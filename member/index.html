@@ -87,6 +87,9 @@
 .form-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
 .form-section h4 { font-size:9px; color:var(--brass); letter-spacing:1.5px; margin-bottom:10px; }
 
+/* ── Hidden utility (must override everything) ── */
+.hidden { display: none !important; }
+
 .empty-note { color:var(--muted); font-size:11px; padding:6px 0; }
 .section-lbl { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin:10px 0 6px; }
 
@@ -118,13 +121,14 @@
   </div>
 
   <!-- ACTIVE CHECKOUTS -->
-  <div class="section-lbl">ACTIVE CHECKOUTS</div>
+  <div class="section-lbl">ACTIVE CHECKOUTS <span style="color:var(--muted);font-weight:normal;font-size:8px;letter-spacing:0">— tap a row to check in</span></div>
   <div id="activeList"><div class="empty-note">Loading…</div></div>
 
-  <!-- LAUNCH BUTTON -->
-  <button class="btn btn-primary" style="width:100%;font-size:13px;padding:12px;margin:10px 0 14px" onclick="openLaunchPicker()">
-    ⛵ Launch a Boat
-  </button>
+  <!-- LAUNCH + CHECK IN BUTTONS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px">
+    <button class="btn btn-primary" style="font-size:12px;padding:12px" onclick="openLaunchPicker()">⛵ Launch a Boat</button>
+    <button class="btn btn-secondary" style="font-size:12px;padding:12px" onclick="openCheckInPicker()">⚓ Check In</button>
+  </div>
 
   <!-- TABS -->
   <div class="hub-tabs">
@@ -180,72 +184,90 @@
 </div>
 
 <!-- ════════════════════════════════
+     MODAL: CHECK-IN PICKER
+     (used when tapping "Check In" button
+     or tapping a checkout row)
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalCheckInPicker">
+  <div class="modal" style="max-width:420px">
+    <h3>Check In a Boat</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Select the boat you're returning:</p>
+    <div id="checkInPickerList"><div class="empty-note">Loading active checkouts…</div></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="closeCheckInPicker()">Cancel</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
      MODAL: LAUNCH FLOW
      Step 1: Boat (auto-advances on select)
      Step 2: Details (no notes, no conditions)
      Step 3: Pre-launch checklist → Launch
 ════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalLaunch">
-  <div class="modal" style="max-width:500px">
-    <div class="steps">
+  <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:90vh">
+    <!-- Step nav — always visible, clickable to go back -->
+    <div class="steps" style="flex-shrink:0">
       <div class="step active" id="lDot1" onclick="goToLaunchStep(1)" style="cursor:pointer">1 · BOAT</div>
-      <div class="step" id="lDot2" onclick="goToLaunchStepBack(2)" style="cursor:pointer">2 · DETAILS</div>
-      <div class="step" id="lDot3" onclick="goToLaunchStepBack(3)" style="cursor:pointer">3 · CHECKLIST</div>
+      <div class="step" id="lDot2" onclick="goToLaunchStep(2)" style="cursor:pointer">2 · DETAILS</div>
+      <div class="step" id="lDot3" onclick="goToLaunchStep(3)" style="cursor:pointer">3 · CHECKLIST</div>
     </div>
 
-    <!-- Step 1: Select boat (auto-advances on selection) -->
-    <div id="launchStep1">
-      <div class="form-section">
-        <h4>SELECT BOAT</h4>
-        <div class="field">
-          <label>Boat</label>
-          <select id="lBoat" onchange="onBoatSelected()"><option value="">Select a boat…</option></select>
-        </div>
-        <div id="boatCategoryLabel" style="display:none;font-size:11px;color:var(--brass);margin-top:6px"></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="closeLaunchModal()">Cancel</button>
-      </div>
-    </div>
+    <!-- Scrollable step content -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
 
-    <!-- Step 2: Launch details (no notes, no conditions) -->
-    <div id="launchStep2" class="hidden">
-      <div class="form-section">
-        <h4>LAUNCH DETAILS</h4>
-        <div class="grid-2">
-          <div class="field"><label>Date</label><input type="date" id="lDate"></div>
-          <div class="field"><label>Time out</label><input type="time" id="lTimeOut"></div>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label>Location</label>
-            <select id="lLocation"><option value="">Select…</option></select>
+      <!-- Step 1: Select boat -->
+      <div id="launchStep1">
+        <div class="form-section">
+          <h4>SELECT BOAT</h4>
+          <div class="field">
+            <label>Boat</label>
+            <select id="lBoat" onchange="onBoatSelected()"><option value="">Select a boat…</option></select>
           </div>
-          <div class="field"><label>Crew on board</label>
-            <input type="number" id="lCrew" min="1" max="20" value="1">
-          </div>
+          <div id="boatCategoryLabel" style="display:none;font-size:11px;color:var(--brass);margin-top:6px"></div>
         </div>
-        <div class="field"><label>Expected return</label><input type="time" id="lReturnBy"></div>
       </div>
-      <div id="launchDetailsErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToLaunchStep(1)">← Back</button>
-        <button class="btn btn-primary" onclick="goToLaunchChecklist()">Next: Checklist →</button>
-      </div>
-    </div>
 
-    <!-- Step 3: Pre-launch checklist → Launch -->
-    <div id="launchStep3" class="hidden">
-      <div class="form-section">
-        <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="checklistTitle">PRE-LAUNCH CHECKLIST</div>
-        <div id="checklistItems"></div>
-        <div class="cl-progress"><div class="cl-bar" id="clBar" style="width:0%"></div></div>
-        <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="clCount">0 / 0</div>
+      <!-- Step 2: Launch details -->
+      <div id="launchStep2" class="hidden">
+        <div class="form-section">
+          <h4>LAUNCH DETAILS</h4>
+          <div class="grid-2">
+            <div class="field"><label>Date</label><input type="date" id="lDate"></div>
+            <div class="field"><label>Time out</label><input type="time" id="lTimeOut"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>Location</label>
+              <select id="lLocation"><option value="">Select…</option></select>
+            </div>
+            <div class="field"><label>Crew on board</label>
+              <input type="number" id="lCrew" min="1" max="20" value="1">
+            </div>
+          </div>
+          <div class="field"><label>Expected return</label><input type="time" id="lReturnBy"></div>
+        </div>
+        <div id="launchDetailsErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
       </div>
-      <div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToLaunchStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="submitLaunch()">⛵ Launch</button>
+
+      <!-- Step 3: Pre-launch checklist -->
+      <div id="launchStep3" class="hidden">
+        <div class="form-section">
+          <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="checklistTitle">PRE-LAUNCH CHECKLIST</div>
+          <div id="checklistItems"></div>
+          <div class="cl-progress"><div class="cl-bar" id="clBar" style="width:0%"></div></div>
+          <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="clCount">0 / 0</div>
+        </div>
+        <div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
       </div>
+
+    </div><!-- end scrollable -->
+
+    <!-- Fixed footer — always visible -->
+    <div style="flex-shrink:0;padding-top:10px;border-top:1px solid var(--border)44;margin-top:4px">
+      <!-- Step-specific action button -->
+      <div id="launchActionRow">
+        <!-- populated by goToLaunchStep() -->
+      </div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeLaunchModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -257,115 +279,115 @@
      Step 3: After-sail checklist + optional damage report
 ════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalReturn">
-  <div class="modal" style="max-width:500px">
-    <div class="steps">
+  <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:90vh">
+    <div class="steps" style="flex-shrink:0">
       <div class="step active" id="rDot1" onclick="goToReturnStep(1)" style="cursor:pointer">1 · CHECK IN</div>
-      <div class="step" id="rDot2" onclick="goToReturnStepBack(2)" style="cursor:pointer">2 · CONDITIONS</div>
-      <div class="step" id="rDot3" onclick="goToReturnStepBack(3)" style="cursor:pointer">3 · CHECKLIST</div>
+      <div class="step" id="rDot2" onclick="goToReturnStep(2)" style="cursor:pointer">2 · CONDITIONS</div>
+      <div class="step" id="rDot3" onclick="goToReturnStep(3)" style="cursor:pointer">3 · CHECKLIST</div>
     </div>
 
-    <!-- Return Step 1: Check-in details -->
-    <div id="returnStep1">
-      <div class="form-section">
-        <h4 id="returnBoatTitle">RETURNING BOAT</h4>
-        <div class="grid-2">
-          <div class="field"><label>Time in</label><input type="time" id="rTimeIn" oninput="updateReturnHours()"></div>
-          <div class="field"><label>Crew returning</label><input type="number" id="rCrew" min="1" max="20" value="1"></div>
-        </div>
-        <div class="hours-calc" id="rHoursCalc"></div>
-        <div class="field" style="margin-top:8px"><label>Trip notes</label>
-          <textarea id="rNotes" rows="2" style="width:100%;resize:vertical" placeholder="Route taken, highlights…"></textarea>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="closeReturnModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="goToReturnConditions()">Next: Conditions →</button>
-      </div>
-    </div>
+    <div style="flex:1;overflow-y:auto;min-height:0">
 
-    <!-- Return Step 2: Conditions -->
-    <div id="returnStep2" class="hidden">
-      <div class="form-section">
-        <h4>CONDITIONS ON RETURN <span style="color:var(--muted);font-weight:normal;font-size:8px">— auto-loaded, edit if needed</span></h4>
-        <button class="cond-btn loaded" id="rCondBtn" onclick="prefillReturnConditions()" style="margin-bottom:10px">
-          <span id="rCondIcon">✓</span><span id="rCondText">Current conditions loaded — tap to refresh</span>
-        </button>
-        <div class="grid-3">
-          <div class="field"><label>Beaufort</label>
-            <select id="rBft"><option value="">–</option>
-              <option value="0">0 Calm</option><option value="1">1 Light air</option>
-              <option value="2">2 Light breeze</option><option value="3">3 Gentle</option>
-              <option value="4">4 Moderate</option><option value="5">5 Fresh</option>
-              <option value="6">6 Strong</option><option value="7">7 Near gale</option>
-              <option value="8">8 Gale</option>
-            </select>
+      <!-- Return Step 1: Check-in details -->
+      <div id="returnStep1">
+        <div class="form-section">
+          <h4 id="returnBoatTitle">RETURNING BOAT</h4>
+          <div class="grid-2">
+            <div class="field"><label>Time in</label><input type="time" id="rTimeIn" oninput="updateReturnHours()"></div>
+            <div class="field"><label>Crew returning</label><input type="number" id="rCrew" min="1" max="20" value="1"></div>
           </div>
-          <div class="field"><label>m/s</label><input type="number" id="rWindMs" step="0.1" min="0" placeholder="0.0"></div>
-          <div class="field"><label>Direction</label>
-            <select id="rWindDir"><option value="">–</option>
-              <option>N</option><option>NE</option><option>E</option><option>SE</option>
-              <option>S</option><option>SW</option><option>W</option><option>NW</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid-3">
-          <div class="field"><label>Sea state</label>
-            <select id="rSea"><option value="">–</option><option>Calm</option><option>Smooth</option>
-              <option>Slight</option><option>Moderate</option><option>Rough</option><option>Very rough</option>
-            </select>
-          </div>
-          <div class="field"><label>Precip.</label>
-            <select id="rPrecip"><option value="">–</option><option>None</option><option>Drizzle</option>
-              <option>Rain</option><option>Showers</option><option>Snow</option><option>Fog</option>
-            </select>
-          </div>
-          <div class="field"><label>Visibility</label>
-            <select id="rVis"><option value="">–</option>
-              <option>Excellent (>10km)</option><option>Good (5–10km)</option>
-              <option>Moderate (2–5km)</option><option>Poor (<2km)</option><option>Fog</option>
-            </select>
+          <div class="hours-calc" id="rHoursCalc"></div>
+          <div class="field" style="margin-top:8px"><label>Trip notes</label>
+            <textarea id="rNotes" rows="2" style="width:100%;resize:vertical" placeholder="Route taken, highlights…"></textarea>
           </div>
         </div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToReturnStep(1)">← Back</button>
-        <button class="btn btn-primary" onclick="goToReturnChecklist()">Next: Checklist →</button>
-      </div>
-    </div>
 
-    <!-- Return Step 3: After-sail checklist + damage report -->
-    <div id="returnStep3" class="hidden">
-      <div class="form-section">
-        <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="afterChecklistTitle">AFTER-SAIL CHECKLIST</div>
-        <div id="afterChecklistItems"></div>
-        <div class="cl-progress"><div class="cl-bar" id="afterClBar" style="width:0%"></div></div>
-        <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="afterClCount">0 / 0</div>
-      </div>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text);padding:10px 0;border-top:1px solid var(--border)44;margin-bottom:8px">
-        <input type="checkbox" id="hasDamage" onchange="toggleDamageReport()" style="accent-color:var(--red);width:16px;height:16px;flex-shrink:0">
-        Report damage or issue with this boat
-      </label>
-      <div id="damageReportSection" style="display:none">
-        <div class="form-section" style="border-color:var(--red)44">
-          <h4 style="color:var(--red)">DAMAGE / ISSUE REPORT</h4>
-          <div class="field"><label>What happened?</label>
-            <textarea id="damageDesc" rows="3" style="width:100%;resize:vertical" placeholder="Describe the damage or issue…"></textarea>
+      <!-- Return Step 2: Conditions -->
+      <div id="returnStep2" class="hidden">
+        <div class="form-section">
+          <h4>CONDITIONS ON RETURN <span style="color:var(--muted);font-weight:normal;font-size:8px">— auto-loaded, edit if needed</span></h4>
+          <button class="cond-btn loaded" id="rCondBtn" onclick="prefillReturnConditions()" style="margin-bottom:10px">
+            <span id="rCondIcon">✓</span><span id="rCondText">Current conditions loaded — tap to refresh</span>
+          </button>
+          <div class="grid-3">
+            <div class="field"><label>Beaufort</label>
+              <select id="rBft"><option value="">–</option>
+                <option value="0">0 Calm</option><option value="1">1 Light air</option>
+                <option value="2">2 Light breeze</option><option value="3">3 Gentle</option>
+                <option value="4">4 Moderate</option><option value="5">5 Fresh</option>
+                <option value="6">6 Strong</option><option value="7">7 Near gale</option>
+                <option value="8">8 Gale</option>
+              </select>
+            </div>
+            <div class="field"><label>m/s</label><input type="number" id="rWindMs" step="0.1" min="0" placeholder="0.0"></div>
+            <div class="field"><label>Direction</label>
+              <select id="rWindDir"><option value="">–</option>
+                <option>N</option><option>NE</option><option>E</option><option>SE</option>
+                <option>S</option><option>SW</option><option>W</option><option>NW</option>
+              </select>
+            </div>
           </div>
-          <div class="field"><label>Severity</label>
-            <select id="damageSeverity">
-              <option value="">Select…</option>
-              <option value="minor">Minor — cosmetic, boat still sailable</option>
-              <option value="moderate">Moderate — needs inspection before next sail</option>
-              <option value="serious">Serious — boat should not sail until repaired</option>
-            </select>
+          <div class="grid-3">
+            <div class="field"><label>Sea state</label>
+              <select id="rSea"><option value="">–</option><option>Calm</option><option>Smooth</option>
+                <option>Slight</option><option>Moderate</option><option>Rough</option><option>Very rough</option>
+              </select>
+            </div>
+            <div class="field"><label>Precip.</label>
+              <select id="rPrecip"><option value="">–</option><option>None</option><option>Drizzle</option>
+                <option>Rain</option><option>Showers</option><option>Snow</option><option>Fog</option>
+              </select>
+            </div>
+            <div class="field"><label>Visibility</label>
+              <select id="rVis"><option value="">–</option>
+                <option>Excellent (>10km)</option><option>Good (5–10km)</option>
+                <option>Moderate (2–5km)</option><option>Poor (<2km)</option><option>Fog</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
-      <div id="returnErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="goToReturnStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="submitReturn()">✓ Confirm Return</button>
+
+      <!-- Return Step 3: After-sail checklist + damage report -->
+      <div id="returnStep3" class="hidden">
+        <div class="form-section">
+          <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="afterChecklistTitle">AFTER-SAIL CHECKLIST</div>
+          <div id="afterChecklistItems"></div>
+          <div class="cl-progress"><div class="cl-bar" id="afterClBar" style="width:0%"></div></div>
+          <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="afterClCount">0 / 0</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text);padding:10px 0;border-top:1px solid var(--border)44;margin-bottom:8px">
+          <input type="checkbox" id="hasDamage" onchange="toggleDamageReport()" style="accent-color:var(--red);width:16px;height:16px;flex-shrink:0">
+          Report damage or issue with this boat
+        </label>
+        <div id="damageReportSection" style="display:none">
+          <div class="form-section" style="border-color:var(--red)44">
+            <h4 style="color:var(--red)">DAMAGE / ISSUE REPORT</h4>
+            <div class="field"><label>What happened?</label>
+              <textarea id="damageDesc" rows="3" style="width:100%;resize:vertical" placeholder="Describe the damage or issue…"></textarea>
+            </div>
+            <div class="field"><label>Severity</label>
+              <select id="damageSeverity">
+                <option value="">Select…</option>
+                <option value="minor">Minor — cosmetic, boat still sailable</option>
+                <option value="moderate">Moderate — needs inspection before next sail</option>
+                <option value="serious">Serious — boat should not sail until repaired</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div id="returnErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
       </div>
+
+    </div><!-- end scrollable -->
+
+    <!-- Fixed footer — always visible -->
+    <div style="flex-shrink:0;padding-top:10px;border-top:1px solid var(--border)44;margin-top:4px">
+      <div id="returnActionRow">
+        <!-- populated by goToReturnStep() -->
+      </div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeReturnModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -620,21 +642,26 @@ function renderCheckouts(){
   const returned=checkouts.filter(c=>c.status==='in').slice(0,5);
 
   const aEl=document.getElementById('activeList');
-  aEl.innerHTML=!active.length
-    ?'<div class="empty-note">No boats currently out.</div>'
-    :active.map(c=>{
+  if(!active.length){
+    aEl.innerHTML='<div class="empty-note">No boats currently out.</div>';
+  } else {
+    aEl.innerHTML=active.map(c=>{
       const isMe=String(c.memberKt)===String(user.kennitala);
       const overdue=c.returnBy&&c.returnBy<nowTime;
-      return`<div class="co-strip${isMe?' mine':overdue?' overdue':''}">
-        <span style="font-size:18px">⛵</span>
+      const cls=overdue?'overdue':isMe?'mine':'';
+      const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
+      const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
+      const retLabel=c.returnBy?`Est. return ${esc(c.returnBy)}`:'No est. return';
+      return`<div class="co-strip${cls?' '+cls:''}" style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Tap to check in">
+        <div style="font-size:20px;flex-shrink:0">⛵</div>
         <div class="co-meta">
-          <div class="co-title">${esc(c.boatName||'—')} · ${esc(c.memberName||'—')}</div>
-          <div class="co-sub">${esc(c.locationName||'—')} · out ${esc(c.timeOut||'—')}${c.returnBy?' · back by '+esc(c.returnBy):''}</div>
+          <div class="co-title">${esc(c.boatName||'—')}</div>
+          <div class="co-sub">${esc(c.memberName||'—')} &nbsp;·&nbsp; ${esc(c.locationName||'—')} &nbsp;·&nbsp; Dep. ${esc(c.timeOut||'—')} &nbsp;·&nbsp; ${retLabel}</div>
         </div>
-        <span class="status-badge ${overdue?'s-overdue':isMe?'s-mine':'s-out'}">${overdue?'OVERDUE':isMe?'YOURS':'OUT'}</span>
-        ${isMe?`<button class="btn btn-primary" style="font-size:10px;padding:4px 10px;margin-left:4px;flex-shrink:0" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Return</button>`:''}
+        <span class="status-badge ${badgeCls}">${badge}</span>
       </div>`;
     }).join('');
+  }
 
   const rEl=document.getElementById('recentList');
   rEl.innerHTML=!returned.length
@@ -657,8 +684,6 @@ function openLaunchPicker(){ document.getElementById('modalLaunchPicker').classL
 function closeLaunchPicker(){ document.getElementById('modalLaunchPicker').classList.add('hidden'); }
 
 function openQRLaunch(){
-  // QR scan: in a real deployment this would open camera/deep link
-  // For now, we just inform and show manual fallback
   if(window.confirm('Point your camera at the QR code on the boat.\n\nNot available in browser — use the "Use Menu" option to continue.')){
     startLaunchMenu();
   }
@@ -679,6 +704,29 @@ function closeLaunchModal(){
   launchBoat=null;
 }
 
+// ── Check-in picker (standalone "Check In" button) ──
+function openCheckInPicker(){
+  const active=checkouts.filter(c=>c.status==='out');
+  const el=document.getElementById('checkInPickerList');
+  if(!active.length){
+    el.innerHTML='<div class="empty-note">No boats currently out.</div>';
+  } else {
+    el.innerHTML=active.map(c=>{
+      const isMe=String(c.memberKt)===String(user.kennitala);
+      return`<div class="co-strip${isMe?' mine':''}" style="cursor:pointer;margin-bottom:6px" onclick='closeCheckInPicker();startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+        <div style="font-size:18px;flex-shrink:0">⛵</div>
+        <div class="co-meta">
+          <div class="co-title">${esc(c.boatName||'—')}${isMe?' <span style="color:var(--brass);font-size:9px;margin-left:4px">YOUR BOAT</span>':''}</div>
+          <div class="co-sub">${esc(c.memberName||'—')} · Dep. ${esc(c.timeOut||'—')}${c.returnBy?' · Est. return '+esc(c.returnBy):''}</div>
+        </div>
+        <span style="font-size:13px;color:var(--brass);flex-shrink:0">→</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('modalCheckInPicker').classList.remove('hidden');
+}
+function closeCheckInPicker(){document.getElementById('modalCheckInPicker').classList.add('hidden');}
+
 // ══════════════════════════════════════════════════════
 // LAUNCH FLOW
 // ══════════════════════════════════════════════════════
@@ -696,6 +744,9 @@ function onBoatSelected(){
 }
 
 function goToLaunchStep(n){
+  // Prevent forward skipping past unvisited steps
+  if(n===2&&!launchBoat) return;
+  if(n===3&&!launchBoat) return;
   [1,2,3].forEach(i=>{
     document.getElementById('launchStep'+i).classList.toggle('hidden',i!==n);
     const dot=document.getElementById('lDot'+i);
@@ -703,12 +754,15 @@ function goToLaunchStep(n){
     if(i===n)dot.classList.add('active');
     else if(i<n)dot.classList.add('done');
   });
-}
-
-// Only allow clicking back via nav dots to already-completed steps
-function goToLaunchStepBack(n){
-  const dot=document.getElementById('lDot'+n);
-  if(dot&&(dot.classList.contains('done')||dot.classList.contains('active'))) goToLaunchStep(n);
+  // Update the action button in the footer
+  const row=document.getElementById('launchActionRow');
+  if(n===1){
+    row.innerHTML=''; // No forward button on step 1 — just select a boat
+  } else if(n===2){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToLaunchChecklist()">Next: Checklist →</button>`;
+  } else if(n===3){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="submitLaunch()">⛵ Launch</button>`;
+  }
 }
 
 function goToLaunchChecklist(){
@@ -745,7 +799,6 @@ async function submitLaunch(){
   const err =document.getElementById('launchErr');
   if(!boat.value||!loc.value){err.textContent='Boat and location are required.';err.style.display='block';return;}
   err.style.display='none';
-  // Silently capture live weather at launch moment
   const wxSnap=currentWx||await fetchLiveConditions();
   try{
     await apiPost('saveCheckout',{
@@ -759,7 +812,6 @@ async function submitLaunch(){
       timeOut:     document.getElementById('lTimeOut').value||fmtTimeNow(),
       returnBy:    document.getElementById('lReturnBy').value||'',
       crew:        document.getElementById('lCrew').value||1,
-      // Auto-captured launch conditions (silent)
       launchBft:    wxSnap?String(wxSnap.bft):'',
       launchWindMs: wxSnap?wxSnap.ws.toFixed(1):'',
       launchWindDir:wxSnap?wxSnap.wDir:'',
@@ -799,10 +851,14 @@ function goToReturnStep(n){
     if(i===n)dot.classList.add('active');
     else if(i<n)dot.classList.add('done');
   });
-}
-function goToReturnStepBack(n){
-  const dot=document.getElementById('rDot'+n);
-  if(dot&&(dot.classList.contains('done')||dot.classList.contains('active'))) goToReturnStep(n);
+  const row=document.getElementById('returnActionRow');
+  if(n===1){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToReturnConditions()">Next: Conditions →</button>`;
+  } else if(n===2){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToReturnChecklist()">Next: Checklist →</button>`;
+  } else if(n===3){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="submitReturn()">✓ Confirm Return</button>`;
+  }
 }
 
 function updateReturnHours(){
