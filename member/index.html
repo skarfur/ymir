@@ -140,14 +140,14 @@
   <div id="tab-fleet">
     <div class="returns-label" style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:10px 0 8px">AVAILABLE BOATS — tap to launch</div>
     <div id="fleetList"><div class="empty-note">Loading…</div></div>
-    <div class="returns-section" style="margin-top:16px">
-      <div class="returns-label">RECENTLY RETURNED (24H)</div>
-      <div id="recentList"><div class="empty-note">Loading…</div></div>
-    </div>
   </div>
 
   <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
   <div id="tab-trips" class="hidden">
+    <div class="returns-section" style="margin-bottom:12px">
+      <div class="returns-label">RECENTLY RETURNED (24H)</div>
+      <div id="recentList"><div class="empty-note">Loading…</div></div>
+    </div>
     <p style="font-size:11px;color:var(--muted);margin:0 0 12px">
       Trips from the last 24 hours. Tap one to add it to your logbook as crew — or add a trip manually.
     </p>
@@ -595,12 +595,12 @@ async function fetchWeatherWidget(){
         <div>
           <div style="font-size:8px;color:var(--muted);letter-spacing:1.2px;margin-bottom:4px">CONDITIONS · BIRK</div>
           <div style="display:flex;align-items:baseline;gap:4px">
-            <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${ws.toFixed(1)}</span>
+            <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
             <span style="font-size:11px;color:var(--muted)">m/s</span>
             <span style="font-size:13px;color:var(--brass);margin-left:4px">${dirArrow(wd)}</span>
             <span style="font-size:11px;color:var(--muted)">${wDir}</span>
           </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">Bft ${bft} ${bftDesc(bft)} · Gusts ${wg.toFixed(1)} m/s · ${msToKt(ws)} kt${waveH!=null?' · 🌊 '+waveH.toFixed(1)+'m':''}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Bft ${bft} ${bftDesc(bft)} · Gusts ${Math.round(wg)} m/s · ${Math.round(ws*1.944)} kt${waveH!=null?' · 🌊 '+waveH.toFixed(1)+'m':''}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:24px">${condIcon(c.weather_code)}</div>
@@ -640,14 +640,14 @@ function doCondPrefill(prefix, wx){
   const dirs8=['N','NE','E','SE','S','SW','W','NW'];
   const dir8=dirs8[Math.round((wx.wd??0)/45)%8];
   setV(prefix+'Bft',String(wx.bft));
-  setV(prefix+'WindMs',wx.ws.toFixed(1));
+  setV(prefix+'WindMs',Math.round(wx.ws));
   setSelByText(prefix+'WindDir',dir8);
   const btn=document.getElementById(prefix+'CondBtn');
   if(btn)btn.className='cond-btn loaded';
   const icon=document.getElementById(prefix+'CondIcon');
   if(icon)icon.textContent='✓';
   const txt=document.getElementById(prefix+'CondText');
-  if(txt)txt.textContent=`Bft ${wx.bft} · ${wx.ws.toFixed(1)} m/s · ${dir8}${wx.waveH!=null?' · Waves '+wx.waveH.toFixed(1)+'m':''} — edit if needed`;
+  if(txt)txt.textContent=`Bft ${wx.bft} · ${Math.round(wx.ws)} m/s · ${dir8}${wx.waveH!=null?' · Waves '+wx.waveH.toFixed(1)+'m':''} — edit if needed`;
 }
 function prefillLaunchConditions(){ doCondPrefill('l', currentWx); }
 function prefillReturnConditions(){ doCondPrefill('r', currentWx); }
@@ -671,7 +671,8 @@ function renderCheckouts(){
       const cls=overdue?'overdue':isMe?'mine':'';
       const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
       const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
-      const tOut=c.timeOut||c.checkedOutAt||'—';
+      const rawTout=c.timeOut||c.checkedOutAt||'';
+      const tOut=(rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5))||'—';
       const retBy=c.returnBy||c.expectedReturn||'';
       const retLabel=retBy?`Est. return ${esc(retBy)}`:'No est. return';
       const clickable=isMe;
@@ -780,7 +781,7 @@ function openCheckInPicker(){
         <div style="font-size:18px;flex-shrink:0">⛵</div>
         <div class="co-meta">
           <div class="co-title">${esc(c.boatName||'—')}</div>
-          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc(c.timeOut||c.checkedOutAt||'—')}${(c.returnBy||c.expectedReturn)?' · Est. '+esc(c.returnBy||c.expectedReturn):''}</div>
+          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc((()=>{const r=c.timeOut||c.checkedOutAt||'';return r.includes('T')?r.slice(11,16):r.slice(0,5)||'—';})())}${(c.returnBy||c.expectedReturn)?' · Est. '+esc(c.returnBy||c.expectedReturn):''}</div>
         </div>
         <span style="font-size:13px;color:var(--brass);flex-shrink:0">→</span>
       </div>`).join('');
@@ -879,7 +880,7 @@ async function submitLaunch(){
       returnBy:        document.getElementById('lReturnBy').value||'',
       crew:            document.getElementById('lCrew').value||1,
       launchBft:       wxSnap?String(wxSnap.bft):'',
-      launchWindMs:    wxSnap?wxSnap.ws.toFixed(1):'',
+      launchWindMs:    wxSnap?String(Math.round(wxSnap.ws)):'',
       launchWindDir:   wxSnap?wxSnap.wDir:'',
       wxSnap:          wxSnap?JSON.stringify(wxSnap):'',
     });
@@ -933,7 +934,9 @@ function goToReturnStep(n){
 
 function updateReturnHours(){
   if(!returnCo)return;
-  const h=hoursLabel(returnCo.timeOut||returnCo.checkedOutAt,document.getElementById('rTimeIn').value);
+  const rawTout=returnCo.timeOut||returnCo.checkedOutAt||'';
+  const tout=rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5)||'';
+  const h=hoursLabel(tout,document.getElementById('rTimeIn').value);
   document.getElementById('rHoursCalc').textContent=h?`⏱ ${h} sailed`:'';
 }
 
@@ -1029,42 +1032,50 @@ async function submitReturn(){
   if(!tin){err.textContent='Return time required.';err.style.display='block';return;}
   err.style.display='none';
   const co=returnCo;
-  const tout=co.timeOut||co.checkedOutAt||'';
+  // Normalise timeOut — strip anything before HH:MM (handles 1899-12-30 serials)
+  const rawTout=co.timeOut||co.checkedOutAt||'';
+  const tout=rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5)||'';
   const date=co.date||todayISO();
   const hDec=tout?Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10):0;
+
+  // Parse launch wx snapshot from checkout
+  let launchWx=null;
+  if(co.wxSnap){ try{ launchWx=JSON.parse(co.wxSnap); }catch(e){} }
+
   try{
     await apiPost('checkIn',{
       id:co.id,
       timeIn:tin,
-      returnBft:    document.getElementById('rBft').value,
-      returnWindMs: document.getElementById('rWindMs').value,
-      returnWindDir:document.getElementById('rWindDir').value,
-      returnSea:    document.getElementById('rSea').value,
-      returnPrecip: document.getElementById('rPrecip').value,
-      returnVis:    document.getElementById('rVis').value,
     });
     await apiPost('saveTrip',{
-      kennitala:    user.kennitala,
-      memberName:   user.name,
+      kennitala:       user.kennitala,
+      memberName:      user.name,
       date,
-      timeOut:      tout,
-      timeIn:       tin,
-      hoursDecimal: hDec,
-      boatId:       co.boatId,
-      boatName:     co.boatName,
-      locationId:   co.locationId,
-      locationName: co.locationName,
-      crew:         co.crew||1,
-      beaufort:     document.getElementById('rBft').value,
-      windMs:       document.getElementById('rWindMs').value,
-      windDir:      document.getElementById('rWindDir').value,
-      seaState:     document.getElementById('rSea').value,
-      precip:       document.getElementById('rPrecip').value,
-      visibility:   document.getElementById('rVis').value,
-      notes:        document.getElementById('rNotes').value.trim(),
-      isLinked:     true,
-      linkedCheckoutId: co.id,
-      role:         'skipper',
+      timeOut:         tout,
+      timeIn:          tin,
+      hoursDecimal:    hDec,
+      boatId:          co.boatId,
+      boatName:        co.boatName,
+      locationId:      co.locationId,
+      locationName:    co.locationName,
+      crew:            co.crew||1,
+      // Return conditions (from step 2)
+      beaufort:        document.getElementById('rBft').value,
+      windMs:          document.getElementById('rWindMs').value,
+      windDir:         document.getElementById('rWindDir').value,
+      seaState:        document.getElementById('rSea').value,
+      precip:          document.getElementById('rPrecip').value,
+      visibility:      document.getElementById('rVis').value,
+      waveHeight:      launchWx?.waveH!=null ? launchWx.waveH.toFixed(1) : '',
+      // Launch conditions (from checkout wx snapshot)
+      launchBeaufort:  co.launchBft   || (launchWx ? String(launchWx.bft) : ''),
+      launchWindMs:    co.launchWindMs || (launchWx ? String(Math.round(launchWx.ws)) : ''),
+      launchWindDir:   co.launchWindDir|| (launchWx ? launchWx.wDir : ''),
+      launchWaveHeight:launchWx?.waveH!=null ? launchWx.waveH.toFixed(1) : '',
+      notes:           document.getElementById('rNotes').value.trim(),
+      isLinked:        true,
+      linkedCheckoutId:co.id,
+      role:            'skipper',
     });
     if(pendingDamage){
       await apiPost('saveDamageReport',{
