@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Maintenance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <style>
+    .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted);
+      border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
+      letter-spacing:.5px; transition:all .15s; }
+    .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
+    .filter-btn:hover:not(.active) { border-color:var(--brass); color:var(--brass); }
+
+    /* ── Stat strip ── */
+    .stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      padding:12px; text-align:center; }
+    .stat-num { font-size:24px; color:var(--brass); font-weight:500; }
+    .stat-label { font-size:10px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
+    @media(max-width:580px){ .stat-strip { grid-template-columns:repeat(2,1fr); } }
+
+    /* ── Request card ── */
+    .req-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+      padding:14px 16px; margin-bottom:10px; transition:border-color .15s; }
+    .req-card.resolved { opacity:.45; }
+    .req-card.sev-critical { border-left:3px solid var(--red); }
+    .req-card.sev-high     { border-left:3px solid var(--orange); }
+    .req-card.sev-medium   { border-left:3px solid var(--yellow); }
+    .req-card.sev-low      { border-left:3px solid var(--green); }
+
+    .req-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .req-title { font-size:14px; font-weight:500; color:var(--text); }
+    .req-meta { font-size:11px; color:var(--muted); margin-top:5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+    .req-desc { font-size:12px; color:var(--text); margin-top:8px; opacity:.8; }
+    .req-photo { margin-top:8px; border-radius:6px; max-width:100%; max-height:200px; object-fit:cover;
+      border:1px solid var(--border); cursor:pointer; }
+    .req-actions { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+
+    .oos-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px;
+      border-radius:10px; border:1px solid var(--red)55; background:var(--red)11; color:var(--red);
+      font-weight:bold; letter-spacing:.5px; }
+
+    /* ── Comment thread ── */
+    .comment-thread { margin-top:10px; border-top:1px solid var(--border); padding-top:8px; }
+    .comment-item { font-size:11px; color:var(--muted); padding:4px 0;
+      border-bottom:1px solid var(--border)44; }
+    .comment-item:last-child { border-bottom:none; }
+    .comment-by { color:var(--brass); }
+    .comment-add { display:flex; gap:6px; margin-top:8px; }
+    .comment-add input { flex:1; font-size:12px; padding:6px 10px; }
+    .comment-add button { padding:6px 12px; font-size:11px; white-space:nowrap; }
+
+    /* ── Empty state ── */
+    .empty-wrap { text-align:center; padding:48px 20px; color:var(--muted); }
+    .empty-icon { font-size:36px; margin-bottom:12px; opacity:.4; }
+
+    /* ── Modal ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75);
+      display:flex; align-items:center; justify-content:center; z-index:200; padding:16px; }
+    .modal-overlay.hidden { display:none; }
+    .modal { background:var(--card); border:1px solid var(--border-l); border-radius:10px;
+      padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
+    .modal h3 { color:var(--brass); margin-bottom:16px; font-size:15px; }
+
+    /* Severity selector */
+    .sev-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .sev-btn { flex:1; min-width:70px; padding:8px 4px; border-radius:6px; border:1px solid;
+      font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:bold;
+      letter-spacing:.5px; transition:all .15s; }
+    .sev-btn[data-sev="low"]      { color:var(--green);  border-color:var(--green)55;  background:var(--green)11; }
+    .sev-btn[data-sev="medium"]   { color:var(--yellow); border-color:var(--yellow)55; background:var(--yellow)11; }
+    .sev-btn[data-sev="high"]     { color:var(--orange); border-color:var(--orange)55; background:var(--orange)11; }
+    .sev-btn[data-sev="critical"] { color:var(--red);    border-color:var(--red)55;    background:var(--red)11; }
+    .sev-btn.selected { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
+
+    /* Category selector */
+    .cat-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:6px; border:1px solid var(--border);
+      background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit;
+      cursor:pointer; text-align:center; transition:all .15s; }
+    .cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
+
+    /* Photo preview */
+    .photo-preview { width:80px; height:60px; object-fit:cover; border-radius:6px;
+      border:1px solid var(--border); margin-top:6px; display:none; }
+    .photo-preview.show { display:block; }
+
+    /* Full-size photo overlay */
+    .photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300;
+      display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .photo-overlay.hidden { display:none; }
+    .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <span class="logo">ÝMIR</span>
+    <span class="page-title" id="hubLink">← Staff hub</span>
+  </div>
+  <div class="header-right">
+    <button class="hbtn" onclick="openNewRequest()">+ New Request</button>
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <!-- Stats -->
+  <div class="stat-strip">
+    <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
+    <div class="stat-card"><div class="stat-num" id="statCritical" style="color:var(--red)">—</div><div class="stat-label">CRITICAL</div></div>
+    <div class="stat-card"><div class="stat-num" id="statOos" style="color:var(--red)">—</div><div class="stat-label">BOATS OOS</div></div>
+    <div class="stat-card"><div class="stat-num" id="statResolved" style="color:var(--green)">—</div><div class="stat-label">RESOLVED</div></div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:11px;color:var(--muted);letter-spacing:.5px">FILTER:</span>
+    <button class="filter-btn active" data-filter="open"     onclick="setFilter('open')">Open</button>
+    <button class="filter-btn"        data-filter="critical" onclick="setFilter('critical')">Critical</button>
+    <button class="filter-btn"        data-filter="boats"    onclick="setFilter('boats')">Boats</button>
+    <button class="filter-btn"        data-filter="equipment"onclick="setFilter('equipment')">Equipment</button>
+    <button class="filter-btn"        data-filter="facility" onclick="setFilter('facility')">Facility</button>
+    <button class="filter-btn"        data-filter="resolved" onclick="setFilter('resolved')">Resolved</button>
+    <button class="filter-btn"        data-filter="all"      onclick="setFilter('all')">All</button>
+  </div>
+
+  <!-- Request list -->
+  <div id="reqList"><div class="empty-wrap"><div class="spinner"></div></div></div>
+
+</div><!-- /page-wrap -->
+
+<!-- ══ NEW REQUEST MODAL ══ -->
+<div class="modal-overlay hidden" id="newModal">
+  <div class="modal">
+    <h3>🔧 New Maintenance Request</h3>
+
+    <div class="field">
+      <label>Category</label>
+      <div class="cat-btns">
+        <button class="cat-btn" data-cat="boat"      onclick="selectCat('boat')">⛵ Boat</button>
+        <button class="cat-btn" data-cat="equipment" onclick="selectCat('equipment')">🦺 Equipment</button>
+        <button class="cat-btn" data-cat="facility"  onclick="selectCat('facility')">🏠 Facility</button>
+      </div>
+    </div>
+
+    <!-- Boat picker (shown when cat=boat) -->
+    <div class="field hidden" id="boatField">
+      <label>Boat</label>
+      <select id="newBoat"><option value="">Select boat…</option></select>
+      <label style="margin-top:10px">Mark boat Out of Service?</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <input type="checkbox" id="newOos" style="width:16px;height:16px;accent-color:var(--red)">
+        <span style="font-size:12px;color:var(--muted)">Take this boat OOS until repaired</span>
+      </div>
+    </div>
+
+    <!-- Equipment / facility name (shown when cat=equipment or facility) -->
+    <div class="field hidden" id="itemField">
+      <label id="itemLabel">Item / Location</label>
+      <input type="text" id="newItem" placeholder="e.g. Wetsuit #3 / Clubhouse roof">
+    </div>
+
+    <div class="field">
+      <label>Part / Area</label>
+      <input type="text" id="newPart" placeholder="e.g. Hull, mast, zipper, window…">
+    </div>
+
+    <div class="field">
+      <label>Severity</label>
+      <div class="sev-btns">
+        <button class="sev-btn" data-sev="low"      onclick="selectSev('low')">LOW</button>
+        <button class="sev-btn" data-sev="medium"   onclick="selectSev('medium')">MEDIUM</button>
+        <button class="sev-btn" data-sev="high"     onclick="selectSev('high')">HIGH</button>
+        <button class="sev-btn" data-sev="critical" onclick="selectSev('critical')">CRITICAL</button>
+      </div>
+      <div id="sevHint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea id="newDesc" rows="3" placeholder="Describe the issue…"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Photo (optional, max 5 MB)</label>
+      <input type="file" id="newPhoto" accept="image/*" onchange="handlePhotoChange(this)"
+        style="font-size:12px;color:var(--muted)">
+      <img id="photoPreview" class="photo-preview" alt="preview">
+      <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
+    </div>
+
+    <div id="newErr" class="msg msg-err" style="display:none"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
+      <button class="btn btn-primary"   onclick="submitRequest()" id="submitBtn">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Full-size photo overlay ── -->
+<div class="photo-overlay hidden" id="photoOverlay" onclick="document.getElementById('photoOverlay').classList.add('hidden')">
+  <img id="overlayImg" src="" alt="">
+</div>
+
+<script>
+const user = requireAuth(isStaff);
+if (user) {
+  const L = getLang();
+  document.getElementById("langBtn").textContent = L==="EN"?"IS":"EN";
+  // Hub link: admin → admin panel, staff → staff dashboard
+  const hub = document.getElementById("hubLink");
+  if (isAdmin(user)) { hub.textContent = "← Admin panel"; hub.style.cursor="pointer"; hub.onclick=()=>location.href="../admin/"; }
+  else               { hub.textContent = "← Staff hub";   hub.style.cursor="pointer"; hub.onclick=()=>location.href="../staff/"; }
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let allRequests = [];
+let boats = [];
+let currentFilter = "open";
+let selectedCat = "";
+let selectedSev = "";
+let photoDataUrl = "";
+
+const SEV_HINTS = {
+  low:      "Minor cosmetic issue, no safety concern.",
+  medium:   "Functional issue, usable with care.",
+  high:     "Significant problem — assess before use.",
+  critical: "Safety risk — take out of service immediately.",
+};
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const [rRes, bRes] = await Promise.all([
+      apiGet("getMaintenance"),
+      apiGet("getBoats"),
+    ]);
+    allRequests = rRes.requests || [];
+    boats = (bRes.boats || []).filter(b => b.active !== false && b.active !== "false");
+    populateBoatSelect();
+    renderStats();
+    renderList();
+  } catch(e) {
+    document.getElementById("reqList").innerHTML =
+      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
+  }
+}
+init();
+
+function populateBoatSelect() {
+  const sel = document.getElementById("newBoat");
+  boats.forEach(b => {
+    const o = document.createElement("option");
+    o.value = b.id;
+    o.textContent = b.name + (b.category ? " (" + b.category + ")" : "");
+    sel.appendChild(o);
+  });
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const open     = allRequests.filter(r => !boolVal(r.resolved));
+  const critical = open.filter(r => r.severity === "critical");
+  const oos      = open.filter(r => boolVal(r.markOos) && r.category === "boat");
+  const resolved = allRequests.filter(r => boolVal(r.resolved));
+  document.getElementById("statOpen").textContent     = open.length;
+  document.getElementById("statCritical").textContent = critical.length;
+  document.getElementById("statOos").textContent      = oos.length;
+  document.getElementById("statResolved").textContent = resolved.length;
+}
+
+// ── Filter & render ────────────────────────────────────────────────────────────
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll(".filter-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.filter === f));
+  renderList();
+}
+
+function getFiltered() {
+  return allRequests.filter(r => {
+    const resolved = boolVal(r.resolved);
+    if (currentFilter === "open")      return !resolved;
+    if (currentFilter === "resolved")  return resolved;
+    if (currentFilter === "critical")  return !resolved && r.severity === "critical";
+    if (currentFilter === "boats")     return !resolved && r.category === "boat";
+    if (currentFilter === "equipment") return !resolved && r.category === "equipment";
+    if (currentFilter === "facility")  return !resolved && r.category === "facility";
+    return true; // all
+  });
+}
+
+function renderList() {
+  const items = getFiltered();
+  const el = document.getElementById("reqList");
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>No requests match this filter.</p></div>`;
+    return;
+  }
+  // Sort: critical first, then by date desc
+  const sevOrder = { critical:0, high:1, medium:2, low:3 };
+  items.sort((a,b) => {
+    const sa = sevOrder[a.severity]??9, sb = sevOrder[b.severity]??9;
+    if (!boolVal(a.resolved) && boolVal(b.resolved)) return -1;
+    if (boolVal(a.resolved) && !boolVal(b.resolved)) return 1;
+    if (sa !== sb) return sa - sb;
+    return (b.createdAt||"") > (a.createdAt||"") ? 1 : -1;
+  });
+  el.innerHTML = items.map(r => renderCard(r)).join("");
+}
+
+function renderCard(r) {
+  const resolved = boolVal(r.resolved);
+  const sevClass = "sev-" + (r.severity||"low");
+  const sevBadge = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  const catIcon  = { boat:"⛵", equipment:"🦺", facility:"🏠" };
+
+  const comments = parseJson(r.comments, []);
+  const commentHtml = comments.length ? `
+    <div class="comment-thread">
+      ${comments.map(c => `
+        <div class="comment-item">
+          <span class="comment-by">${esc(c.by)}</span>
+          <span style="color:var(--border)"> · </span>
+          <span>${esc((c.at||"").slice(0,16).replace("T"," "))}</span>
+          <span style="color:var(--border)"> · </span>
+          ${esc(c.text)}
+        </div>`).join("")}
+    </div>` : "";
+
+  const commentInput = !resolved ? `
+    <div class="comment-add">
+      <input type="text" placeholder="Add a comment…" id="ci-${r.id}"
+        onkeydown="if(event.key==='Enter')addComment('${r.id}')">
+      <button class="btn btn-secondary" onclick="addComment('${r.id}')">Add</button>
+    </div>` : "";
+
+  const resolveBtn = !resolved ? `
+    <button class="btn btn-primary" style="font-size:11px;padding:6px 14px"
+      onclick="resolveRequest('${r.id}')">✓ Mark Resolved</button>` : `
+    <span style="font-size:11px;color:var(--green)">✓ Resolved by ${esc(r.resolvedBy||"—")} · ${esc((r.resolvedAt||"").slice(0,10))}</span>`;
+
+  const oosTag = boolVal(r.markOos) && r.category === "boat" && !resolved
+    ? `<span class="oos-badge">⛔ OOS</span>` : "";
+
+  const subjectLabel = r.category === "boat"
+    ? esc(r.boatName || r.boatId || "—")
+    : esc(r.itemName || "—");
+
+  return `
+  <div class="req-card ${sevClass} ${resolved?"resolved":""}" id="card-${r.id}">
+    <div class="req-header">
+      <div>
+        <div class="req-title">
+          ${catIcon[r.category]||"🔧"} ${subjectLabel}
+          ${r.part ? `<span style="color:var(--muted);font-size:12px"> · ${esc(r.part)}</span>` : ""}
+          ${oosTag}
+        </div>
+        <div class="req-meta">
+          <span class="badge ${sevBadge[r.severity]||"badge-muted"}">${(r.severity||"—").toUpperCase()}</span>
+          <span>by ${esc(r.reportedBy||"—")}</span>
+          <span>${esc((r.createdAt||"").slice(0,10))}</span>
+          ${r.source ? `<span class="badge badge-muted">${esc(r.source)}</span>` : ""}
+        </div>
+      </div>
+    </div>
+    ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ""}
+    ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" alt="photo"
+      onclick="viewPhoto('${esc(r.photoUrl)}')">` : ""}
+    ${commentHtml}
+    ${commentInput}
+    <div class="req-actions">${resolveBtn}</div>
+  </div>`;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+async function resolveRequest(id) {
+  const r = allRequests.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm("Mark this request as resolved?")) return;
+  try {
+    await apiPost("resolveMaintenance", { id, resolvedBy: user.name });
+    r.resolved = true; r.resolvedBy = user.name; r.resolvedAt = new Date().toISOString();
+    // Un-OOS the boat if needed
+    if (boolVal(r.markOos) && r.boatId) {
+      await apiPost("saveBoat", { id: r.boatId, oos: false, oosReason: "" });
+    }
+    renderStats(); renderList(); toast("✓ Resolved.");
+  } catch(e) { alert("Error: " + e.message); }
+}
+
+async function addComment(id) {
+  const input = document.getElementById("ci-" + id);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    await apiPost("addMaintenanceComment", { id, by: user.name, text });
+    const r = allRequests.find(x => x.id === id);
+    if (r) {
+      const comments = parseJson(r.comments, []);
+      comments.push({ by: user.name, at: new Date().toISOString(), text });
+      r.comments = JSON.stringify(comments);
+    }
+    renderList(); toast("Comment added.");
+  } catch(e) { alert("Error: " + e.message); }
+}
+
+function viewPhoto(url) {
+  document.getElementById("overlayImg").src = url;
+  document.getElementById("photoOverlay").classList.remove("hidden");
+}
+
+// ── New request modal ──────────────────────────────────────────────────────────
+function openNewRequest(prefill) {
+  // Reset
+  selectedCat = ""; selectedSev = ""; photoDataUrl = "";
+  ["newPart","newDesc","newItem"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("newBoat").value = "";
+  document.getElementById("newOos").checked = false;
+  document.getElementById("newPhoto").value = "";
+  document.getElementById("photoPreview").className = "photo-preview";
+  document.getElementById("photoErr").textContent = "";
+  document.getElementById("newErr").style.display = "none";
+  document.querySelectorAll(".sev-btn").forEach(b => b.classList.remove("selected"));
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("sevHint").textContent = "";
+  document.getElementById("boatField").classList.add("hidden");
+  document.getElementById("itemField").classList.add("hidden");
+
+  // Pre-fill from checkin context if provided
+  if (prefill) {
+    if (prefill.category) selectCat(prefill.category);
+    if (prefill.boatId) document.getElementById("newBoat").value = prefill.boatId;
+    if (prefill.severity) selectSev(prefill.severity);
+    if (prefill.description) document.getElementById("newDesc").value = prefill.description;
+  }
+  document.getElementById("newModal").classList.remove("hidden");
+}
+
+function closeNewModal() {
+  document.getElementById("newModal").classList.add("hidden");
+}
+
+function selectCat(cat) {
+  selectedCat = cat;
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
+  document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
+  document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
+  if (cat === "equipment") document.getElementById("itemLabel").textContent = "Equipment item";
+  if (cat === "facility")  document.getElementById("itemLabel").textContent = "Location / area";
+}
+
+function selectSev(sev) {
+  selectedSev = sev;
+  document.querySelectorAll(".sev-btn").forEach(b => b.classList.toggle("selected", b.dataset.sev === sev));
+  document.getElementById("sevHint").textContent = SEV_HINTS[sev] || "";
+  // Auto-suggest OOS for critical boat damage
+  if (sev === "critical" && selectedCat === "boat") {
+    document.getElementById("newOos").checked = true;
+  }
+}
+
+function handlePhotoChange(input) {
+  const file = input.files[0];
+  const errEl = document.getElementById("photoErr");
+  const preview = document.getElementById("photoPreview");
+  if (!file) { photoDataUrl = ""; preview.className="photo-preview"; return; }
+  const MAX_MB = 5;
+  if (file.size > MAX_MB * 1024 * 1024) {
+    errEl.textContent = `Image too large (${(file.size/1024/1024).toFixed(1)} MB). Max is ${MAX_MB} MB.`;
+    input.value = ""; photoDataUrl = ""; preview.className="photo-preview"; return;
+  }
+  errEl.textContent = "";
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Scale down if > 1400px wide
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1400;
+      if (img.width <= maxW) { photoDataUrl = e.target.result; }
+      else {
+        const canvas = document.createElement("canvas");
+        const ratio = maxW / img.width;
+        canvas.width = maxW; canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        photoDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      }
+      preview.src = photoDataUrl;
+      preview.className = "photo-preview show";
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitRequest() {
+  const btn = document.getElementById("submitBtn");
+  const err = document.getElementById("newErr");
+  err.style.display = "none";
+
+  if (!selectedCat) { showErr("Please select a category."); return; }
+  if (!selectedSev) { showErr("Please select a severity level."); return; }
+  const desc = document.getElementById("newDesc").value.trim();
+  if (!desc)        { showErr("Please describe the issue."); return; }
+
+  let boatId = "", boatName = "", itemName = "", markOos = false;
+  if (selectedCat === "boat") {
+    const sel = document.getElementById("newBoat");
+    boatId = sel.value;
+    boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
+    if (!boatId) { showErr("Please select a boat."); return; }
+    markOos = document.getElementById("newOos").checked;
+  } else {
+    itemName = document.getElementById("newItem").value.trim();
+    if (!itemName) { showErr("Please enter the item or location."); return; }
+  }
+
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    const res = await apiPost("saveMaintenance", {
+      category:    selectedCat,
+      boatId, boatName, itemName,
+      part:        document.getElementById("newPart").value.trim(),
+      severity:    selectedSev,
+      description: desc,
+      markOos,
+      photoData:   photoDataUrl,
+      reportedBy:  user.name,
+      source:      "staff",
+    });
+    // If OOS requested, mark the boat
+    if (markOos && boatId) {
+      await apiPost("saveBoat", { id: boatId, oos: true, oosReason: desc.slice(0,80) });
+    }
+    closeNewModal();
+    // Refresh
+    const rRes = await apiGet("getMaintenance");
+    allRequests = rRes.requests || [];
+    renderStats(); renderList();
+    toast("✓ Request submitted.");
+  } catch(e) {
+    showErr("Error: " + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Submit";
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById("newErr");
+  el.textContent = msg; el.style.display = "block";
+}
+
+function toast(msg) {
+  const el = document.createElement("div");
+  el.className = "msg msg-ok";
+  el.textContent = msg;
+  el.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:200px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function boolVal(v) { return v===true||v==="true"||v==="TRUE"||v===1||v==="1"; }
+function parseJson(v, fallback) { if(!v) return fallback; try { return typeof v==="string"?JSON.parse(v):v; } catch(e){ return fallback; } }
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+</script>
+</body>
+</html>
