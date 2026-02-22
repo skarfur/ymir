@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script src="../shared/weather.js"></script>
 <style>
 /* ── Tabs ── */
 .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; flex-shrink:0; }
@@ -466,7 +467,7 @@
 // ══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS + HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
-const LAT=64.1300, LON=-21.9406;
+// LAT/LON defined in weather.js
 const FLAGS={
   green: {color:'#27ae60',bg:'#27ae6018',border:'#27ae6044',label:'Green', advice:"Good conditions."},
   yellow:{color:'#f1c40f',bg:'#f1c40f18',border:'#f1c40f44',label:'Yellow',advice:"Marginal — experienced only."},
@@ -596,67 +597,18 @@ function populateSelects(){
 // ══════════════════════════════════════════════════════════════════════════════
 // WEATHER WIDGET
 // ══════════════════════════════════════════════════════════════════════════════
-async function fetchWeatherWidget(){
-  try{
-    const[wxRes,marineRes]=await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}&current=wave_height,wave_direction,wave_period&timezone=Atlantic%2FReykjavik`).then(r=>r.ok?r.json():null).catch(()=>null),
-    ]);
-    const c=wxRes.current, mc=marineRes?.current;
-    const ws=c.wind_speed_10m, wd=c.wind_direction_10m, wg=c.wind_gusts_10m;
-    const bft=msToBft(ws), waveH=mc?.wave_height??null, wDir=dirLabel(wd);
-    const flagKey=assessFlag(ws,wDir,waveH??0);
-    const flag=FLAGS[flagKey];
-    currentWx={ws,wd,wg,bft,waveH,wDir,airT:c.temperature_2m,code:c.weather_code,flagKey};
-    const el=document.getElementById('wxWidget');
-    el.className=`wx-widget flag-${flagKey}`;
-    el.innerHTML=`
-      <div class="wx-top">
-        <div>
-          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:5px">CONDITIONS · BIRK</div>
-          <div style="display:flex;align-items:baseline;gap:4px">
-            <span class="wx-wind-big">${ws.toFixed(1)}</span><span style="font-size:13px;color:var(--muted)"> m/s</span>
-          </div>
-          <div class="wx-wind-alts">
-            <b>${msToKt(ws)}</b> kt &nbsp;·&nbsp; <b>Bft ${bft}</b> ${bftDesc(bft)}<br>
-            Gusts <b>${wg.toFixed(1)} m/s</b>
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:28px">${condIcon(c.weather_code)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px">${condDesc(c.weather_code)}</div>
-        </div>
-      </div>
-      <div class="wx-grid">
-        <div class="wx-cell">
-          <div style="font-size:22px;color:var(--brass)">${dirArrow(wd)}</div>
-          <div class="wx-cell-lbl">${wDir}</div>
-        </div>
-        <div class="wx-cell">
-          <div class="wx-cell-val">${c.temperature_2m!=null?Math.round(c.temperature_2m)+'°C':'–'}</div>
-          <div class="wx-cell-lbl">AIR</div>
-        </div>
-        <div class="wx-cell">
-          <div class="wx-cell-val" style="color:#4a9eca">${waveH!=null?waveH.toFixed(1)+'m':'–'}</div>
-          <div class="wx-cell-lbl">WAVES</div>
-        </div>
-        <div class="wx-cell">
-          <div class="wx-cell-val">${wd!=null?Math.round(wd)+'°':'–'}</div>
-          <div class="wx-cell-lbl">FROM</div>
-        </div>
-      </div>
-      <div>
-        <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg}">
-          ${FLAG_ICONS[flagKey]} ${flag.label} — ${flag.advice}
-        </span>
-      </div>
-      <div class="wx-footer">
-        <span class="wx-updated">Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>
-        <a class="wx-detail-link" href="../weather/">Full forecast →</a>
-      </div>`;
-  }catch(e){
-    document.getElementById('wxWidget').innerHTML=`<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable. <a href="../weather/" style="color:var(--brass)">Try full page →</a></div>`;
-  }
+function fetchWeatherWidget(){
+  const el = document.getElementById('wxWidget');
+  if (!el) return;
+  el.className = 'wx-widget';
+  // Use shared wxWidget — auto-refreshes every 10 min
+  // Pass onData so conditions prefill still works
+  const controller = wxWidget(el, {
+    onData: snap => { currentWx = snap; },
+    showRefreshBtn: true,
+  });
+  controller.start();
+}
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

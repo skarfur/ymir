@@ -8,434 +8,517 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script src="../shared/weather.js"></script>
 <style>
-:root { --card:#132d50; --faint:#0f2847; }
-.page { max-width:700px; margin:0 auto; padding:20px 16px 40px; }
-.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; text-decoration:none; margin-bottom:20px; }
-.back-link:hover { color:var(--brass); }
-.wx-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; }
-.wx-title { font-size:11px; color:var(--muted); letter-spacing:1.5px; margin-bottom:4px; }
-.updated { font-size:10px; color:var(--muted); margin-top:6px; }
+.page { max-width:700px; margin:0 auto; padding:20px 16px 56px; }
 
-/* Flag banner */
-.flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:20px; border:1px solid; display:flex; align-items:center; gap:14px; }
-.flag-icon { font-size:26px; }
-.flag-label { font-size:15px; font-weight:500; }
+/* ── Top bar ── */
+.top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+.top-bar-left { display:flex; flex-direction:column; gap:3px; }
+.loc-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.loc-name { font-size:16px; color:var(--text); font-weight:500; }
+.loc-coords { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+.loc-default-badge { font-size:9px; padding:2px 6px; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--muted); letter-spacing:.5px; }
+.top-bar-right { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+
+/* ── Location picker ── */
+.loc-picker {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  margin-bottom:16px;
+}
+.loc-picker h4 { font-size:11px; color:var(--muted); letter-spacing:1.2px; margin:0 0 12px; }
+.loc-presets { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.loc-preset-btn {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 12px; font-size:12px; font-family:inherit;
+  cursor:pointer; transition:all .15s;
+}
+.loc-preset-btn:hover, .loc-preset-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
+.loc-divider { font-size:10px; color:var(--muted); margin-bottom:10px; letter-spacing:.5px; }
+.loc-manual { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+.loc-manual .field { flex:1; min-width:100px; }
+.loc-manual .field label { font-size:10px; color:var(--muted); display:block; margin-bottom:5px; letter-spacing:.5px; }
+.loc-manual .field input { width:100%; box-sizing:border-box; }
+
+/* ── Flag banner ── */
+.flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; }
+.flag-label  { font-size:15px; font-weight:500; }
 .flag-advice { font-size:11px; margin-top:3px; opacity:.85; }
 .flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
 .flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }
 
-/* Main wind display */
-.wind-main { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:14px; }
-.wind-big { font-size:52px; font-weight:500; color:var(--brass); line-height:1; }
-.wind-unit { font-size:16px; color:var(--muted); margin-left:4px; }
-.wind-alts { display:flex; gap:16px; margin-top:8px; }
-.wind-alt { font-size:12px; color:var(--muted); }
-.wind-alt span { color:var(--text); }
-.wind-dir-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
-.wind-arrow { font-size:28px; transition:transform .3s; }
-.wind-dir-label { font-size:13px; color:var(--text); }
-.wind-gust { font-size:12px; color:var(--muted); margin-top:2px; }
-.wind-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-.info-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
-.info-lbl { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
-.info-val { font-size:22px; color:var(--text); font-weight:400; }
-.info-val .unit { font-size:13px; color:var(--muted); margin-left:3px; }
-.info-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+/* ── Wind hero ── */
+.wind-hero { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:12px; }
+.wind-ms   { font-size:56px; font-weight:500; color:var(--brass); line-height:1; }
+.wind-unit { font-size:18px; color:var(--muted); align-self:flex-end; margin-bottom:8px; }
+.wind-bft  { font-size:13px; color:var(--muted); margin-top:4px; }
+.gust-row  { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.gust-lbl  { font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:3px; }
+.gust-val  { font-size:18px; color:var(--text); }
+.dir-arrow { font-size:40px; color:var(--brass); }
+.dir-label { font-size:14px; color:var(--text); }
+.dir-deg   { font-size:11px; color:var(--muted); }
 
-/* Chart */
-.chart-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:14px; }
-.chart-title { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
-.chart-title .legend { display:flex; gap:12px; }
-.leg-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
+/* ── Info grids ── */
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.info-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
+.info-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+.info-lbl  { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
+.info-val  { font-size:24px; color:var(--text); }
+.info-val .unit { font-size:14px; color:var(--muted); margin-left:3px; }
+.info-sub  { font-size:11px; color:var(--muted); margin-top:5px; }
+.rising   { color:var(--green)  !important; }
+.falling  { color:var(--orange) !important; }
+
+/* ── Charts ── */
+.section-lbl { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 10px; }
+.chart-card  { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:12px; }
+.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
+.chart-title-txt { font-size:10px; color:var(--muted); letter-spacing:1.2px; }
+.chart-legend { display:flex; gap:12px; flex-wrap:wrap; }
+.leg-item { font-size:10px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+.leg-dot  { width:8px; height:8px; border-radius:50%; display:inline-block; }
 svg.chart { width:100%; overflow:visible; display:block; }
 
-/* Hourly forecast strip */
-.forecast-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; }
-.forecast-strip::-webkit-scrollbar { height:4px; }
-.forecast-strip::-webkit-scrollbar-track { background:var(--faint); }
-.forecast-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-.fc-slot { flex:0 0 70px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 6px; text-align:center; }
-.fc-slot.now { border-color:var(--brass); }
-.fc-time { font-size:10px; color:var(--muted); }
-.fc-wind { font-size:16px; color:var(--brass); font-weight:500; margin:4px 0 2px; }
-.fc-gust { font-size:10px; color:var(--muted); }
-.fc-dir { font-size:14px; }
-.fc-wave { font-size:11px; color:#4a9eca; margin-top:4px; }
-.fc-flag { width:8px; height:8px; border-radius:50%; margin:4px auto 0; }
+/* ── Hourly strip ── */
+.hour-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; scroll-snap-type:x mandatory; }
+.hour-strip::-webkit-scrollbar { height:4px; }
+.hour-strip::-webkit-scrollbar-track { background:transparent; }
+.hour-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.h-slot {
+  flex:0 0 78px; background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:10px 6px; text-align:center;
+  scroll-snap-align:start;
+}
+.h-slot.now  { border-color:var(--brass); }
+.h-slot.past { opacity:.5; }
+.h-time  { font-size:10px; color:var(--muted); margin-bottom:5px; }
+.h-wind  { font-size:16px; color:var(--brass); font-weight:500; }
+.h-kt    { font-size:10px; color:var(--muted); }
+.h-gust  { font-size:10px; color:var(--muted); }
+.h-dir   { font-size:16px; margin-top:3px; }
+.h-wave  { font-size:11px; color:#4a9eca; margin-top:3px; }
+.h-pres  { font-size:10px; color:var(--muted); margin-top:3px; }
+.h-flag  { width:8px; height:8px; border-radius:50%; margin:5px auto 0; }
 
-/* Condition icon */
-.cond-icon { font-size:36px; display:block; text-align:center; margin-bottom:6px; }
-.cond-desc { font-size:12px; color:var(--muted); text-align:center; }
+.loading-msg { text-align:center; padding:48px 0; color:var(--muted); font-size:13px; }
+.error-msg   { text-align:center; padding:32px 0; color:var(--red); font-size:13px; }
 
-/* Waves */
-.wave-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
-
-/* Now line */
-.now-label { font-size:9px; fill:#d4af37; font-family:inherit; }
-
-.section-lbl { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 10px; }
-.loading-spinner { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
+@media(max-width:480px) {
+  .info-3 { grid-template-columns:1fr 1fr; }
+  .wind-ms { font-size:44px; }
+}
 </style>
 </head>
 <body>
 <div class="page">
-  <a class="back-link" href="../member/">← Member Hub</a>
 
-  <div class="wx-header">
-    <div>
-      <div class="wx-title">CONDITIONS · BIRK / FAXAFLÓI</div>
-      <div id="updatedAt" class="updated">Loading…</div>
+  <!-- ══ TOP BAR ══ -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <a href="../member/" style="font-size:12px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px">← Member Hub</a>
+      <div class="loc-row">
+        <span class="loc-name" id="locName">Fossvogur</span>
+        <span class="loc-coords" id="locCoords">64.1188°N 21.9376°W</span>
+        <span class="loc-default-badge hidden" id="customBadge">CUSTOM</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted)" id="updatedAt">Loading…</div>
     </div>
-    <button class="btn btn-secondary" onclick="fetchAll()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+    <div class="top-bar-right">
+      <button class="btn btn-secondary" onclick="togglePicker()" id="pickerBtn" style="font-size:11px;padding:6px 12px">📍 Location</button>
+      <button class="btn btn-secondary" onclick="fetchAll()" id="refreshBtn" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+    </div>
   </div>
 
-  <div id="mainContent">
-    <div class="loading-spinner">⚓ Fetching weather data…</div>
+  <!-- ══ LOCATION PICKER (hidden by default) ══ -->
+  <div class="loc-picker hidden" id="locPicker">
+    <h4>CHOOSE LOCATION</h4>
+    <div class="loc-presets" id="locPresets"></div>
+    <div class="loc-divider">OR ENTER CUSTOM COORDINATES</div>
+    <div class="loc-manual">
+      <div class="field">
+        <label>LATITUDE</label>
+        <input type="number" id="manualLat" step="0.0001" min="60" max="70" placeholder="64.1188">
+      </div>
+      <div class="field">
+        <label>LONGITUDE</label>
+        <input type="number" id="manualLon" step="0.0001" min="-26" max="-10" placeholder="-21.9376">
+      </div>
+      <div class="field" style="flex:2;min-width:120px">
+        <label>LABEL</label>
+        <input type="text" id="manualLabel" placeholder="Custom location" maxlength="30">
+      </div>
+      <button class="btn btn-primary" onclick="applyManual()" style="font-size:12px;padding:8px 14px;align-self:flex-end">Go</button>
+    </div>
   </div>
-</div>
+
+  <!-- ══ WEATHER CONTENT ══ -->
+  <div id="mainContent">
+    <div class="loading-msg">⚓ Fetching weather data…</div>
+  </div>
+
+</div><!-- /page -->
 
 <script>
-const LAT = 64.1300, LON = -21.9406;
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOCATION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+const PRESETS = [
+  { label:'Fossvogur',        lat: 64.1188, lon:-21.9376, isDefault:true  },
+  { label:'Keflavík / BIKF',  lat: 63.9850, lon:-22.6056, isDefault:false },
+  { label:'Akureyri / BIAR',  lat: 65.6596, lon:-18.0727, isDefault:false },
+  { label:'Hafnarfjörður',    lat: 64.0667, lon:-21.9500, isDefault:false },
+  { label:'Álftanes',         lat: 64.1000, lon:-22.0500, isDefault:false },
+];
 
-// ── Flag system ──────────────────────────────────────────────────────────────
-const FLAGS = {
-  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green',  labelIS:'Grænt',         advice:'Good conditions — all boats at member\'s discretion.',   adviceIS:'Góðar aðstæður — allir bátar að eigin ákvörðun.' },
-  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow', labelIS:'Gult',          advice:'Marginal — experienced sailors only, assess carefully.', adviceIS:'Jaðaraðstæður — aðeins reyndur siglari.' },
-  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange', labelIS:'Appelsínugult', advice:'Difficult — keelboats only, staff auth for dinghies.',  adviceIS:'Erfiðar — kjólbátar einir, leyfi þarf fyrir kænur.' },
-  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red',    labelIS:'Rautt',         advice:'Do not sail — all sailing suspended.',                  adviceIS:'Ekki sigla — allar siglingarnar stöðvaðar.' },
-};
+// Current fetch location (may differ from WX_DEFAULT)
+let curLoc = { ...PRESETS[0] };
 
-function assessFlag(ws_ms, windDir, waveH) {
-  const reasons = [];
-  let level = 0;
-  const bft = msToBft(ws_ms);
-  const easterly = ['E','NE','SE'].includes((windDir||'').toUpperCase());
+function isDefault() {
+  return curLoc.lat === WX_DEFAULT.lat && curLoc.lon === WX_DEFAULT.lon;
+}
 
-  if (bft >= 7) { level=3; reasons.push({ flag:'red',   text:`Force ${bft} — all sailing suspended` }); }
-  else if (bft===6) {
-    level=Math.max(level,2); reasons.push({ flag:'orange', text:'Force 6 — difficult conditions' });
-    if (easterly) { level=3; reasons.push({ flag:'red', text:`Easterly F${bft} — amplified hazard in Faxaflói` }); }
-  } else if (bft===5) {
-    level=Math.max(level,1); reasons.push({ flag:'yellow', text:'Force 5 — marginal for smaller boats' });
-    if (easterly) { level=Math.max(level,2); reasons.push({ flag:'orange', text:`Easterly F${bft} — elevated wave risk` }); }
-  } else if (bft===4 && easterly) { level=Math.max(level,1); reasons.push({ flag:'yellow', text:`Easterly F${bft} — warrants caution` }); }
+function setLocation(loc, refetch) {
+  curLoc = { ...loc };
+  document.getElementById('locName').textContent    = loc.label;
+  document.getElementById('locCoords').textContent  = `${loc.lat.toFixed(4)}°N ${Math.abs(loc.lon).toFixed(4)}°W`;
+  document.getElementById('customBadge').classList.toggle('hidden', isDefault());
+  renderPresetBtns();
+  if (refetch) { closePicker(); fetchAll(); }
+}
 
-  if (waveH != null) {
-    if (waveH >= 2.0) { level=Math.max(level,3); reasons.push({ flag:'red',    text:`Waves ${waveH}m — very rough` }); }
-    else if (waveH >= 1.2) { level=Math.max(level,2); reasons.push({ flag:'orange', text:`Waves ${waveH}m — rough` }); }
-    else if (waveH >= 0.6) { level=Math.max(level,1); reasons.push({ flag:'yellow', text:`Waves ${waveH}m — moderate` }); }
+function renderPresetBtns() {
+  const isHome = isDefault();
+  document.getElementById('locPresets').innerHTML = PRESETS.map(p => {
+    const active = p.lat === curLoc.lat && p.lon === curLoc.lon;
+    return `<button class="loc-preset-btn${active?' active':''}" onclick="setLocation(${JSON.stringify(p)}, true)">${p.label}${p.isDefault?' ⚓':''}</button>`;
+  }).join('') + (!isHome ? `<button class="loc-preset-btn" style="border-color:var(--brass);color:var(--brass)" onclick="backToDefault()">← Back to Fossvogur</button>` : '');
+}
+
+function backToDefault() {
+  setLocation(PRESETS[0], true);
+}
+
+function togglePicker() {
+  const el = document.getElementById('locPicker');
+  const hidden = el.classList.contains('hidden');
+  el.classList.toggle('hidden', !hidden);
+  if (!el.classList.contains('hidden')) {
+    renderPresetBtns();
+    document.getElementById('manualLat').value   = '';
+    document.getElementById('manualLon').value   = '';
+    document.getElementById('manualLabel').value = '';
   }
+}
+function closePicker() { document.getElementById('locPicker').classList.add('hidden'); }
 
+function applyManual() {
+  const lat   = parseFloat(document.getElementById('manualLat').value);
+  const lon   = parseFloat(document.getElementById('manualLon').value);
+  const label = document.getElementById('manualLabel').value.trim() || `${lat.toFixed(2)}°N`;
+  if (isNaN(lat) || isNaN(lon) || lat < 60 || lat > 70) {
+    alert('Enter a valid latitude (60–70°N) and longitude.');
+    return;
+  }
+  setLocation({ lat, lon, label, isDefault: false }, true);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLAG + HELPERS (full-page versions with detailed reasons)
+// ═══════════════════════════════════════════════════════════════════════════════
+const FLAGS_FULL = {
+  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green',  advice:'Good conditions — all boats at member\'s discretion.' },
+  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow', advice:'Marginal — experienced sailors only.' },
+  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange', advice:'Difficult — keelboats only, staff auth for dinghies.' },
+  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red',    advice:'Do not sail — all sailing suspended.' },
+};
+function assessFlagFull(ws, wDir, waveH) {
+  let level = 0, reasons = [];
+  const bft = wxMsToBft(ws || 0);
+  const easterly = ['E','NE','SE'].includes((wDir||'').toUpperCase());
+  if      (bft >= 7) { level = 3; reasons.push({ f:'red',    t:`Force ${bft} — all sailing suspended` }); }
+  else if (bft === 6) { level = 2; reasons.push({ f:'orange', t:'Force 6 — difficult conditions' });
+    if (easterly) { level = 3; reasons.push({ f:'red', t:`Easterly F${bft} — amplified hazard` }); } }
+  else if (bft === 5) { level = 1; reasons.push({ f:'yellow', t:'Force 5 — marginal' });
+    if (easterly) { level = Math.max(level,2); reasons.push({ f:'orange', t:`Easterly F${bft} — elevated risk` }); } }
+  else if (bft === 4 && easterly) { level = 1; reasons.push({ f:'yellow', t:`Easterly F${bft} — warrants caution` }); }
+  if      ((waveH||0) >= 2.0) { level = Math.max(level,3); reasons.push({ f:'red',    t:`Waves ${waveH}m — very rough` }); }
+  else if ((waveH||0) >= 1.2) { level = Math.max(level,2); reasons.push({ f:'orange', t:`Waves ${(waveH||0).toFixed(1)}m — rough` }); }
+  else if ((waveH||0) >= 0.6) { level = Math.max(level,1); reasons.push({ f:'yellow', t:`Waves ${(waveH||0).toFixed(1)}m — moderate` }); }
   const keys = ['green','yellow','orange','red'];
-  return { flagKey: keys[level], flag: FLAGS[keys[level]], reasons };
+  return { flagKey: keys[level], flag: FLAGS_FULL[keys[level]], reasons };
 }
 
-// ── Unit conversions ─────────────────────────────────────────────────────────
-function msToKt(ms)  { return (ms * 1.944).toFixed(1); }
-function msToBft(ms) {
-  const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
-  for (let i=T.length-1;i>=0;i--) if (ms>=T[i]) return i;
-  return 0;
-}
-function bftDesc(b) {
-  return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b]||'';
-}
-function dirArrow(deg) {
-  if (deg==null) return '–';
-  const dirs=['N','NE','E','SE','S','SW','W','NW'];
-  const arrows=['↓','↙','←','↖','↑','↗','→','↘'];
-  const i = Math.round(deg/45)%8;
-  return arrows[i];
-}
-function dirLabel(deg) {
-  if (deg==null) return '–';
-  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return dirs[Math.round(deg/22.5)%16];
-}
-function condIcon(code, isDay) {
-  // WMO weather codes → emoji + description
-  if (code==0)  return {i:'☀️', d:'Clear sky'};
-  if (code==1)  return {i:'🌤', d:'Mainly clear'};
-  if (code==2)  return {i:'⛅', d:'Partly cloudy'};
-  if (code==3)  return {i:'☁️', d:'Overcast'};
-  if ([45,48].includes(code)) return {i:'🌫', d:'Fog'};
-  if ([51,53,55].includes(code)) return {i:'🌦', d:'Drizzle'};
-  if ([61,63,65].includes(code)) return {i:'🌧', d:'Rain'};
-  if ([71,73,75,77].includes(code)) return {i:'🌨', d:'Snow'};
-  if ([80,81,82].includes(code)) return {i:'🌧', d:'Rain showers'};
-  if ([85,86].includes(code)) return {i:'🌨', d:'Snow showers'};
-  if ([95,96,99].includes(code)) return {i:'⛈', d:'Thunderstorm'};
-  return {i:'🌡', d:'—'};
-}
-function fmtTime(isoOrHH) {
-  if (!isoOrHH) return '–';
-  if (isoOrHH.length > 5) return isoOrHH.slice(11,16);
-  return isoOrHH;
-}
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtT(t) { return t ? t.slice(11,16) : '–'; }
 
-// ── Fetch Open-Meteo ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// FETCH + RENDER
+// ═══════════════════════════════════════════════════════════════════════════════
 async function fetchAll() {
-  document.getElementById('mainContent').innerHTML = '<div class="loading-spinner">⚓ Fetching weather data…</div>';
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('refreshBtn').textContent = '⏳';
+  document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓ Fetching weather data…</div>';
   document.getElementById('updatedAt').textContent = 'Updating…';
   try {
-    const [wxRes, marineRes] = await Promise.all([fetchWeather(), fetchMarine()]);
-    render(wxRes, marineRes);
-    document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const { wx, marine } = await wxFetch(curLoc.lat, curLoc.lon);
+    render(wx, marine);
+    document.getElementById('updatedAt').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
   } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="loading-spinner" style="color:var(--red)">⚠ ${esc(e.message)}</div>`;
-    document.getElementById('updatedAt').textContent = 'Failed to load';
+    document.getElementById('mainContent').innerHTML =
+      `<div class="error-msg">⚠ ${esc(e.message)}<br><span style="font-size:11px;color:var(--muted)">Check connection and try again.</span></div>`;
+    document.getElementById('updatedAt').textContent = 'Failed';
+  } finally {
+    document.getElementById('refreshBtn').disabled = false;
+    document.getElementById('refreshBtn').textContent = '↻ Refresh';
   }
 }
 
-async function fetchWeather() {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-    `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day` +
-    `&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
-    `&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&forecast_days=2`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('Weather API error: ' + r.status);
-  return r.json();
-}
-
-async function fetchMarine() {
-  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}` +
-    `&current=wave_height,wave_direction,wave_period,ocean_current_speed` +
-    `&hourly=wave_height,wave_direction,wave_period,sea_surface_temperature` +
-    `&timezone=Atlantic%2FReykjavik&forecast_days=2`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('Marine API error: ' + r.status);
-  return r.json();
-}
-
-// ── Render ────────────────────────────────────────────────────────────────────
 function render(wx, marine) {
-  const c   = wx.current;
-  const hr  = wx.hourly;
-  const mc  = marine.current;
-  const mhr = marine.hourly;
+  const c   = wx.current, hr  = wx.hourly;
+  const mc  = marine?.current, mhr = marine?.hourly;
 
-  const ws  = c.wind_speed_10m;   // m/s
-  const wd  = c.wind_direction_10m;
-  const wg  = c.wind_gusts_10m;
-  const bft = msToBft(ws);
-  const waveH = mc?.wave_height;
+  const ws  = c.wind_speed_10m, wd = c.wind_direction_10m, wg = c.wind_gusts_10m;
+  const bft = wxMsToBft(ws), wDir = wxDirLabel(wd);
+  const waveH = mc?.wave_height ?? null;
+  const sst   = mc?.sea_surface_temperature ?? null;
+  const pres  = c.surface_pressure;
 
-  // Find current hour index
   const nowISO = new Date().toISOString().slice(0,13);
-  const nowIdx = hr.time.findIndex(t => t.startsWith(nowISO));
-  const safeI = nowIdx >= 0 ? nowIdx : 0;
+  const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
+  const { trend: presTrend, diff: presDiff } = wxPressureTrend(hr.surface_pressure, nowIdx);
 
-  // History: last 3 hours (indices safeI-3..safeI)
-  const histStart = Math.max(0, safeI - 3);
-  const hist = [];
-  for (let i = histStart; i <= safeI; i++) {
-    hist.push({ t: fmtTime(hr.time[i]), ws: hr.wind_speed_10m[i]||0, wg: hr.wind_gusts_10m[i]||0, wd: hr.wind_direction_10m[i], mWH: mhr?.wave_height?.[i]??null });
+  const { flagKey, flag, reasons } = assessFlagFull(ws, wDir, waveH);
+  const presClass = presTrend === 'rising' ? 'rising' : presTrend === 'falling' ? 'falling' : '';
+
+  // All points: up to 3h history + 6h forecast
+  const pts = [];
+  const end = Math.min(hr.time.length - 1, nowIdx + 6);
+  for (let i = Math.max(0, nowIdx - 3); i <= end; i++) {
+    pts.push({
+      t: fmtT(hr.time[i]), i,
+      ws:   hr.wind_speed_10m[i]   || 0,
+      wg:   hr.wind_gusts_10m[i]   || 0,
+      wd:   hr.wind_direction_10m[i],
+      pr:   hr.surface_pressure?.[i] ?? null,
+      mWH:  mhr?.wave_height?.[i]  ?? null,
+      isNow:  i === nowIdx,
+      isPast: i < nowIdx,
+    });
   }
 
-  // Forecast: next 6 hours
-  const fc = [];
-  for (let i = safeI; i < Math.min(safeI+7, hr.time.length); i++) {
-    fc.push({ t: fmtTime(hr.time[i]), ws: hr.wind_speed_10m[i]||0, wg: hr.wind_gusts_10m[i]||0, wd: hr.wind_direction_10m[i], code: hr.weather_code[i], mWH: mhr?.wave_height?.[i]??null, isNow: i===safeI });
-  }
+  // Note whether marine data is from fallback coords
+  const marineNote = marine && !isDefault()
+    ? `<div style="font-size:10px;color:var(--muted);margin-top:6px">⚓ Wave data from nearest offshore cell</div>` : '';
 
-  const sst = mhr?.sea_surface_temperature?.[safeI];
-  const { flagKey, flag, reasons } = assessFlag(ws, dirLabel(wd), waveH);
-  const { i: condEmoji, d: condDesc } = condIcon(c.weather_code, c.is_day);
+  document.getElementById('mainContent').innerHTML = `
 
-  // Chart data: 3h history + 6h forecast = 10 points
-  const chartPts = [...hist.slice(0,-1), ...fc]; // avoid duplicate "now"
-
-  document.getElementById('mainContent').innerHTML = renderHTML(
-    ws, wd, wg, bft, c.temperature_2m, c.apparent_temperature, sst,
-    waveH, mc?.wave_direction, mc?.wave_period,
-    flag, flagKey, reasons, condEmoji, condDesc,
-    hist, fc, chartPts
-  );
-
-  // Draw SVG chart
-  drawChart(chartPts, safeI - histStart);
-}
-
-function renderHTML(ws, wd, wg, bft, airT, feelT, sst, waveH, waveDir, wavePer, flag, flagKey, reasons, condEmoji, condDesc, hist, fc, chartPts) {
-  const bftD = bftDesc(bft);
-  const arrow = dirArrow(wd);
-  const dirLbl = dirLabel(wd);
-  const nowIdx = hist.length - 1; // index of "now" in chartPts
-
-  return `
-<!-- Flag banner -->
 <div class="flag-banner" style="background:${flag.bg};border-color:${flag.border};color:${flag.color}">
-  <div>
-    <div style="font-size:28px;line-height:1;margin-bottom:4px">${flag.icon}</div>
-  </div>
+  <div style="font-size:28px;line-height:1">${flag.icon}</div>
   <div style="flex:1">
     <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
-    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAGS[r.flag].color};border-color:${FLAGS[r.flag].border}">${esc(r.text)}</span>`).join('')}</div>` : ''}
+    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAGS_FULL[r.f].color};border-color:${FLAGS_FULL[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
 
-<!-- Wind main -->
-<div class="wind-main">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between">
+<!-- WIND HERO -->
+<div class="wind-hero">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
     <div>
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px">WIND · BIRK</div>
-      <div style="display:flex;align-items:baseline;gap:6px">
-        <div class="wind-big">${ws.toFixed(1)}</div>
-        <div class="wind-unit">m/s</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">WIND · ${esc(curLoc.label.toUpperCase())}</div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <span class="wind-ms">${ws.toFixed(1)}</span><span class="wind-unit">m/s</span>
       </div>
-      <div class="wind-alts">
-        <div class="wind-alt"><span>${msToKt(ws)}</span> kt</div>
-        <div class="wind-alt"><span>Bft ${bft}</span> — ${bftD}</div>
-        <div class="wind-alt">Gusts <span>${wg.toFixed(1)} m/s</span></div>
-      </div>
+      <div style="font-size:20px;color:var(--muted);margin-top:3px"><b style="color:var(--text)">${wxMsToKt(ws)}</b> kt</div>
+      <div class="wind-bft">Bft <b>${bft}</b> — ${wxBftDesc(bft)}</div>
     </div>
     <div style="text-align:center">
-      <div style="font-size:40px">${condEmoji}</div>
-      <div class="cond-desc">${condDesc}</div>
+      <div style="font-size:40px">${wxCondIcon(c.weather_code)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${wxCondDesc(c.weather_code)}</div>
     </div>
   </div>
-  <div class="wind-dir-row">
-    <div class="wind-arrow" style="color:var(--brass)">${arrow}</div>
+  <div class="gust-row">
     <div>
-      <div class="wind-dir-label">${dirLbl} · ${wd!=null?Math.round(wd)+'°':'–'}</div>
-      <div class="wind-gust">From ${dirLbl}</div>
+      <div class="gust-lbl">GUSTS</div>
+      <div class="gust-val">${wg.toFixed(1)}<span style="font-size:13px;color:var(--muted)"> m/s</span>
+        <span style="font-size:15px;color:var(--muted);margin-left:8px">${wxMsToKt(wg)} kt</span>
+      </div>
+    </div>
+    <div style="width:1px;height:36px;background:var(--border)"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="dir-arrow">${wxDirArrow(wd)}</div>
+      <div>
+        <div class="dir-label">${wDir} · ${wd != null ? Math.round(wd)+'°' : '–'}</div>
+        <div class="dir-deg">From ${wDir}</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Temp & waves grid -->
-<div class="wind-grid">
+<!-- TEMPS -->
+<div class="info-grid">
   <div class="info-card">
     <div class="info-lbl">AIR TEMPERATURE</div>
-    <div class="info-val">${airT!=null?Math.round(airT):'–'}<span class="unit">°C</span></div>
-    <div class="info-sub">Feels like ${feelT!=null?Math.round(feelT):'–'}°C</div>
+    <div class="info-val">${c.temperature_2m != null ? Math.round(c.temperature_2m) : '–'}<span class="unit">°C</span></div>
+    <div class="info-sub">Feels like ${c.apparent_temperature != null ? Math.round(c.apparent_temperature) : '–'}°C</div>
   </div>
   <div class="info-card">
     <div class="info-lbl">SEA TEMPERATURE</div>
-    <div class="info-val">${sst!=null?sst.toFixed(1):'–'}<span class="unit">°C</span></div>
-    <div class="info-sub">Surface water</div>
+    <div class="info-val" style="color:#4a9eca">${sst != null ? sst.toFixed(1) : '–'}<span class="unit">°C</span></div>
+    <div class="info-sub">${sst != null ? 'Surface water' : marine ? 'No SST for this cell' : 'Marine unavailable'}</div>
   </div>
 </div>
 
-<!-- Waves -->
-<div class="wave-grid">
+<!-- WAVES -->
+<div class="info-3">
   <div class="info-card">
     <div class="info-lbl">WAVE HEIGHT</div>
-    <div class="info-val" style="color:#4a9eca">${waveH!=null?waveH.toFixed(1):'–'}<span class="unit">m</span></div>
+    <div class="info-val" style="color:#4a9eca">${waveH != null ? waveH.toFixed(1) : '–'}<span class="unit">m</span></div>
+    <div class="info-sub">Significant height${marineNote}</div>
   </div>
   <div class="info-card">
     <div class="info-lbl">WAVE DIRECTION</div>
-    <div class="info-val">${waveDir!=null?dirArrow(waveDir):'–'}</div>
-    <div class="info-sub">${waveDir!=null?dirLabel(waveDir)+' · '+Math.round(waveDir)+'°':'–'}</div>
+    <div class="info-val" style="font-size:32px">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction) : '–'}</div>
+    <div class="info-sub">${mc?.wave_direction != null ? wxDirLabel(mc.wave_direction)+' · '+Math.round(mc.wave_direction)+'°' : '–'}</div>
   </div>
   <div class="info-card">
     <div class="info-lbl">WAVE PERIOD</div>
-    <div class="info-val">${wavePer!=null?wavePer.toFixed(0):'–'}<span class="unit">s</span></div>
+    <div class="info-val">${mc?.wave_period != null ? mc.wave_period.toFixed(0) : '–'}<span class="unit">s</span></div>
+    <div class="info-sub">Mean period</div>
   </div>
 </div>
 
-<!-- Wind & wave chart -->
+<!-- PRESSURE -->
+<div class="info-card" style="margin-bottom:14px">
+  <div class="info-lbl">BAROMETRIC PRESSURE</div>
+  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+    <div class="info-val">${pres != null ? Math.round(pres) : '–'}<span class="unit">hPa</span></div>
+    <div style="font-size:22px;color:${wxPressureTrendColor(presTrend)}">${wxPressureTrendIcon(presTrend)}</div>
+    <div class="info-sub ${presClass}" style="margin-top:0">${presTrend}${presDiff !== 0 ? ' ('+( presDiff>0?'+':'')+presDiff+' hPa / 3h)' : ''}</div>
+  </div>
+</div>
+
+<!-- WIND + WAVE CHART -->
 <div class="chart-card">
-  <div class="chart-title">
-    <span>WIND & WAVES · 3H HISTORY + 6H FORECAST</span>
-    <div class="legend">
-      <span><span class="leg-dot" style="background:var(--brass)"></span>Wind m/s</span>
-      <span><span class="leg-dot" style="background:#4a9eca"></span>Waves m</span>
+  <div class="chart-header">
+    <span class="chart-title-txt">WIND & WAVES · 3H HISTORY + 6H FORECAST</span>
+    <div class="chart-legend">
+      <span class="leg-item"><span class="leg-dot" style="background:var(--brass)"></span>Wind m/s</span>
+      <span class="leg-item" style="opacity:.55;font-style:italic">— — Gusts</span>
+      ${marine ? `<span class="leg-item"><span class="leg-dot" style="background:#4a9eca"></span>Waves m</span>` : ''}
     </div>
   </div>
-  <svg class="chart" id="mainChart" height="120"></svg>
+  <svg class="chart" id="windChart" height="120"></svg>
 </div>
 
-<!-- Hourly forecast strip -->
-<div class="section-lbl">6-HOUR FORECAST</div>
-<div class="forecast-strip">
-  ${fc.map(f => {
-    const { flagKey: fk } = assessFlag(f.ws, dirLabel(f.wd), f.mWH);
-    return `<div class="fc-slot${f.isNow?' now':''}">
-      <div class="fc-time">${f.isNow?'NOW':f.t}</div>
-      <div class="fc-wind">${f.ws.toFixed(1)}</div>
-      <div class="fc-gust">↑${f.wg.toFixed(1)}</div>
-      <div class="fc-dir">${dirArrow(f.wd)}</div>
-      ${f.mWH!=null?`<div class="fc-wave">🌊${f.mWH.toFixed(1)}m</div>`:''}
-      <div class="fc-flag" style="background:${FLAGS[fk].color}"></div>
+<!-- PRESSURE CHART -->
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title-txt">PRESSURE TREND · 3H HISTORY + 6H FORECAST</span>
+    <div class="chart-legend">
+      <span class="leg-item"><span class="leg-dot" style="background:#a78bfa"></span>hPa</span>
+    </div>
+  </div>
+  <svg class="chart" id="presChart" height="80"></svg>
+</div>
+
+<!-- HOURLY STRIP -->
+<div class="section-lbl">HOUR BY HOUR</div>
+<div class="hour-strip" id="hourStrip"></div>`;
+
+  renderHourStrip(pts);
+  drawWindChart(pts, pts.findIndex(p=>p.isNow));
+  drawPresChart(pts, pts.findIndex(p=>p.isNow));
+}
+
+// ─── Hourly strip ─────────────────────────────────────────────────────────────
+function renderHourStrip(pts) {
+  const FLAG_COLORS = { green:'#27ae60', yellow:'#f1c40f', orange:'#e67e22', red:'#e74c3c' };
+  document.getElementById('hourStrip').innerHTML = pts.map(p => {
+    const { flagKey } = wxAssessFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0);
+    return `<div class="h-slot${p.isNow?' now':p.isPast?' past':''}">
+      <div class="h-time">${p.isNow ? 'NOW' : p.t}</div>
+      <div class="h-wind">${p.ws.toFixed(1)}</div>
+      <div class="h-kt">${wxMsToKt(p.ws)} kt</div>
+      <div class="h-gust">↑${p.wg.toFixed(1)}</div>
+      <div class="h-dir">${wxDirArrow(p.wd)}</div>
+      ${p.mWH != null ? `<div class="h-wave">🌊${p.mWH.toFixed(1)}m</div>` : ''}
+      ${p.pr  != null ? `<div class="h-pres">${Math.round(p.pr)}</div>` : ''}
+      <div class="h-flag" style="background:${FLAG_COLORS[flagKey]}"></div>
     </div>`;
-  }).join('')}
-</div>
-`;
+  }).join('');
+  // Scroll to NOW slot
+  setTimeout(() => {
+    const nowEl = document.querySelector('.h-slot.now');
+    if (nowEl) nowEl.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
+  }, 100);
 }
 
-function drawChart(pts, nowIdx) {
-  const svg = document.getElementById('mainChart');
+// ─── Wind/wave chart ──────────────────────────────────────────────────────────
+function drawWindChart(pts, nowI) {
+  const svg = document.getElementById('windChart');
   if (!svg || !pts.length) return;
-
-  const W = svg.clientWidth || 640;
-  const H = 120;
-  const PAD = { t:16, b:28, l:6, r:6 };
-  const innerW = W - PAD.l - PAD.r;
-  const innerH = H - PAD.t - PAD.b;
-
-  const winds = pts.map(p=>p.ws);
-  const waves = pts.map(p=>p.mWH??0);
-  const maxV  = Math.max(...winds, ...waves, 5);
-
-  const xOf = i => PAD.l + (i/(pts.length-1)) * innerW;
-  const yOf = v => PAD.t + (1 - v/maxV) * innerH;
-
-  function polyline(vals, color, strokeW, opacity) {
-    const d = vals.map((v,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
-    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linejoin="round" opacity="${opacity}"/>`;
-  }
-  function area(vals, color) {
-    const d = vals.map((v,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ') +
-      ` L${xOf(vals.length-1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-    return `<path d="${d}" fill="${color}" opacity="0.12"/>`;
-  }
-
-  const nowX = xOf(nowIdx).toFixed(1);
-
-  let html = `<defs>
-    <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
-    </linearGradient>
-  </defs>`;
-
-  // Shaded past
-  html += `<rect x="${PAD.l}" y="${PAD.t}" width="${(nowX-PAD.l)}" height="${innerH}" fill="#0b1f38" opacity="0.3"/>`;
-
-  // Areas
-  html += area(waves, '#4a9eca');
-  html += area(winds, '#d4af37');
-
-  // Lines
-  html += polyline(waves, '#4a9eca', 1.5, 0.8);
-  html += polyline(winds, '#d4af37', 2, 1);
-
-  // Gust line (dashed)
-  const gustLine = pts.map((p,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(p.wg).toFixed(1)}`).join(' ');
-  html += `<path d="${gustLine}" fill="none" stroke="#d4af37" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
-
-  // Now line
-  html += `<line x1="${nowX}" y1="${PAD.t}" x2="${nowX}" y2="${H-PAD.b}" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
-  html += `<text x="${nowX}" y="${H-PAD.b+11}" text-anchor="middle" class="now-label" font-family="DM Mono,monospace" font-size="9" fill="#d4af37">NOW</text>`;
-
-  // Time labels
+  const W = svg.clientWidth || 640, H = 120, P = {t:14,b:26,l:4,r:4};
+  const iW = W-P.l-P.r, iH = H-P.t-P.b;
+  const winds = pts.map(p=>p.ws), gusts = pts.map(p=>p.wg), waves = pts.map(p=>p.mWH??0);
+  const maxV = Math.max(...winds,...gusts,...waves,5);
+  const xOf = i => P.l+(i/(pts.length-1))*iW;
+  const yOf = v => P.t+(1-v/maxV)*iH;
+  const line = vals => vals.map((v,i)=>`${i?'L':'M'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+  const area = vals => line(vals)+` L${xOf(vals.length-1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+  const nowX = xOf(nowI).toFixed(1);
+  let h = `<rect x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}" fill="#0b1f38" opacity="0.3"/>`;
+  if (waves.some(v=>v>0)) { h+=`<path d="${area(waves)}" fill="#4a9eca" opacity="0.1"/>`;h+=`<path d="${line(waves)}" fill="none" stroke="#4a9eca" stroke-width="1.5" opacity="0.75"/>`; }
+  h+=`<path d="${area(winds)}" fill="#d4af37" opacity="0.07"/>`;
+  h+=`<path d="${line(winds)}" fill="none" stroke="#d4af37" stroke-width="2"/>`;
+  h+=`<path d="${line(gusts)}" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.45"/>`;
+  h+=`<line x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  h+=`<text x="${nowX}" y="${H-P.b+11}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#d4af37">NOW</text>`;
   pts.forEach((p,i) => {
-    const x = xOf(i).toFixed(1);
-    if (i===0 || i===pts.length-1 || i===nowIdx || i%2===0) {
-      html += `<text x="${x}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
-    }
-    // Dot at each point for wind
-    html += `<circle cx="${x}" cy="${yOf(p.ws).toFixed(1)}" r="2.5" fill="#d4af37" opacity="0.7"/>`;
+    h+=`<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2.5" fill="${p.isPast?'#6b92b8':'#d4af37'}" opacity="0.8"/>`;
+    if (p.isNow||i===0||i===pts.length-1||i%2===0)
+      h+=`<text x="${xOf(i).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
   });
-
-  svg.innerHTML = html;
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
 }
 
+// ─── Pressure chart ───────────────────────────────────────────────────────────
+function drawPresChart(pts, nowI) {
+  const svg = document.getElementById('presChart');
+  if (!svg) return;
+  const hasPres = pts.some(p=>p.pr!=null);
+  if (!hasPres) { svg.innerHTML=`<text x="50%" y="40" text-anchor="middle" fill="#6b92b8" font-size="11" font-family="DM Mono,monospace">Pressure data unavailable</text>`; return; }
+  const W = svg.clientWidth||640, H=80, P={t:8,b:22,l:4,r:4};
+  const iW=W-P.l-P.r, iH=H-P.t-P.b;
+  const valid = pts.map((p,i)=>({...p,pi:i})).filter(p=>p.pr!=null);
+  const prs   = valid.map(p=>p.pr);
+  const minP  = Math.min(...prs)-0.5, maxP = Math.max(...prs)+0.5;
+  const xOf   = i => P.l+(i/(pts.length-1))*iW;
+  const yOf   = v => P.t+(1-(v-minP)/(maxP-minP))*iH;
+  const nowX  = xOf(nowI).toFixed(1);
+  const lpath = valid.map((p,j)=>`${j?'L':'M'}${xOf(p.pi).toFixed(1)},${yOf(p.pr).toFixed(1)}`).join(' ');
+  const apath = lpath+` L${xOf(valid[valid.length-1].pi).toFixed(1)},${yOf(minP).toFixed(1)} L${xOf(valid[0].pi).toFixed(1)},${yOf(minP).toFixed(1)} Z`;
+  let h = `<rect x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}" fill="#0b1f38" opacity="0.3"/>`;
+  h+=`<path d="${apath}" fill="#a78bfa" opacity="0.08"/>`;
+  h+=`<path d="${lpath}" fill="none" stroke="#a78bfa" stroke-width="2"/>`;
+  h+=`<line x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  // Annotate first, now, last
+  valid.forEach((p,j) => {
+    if (j===0||p.isNow||j===valid.length-1) {
+      h+=`<text x="${xOf(p.pi).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
+      h+=`<text x="${xOf(p.pi).toFixed(1)}" y="${yOf(p.pr)-4}" text-anchor="middle" font-size="9" fill="#a78bfa" font-family="DM Mono,monospace">${Math.round(p.pr)}</text>`;
+    }
+  });
+  svg.innerHTML=h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+setLocation(PRESETS[0], false);
 fetchAll();
 </script>
 </body>
