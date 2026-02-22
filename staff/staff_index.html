@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Staff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <script src="../shared/weather.js"></script>
+  <script src="../shared/boats.js"></script>
+  <style>
+    /* boat card styles now in shared/style.css via boats.js */
+
+    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center; }
+    .stat-num  { font-size:28px; color:var(--brass); font-weight:500; }
+    .stat-label{ font-size:11px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
+    .section   { margin-bottom:28px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .section-head h3 { font-size:11px; letter-spacing:1px; color:var(--muted); }
+    .empty-note { color:var(--muted); font-size:12px; padding:12px 0; }
+    .checkout-form { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:12px; }
+    .checkout-form h4 { color:var(--brass); font-size:11px; letter-spacing:1px; margin-bottom:16px; }
+    .inline-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .crew-field { display:flex; align-items:center; gap:8px; }
+    .crew-btn { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+    .crew-btn:hover { border-color:var(--brass); }
+    .crew-num { width:36px; text-align:center; font-size:16px; color:var(--text); }
+    .recent-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border)33; font-size:11px; color:var(--muted); }
+    .recent-row:last-child { border-bottom:none; }
+
+    /* ── Return-time quick buttons ── */
+    .ret-btn { background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--muted); font-size:10px; padding:4px 7px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:border-color .12s,color .12s; }
+    .ret-btn:hover { border-color:var(--brass); color:var(--brass); }
+  </style>
+</head>
+<body>
+
+<header class="navbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-secondary" onclick="location.href='../dailylog/'">📋 Daily Log</button>
+    <button class="btn btn-secondary" onclick="location.href='trips.html'">✓ Trip Review</button>
+    <button class="btn btn-secondary" onclick="location.href='../incidents/'">⚠ Incident</button>
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <!-- Weather widget -->
+  <div class="wx-widget" id="wxWidget" style="margin-bottom:20px">
+    <div style="color:var(--muted);font-size:11px;padding:6px 0">⚓ Loading conditions…</div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num" id="statOut">—</div><div class="stat-label">ON WATER</div></div>
+    <div class="stat-card"><div class="stat-num" id="statOverdue" style="color:var(--red)">—</div><div class="stat-label">OVERDUE</div></div>
+    <div class="stat-card"><div class="stat-num" id="statAvail">—</div><div class="stat-label">AVAILABLE</div></div>
+  </div>
+
+  <!-- Active check-outs -->
+  <div class="section">
+    <div class="section-head">
+      <h3>ACTIVE CHECK-OUTS</h3>
+      <button class="btn btn-primary" onclick="toggleCheckoutForm()">+ Check Out Boat</button>
+    </div>
+    <div id="activeCheckouts"><div class="empty-note">Loading…</div></div>
+
+    <!-- Quick check-out form -->
+    <div class="checkout-form hidden" id="coForm">
+      <h4>NEW CHECK-OUT</h4>
+      <div class="field">
+        <label>Member (kennitala or name)</label>
+        <input type="text" id="coMember" placeholder="Search member…" oninput="searchMember(this.value)">
+        <div id="coMemberSuggestions" style="position:relative"></div>
+        <input type="hidden" id="coMemberKt">
+        <div id="coMemberName" style="color:var(--brass);font-size:12px;margin-top:4px"></div>
+      </div>
+      <div class="inline-fields">
+        <div class="field">
+          <label>Boat</label>
+          <select id="coBoat"><option value="">Select boat…</option></select>
+        </div>
+        <div class="field">
+          <label>Location / Destination</label>
+          <select id="coLocation"><option value="">Select…</option></select>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field"><label>Time out</label><input type="time" id="coTimeOut"></div>
+<div class="field">
+          <label>Est. return</label>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="time" id="coReturnBy" style="flex:1;min-width:90px">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(60)">+1h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(90)">+1.5h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(120)">+2h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(180)">+3h</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Crew on board</label>
+        <div class="crew-field">
+          <button class="crew-btn" onclick="adjustCrew(-1)">−</button>
+          <span class="crew-num" id="crewNum">1</span>
+          <button class="crew-btn" onclick="adjustCrew(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <input type="text" id="coNotes" placeholder="Any notes…">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="toggleCheckoutForm()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCheckout()">Check Out</button>
+      </div>
+      <div id="coErr" class="msg msg-err" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Fleet status -->
+  <div class="section">
+    <div class="section-head"><h3>FLEET STATUS</h3></div>
+    <div class="fleet-grid" id="fleetGrid"><div class="empty-note">Loading…</div></div>
+  </div>
+
+  <!-- Recent check-ins -->
+  <div class="section">
+    <div class="section-head"><h3>RECENT CHECK-INS (24H)</h3></div>
+    <div id="recentCheckins"><div class="empty-note">Loading…</div></div>
+  </div>
+
+</div>
+
+<script>
+const user = requireAuth(isStaff);
+if (user) {
+  document.getElementById("userBadge").textContent = user.name + " · " + user.role;
+  document.getElementById("langBtn").textContent = getLang()==="EN"?"IS":"EN";
+  init();
+  // Weather widget — shared module
+  wxWidget(document.getElementById("wxWidget"), { showRefreshBtn: true }).start();
+}
+
+let boats=[], locations=[], members=[], checkouts=[];
+let crewCount = 1;
+let selectedMemberKt = "";
+
+async function init() {
+  try {
+    const [bRes, lRes, mRes, coRes] = await Promise.all([
+      apiGet("getBoats"),
+      apiGet("getLocations"),
+      apiGet("getMembers"),
+      apiGet("getActiveCheckouts"),
+    ]);
+    boats     = (bRes.boats     || []).filter(b => b.active!=="false" && b.active!==false);
+    locations = (lRes.locations || []).filter(l => l.active!=="false" && l.active!==false);
+    members   = mRes.members || [];
+    checkouts = coRes.checkouts || [];
+    populateSelects();
+    renderAll();
+  } catch(e) { console.error("init:", e); }
+}
+
+function populateSelects() {
+  const bSel = document.getElementById("coBoat");
+  boats.filter(b => !b.oos && b.oos!=="true").forEach(b => {
+    const o=document.createElement("option"); o.value=b.id;
+    o.textContent=b.name+(b.category?" ("+b.category+")":""); bSel.appendChild(o);
+  });
+  const lSel = document.getElementById("coLocation");
+  locations.forEach(l => { const o=document.createElement("option"); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+  document.getElementById("coTimeOut").value = new Date().toTimeString().slice(0,5);
+}
+
+function renderAll() { renderCheckouts(); renderFleet(); renderStats(); renderRecentCheckins(); }
+
+function renderStats() {
+  const active  = checkouts.filter(c => c.status==="out");
+  const now     = new Date().toTimeString().slice(0,5);
+  const overdue = active.filter(c => (c.expectedReturn||c.returnBy) && (c.expectedReturn||c.returnBy) < now);
+  document.getElementById("statOut").textContent     = active.length;
+  document.getElementById("statOverdue").textContent = overdue.length;
+  document.getElementById("statAvail").textContent   = boats.filter(b => !b.oos && b.oos!=="true" && !active.find(c => c.boatId===b.id)).length;
+}
+
+function renderCheckouts() {
+  const el     = document.getElementById("activeCheckouts");
+  const active = checkouts.filter(c => c.status==="out");
+  if (!active.length) { el.innerHTML='<div class="empty-note">No boats currently out.</div>'; return; }
+  const now = new Date().toTimeString().slice(0,5);
+
+  el.innerHTML = active.map(c => renderCheckoutCard(c, {
+    staffView: true,
+    onCheckIn: `staffCheckIn('${c.id}')`,
+    onDelete:  `staffDeleteCheckout('${c.id}','${esc(c.boatName||"")}')`,
+  })).join("");
+}
+
+function renderFleet() {
+  const el     = document.getElementById("fleetGrid");
+  const active = checkouts.filter(c => c.status==="out");
+  const now    = new Date().toTimeString().slice(0,5);
+  if (!boats.length) { el.innerHTML = '<div class="empty-note">No boats found.</div>'; return; }
+  el.innerHTML = '<div class="bc-grid">'
+    + boats.map(b => {
+        const co      = active.find(c => c.boatId===b.id);
+        const overdue = co && (co.expectedReturn||co.returnBy) && (co.expectedReturn||co.returnBy) < now;
+        const oos     = b.oos===true || b.oos==="true";
+        const status  = co ? (overdue?"overdue":"out") : (oos?"oos":"avail");
+        return renderBoatCard(b, { status, checkoutData: co, overdue });
+      }).join("")
+    + '</div>';
+}
+
+function renderRecentCheckins() {
+  const el     = document.getElementById("recentCheckins");
+  const recent = checkouts.filter(c => c.status==="in").slice(0,10);
+  if (!recent.length) { el.innerHTML='<div class="empty-note">No check-ins in the last 24 hours.</div>'; return; }
+  el.innerHTML = recent.map(c => {
+    const tout = (c.checkedOutAt||c.timeOut||"").slice(0,5);
+    const tin  = (c.checkedInAt ||c.timeIn  ||"").slice(0,5);
+    return `<div class="recent-row">
+      <span style="opacity:.4">⛵</span>
+      <div style="flex:1"><span style="color:var(--text);font-weight:500">${esc(c.boatName||c.boatId)}</span> · ${esc(c.memberName||"")} · ${esc(c.locationName||"")}</div>
+      <span>${esc(tout)}–${esc(tin)}</span>
+    </div>`;
+  }).join("");
+}
+
+// ── Check-out form ──────────────────────────────────────────────────────────────
+function toggleCheckoutForm() { document.getElementById("coForm").classList.toggle("hidden"); }
+function adjustCrew(d) { crewCount=Math.max(1,Math.min(20,crewCount+d)); document.getElementById("crewNum").textContent=crewCount; }
+
+function searchMember(q) {
+  const box = document.getElementById("coMemberSuggestions");
+  if (!q||q.length<2) { box.innerHTML=""; return; }
+  const matches = members.filter(m => m.name.toLowerCase().includes(q.toLowerCase())||m.kennitala.startsWith(q)).slice(0,5);
+  box.innerHTML = matches.length ? `<div style="position:absolute;top:0;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:6px;z-index:100;overflow:hidden">
+    ${matches.map(m=>`<div onclick="selectMember('${m.kennitala}','${esc(m.name)}')" style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)">${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span></div>`).join("")}
+  </div>` : "";
+}
+
+function selectMember(kt, name) {
+  selectedMemberKt=kt;
+  document.getElementById("coMember").value=name;
+  document.getElementById("coMemberName").textContent=kt;
+  document.getElementById("coMemberSuggestions").innerHTML="";
+}
+
+async function submitCheckout() {
+  const kt  = selectedMemberKt || document.getElementById("coMember").value.trim();
+  const bid = document.getElementById("coBoat").value;
+  const lid = document.getElementById("coLocation").value;
+  const err = document.getElementById("coErr");
+  if (!kt||!bid) { err.textContent="Member and boat are required."; err.style.display="block"; return; }
+  err.style.display="none";
+  const boat     = boats.find(b=>b.id===bid)||{};
+  const location = locations.find(l=>l.id===lid)||{};
+  const member   = members.find(m=>m.kennitala===kt)||{};
+  try {
+    const res = await apiPost("saveCheckout", {
+      memberKennitala: kt, memberName: member.name||kt,
+      boatId: bid, boatName: boat.name||bid,
+      boatCategory: boat.category||"",
+      locationId: lid, locationName: location.name||lid,
+      checkedOutAt: document.getElementById("coTimeOut").value,
+      expectedReturn: document.getElementById("coReturnBy").value,
+      crew: crewCount,
+      notes: document.getElementById("coNotes").value.trim(),
+    });
+    // Refresh from server to get enriched data (phone, guardian etc.)
+    checkouts = (await apiGet("getActiveCheckouts")).checkouts || [];
+    toggleCheckoutForm();
+    renderAll();
+    showMsg("✓ Checked out.", "ok");
+  } catch(e) { err.textContent="Error: "+e.message; err.style.display="block"; }
+}
+
+// ── Check-in ────────────────────────────────────────────────────────────────────
+async function staffCheckIn(id) {
+  try {
+    const timeIn = new Date().toTimeString().slice(0,5);
+    await apiPost("checkIn", { id, timeIn });
+    const co = checkouts.find(c=>c.id===id);
+    if (co) { co.status="in"; co.checkedInAt=timeIn; co.timeIn=timeIn; }
+    renderAll();
+    showMsg("✓ Checked in.", "ok");
+  } catch(e) { alert("Error: "+e.message); }
+}
+
+// ── Delete checkout ─────────────────────────────────────────────────────────────
+async function staffDeleteCheckout(id, boatName) {
+  if (!confirm(`Delete checkout for ${boatName||"this boat"}? This cannot be undone.`)) return;
+  try {
+    await apiPost("deleteCheckout", { id });
+    checkouts = checkouts.filter(c => c.id!==id);
+    renderAll();
+    showMsg("Checkout deleted.", "ok");
+  } catch(e) { alert("Error: "+e.message); }
+}
+
+function showMsg(text, type) {
+  const el=document.createElement("div");
+  el.className=`msg msg-${type}`;
+  el.textContent=text;
+  el.style.cssText="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:220px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px";
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ── Return-time quick buttons ────────────────────────────────
+function setCoReturnIn(mins) {
+  const base = document.getElementById('coTimeOut').value || new Date().toTimeString().slice(0,5);
+  const [h, m] = base.split(':').map(Number);
+  const total  = h * 60 + m + mins;
+  const rh = Math.floor(total / 60) % 24;
+  const rm = total % 60;
+  document.getElementById('coReturnBy').value =
+    String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0');
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+</script>
+</body>
+</html>
