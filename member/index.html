@@ -275,8 +275,8 @@
 <!-- ════════════════════════════════
      MODAL: RETURN FLOW
      Step 1: Check-in (time + note)
-     Step 2: Conditions (auto-loaded, editable)
-     Step 3: After-sail checklist + optional damage report
+     Step 2: Conditions (from checkout wx, updatable)
+     Step 3: After-sail checklist + damage report button
 ════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalReturn">
   <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:90vh">
@@ -288,13 +288,16 @@
 
     <div style="flex:1;overflow-y:auto;min-height:0">
 
-      <!-- Return Step 1: Check-in details -->
+      <!-- Step 1: time in + notes (no crew) -->
       <div id="returnStep1">
         <div class="form-section">
           <h4 id="returnBoatTitle">RETURNING BOAT</h4>
-          <div class="grid-2">
-            <div class="field"><label>Time in</label><input type="time" id="rTimeIn" oninput="updateReturnHours()"></div>
-            <div class="field"><label>Crew returning</label><input type="number" id="rCrew" min="1" max="20" value="1"></div>
+          <div class="field">
+            <label>Time returned</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="time" id="rTimeIn" oninput="updateReturnHours()" style="flex:1">
+              <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick="setV('rTimeIn',fmtTimeNow());updateReturnHours()">Now</button>
+            </div>
           </div>
           <div class="hours-calc" id="rHoursCalc"></div>
           <div class="field" style="margin-top:8px"><label>Trip notes</label>
@@ -303,13 +306,14 @@
         </div>
       </div>
 
-      <!-- Return Step 2: Conditions -->
+      <!-- Step 2: Conditions — prefilled from checkout wx snapshot -->
       <div id="returnStep2" class="hidden">
         <div class="form-section">
-          <h4>CONDITIONS ON RETURN <span style="color:var(--muted);font-weight:normal;font-size:8px">— auto-loaded, edit if needed</span></h4>
-          <button class="cond-btn loaded" id="rCondBtn" onclick="prefillReturnConditions()" style="margin-bottom:10px">
-            <span id="rCondIcon">✓</span><span id="rCondText">Current conditions loaded — tap to refresh</span>
-          </button>
+          <h4>CONDITIONS <span style="color:var(--muted);font-weight:normal;font-size:8px">— from launch, edit if needed</span></h4>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button class="cond-btn" id="rCondBtnLaunch" onclick="prefillFromLaunchWx()" style="flex:1;font-size:10px">⚓ Use launch weather</button>
+            <button class="cond-btn" id="rCondBtnCurrent" onclick="prefillReturnConditions()" style="flex:1;font-size:10px">🔄 Use current weather</button>
+          </div>
           <div class="grid-3">
             <div class="field"><label>Beaufort</label>
               <select id="rBft"><option value="">–</option>
@@ -349,7 +353,7 @@
         </div>
       </div>
 
-      <!-- Return Step 3: After-sail checklist + damage report -->
+      <!-- Step 3: After-sail checklist + damage report button -->
       <div id="returnStep3" class="hidden">
         <div class="form-section">
           <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="afterChecklistTitle">AFTER-SAIL CHECKLIST</div>
@@ -357,37 +361,45 @@
           <div class="cl-progress"><div class="cl-bar" id="afterClBar" style="width:0%"></div></div>
           <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="afterClCount">0 / 0</div>
         </div>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text);padding:10px 0;border-top:1px solid var(--border)44;margin-bottom:8px">
-          <input type="checkbox" id="hasDamage" onchange="toggleDamageReport()" style="accent-color:var(--red);width:16px;height:16px;flex-shrink:0">
-          Report damage or issue with this boat
-        </label>
-        <div id="damageReportSection" style="display:none">
-          <div class="form-section" style="border-color:var(--red)44">
-            <h4 style="color:var(--red)">DAMAGE / ISSUE REPORT</h4>
-            <div class="field"><label>What happened?</label>
-              <textarea id="damageDesc" rows="3" style="width:100%;resize:vertical" placeholder="Describe the damage or issue…"></textarea>
-            </div>
-            <div class="field"><label>Severity</label>
-              <select id="damageSeverity">
-                <option value="">Select…</option>
-                <option value="minor">Minor — cosmetic, boat still sailable</option>
-                <option value="moderate">Moderate — needs inspection before next sail</option>
-                <option value="serious">Serious — boat should not sail until repaired</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        <button class="btn btn-secondary" style="width:100%;border-color:var(--red)66;color:var(--red);margin-bottom:10px" onclick="openDamageModal()">
+          🔧 Report damage or issue
+        </button>
+        <div id="damageSubmittedNote" style="display:none;font-size:11px;color:var(--red);text-align:center;margin-bottom:10px">⚠ Damage report will be submitted with this check-in</div>
         <div id="returnErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
       </div>
 
     </div><!-- end scrollable -->
 
-    <!-- Fixed footer — always visible -->
     <div style="flex-shrink:0;padding-top:10px;border-top:1px solid var(--border)44;margin-top:4px">
-      <div id="returnActionRow">
-        <!-- populated by goToReturnStep() -->
-      </div>
+      <div id="returnActionRow"></div>
       <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeReturnModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: DAMAGE REPORT
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalDamage">
+  <div class="modal" style="max-width:440px">
+    <h3 style="color:var(--red)">🔧 Damage / Issue Report</h3>
+    <div class="form-section" style="border-color:var(--red)44">
+      <div class="field"><label>What happened?</label>
+        <textarea id="damageDesc" rows="3" style="width:100%;resize:vertical" placeholder="Describe the damage or issue…"></textarea>
+      </div>
+      <div class="field"><label>Severity</label>
+        <select id="damageSeverity">
+          <option value="">Select…</option>
+          <option value="minor">Minor — cosmetic, boat still sailable</option>
+          <option value="moderate">Moderate — needs inspection before next sail</option>
+          <option value="serious">Serious — boat should not sail until repaired</option>
+        </select>
+      </div>
+    </div>
+    <div id="damageErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeDamageModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="saveDamageReport()">Submit Report</button>
     </div>
   </div>
 </div>
@@ -652,7 +664,8 @@ function renderCheckouts(){
       const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
       const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
       const retLabel=c.returnBy?`Est. return ${esc(c.returnBy)}`:'No est. return';
-      return`<div class="co-strip${cls?' '+cls:''}" style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Tap to check in">
+      const clickable=isMe;
+      return`<div class="co-strip${cls?' '+cls:''}" ${clickable?`style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'  title="Tap to check in"`:'style="cursor:default"'}>
         <div style="font-size:20px;flex-shrink:0">⛵</div>
         <div class="co-meta">
           <div class="co-title">${esc(c.boatName||'—')}</div>
@@ -707,21 +720,22 @@ function closeLaunchModal(){
 // ── Check-in picker (standalone "Check In" button) ──
 function openCheckInPicker(){
   const active=checkouts.filter(c=>c.status==='out');
+  const mine=active.filter(c=>String(c.memberKt)===String(user.kennitala));
   const el=document.getElementById('checkInPickerList');
-  if(!active.length){
-    el.innerHTML='<div class="empty-note">No boats currently out.</div>';
+  if(!mine.length){
+    el.innerHTML=active.length
+      ?'<div class="empty-note">No boats checked out by you. Tap a row in Active Checkouts to check in your boat.</div>'
+      :'<div class="empty-note">No boats currently out.</div>';
   } else {
-    el.innerHTML=active.map(c=>{
-      const isMe=String(c.memberKt)===String(user.kennitala);
-      return`<div class="co-strip${isMe?' mine':''}" style="cursor:pointer;margin-bottom:6px" onclick='closeCheckInPicker();startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+    el.innerHTML=mine.map(c=>`
+      <div class="co-strip mine" style="cursor:pointer;margin-bottom:6px" onclick='closeCheckInPicker();startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
         <div style="font-size:18px;flex-shrink:0">⛵</div>
         <div class="co-meta">
-          <div class="co-title">${esc(c.boatName||'—')}${isMe?' <span style="color:var(--brass);font-size:9px;margin-left:4px">YOUR BOAT</span>':''}</div>
-          <div class="co-sub">${esc(c.memberName||'—')} · Dep. ${esc(c.timeOut||'—')}${c.returnBy?' · Est. return '+esc(c.returnBy):''}</div>
+          <div class="co-title">${esc(c.boatName||'—')}</div>
+          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc(c.timeOut||'—')}${c.returnBy?' · Est. '+esc(c.returnBy):''}</div>
         </div>
         <span style="font-size:13px;color:var(--brass);flex-shrink:0">→</span>
-      </div>`;
-    }).join('');
+      </div>`).join('');
   }
   document.getElementById('modalCheckInPicker').classList.remove('hidden');
 }
@@ -829,19 +843,23 @@ async function submitLaunch(){
 // RETURN FLOW
 // ══════════════════════════════════════════════════════
 function startReturn(co){
+  // Guard: only your own checkouts
+  if(String(co.memberKt)!==String(user.kennitala)){
+    showMsg('You can only check in a boat you checked out.','err');
+    return;
+  }
   returnCo=co;
+  pendingDamage=null;
   document.getElementById('returnBoatTitle').textContent=`RETURNING: ${(co.boatName||co.boatId).toUpperCase()}`;
   setV('rTimeIn',fmtTimeNow());
-  setV('rCrew',co.crew||1);
   setV('rNotes','');
   document.getElementById('returnErr').style.display='none';
-  document.getElementById('hasDamage').checked=false;
-  document.getElementById('damageReportSection').style.display='none';
+  document.getElementById('damageSubmittedNote').style.display='none';
   updateReturnHours();
   goToReturnStep(1);
   document.getElementById('modalReturn').classList.remove('hidden');
 }
-function closeReturnModal(){document.getElementById('modalReturn').classList.add('hidden');returnCo=null;}
+function closeReturnModal(){document.getElementById('modalReturn').classList.add('hidden');returnCo=null;pendingDamage=null;}
 
 function goToReturnStep(n){
   [1,2,3].forEach(i=>{
@@ -868,9 +886,32 @@ function updateReturnHours(){
 }
 
 async function goToReturnConditions(){
-  if(!currentWx){const fresh=await fetchLiveConditions();if(fresh)currentWx=fresh;}
-  prefillReturnConditions();
+  // Prefill from checkout wx snapshot; fall back to current
+  prefillFromLaunchWx();
+  // Also eagerly fetch current wx in background for the "current" button
+  if(!currentWx) fetchLiveConditions().then(wx=>{ if(wx) currentWx=wx; });
   goToReturnStep(2);
+}
+
+function prefillFromLaunchWx(){
+  if(!returnCo) return;
+  let wx=null;
+  if(returnCo.wxSnap){
+    try{ wx=JSON.parse(returnCo.wxSnap); }catch(e){}
+  }
+  // Fall back to launchBft/launchWindMs/launchWindDir fields on the checkout
+  if(!wx && (returnCo.launchBft||returnCo.launchWindMs)){
+    wx={
+      bft: parseFloat(returnCo.launchBft)||0,
+      ws:  parseFloat(returnCo.launchWindMs)||0,
+      wDir:returnCo.launchWindDir||'',
+    };
+  }
+  if(wx){
+    doCondPrefill('r',wx);
+    const btn=document.getElementById('rCondBtnLaunch');
+    if(btn){btn.classList.add('loaded');btn.textContent='✓ Launch weather loaded';}
+  }
 }
 
 function goToReturnChecklist(){
@@ -878,11 +919,37 @@ function goToReturnChecklist(){
   goToReturnStep(3);
 }
 
+// ── Damage report modal ──
+let pendingDamage=null;
+function openDamageModal(){
+  // Pre-fill if already drafted
+  if(pendingDamage){
+    setV('damageDesc',pendingDamage.description);
+    setV('damageSeverity',pendingDamage.severity);
+  } else {
+    setV('damageDesc','');
+    setV('damageSeverity','');
+  }
+  document.getElementById('damageErr').style.display='none';
+  document.getElementById('modalDamage').classList.remove('hidden');
+}
+function closeDamageModal(){document.getElementById('modalDamage').classList.add('hidden');}
+function saveDamageReport(){
+  const desc=document.getElementById('damageDesc').value.trim();
+  const sev=document.getElementById('damageSeverity').value;
+  const err=document.getElementById('damageErr');
+  if(!desc){err.textContent='Please describe the damage or issue.';err.style.display='block';return;}
+  if(!sev){err.textContent='Please select a severity level.';err.style.display='block';return;}
+  pendingDamage={description:desc,severity:sev};
+  closeDamageModal();
+  document.getElementById('damageSubmittedNote').style.display='block';
+}
+
 const AFTER_CHECKLISTS={
-  dinghy:   ['Rinse boat with fresh water','Lower and secure mast/rig if required','Drain bailer, leave open to dry','Secure rudder and tiller','Coil and stow all sheets','Return boat to designated storage','Return life jackets to rack','Report any damage or issues'],
-  keelboat: ['Engine flushed and off','Sails furled/bagged and secured','Lines coiled and stowed','Fenders secured','Bilge pumped dry','Shore power reconnected if applicable','Engine log updated','Report any damage or issues'],
-  catamaran:['Rinse both hulls and trampoline','Lower and bag sails','Secure rudder assemblies','Coil and stow sheets and halyards','Return boat to designated area','Report any damage or issues'],
-  kayak:    ['Drain cockpit, leave hatch open','Rinse paddle and spray deck','Store upside down or in rack','Report any damage or issues'],
+  dinghy:   ['Rinse boat with fresh water','Lower and secure mast/rig if required','Drain bailer, leave open to dry','Secure rudder and tiller','Coil and stow all sheets','Return boat to designated storage','Return life jackets to rack'],
+  keelboat: ['Engine flushed and off','Sails furled/bagged and secured','Lines coiled and stowed','Fenders secured','Bilge pumped dry','Shore power reconnected if applicable','Engine log updated'],
+  catamaran:['Rinse both hulls and trampoline','Lower and bag sails','Secure rudder assemblies','Coil and stow sheets and halyards','Return boat to designated area'],
+  kayak:    ['Drain cockpit, leave hatch open','Rinse paddle and spray deck','Store upside down or in rack'],
 };
 function getAfterChecklist(cat){return AFTER_CHECKLISTS[(cat||'dinghy').toLowerCase()]||AFTER_CHECKLISTS.dinghy;}
 
@@ -905,28 +972,19 @@ function updateAfterClProgress(){
   boxes.forEach((b,i)=>document.getElementById('acll'+i)?.classList.toggle('checked',b.checked));
 }
 
-function toggleDamageReport(){
-  document.getElementById('damageReportSection').style.display=
-    document.getElementById('hasDamage').checked?'block':'none';
-}
-
 async function submitReturn(){
   const err=document.getElementById('returnErr');
   const tin=document.getElementById('rTimeIn').value;
   if(!tin){err.textContent='Return time required.';err.style.display='block';return;}
-  const hasDmg=document.getElementById('hasDamage').checked;
-  if(hasDmg&&!document.getElementById('damageDesc').value.trim()){
-    err.textContent='Please describe the damage or issue.';err.style.display='block';return;
-  }
-  if(hasDmg&&!document.getElementById('damageSeverity').value){
-    err.textContent='Please select a severity level for the damage report.';err.style.display='block';return;
-  }
   err.style.display='none';
   const co=returnCo;
-  const hDec=Math.max(0,Math.round(timeDiffHours(co.timeOut,tin)*10)/10);
+  const tout=co.timeOut||'';
+  const date=co.date||todayISO();
+  const hDec=tout?Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10):0;
   try{
     await apiPost('checkIn',{
-      id:co.id, timeIn:tin,
+      id:co.id,
+      timeIn:tin,
       returnBft:    document.getElementById('rBft').value,
       returnWindMs: document.getElementById('rWindMs').value,
       returnWindDir:document.getElementById('rWindDir').value,
@@ -935,43 +993,43 @@ async function submitReturn(){
       returnVis:    document.getElementById('rVis').value,
     });
     await apiPost('saveTrip',{
-      kennitala:   user.kennitala,
-      memberName:  user.name,
-      date:        co.date||todayISO(),
-      timeOut:     co.timeOut||'',
-      timeIn:      tin,
-      hoursDecimal:hDec,
-      boatId:      co.boatId,
-      boatName:    co.boatName,
-      locationId:  co.locationId,
-      locationName:co.locationName,
-      crew:        document.getElementById('rCrew').value,
-      beaufort:    document.getElementById('rBft').value,
-      windMs:      document.getElementById('rWindMs').value,
-      windDir:     document.getElementById('rWindDir').value,
-      seaState:    document.getElementById('rSea').value,
-      precip:      document.getElementById('rPrecip').value,
-      visibility:  document.getElementById('rVis').value,
-      notes:       document.getElementById('rNotes').value.trim(),
-      isLinked:    true,
-      linkedCheckoutId:co.id,
+      kennitala:    user.kennitala,
+      memberName:   user.name,
+      date,
+      timeOut:      tout,
+      timeIn:       tin,
+      hoursDecimal: hDec,
+      boatId:       co.boatId,
+      boatName:     co.boatName,
+      locationId:   co.locationId,
+      locationName: co.locationName,
+      crew:         co.crew||1,
+      beaufort:     document.getElementById('rBft').value,
+      windMs:       document.getElementById('rWindMs').value,
+      windDir:      document.getElementById('rWindDir').value,
+      seaState:     document.getElementById('rSea').value,
+      precip:       document.getElementById('rPrecip').value,
+      visibility:   document.getElementById('rVis').value,
+      notes:        document.getElementById('rNotes').value.trim(),
+      isLinked:     true,
+      linkedCheckoutId: co.id,
     });
-    if(hasDmg){
+    if(pendingDamage){
       await apiPost('saveDamageReport',{
         boatId:      co.boatId,
         boatName:    co.boatName,
         memberKt:    user.kennitala,
         memberName:  user.name,
-        date:        co.date||todayISO(),
-        description: document.getElementById('damageDesc').value.trim(),
-        severity:    document.getElementById('damageSeverity').value,
+        date,
+        description: pendingDamage.description,
+        severity:    pendingDamage.severity,
         checkoutId:  co.id,
       });
     }
     checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
     renderCheckouts();
     closeReturnModal();
-    showMsg(hasDmg?'✓ Return logged. Damage report submitted — thank you.':'✓ Safe return logged. Trip saved to your logbook.','ok');
+    showMsg(pendingDamage?'✓ Return logged. Damage report submitted.':'✓ Safe return logged. Trip saved to your logbook.','ok');
   }catch(e){err.textContent='Error: '+e.message;err.style.display='block';}
 }
 
