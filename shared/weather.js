@@ -30,7 +30,7 @@ function wxMsToBft(ms) {
   for (let i = T.length - 1; i >= 0; i--) if (ms >= T[i]) return i;
   return 0;
 }
-function wxMsToKt(ms)   { return (ms * 1.944).toFixed(1); }
+function wxMsToKt(ms)   { return Math.round(ms * 1.944); }
 function wxDirLabel(d)  { if (d == null) return '–'; return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
 function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
 function wxBftDesc(b)   { return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b] || ''; }
@@ -152,15 +152,21 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       targetEl.innerHTML = `
         <div class="wx-top">
           <div style="flex:1">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:5px">${loc.label.toUpperCase()} · CONDITIONS</div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-              <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${ws.toFixed(1)}</span>
-              <span style="font-size:14px;color:var(--muted)">m/s</span>
-              <span style="font-size:16px;color:var(--muted)">${wxMsToKt(ws)} kt</span>
-              <span style="font-size:14px;color:var(--text)">${wxDirArrow(wd)} ${wDir}</span>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${loc.label.toUpperCase()} · CONDITIONS</div>
+            <div style="display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:10px;row-gap:0;align-items:start">
+              <span style="grid-row:1/3;font-size:36px;color:var(--brass);font-weight:500;line-height:1;align-self:center;padding-right:2px">${wxDirArrow(wd)}</span>
+              <span style="display:flex;align-items:center;gap:5px;line-height:1">
+                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
+                <span style="font-size:13px;color:var(--muted)">m/s</span>
+              </span>
+              <span style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;padding-top:6px">
+                <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
+                <span style="color:var(--border)">·</span>
+                <b style="color:var(--text)">${wDir}</b>
+              </span>
             </div>
-            <div style="font-size:12px;color:var(--muted);margin-top:5px;display:flex;gap:12px;flex-wrap:wrap">
-              <span>Gusts <b style="color:var(--text)">${wg.toFixed(1)} m/s</b> / <b style="color:var(--text)">${wxMsToKt(wg)} kt</b></span>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
+              <span>Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)} kt</b></span>
               <span>Bft <b style="color:var(--text)">${bft}</b> — ${wxBftDesc(bft)}</span>
             </div>
           </div>

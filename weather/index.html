@@ -55,11 +55,23 @@
 .wind-ms   { font-size:56px; font-weight:500; color:var(--brass); line-height:1; }
 .wind-unit { font-size:18px; color:var(--muted); }
 .wind-bft  { font-size:13px; color:var(--muted); margin-top:4px; }
-.wind-cols { display:grid; grid-template-columns:1fr 1fr; gap:0; align-items:center; margin-bottom:16px; }
-.wind-dir-col { text-align:center; border-left:1px solid var(--border); padding-left:16px; }
-.dir-arrow { font-size:56px; color:var(--brass); line-height:1; }
-.dir-label { font-size:16px; color:var(--text); font-weight:500; margin-top:4px; }
-.dir-deg   { font-size:11px; color:var(--muted); margin-top:2px; }
+.wind-cols {
+  display:grid;
+  grid-template-columns:auto auto;
+  grid-template-rows:auto auto;
+  column-gap:14px;
+  row-gap:0;
+  align-items:start;
+  margin-bottom:16px;
+}
+.dir-arrow { font-size:56px; color:var(--brass); line-height:1; font-weight:500; grid-row:1/3; align-self:center; }
+.wind-speed-row { display:flex; align-items:center; gap:8px; line-height:1; }
+.wind-ms   { font-size:56px; font-weight:500; color:var(--brass); line-height:1; }
+.wind-unit { font-size:18px; color:var(--muted); }
+.wind-sub  { font-size:16px; color:var(--muted); display:flex; align-items:center; gap:8px; padding-top:8px; }
+.wind-sub b     { color:var(--text); }
+.wind-sub .sep  { color:var(--border); }
+.wind-bft  { font-size:13px; color:var(--muted); margin-top:2px; }
 .gust-row  { padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
 .gust-lbl  { font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:3px; }
 .gust-val  { font-size:18px; color:var(--text); }
@@ -98,10 +110,19 @@ svg.chart { width:100%; overflow:visible; display:block; }
 .h-slot.now  { border-color:var(--brass); }
 .h-slot.past { opacity:.5; }
 .h-time  { font-size:10px; color:var(--muted); margin-bottom:6px; }
-.h-main  { display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:3px; }
-.h-wind  { font-size:18px; color:var(--brass); font-weight:500; line-height:1; }
-.h-dir   { font-size:18px; color:var(--brass); line-height:1; }
-.h-kt    { font-size:10px; color:var(--muted); }
+.h-main  {
+  display:grid;
+  grid-template-columns:auto auto;
+  grid-template-rows:auto auto;
+  column-gap:4px;
+  row-gap:2px;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:4px;
+}
+.h-dir   { font-size:18px; color:var(--brass); font-weight:500; line-height:1; grid-row:1/3; align-self:center; display:flex; align-items:center; }
+.h-wind  { font-size:18px; color:var(--brass); font-weight:500; line-height:1; display:flex; align-items:center; }
+.h-kt    { font-size:10px; color:var(--muted); line-height:1; }
 .h-gust  { font-size:10px; color:var(--muted); margin-top:1px; }
 .h-wave  { font-size:11px; color:#4a9eca; margin-top:4px; }
 .h-pres  { font-size:10px; color:var(--muted); margin-top:3px; }
@@ -112,7 +133,7 @@ svg.chart { width:100%; overflow:visible; display:block; }
 
 @media(max-width:480px) {
   .info-3 { grid-template-columns:1fr 1fr; }
-  .wind-ms, .dir-arrow { font-size:44px; }
+  .wind-ms, .dir-arrow { font-size:40px; font-weight:500; }
 }
 </style>
 </head>
@@ -333,23 +354,22 @@ function render(wx, marine) {
 <div class="wind-hero">
   <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">WIND · ${esc(curLoc.label.toUpperCase())}</div>
   <div class="wind-cols">
-    <div>
-      <div style="display:flex;align-items:baseline;gap:6px">
-        <span class="wind-ms">${ws.toFixed(1)}</span><span class="wind-unit">m/s</span>
-      </div>
-      <div style="font-size:20px;color:var(--muted);margin-top:4px"><b style="color:var(--text)">${wxMsToKt(ws)}</b> kt</div>
-      <div class="wind-bft">Bft <b>${bft}</b> — ${wxBftDesc(bft)}</div>
+    <span class="dir-arrow">${wxDirArrow(wd)}</span>
+    <div class="wind-speed-row">
+      <span class="wind-ms">${Math.round(ws)}</span><span class="wind-unit">m/s</span>
     </div>
-    <div class="wind-dir-col">
-      <div class="dir-arrow">${wxDirArrow(wd)}</div>
-      <div class="dir-label">${wDir}</div>
-      <div class="dir-deg">${wd != null ? Math.round(wd)+'°' : '–'} · From ${wDir}</div>
+    <div class="wind-sub">
+      <b>${wxMsToKt(ws)}</b> kt
+      <span class="sep">·</span>
+      <b>${wDir}</b>
+      <span class="sep">·</span>
+      <span class="wind-bft">${wd != null ? Math.round(wd)+'°' : ''}</span>
     </div>
   </div>
   <div class="gust-row">
     <div>
       <div class="gust-lbl">GUSTS</div>
-      <div class="gust-val">${wg.toFixed(1)}<span style="font-size:13px;color:var(--muted)"> m/s</span>
+      <div class="gust-val">${Math.round(wg)}<span style="font-size:13px;color:var(--muted)"> m/s</span>
         <span style="font-size:15px;color:var(--muted);margin-left:8px">${wxMsToKt(wg)} kt</span>
       </div>
     </div>
@@ -448,11 +468,11 @@ function renderHourStrip(pts) {
     return `<div class="h-slot${p.isNow?' now':p.isPast?' past':''}">
       <div class="h-time">${p.isNow ? 'NOW' : p.t}</div>
       <div class="h-main">
-        <span class="h-wind">${p.ws.toFixed(1)}</span>
         <span class="h-dir">${wxDirArrow(p.wd)}</span>
+        <span class="h-wind">${Math.round(p.ws)}</span>
+        <span class="h-kt">${wxMsToKt(p.ws)} kt</span>
       </div>
-      <div class="h-kt">${wxMsToKt(p.ws)} kt</div>
-      <div class="h-gust">↑${p.wg.toFixed(1)}</div>
+      <div class="h-gust">↑${Math.round(p.wg)}</div>
       ${p.mWH != null ? `<div class="h-wave">🌊${p.mWH.toFixed(1)}m</div>` : ''}
       ${p.pr  != null ? `<div class="h-pres">${Math.round(p.pr)}</div>` : ''}
       <div class="h-flag" style="background:${FLAG_COLORS[flagKey]}"></div>
