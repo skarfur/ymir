@@ -226,3 +226,20 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
     stop()   { if (timer) clearInterval(timer); },
   };
 }
+
+// ── wxSnapshot ────────────────────────────────────────────────────────────────
+// Compact storable object from an onData snapshot. Integer wind speeds, 1dp waves.
+// Pass to saveCheckout as wxSnapshot (JSON.stringify'd by backend).
+function wxSnapshot(snap) {
+  if (!snap) return null;
+  return {
+    bft:  snap.bft,
+    ws:   Math.round(snap.ws   || 0),
+    wg:   Math.round(snap.wg   || 0),
+    dir:  snap.wDir || "",
+    wv:   snap.waveH != null ? parseFloat(snap.waveH.toFixed(1)) : null,
+    flag: snap.flagKey || "",
+    tc:   snap.airT   != null ? Math.round(snap.airT)   : null,
+    ts:   new Date().toISOString().slice(0,16),
+  };
+}
