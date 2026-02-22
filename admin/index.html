@@ -501,12 +501,6 @@ function parseCSVRow(line) {
   out.push(cur); return out;
 }
 
-function normBirthYear(raw) {
-  const s=String(raw||"").trim();
-  if (/^\d{4}$/.test(s)) return parseInt(s);
-  const d=new Date(s); if (!isNaN(d)) return d.getFullYear();
-  return null;
-}
 
 function parseAblerCSV(text) {
   const lines=text.trim().split(/\r?\n/); if (lines.length<2) return [];
@@ -517,11 +511,12 @@ function parseAblerCSV(text) {
     const c=parseCSVRow(l), g=i=>(c[i]||"").trim();
     const kt=g(ABLER.kennitala).replace(/\D/g,"");
     if (!kt||kt.length!==10) return null;
-    const by=normBirthYear(g(ABLER.birthYear));
+    const by=g(ABLER.birthYear);
+    const byInt=parseInt(by,10);
     const gc=parseInt(g(ABLER.guardianCount),10)||0;
     return {
       kennitala:kt, name:g(ABLER.name), email:g(ABLER.email), phone:g(ABLER.phone),
-      birthYear:by||"", isMinor:by?(new Date().getFullYear()-by<18):false,
+      birthYear:by, isMinor:byInt>0?(new Date().getFullYear()-byInt<18):false,
       guardianName:gc>0?g(guardianCol(1,"name")):"",
       guardianKennitala:gc>0?g(guardianCol(1,"kennitala")).replace(/\D/g,""):"",
       guardianPhone:gc>0?g(guardianCol(1,"phone")):"",
@@ -619,7 +614,11 @@ async function confirmImport() {
       ...importResult.added.map(m=>{const c={...m};delete c._s;return c;}),
       ...importResult.updated.map(m=>{const c={...m};delete c._s;delete c._prev;return c;}),
     ];
-    await apiPost("importMembers", {rows:toSend});
+    // Chunk into batches of 10 to stay within URL length limits
+    const CHUNK=10;
+    for (let i=0;i<toSend.length;i+=CHUNK) {
+      await apiPost("importMembers", {rows:toSend.slice(i,i+CHUNK)});
+    }
     // Update local state
     importResult.updated.forEach(u=>{
       members=members.map(m=>m.kennitala===u.kennitala?{...u,_s:undefined,_prev:undefined}:m);
