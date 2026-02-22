@@ -184,8 +184,11 @@ function renderLogbook() {
   }
   el.innerHTML = [...myTrips].sort((a,b) => b.date > a.date ? 1 : -1).map(t => {
     const isLinked = t.isLinked === true || t.isLinked === 'true';
-    const isCrew   = !!t.linkedTripId && !t.linkedCheckoutId;
+    const isCrew   = t.isCrew === true || t.isCrew === 'true' || t.role === 'crew';
+    const isSkipper= !isCrew;
     const isVer    = t.verified && t.verified !== 'false';
+    const roleLabel= isCrew ? 'CREW' : 'SKIPPER';
+    const roleCls  = isCrew ? 'badge-crew' : 'badge-linked';
     return `<div class="trip-card${isLinked?' linked':''}">
       <div class="trip-head">
         <div>
@@ -194,13 +197,11 @@ function renderLogbook() {
           <div class="trip-meta">
             <span>${esc(t.timeOut||'')}–${esc(t.timeIn||'')}</span>
             <span>${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</span>
-            <span>👥 ${esc(t.crew||1)}</span>
             ${t.beaufort||t.windMs?`<span>💨 Bft ${esc(t.beaufort||'?')}${t.windMs?' ('+esc(t.windMs)+' m/s)':''}</span>`:''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
-          ${isCrew   ? '<span class="badge badge-crew">CREW</span>'           : ''}
-          ${isLinked && !isCrew ? '<span class="badge badge-linked">LINKED</span>' : ''}
+          <span class="badge ${roleCls}">${roleLabel}</span>
           ${!isLinked ? '<span class="badge badge-standalone">MANUAL</span>' : ''}
           ${isVer ? '<span class="badge badge-verified">✓ VERIFIED</span>'   : ''}
         </div>
