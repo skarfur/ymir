@@ -1,219 +1,423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ýmir — Daily Log</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/style.css">
-  <script src="../shared/api.js"></script>
-  <style>
-    .wx-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      position: relative;
-    }
-    .wx-main { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-    .wx-wind { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 80px; }
-    .wx-arrow { font-size: 36px; line-height: 1; }
-    .wx-speed { font-size: 28px; font-weight: bold; color: var(--text); line-height: 1; }
-    .wx-unit  { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
-    .wx-dir   { font-size: 13px; color: var(--brass); font-weight: bold; }
-    .wx-divider { width: 1px; height: 60px; background: var(--border); flex-shrink: 0; }
-    .wx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; flex: 1; }
-    .wx-stat label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; }
-    .wx-stat .val  { font-size: 15px; color: var(--text); }
-    .wx-stat .val.warn { color: var(--orange); }
-    .wx-refresh {
-      position: absolute; top: 12px; right: 14px;
-      background: none; border: none; color: var(--muted);
-      cursor: pointer; font-size: 15px; font-family: inherit;
-      padding: 2px 6px; border-radius: 4px; transition: color .15s;
-    }
-    .wx-refresh:hover { color: var(--brass); }
-    .wx-age { font-size: 11px; color: var(--muted); margin-top: 10px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Daily Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<style>
+/* ── Date hero ── */
+.date-hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.date-big {
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.1;
+}
+.date-sub {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+.date-signoff-badge {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid #27ae6055;
+  background: #27ae6011;
+  color: var(--green);
+  flex-shrink: 0;
+}
 
-    .flag-strip {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;
-      font-size: 13px; font-weight: bold;
-    }
-    .flag-strip .flag-icon { font-size: 20px; }
-    .flag-strip .flag-note { font-size: 11px; font-weight: normal; opacity: .8; margin-left: auto; }
-    .flag-green  { background:#27ae6018; color:var(--green);  border:1px solid #27ae6040; }
-    .flag-yellow { background:#f1c40f18; color:#c9a800;       border:1px solid #f1c40f40; }
-    .flag-orange { background:#e67e2218; color:var(--orange); border:1px solid #e67e2240; }
-    .flag-red    { background:#e74c3c18; color:var(--red);    border:1px solid #e74c3c40; }
+/* ── Weather widget (same as member page) ── */
+.wx-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.wx-widget::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 10px 10px 0 0;
+}
+.wx-widget.flag-green::before  { background: #27ae60; }
+.wx-widget.flag-yellow::before { background: #f1c40f; }
+.wx-widget.flag-orange::before { background: #e67e22; }
+.wx-widget.flag-red::before    { background: #e74c3c; }
+.wx-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.wx-wind-big  { font-size: 36px; color: var(--brass); font-weight: 500; line-height: 1; }
+.wx-wind-alts { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.8; }
+.wx-wind-alts b { color: var(--text); }
+.wx-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.wx-cell     { text-align: center; }
+.wx-cell-val { font-size: 13px; color: var(--text); }
+.wx-cell-lbl { font-size: 9px; color: var(--muted); letter-spacing: .6px; margin-top: 2px; }
+.flag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  border: 1px solid;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+.wx-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.wx-updated     { font-size: 10px; color: var(--muted); }
+.wx-detail-link { font-size: 11px; color: var(--brass); text-decoration: none; }
+.wx-detail-link:hover { text-decoration: underline; }
 
-    .boat-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 12px; border-bottom: 1px solid var(--faint); font-size: 13px;
-    }
-    .boat-row:last-child { border-bottom: none; }
-    .boat-name  { font-weight: bold; flex: 1; }
-    .boat-crew  { color: var(--muted); font-size: 12px; }
-    .boat-eta   { font-size: 12px; color: var(--muted); }
-    .overdue    { color: var(--red); font-weight: bold; }
-    .eta-soon   { color: var(--orange); }
+/* ── Tide placeholder ── */
+.tide-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
 
-    .checklist-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 8px 0; border-bottom: 1px solid var(--faint);
-      cursor: pointer; user-select: none;
-    }
-    .checklist-item:last-child { border-bottom: none; }
-    .checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--brass); flex-shrink:0; margin-top:2px; cursor:pointer; }
-    .checklist-item .item-text { font-size: 13px; transition: opacity .15s; }
-    .checklist-item.done .item-text { opacity: .35; text-decoration: line-through; }
-    .cl-progress { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
-    .cl-progress span { color: var(--brass); font-weight: bold; }
+/* ── Weather log (record snapshots) ── */
+.wxlog-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+}
+.wxlog-row {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.wxlog-row:last-child { border-bottom: none; }
+.wxlog-time  { color: var(--brass); font-weight: 500; width: 40px; flex-shrink: 0; }
 
-    .activity-row {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid var(--faint); font-size: 13px;
-    }
-    .activity-row:last-child { border-bottom: none; }
-    .activity-info { flex: 1; }
-    .activity-name { font-weight: bold; }
-    .activity-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
-    .activity-note { color: var(--text); font-size: 12px; margin-top: 4px; opacity: .65; }
-    .activity-del  { background:none; border:none; color:var(--faint); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
-    .activity-del:hover { color: var(--red); }
+/* ── Section headings ── */
+.section-heading {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  margin: 20px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-    .maint-row {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid var(--faint); font-size: 13px;
-    }
-    .maint-row:last-child { border-bottom: none; }
-    .maint-row.resolved .maint-info { opacity: .35; text-decoration: line-through; }
-    .maint-row input[type=checkbox] { width:15px; height:15px; accent-color:var(--green); flex-shrink:0; margin-top:2px; cursor:pointer; }
-    .maint-boat { font-weight: bold; }
-    .maint-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .maint-info { flex: 1; }
+/* ── Cards ── */
+.content-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+}
 
-    .wxlog-row {
-      display: flex; gap: 10px; padding: 7px 0;
-      border-bottom: 1px solid var(--faint); font-size: 12px; align-items: center;
-    }
-    .wxlog-row:last-child { border-bottom: none; }
-    .wxlog-time { color: var(--brass); font-weight: bold; width: 42px; flex-shrink: 0; }
-    .wxlog-wind { color: var(--text); }
+/* ── Boats ── */
+.boat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.boat-row:last-child { border-bottom: none; }
+.boat-name  { font-weight: 500; flex: 1; }
+.boat-crew  { color: var(--muted); font-size: 12px; }
+.boat-eta   { font-size: 12px; color: var(--muted); }
+.overdue    { color: var(--red); font-weight: bold; }
+.eta-soon   { color: var(--orange); }
 
-    .type-btn {
-      background: var(--faint); border: 1px solid var(--border);
-      color: var(--text); border-radius: 4px; padding: 5px 10px;
-      font-size: 12px; font-family: inherit; cursor: pointer;
-      transition: all .15s;
-    }
-    .type-btn.selected, .type-btn:hover { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
-    .type-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+/* ── Checklists ── */
+.cl-progress-line {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.cl-progress-line span { color: var(--brass); font-weight: 500; }
+.cl-bar-wrap  { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+.cl-bar       { height: 100%; background: var(--brass); border-radius: 2px; transition: width .3s; }
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item input[type=checkbox] {
+  width: 15px; height: 15px;
+  accent-color: var(--brass);
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.item-text { font-size: 13px; transition: opacity .15s; }
+.checklist-item.done .item-text { opacity: .35; text-decoration: line-through; }
 
-    .save-bar {
-      position: sticky; bottom: 0;
-      background: var(--surface); border-top: 1px solid var(--border);
-      padding: 12px 20px; display: flex; align-items: center; gap: 10px;
-      margin: 0 -20px -24px;
-    }
-    .save-bar .save-ok  { font-size: 12px; color: var(--green); flex: 1; }
-    .save-bar .save-err { font-size: 12px; color: var(--red);   flex: 1; }
-  </style>
+/* ── Activities ── */
+.activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.activity-row:last-child { border-bottom: none; }
+.activity-info { flex: 1; }
+.activity-name { font-weight: 500; }
+.activity-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
+.activity-note { color: var(--text); font-size: 12px; margin-top: 4px; opacity: .65; }
+.del-btn { background: none; border: none; color: var(--border); cursor: pointer; font-size: 18px; padding: 0 4px; transition: color .15s; line-height: 1; }
+.del-btn:hover { color: var(--red); }
+
+/* ── Maintenance ── */
+.maint-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.maint-row:last-child { border-bottom: none; }
+.maint-row.resolved .maint-info { opacity: .35; text-decoration: line-through; }
+.maint-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--green); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+.maint-boat { font-weight: 500; }
+.maint-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.maint-info { flex: 1; }
+
+/* ── Activity type buttons ── */
+.type-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .15s;
+}
+.type-btn.selected, .type-btn:hover { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
+.type-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+/* ── Incident button ── */
+.incident-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+  margin-bottom: 4px;
+}
+.incident-btn:hover { border-color: var(--orange); color: var(--orange); }
+.incident-btn .incident-icon { font-size: 20px; }
+.incident-btn .incident-label { font-weight: 500; }
+.incident-btn .incident-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── Save bar ── */
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.save-ok  { font-size: 12px; color: var(--green); flex: 1; }
+.save-err { font-size: 12px; color: var(--red); flex: 1; }
+
+@media(max-width: 480px) {
+  .wx-grid { grid-template-columns: repeat(2, 1fr); }
+  .date-big { font-size: 20px; }
+}
+</style>
 </head>
 <body>
-<div class="page">
 
-  <header>
-    <div class="header-left">
-      <a href="../" class="logo">ÝMIR</a>
-      <span class="page-title">Daily Log</span>
-    </div>
-    <div class="header-right">
-      <span id="headerDate" style="font-size:12px;color:var(--muted)"></span>
-      <a href="../incidents/" class="hbtn">⚠ Incident</a>
-      <button class="hbtn" onclick="toggleLang()">IS</button>
-      <button class="hbtn" onclick="signOut()">Sign out</button>
-    </div>
-  </header>
+<!-- ══════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════ -->
+<header style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--bg)">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:17px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--border)">|</span>
+    <a href="../staff/"  style="font-size:11px;color:var(--muted);text-decoration:none" id="hubLink">← Staff hub</a>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn-ghost" onclick="toggleLang()" style="font-size:11px;padding:5px 8px" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()"   style="font-size:11px;padding:5px 8px">Sign out</button>
+  </div>
+</header>
 
-  <main>
+<div style="max-width:680px;margin:0 auto;padding:16px 14px 40px">
 
-    <!-- WEATHER -->
-    <div class="wx-card">
-      <button class="wx-refresh" onclick="loadWeather(true)" title="Refresh">↻</button>
-      <div id="flagStrip" class="flag-strip flag-green">
-        <span class="flag-icon">🟢</span>
-        <span id="flagLabel">Green — Sailing conditions good</span>
-        <span class="flag-note" id="flagNote"></span>
-      </div>
-      <div class="wx-main" id="wxMain">
-        <div style="color:var(--muted);font-size:13px"><span class="spinner"></span> Loading weather…</div>
-      </div>
-      <div class="wx-age" id="wxAge"></div>
+  <!-- ══ DATE HERO ══ -->
+  <div class="date-hero">
+    <div>
+      <div class="date-big" id="dateBig"></div>
+      <div class="date-sub">DAILY LOG</div>
     </div>
+    <div id="signoffBadge" class="date-signoff-badge hidden">✓ Signed off</div>
+  </div>
 
-    <!-- RECORD WEATHER -->
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
-      <button class="btn btn-secondary" onclick="logCurrentWeather()" id="logWxBtn">📋 Record weather snapshot</button>
-      <span style="font-size:12px;color:var(--muted)" id="wxLogCount"></span>
-    </div>
-    <div id="wxLogList" style="margin-bottom:16px"></div>
+  <!-- ══ WEATHER WIDGET ══ -->
+  <div class="wx-widget" id="wxWidget">
+    <div style="color:var(--muted);font-size:12px;padding:6px 0">⚓ Loading conditions…</div>
+  </div>
 
-    <!-- BOATS ON WATER -->
-    <div class="section-heading">Boats on water</div>
-    <div class="card" id="boatsCard">
-      <div class="loading-state"><span class="spinner"></span></div>
-    </div>
-
-    <!-- AM CHECKLIST -->
-    <div class="section-heading">AM Checklist</div>
-    <div class="card" id="amCard">
-      <div class="loading-state"><span class="spinner"></span></div>
-    </div>
-
-    <!-- PM CHECKLIST -->
-    <div class="section-heading">PM Checklist</div>
-    <div class="card" id="pmCard">
-      <div class="loading-state"><span class="spinner"></span></div>
-    </div>
-
-    <!-- ACTIVITIES -->
-    <div class="section-heading">
-      Activities
-      <button class="btn-ghost" onclick="openActivityModal()" style="font-size:11px;padding:3px 10px">+ Add</button>
-    </div>
-    <div class="card" id="activitiesCard">
-      <div class="empty-state" id="activitiesEmpty">No activities recorded yet.</div>
-      <div id="activitiesList"></div>
-    </div>
-
-    <!-- MAINTENANCE -->
-    <div class="section-heading">Maintenance &amp; Repairs</div>
-    <div class="card" id="maintCard">
-      <div class="loading-state"><span class="spinner"></span></div>
-    </div>
-
-    <!-- NARRATIVE -->
-    <div class="section-heading">Staff notes</div>
-    <div class="card">
-      <div class="field">
-        <label>General notes / narrative for the day</label>
-        <textarea id="narrativeInput" rows="4" placeholder="Anything notable today…"></textarea>
+  <!-- ══ TIDE PLACEHOLDER ══ -->
+  <div class="tide-widget">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">TIDES · FAXAFLÓI</div>
+    <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px">
+      <span style="font-size:20px">🌊</span>
+      <div>
+        <div style="color:var(--text)">Tide data coming soon</div>
+        <div style="font-size:10px;margin-top:2px">Real-time tidal predictions for Reykjavík harbour</div>
       </div>
     </div>
-
-    <div class="save-bar">
-      <span id="saveMsg"></span>
-      <button class="btn btn-secondary" onclick="saveDraft()" id="saveDraftBtn">Save draft</button>
-      <button class="btn btn-primary"   onclick="signOffDay()" id="signOffBtn">Sign off day</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;opacity:.35">
+      <div style="text-align:center"><div style="font-size:9px;color:var(--muted)">LAST HIGH</div><div style="font-size:14px;color:var(--text);margin-top:4px">—</div></div>
+      <div style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:18px">↕</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--muted)">NEXT LOW</div><div style="font-size:14px;color:var(--text);margin-top:4px">—</div></div>
     </div>
+  </div>
 
-  </main>
-</div>
+  <!-- ══ 1. RECORD WEATHER ══ -->
+  <div class="section-heading">
+    <span>RECORD WEATHER</span>
+    <span id="wxLogCount" style="font-weight:normal"></span>
+  </div>
+  <div class="content-card">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Tap to stamp a weather snapshot into the log at the current time.</div>
+    <button class="btn btn-secondary" onclick="logCurrentWeather()" id="logWxBtn">📋 Record weather snapshot</button>
+    <div id="wxLogList"></div>
+  </div>
 
-<!-- ACTIVITY MODAL -->
+  <!-- ══ 2. BOATS ON WATER ══ -->
+  <div class="section-heading">BOATS ON WATER</div>
+  <div class="content-card" id="boatsCard">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+
+  <!-- ══ 3. AM CHECKLIST ══ -->
+  <div class="section-heading">AM CHECKLIST</div>
+  <div class="content-card" id="amCard">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+
+  <!-- ══ 4. ACTIVITIES ══ -->
+  <div class="section-heading">
+    <span>ACTIVITIES</span>
+    <button class="btn-ghost" onclick="openActivityModal()" style="font-size:11px;padding:3px 10px">+ Add</button>
+  </div>
+  <div class="content-card" id="activitiesCard">
+    <div class="empty-state" id="activitiesEmpty">No activities recorded yet.</div>
+    <div id="activitiesList"></div>
+  </div>
+
+  <!-- ══ 5. STAFF NOTES ══ -->
+  <div class="section-heading">STAFF NOTES</div>
+  <div class="content-card">
+    <textarea id="narrativeInput" rows="4" placeholder="General notes, anything notable today, conditions summary…" style="width:100%;resize:vertical"></textarea>
+  </div>
+
+  <!-- ══ 6. INCIDENT REPORT ══ -->
+  <div class="section-heading">INCIDENT REPORT</div>
+  <a href="../incidents/" class="incident-btn">
+    <span class="incident-icon">⚠️</span>
+    <div>
+      <div class="incident-label">Submit an Incident Report</div>
+      <div class="incident-sub">Injuries, near-misses, property damage, or any safety concern</div>
+    </div>
+    <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
+  </a>
+
+  <!-- ══ 7. PM CHECKLIST ══ -->
+  <div class="section-heading">PM CHECKLIST</div>
+  <div class="content-card" id="pmCard">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+
+  <!-- ══ 8. MAINTENANCE & REPAIRS ══ -->
+  <div class="section-heading">
+    <span>MAINTENANCE &amp; REPAIRS</span>
+  </div>
+  <div class="content-card" id="maintCard">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+
+  <!-- ══ SAVE BAR ══ -->
+  <div class="save-bar">
+    <span id="saveMsg"></span>
+    <button class="btn btn-secondary" onclick="saveDraft()" id="saveDraftBtn">Save draft</button>
+    <button class="btn btn-primary"   onclick="signOffDay()" id="signOffBtn">Save &amp; Sign off</button>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════════
+     ACTIVITY MODAL
+══════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="activityModal">
   <div class="modal">
     <h3>Add Activity</h3>
@@ -225,15 +429,9 @@
       <label>Name / description</label>
       <input type="text" id="actName" placeholder="e.g. Junior sailing lesson">
     </div>
-    <div class="grid2">
-      <div class="field">
-        <label>Start time</label>
-        <input type="time" id="actStart">
-      </div>
-      <div class="field">
-        <label>End time</label>
-        <input type="time" id="actEnd">
-      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Start time</label><input type="time" id="actStart"></div>
+      <div class="field"><label>End time</label><input type="time" id="actEnd"></div>
     </div>
     <div class="field">
       <label>Participants</label>
@@ -241,7 +439,7 @@
     </div>
     <div class="field">
       <label>Notes</label>
-      <textarea id="actNotes" rows="3" placeholder="Optional narrative…"></textarea>
+      <textarea id="actNotes" rows="3" placeholder="Optional notes…"></textarea>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeActivityModal()">Cancel</button>
@@ -251,13 +449,41 @@
 </div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════════
+const LAT = 64.1300, LON = -21.9406;
+const FLAGS = {
+  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', label:'Green',  advice:"Good conditions." },
+  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', label:'Yellow', advice:"Marginal — experienced only." },
+  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', label:'Orange', advice:"Difficult — keelboats only." },
+  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', label:'Red',    advice:"Do not sail." },
+};
+const FLAG_ICONS = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
+
+function msToBft(ms) { const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7]; for(let i=T.length-1;i>=0;i--) if(ms>=T[i]) return i; return 0; }
+function msToKt(ms)  { return (ms*1.944).toFixed(1); }
+function dirLabel(d) { if(d==null)return'–'; return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
+function dirArrow(d) { if(d==null)return''; return['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
+function condIcon(c) { if(c==0)return'☀️'; if(c==1)return'🌤'; if(c==2)return'⛅'; if(c==3)return'☁️'; if([45,48].includes(c))return'🌫'; if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧'; if([71,73,75,77,85,86].includes(c))return'🌨'; if([95,96,99].includes(c))return'⛈'; return'🌡'; }
+function condDesc(c) { if(c==0)return'Clear'; if(c==1)return'Mainly clear'; if(c==2)return'Partly cloudy'; if(c==3)return'Overcast'; if([45,48].includes(c))return'Fog'; if([51,53,55].includes(c))return'Drizzle'; if([61,63,65,80,81,82].includes(c))return'Rain'; if([71,73,75,77].includes(c))return'Snow'; if([95,96,99].includes(c))return'Thunderstorm'; return'–'; }
+function assessFlag(ws, wDir, wh) {
+  let lv=0; const bft=msToBft(ws||0); const east=['E','NE','SE'].includes((wDir||'').toUpperCase());
+  if(bft>=7)lv=3; else if(bft===6){lv=2;if(east)lv=3;} else if(bft===5){lv=1;if(east)lv=2;} else if(bft===4&&east)lv=1;
+  if(wh>=2.0)lv=Math.max(lv,3); else if(wh>=1.2)lv=Math.max(lv,2); else if(wh>=0.6)lv=Math.max(lv,1);
+  return ['green','yellow','orange','red'][lv];
+}
+function bftDesc(b) { return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale'][Math.min(b,8)]||''; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
 const user  = requireAuth(isStaff);
 const L     = getLang();
 const TODAY = todayISO();
 
 let wxData        = null;
-let wxLoadedAt    = null;
 let wxLog         = [];
 let amChecks      = {};
 let pmChecks      = {};
@@ -271,196 +497,199 @@ let checkouts     = [];
 let dirty         = false;
 let selectedType  = null;
 
-// ── INIT ───────────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("headerDate").textContent = new Date().toLocaleDateString("en-GB",
-    { weekday:"short", day:"numeric", month:"long", year:"numeric" });
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Prominent date
+  const now = new Date();
+  document.getElementById('dateBig').textContent = now.toLocaleDateString('en-GB',
+    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  // Header hub link — admins go to admin hub, staff go to staff hub
+  if (user && isAdmin(user)) {
+    const lnk = document.getElementById('hubLink');
+    lnk.href = '../admin/';
+    lnk.textContent = '← Admin panel';
+  }
 
   await Promise.all([
-    loadWeather(),
+    fetchWeatherWidget(),
     loadTodayLog(),
     loadCheckouts(),
     loadMaintenance(),
   ]);
 });
 
-// ── WEATHER ────────────────────────────────────────────────────────────────────
-const DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
-const ARROWS = ["↓","↙","←","↖","↑","↗","→","↘"];
-const EASTERLIES = ["E","ENE","ESE"];
-
-function degToDir(d)   { return d == null ? "—" : DIRS[Math.round(((d%360)+360)/22.5)%16]; }
-function degToArrow(d) { return ARROWS[Math.round(((d%360)+360)/45)%8]; }
-function beaufort(ms) {
-  const s = [0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
-  return s.findIndex(v => ms < v);  // returns -1 if >= 32.7 → Bf12
-}
-function bfScale(ms) { const b = beaufort(ms); return b < 0 ? 12 : b; }
-function computeFlag(windMs, waveM) {
-  const bf = bfScale(windMs);
-  if (bf >= 8 || waveM > 2.0) return "red";
-  if (bf >= 6 || waveM > 1.0) return "orange";
-  if (bf >= 4 || waveM > 0.5) return "yellow";
-  return "green";
-}
-
-async function loadWeather(force) {
-  if (!force && wxData && wxLoadedAt && Date.now() - wxLoadedAt < 300000) { renderWeather(); return; }
+// ══════════════════════════════════════════════════════════════════════════════
+// WEATHER WIDGET  (same pattern as member page)
+// ══════════════════════════════════════════════════════════════════════════════
+async function fetchWeatherWidget() {
   try {
-    const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=64.13&longitude=-21.9" +
-      "&current=temperature_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure" +
-      "&timezone=Atlantic/Reykjavik");
-    wxData = (await r.json()).current;
-    wxLoadedAt = Date.now();
-    try {
-      const wr = await fetch("https://marine-api.open-meteo.com/v1/marine?latitude=64.13&longitude=-21.9&current=wave_height&timezone=Atlantic/Reykjavik");
-      wxData._wave = (await wr.json())?.current?.wave_height;
-    } catch(e) {}
-    renderWeather();
+    const [wxRes, marineRes] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}&current=wave_height,wave_direction,wave_period&timezone=Atlantic%2FReykjavik`).then(r=>r.ok?r.json():null).catch(()=>null),
+    ]);
+    const c   = wxRes.current;
+    const mc  = marineRes?.current;
+    const ws  = c.wind_speed_10m;
+    const wd  = c.wind_direction_10m;
+    const wg  = c.wind_gusts_10m;
+    const bft = msToBft(ws);
+    const waveH = mc?.wave_height ?? null;
+    const wDir  = dirLabel(wd);
+    const flagKey = assessFlag(ws, wDir, waveH ?? 0);
+    const flag    = FLAGS[flagKey];
+
+    // Store compact snapshot for recording
+    wxData = { ws, wd, wg, bft, waveH, wDir, airT: c.temperature_2m, code: c.weather_code, flagKey };
+
+    const el = document.getElementById('wxWidget');
+    el.className = `wx-widget flag-${flagKey}`;
+    el.innerHTML = `
+      <div class="wx-top">
+        <div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:5px">CONDITIONS · BIRK</div>
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <span class="wx-wind-big">${ws.toFixed(1)}</span>
+            <span style="font-size:13px;color:var(--muted)"> m/s</span>
+          </div>
+          <div class="wx-wind-alts">
+            <b>${msToKt(ws)}</b> kt &nbsp;·&nbsp; <b>Bft ${bft}</b> ${bftDesc(bft)}<br>
+            Gusts <b>${wg.toFixed(1)} m/s</b>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px">${condIcon(c.weather_code)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${condDesc(c.weather_code)}</div>
+        </div>
+      </div>
+      <div class="wx-grid">
+        <div class="wx-cell">
+          <div style="font-size:22px;color:var(--brass)">${dirArrow(wd)}</div>
+          <div class="wx-cell-lbl">${wDir}</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val">${c.temperature_2m != null ? Math.round(c.temperature_2m) + '°C' : '–'}</div>
+          <div class="wx-cell-lbl">AIR</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val" style="color:#4a9eca">${waveH != null ? waveH.toFixed(1) + 'm' : '–'}</div>
+          <div class="wx-cell-lbl">WAVES</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val">${wd != null ? Math.round(wd) + '°' : '–'}</div>
+          <div class="wx-cell-lbl">FROM</div>
+        </div>
+      </div>
+      <div>
+        <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg}">
+          ${FLAG_ICONS[flagKey]} ${flag.label} — ${flag.advice}
+        </span>
+      </div>
+      <div class="wx-footer">
+        <span class="wx-updated">Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>
+        <a class="wx-detail-link" href="../weather/">Full forecast →</a>
+      </div>`;
   } catch(e) {
-    document.getElementById("wxMain").innerHTML = `<span style="color:var(--red);font-size:13px">Weather unavailable</span>`;
+    document.getElementById('wxWidget').innerHTML =
+      `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable. <a href="../weather/" style="color:var(--brass)">Try full page →</a></div>`;
   }
 }
 
-function renderWeather() {
-  if (!wxData) return;
-  const ws = wxData.wind_speed_10m, wg = wxData.wind_gusts_10m;
-  const wd = wxData.wind_direction_10m, tc = wxData.temperature_2m;
-  const pr = wxData.surface_pressure, wv = wxData._wave;
-  const dir = degToDir(wd), arrow = degToArrow(wd);
-  const bf  = bfScale(ws);
-  const flag = computeFlag(ws, wv || 0);
-  const easterly = EASTERLIES.includes(dir);
-  const bfCol = bf <= 3 ? "var(--green)" : bf <= 5 ? "var(--yellow)" : bf <= 7 ? "var(--orange)" : "var(--red)";
-  const flagLabels = {
-    green:  "Green — Sailing conditions good",
-    yellow: "Yellow — Caution advised",
-    orange: "Orange — Experienced sailors only",
-    red:    "Red — No sailing",
-  };
-  const flagIcons = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
-
-  const strip = document.getElementById("flagStrip");
-  strip.className = "flag-strip flag-" + flag;
-  document.getElementById("flagLabel").textContent = flagLabels[flag];
-  document.getElementById("flagNote").textContent  = easterly ? "⚠ Easterly wind advisory" : "";
-
-  document.getElementById("wxMain").innerHTML = `
-    <div class="wx-wind">
-      <div class="wx-arrow">${arrow}</div>
-      <div class="wx-speed" style="color:${bfCol}">${ws != null ? ws.toFixed(1) : "—"}</div>
-      <div class="wx-unit">m/s</div>
-      <div class="wx-dir">${dir} &nbsp;Bf ${bf}</div>
-    </div>
-    <div class="wx-divider"></div>
-    <div class="wx-grid">
-      <div class="wx-stat"><label>Gusts</label><div class="val ${wg>10?"warn":""}">${wg!=null?wg.toFixed(1):"—"} m/s</div></div>
-      <div class="wx-stat"><label>Temp</label><div class="val">${tc!=null?tc.toFixed(1):"—"}°C</div></div>
-      <div class="wx-stat"><label>Pressure</label><div class="val">${pr!=null?Math.round(pr):"—"} hPa</div></div>
-      ${wv!=null?`<div class="wx-stat"><label>Waves</label><div class="val">${wv.toFixed(1)} m</div></div>`:""}
-    </div>`;
-
-  const age = Math.round((Date.now() - wxLoadedAt) / 60000);
-  document.getElementById("wxAge").textContent = "Updated " + (age === 0 ? "just now" : age + " min ago");
-}
-
+// ══════════════════════════════════════════════════════════════════════════════
+// RECORD WEATHER SNAPSHOTS
+// ══════════════════════════════════════════════════════════════════════════════
 function logCurrentWeather() {
-  if (!wxData) { alert("Weather not loaded yet."); return; }
-  const ws = wxData.wind_speed_10m, wg = wxData.wind_gusts_10m;
-  const wd = wxData.wind_direction_10m, tc = wxData.temperature_2m;
-  const wv = wxData._wave;
-  const dir = degToDir(wd), flag = computeFlag(ws, wv || 0);
-  const time = new Date().toTimeString().slice(0,5);
-  wxLog.push({ time, ws, wg, dir, tc, wv, flag });
+  if (!wxData) { return; }
+  const time = new Date().toTimeString().slice(0, 5);
+  wxLog.push({ time, ws: wxData.ws, wg: wxData.wg, dir: wxData.wDir, tc: wxData.airT, wv: wxData.waveH, flag: wxData.flagKey });
   renderWxLog();
   markDirty();
 }
 
 function renderWxLog() {
-  const fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
-  const count = document.getElementById("wxLogCount");
-  const list  = document.getElementById("wxLogList");
-  if (!wxLog.length) { list.innerHTML = ""; count.textContent = ""; return; }
-  count.textContent = wxLog.length + (wxLog.length === 1 ? " snapshot" : " snapshots") + " recorded today";
-  list.innerHTML = `<div class="card" style="padding:8px 14px">` +
+  const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
+  const countEl = document.getElementById('wxLogCount');
+  const listEl  = document.getElementById('wxLogList');
+  if (!wxLog.length) { listEl.innerHTML = ''; countEl.textContent = ''; return; }
+  countEl.textContent = wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots');
+  listEl.innerHTML = `<div class="wxlog-card">` +
     wxLog.map(w => `
       <div class="wxlog-row">
         <span class="wxlog-time">${w.time}</span>
-        <span>${fi[w.flag]||"⚪"}</span>
-        <span class="wxlog-wind">${w.ws!=null?w.ws.toFixed(1):"—"} m/s ${w.dir}</span>
-        <span style="color:var(--muted)">gust ${w.wg!=null?w.wg.toFixed(1):"—"}</span>
-        ${w.wv!=null?`<span style="color:var(--muted)">wave ${w.wv.toFixed(1)}m</span>`:""}
-        <span style="color:var(--muted)">${w.tc!=null?w.tc.toFixed(1)+"°C":""}</span>
-      </div>`).join("") +
+        <span>${fi[w.flag]||'⚪'}</span>
+        <span style="color:var(--text)">${w.ws!=null?w.ws.toFixed(1):'—'} m/s ${w.dir||''}</span>
+        <span style="color:var(--muted)">↑${w.wg!=null?w.wg.toFixed(1):'—'}</span>
+        ${w.wv!=null?`<span style="color:#4a9eca">🌊${w.wv.toFixed(1)}m</span>`:''}
+        <span style="color:var(--muted)">${w.tc!=null?Math.round(w.tc)+'°C':''}</span>
+      </div>`).join('') +
   `</div>`;
 }
 
-// ── BOATS ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// BOATS ON WATER
+// ══════════════════════════════════════════════════════════════════════════════
 async function loadCheckouts() {
-  try { checkouts = (await apiGet("getActiveCheckouts")).checkouts || []; }
+  try { checkouts = (await apiGet('getActiveCheckouts')).checkouts || []; }
   catch(e) { checkouts = []; }
   renderBoats();
 }
 
 function renderBoats() {
-  const card = document.getElementById("boatsCard");
-  if (!checkouts.length) { card.innerHTML = `<div class="empty-state">No boats currently out.</div>`; return; }
-  const now = Date.now();
-  card.innerHTML = checkouts.map(c => {
-    const eta    = c.expectedReturn ? new Date(c.expectedReturn) : null;
-    const diff   = eta ? eta.getTime() - now : null;
-    const overdue = diff != null && diff < 0;
-    const soon    = diff != null && diff >= 0 && diff < 1800000;
-    const etaStr  = eta ? eta.toTimeString().slice(0,5) : "—";
-    let crew = 1;
-    try { crew = JSON.parse(c.crew || "[]").length || 1; } catch(e) {}
+  const card = document.getElementById('boatsCard');
+  const active = checkouts.filter(c => c.status === 'out');
+  if (!active.length) { card.innerHTML = `<div class="empty-state">No boats currently out.</div>`; return; }
+  const nowTime = new Date().toTimeString().slice(0, 5);
+  card.innerHTML = active.map(c => {
+    const overdue = c.returnBy && c.returnBy < nowTime;
+    const etaStr  = c.returnBy || '—';
     return `<div class="boat-row">
-      <span class="boat-name">${esc(c.boatName||"—")}</span>
-      <span class="boat-crew">${esc(c.memberName)} +${crew-1}</span>
-      <span class="boat-eta ${overdue?"overdue":soon?"eta-soon":""}">
-        ${overdue ? "⚠ OVERDUE" : "ETA " + etaStr}
-      </span>
+      <span class="boat-name">${esc(c.boatName||'—')}</span>
+      <span class="boat-crew">${esc(c.memberName||'—')}${c.crew>1?' +' + (c.crew-1):''}</span>
+      <span class="boat-eta ${overdue?'overdue':''}">${overdue?'⚠ OVERDUE':'ETA ' + etaStr}</span>
     </div>`;
-  }).join("");
+  }).join('');
 }
-
 setInterval(() => { if (checkouts.length) renderBoats(); }, 60000);
 
-// ── LOAD TODAY'S LOG ───────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// LOAD TODAY'S LOG
+// ══════════════════════════════════════════════════════════════════════════════
 const DEFAULT_AM = [
-  { id:"am1", textEN:"Check all boats for damage",          textIS:"Athuga alla báta vegna skemmda" },
-  { id:"am2", textEN:"Inspect safety equipment",            textIS:"Skoða öryggisbúnað" },
-  { id:"am3", textEN:"Confirm weather conditions",          textIS:"Staðfesta veðurlag" },
-  { id:"am4", textEN:"Open clubhouse and facilities",       textIS:"Opna klúbbhús og aðstöðu" },
-  { id:"am5", textEN:"Check radio / communication",         textIS:"Athuga útvarps- og samskiptabúnað" },
-  { id:"am6", textEN:"Brief duty staff on conditions",      textIS:"Kynna starfsfólki aðstæður" },
+  { id:'am1', textEN:'Check all boats for damage',       textIS:'Athuga alla báta vegna skemmda' },
+  { id:'am2', textEN:'Inspect safety equipment',         textIS:'Skoða öryggisbúnað' },
+  { id:'am3', textEN:'Confirm weather conditions',       textIS:'Staðfesta veðurlag' },
+  { id:'am4', textEN:'Open clubhouse and facilities',    textIS:'Opna klúbbhús og aðstöðu' },
+  { id:'am5', textEN:'Check radio / communication',      textIS:'Athuga útvarps- og samskiptabúnað' },
+  { id:'am6', textEN:'Brief duty staff on conditions',   textIS:'Kynna starfsfólki aðstæður' },
 ];
 const DEFAULT_PM = [
-  { id:"pm1", textEN:"All boats returned and secured",      textIS:"Allir bátar komnir og tryggðir" },
-  { id:"pm2", textEN:"Damage reports filed if needed",      textIS:"Skemmdarskýrslur lagðar fram ef þarf" },
-  { id:"pm3", textEN:"Safety equipment stowed",             textIS:"Öryggisbúnaður geymdur" },
-  { id:"pm4", textEN:"Facilities locked and secured",       textIS:"Aðstaða læst og tryggð" },
-  { id:"pm5", textEN:"Log completed and signed off",        textIS:"Skráning lokið og undirrituð" },
+  { id:'pm1', textEN:'All boats returned and secured',   textIS:'Allir bátar komnir og tryggðir' },
+  { id:'pm2', textEN:'Damage reports filed if needed',   textIS:'Skemmdarskýrslur lagðar fram ef þarf' },
+  { id:'pm3', textEN:'Safety equipment stowed',          textIS:'Öryggisbúnaður geymdur' },
+  { id:'pm4', textEN:'Facilities locked and secured',    textIS:'Aðstaða læst og tryggð' },
+  { id:'pm5', textEN:'Log completed and signed off',     textIS:'Skráning lokið og undirrituð' },
 ];
 const DEFAULT_TYPES = [
-  { id:"t1", name:"Lesson",      nameIS:"Kennsla" },
-  { id:"t2", name:"Race",        nameIS:"Keppni" },
-  { id:"t3", name:"Club event",  nameIS:"Félagsviðburður" },
-  { id:"t4", name:"Training",    nameIS:"Þjálfun" },
-  { id:"t5", name:"Maintenance", nameIS:"Viðhald" },
-  { id:"t6", name:"Other",       nameIS:"Annað" },
+  { id:'t1', name:'Lesson',     nameIS:'Kennsla' },
+  { id:'t2', name:'Race',       nameIS:'Keppni' },
+  { id:'t3', name:'Club event', nameIS:'Félagsviðburður' },
+  { id:'t4', name:'Training',   nameIS:'Þjálfun' },
+  { id:'t5', name:'Maintenance',nameIS:'Viðhald' },
+  { id:'t6', name:'Other',      nameIS:'Annað' },
 ];
 
 function sjson(v, fallback) {
   if (!v) return fallback;
-  try { return typeof v === "string" ? JSON.parse(v) : v; } catch(e) { return fallback; }
+  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
 }
 
 async function loadTodayLog() {
   try {
     const [logRes, cfgRes] = await Promise.all([
-      apiGet("getDailyLog", { date: TODAY }),
-      apiGet("getConfig"),
+      apiGet('getDailyLog', { date: TODAY }),
+      apiGet('getConfig'),
     ]);
     const log = logRes.log;
     if (log) {
@@ -469,12 +698,13 @@ async function loadTodayLog() {
       pmChecks   = sjson(log.closingChecks, {});
       activities = sjson(log.activities, []);
       wxLog      = sjson(log.weatherLog, []);
-      document.getElementById("narrativeInput").value = log.narrative || "";
+      document.getElementById('narrativeInput').value = log.narrative || '';
+      if (log.signedOffBy) document.getElementById('signoffBadge').classList.remove('hidden');
     }
     const cfg = cfgRes || {};
-    amItems       = (cfg.dailyChecklist && cfg.dailyChecklist.am)  || DEFAULT_AM;
-    pmItems       = (cfg.dailyChecklist && cfg.dailyChecklist.pm)  || DEFAULT_PM;
-    activityTypes = cfg.activityTypes || DEFAULT_TYPES;
+    amItems       = (cfg.dailyChecklist?.am)  || DEFAULT_AM;
+    pmItems       = (cfg.dailyChecklist?.pm)  || DEFAULT_PM;
+    activityTypes = cfg.activityTypes         || DEFAULT_TYPES;
   } catch(e) {
     amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
   }
@@ -484,70 +714,75 @@ async function loadTodayLog() {
   renderActTypeBtns();
 }
 
-// ── CHECKLISTS ─────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// CHECKLISTS
+// ══════════════════════════════════════════════════════════════════════════════
 function renderChecklists() {
-  renderCL("amCard", amItems, amChecks, "am");
-  renderCL("pmCard", pmItems, pmChecks, "pm");
+  renderCL('amCard', amItems, amChecks, 'am');
+  renderCL('pmCard', pmItems, pmChecks, 'pm');
 }
 
 function renderCL(cardId, items, state, prefix) {
   const done = items.filter(i => state[i.id]).length;
+  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
   document.getElementById(cardId).innerHTML = `
-    <div class="cl-progress"><span>${done}</span> / ${items.length} complete</div>
+    <div class="cl-progress-line"><span>${done}</span> / ${items.length} complete</div>
+    <div class="cl-bar-wrap"><div class="cl-bar" style="width:${pct}%"></div></div>
     ${items.map(i => {
-      const text = L === "IS" ? (i.textIS || i.textEN) : (i.textEN || i.text || "");
-      return `<div class="checklist-item ${state[i.id]?"done":""}" onclick="toggleCL('${prefix}','${i.id}')">
-        <input type="checkbox" ${state[i.id]?"checked":""} onclick="event.stopPropagation();toggleCL('${prefix}','${i.id}')">
+      const text = L === 'IS' ? (i.textIS || i.textEN) : (i.textEN || i.text || '');
+      return `<div class="checklist-item ${state[i.id]?'done':''}" onclick="toggleCL('${prefix}','${i.id}')">
+        <input type="checkbox" ${state[i.id]?'checked':''} onclick="event.stopPropagation();toggleCL('${prefix}','${i.id}')">
         <span class="item-text">${esc(text)}</span>
       </div>`;
-    }).join("")}`;
+    }).join('')}`;
 }
 
 function toggleCL(prefix, id) {
-  if (prefix === "am") amChecks[id] = !amChecks[id];
+  if (prefix === 'am') amChecks[id] = !amChecks[id];
   else                 pmChecks[id] = !pmChecks[id];
-  renderCL(prefix === "am" ? "amCard" : "pmCard",
-           prefix === "am" ? amItems  : pmItems,
-           prefix === "am" ? amChecks : pmChecks, prefix);
+  renderCL(prefix === 'am' ? 'amCard' : 'pmCard',
+           prefix === 'am' ? amItems  : pmItems,
+           prefix === 'am' ? amChecks : pmChecks, prefix);
   markDirty();
 }
 
-// ── ACTIVITIES ─────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// ACTIVITIES
+// ══════════════════════════════════════════════════════════════════════════════
 function renderActTypeBtns() {
-  document.getElementById("actTypeBtns").innerHTML = activityTypes.map(a => {
-    const name = L === "IS" && a.nameIS ? a.nameIS : a.name;
+  document.getElementById('actTypeBtns').innerHTML = activityTypes.map(a => {
+    const name = L === 'IS' && a.nameIS ? a.nameIS : a.name;
     return `<button class="type-btn" data-id="${a.id}" onclick="selectType('${a.id}')">${esc(name)}</button>`;
-  }).join("");
+  }).join('');
 }
 
 function selectType(id) {
   selectedType = activityTypes.find(a => a.id === id);
-  document.querySelectorAll(".type-btn").forEach(b => b.classList.toggle("selected", b.dataset.id === id));
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b.dataset.id === id));
 }
 
 function openActivityModal() {
   selectedType = null;
-  document.getElementById("actName").value = "";
-  document.getElementById("actStart").value = new Date().toTimeString().slice(0,5);
-  document.getElementById("actEnd").value = "";
-  document.getElementById("actParticipants").value = "";
-  document.getElementById("actNotes").value = "";
-  document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("selected"));
-  document.getElementById("activityModal").classList.remove("hidden");
+  ['actName','actNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('actStart').value = new Date().toTimeString().slice(0,5);
+  document.getElementById('actEnd').value = '';
+  document.getElementById('actParticipants').value = '';
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('activityModal').classList.remove('hidden');
 }
-function closeActivityModal() { document.getElementById("activityModal").classList.add("hidden"); }
+function closeActivityModal() { document.getElementById('activityModal').classList.add('hidden'); }
 
 function saveActivity() {
-  const name = document.getElementById("actName").value.trim();
-  if (!name) { document.getElementById("actName").focus(); return; }
+  const name = document.getElementById('actName').value.trim();
+  if (!name) { document.getElementById('actName').focus(); return; }
   activities.push({
     id:           Date.now().toString(36),
-    type:         selectedType ? (L === "IS" && selectedType.nameIS ? selectedType.nameIS : selectedType.name) : "Other",
+    type:         selectedType ? (L === 'IS' && selectedType.nameIS ? selectedType.nameIS : selectedType.name) : 'Other',
     name,
-    start:        document.getElementById("actStart").value,
-    end:          document.getElementById("actEnd").value,
-    participants: parseInt(document.getElementById("actParticipants").value) || 0,
-    notes:        document.getElementById("actNotes").value.trim(),
+    start:        document.getElementById('actStart').value,
+    end:          document.getElementById('actEnd').value,
+    participants: parseInt(document.getElementById('actParticipants').value) || 0,
+    notes:        document.getElementById('actNotes').value.trim(),
     recordedBy:   user.name,
   });
   closeActivityModal();
@@ -562,48 +797,50 @@ function deleteActivity(id) {
 }
 
 function renderActivities() {
-  const list  = document.getElementById("activitiesList");
-  const empty = document.getElementById("activitiesEmpty");
-  if (!activities.length) { empty.style.display = ""; list.innerHTML = ""; return; }
-  empty.style.display = "none";
+  const list  = document.getElementById('activitiesList');
+  const empty = document.getElementById('activitiesEmpty');
+  if (!activities.length) { empty.style.display = ''; list.innerHTML = ''; return; }
+  empty.style.display = 'none';
   list.innerHTML = activities.map(a => `
     <div class="activity-row">
       <div class="activity-info">
         <div class="activity-name">${esc(a.name)}</div>
         <div class="activity-meta">
           <span class="badge badge-muted">${esc(a.type)}</span>
-          ${a.start ? " " + a.start : ""}${a.end ? " – " + a.end : ""}
-          ${a.participants ? " · " + a.participants + " participants" : ""}
+          ${a.start ? ' ' + a.start : ''}${a.end ? ' – ' + a.end : ''}
+          ${a.participants ? ' · ' + a.participants + ' participants' : ''}
         </div>
-        ${a.notes ? `<div class="activity-note">${esc(a.notes)}</div>` : ""}
+        ${a.notes ? `<div class="activity-note">${esc(a.notes)}</div>` : ''}
       </div>
-      <button class="activity-del" onclick="deleteActivity('${a.id}')" title="Remove">×</button>
-    </div>`).join("");
+      <button class="del-btn" onclick="deleteActivity('${a.id}')" title="Remove">×</button>
+    </div>`).join('');
 }
 
-// ── MAINTENANCE ────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// MAINTENANCE
+// ══════════════════════════════════════════════════════════════════════════════
 async function loadMaintenance() {
-  try { maintenance = ((await apiGet("getDamageReports")).reports || []).filter(r => !r.resolved); }
+  try { maintenance = ((await apiGet('getDamageReports')).reports || []).filter(r => !r.resolved); }
   catch(e) { maintenance = []; }
   renderMaintenance();
 }
 
 function renderMaintenance() {
-  const card = document.getElementById("maintCard");
+  const card = document.getElementById('maintCard');
   if (!maintenance.length) { card.innerHTML = `<div class="empty-state">No open maintenance requests.</div>`; return; }
-  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
   card.innerHTML = maintenance.map(m => `
-    <div class="maint-row ${m._done?"resolved":""}" id="mr-${m.id}">
-      <input type="checkbox" ${m._done?"checked":""} onchange="resolveMaint('${m.id}',this.checked)">
+    <div class="maint-row ${m._done?'resolved':''}" id="mr-${m.id}">
+      <input type="checkbox" ${m._done?'checked':''} onchange="resolveMaint('${m.id}',this.checked)">
       <div class="maint-info">
         <div class="maint-boat">
-          ${esc(m.boatName||"—")}
-          <span class="badge ${sevColor[m.severity]||"badge-muted"}" style="margin-left:6px">${m.severity||"—"}</span>
-          ${m.part?`<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>`:""}
+          ${esc(m.boatName||'—')}
+          <span class="badge ${sevColor[m.severity]||'badge-muted'}" style="margin-left:6px">${m.severity||'—'}</span>
+          ${m.part?`<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>`:''}
         </div>
-        <div class="maint-desc">${esc(m.description||"")}</div>
+        <div class="maint-desc">${esc(m.description||'')}</div>
       </div>
-    </div>`).join("");
+    </div>`).join('');
 }
 
 async function resolveMaint(id, checked) {
@@ -612,26 +849,28 @@ async function resolveMaint(id, checked) {
   item._done = checked;
   renderMaintenance();
   if (checked) {
-    try { await apiPost("resolveDamage", { id, resolvedBy: user.name }); }
-    catch(e) { item._done = false; renderMaintenance(); alert("Could not resolve: " + e.message); }
+    try { await apiPost('resolveDamage', { id, resolvedBy: user.name }); }
+    catch(e) { item._done = false; renderMaintenance(); alert('Could not resolve: ' + e.message); }
   }
 }
 
-// ── SAVE ───────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// SAVE / SIGN OFF
+// ══════════════════════════════════════════════════════════════════════════════
 function markDirty() { dirty = true; }
 
-async function saveDraft() { await doSave(false); }
-async function signOffDay() {
+async function saveDraft()   { await doSave(false); }
+async function signOffDay()  {
   const done = pmItems.filter(i => pmChecks[i.id]).length;
   if (done < pmItems.length && !confirm(`PM checklist not complete (${done}/${pmItems.length}). Sign off anyway?`)) return;
   await doSave(true);
 }
 
 async function doSave(signOff) {
-  const btn = document.getElementById(signOff ? "signOffBtn" : "saveDraftBtn");
-  const msg = document.getElementById("saveMsg");
+  const btn = document.getElementById(signOff ? 'signOffBtn' : 'saveDraftBtn');
+  const msg = document.getElementById('saveMsg');
   btn.disabled = true;
-  msg.className = ""; msg.textContent = "";
+  msg.className = ''; msg.textContent = '';
   try {
     const payload = {
       id:            logId,
@@ -640,27 +879,24 @@ async function doSave(signOff) {
       closingChecks: JSON.stringify(pmChecks),
       activities:    JSON.stringify(activities),
       weatherLog:    JSON.stringify(wxLog),
-      narrative:     document.getElementById("narrativeInput").value.trim(),
+      narrative:     document.getElementById('narrativeInput').value.trim(),
       updatedBy:     user.name,
     };
     if (signOff) { payload.signedOffBy = user.name; payload.signedOffAt = new Date().toISOString(); }
-    const res = await apiPost("saveDailyLog", payload);
+    const res = await apiPost('saveDailyLog', payload);
     if (!logId && res.id) logId = res.id;
     dirty = false;
-    msg.className = "save-ok";
-    msg.textContent = signOff ? "Day signed off ✓" : "Saved ✓";
-    setTimeout(() => { msg.textContent = ""; }, 3000);
+    if (signOff) document.getElementById('signoffBadge').classList.remove('hidden');
+    msg.className = 'save-ok';
+    msg.textContent = signOff ? 'Day signed off ✓' : 'Saved ✓';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
   } catch(e) {
-    msg.className = "save-err";
-    msg.textContent = "Save failed: " + e.message;
+    msg.className = 'save-err';
+    msg.textContent = 'Save failed: ' + e.message;
   } finally { btn.disabled = false; }
 }
 
-window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
-
-function esc(s) {
-  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 </script>
 </body>
 </html>
