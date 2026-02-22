@@ -9,67 +9,104 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <style>
-    .tab-bar { display:flex; gap:2px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:0; }
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-      font-family:inherit; font-size:13px; padding:8px 14px; cursor:pointer; margin-bottom:-1px; transition:all .15s; }
+      font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
+      margin-bottom:-1px; transition:color .15s,border-color .15s; white-space:nowrap; }
     .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
+    /* ── Collapsible section ── */
+    .col-section { margin-bottom:16px; }
+    .col-head { display:flex; align-items:center; justify-content:space-between;
+      padding:10px 14px; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; cursor:pointer; user-select:none; transition:border-color .15s; }
+    .col-head:hover { border-color:var(--brass)55; }
+    .col-head.open { border-radius:8px 8px 0 0; border-bottom-color:transparent; }
+    .col-title { font-size:11px; letter-spacing:1.2px; color:var(--muted); display:flex; align-items:center; gap:10px; }
+    .col-title strong { color:var(--text); font-size:13px; letter-spacing:0; }
+    .col-toggle { font-size:11px; color:var(--muted); transition:transform .2s; }
+    .col-toggle.open { transform:rotate(180deg); }
+    .col-body { border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px;
+      padding:14px 16px; background:var(--card); }
+
+    /* ── Member rows ── */
     .member-row { display:flex; align-items:center; gap:10px; padding:9px 0;
-      border-bottom:1px solid var(--faint); font-size:13px; }
+      border-bottom:1px solid var(--border)44; font-size:12px; }
     .member-row:last-child { border-bottom:none; }
-    .member-name { font-weight:bold; flex:1; }
-    .member-kt   { color:var(--muted); font-size:11px; width:90px; }
-    .member-role { width:60px; }
-    .row-edit { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px;
-      padding:2px 6px; border-radius:3px; transition:color .15s; }
-    .row-edit:hover { color:var(--brass); }
-    .row-del  { background:none; border:none; color:var(--faint); cursor:pointer; font-size:16px;
-      padding:2px 4px; line-height:1; transition:color .15s; }
+    .member-name { font-weight:500; flex:1; color:var(--text); }
+    .member-kt   { color:var(--muted); font-size:11px; width:88px; flex-shrink:0; }
+
+    /* ── Boat cards ── */
+    .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+    .boat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+    .boat-card.oos { opacity:.55; }
+    .boat-card-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; }
+    .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
+
+    /* ── Category badge colours (shared across all sections) ── */
+    .cat-dinghy         { background:#1a4a8a22; color:#5b9bd5;  border-color:#5b9bd544; }
+    .cat-keelboat       { background:var(--brass)18; color:var(--brass); border-color:var(--brass)44; }
+    .cat-kayak          { background:#8e44ad18; color:#9b59b6; border-color:#9b59b644; }
+    .cat-rowing-shell   { background:#16a08518; color:#1abc9c; border-color:#1abc9c44; }
+    .cat-rowboat        { background:#16a08518; color:#1abc9c; border-color:#1abc9c44; }
+    .cat-sup            { background:#e67e2218; color:#e67e22; border-color:#e67e2244; }
+    .cat-wingfoil       { background:#c0392b18; color:#e74c3c; border-color:#e74c3c44; }
+    .cat-other          { background:var(--surface); color:var(--muted); border-color:var(--border); }
+    .cat-badge { font-size:10px; letter-spacing:.6px; padding:2px 7px; border-radius:10px; border:1px solid; display:inline-block; }
+
+    /* ── Generic row ── */
+    .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;
+      border-bottom:1px solid var(--border)44; font-size:12px; }
+    .list-row:last-child { border-bottom:none; }
+    .list-name { flex:1; color:var(--text); }
+
+    /* ── Checklist rows ── */
+    .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
+      border-bottom:1px solid var(--border)44; font-size:12px; }
+    .cl-row:last-child { border-bottom:none; }
+    .cl-phase { width:32px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+
+    /* ── Action buttons ── */
+    .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
+      font-size:11px; font-family:inherit; padding:3px 8px; border-radius:4px; transition:all .15s; }
+    .row-edit:hover { color:var(--brass); border-color:var(--brass)55; }
+    .row-del  { background:none; border:none; color:var(--border); cursor:pointer;
+      font-size:16px; padding:2px 4px; line-height:1; transition:color .15s; }
     .row-del:hover { color:var(--red); }
 
-    .boat-row  { display:flex; align-items:center; gap:10px; padding:9px 0;
-      border-bottom:1px solid var(--faint); font-size:13px; }
-    .boat-row:last-child { border-bottom:none; }
-    .boat-name { font-weight:bold; flex:1; }
-
-    .cl-item-row { display:flex; align-items:center; gap:8px; padding:7px 0;
-      border-bottom:1px solid var(--faint); font-size:13px; }
-    .cl-item-row:last-child { border-bottom:none; }
-    .cl-item-text { flex:1; }
-    .cl-phase { width:36px; font-size:11px; color:var(--brass); font-weight:bold; }
-
-    .search-bar { position:relative; margin-bottom:12px; }
+    /* ── Search ── */
+    .search-bar { position:relative; }
     .search-bar input { padding-left:30px; }
     .search-bar::before { content:"⌕"; position:absolute; left:10px; top:50%;
-      transform:translateY(-50%); color:var(--muted); font-size:15px; }
+      transform:translateY(-50%); color:var(--muted); font-size:15px; pointer-events:none; }
 
-    /* Import */
+    /* ── Import ── */
     .import-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; }
-    .upload-zone { border:2px dashed var(--border); border-radius:8px; padding:32px;
-      text-align:center; cursor:pointer; transition:border-color .2s; display:flex;
-      flex-direction:column; align-items:center; gap:8px; }
+    .upload-zone { border:2px dashed var(--border); border-radius:8px; padding:28px;
+      text-align:center; cursor:pointer; transition:border-color .2s;
+      display:flex; flex-direction:column; align-items:center; gap:8px; }
     .upload-zone:hover { border-color:var(--brass); }
-    .upload-zone .icon { font-size:32px; }
-    .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:6px;
-      padding:12px 16px; margin-bottom:16px; }
+    .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px 16px; margin-bottom:16px; }
     .col-hint-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; align-items:flex-start; }
     .col-hint-field { color:var(--brass); width:120px; flex-shrink:0; }
     .col-hint-vals  { color:var(--muted); }
-    .import-summary { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
-    .import-chip { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:bold; }
-    .chip-green  { background:#27ae6022; color:var(--green);  border:1px solid #27ae6044; }
-    .chip-brass  { background:#d4af3722; color:var(--brass);  border:1px solid #d4af3744; }
-    .chip-orange { background:#e67e2222; color:var(--orange); border:1px solid #e67e2244; }
-    .chip-muted  { background:var(--faint); color:var(--muted); border:1px solid var(--border); }
-    .import-list { max-height:240px; overflow-y:auto; border:1px solid var(--border);
-      border-radius:6px; margin-top:8px; }
-    .import-row { display:flex; gap:10px; padding:7px 12px; border-bottom:1px solid var(--faint);
-      font-size:12px; align-items:center; }
+    .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+    .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
+    .chip-green  { background:#27ae6022; color:#27ae60; border:1px solid #27ae6044; }
+    .chip-brass  { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
+    .chip-orange { background:#e67e2222; color:#e67e22; border:1px solid #e67e2244; }
+    .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .import-list { max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; margin-top:6px; }
+    .import-row  { display:flex; gap:10px; padding:6px 12px; border-bottom:1px solid var(--border)33;
+      font-size:11px; align-items:center; }
     .import-row:last-child { border-bottom:none; }
 
     .minor-badge { font-size:10px; background:#f1c40f22; color:#c9a800;
       border:1px solid #f1c40f44; border-radius:3px; padding:1px 5px; }
+    .oos-badge   { font-size:10px; background:var(--red)22; color:var(--red);
+      border:1px solid var(--red)44; border-radius:3px; padding:1px 5px; }
   </style>
 </head>
 <body>
@@ -80,38 +117,49 @@
       <span class="page-title">Admin</span>
     </div>
     <div class="header-right">
-      <a href="../staff/" class="hbtn">Staff Hub</a>
-      <a href="../dailylog/" class="hbtn">Daily Log</a>
+      <a href="../staff/"          class="hbtn">⚓ Staff</a>
+      <a href="../dailylog/"       class="hbtn">📋 Log</a>
       <a href="../staff/trips.html" class="hbtn">✓ Trips</a>
-      <a href="../incidents/" class="hbtn">⚠ Incident</a>
+      <a href="../incidents/"      class="hbtn">⚠ Incident</a>
+      <a href="../weather/"        class="hbtn">⛅ Weather</a>
+      <a href="../member/"         class="hbtn">👤 Member Hub</a>
       <button class="hbtn" onclick="toggleLang()">IS</button>
       <button class="hbtn" onclick="signOut()">Sign out</button>
     </div>
   </header>
 
   <main>
+    <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" onclick="showTab('members')">Members</button>
-      <button class="tab-btn" onclick="showTab('boats')">Boats</button>
-      <button class="tab-btn" onclick="showTab('locations')">Locations</button>
-      <button class="tab-btn" onclick="showTab('checklists')">Checklists</button>
-      <button class="tab-btn" onclick="showTab('actTypes')">Activity Types</button>
+      <button class="tab-btn active" data-tab="members"   onclick="showTab('members')">Members</button>
+      <button class="tab-btn"        data-tab="boats"     onclick="showTab('boats')">Boats</button>
+      <button class="tab-btn"        data-tab="locations" onclick="showTab('locations')">Locations</button>
+      <button class="tab-btn"        data-tab="checklists"onclick="showTab('checklists')">Checklists</button>
+      <button class="tab-btn"        data-tab="actTypes"  onclick="showTab('actTypes')">Activity Types</button>
     </div>
 
-    <!-- MEMBERS TAB -->
+    <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
     <div id="tab-members">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+
+      <!-- Controls -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <div class="search-bar" style="flex:1;min-width:200px">
           <input type="text" id="memberSearch" placeholder="Search name or kennitala…" oninput="filterMembers()">
         </div>
         <button class="btn btn-secondary" onclick="showTab('members','import')">⇪ Import CSV</button>
-        <button class="btn btn-primary" onclick="openMemberModal()">+ Add member</button>
+        <button class="btn btn-primary"   onclick="openMemberModal()">+ Add member</button>
       </div>
 
-      <!-- Members list -->
+      <!-- Members list (collapsible) -->
       <div id="memberSubList">
-        <div class="card" id="membersCard">
-          <div class="loading-state"><span class="spinner"></span></div>
+        <div class="col-section">
+          <div class="col-head open" onclick="toggleSection(this)">
+            <div class="col-title">MEMBERS <strong id="memberCountLabel"></strong></div>
+            <span class="col-toggle open">▼</span>
+          </div>
+          <div class="col-body" id="membersCard">
+            <div class="loading-state"><span class="spinner"></span></div>
+          </div>
         </div>
       </div>
 
@@ -119,47 +167,46 @@
       <div id="memberSubImport" class="hidden">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <button class="btn-ghost" onclick="showTab('members','list')">← Back to list</button>
-          <span style="font-size:13px;color:var(--muted)">Import members from Abler.io CSV export</span>
+          <span style="font-size:12px;color:var(--muted)">Import from Abler.io CSV</span>
         </div>
         <div id="importStep1">
           <div class="import-card">
             <div class="col-hint">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Recognised Abler.io columns</div>
-              <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">col 2 (Kennitala)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">col 0 (Name)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">col 7 (Email)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">col 4 (Phone)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">birthYear</span><span class="col-hint-vals">col 3 (Birth Year)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">guardian</span><span class="col-hint-vals">cols 12–14 (Guardian 1 Name/Kennitala/Phone)</span></div>
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">RECOGNISED ABLER.IO COLUMNS</div>
+              <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">col 2</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">col 0</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">email / phone</span><span class="col-hint-vals">cols 7 / 4</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">birthYear</span><span class="col-hint-vals">col 3</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">guardian</span><span class="col-hint-vals">cols 12–14</span></div>
             </div>
             <input type="file" id="csvFile" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVFile(event)">
             <div class="upload-zone" onclick="document.getElementById('csvFile').click()">
-              <span class="icon">⇪</span>
-              <span style="font-size:13px">Click to upload CSV file</span>
-              <span style="font-size:11px;color:var(--muted)">.csv · .tsv · .txt accepted</span>
+              <span style="font-size:30px">⇪</span>
+              <span style="font-size:13px">Click to upload CSV</span>
+              <span style="font-size:11px;color:var(--muted)">.csv · .tsv · .txt</span>
             </div>
-            <div style="text-align:center;margin-top:12px">
-              <button class="btn-ghost" onclick="loadDemoCSV()" style="font-size:12px">Load demo data</button>
+            <div style="text-align:center;margin-top:10px">
+              <button class="btn-ghost" onclick="loadDemoCSV()" style="font-size:11px">Load demo data</button>
             </div>
           </div>
         </div>
         <div id="importStep2" class="hidden">
           <div class="import-card" style="margin-bottom:12px">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Preview — kennitala used to match existing members. Admin/staff roles never overwritten.</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Preview — kennitala used to match. Admin/staff roles never overwritten.</div>
             <div class="import-summary" id="importSummary"></div>
             <div id="importLists"></div>
             <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
-            <div class="btn-row" style="margin-top:16px">
+            <div class="btn-row" style="margin-top:14px">
               <button class="btn btn-secondary" onclick="resetImport()">← Start over</button>
               <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
             </div>
           </div>
         </div>
         <div id="importStep3" class="hidden">
-          <div class="import-card" style="text-align:center;padding:40px">
-            <div style="font-size:32px;margin-bottom:12px">✓</div>
-            <div style="font-size:15px;font-weight:bold;color:var(--green)" id="importDoneMsg"></div>
-            <div style="margin-top:20px">
+          <div class="import-card" style="text-align:center;padding:36px">
+            <div style="font-size:30px;margin-bottom:10px">✓</div>
+            <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
+            <div style="margin-top:18px">
               <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
               <button class="btn btn-primary" onclick="showTab('members','list')" style="margin-left:8px">View members</button>
             </div>
@@ -168,51 +215,76 @@
       </div>
     </div>
 
-    <!-- BOATS TAB -->
+    <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
     <div id="tab-boats" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openBoatModal()">+ Add boat</button>
       </div>
-      <div class="card" id="boatsCard">
+      <!-- One collapsible section per category, rendered dynamically -->
+      <div id="boatSections">
         <div class="loading-state"><span class="spinner"></span></div>
       </div>
     </div>
 
-    <!-- LOCATIONS TAB -->
+    <!-- ══ LOCATIONS ════════════════════════════════════════════════════════ -->
     <div id="tab-locations" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openLocationModal()">+ Add location</button>
       </div>
-      <div class="card" id="locationsCard">
-        <div class="loading-state"><span class="spinner"></span></div>
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">LOCATIONS</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="locationsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
       </div>
     </div>
 
-    <!-- CHECKLISTS TAB -->
+    <!-- ══ CHECKLISTS ═══════════════════════════════════════════════════════ -->
     <div id="tab-checklists" class="hidden">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--muted)">Edit the AM and PM daily checklists</span>
-        <button class="btn btn-primary" onclick="openCLModal()" style="margin-left:auto">+ Add item</button>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary" onclick="openCLModal()">+ Add item</button>
       </div>
-      <div class="section-heading">AM Checklist</div>
-      <div class="card" id="amCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
-      <div class="section-heading">PM Checklist</div>
-      <div class="card" id="pmCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">AM — OPENING CHECKLIST</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="amCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+      </div>
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">PM — CLOSING CHECKLIST</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="pmCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+      </div>
     </div>
 
-    <!-- ACTIVITY TYPES TAB -->
+    <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-actTypes" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openActTypeModal()">+ Add type</button>
       </div>
-      <div class="card" id="actTypesCard">
-        <div class="loading-state"><span class="spinner"></span></div>
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">ACTIVITY TYPES</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="actTypesCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
       </div>
     </div>
+
   </main>
 </div>
 
-<!-- MEMBER MODAL -->
+<!-- ── MODALS ────────────────────────────────────────────────────────────────── -->
+
+<!-- Member modal -->
 <div class="modal-overlay hidden" id="memberModal">
   <div class="modal">
     <h3 id="memberModalTitle">Add Member</h3>
@@ -239,7 +311,7 @@
     </div>
     <div id="guardianFields">
       <div class="divider"></div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Guardian</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Guardian</div>
       <div class="field"><label>Guardian name</label><input type="text" id="mGuardianName"></div>
       <div class="grid2">
         <div class="field"><label>Guardian kennitala</label><input type="text" id="mGuardianKt" maxlength="10"></div>
@@ -257,7 +329,7 @@
   </div>
 </div>
 
-<!-- BOAT MODAL -->
+<!-- Boat modal -->
 <div class="modal-overlay hidden" id="boatModal">
   <div class="modal">
     <h3 id="boatModalTitle">Add Boat</h3>
@@ -274,6 +346,12 @@
         <option value="other">Other</option>
       </select>
     </div>
+    <div class="check-row">
+      <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
+    </div>
+    <div class="field hidden" id="oosReasonField">
+      <label>OOS reason</label><input type="text" id="bOOSReason" placeholder="e.g. Mast repair">
+    </div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="bActive" checked> <label for="bActive">Active</label>
     </div>
@@ -285,7 +363,7 @@
   </div>
 </div>
 
-<!-- LOCATION MODAL -->
+<!-- Location modal -->
 <div class="modal-overlay hidden" id="locationModal">
   <div class="modal">
     <h3 id="locationModalTitle">Add Location</h3>
@@ -301,12 +379,12 @@
   </div>
 </div>
 
-<!-- CHECKLIST ITEM MODAL -->
+<!-- Checklist item modal -->
 <div class="modal-overlay hidden" id="clModal">
   <div class="modal">
     <h3 id="clModalTitle">Add Checklist Item</h3>
     <div class="field"><label>Phase</label>
-      <select id="clPhase"><option value="am">AM</option><option value="pm">PM</option></select>
+      <select id="clPhase"><option value="am">AM — Opening</option><option value="pm">PM — Closing</option></select>
     </div>
     <div class="field"><label>Text (English)</label><input type="text" id="clTextEN"></div>
     <div class="field"><label>Text (Íslenska)</label><input type="text" id="clTextIS"></div>
@@ -322,7 +400,7 @@
   </div>
 </div>
 
-<!-- ACTIVITY TYPE MODAL -->
+<!-- Activity type modal -->
 <div class="modal-overlay hidden" id="actTypeModal">
   <div class="modal">
     <h3 id="actTypeModalTitle">Add Activity Type</h3>
@@ -339,135 +417,138 @@
   </div>
 </div>
 
+<!-- QR modal -->
+<div class="modal-overlay hidden" id="qrModal">
+  <div class="modal" style="max-width:400px">
+    <h3>Boat QR Code</h3>
+    <div style="text-align:center">
+      <div id="qrBoatName" style="font-size:15px;font-weight:500;color:var(--brass);margin-bottom:3px"></div>
+      <div id="qrCategory" style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:14px"></div>
+      <img id="qrImg" src="" alt="Boat QR" style="width:210px;height:210px;border-radius:6px;background:#fff;display:block;margin:0 auto">
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all;max-width:280px;margin-left:auto;margin-right:auto" id="qrUrl"></div>
+      <div style="font-size:9px;color:var(--border);margin-top:4px">ID: <span id="qrBoatId"></span></div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:10px">
+      One code per boat. Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+      <button class="btn btn-primary" onclick="printQR()">🖨 Print / PDF</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const user = requireAuth(isStaff);
-const L    = getLang();
 
-let members   = [], boats = [], locations = [], clItems = [], actTypes = [];
-let editingId = null;
-let importResult = null;
+let members=[], boats=[], locations=[], clItems=[], actTypes=[];
+let editingId=null, importResult=null;
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   loadAll().then(() => {
-    // Navigate to tab from URL param if present
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    const sub = params.get("sub");
-    if (tab) showTab(tab, sub || undefined);
+    const p = new URLSearchParams(window.location.search);
+    showTab(p.get("tab") || "members", p.get("sub") || undefined);
+  });
+  // OOS checkbox toggle in boat modal
+  document.getElementById("bOOS").addEventListener("change", e => {
+    document.getElementById("oosReasonField").classList.toggle("hidden", !e.target.checked);
   });
 });
 
 async function loadAll() {
   try {
-    const [mRes, cfgRes] = await Promise.all([
-      apiGet("getMembers"),
-      apiGet("getConfig"),
-    ]);
-    members  = mRes.members  || [];
-    const cfg = cfgRes || {};
-    actTypes = cfg.activityTypes || [];
-    clItems  = [
-      ...(cfg.dailyChecklist && cfg.dailyChecklist.am || []),
-      ...(cfg.dailyChecklist && cfg.dailyChecklist.pm || []),
-    ];
-    // Boats and locations — add routes later, seed empty for now
-    try { boats     = (await apiGet("getBoats")).boats || []; }     catch(e) { boats = []; }
-    try { locations = (await apiGet("getLocations")).locations || []; } catch(e) { locations = []; }
-  } catch(e) {
-    console.error("loadAll:", e);
-  }
-  renderMembers();
-  renderBoats();
-  renderLocations();
-  renderChecklists();
-  renderActTypes();
+    const [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
+    members  = mRes.members || [];
+    actTypes = cfgRes.activityTypes || [];
+    clItems  = [ ...(cfgRes.dailyChecklist?.am||[]), ...(cfgRes.dailyChecklist?.pm||[]) ];
+    try { boats     = (await apiGet("getBoats")).boats     || []; } catch(e){}
+    try { locations = (await apiGet("getLocations")).locations || []; } catch(e){}
+  } catch(e) { console.error("loadAll:", e); }
+  renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
 }
 
-// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+// ── Collapsible sections ───────────────────────────────────────────────────────
+function toggleSection(head) {
+  const body   = head.nextElementSibling;
+  const toggle = head.querySelector(".col-toggle");
+  const open   = !body.classList.contains("hidden");
+  body.classList.toggle("hidden", open);
+  head.classList.toggle("open", !open);
+  toggle.classList.toggle("open", !open);
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
 function showTab(tab, sub) {
   document.querySelectorAll("[id^='tab-']").forEach(el => el.classList.add("hidden"));
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("tab-" + tab).classList.remove("hidden");
   document.querySelectorAll(".tab-btn").forEach(b => {
-    if (b.textContent.toLowerCase().includes(tab === "actTypes" ? "activity" : tab)) b.classList.add("active");
+    b.classList.toggle("active", b.dataset.tab === tab);
   });
+  const el = document.getElementById("tab-" + tab);
+  if (el) el.classList.remove("hidden");
   if (tab === "members") {
     document.getElementById("memberSubList").classList.toggle("hidden", sub === "import");
     document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
   }
-  // Update URL so tabs are bookmarkable / linkable
   const url = new URL(window.location.href);
   url.searchParams.set("tab", tab);
-  if (sub) url.searchParams.set("sub", sub); else url.searchParams.delete("sub");
+  sub ? url.searchParams.set("sub", sub) : url.searchParams.delete("sub");
   history.replaceState(null, "", url);
 }
 
-// ── MEMBERS ───────────────────────────────────────────────────────────────────
+// ── Members ────────────────────────────────────────────────────────────────────
 let memberFilter = "";
-function filterMembers() {
-  memberFilter = document.getElementById("memberSearch").value.toLowerCase();
-  renderMembers();
-}
+function filterMembers() { memberFilter = document.getElementById("memberSearch").value.toLowerCase(); renderMembers(); }
 
 function renderMembers() {
-  const card = document.getElementById("membersCard");
+  const card     = document.getElementById("membersCard");
   const filtered = members.filter(m => {
-    if (!memberFilter) return bool(m.active);
-    return bool(m.active) && (
-      String(m.name||"").toLowerCase().includes(memberFilter) ||
-      String(m.kennitala||"").includes(memberFilter)
-    );
+    if (!bool(m.active)) return false;
+    if (!memberFilter) return true;
+    return String(m.name||"").toLowerCase().includes(memberFilter) || String(m.kennitala||"").includes(memberFilter);
   });
-  if (!filtered.length) {
-    card.innerHTML = `<div class="empty-state">${memberFilter ? "No matches." : "No members yet."}</div>`;
-    return;
-  }
+  document.getElementById("memberCountLabel").textContent = filtered.length;
+  if (!filtered.length) { card.innerHTML = `<div class="empty-state">${memberFilter?"No matches.":"No members yet."}</div>`; return; }
   const roleColors = { admin:"badge-red", staff:"badge-brass", member:"badge-muted" };
-  card.innerHTML = `
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${filtered.length} member${filtered.length===1?"":"s"}</div>
-    ${filtered.map(m => `
-      <div class="member-row">
-        <span class="member-kt">${esc(m.kennitala)}</span>
-        <span class="member-name">${esc(m.name)} ${m.isMinor||m.isMinor==="true"||m.isMinor==="TRUE" ? '<span class="minor-badge">minor</span>' : ""}</span>
-        <span class="member-role"><span class="badge ${roleColors[m.role]||"badge-muted"}">${m.role||"member"}</span></span>
-        <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
-        <button class="row-del"  onclick="deactivateMember('${m.id}')" title="Deactivate">×</button>
-      </div>`).join("")}`;
+  card.innerHTML = filtered.map(m => `
+    <div class="member-row">
+      <span class="member-kt">${esc(m.kennitala)}</span>
+      <span class="member-name">${esc(m.name)}${bool(m.isMinor)?` <span class="minor-badge">minor</span>`:""}</span>
+      <span><span class="badge ${roleColors[m.role]||"badge-muted"}">${m.role||"member"}</span></span>
+      <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
+      <button class="row-del"  onclick="deactivateMember('${m.id}')" title="Deactivate">×</button>
+    </div>`).join("");
 }
 
 function openMemberModal(id) {
-  editingId = id || null;
-  const m = id ? members.find(x => x.id === id) : null;
-  document.getElementById("memberModalTitle").textContent = m ? "Edit Member" : "Add Member";
-  document.getElementById("mKennitala").value  = m ? m.kennitala : "";
-  document.getElementById("mName").value       = m ? m.name : "";
-  document.getElementById("mRole").value       = m ? (m.role||"member") : "member";
-  document.getElementById("mEmail").value      = m ? (m.email||"") : "";
-  document.getElementById("mPhone").value      = m ? (m.phone||"") : "";
-  document.getElementById("mBirthYear").value  = m ? (m.birthYear||"") : "";
-  document.getElementById("mIsMinor").checked  = m ? bool(m.isMinor) : false;
-  document.getElementById("mActive").checked   = m ? bool(m.active) : true;
-  document.getElementById("mGuardianName").value  = m ? (m.guardianName||"") : "";
-  document.getElementById("mGuardianKt").value    = m ? (m.guardianKennitala||"") : "";
-  document.getElementById("mGuardianPhone").value = m ? (m.guardianPhone||"") : "";
-  document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
+  editingId=id||null;
+  const m=id?members.find(x=>x.id===id):null;
+  document.getElementById("memberModalTitle").textContent = m?"Edit Member":"Add Member";
+  document.getElementById("mKennitala").value  = m?m.kennitala:"";
+  document.getElementById("mName").value       = m?m.name:"";
+  document.getElementById("mRole").value       = m?(m.role||"member"):"member";
+  document.getElementById("mEmail").value      = m?(m.email||""):"";
+  document.getElementById("mPhone").value      = m?(m.phone||""):"";
+  document.getElementById("mBirthYear").value  = m?(m.birthYear||""):"";
+  document.getElementById("mIsMinor").checked  = m?bool(m.isMinor):false;
+  document.getElementById("mActive").checked   = m?bool(m.active):true;
+  document.getElementById("mGuardianName").value  = m?(m.guardianName||""):"";
+  document.getElementById("mGuardianKt").value    = m?(m.guardianKennitala||""):"";
+  document.getElementById("mGuardianPhone").value = m?(m.guardianPhone||""):"";
+  document.getElementById("mDeleteBtn").classList.toggle("hidden",!m);
   document.getElementById("memberModal").classList.remove("hidden");
 }
 function closeMemberModal() { document.getElementById("memberModal").classList.add("hidden"); }
 
 async function saveMember() {
   const kt = document.getElementById("mKennitala").value.trim().replace(/\D/g,"");
-  if (!kt || kt.length !== 10) { alert("Kennitala must be 10 digits"); return; }
+  if (!kt||kt.length!==10) { alert("Kennitala must be 10 digits"); return; }
   const name = document.getElementById("mName").value.trim();
   if (!name) { alert("Name required"); return; }
-  const btn = document.getElementById("mSaveBtn");
-  btn.disabled = true;
+  const btn = document.getElementById("mSaveBtn"); btn.disabled=true;
   try {
     const payload = {
-      id:                editingId,
-      kennitala:         kt,
-      name,
+      id:editingId, kennitala:kt, name,
       role:              document.getElementById("mRole").value,
       email:             document.getElementById("mEmail").value.trim(),
       phone:             document.getElementById("mPhone").value.trim(),
@@ -479,462 +560,369 @@ async function saveMember() {
       active:            document.getElementById("mActive").checked,
     };
     const res = await apiPost("saveMember", payload);
-    if (!editingId && res.id) {
-      members.push({ ...payload, id: res.id });
-    } else {
-      members = members.map(m => m.id === editingId ? { ...m, ...payload } : m);
-    }
-    closeMemberModal();
-    renderMembers();
-  } catch(e) { alert("Save failed: " + e.message); }
-  finally { btn.disabled = false; }
+    if (!editingId&&res.id) members.push({...payload,id:res.id});
+    else members = members.map(m => m.id===editingId?{...m,...payload}:m);
+    closeMemberModal(); renderMembers();
+  } catch(e) { alert("Save failed: "+e.message); }
+  finally { btn.disabled=false; }
 }
 
 async function deactivateMember(id) {
   if (!confirm("Deactivate this member?")) return;
-  try {
-    await apiPost("deleteMember", { id });
-    members = members.filter(m => m.id !== id);
-    renderMembers();
-  } catch(e) { alert("Error: " + e.message); }
+  try { await apiPost("deleteMember",{id}); members=members.filter(m=>m.id!==id); renderMembers(); }
+  catch(e) { alert("Error: "+e.message); }
 }
 async function deleteMember() { await deactivateMember(editingId); closeMemberModal(); }
 
-// ── CSV IMPORT ────────────────────────────────────────────────────────────────
+// ── Boats ──────────────────────────────────────────────────────────────────────
+const CAT_ORDER  = ["dinghy","keelboat","kayak","rowing shell","rowboat","sup","wingfoil","other"];
+const CAT_EMOJI  = { dinghy:"⛵", keelboat:"⛴️", kayak:"🛶", "rowing shell":"🚣", rowboat:"🚣", sup:"🏄", wingfoil:"🪁", other:"🚤" };
+const CAT_LABELS = { dinghy:"Dinghies", keelboat:"Keelboats", kayak:"Kayaks", "rowing shell":"Rowing Shells", rowboat:"Rowboats", sup:"SUPs", wingfoil:"Wingfoils", other:"Other" };
 
-// Abler.io fixed column positions
-const ABLER = { name:0,gender:1,kennitala:2,birthYear:3,phone:4,address:5,postal:6,
-  email:7,subgroups:8,attendance:9,dateAdded:10,guardianCount:11 };
-function guardianCol(n, f) { return 12+(n-1)*4+["name","kennitala","phone","email"].indexOf(f); }
-
-function parseCSVRow(line) {
-  const out=[]; let cur="", inQ=false;
-  for (let i=0;i<line.length;i++) {
-    const c=line[i];
-    if (c==='"') { if (inQ&&line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
-    else if (c===','&&!inQ) { out.push(cur); cur=""; }
-    else cur+=c;
-  }
-  out.push(cur); return out;
+function catBadgeClass(cat) {
+  return "cat-badge cat-" + (CAT_ORDER.includes(cat) ? cat.replace(/\s+/g,"-") : "other");
 }
 
-
-function parseAblerCSV(text) {
-  const lines=text.trim().split(/\r?\n/); if (lines.length<2) return [];
-  const first=parseCSVRow(lines[0]);
-  const hasHeader=isNaN(parseInt((first[2]||"").replace(/\s/g,""),10));
-  const data=hasHeader?lines.slice(1):lines;
-  return data.map(l=>l.trim()).filter(Boolean).map(l=>{
-    const c=parseCSVRow(l), g=i=>(c[i]||"").trim();
-    const kt=g(ABLER.kennitala).replace(/\D/g,"");
-    if (!kt||kt.length!==10) return null;
-    const by=g(ABLER.birthYear);
-    const byInt=parseInt(by,10);
-    const gc=parseInt(g(ABLER.guardianCount),10)||0;
-    return {
-      kennitala:kt, name:g(ABLER.name), email:g(ABLER.email), phone:g(ABLER.phone),
-      birthYear:by, isMinor:byInt>0?(new Date().getFullYear()-byInt<18):false,
-      guardianName:gc>0?g(guardianCol(1,"name")):"",
-      guardianKennitala:gc>0?g(guardianCol(1,"kennitala")).replace(/\D/g,""):"",
-      guardianPhone:gc>0?g(guardianCol(1,"phone")):"",
-      role:"member",
-    };
-  }).filter(Boolean);
-}
-
-const DEMO_CSV = `Name,Gender,Kennitala,Birth Year,Phone,Address,Postal code,Email,Subgroups,Attendance %,Date Added,Guardian Count,Guardian 1 Name,Guardian 1 Kennitala,Guardian 1 Phone,Guardian 1 Email
-Jón Sigurðsson,Male,1234567890,1985,6200001,"Laugavegur 1, 101",101,jon@example.is,"AL, Á23",92%,6/1/2020,0,,,,
-Sigrídur Björnsdóttir,Female,0987654321,1990,6200002,"Hlíðarsmári 3, 201",201,sig@example.is,"AL, Á24",100%,1/6/2019,0,,,,
-Óliver Björnsson,Male,2222222229,2012,6200050,"",107,oli@example.is,Youth,85%,9/1/2022,1,Björn Ólason,5566778899,6200099,bjorn@example.is`;
-
-function handleCSVFile(e) {
-  const file=e.target.files[0]; if (!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>processCSV(ev.target.result);
-  reader.readAsText(file);
-}
-
-function loadDemoCSV() { processCSV(DEMO_CSV); }
-
-function processCSV(text) {
-  const incoming=parseAblerCSV(text);
-  if (!incoming.length) { alert("No valid rows found. Check the file format."); return; }
-  const importedKTs=new Set(incoming.map(r=>r.kennitala));
-  const added=[],updated=[],unchanged=[],flagged=[];
-
-  incoming.forEach(row=>{
-    const ex=members.find(m=>m.kennitala===row.kennitala);
-    if (!ex) {
-      added.push({...row,_s:"added"});
-    } else {
-      // Never downgrade admin/staff
-      const role=(ex.role==="admin"||ex.role==="staff")?ex.role:row.role;
-      const merged={...row,role};
-      const changed=["name","email","phone","birthYear","isMinor","guardianName","guardianPhone","guardianKennitala","role"]
-        .some(f=>String(merged[f]||"")!==String(ex[f]||""));
-      if (changed) updated.push({...ex,...merged,_s:"updated",_prev:ex});
-      else unchanged.push({...ex,_s:"unchanged"});
-    }
-  });
-
-  members.filter(m=>bool(m.active)&&!importedKTs.has(m.kennitala))
-    .forEach(m=>flagged.push({...m,_s:"missing"}));
-
-  importResult={added,updated,flagged,unchanged};
-
-  // Summary chips
-  document.getElementById("importSummary").innerHTML=`
-    <span class="import-chip chip-green">${added.length} new</span>
-    <span class="import-chip chip-brass">${updated.length} updated</span>
-    <span class="import-chip chip-orange">${flagged.length} not in import</span>
-    <span class="import-chip chip-muted">${unchanged.length} unchanged</span>`;
-
-  // Lists
-  let html="";
-  if (added.length) {
-    html+=`<div style="font-size:11px;color:var(--green);margin:10px 0 4px;font-weight:bold">NEW (${added.length})</div>`;
-    html+=`<div class="import-list">${added.map(m=>`
-      <div class="import-row">
-        <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
-        <span style="flex:1">${esc(m.name)}</span>
-        ${m.isMinor?'<span class="minor-badge">minor</span>':""}
-      </div>`).join("")}</div>`;
-  }
-  if (updated.length) {
-    html+=`<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:bold">UPDATED (${updated.length})</div>`;
-    html+=`<div class="import-list">${updated.map(m=>`
-      <div class="import-row">
-        <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
-        <span style="flex:1">${esc(m.name)}</span>
-        <span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span>
-      </div>`).join("")}</div>`;
-  }
-  if (flagged.length) {
-    html+=`<div style="font-size:11px;color:var(--orange);margin:10px 0 4px;font-weight:bold">NOT IN THIS IMPORT (${flagged.length}) — not changed</div>`;
-    html+=`<div class="import-list">${flagged.map(m=>`
-      <div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span>${esc(m.name)}</span></div>
-    `).join("")}</div>`;
-  }
-  document.getElementById("importLists").innerHTML=html;
-
-  document.getElementById("importStep1").classList.add("hidden");
-  document.getElementById("importStep2").classList.remove("hidden");
-  document.getElementById("importStep3").classList.add("hidden");
-}
-
-async function confirmImport() {
-  if (!importResult) return;
-  const btn=document.getElementById("confirmImportBtn");
-  btn.disabled=true; btn.textContent="Importing…";
-  try {
-    const toSend=[
-      ...importResult.added.map(m=>{const c={...m};delete c._s;return c;}),
-      ...importResult.updated.map(m=>{const c={...m};delete c._s;delete c._prev;return c;}),
-    ];
-    // Chunk into batches of 10 to stay within URL length limits
-    const CHUNK=10;
-    for (let i=0;i<toSend.length;i+=CHUNK) {
-      await apiPost("importMembers", {rows:toSend.slice(i,i+CHUNK)});
-    }
-    // Update local state
-    importResult.updated.forEach(u=>{
-      members=members.map(m=>m.kennitala===u.kennitala?{...u,_s:undefined,_prev:undefined}:m);
-    });
-    importResult.added.forEach(a=>{
-      const c={...a};delete c._s;
-      members.push(c);
-    });
-    document.getElementById("importDoneMsg").textContent=
-      `Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
-    document.getElementById("importStep2").classList.add("hidden");
-    document.getElementById("importStep3").classList.remove("hidden");
-  } catch(e) {
-    console.error("Import failed:", e);
-    document.getElementById("importError").textContent="Import failed: "+e.message;
-    document.getElementById("importError").style.display="block";
-    btn.disabled=false; btn.textContent="Confirm import";
-  }
-}
-
-function resetImport() {
-  importResult=null;
-  document.getElementById("importStep1").classList.remove("hidden");
-  document.getElementById("importStep2").classList.add("hidden");
-  document.getElementById("importStep3").classList.add("hidden");
-  document.getElementById("csvFile").value="";
-}
-
-// ── BOATS ─────────────────────────────────────────────────────────────────────
 function renderBoats() {
-  const card=document.getElementById("boatsCard");
-  const active=boats.filter(b=>bool(b.active));
-  if (!active.length){card.innerHTML=`<div class="empty-state">No boats yet.</div>`;return;}
-  const catColors={dinghy:"badge-blue",keelboat:"badge-brass",catamaran:"badge-green",kayak:"badge-muted"};
-  card.innerHTML=active.map(b=>`
-    <div class="boat-row">
-      <span class="boat-name">${esc(b.name)}</span>
-      <span class="badge ${catColors[b.category]||"badge-muted"}">${b.category||"other"}</span>
-      ${bool(b.oos)?'<span class="badge badge-red">OOS</span>':""}
-      <button class="row-edit" onclick="openBoatModal('${b.id}')">Edit</button>
-      <button class="row-edit" onclick="showBoatQR('${b.id}')" title="QR codes for this boat" style="background:#1a3a6a">QR</button>
-      <button class="row-del" onclick="deleteBoat('${b.id}')" title="Delete">×</button>
-    </div>`).join("");
+  const el     = document.getElementById("boatSections");
+  const active = boats.filter(b => bool(b.active));
+  if (!active.length) { el.innerHTML=`<div class="empty-state">No boats yet.</div>`; return; }
+
+  // Group by category preserving order
+  const groups = {};
+  CAT_ORDER.forEach(c => { groups[c] = []; });
+  active.forEach(b => { const c=(b.category||"other").toLowerCase(); (groups[c]||groups.other).push(b); });
+
+  el.innerHTML = CAT_ORDER
+    .filter(c => groups[c].length > 0)
+    .map(cat => {
+      const label = CAT_LABELS[cat] || cat;
+      const cards = groups[cat].map(b => `
+        <div class="boat-card${bool(b.oos)?" oos":""}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
+            <div class="boat-card-name">${CAT_EMOJI[cat]||"⛵"} ${esc(b.name)}</div>
+            <div style="display:flex;gap:4px;flex-shrink:0">
+              ${bool(b.oos)?`<span class="oos-badge">OOS</span>`:""}
+              <span class="${catBadgeClass(cat)}">${cat}</span>
+            </div>
+          </div>
+          ${b.oosReason?`<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>`:""}
+          <div class="boat-card-actions">
+            <button class="row-edit" style="flex:1" onclick="openBoatModal('${b.id}')">Edit</button>
+            <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">🔳</button>
+            <button class="row-del"  onclick="deleteBoat('${b.id}')" title="Delete">×</button>
+          </div>
+        </div>`).join("");
+
+      return `<div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">${CAT_EMOJI[cat]||"⛵"} <span class="${catBadgeClass(cat)}">${cat}</span> <strong>${label}</strong></div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body">
+          <div class="boat-grid">${cards}</div>
+        </div>
+      </div>`;
+    }).join("");
 }
 
 function openBoatModal(id) {
   editingId=id||null;
   const b=id?boats.find(x=>x.id===id):null;
-  document.getElementById("boatModalTitle").textContent=b?"Edit Boat":"Add Boat";
-  document.getElementById("bName").value=b?b.name:"";
-  document.getElementById("bCategory").value=b?(b.category||"dinghy"):"dinghy";
-  document.getElementById("bActive").checked=b?bool(b.active):true;
+  document.getElementById("boatModalTitle").textContent = b?"Edit Boat":"Add Boat";
+  document.getElementById("bName").value     = b?b.name:"";
+  document.getElementById("bCategory").value = b?(b.category||"dinghy"):"dinghy";
+  document.getElementById("bOOS").checked    = b?bool(b.oos):false;
+  document.getElementById("bOOSReason").value= b?(b.oosReason||""):"";
+  document.getElementById("oosReasonField").classList.toggle("hidden", !b||!bool(b.oos));
+  document.getElementById("bActive").checked = b?bool(b.active):true;
   document.getElementById("bDeleteBtn").classList.toggle("hidden",!b);
   document.getElementById("boatModal").classList.remove("hidden");
 }
-function closeBoatModal(){document.getElementById("boatModal").classList.add("hidden");}
+function closeBoatModal() { document.getElementById("boatModal").classList.add("hidden"); }
 
 async function saveBoat() {
-  const name=document.getElementById("bName").value.trim();
-  if (!name){alert("Name required");return;}
+  const name = document.getElementById("bName").value.trim();
+  if (!name) { alert("Name required"); return; }
   try {
-    const payload={id:editingId,name,category:document.getElementById("bCategory").value,active:document.getElementById("bActive").checked};
-    const res=await apiPost("saveBoat",payload);
-    if (!editingId&&res.id){boats.push({...payload,id:res.id});}
-    else{boats=boats.map(b=>b.id===editingId?{...b,...payload}:b);}
-    closeBoatModal();renderBoats();
-  } catch(e){alert("Save failed: "+e.message);}
+    const payload = {
+      id:editingId, name,
+      category: document.getElementById("bCategory").value,
+      oos:      document.getElementById("bOOS").checked,
+      oosReason:document.getElementById("bOOSReason").value.trim(),
+      active:   document.getElementById("bActive").checked,
+    };
+    const res = await apiPost("saveBoat", payload);
+    if (!editingId&&res.id) boats.push({...payload,id:res.id});
+    else boats = boats.map(b => b.id===editingId?{...b,...payload}:b);
+    closeBoatModal(); renderBoats();
+  } catch(e) { alert("Save failed: "+e.message); }
 }
 
 async function deleteBoat(id) {
   const _id=id||editingId;
   if (!confirm("Delete this boat?")) return;
-  try{await apiPost("deleteMember",{id:_id});boats=boats.filter(b=>b.id!==_id);renderBoats();closeBoatModal();}
-  catch(e){alert("Error: "+e.message);}
+  try { await apiPost("deleteBoat",{id:_id}); boats=boats.filter(b=>b.id!==_id); renderBoats(); closeBoatModal(); }
+  catch(e) { alert("Error: "+e.message); }
 }
 
-// ── LOCATIONS ─────────────────────────────────────────────────────────────────
+// ── Locations ──────────────────────────────────────────────────────────────────
 function renderLocations() {
-  const card=document.getElementById("locationsCard");
-  const active=locations.filter(l=>bool(l.active));
-  if (!active.length){card.innerHTML=`<div class="empty-state">No locations yet.</div>`;return;}
-  card.innerHTML=active.map(l=>`
-    <div class="member-row">
-      <span class="member-name">${esc(l.name)}</span>
+  const card   = document.getElementById("locationsCard");
+  const active = locations.filter(l=>bool(l.active));
+  if (!active.length) { card.innerHTML=`<div class="empty-state">No locations yet.</div>`; return; }
+  card.innerHTML = active.map(l=>`
+    <div class="list-row">
+      <span class="list-name">${esc(l.name)}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
-      <button class="row-del" onclick="deleteLocation('${l.id}')">×</button>
+      <button class="row-del"  onclick="deleteLocation('${l.id}')">×</button>
     </div>`).join("");
 }
 
 function openLocationModal(id) {
   editingId=id||null;
   const l=id?locations.find(x=>x.id===id):null;
-  document.getElementById("locationModalTitle").textContent=l?"Edit Location":"Add Location";
-  document.getElementById("lName").value=l?l.name:"";
-  document.getElementById("lActive").checked=l?bool(l.active):true;
+  document.getElementById("locationModalTitle").textContent = l?"Edit Location":"Add Location";
+  document.getElementById("lName").value    = l?l.name:"";
+  document.getElementById("lActive").checked= l?bool(l.active):true;
   document.getElementById("lDeleteBtn").classList.toggle("hidden",!l);
   document.getElementById("locationModal").classList.remove("hidden");
 }
-function closeLocationModal(){document.getElementById("locationModal").classList.add("hidden");}
+function closeLocationModal() { document.getElementById("locationModal").classList.add("hidden"); }
 
 async function saveLocation() {
-  const name=document.getElementById("lName").value.trim();
-  if (!name){alert("Name required");return;}
+  const name = document.getElementById("lName").value.trim();
+  if (!name) { alert("Name required"); return; }
   try {
-    const payload={id:editingId,name,active:document.getElementById("lActive").checked};
-    const res=await apiPost("saveLocation",payload);
-    if (!editingId&&res.id){locations.push({...payload,id:res.id});}
-    else{locations=locations.map(l=>l.id===editingId?{...l,...payload}:l);}
-    closeLocationModal();renderLocations();
-  } catch(e){alert("Save failed: "+e.message);}
+    const payload = { id:editingId, name, active:document.getElementById("lActive").checked };
+    const res = await apiPost("saveLocation", payload);
+    if (!editingId&&res.id) locations.push({...payload,id:res.id});
+    else locations = locations.map(l => l.id===editingId?{...l,...payload}:l);
+    closeLocationModal(); renderLocations();
+  } catch(e) { alert("Save failed: "+e.message); }
 }
 
 async function deleteLocation(id) {
   const _id=id||editingId;
   if (!confirm("Delete this location?")) return;
-  try{await apiPost("deleteLocation",{id:_id});locations=locations.filter(l=>l.id!==_id);renderLocations();closeLocationModal();}
-  catch(e){alert("Error: "+e.message);}
+  try { await apiPost("deleteLocation",{id:_id}); locations=locations.filter(l=>l.id!==_id); renderLocations(); closeLocationModal(); }
+  catch(e) { alert("Error: "+e.message); }
 }
 
-// ── CHECKLISTS ─────────────────────────────────────────────────────────────────
-function renderChecklists() {
-  renderCLPhase("amCLCard","am");
-  renderCLPhase("pmCLCard","pm");
-}
+// ── Checklists ─────────────────────────────────────────────────────────────────
+function renderChecklists() { renderCLPhase("amCLCard","am"); renderCLPhase("pmCLCard","pm"); }
 
 function renderCLPhase(cardId, phase) {
-  const card=document.getElementById(cardId);
-  const items=clItems.filter(i=>String(i.phase).toLowerCase()===phase&&bool(i.active));
-  if (!items.length){card.innerHTML=`<div class="empty-state">No items.</div>`;return;}
-  card.innerHTML=items.sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(i=>`
-    <div class="cl-item-row">
+  const card  = document.getElementById(cardId);
+  const items = clItems.filter(i=>String(i.phase).toLowerCase()===phase&&bool(i.active))
+    .sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  if (!items.length) { card.innerHTML=`<div class="empty-state">No items.</div>`; return; }
+  card.innerHTML = items.map(i=>`
+    <div class="cl-row">
       <span class="cl-phase">${phase.toUpperCase()}</span>
-      <span class="cl-item-text">${esc(i.textEN||"")}<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS||"")}</span></span>
+      <span style="flex:1;color:var(--text)">${esc(i.textEN||"")}${i.textIS?`<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>`:""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
-      <button class="row-del" onclick="deleteCLItem('${i.id}')">×</button>
+      <button class="row-del"  onclick="deleteCLItem('${i.id}')">×</button>
     </div>`).join("");
 }
 
 function openCLModal(id) {
   editingId=id||null;
   const item=id?clItems.find(x=>x.id===id):null;
-  document.getElementById("clModalTitle").textContent=item?"Edit Item":"Add Item";
-  document.getElementById("clPhase").value=item?(item.phase||"am"):"am";
-  document.getElementById("clTextEN").value=item?(item.textEN||""):"";
-  document.getElementById("clTextIS").value=item?(item.textIS||""):"";
-  document.getElementById("clSort").value=item?(item.sortOrder||99):99;
-  document.getElementById("clActive").checked=item?bool(item.active):true;
+  document.getElementById("clModalTitle").textContent = item?"Edit Item":"Add Item";
+  document.getElementById("clPhase").value   = item?(item.phase||"am"):"am";
+  document.getElementById("clTextEN").value  = item?(item.textEN||""):"";
+  document.getElementById("clTextIS").value  = item?(item.textIS||""):"";
+  document.getElementById("clSort").value    = item?(item.sortOrder||99):99;
+  document.getElementById("clActive").checked= item?bool(item.active):true;
   document.getElementById("clDeleteBtn").classList.toggle("hidden",!item);
   document.getElementById("clModal").classList.remove("hidden");
 }
-function closeCLModal(){document.getElementById("clModal").classList.add("hidden");}
+function closeCLModal() { document.getElementById("clModal").classList.add("hidden"); }
 
 async function saveCLItem() {
-  const textEN=document.getElementById("clTextEN").value.trim();
-  if (!textEN){alert("English text required");return;}
+  const textEN = document.getElementById("clTextEN").value.trim();
+  if (!textEN) { alert("English text required"); return; }
   try {
-    const payload={
-      id:editingId,
-      phase:document.getElementById("clPhase").value,
-      textEN,
-      textIS:document.getElementById("clTextIS").value.trim(),
-      sortOrder:parseInt(document.getElementById("clSort").value)||99,
-      active:document.getElementById("clActive").checked,
+    const payload = {
+      id:editingId, phase:document.getElementById("clPhase").value, textEN,
+      textIS:     document.getElementById("clTextIS").value.trim(),
+      sortOrder:  parseInt(document.getElementById("clSort").value)||99,
+      active:     document.getElementById("clActive").checked,
     };
-    const res=await apiPost("saveChecklistItem",payload);
-    if (!editingId&&res.id){clItems.push({...payload,id:res.id});}
-    else{clItems=clItems.map(i=>i.id===editingId?{...i,...payload}:i);}
-    closeCLModal();renderChecklists();
-  } catch(e){alert("Save failed: "+e.message);}
+    const res = await apiPost("saveChecklistItem", payload);
+    if (!editingId&&res.id) clItems.push({...payload,id:res.id});
+    else clItems = clItems.map(i => i.id===editingId?{...i,...payload}:i);
+    closeCLModal(); renderChecklists();
+  } catch(e) { alert("Save failed: "+e.message); }
 }
 
 async function deleteCLItem(id) {
   const _id=id||editingId;
   if (!confirm("Delete this item?")) return;
-  try{await apiPost("deleteChecklistItem",{id:_id});clItems=clItems.filter(i=>i.id!==_id);renderChecklists();closeCLModal();}
-  catch(e){alert("Error: "+e.message);}
+  try { await apiPost("deleteChecklistItem",{id:_id}); clItems=clItems.filter(i=>i.id!==_id); renderChecklists(); closeCLModal(); }
+  catch(e) { alert("Error: "+e.message); }
 }
 
-// ── ACTIVITY TYPES ────────────────────────────────────────────────────────────
+// ── Activity types ─────────────────────────────────────────────────────────────
 function renderActTypes() {
-  const card=document.getElementById("actTypesCard");
-  const active=actTypes.filter(a=>bool(a.active));
-  if (!active.length){card.innerHTML=`<div class="empty-state">No activity types.</div>`;return;}
-  card.innerHTML=active.map(a=>`
-    <div class="member-row">
-      <span class="member-name">${esc(a.name)}</span>
-      <span style="color:var(--muted);font-size:12px">${esc(a.nameIS||"")}</span>
+  const card   = document.getElementById("actTypesCard");
+  const active = actTypes.filter(a=>bool(a.active));
+  if (!active.length) { card.innerHTML=`<div class="empty-state">No activity types.</div>`; return; }
+  card.innerHTML = active.map(a=>`
+    <div class="list-row">
+      <span class="list-name">${esc(a.name)}${a.nameIS?`<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>`:""}</span>
       <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
-      <button class="row-del" onclick="deleteActType('${a.id}')">×</button>
+      <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
     </div>`).join("");
 }
 
 function openActTypeModal(id) {
   editingId=id||null;
   const a=id?actTypes.find(x=>x.id===id):null;
-  document.getElementById("actTypeModalTitle").textContent=a?"Edit Type":"Add Activity Type";
-  document.getElementById("atName").value=a?a.name:"";
-  document.getElementById("atNameIS").value=a?(a.nameIS||""):"";
-  document.getElementById("atActive").checked=a?bool(a.active):true;
+  document.getElementById("actTypeModalTitle").textContent = a?"Edit Type":"Add Activity Type";
+  document.getElementById("atName").value    = a?a.name:"";
+  document.getElementById("atNameIS").value  = a?(a.nameIS||""):"";
+  document.getElementById("atActive").checked= a?bool(a.active):true;
   document.getElementById("atDeleteBtn").classList.toggle("hidden",!a);
   document.getElementById("actTypeModal").classList.remove("hidden");
 }
-function closeActTypeModal(){document.getElementById("actTypeModal").classList.add("hidden");}
+function closeActTypeModal() { document.getElementById("actTypeModal").classList.add("hidden"); }
 
 async function saveActType() {
-  const name=document.getElementById("atName").value.trim();
-  if (!name){alert("Name required");return;}
+  const name = document.getElementById("atName").value.trim();
+  if (!name) { alert("Name required"); return; }
   try {
-    const payload={id:editingId,name,nameIS:document.getElementById("atNameIS").value.trim(),active:document.getElementById("atActive").checked};
-    const res=await apiPost("saveActivityType",payload);
-    if (!editingId&&res.id){actTypes.push({...payload,id:res.id});}
-    else{actTypes=actTypes.map(a=>a.id===editingId?{...a,...payload}:a);}
-    closeActTypeModal();renderActTypes();
-  } catch(e){alert("Save failed: "+e.message);}
+    const payload = { id:editingId, name, nameIS:document.getElementById("atNameIS").value.trim(), active:document.getElementById("atActive").checked };
+    const res = await apiPost("saveActivityType", payload);
+    if (!editingId&&res.id) actTypes.push({...payload,id:res.id});
+    else actTypes = actTypes.map(a => a.id===editingId?{...a,...payload}:a);
+    closeActTypeModal(); renderActTypes();
+  } catch(e) { alert("Save failed: "+e.message); }
 }
 
 async function deleteActType(id) {
   const _id=id||editingId;
   if (!confirm("Delete this activity type?")) return;
-  try{await apiPost("deleteActivityType",{id:_id});actTypes=actTypes.filter(a=>a.id!==_id);renderActTypes();closeActTypeModal();}
-  catch(e){alert("Error: "+e.message);}
+  try { await apiPost("deleteActivityType",{id:_id}); actTypes=actTypes.filter(a=>a.id!==_id); renderActTypes(); closeActTypeModal(); }
+  catch(e) { alert("Error: "+e.message); }
 }
 
-function bool(v){return v===true||v==="TRUE"||v==="true"||v===1||v==="1";}
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+// ── CSV Import ─────────────────────────────────────────────────────────────────
+const ABLER = { name:0,gender:1,kennitala:2,birthYear:3,phone:4,address:5,postal:6,email:7,subgroups:8,attendance:9,dateAdded:10,guardianCount:11 };
+function guardianCol(n,f){return 12+(n-1)*4+["name","kennitala","phone","email"].indexOf(f);}
 
-// ── QR CODE GENERATION ──────────────────────────────────────────────────────
-// Uses the free QR Server API (no key needed, just a URL encode)
+function parseCSVRow(line){const out=[];let cur="",inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){out.push(cur);cur="";}else cur+=c;}out.push(cur);return out;}
+
+function parseAblerCSV(text){
+  const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];
+  const hasHeader=isNaN(parseInt((parseCSVRow(lines[0])[2]||"").replace(/\s/g,""),10));
+  return (hasHeader?lines.slice(1):lines).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const c=parseCSVRow(l),g=i=>(c[i]||"").trim();
+    const kt=g(ABLER.kennitala).replace(/\D/g,"");
+    if(!kt||kt.length!==10)return null;
+    const byInt=parseInt(g(ABLER.birthYear),10);
+    const gc=parseInt(g(ABLER.guardianCount),10)||0;
+    return{kennitala:kt,name:g(ABLER.name),email:g(ABLER.email),phone:g(ABLER.phone),
+      birthYear:g(ABLER.birthYear),isMinor:byInt>0?(new Date().getFullYear()-byInt<18):false,
+      guardianName:gc>0?g(guardianCol(1,"name")):"",
+      guardianKennitala:gc>0?g(guardianCol(1,"kennitala")).replace(/\D/g,""):"",
+      guardianPhone:gc>0?g(guardianCol(1,"phone")):"",role:"member"};
+  }).filter(Boolean);
+}
+
+const DEMO_CSV=`Name,Gender,Kennitala,Birth Year,Phone,Address,Postal code,Email,Subgroups,Attendance %,Date Added,Guardian Count,Guardian 1 Name,Guardian 1 Kennitala,Guardian 1 Phone,Guardian 1 Email
+Jón Sigurðsson,Male,1234567890,1985,6200001,"Laugavegur 1, 101",101,jon@example.is,"AL, Á23",92%,6/1/2020,0,,,,
+Sigrídur Björnsdóttir,Female,0987654321,1990,6200002,"Hlíðarsmári 3, 201",201,sig@example.is,"AL, Á24",100%,1/6/2019,0,,,,
+Óliver Björnsson,Male,2222222229,2012,6200050,"",107,oli@example.is,Youth,85%,9/1/2022,1,Björn Ólason,5566778899,6200099,bjorn@example.is`;
+
+function handleCSVFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>processCSV(ev.target.result);r.readAsText(f);}
+function loadDemoCSV(){processCSV(DEMO_CSV);}
+
+function processCSV(text){
+  const incoming=parseAblerCSV(text);
+  if(!incoming.length){alert("No valid rows found.");return;}
+  const kts=new Set(incoming.map(r=>r.kennitala));
+  const added=[],updated=[],unchanged=[],flagged=[];
+  incoming.forEach(row=>{
+    const ex=members.find(m=>m.kennitala===row.kennitala);
+    if(!ex){added.push({...row,_s:"added"});}
+    else{
+      const role=(ex.role==="admin"||ex.role==="staff")?ex.role:row.role;
+      const merged={...row,role};
+      const changed=["name","email","phone","birthYear","isMinor","guardianName","guardianPhone","guardianKennitala","role"].some(f=>String(merged[f]||"")!==String(ex[f]||""));
+      if(changed)updated.push({...ex,...merged,_s:"updated",_prev:ex});
+      else unchanged.push({...ex,_s:"unchanged"});
+    }
+  });
+  members.filter(m=>bool(m.active)&&!kts.has(m.kennitala)).forEach(m=>flagged.push({...m,_s:"missing"}));
+  importResult={added,updated,flagged,unchanged};
+  document.getElementById("importSummary").innerHTML=`
+    <span class="import-chip chip-green">${added.length} new</span>
+    <span class="import-chip chip-brass">${updated.length} updated</span>
+    <span class="import-chip chip-orange">${flagged.length} not in import</span>
+    <span class="import-chip chip-muted">${unchanged.length} unchanged</span>`;
+  let html="";
+  if(added.length){html+=`<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${added.length})</div><div class="import-list">${added.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span style="flex:1">${esc(m.name)}</span>${m.isMinor?'<span class="minor-badge">minor</span>':""}</div>`).join("")}</div>`;}
+  if(updated.length){html+=`<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${updated.length})</div><div class="import-list">${updated.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span style="flex:1">${esc(m.name)}</span><span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span></div>`).join("")}</div>`;}
+  if(flagged.length){html+=`<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${flagged.length})</div><div class="import-list">${flagged.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span>${esc(m.name)}</span></div>`).join("")}</div>`;}
+  document.getElementById("importLists").innerHTML=html;
+  document.getElementById("importStep1").classList.add("hidden");
+  document.getElementById("importStep2").classList.remove("hidden");
+  document.getElementById("importStep3").classList.add("hidden");
+}
+
+async function confirmImport(){
+  if(!importResult)return;
+  const btn=document.getElementById("confirmImportBtn");
+  btn.disabled=true;btn.textContent="Importing…";
+  try{
+    const toSend=[...importResult.added,...importResult.updated].map(m=>{const c={...m};delete c._s;delete c._prev;return c;});
+    for(let i=0;i<toSend.length;i+=10) await apiPost("importMembers",{rows:toSend.slice(i,i+10)});
+    importResult.updated.forEach(u=>{members=members.map(m=>m.kennitala===u.kennitala?{...u}:m);});
+    importResult.added.forEach(a=>{const c={...a};delete c._s;members.push(c);});
+    document.getElementById("importDoneMsg").textContent=`Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
+    document.getElementById("importStep2").classList.add("hidden");
+    document.getElementById("importStep3").classList.remove("hidden");
+  }catch(e){
+    document.getElementById("importError").textContent="Import failed: "+e.message;
+    document.getElementById("importError").style.display="block";
+    btn.disabled=false;btn.textContent="Confirm import";
+  }
+}
+
+function resetImport(){
+  importResult=null;
+  ["importStep1","importStep2","importStep3"].forEach((id,i)=>document.getElementById(id).classList.toggle("hidden",i!==0));
+  document.getElementById("csvFile").value="";
+}
+
+// ── QR codes ───────────────────────────────────────────────────────────────────
 const BASE_SITE="https://skarfur.github.io/ymir";
-
-function showBoatQR(boatId) {
-  const boat = boats.find(b=>b.id===boatId);
-  if (!boat) return;
-  // Single QR per boat — encodes only boat identity.
-  // The member app reads live checkout state and decides: launch or return.
-  const boatURL = `${BASE_SITE}/member/?boat=${boatId}`;
-  const qrSrc   = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(boatURL)}`;
-  document.getElementById("qrBoatName").textContent = boat.name;
-  document.getElementById("qrCategory").textContent = (boat.category||"dinghy").toUpperCase();
-  document.getElementById("qrImg").src  = qrSrc;
-  document.getElementById("qrUrl").textContent = boatURL;
-  document.getElementById("qrBoatId").textContent = boatId;
+function showBoatQR(boatId){
+  const b=boats.find(x=>x.id===boatId);if(!b)return;
+  const url=`${BASE_SITE}/member/?boat=${boatId}`;
+  document.getElementById("qrBoatName").textContent=b.name;
+  document.getElementById("qrCategory").textContent=(b.category||"dinghy").toUpperCase();
+  document.getElementById("qrImg").src=`https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
+  document.getElementById("qrUrl").textContent=url;
+  document.getElementById("qrBoatId").textContent=boatId;
   document.getElementById("qrModal").classList.remove("hidden");
 }
-function closeQRModal() { document.getElementById("qrModal").classList.add("hidden"); }
-function printQR() {
-  const boatName = document.getElementById("qrBoatName").textContent;
-  const category = document.getElementById("qrCategory").textContent;
-  const imgSrc   = document.getElementById("qrImg").src;
-  const url      = document.getElementById("qrUrl").textContent;
-  const w = window.open("","_blank","width=480,height=640");
-  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${boatName}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-    .card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}
-    .boat{font-size:26px;font-weight:bold;margin-bottom:4px}
-    .cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}
-    img{width:220px;height:220px;display:block;margin:0 auto}
-    .instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}
-    .url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}
-    @media print{body{background:#fff}button{display:none!important}}
-  </style></head><body>
-  <div class="card">
-    <div class="boat">⛵ ${boatName}</div>
-    <div class="cat">${category}</div>
-    <img src="${imgSrc}" alt="Boat QR">
-    <div class="instruction">Scan to check out or check in this boat</div>
-    <div class="url">${url}</div>
-  </div>
-  <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
-  </body></html>`);
+function closeQRModal(){document.getElementById("qrModal").classList.add("hidden");}
+function printQR(){
+  const name=document.getElementById("qrBoatName").textContent;
+  const cat =document.getElementById("qrCategory").textContent;
+  const src =document.getElementById("qrImg").src;
+  const url =document.getElementById("qrUrl").textContent;
+  const w=window.open("","_blank","width=480,height=640");
+  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${name}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}.card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}.boat{font-size:26px;font-weight:bold;margin-bottom:4px}.cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}img{width:220px;height:220px;display:block;margin:0 auto}.instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}.url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}@media print{button{display:none!important}}</style></head><body><div class="card"><div class="boat">⛵ ${name}</div><div class="cat">${cat}</div><img src="${src}"><div class="instruction">Scan to check out or check in this boat</div><div class="url">${url}</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
 }
-</script>
 
-<!-- ── QR MODAL ── -->
-<div class="modal-overlay hidden" id="qrModal">
-  <div class="modal" style="max-width:400px">
-    <h3>Boat QR Code</h3>
-    <div id="qrPrintArea" style="text-align:center">
-      <div id="qrBoatName" style="font-size:16px;font-weight:bold;color:var(--brass);margin-bottom:3px"></div>
-      <div id="qrCategory" style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:16px"></div>
-      <img id="qrImg" src="" alt="Boat QR" style="width:220px;height:220px;border-radius:6px;background:#fff;display:block;margin:0 auto">
-      <div style="font-size:10px;color:var(--muted);margin-top:12px;word-break:break-all;max-width:280px;margin-left:auto;margin-right:auto" id="qrUrl"></div>
-      <div style="font-size:9px;color:var(--border);margin-top:6px">ID: <span id="qrBoatId"></span></div>
-    </div>
-    <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:12px">
-      One code per boat. When a member scans it, the app checks live state:
-      <strong style="color:var(--text)">available → launch flow with checklist</strong> ·
-      <strong style="color:var(--text)">their boat out → return flow</strong> ·
-      <strong style="color:var(--text)">someone else's boat out → shows status</strong>.
-      Print, laminate, attach to the boat or its rack.
-    </div>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
-      <button class="btn btn-primary" onclick="printQR()">🖨 Print / Save PDF</button>
-    </div>
-  </div>
-</div>
+// ── Utilities ──────────────────────────────────────────────────────────────────
+function bool(v){return v===true||v==="TRUE"||v==="true"||v===1||v==="1";}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+</script>
 </body>
 </html>
