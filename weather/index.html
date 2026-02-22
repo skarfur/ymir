@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Weather</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<style>
+:root { --card:#132d50; --faint:#0f2847; }
+.page { max-width:700px; margin:0 auto; padding:20px 16px 40px; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; text-decoration:none; margin-bottom:20px; }
+.back-link:hover { color:var(--brass); }
+.wx-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; }
+.wx-title { font-size:11px; color:var(--muted); letter-spacing:1.5px; margin-bottom:4px; }
+.updated { font-size:10px; color:var(--muted); margin-top:6px; }
+
+/* Flag banner */
+.flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:20px; border:1px solid; display:flex; align-items:center; gap:14px; }
+.flag-icon { font-size:26px; }
+.flag-label { font-size:15px; font-weight:500; }
+.flag-advice { font-size:11px; margin-top:3px; opacity:.85; }
+.flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+.flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }
+
+/* Main wind display */
+.wind-main { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:14px; }
+.wind-big { font-size:52px; font-weight:500; color:var(--brass); line-height:1; }
+.wind-unit { font-size:16px; color:var(--muted); margin-left:4px; }
+.wind-alts { display:flex; gap:16px; margin-top:8px; }
+.wind-alt { font-size:12px; color:var(--muted); }
+.wind-alt span { color:var(--text); }
+.wind-dir-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+.wind-arrow { font-size:28px; transition:transform .3s; }
+.wind-dir-label { font-size:13px; color:var(--text); }
+.wind-gust { font-size:12px; color:var(--muted); margin-top:2px; }
+.wind-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.info-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+.info-lbl { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
+.info-val { font-size:22px; color:var(--text); font-weight:400; }
+.info-val .unit { font-size:13px; color:var(--muted); margin-left:3px; }
+.info-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* Chart */
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+.chart-title { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+.chart-title .legend { display:flex; gap:12px; }
+.leg-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
+svg.chart { width:100%; overflow:visible; display:block; }
+
+/* Hourly forecast strip */
+.forecast-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; }
+.forecast-strip::-webkit-scrollbar { height:4px; }
+.forecast-strip::-webkit-scrollbar-track { background:var(--faint); }
+.forecast-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.fc-slot { flex:0 0 70px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 6px; text-align:center; }
+.fc-slot.now { border-color:var(--brass); }
+.fc-time { font-size:10px; color:var(--muted); }
+.fc-wind { font-size:16px; color:var(--brass); font-weight:500; margin:4px 0 2px; }
+.fc-gust { font-size:10px; color:var(--muted); }
+.fc-dir { font-size:14px; }
+.fc-wave { font-size:11px; color:#4a9eca; margin-top:4px; }
+.fc-flag { width:8px; height:8px; border-radius:50%; margin:4px auto 0; }
+
+/* Condition icon */
+.cond-icon { font-size:36px; display:block; text-align:center; margin-bottom:6px; }
+.cond-desc { font-size:12px; color:var(--muted); text-align:center; }
+
+/* Waves */
+.wave-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+
+/* Now line */
+.now-label { font-size:9px; fill:#d4af37; font-family:inherit; }
+
+.section-lbl { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 10px; }
+.loading-spinner { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back-link" href="../member/">← Member Hub</a>
+
+  <div class="wx-header">
+    <div>
+      <div class="wx-title">CONDITIONS · BIRK / FAXAFLÓI</div>
+      <div id="updatedAt" class="updated">Loading…</div>
+    </div>
+    <button class="btn btn-secondary" onclick="fetchAll()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+  </div>
+
+  <div id="mainContent">
+    <div class="loading-spinner">⚓ Fetching weather data…</div>
+  </div>
+</div>
+
+<script>
+const LAT = 64.1300, LON = -21.9406;
+
+// ── Flag system ──────────────────────────────────────────────────────────────
+const FLAGS = {
+  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green',  labelIS:'Grænt',         advice:'Good conditions — all boats at member\'s discretion.',   adviceIS:'Góðar aðstæður — allir bátar að eigin ákvörðun.' },
+  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow', labelIS:'Gult',          advice:'Marginal — experienced sailors only, assess carefully.', adviceIS:'Jaðaraðstæður — aðeins reyndur siglari.' },
+  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange', labelIS:'Appelsínugult', advice:'Difficult — keelboats only, staff auth for dinghies.',  adviceIS:'Erfiðar — kjólbátar einir, leyfi þarf fyrir kænur.' },
+  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red',    labelIS:'Rautt',         advice:'Do not sail — all sailing suspended.',                  adviceIS:'Ekki sigla — allar siglingarnar stöðvaðar.' },
+};
+
+function assessFlag(ws_ms, windDir, waveH) {
+  const reasons = [];
+  let level = 0;
+  const bft = msToBft(ws_ms);
+  const easterly = ['E','NE','SE'].includes((windDir||'').toUpperCase());
+
+  if (bft >= 7) { level=3; reasons.push({ flag:'red',   text:`Force ${bft} — all sailing suspended` }); }
+  else if (bft===6) {
+    level=Math.max(level,2); reasons.push({ flag:'orange', text:'Force 6 — difficult conditions' });
+    if (easterly) { level=3; reasons.push({ flag:'red', text:`Easterly F${bft} — amplified hazard in Faxaflói` }); }
+  } else if (bft===5) {
+    level=Math.max(level,1); reasons.push({ flag:'yellow', text:'Force 5 — marginal for smaller boats' });
+    if (easterly) { level=Math.max(level,2); reasons.push({ flag:'orange', text:`Easterly F${bft} — elevated wave risk` }); }
+  } else if (bft===4 && easterly) { level=Math.max(level,1); reasons.push({ flag:'yellow', text:`Easterly F${bft} — warrants caution` }); }
+
+  if (waveH != null) {
+    if (waveH >= 2.0) { level=Math.max(level,3); reasons.push({ flag:'red',    text:`Waves ${waveH}m — very rough` }); }
+    else if (waveH >= 1.2) { level=Math.max(level,2); reasons.push({ flag:'orange', text:`Waves ${waveH}m — rough` }); }
+    else if (waveH >= 0.6) { level=Math.max(level,1); reasons.push({ flag:'yellow', text:`Waves ${waveH}m — moderate` }); }
+  }
+
+  const keys = ['green','yellow','orange','red'];
+  return { flagKey: keys[level], flag: FLAGS[keys[level]], reasons };
+}
+
+// ── Unit conversions ─────────────────────────────────────────────────────────
+function msToKt(ms)  { return (ms * 1.944).toFixed(1); }
+function msToBft(ms) {
+  const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
+  for (let i=T.length-1;i>=0;i--) if (ms>=T[i]) return i;
+  return 0;
+}
+function bftDesc(b) {
+  return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b]||'';
+}
+function dirArrow(deg) {
+  if (deg==null) return '–';
+  const dirs=['N','NE','E','SE','S','SW','W','NW'];
+  const arrows=['↓','↙','←','↖','↑','↗','→','↘'];
+  const i = Math.round(deg/45)%8;
+  return arrows[i];
+}
+function dirLabel(deg) {
+  if (deg==null) return '–';
+  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5)%16];
+}
+function condIcon(code, isDay) {
+  // WMO weather codes → emoji + description
+  if (code==0)  return {i:'☀️', d:'Clear sky'};
+  if (code==1)  return {i:'🌤', d:'Mainly clear'};
+  if (code==2)  return {i:'⛅', d:'Partly cloudy'};
+  if (code==3)  return {i:'☁️', d:'Overcast'};
+  if ([45,48].includes(code)) return {i:'🌫', d:'Fog'};
+  if ([51,53,55].includes(code)) return {i:'🌦', d:'Drizzle'};
+  if ([61,63,65].includes(code)) return {i:'🌧', d:'Rain'};
+  if ([71,73,75,77].includes(code)) return {i:'🌨', d:'Snow'};
+  if ([80,81,82].includes(code)) return {i:'🌧', d:'Rain showers'};
+  if ([85,86].includes(code)) return {i:'🌨', d:'Snow showers'};
+  if ([95,96,99].includes(code)) return {i:'⛈', d:'Thunderstorm'};
+  return {i:'🌡', d:'—'};
+}
+function fmtTime(isoOrHH) {
+  if (!isoOrHH) return '–';
+  if (isoOrHH.length > 5) return isoOrHH.slice(11,16);
+  return isoOrHH;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Fetch Open-Meteo ──────────────────────────────────────────────────────────
+async function fetchAll() {
+  document.getElementById('mainContent').innerHTML = '<div class="loading-spinner">⚓ Fetching weather data…</div>';
+  document.getElementById('updatedAt').textContent = 'Updating…';
+  try {
+    const [wxRes, marineRes] = await Promise.all([fetchWeather(), fetchMarine()]);
+    render(wxRes, marineRes);
+    document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML = `<div class="loading-spinner" style="color:var(--red)">⚠ ${esc(e.message)}</div>`;
+    document.getElementById('updatedAt').textContent = 'Failed to load';
+  }
+}
+
+async function fetchWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+    `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day` +
+    `&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
+    `&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&forecast_days=2`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Weather API error: ' + r.status);
+  return r.json();
+}
+
+async function fetchMarine() {
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}` +
+    `&current=wave_height,wave_direction,wave_period,ocean_current_speed` +
+    `&hourly=wave_height,wave_direction,wave_period,sea_surface_temperature` +
+    `&timezone=Atlantic%2FReykjavik&forecast_days=2`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Marine API error: ' + r.status);
+  return r.json();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(wx, marine) {
+  const c   = wx.current;
+  const hr  = wx.hourly;
+  const mc  = marine.current;
+  const mhr = marine.hourly;
+
+  const ws  = c.wind_speed_10m;   // m/s
+  const wd  = c.wind_direction_10m;
+  const wg  = c.wind_gusts_10m;
+  const bft = msToBft(ws);
+  const waveH = mc?.wave_height;
+
+  // Find current hour index
+  const nowISO = new Date().toISOString().slice(0,13);
+  const nowIdx = hr.time.findIndex(t => t.startsWith(nowISO));
+  const safeI = nowIdx >= 0 ? nowIdx : 0;
+
+  // History: last 3 hours (indices safeI-3..safeI)
+  const histStart = Math.max(0, safeI - 3);
+  const hist = [];
+  for (let i = histStart; i <= safeI; i++) {
+    hist.push({ t: fmtTime(hr.time[i]), ws: hr.wind_speed_10m[i]||0, wg: hr.wind_gusts_10m[i]||0, wd: hr.wind_direction_10m[i], mWH: mhr?.wave_height?.[i]??null });
+  }
+
+  // Forecast: next 6 hours
+  const fc = [];
+  for (let i = safeI; i < Math.min(safeI+7, hr.time.length); i++) {
+    fc.push({ t: fmtTime(hr.time[i]), ws: hr.wind_speed_10m[i]||0, wg: hr.wind_gusts_10m[i]||0, wd: hr.wind_direction_10m[i], code: hr.weather_code[i], mWH: mhr?.wave_height?.[i]??null, isNow: i===safeI });
+  }
+
+  const sst = mhr?.sea_surface_temperature?.[safeI];
+  const { flagKey, flag, reasons } = assessFlag(ws, dirLabel(wd), waveH);
+  const { i: condEmoji, d: condDesc } = condIcon(c.weather_code, c.is_day);
+
+  // Chart data: 3h history + 6h forecast = 10 points
+  const chartPts = [...hist.slice(0,-1), ...fc]; // avoid duplicate "now"
+
+  document.getElementById('mainContent').innerHTML = renderHTML(
+    ws, wd, wg, bft, c.temperature_2m, c.apparent_temperature, sst,
+    waveH, mc?.wave_direction, mc?.wave_period,
+    flag, flagKey, reasons, condEmoji, condDesc,
+    hist, fc, chartPts
+  );
+
+  // Draw SVG chart
+  drawChart(chartPts, safeI - histStart);
+}
+
+function renderHTML(ws, wd, wg, bft, airT, feelT, sst, waveH, waveDir, wavePer, flag, flagKey, reasons, condEmoji, condDesc, hist, fc, chartPts) {
+  const bftD = bftDesc(bft);
+  const arrow = dirArrow(wd);
+  const dirLbl = dirLabel(wd);
+  const nowIdx = hist.length - 1; // index of "now" in chartPts
+
+  return `
+<!-- Flag banner -->
+<div class="flag-banner" style="background:${flag.bg};border-color:${flag.border};color:${flag.color}">
+  <div>
+    <div style="font-size:28px;line-height:1;margin-bottom:4px">${flag.icon}</div>
+  </div>
+  <div style="flex:1">
+    <div class="flag-label">${flag.label}</div>
+    <div class="flag-advice">${flag.advice}</div>
+    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAGS[r.flag].color};border-color:${FLAGS[r.flag].border}">${esc(r.text)}</span>`).join('')}</div>` : ''}
+  </div>
+</div>
+
+<!-- Wind main -->
+<div class="wind-main">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px">WIND · BIRK</div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <div class="wind-big">${ws.toFixed(1)}</div>
+        <div class="wind-unit">m/s</div>
+      </div>
+      <div class="wind-alts">
+        <div class="wind-alt"><span>${msToKt(ws)}</span> kt</div>
+        <div class="wind-alt"><span>Bft ${bft}</span> — ${bftD}</div>
+        <div class="wind-alt">Gusts <span>${wg.toFixed(1)} m/s</span></div>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:40px">${condEmoji}</div>
+      <div class="cond-desc">${condDesc}</div>
+    </div>
+  </div>
+  <div class="wind-dir-row">
+    <div class="wind-arrow" style="color:var(--brass)">${arrow}</div>
+    <div>
+      <div class="wind-dir-label">${dirLbl} · ${wd!=null?Math.round(wd)+'°':'–'}</div>
+      <div class="wind-gust">From ${dirLbl}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Temp & waves grid -->
+<div class="wind-grid">
+  <div class="info-card">
+    <div class="info-lbl">AIR TEMPERATURE</div>
+    <div class="info-val">${airT!=null?Math.round(airT):'–'}<span class="unit">°C</span></div>
+    <div class="info-sub">Feels like ${feelT!=null?Math.round(feelT):'–'}°C</div>
+  </div>
+  <div class="info-card">
+    <div class="info-lbl">SEA TEMPERATURE</div>
+    <div class="info-val">${sst!=null?sst.toFixed(1):'–'}<span class="unit">°C</span></div>
+    <div class="info-sub">Surface water</div>
+  </div>
+</div>
+
+<!-- Waves -->
+<div class="wave-grid">
+  <div class="info-card">
+    <div class="info-lbl">WAVE HEIGHT</div>
+    <div class="info-val" style="color:#4a9eca">${waveH!=null?waveH.toFixed(1):'–'}<span class="unit">m</span></div>
+  </div>
+  <div class="info-card">
+    <div class="info-lbl">WAVE DIRECTION</div>
+    <div class="info-val">${waveDir!=null?dirArrow(waveDir):'–'}</div>
+    <div class="info-sub">${waveDir!=null?dirLabel(waveDir)+' · '+Math.round(waveDir)+'°':'–'}</div>
+  </div>
+  <div class="info-card">
+    <div class="info-lbl">WAVE PERIOD</div>
+    <div class="info-val">${wavePer!=null?wavePer.toFixed(0):'–'}<span class="unit">s</span></div>
+  </div>
+</div>
+
+<!-- Wind & wave chart -->
+<div class="chart-card">
+  <div class="chart-title">
+    <span>WIND & WAVES · 3H HISTORY + 6H FORECAST</span>
+    <div class="legend">
+      <span><span class="leg-dot" style="background:var(--brass)"></span>Wind m/s</span>
+      <span><span class="leg-dot" style="background:#4a9eca"></span>Waves m</span>
+    </div>
+  </div>
+  <svg class="chart" id="mainChart" height="120"></svg>
+</div>
+
+<!-- Hourly forecast strip -->
+<div class="section-lbl">6-HOUR FORECAST</div>
+<div class="forecast-strip">
+  ${fc.map(f => {
+    const { flagKey: fk } = assessFlag(f.ws, dirLabel(f.wd), f.mWH);
+    return `<div class="fc-slot${f.isNow?' now':''}">
+      <div class="fc-time">${f.isNow?'NOW':f.t}</div>
+      <div class="fc-wind">${f.ws.toFixed(1)}</div>
+      <div class="fc-gust">↑${f.wg.toFixed(1)}</div>
+      <div class="fc-dir">${dirArrow(f.wd)}</div>
+      ${f.mWH!=null?`<div class="fc-wave">🌊${f.mWH.toFixed(1)}m</div>`:''}
+      <div class="fc-flag" style="background:${FLAGS[fk].color}"></div>
+    </div>`;
+  }).join('')}
+</div>
+`;
+}
+
+function drawChart(pts, nowIdx) {
+  const svg = document.getElementById('mainChart');
+  if (!svg || !pts.length) return;
+
+  const W = svg.clientWidth || 640;
+  const H = 120;
+  const PAD = { t:16, b:28, l:6, r:6 };
+  const innerW = W - PAD.l - PAD.r;
+  const innerH = H - PAD.t - PAD.b;
+
+  const winds = pts.map(p=>p.ws);
+  const waves = pts.map(p=>p.mWH??0);
+  const maxV  = Math.max(...winds, ...waves, 5);
+
+  const xOf = i => PAD.l + (i/(pts.length-1)) * innerW;
+  const yOf = v => PAD.t + (1 - v/maxV) * innerH;
+
+  function polyline(vals, color, strokeW, opacity) {
+    const d = vals.map((v,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linejoin="round" opacity="${opacity}"/>`;
+  }
+  function area(vals, color) {
+    const d = vals.map((v,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ') +
+      ` L${xOf(vals.length-1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+    return `<path d="${d}" fill="${color}" opacity="0.12"/>`;
+  }
+
+  const nowX = xOf(nowIdx).toFixed(1);
+
+  let html = `<defs>
+    <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
+    </linearGradient>
+  </defs>`;
+
+  // Shaded past
+  html += `<rect x="${PAD.l}" y="${PAD.t}" width="${(nowX-PAD.l)}" height="${innerH}" fill="#0b1f38" opacity="0.3"/>`;
+
+  // Areas
+  html += area(waves, '#4a9eca');
+  html += area(winds, '#d4af37');
+
+  // Lines
+  html += polyline(waves, '#4a9eca', 1.5, 0.8);
+  html += polyline(winds, '#d4af37', 2, 1);
+
+  // Gust line (dashed)
+  const gustLine = pts.map((p,i)=>`${i===0?'M':'L'}${xOf(i).toFixed(1)},${yOf(p.wg).toFixed(1)}`).join(' ');
+  html += `<path d="${gustLine}" fill="none" stroke="#d4af37" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+
+  // Now line
+  html += `<line x1="${nowX}" y1="${PAD.t}" x2="${nowX}" y2="${H-PAD.b}" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  html += `<text x="${nowX}" y="${H-PAD.b+11}" text-anchor="middle" class="now-label" font-family="DM Mono,monospace" font-size="9" fill="#d4af37">NOW</text>`;
+
+  // Time labels
+  pts.forEach((p,i) => {
+    const x = xOf(i).toFixed(1);
+    if (i===0 || i===pts.length-1 || i===nowIdx || i%2===0) {
+      html += `<text x="${x}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
+    }
+    // Dot at each point for wind
+    html += `<circle cx="${x}" cy="${yOf(p.ws).toFixed(1)}" r="2.5" fill="#d4af37" opacity="0.7"/>`;
+  });
+
+  svg.innerHTML = html;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+}
+
+fetchAll();
+</script>
+</body>
+</html>

@@ -1,124 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ýmir — Member Hub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/style.css">
-  <script src="../shared/api.js"></script>
-  <style>
-    /* ── TABS ── */
-    .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:24px; }
-    .hub-tab { padding:12px 20px; border:none; background:none; color:var(--muted); font-family:inherit; font-size:12px; letter-spacing:1px; cursor:pointer; border-bottom:2px solid transparent; transition:color .15s, border-color .15s; }
-    .hub-tab.active { color:var(--brass); border-bottom-color:var(--brass); }
-    .hub-tab:hover:not(.active) { color:var(--text); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Member Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<style>
+/* ── Tabs ── */
+.hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
+.hub-tab { padding:11px 18px; border:none; background:none; color:var(--muted); font-family:inherit; font-size:11px; letter-spacing:.8px; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s,border-color .15s; }
+.hub-tab.active { color:var(--brass); border-bottom-color:var(--brass); }
+.hub-tab:hover:not(.active) { color:var(--text); }
 
-    /* ── STATUS CARD ── */
-    .status-card { padding:20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); margin-bottom:20px; }
-    .status-card.active-out { border-color:var(--brass)77; }
-    .status-icon { font-size:32px; margin-bottom:8px; }
-    .status-title { font-size:14px; font-weight:500; color:var(--text); }
-    .status-meta { font-size:12px; color:var(--muted); margin-top:4px; }
-    .status-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+/* ── Weather widget ── */
+.wx-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:14px; position:relative; overflow:hidden; }
+.wx-widget::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.wx-widget.flag-green::before  { background:#27ae60; }
+.wx-widget.flag-yellow::before { background:#f1c40f; }
+.wx-widget.flag-orange::before { background:#e67e22; }
+.wx-widget.flag-red::before    { background:#e74c3c; }
+.wx-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.wx-wind-big { font-size:38px; color:var(--brass); font-weight:500; line-height:1; }
+.wx-wind-unit { font-size:13px; color:var(--muted); margin-left:2px; }
+.wx-wind-alts { font-size:11px; color:var(--muted); margin-top:5px; }
+.wx-wind-alts b { color:var(--text); }
+.wx-cond-icon { font-size:30px; text-align:right; }
+.wx-cond-desc { font-size:10px; color:var(--muted); text-align:right; margin-top:2px; }
+.wx-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+.wx-cell { text-align:center; }
+.wx-cell-val { font-size:14px; color:var(--text); }
+.wx-cell-lbl { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-top:2px; }
+.wx-dir-arrow { font-size:20px; color:var(--brass); }
+.flag-pill { display:inline-flex; align-items:center; gap:6px; border-radius:20px; border:1px solid; padding:4px 10px; font-size:11px; font-weight:500; margin-top:10px; }
+.wx-footer { display:flex; align-items:center; justify-content:space-between; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
+.wx-updated { font-size:10px; color:var(--muted); }
+.wx-detail-link { font-size:11px; color:var(--brass); text-decoration:none; }
+.wx-detail-link:hover { text-decoration:underline; }
 
-    /* ── TRIP CARDS ── */
-    .trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:10px; }
-    .trip-card.linked { border-left:3px solid var(--brass); }
-    .trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .trip-date { color:var(--brass); font-size:12px; }
-    .trip-title { font-size:13px; font-weight:500; color:var(--text); margin-top:2px; }
-    .trip-meta { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:12px; flex-wrap:wrap; }
-    .trip-notes { font-size:12px; color:var(--muted); margin-top:8px; border-top:1px solid var(--border); padding-top:8px; }
-    .trip-badge { font-size:10px; letter-spacing:.5px; padding:2px 7px; border-radius:10px; border:1px solid; }
-    .trip-badge.linked { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
-    .trip-badge.standalone { color:var(--muted); border-color:var(--border); }
-    .trip-badge.stamped { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
-    .trip-badge.verified { color:#2ecc71; border-color:#2ecc7155; }
-    .stamp-note { font-size:11px; color:#2ecc71; margin-top:6px; }
+/* Tide placeholder */
+.tide-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:14px; }
+.tide-placeholder { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; padding:8px 0; }
 
-    /* ── LOG TRIP FORM ── */
-    .form-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-bottom:16px; }
-    .form-section h4 { color:var(--brass); font-size:11px; letter-spacing:1.5px; margin-bottom:14px; }
-    .inline-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .inline-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-    .hours-display { font-size:20px; color:var(--brass); text-align:center; margin-top:8px; }
+/* ── Checkouts ── */
+.co-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:8px; }
+.co-card.mine { border-left:3px solid var(--brass); }
+.co-card.overdue { border-left:3px solid var(--red); }
+.co-head { display:flex; align-items:center; gap:10px; }
+.co-icon { font-size:20px; }
+.co-info { flex:1; min-width:0; }
+.co-boat { font-size:13px; font-weight:500; color:var(--text); }
+.co-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.co-badge { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid; letter-spacing:.4px; }
+.co-badge.out    { color:var(--brass);  border-color:var(--brass)55;  background:var(--brass)11; }
+.co-badge.mine   { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+.co-badge.overdue{ color:var(--red);   border-color:var(--red)55;   background:var(--red)11; }
+.co-badge.returned{ color:var(--muted); border-color:var(--border); }
 
-    /* ── STATS ── */
-    .stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:24px; }
-    .stat-cell { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
-    .stat-n { font-size:22px; color:var(--brass); font-weight:500; }
-    .stat-l { font-size:10px; color:var(--muted); margin-top:2px; letter-spacing:.5px; }
+/* ── Trip cards ── */
+.trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:8px; }
+.trip-card.linked { border-left:3px solid var(--brass); }
+.trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.trip-date { font-size:11px; color:var(--brass); }
+.trip-name { font-size:13px; font-weight:500; color:var(--text); margin-top:2px; }
+.trip-meta { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; }
+.trip-notes { font-size:11px; color:var(--muted); margin-top:8px; border-top:1px solid var(--border)55; padding-top:8px; }
+.badge { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid; }
+.badge-linked   { color:var(--brass);  border-color:var(--brass)55;  background:var(--brass)11; }
+.badge-standalone{ color:var(--muted); border-color:var(--border); }
+.badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
 
-    /* ── RECENT PUBLIC TRIPS (link another's trip) ── */
-    .public-trip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:8px; display:flex; gap:14px; align-items:center; }
-    .public-trip-info { flex:1; min-width:0; }
-    .public-name { font-size:12px; color:var(--muted); }
-    .public-detail { font-size:13px; color:var(--text); font-weight:500; margin-top:2px; }
+/* ── Log form ── */
+.form-box { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:12px; }
+.form-box h4 { font-size:10px; color:var(--brass); letter-spacing:1.5px; margin-bottom:14px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.hours-badge { font-size:20px; color:var(--brass); text-align:center; margin-top:6px; display:none; }
 
-    @media(max-width:500px) {
-      .stat-strip { grid-template-columns:repeat(2,1fr); }
-      .inline-3 { grid-template-columns:1fr 1fr; }
-    }
-  </style>
+/* Stats strip */
+.stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
+.stat-cell { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+.stat-n { font-size:20px; color:var(--brass); font-weight:500; }
+.stat-l { font-size:9px; color:var(--muted); margin-top:2px; letter-spacing:.5px; }
+
+/* Conditions pill (in checkout) */
+.conditions-pill { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:11px; color:var(--muted); cursor:pointer; margin-top:8px; }
+.conditions-pill:hover { border-color:var(--brass); color:var(--text); }
+.conditions-pill.loaded { border-color:var(--brass)55; color:var(--brass); }
+
+/* Weather prefill modal */
+.cond-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+.cond-item { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px; text-align:center; }
+.cond-item-val { font-size:16px; color:var(--brass); }
+.cond-item-lbl { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
+
+/* Club trips */
+.pub-trip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:8px; display:flex; gap:12px; align-items:center; }
+.pub-info { flex:1; min-width:0; }
+.pub-by { font-size:11px; color:var(--muted); }
+.pub-detail { font-size:13px; font-weight:500; color:var(--text); margin-top:1px; }
+
+.section-lbl { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:16px 0 10px; }
+.empty-note { color:var(--muted); font-size:12px; padding:10px 0; }
+
+@media(max-width:480px) {
+  .wx-grid { grid-template-columns:repeat(2,1fr); }
+  .stat-strip { grid-template-columns:repeat(2,1fr); }
+  .grid-3 { grid-template-columns:1fr 1fr; }
+}
+</style>
 </head>
 <body>
 
-<header class="navbar">
-  <div style="display:flex;align-items:center;gap:12px">
-    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
-    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
+<header style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--bg)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="color:var(--brass);font-size:17px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:11px" id="userBadge"></span>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
-    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn-ghost" onclick="toggleLang()" style="font-size:11px;padding:5px 8px" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()" style="font-size:11px;padding:5px 8px">Sign out</button>
   </div>
 </header>
 
-<div class="page-wrap">
+<div style="max-width:680px;margin:0 auto;padding:16px 14px 40px">
 
+  <!-- ── WEATHER WIDGET ── -->
+  <div class="wx-widget" id="wxWidget">
+    <div style="color:var(--muted);font-size:12px;padding:10px 0">⚓ Loading conditions…</div>
+  </div>
+
+  <!-- ── TIDE PLACEHOLDER ── -->
+  <div class="tide-widget">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">TIDES · FAXAFLÓI</div>
+    <div class="tide-placeholder">
+      <span style="font-size:22px">🌊</span>
+      <div>
+        <div style="color:var(--text);font-size:13px">Tide data coming soon</div>
+        <div style="font-size:11px;margin-top:2px">Real-time tidal predictions for Reykjavík harbour will appear here.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;opacity:.4">
+      <div style="text-align:center">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px">LAST HIGH</div>
+        <div style="font-size:14px;color:var(--text);margin-top:4px">—</div>
+        <div style="font-size:10px;color:var(--muted)">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:flex;align-items:center;justify-content:center;gap:4px"><span style="font-size:14px">↕</span>Rising/Falling</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px">NEXT LOW</div>
+        <div style="font-size:14px;color:var(--text);margin-top:4px">—</div>
+        <div style="font-size:10px;color:var(--muted)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TABS ── -->
   <div class="hub-tabs">
-    <button class="hub-tab active" onclick="showTab('status')">⛵ Status</button>
+    <button class="hub-tab active" onclick="showTab('checkouts')">⛵ Checkouts</button>
     <button class="hub-tab" onclick="showTab('log')">📖 Log a Trip</button>
     <button class="hub-tab" onclick="showTab('history')">📋 My Logbook</button>
     <button class="hub-tab" onclick="showTab('club')">🌊 Club Trips</button>
   </div>
 
-  <!-- ── TAB: STATUS ── -->
-  <div id="tab-status">
-    <div id="statusCard" class="status-card">
-      <div id="statusLoading">Loading…</div>
-    </div>
+  <!-- ── TAB: CHECKOUTS ── -->
+  <div id="tab-checkouts">
+    <div class="section-lbl">ACTIVE CHECKOUTS</div>
+    <div id="activeList"><div class="empty-note">Loading…</div></div>
+    <div class="section-lbl">RECENTLY RETURNED (24H)</div>
+    <div id="recentList"><div class="empty-note">Loading…</div></div>
   </div>
 
   <!-- ── TAB: LOG A TRIP ── -->
   <div id="tab-log" class="hidden">
-    <div class="form-section">
+    <div class="form-box">
       <h4>ENTRY TYPE</h4>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn btn-primary" id="btnStandalone" onclick="setEntryType('standalone')">Standalone entry</button>
-        <button class="btn btn-secondary" id="btnLinked" onclick="setEntryType('linked')">Link to check-in/out</button>
+        <button class="btn btn-primary" id="btnStandalone" onclick="setEntryType('standalone')">Standalone</button>
+        <button class="btn btn-secondary" id="btnLinked" onclick="setEntryType('linked')">Link to checkout</button>
       </div>
-      <!-- Link picker -->
-      <div id="linkPicker" class="hidden" style="margin-top:12px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Select a recent check-out to link this log entry to:</div>
-        <div id="recentCheckoutsList"></div>
+      <div id="linkPicker" class="hidden" style="margin-top:10px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Select a recent checkout to link:</div>
+        <div id="linkPickerList"></div>
       </div>
     </div>
 
-    <div class="form-section">
+    <div class="form-box">
       <h4>TRIP DETAILS</h4>
-      <div class="inline-2">
+      <div class="grid-2">
         <div class="field"><label>Date</label><input type="date" id="fDate"></div>
         <div class="field"><label>Crew on board</label><input type="number" id="fCrew" min="1" max="20" value="1"></div>
       </div>
-      <div class="inline-2">
+      <div class="grid-2">
         <div class="field"><label>Departure</label><input type="time" id="fTimeOut" oninput="calcHours()"></div>
         <div class="field"><label>Return</label><input type="time" id="fTimeIn" oninput="calcHours()"></div>
       </div>
-      <div id="hoursDisplay" class="hours-display" style="display:none"></div>
-      <div class="inline-2">
+      <div class="hours-badge" id="hoursDisplay"></div>
+      <div class="grid-2">
         <div class="field">
           <label>Boat</label>
           <select id="fBoat"><option value="">Select boat…</option></select>
@@ -130,71 +212,67 @@
       </div>
     </div>
 
-    <div class="form-section">
+    <div class="form-box">
       <h4>CONDITIONS</h4>
-      <div class="inline-3">
-        <div class="field">
-          <label>Wind (Beaufort)</label>
-          <select id="fBeaufort">
-            <option value="">Select…</option>
-            <option value="0">0 – Calm</option>
-            <option value="1">1 – Light air</option>
-            <option value="2">2 – Light breeze</option>
-            <option value="3">3 – Gentle breeze</option>
-            <option value="4">4 – Moderate</option>
-            <option value="5">5 – Fresh breeze</option>
-            <option value="6">6 – Strong breeze</option>
-            <option value="7">7 – Near gale</option>
-            <option value="8">8 – Gale</option>
-          </select>
+      <button class="conditions-pill" id="condPillBtn" onclick="prefillConditions()">
+        <span id="condPillIcon">🌀</span>
+        <span id="condPillText">Use current conditions</span>
+      </button>
+      <div style="margin-top:12px">
+        <div class="grid-3">
+          <div class="field"><label>Wind (Beaufort)</label>
+            <select id="fBeaufort">
+              <option value="">Select…</option>
+              <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
+              <option value="2">2 – Light breeze</option><option value="3">3 – Gentle breeze</option>
+              <option value="4">4 – Moderate</option><option value="5">5 – Fresh breeze</option>
+              <option value="6">6 – Strong breeze</option><option value="7">7 – Near gale</option>
+              <option value="8">8 – Gale</option>
+            </select>
+          </div>
+          <div class="field"><label>Wind m/s</label><input type="number" id="fWindMs" step="0.1" min="0" placeholder="0.0"></div>
+          <div class="field"><label>Direction</label>
+            <select id="fWindDir">
+              <option value="">–</option>
+              <option>N</option><option>NE</option><option>E</option><option>SE</option>
+              <option>S</option><option>SW</option><option>W</option><option>NW</option>
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label>Direction</label>
-          <select id="fWindDir">
-            <option value="">Select…</option>
-            <option>N</option><option>NE</option><option>E</option><option>SE</option>
-            <option>S</option><option>SW</option><option>W</option><option>NW</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Sea state</label>
-          <select id="fSea">
-            <option value="">Select…</option>
-            <option>Calm</option><option>Smooth</option><option>Slight</option>
-            <option>Moderate</option><option>Rough</option><option>Very rough</option>
-          </select>
-        </div>
-      </div>
-      <div class="inline-2">
-        <div class="field">
-          <label>Precipitation</label>
-          <select id="fPrecip">
-            <option value="">Select…</option>
-            <option>None</option><option>Drizzle</option><option>Rain</option>
-            <option>Showers</option><option>Snow</option><option>Fog</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Visibility</label>
-          <select id="fVis">
-            <option value="">Select…</option>
-            <option>Excellent (&gt;10km)</option><option>Good (5–10km)</option>
-            <option>Moderate (2–5km)</option><option>Poor (&lt;2km)</option><option>Fog</option>
-          </select>
+        <div class="grid-3">
+          <div class="field"><label>Sea state</label>
+            <select id="fSea">
+              <option value="">–</option><option>Calm</option><option>Smooth</option>
+              <option>Slight</option><option>Moderate</option><option>Rough</option><option>Very rough</option>
+            </select>
+          </div>
+          <div class="field"><label>Precip.</label>
+            <select id="fPrecip">
+              <option value="">–</option><option>None</option><option>Drizzle</option>
+              <option>Rain</option><option>Showers</option><option>Snow</option><option>Fog</option>
+            </select>
+          </div>
+          <div class="field"><label>Visibility</label>
+            <select id="fVis">
+              <option value="">–</option>
+              <option>Excellent (&gt;10km)</option><option>Good (5–10km)</option>
+              <option>Moderate (2–5km)</option><option>Poor (&lt;2km)</option><option>Fog</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="form-section">
+    <div class="form-box">
       <h4>YOUR NOTES</h4>
-      <textarea id="fNotes" rows="4" placeholder="Route taken, highlights, observations, anything notable…" style="width:100%;resize:vertical"></textarea>
+      <textarea id="fNotes" rows="3" placeholder="Route taken, highlights, observations…" style="width:100%;resize:vertical"></textarea>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="showTab('status')">Cancel</button>
+      <button class="btn btn-secondary" onclick="showTab('checkouts')">Cancel</button>
       <button class="btn btn-primary" onclick="submitTrip()">Save Trip</button>
     </div>
-    <div id="tripErr" class="msg msg-err" style="display:none"></div>
+    <div id="tripErr" class="msg msg-err" style="display:none;margin-top:10px"></div>
   </div>
 
   <!-- ── TAB: MY LOGBOOK ── -->
@@ -205,30 +283,25 @@
       <div class="stat-cell"><div class="stat-n" id="sBoats">—</div><div class="stat-l">BOATS</div></div>
       <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
     </div>
-    <div id="myTrips"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+    <div id="myTrips"><div class="empty-note">Loading…</div></div>
   </div>
 
-  <!-- ── TAB: CLUB TRIPS (link another's) ── -->
+  <!-- ── TAB: CLUB TRIPS ── -->
   <div id="tab-club" class="hidden">
-    <div style="color:var(--muted);font-size:12px;margin-bottom:16px">
-      Recent trips by club members. If you were crew on someone else's trip, add it to your own logbook with your own notes.
-    </div>
-    <div id="clubTrips"><div style="color:var(--muted)">Loading…</div></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Recent trips by other members. Were you crew? Add to your own logbook with personal notes.</div>
+    <div id="clubTrips"><div class="empty-note">Loading…</div></div>
   </div>
 
 </div>
 
-<!-- LINK TRIP MODAL -->
-<div id="linkModal" class="modal-backdrop hidden">
-  <div class="modal" style="max-width:460px">
-    <div class="modal-head">
-      <span class="modal-title">Add trip to your logbook</span>
-      <button class="modal-close" onclick="closeLinkModal()">×</button>
-    </div>
-    <div id="linkModalInfo" style="margin-bottom:16px;font-size:13px;color:var(--muted)"></div>
+<!-- ── LINK TRIP MODAL ── -->
+<div class="modal-overlay hidden" id="linkModal">
+  <div class="modal" style="max-width:440px">
+    <h3>Add to My Logbook</h3>
+    <div id="linkModalInfo" style="margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.6"></div>
     <div class="field">
       <label>Your notes (optional)</label>
-      <textarea id="linkNotes" rows="3" placeholder="Your personal notes about this trip…" style="width:100%;resize:vertical"></textarea>
+      <textarea id="linkNotes" rows="3" style="width:100%;resize:vertical" placeholder="Your personal notes about this trip…"></textarea>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeLinkModal()">Cancel</button>
@@ -238,299 +311,467 @@
 </div>
 
 <script>
-const user = requireAuth();
-if (user) {
-  document.getElementById("userBadge").textContent = user.name;
-  document.getElementById("langBtn").textContent = getLang()==="EN"?"IS":"EN";
-  init();
+// ── Constants ────────────────────────────────────────────────────────────────
+const LAT = 64.1300, LON = -21.9406;
+const FLAGS = {
+  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', label:'Green',  advice:'Good conditions.' },
+  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', label:'Yellow', advice:'Marginal — experienced only.' },
+  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', label:'Orange', advice:'Difficult — keelboats only.' },
+  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', label:'Red',    advice:'Do not sail.' },
+};
+const FLAG_ICONS = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
+
+function msToBft(ms) {
+  const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
+  for (let i=T.length-1;i>=0;i--) if(ms>=T[i]) return i;
+  return 0;
+}
+function msToKt(ms)  { return (ms*1.944).toFixed(1); }
+function dirLabel(deg) {
+  if (deg==null) return '–';
+  return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(deg/22.5)%16];
+}
+function dirArrow(deg) {
+  if (deg==null) return '';
+  return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(deg/45)%8];
+}
+function condIcon(code) {
+  if (code==0)  return '☀️';
+  if (code==1)  return '🌤';
+  if (code==2)  return '⛅';
+  if (code==3)  return '☁️';
+  if ([45,48].includes(code)) return '🌫';
+  if ([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧';
+  if ([71,73,75,77,85,86].includes(code)) return '🌨';
+  if ([95,96,99].includes(code)) return '⛈';
+  return '🌡';
+}
+function condDesc(code) {
+  if (code==0) return 'Clear sky';
+  if (code==1) return 'Mainly clear';
+  if (code==2) return 'Partly cloudy';
+  if (code==3) return 'Overcast';
+  if ([45,48].includes(code)) return 'Fog';
+  if ([51,53,55].includes(code)) return 'Drizzle';
+  if ([61,63,65].includes(code)) return 'Rain';
+  if ([71,73,75,77].includes(code)) return 'Snow';
+  if ([80,81,82].includes(code)) return 'Showers';
+  if ([95,96,99].includes(code)) return 'Thunderstorm';
+  return '–';
+}
+function assessFlag(ws_ms, wDir, waveH) {
+  let level=0;
+  const bft=msToBft(ws_ms);
+  const easterly=['E','NE','SE'].includes((wDir||'').toUpperCase());
+  if (bft>=7) level=3;
+  else if (bft===6) { level=2; if(easterly) level=3; }
+  else if (bft===5) { level=1; if(easterly) level=2; }
+  else if (bft===4&&easterly) level=1;
+  if (waveH>=2.0) level=Math.max(level,3);
+  else if (waveH>=1.2) level=Math.max(level,2);
+  else if (waveH>=0.6) level=Math.max(level,1);
+  return ['green','yellow','orange','red'][level];
+}
+function bftDesc(b) {
+  return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale'][Math.min(b,8)]||'';
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTimeNow() { return new Date().toTimeString().slice(0,5); }
+function setSelByText(id,text) {
+  const s=document.getElementById(id);
+  for(let o of s.options) if(o.textContent===text||o.value===text){s.value=o.value;return;}
 }
 
-let boats=[], locations=[], myTrips=[], myCheckout=null, allRecentTrips=[];
-let entryType = "standalone";
-let linkingTrip = null;
-let linkedCheckoutId = null;
+// ── State ─────────────────────────────────────────────────────────────────────
+const user = requireAuth();
+let boats=[], locations=[], myTrips=[], checkouts=[];
+let entryType='standalone', linkedCheckoutId=null, linkingTrip=null;
+let currentWx = null;  // store live weather for prefill
+
+if (user) {
+  document.getElementById('userBadge').textContent = user.name;
+  document.getElementById('langBtn').textContent = getLang()==='EN'?'IS':'EN';
+  init();
+  fetchWeatherWidget();
+}
 
 async function init() {
   try {
-    const [bRes, lRes, coRes, tripRes] = await Promise.all([
-      apiGet("getBoats"),
-      apiGet("getLocations"),
-      apiGet("getActiveCheckouts"),
-      apiGet("getTrips", { kennitala: user.kennitala }),
+    const [bRes, lRes, coRes, tRes] = await Promise.all([
+      apiGet('getBoats'),
+      apiGet('getLocations'),
+      apiGet('getActiveCheckouts'),
+      apiGet('getTrips', { kennitala: user.kennitala }),
     ]);
-    boats     = (bRes.boats     || []).filter(b => b.active!=="false"&&b.active!==false);
-    locations = (lRes.locations || []).filter(l => l.active!=="false"&&l.active!==false);
-    const checkouts = coRes.checkouts || [];
-    myCheckout = checkouts.find(c => c.memberKt===user.kennitala && c.status==="out") || null;
-    myTrips    = tripRes.trips || [];
-
+    boats     = (bRes.boats     || []).filter(b => b.active!=='false'&&b.active!==false);
+    locations = (lRes.locations || []).filter(l => l.active!=='false'&&l.active!==false);
+    checkouts = coRes.checkouts || [];
+    myTrips   = tRes.trips || [];
     populateFormSelects();
-    renderStatus();
+    renderCheckouts();
     renderMyLogbook();
-
-    // Init form defaults
-    document.getElementById("fDate").value = todayISO();
-    document.getElementById("fTimeOut").value = new Date().toTimeString().slice(0,5);
-  } catch(e) { console.error("init:", e); }
-}
-
-async function loadClubTrips() {
-  try {
-    const res = await apiGet("getTrips", { limit:30 });
-    allRecentTrips = (res.trips || []).filter(t => t.kennitala !== user.kennitala);
-    renderClubTrips();
-  } catch(e) { document.getElementById("clubTrips").innerHTML='<div style="color:var(--muted)">Could not load club trips.</div>'; }
+    document.getElementById('fDate').value = todayISO();
+    document.getElementById('fTimeOut').value = fmtTimeNow();
+  } catch(e) { console.error('init:', e); }
 }
 
 function populateFormSelects() {
-  const bSel = document.getElementById("fBoat");
-  boats.forEach(b => { const o=document.createElement("option"); o.value=b.id; o.textContent=b.name; bSel.appendChild(o); });
-  const lSel = document.getElementById("fLocation");
-  locations.forEach(l => { const o=document.createElement("option"); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+  const bSel = document.getElementById('fBoat');
+  boats.forEach(b => { const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; bSel.appendChild(o); });
+  const lSel = document.getElementById('fLocation');
+  locations.forEach(l => { const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
 }
 
-// ── STATUS TAB ─────────────────────────────────────────────────────────────────
-function renderStatus() {
-  const el = document.getElementById("statusCard");
-  if (myCheckout) {
-    el.className = "status-card active-out";
-    el.innerHTML = `
-      <div class="status-icon">⛵</div>
-      <div class="status-title">You are checked out</div>
-      <div class="status-meta">${esc(myCheckout.boatName||"")} · ${esc(myCheckout.locationName||"")} · Since ${esc(myCheckout.timeOut||"")}${myCheckout.returnBy?" · Return by "+esc(myCheckout.returnBy):""}</div>
-      <div class="status-actions">
-        <button class="btn btn-primary" onclick="selfCheckIn()">Check In</button>
-        <button class="btn btn-secondary" onclick="showTab('log')">Log this trip</button>
-      </div>`;
-  } else {
-    el.className = "status-card";
-    el.innerHTML = `
-      <div class="status-icon">⚓</div>
-      <div class="status-title">You are ashore</div>
-      <div class="status-meta">No active check-out. Staff can check you out at the dock.</div>
-      <div class="status-actions">
-        <button class="btn btn-primary" onclick="showTab('log')">📖 Log a Trip</button>
-      </div>`;
-  }
-}
-
-async function selfCheckIn() {
-  if (!myCheckout) return;
+// ── Weather Widget ─────────────────────────────────────────────────────────────
+async function fetchWeatherWidget() {
   try {
-    const timeIn = new Date().toTimeString().slice(0,5);
-    await apiPost("checkIn", { id: myCheckout.id, timeIn });
-    // Pre-fill log form and switch to it
-    document.getElementById("fDate").value = todayISO();
-    document.getElementById("fTimeOut").value = myCheckout.timeOut || "";
-    document.getElementById("fTimeIn").value  = timeIn;
-    // Set boat and location
-    setSelectByText("fBoat", myCheckout.boatName);
-    setSelectByText("fLocation", myCheckout.locationName);
-    calcHours();
-    linkedCheckoutId = myCheckout.id;
-    myCheckout = null;
-    renderStatus();
-    showTab("log");
-    setEntryType("linked");
-  } catch(e) { alert("Error: "+e.message); }
-}
+    const [wxRes, marineRes] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}&current=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
+    ]);
+    const c   = wxRes.current;
+    const mc  = marineRes.current;
+    const ws  = c.wind_speed_10m;
+    const wd  = c.wind_direction_10m;
+    const wg  = c.wind_gusts_10m;
+    const bft = msToBft(ws);
+    const waveH = mc?.wave_height ?? null;
+    const wDir  = dirLabel(wd);
+    const flagKey = assessFlag(ws, wDir, waveH??0);
+    const flag    = FLAGS[flagKey];
 
-function setSelectByText(id, text) {
-  const sel = document.getElementById(id);
-  for (let o of sel.options) {
-    if (o.textContent === text) { sel.value = o.value; return; }
+    // Store for prefill
+    currentWx = {
+      ws, wd, wg, bft, waveH, wDir,
+      airT: c.temperature_2m,
+      sst:  mc?.sea_surface_temperature,
+      code: c.weather_code,
+      flagKey,
+    };
+
+    const el = document.getElementById('wxWidget');
+    el.className = `wx-widget flag-${flagKey}`;
+    el.innerHTML = `
+      <div class="wx-top">
+        <div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px">CONDITIONS · BIRK / FAXAFLÓI</div>
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <div class="wx-wind-big">${ws.toFixed(1)}</div>
+            <div class="wx-wind-unit">m/s</div>
+          </div>
+          <div class="wx-wind-alts">
+            <b>${msToKt(ws)}</b>&nbsp;kt &nbsp;·&nbsp; <b>Bft ${bft}</b> ${bftDesc(bft)}
+            &nbsp;·&nbsp; Gusts <b>${wg.toFixed(1)} m/s</b>
+          </div>
+        </div>
+        <div>
+          <div class="wx-cond-icon">${condIcon(c.weather_code)}</div>
+          <div class="wx-cond-desc">${condDesc(c.weather_code)}</div>
+        </div>
+      </div>
+      <div class="wx-grid">
+        <div class="wx-cell">
+          <div class="wx-dir-arrow">${dirArrow(wd)}</div>
+          <div class="wx-cell-lbl">${wDir} · ${wd!=null?Math.round(wd)+'°':'–'}</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val">${c.temperature_2m!=null?Math.round(c.temperature_2m)+'°C':'–'}</div>
+          <div class="wx-cell-lbl">AIR TEMP</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val" style="color:#4a9eca">${mc?.sea_surface_temperature!=null?mc.sea_surface_temperature.toFixed(1)+'°C':'–'}</div>
+          <div class="wx-cell-lbl">SEA TEMP</div>
+        </div>
+        <div class="wx-cell">
+          <div class="wx-cell-val" style="color:#4a9eca">${waveH!=null?waveH.toFixed(1)+'m':'–'}</div>
+          <div class="wx-cell-lbl">WAVES</div>
+        </div>
+      </div>
+      <div>
+        <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg}">
+          ${FLAG_ICONS[flagKey]} ${flag.label} — ${flag.advice}
+        </span>
+      </div>
+      <div class="wx-footer">
+        <span class="wx-updated">Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>
+        <a class="wx-detail-link" href="../weather/">Full forecast →</a>
+      </div>`;
+  } catch(e) {
+    document.getElementById('wxWidget').innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px 0">⚠ Could not load weather data. <a href="../weather/" style="color:var(--brass)">Try full page →</a></div>`;
   }
 }
 
-// ── LOG FORM ───────────────────────────────────────────────────────────────────
+// ── Conditions prefill ─────────────────────────────────────────────────────────
+function prefillConditions() {
+  if (!currentWx) return;
+  const wx = currentWx;
+  // Set Beaufort
+  document.getElementById('fBeaufort').value = String(wx.bft);
+  document.getElementById('fWindMs').value   = wx.ws.toFixed(1);
+  // Direction
+  const dirs8 = ['N','NE','E','SE','S','SW','W','NW'];
+  const deg = wx.wd ?? 0;
+  const dir8 = dirs8[Math.round(deg/45)%8];
+  setSelByText('fWindDir', dir8);
+
+  const btn = document.getElementById('condPillBtn');
+  btn.className = 'conditions-pill loaded';
+  document.getElementById('condPillIcon').textContent = '✓';
+  document.getElementById('condPillText').textContent =
+    `Bft ${wx.bft} · ${wx.ws.toFixed(1)} m/s · ${dir8}${wx.waveH!=null?' · Waves '+wx.waveH.toFixed(1)+'m':''} — edit if needed`;
+}
+
+// ── Checkouts tab ──────────────────────────────────────────────────────────────
+function renderCheckouts() {
+  const now = fmtTimeNow();
+  const active   = checkouts.filter(c => c.status==='out');
+  const returned = checkouts.filter(c => c.status==='in').slice(0, 8);
+
+  // Active
+  const aEl = document.getElementById('activeList');
+  if (!active.length) {
+    aEl.innerHTML = '<div class="empty-note">No boats currently out.</div>';
+  } else {
+    aEl.innerHTML = active.map(c => {
+      const isMe   = String(c.memberKt)===String(user.kennitala);
+      const overdue= c.returnBy && c.returnBy < now;
+      let cls = 'co-card' + (isMe?' mine':overdue?' overdue':'');
+      return `<div class="${cls}">
+        <div class="co-head">
+          <div class="co-icon">⛵</div>
+          <div class="co-info">
+            <div class="co-boat">${esc(c.boatName||c.boatId||'—')}</div>
+            <div class="co-meta">${esc(c.memberName||c.memberKt||'—')} · ${esc(c.locationName||'—')} · Out ${esc(c.timeOut||'—')}${c.returnBy?` · Return by ${esc(c.returnBy)}`:''} · ${esc(c.crew||1)} crew</div>
+          </div>
+          <span class="co-badge ${overdue?'overdue':isMe?'mine':'out'}">${overdue?'OVERDUE':isMe?'YOURS':'OUT'}</span>
+        </div>
+        ${isMe?`<div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="prefillFromCheckout(${JSON.stringify(c).replace(/"/g,'&quot;')})">Log this trip</button>
+        </div>`:''}
+      </div>`;
+    }).join('');
+  }
+
+  // Recently returned
+  const rEl = document.getElementById('recentList');
+  if (!returned.length) {
+    rEl.innerHTML = '<div class="empty-note">No returns in the last 24 hours.</div>';
+  } else {
+    rEl.innerHTML = returned.map(c => `
+      <div class="co-card">
+        <div class="co-head">
+          <div class="co-icon" style="opacity:.5">⛵</div>
+          <div class="co-info">
+            <div class="co-boat">${esc(c.boatName||c.boatId||'—')}</div>
+            <div class="co-meta">${esc(c.memberName||'—')} · ${esc(c.locationName||'—')} · ${esc(c.timeOut||'—')}–${esc(c.timeIn||'—')}</div>
+          </div>
+          <span class="co-badge returned">RETURNED</span>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function prefillFromCheckout(co) {
+  linkedCheckoutId = co.id;
+  document.getElementById('fDate').value    = co.date || todayISO();
+  document.getElementById('fTimeOut').value = co.timeOut || '';
+  document.getElementById('fTimeIn').value  = co.timeIn || fmtTimeNow();
+  setSelByText('fBoat', co.boatName);
+  setSelByText('fLocation', co.locationName);
+  calcHours();
+  setEntryType('linked');
+  showTab('log');
+  // Offer to prefill conditions
+  if (currentWx) prefillConditions();
+}
+
+// ── Log form ──────────────────────────────────────────────────────────────────
 function setEntryType(t) {
   entryType = t;
-  document.getElementById("btnStandalone").className = t==="standalone" ? "btn btn-primary" : "btn btn-secondary";
-  document.getElementById("btnLinked").className      = t==="linked"     ? "btn btn-primary" : "btn btn-secondary";
-  document.getElementById("linkPicker").classList.toggle("hidden", t!=="linked");
-  if (t==="linked") loadRecentCheckoutsForLinking();
+  document.getElementById('btnStandalone').className = t==='standalone'?'btn btn-primary':'btn btn-secondary';
+  document.getElementById('btnLinked').className      = t==='linked'    ?'btn btn-primary':'btn btn-secondary';
+  document.getElementById('linkPicker').classList.toggle('hidden', t!=='linked');
+  if (t==='linked') loadRecentCheckoutsForLinking();
 }
 
 async function loadRecentCheckoutsForLinking() {
-  const el = document.getElementById("recentCheckoutsList");
+  const el = document.getElementById('linkPickerList');
   try {
-    const res = await apiGet("getRecentCheckouts", { kennitala: user.kennitala, limit:10 });
-    const list = (res.checkouts || []);
-    if (!list.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No recent check-outs found.</div>'; return; }
+    const res = await apiGet('getRecentCheckouts', { kennitala: user.kennitala, limit:10 });
+    const list = res.checkouts || [];
+    if (!list.length) { el.innerHTML='<div class="empty-note">No recent checkouts found.</div>'; return; }
     el.innerHTML = list.map(c => `
-      <div class="public-trip" style="cursor:pointer;${linkedCheckoutId===c.id?'border-color:var(--brass)':''}" onclick="selectLinkedCheckout('${c.id}','${esc(c.boatName||"")}','${esc(c.locationName||"")}','${esc(c.timeOut||"")}','${esc(c.timeIn||"")}')">
-        <div>⛵</div>
-        <div class="public-trip-info">
-          <div class="public-detail">${esc(c.boatName||"")} · ${esc(c.locationName||"")}</div>
-          <div class="public-name">${esc(c.date||"")} · ${esc(c.timeOut||"")}${c.timeIn?"–"+esc(c.timeIn):""}</div>
+      <div class="co-card" style="cursor:pointer;${linkedCheckoutId===c.id?'border-color:var(--brass)':''}" onclick="selectLinkedCo('${c.id}','${esc(c.boatName||'')}','${esc(c.locationName||'')}','${esc(c.timeOut||'')}','${esc(c.timeIn||'')}','${esc(c.date||'')}')">
+        <div class="co-head">
+          <div class="co-icon">⛵</div>
+          <div class="co-info">
+            <div class="co-boat">${esc(c.boatName||'—')}</div>
+            <div class="co-meta">${esc(c.date||'')} · ${esc(c.timeOut||'')}${c.timeIn?'–'+esc(c.timeIn):''} · ${esc(c.locationName||'—')}</div>
+          </div>
+          ${linkedCheckoutId===c.id?'<span style="color:var(--brass)">✓</span>':''}
         </div>
-        ${linkedCheckoutId===c.id?'<span style="color:var(--brass)">✓</span>':''}
-      </div>`).join("");
-  } catch(e) { el.innerHTML='<div style="color:var(--muted);font-size:12px">Could not load recent check-outs.</div>'; }
+      </div>`).join('');
+  } catch(e) { el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load.</div>'; }
 }
 
-function selectLinkedCheckout(id, boatName, locName, timeOut, timeIn) {
+function selectLinkedCo(id, boatName, locName, timeOut, timeIn, date) {
   linkedCheckoutId = id;
-  setSelectByText("fBoat", boatName);
-  setSelectByText("fLocation", locName);
-  if (timeOut) document.getElementById("fTimeOut").value = timeOut;
-  if (timeIn)  document.getElementById("fTimeIn").value  = timeIn;
+  setSelByText('fBoat', boatName);
+  setSelByText('fLocation', locName);
+  if (timeOut) document.getElementById('fTimeOut').value = timeOut;
+  if (timeIn)  document.getElementById('fTimeIn').value  = timeIn;
+  if (date)    document.getElementById('fDate').value    = date;
   calcHours();
-  loadRecentCheckoutsForLinking(); // re-render to show check
+  loadRecentCheckoutsForLinking();
 }
 
 function calcHours() {
-  const tout = document.getElementById("fTimeOut").value;
-  const tin  = document.getElementById("fTimeIn").value;
-  if (!tout||!tin) { document.getElementById("hoursDisplay").style.display="none"; return; }
-  const [oh,om] = tout.split(":").map(Number);
-  const [ih,im] = tin.split(":").map(Number);
+  const tout = document.getElementById('fTimeOut').value;
+  const tin  = document.getElementById('fTimeIn').value;
+  const el   = document.getElementById('hoursDisplay');
+  if (!tout||!tin) { el.style.display='none'; return; }
+  const [oh,om]=tout.split(':').map(Number), [ih,im]=tin.split(':').map(Number);
   const mins = (ih*60+im)-(oh*60+om);
-  if (mins<=0) { document.getElementById("hoursDisplay").style.display="none"; return; }
-  const h = Math.floor(mins/60), m = mins%60;
-  document.getElementById("hoursDisplay").textContent = (h?h+"h ":"")+(m?m+"m":"");
-  document.getElementById("hoursDisplay").style.display="block";
+  if (mins<=0) { el.style.display='none'; return; }
+  const h=Math.floor(mins/60), m=mins%60;
+  el.textContent = (h?h+'h ':'')+( m?m+'m':'');
+  el.style.display='block';
 }
 
 async function submitTrip() {
-  const boat     = document.getElementById("fBoat");
-  const location = document.getElementById("fLocation");
-  const err      = document.getElementById("tripErr");
-  const date = document.getElementById("fDate").value;
-  const tout = document.getElementById("fTimeOut").value;
-  const tin  = document.getElementById("fTimeIn").value;
-  if (!date||!tout||!tin||!boat.value||!location.value) {
-    err.textContent="Date, times, boat, and location are required."; err.style.display="block"; return;
+  const boat = document.getElementById('fBoat');
+  const loc  = document.getElementById('fLocation');
+  const err  = document.getElementById('tripErr');
+  const date = document.getElementById('fDate').value;
+  const tout = document.getElementById('fTimeOut').value;
+  const tin  = document.getElementById('fTimeIn').value;
+  if (!date||!tout||!tin||!boat.value||!loc.value) {
+    err.textContent='Date, times, boat and location are required.'; err.style.display='block'; return;
   }
-  const [oh,om]=[tout.split(":").map(Number)][0], [ih,im]=[tin.split(":").map(Number)][0];
-  const hoursDecimal = Math.max(0, Math.round(((ih*60+im)-(oh*60+om))/6)/10);
-  err.style.display="none";
+  const [oh,om]=tout.split(':').map(Number), [ih,im]=tin.split(':').map(Number);
+  const hoursDecimal = Math.max(0,Math.round(((ih*60+im)-(oh*60+om))/6)/10);
+  err.style.display='none';
   try {
-    await apiPost("saveTrip", {
-      kennitala: user.kennitala,
-      memberName: user.name,
+    await apiPost('saveTrip', {
+      kennitala:    user.kennitala,
+      memberName:   user.name,
       date, timeOut:tout, timeIn:tin, hoursDecimal,
-      boatId:    boat.value,
-      boatName:  boat.options[boat.selectedIndex]?.text || "",
-      locationId:    location.value,
-      locationName:  location.options[location.selectedIndex]?.text || "",
-      crew:      document.getElementById("fCrew").value,
-      beaufort:  document.getElementById("fBeaufort").value,
-      windDir:   document.getElementById("fWindDir").value,
-      seaState:  document.getElementById("fSea").value,
-      precip:    document.getElementById("fPrecip").value,
-      visibility:document.getElementById("fVis").value,
-      notes:     document.getElementById("fNotes").value.trim(),
-      linkedCheckoutId: entryType==="linked" ? (linkedCheckoutId||"") : "",
-      isLinked:  entryType==="linked",
+      boatId:       boat.value,
+      boatName:     boat.options[boat.selectedIndex]?.text||'',
+      locationId:   loc.value,
+      locationName: loc.options[loc.selectedIndex]?.text||'',
+      crew:         document.getElementById('fCrew').value,
+      beaufort:     document.getElementById('fBeaufort').value,
+      windMs:       document.getElementById('fWindMs').value,
+      windDir:      document.getElementById('fWindDir').value,
+      seaState:     document.getElementById('fSea').value,
+      precip:       document.getElementById('fPrecip').value,
+      visibility:   document.getElementById('fVis').value,
+      notes:        document.getElementById('fNotes').value.trim(),
+      isLinked:     entryType==='linked',
+      linkedCheckoutId: entryType==='linked'?(linkedCheckoutId||''):'',
     });
-    // Reload trips
-    const res = await apiGet("getTrips", { kennitala: user.kennitala });
+    const res = await apiGet('getTrips', { kennitala: user.kennitala });
     myTrips = res.trips || [];
     renderMyLogbook();
-    showTab("history");
-    // Reset form
-    linkedCheckoutId=null; entryType="standalone";
-    document.getElementById("fNotes").value="";
-  } catch(e) { err.textContent="Error: "+e.message; err.style.display="block"; }
+    showTab('history');
+    linkedCheckoutId=null; entryType='standalone';
+    document.getElementById('fNotes').value='';
+    const pill = document.getElementById('condPillBtn');
+    pill.className='conditions-pill';
+    document.getElementById('condPillIcon').textContent='🌀';
+    document.getElementById('condPillText').textContent='Use current conditions';
+  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
 }
 
-// ── MY LOGBOOK ─────────────────────────────────────────────────────────────────
+// ── My Logbook ─────────────────────────────────────────────────────────────────
 function renderMyLogbook() {
-  const totalHours = myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const boats = [...new Set(myTrips.map(t=>t.boatId).filter(Boolean))].length;
-  const verified = myTrips.filter(t=>t.verified||t.verified==="true").length;
-  document.getElementById("sTrips").textContent    = myTrips.length;
-  document.getElementById("sHours").textContent    = totalHours.toFixed(1)+"h";
-  document.getElementById("sBoats").textContent    = boats;
-  document.getElementById("sVerified").textContent = verified;
+  const hours    = myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const uniqueB  = [...new Set(myTrips.map(t=>t.boatId).filter(Boolean))].length;
+  const verified = myTrips.filter(t=>t.verified&&t.verified!=='false').length;
+  document.getElementById('sTrips').textContent    = myTrips.length;
+  document.getElementById('sHours').textContent    = hours.toFixed(1)+'h';
+  document.getElementById('sBoats').textContent    = uniqueB;
+  document.getElementById('sVerified').textContent = verified;
 
-  const el = document.getElementById("myTrips");
-  if (!myTrips.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No trips logged yet.</div>'; return; }
-  el.innerHTML = myTrips.sort((a,b)=>b.date>a.date?1:-1).map(t => `
-    <div class="trip-card ${t.isLinked||t.isLinked==="true"?"linked":""}">
+  const el = document.getElementById('myTrips');
+  if (!myTrips.length) { el.innerHTML='<div class="empty-note">No trips logged yet.</div>'; return; }
+  el.innerHTML = [...myTrips].sort((a,b)=>b.date>a.date?1:-1).map(t => `
+    <div class="trip-card ${t.isLinked||t.isLinked==='true'?'linked':''}">
       <div class="trip-head">
         <div>
-          <div class="trip-date">${esc(t.date||"")}</div>
-          <div class="trip-title">${esc(t.boatName||"")} · ${esc(t.locationName||"")}</div>
+          <div class="trip-date">${esc(t.date||'')}</div>
+          <div class="trip-name">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
           <div class="trip-meta">
-            <span>${esc(t.timeOut||"")}–${esc(t.timeIn||"")}</span>
-            <span>${esc(t.hoursDecimal||"")}h</span>
+            <span>${esc(t.timeOut||'')}–${esc(t.timeIn||'')}</span>
+            <span>${esc(t.hoursDecimal||'')}h</span>
             <span>👥 ${esc(t.crew||1)}</span>
-            ${t.beaufort?`<span>💨 Bft ${esc(t.beaufort)}</span>`:""}
+            ${t.beaufort?`<span>💨 Bft ${esc(t.beaufort)}${t.windMs?' ('+esc(t.windMs)+'m/s)':''}</span>`:''}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <span class="trip-badge ${t.isLinked||t.isLinked==="true"?"linked":"standalone"}">${t.isLinked||t.isLinked==="true"?"LINKED":"STANDALONE"}</span>
-          ${t.verified||t.verified==="true"?'<span class="trip-badge stamped">VERIFIED</span>':""}
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+          <span class="badge ${t.isLinked||t.isLinked==='true'?'badge-linked':'badge-standalone'}">${t.isLinked||t.isLinked==='true'?'LINKED':'STANDALONE'}</span>
+          ${t.verified&&t.verified!=='false'?'<span class="badge badge-verified">VERIFIED</span>':''}
         </div>
       </div>
-      ${t.notes?`<div class="trip-notes">${esc(t.notes)}</div>`:""}
-      ${t.verifiedBy?`<div class="stamp-note">✓ Verified by ${esc(t.verifiedBy)}</div>`:""}
-    </div>`).join("");
+      ${t.notes?`<div class="trip-notes">${esc(t.notes)}</div>`:''}
+    </div>`).join('');
 }
 
-// ── CLUB TRIPS (link tab) ──────────────────────────────────────────────────────
-function renderClubTrips() {
-  const el = document.getElementById("clubTrips");
-  if (!allRecentTrips.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No recent club trips.</div>'; return; }
-  el.innerHTML = allRecentTrips.map(t => `
-    <div class="public-trip">
-      <div style="font-size:20px">⛵</div>
-      <div class="public-trip-info">
-        <div class="public-name">${esc(t.memberName||"")} · ${esc(t.date||"")}</div>
-        <div class="public-detail">${esc(t.boatName||"")} · ${esc(t.locationName||"")} · ${esc(t.hoursDecimal||"")}h</div>
-      </div>
-      <button class="btn btn-secondary" onclick="openLinkModal(${JSON.stringify(t).replace(/"/g,'&quot;')})">Add to my log</button>
-    </div>`).join("");
+// ── Club Trips ─────────────────────────────────────────────────────────────────
+let clubLoaded = false;
+async function loadClubTrips() {
+  if (clubLoaded) return;
+  const el = document.getElementById('clubTrips');
+  try {
+    const res = await apiGet('getTrips', { limit:30 });
+    const trips = (res.trips||[]).filter(t=>t.kennitala!==user.kennitala);
+    clubLoaded = true;
+    if (!trips.length) { el.innerHTML='<div class="empty-note">No recent club trips.</div>'; return; }
+    el.innerHTML = trips.map(t => `
+      <div class="pub-trip">
+        <div style="font-size:20px">⛵</div>
+        <div class="pub-info">
+          <div class="pub-by">${esc(t.memberName||'—')} · ${esc(t.date||'')}</div>
+          <div class="pub-detail">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')} · ${esc(t.hoursDecimal||'')}h</div>
+        </div>
+        <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0" onclick='openLinkModal(${JSON.stringify(t)})'>Add to log</button>
+      </div>`).join('');
+  } catch(e) { el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load club trips.</div>'; }
 }
 
-// ── LINK MODAL ─────────────────────────────────────────────────────────────────
+// ── Link Trip Modal ────────────────────────────────────────────────────────────
 function openLinkModal(trip) {
   linkingTrip = trip;
-  document.getElementById("linkModalInfo").innerHTML =
+  document.getElementById('linkModalInfo').innerHTML =
     `<strong>${esc(trip.memberName)}</strong> · ${esc(trip.boatName)} · ${esc(trip.locationName)}<br>
-    ${esc(trip.date)} · ${esc(trip.timeOut)}–${esc(trip.timeIn)} · ${esc(trip.hoursDecimal)}h<br>
-    <span style="color:var(--muted);font-size:11px">This will copy the trip details to your logbook.</span>`;
-  document.getElementById("linkNotes").value = "";
-  document.getElementById("linkModal").classList.remove("hidden");
+    ${esc(trip.date)} · ${esc(trip.timeOut||'')}–${esc(trip.timeIn||'')} · ${esc(trip.hoursDecimal||'')}h`;
+  document.getElementById('linkNotes').value='';
+  document.getElementById('linkModal').classList.remove('hidden');
 }
-
-function closeLinkModal() {
-  document.getElementById("linkModal").classList.add("hidden");
-  linkingTrip = null;
-}
+function closeLinkModal() { document.getElementById('linkModal').classList.add('hidden'); linkingTrip=null; }
 
 async function submitLinkTrip() {
   if (!linkingTrip) return;
   try {
-    await apiPost("saveTrip", {
-      ...linkingTrip,
-      kennitala:   user.kennitala,
-      memberName:  user.name,
-      notes:       document.getElementById("linkNotes").value.trim(),
-      isLinked:    true,
-      linkedTripId: linkingTrip.id,
-    });
+    await apiPost('saveTrip', { ...linkingTrip, kennitala:user.kennitala, memberName:user.name, notes:document.getElementById('linkNotes').value.trim(), isLinked:true, linkedTripId:linkingTrip.id });
     closeLinkModal();
-    const res = await apiGet("getTrips", { kennitala: user.kennitala });
-    myTrips = res.trips || [];
+    const res = await apiGet('getTrips', { kennitala:user.kennitala });
+    myTrips = res.trips||[];
     renderMyLogbook();
-    showTab("history");
-  } catch(e) { alert("Error: "+e.message); }
+    showTab('history');
+  } catch(e) { alert('Error: '+e.message); }
 }
 
-// ── TABS ───────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 function showTab(tab) {
-  document.querySelectorAll("[id^='tab-']").forEach(el=>el.classList.add("hidden"));
-  document.querySelectorAll(".hub-tab").forEach(b=>b.classList.remove("active"));
-  document.getElementById("tab-"+tab).classList.remove("hidden");
-  const labels = {status:"⛵ Status",log:"📖 Log a Trip",history:"📋 My Logbook",club:"🌊 Club Trips"};
-  document.querySelectorAll(".hub-tab").forEach(b=>{ if(b.textContent.trim()===labels[tab]) b.classList.add("active"); });
-  if (tab==="club" && !allRecentTrips.length) loadClubTrips();
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.querySelectorAll('.hub-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  const labels = { checkouts:'⛵ Checkouts', log:'📖 Log a Trip', history:'📋 My Logbook', club:'🌊 Club Trips' };
+  document.querySelectorAll('.hub-tab').forEach(b=>{ if(b.textContent.trim()===labels[tab]) b.classList.add('active'); });
+  if (tab==='club') loadClubTrips();
 }
-
-function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 </script>
 </body>
 </html>
