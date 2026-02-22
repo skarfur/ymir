@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Member Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script src="../shared/weather.js"></script>
+<style>
+/* ── Weather widget ── */
+.wx-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; position:relative; overflow:hidden; }
+.wx-widget::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:10px 10px 0 0; }
+.wx-widget.flag-green::before  { background:#27ae60; }
+.wx-widget.flag-yellow::before { background:#f1c40f; }
+.wx-widget.flag-orange::before { background:#e67e22; }
+.wx-widget.flag-red::before    { background:#e74c3c; }
+.flag-pill { display:inline-flex; align-items:center; gap:5px; border-radius:20px; border:1px solid; padding:3px 9px; font-size:10px; font-weight:500; }
+
+/* ── Active checkout strip ── */
+.co-strip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:6px; display:flex; align-items:center; gap:10px; }
+.co-strip.mine    { border-left:3px solid var(--brass); }
+.co-strip.overdue { border-left:3px solid var(--red); }
+.co-meta { flex:1; min-width:0; }
+.co-title { font-size:12px; font-weight:500; color:var(--text); }
+.co-sub   { font-size:10px; color:var(--muted); margin-top:2px; }
+.status-badge { font-size:9px; padding:2px 6px; border-radius:8px; border:1px solid; letter-spacing:.3px; flex-shrink:0; }
+.s-out     { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
+.s-mine    { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+.s-overdue { color:var(--red); border-color:var(--red)55; background:var(--red)11; }
+.s-returned{ color:var(--muted); border-color:var(--border); }
+
+/* ── Tabs ── */
+.hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
+.hub-tab { padding:10px 16px; border:none; background:none; color:var(--muted); font-family:inherit; font-size:11px; letter-spacing:.8px; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s,border-color .15s; }
+.hub-tab.active { color:var(--brass); border-bottom-color:var(--brass); }
+
+/* ── Step indicator ── */
+.steps { display:flex; margin-bottom:14px; }
+.step { flex:1; text-align:center; padding:6px 4px; border-bottom:2px solid var(--border); font-size:9px; color:var(--muted); letter-spacing:.5px; }
+.step.active { border-bottom-color:var(--brass); color:var(--brass); }
+.step.done   { border-bottom-color:#2ecc7166; color:var(--muted); }
+
+/* ── Checklist ── */
+.cl-item { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--border)44; }
+.cl-item:last-child { border-bottom:none; }
+.cl-checkbox { width:17px; height:17px; margin-top:1px; accent-color:var(--brass); flex-shrink:0; cursor:pointer; }
+.cl-label { font-size:12px; color:var(--text); line-height:1.4; cursor:pointer; }
+.cl-label.checked { color:var(--muted); text-decoration:line-through; }
+.cl-progress { height:3px; background:var(--border); border-radius:2px; margin:8px 0 3px; overflow:hidden; }
+.cl-bar { height:100%; background:var(--brass); border-radius:2px; transition:width .3s; }
+
+/* ── Conditions prefill button ── */
+.cond-btn { display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; font-size:11px; color:var(--muted); cursor:pointer; font-family:inherit; width:100%; text-align:left; transition:border-color .15s; }
+.cond-btn:hover { border-color:var(--brass); }
+.cond-btn.loaded { border-color:var(--brass)77; color:var(--brass); }
+
+/* ── Grid helpers ── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.hours-calc { font-size:12px; color:var(--brass); min-height:16px; margin-top:4px; }
+
+/* ── Choice cards (launch picker) ── */
+.choice-cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.choice-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 12px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; }
+.choice-card:hover { border-color:var(--brass); background:var(--card); }
+.choice-icon { font-size:34px; margin-bottom:8px; }
+.choice-label { font-size:13px; font-weight:500; color:var(--text); }
+.choice-sub { font-size:10px; color:var(--muted); margin-top:3px; }
+
+/* ── Trip display ── */
+.pub-trip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:6px; display:flex; align-items:center; gap:10px; }
+.pub-trip-info { flex:1; min-width:0; }
+
+/* ── Returns section ── */
+.returns-section { border:1px dashed var(--border); border-radius:8px; padding:10px 12px; }
+.returns-label { font-size:9px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
+.returned-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border)33; }
+.returned-row:last-child { border-bottom:none; }
+
+/* ── Filter row ── */
+.filter-row { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.filter-row input { flex:1; min-width:80px; }
+
+/* ── Form section ── */
+.form-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+.form-section h4 { font-size:9px; color:var(--brass); letter-spacing:1.5px; margin-bottom:10px; }
+
+/* ── Hidden utility (must override everything) ── */
+.hidden { display: none !important; }
+
+.empty-note { color:var(--muted); font-size:11px; padding:6px 0; }
+.section-lbl { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin:10px 0 6px; }
+
+@media(max-width:480px){
+  .grid-3 { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--bg)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="color:var(--brass);font-size:16px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:10px" id="userBadge"></span>
+  </div>
+  <div style="display:flex;gap:6px">
+    <a href="../weather/" style="font-size:10px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">⛅ Weather</a>
+    <a href="logbook.html" style="font-size:10px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">📋 Logbook</a>
+    <button class="btn-ghost" onclick="signOut()" style="font-size:10px;padding:4px 8px">Out</button>
+  </div>
+</header>
+
+<div style="max-width:660px;margin:0 auto;padding:12px 12px 48px">
+
+  <!-- WEATHER WIDGET -->
+  <div class="wx-widget" id="wxWidget">
+    <div style="color:var(--muted);font-size:11px;padding:4px 0">⚓ Loading conditions…</div>
+  </div>
+
+  <!-- ACTIVE CHECKOUTS -->
+  <div class="section-lbl">ACTIVE CHECKOUTS <span style="color:var(--muted);font-weight:normal;font-size:8px;letter-spacing:0">— tap a row to check in</span></div>
+  <div id="activeList"><div class="empty-note">Loading…</div></div>
+
+  <!-- LAUNCH + CHECK IN BUTTONS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px">
+    <button class="btn btn-primary" style="font-size:12px;padding:12px" onclick="openLaunchPicker()">⛵ Launch a Boat</button>
+    <button class="btn btn-secondary" style="font-size:12px;padding:12px" onclick="openCheckInPicker()">⚓ Check In</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="hub-tabs">
+    <button class="hub-tab active" onclick="showTab('fleet')" id="tabBtnFleet">⛵ Fleet</button>
+    <button class="hub-tab" onclick="showTab('trips')" id="tabBtnTrips">📋 Log a Recent Trip</button>
+  </div>
+
+  <!-- ═══ TAB: FLEET ═══ -->
+  <div id="tab-fleet">
+    <div class="returns-label" style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:10px 0 8px">AVAILABLE BOATS — tap to launch</div>
+    <div id="fleetList"><div class="empty-note">Loading…</div></div>
+  </div>
+
+  <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
+  <div id="tab-trips" class="hidden">
+    <div class="returns-section" style="margin-bottom:12px">
+      <div class="returns-label">RECENTLY RETURNED (24H)</div>
+      <div id="recentList"><div class="empty-note">Loading…</div></div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin:0 0 12px">
+      Trips from the last 24 hours. Tap one to add it to your logbook as crew — or add a trip manually.
+    </p>
+    <div id="clubTrips"><div class="empty-note">Loading recent trips…</div></div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <button class="btn btn-secondary" style="width:100%;font-size:11px" onclick="openManualTripModal()">+ Add trip manually</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: LAUNCH PICKER
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalLaunchPicker">
+  <div class="modal" style="max-width:360px">
+    <h3>How to Launch?</h3>
+    <div class="choice-cards">
+      <div class="choice-card" onclick="closeLaunchPicker(); openQRLaunch()">
+        <div class="choice-icon">📱</div>
+        <div class="choice-label">Scan QR</div>
+        <div class="choice-sub">Scan the code on the boat</div>
+      </div>
+      <div class="choice-card" onclick="closeLaunchPicker(); startLaunchMenu()">
+        <div class="choice-icon">📋</div>
+        <div class="choice-label">Use Menu</div>
+        <div class="choice-sub">Select from list</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" style="width:100%" onclick="closeLaunchPicker()">Cancel</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: CHECK-IN PICKER
+     (used when tapping "Check In" button
+     or tapping a checkout row)
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalCheckInPicker">
+  <div class="modal" style="max-width:420px">
+    <h3>Check In a Boat</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Select the boat you're returning:</p>
+    <div id="checkInPickerList"><div class="empty-note">Loading active checkouts…</div></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="closeCheckInPicker()">Cancel</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: LAUNCH FLOW
+     Step 1: Boat (auto-advances on select)
+     Step 2: Details (no notes, no conditions)
+     Step 3: Pre-launch checklist → Launch
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalLaunch">
+  <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:90vh">
+    <!-- Step nav — always visible, clickable to go back -->
+    <div class="steps" style="flex-shrink:0">
+      <div class="step active" id="lDot1" onclick="goToLaunchStep(1)" style="cursor:pointer">1 · BOAT</div>
+      <div class="step" id="lDot2" onclick="goToLaunchStep(2)" style="cursor:pointer">2 · DETAILS</div>
+      <div class="step" id="lDot3" onclick="goToLaunchStep(3)" style="cursor:pointer">3 · CHECKLIST</div>
+    </div>
+
+    <!-- Scrollable step content -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
+
+      <!-- Step 1: Select boat -->
+      <div id="launchStep1">
+        <div class="form-section">
+          <h4>SELECT BOAT</h4>
+          <div class="field">
+            <label>Boat</label>
+            <select id="lBoat" onchange="onBoatSelected()"><option value="">Select a boat…</option></select>
+          </div>
+          <div id="boatCategoryLabel" style="display:none;font-size:11px;color:var(--brass);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Launch details -->
+      <div id="launchStep2" class="hidden">
+        <div class="form-section">
+          <h4>LAUNCH DETAILS</h4>
+          <div class="grid-2">
+            <div class="field"><label>Date</label><input type="date" id="lDate"></div>
+            <div class="field"><label>Time out</label><input type="time" id="lTimeOut"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>Location</label>
+              <select id="lLocation"><option value="">Select…</option></select>
+            </div>
+            <div class="field"><label>Crew on board</label>
+              <input type="number" id="lCrew" min="1" max="20" value="1">
+            </div>
+          </div>
+          <div class="field"><label>Expected return</label><input type="time" id="lReturnBy"></div>
+        </div>
+        <div id="launchDetailsErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+      </div>
+
+      <!-- Step 3: Pre-launch checklist -->
+      <div id="launchStep3" class="hidden">
+        <div class="form-section">
+          <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="checklistTitle">PRE-LAUNCH CHECKLIST</div>
+          <div id="checklistItems"></div>
+          <div class="cl-progress"><div class="cl-bar" id="clBar" style="width:0%"></div></div>
+          <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="clCount">0 / 0</div>
+        </div>
+        <div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+      </div>
+
+    </div><!-- end scrollable -->
+
+    <!-- Fixed footer — always visible -->
+    <div style="flex-shrink:0;padding-top:10px;border-top:1px solid var(--border)44;margin-top:4px">
+      <!-- Step-specific action button -->
+      <div id="launchActionRow">
+        <!-- populated by goToLaunchStep() -->
+      </div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeLaunchModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: RETURN FLOW
+     Step 1: Check-in (time + note)
+     Step 2: Conditions (from checkout wx, updatable)
+     Step 3: After-sail checklist + damage report button
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalReturn">
+  <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:90vh">
+    <div class="steps" style="flex-shrink:0">
+      <div class="step active" id="rDot1" onclick="goToReturnStep(1)" style="cursor:pointer">1 · CHECK IN</div>
+      <div class="step" id="rDot2" onclick="goToReturnStep(2)" style="cursor:pointer">2 · CONDITIONS</div>
+      <div class="step" id="rDot3" onclick="goToReturnStep(3)" style="cursor:pointer">3 · CHECKLIST</div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;min-height:0">
+
+      <!-- Step 1: time in + notes (no crew) -->
+      <div id="returnStep1">
+        <div class="form-section">
+          <h4 id="returnBoatTitle">RETURNING BOAT</h4>
+          <div class="field">
+            <label>Time returned</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="time" id="rTimeIn" oninput="updateReturnHours()" style="flex:1">
+              <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick="setV('rTimeIn',fmtTimeNow());updateReturnHours()">Now</button>
+            </div>
+          </div>
+          <div class="hours-calc" id="rHoursCalc"></div>
+          <div class="field" style="margin-top:8px"><label>Trip notes</label>
+            <textarea id="rNotes" rows="2" style="width:100%;resize:vertical" placeholder="Route taken, highlights…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Conditions — prefilled from checkout wx snapshot -->
+      <div id="returnStep2" class="hidden">
+        <div class="form-section">
+          <h4>CONDITIONS <span style="color:var(--muted);font-weight:normal;font-size:8px">— from launch, edit if needed</span></h4>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button class="cond-btn" id="rCondBtnLaunch" onclick="prefillFromLaunchWx()" style="flex:1;font-size:10px">⚓ Use launch weather</button>
+            <button class="cond-btn" id="rCondBtnCurrent" onclick="prefillReturnConditions()" style="flex:1;font-size:10px">🔄 Use current weather</button>
+          </div>
+          <div class="grid-3">
+            <div class="field"><label>Beaufort</label>
+              <select id="rBft"><option value="">–</option>
+                <option value="0">0 Calm</option><option value="1">1 Light air</option>
+                <option value="2">2 Light breeze</option><option value="3">3 Gentle</option>
+                <option value="4">4 Moderate</option><option value="5">5 Fresh</option>
+                <option value="6">6 Strong</option><option value="7">7 Near gale</option>
+                <option value="8">8 Gale</option>
+              </select>
+            </div>
+            <div class="field"><label>m/s</label><input type="number" id="rWindMs" step="0.1" min="0" placeholder="0.0"></div>
+            <div class="field"><label>Direction</label>
+              <select id="rWindDir"><option value="">–</option>
+                <option>N</option><option>NE</option><option>E</option><option>SE</option>
+                <option>S</option><option>SW</option><option>W</option><option>NW</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="field"><label>Sea state</label>
+              <select id="rSea"><option value="">–</option><option>Calm</option><option>Smooth</option>
+                <option>Slight</option><option>Moderate</option><option>Rough</option><option>Very rough</option>
+              </select>
+            </div>
+            <div class="field"><label>Precip.</label>
+              <select id="rPrecip"><option value="">–</option><option>None</option><option>Drizzle</option>
+                <option>Rain</option><option>Showers</option><option>Snow</option><option>Fog</option>
+              </select>
+            </div>
+            <div class="field"><label>Visibility</label>
+              <select id="rVis"><option value="">–</option>
+                <option>Excellent (>10km)</option><option>Good (5–10km)</option>
+                <option>Moderate (2–5km)</option><option>Poor (<2km)</option><option>Fog</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: After-sail checklist + damage report button -->
+      <div id="returnStep3" class="hidden">
+        <div class="form-section">
+          <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" id="afterChecklistTitle">AFTER-SAIL CHECKLIST</div>
+          <div id="afterChecklistItems"></div>
+          <div class="cl-progress"><div class="cl-bar" id="afterClBar" style="width:0%"></div></div>
+          <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:3px" id="afterClCount">0 / 0</div>
+        </div>
+        <button class="btn btn-secondary" style="width:100%;border-color:var(--red)66;color:var(--red);margin-bottom:10px" onclick="openDamageModal()">
+          🔧 Report damage or issue
+        </button>
+        <div id="damageSubmittedNote" style="display:none;font-size:11px;color:var(--red);text-align:center;margin-bottom:10px">⚠ Damage report will be submitted with this check-in</div>
+        <div id="returnErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+      </div>
+
+    </div><!-- end scrollable -->
+
+    <div style="flex-shrink:0;padding-top:10px;border-top:1px solid var(--border)44;margin-top:4px">
+      <div id="returnActionRow"></div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeReturnModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: DAMAGE REPORT
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalDamage">
+  <div class="modal" style="max-width:440px">
+    <h3 style="color:var(--red)">🔧 Damage / Issue Report</h3>
+    <div class="form-section" style="border-color:var(--red)44">
+      <div class="field"><label>What happened?</label>
+        <textarea id="damageDesc" rows="3" style="width:100%;resize:vertical" placeholder="Describe the damage or issue…"></textarea>
+      </div>
+      <div class="field"><label>Severity</label>
+        <select id="damageSeverity">
+          <option value="">Select…</option>
+          <option value="minor">Minor — cosmetic, boat still sailable</option>
+          <option value="moderate">Moderate — needs inspection before next sail</option>
+          <option value="serious">Serious — boat should not sail until repaired</option>
+        </select>
+      </div>
+    </div>
+    <div id="damageErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeDamageModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="saveDamageReport()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: MANUAL TRIP
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalManualTrip">
+  <div class="modal" style="max-width:500px">
+    <h3>Log a Trip Manually</h3>
+    <div class="form-section">
+      <h4>TRIP DETAILS</h4>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;cursor:pointer;font-size:11px;transition:background .15s" id="mRoleSkipperLbl">
+          <input type="radio" name="mRole" id="mRoleSkipper" value="skipper" checked onchange="updateManualRoleStyle()"> ⛵ Skipper
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;cursor:pointer;font-size:11px;border-left:1px solid var(--border);transition:background .15s" id="mRoleCrewLbl">
+          <input type="radio" name="mRole" id="mRoleCrew" value="crew" onchange="updateManualRoleStyle()"> 👥 Crew
+        </label>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Date</label><input type="date" id="mDate"></div>
+        <div class="field"><label>Crew count</label><input type="number" id="mCrew" min="1" value="1"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Departure</label><input type="time" id="mTimeOut" oninput="calcManualHours()"></div>
+        <div class="field"><label>Return</label><input type="time" id="mTimeIn" oninput="calcManualHours()"></div>
+      </div>
+      <div class="hours-calc" id="mHoursCalc"></div>
+      <div class="grid-2" style="margin-top:4px">
+        <div class="field"><label>Boat</label><select id="mBoat"><option value="">Select…</option></select></div>
+        <div class="field"><label>Location</label><select id="mLocation"><option value="">Select…</option></select></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <h4>CONDITIONS (optional)</h4>
+      <div class="grid-3">
+        <div class="field"><label>Beaufort</label>
+          <select id="mBft"><option value="">–</option>
+            <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+            <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+          </select>
+        </div>
+        <div class="field"><label>Wind dir.</label>
+          <select id="mWindDir"><option value="">–</option>
+            <option>N</option><option>NE</option><option>E</option><option>SE</option>
+            <option>S</option><option>SW</option><option>W</option><option>NW</option>
+          </select>
+        </div>
+        <div class="field"><label>Sea state</label>
+          <select id="mSea"><option value="">–</option><option>Calm</option><option>Smooth</option>
+            <option>Slight</option><option>Moderate</option><option>Rough</option><option>Very rough</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label>
+        <textarea id="mNotes" rows="2" style="width:100%;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div id="manualErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeManualTripModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitManualTrip()">Save Trip</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL: LINK TRIP (add as crew)
+════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalLink">
+  <div class="modal" style="max-width:420px">
+    <h3>Add to My Logbook</h3>
+    <div id="linkModalInfo" style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px"></div>
+    <div class="field"><label>Your notes (optional)</label>
+      <textarea id="linkNotes" rows="2" style="width:100%;resize:vertical" placeholder="Your personal notes as crew…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLinkTrip()">Add to My Logbook</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONSTANTS + HELPERS
+// ══════════════════════════════════════════════════════
+const LAT=64.1300, LON=-21.9406;
+const FLAGS={
+  green: {color:'#27ae60',bg:'#27ae6018',border:'#27ae6044',label:'Green', advice:"Good conditions."},
+  yellow:{color:'#f1c40f',bg:'#f1c40f18',border:'#f1c40f44',label:'Yellow',advice:"Marginal — experienced only."},
+  orange:{color:'#e67e22',bg:'#e67e2218',border:'#e67e2244',label:'Orange',advice:"Difficult — keelboats only."},
+  red:   {color:'#e74c3c',bg:'#e74c3c18',border:'#e74c3c44',label:'Red',   advice:"Do not sail."},
+};
+const FLAG_ICONS={green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴'};
+
+function msToBft(ms){const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];for(let i=T.length-1;i>=0;i--)if(ms>=T[i])return i;return 0;}
+function msToKt(ms){return(ms*1.944).toFixed(1);}
+function dirLabel(d){if(d==null)return'–';return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16];}
+function dirArrow(d){if(d==null)return'';return['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8];}
+function condIcon(c){if(c==0)return'☀️';if(c==1)return'🌤';if(c==2)return'⛅';if(c==3)return'☁️';if([45,48].includes(c))return'🌫';if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧';if([71,73,75,77,85,86].includes(c))return'🌨';if([95,96,99].includes(c))return'⛈';return'🌡';}
+function condDesc(c){if(c==0)return'Clear';if(c==1)return'Mainly clear';if(c==2)return'Partly cloudy';if(c==3)return'Overcast';if([45,48].includes(c))return'Fog';if([51,53,55].includes(c))return'Drizzle';if([61,63,65,80,81,82].includes(c))return'Rain';if([71,73,75,77].includes(c))return'Snow';if([95,96,99].includes(c))return'Thunderstorm';return'–';}
+function assessFlag(ws,wDir,wh){
+  let lv=0;const bft=msToBft(ws||0);const east=['E','NE','SE'].includes((wDir||'').toUpperCase());
+  if(bft>=7)lv=3;else if(bft===6){lv=2;if(east)lv=3;}else if(bft===5){lv=1;if(east)lv=2;}else if(bft===4&&east)lv=1;
+  if(wh>=2.0)lv=Math.max(lv,3);else if(wh>=1.2)lv=Math.max(lv,2);else if(wh>=0.6)lv=Math.max(lv,1);
+  return['green','yellow','orange','red'][lv];
+}
+function bftDesc(b){return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale'][Math.min(b,8)]||'';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtTimeNow(){return new Date().toTimeString().slice(0,5);}
+function setSelByText(id,text){const s=document.getElementById(id);if(!s)return;for(let o of s.options)if(o.text===text||o.value===text){s.value=o.value;return;}}
+function timeDiffHours(t1,t2){if(!t1||!t2)return 0;const[h1,m1]=t1.split(':').map(Number),[h2,m2]=t2.split(':').map(Number);return((h2*60+m2)-(h1*60+m1))/60;}
+function hoursLabel(t1,t2){const diff=timeDiffHours(t1,t2);if(diff<=0)return'';const h=Math.floor(diff),m=Math.round((diff-h)*60);return(h?h+'h ':'')+( m?m+'m':'');}
+function setV(id,val){const el=document.getElementById(id);if(el)el.value=val;}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const user=requireAuth();
+let boats=[], locations=[], checkouts=[], allTrips=[];
+let currentWx=null;
+let launchBoat=null;
+let returnCo=null;
+let linkingTrip=null;
+let tripsLoaded=false;
+let pendingDamage=null;
+
+const CHECKLISTS={
+  dinghy:['Life jacket fitted and fastened','Buoyancy aid for each crew member','Rudder and tiller attached correctly','Centreboard / daggerboard present','Mainsheet and jib sheets uncoiled','Bailer and paddle on board','Check forecast — conditions acceptable'],
+  keelboat:['Life jackets for all crew','Engine fuel & oil levels checked','Engine starts and in neutral','Navigation lights operational','VHF radio on and charged','Flares in date and accessible','Safety tether / harness available','MOB equipment ready','Lines and fenders stowed','Check forecast — conditions acceptable'],
+  catamaran:['Life jackets for all crew','Both hulls dry — no ingress','Trampoline secure — no damage','Both rudder assemblies fitted','Both centreboards / foils checked','Mainsheet and traveller free','Check forecast — conditions acceptable'],
+  kayak:['Paddle float and spare paddle','Spray deck fitted correctly','Dry bag with emergency kit','Whistle and light attached','Check forecast — conditions acceptable'],
+};
+function getChecklist(cat){return CHECKLISTS[(cat||'dinghy').toLowerCase()]||CHECKLISTS.dinghy;}
+
+if(user){
+  document.getElementById('userBadge').textContent=user.name;
+  init();
+  fetchWeatherWidget();
+}
+
+async function init(){
+  try{
+    const[bRes,lRes,coRes]=await Promise.all([
+      apiGet('getBoats'),
+      apiGet('getLocations'),
+      apiGet('getActiveCheckouts'),
+    ]);
+    boats    =(bRes.boats    ||[]).filter(b=>String(b.active)!=='false'&&String(b.oos)!=='true');
+    locations=(lRes.locations||[]).filter(l=>String(l.active)!=='false');
+    checkouts= coRes.checkouts||[];
+    populateSelects();
+    renderCheckouts();
+    setV('lDate',todayISO()); setV('lTimeOut',fmtTimeNow());
+    setV('mDate',todayISO()); setV('mTimeOut',fmtTimeNow());
+    handleQR();
+  }catch(e){console.error('init',e);}
+}
+
+function populateSelects(){
+  ['lBoat','mBoat'].forEach(id=>{
+    const s=document.getElementById(id);
+    s.innerHTML='<option value="">Select a boat…</option>';
+    boats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;o.dataset.category=b.category||'dinghy';s.appendChild(o);});
+  });
+  ['lLocation','mLocation'].forEach(id=>{
+    const s=document.getElementById(id);
+    s.innerHTML='<option value="">Select location…</option>';
+    locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;s.appendChild(o);});
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// WEATHER WIDGET  (shared weather.js)
+// ══════════════════════════════════════════════════════
+function fetchWeatherWidget(){
+  const el=document.getElementById('wxWidget');
+  if(!el) return;
+  el.className='wx-widget';
+  wxWidget(el, {
+    onData: snap => { currentWx = snap; },
+    showRefreshBtn: true,
+  }).start();
+}
+
+// ══════════════════════════════════════════════════════
+// CONDITIONS PREFILL
+// ══════════════════════════════════════════════════════
+function doCondPrefill(prefix, wx){
+  if(!wx)return;
+  const dirs8=['N','NE','E','SE','S','SW','W','NW'];
+  const dir8=dirs8[Math.round((wx.wd??0)/45)%8];
+  setV(prefix+'Bft',String(wx.bft));
+  setV(prefix+'WindMs',Math.round(wx.ws));
+  setSelByText(prefix+'WindDir',dir8);
+  const btn=document.getElementById(prefix+'CondBtn');
+  if(btn)btn.className='cond-btn loaded';
+  const icon=document.getElementById(prefix+'CondIcon');
+  if(icon)icon.textContent='✓';
+  const txt=document.getElementById(prefix+'CondText');
+  if(txt)txt.textContent=`Bft ${wx.bft} · ${Math.round(wx.ws)} m/s · ${dir8}${wx.waveH!=null?' · Waves '+wx.waveH.toFixed(1)+'m':''} — edit if needed`;
+}
+function prefillLaunchConditions(){ doCondPrefill('l', currentWx); }
+function prefillReturnConditions(){ doCondPrefill('r', currentWx); }
+
+// ══════════════════════════════════════════════════════
+// CHECKOUT DISPLAY + FLEET
+// ══════════════════════════════════════════════════════
+function renderCheckouts(){
+  const nowTime=fmtTimeNow();
+  const active  =checkouts.filter(c=>c.status==='out');
+  const returned=checkouts.filter(c=>c.status==='in').slice(0,5);
+
+  // Active checkouts
+  const aEl=document.getElementById('activeList');
+  if(!active.length){
+    aEl.innerHTML='<div class="empty-note">No boats currently out.</div>';
+  } else {
+    aEl.innerHTML=active.map(c=>{
+      const isMe=String(c.memberKennitala||c.memberKt||c.kennitala||'')===String(user.kennitala);
+      const overdue=(c.returnBy||c.expectedReturn)&&(c.returnBy||c.expectedReturn)<nowTime;
+      const cls=overdue?'overdue':isMe?'mine':'';
+      const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
+      const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
+      const rawTout=c.timeOut||c.checkedOutAt||'';
+      const tOut=(rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5))||'—';
+      const retBy=c.returnBy||c.expectedReturn||'';
+      const retLabel=retBy?`Est. return ${esc(retBy)}`:'No est. return';
+      const coJson=JSON.stringify(c).replace(/'/g,"&#39;");
+      return`<div class="co-strip${cls?' '+cls:''}">
+        <div style="font-size:20px;flex-shrink:0">⛵</div>
+        <div class="co-meta" ${isMe?`style="cursor:pointer" onclick='startReturn(${coJson})'`:''}>
+          <div class="co-title">${esc(c.boatName||'—')}</div>
+          <div class="co-sub">${esc(c.memberName||'—')} &nbsp;·&nbsp; ${esc(c.locationName||'—')} &nbsp;·&nbsp; Dep. ${esc(tOut)} &nbsp;·&nbsp; ${retLabel}</div>
+        </div>
+        ${isMe
+          ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" onclick='startReturn(${coJson})'>Check In</button>
+             <button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="Delete checkout" onclick='confirmDeleteCheckout("${c.id}")'>✕</button>`
+          : `<span class="status-badge ${badgeCls}">${badge}</span>`
+        }
+      </div>`;
+    }).join('');
+  }
+
+  // Recently returned
+  const rEl=document.getElementById('recentList');
+  rEl.innerHTML=!returned.length
+    ?'<div class="empty-note">No returns in the last 24h.</div>'
+    :returned.map(c=>`
+      <div class="returned-row">
+        <span style="font-size:14px;opacity:.45">⛵</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:500">${esc(c.boatName||'—')}</div>
+          <div style="font-size:10px;color:var(--muted)">${esc(c.memberName||'—')} · ${esc(c.timeOut||'')}–${esc(c.timeIn||'')} · ${esc(c.locationName||'—')}</div>
+        </div>
+        <span class="status-badge s-returned">RETURNED</span>
+      </div>`).join('');
+
+  // Fleet tab — available boats
+  renderFleet(active);
+}
+
+function renderFleet(activeCheckouts){
+  const el=document.getElementById('fleetList');
+  if(!el) return;
+  const outIds=new Set((activeCheckouts||checkouts.filter(c=>c.status==='out')).map(c=>c.boatId));
+  const available=boats.filter(b=>!outIds.has(b.id));
+  if(!available.length){
+    el.innerHTML='<div class="empty-note">All boats are currently out.</div>';
+    return;
+  }
+  el.innerHTML=available.map(b=>`
+    <div class="co-strip" style="cursor:pointer" onclick='startLaunchForBoat(${JSON.stringify(b).replace(/'/g,"&#39;")})'>
+      <div style="font-size:20px;flex-shrink:0">⛵</div>
+      <div class="co-meta">
+        <div class="co-title">${esc(b.name||'—')}</div>
+        <div class="co-sub">${esc((b.category||'').toUpperCase())}${b.location?' · '+esc(b.location):''}</div>
+      </div>
+      <span class="status-badge" style="background:var(--brass)18;color:var(--brass);border:1px solid var(--brass)44">AVAIL</span>
+    </div>`).join('');
+}
+
+function startLaunchForBoat(boat){
+  startLaunchMenu();
+  setTimeout(()=>{
+    const sel=document.getElementById('lBoat');
+    if(sel){
+      sel.value=boat.id;
+      launchBoat={id:boat.id,name:boat.name,category:boat.category||'dinghy'};
+      const lbl=document.getElementById('boatCategoryLabel');
+      if(lbl){lbl.textContent=launchBoat.category.toUpperCase();lbl.style.display='block';}
+      goToLaunchStep(2);
+    }
+  },80);
+}
+
+// ══════════════════════════════════════════════════════
+// LAUNCH PICKER MODAL
+// ══════════════════════════════════════════════════════
+function openLaunchPicker(){ document.getElementById('modalLaunchPicker').classList.remove('hidden'); }
+function closeLaunchPicker(){ document.getElementById('modalLaunchPicker').classList.add('hidden'); }
+
+function openQRLaunch(){
+  if(window.confirm('Point your camera at the QR code on the boat.\n\nNot available in browser — use the "Use Menu" option to continue.')){
+    startLaunchMenu();
+  }
+}
+
+function startLaunchMenu(){
+  setV('lDate',todayISO()); setV('lTimeOut',fmtTimeNow());
+  document.getElementById('launchErr').style.display='none';
+  if(document.getElementById('launchDetailsErr')) document.getElementById('launchDetailsErr').style.display='none';
+  document.getElementById('lBoat').value='';
+  document.getElementById('boatCategoryLabel').style.display='none';
+  launchBoat=null;
+  document.getElementById('modalLaunch').classList.remove('hidden');
+  goToLaunchStep(1);
+}
+function closeLaunchModal(){
+  document.getElementById('modalLaunch').classList.add('hidden');
+  launchBoat=null;
+}
+
+// ── Check-in picker (standalone "Check In" button) ──
+function openCheckInPicker(){
+  const active=checkouts.filter(c=>c.status==='out');
+  const mine=active.filter(c=>String(c.memberKennitala||c.memberKt||c.kennitala||'')===String(user.kennitala));
+  const el=document.getElementById('checkInPickerList');
+  if(!mine.length){
+    el.innerHTML=active.length
+      ?'<div class="empty-note">No boats checked out by you. Tap a row in Active Checkouts to check in your boat.</div>'
+      :'<div class="empty-note">No boats currently out.</div>';
+  } else {
+    el.innerHTML=mine.map(c=>`
+      <div class="co-strip mine" style="cursor:pointer;margin-bottom:6px" onclick='closeCheckInPicker();startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+        <div style="font-size:18px;flex-shrink:0">⛵</div>
+        <div class="co-meta">
+          <div class="co-title">${esc(c.boatName||'—')}</div>
+          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc((()=>{const r=c.timeOut||c.checkedOutAt||'';return r.includes('T')?r.slice(11,16):r.slice(0,5)||'—';})())}${(c.returnBy||c.expectedReturn)?' · Est. '+esc(c.returnBy||c.expectedReturn):''}</div>
+        </div>
+        <span style="font-size:13px;color:var(--brass);flex-shrink:0">→</span>
+      </div>`).join('');
+  }
+  document.getElementById('modalCheckInPicker').classList.remove('hidden');
+}
+function closeCheckInPicker(){document.getElementById('modalCheckInPicker').classList.add('hidden');}
+
+// ══════════════════════════════════════════════════════
+// LAUNCH FLOW
+// ══════════════════════════════════════════════════════
+function onBoatSelected(){
+  const s=document.getElementById('lBoat');
+  const opt=s.options[s.selectedIndex];
+  const lbl=document.getElementById('boatCategoryLabel');
+  if(s.value){
+    launchBoat=boats.find(b=>b.id===s.value)||{id:s.value,name:opt.text,category:opt.dataset?.category||'dinghy'};
+    lbl.textContent=(launchBoat.category||'dinghy').toUpperCase();
+    lbl.style.display='block';
+    // Auto-advance to details after a short pause
+    setTimeout(()=>goToLaunchStep(2), 180);
+  }else{launchBoat=null;lbl.style.display='none';}
+}
+
+function goToLaunchStep(n){
+  // Prevent forward skipping past unvisited steps
+  if(n===2&&!launchBoat) return;
+  if(n===3&&!launchBoat) return;
+  [1,2,3].forEach(i=>{
+    document.getElementById('launchStep'+i).classList.toggle('hidden',i!==n);
+    const dot=document.getElementById('lDot'+i);
+    dot.classList.remove('active','done');
+    if(i===n)dot.classList.add('active');
+    else if(i<n)dot.classList.add('done');
+  });
+  // Update the action button in the footer
+  const row=document.getElementById('launchActionRow');
+  if(n===1){
+    row.innerHTML=''; // No forward button on step 1 — just select a boat
+  } else if(n===2){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToLaunchChecklist()">Next: Checklist →</button>`;
+  } else if(n===3){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="submitLaunch()">⛵ Launch</button>`;
+  }
+}
+
+function goToLaunchChecklist(){
+  const loc=document.getElementById('lLocation');
+  const err=document.getElementById('launchDetailsErr');
+  if(!loc.value){err.textContent='Location is required.';err.style.display='block';return;}
+  err.style.display='none';
+  buildChecklist(launchBoat?.category||'dinghy');
+  goToLaunchStep(3);
+}
+
+function buildChecklist(category){
+  const items=getChecklist(category);
+  document.getElementById('checklistTitle').textContent=`PRE-LAUNCH · ${(category).toUpperCase()} (${items.length} items)`;
+  document.getElementById('checklistItems').innerHTML=items.map((txt,i)=>`
+    <div class="cl-item">
+      <input type="checkbox" class="cl-checkbox" id="cl${i}" onchange="updateClProgress()">
+      <label class="cl-label" for="cl${i}" id="cll${i}">${esc(txt)}</label>
+    </div>`).join('');
+  updateClProgress();
+}
+
+function updateClProgress(){
+  const boxes=[...document.querySelectorAll('.cl-checkbox')];
+  const checked=boxes.filter(b=>b.checked).length,total=boxes.length;
+  document.getElementById('clBar').style.width=(total?Math.round(checked/total*100):0)+'%';
+  document.getElementById('clCount').textContent=`${checked} / ${total}`;
+  boxes.forEach((b,i)=>document.getElementById('cll'+i)?.classList.toggle('checked',b.checked));
+}
+
+async function submitLaunch(){
+  const boat=document.getElementById('lBoat');
+  const loc =document.getElementById('lLocation');
+  const err =document.getElementById('launchErr');
+  if(!boat.value||!loc.value){err.textContent='Boat and location are required.';err.style.display='block';return;}
+  err.style.display='none';
+  // Get current weather snapshot (already live from widget; fall back to fresh fetch)
+  if(!currentWx){ try{ const {wx,marine}=await wxFetch(); const c=wx.current,mc=marine?.current; const ws=c.wind_speed_10m,wd=c.wind_direction_10m,wg=c.wind_gusts_10m; currentWx={ws,wd,wg,bft:wxMsToBft(ws),waveH:mc?.wave_height??null,wDir:wxDirLabel(wd),airT:c.temperature_2m,flagKey:wxAssessFlag(ws,wxDirLabel(wd),mc?.wave_height??0).flagKey}; }catch(e){} }
+  const snap=wxSnapshot(currentWx); // compact storable object, integer winds
+  try{
+    await apiPost('saveCheckout',{
+      memberKennitala: user.kennitala,
+      memberName:      user.name,
+      boatId:          boat.value,
+      boatName:        boat.options[boat.selectedIndex]?.text||'',
+      boatCategory:    launchBoat?.category||'',
+      locationId:      loc.value,
+      locationName:    loc.options[loc.selectedIndex]?.text||'',
+      checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
+      expectedReturn:  document.getElementById('lReturnBy').value||'',
+      crew:            document.getElementById('lCrew').value||1,
+      wxSnapshot:      snap,
+    });
+    const co=await apiGet('getActiveCheckouts');
+    checkouts=co.checkouts||[];
+    renderCheckouts();
+    closeLaunchModal();
+    showMsg('⛵ Launched! Have a safe sail.','ok');
+  }catch(e){err.textContent='Error: '+e.message;err.style.display='block';}
+}
+
+// ══════════════════════════════════════════════════════
+// RETURN FLOW
+// ══════════════════════════════════════════════════════
+function startReturn(co){
+  // Guard: only your own checkouts
+  if(String(co.memberKennitala||co.memberKt||co.kennitala||'')!==String(user.kennitala)){
+    showMsg('You can only check in a boat you checked out.','err');
+    return;
+  }
+  returnCo=co;
+  pendingDamage=null;
+  document.getElementById('returnBoatTitle').textContent=`RETURNING: ${(co.boatName||co.boatId).toUpperCase()}`;
+  setV('rTimeIn',fmtTimeNow());
+  setV('rNotes','');
+  document.getElementById('returnErr').style.display='none';
+  document.getElementById('damageSubmittedNote').style.display='none';
+  updateReturnHours();
+  goToReturnStep(1);
+  document.getElementById('modalReturn').classList.remove('hidden');
+}
+function closeReturnModal(){document.getElementById('modalReturn').classList.add('hidden');returnCo=null;pendingDamage=null;}
+
+function goToReturnStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('returnStep'+i).classList.toggle('hidden',i!==n);
+    const dot=document.getElementById('rDot'+i);
+    dot.classList.remove('active','done');
+    if(i===n)dot.classList.add('active');
+    else if(i<n)dot.classList.add('done');
+  });
+  const row=document.getElementById('returnActionRow');
+  if(n===1){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToReturnConditions()">Next: Conditions →</button>`;
+  } else if(n===2){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="goToReturnChecklist()">Next: Checklist →</button>`;
+  } else if(n===3){
+    row.innerHTML=`<button class="btn btn-primary" style="width:100%" onclick="submitReturn()">✓ Confirm Return</button>`;
+  }
+}
+
+function updateReturnHours(){
+  if(!returnCo)return;
+  const rawTout=returnCo.timeOut||returnCo.checkedOutAt||'';
+  const tout=rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5)||'';
+  const h=hoursLabel(tout,document.getElementById('rTimeIn').value);
+  document.getElementById('rHoursCalc').textContent=h?`⏱ ${h} sailed`:'';
+}
+
+async function goToReturnConditions(){
+  // Prefill from checkout wx snapshot; fall back to current
+  prefillFromLaunchWx();
+  goToReturnStep(2);
+}
+
+function prefillFromLaunchWx(){
+  if(!returnCo) return;
+  let wx=null;
+  if(returnCo.wxSnapshot){
+    try{ wx=typeof returnCo.wxSnapshot==='string'?JSON.parse(returnCo.wxSnapshot):returnCo.wxSnapshot; }catch(e){}
+  }
+  // Fall back to launchBft/launchWindMs/launchWindDir fields on the checkout
+  if(!wx && (returnCo.launchBft||returnCo.launchWindMs)){
+    wx={
+      bft: parseFloat(returnCo.launchBft)||0,
+      ws:  parseFloat(returnCo.launchWindMs)||0,
+      wDir:returnCo.launchWindDir||returnCo.dir||'',
+    };
+  }
+  if(wx){
+    doCondPrefill('r',wx);
+    const btn=document.getElementById('rCondBtnLaunch');
+    if(btn){btn.classList.add('loaded');btn.textContent='✓ Launch weather loaded';}
+  }
+}
+
+function goToReturnChecklist(){
+  buildAfterChecklist(returnCo?.boatCategory||'dinghy');
+  goToReturnStep(3);
+}
+
+// ── Damage report modal ──
+function openDamageModal(){
+  // Pre-fill if already drafted
+  if(pendingDamage){
+    setV('damageDesc',pendingDamage.description);
+    setV('damageSeverity',pendingDamage.severity);
+  } else {
+    setV('damageDesc','');
+    setV('damageSeverity','');
+  }
+  document.getElementById('damageErr').style.display='none';
+  document.getElementById('modalDamage').classList.remove('hidden');
+}
+function closeDamageModal(){document.getElementById('modalDamage').classList.add('hidden');}
+function saveDamageReport(){
+  const desc=document.getElementById('damageDesc').value.trim();
+  const sev=document.getElementById('damageSeverity').value;
+  const err=document.getElementById('damageErr');
+  if(!desc){err.textContent='Please describe the damage or issue.';err.style.display='block';return;}
+  if(!sev){err.textContent='Please select a severity level.';err.style.display='block';return;}
+  pendingDamage={description:desc,severity:sev};
+  closeDamageModal();
+  document.getElementById('damageSubmittedNote').style.display='block';
+}
+
+const AFTER_CHECKLISTS={
+  dinghy:   ['Rinse boat with fresh water','Lower and secure mast/rig if required','Drain bailer, leave open to dry','Secure rudder and tiller','Coil and stow all sheets','Return boat to designated storage','Return life jackets to rack'],
+  keelboat: ['Engine flushed and off','Sails furled/bagged and secured','Lines coiled and stowed','Fenders secured','Bilge pumped dry','Shore power reconnected if applicable','Engine log updated'],
+  catamaran:['Rinse both hulls and trampoline','Lower and bag sails','Secure rudder assemblies','Coil and stow sheets and halyards','Return boat to designated area'],
+  kayak:    ['Drain cockpit, leave hatch open','Rinse paddle and spray deck','Store upside down or in rack'],
+};
+function getAfterChecklist(cat){return AFTER_CHECKLISTS[(cat||'dinghy').toLowerCase()]||AFTER_CHECKLISTS.dinghy;}
+
+function buildAfterChecklist(category){
+  const items=getAfterChecklist(category);
+  document.getElementById('afterChecklistTitle').textContent=`AFTER-SAIL · ${(category).toUpperCase()} (${items.length} items)`;
+  document.getElementById('afterChecklistItems').innerHTML=items.map((txt,i)=>`
+    <div class="cl-item">
+      <input type="checkbox" class="cl-checkbox" id="acl${i}" onchange="updateAfterClProgress()">
+      <label class="cl-label" for="acl${i}" id="acll${i}">${esc(txt)}</label>
+    </div>`).join('');
+  updateAfterClProgress();
+}
+
+function updateAfterClProgress(){
+  const boxes=[...document.querySelectorAll('[id^="acl"]')].filter(el=>el.type==='checkbox');
+  const checked=boxes.filter(b=>b.checked).length,total=boxes.length;
+  document.getElementById('afterClBar').style.width=(total?Math.round(checked/total*100):0)+'%';
+  document.getElementById('afterClCount').textContent=`${checked} / ${total}`;
+  boxes.forEach((b,i)=>document.getElementById('acll'+i)?.classList.toggle('checked',b.checked));
+}
+
+async function submitReturn(){
+  const err=document.getElementById('returnErr');
+  const tin=document.getElementById('rTimeIn').value;
+  if(!tin){err.textContent='Return time required.';err.style.display='block';return;}
+  err.style.display='none';
+  const co=returnCo;
+  // Normalise timeOut — strip anything before HH:MM (handles 1899-12-30 serials)
+  const rawTout=co.timeOut||co.checkedOutAt||'';
+  const tout=rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5)||'';
+  const date=co.date||todayISO();
+  const hDec=tout?Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10):0;
+
+  // Parse launch wx snapshot from checkout
+  let launchWx=null;
+  if(co.wxSnapshot){ try{ launchWx=typeof co.wxSnapshot==='string'?JSON.parse(co.wxSnapshot):co.wxSnapshot; }catch(e){} }
+
+  try{
+    await apiPost('checkIn',{
+      id:co.id,
+      timeIn:tin,
+    });
+    await apiPost('saveTrip',{
+      kennitala:       user.kennitala,
+      memberName:      user.name,
+      date,
+      timeOut:         tout,
+      timeIn:          tin,
+      hoursDecimal:    hDec,
+      boatId:          co.boatId,
+      boatName:        co.boatName,
+      locationId:      co.locationId,
+      locationName:    co.locationName,
+      crew:            co.crew||1,
+      // Return conditions (from step 2)
+      beaufort:        document.getElementById('rBft').value,
+      windMs:          document.getElementById('rWindMs').value,
+      windDir:         document.getElementById('rWindDir').value,
+      seaState:        document.getElementById('rSea').value,
+      precip:          document.getElementById('rPrecip').value,
+      visibility:      document.getElementById('rVis').value,
+      waveHeight:      launchWx?.wv!=null ? String(launchWx.wv) : (launchWx?.waveH!=null ? String(launchWx.waveH.toFixed?launchWx.waveH.toFixed(1):launchWx.waveH) : ''),
+      // Launch conditions (from checkout wx snapshot)
+      launchBeaufort:  launchWx ? String(launchWx.bft||'') : '',
+      launchWindMs:    launchWx ? String(launchWx.ws||'') : '',
+      launchWindDir:   launchWx ? (launchWx.dir||launchWx.wDir||'') : '',
+      launchWaveHeight:launchWx?.wv!=null ? String(launchWx.wv) : '',
+      notes:           document.getElementById('rNotes').value.trim(),
+      isLinked:        true,
+      linkedCheckoutId:co.id,
+      role:            'skipper',
+    });
+    if(pendingDamage){
+      await apiPost('saveDamageReport',{
+        boatId:      co.boatId,
+        boatName:    co.boatName,
+        memberKt:    user.kennitala,
+        memberName:  user.name,
+        date,
+        description: pendingDamage.description,
+        severity:    pendingDamage.severity,
+        checkoutId:  co.id,
+      });
+    }
+    checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
+    renderCheckouts();
+    closeReturnModal();
+    showMsg(pendingDamage?'✓ Return logged. Damage report submitted.':'✓ Safe return logged. Trip saved to your logbook.','ok');
+  }catch(e){err.textContent='Error: '+e.message;err.style.display='block';}
+}
+
+// ══════════════════════════════════════════════════════
+// TRIPS TAB — last 24h, add to logbook as crew
+// ══════════════════════════════════════════════════════
+async function loadTripsTab(){
+  if(tripsLoaded)return;
+  const el=document.getElementById('clubTrips');
+  try{
+    const res=await apiGet('getTrips',{limit:120});
+    allTrips=res.trips||[];
+    tripsLoaded=true;
+    renderRecentTrips();
+  }catch(e){el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load trips.</div>';}
+}
+
+function renderRecentTrips(){
+  const el=document.getElementById('clubTrips');
+  // Last 24h: filter by date today or yesterday, and timeIn within 24h
+  const now=Date.now();
+  const cutoff=now-(24*60*60*1000);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const yesterdayStr=new Date(now-86400000).toISOString().slice(0,10);
+
+  const recent=allTrips.filter(t=>{
+    if(!t.date)return false;
+    if(t.date!==todayStr&&t.date!==yesterdayStr)return false;
+    // Rough time filter using date+timeIn
+    if(t.timeIn){
+      const ts=new Date(t.date+'T'+t.timeIn).getTime();
+      if(!isNaN(ts)&&ts<cutoff)return false;
+    }
+    return true;
+  });
+
+  if(!recent.length){el.innerHTML='<div class="empty-note">No trips in the last 24 hours.</div>';return;}
+
+  el.innerHTML=recent.map(t=>{
+    const isMe=String(t.kennitala||'')===String(user.kennitala);
+    const roleTag=isMe
+      ?'<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">SKIPPER</span>'
+      :'';
+    return`<div class="pub-trip" style="cursor:${isMe?'default':'pointer'}" ${!isMe?`onclick='openLinkModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'`:''}> 
+      <span style="font-size:17px">⛵</span>
+      <div class="pub-trip-info">
+        <div style="font-size:11px;font-weight:500;color:var(--text)">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')} ${roleTag}</div>
+        <div style="font-size:10px;color:var(--muted)">${esc(t.memberName||'—')} · ${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
+      </div>
+      ${!isMe
+        ?'<span style="font-size:10px;color:var(--brass);flex-shrink:0">Add →</span>'
+        :'<span style="font-size:9px;color:var(--muted);flex-shrink:0">Your trip</span>'
+      }
+    </div>`;
+  }).join('');
+}
+
+function openLinkModal(trip){
+  linkingTrip=trip;
+  document.getElementById('linkModalInfo').innerHTML=
+    `<strong>${esc(trip.memberName)}</strong> · ${esc(trip.boatName)} · ${esc(trip.locationName)}<br>`+
+    `${esc(trip.date)} · ${esc(trip.timeOut||'')}–${esc(trip.timeIn||'')} · ${(parseFloat(trip.hoursDecimal)||0).toFixed(1)}h`;
+  setV('linkNotes','');
+  document.getElementById('modalLink').classList.remove('hidden');
+}
+function closeLinkModal(){document.getElementById('modalLink').classList.add('hidden');linkingTrip=null;}
+
+async function submitLinkTrip(){
+  if(!linkingTrip)return;
+  try{
+    await apiPost('saveTrip',{
+      kennitala:        user.kennitala,
+      memberName:       user.name,
+      date:             linkingTrip.date,
+      timeOut:          linkingTrip.timeOut||'',
+      timeIn:           linkingTrip.timeIn||'',
+      hoursDecimal:     linkingTrip.hoursDecimal||0,
+      boatId:           linkingTrip.boatId,
+      boatName:         linkingTrip.boatName,
+      locationId:       linkingTrip.locationId,
+      locationName:     linkingTrip.locationName,
+      crew:             linkingTrip.crew||1,
+      beaufort:         linkingTrip.beaufort||'',
+      windMs:           linkingTrip.windMs||'',
+      windDir:          linkingTrip.windDir||'',
+      seaState:         linkingTrip.seaState||'',
+      notes:            document.getElementById('linkNotes').value.trim(),
+      isLinked:         true,
+      linkedTripId:     linkingTrip.id,
+      role:             'crew',
+      isCrew:           true,
+    });
+    closeLinkModal();
+    showMsg('✓ Trip added to your logbook as crew.','ok');
+  }catch(e){alert('Error: '+e.message);}
+}
+
+// ══════════════════════════════════════════════════════
+// MANUAL TRIP MODAL
+// ══════════════════════════════════════════════════════
+function updateManualRoleStyle(){
+  const isSk=document.getElementById('mRoleSkipper').checked;
+  document.getElementById('mRoleSkipperLbl').style.background=isSk?'var(--brass)22':'';
+  document.getElementById('mRoleCrewLbl').style.background=!isSk?'var(--brass)22':'';
+}
+
+function openManualTripModal(){
+  setV('mDate',todayISO()); setV('mTimeOut',fmtTimeNow()); setV('mCrew',1);
+  document.getElementById('mHoursCalc').textContent='';
+  document.getElementById('manualErr').style.display='none';
+  document.getElementById('mRoleSkipper').checked=true;
+  updateManualRoleStyle();
+  document.getElementById('modalManualTrip').classList.remove('hidden');
+}
+function closeManualTripModal(){document.getElementById('modalManualTrip').classList.add('hidden');}
+
+function calcManualHours(){
+  const h=hoursLabel(document.getElementById('mTimeOut').value,document.getElementById('mTimeIn').value);
+  document.getElementById('mHoursCalc').textContent=h?`⏱ ${h}`:'';
+}
+
+async function submitManualTrip(){
+  const boat=document.getElementById('mBoat');
+  const loc =document.getElementById('mLocation');
+  const err=document.getElementById('manualErr');
+  const date=document.getElementById('mDate').value;
+  const tout=document.getElementById('mTimeOut').value;
+  const tin =document.getElementById('mTimeIn').value;
+  if(!date||!tout||!tin||!boat.value||!loc.value){err.textContent='Date, times, boat and location are required.';err.style.display='block';return;}
+  err.style.display='none';
+  const hDec=Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10);
+  const role=document.getElementById('mRoleCrew').checked?'crew':'skipper';
+  try{
+    await apiPost('saveTrip',{
+      kennitala:   user.kennitala,
+      memberName:  user.name,
+      date,timeOut:tout,timeIn:tin,hoursDecimal:hDec,
+      boatId:      boat.value,
+      boatName:    boat.options[boat.selectedIndex]?.text||'',
+      locationId:  loc.value,
+      locationName:loc.options[loc.selectedIndex]?.text||'',
+      crew:        document.getElementById('mCrew').value,
+      beaufort:    document.getElementById('mBft').value,
+      windDir:     document.getElementById('mWindDir').value,
+      seaState:    document.getElementById('mSea').value,
+      notes:       document.getElementById('mNotes').value.trim(),
+      isLinked:    false,
+      role,
+      isCrew:      role==='crew',
+    });
+    closeManualTripModal();
+    showMsg('✓ Trip saved to your logbook.','ok');
+  }catch(e){err.textContent='Error: '+e.message;err.style.display='block';}
+}
+
+// ══════════════════════════════════════════════════════
+// TAB MANAGEMENT
+// ══════════════════════════════════════════════════════
+function showTab(tab){
+  ['fleet','trips'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab);
+    const btn=document.getElementById('tabBtn'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn)btn.classList.toggle('active',t===tab);
+  });
+  if(tab==='trips') loadTripsTab();
+}
+
+function showMsg(text,type){
+  const el=document.createElement('div');
+  el.className=`msg msg-${type}`;
+  el.textContent=text;
+  el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:220px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ══════════════════════════════════════════════════════
+// DELETE ACTIONS
+// ══════════════════════════════════════════════════════
+async function confirmDeleteCheckout(id){
+  if(!confirm('Delete this checkout? This cannot be undone.')) return;
+  try{
+    await apiPost('deleteCheckout',{id});
+    checkouts=checkouts.filter(c=>c.id!==id);
+    renderCheckouts();
+    showMsg('Checkout deleted.','ok');
+  }catch(e){showMsg('Error: '+e.message,'err');}
+}
+
+async function confirmDeleteTrip(id){
+  if(!confirm('Remove this trip from your logbook? This cannot be undone.')) return;
+  try{
+    await apiPost('deleteTrip',{id});
+    showMsg('Trip removed.','ok');
+  }catch(e){showMsg('Error: '+e.message,'err');}
+}
+
+// ══════════════════════════════════════════════════════
+// QR ENTRY POINT
+// ══════════════════════════════════════════════════════
+function handleQR(){
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('action')==='launch'&&p.get('boatId')){
+    const bid=p.get('boatId');
+    const trySelect=setInterval(()=>{
+      const s=document.getElementById('lBoat');
+      const opt=[...s.options].find(o=>o.value===bid);
+      if(opt){clearInterval(trySelect);s.value=bid;onBoatSelected();startLaunchMenu();}
+      else if(boats.length){clearInterval(trySelect);}
+    },100);
+  }
+  if(p.get('action')==='return'&&p.get('boatId')){
+    const bid=p.get('boatId');
+    const tryReturn=setInterval(()=>{
+      const co=checkouts.find(c=>c.boatId===bid&&c.status==='out');
+      if(co){clearInterval(tryReturn);startReturn(co);}
+      else if(boats.length){clearInterval(tryReturn);}
+    },100);
+  }
+}
+</script>
+</body>
+</html>
