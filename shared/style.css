@@ -344,3 +344,45 @@ textarea { min-height: 70px; }
   accent-color: var(--brass);
   flex-shrink: 0;
 }
+
+/* ── BOAT CARDS (shared/boats.js) ─────────────────────────────────────────────── */
+
+/* Fleet card — available / out / oos */
+.bc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: border-color .15s;
+}
+.bc-card.bc-avail   { }
+.bc-card.bc-out     { border-left: 3px solid var(--brass); }
+.bc-card.bc-overdue { border-left: 3px solid var(--red); }
+.bc-card.bc-oos     { opacity: .55; }
+
+/* Checkout card — active checkouts */
+.bc-checkout-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+/* Grid layout for fleet overview */
+.bc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+/* List layout (stacked strips) for member hub */
+.bc-list .bc-card {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.hidden { display: none !important; }
