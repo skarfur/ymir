@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script src="../shared/weather.js"></script>
 <style>
 /* ── Weather widget ── */
 .wx-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; position:relative; overflow:hidden; }
@@ -574,62 +575,16 @@ function populateSelects(){
 }
 
 // ══════════════════════════════════════════════════════
-// WEATHER WIDGET
+// WEATHER WIDGET  (shared weather.js)
 // ══════════════════════════════════════════════════════
-async function fetchWeatherWidget(){
-  try{
-    const[wxRes,marineRes]=await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}&current=wave_height,wave_direction,wave_period&timezone=Atlantic%2FReykjavik`).then(r=>r.ok?r.json():null).catch(()=>null),
-    ]);
-    const c=wxRes.current, mc=marineRes?.current;
-    const ws=c.wind_speed_10m, wd=c.wind_direction_10m, wg=c.wind_gusts_10m;
-    const bft=msToBft(ws), waveH=mc?.wave_height??null, wDir=dirLabel(wd);
-    const flagKey=assessFlag(ws,wDir,waveH??0);
-    const flag=FLAGS[flagKey];
-    currentWx={ws,wd,wg,bft,waveH,wDir,airT:c.temperature_2m,code:c.weather_code,flagKey};
-    const el=document.getElementById('wxWidget');
-    el.className=`wx-widget flag-${flagKey}`;
-    el.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div>
-          <div style="font-size:8px;color:var(--muted);letter-spacing:1.2px;margin-bottom:4px">CONDITIONS · BIRK</div>
-          <div style="display:flex;align-items:baseline;gap:4px">
-            <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
-            <span style="font-size:11px;color:var(--muted)">m/s</span>
-            <span style="font-size:13px;color:var(--brass);margin-left:4px">${dirArrow(wd)}</span>
-            <span style="font-size:11px;color:var(--muted)">${wDir}</span>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">Bft ${bft} ${bftDesc(bft)} · Gusts ${Math.round(wg)} m/s · ${Math.round(ws*1.944)} kt${waveH!=null?' · 🌊 '+waveH.toFixed(1)+'m':''}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:24px">${condIcon(c.weather_code)}</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:2px">${condDesc(c.weather_code)}</div>
-          ${c.temperature_2m!=null?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${Math.round(c.temperature_2m)}°C</div>`:''}
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)44">
-        <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg}">
-          ${FLAG_ICONS[flagKey]} ${flag.label} — ${flag.advice}
-        </span>
-        <a href="../weather/" style="font-size:10px;color:var(--brass);text-decoration:none">Full forecast →</a>
-      </div>`;
-  }catch(e){
-    document.getElementById('wxWidget').innerHTML=`<div style="color:var(--muted);font-size:11px;padding:4px 0">⚠ Weather unavailable. <a href="../weather/" style="color:var(--brass)">Full page →</a></div>`;
-  }
-}
-
-// Silent live weather fetch (for automatic capture on checkout)
-async function fetchLiveConditions(){
-  try{
-    const[wx,marine]=await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}&current=wave_height,wave_direction,wave_period&timezone=Atlantic%2FReykjavik`).then(r=>r.ok?r.json():null).catch(()=>null),
-    ]);
-    const c=wx.current, mc=marine?.current;
-    const ws=c.wind_speed_10m, wd=c.wind_direction_10m, wg=c.wind_gusts_10m;
-    return {ws,wd,wg,bft:msToBft(ws),waveH:mc?.wave_height??null,wDir:dirLabel(wd),airT:c.temperature_2m,code:c.weather_code};
-  }catch(e){return null;}
+function fetchWeatherWidget(){
+  const el=document.getElementById('wxWidget');
+  if(!el) return;
+  el.className='wx-widget';
+  wxWidget(el, {
+    onData: snap => { currentWx = snap; },
+    showRefreshBtn: true,
+  }).start();
 }
 
 // ══════════════════════════════════════════════════════
@@ -675,14 +630,18 @@ function renderCheckouts(){
       const tOut=(rawTout.includes('T')?rawTout.slice(11,16):rawTout.slice(0,5))||'—';
       const retBy=c.returnBy||c.expectedReturn||'';
       const retLabel=retBy?`Est. return ${esc(retBy)}`:'No est. return';
-      const clickable=isMe;
-      return`<div class="co-strip${cls?' '+cls:''}" ${clickable?`style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'`:'style="cursor:default"'}>
+      const coJson=JSON.stringify(c).replace(/'/g,"&#39;");
+      return`<div class="co-strip${cls?' '+cls:''}">
         <div style="font-size:20px;flex-shrink:0">⛵</div>
-        <div class="co-meta">
+        <div class="co-meta" ${isMe?`style="cursor:pointer" onclick='startReturn(${coJson})'`:''}>
           <div class="co-title">${esc(c.boatName||'—')}</div>
           <div class="co-sub">${esc(c.memberName||'—')} &nbsp;·&nbsp; ${esc(c.locationName||'—')} &nbsp;·&nbsp; Dep. ${esc(tOut)} &nbsp;·&nbsp; ${retLabel}</div>
         </div>
-        <span class="status-badge ${badgeCls}">${badge}</span>
+        ${isMe
+          ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" onclick='startReturn(${coJson})'>Check In</button>
+             <button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="Delete checkout" onclick='confirmDeleteCheckout("${c.id}")'>✕</button>`
+          : `<span class="status-badge ${badgeCls}">${badge}</span>`
+        }
       </div>`;
     }).join('');
   }
@@ -862,12 +821,12 @@ async function submitLaunch(){
   const err =document.getElementById('launchErr');
   if(!boat.value||!loc.value){err.textContent='Boat and location are required.';err.style.display='block';return;}
   err.style.display='none';
-  const wxSnap=currentWx||await fetchLiveConditions();
+  // Get current weather snapshot (already live from widget; fall back to fresh fetch)
+  if(!currentWx){ try{ const {wx,marine}=await wxFetch(); const c=wx.current,mc=marine?.current; const ws=c.wind_speed_10m,wd=c.wind_direction_10m,wg=c.wind_gusts_10m; currentWx={ws,wd,wg,bft:wxMsToBft(ws),waveH:mc?.wave_height??null,wDir:wxDirLabel(wd),airT:c.temperature_2m,flagKey:wxAssessFlag(ws,wxDirLabel(wd),mc?.wave_height??0).flagKey}; }catch(e){} }
+  const snap=wxSnapshot(currentWx); // compact storable object, integer winds
   try{
     await apiPost('saveCheckout',{
       memberKennitala: user.kennitala,
-      kennitala:       user.kennitala,
-      memberKt:        user.kennitala,
       memberName:      user.name,
       boatId:          boat.value,
       boatName:        boat.options[boat.selectedIndex]?.text||'',
@@ -875,14 +834,9 @@ async function submitLaunch(){
       locationId:      loc.value,
       locationName:    loc.options[loc.selectedIndex]?.text||'',
       checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
-      timeOut:         document.getElementById('lTimeOut').value||fmtTimeNow(),
       expectedReturn:  document.getElementById('lReturnBy').value||'',
-      returnBy:        document.getElementById('lReturnBy').value||'',
       crew:            document.getElementById('lCrew').value||1,
-      launchBft:       wxSnap?String(wxSnap.bft):'',
-      launchWindMs:    wxSnap?String(Math.round(wxSnap.ws)):'',
-      launchWindDir:   wxSnap?wxSnap.wDir:'',
-      wxSnap:          wxSnap?JSON.stringify(wxSnap):'',
+      wxSnapshot:      snap,
     });
     const co=await apiGet('getActiveCheckouts');
     checkouts=co.checkouts||[];
@@ -943,23 +897,21 @@ function updateReturnHours(){
 async function goToReturnConditions(){
   // Prefill from checkout wx snapshot; fall back to current
   prefillFromLaunchWx();
-  // Also eagerly fetch current wx in background for the "current" button
-  if(!currentWx) fetchLiveConditions().then(wx=>{ if(wx) currentWx=wx; });
   goToReturnStep(2);
 }
 
 function prefillFromLaunchWx(){
   if(!returnCo) return;
   let wx=null;
-  if(returnCo.wxSnap){
-    try{ wx=JSON.parse(returnCo.wxSnap); }catch(e){}
+  if(returnCo.wxSnapshot){
+    try{ wx=typeof returnCo.wxSnapshot==='string'?JSON.parse(returnCo.wxSnapshot):returnCo.wxSnapshot; }catch(e){}
   }
   // Fall back to launchBft/launchWindMs/launchWindDir fields on the checkout
   if(!wx && (returnCo.launchBft||returnCo.launchWindMs)){
     wx={
       bft: parseFloat(returnCo.launchBft)||0,
       ws:  parseFloat(returnCo.launchWindMs)||0,
-      wDir:returnCo.launchWindDir||'',
+      wDir:returnCo.launchWindDir||returnCo.dir||'',
     };
   }
   if(wx){
@@ -1040,7 +992,7 @@ async function submitReturn(){
 
   // Parse launch wx snapshot from checkout
   let launchWx=null;
-  if(co.wxSnap){ try{ launchWx=JSON.parse(co.wxSnap); }catch(e){} }
+  if(co.wxSnapshot){ try{ launchWx=typeof co.wxSnapshot==='string'?JSON.parse(co.wxSnapshot):co.wxSnapshot; }catch(e){} }
 
   try{
     await apiPost('checkIn',{
@@ -1066,12 +1018,12 @@ async function submitReturn(){
       seaState:        document.getElementById('rSea').value,
       precip:          document.getElementById('rPrecip').value,
       visibility:      document.getElementById('rVis').value,
-      waveHeight:      launchWx?.waveH!=null ? launchWx.waveH.toFixed(1) : '',
+      waveHeight:      launchWx?.wv!=null ? String(launchWx.wv) : (launchWx?.waveH!=null ? String(launchWx.waveH.toFixed?launchWx.waveH.toFixed(1):launchWx.waveH) : ''),
       // Launch conditions (from checkout wx snapshot)
-      launchBeaufort:  co.launchBft   || (launchWx ? String(launchWx.bft) : ''),
-      launchWindMs:    co.launchWindMs || (launchWx ? String(Math.round(launchWx.ws)) : ''),
-      launchWindDir:   co.launchWindDir|| (launchWx ? launchWx.wDir : ''),
-      launchWaveHeight:launchWx?.waveH!=null ? launchWx.waveH.toFixed(1) : '',
+      launchBeaufort:  launchWx ? String(launchWx.bft||'') : '',
+      launchWindMs:    launchWx ? String(launchWx.ws||'') : '',
+      launchWindDir:   launchWx ? (launchWx.dir||launchWx.wDir||'') : '',
+      launchWaveHeight:launchWx?.wv!=null ? String(launchWx.wv) : '',
       notes:           document.getElementById('rNotes').value.trim(),
       isLinked:        true,
       linkedCheckoutId:co.id,
@@ -1267,6 +1219,27 @@ function showMsg(text,type){
   el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:220px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px';
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),3500);
+}
+
+// ══════════════════════════════════════════════════════
+// DELETE ACTIONS
+// ══════════════════════════════════════════════════════
+async function confirmDeleteCheckout(id){
+  if(!confirm('Delete this checkout? This cannot be undone.')) return;
+  try{
+    await apiPost('deleteCheckout',{id});
+    checkouts=checkouts.filter(c=>c.id!==id);
+    renderCheckouts();
+    showMsg('Checkout deleted.','ok');
+  }catch(e){showMsg('Error: '+e.message,'err');}
+}
+
+async function confirmDeleteTrip(id){
+  if(!confirm('Remove this trip from your logbook? This cannot be undone.')) return;
+  try{
+    await apiPost('deleteTrip',{id});
+    showMsg('Trip removed.','ok');
+  }catch(e){showMsg('Error: '+e.message,'err');}
 }
 
 // ══════════════════════════════════════════════════════
