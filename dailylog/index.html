@@ -678,7 +678,7 @@ function fetchWeatherWidget() {
 function logCurrentWeather() {
   if (!wxData) { return; }
   const time = new Date().toTimeString().slice(0, 5);
-  wxLog.push({ time, ws: wxData.ws, wg: wxData.wg, dir: wxData.wDir, tc: wxData.airT, wv: wxData.waveH, flag: wxData.flagKey });
+  const snap = wxSnapshot(wxData); if (snap) { snap.time = time; wxLog.push(snap); }
   renderWxLog();
   markDirty();
 }
@@ -695,7 +695,7 @@ function renderWxLog() {
         <span class="wxlog-time">${w.time}</span>
         <span>${fi[w.flag]||'⚪'}</span>
         <span style="color:var(--text)">${w.ws!=null?w.ws.toFixed(1):'—'} m/s ${w.dir||''}</span>
-        <span style="color:var(--muted)">↑${w.wg!=null?w.wg.toFixed(1):'—'}</span>
+        <span style="color:var(--muted)">↑${w.wg!=null?Math.round(w.wg):'—'}</span>
         ${w.wv!=null?`<span style="color:#4a9eca">🌊${w.wv.toFixed(1)}m</span>`:''}
         <span style="color:var(--muted)">${w.tc!=null?Math.round(w.tc)+'°C':''}</span>
       </div>`).join('') +
