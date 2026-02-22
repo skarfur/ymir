@@ -671,6 +671,7 @@ function renderBoats() {
       <span class="badge ${catColors[b.category]||"badge-muted"}">${b.category||"other"}</span>
       ${bool(b.oos)?'<span class="badge badge-red">OOS</span>':""}
       <button class="row-edit" onclick="openBoatModal('${b.id}')">Edit</button>
+      <button class="row-edit" onclick="showBoatQR('${b.id}')" title="QR codes for this boat" style="background:#1a3a6a">QR</button>
       <button class="row-del" onclick="deleteBoat('${b.id}')" title="Delete">×</button>
     </div>`).join("");
 }
@@ -855,6 +856,80 @@ async function deleteActType(id) {
 
 function bool(v){return v===true||v==="TRUE"||v==="true"||v===1||v==="1";}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ── QR CODE GENERATION ──────────────────────────────────────────────────────
+// Uses the free QR Server API (no key needed, just a URL encode)
+const BASE_SITE="https://skarfur.github.io/ymir";
+
+function showBoatQR(boatId) {
+  const boat = boats.find(b=>b.id===boatId);
+  if (!boat) return;
+  // Single QR per boat — encodes only boat identity.
+  // The member app reads live checkout state and decides: launch or return.
+  const boatURL = `${BASE_SITE}/member/?boat=${boatId}`;
+  const qrSrc   = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(boatURL)}`;
+  document.getElementById("qrBoatName").textContent = boat.name;
+  document.getElementById("qrCategory").textContent = (boat.category||"dinghy").toUpperCase();
+  document.getElementById("qrImg").src  = qrSrc;
+  document.getElementById("qrUrl").textContent = boatURL;
+  document.getElementById("qrBoatId").textContent = boatId;
+  document.getElementById("qrModal").classList.remove("hidden");
+}
+function closeQRModal() { document.getElementById("qrModal").classList.add("hidden"); }
+function printQR() {
+  const boatName = document.getElementById("qrBoatName").textContent;
+  const category = document.getElementById("qrCategory").textContent;
+  const imgSrc   = document.getElementById("qrImg").src;
+  const url      = document.getElementById("qrUrl").textContent;
+  const w = window.open("","_blank","width=480,height=640");
+  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${boatName}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+    .card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}
+    .boat{font-size:26px;font-weight:bold;margin-bottom:4px}
+    .cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}
+    img{width:220px;height:220px;display:block;margin:0 auto}
+    .instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}
+    .url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}
+    @media print{body{background:#fff}button{display:none!important}}
+  </style></head><body>
+  <div class="card">
+    <div class="boat">⛵ ${boatName}</div>
+    <div class="cat">${category}</div>
+    <img src="${imgSrc}" alt="Boat QR">
+    <div class="instruction">Scan to check out or check in this boat</div>
+    <div class="url">${url}</div>
+  </div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
+  </body></html>`);
+  w.document.close();
+}
 </script>
+
+<!-- ── QR MODAL ── -->
+<div class="modal-overlay hidden" id="qrModal">
+  <div class="modal" style="max-width:400px">
+    <h3>Boat QR Code</h3>
+    <div id="qrPrintArea" style="text-align:center">
+      <div id="qrBoatName" style="font-size:16px;font-weight:bold;color:var(--brass);margin-bottom:3px"></div>
+      <div id="qrCategory" style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:16px"></div>
+      <img id="qrImg" src="" alt="Boat QR" style="width:220px;height:220px;border-radius:6px;background:#fff;display:block;margin:0 auto">
+      <div style="font-size:10px;color:var(--muted);margin-top:12px;word-break:break-all;max-width:280px;margin-left:auto;margin-right:auto" id="qrUrl"></div>
+      <div style="font-size:9px;color:var(--border);margin-top:6px">ID: <span id="qrBoatId"></span></div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:12px">
+      One code per boat. When a member scans it, the app checks live state:
+      <strong style="color:var(--text)">available → launch flow with checklist</strong> ·
+      <strong style="color:var(--text)">their boat out → return flow</strong> ·
+      <strong style="color:var(--text)">someone else's boat out → shows status</strong>.
+      Print, laminate, attach to the boat or its rack.
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+      <button class="btn btn-primary" onclick="printQR()">🖨 Print / Save PDF</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
