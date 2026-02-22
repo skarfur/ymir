@@ -666,18 +666,20 @@ function renderCheckouts(){
     aEl.innerHTML='<div class="empty-note">No boats currently out.</div>';
   } else {
     aEl.innerHTML=active.map(c=>{
-      const isMe=String(c.memberKt||c.kennitala||'')===String(user.kennitala);
-      const overdue=c.returnBy&&c.returnBy<nowTime;
+      const isMe=String(c.memberKennitala||c.memberKt||c.kennitala||'')===String(user.kennitala);
+      const overdue=(c.returnBy||c.expectedReturn)&&(c.returnBy||c.expectedReturn)<nowTime;
       const cls=overdue?'overdue':isMe?'mine':'';
       const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
       const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
-      const retLabel=c.returnBy?`Est. return ${esc(c.returnBy)}`:'No est. return';
+      const tOut=c.timeOut||c.checkedOutAt||'—';
+      const retBy=c.returnBy||c.expectedReturn||'';
+      const retLabel=retBy?`Est. return ${esc(retBy)}`:'No est. return';
       const clickable=isMe;
       return`<div class="co-strip${cls?' '+cls:''}" ${clickable?`style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'`:'style="cursor:default"'}>
         <div style="font-size:20px;flex-shrink:0">⛵</div>
         <div class="co-meta">
           <div class="co-title">${esc(c.boatName||'—')}</div>
-          <div class="co-sub">${esc(c.memberName||'—')} &nbsp;·&nbsp; ${esc(c.locationName||'—')} &nbsp;·&nbsp; Dep. ${esc(c.timeOut||'—')} &nbsp;·&nbsp; ${retLabel}</div>
+          <div class="co-sub">${esc(c.memberName||'—')} &nbsp;·&nbsp; ${esc(c.locationName||'—')} &nbsp;·&nbsp; Dep. ${esc(tOut)} &nbsp;·&nbsp; ${retLabel}</div>
         </div>
         <span class="status-badge ${badgeCls}">${badge}</span>
       </div>`;
@@ -766,7 +768,7 @@ function closeLaunchModal(){
 // ── Check-in picker (standalone "Check In" button) ──
 function openCheckInPicker(){
   const active=checkouts.filter(c=>c.status==='out');
-  const mine=active.filter(c=>String(c.memberKt)===String(user.kennitala));
+  const mine=active.filter(c=>String(c.memberKennitala||c.memberKt||c.kennitala||'')===String(user.kennitala));
   const el=document.getElementById('checkInPickerList');
   if(!mine.length){
     el.innerHTML=active.length
@@ -778,7 +780,7 @@ function openCheckInPicker(){
         <div style="font-size:18px;flex-shrink:0">⛵</div>
         <div class="co-meta">
           <div class="co-title">${esc(c.boatName||'—')}</div>
-          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc(c.timeOut||'—')}${c.returnBy?' · Est. '+esc(c.returnBy):''}</div>
+          <div class="co-sub">${esc(c.locationName||'—')} · Dep. ${esc(c.timeOut||c.checkedOutAt||'—')}${(c.returnBy||c.expectedReturn)?' · Est. '+esc(c.returnBy||c.expectedReturn):''}</div>
         </div>
         <span style="font-size:13px;color:var(--brass);flex-shrink:0">→</span>
       </div>`).join('');
@@ -862,21 +864,24 @@ async function submitLaunch(){
   const wxSnap=currentWx||await fetchLiveConditions();
   try{
     await apiPost('saveCheckout',{
-      kennitala:   user.kennitala,
-      memberKt:    user.kennitala,
-      memberName:  user.name,
-      boatId:      boat.value,
-      boatName:    boat.options[boat.selectedIndex]?.text||'',
-      boatCategory:launchBoat?.category||'',
-      locationId:  loc.value,
-      locationName:loc.options[loc.selectedIndex]?.text||'',
-      timeOut:     document.getElementById('lTimeOut').value||fmtTimeNow(),
-      returnBy:    document.getElementById('lReturnBy').value||'',
-      crew:        document.getElementById('lCrew').value||1,
-      launchBft:    wxSnap?String(wxSnap.bft):'',
-      launchWindMs: wxSnap?wxSnap.ws.toFixed(1):'',
-      launchWindDir:wxSnap?wxSnap.wDir:'',
-      wxSnap:       wxSnap?JSON.stringify(wxSnap):'',
+      memberKennitala: user.kennitala,
+      kennitala:       user.kennitala,
+      memberKt:        user.kennitala,
+      memberName:      user.name,
+      boatId:          boat.value,
+      boatName:        boat.options[boat.selectedIndex]?.text||'',
+      boatCategory:    launchBoat?.category||'',
+      locationId:      loc.value,
+      locationName:    loc.options[loc.selectedIndex]?.text||'',
+      checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
+      timeOut:         document.getElementById('lTimeOut').value||fmtTimeNow(),
+      expectedReturn:  document.getElementById('lReturnBy').value||'',
+      returnBy:        document.getElementById('lReturnBy').value||'',
+      crew:            document.getElementById('lCrew').value||1,
+      launchBft:       wxSnap?String(wxSnap.bft):'',
+      launchWindMs:    wxSnap?wxSnap.ws.toFixed(1):'',
+      launchWindDir:   wxSnap?wxSnap.wDir:'',
+      wxSnap:          wxSnap?JSON.stringify(wxSnap):'',
     });
     const co=await apiGet('getActiveCheckouts');
     checkouts=co.checkouts||[];
@@ -891,7 +896,7 @@ async function submitLaunch(){
 // ══════════════════════════════════════════════════════
 function startReturn(co){
   // Guard: only your own checkouts
-  if(String(co.memberKt)!==String(user.kennitala)){
+  if(String(co.memberKennitala||co.memberKt||co.kennitala||'')!==String(user.kennitala)){
     showMsg('You can only check in a boat you checked out.','err');
     return;
   }
@@ -928,7 +933,7 @@ function goToReturnStep(n){
 
 function updateReturnHours(){
   if(!returnCo)return;
-  const h=hoursLabel(returnCo.timeOut,document.getElementById('rTimeIn').value);
+  const h=hoursLabel(returnCo.timeOut||returnCo.checkedOutAt,document.getElementById('rTimeIn').value);
   document.getElementById('rHoursCalc').textContent=h?`⏱ ${h} sailed`:'';
 }
 
@@ -1024,7 +1029,7 @@ async function submitReturn(){
   if(!tin){err.textContent='Return time required.';err.style.display='block';return;}
   err.style.display='none';
   const co=returnCo;
-  const tout=co.timeOut||'';
+  const tout=co.timeOut||co.checkedOutAt||'';
   const date=co.date||todayISO();
   const hDec=tout?Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10):0;
   try{
