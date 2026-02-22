@@ -146,6 +146,7 @@
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Preview — kennitala used to match existing members. Admin/staff roles never overwritten.</div>
             <div class="import-summary" id="importSummary"></div>
             <div id="importLists"></div>
+            <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
             <div class="btn-row" style="margin-top:16px">
               <button class="btn btn-secondary" onclick="resetImport()">← Start over</button>
               <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
@@ -632,7 +633,9 @@ async function confirmImport() {
     document.getElementById("importStep2").classList.add("hidden");
     document.getElementById("importStep3").classList.remove("hidden");
   } catch(e) {
-    alert("Import failed: "+e.message);
+    console.error("Import failed:", e);
+    document.getElementById("importError").textContent="Import failed: "+e.message;
+    document.getElementById("importError").style.display="block";
     btn.disabled=false; btn.textContent="Confirm import";
   }
 }
