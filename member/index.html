@@ -133,26 +133,24 @@
   <!-- TABS -->
   <div class="hub-tabs">
     <button class="hub-tab active" onclick="showTab('fleet')" id="tabBtnFleet">⛵ Fleet</button>
-    <button class="hub-tab" onclick="showTab('trips')" id="tabBtnTrips">📋 Log a Trip</button>
+    <button class="hub-tab" onclick="showTab('trips')" id="tabBtnTrips">📋 Log a Recent Trip</button>
   </div>
 
   <!-- ═══ TAB: FLEET ═══ -->
   <div id="tab-fleet">
-    <div class="returns-section">
+    <div class="returns-label" style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:10px 0 8px">AVAILABLE BOATS — tap to launch</div>
+    <div id="fleetList"><div class="empty-note">Loading…</div></div>
+    <div class="returns-section" style="margin-top:16px">
       <div class="returns-label">RECENTLY RETURNED (24H)</div>
       <div id="recentList"><div class="empty-note">Loading…</div></div>
     </div>
   </div>
 
-  <!-- ═══ TAB: LOG A TRIP ═══ -->
+  <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
   <div id="tab-trips" class="hidden">
     <p style="font-size:11px;color:var(--muted);margin:0 0 12px">
-      Were you crew on someone else's boat? Search recent trips and add to your log. Or add a trip completely manually.
+      Trips from the last 24 hours. Tap one to add it to your logbook as crew — or add a trip manually.
     </p>
-    <div class="filter-row">
-      <input type="text" id="tripSearch" placeholder="Search member…" oninput="filterTrips()">
-      <input type="text" id="boatSearch" placeholder="Boat name…" oninput="filterTrips()">
-    </div>
     <div id="clubTrips"><div class="empty-note">Loading recent trips…</div></div>
     <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
       <button class="btn btn-secondary" style="width:100%;font-size:11px" onclick="openManualTripModal()">+ Add trip manually</button>
@@ -412,9 +410,17 @@
     <h3>Log a Trip Manually</h3>
     <div class="form-section">
       <h4>TRIP DETAILS</h4>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;cursor:pointer;font-size:11px;transition:background .15s" id="mRoleSkipperLbl">
+          <input type="radio" name="mRole" id="mRoleSkipper" value="skipper" checked onchange="updateManualRoleStyle()"> ⛵ Skipper
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;cursor:pointer;font-size:11px;border-left:1px solid var(--border);transition:background .15s" id="mRoleCrewLbl">
+          <input type="radio" name="mRole" id="mRoleCrew" value="crew" onchange="updateManualRoleStyle()"> 👥 Crew
+        </label>
+      </div>
       <div class="grid-2">
         <div class="field"><label>Date</label><input type="date" id="mDate"></div>
-        <div class="field"><label>Crew</label><input type="number" id="mCrew" min="1" value="1"></div>
+        <div class="field"><label>Crew count</label><input type="number" id="mCrew" min="1" value="1"></div>
       </div>
       <div class="grid-2">
         <div class="field"><label>Departure</label><input type="time" id="mTimeOut" oninput="calcManualHours()"></div>
@@ -520,6 +526,7 @@ let launchBoat=null;
 let returnCo=null;
 let linkingTrip=null;
 let tripsLoaded=false;
+let pendingDamage=null;
 
 const CHECKLISTS={
   dinghy:['Life jacket fitted and fastened','Buoyancy aid for each crew member','Rudder and tiller attached correctly','Centreboard / daggerboard present','Mainsheet and jib sheets uncoiled','Bailer and paddle on board','Check forecast — conditions acceptable'],
@@ -646,26 +653,27 @@ function prefillLaunchConditions(){ doCondPrefill('l', currentWx); }
 function prefillReturnConditions(){ doCondPrefill('r', currentWx); }
 
 // ══════════════════════════════════════════════════════
-// CHECKOUT DISPLAY
+// CHECKOUT DISPLAY + FLEET
 // ══════════════════════════════════════════════════════
 function renderCheckouts(){
   const nowTime=fmtTimeNow();
   const active  =checkouts.filter(c=>c.status==='out');
   const returned=checkouts.filter(c=>c.status==='in').slice(0,5);
 
+  // Active checkouts
   const aEl=document.getElementById('activeList');
   if(!active.length){
     aEl.innerHTML='<div class="empty-note">No boats currently out.</div>';
   } else {
     aEl.innerHTML=active.map(c=>{
-      const isMe=String(c.memberKt)===String(user.kennitala);
+      const isMe=String(c.memberKt||c.kennitala||'')===String(user.kennitala);
       const overdue=c.returnBy&&c.returnBy<nowTime;
       const cls=overdue?'overdue':isMe?'mine':'';
       const badge=overdue?'OVERDUE':isMe?'YOURS':'OUT';
       const badgeCls=overdue?'s-overdue':isMe?'s-mine':'s-out';
       const retLabel=c.returnBy?`Est. return ${esc(c.returnBy)}`:'No est. return';
       const clickable=isMe;
-      return`<div class="co-strip${cls?' '+cls:''}" ${clickable?`style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'  title="Tap to check in"`:'style="cursor:default"'}>
+      return`<div class="co-strip${cls?' '+cls:''}" ${clickable?`style="cursor:pointer" onclick='startReturn(${JSON.stringify(c).replace(/'/g,"&#39;")})'`:'style="cursor:default"'}>
         <div style="font-size:20px;flex-shrink:0">⛵</div>
         <div class="co-meta">
           <div class="co-title">${esc(c.boatName||'—')}</div>
@@ -676,6 +684,7 @@ function renderCheckouts(){
     }).join('');
   }
 
+  // Recently returned
   const rEl=document.getElementById('recentList');
   rEl.innerHTML=!returned.length
     ?'<div class="empty-note">No returns in the last 24h.</div>'
@@ -688,6 +697,43 @@ function renderCheckouts(){
         </div>
         <span class="status-badge s-returned">RETURNED</span>
       </div>`).join('');
+
+  // Fleet tab — available boats
+  renderFleet(active);
+}
+
+function renderFleet(activeCheckouts){
+  const el=document.getElementById('fleetList');
+  if(!el) return;
+  const outIds=new Set((activeCheckouts||checkouts.filter(c=>c.status==='out')).map(c=>c.boatId));
+  const available=boats.filter(b=>!outIds.has(b.id));
+  if(!available.length){
+    el.innerHTML='<div class="empty-note">All boats are currently out.</div>';
+    return;
+  }
+  el.innerHTML=available.map(b=>`
+    <div class="co-strip" style="cursor:pointer" onclick='startLaunchForBoat(${JSON.stringify(b).replace(/'/g,"&#39;")})'>
+      <div style="font-size:20px;flex-shrink:0">⛵</div>
+      <div class="co-meta">
+        <div class="co-title">${esc(b.name||'—')}</div>
+        <div class="co-sub">${esc((b.category||'').toUpperCase())}${b.location?' · '+esc(b.location):''}</div>
+      </div>
+      <span class="status-badge" style="background:var(--brass)18;color:var(--brass);border:1px solid var(--brass)44">AVAIL</span>
+    </div>`).join('');
+}
+
+function startLaunchForBoat(boat){
+  startLaunchMenu();
+  setTimeout(()=>{
+    const sel=document.getElementById('lBoat');
+    if(sel){
+      sel.value=boat.id;
+      launchBoat={id:boat.id,name:boat.name,category:boat.category||'dinghy'};
+      const lbl=document.getElementById('boatCategoryLabel');
+      if(lbl){lbl.textContent=launchBoat.category.toUpperCase();lbl.style.display='block';}
+      goToLaunchStep(2);
+    }
+  },80);
 }
 
 // ══════════════════════════════════════════════════════
@@ -816,6 +862,7 @@ async function submitLaunch(){
   const wxSnap=currentWx||await fetchLiveConditions();
   try{
     await apiPost('saveCheckout',{
+      kennitala:   user.kennitala,
       memberKt:    user.kennitala,
       memberName:  user.name,
       boatId:      boat.value,
@@ -920,7 +967,6 @@ function goToReturnChecklist(){
 }
 
 // ── Damage report modal ──
-let pendingDamage=null;
 function openDamageModal(){
   // Pre-fill if already drafted
   if(pendingDamage){
@@ -1013,6 +1059,7 @@ async function submitReturn(){
       notes:        document.getElementById('rNotes').value.trim(),
       isLinked:     true,
       linkedCheckoutId: co.id,
+      role:         'skipper',
     });
     if(pendingDamage){
       await apiPost('saveDamageReport',{
@@ -1034,42 +1081,54 @@ async function submitReturn(){
 }
 
 // ══════════════════════════════════════════════════════
-// TRIPS TAB
+// TRIPS TAB — last 24h, add to logbook as crew
 // ══════════════════════════════════════════════════════
 async function loadTripsTab(){
   if(tripsLoaded)return;
   const el=document.getElementById('clubTrips');
   try{
-    const res=await apiGet('getTrips',{limit:60});
+    const res=await apiGet('getTrips',{limit:120});
     allTrips=res.trips||[];
     tripsLoaded=true;
-    renderFilteredTrips();
+    renderRecentTrips();
   }catch(e){el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load trips.</div>';}
 }
 
-function filterTrips(){if(tripsLoaded)renderFilteredTrips();}
-
-function renderFilteredTrips(){
-  const q=(document.getElementById('tripSearch')?.value||'').toLowerCase();
-  const bq=(document.getElementById('boatSearch')?.value||'').toLowerCase();
+function renderRecentTrips(){
   const el=document.getElementById('clubTrips');
-  let trips=allTrips.filter(t=>{
-    if(bq&&!(t.boatName||'').toLowerCase().includes(bq))return false;
-    if(q&&!((t.memberName||'')+(t.notes||'')).toLowerCase().includes(q))return false;
+  // Last 24h: filter by date today or yesterday, and timeIn within 24h
+  const now=Date.now();
+  const cutoff=now-(24*60*60*1000);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const yesterdayStr=new Date(now-86400000).toISOString().slice(0,10);
+
+  const recent=allTrips.filter(t=>{
+    if(!t.date)return false;
+    if(t.date!==todayStr&&t.date!==yesterdayStr)return false;
+    // Rough time filter using date+timeIn
+    if(t.timeIn){
+      const ts=new Date(t.date+'T'+t.timeIn).getTime();
+      if(!isNaN(ts)&&ts<cutoff)return false;
+    }
     return true;
-  }).slice(0,25);
-  if(!trips.length){el.innerHTML='<div class="empty-note">No trips found.</div>';return;}
-  el.innerHTML=trips.map(t=>{
-    const isMe=String(t.kennitala)===String(user.kennitala);
-    return`<div class="pub-trip">
+  });
+
+  if(!recent.length){el.innerHTML='<div class="empty-note">No trips in the last 24 hours.</div>';return;}
+
+  el.innerHTML=recent.map(t=>{
+    const isMe=String(t.kennitala||'')===String(user.kennitala);
+    const roleTag=isMe
+      ?'<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">SKIPPER</span>'
+      :'';
+    return`<div class="pub-trip" style="cursor:${isMe?'default':'pointer'}" ${!isMe?`onclick='openLinkModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'`:''}> 
       <span style="font-size:17px">⛵</span>
       <div class="pub-trip-info">
-        <div style="font-size:11px;font-weight:500;color:var(--text)">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
+        <div style="font-size:11px;font-weight:500;color:var(--text)">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')} ${roleTag}</div>
         <div style="font-size:10px;color:var(--muted)">${esc(t.memberName||'—')} · ${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
       </div>
       ${!isMe
-        ?`<button class="btn btn-secondary" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick='openLinkModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Add to log</button>`
-        :`<span style="font-size:9px;color:var(--muted);flex-shrink:0">Your trip</span>`
+        ?'<span style="font-size:10px;color:var(--brass);flex-shrink:0">Add →</span>'
+        :'<span style="font-size:9px;color:var(--muted);flex-shrink:0">Your trip</span>'
       }
     </div>`;
   }).join('');
@@ -1077,7 +1136,9 @@ function renderFilteredTrips(){
 
 function openLinkModal(trip){
   linkingTrip=trip;
-  document.getElementById('linkModalInfo').innerHTML=`<strong>${esc(trip.memberName)}</strong> · ${esc(trip.boatName)} · ${esc(trip.locationName)}<br>${esc(trip.date)} · ${esc(trip.timeOut||'')}–${esc(trip.timeIn||'')} · ${(parseFloat(trip.hoursDecimal)||0).toFixed(1)}h`;
+  document.getElementById('linkModalInfo').innerHTML=
+    `<strong>${esc(trip.memberName)}</strong> · ${esc(trip.boatName)} · ${esc(trip.locationName)}<br>`+
+    `${esc(trip.date)} · ${esc(trip.timeOut||'')}–${esc(trip.timeIn||'')} · ${(parseFloat(trip.hoursDecimal)||0).toFixed(1)}h`;
   setV('linkNotes','');
   document.getElementById('modalLink').classList.remove('hidden');
 }
@@ -1086,19 +1147,48 @@ function closeLinkModal(){document.getElementById('modalLink').classList.add('hi
 async function submitLinkTrip(){
   if(!linkingTrip)return;
   try{
-    await apiPost('saveTrip',{...linkingTrip,kennitala:user.kennitala,memberName:user.name,notes:document.getElementById('linkNotes').value.trim(),isLinked:true,linkedTripId:linkingTrip.id,isCrew:true});
+    await apiPost('saveTrip',{
+      kennitala:        user.kennitala,
+      memberName:       user.name,
+      date:             linkingTrip.date,
+      timeOut:          linkingTrip.timeOut||'',
+      timeIn:           linkingTrip.timeIn||'',
+      hoursDecimal:     linkingTrip.hoursDecimal||0,
+      boatId:           linkingTrip.boatId,
+      boatName:         linkingTrip.boatName,
+      locationId:       linkingTrip.locationId,
+      locationName:     linkingTrip.locationName,
+      crew:             linkingTrip.crew||1,
+      beaufort:         linkingTrip.beaufort||'',
+      windMs:           linkingTrip.windMs||'',
+      windDir:          linkingTrip.windDir||'',
+      seaState:         linkingTrip.seaState||'',
+      notes:            document.getElementById('linkNotes').value.trim(),
+      isLinked:         true,
+      linkedTripId:     linkingTrip.id,
+      role:             'crew',
+      isCrew:           true,
+    });
     closeLinkModal();
-    showMsg('✓ Trip added to your logbook.','ok');
+    showMsg('✓ Trip added to your logbook as crew.','ok');
   }catch(e){alert('Error: '+e.message);}
 }
 
 // ══════════════════════════════════════════════════════
 // MANUAL TRIP MODAL
 // ══════════════════════════════════════════════════════
+function updateManualRoleStyle(){
+  const isSk=document.getElementById('mRoleSkipper').checked;
+  document.getElementById('mRoleSkipperLbl').style.background=isSk?'var(--brass)22':'';
+  document.getElementById('mRoleCrewLbl').style.background=!isSk?'var(--brass)22':'';
+}
+
 function openManualTripModal(){
   setV('mDate',todayISO()); setV('mTimeOut',fmtTimeNow()); setV('mCrew',1);
   document.getElementById('mHoursCalc').textContent='';
   document.getElementById('manualErr').style.display='none';
+  document.getElementById('mRoleSkipper').checked=true;
+  updateManualRoleStyle();
   document.getElementById('modalManualTrip').classList.remove('hidden');
 }
 function closeManualTripModal(){document.getElementById('modalManualTrip').classList.add('hidden');}
@@ -1118,18 +1208,24 @@ async function submitManualTrip(){
   if(!date||!tout||!tin||!boat.value||!loc.value){err.textContent='Date, times, boat and location are required.';err.style.display='block';return;}
   err.style.display='none';
   const hDec=Math.max(0,Math.round(timeDiffHours(tout,tin)*10)/10);
+  const role=document.getElementById('mRoleCrew').checked?'crew':'skipper';
   try{
     await apiPost('saveTrip',{
-      kennitala:user.kennitala,memberName:user.name,
+      kennitala:   user.kennitala,
+      memberName:  user.name,
       date,timeOut:tout,timeIn:tin,hoursDecimal:hDec,
-      boatId:boat.value,boatName:boat.options[boat.selectedIndex]?.text||'',
-      locationId:loc.value,locationName:loc.options[loc.selectedIndex]?.text||'',
-      crew:document.getElementById('mCrew').value,
-      beaufort:document.getElementById('mBft').value,
-      windDir:document.getElementById('mWindDir').value,
-      seaState:document.getElementById('mSea').value,
-      notes:document.getElementById('mNotes').value.trim(),
-      isLinked:false,
+      boatId:      boat.value,
+      boatName:    boat.options[boat.selectedIndex]?.text||'',
+      locationId:  loc.value,
+      locationName:loc.options[loc.selectedIndex]?.text||'',
+      crew:        document.getElementById('mCrew').value,
+      beaufort:    document.getElementById('mBft').value,
+      windDir:     document.getElementById('mWindDir').value,
+      seaState:    document.getElementById('mSea').value,
+      notes:       document.getElementById('mNotes').value.trim(),
+      isLinked:    false,
+      role,
+      isCrew:      role==='crew',
     });
     closeManualTripModal();
     showMsg('✓ Trip saved to your logbook.','ok');
