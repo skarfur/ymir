@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Daily Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <style>
+    .wx-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .wx-main { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .wx-wind { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 80px; }
+    .wx-arrow { font-size: 36px; line-height: 1; }
+    .wx-speed { font-size: 28px; font-weight: bold; color: var(--text); line-height: 1; }
+    .wx-unit  { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+    .wx-dir   { font-size: 13px; color: var(--brass); font-weight: bold; }
+    .wx-divider { width: 1px; height: 60px; background: var(--border); flex-shrink: 0; }
+    .wx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; flex: 1; }
+    .wx-stat label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; }
+    .wx-stat .val  { font-size: 15px; color: var(--text); }
+    .wx-stat .val.warn { color: var(--orange); }
+    .wx-refresh {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 15px; font-family: inherit;
+      padding: 2px 6px; border-radius: 4px; transition: color .15s;
+    }
+    .wx-refresh:hover { color: var(--brass); }
+    .wx-age { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+    .flag-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;
+      font-size: 13px; font-weight: bold;
+    }
+    .flag-strip .flag-icon { font-size: 20px; }
+    .flag-strip .flag-note { font-size: 11px; font-weight: normal; opacity: .8; margin-left: auto; }
+    .flag-green  { background:#27ae6018; color:var(--green);  border:1px solid #27ae6040; }
+    .flag-yellow { background:#f1c40f18; color:#c9a800;       border:1px solid #f1c40f40; }
+    .flag-orange { background:#e67e2218; color:var(--orange); border:1px solid #e67e2240; }
+    .flag-red    { background:#e74c3c18; color:var(--red);    border:1px solid #e74c3c40; }
+
+    .boat-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-bottom: 1px solid var(--faint); font-size: 13px;
+    }
+    .boat-row:last-child { border-bottom: none; }
+    .boat-name  { font-weight: bold; flex: 1; }
+    .boat-crew  { color: var(--muted); font-size: 12px; }
+    .boat-eta   { font-size: 12px; color: var(--muted); }
+    .overdue    { color: var(--red); font-weight: bold; }
+    .eta-soon   { color: var(--orange); }
+
+    .checklist-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--faint);
+      cursor: pointer; user-select: none;
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--brass); flex-shrink:0; margin-top:2px; cursor:pointer; }
+    .checklist-item .item-text { font-size: 13px; transition: opacity .15s; }
+    .checklist-item.done .item-text { opacity: .35; text-decoration: line-through; }
+    .cl-progress { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .cl-progress span { color: var(--brass); font-weight: bold; }
+
+    .activity-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--faint); font-size: 13px;
+    }
+    .activity-row:last-child { border-bottom: none; }
+    .activity-info { flex: 1; }
+    .activity-name { font-weight: bold; }
+    .activity-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .activity-note { color: var(--text); font-size: 12px; margin-top: 4px; opacity: .65; }
+    .activity-del  { background:none; border:none; color:var(--faint); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
+    .activity-del:hover { color: var(--red); }
+
+    .maint-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--faint); font-size: 13px;
+    }
+    .maint-row:last-child { border-bottom: none; }
+    .maint-row.resolved .maint-info { opacity: .35; text-decoration: line-through; }
+    .maint-row input[type=checkbox] { width:15px; height:15px; accent-color:var(--green); flex-shrink:0; margin-top:2px; cursor:pointer; }
+    .maint-boat { font-weight: bold; }
+    .maint-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .maint-info { flex: 1; }
+
+    .wxlog-row {
+      display: flex; gap: 10px; padding: 7px 0;
+      border-bottom: 1px solid var(--faint); font-size: 12px; align-items: center;
+    }
+    .wxlog-row:last-child { border-bottom: none; }
+    .wxlog-time { color: var(--brass); font-weight: bold; width: 42px; flex-shrink: 0; }
+    .wxlog-wind { color: var(--text); }
+
+    .type-btn {
+      background: var(--faint); border: 1px solid var(--border);
+      color: var(--text); border-radius: 4px; padding: 5px 10px;
+      font-size: 12px; font-family: inherit; cursor: pointer;
+      transition: all .15s;
+    }
+    .type-btn.selected, .type-btn:hover { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
+    .type-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+    .save-bar {
+      position: sticky; bottom: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 12px 20px; display: flex; align-items: center; gap: 10px;
+      margin: 0 -20px -24px;
+    }
+    .save-bar .save-ok  { font-size: 12px; color: var(--green); flex: 1; }
+    .save-bar .save-err { font-size: 12px; color: var(--red);   flex: 1; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-left">
+      <a href="../" class="logo">ÝMIR</a>
+      <span class="page-title">Daily Log</span>
+    </div>
+    <div class="header-right">
+      <span id="headerDate" style="font-size:12px;color:var(--muted)"></span>
+      <a href="../incidents/" class="hbtn">⚠ Incident</a>
+      <button class="hbtn" onclick="toggleLang()">IS</button>
+      <button class="hbtn" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- WEATHER -->
+    <div class="wx-card">
+      <button class="wx-refresh" onclick="loadWeather(true)" title="Refresh">↻</button>
+      <div id="flagStrip" class="flag-strip flag-green">
+        <span class="flag-icon">🟢</span>
+        <span id="flagLabel">Green — Sailing conditions good</span>
+        <span class="flag-note" id="flagNote"></span>
+      </div>
+      <div class="wx-main" id="wxMain">
+        <div style="color:var(--muted);font-size:13px"><span class="spinner"></span> Loading weather…</div>
+      </div>
+      <div class="wx-age" id="wxAge"></div>
+    </div>
+
+    <!-- RECORD WEATHER -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="logCurrentWeather()" id="logWxBtn">📋 Record weather snapshot</button>
+      <span style="font-size:12px;color:var(--muted)" id="wxLogCount"></span>
+    </div>
+    <div id="wxLogList" style="margin-bottom:16px"></div>
+
+    <!-- BOATS ON WATER -->
+    <div class="section-heading">Boats on water</div>
+    <div class="card" id="boatsCard">
+      <div class="loading-state"><span class="spinner"></span></div>
+    </div>
+
+    <!-- AM CHECKLIST -->
+    <div class="section-heading">AM Checklist</div>
+    <div class="card" id="amCard">
+      <div class="loading-state"><span class="spinner"></span></div>
+    </div>
+
+    <!-- PM CHECKLIST -->
+    <div class="section-heading">PM Checklist</div>
+    <div class="card" id="pmCard">
+      <div class="loading-state"><span class="spinner"></span></div>
+    </div>
+
+    <!-- ACTIVITIES -->
+    <div class="section-heading">
+      Activities
+      <button class="btn-ghost" onclick="openActivityModal()" style="font-size:11px;padding:3px 10px">+ Add</button>
+    </div>
+    <div class="card" id="activitiesCard">
+      <div class="empty-state" id="activitiesEmpty">No activities recorded yet.</div>
+      <div id="activitiesList"></div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div class="section-heading">Maintenance &amp; Repairs</div>
+    <div class="card" id="maintCard">
+      <div class="loading-state"><span class="spinner"></span></div>
+    </div>
+
+    <!-- NARRATIVE -->
+    <div class="section-heading">Staff notes</div>
+    <div class="card">
+      <div class="field">
+        <label>General notes / narrative for the day</label>
+        <textarea id="narrativeInput" rows="4" placeholder="Anything notable today…"></textarea>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <span id="saveMsg"></span>
+      <button class="btn btn-secondary" onclick="saveDraft()" id="saveDraftBtn">Save draft</button>
+      <button class="btn btn-primary"   onclick="signOffDay()" id="signOffBtn">Sign off day</button>
+    </div>
+
+  </main>
+</div>
+
+<!-- ACTIVITY MODAL -->
+<div class="modal-overlay hidden" id="activityModal">
+  <div class="modal">
+    <h3>Add Activity</h3>
+    <div class="field">
+      <label>Type</label>
+      <div class="type-btns" id="actTypeBtns"></div>
+    </div>
+    <div class="field">
+      <label>Name / description</label>
+      <input type="text" id="actName" placeholder="e.g. Junior sailing lesson">
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>Start time</label>
+        <input type="time" id="actStart">
+      </div>
+      <div class="field">
+        <label>End time</label>
+        <input type="time" id="actEnd">
+      </div>
+    </div>
+    <div class="field">
+      <label>Participants</label>
+      <input type="number" id="actParticipants" min="0" placeholder="0">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="actNotes" rows="3" placeholder="Optional narrative…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeActivityModal()">Cancel</button>
+      <button class="btn btn-primary"   onclick="saveActivity()">Add activity</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+const user  = requireAuth(isStaff);
+const L     = getLang();
+const TODAY = todayISO();
+
+let wxData        = null;
+let wxLoadedAt    = null;
+let wxLog         = [];
+let amChecks      = {};
+let pmChecks      = {};
+let activities    = [];
+let maintenance   = [];
+let amItems       = [];
+let pmItems       = [];
+let activityTypes = [];
+let logId         = null;
+let checkouts     = [];
+let dirty         = false;
+let selectedType  = null;
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  document.getElementById("headerDate").textContent = new Date().toLocaleDateString("en-GB",
+    { weekday:"short", day:"numeric", month:"long", year:"numeric" });
+
+  await Promise.all([
+    loadWeather(),
+    loadTodayLog(),
+    loadCheckouts(),
+    loadMaintenance(),
+  ]);
+});
+
+// ── WEATHER ────────────────────────────────────────────────────────────────────
+const DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+const ARROWS = ["↓","↙","←","↖","↑","↗","→","↘"];
+const EASTERLIES = ["E","ENE","ESE"];
+
+function degToDir(d)   { return d == null ? "—" : DIRS[Math.round(((d%360)+360)/22.5)%16]; }
+function degToArrow(d) { return ARROWS[Math.round(((d%360)+360)/45)%8]; }
+function beaufort(ms) {
+  const s = [0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
+  return s.findIndex(v => ms < v);  // returns -1 if >= 32.7 → Bf12
+}
+function bfScale(ms) { const b = beaufort(ms); return b < 0 ? 12 : b; }
+function computeFlag(windMs, waveM) {
+  const bf = bfScale(windMs);
+  if (bf >= 8 || waveM > 2.0) return "red";
+  if (bf >= 6 || waveM > 1.0) return "orange";
+  if (bf >= 4 || waveM > 0.5) return "yellow";
+  return "green";
+}
+
+async function loadWeather(force) {
+  if (!force && wxData && wxLoadedAt && Date.now() - wxLoadedAt < 300000) { renderWeather(); return; }
+  try {
+    const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=64.13&longitude=-21.9" +
+      "&current=temperature_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure" +
+      "&timezone=Atlantic/Reykjavik");
+    wxData = (await r.json()).current;
+    wxLoadedAt = Date.now();
+    try {
+      const wr = await fetch("https://marine-api.open-meteo.com/v1/marine?latitude=64.13&longitude=-21.9&current=wave_height&timezone=Atlantic/Reykjavik");
+      wxData._wave = (await wr.json())?.current?.wave_height;
+    } catch(e) {}
+    renderWeather();
+  } catch(e) {
+    document.getElementById("wxMain").innerHTML = `<span style="color:var(--red);font-size:13px">Weather unavailable</span>`;
+  }
+}
+
+function renderWeather() {
+  if (!wxData) return;
+  const ws = wxData.wind_speed_10m, wg = wxData.wind_gusts_10m;
+  const wd = wxData.wind_direction_10m, tc = wxData.temperature_2m;
+  const pr = wxData.surface_pressure, wv = wxData._wave;
+  const dir = degToDir(wd), arrow = degToArrow(wd);
+  const bf  = bfScale(ws);
+  const flag = computeFlag(ws, wv || 0);
+  const easterly = EASTERLIES.includes(dir);
+  const bfCol = bf <= 3 ? "var(--green)" : bf <= 5 ? "var(--yellow)" : bf <= 7 ? "var(--orange)" : "var(--red)";
+  const flagLabels = {
+    green:  "Green — Sailing conditions good",
+    yellow: "Yellow — Caution advised",
+    orange: "Orange — Experienced sailors only",
+    red:    "Red — No sailing",
+  };
+  const flagIcons = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+
+  const strip = document.getElementById("flagStrip");
+  strip.className = "flag-strip flag-" + flag;
+  document.getElementById("flagLabel").textContent = flagLabels[flag];
+  document.getElementById("flagNote").textContent  = easterly ? "⚠ Easterly wind advisory" : "";
+
+  document.getElementById("wxMain").innerHTML = `
+    <div class="wx-wind">
+      <div class="wx-arrow">${arrow}</div>
+      <div class="wx-speed" style="color:${bfCol}">${ws != null ? ws.toFixed(1) : "—"}</div>
+      <div class="wx-unit">m/s</div>
+      <div class="wx-dir">${dir} &nbsp;Bf ${bf}</div>
+    </div>
+    <div class="wx-divider"></div>
+    <div class="wx-grid">
+      <div class="wx-stat"><label>Gusts</label><div class="val ${wg>10?"warn":""}">${wg!=null?wg.toFixed(1):"—"} m/s</div></div>
+      <div class="wx-stat"><label>Temp</label><div class="val">${tc!=null?tc.toFixed(1):"—"}°C</div></div>
+      <div class="wx-stat"><label>Pressure</label><div class="val">${pr!=null?Math.round(pr):"—"} hPa</div></div>
+      ${wv!=null?`<div class="wx-stat"><label>Waves</label><div class="val">${wv.toFixed(1)} m</div></div>`:""}
+    </div>`;
+
+  const age = Math.round((Date.now() - wxLoadedAt) / 60000);
+  document.getElementById("wxAge").textContent = "Updated " + (age === 0 ? "just now" : age + " min ago");
+}
+
+function logCurrentWeather() {
+  if (!wxData) { alert("Weather not loaded yet."); return; }
+  const ws = wxData.wind_speed_10m, wg = wxData.wind_gusts_10m;
+  const wd = wxData.wind_direction_10m, tc = wxData.temperature_2m;
+  const wv = wxData._wave;
+  const dir = degToDir(wd), flag = computeFlag(ws, wv || 0);
+  const time = new Date().toTimeString().slice(0,5);
+  wxLog.push({ time, ws, wg, dir, tc, wv, flag });
+  renderWxLog();
+  markDirty();
+}
+
+function renderWxLog() {
+  const fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+  const count = document.getElementById("wxLogCount");
+  const list  = document.getElementById("wxLogList");
+  if (!wxLog.length) { list.innerHTML = ""; count.textContent = ""; return; }
+  count.textContent = wxLog.length + (wxLog.length === 1 ? " snapshot" : " snapshots") + " recorded today";
+  list.innerHTML = `<div class="card" style="padding:8px 14px">` +
+    wxLog.map(w => `
+      <div class="wxlog-row">
+        <span class="wxlog-time">${w.time}</span>
+        <span>${fi[w.flag]||"⚪"}</span>
+        <span class="wxlog-wind">${w.ws!=null?w.ws.toFixed(1):"—"} m/s ${w.dir}</span>
+        <span style="color:var(--muted)">gust ${w.wg!=null?w.wg.toFixed(1):"—"}</span>
+        ${w.wv!=null?`<span style="color:var(--muted)">wave ${w.wv.toFixed(1)}m</span>`:""}
+        <span style="color:var(--muted)">${w.tc!=null?w.tc.toFixed(1)+"°C":""}</span>
+      </div>`).join("") +
+  `</div>`;
+}
+
+// ── BOATS ──────────────────────────────────────────────────────────────────────
+async function loadCheckouts() {
+  try { checkouts = (await apiGet("getActiveCheckouts")).checkouts || []; }
+  catch(e) { checkouts = []; }
+  renderBoats();
+}
+
+function renderBoats() {
+  const card = document.getElementById("boatsCard");
+  if (!checkouts.length) { card.innerHTML = `<div class="empty-state">No boats currently out.</div>`; return; }
+  const now = Date.now();
+  card.innerHTML = checkouts.map(c => {
+    const eta    = c.expectedReturn ? new Date(c.expectedReturn) : null;
+    const diff   = eta ? eta.getTime() - now : null;
+    const overdue = diff != null && diff < 0;
+    const soon    = diff != null && diff >= 0 && diff < 1800000;
+    const etaStr  = eta ? eta.toTimeString().slice(0,5) : "—";
+    let crew = 1;
+    try { crew = JSON.parse(c.crew || "[]").length || 1; } catch(e) {}
+    return `<div class="boat-row">
+      <span class="boat-name">${esc(c.boatName||"—")}</span>
+      <span class="boat-crew">${esc(c.memberName)} +${crew-1}</span>
+      <span class="boat-eta ${overdue?"overdue":soon?"eta-soon":""}">
+        ${overdue ? "⚠ OVERDUE" : "ETA " + etaStr}
+      </span>
+    </div>`;
+  }).join("");
+}
+
+setInterval(() => { if (checkouts.length) renderBoats(); }, 60000);
+
+// ── LOAD TODAY'S LOG ───────────────────────────────────────────────────────────
+const DEFAULT_AM = [
+  { id:"am1", textEN:"Check all boats for damage",          textIS:"Athuga alla báta vegna skemmda" },
+  { id:"am2", textEN:"Inspect safety equipment",            textIS:"Skoða öryggisbúnað" },
+  { id:"am3", textEN:"Confirm weather conditions",          textIS:"Staðfesta veðurlag" },
+  { id:"am4", textEN:"Open clubhouse and facilities",       textIS:"Opna klúbbhús og aðstöðu" },
+  { id:"am5", textEN:"Check radio / communication",         textIS:"Athuga útvarps- og samskiptabúnað" },
+  { id:"am6", textEN:"Brief duty staff on conditions",      textIS:"Kynna starfsfólki aðstæður" },
+];
+const DEFAULT_PM = [
+  { id:"pm1", textEN:"All boats returned and secured",      textIS:"Allir bátar komnir og tryggðir" },
+  { id:"pm2", textEN:"Damage reports filed if needed",      textIS:"Skemmdarskýrslur lagðar fram ef þarf" },
+  { id:"pm3", textEN:"Safety equipment stowed",             textIS:"Öryggisbúnaður geymdur" },
+  { id:"pm4", textEN:"Facilities locked and secured",       textIS:"Aðstaða læst og tryggð" },
+  { id:"pm5", textEN:"Log completed and signed off",        textIS:"Skráning lokið og undirrituð" },
+];
+const DEFAULT_TYPES = [
+  { id:"t1", name:"Lesson",      nameIS:"Kennsla" },
+  { id:"t2", name:"Race",        nameIS:"Keppni" },
+  { id:"t3", name:"Club event",  nameIS:"Félagsviðburður" },
+  { id:"t4", name:"Training",    nameIS:"Þjálfun" },
+  { id:"t5", name:"Maintenance", nameIS:"Viðhald" },
+  { id:"t6", name:"Other",       nameIS:"Annað" },
+];
+
+function sjson(v, fallback) {
+  if (!v) return fallback;
+  try { return typeof v === "string" ? JSON.parse(v) : v; } catch(e) { return fallback; }
+}
+
+async function loadTodayLog() {
+  try {
+    const [logRes, cfgRes] = await Promise.all([
+      apiGet("getDailyLog", { date: TODAY }),
+      apiGet("getConfig"),
+    ]);
+    const log = logRes.log;
+    if (log) {
+      logId      = log.id;
+      amChecks   = sjson(log.openingChecks, {});
+      pmChecks   = sjson(log.closingChecks, {});
+      activities = sjson(log.activities, []);
+      wxLog      = sjson(log.weatherLog, []);
+      document.getElementById("narrativeInput").value = log.narrative || "";
+    }
+    const cfg = cfgRes || {};
+    amItems       = (cfg.dailyChecklist && cfg.dailyChecklist.am)  || DEFAULT_AM;
+    pmItems       = (cfg.dailyChecklist && cfg.dailyChecklist.pm)  || DEFAULT_PM;
+    activityTypes = cfg.activityTypes || DEFAULT_TYPES;
+  } catch(e) {
+    amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
+  }
+  renderChecklists();
+  renderActivities();
+  renderWxLog();
+  renderActTypeBtns();
+}
+
+// ── CHECKLISTS ─────────────────────────────────────────────────────────────────
+function renderChecklists() {
+  renderCL("amCard", amItems, amChecks, "am");
+  renderCL("pmCard", pmItems, pmChecks, "pm");
+}
+
+function renderCL(cardId, items, state, prefix) {
+  const done = items.filter(i => state[i.id]).length;
+  document.getElementById(cardId).innerHTML = `
+    <div class="cl-progress"><span>${done}</span> / ${items.length} complete</div>
+    ${items.map(i => {
+      const text = L === "IS" ? (i.textIS || i.textEN) : (i.textEN || i.text || "");
+      return `<div class="checklist-item ${state[i.id]?"done":""}" onclick="toggleCL('${prefix}','${i.id}')">
+        <input type="checkbox" ${state[i.id]?"checked":""} onclick="event.stopPropagation();toggleCL('${prefix}','${i.id}')">
+        <span class="item-text">${esc(text)}</span>
+      </div>`;
+    }).join("")}`;
+}
+
+function toggleCL(prefix, id) {
+  if (prefix === "am") amChecks[id] = !amChecks[id];
+  else                 pmChecks[id] = !pmChecks[id];
+  renderCL(prefix === "am" ? "amCard" : "pmCard",
+           prefix === "am" ? amItems  : pmItems,
+           prefix === "am" ? amChecks : pmChecks, prefix);
+  markDirty();
+}
+
+// ── ACTIVITIES ─────────────────────────────────────────────────────────────────
+function renderActTypeBtns() {
+  document.getElementById("actTypeBtns").innerHTML = activityTypes.map(a => {
+    const name = L === "IS" && a.nameIS ? a.nameIS : a.name;
+    return `<button class="type-btn" data-id="${a.id}" onclick="selectType('${a.id}')">${esc(name)}</button>`;
+  }).join("");
+}
+
+function selectType(id) {
+  selectedType = activityTypes.find(a => a.id === id);
+  document.querySelectorAll(".type-btn").forEach(b => b.classList.toggle("selected", b.dataset.id === id));
+}
+
+function openActivityModal() {
+  selectedType = null;
+  document.getElementById("actName").value = "";
+  document.getElementById("actStart").value = new Date().toTimeString().slice(0,5);
+  document.getElementById("actEnd").value = "";
+  document.getElementById("actParticipants").value = "";
+  document.getElementById("actNotes").value = "";
+  document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("activityModal").classList.remove("hidden");
+}
+function closeActivityModal() { document.getElementById("activityModal").classList.add("hidden"); }
+
+function saveActivity() {
+  const name = document.getElementById("actName").value.trim();
+  if (!name) { document.getElementById("actName").focus(); return; }
+  activities.push({
+    id:           Date.now().toString(36),
+    type:         selectedType ? (L === "IS" && selectedType.nameIS ? selectedType.nameIS : selectedType.name) : "Other",
+    name,
+    start:        document.getElementById("actStart").value,
+    end:          document.getElementById("actEnd").value,
+    participants: parseInt(document.getElementById("actParticipants").value) || 0,
+    notes:        document.getElementById("actNotes").value.trim(),
+    recordedBy:   user.name,
+  });
+  closeActivityModal();
+  renderActivities();
+  markDirty();
+}
+
+function deleteActivity(id) {
+  activities = activities.filter(a => a.id !== id);
+  renderActivities();
+  markDirty();
+}
+
+function renderActivities() {
+  const list  = document.getElementById("activitiesList");
+  const empty = document.getElementById("activitiesEmpty");
+  if (!activities.length) { empty.style.display = ""; list.innerHTML = ""; return; }
+  empty.style.display = "none";
+  list.innerHTML = activities.map(a => `
+    <div class="activity-row">
+      <div class="activity-info">
+        <div class="activity-name">${esc(a.name)}</div>
+        <div class="activity-meta">
+          <span class="badge badge-muted">${esc(a.type)}</span>
+          ${a.start ? " " + a.start : ""}${a.end ? " – " + a.end : ""}
+          ${a.participants ? " · " + a.participants + " participants" : ""}
+        </div>
+        ${a.notes ? `<div class="activity-note">${esc(a.notes)}</div>` : ""}
+      </div>
+      <button class="activity-del" onclick="deleteActivity('${a.id}')" title="Remove">×</button>
+    </div>`).join("");
+}
+
+// ── MAINTENANCE ────────────────────────────────────────────────────────────────
+async function loadMaintenance() {
+  try { maintenance = ((await apiGet("getDamageReports")).reports || []).filter(r => !r.resolved); }
+  catch(e) { maintenance = []; }
+  renderMaintenance();
+}
+
+function renderMaintenance() {
+  const card = document.getElementById("maintCard");
+  if (!maintenance.length) { card.innerHTML = `<div class="empty-state">No open maintenance requests.</div>`; return; }
+  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  card.innerHTML = maintenance.map(m => `
+    <div class="maint-row ${m._done?"resolved":""}" id="mr-${m.id}">
+      <input type="checkbox" ${m._done?"checked":""} onchange="resolveMaint('${m.id}',this.checked)">
+      <div class="maint-info">
+        <div class="maint-boat">
+          ${esc(m.boatName||"—")}
+          <span class="badge ${sevColor[m.severity]||"badge-muted"}" style="margin-left:6px">${m.severity||"—"}</span>
+          ${m.part?`<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>`:""}
+        </div>
+        <div class="maint-desc">${esc(m.description||"")}</div>
+      </div>
+    </div>`).join("");
+}
+
+async function resolveMaint(id, checked) {
+  const item = maintenance.find(m => m.id === id);
+  if (!item) return;
+  item._done = checked;
+  renderMaintenance();
+  if (checked) {
+    try { await apiPost("resolveDamage", { id, resolvedBy: user.name }); }
+    catch(e) { item._done = false; renderMaintenance(); alert("Could not resolve: " + e.message); }
+  }
+}
+
+// ── SAVE ───────────────────────────────────────────────────────────────────────
+function markDirty() { dirty = true; }
+
+async function saveDraft() { await doSave(false); }
+async function signOffDay() {
+  const done = pmItems.filter(i => pmChecks[i.id]).length;
+  if (done < pmItems.length && !confirm(`PM checklist not complete (${done}/${pmItems.length}). Sign off anyway?`)) return;
+  await doSave(true);
+}
+
+async function doSave(signOff) {
+  const btn = document.getElementById(signOff ? "signOffBtn" : "saveDraftBtn");
+  const msg = document.getElementById("saveMsg");
+  btn.disabled = true;
+  msg.className = ""; msg.textContent = "";
+  try {
+    const payload = {
+      id:            logId,
+      date:          TODAY,
+      openingChecks: JSON.stringify(amChecks),
+      closingChecks: JSON.stringify(pmChecks),
+      activities:    JSON.stringify(activities),
+      weatherLog:    JSON.stringify(wxLog),
+      narrative:     document.getElementById("narrativeInput").value.trim(),
+      updatedBy:     user.name,
+    };
+    if (signOff) { payload.signedOffBy = user.name; payload.signedOffAt = new Date().toISOString(); }
+    const res = await apiPost("saveDailyLog", payload);
+    if (!logId && res.id) logId = res.id;
+    dirty = false;
+    msg.className = "save-ok";
+    msg.textContent = signOff ? "Day signed off ✓" : "Saved ✓";
+    setTimeout(() => { msg.textContent = ""; }, 3000);
+  } catch(e) {
+    msg.className = "save-err";
+    msg.textContent = "Save failed: " + e.message;
+  } finally { btn.disabled = false; }
+}
+
+window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+</body>
+</html>
