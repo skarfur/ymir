@@ -21,6 +21,21 @@
                   false → show YOURS/OUT/OVERDUE badge + member check-in button
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+
+// ── Object registry — avoids JSON-in-onclick attribute problems ───────────────
+// Pages call boatRegistry.set(id, obj) after loading data,
+// then onclick can safely call boatRegistry.get(id).
+const boatRegistry = {
+  _boats: {},
+  _cos:   {},
+  setBoat(b)  { this._boats[b.id] = b; },
+  setBoats(bs){ bs.forEach(b => this.setBoat(b)); },
+  getBoat(id) { return this._boats[id] || null; },
+  setCo(c)    { this._cos[c.id] = c; },
+  setCos(cs)  { cs.forEach(c => this.setCo(c)); },
+  getCo(id)   { return this._cos[id] || null; },
+};
+
 // ── Category meta ──────────────────────────────────────────────────────────────
 
 const BOAT_EMOJI = {
@@ -120,7 +135,13 @@ function renderBoatCard(boat, opts) {
   const locLine = (status==="avail" && boat.location)
     ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${_besc(boat.location)}</div>` : "";
 
-  const clickAttr = opts.onClick ? ` style="cursor:pointer" onclick="${opts.onClick}"` : "";
+  // Use registry-based onclick to avoid JSON-in-attribute encoding problems
+  const boatId = _besc(boat.id || "");
+  const clickAttr = opts.onClickAction
+    ? ` style="cursor:pointer" onclick="${opts.onClickAction}(boatRegistry.getBoat('${boatId}'))"`
+    : opts.onClick
+    ? ` style="cursor:pointer" onclick="${opts.onClick}"`
+    : "";
 
   return `<div class="bc-card bc-${status}"${clickAttr}>`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
