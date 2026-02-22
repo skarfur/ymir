@@ -52,6 +52,10 @@
     .crew-num { width:36px; text-align:center; font-size:16px; color:var(--text); }
     .recent-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border)33; font-size:11px; color:var(--muted); }
     .recent-row:last-child { border-bottom:none; }
+
+    /* ── Return-time quick buttons ── */
+    .ret-btn { background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--muted); font-size:10px; padding:4px 7px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:border-color .12s,color .12s; }
+    .ret-btn:hover { border-color:var(--brass); color:var(--brass); }
   </style>
 </head>
 <body>
@@ -114,7 +118,18 @@
       </div>
       <div class="inline-fields">
         <div class="field"><label>Time out</label><input type="time" id="coTimeOut"></div>
-        <div class="field"><label>Est. return</label><input type="time" id="coReturnBy"></div>
+<div class="field">
+          <label>Est. return</label>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="time" id="coReturnBy" style="flex:1;min-width:90px">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(60)">+1h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(90)">+1.5h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(120)">+2h</button>
+              <button type="button" class="ret-btn" onclick="setCoReturnIn(180)">+3h</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="field">
         <label>Crew on board</label>
@@ -371,6 +386,17 @@ function showMsg(text, type) {
   el.style.cssText="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:220px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px";
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),3500);
+}
+
+// ── Return-time quick buttons ────────────────────────────────
+function setCoReturnIn(mins) {
+  const base = document.getElementById('coTimeOut').value || new Date().toTimeString().slice(0,5);
+  const [h, m] = base.split(':').map(Number);
+  const total  = h * 60 + m + mins;
+  const rh = Math.floor(total / 60) % 24;
+  const rm = total % 60;
+  document.getElementById('coReturnBy').value =
+    String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0');
 }
 
 function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
