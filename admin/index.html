@@ -344,7 +344,13 @@ let importResult = null;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  loadAll();
+  loadAll().then(() => {
+    // Navigate to tab from URL param if present
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const sub = params.get("sub");
+    if (tab) showTab(tab, sub || undefined);
+  });
 });
 
 async function loadAll() {
@@ -385,6 +391,11 @@ function showTab(tab, sub) {
     document.getElementById("memberSubList").classList.toggle("hidden", sub === "import");
     document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
   }
+  // Update URL so tabs are bookmarkable / linkable
+  const url = new URL(window.location.href);
+  url.searchParams.set("tab", tab);
+  if (sub) url.searchParams.set("sub", sub); else url.searchParams.delete("sub");
+  history.replaceState(null, "", url);
 }
 
 // ── MEMBERS ───────────────────────────────────────────────────────────────────

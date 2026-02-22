@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Member Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <style>
+    /* ── TABS ── */
+    .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:24px; }
+    .hub-tab { padding:12px 20px; border:none; background:none; color:var(--muted); font-family:inherit; font-size:12px; letter-spacing:1px; cursor:pointer; border-bottom:2px solid transparent; transition:color .15s, border-color .15s; }
+    .hub-tab.active { color:var(--brass); border-bottom-color:var(--brass); }
+    .hub-tab:hover:not(.active) { color:var(--text); }
+
+    /* ── STATUS CARD ── */
+    .status-card { padding:20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); margin-bottom:20px; }
+    .status-card.active-out { border-color:var(--brass)77; }
+    .status-icon { font-size:32px; margin-bottom:8px; }
+    .status-title { font-size:14px; font-weight:500; color:var(--text); }
+    .status-meta { font-size:12px; color:var(--muted); margin-top:4px; }
+    .status-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+
+    /* ── TRIP CARDS ── */
+    .trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:10px; }
+    .trip-card.linked { border-left:3px solid var(--brass); }
+    .trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .trip-date { color:var(--brass); font-size:12px; }
+    .trip-title { font-size:13px; font-weight:500; color:var(--text); margin-top:2px; }
+    .trip-meta { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:12px; flex-wrap:wrap; }
+    .trip-notes { font-size:12px; color:var(--muted); margin-top:8px; border-top:1px solid var(--border); padding-top:8px; }
+    .trip-badge { font-size:10px; letter-spacing:.5px; padding:2px 7px; border-radius:10px; border:1px solid; }
+    .trip-badge.linked { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
+    .trip-badge.standalone { color:var(--muted); border-color:var(--border); }
+    .trip-badge.stamped { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+    .trip-badge.verified { color:#2ecc71; border-color:#2ecc7155; }
+    .stamp-note { font-size:11px; color:#2ecc71; margin-top:6px; }
+
+    /* ── LOG TRIP FORM ── */
+    .form-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-bottom:16px; }
+    .form-section h4 { color:var(--brass); font-size:11px; letter-spacing:1.5px; margin-bottom:14px; }
+    .inline-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .inline-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .hours-display { font-size:20px; color:var(--brass); text-align:center; margin-top:8px; }
+
+    /* ── STATS ── */
+    .stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:24px; }
+    .stat-cell { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+    .stat-n { font-size:22px; color:var(--brass); font-weight:500; }
+    .stat-l { font-size:10px; color:var(--muted); margin-top:2px; letter-spacing:.5px; }
+
+    /* ── RECENT PUBLIC TRIPS (link another's trip) ── */
+    .public-trip { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:8px; display:flex; gap:14px; align-items:center; }
+    .public-trip-info { flex:1; min-width:0; }
+    .public-name { font-size:12px; color:var(--muted); }
+    .public-detail { font-size:13px; color:var(--text); font-weight:500; margin-top:2px; }
+
+    @media(max-width:500px) {
+      .stat-strip { grid-template-columns:repeat(2,1fr); }
+      .inline-3 { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <div class="hub-tabs">
+    <button class="hub-tab active" onclick="showTab('status')">⛵ Status</button>
+    <button class="hub-tab" onclick="showTab('log')">📖 Log a Trip</button>
+    <button class="hub-tab" onclick="showTab('history')">📋 My Logbook</button>
+    <button class="hub-tab" onclick="showTab('club')">🌊 Club Trips</button>
+  </div>
+
+  <!-- ── TAB: STATUS ── -->
+  <div id="tab-status">
+    <div id="statusCard" class="status-card">
+      <div id="statusLoading">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: LOG A TRIP ── -->
+  <div id="tab-log" class="hidden">
+    <div class="form-section">
+      <h4>ENTRY TYPE</h4>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn btn-primary" id="btnStandalone" onclick="setEntryType('standalone')">Standalone entry</button>
+        <button class="btn btn-secondary" id="btnLinked" onclick="setEntryType('linked')">Link to check-in/out</button>
+      </div>
+      <!-- Link picker -->
+      <div id="linkPicker" class="hidden" style="margin-top:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Select a recent check-out to link this log entry to:</div>
+        <div id="recentCheckoutsList"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h4>TRIP DETAILS</h4>
+      <div class="inline-2">
+        <div class="field"><label>Date</label><input type="date" id="fDate"></div>
+        <div class="field"><label>Crew on board</label><input type="number" id="fCrew" min="1" max="20" value="1"></div>
+      </div>
+      <div class="inline-2">
+        <div class="field"><label>Departure</label><input type="time" id="fTimeOut" oninput="calcHours()"></div>
+        <div class="field"><label>Return</label><input type="time" id="fTimeIn" oninput="calcHours()"></div>
+      </div>
+      <div id="hoursDisplay" class="hours-display" style="display:none"></div>
+      <div class="inline-2">
+        <div class="field">
+          <label>Boat</label>
+          <select id="fBoat"><option value="">Select boat…</option></select>
+        </div>
+        <div class="field">
+          <label>Location / Route</label>
+          <select id="fLocation"><option value="">Select location…</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h4>CONDITIONS</h4>
+      <div class="inline-3">
+        <div class="field">
+          <label>Wind (Beaufort)</label>
+          <select id="fBeaufort">
+            <option value="">Select…</option>
+            <option value="0">0 – Calm</option>
+            <option value="1">1 – Light air</option>
+            <option value="2">2 – Light breeze</option>
+            <option value="3">3 – Gentle breeze</option>
+            <option value="4">4 – Moderate</option>
+            <option value="5">5 – Fresh breeze</option>
+            <option value="6">6 – Strong breeze</option>
+            <option value="7">7 – Near gale</option>
+            <option value="8">8 – Gale</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Direction</label>
+          <select id="fWindDir">
+            <option value="">Select…</option>
+            <option>N</option><option>NE</option><option>E</option><option>SE</option>
+            <option>S</option><option>SW</option><option>W</option><option>NW</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sea state</label>
+          <select id="fSea">
+            <option value="">Select…</option>
+            <option>Calm</option><option>Smooth</option><option>Slight</option>
+            <option>Moderate</option><option>Rough</option><option>Very rough</option>
+          </select>
+        </div>
+      </div>
+      <div class="inline-2">
+        <div class="field">
+          <label>Precipitation</label>
+          <select id="fPrecip">
+            <option value="">Select…</option>
+            <option>None</option><option>Drizzle</option><option>Rain</option>
+            <option>Showers</option><option>Snow</option><option>Fog</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Visibility</label>
+          <select id="fVis">
+            <option value="">Select…</option>
+            <option>Excellent (&gt;10km)</option><option>Good (5–10km)</option>
+            <option>Moderate (2–5km)</option><option>Poor (&lt;2km)</option><option>Fog</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h4>YOUR NOTES</h4>
+      <textarea id="fNotes" rows="4" placeholder="Route taken, highlights, observations, anything notable…" style="width:100%;resize:vertical"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="showTab('status')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTrip()">Save Trip</button>
+    </div>
+    <div id="tripErr" class="msg msg-err" style="display:none"></div>
+  </div>
+
+  <!-- ── TAB: MY LOGBOOK ── -->
+  <div id="tab-history" class="hidden">
+    <div class="stat-strip" id="myStats">
+      <div class="stat-cell"><div class="stat-n" id="sTrips">—</div><div class="stat-l">TRIPS</div></div>
+      <div class="stat-cell"><div class="stat-n" id="sHours">—</div><div class="stat-l">HOURS</div></div>
+      <div class="stat-cell"><div class="stat-n" id="sBoats">—</div><div class="stat-l">BOATS</div></div>
+      <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
+    </div>
+    <div id="myTrips"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+  </div>
+
+  <!-- ── TAB: CLUB TRIPS (link another's) ── -->
+  <div id="tab-club" class="hidden">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:16px">
+      Recent trips by club members. If you were crew on someone else's trip, add it to your own logbook with your own notes.
+    </div>
+    <div id="clubTrips"><div style="color:var(--muted)">Loading…</div></div>
+  </div>
+
+</div>
+
+<!-- LINK TRIP MODAL -->
+<div id="linkModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <span class="modal-title">Add trip to your logbook</span>
+      <button class="modal-close" onclick="closeLinkModal()">×</button>
+    </div>
+    <div id="linkModalInfo" style="margin-bottom:16px;font-size:13px;color:var(--muted)"></div>
+    <div class="field">
+      <label>Your notes (optional)</label>
+      <textarea id="linkNotes" rows="3" placeholder="Your personal notes about this trip…" style="width:100%;resize:vertical"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLinkTrip()">Add to My Logbook</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const user = requireAuth();
+if (user) {
+  document.getElementById("userBadge").textContent = user.name;
+  document.getElementById("langBtn").textContent = getLang()==="EN"?"IS":"EN";
+  init();
+}
+
+let boats=[], locations=[], myTrips=[], myCheckout=null, allRecentTrips=[];
+let entryType = "standalone";
+let linkingTrip = null;
+let linkedCheckoutId = null;
+
+async function init() {
+  try {
+    const [bRes, lRes, coRes, tripRes] = await Promise.all([
+      apiGet("getBoats"),
+      apiGet("getLocations"),
+      apiGet("getActiveCheckouts"),
+      apiGet("getTrips", { kennitala: user.kennitala }),
+    ]);
+    boats     = (bRes.boats     || []).filter(b => b.active!=="false"&&b.active!==false);
+    locations = (lRes.locations || []).filter(l => l.active!=="false"&&l.active!==false);
+    const checkouts = coRes.checkouts || [];
+    myCheckout = checkouts.find(c => c.memberKt===user.kennitala && c.status==="out") || null;
+    myTrips    = tripRes.trips || [];
+
+    populateFormSelects();
+    renderStatus();
+    renderMyLogbook();
+
+    // Init form defaults
+    document.getElementById("fDate").value = todayISO();
+    document.getElementById("fTimeOut").value = new Date().toTimeString().slice(0,5);
+  } catch(e) { console.error("init:", e); }
+}
+
+async function loadClubTrips() {
+  try {
+    const res = await apiGet("getTrips", { limit:30 });
+    allRecentTrips = (res.trips || []).filter(t => t.kennitala !== user.kennitala);
+    renderClubTrips();
+  } catch(e) { document.getElementById("clubTrips").innerHTML='<div style="color:var(--muted)">Could not load club trips.</div>'; }
+}
+
+function populateFormSelects() {
+  const bSel = document.getElementById("fBoat");
+  boats.forEach(b => { const o=document.createElement("option"); o.value=b.id; o.textContent=b.name; bSel.appendChild(o); });
+  const lSel = document.getElementById("fLocation");
+  locations.forEach(l => { const o=document.createElement("option"); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+}
+
+// ── STATUS TAB ─────────────────────────────────────────────────────────────────
+function renderStatus() {
+  const el = document.getElementById("statusCard");
+  if (myCheckout) {
+    el.className = "status-card active-out";
+    el.innerHTML = `
+      <div class="status-icon">⛵</div>
+      <div class="status-title">You are checked out</div>
+      <div class="status-meta">${esc(myCheckout.boatName||"")} · ${esc(myCheckout.locationName||"")} · Since ${esc(myCheckout.timeOut||"")}${myCheckout.returnBy?" · Return by "+esc(myCheckout.returnBy):""}</div>
+      <div class="status-actions">
+        <button class="btn btn-primary" onclick="selfCheckIn()">Check In</button>
+        <button class="btn btn-secondary" onclick="showTab('log')">Log this trip</button>
+      </div>`;
+  } else {
+    el.className = "status-card";
+    el.innerHTML = `
+      <div class="status-icon">⚓</div>
+      <div class="status-title">You are ashore</div>
+      <div class="status-meta">No active check-out. Staff can check you out at the dock.</div>
+      <div class="status-actions">
+        <button class="btn btn-primary" onclick="showTab('log')">📖 Log a Trip</button>
+      </div>`;
+  }
+}
+
+async function selfCheckIn() {
+  if (!myCheckout) return;
+  try {
+    const timeIn = new Date().toTimeString().slice(0,5);
+    await apiPost("checkIn", { id: myCheckout.id, timeIn });
+    // Pre-fill log form and switch to it
+    document.getElementById("fDate").value = todayISO();
+    document.getElementById("fTimeOut").value = myCheckout.timeOut || "";
+    document.getElementById("fTimeIn").value  = timeIn;
+    // Set boat and location
+    setSelectByText("fBoat", myCheckout.boatName);
+    setSelectByText("fLocation", myCheckout.locationName);
+    calcHours();
+    linkedCheckoutId = myCheckout.id;
+    myCheckout = null;
+    renderStatus();
+    showTab("log");
+    setEntryType("linked");
+  } catch(e) { alert("Error: "+e.message); }
+}
+
+function setSelectByText(id, text) {
+  const sel = document.getElementById(id);
+  for (let o of sel.options) {
+    if (o.textContent === text) { sel.value = o.value; return; }
+  }
+}
+
+// ── LOG FORM ───────────────────────────────────────────────────────────────────
+function setEntryType(t) {
+  entryType = t;
+  document.getElementById("btnStandalone").className = t==="standalone" ? "btn btn-primary" : "btn btn-secondary";
+  document.getElementById("btnLinked").className      = t==="linked"     ? "btn btn-primary" : "btn btn-secondary";
+  document.getElementById("linkPicker").classList.toggle("hidden", t!=="linked");
+  if (t==="linked") loadRecentCheckoutsForLinking();
+}
+
+async function loadRecentCheckoutsForLinking() {
+  const el = document.getElementById("recentCheckoutsList");
+  try {
+    const res = await apiGet("getRecentCheckouts", { kennitala: user.kennitala, limit:10 });
+    const list = (res.checkouts || []);
+    if (!list.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No recent check-outs found.</div>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="public-trip" style="cursor:pointer;${linkedCheckoutId===c.id?'border-color:var(--brass)':''}" onclick="selectLinkedCheckout('${c.id}','${esc(c.boatName||"")}','${esc(c.locationName||"")}','${esc(c.timeOut||"")}','${esc(c.timeIn||"")}')">
+        <div>⛵</div>
+        <div class="public-trip-info">
+          <div class="public-detail">${esc(c.boatName||"")} · ${esc(c.locationName||"")}</div>
+          <div class="public-name">${esc(c.date||"")} · ${esc(c.timeOut||"")}${c.timeIn?"–"+esc(c.timeIn):""}</div>
+        </div>
+        ${linkedCheckoutId===c.id?'<span style="color:var(--brass)">✓</span>':''}
+      </div>`).join("");
+  } catch(e) { el.innerHTML='<div style="color:var(--muted);font-size:12px">Could not load recent check-outs.</div>'; }
+}
+
+function selectLinkedCheckout(id, boatName, locName, timeOut, timeIn) {
+  linkedCheckoutId = id;
+  setSelectByText("fBoat", boatName);
+  setSelectByText("fLocation", locName);
+  if (timeOut) document.getElementById("fTimeOut").value = timeOut;
+  if (timeIn)  document.getElementById("fTimeIn").value  = timeIn;
+  calcHours();
+  loadRecentCheckoutsForLinking(); // re-render to show check
+}
+
+function calcHours() {
+  const tout = document.getElementById("fTimeOut").value;
+  const tin  = document.getElementById("fTimeIn").value;
+  if (!tout||!tin) { document.getElementById("hoursDisplay").style.display="none"; return; }
+  const [oh,om] = tout.split(":").map(Number);
+  const [ih,im] = tin.split(":").map(Number);
+  const mins = (ih*60+im)-(oh*60+om);
+  if (mins<=0) { document.getElementById("hoursDisplay").style.display="none"; return; }
+  const h = Math.floor(mins/60), m = mins%60;
+  document.getElementById("hoursDisplay").textContent = (h?h+"h ":"")+(m?m+"m":"");
+  document.getElementById("hoursDisplay").style.display="block";
+}
+
+async function submitTrip() {
+  const boat     = document.getElementById("fBoat");
+  const location = document.getElementById("fLocation");
+  const err      = document.getElementById("tripErr");
+  const date = document.getElementById("fDate").value;
+  const tout = document.getElementById("fTimeOut").value;
+  const tin  = document.getElementById("fTimeIn").value;
+  if (!date||!tout||!tin||!boat.value||!location.value) {
+    err.textContent="Date, times, boat, and location are required."; err.style.display="block"; return;
+  }
+  const [oh,om]=[tout.split(":").map(Number)][0], [ih,im]=[tin.split(":").map(Number)][0];
+  const hoursDecimal = Math.max(0, Math.round(((ih*60+im)-(oh*60+om))/6)/10);
+  err.style.display="none";
+  try {
+    await apiPost("saveTrip", {
+      kennitala: user.kennitala,
+      memberName: user.name,
+      date, timeOut:tout, timeIn:tin, hoursDecimal,
+      boatId:    boat.value,
+      boatName:  boat.options[boat.selectedIndex]?.text || "",
+      locationId:    location.value,
+      locationName:  location.options[location.selectedIndex]?.text || "",
+      crew:      document.getElementById("fCrew").value,
+      beaufort:  document.getElementById("fBeaufort").value,
+      windDir:   document.getElementById("fWindDir").value,
+      seaState:  document.getElementById("fSea").value,
+      precip:    document.getElementById("fPrecip").value,
+      visibility:document.getElementById("fVis").value,
+      notes:     document.getElementById("fNotes").value.trim(),
+      linkedCheckoutId: entryType==="linked" ? (linkedCheckoutId||"") : "",
+      isLinked:  entryType==="linked",
+    });
+    // Reload trips
+    const res = await apiGet("getTrips", { kennitala: user.kennitala });
+    myTrips = res.trips || [];
+    renderMyLogbook();
+    showTab("history");
+    // Reset form
+    linkedCheckoutId=null; entryType="standalone";
+    document.getElementById("fNotes").value="";
+  } catch(e) { err.textContent="Error: "+e.message; err.style.display="block"; }
+}
+
+// ── MY LOGBOOK ─────────────────────────────────────────────────────────────────
+function renderMyLogbook() {
+  const totalHours = myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const boats = [...new Set(myTrips.map(t=>t.boatId).filter(Boolean))].length;
+  const verified = myTrips.filter(t=>t.verified||t.verified==="true").length;
+  document.getElementById("sTrips").textContent    = myTrips.length;
+  document.getElementById("sHours").textContent    = totalHours.toFixed(1)+"h";
+  document.getElementById("sBoats").textContent    = boats;
+  document.getElementById("sVerified").textContent = verified;
+
+  const el = document.getElementById("myTrips");
+  if (!myTrips.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No trips logged yet.</div>'; return; }
+  el.innerHTML = myTrips.sort((a,b)=>b.date>a.date?1:-1).map(t => `
+    <div class="trip-card ${t.isLinked||t.isLinked==="true"?"linked":""}">
+      <div class="trip-head">
+        <div>
+          <div class="trip-date">${esc(t.date||"")}</div>
+          <div class="trip-title">${esc(t.boatName||"")} · ${esc(t.locationName||"")}</div>
+          <div class="trip-meta">
+            <span>${esc(t.timeOut||"")}–${esc(t.timeIn||"")}</span>
+            <span>${esc(t.hoursDecimal||"")}h</span>
+            <span>👥 ${esc(t.crew||1)}</span>
+            ${t.beaufort?`<span>💨 Bft ${esc(t.beaufort)}</span>`:""}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <span class="trip-badge ${t.isLinked||t.isLinked==="true"?"linked":"standalone"}">${t.isLinked||t.isLinked==="true"?"LINKED":"STANDALONE"}</span>
+          ${t.verified||t.verified==="true"?'<span class="trip-badge stamped">VERIFIED</span>':""}
+        </div>
+      </div>
+      ${t.notes?`<div class="trip-notes">${esc(t.notes)}</div>`:""}
+      ${t.verifiedBy?`<div class="stamp-note">✓ Verified by ${esc(t.verifiedBy)}</div>`:""}
+    </div>`).join("");
+}
+
+// ── CLUB TRIPS (link tab) ──────────────────────────────────────────────────────
+function renderClubTrips() {
+  const el = document.getElementById("clubTrips");
+  if (!allRecentTrips.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No recent club trips.</div>'; return; }
+  el.innerHTML = allRecentTrips.map(t => `
+    <div class="public-trip">
+      <div style="font-size:20px">⛵</div>
+      <div class="public-trip-info">
+        <div class="public-name">${esc(t.memberName||"")} · ${esc(t.date||"")}</div>
+        <div class="public-detail">${esc(t.boatName||"")} · ${esc(t.locationName||"")} · ${esc(t.hoursDecimal||"")}h</div>
+      </div>
+      <button class="btn btn-secondary" onclick="openLinkModal(${JSON.stringify(t).replace(/"/g,'&quot;')})">Add to my log</button>
+    </div>`).join("");
+}
+
+// ── LINK MODAL ─────────────────────────────────────────────────────────────────
+function openLinkModal(trip) {
+  linkingTrip = trip;
+  document.getElementById("linkModalInfo").innerHTML =
+    `<strong>${esc(trip.memberName)}</strong> · ${esc(trip.boatName)} · ${esc(trip.locationName)}<br>
+    ${esc(trip.date)} · ${esc(trip.timeOut)}–${esc(trip.timeIn)} · ${esc(trip.hoursDecimal)}h<br>
+    <span style="color:var(--muted);font-size:11px">This will copy the trip details to your logbook.</span>`;
+  document.getElementById("linkNotes").value = "";
+  document.getElementById("linkModal").classList.remove("hidden");
+}
+
+function closeLinkModal() {
+  document.getElementById("linkModal").classList.add("hidden");
+  linkingTrip = null;
+}
+
+async function submitLinkTrip() {
+  if (!linkingTrip) return;
+  try {
+    await apiPost("saveTrip", {
+      ...linkingTrip,
+      kennitala:   user.kennitala,
+      memberName:  user.name,
+      notes:       document.getElementById("linkNotes").value.trim(),
+      isLinked:    true,
+      linkedTripId: linkingTrip.id,
+    });
+    closeLinkModal();
+    const res = await apiGet("getTrips", { kennitala: user.kennitala });
+    myTrips = res.trips || [];
+    renderMyLogbook();
+    showTab("history");
+  } catch(e) { alert("Error: "+e.message); }
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll("[id^='tab-']").forEach(el=>el.classList.add("hidden"));
+  document.querySelectorAll(".hub-tab").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.remove("hidden");
+  const labels = {status:"⛵ Status",log:"📖 Log a Trip",history:"📋 My Logbook",club:"🌊 Club Trips"};
+  document.querySelectorAll(".hub-tab").forEach(b=>{ if(b.textContent.trim()===labels[tab]) b.classList.add("active"); });
+  if (tab==="club" && !allRecentTrips.length) loadClubTrips();
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+</script>
+</body>
+</html>

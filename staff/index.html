@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Staff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <style>
+    .fleet-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:10px; }
+    .fleet-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+    .fleet-card.out { border-left:3px solid var(--brass); }
+    .fleet-card.overdue { border-left:3px solid var(--red); }
+    .fleet-card.oos { opacity:.5; }
+    .fleet-badge { font-size:10px; letter-spacing:.8px; padding:2px 7px; border-radius:10px; border:1px solid; display:inline-block; }
+    .fleet-badge.out { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
+    .fleet-badge.available { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+    .fleet-badge.overdue { color:var(--red); border-color:var(--red)55; background:var(--red)11; }
+    .fleet-badge.oos { color:var(--muted); border-color:var(--border); }
+    .fleet-name { font-size:14px; font-weight:500; color:var(--text); margin-bottom:6px; }
+    .fleet-meta { font-size:11px; color:var(--muted); margin-top:4px; }
+    .checkout-row { display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:6px; margin-bottom:8px; }
+    .checkout-info { flex:1; min-width:0; }
+    .checkout-name { font-size:13px; color:var(--text); font-weight:500; }
+    .checkout-detail { font-size:11px; color:var(--muted); margin-top:2px; }
+    .overdue-badge { color:var(--red); font-size:10px; letter-spacing:.5px; }
+    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center; }
+    .stat-num { font-size:28px; color:var(--brass); font-weight:500; }
+    .stat-label { font-size:11px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
+    .section { margin-bottom:28px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .section-head h3 { font-size:13px; letter-spacing:1px; color:var(--muted); }
+    .empty-note { color:var(--muted); font-size:12px; padding:12px 0; }
+    .checkout-form { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:12px; }
+    .checkout-form h4 { color:var(--brass); font-size:12px; letter-spacing:1px; margin-bottom:16px; }
+    .inline-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .crew-field { display:flex; align-items:center; gap:8px; }
+    .crew-btn { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+    .crew-btn:hover { border-color:var(--brass); }
+    .crew-num { width:36px; text-align:center; font-size:16px; color:var(--text); }
+  </style>
+</head>
+<body>
+
+<header class="navbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn btn-secondary" onclick="location.href='../dailylog/'">📋 Daily Log</button>
+    <button class="btn btn-secondary" onclick="location.href='../incidents/'">⚠ Incident</button>
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <!-- Stats strip -->
+  <div class="stat-row" id="statsRow">
+    <div class="stat-card"><div class="stat-num" id="statOut">—</div><div class="stat-label">ON WATER</div></div>
+    <div class="stat-card"><div class="stat-num" id="statOverdue" style="color:var(--red)">—</div><div class="stat-label">OVERDUE</div></div>
+    <div class="stat-card"><div class="stat-num" id="statAvail">—</div><div class="stat-label">AVAILABLE</div></div>
+  </div>
+
+  <!-- Active check-outs -->
+  <div class="section">
+    <div class="section-head">
+      <h3>ACTIVE CHECK-OUTS</h3>
+      <button class="btn btn-primary" onclick="toggleCheckoutForm()">+ Check Out Boat</button>
+    </div>
+    <div id="activeCheckouts"><div class="empty-note">Loading…</div></div>
+
+    <!-- Quick check-out form -->
+    <div class="checkout-form hidden" id="coForm">
+      <h4>NEW CHECK-OUT</h4>
+      <div class="field">
+        <label>Member (kennitala or name)</label>
+        <input type="text" id="coMember" placeholder="Search member…" oninput="searchMember(this.value)">
+        <div id="coMemberSuggestions" style="position:relative"></div>
+        <input type="hidden" id="coMemberKt">
+        <div id="coMemberName" style="color:var(--brass);font-size:12px;margin-top:4px"></div>
+      </div>
+      <div class="inline-fields">
+        <div class="field">
+          <label>Boat</label>
+          <select id="coBoat"><option value="">Select boat…</option></select>
+        </div>
+        <div class="field">
+          <label>Location / Destination</label>
+          <select id="coLocation"><option value="">Select…</option></select>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field">
+          <label>Time out</label>
+          <input type="time" id="coTimeOut">
+        </div>
+        <div class="field">
+          <label>Return by (estimated)</label>
+          <input type="time" id="coReturnBy">
+        </div>
+      </div>
+      <div class="field">
+        <label>Crew on board</label>
+        <div class="crew-field">
+          <button class="crew-btn" onclick="adjustCrew(-1)">−</button>
+          <span class="crew-num" id="crewNum">1</span>
+          <button class="crew-btn" onclick="adjustCrew(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <input type="text" id="coNotes" placeholder="Any notes…">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="toggleCheckoutForm()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCheckout()">Check Out</button>
+      </div>
+      <div id="coErr" class="msg msg-err" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Fleet status -->
+  <div class="section">
+    <div class="section-head"><h3>FLEET STATUS</h3></div>
+    <div class="fleet-grid" id="fleetGrid"><div class="empty-note">Loading…</div></div>
+  </div>
+
+  <!-- Recent check-ins (last 24h) -->
+  <div class="section">
+    <div class="section-head"><h3>RECENT CHECK-INS (24H)</h3></div>
+    <div id="recentCheckins"><div class="empty-note">Loading…</div></div>
+  </div>
+
+</div>
+
+<script>
+const user = requireAuth(isStaff);
+if (user) {
+  document.getElementById("userBadge").textContent = user.name + " · " + user.role;
+  document.getElementById("langBtn").textContent = getLang()==="EN"?"IS":"EN";
+  init();
+}
+
+let boats=[], locations=[], members=[], checkouts=[];
+let crewCount = 1;
+let selectedMemberKt = "";
+
+async function init() {
+  try {
+    const [bRes, lRes, mRes, coRes] = await Promise.all([
+      apiGet("getBoats"),
+      apiGet("getLocations"),
+      apiGet("getMembers"),
+      apiGet("getActiveCheckouts"),
+    ]);
+    boats     = (bRes.boats     || []).filter(b => b.active!=="false"&&b.active!==false&&b.oos!=="true"&&b.oos!==true);
+    locations = (lRes.locations || []).filter(l => l.active!=="false"&&l.active!==false);
+    members   = mRes.members || [];
+    checkouts = coRes.checkouts || [];
+    populateSelects();
+    renderAll();
+  } catch(e) {
+    console.error("init:", e);
+  }
+}
+
+function populateSelects() {
+  const bSel = document.getElementById("coBoat");
+  boats.forEach(b => { const o=document.createElement("option"); o.value=b.id; o.textContent=b.name+(b.category?" ("+b.category+")":""); bSel.appendChild(o); });
+  const lSel = document.getElementById("coLocation");
+  locations.forEach(l => { const o=document.createElement("option"); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+  // Set default time out to now
+  document.getElementById("coTimeOut").value = new Date().toTimeString().slice(0,5);
+}
+
+function renderAll() {
+  renderCheckouts();
+  renderFleet();
+  renderStats();
+}
+
+function renderStats() {
+  const active = checkouts.filter(c => c.status==="out");
+  const overdue = active.filter(c => c.returnBy && c.returnBy < new Date().toTimeString().slice(0,5));
+  document.getElementById("statOut").textContent    = active.length;
+  document.getElementById("statOverdue").textContent = overdue.length;
+  document.getElementById("statAvail").textContent   = boats.filter(b => !active.find(c => c.boatId===b.id)).length;
+}
+
+function renderCheckouts() {
+  const el = document.getElementById("activeCheckouts");
+  const active = checkouts.filter(c => c.status==="out");
+  if (!active.length) { el.innerHTML='<div class="empty-note">No boats currently out.</div>'; return; }
+  const now = new Date().toTimeString().slice(0,5);
+  el.innerHTML = active.map(c => {
+    const overdue = c.returnBy && c.returnBy < now;
+    return `<div class="checkout-row">
+      <div style="font-size:20px">⛵</div>
+      <div class="checkout-info">
+        <div class="checkout-name">${esc(c.boatName||c.boatId)} ${overdue?'<span class="overdue-badge">⚠ OVERDUE</span>':''}</div>
+        <div class="checkout-detail">${esc(c.memberName||c.memberKt)} · ${esc(c.locationName||"")} · Out ${esc(c.timeOut||"")}${c.returnBy?" · Return by "+esc(c.returnBy):""} · ${esc(c.crew||1)} crew</div>
+      </div>
+      <button class="btn btn-secondary" onclick="checkIn('${c.id}')">Check In</button>
+    </div>`;
+  }).join("");
+}
+
+function renderFleet() {
+  const el = document.getElementById("fleetGrid");
+  const allBoats = [...boats];
+  // Add OOS boats from backend (not filtered above)
+  el.innerHTML = allBoats.map(b => {
+    const out = checkouts.find(c => c.status==="out" && c.boatId===b.id);
+    const now = new Date().toTimeString().slice(0,5);
+    const overdue = out && out.returnBy && out.returnBy < now;
+    const status = out ? (overdue?"overdue":"out") : (b.oos||b.oos==="true"?"oos":"available");
+    return `<div class="fleet-card ${status}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="fleet-name">${esc(b.name)}</div>
+        <span class="fleet-badge ${status}">${status==="out"?"OUT":status==="overdue"?"OVERDUE":status==="oos"?"OOS":"FREE"}</span>
+      </div>
+      ${out?`<div class="fleet-meta">👤 ${esc(out.memberName||"")} · ${esc(out.locationName||"")}${out.returnBy?" · ↩ "+esc(out.returnBy):""}</div>`:""}
+      ${b.oosReason?`<div class="fleet-meta" style="color:var(--red)">${esc(b.oosReason)}</div>`:""}
+    </div>`;
+  }).join("") || '<div class="empty-note">No boats found. Add boats in Admin.</div>';
+}
+
+function renderRecentCheckins() {
+  const el = document.getElementById("recentCheckins");
+  const recent = checkouts.filter(c => c.status==="in").slice(0,10);
+  if (!recent.length) { el.innerHTML='<div class="empty-note">No check-ins in the last 24 hours.</div>'; return; }
+  el.innerHTML = recent.map(c => `<div class="checkout-row">
+    <div class="checkout-info">
+      <div class="checkout-name">${esc(c.boatName||c.boatId)} <span style="color:var(--muted);font-size:11px">→ returned</span></div>
+      <div class="checkout-detail">${esc(c.memberName||c.memberKt)} · ${esc(c.locationName||"")} · ${esc(c.timeOut||"")}–${esc(c.timeIn||"")}</div>
+    </div>
+  </div>`).join("");
+}
+
+// ── CHECK-OUT FORM ─────────────────────────────────────────────────────────────
+function toggleCheckoutForm() {
+  document.getElementById("coForm").classList.toggle("hidden");
+}
+
+function adjustCrew(delta) {
+  crewCount = Math.max(1, Math.min(20, crewCount + delta));
+  document.getElementById("crewNum").textContent = crewCount;
+}
+
+function searchMember(q) {
+  const box = document.getElementById("coMemberSuggestions");
+  if (!q || q.length < 2) { box.innerHTML=""; return; }
+  const matches = members.filter(m => m.name.toLowerCase().includes(q.toLowerCase()) || m.kennitala.startsWith(q)).slice(0,5);
+  box.innerHTML = matches.length ? `<div style="position:absolute;top:0;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:6px;z-index:100;overflow:hidden">
+    ${matches.map(m=>`<div onclick="selectMember('${m.kennitala}','${esc(m.name)}')" style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)">${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span></div>`).join("")}
+  </div>` : "";
+}
+
+function selectMember(kt, name) {
+  selectedMemberKt = kt;
+  document.getElementById("coMember").value = name;
+  document.getElementById("coMemberName").textContent = kt;
+  document.getElementById("coMemberSuggestions").innerHTML = "";
+}
+
+async function submitCheckout() {
+  const kt  = selectedMemberKt || document.getElementById("coMember").value.trim();
+  const bid = document.getElementById("coBoat").value;
+  const lid = document.getElementById("coLocation").value;
+  const err = document.getElementById("coErr");
+  if (!kt||!bid) { err.textContent="Member and boat are required."; err.style.display="block"; return; }
+  err.style.display="none";
+  const boat     = boats.find(b=>b.id===bid)||{};
+  const location = locations.find(l=>l.id===lid)||{};
+  const member   = members.find(m=>m.kennitala===kt)||{};
+  try {
+    const res = await apiPost("saveCheckout", {
+      memberKt: kt, memberName: member.name||kt,
+      boatId: bid, boatName: boat.name||bid,
+      locationId: lid, locationName: location.name||lid,
+      timeOut: document.getElementById("coTimeOut").value,
+      returnBy: document.getElementById("coReturnBy").value,
+      crew: crewCount,
+      notes: document.getElementById("coNotes").value.trim(),
+      status: "out",
+      staffKt: user.kennitala,
+    });
+    checkouts.unshift({ id:res.id, memberKt:kt, memberName:member.name||kt, boatId:bid, boatName:boat.name||bid, locationId:lid, locationName:location.name||lid, timeOut:document.getElementById("coTimeOut").value, returnBy:document.getElementById("coReturnBy").value, crew:crewCount, status:"out" });
+    toggleCheckoutForm();
+    renderAll();
+  } catch(e) {
+    err.textContent = "Error: "+e.message; err.style.display="block";
+  }
+}
+
+async function checkIn(id) {
+  try {
+    const timeIn = new Date().toTimeString().slice(0,5);
+    await apiPost("checkIn", { id, timeIn });
+    const co = checkouts.find(c=>c.id===id);
+    if (co) { co.status="in"; co.timeIn=timeIn; }
+    renderAll();
+    renderRecentCheckins();
+  } catch(e) { alert("Error: "+e.message); }
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+</script>
+</body>
+</html>
