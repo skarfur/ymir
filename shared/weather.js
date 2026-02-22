@@ -151,29 +151,34 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
         <div class="wx-top">
-          <div style="flex:1">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${loc.label.toUpperCase()} · CONDITIONS</div>
-            <div style="display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:10px;row-gap:0;align-items:start">
-              <span style="grid-row:1/3;font-size:36px;color:var(--brass);font-weight:500;line-height:1;align-self:center;padding-right:2px">${wxDirArrow(wd)}</span>
-              <span style="display:flex;align-items:center;gap:5px;line-height:1">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <!-- wind col -->
+            <div style="flex:1">
+              <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${loc.label.toUpperCase()} · CONDITIONS</div>
+              <!-- row 1: arrow · number · m/s -->
+              <div style="display:flex;align-items:center;gap:4px;line-height:1">
+                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
                 <span style="font-size:13px;color:var(--muted)">m/s</span>
-              </span>
-              <span style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;padding-top:6px">
-                <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
-                <span style="color:var(--border)">·</span>
+              </div>
+              <!-- row 2: dir · kt -->
+              <div style="font-size:13px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:6px">
                 <b style="color:var(--text)">${wDir}</b>
-              </span>
+                <span style="color:var(--border)">·</span>
+                <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
+              </div>
+              <!-- gusts row -->
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
+                <span>Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)} kt</b></span>
+                <span>Bft <b style="color:var(--text)">${bft}</b> — ${wxBftDesc(bft)}</span>
+              </div>
             </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
-              <span>Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)} kt</b></span>
-              <span>Bft <b style="color:var(--text)">${bft}</b> — ${wxBftDesc(bft)}</span>
+            <!-- icon col (right) -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:4px">
+              <div style="font-size:30px;line-height:1">${wxCondIcon(c.weather_code)}</div>
+              <div style="font-size:9px;color:var(--muted);text-align:center">${wxCondDesc(c.weather_code)}</div>
+              ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
             </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:28px">${wxCondIcon(c.weather_code)}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">${wxCondDesc(c.weather_code)}</div>
-            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:10px">
