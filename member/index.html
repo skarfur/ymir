@@ -851,7 +851,8 @@ async function submitLaunch(){
       checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
       expectedReturn:  document.getElementById('lReturnBy').value||'',
       crew:            document.getElementById('lCrew').value||1,
-      wxSnapshot:      snap,
+      wxSnapshot:            snap,
+      preLaunchChecklist:   JSON.stringify(collectChecklist('cl', getChecklist, launchBoat?.category||'dinghy')),
     });
     const co=await apiGet('getActiveCheckouts');
     checkouts=co.checkouts||[];
@@ -985,6 +986,14 @@ function buildAfterChecklist(category){
   updateAfterClProgress();
 }
 
+// Collect checklist state → compact JSON: {items:[{text,checked},...], allDone:bool}
+function collectChecklist(prefix, listFn, category) {
+  const items = listFn ? listFn(category) : [];
+  const boxes = [...document.querySelectorAll(`[id^="${prefix}"]`)].filter(el => el.type==='checkbox');
+  const result = boxes.map((b, i) => ({ text: items[i] || b.id, checked: b.checked }));
+  return { items: result, allDone: result.length > 0 && result.every(r => r.checked) };
+}
+
 function updateAfterClProgress(){
   const boxes=[...document.querySelectorAll('[id^="acl"]')].filter(el=>el.type==='checkbox');
   const checked=boxes.filter(b=>b.checked).length,total=boxes.length;
@@ -1011,8 +1020,9 @@ async function submitReturn(){
 
   try{
     await apiPost('checkIn',{
-      id:co.id,
-      timeIn:tin,
+      id:           co.id,
+      timeIn:       tin,
+      afterSailChecklist: JSON.stringify(collectChecklist('acl', getAfterChecklist, co.boatCategory||'dinghy')),
     });
     await apiPost('saveTrip',{
       kennitala:       user.kennitala,
