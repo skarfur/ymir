@@ -39,6 +39,7 @@
   .stat-strip { grid-template-columns:repeat(2,1fr); }
   .grid-3 { grid-template-columns:1fr 1fr; }
 }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -65,12 +66,20 @@
     <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
   </div>
 
-  <button class="btn btn-secondary" style="width:100%;margin-bottom:16px" onclick="toggleManual()">+ Log a trip manually</button>
+  <button class="btn btn-secondary" style="width:100%;margin-bottom:16px" onclick="openManualModal()">+ Log a trip manually</button>
 
-  <!-- Manual entry (collapsed by default) -->
-  <div id="panel-manual" class="hidden">
+  <!-- Trip history -->
+  <div class="section-lbl">TRIP HISTORY</div>
+  <div id="tripList"><div class="empty-note">Loading…</div></div>
+
+</div>
+
+<!-- ════ MODAL: MANUAL TRIP ════ -->
+<div class="modal-overlay hidden" id="modalManual" style="align-items:flex-start;padding-top:40px">
+  <div class="modal" style="max-width:500px;width:100%">
+    <h3 style="margin-bottom:14px">Log a Trip Manually</h3>
     <div class="form-section">
-      <h4>LOG TRIP MANUALLY</h4>
+      <h4>TRIP DETAILS</h4>
       <div class="grid-2">
         <div class="field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="field"><label>Crew</label><input type="number" id="mCrew" min="1" value="1"></div>
@@ -80,11 +89,14 @@
         <div class="field"><label>Return</label><input type="time" id="mTimeIn" oninput="calcManualHours()"></div>
       </div>
       <div class="hours-calc" id="mHoursCalc"></div>
-      <div class="grid-2">
+      <div class="grid-2" style="margin-top:4px">
         <div class="field"><label>Boat</label><select id="mBoat"><option value="">Select…</option></select></div>
         <div class="field"><label>Location</label><select id="mLocation"><option value="">Select…</option></select></div>
       </div>
-      <div class="grid-3" style="margin-top:6px">
+    </div>
+    <div class="form-section">
+      <h4>CONDITIONS (optional)</h4>
+      <div class="grid-3">
         <div class="field"><label>Beaufort</label>
           <select id="mBft"><option value="">–</option>
             <option value="0">0</option><option value="1">1</option><option value="2">2</option>
@@ -104,23 +116,17 @@
           </select>
         </div>
       </div>
-      <div class="field" style="margin-top:4px">
-        <label>Notes</label>
-        <textarea id="mNotes" rows="2" style="width:100%;resize:vertical"></textarea>
-      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="mNotes" rows="2" style="width:100%;resize:vertical"></textarea>
     </div>
     <div id="manualErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="toggleManual()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeManualModal()">Cancel</button>
       <button class="btn btn-primary" onclick="submitManualTrip()">Save Trip</button>
     </div>
-    <div style="margin-bottom:16px"></div>
   </div>
-
-  <!-- Trip list -->
-  <div class="section-lbl">TRIP HISTORY</div>
-  <div id="tripList"><div class="empty-note">Loading…</div></div>
-
 </div>
 
 <script>
@@ -150,8 +156,6 @@ async function init() {
     locations = (lRes.locations || []).filter(l => String(l.active) !== 'false');
     populateSelects();
     renderLogbook();
-    document.getElementById('mDate').value    = todayISO();
-    document.getElementById('mTimeOut').value = fmtTimeNow();
   } catch(e) { console.error('init', e); }
 }
 
@@ -207,10 +211,20 @@ function renderLogbook() {
   }).join('');
 }
 
-function toggleManual() {
-  const p = document.getElementById('panel-manual');
-  p.classList.toggle('hidden');
-  if (!p.classList.contains('hidden')) p.scrollIntoView({ behavior:'smooth' });
+function openManualModal(){
+  document.getElementById('mDate').value    = todayISO();
+  document.getElementById('mTimeOut').value = fmtTimeNow();
+  document.getElementById('mTimeIn').value  = '';
+  document.getElementById('mHoursCalc').textContent = '';
+  document.getElementById('mNotes').value   = '';
+  document.getElementById('mBft').value     = '';
+  document.getElementById('mWindDir').value = '';
+  document.getElementById('mSea').value     = '';
+  document.getElementById('manualErr').style.display = 'none';
+  document.getElementById('modalManual').classList.remove('hidden');
+}
+function closeManualModal(){
+  document.getElementById('modalManual').classList.add('hidden');
 }
 
 function calcManualHours() {
@@ -246,8 +260,7 @@ async function submitManualTrip() {
     const res = await apiGet('getTrips', { kennitala: user.kennitala });
     myTrips = res.trips || [];
     renderLogbook();
-    toggleManual();
-    document.getElementById('mNotes').value = '';
+    closeManualModal();
     showMsg('✓ Trip saved.', 'ok');
   } catch(e) { err.textContent = 'Error: '+e.message; err.style.display='block'; }
 }
