@@ -407,6 +407,98 @@ function renderBoats() {
   replaceWithFragment(dom.boatsCard, active, buildBoatRow.bind(null, nowMins));
 }
 
+// ── Checkout detail modal (daily log) ──────────────────────────────────────
+// Opens when a boat-row in the boats card is clicked.
+
+function openDlCoDetail(id) {
+  const co = checkouts.find(c => c.id === id);
+  if (!co) return;
+
+  const now     = new Date().toTimeString().slice(0, 5);
+  const retBy   = co.expectedReturn || co.returnBy || '';
+  const overdue = retBy && retBy < now;
+
+  // Title
+  document.getElementById('dlCoDetailTitle').innerHTML =
+    `⛵ ${dlEsc(co.boatName || 'Checkout')}`
+    + (overdue ? ` <span style="color:var(--red);font-size:12px;margin-left:8px">⚠ OVERDUE</span>` : '');
+
+  // Trip fields
+  dlSet('dlCdBoat',     co.boatName     || '—');
+  dlSet('dlCdLocation', co.locationName || '—');
+  dlSet('dlCdOut',      (co.checkedOutAt || co.timeOut || '—').slice(0, 5));
+
+  const retEl = document.getElementById('dlCdReturn');
+  retEl.textContent = retBy ? retBy + (overdue ? '  ⚠' : '') : '—';
+  retEl.style.color = overdue ? 'var(--red)' : 'var(--text)';
+
+  dlSet('dlCdCrew', (co.crew || 1) + ' person' + ((co.crew || 1) > 1 ? 's' : ''));
+
+  const notesRow = document.getElementById('dlCdNotesRow');
+  notesRow.style.display = co.notes ? '' : 'none';
+  if (co.notes) dlSet('dlCdNotes', co.notes);
+
+  // Conditions at launch
+  const wxSec = document.getElementById('dlCdWxSection');
+  if (co.wxSnapshot) {
+    try {
+      const w = typeof co.wxSnapshot === 'string' ? JSON.parse(co.wxSnapshot) : co.wxSnapshot;
+      dlSet('dlCdWind', `Bft ${w.bft} · ${w.ws} m/s${w.wg ? ' (gusts ' + w.wg + ')' : ''}${w.dir ? ' ' + w.dir : ''}`);
+      dlShowRow('dlCdWaveRow', w.wv != null, 'dlCdWave', w.wv != null ? w.wv + ' m' : '');
+      dlShowRow('dlCdTempRow', w.tc != null, 'dlCdTemp', w.tc != null ? w.tc + ' °C' : '');
+      dlShowRow('dlCdFlagRow', !!w.flag,     'dlCdFlag', w.flag || '');
+      wxSec.style.display = '';
+    } catch(e) { wxSec.style.display = 'none'; }
+  } else {
+    wxSec.style.display = 'none';
+  }
+
+  // Sailor
+  dlSet('dlCdMember',    co.memberName       || '—');
+  dlSet('dlCdKennitala', co.memberKennitala  || '—');
+
+  // Contact block
+  const contactDiv = document.getElementById('dlCdContactBlock');
+  const isMinor    = co.memberIsMinor === true || co.memberIsMinor === 'true';
+  if (isMinor && (co.guardianName || co.guardianPhone)) {
+    contactDiv.innerHTML = `
+      <div class="dl-contact minor">
+        <span style="font-size:18px">⚠</span>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--brass);letter-spacing:.8px;margin-bottom:3px">MINOR — GUARDIAN CONTACT</div>
+          <div style="font-weight:500;color:var(--text)">${dlEsc(co.guardianName || '—')}</div>
+        </div>
+        ${co.guardianPhone ? `<a href="tel:${dlEsc(co.guardianPhone)}" style="color:var(--brass);text-decoration:none;font-weight:500">${dlEsc(co.guardianPhone)}</a>` : ''}
+      </div>`;
+  } else if (co.memberPhone) {
+    contactDiv.innerHTML = `
+      <div class="dl-contact normal">
+        <span>📱</span>
+        <div style="flex:1;font-size:10px;color:var(--muted);letter-spacing:.8px">SAILOR PHONE</div>
+        <a href="tel:${dlEsc(co.memberPhone)}" style="color:var(--brass);text-decoration:none;font-weight:500">${dlEsc(co.memberPhone)}</a>
+      </div>`;
+  } else {
+    contactDiv.innerHTML = '';
+  }
+
+  document.getElementById('dlCoDetailModal').classList.remove('hidden');
+}
+
+function closeDlCoDetail() {
+  document.getElementById('dlCoDetailModal').classList.add('hidden');
+}
+
+// Helpers scoped to this modal (avoid collision with any outer esc())
+function dlSet(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function dlShowRow(rowId, show, valId, val) {
+  const row = document.getElementById(rowId);
+  if (row) row.style.display = show ? '' : 'none';
+  if (show && valId) dlSet(valId, val);
+}
+function dlEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function buildBoatRow(nowMins, c) {
   const returnBy  = c.returnBy || c.expectedReturn || '';
   const rbMins    = returnBy ? timeToMins(returnBy) : null;
@@ -717,6 +809,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Weather snapshot
   dom.logWxBtn.addEventListener('click', logCurrentWeather);
+
+  // Boat row click → open checkout detail modal
+  dom.boatsCard.addEventListener('click', e => {
+    const row = e.target.closest('[data-checkout-id]');
+    if (!row) return;
+    openDlCoDetail(row.dataset.checkoutId);
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1055,5 +1154,67 @@ async function loadDay() {
   }
 }
 </script>
+  <!-- ═══════════════════════════════════════════════
+     ADDITION 1 — paste just before </body>
+     Checkout detail modal for the daily log boats card.
+     Identical structure to the staff page modal.
+═══════════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="dlCoDetailModal" onclick="if(event.target===this)closeDlCoDetail()">
+    <div class="modal" style="max-width:480px;width:100%;max-height:92vh;overflow-y:auto">
+  
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="margin:0;font-size:15px" id="dlCoDetailTitle">Checkout</h3>
+        <button class="btn-ghost" onclick="closeDlCoDetail()" style="font-size:20px;padding:0 8px;line-height:1;border:none;color:var(--muted)">×</button>
+      </div>
+  
+      <!-- Trip -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
+        <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">TRIP</div>
+        <div class="dl-drow"><span class="dl-dlbl">BOAT</span><span class="dl-dval" id="dlCdBoat"></span></div>
+        <div class="dl-drow"><span class="dl-dlbl">DESTINATION</span><span class="dl-dval" id="dlCdLocation"></span></div>
+        <div class="dl-drow"><span class="dl-dlbl">DEPARTED</span><span class="dl-dval" id="dlCdOut"></span></div>
+        <div class="dl-drow"><span class="dl-dlbl">EST. RETURN</span><span class="dl-dval" id="dlCdReturn"></span></div>
+        <div class="dl-drow"><span class="dl-dlbl">CREW</span><span class="dl-dval" id="dlCdCrew"></span></div>
+        <div class="dl-drow" id="dlCdNotesRow"><span class="dl-dlbl">NOTES</span><span class="dl-dval" id="dlCdNotes"></span></div>
+      </div>
+  
+      <!-- Conditions at launch -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px" id="dlCdWxSection">
+        <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">CONDITIONS AT LAUNCH</div>
+        <div class="dl-drow"><span class="dl-dlbl">WIND</span><span class="dl-dval" id="dlCdWind"></span></div>
+        <div class="dl-drow" id="dlCdWaveRow"><span class="dl-dlbl">WAVE HEIGHT</span><span class="dl-dval" id="dlCdWave"></span></div>
+        <div class="dl-drow" id="dlCdTempRow"><span class="dl-dlbl">AIR TEMP</span><span class="dl-dval" id="dlCdTemp"></span></div>
+        <div class="dl-drow" id="dlCdFlagRow"><span class="dl-dlbl">FLAG</span><span class="dl-dval" id="dlCdFlag"></span></div>
+      </div>
+  
+      <!-- Sailor -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
+        <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">SAILOR</div>
+        <div class="dl-drow"><span class="dl-dlbl">NAME</span><span class="dl-dval" id="dlCdMember"></span></div>
+        <div class="dl-drow"><span class="dl-dlbl">KENNITALA</span><span class="dl-dval" id="dlCdKennitala"></span></div>
+      </div>
+  
+      <!-- Contact (phone or guardian) -->
+      <div id="dlCdContactBlock"></div>
+  
+      <!-- Close -->
+      <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="closeDlCoDetail()">Close</button>
+  
+    </div>
+  </div>
+  
+  <!-- Styles for the modal detail rows (add inside <style> or alongside) -->
+  <style>
+  .dl-drow { display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-bottom:1px solid var(--border)33; font-size:12px; }
+  .dl-drow:last-child { border-bottom:none; }
+  .dl-dlbl { color:var(--muted); font-size:10px; letter-spacing:.5px; flex-shrink:0; margin-right:12px; }
+  .dl-dval { color:var(--text); text-align:right; }
+  .dl-contact { border-radius:6px; padding:10px 12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; font-size:12px; }
+  .dl-contact.minor  { background:var(--card); border:1px solid var(--brass)44; }
+  .dl-contact.normal { background:var(--card); border:1px solid var(--border); }
+  /* Make boat rows clickable */
+  .boat-row { cursor: pointer; transition: background .12s; }
+  .boat-row:hover { background: var(--card); border-radius: 4px; }
+  </style>
 </body>
 </html>
