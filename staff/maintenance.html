@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
-  <script src="../shared/maintenance.js"></script>
   <style>
     .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
 
@@ -37,39 +36,51 @@
     .req-card.sev-medium   { border-left:3px solid var(--yellow); }
     .req-card.sev-low      { border-left:3px solid var(--green); }
 
-    .req-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-    .req-title { font-size:14px; font-weight:500; color:var(--text); }
-    .req-meta { font-size:11px; color:var(--muted); margin-top:5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-    .req-desc { font-size:12px; color:var(--text); margin-top:8px; opacity:.8; }
-    .req-photo { margin-top:8px; border-radius:6px; max-width:100%; max-height:200px; object-fit:cover;
-      border:1px solid var(--border); cursor:pointer; }
-    .req-actions { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+    .req-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .req-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:4px; }
+    .req-meta  { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; color:var(--muted); }
+    .req-desc  { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; }
+    .req-actions { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    .req-photo { width:80px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border);
+      margin-top:8px; cursor:pointer; transition:opacity .15s; }
+    .req-photo:hover { opacity:.8; }
 
-    .oos-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px;
-      border-radius:10px; border:1px solid var(--red)55; background:var(--red)11; color:var(--red);
-      font-weight:bold; letter-spacing:.5px; }
-
-    /* ── Comment thread ── */
-    .comment-thread { margin-top:10px; border-top:1px solid var(--border); padding-top:8px; }
-    .comment-item { font-size:11px; color:var(--muted); padding:4px 0;
-      border-bottom:1px solid var(--border)44; }
-    .comment-item:last-child { border-bottom:none; }
-    .comment-by { color:var(--brass); }
+    /* ── Comments ── */
+    .comment-thread { margin-top:8px; border-top:1px solid var(--border)44; padding-top:8px; }
+    .comment-item { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .comment-by { color:var(--text); font-weight:500; }
     .comment-add { display:flex; gap:6px; margin-top:8px; }
-    .comment-add input { flex:1; font-size:12px; padding:6px 10px; }
-    .comment-add button { padding:6px 12px; font-size:11px; white-space:nowrap; }
+    .comment-add input { flex:1; }
 
-    /* ── Empty state ── */
-    .empty-wrap { text-align:center; padding:48px 20px; color:var(--muted); }
-    .empty-icon { font-size:36px; margin-bottom:12px; opacity:.4; }
+    /* ── Empty / loading ── */
+    .empty-wrap { text-align:center; padding:40px 20px; color:var(--muted); }
+    .empty-icon { font-size:32px; margin-bottom:12px; }
+
+    /* ── Badges ── */
+    .badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px;
+      font-weight:500; letter-spacing:.3px; }
+    .badge-green  { background:var(--green)22;  color:var(--green);  border:1px solid var(--green)44; }
+    .badge-yellow { background:var(--yellow)22; color:var(--yellow); border:1px solid var(--yellow)44; }
+    .badge-orange { background:var(--orange)22; color:var(--orange); border:1px solid var(--orange)44; }
+    .badge-red    { background:var(--red)22;    color:var(--red);    border:1px solid var(--red)44; }
+    .badge-muted  { background:var(--surface);  color:var(--muted);  border:1px solid var(--border); }
+    .oos-badge { font-size:10px; background:var(--red)22; color:var(--red);
+      border:1px solid var(--red)44; border-radius:3px; padding:2px 6px; font-weight:500; }
 
     /* ── Modal ── */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75);
-      display:flex; align-items:center; justify-content:center; z-index:200; padding:16px; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200;
+      display:flex; align-items:center; justify-content:center; padding:16px; }
     .modal-overlay.hidden { display:none; }
-    .modal { background:var(--card); border:1px solid var(--border-l); border-radius:10px;
+    .modal { background:var(--card); border:1px solid var(--border); border-radius:10px;
       padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
     .modal h3 { color:var(--brass); margin-bottom:16px; font-size:15px; }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:6px; }
+    .field input, .field select, .field textarea {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); padding:9px 10px; font-size:13px; font-family:inherit; box-sizing:border-box; }
+    .field textarea { resize:vertical; min-height:72px; }
+    .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
 
     /* Severity selector */
     .sev-btns { display:flex; gap:6px; flex-wrap:wrap; }
@@ -102,13 +113,19 @@
   </style>
 </head>
 <body>
-<header>
-  <div class="header-left">
-    <span class="logo">ÝMIR</span>
-    <span class="page-title" id="hubLink">← Staff hub</span>
+
+<!-- ══ HEADER ══ -->
+<header class="navbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
+    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
   </div>
-  <div class="header-right">
-    <button class="hbtn" onclick="openNewRequest()">+ New Request</button>
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openNewRequest()">+ New Request</button>
+    <button class="btn btn-secondary" id="hubBtn" onclick="location.href='../staff/'">⚓ Staff Hub</button>
+    <button class="btn btn-secondary" onclick="location.href='../dailylog/'">📋 Daily Log</button>
+    <button class="btn btn-secondary" onclick="location.href='trips.html'">✓ Trips</button>
+    <button class="btn btn-secondary" onclick="location.href='../incidents/'">⚠ Incident</button>
     <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
     <button class="btn-ghost" onclick="signOut()">Sign out</button>
   </div>
@@ -155,7 +172,6 @@
       </div>
     </div>
 
-    <!-- Boat picker (shown when cat=boat) -->
     <div class="field hidden" id="boatField">
       <label>Boat</label>
       <select id="newBoat"><option value="">Select boat…</option></select>
@@ -166,7 +182,6 @@
       </div>
     </div>
 
-    <!-- Equipment / facility name (shown when cat=equipment or facility) -->
     <div class="field hidden" id="itemField">
       <label id="itemLabel">Item / Location</label>
       <input type="text" id="newItem" placeholder="e.g. Wetsuit #3 / Clubhouse roof">
@@ -201,27 +216,31 @@
       <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
     </div>
 
-    <div id="newErr" class="msg msg-err" style="display:none"></div>
+    <div id="newErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
-      <button class="btn btn-primary"   onclick="submitRequest()" id="submitBtn">Submit</button>
+      <button class="btn btn-primary"   id="submitBtn" onclick="submitRequest()">Submit</button>
     </div>
   </div>
 </div>
 
 <!-- ── Full-size photo overlay ── -->
-<div class="photo-overlay hidden" id="photoOverlay" onclick="document.getElementById('photoOverlay').classList.add('hidden')">
+<div class="photo-overlay hidden" id="photoOverlay" onclick="this.classList.add('hidden')">
   <img id="overlayImg" src="" alt="">
 </div>
 
 <script>
+// ── Auth ───────────────────────────────────────────────────────────────────────
 const user = requireAuth(isStaff);
 if (user) {
-  const L = getLang();
-  document.getElementById("langBtn").textContent = L==="EN"?"IS":"EN";
-  const hub = document.getElementById("hubLink");
-  if (isAdmin(user)) { hub.textContent = "← Admin panel"; hub.style.cursor="pointer"; hub.onclick=()=>location.href="../admin/"; }
-  else               { hub.textContent = "← Staff hub";   hub.style.cursor="pointer"; hub.onclick=()=>location.href="../staff/"; }
+  document.getElementById("userBadge").textContent = user.name;
+  document.getElementById("langBtn").textContent = getLang() === "EN" ? "IS" : "EN";
+  // Admins get link to admin panel instead
+  if (isAdmin(user)) {
+    const btn = document.getElementById("hubBtn");
+    btn.textContent = "🛠 Admin";
+    btn.onclick = () => location.href = "../admin/";
+  }
 }
 
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -232,36 +251,38 @@ let selectedCat = "";
 let selectedSev = "";
 let photoDataUrl = "";
 
-// Expose for shared/maintenance.js
-window._maintRequests = allRequests;
-window._maintUser     = user;
+const SEV_HINTS = {
+  low:      "Minor cosmetic issue, no safety concern.",
+  medium:   "Functional issue, usable with care.",
+  high:     "Significant problem — assess before use.",
+  critical: "Safety risk — take out of service immediately.",
+};
 
-// SEV_HINTS provided by shared/maintenance.js
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-if (user) { init(); }
-
-async function init() {
+// ── Init (deferred to DOMContentLoaded to avoid race) ─────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
   try {
     const [rRes, bRes] = await Promise.all([
       apiGet("getMaintenance"),
       apiGet("getBoats"),
     ]);
     allRequests = rRes.requests || [];
-    window._maintRequests = allRequests;   // keep shared ref in sync
-    boats = (bRes.boats || []).filter(b => b.active !== "false" && b.active !== false);
+    boats = (bRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
     renderStats();
     renderList();
   } catch(e) {
     document.getElementById("reqList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠</div><p>Could not load: ${esc(e.message)}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
   }
-}
+  // Auto-open new request modal if navigated here with ?new=1
+  if (new URLSearchParams(window.location.search).get("new") === "1") {
+    openNewRequest();
+  }
+});
 
+// ── Boat select ────────────────────────────────────────────────────────────────
 function populateBoatSelect() {
   const sel = document.getElementById("newBoat");
-  sel.innerHTML = '<option value="">Select boat…</option>';
   boats.forEach(b => {
     const o = document.createElement("option");
     o.value = b.id;
@@ -299,7 +320,7 @@ function getFiltered() {
     if (currentFilter === "boats")     return !resolved && r.category === "boat";
     if (currentFilter === "equipment") return !resolved && r.category === "equipment";
     if (currentFilter === "facility")  return !resolved && r.category === "facility";
-    return true; // all
+    return true;
   });
 }
 
@@ -310,24 +331,114 @@ function renderList() {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>No requests match this filter.</p></div>`;
     return;
   }
-  // Sort: critical first, then by date desc
   const sevOrder = { critical:0, high:1, medium:2, low:3 };
   items.sort((a,b) => {
+    const ra = boolVal(a.resolved), rb = boolVal(b.resolved);
+    if (!ra && rb) return -1;
+    if (ra && !rb) return 1;
     const sa = sevOrder[a.severity]??9, sb = sevOrder[b.severity]??9;
-    if (!boolVal(a.resolved) && boolVal(b.resolved)) return -1;
-    if (boolVal(a.resolved) && !boolVal(b.resolved)) return 1;
     if (sa !== sb) return sa - sb;
     return (b.createdAt||"") > (a.createdAt||"") ? 1 : -1;
   });
   el.innerHTML = items.map(r => renderCard(r)).join("");
 }
 
-// renderCard, resolveRequest, addComment → shared/maintenance.js
-function renderCard(r)       { return maintRenderCard(r); }
-async function resolveRequest(id) { await maintResolve(id); }
-async function addComment(id)     { await maintAddComment(id); }
+function renderCard(r) {
+  const resolved  = boolVal(r.resolved);
+  const sevClass  = "sev-" + (r.severity||"low");
+  const sevBadge  = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  const catIcon   = { boat:"⛵", equipment:"🦺", facility:"🏠" };
+  const comments  = parseJson(r.comments, []);
 
-function viewPhoto(url) {
+  const commentHtml = comments.length ? `
+    <div class="comment-thread">
+      ${comments.map(c => `
+        <div class="comment-item">
+          <span class="comment-by">${esc(c.by)}</span>
+          <span style="color:var(--border)"> · </span>
+          <span>${esc((c.at||"").slice(0,16).replace("T"," "))}</span>
+          <span style="color:var(--border)"> · </span>
+          ${esc(c.text)}
+        </div>`).join("")}
+    </div>` : "";
+
+  const commentInput = !resolved ? `
+    <div class="comment-add">
+      <input type="text" placeholder="Add a comment…" id="ci-${r.id}"
+        onkeydown="if(event.key==='Enter')addComment('${r.id}')">
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px" onclick="addComment('${r.id}')">Add</button>
+    </div>` : "";
+
+  const resolveBtn = !resolved
+    ? `<button class="btn btn-primary" style="font-size:11px;padding:6px 14px"
+         onclick="resolveRequest('${r.id}')">✓ Mark Resolved</button>`
+    : `<span style="font-size:11px;color:var(--green)">✓ Resolved by ${esc(r.resolvedBy||"—")} · ${esc((r.resolvedAt||"").slice(0,10))}</span>`;
+
+  const oosTag = boolVal(r.markOos) && r.category === "boat" && !resolved
+    ? `<span class="oos-badge">⛔ OOS</span>` : "";
+
+  const subjectLabel = r.category === "boat"
+    ? esc(r.boatName || r.boatId || "—")
+    : esc(r.itemName || "—");
+
+  return `
+  <div class="req-card ${sevClass} ${resolved ? "resolved" : ""}" id="card-${r.id}">
+    <div class="req-header">
+      <div>
+        <div class="req-title">
+          ${catIcon[r.category]||"🔧"} ${subjectLabel}
+          ${r.part ? `<span style="color:var(--muted);font-size:12px"> · ${esc(r.part)}</span>` : ""}
+          ${oosTag}
+        </div>
+        <div class="req-meta">
+          <span class="badge ${sevBadge[r.severity]||"badge-muted"}">${(r.severity||"—").toUpperCase()}</span>
+          <span>by ${esc(r.reportedBy||"—")}</span>
+          <span>${esc((r.createdAt||"").slice(0,10))}</span>
+          ${r.source ? `<span class="badge badge-muted">${esc(r.source)}</span>` : ""}
+        </div>
+      </div>
+    </div>
+    ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ""}
+    ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" alt="photo"
+      onclick="viewPhoto('${esc(r.photoUrl)}')">` : ""}
+    ${commentHtml}
+    ${commentInput}
+    <div class="req-actions">${resolveBtn}</div>
+  </div>`;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+async function resolveRequest(id) {
+  if (!confirm("Mark this request as resolved?")) return;
+  const r = allRequests.find(x => x.id === id);
+  if (!r) return;
+  try {
+    await apiPost("resolveMaintenance", { id, resolvedBy: user.name });
+    r.resolved = true; r.resolvedBy = user.name; r.resolvedAt = new Date().toISOString();
+    if (boolVal(r.markOos) && r.boatId) {
+      await apiPost("saveBoat", { id: r.boatId, oos: false, oosReason: "" });
+    }
+    renderStats(); renderList(); toast("✓ Resolved.");
+  } catch(e) { alert("Error: " + e.message); }
+}
+
+async function addComment(id) {
+  const input = document.getElementById("ci-" + id);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    await apiPost("addMaintenanceComment", { id, by: user.name, text });
+    const r = allRequests.find(x => x.id === id);
+    if (r) {
+      const comments = parseJson(r.comments, []);
+      comments.push({ by: user.name, at: new Date().toISOString(), text });
+      r.comments = JSON.stringify(comments);
+    }
+    renderList(); toast("Comment added.");
+  } catch(e) { alert("Error: " + e.message); }
+}
+
 function viewPhoto(url) {
   document.getElementById("overlayImg").src = url;
   document.getElementById("photoOverlay").classList.remove("hidden");
@@ -384,11 +495,10 @@ function handlePhotoChange(input) {
   const file = input.files[0];
   const errEl = document.getElementById("photoErr");
   const preview = document.getElementById("photoPreview");
-  if (!file) { photoDataUrl = ""; preview.className="photo-preview"; return; }
-  const MAX_MB = 5;
-  if (file.size > MAX_MB * 1024 * 1024) {
-    errEl.textContent = `Image too large (${(file.size/1024/1024).toFixed(1)} MB). Max is ${MAX_MB} MB.`;
-    input.value = ""; photoDataUrl = ""; preview.className="photo-preview"; return;
+  if (!file) { photoDataUrl = ""; preview.className = "photo-preview"; return; }
+  if (file.size > 5 * 1024 * 1024) {
+    errEl.textContent = `Image too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 5 MB.`;
+    input.value = ""; photoDataUrl = ""; preview.className = "photo-preview"; return;
   }
   errEl.textContent = "";
   const reader = new FileReader();
@@ -414,8 +524,7 @@ function handlePhotoChange(input) {
 
 async function submitRequest() {
   const btn = document.getElementById("submitBtn");
-  const err = document.getElementById("newErr");
-  err.style.display = "none";
+  document.getElementById("newErr").style.display = "none";
 
   if (!selectedCat) { showErr("Please select a category."); return; }
   if (!selectedSev) { showErr("Please select a severity level."); return; }
@@ -437,8 +546,7 @@ async function submitRequest() {
   btn.disabled = true; btn.textContent = "Submitting…";
   try {
     await apiPost("saveMaintenance", {
-      category:    selectedCat,
-      boatId, boatName, itemName,
+      category: selectedCat, boatId, boatName, itemName,
       part:        document.getElementById("newPart").value.trim(),
       severity:    selectedSev,
       description: desc,
@@ -453,7 +561,6 @@ async function submitRequest() {
     closeNewModal();
     const rRes = await apiGet("getMaintenance");
     allRequests = rRes.requests || [];
-    window._maintRequests = allRequests;
     renderStats(); renderList();
     toast("✓ Request submitted.");
   } catch(e) {
@@ -468,7 +575,18 @@ function showErr(msg) {
   el.textContent = msg; el.style.display = "block";
 }
 
-// toast, boolVal, parseJson, esc → shared/api.js
+function toast(msg) {
+  const el = document.createElement("div");
+  el.className = "msg msg-ok";
+  el.textContent = msg;
+  el.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);min-width:200px;text-align:center;z-index:9999;font-size:12px;padding:10px 16px;border-radius:8px";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function boolVal(v) { return v===true||v==="true"||v==="TRUE"||v===1||v==="1"; }
+function parseJson(v, fallback) { if(!v) return fallback; try { return typeof v==="string"?JSON.parse(v):v; } catch(e){ return fallback; } }
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 </script>
 </body>
 </html>
