@@ -182,19 +182,14 @@ function wxDirStrToDeg(s) {
 }
 
 // ── API fetch ─────────────────────────────────────────────────────────────────
-// Wind/temp/pressure: BIRK (Reykjavík airport) via apis.is station 1478
-// Waves/SST:          Open-Meteo marine API (unchanged)
-// Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart only)
-const BIRK_STATION  = '1478';
-const APIS_IS_OBS   = 'https://apis.is/weather/observations/en';
+// Wind/temp/pressure: BIRK (Reykjavík airport) proxied via Apps Script backend
+//                     (apis.is blocks direct browser fetches due to CORS)
+// Waves/SST:          Open-Meteo marine API
+// Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart)
 
 async function wxFetch(lat, lon) {
-  // ── 1. BIRK current observations ─────────────────────────────────────────
-  const birkUrl = `${APIS_IS_OBS}?stations=${BIRK_STATION}&time=1h&anytime=1`;
-  const birkPromise = fetch(birkUrl).then(r => {
-    if (!r.ok) throw new Error(`BIRK ${r.status}`);
-    return r.json();
-  });
+  // ── 1. BIRK current observations — via backend proxy ─────────────────────
+  const birkPromise = apiGet('getWeather');
 
   // ── 2. Open-Meteo hourly — wind + pressure for chart only ────────────────
   const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
@@ -221,8 +216,8 @@ async function wxFetch(lat, lon) {
   ]);
 
   // ── Map BIRK observation into the wx.current shape the rest of the code expects
-  const obs = birkRes?.results?.[0] ?? {};
-  const wdDeg = wxDirStrToDeg(obs.D);   // direction degrees (or null if calm)
+  const obs   = birkRes?.obs ?? {};
+  const wdDeg = wxDirStrToDeg(obs.D);
   const ws    = parseFloat(obs.F)  || 0;
   const wg    = parseFloat(obs.FG) || parseFloat(obs.FX) || ws;
   const temp  = parseFloat(obs.T)  ?? null;
