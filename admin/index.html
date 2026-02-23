@@ -125,6 +125,7 @@
       <button class="tab-btn"        data-tab="locations" onclick="showTab('locations')">Locations</button>
       <button class="tab-btn"        data-tab="checklists"onclick="showTab('checklists')">Checklists</button>
       <button class="tab-btn"        data-tab="actTypes"  onclick="showTab('actTypes')">Activity Types</button>
+      <button class="tab-btn"        data-tab="alerts"    onclick="showTab('alerts')">Alerts</button>
     </div>
 
     <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
@@ -273,8 +274,8 @@
       </div>
     </div>
 
-    <!-- ══ ALERT SETTINGS ════════════════════════════════════════════════════
-         FIX: moved inside <main> / <div class="page"> where it belongs      -->
+    <!-- ══ ALERT SETTINGS ══════════════════════════════════════════════════ -->
+    <div id="tab-alerts" class="hidden">
     <div class="col-section">
       <div class="col-head" onclick="toggleSection(this)">
         <div class="col-title">⚠ OVERDUE ALERTS</div>
@@ -396,6 +397,7 @@
 
       </div><!-- /col-body -->
     </div><!-- /col-section -->
+    </div><!-- /tab-alerts -->
 
   </main>
 </div><!-- /page -->
