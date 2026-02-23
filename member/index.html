@@ -759,6 +759,13 @@ function updateClProgress(){
   boxes.forEach((b,i)=>document.getElementById('cll'+i)?.classList.toggle('checked',b.checked));
 }
 
+function getReturnByValue() {
+  const h = document.getElementById('lReturnByH').value.trim();
+  const m = document.getElementById('lReturnByM').value.trim();
+  if (!h && !m) return '';
+  return String(parseInt(h)||0).padStart(2,'0') + ':' + String(parseInt(m)||0).padStart(2,'0');
+}
+  
 async function submitLaunch(){
   const boat=document.getElementById('lBoat');
   const loc =document.getElementById('lLocation');
@@ -777,7 +784,7 @@ async function submitLaunch(){
       locationId:      loc.value,
       locationName:    loc.options[loc.selectedIndex]?.text||'',
       checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
-      expectedReturn:  document.getElementById('lReturnBy').value||'',
+      expectedReturn:  getReturnByValue(),
       crew:            document.getElementById('lCrew').value||1,
       wxSnapshot:          snap,
       preLaunchChecklist:  JSON.stringify(collectChecklist('cl', getChecklist, launchBoat?.category||'dinghy')),
