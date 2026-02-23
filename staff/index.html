@@ -163,8 +163,8 @@
 
     <div class="divider-label" style="margin-bottom:20px">FLEET</div>
 
-    <!-- Two primary counters -->
-    <div class="stat-row">
+    <!-- Three primary counters -->
+  <div class="stat-row">
       <div class="stat-card">
         <div class="stat-num" id="statBoats">—</div>
         <div class="stat-label">BOATS ON WATER</div>
@@ -173,7 +173,12 @@
         <div class="stat-num" id="statPeople" style="color:#5b9bd5">—</div>
         <div class="stat-label">PEOPLE ON WATER</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statOverdue" style="color:var(--red)">—</div>
+        <div class="stat-label">OVERDUE</div>
+      </div>
     </div>
+
 
     <!-- Available by category -->
     <div class="avail-card">
@@ -372,9 +377,20 @@
 
     // ── Stats + available by category ─────────────────────────────────────────
     function renderStats() {
-      const active = checkouts.filter(c => c.status === "out");
+      const active  = checkouts.filter(c => c.status === "out");
+      const now     = new Date().toTimeString().slice(0, 5);
+      const overdue = active.filter(c => {
+        const ret = c.expectedReturn || c.returnBy || "";
+        return ret && ret < now;
+      });
+
       document.getElementById("statBoats").textContent  = active.length;
       document.getElementById("statPeople").textContent = active.reduce((s, c) => s + (parseInt(c.crew) || 1), 0);
+
+      const overdueEl = document.getElementById("statOverdue");
+      overdueEl.textContent  = overdue.length;
+      overdueEl.style.color  = overdue.length ? "var(--red)" : "var(--brass)";
+
       renderAvailByCategory(active);
     }
 
