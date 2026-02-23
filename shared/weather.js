@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// ÝMIR SHARED WEATHER MODULE  v3
+// ÝMIR — shared/weather.js
 //
-// Default location: Reykjavík / BIRK area (Fossvogur)
-//   Atmosphere coords: 64.1188°N  21.9376°W  (requested club coords)
-//   Marine fallback:   64.25°N   22.25°W     (open Faxaflói, valid ocean cell)
+// Shared weather utilities used across member, staff, daily-log and weather pages.
+// Wind data always comes from the atmosphere API at club coords.
 //
-// Marine strategy: try the exact club coords first; if the marine API returns
-// a non-ok response (coastal land cell → 400), silently retry with the open-
-// water fallback. Wind data always comes from the atmosphere API at club coords.
+// FLAG SYSTEM
+// -----------
+// All flag thresholds live in FLAG_CONFIG (below). Admin can edit these via
+// admin/index.html → Flags tab; changes are saved to the backend and fetched
+// on load via wxLoadFlagConfig(). No magic numbers anywhere else.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const WX_DEFAULT = {
@@ -23,6 +24,67 @@ const WX_MARINE_FALLBACK = { lat: 64.25, lon: -22.25 };
 let WX_LAT   = WX_DEFAULT.lat;
 let WX_LON   = WX_DEFAULT.lon;
 let WX_LABEL = WX_DEFAULT.label;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLAG CONFIG — single source of truth for all flag logic
+// Admin-editable via admin → Flags tab.  wxLoadFlagConfig() merges saved values.
+// ═══════════════════════════════════════════════════════════════════════════════
+const FLAG_CONFIG = {
+  // Beaufort thresholds — the minimum Bft to trigger each level
+  wind: {
+    yellow: 5,   // Bft ≥ 5 → yellow
+    orange: 6,   // Bft ≥ 6 → orange
+    red:    7,   // Bft ≥ 7 → red
+  },
+  // Easterly directions add +1 to the flag level
+  easterlyDirs: ['E', 'NE', 'SE'],
+  // Wave height thresholds (metres)
+  wave: {
+    yellow: 0.6,
+    orange: 1.2,
+    red:    2.0,
+  },
+  // Display labels & advice — editable by admin
+  flags: {
+    green:  {
+      color: '#27ae60', bg: '#27ae6018', border: '#27ae6044',
+      icon: '🟢', label: 'Green',
+      advice: 'Good conditions.',
+    },
+    yellow: {
+      color: '#f1c40f', bg: '#f1c40f18', border: '#f1c40f44',
+      icon: '🟡', label: 'Yellow',
+      advice: 'Marginal — experienced sailors only.',
+    },
+    orange: {
+      color: '#e67e22', bg: '#e67e2218', border: '#e67e2244',
+      icon: '🟠', label: 'Orange',
+      advice: 'Difficult — keelboats only, staff auth for dinghies.',
+    },
+    red: {
+      color: '#e74c3c', bg: '#e74c3c18', border: '#e74c3c44',
+      icon: '🔴', label: 'Red',
+      advice: 'Do not sail — all sailing suspended.',
+    },
+  },
+};
+
+/**
+ * Merge saved flag config from the backend into FLAG_CONFIG.
+ * Call this once after auth, before any weather fetch.
+ * @param {object} saved — the flagConfig object from getConfig response
+ */
+function wxLoadFlagConfig(saved) {
+  if (!saved) return;
+  if (saved.wind)        Object.assign(FLAG_CONFIG.wind,  saved.wind);
+  if (saved.wave)        Object.assign(FLAG_CONFIG.wave,  saved.wave);
+  if (saved.easterlyDirs) FLAG_CONFIG.easterlyDirs = saved.easterlyDirs;
+  if (saved.flags) {
+    for (const key of ['green','yellow','orange','red']) {
+      if (saved.flags[key]) Object.assign(FLAG_CONFIG.flags[key], saved.flags[key]);
+    }
+  }
+}
 
 // ── Unit helpers ──────────────────────────────────────────────────────────────
 function wxMsToBft(ms) {
@@ -45,83 +107,111 @@ function wxCondDesc(c)  {
   if ([61,63,65,80,81,82].includes(c)) return 'Rain'; if ([71,73,75,77].includes(c)) return 'Snow';
   if ([95,96,99].includes(c)) return 'Thunderstorm'; return '–';
 }
+
+// ── Core flag assessment — reads from FLAG_CONFIG ─────────────────────────────
+/**
+ * Assess the sailing flag level from weather data.
+ * @param {number} ws     — wind speed m/s
+ * @param {string} wDir   — compass direction label e.g. 'NE'
+ * @param {number} waveH  — wave height metres (0 if unknown)
+ * @returns {{ flagKey, flag, reasons }}
+ */
 function wxAssessFlag(ws, wDir, waveH) {
-  let lv = 0;
-  const bft = wxMsToBft(ws || 0);
-  const east = ['E','NE','SE'].includes((wDir || '').toUpperCase());
-  if (bft >= 7) lv = 3;
-  else if (bft === 6) { lv = 2; if (east) lv = 3; }
-  else if (bft === 5) { lv = 1; if (east) lv = 2; }
-  else if (bft === 4 && east) lv = 1;
-  if ((waveH || 0) >= 2.0) lv = Math.max(lv, 3);
-  else if ((waveH || 0) >= 1.2) lv = Math.max(lv, 2);
-  else if ((waveH || 0) >= 0.6) lv = Math.max(lv, 1);
-  const keys = ['green','yellow','orange','red'];
-  const FLAGS = {
-    green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green',  advice:'Good conditions.' },
-    yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow', advice:'Marginal — experienced only.' },
-    orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange', advice:'Difficult — keelboats only.' },
-    red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red',    advice:'Do not sail.' },
-  };
-  return { flagKey: keys[lv], flag: FLAGS[keys[lv]], flags: FLAGS };
-}
+  const cfg  = FLAG_CONFIG;
+  let lv     = 0;
+  const reasons = [];
+  const bft  = wxMsToBft(ws || 0);
+  const east = cfg.easterlyDirs.includes((wDir || '').toUpperCase());
 
-// ── Fetch ─────────────────────────────────────────────────────────────────────
-// lat/lon optional — defaults to current WX_LAT/WX_LON
-async function wxFetch(lat, lon) {
-  lat = lat ?? WX_LAT;
-  lon = lon ?? WX_LON;
-  const tz = 'Atlantic%2FReykjavik';
-
-  const wxUrl = `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lon}&timezone=${tz}` +
-    `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure` +
-    `&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure` +
-    `&wind_speed_unit=ms&past_hours=3&forecast_days=1`;
-
-  // Try marine at exact coords first; if that fails (coastal land cell → 400/error),
-  // retry at the open-ocean fallback for waves and SST
-  const marineCurrent = `wave_height,wave_direction,wave_period,sea_surface_temperature`;
-  const marineHourly  = `wave_height,wave_direction,wave_period,sea_surface_temperature`;
-
-  async function tryMarine(mLat, mLon) {
-    const url = `https://marine-api.open-meteo.com/v1/marine` +
-      `?latitude=${mLat}&longitude=${mLon}&timezone=${tz}` +
-      `&current=${marineCurrent}&hourly=${marineHourly}` +
-      `&past_hours=3&forecast_days=1`;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`marine ${r.status}`);
-    return r.json();
+  // Wind assessment
+  if (bft >= cfg.wind.red) {
+    lv = 3;
+    reasons.push({ f: 'red',    t: `Force ${bft} — all sailing suspended` });
+  } else if (bft >= cfg.wind.orange) {
+    lv = 2;
+    reasons.push({ f: 'orange', t: `Force ${bft} — difficult conditions` });
+    if (east) { lv = 3; reasons.push({ f: 'red', t: `Easterly F${bft} — amplified hazard` }); }
+  } else if (bft >= cfg.wind.yellow) {
+    lv = 1;
+    reasons.push({ f: 'yellow', t: `Force ${bft} — marginal` });
+    if (east) { lv = Math.max(lv, 2); reasons.push({ f: 'orange', t: `Easterly F${bft} — elevated risk` }); }
+  } else if (bft === cfg.wind.yellow - 1 && east) {
+    // One Bft below yellow but easterly — still flag yellow
+    lv = 1;
+    reasons.push({ f: 'yellow', t: `Easterly F${bft} — warrants caution` });
   }
 
-  const wxPromise = fetch(wxUrl).then(r => {
-    if (!r.ok) throw new Error(`Weather API ${r.status}`);
-    return r.json();
-  });
+  // Wave assessment
+  const wh = waveH || 0;
+  if (wh >= cfg.wave.red) {
+    lv = Math.max(lv, 3);
+    reasons.push({ f: 'red',    t: `Waves ${wh.toFixed(1)}m — very rough` });
+  } else if (wh >= cfg.wave.orange) {
+    lv = Math.max(lv, 2);
+    reasons.push({ f: 'orange', t: `Waves ${wh.toFixed(1)}m — rough` });
+  } else if (wh >= cfg.wave.yellow) {
+    lv = Math.max(lv, 1);
+    reasons.push({ f: 'yellow', t: `Waves ${wh.toFixed(1)}m — moderate` });
+  }
 
-  const marinePromise = tryMarine(lat, lon).catch(() => {
-    // Fallback to open-ocean cell — only for waves/SST, wind still from atmosphere API
-    return tryMarine(WX_MARINE_FALLBACK.lat, WX_MARINE_FALLBACK.lon).catch(() => null);
-  });
-
-  const [wx, marine] = await Promise.all([wxPromise, marinePromise]);
-  return { wx, marine };
+  const keys    = ['green', 'yellow', 'orange', 'red'];
+  const flagKey = keys[lv];
+  return { flagKey, flag: cfg.flags[flagKey], reasons };
 }
 
 // ── Pressure trend ────────────────────────────────────────────────────────────
-function wxPressureTrend(hourlyPressure, nowIdx) {
-  if (!hourlyPressure || nowIdx < 1) return { trend: 'steady', diff: 0 };
-  const histIdx = Math.max(0, nowIdx - 3);
-  const diff = (hourlyPressure[nowIdx] || 0) - (hourlyPressure[histIdx] || 0);
+function wxPressureTrend(pressureArr, nowIdx) {
+  if (!pressureArr || pressureArr.length < 4) return { trend: 'steady', diff: 0 };
+  const past = pressureArr[Math.max(0, nowIdx - 3)];
+  const now  = pressureArr[nowIdx];
+  const diff = now - past;
   return { trend: diff > 1 ? 'rising' : diff < -1 ? 'falling' : 'steady', diff: Math.round(diff * 10) / 10 };
 }
 function wxPressureTrendIcon(trend)  { return { rising:'↗', falling:'↘', steady:'→' }[trend] || '→'; }
 function wxPressureTrendColor(trend) { return { rising:'var(--green)', falling:'var(--orange)', steady:'var(--muted)' }[trend] || 'var(--muted)'; }
 
+// ── API fetch ─────────────────────────────────────────────────────────────────
+async function wxFetch(lat, lon) {
+  const atmoParams = [
+    'wind_speed_10m','wind_direction_10m','wind_gusts_10m',
+    'temperature_2m','apparent_temperature','weather_code','surface_pressure',
+  ].join(',');
+  const atmoHourly = [
+    'wind_speed_10m','wind_direction_10m','wind_gusts_10m','surface_pressure',
+  ].join(',');
+  const marineParams = [
+    'wave_height','wave_direction','sea_surface_temperature',
+  ].join(',');
+
+  const atmoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=${atmoParams}&hourly=${atmoHourly}&forecast_hours=9&timezone=auto`;
+
+  let marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
+    `&current=${marineParams}`;
+
+  const [atmoRes, marineRes] = await Promise.allSettled([
+    fetch(atmoUrl).then(r => r.json()),
+    fetch(marineUrl).then(r => {
+      if (!r.ok) {
+        // Fallback to offshore coords
+        const fb = WX_MARINE_FALLBACK;
+        return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}`)
+          .then(r2 => r2.json());
+      }
+      return r.json();
+    }),
+  ]);
+
+  return {
+    wx:     atmoRes.status   === 'fulfilled' ? atmoRes.value   : null,
+    marine: marineRes.status === 'fulfilled' ? marineRes.value : null,
+  };
+}
+
 // ── Compact widget (member + dailylog) ────────────────────────────────────────
 // Always uses WX_DEFAULT coords regardless of any location override.
 // targetEl  : DOM element to render into (must have class wx-widget in CSS)
-// onData    : optional callback(snapshot) — snapshot has ws,wd,wg,bft,waveH,wDir,sst,airT,apparentT,code,flagKey,pres,presTrend
+// onData    : optional callback(snapshot)
 // Returns { refresh(), start(), stop() }
 function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
   const loc = { lat: WX_DEFAULT.lat, lon: WX_DEFAULT.lon, label: label || WX_DEFAULT.label };
@@ -130,15 +220,15 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
   async function refresh() {
     try {
       const { wx, marine } = await wxFetch(loc.lat, loc.lon);
-      const c   = wx.current;
-      const mc  = marine?.current;
-      const hr  = wx.hourly;
-      const ws  = c.wind_speed_10m, wd = c.wind_direction_10m, wg = c.wind_gusts_10m;
-      const bft = wxMsToBft(ws), wDir = wxDirLabel(wd);
+      const c    = wx.current;
+      const mc   = marine?.current;
+      const hr   = wx.hourly;
+      const ws   = c.wind_speed_10m, wd = c.wind_direction_10m, wg = c.wind_gusts_10m;
+      const bft  = wxMsToBft(ws), wDir = wxDirLabel(wd);
       const waveH = mc?.wave_height ?? null;
       const sst   = mc?.sea_surface_temperature ?? null;
       const pres  = c.surface_pressure;
-      const { flagKey, flag } = wxAssessFlag(ws, wDir, waveH ?? 0);
+      const { flagKey, flag, reasons } = wxAssessFlag(ws, wDir, waveH ?? 0);
 
       const nowISO = new Date().toISOString().slice(0,13);
       const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
@@ -177,7 +267,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:4px">
               <div style="font-size:30px;line-height:1">${wxCondIcon(c.weather_code)}</div>
               <div style="font-size:9px;color:var(--muted);text-align:center">${wxCondDesc(c.weather_code)}</div>
-              ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
+              ${showRefreshBtn ?
+                `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
             </div>
           </div>
         </div>
@@ -229,16 +320,15 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
 
 // ── wxSnapshot ────────────────────────────────────────────────────────────────
 // Compact storable object from an onData snapshot. Integer wind speeds, 1dp waves.
-// Pass to saveCheckout as wxSnapshot (JSON.stringify'd by backend).
 function wxSnapshot(snap) {
   if (!snap) return null;
   return {
     bft:  snap.bft,
     ws:   Math.round(snap.ws   || 0),
     wg:   Math.round(snap.wg   || 0),
-    dir:  snap.wDir || "",
+    dir:  snap.wDir || '',
     wv:   snap.waveH != null ? parseFloat(snap.waveH.toFixed(1)) : null,
-    flag: snap.flagKey || "",
+    flag: snap.flagKey || '',
     tc:   snap.airT   != null ? Math.round(snap.airT)   : null,
     ts:   new Date().toISOString().slice(0,16),
   };
