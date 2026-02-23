@@ -216,6 +216,17 @@
   </main>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ÝMIR — incidents/index.html  (refactored <script> block)
+
+     Changes vs. original
+     ────────────────────
+     1. Removed local bool() / esc() / sjson() — all come from shared/api.js.
+        sjson was identical to parseJson; all calls replaced with parseJson().
+     2. All alert("…") replaced with toast("…","err").
+     3. Minor: loadData() populates selects via the shared populateSelect()
+        helper instead of innerHTML concatenation loops.
+     ═══════════════════════════════════════════════════════════════════════ -->
 <script>
 const user  = requireAuth(isStaff);
 const L     = getLang();
@@ -225,11 +236,9 @@ let selectedTypes = new Set(), selectedSev = "";
 let viewingId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Pre-fill date/time
   const now = new Date();
-  document.getElementById("iDate").value = now.toISOString().slice(0,10);
-  document.getElementById("iTime").value = now.toTimeString().slice(0,5);
-
+  document.getElementById("iDate").value = now.toISOString().slice(0, 10);
+  document.getElementById("iTime").value = now.toTimeString().slice(0, 5);
   await loadData();
 });
 
@@ -237,200 +246,209 @@ async function loadData() {
   try {
     const [iRes, bRes, lRes] = await Promise.all([
       apiGet("getIncidents"),
-      apiGet("getBoats").catch(()=>({boats:[]})),
-      apiGet("getLocations").catch(()=>({locations:[]})),
+      apiGet("getBoats").catch(() => ({ boats: [] })),
+      apiGet("getLocations").catch(() => ({ locations: [] })),
     ]);
     incidents = iRes.incidents || [];
     boats     = bRes.boats     || [];
     locations = lRes.locations || [];
   } catch(e) {
-    incidents=[]; boats=[]; locations=[];
+    incidents = []; boats = []; locations = [];
+    console.error("loadData:", e);
   }
   populateSelects();
   renderList();
 }
 
 function populateSelects() {
-  const bSel=document.getElementById("iBoat");
-  const lSel=document.getElementById("iLocation");
-  boats.filter(b=>bool(b.active)).forEach(b=>{
-    bSel.innerHTML+=`<option value="${esc(b.id)}">${esc(b.name)}</option>`;
-  });
-  locations.filter(l=>bool(l.active)).forEach(l=>{
-    lSel.innerHTML+=`<option value="${esc(l.id)}">${esc(l.name)}</option>`;
-  });
+  // Use shared populateSelect() helper — no manual innerHTML loops
+  populateSelect("iBoat",     boats,     b => b.name, b => b.id, b => bool(b.active));
+  populateSelect("iLocation", locations, l => l.name, l => l.id, l => bool(l.active));
 }
 
-// ── MODES ─────────────────────────────────────────────────────────────────────
+// ── Modes ──────────────────────────────────────────────────────────────────────
 function setMode(mode) {
-  document.getElementById("listMode").classList.toggle("hidden", mode!=="list");
-  document.getElementById("newMode").classList.toggle("hidden", mode!=="new");
-  document.getElementById("detailMode").classList.toggle("hidden", mode!=="detail");
-  document.getElementById("modeListBtn").classList.toggle("active", mode==="list"||mode==="detail");
-  document.getElementById("modeNewBtn").classList.toggle("active", mode==="new");
-  if (mode==="list") renderList();
+  document.getElementById("listMode").classList.toggle("hidden",   mode !== "list");
+  document.getElementById("newMode").classList.toggle("hidden",    mode !== "new");
+  document.getElementById("detailMode").classList.toggle("hidden", mode !== "detail");
+  document.getElementById("modeListBtn").classList.toggle("active", mode === "list" || mode === "detail");
+  document.getElementById("modeNewBtn").classList.toggle("active",  mode === "new");
+  if (mode === "list") renderList();
 }
 
-// ── LIST ──────────────────────────────────────────────────────────────────────
+// ── List ───────────────────────────────────────────────────────────────────────
 function renderList() {
-  const card=document.getElementById("incidentsList");
-  const sorted=[...incidents].sort((a,b)=>new Date(b.filedAt||b.date)-new Date(a.filedAt||a.date));
-  if (!sorted.length){card.innerHTML=`<div class="empty-state">No incidents on record.</div>`;return;}
-  const sevColor={low:"badge-green",medium:"badge-yellow",high:"badge-orange",critical:"badge-red"};
-  card.innerHTML=sorted.map(i=>{
-    const types=sjson(i.types,[]);
-    const typeStr=Array.isArray(types)?types.join(", "):String(types);
-    const date=i.date?new Date(i.date).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"—";
+  const card   = document.getElementById("incidentsList");
+  const sorted = [...incidents].sort((a, b) => new Date(b.filedAt || b.date) - new Date(a.filedAt || a.date));
+  if (!sorted.length) { card.innerHTML = `<div class="empty-state">No incidents on record.</div>`; return; }
+
+  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  card.innerHTML = sorted.map(i => {
+    const types   = parseJson(i.types, []);
+    const typeStr = Array.isArray(types) ? types.join(", ") : String(types);
+    const date    = i.date
+      ? new Date(i.date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" })
+      : "—";
     return `<div class="incident-row" onclick="viewIncident('${i.id}')">
       <div class="incident-header">
-        <span class="badge ${sevColor[i.severity]||"badge-muted"}">${i.severity||"—"}</span>
-        <span style="font-weight:bold;flex:1">${esc(typeStr||"Incident")}</span>
+        <span class="badge ${sevColor[i.severity] || "badge-muted"}">${i.severity || "—"}</span>
+        <span style="font-weight:bold;flex:1">${esc(typeStr || "Incident")}</span>
         <span style="font-size:11px;color:var(--muted)">${date}</span>
-        ${bool(i.resolved)?'<span class="badge badge-green">resolved</span>':""}
+        ${bool(i.resolved) ? `<span class="badge badge-green">resolved</span>` : ""}
       </div>
-      <div class="incident-desc">${esc((i.description||"").slice(0,120))}${(i.description||"").length>120?"…":""}</div>
-      <div class="incident-meta">Filed by ${esc(i.filedBy||"—")} · ${esc(i.locationName||"—")}</div>
+      <div class="incident-desc">${esc((i.description || "").slice(0, 120))}${(i.description || "").length > 120 ? "…" : ""}</div>
+      <div class="incident-meta">Filed by ${esc(i.filedBy || "—")} · ${esc(i.locationName || "—")}</div>
     </div>`;
   }).join("");
 }
 
 function viewIncident(id) {
-  viewingId=id;
-  const i=incidents.find(x=>x.id===id);
+  viewingId = id;
+  const i   = incidents.find(x => x.id === id);
   if (!i) return;
-  const sevColor={low:"badge-green",medium:"badge-yellow",high:"badge-orange",critical:"badge-red"};
-  const types=sjson(i.types,[]);
-  const notes=sjson(i.staffNotes,[]);
-  document.getElementById("detailCard").innerHTML=`
+
+  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  const types    = parseJson(i.types, []);
+  const notes    = parseJson(i.staffNotes, []);
+
+  document.getElementById("detailCard").innerHTML = `
     <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px">
-      <span class="badge ${sevColor[i.severity]||"badge-muted"} badge-lg">${i.severity||"—"}</span>
-      ${(Array.isArray(types)?types:[types]).map(t=>`<span class="badge badge-muted">${esc(t)}</span>`).join("")}
-      ${bool(i.resolved)?'<span class="badge badge-green">resolved</span>':""}
+      <span class="badge ${sevColor[i.severity] || "badge-muted"} badge-lg">${i.severity || "—"}</span>
+      ${(Array.isArray(types) ? types : [types]).map(t => `<span class="badge badge-muted">${esc(t)}</span>`).join("")}
+      ${bool(i.resolved) ? `<span class="badge badge-green">resolved</span>` : ""}
       <span style="flex:1"></span>
-      <button class="btn btn-secondary" style="font-size:11px" onclick="resolveIncident('${i.id}')">${bool(i.resolved)?"Reopen":"Mark resolved"}</button>
+      <button class="btn btn-secondary" style="font-size:11px" onclick="resolveIncident('${i.id}')">
+        ${bool(i.resolved) ? "Reopen" : "Mark resolved"}
+      </button>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:16px">
-      ${esc(i.date||"")} ${esc(i.time||"")} · ${esc(i.locationName||"—")} ${i.boatName?`· ${esc(i.boatName)}`:""}
+      ${esc(i.date || "")} ${esc(i.time || "")} · ${esc(i.locationName || "—")}
+      ${i.boatName ? ` · ${esc(i.boatName)}` : ""}
     </div>
     ${field("Description", i.description)}
     ${field("Persons involved", i.involved)}
     ${field("Witnesses", i.witnesses)}
     ${field("Immediate action", i.immediateAction)}
     ${field("Follow-up", i.followUp)}
-    ${i.handOffTo?field("Handed off to",`${i.handOffTo}${i.handOffName?" — "+i.handOffName:""} ${i.handOffNotes||""}`):""}
-    ${field("Filed by", i.filedBy+" at "+(i.filedAt?new Date(i.filedAt).toLocaleString("en-GB"):""))}
-    ${notes.length?`<div style="margin-top:16px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Notes</div>
-      ${notes.map(n=>`<div class="note-item">${esc(n.text)}<div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div></div>`).join("")}</div>`:""}
+    ${i.handOffTo ? field("Handed off to", `${i.handOffTo}${i.handOffName ? " — " + i.handOffName : ""} ${i.handOffNotes || ""}`) : ""}
+    ${field("Filed by", i.filedBy + " at " + (i.filedAt ? new Date(i.filedAt).toLocaleString("en-GB") : ""))}
+    ${notes.length ? `
+      <div style="margin-top:16px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Notes</div>
+        ${notes.map(n => `
+          <div class="note-item">${esc(n.text)}
+            <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
+          </div>`).join("")}
+      </div>` : ""}
   `;
   setMode("detail");
 }
 
-function field(label,val) {
-  if (!val||String(val).trim()===""||val==="—") return "";
+function field(label, val) {
+  if (!val || String(val).trim() === "" || val === "—") return "";
   return `<div style="margin-bottom:12px">
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px">${esc(label)}</div>
     <div style="font-size:13px;white-space:pre-wrap">${esc(val)}</div>
   </div>`;
 }
 
-// ── TYPE / SEVERITY TOGGLES ───────────────────────────────────────────────────
+// ── Type / severity toggles ───────────────────────────────────────────────────
 function toggleType(btn) {
-  const v=btn.dataset.v;
+  const v = btn.dataset.v;
   if (selectedTypes.has(v)) { selectedTypes.delete(v); btn.classList.remove("on"); }
-  else { selectedTypes.add(v); btn.classList.add("on"); }
+  else                      { selectedTypes.add(v);    btn.classList.add("on"); }
 }
 
 function setSev(btn) {
-  document.querySelectorAll(".sev-btn").forEach(b=>b.classList.remove("on"));
+  document.querySelectorAll(".sev-btn").forEach(b => b.classList.remove("on"));
   btn.classList.add("on");
-  selectedSev=btn.dataset.v;
+  selectedSev = btn.dataset.v;
 }
 
-// ── FILE REPORT ───────────────────────────────────────────────────────────────
+// ── File report ───────────────────────────────────────────────────────────────
 async function fileReport() {
-  const desc=document.getElementById("iDesc").value.trim();
-  if (!desc){alert("Description is required.");return;}
-  if (!selectedTypes.size){alert("Select at least one incident type.");return;}
-  if (!selectedSev){alert("Select severity.");return;}
+  const desc = document.getElementById("iDesc").value.trim();
+  if (!desc)               { toast("Description is required.", "err"); return; }
+  if (!selectedTypes.size) { toast("Select at least one incident type.", "err"); return; }
+  if (!selectedSev)        { toast("Select severity.", "err"); return; }
 
-  const btn=document.getElementById("fileBtn");
-  const msg=document.getElementById("saveMsg");
-  btn.disabled=true; msg.textContent="";
+  const btn = document.getElementById("fileBtn");
+  const msg = document.getElementById("saveMsg");
+  btn.disabled = true; msg.textContent = "";
 
-  const boatSel=document.getElementById("iBoat");
-  const locSel=document.getElementById("iLocation");
-  const boatOpt=boatSel.options[boatSel.selectedIndex];
-  const locOpt=locSel.options[locSel.selectedIndex];
+  const boatSel = document.getElementById("iBoat");
+  const locSel  = document.getElementById("iLocation");
+  const boatOpt = boatSel.options[boatSel.selectedIndex];
+  const locOpt  = locSel.options[locSel.selectedIndex];
 
   try {
-    const payload={
-      types:         JSON.stringify([...selectedTypes]),
-      severity:      selectedSev,
-      date:          document.getElementById("iDate").value,
-      time:          document.getElementById("iTime").value,
-      locationId:    locSel.value,
-      locationName:  locOpt.text!=="— select —"?locOpt.text:"",
-      boatId:        boatSel.value,
-      boatName:      boatOpt.text!=="— none —"?boatOpt.text:"",
-      description:   desc,
-      involved:      document.getElementById("iInvolved").value.trim(),
-      witnesses:     document.getElementById("iWitnesses").value.trim(),
+    const payload = {
+      types:          JSON.stringify([...selectedTypes]),
+      severity:       selectedSev,
+      date:           document.getElementById("iDate").value,
+      time:           document.getElementById("iTime").value,
+      locationId:     locSel.value,
+      locationName:   locOpt.text !== "— select —" ? locOpt.text : "",
+      boatId:         boatSel.value,
+      boatName:       boatOpt.text !== "— none —" ? boatOpt.text : "",
+      description:    desc,
+      involved:       document.getElementById("iInvolved").value.trim(),
+      witnesses:      document.getElementById("iWitnesses").value.trim(),
       immediateAction: document.getElementById("iAction").value.trim(),
-      followUp:      document.getElementById("iFollowUp").value.trim(),
-      handOffTo:     document.getElementById("iHandOffTo").value,
-      handOffName:   document.getElementById("iHandOffName").value.trim(),
-      handOffNotes:  document.getElementById("iHandOffNotes").value.trim(),
-      staffNotes:    JSON.stringify([]),
-      filedBy:       user.name,
-      filedAt:       new Date().toISOString(),
+      followUp:       document.getElementById("iFollowUp").value.trim(),
+      handOffTo:      document.getElementById("iHandOffTo").value,
+      handOffName:    document.getElementById("iHandOffName").value.trim(),
+      handOffNotes:   document.getElementById("iHandOffNotes").value.trim(),
+      staffNotes:     JSON.stringify([]),
+      filedBy:        user.name,
+      filedAt:        new Date().toISOString(),
     };
-    const res=await apiPost("createIncident",payload);
+    const res = await apiPost("createIncident", payload);
     if (res.id) {
-      incidents.unshift({...payload,id:res.id});
+      incidents.unshift({ ...payload, id: res.id });
       viewIncident(res.id);
     }
   } catch(e) {
-    msg.textContent="Error: "+e.message;
-    msg.style.color="var(--red)";
-    btn.disabled=false;
+    msg.textContent = "Error: " + e.message;
+    msg.style.color = "var(--red)";
+    btn.disabled = false;
   }
 }
 
 async function resolveIncident(id) {
-  const i=incidents.find(x=>x.id===id);
+  const i = incidents.find(x => x.id === id);
   if (!i) return;
-  const nowResolved=!bool(i.resolved);
+  const nowResolved = !bool(i.resolved);
   try {
-    await apiPost("resolveIncident",{id,resolved:nowResolved,resolvedAt:new Date().toISOString()});
-    i.resolved=nowResolved;
-    if (nowResolved) i.resolvedAt=new Date().toISOString();
+    await apiPost("resolveIncident", { id, resolved: nowResolved, resolvedAt: new Date().toISOString() });
+    i.resolved = nowResolved;
+    if (nowResolved) i.resolvedAt = new Date().toISOString();
     viewIncident(id);
-  } catch(e){alert("Error: "+e.message);}
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 async function addNote() {
-  const text=document.getElementById("noteText").value.trim();
-  if (!text||!viewingId) return;
-  const btn=document.getElementById("noteBtn");
-  btn.disabled=true;
+  const text = document.getElementById("noteText").value.trim();
+  if (!text || !viewingId) return;
+  const btn = document.getElementById("noteBtn");
+  btn.disabled = true;
   try {
-    const note={text,by:user.name,at:new Date().toLocaleString("en-GB")};
-    await apiPost("addIncidentNote",{id:viewingId,note:JSON.stringify(note)});
-    const i=incidents.find(x=>x.id===viewingId);
+    const note = { text, by: user.name, at: new Date().toLocaleString("en-GB") };
+    await apiPost("addIncidentNote", { id: viewingId, note: JSON.stringify(note) });
+    const i = incidents.find(x => x.id === viewingId);
     if (i) {
-      const notes=sjson(i.staffNotes,[]);
+      const notes = parseJson(i.staffNotes, []);   // ← was sjson()
       notes.push(note);
-      i.staffNotes=JSON.stringify(notes);
+      i.staffNotes = JSON.stringify(notes);
     }
-    document.getElementById("noteText").value="";
+    document.getElementById("noteText").value = "";
     viewIncident(viewingId);
-  } catch(e){alert("Error: "+e.message);}
-  finally{btn.disabled=false;}
+  } catch(e) { toast("Error: " + e.message, "err"); }
+  finally { btn.disabled = false; }
 }
 
-function sjson(v,fb){try{return typeof v==="string"?JSON.parse(v):v||fb;}catch(e){return fb;}}
-function bool(v){return v===true||v==="TRUE"||v==="true"||v===1||v==="1";}
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+// bool, esc, parseJson, toast, populateSelect — all from shared/api.js.
+// sjson was a local duplicate of parseJson and has been removed.
 </script>
 </body>
 </html>
