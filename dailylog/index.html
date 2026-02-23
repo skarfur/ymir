@@ -1,200 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ýmir — Daily Log</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/style.css">
-  <script src="../shared/api.js"></script>
-  <script src="../shared/weather.js"></script>
-  <script src="../shared/boats.js"></script>
-  <script src="../shared/maintenance.js"></script>
-  <style>
-    .page-wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px 80px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Daily Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script src="../shared/weather.js"></script>
+<script src="../shared/ui.js"></script>
+<style>
 
-    /* ── Date nav ── */
-    .date-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .date-nav-btn { background: none; border: 1px solid var(--border); color: var(--muted);
-      border-radius: 6px; width: 32px; height: 32px; font-size: 18px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; transition: all .15s; }
-    .date-nav-btn:hover:not(:disabled) { border-color: var(--brass); color: var(--brass); }
-    .date-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
-    .date-big  { font-size: 15px; color: var(--text); font-weight: 500; }
-    .date-sub  { font-size: 10px; color: var(--muted); letter-spacing: 1.2px; }
-    .today-btn { background: var(--brass); color: #0b1f38; border: none; border-radius: 4px;
-      padding: 3px 8px; font-size: 10px; font-family: inherit; cursor: pointer; letter-spacing: .5px; }
-    .date-signoff-badge { font-size: 11px; color: var(--green); background: #27ae6018;
-      border: 1px solid #27ae6040; border-radius: 6px; padding: 4px 10px; }
-    .date-readonly-badge { font-size: 11px; color: var(--muted); background: var(--surface);
-      border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
+/* ── Date hero ── */
+.date-hero { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.date-big  { font-size:26px; font-weight:500; color:var(--text); line-height:1.1; }
+.date-sub  { font-size:11px; color:var(--muted); letter-spacing:1px; margin-top:4px; }
+.date-nav-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:24px; line-height:1; width:40px; height:40px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:color .15s, border-color .15s; }
+.date-nav-btn:hover:not(:disabled) { color:var(--brass); border-color:var(--brass); }
+.date-nav-btn:disabled { opacity:.25; cursor:default; }
+.date-signoff-badge { font-size:10px; padding:4px 10px; border-radius:10px; border:1px solid #27ae6055; background:#27ae6011; color:var(--green); }
+.date-readonly-badge { font-size:10px; padding:4px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
+.today-btn { background:none; border:1px solid var(--brass); color:var(--brass); font-size:10px; padding:2px 8px; border-radius:10px; cursor:pointer; font-family:inherit; letter-spacing:.5px; transition:background .15s, color .15s; }
+.today-btn:hover { background:var(--brass); color:#0b1f38; }
 
-    /* ── Save bar ── */
-    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg);
-      border-top: 1px solid var(--border); padding: 10px 16px; display: flex;
-      align-items: center; gap: 10px; z-index: 100; }
-    .save-bar .btn { padding: 8px 18px; font-size: 12px; }
-    #saveMsg { flex: 1; font-size: 12px; }
-    .save-ok  { color: var(--green); }
-    .save-err { color: var(--red); }
+/* ── Weather widget ── */
+.wx-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:12px; position:relative; overflow:hidden; }
+.wx-widget::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:10px 10px 0 0; }
+.wx-widget.flag-green::before  { background:#27ae60; }
+.wx-widget.flag-yellow::before { background:#f1c40f; }
+.wx-widget.flag-orange::before { background:#e67e22; }
+.wx-widget.flag-red::before    { background:#e74c3c; }
+.wx-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.wx-wind-big  { font-size:36px; color:var(--brass); font-weight:500; line-height:1; }
+.wx-wind-alts { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.8; }
+.wx-wind-alts b { color:var(--text); }
+.wx-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+.wx-cell-val { font-size:13px; color:var(--text); }
+.wx-cell-lbl { font-size:9px; color:var(--muted); letter-spacing:.6px; margin-top:2px; }
+.flag-pill { display:inline-flex; align-items:center; gap:6px; border-radius:20px; border:1px solid; padding:4px 10px; font-size:11px; font-weight:500; }
 
-    /* ── Read-only mode ── */
-    .readonly-mode textarea,
-    .readonly-mode input[type=checkbox] { pointer-events: none; opacity: .7; }
-    .readonly-mode .btn-ghost,
-    .readonly-mode button.del-btn,
-    .readonly-mode .save-bar { display: none; }
+/* ── Tide placeholder ── */
+.tide-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:14px; }
 
-    /* ── Weather widget ── */
-    .wx-widget { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-      padding: 16px 18px; margin-bottom: 12px; position: relative; overflow: hidden; }
-    .wx-widget::before { content: ''; position: absolute; top: 0; left: 0; right: 0;
-      height: 3px; border-radius: 10px 10px 0 0; }
-    .wx-widget.flag-green::before  { background: #27ae60; }
-    .wx-widget.flag-yellow::before { background: #f1c40f; }
-    .wx-widget.flag-orange::before { background: #e67e22; }
-    .wx-widget.flag-red::before    { background: #e74c3c; }
-    .wx-top { display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 10px; margin-bottom: 10px; }
-    .wx-wind-big  { font-size: 36px; color: var(--brass); font-weight: 500; line-height: 1; }
-    .wx-wind-alts { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.8; }
-    .wx-wind-alts b { color: var(--text); }
-    .wx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
-    .wx-cell     { text-align: center; }
-    .wx-cell-val { font-size: 13px; color: var(--text); }
-    .wx-cell-lbl { font-size: 9px; color: var(--muted); letter-spacing: .6px; margin-top: 2px; }
-    .flag-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 20px;
-      border: 1px solid; padding: 4px 10px; font-size: 11px; font-weight: 500; margin-top: 10px; }
-    .wx-footer { display: flex; align-items: center; justify-content: space-between;
-      margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
-    .wx-updated     { font-size: 10px; color: var(--muted); }
-    .wx-detail-link { font-size: 11px; color: var(--brass); text-decoration: none; }
-    .wx-detail-link:hover { text-decoration: underline; }
+/* ── Weather log ── */
+.wxlog-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-top:8px; }
+.wxlog-row  { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; align-items:center; flex-wrap:wrap; }
+.wxlog-row:last-child { border-bottom:none; }
+.wxlog-time { color:var(--brass); font-weight:500; width:40px; flex-shrink:0; }
 
-    /* ── Tide placeholder ── */
-    .tide-widget { background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; }
+/* ── Section headings ── */
+.section-heading { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
 
-    /* ── Weather log ── */
-    .wxlog-card { background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
-    .wxlog-row { display: flex; gap: 10px; padding: 5px 0;
-      border-bottom: 1px solid var(--border); font-size: 12px; align-items: center; flex-wrap: wrap; }
-    .wxlog-row:last-child { border-bottom: none; }
-    .wxlog-time { color: var(--brass); font-weight: 500; width: 40px; flex-shrink: 0; }
+/* ── Cards ── */
+.content-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:4px; }
 
-    /* ── Section headings ── */
-    .section-heading { font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
-      margin: 20px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+/* ── Boats ── */
+.boat-row       { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.boat-row:last-child { border-bottom:none; }
+.boat-name  { font-weight:500; flex:1; }
+.boat-crew  { color:var(--muted); font-size:12px; }
+.boat-eta   { font-size:12px; color:var(--muted); }
+.boat-eta.overdue  { color:var(--red); font-weight:bold; }
+.boat-eta.eta-soon { color:var(--orange); }
 
-    /* ── Cards ── */
-    .content-card { background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 14px 16px; margin-bottom: 4px; }
+/* ── Checklists ── */
+.cl-progress-line { font-size:11px; color:var(--muted); margin-bottom:8px; }
+.cl-progress-line span { color:var(--brass); font-weight:500; }
+.cl-bar-wrap { height:4px; background:var(--border); border-radius:2px; margin-bottom:12px; overflow:hidden; }
+.cl-bar      { height:100%; background:var(--brass); border-radius:2px; transition:width .3s; }
+.checklist-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.checklist-item:last-child { border-bottom:none; }
+.checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--brass); flex-shrink:0; margin-top:2px; cursor:pointer; }
+.item-text { font-size:13px; transition:opacity .15s; }
+.checklist-item.done .item-text { opacity:.35; text-decoration:line-through; }
 
-    /* ── Boats on water ── */
-    .boat-row { display: flex; align-items: center; gap: 10px; padding: 8px 0;
-      border-bottom: 1px solid var(--border); font-size: 13px; }
-    .boat-row:last-child { border-bottom: none; }
-    .boat-name { font-weight: 500; flex: 1; }
-    .boat-crew { color: var(--muted); font-size: 12px; }
-    .boat-eta  { font-size: 12px; color: var(--muted); }
-    .overdue   { color: var(--red); font-weight: bold; }
+/* ── Activities ── */
+.activity-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.activity-row:last-child { border-bottom:none; }
+.activity-info { flex:1; }
+.activity-name { font-weight:500; }
+.activity-meta { color:var(--muted); font-size:11px; margin-top:3px; }
+.activity-note { color:var(--text); font-size:12px; margin-top:4px; opacity:.65; }
+.del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
+.del-btn:hover { color:var(--red); }
 
-    /* ── Checklists ── */
-    .cl-progress-line { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
-    .cl-progress-line span { color: var(--brass); font-weight: 500; }
-    .cl-bar-wrap { height: 4px; background: var(--border); border-radius: 2px;
-      margin-bottom: 12px; overflow: hidden; }
-    .cl-bar { height: 100%; background: var(--brass); border-radius: 2px; transition: width .3s; }
-    .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0;
-      border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
-    .checklist-item:last-child { border-bottom: none; }
-    .checklist-item input[type=checkbox] { width: 15px; height: 15px;
-      accent-color: var(--brass); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
-    .item-text { font-size: 13px; transition: opacity .15s; }
-    .checklist-item.done .item-text { opacity: .35; text-decoration: line-through; }
+/* ── Activity type buttons ── */
+.type-btn { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:5px 10px; font-size:12px; font-family:inherit; cursor:pointer; transition:all .15s; }
+.type-btn.selected,.type-btn:hover { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
+.type-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 
-    /* ── Activities ── */
-    .activity-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0;
-      border-bottom: 1px solid var(--border); font-size: 13px; }
-    .activity-row:last-child { border-bottom: none; }
-    .activity-info { flex: 1; }
-    .activity-name { font-weight: 500; }
-    .activity-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
-    .activity-note { color: var(--text); font-size: 12px; margin-top: 4px; opacity: .65; }
-    .del-btn { background: none; border: none; color: var(--border); cursor: pointer;
-      font-size: 18px; padding: 0 4px; transition: color .15s; line-height: 1; }
-    .del-btn:hover { color: var(--red); }
+/* ── Maintenance ── */
+.maint-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.maint-row:last-child { border-bottom:none; }
+.maint-row.resolved .maint-info { opacity:.35; text-decoration:line-through; }
+.maint-row input[type=checkbox] { width:15px; height:15px; accent-color:var(--green); flex-shrink:0; margin-top:2px; cursor:pointer; }
+.maint-boat { font-weight:500; }
+.maint-desc { color:var(--muted); font-size:12px; margin-top:2px; }
+.maint-info { flex:1; }
 
-    /* ── Maintenance rows ── */
-    .maint-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0;
-      border-bottom: 1px solid var(--border); font-size: 13px; }
-    .maint-row:last-child { border-bottom: none; }
-    .maint-row.resolved .maint-info { opacity: .35; text-decoration: line-through; }
-    .maint-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--green);
-      flex-shrink: 0; margin-top: 2px; cursor: pointer; }
-    .maint-boat { font-weight: 500; }
-    .maint-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .maint-info { flex: 1; }
+/* ── Incident button ── */
+.incident-btn { display:flex; align-items:center; gap:10px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; color:var(--text); font-family:inherit; font-size:13px; cursor:pointer; text-decoration:none; transition:border-color .15s, color .15s; margin-bottom:4px; }
+.incident-btn:hover { border-color:var(--orange); color:var(--orange); }
+.incident-btn .incident-icon { font-size:20px; }
+.incident-btn .incident-label { font-weight:500; }
+.incident-btn .incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
 
-    /* ── Activity type buttons ── */
-    .type-btn { background: var(--card); border: 1px solid var(--border); color: var(--text);
-      border-radius: 4px; padding: 5px 10px; font-size: 12px; font-family: inherit;
-      cursor: pointer; transition: all .15s; }
-    .type-btn.selected, .type-btn:hover { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
-    .type-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+/* ── Save bar ── */
+.save-bar { position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--border); padding:12px 0; display:flex; align-items:center; gap:10px; margin-top:24px; }
+.save-ok  { font-size:12px; color:var(--green); flex:1; }
+.save-err { font-size:12px; color:var(--red); flex:1; }
 
-    /* ── Incident button ── */
-    .incident-btn { display: flex; align-items: center; gap: 10px; width: 100%;
-      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-      padding: 14px 16px; text-decoration: none; color: var(--text); transition: border-color .15s; }
-    .incident-btn:hover { border-color: var(--orange); }
-    .incident-icon  { font-size: 22px; }
-    .incident-label { font-size: 13px; font-weight: 500; }
-    .incident-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
-  </style>
+/* ── Read-only mode ── */
+.readonly-mode textarea,
+.readonly-mode input[type=checkbox] { pointer-events:none; opacity:.7; }
+.readonly-mode .btn-ghost,
+.readonly-mode .del-btn,
+.readonly-mode .save-bar { display:none; }
+
+@media(max-width:480px) {
+  .wx-grid { grid-template-columns:repeat(2,1fr); }
+  .date-big { font-size:20px; }
+}
+</style>
 </head>
 <body>
-<header>
-  <div style="display:flex;gap:6px;align-items:center">
-    <a href="../staff/" style="font-size:11px;color:var(--muted);text-decoration:none" id="hubLink">← Staff hub</a>
-      <span style="color:var(--border)">|</span>
-    <a href="../maintenance.html" style="font-size:11px;color:var(--muted);text-decoration:none">🔧 Maintenance</a>
-      <span style="color:var(--border)">|</span>
-    <a href="../incidents/" style="font-size:11px;color:var(--muted);text-decoration:none">⚠ Incident</a>
-      <span style="color:var(--border)">|</span>
-    <a href="../weather/" style="font-size:11px;color:var(--muted);text-decoration:none">⛅ Weather</a>
-      <button class="btn-ghost" onclick="toggleLang()" style="font-size:11px;padding:5px 8px" id="langBtn">IS</button>
-      <button class="btn-ghost" onclick="signOut()" style="font-size:11px;padding:5px 8px">Sign out</button>
-</div>
+
+<!-- ══ HEADER — populated by buildHeader() ══ -->
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
 </header>
 
-<main class="page-wrap" id="mainWrap">
+<div id="mainWrap" style="max-width:680px;margin:0 auto;padding:16px 14px 40px">
 
-  <!-- Date navigation -->
-  <div class="date-nav">
-    <button class="date-nav-btn" onclick="navigateDay(-1)" title="Previous day">&#8249;</button>
+  <!-- ══ DATE HERO ══ -->
+  <div class="date-hero">
+    <button class="date-nav-btn" id="prevBtn" title="Previous day">&#8249;</button>
     <div style="flex:1;text-align:center">
       <div class="date-big" id="dateBig"></div>
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px">
         <span class="date-sub">DAILY LOG</span>
-        <button class="today-btn hidden" id="todayBtn" onclick="navigateToToday()">Today</button>
+        <button class="today-btn hidden" id="todayBtn">Today</button>
       </div>
     </div>
-    <button class="date-nav-btn" id="nextBtn" onclick="navigateDay(1)" title="Next day">&#8250;</button>
+    <button class="date-nav-btn" id="nextBtn" title="Next day">&#8250;</button>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
     <div id="signoffBadge" class="date-signoff-badge hidden">&#10003; Signed off</div>
-    <div id="readonlyBadge" class="date-readonly-badge hidden">&#128065; Read-only — past log</div>
+    <div id="readonlyBadge" class="date-readonly-badge hidden">&#128065; Read-only &mdash; past log</div>
   </div>
 
-  <!-- Weather widget -->
+  <!-- ══ WEATHER WIDGET ══ -->
   <div class="wx-widget" id="wxWidget">
     <div style="color:var(--muted);font-size:12px;padding:6px 0">⚓ Loading conditions…</div>
   </div>
 
-  <!-- Tide placeholder -->
+  <!-- ══ TIDE PLACEHOLDER ══ -->
   <div class="tide-widget">
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">TIDES · FAXAFLÓI</div>
     <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px">
@@ -204,91 +166,85 @@
         <div style="font-size:10px;margin-top:2px">Real-time tidal predictions for Reykjavík harbour</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;opacity:.35">
-      <div style="text-align:center"><div style="font-size:9px;color:var(--muted)">LAST HIGH</div><div style="font-size:14px;color:var(--text);margin-top:4px">—</div></div>
-      <div style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:18px">↕</div></div>
-      <div style="text-align:center"><div style="font-size:9px;color:var(--muted)">NEXT LOW</div><div style="font-size:14px;color:var(--text);margin-top:4px">—</div></div>
-    </div>
   </div>
 
-  <!-- 1. Record Weather -->
+  <!-- ══ 1. RECORD WEATHER ══ -->
   <div class="section-heading">
     <span>RECORD WEATHER</span>
     <span id="wxLogCount" style="font-weight:normal"></span>
   </div>
   <div class="content-card">
-    <div id="logWxDesc" style="font-size:12px;color:var(--muted);margin-bottom:10px">Tap to stamp a weather snapshot into the log at the current time.</div>
-    <button class="btn btn-secondary" onclick="logCurrentWeather()" id="logWxBtn">📋 Record weather snapshot</button>
+    <div id="logWxDesc" style="font-size:12px;color:var(--muted);margin-bottom:10px">Tap to stamp a weather snapshot into the log.</div>
+    <button class="btn btn-secondary" id="logWxBtn">📋 Record weather snapshot</button>
     <div id="wxLogList"></div>
   </div>
 
-  <!-- 2. Boats on water -->
+  <!-- ══ 2. BOATS ON WATER ══ -->
   <div class="section-heading">BOATS ON WATER</div>
   <div class="content-card" id="boatsCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- 3. AM Checklist -->
+  <!-- ══ 3. AM CHECKLIST ══ -->
   <div class="section-heading">AM CHECKLIST</div>
   <div class="content-card" id="amCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- 4. Activities -->
+  <!-- ══ 4. ACTIVITIES ══ -->
   <div class="section-heading">
     <span>ACTIVITIES</span>
-    <button class="btn-ghost" onclick="openActivityModal()" style="font-size:11px;padding:3px 10px" id="addActivityBtn">+ Add</button>
+    <button class="btn-ghost" id="addActivityBtn" style="font-size:11px;padding:3px 10px">+ Add</button>
   </div>
   <div class="content-card" id="activitiesCard">
     <div class="empty-state" id="activitiesEmpty">No activities recorded yet.</div>
     <div id="activitiesList"></div>
   </div>
 
-  <!-- 5. Staff Notes -->
+  <!-- ══ 5. STAFF NOTES ══ -->
   <div class="section-heading">STAFF NOTES</div>
   <div class="content-card">
-    <textarea id="narrativeInput" rows="4"
-      placeholder="General notes, anything notable today, conditions summary…"
-      style="width:100%;resize:vertical" oninput="markDirty()"></textarea>
+    <textarea id="narrativeInput" rows="4" placeholder="General notes, conditions summary…" style="width:100%;resize:vertical"></textarea>
   </div>
 
-  <!-- 6. Incident Report -->
+  <!-- ══ 6. INCIDENT REPORT ══ -->
   <div class="section-heading" id="incidentHeading">INCIDENT REPORT</div>
   <div id="incidentContainer">
     <a href="../incidents/" class="incident-btn">
       <span class="incident-icon">⚠️</span>
       <div>
         <div class="incident-label">Submit an Incident Report</div>
-        <div class="incident-sub">Injuries, near-misses, property damage, or any safety concern</div>
+        <div class="incident-sub">Injuries, near-misses, property damage, safety concerns</div>
       </div>
       <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
     </a>
   </div>
 
-  <!-- 7. PM Checklist -->
+  <!-- ══ 7. PM CHECKLIST ══ -->
   <div class="section-heading">PM CHECKLIST</div>
   <div class="content-card" id="pmCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- 8. Maintenance -->
+  <!-- ══ 8. MAINTENANCE & REPAIRS ══ -->
   <div class="section-heading">
     <span>MAINTENANCE &amp; REPAIRS</span>
-      <button class="btn-ghost" id="addMaintBtn"
-    style="font-size:11px;padding:3px 10px"
-    onclick="location.href='../maintenance.html?new=1'">+ Report Issue</button>
+    <a href="../maintenance/?new=1" class="btn-ghost" style="font-size:11px;padding:3px 10px;text-decoration:none">+ Report Issue</a>
+  </div>
+  <div class="content-card" id="maintCard">
+    <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- Save bar -->
+  <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">
     <span id="saveMsg"></span>
-    <button class="btn btn-secondary" onclick="saveDraft()" id="saveDraftBtn">Save draft</button>
-    <button class="btn btn-primary"   onclick="signOffDay()" id="signOffBtn">Save &amp; Sign off</button>
+    <button class="btn btn-secondary" id="saveDraftBtn">Save draft</button>
+    <button class="btn btn-primary"   id="signOffBtn">Save &amp; Sign off</button>
   </div>
 
-</main>
+</div><!-- /mainWrap -->
 
-<!-- Activity Modal -->
+<!-- ══ ACTIVITY MODAL ══ -->
 <div class="modal-overlay hidden" id="activityModal">
   <div class="modal">
     <h3>Add Activity</h3>
@@ -298,109 +254,560 @@
     </div>
     <div class="field">
       <label>Name / description</label>
-      <input type="text" id="actName" placeholder="e.g. Junior sailing lesson">
+      <input type="text" id="actName" placeholder="e.g. Junior training session">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>Start time</label><input type="time" id="actStart"></div>
-      <div class="field"><label>End time</label>  <input type="time" id="actEnd"></div>
+    <div class="field">
+      <label>Time (optional)</label>
+      <div style="display:flex;gap:8px">
+        <input type="time" id="actStart" style="flex:1">
+        <span style="align-self:center;color:var(--muted)">–</span>
+        <input type="time" id="actEnd" style="flex:1">
+      </div>
     </div>
     <div class="field">
       <label>Participants</label>
       <input type="number" id="actParticipants" min="0" placeholder="0">
     </div>
     <div class="field">
-      <label>Notes</label>
-      <textarea id="actNotes" rows="3" placeholder="Optional notes…"></textarea>
+      <label>Notes (optional)</label>
+      <textarea id="actNotes" rows="2" style="width:100%;resize:vertical"></textarea>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeActivityModal()">Cancel</button>
-      <button class="btn btn-primary"   onclick="saveActivity()">Add activity</button>
+      <button class="btn btn-secondary" id="actCancelBtn">Cancel</button>
+      <button class="btn btn-primary"   id="actSaveBtn">Add Activity</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── Weather helpers (local — needed by weather.js widget callbacks) ────────────
-const FLAGS = {
-  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', label:'Green',  advice:"Good conditions." },
-  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', label:'Yellow', advice:"Marginal — experienced only." },
-  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', label:'Orange', advice:"Difficult — keelboats only." },
-  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', label:'Red',    advice:"Do not sail." },
-};
-function msToBft(ms) { const T=[0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7]; for(let i=T.length-1;i>=0;i--) if(ms>=T[i]) return i; return 0; }
-function msToKt(ms)  { return (ms*1.944).toFixed(1); }
-function dirLabel(d) { if(d==null)return'–'; return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
-function dirArrow(d) { if(d==null)return''; return['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
-function condIcon(c) { if(c==0)return'☀️'; if(c==1)return'🌤'; if(c==2)return'⛅'; if(c==3)return'☁️'; if([45,48].includes(c))return'🌫'; if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧'; if([71,73,75,77,85,86].includes(c))return'🌨'; if([95,96,99].includes(c))return'⛈'; return'🌡'; }
-function condDesc(c) { if(c==0)return'Clear'; if(c==1)return'Mainly clear'; if(c==2)return'Partly cloudy'; if(c==3)return'Overcast'; if([45,48].includes(c))return'Fog'; if([51,53,55].includes(c))return'Drizzle'; if([61,63,65,80,81,82].includes(c))return'Rain'; if([71,73,75,77].includes(c))return'Snow'; if([95,96,99].includes(c))return'Thunderstorm'; return'–'; }
-function assessFlag(ws, wDir, wh) {
-  let lv=0; const bft=msToBft(ws||0); const east=['E','NE','SE'].includes((wDir||'').toUpperCase());
-  if(bft>=7)lv=3; else if(bft===6){lv=2;if(east)lv=3;} else if(bft===5){lv=1;if(east)lv=2;} else if(bft===4&&east)lv=1;
-  if(wh>=2.0)lv=Math.max(lv,3); else if(wh>=1.2)lv=Math.max(lv,2); else if(wh>=0.6)lv=Math.max(lv,1);
-  return ['green','yellow','orange','red'][lv];
-}
-function bftDesc(b) { return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale'][Math.min(b,8)]||''; }
+'use strict';
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 1 — AUTH & CONSTANTS
+// ════════════════════════════════════════════════════════════════════════════
+const user = requireAuth(isStaff);
+const L    = getLang();
+const TODAY = new Date().toISOString().slice(0, 10);
 
-// ── State ─────────────────────────────────────────────────────────────────────
-const user  = requireAuth(isStaff);
-const L     = getLang();
-const TODAY = todayISO();
-
-let wxData        = null;
-let wxLog         = [];
-let amChecks      = {};
-let pmChecks      = {};
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 2 — STATE
+// (all mutable state in one place — never scattered across functions)
+// ════════════════════════════════════════════════════════════════════════════
+let viewDate  = TODAY;
+let logId     = null;
+let dirty     = false;
+let wxData    = null;       // latest wx snapshot from widget
+let wxLog     = [];         // [{time, bft, ws, …}]
+let amChecks  = {};         // {id: bool}
+let pmChecks  = {};
+let amItems   = DEFAULT_AM;
+let pmItems   = DEFAULT_PM;
 let activities    = [];
-let maintenance   = [];
-let amItems       = [];
-let pmItems       = [];
-let activityTypes = [];
-let logId         = null;
-let checkouts     = [];
-let dirty         = false;
-let selectedType  = null;
-let viewDate      = todayISO();
+let activityTypes = DEFAULT_TYPES;
+let checkouts     = [];    // active today
+let maintenance   = [];    // open requests
 
-function isToday() { return viewDate === TODAY; }
-
-const DEFAULT_AM = [
-  { id:'am1', textEN:'Check all boats for damage',     textIS:'Athuga alla báta vegna skemmda' },
-  { id:'am2', textEN:'Inspect safety equipment',       textIS:'Skoða öryggisbúnað' },
-  { id:'am3', textEN:'Confirm weather conditions',     textIS:'Staðfesta veðurlag' },
-  { id:'am4', textEN:'Open clubhouse and facilities',  textIS:'Opna klúbbhús og aðstöðu' },
-  { id:'am5', textEN:'Check radio / communication',    textIS:'Athuga útvarps- og samskiptabúnað' },
-  { id:'am6', textEN:'Brief duty staff on conditions', textIS:'Kynna starfsfólki aðstæður' },
-];
-const DEFAULT_PM = [
-  { id:'pm1', textEN:'All boats returned and secured', textIS:'Allir bátar komnir og tryggðir' },
-  { id:'pm2', textEN:'Damage reports filed if needed', textIS:'Skemmdarskýrslur lagðar fram ef þarf' },
-  { id:'pm3', textEN:'Safety equipment stowed',        textIS:'Öryggisbúnaður geymdur' },
-  { id:'pm4', textEN:'Facilities locked and secured',  textIS:'Aðstaða læst og tryggð' },
-  { id:'pm5', textEN:'Log completed and signed off',   textIS:'Skráning lokið og undirrituð' },
-];
-const DEFAULT_TYPES = [
-  { id:'t1', name:'Lesson',      nameIS:'Kennsla' },
-  { id:'t2', name:'Race',        nameIS:'Keppni' },
-  { id:'t3', name:'Club event',  nameIS:'Félagsviðburður' },
-  { id:'t4', name:'Training',    nameIS:'Þjálfun' },
-  { id:'t5', name:'Maintenance', nameIS:'Viðhald' },
-  { id:'t6', name:'Other',       nameIS:'Annað' },
-];
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  if (user) {
-    document.getElementById('langBtn').textContent = L === 'EN' ? 'IS' : 'EN';
-    if (user && isAdmin(user)) {
-      const lnk = document.getElementById('hubLink');
-      lnk.href = '../admin/';
-      lnk.textContent = '← Admin panel';
-    }
-  }
-  await Promise.all([fetchWeatherWidget(), loadDay(), loadMaintenance()]);
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 3 — DOM REFS (cached, never re-queried)
+// ════════════════════════════════════════════════════════════════════════════
+const dom = domRefs({
+  mainWrap:          'mainWrap',
+  dateBig:           'dateBig',
+  prevBtn:           'prevBtn',
+  nextBtn:           'nextBtn',
+  todayBtn:          'todayBtn',
+  signoffBadge:      'signoffBadge',
+  readonlyBadge:     'readonlyBadge',
+  wxWidget:          'wxWidget',
+  logWxBtn:          'logWxBtn',
+  logWxDesc:         'logWxDesc',
+  wxLogList:         'wxLogList',
+  wxLogCount:        'wxLogCount',
+  boatsCard:         'boatsCard',
+  amCard:            'amCard',
+  pmCard:            'pmCard',
+  activitiesCard:    'activitiesCard',
+  activitiesEmpty:   'activitiesEmpty',
+  activitiesList:    'activitiesList',
+  narrativeInput:    'narrativeInput',
+  incidentHeading:   'incidentHeading',
+  incidentContainer: 'incidentContainer',
+  maintCard:         'maintCard',
+  saveMsg:           'saveMsg',
+  saveDraftBtn:      'saveDraftBtn',
+  signOffBtn:        'signOffBtn',
+  addActivityBtn:    'addActivityBtn',
+  activityModal:     'activityModal',
+  actTypeBtns:       'actTypeBtns',
+  actName:           'actName',
+  actStart:          'actStart',
+  actEnd:            'actEnd',
+  actParticipants:   'actParticipants',
+  actNotes:          'actNotes',
 });
 
-// ── Date navigation ───────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 4 — DEFAULT FALLBACK DATA
+// ════════════════════════════════════════════════════════════════════════════
+const DEFAULT_AM = [
+  { id:'am1', textEN:'Check all boats for damage',    textIS:'Athuga alla báta vegna skemmda' },
+  { id:'am2', textEN:'Inspect safety equipment',      textIS:'Skoða öryggisbúnað' },
+  { id:'am3', textEN:'Confirm weather conditions',    textIS:'Staðfesta veðurlag' },
+  { id:'am4', textEN:'Open clubhouse and facilities', textIS:'Opna klúbbhús og aðstöðu' },
+  { id:'am5', textEN:'Check radio / communication',   textIS:'Athuga útvarps- og samskiptabúnað' },
+  { id:'am6', textEN:'Brief duty staff on conditions',textIS:'Kynna starfsfólki aðstæður' },
+];
+const DEFAULT_PM = [
+  { id:'pm1', textEN:'All boats returned and secured',textIS:'Allir bátar komnir og tryggðir' },
+  { id:'pm2', textEN:'Damage reports filed if needed',textIS:'Skemmdarskýrslur lagðar ef þarf' },
+  { id:'pm3', textEN:'Safety equipment stowed',       textIS:'Öryggisbúnaður geymdur' },
+  { id:'pm4', textEN:'Facilities locked and secured', textIS:'Aðstaða læst og tryggð' },
+  { id:'pm5', textEN:'Log completed and signed off',  textIS:'Skráning lokið og undirrituð' },
+];
+const DEFAULT_TYPES = [
+  { id:'t1', name:'Lesson',     nameIS:'Kennsla' },
+  { id:'t2', name:'Race',       nameIS:'Keppni' },
+  { id:'t3', name:'Club event', nameIS:'Félagsviðburður' },
+  { id:'t4', name:'Training',   nameIS:'Þjálfun' },
+  { id:'t5', name:'Maintenance',nameIS:'Viðhald' },
+  { id:'t6', name:'Other',      nameIS:'Annað' },
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 5 — RENDERERS
+// Each renderer is pure: takes state, touches DOM, returns nothing.
+// No inline onclick — use event delegation (SECTION 6).
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Boats ──────────────────────────────────────────────────────────────────
+function renderBoats() {
+  const active = checkouts.filter(c => c.status === 'out');
+  if (!active.length) {
+    dom.boatsCard.innerHTML = '<div class="empty-state">No boats currently out.</div>';
+    return;
+  }
+  const nowMins = timeToMins(new Date().toTimeString().slice(0, 5));
+  replaceWithFragment(dom.boatsCard, active, buildBoatRow.bind(null, nowMins));
+}
+
+function buildBoatRow(nowMins, c) {
+  const returnBy  = c.returnBy || c.expectedReturn || '';
+  const rbMins    = returnBy ? timeToMins(returnBy) : null;
+  const remaining = rbMins != null ? rbMins - nowMins : null;
+  const overdue   = remaining != null && remaining < 0;
+  const soon      = remaining != null && remaining >= 0 && remaining <= 15;
+
+  const row = document.createElement('div');
+  row.className = 'boat-row';
+  row.dataset.checkoutId = c.id;
+  row.dataset.returnby   = returnBy; // for interval updates
+
+  const name = document.createElement('span');
+  name.className = 'boat-name';
+  name.textContent = c.boatName || '—';
+
+  const crew = document.createElement('span');
+  crew.className = 'boat-crew';
+  crew.textContent = (c.memberName || '—') + (c.crew > 1 ? ' +' + (c.crew - 1) : '');
+
+  const eta = document.createElement('span');
+  eta.className = 'boat-eta' + (overdue ? ' overdue' : soon ? ' eta-soon' : '');
+  eta.dataset.etaFor = c.id;
+  eta.textContent = etaText(remaining, returnBy);
+
+  row.append(name, crew, eta);
+  return row;
+}
+
+function etaText(remaining, returnBy) {
+  if (returnBy === '' || remaining == null) return '—';
+  if (remaining < 0) return '⚠ OVERDUE';
+  if (remaining === 0) return 'ETA now';
+  if (remaining <= 60) return `ETA ${remaining}min`;
+  return 'ETA ' + returnBy;
+}
+
+// Interval: only patch time-dependent ETA cells — no full rebuild
+function tickBoatEtas() {
+  const nowMins = timeToMins(new Date().toTimeString().slice(0, 5));
+  dom.boatsCard.querySelectorAll('[data-returnby]').forEach(row => {
+    const returnBy  = row.dataset.returnby;
+    if (!returnBy) return;
+    const rbMins    = timeToMins(returnBy);
+    const remaining = rbMins - nowMins;
+    const overdue   = remaining < 0;
+    const soon      = remaining >= 0 && remaining <= 15;
+    const etaEl     = row.querySelector('[data-eta-for]');
+    if (!etaEl) return;
+    etaEl.textContent = etaText(remaining, returnBy);
+    etaEl.className   = 'boat-eta' + (overdue ? ' overdue' : soon ? ' eta-soon' : '');
+  });
+}
+
+// ── Checklists ─────────────────────────────────────────────────────────────
+function renderChecklists() {
+  renderCL(dom.amCard, amItems, amChecks, 'am', /*readonly=*/false);
+  renderCL(dom.pmCard, pmItems, pmChecks, 'pm', /*readonly=*/false);
+}
+function renderChecklistsReadonly() {
+  renderCL(dom.amCard, amItems, amChecks, 'am', true);
+  renderCL(dom.pmCard, pmItems, pmChecks, 'pm', true);
+}
+
+function renderCL(card, items, state, prefix, readonly) {
+  const done = items.filter(i => state[i.id]).length;
+  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
+
+  // Build fragment
+  const frag = document.createDocumentFragment();
+
+  // Progress bar
+  const prog = document.createElement('div');
+  prog.className = 'cl-progress-line';
+  prog.innerHTML = `<span>${done}</span> / ${items.length} ${readonly ? 'complete at sign-off' : 'complete'}`;
+  frag.appendChild(prog);
+
+  const barWrap = document.createElement('div');
+  barWrap.className = 'cl-bar-wrap';
+  const bar = document.createElement('div');
+  bar.className = 'cl-bar';
+  bar.style.width = pct + '%';
+  if (readonly && pct === 100) bar.style.background = 'var(--green)';
+  barWrap.appendChild(bar);
+  frag.appendChild(barWrap);
+
+  items.forEach(item => {
+    const text   = L === 'IS' ? (item.textIS || item.textEN) : (item.textEN || item.text || '');
+    const checked = !!state[item.id];
+    const div    = document.createElement('div');
+    div.className = 'checklist-item' + (checked ? ' done' : '');
+    div.dataset.prefix = prefix;
+    div.dataset.itemId = item.id;
+    if (!readonly) div.dataset.toggle = '1'; // for event delegation
+
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = checked;
+    if (readonly) cb.disabled = true;
+
+    const label = document.createElement('span');
+    label.className = 'item-text';
+    label.textContent = text;
+
+    div.append(cb, label);
+    frag.appendChild(div);
+  });
+
+  card.replaceChildren(frag);
+}
+
+// ── Activities ─────────────────────────────────────────────────────────────
+function renderActivities() {
+  const list  = dom.activitiesList;
+  const empty = dom.activitiesEmpty;
+  if (!activities.length) {
+    empty.style.display = '';
+    list.replaceChildren();
+    return;
+  }
+  empty.style.display = 'none';
+  replaceWithFragment(list, activities, buildActivityRow.bind(null, /*readonly=*/false));
+}
+function renderActivitiesReadonly() {
+  const list  = dom.activitiesList;
+  const empty = dom.activitiesEmpty;
+  if (!activities.length) {
+    empty.style.display = '';
+    empty.textContent = 'No activities recorded for this day.';
+    list.replaceChildren();
+    return;
+  }
+  empty.style.display = 'none';
+  replaceWithFragment(list, activities, buildActivityRow.bind(null, true));
+}
+
+function buildActivityRow(readonly, a) {
+  const row  = document.createElement('div');
+  row.className = 'activity-row';
+
+  const info = document.createElement('div');
+  info.className = 'activity-info';
+  info.innerHTML = `<div class="activity-name">${esc(a.name)}</div>
+    <div class="activity-meta">
+      <span class="badge badge-muted">${esc(a.type)}</span>
+      ${a.start ? ' ' + esc(a.start) : ''}${a.end ? ' – ' + esc(a.end) : ''}
+      ${a.participants ? ' · ' + esc(a.participants) + ' participants' : ''}
+    </div>
+    ${a.notes ? `<div class="activity-note">${esc(a.notes)}</div>` : ''}`;
+
+  row.appendChild(info);
+  if (!readonly) {
+    const del = document.createElement('button');
+    del.className = 'del-btn';
+    del.title = 'Remove';
+    del.textContent = '×';
+    del.dataset.deleteActivity = a.id;
+    row.appendChild(del);
+  }
+  return row;
+}
+
+// ── Activity type buttons ───────────────────────────────────────────────────
+let _selectedActType = null;
+function renderActTypeBtns() {
+  replaceWithFragment(dom.actTypeBtns, activityTypes, t => {
+    const btn = document.createElement('button');
+    btn.className = 'type-btn btn' + (t.id === _selectedActType ? ' selected' : '');
+    btn.dataset.typeId   = t.id;
+    btn.dataset.typeName = L === 'IS' && t.nameIS ? t.nameIS : t.name;
+    btn.textContent = L === 'IS' && t.nameIS ? t.nameIS : t.name;
+    return btn;
+  });
+}
+
+// ── Maintenance ─────────────────────────────────────────────────────────────
+function renderMaintenance() {
+  const card = dom.maintCard;
+  if (!maintenance.length) {
+    card.innerHTML = `<div class="empty-state">No open maintenance requests. <a href="../maintenance/" style="color:var(--brass)">View all →</a></div>`;
+    return;
+  }
+  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
+  replaceWithFragment(card, maintenance, m => {
+    const row = document.createElement('div');
+    row.className = 'maint-row' + (m._done ? ' resolved' : '');
+    row.id = 'mr-' + m.id;
+
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = !!m._done;
+    cb.dataset.resolveMaint = m.id;
+
+    const info = document.createElement('div');
+    info.className = 'maint-info';
+    info.innerHTML = `<div class="maint-boat">${esc(m.boatName || m.target || '—')}
+      <span class="badge ${sevColor[m.severity] || 'badge-muted'}" style="margin-left:6px">${esc(m.severity || '—')}</span>
+      ${m.category ? `<span class="badge badge-muted" style="margin-left:4px">${esc(m.category)}</span>` : ''}
+    </div>
+    <div class="maint-desc">${esc(m.description || m.title || '')}</div>`;
+
+    row.append(cb, info);
+    return row;
+  });
+}
+
+// ── Weather log ─────────────────────────────────────────────────────────────
+function renderWxLog() {
+  const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
+  dom.wxLogCount.textContent = wxLog.length ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
+  if (!wxLog.length) { dom.wxLogList.replaceChildren(); return; }
+
+  const card = document.createElement('div');
+  card.className = 'wxlog-card';
+  replaceWithFragment(card, wxLog, w => {
+    const row = document.createElement('div');
+    row.className = 'wxlog-row';
+    row.innerHTML = `<span class="wxlog-time">${esc(w.time)}</span>
+      <span>${fi[w.flag] || '⚪'}</span>
+      <span style="color:var(--text)">${w.ws != null ? w.ws.toFixed(1) : '—'} m/s ${esc(w.dir || '')}</span>
+      <span style="color:var(--muted)">↑${w.wg != null ? Math.round(w.wg) : '—'}</span>
+      ${w.wv != null ? `<span style="color:#4a9eca">🌊${w.wv.toFixed(1)}m</span>` : ''}
+      ${w.tc != null ? `<span style="color:var(--muted)">${Math.round(w.tc)}°C</span>` : ''}`;
+    return row;
+  });
+  dom.wxLogList.replaceChildren(card);
+}
+
+// ── Incident section ────────────────────────────────────────────────────────
+function renderIncidentSection(incidents) {
+  const c = dom.incidentContainer;
+  if (isToday()) {
+    c.innerHTML = `<a href="../incidents/" class="incident-btn">
+      <span class="incident-icon">⚠️</span>
+      <div>
+        <div class="incident-label">Submit an Incident Report</div>
+        <div class="incident-sub">Injuries, near-misses, property damage, or any safety concern</div>
+      </div>
+      <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
+    </a>`;
+    return;
+  }
+  if (!incidents || !incidents.length) {
+    c.innerHTML = `<div class="content-card"><div class="empty-state" style="color:var(--muted)">No incident reports filed for this day.</div></div>`;
+    return;
+  }
+  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
+  c.innerHTML = incidents.map(inc => `
+    <a href="../incidents/?id=${encodeURIComponent(inc.id)}" class="incident-btn" style="border-color:var(--orange)44">
+      <span class="incident-icon">⚠️</span>
+      <div>
+        <div class="incident-label">${esc(inc.title || inc.type || 'Incident report')}</div>
+        <div class="incident-sub">${esc(inc.filedBy || '—')} · ${(inc.filedAt || inc.createdAt || '').slice(11,16) || '—'}
+          ${inc.severity ? ` · <span class="badge ${sevColor[inc.severity] || 'badge-muted'}">${inc.severity}</span>` : ''}
+        </div>
+      </div>
+      <span style="margin-left:auto;color:var(--brass);font-size:16px">→</span>
+    </a>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 6 — EVENT DELEGATION
+// One listener per container, no inline onclick in rendered HTML.
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Checklist toggle — delegated to document (amCard / pmCard)
+  document.addEventListener('click', e => {
+    const item = e.target.closest('[data-toggle]');
+    if (!item) return;
+    toggleCL(item.dataset.prefix, item.dataset.itemId);
+  });
+
+  // Delete activity — delegated to activitiesList
+  dom.activitiesList.addEventListener('click', e => {
+    const btn = e.target.closest('[data-delete-activity]');
+    if (!btn) return;
+    deleteActivity(btn.dataset.deleteActivity);
+  });
+
+  // Activity type selection — delegated to actTypeBtns
+  dom.actTypeBtns.addEventListener('click', e => {
+    const btn = e.target.closest('[data-type-id]');
+    if (!btn) return;
+    _selectedActType = btn.dataset.typeId;
+    dom.actTypeBtns.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b === btn));
+  });
+
+  // Maintenance resolve — delegated to maintCard
+  dom.maintCard.addEventListener('change', e => {
+    const cb = e.target.closest('[data-resolve-maint]');
+    if (!cb) return;
+    resolveMaint(cb.dataset.resolveMaint, cb.checked);
+  });
+
+  // Date nav
+  dom.prevBtn.addEventListener('click',  () => navigateDay(-1));
+  dom.nextBtn.addEventListener('click',  () => navigateDay(1));
+  dom.todayBtn.addEventListener('click', () => navigateToToday());
+
+  // Activity modal buttons
+  dom.addActivityBtn.addEventListener('click', openActivityModal);
+  dom.actCancelBtn?.addEventListener('click',  closeActivityModal);
+  dom.actSaveBtn?.addEventListener('click',    saveActivity);
+  document.getElementById('actCancelBtn')?.addEventListener('click', closeActivityModal);
+  document.getElementById('actSaveBtn')?.addEventListener('click', saveActivity);
+
+  // Save bar
+  dom.saveDraftBtn.addEventListener('click', saveDraft);
+  dom.signOffBtn.addEventListener('click',   signOffDay);
+
+  // Weather snapshot
+  dom.logWxBtn.addEventListener('click', logCurrentWeather);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 7 — STATE MUTATORS
+// ════════════════════════════════════════════════════════════════════════════
+
+function toggleCL(prefix, id) {
+  if (prefix === 'am') amChecks[id] = !amChecks[id];
+  else                 pmChecks[id] = !pmChecks[id];
+  // Patch in place — no full rebuild, just update the one item's class
+  const item = dom[prefix + 'Card'].querySelector(`[data-item-id="${id}"]`);
+  const state = prefix === 'am' ? amChecks : pmChecks;
+  if (item) {
+    item.classList.toggle('done', !!state[id]);
+    const cb = item.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = !!state[id];
+  }
+  // Update progress bar only
+  const items = prefix === 'am' ? amItems : pmItems;
+  updateCLProgress(prefix === 'am' ? dom.amCard : dom.pmCard, items, state);
+  markDirty();
+}
+
+function updateCLProgress(card, items, state) {
+  const done = items.filter(i => state[i.id]).length;
+  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
+  const prog = card.querySelector('.cl-progress-line');
+  if (prog) prog.querySelector('span').textContent = done;
+  const bar = card.querySelector('.cl-bar');
+  if (bar) bar.style.width = pct + '%';
+}
+
+function deleteActivity(id) {
+  activities = activities.filter(a => a.id !== id);
+  renderActivities();
+  markDirty();
+}
+
+async function resolveMaint(id, checked) {
+  const item = maintenance.find(m => m.id === id);
+  if (!item) return;
+  item._done = checked;
+  const row = document.getElementById('mr-' + id);
+  if (row) row.classList.toggle('resolved', checked);
+  if (checked) {
+    try { await apiPost('resolveMaintenance', { id, resolvedBy: user.name }); }
+    catch(e) {
+      item._done = false;
+      const row2 = document.getElementById('mr-' + id);
+      if (row2) row2.classList.remove('resolved');
+      const cb = dom.maintCard.querySelector(`[data-resolve-maint="${id}"]`);
+      if (cb) cb.checked = false;
+      showToast('Could not resolve: ' + e.message, 'err');
+    }
+  }
+}
+
+// ── Activity modal ───────────────────────────────────────────────────────────
+let _actCancelBtn, _actSaveBtn;
+
+function openActivityModal() {
+  _selectedActType = activityTypes[0]?.id || null;
+  renderActTypeBtns();
+  dom.actName.value = '';
+  dom.actStart.value = '';
+  dom.actEnd.value = '';
+  dom.actParticipants.value = '';
+  dom.actNotes.value = '';
+  dom.activityModal.classList.remove('hidden');
+}
+function closeActivityModal() { dom.activityModal.classList.add('hidden'); }
+
+function saveActivity() {
+  const name = dom.actName.value.trim();
+  const typeObj = activityTypes.find(t => t.id === _selectedActType);
+  if (!name)    { showToast('Enter a name for the activity.', 'warn'); return; }
+  if (!typeObj) { showToast('Select an activity type.', 'warn'); return; }
+  activities.push({
+    id:          'act-' + Date.now(),
+    type:        L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
+    name,
+    start:        dom.actStart.value || '',
+    end:          dom.actEnd.value   || '',
+    participants: dom.actParticipants.value || '',
+    notes:        dom.actNotes.value.trim(),
+  });
+  renderActivities();
+  closeActivityModal();
+  markDirty();
+}
+
+// ── Weather snapshot ─────────────────────────────────────────────────────────
+function logCurrentWeather() {
+  if (!wxData) { showToast('Weather data not loaded yet.', 'warn'); return; }
+  const time = new Date().toTimeString().slice(0, 5);
+  const snap = wxSnapshot(wxData);
+  if (snap) { snap.time = time; wxLog.push(snap); }
+  renderWxLog();
+  markDirty();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 8 — DATE NAVIGATION
+// ════════════════════════════════════════════════════════════════════════════
+function isToday()  { return viewDate === TODAY; }
+function timeToMins(t) { if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+(m||0); }
+
 function navigateDay(delta) {
   if (dirty && !confirm('You have unsaved changes. Leave this day?')) return;
   const d = new Date(viewDate + 'T12:00:00');
@@ -410,356 +817,116 @@ function navigateDay(delta) {
   viewDate = next;
   loadDay();
 }
-
 function navigateToToday() {
   if (dirty && !confirm('You have unsaved changes. Leave this day?')) return;
   viewDate = TODAY;
   loadDay();
 }
-
 function updateDateNav() {
-  const isT = isToday();
-  document.getElementById('nextBtn').disabled = isT;
-  document.getElementById('todayBtn').classList.toggle('hidden', isT);
-  document.getElementById('readonlyBadge').classList.toggle('hidden', isT);
-  document.getElementById('mainWrap')?.classList.toggle('readonly-mode', !isT);
-  document.getElementById('addActivityBtn') && (document.getElementById('addActivityBtn').style.display = isT ? '' : 'none');
-  document.getElementById('logWxDesc')      && (document.getElementById('logWxDesc').style.display      = isT ? '' : 'none');
+  const t = isToday();
+  dom.nextBtn.disabled = t;
+  dom.todayBtn.classList.toggle('hidden', t);
+  dom.readonlyBadge.classList.toggle('hidden', t);
+  dom.mainWrap.classList.toggle('readonly-mode', !t);
+  dom.addActivityBtn.style.display = t ? '' : 'none';
+  dom.logWxDesc.style.display      = t ? '' : 'none';
 }
 
-// ── Load day ──────────────────────────────────────────────────────────────────
-async function loadDay() {
-  logId = null; wxLog = []; amChecks = {}; pmChecks = {};
-  activities = []; checkouts = []; dirty = false;
-
-  const d = new Date(viewDate + 'T12:00:00');
-  document.getElementById('dateBig').textContent = d.toLocaleDateString('en-GB',
-    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-  document.getElementById('signoffBadge').classList.add('hidden');
-  updateDateNav();
-
-  ['boatsCard','amCard','pmCard','maintCard'].forEach(id => {
-    document.getElementById(id).innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
-  });
-  document.getElementById('activitiesEmpty').style.display = '';
-  document.getElementById('activitiesList').innerHTML = '';
-  document.getElementById('narrativeInput').value = '';
-  document.getElementById('wxLogList').innerHTML = '';
-  document.getElementById('wxLogCount').textContent = '';
-
-  if (isToday()) {
-    document.getElementById('logWxBtn').style.display = '';
-    if (document.getElementById('logWxDesc')) document.getElementById('logWxDesc').style.display = '';
-    await Promise.all([loadTodayLog(), loadCheckouts()]);
-  } else {
-    document.getElementById('logWxBtn').style.display = 'none';
-    if (document.getElementById('logWxDesc')) document.getElementById('logWxDesc').style.display = 'none';
-    document.getElementById('boatsCard').innerHTML =
-      '<div class="empty-state">Checkout data not archived per day — see checkout history.</div>';
-    await loadPastLog();
-  }
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 9 — API / DATA LOADERS
+// Each returns data — doesn't mutate state directly.
+// State mutations happen after await in loadDay / init.
+// ════════════════════════════════════════════════════════════════════════════
+function sjson(v, fallback) {
+  if (!v) return fallback;
+  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
 }
 
-// ── Weather widget ────────────────────────────────────────────────────────────
-function fetchWeatherWidget() {
-  const el = document.getElementById('wxWidget');
-  if (!el) return;
-  el.className = 'wx-widget';
-  wxWidget(el, { onData: snap => { wxData = snap; }, showRefreshBtn: true }).start();
-}
-
-// ── Record weather snapshots ──────────────────────────────────────────────────
-function logCurrentWeather() {
-  if (!wxData) return;
-  const snap = wxSnapshot(wxData);
-  if (snap) { snap.time = fmtTimeNow(); wxLog.push(snap); }
-  renderWxLog(); markDirty();
-}
-
-function renderWxLog() {
-  const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
-  const countEl = document.getElementById('wxLogCount');
-  const listEl  = document.getElementById('wxLogList');
-  if (!wxLog.length) { listEl.innerHTML = ''; countEl.textContent = ''; return; }
-  countEl.textContent = wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots');
-  listEl.innerHTML = `<div class="wxlog-card">` +
-    wxLog.map(w => `
-      <div class="wxlog-row">
-        <span class="wxlog-time">${w.time}</span>
-        <span>${fi[w.flag]||'⚪'}</span>
-        <span style="color:var(--text)">${w.ws!=null?w.ws.toFixed(1):'—'} m/s ${w.dir||''}</span>
-        <span style="color:var(--muted)">↑${w.wg!=null?Math.round(w.wg):'—'}</span>
-        ${w.wv!=null?`<span style="color:#4a9eca">🌊${w.wv.toFixed(1)}m</span>`:''}
-        <span style="color:var(--muted)">${w.tc!=null?Math.round(w.tc)+'°C':''}</span>
-      </div>`).join('') + `</div>`;
-}
-
-// ── Boats on water ────────────────────────────────────────────────────────────
-async function loadCheckouts() {
-  try { checkouts = (await apiGet('getActiveCheckouts')).checkouts || []; }
-  catch(e) { checkouts = []; }
-  renderBoats();
-}
-
-function renderBoats() {
-  const card   = document.getElementById('boatsCard');
-  const active = checkouts.filter(c => c.status === 'out');
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No boats currently out.</div>`; return; }
-  const nowTime = fmtTimeNow();
-  card.innerHTML = active.map(c => {
-    const overdue = c.returnBy && c.returnBy < nowTime;
-    return `<div class="boat-row">
-      <span class="boat-name">${esc(c.boatName||'—')}</span>
-      <span class="boat-crew">${esc(c.memberName||'—')}${c.crew>1?' +'+(c.crew-1):''}</span>
-      <span class="boat-eta ${overdue?'overdue':''}">${overdue?'⚠ OVERDUE':'ETA '+(c.returnBy||'—')}</span>
-    </div>`;
-  }).join('');
-}
-setInterval(() => { if (checkouts.length) renderBoats(); }, 60000);
-
-// ── Load today's / past log ───────────────────────────────────────────────────
 async function loadTodayLog() {
   try {
-    const [logRes, cfgRes] = await Promise.all([apiGet('getDailyLog', { date: TODAY }), apiGet('getConfig')]);
+    const [logRes, cfgRes] = await Promise.all([
+      apiGet('getDailyLog',  { date: TODAY }),
+      apiGet('getConfig'),
+    ]);
     applyLogData(logRes.log, cfgRes);
-  } catch(e) { amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES; }
-  renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns(); renderIncidentSection(null);
+  } catch(e) {
+    console.warn('loadTodayLog failed:', e.message);
+    amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
+  }
+  renderChecklists();
+  renderActivities();
+  renderWxLog();
+  renderActTypeBtns();
+  renderIncidentSection(null);
 }
 
 async function loadPastLog() {
   try {
-    const [logRes, cfgRes] = await Promise.all([apiGet('getDailyLog', { date: viewDate }), apiGet('getConfig')]);
+    const [logRes, cfgRes] = await Promise.all([
+      apiGet('getDailyLog',  { date: viewDate }),
+      apiGet('getConfig'),
+    ]);
     applyLogData(logRes.log, cfgRes);
-    renderIncidentSection(await loadIncidentsForDate(viewDate));
+    const incidents = await loadIncidentsForDate(viewDate);
+    renderIncidentSection(incidents);
   } catch(e) {
+    console.warn('loadPastLog failed:', e.message);
     amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
     renderIncidentSection(null);
   }
-  renderChecklistsReadonly(); renderActivitiesReadonly(); renderWxLog();
+  renderChecklistsReadonly();
+  renderActivitiesReadonly();
+  renderWxLog();
 }
 
 function applyLogData(log, cfgRes) {
   if (log) {
-    logId      = log.id;
-    amChecks   = parseJson(log.openingChecks, {});
-    pmChecks   = parseJson(log.closingChecks, {});
-    activities = parseJson(log.activities, []);
-    wxLog      = parseJson(log.weatherLog, []);
-    document.getElementById('narrativeInput').value = log.narrative || '';
+    logId    = log.id;
+    amChecks = sjson(log.openingChecks, {});
+    pmChecks = sjson(log.closingChecks, {});
+    activities = sjson(log.activities, []);
+    wxLog    = sjson(log.weatherLog,  []);
+    dom.narrativeInput.value = log.narrative || '';
     if (log.signedOffBy) {
-      const badge = document.getElementById('signoffBadge');
-      badge.classList.remove('hidden');
-      if (log.signedOffAt) {
-        const d = new Date(log.signedOffAt);
-        badge.textContent = '✓ Signed off by ' + (log.signedOffBy||'') + ' at ' +
-          d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-      }
+      dom.signoffBadge.classList.remove('hidden');
+      const at = log.signedOffAt ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+      dom.signoffBadge.textContent = '✓ Signed off by ' + (log.signedOffBy || '') + at;
     }
   }
-  const cfg     = cfgRes || {};
-  amItems       = cfg.dailyChecklist?.am || DEFAULT_AM;
-  pmItems       = cfg.dailyChecklist?.pm || DEFAULT_PM;
-  activityTypes = cfg.activityTypes      || DEFAULT_TYPES;
+  const cfg = cfgRes || {};
+  amItems       = cfg.dailyChecklist?.am  || DEFAULT_AM;
+  pmItems       = cfg.dailyChecklist?.pm  || DEFAULT_PM;
+  activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
+}
+
+async function loadCheckouts() {
+  try { checkouts = (await apiGet('getActiveCheckouts')).checkouts || []; }
+  catch(e) { checkouts = []; console.warn('loadCheckouts failed:', e.message); }
+  renderBoats();
+}
+
+async function loadMaintenance() {
+  try {
+    // getMaintenance is the correct handler (getDamageReports was removed)
+    const res = await apiGet('getMaintenance');
+    maintenance = (res.requests || res.maintenance || []).filter(r => r.status !== 'resolved' && !r.resolved);
+  } catch(e) {
+    maintenance = [];
+    console.warn('loadMaintenance failed:', e.message);
+  }
+  renderMaintenance();
 }
 
 async function loadIncidentsForDate(date) {
   try {
-    return ((await apiGet('getIncidents')).incidents || [])
-      .filter(i => (i.reportedAt||i.createdAt||'').slice(0,10) === date);
+    const res = await apiGet('getIncidents');
+    return (res.incidents || []).filter(i => (i.filedAt || i.createdAt || '').slice(0,10) === date);
   } catch(e) { return []; }
 }
 
-function renderIncidentSection(incidents) {
-  const container = document.getElementById('incidentContainer');
-  if (!container) return;
-  if (isToday()) {
-    container.innerHTML = `
-      <a href="../incidents/" class="incident-btn">
-        <span class="incident-icon">⚠️</span>
-        <div>
-          <div class="incident-label">Submit an Incident Report</div>
-          <div class="incident-sub">Injuries, near-misses, property damage, or any safety concern</div>
-        </div>
-        <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
-      </a>`;
-    return;
-  }
-  if (!incidents?.length) {
-    container.innerHTML = `<div class="content-card"><div class="empty-state">No incident reports filed for this day.</div></div>`;
-    return;
-  }
-  container.innerHTML = incidents.map(inc => `
-    <a href="../incidents/?id=${encodeURIComponent(inc.id)}" class="incident-btn" style="border-color:var(--orange)44">
-      <span class="incident-icon">⚠️</span>
-      <div>
-        <div class="incident-label">${esc(inc.title||inc.type||'Incident report')}</div>
-        <div class="incident-sub">${esc(inc.reportedBy||'—')} · ${(inc.reportedAt||inc.createdAt||'').slice(11,16)||'—'}</div>
-      </div>
-      <span style="margin-left:auto;color:var(--brass);font-size:16px">→</span>
-    </a>`).join('');
-}
-
-// ── Checklists ────────────────────────────────────────────────────────────────
-function renderChecklists() {
-  renderCL('amCard', amItems, amChecks, 'am');
-  renderCL('pmCard', pmItems, pmChecks, 'pm');
-}
-
-function renderCL(cardId, items, state, prefix) {
-  const done = items.filter(i => state[i.id]).length;
-  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
-  document.getElementById(cardId).innerHTML = `
-    <div class="cl-progress-line"><span>${done}</span> / ${items.length} complete</div>
-    <div class="cl-bar-wrap"><div class="cl-bar" style="width:${pct}%"></div></div>
-    ${items.map(i => {
-      const text = L === 'IS' ? (i.textIS || i.textEN) : (i.textEN || i.text || '');
-      return `<div class="checklist-item ${state[i.id]?'done':''}" onclick="toggleCL('${prefix}','${i.id}')">
-        <input type="checkbox" ${state[i.id]?'checked':''} onclick="event.stopPropagation();toggleCL('${prefix}','${i.id}')">
-        <span class="item-text">${esc(text)}</span>
-      </div>`;
-    }).join('')}`;
-}
-
-function toggleCL(prefix, id) {
-  if (prefix === 'am') amChecks[id] = !amChecks[id];
-  else                 pmChecks[id] = !pmChecks[id];
-  renderCL(prefix==='am'?'amCard':'pmCard', prefix==='am'?amItems:pmItems, prefix==='am'?amChecks:pmChecks, prefix);
-  markDirty();
-}
-
-function renderChecklistsReadonly() {
-  renderCLReadonly('amCard', amItems, amChecks);
-  renderCLReadonly('pmCard', pmItems, pmChecks);
-}
-
-function renderCLReadonly(cardId, items, state) {
-  const done = items.filter(i => state[i.id]).length;
-  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
-  document.getElementById(cardId).innerHTML = `
-    <div class="cl-progress-line"><span>${done}</span> / ${items.length} complete at sign-off</div>
-    <div class="cl-bar-wrap"><div class="cl-bar" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--brass)'}"></div></div>
-    ${items.map(i => {
-      const text = L === 'IS' ? (i.textIS || i.textEN) : (i.textEN || i.text || '');
-      return `<div class="checklist-item ${state[i.id]?'done':''}" style="cursor:default">
-        <input type="checkbox" ${state[i.id]?'checked':''} disabled>
-        <span class="item-text">${esc(text)}</span>
-      </div>`;
-    }).join('')}`;
-}
-
-// ── Activities ────────────────────────────────────────────────────────────────
-function renderActTypeBtns() {
-  document.getElementById('actTypeBtns').innerHTML = activityTypes.map(a => {
-    const name = L === 'IS' && a.nameIS ? a.nameIS : a.name;
-    return `<button class="type-btn" data-id="${a.id}" onclick="selectType('${a.id}')">${esc(name)}</button>`;
-  }).join('');
-}
-
-function selectType(id) {
-  selectedType = activityTypes.find(a => a.id === id);
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b.dataset.id === id));
-}
-
-function openActivityModal() {
-  selectedType = null;
-  ['actName','actNotes'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('actStart').value = fmtTimeNow();
-  document.getElementById('actEnd').value = '';
-  document.getElementById('actParticipants').value = '';
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('activityModal').classList.remove('hidden');
-}
-function closeActivityModal() { document.getElementById('activityModal').classList.add('hidden'); }
-
-function saveActivity() {
-  const name = document.getElementById('actName').value.trim();
-  if (!name) { document.getElementById('actName').focus(); return; }
-  activities.push({
-    id:           Date.now().toString(36),
-    type:         selectedType ? (L==='IS'&&selectedType.nameIS ? selectedType.nameIS : selectedType.name) : 'Other',
-    name,
-    start:        document.getElementById('actStart').value,
-    end:          document.getElementById('actEnd').value,
-    participants: parseInt(document.getElementById('actParticipants').value) || 0,
-    notes:        document.getElementById('actNotes').value.trim(),
-    recordedBy:   user.name,
-  });
-  closeActivityModal(); renderActivities(); markDirty();
-}
-
-function deleteActivity(id) { activities = activities.filter(a => a.id !== id); renderActivities(); markDirty(); }
-
-function _activityRow(a, editable) {
-  return `<div class="activity-row">
-    <div class="activity-info">
-      <div class="activity-name">${esc(a.name)}</div>
-      <div class="activity-meta">
-        <span class="badge badge-muted">${esc(a.type)}</span>
-        ${a.start?' '+a.start:''}${a.end?' – '+a.end:''}
-        ${a.participants?' · '+a.participants+' participants':''}
-      </div>
-      ${a.notes?`<div class="activity-note">${esc(a.notes)}</div>`:''}
-    </div>
-    ${editable?`<button class="del-btn" onclick="deleteActivity('${a.id}')" title="Remove">×</button>`:''}
-  </div>`;
-}
-
-function renderActivities() {
-  const list = document.getElementById('activitiesList');
-  const empty = document.getElementById('activitiesEmpty');
-  if (!activities.length) { empty.style.display=''; list.innerHTML=''; return; }
-  empty.style.display = 'none';
-  list.innerHTML = activities.map(a => _activityRow(a, true)).join('');
-}
-
-function renderActivitiesReadonly() {
-  const list = document.getElementById('activitiesList');
-  const empty = document.getElementById('activitiesEmpty');
-  if (!activities.length) { empty.style.display=''; empty.textContent='No activities recorded for this day.'; list.innerHTML=''; return; }
-  empty.style.display = 'none';
-  list.innerHTML = activities.map(a => _activityRow(a, false)).join('');
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAINTENANCE
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadMaintenance() {
-  try { maintenance = ((await apiGet('getMaintenance')).requests || []).filter(r => !r.resolved); }
-  catch(e) { maintenance = []; }
-  renderMaintenance();
-}
-
-function renderMaintenance() {
-  const card = document.getElementById('maintCard');
-  if (!maintenance.length) { card.innerHTML = `<div class="empty-state">No open maintenance requests.</div>`; return; }
-  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
-  const catIcon  = { boat:'⛵', equipment:'🦺', facility:'🏠' };
-  card.innerHTML = maintenance.map(m => `
-    <div class="maint-row ${m._done?'resolved':''}" id="mr-${m.id}">
-      <input type="checkbox" ${m._done?'checked':''} onchange="resolveMaint('${m.id}',this.checked)">
-      <div class="maint-info">
-        <div class="maint-boat">
-          ${catIcon[m.category]||'🔧'} ${esc(m.boatName||m.itemName||'—')}
-          <span class="badge ${sevColor[m.severity]||'badge-muted'}" style="margin-left:6px">${m.severity||'—'}</span>
-          ${m.part?`<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>`:''}
-        </div>
-        <div class="maint-desc">${esc(m.description||'')}</div>
-      </div>
-    </div>`).join('');
-}
-
-async function resolveMaint(id, checked) {
-  const item = maintenance.find(m => m.id === id);
-  if (!item) return;
-  item._done = checked;
-  renderMaintenance();
-  if (checked) {
-    try { await apiPost('resolveMaintenance', { id, resolvedBy: user.name }); }
-    catch(e) { item._done = false; renderMaintenance(); alert('Could not resolve: ' + e.message); }
-  }
-}
-
-// ── Save / Sign off ───────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 10 — SAVE / SIGN OFF
+// ════════════════════════════════════════════════════════════════════════════
 function markDirty() { dirty = true; }
 
 async function saveDraft()  { if (!isToday()) return; await doSave(false); }
@@ -771,34 +938,98 @@ async function signOffDay() {
 }
 
 async function doSave(signOff) {
-  const btn = document.getElementById(signOff ? 'signOffBtn' : 'saveDraftBtn');
-  const msg = document.getElementById('saveMsg');
-  btn.disabled = true; msg.className = ''; msg.textContent = '';
+  const btn = dom[signOff ? 'signOffBtn' : 'saveDraftBtn'];
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = signOff ? 'Signing off…' : 'Saving…';
+  dom.saveMsg.textContent = '';
+
   try {
     const payload = {
-      id: logId, date: TODAY,
+      date:          viewDate,
       openingChecks: JSON.stringify(amChecks),
       closingChecks: JSON.stringify(pmChecks),
       activities:    JSON.stringify(activities),
       weatherLog:    JSON.stringify(wxLog),
-      narrative:     document.getElementById('narrativeInput').value.trim(),
-      updatedBy:     user.name,
+      narrative:     dom.narrativeInput.value.trim(),
+      signOff,
+      ...(logId ? { id: logId } : {}),
     };
-    if (signOff) { payload.signedOffBy = user.name; payload.signedOffAt = new Date().toISOString(); }
     const res = await apiPost('saveDailyLog', payload);
-    if (!logId && res.id) logId = res.id;
+    if (res.id && !logId) logId = res.id;
     dirty = false;
-    if (signOff) document.getElementById('signoffBadge').classList.remove('hidden');
-    msg.className = 'save-ok';
-    msg.textContent = signOff ? 'Day signed off ✓' : 'Saved ✓';
-    setTimeout(() => { msg.textContent = ''; }, 3000);
+    dom.saveMsg.className = 'save-ok';
+    dom.saveMsg.textContent = signOff ? '✓ Signed off' : '✓ Saved';
+    if (signOff) {
+      dom.signoffBadge.classList.remove('hidden');
+      dom.signoffBadge.textContent = '✓ Signed off by ' + user.name;
+    }
+    showToast(signOff ? '✓ Day signed off.' : '✓ Draft saved.', 'ok');
   } catch(e) {
-    msg.className = 'save-err';
-    msg.textContent = 'Save failed: ' + e.message;
-  } finally { btn.disabled = false; }
+    dom.saveMsg.className = 'save-err';
+    dom.saveMsg.textContent = 'Error: ' + e.message;
+    showToast('Save failed: ' + e.message, 'err', 5000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
 }
 
-window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 11 — INIT
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Standard header (role-aware)
+  buildHeader('dailylog');
+
+  // Weather widget — starts polling, feeds wxData for snapshots
+  const wxCtrl = wxWidget(dom.wxWidget, {
+    onData: snap => { wxData = snap; },
+    showRefreshBtn: true,
+  });
+  wxCtrl.start();
+
+  // Interval: patch boat ETAs without full rebuild
+  setInterval(tickBoatEtas, 60_000);
+
+  await loadDay();
+  await loadMaintenance();
+});
+
+async function loadDay() {
+  // Reset state
+  logId = null; dirty = false;
+  wxLog = []; amChecks = {}; pmChecks = {};
+  activities = []; checkouts = [];
+  amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
+
+  // Date display
+  const d = new Date(viewDate + 'T12:00:00');
+  dom.dateBig.textContent = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  dom.signoffBadge.classList.add('hidden');
+  dom.signoffBadge.textContent = '✓ Signed off';
+  dom.narrativeInput.value = '';
+  updateDateNav();
+
+  // Show spinners
+  const spinner = '<div class="empty-state"><span class="spinner"></span></div>';
+  ['boatsCard','amCard','pmCard','maintCard'].forEach(id => { dom[id].innerHTML = spinner; });
+  dom.activitiesEmpty.style.display = '';
+  dom.activitiesList.replaceChildren();
+  dom.wxLogList.replaceChildren();
+  dom.wxLogCount.textContent = '';
+
+  if (isToday()) {
+    dom.logWxBtn.style.display  = '';
+    dom.logWxDesc.style.display = '';
+    await Promise.all([loadTodayLog(), loadCheckouts()]);
+  } else {
+    dom.logWxBtn.style.display  = 'none';
+    dom.logWxDesc.style.display = 'none';
+    dom.boatsCard.innerHTML = '<div class="empty-state">Checkout data not archived per day — see checkout history.</div>';
+    await loadPastLog();
+  }
+}
 </script>
 </body>
 </html>
