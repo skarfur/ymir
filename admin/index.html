@@ -126,6 +126,7 @@
       <button class="tab-btn"        data-tab="locations" onclick="showTab('locations')">Locations</button>
       <button class="tab-btn"        data-tab="checklists"onclick="showTab('checklists')">Checklists</button>
       <button class="tab-btn"        data-tab="actTypes"  onclick="showTab('actTypes')">Activity Types</button>
+      <button class="tab-btn" data-tab="flags" onclick="showTab('flags')">🚩 Flags</button>
       <button class="tab-btn"        data-tab="alerts"    onclick="showTab('alerts')">Alerts</button>
     </div>
 
@@ -399,7 +400,106 @@
       </div><!-- /col-body -->
     </div><!-- /col-section -->
     </div><!-- /tab-alerts -->
+       <!-- ══ FLAG SETTINGS ═══════════════════════════════════════════════════ -->
+    <div id="tab-flags" class="hidden">
 
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">🚩 SAILING FLAG THRESHOLDS</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="flagConfigCard">
+
+          <p style="font-size:12px;color:var(--muted);margin:0 0 18px;line-height:1.6">
+            These thresholds control the automatic flag displayed on the weather page
+            and member hub. Changes take effect immediately for all users on next refresh.
+          </p>
+
+          <!-- ── Wind thresholds ─────────────────────────────────────────── -->
+          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">WIND — BEAUFORT THRESHOLDS</div>
+
+          <div class="grid2" style="margin-bottom:18px">
+            <div class="field">
+              <label>🟡 Yellow flag — min Bft</label>
+              <input type="number" id="fcWindYellow" min="1" max="12" step="1" style="width:80px">
+              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Yellow</div>
+            </div>
+            <div class="field">
+              <label>🟠 Orange flag — min Bft</label>
+              <input type="number" id="fcWindOrange" min="1" max="12" step="1" style="width:80px">
+              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Orange</div>
+            </div>
+            <div class="field">
+              <label>🔴 Red flag — min Bft</label>
+              <input type="number" id="fcWindRed" min="1" max="12" step="1" style="width:80px">
+              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Red</div>
+            </div>
+          </div>
+
+          <!-- ── Easterly directions ────────────────────────────────────── -->
+          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">EASTERLY DIRECTIONS (add +1 flag level)</div>
+          <div id="fcEasterlyDirs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+            <!-- checkboxes rendered by JS -->
+          </div>
+
+          <!-- ── Wave height thresholds ─────────────────────────────────── -->
+          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">WAVE HEIGHT THRESHOLDS (metres)</div>
+          <div class="grid2" style="margin-bottom:18px">
+            <div class="field">
+              <label>🟡 Yellow flag — min wave ht (m)</label>
+              <input type="number" id="fcWaveYellow" min="0" max="10" step="0.1" style="width:80px">
+            </div>
+            <div class="field">
+              <label>🟠 Orange flag — min wave ht (m)</label>
+              <input type="number" id="fcWaveOrange" min="0" max="10" step="0.1" style="width:80px">
+            </div>
+            <div class="field">
+              <label>🔴 Red flag — min wave ht (m)</label>
+              <input type="number" id="fcWaveRed" min="0" max="10" step="0.1" style="width:80px">
+            </div>
+          </div>
+
+          <!-- ── Advice text ─────────────────────────────────────────────── -->
+          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">ADVICE TEXT (shown on flag banner)</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+            <div class="field">
+              <label>🟢 Green advice</label>
+              <input type="text" id="fcAdviceGreen" maxlength="120" style="width:100%">
+            </div>
+            <div class="field">
+              <label>🟡 Yellow advice</label>
+              <input type="text" id="fcAdviceYellow" maxlength="120" style="width:100%">
+            </div>
+            <div class="field">
+              <label>🟠 Orange advice</label>
+              <input type="text" id="fcAdviceOrange" maxlength="120" style="width:100%">
+            </div>
+            <div class="field">
+              <label>🔴 Red advice</label>
+              <input type="text" id="fcAdviceRed" maxlength="120" style="width:100%">
+            </div>
+          </div>
+
+          <!-- ── Validation error ───────────────────────────────────────── -->
+          <div id="fcValidationError" style="display:none;color:var(--red);font-size:12px;
+            background:#e74c3c11;border:1px solid var(--red)44;border-radius:6px;
+            padding:8px 12px;margin-bottom:12px"></div>
+
+          <!-- ── Live preview ───────────────────────────────────────────── -->
+          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:8px">PREVIEW</div>
+          <div id="fcPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+            <!-- rendered by renderFlagPreview() -->
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
+            <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
+            <span id="fcSaveMsg" style="font-size:12px"></span>
+          </div>
+
+        </div><!-- /col-body -->
+      </div><!-- /col-section -->
+    </div><!-- /tab-flags -->
   </main>
 </div><!-- /page -->
 
@@ -1219,7 +1319,171 @@ function printQR() {
   </body></html>`);
   w.document.close();
 }
+// ── Flag config admin ─────────────────────────────────────────────────────────
 
+const FC_DEFAULTS = {
+  wind: { yellow: 5, orange: 6, red: 7 },
+  easterlyDirs: ['E', 'NE', 'SE'],
+  wave: { yellow: 0.6, orange: 1.2, red: 2.0 },
+  flags: {
+    green:  { advice: 'Good conditions.' },
+    yellow: { advice: 'Marginal — experienced sailors only.' },
+    orange: { advice: 'Difficult — keelboats only, staff auth for dinghies.' },
+    red:    { advice: 'Do not sail — all sailing suspended.' },
+  },
+};
+
+const ALL_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
+// Called in loadAll() after getConfig resolves — add this line there:
+//   loadFlagConfigPanel(cfgRes.flagConfig);
+function loadFlagConfigPanel(cfg) {
+  cfg = cfg || {};
+  const wind  = { ...FC_DEFAULTS.wind,  ...(cfg.wind  || {}) };
+  const wave  = { ...FC_DEFAULTS.wave,  ...(cfg.wave  || {}) };
+  const eDirs = cfg.easterlyDirs || FC_DEFAULTS.easterlyDirs;
+  const flags = {
+    green:  { ...FC_DEFAULTS.flags.green,  ...(cfg.flags?.green  || {}) },
+    yellow: { ...FC_DEFAULTS.flags.yellow, ...(cfg.flags?.yellow || {}) },
+    orange: { ...FC_DEFAULTS.flags.orange, ...(cfg.flags?.orange || {}) },
+    red:    { ...FC_DEFAULTS.flags.red,    ...(cfg.flags?.red    || {}) },
+  };
+
+  // Wind
+  document.getElementById('fcWindYellow').value = wind.yellow;
+  document.getElementById('fcWindOrange').value = wind.orange;
+  document.getElementById('fcWindRed').value    = wind.red;
+
+  // Wave
+  document.getElementById('fcWaveYellow').value = wave.yellow;
+  document.getElementById('fcWaveOrange').value = wave.orange;
+  document.getElementById('fcWaveRed').value    = wave.red;
+
+  // Advice text
+  document.getElementById('fcAdviceGreen').value  = flags.green.advice;
+  document.getElementById('fcAdviceYellow').value = flags.yellow.advice;
+  document.getElementById('fcAdviceOrange').value = flags.orange.advice;
+  document.getElementById('fcAdviceRed').value    = flags.red.advice;
+
+  // Easterly direction checkboxes
+  const container = document.getElementById('fcEasterlyDirs');
+  container.innerHTML = ALL_DIRS.map(d => `
+    <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;
+      background:var(--surface);border:1px solid var(--border);border-radius:6px;
+      padding:5px 10px;cursor:pointer;user-select:none">
+      <input type="checkbox" value="${d}"
+        ${eDirs.includes(d) ? 'checked' : ''}
+        onchange="renderFlagPreview()"
+        style="accent-color:var(--brass)">
+      ${d}
+    </label>`).join('');
+
+  // Live preview
+  renderFlagPreview();
+
+  // Re-render preview on any input change
+  ['fcWindYellow','fcWindOrange','fcWindRed',
+   'fcWaveYellow','fcWaveOrange','fcWaveRed',
+   'fcAdviceGreen','fcAdviceYellow','fcAdviceOrange','fcAdviceRed',
+  ].forEach(id => document.getElementById(id)
+    .addEventListener('input', renderFlagPreview));
+}
+
+function getFlagFormValues() {
+  return {
+    wind: {
+      yellow: parseInt(document.getElementById('fcWindYellow').value) || 5,
+      orange: parseInt(document.getElementById('fcWindOrange').value) || 6,
+      red:    parseInt(document.getElementById('fcWindRed').value)    || 7,
+    },
+    wave: {
+      yellow: parseFloat(document.getElementById('fcWaveYellow').value) || 0.6,
+      orange: parseFloat(document.getElementById('fcWaveOrange').value) || 1.2,
+      red:    parseFloat(document.getElementById('fcWaveRed').value)    || 2.0,
+    },
+    easterlyDirs: [...document.querySelectorAll('#fcEasterlyDirs input:checked')]
+      .map(cb => cb.value),
+    flags: {
+      green:  { advice: document.getElementById('fcAdviceGreen').value.trim() },
+      yellow: { advice: document.getElementById('fcAdviceYellow').value.trim() },
+      orange: { advice: document.getElementById('fcAdviceOrange').value.trim() },
+      red:    { advice: document.getElementById('fcAdviceRed').value.trim() },
+    },
+  };
+}
+
+function validateFlagConfig(cfg) {
+  const errs = [];
+  const { wind, wave } = cfg;
+  if (wind.yellow >= wind.orange) errs.push('Yellow wind threshold must be lower than Orange.');
+  if (wind.orange >= wind.red)    errs.push('Orange wind threshold must be lower than Red.');
+  if (wave.yellow >= wave.orange) errs.push('Yellow wave threshold must be lower than Orange.');
+  if (wave.orange >= wave.red)    errs.push('Orange wave threshold must be lower than Red.');
+  if (wind.red > 12)              errs.push('Max Beaufort scale is 12.');
+  return errs;
+}
+
+function renderFlagPreview() {
+  const cfg  = getFlagFormValues();
+  const colors = {
+    green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green'  },
+    yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow' },
+    orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange' },
+    red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red'    },
+  };
+  document.getElementById('fcPreview').innerHTML = ['green','yellow','orange','red'].map(key => {
+    const c = colors[key];
+    const advice = cfg.flags[key]?.advice || '';
+    const windLabel = key === 'green'
+      ? `Bft < ${cfg.wind.yellow}`
+      : key === 'yellow' ? `Bft ${cfg.wind.yellow}–${cfg.wind.orange - 1}`
+      : key === 'orange' ? `Bft ${cfg.wind.orange}–${cfg.wind.red - 1}`
+      : `Bft ≥ ${cfg.wind.red}`;
+    const waveLabel = key === 'green'
+      ? `< ${cfg.wave.yellow}m wave`
+      : key === 'yellow' ? `≥ ${cfg.wave.yellow}m wave`
+      : key === 'orange' ? `≥ ${cfg.wave.orange}m wave`
+      : `≥ ${cfg.wave.red}m wave`;
+    return `<div style="flex:1;min-width:180px;background:${c.bg};border:1px solid ${c.border};
+      border-radius:8px;padding:10px 12px;color:${c.color}">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${c.icon} ${c.label}</div>
+      <div style="font-size:10px;opacity:.8;margin-bottom:4px">${windLabel} · ${waveLabel}</div>
+      <div style="font-size:11px;opacity:.75;font-style:italic">${advice || '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function saveFlagConfig() {
+  const errEl = document.getElementById('fcValidationError');
+  const msgEl = document.getElementById('fcSaveMsg');
+  errEl.style.display = 'none';
+  msgEl.textContent   = '';
+
+  const cfg  = getFlagFormValues();
+  const errs = validateFlagConfig(cfg);
+  if (errs.length) {
+    errEl.textContent   = errs.join(' ');
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    await apiPost('saveConfig', { flagConfig: cfg });
+    // Push into live FLAG_CONFIG so the admin page reflects changes immediately
+    if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg);
+    msgEl.style.color   = 'var(--green)';
+    msgEl.textContent   = '✓ Saved';
+    setTimeout(() => { msgEl.textContent = ''; }, 3000);
+  } catch(e) {
+    msgEl.style.color   = 'var(--red)';
+    msgEl.textContent   = 'Save failed: ' + e.message;
+  }
+}
+
+function resetFlagConfig() {
+  if (!confirm('Reset flag settings to defaults?')) return;
+  loadFlagConfigPanel(null);
+}
 // ── Utilities ──────────────────────────────────────────────────────────────────
 // bool, esc, boolVal, parseJson, toast, chunk, openModal, closeModal
 // all come from shared/api.js — no local redefinitions needed.
