@@ -216,13 +216,15 @@ async function wxFetch(lat, lon) {
   ]);
 
   // ── Map BIRK METAR into the wx.current shape the rest of the code expects
-  // aviationweather.gov fields: wdir (deg), wspd (kt), wgst (kt), temp (°C), altim (hPa)
+  // aviationweather.gov JSON fields:
+  //   wdir (degrees), wspd (knots), wgst (knots or null), temp (°C),
+  //   slp (hPa sea-level pressure), altim (inches Hg — NOT used)
   const obs   = birkRes?.obs ?? {};
   const wdDeg = (obs.wdir != null && obs.wdir !== 'VRB') ? Number(obs.wdir) : null;
-  const ws    = (obs.wspd  != null) ? obs.wspd  * 0.514444 : 0;  // knots → m/s
-  const wg    = (obs.wgst != null) ? obs.wgst * 0.514444 : ws;   // knots → m/s
-  const temp  = obs.temp  ?? null;   // already °C
-  const pres  = obs.altim ?? null;   // already hPa
+  const ws    = obs.wspd  != null ? Number(obs.wspd)  * 0.514444 : 0;  // knots → m/s
+  const wg    = obs.wgst != null  ? Number(obs.wgst) * 0.514444 : ws;  // knots → m/s, fallback to wspd
+  const temp  = obs.temp  != null ? Number(obs.temp)  : null;           // already °C
+  const pres  = obs.slp   != null ? Number(obs.slp)   : null;           // hPa sea-level
 
   const wx = {
     current: {
