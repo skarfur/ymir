@@ -180,7 +180,6 @@ const PRESETS = [
   { label:'Álftanes',         lat: 64.1000, lon:-22.0500, isDefault:false },
 ];
 
-// Current fetch location (may differ from WX_DEFAULT)
 let curLoc = { ...PRESETS[0] };
 
 function isDefault() {
@@ -232,32 +231,6 @@ function applyManual() {
   setLocation({ lat, lon, label, isDefault: false }, true);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// FLAG + HELPERS (full-page versions with detailed reasons)
-// ═══════════════════════════════════════════════════════════════════════════════
-const FLAGS_FULL = {
-  green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green',  advice:'Good conditions — all boats at member\'s discretion.' },
-  yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow', advice:'Marginal — experienced sailors only.' },
-  orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange', advice:'Difficult — keelboats only, staff auth for dinghies.' },
-  red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red',    advice:'Do not sail — all sailing suspended.' },
-};
-function assessFlagFull(ws, wDir, waveH) {
-  let level = 0, reasons = [];
-  const bft = wxMsToBft(ws || 0);
-  const easterly = ['E','NE','SE'].includes((wDir||'').toUpperCase());
-  if      (bft >= 7) { level = 3; reasons.push({ f:'red',    t:`Force ${bft} — all sailing suspended` }); }
-  else if (bft === 6) { level = 2; reasons.push({ f:'orange', t:'Force 6 — difficult conditions' });
-    if (easterly) { level = 3; reasons.push({ f:'red', t:`Easterly F${bft} — amplified hazard` }); } }
-  else if (bft === 5) { level = 1; reasons.push({ f:'yellow', t:'Force 5 — marginal' });
-    if (easterly) { level = Math.max(level,2); reasons.push({ f:'orange', t:`Easterly F${bft} — elevated risk` }); } }
-  else if (bft === 4 && easterly) { level = 1; reasons.push({ f:'yellow', t:`Easterly F${bft} — warrants caution` }); }
-  if      ((waveH||0) >= 2.0) { level = Math.max(level,3); reasons.push({ f:'red',    t:`Waves ${waveH}m — very rough` }); }
-  else if ((waveH||0) >= 1.2) { level = Math.max(level,2); reasons.push({ f:'orange', t:`Waves ${(waveH||0).toFixed(1)}m — rough` }); }
-  else if ((waveH||0) >= 0.6) { level = Math.max(level,1); reasons.push({ f:'yellow', t:`Waves ${(waveH||0).toFixed(1)}m — moderate` }); }
-  const keys = ['green','yellow','orange','red'];
-  return { flagKey: keys[level], flag: FLAGS_FULL[keys[level]], reasons };
-}
-
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtT(t) { return t ? t.slice(11,16) : '–'; }
 
@@ -298,8 +271,15 @@ function render(wx, marine) {
   const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
   const { trend: presTrend, diff: presDiff } = wxPressureTrend(hr.surface_pressure, nowIdx);
 
-  const { flagKey, flag, reasons } = assessFlagFull(ws, wDir, waveH);
+  // Use wxAssessFlag from shared/weather.js (reads FLAG_CONFIG, admin-editable)
+  const { flagKey, flag, reasons } = wxAssessFlag(ws, wDir, waveH ?? 0);
   const presClass = presTrend === 'rising' ? 'rising' : presTrend === 'falling' ? 'falling' : '';
+
+  // BIRK doesn't provide a weather code — derive a simple description from wind/conditions
+  const condIcon = c.weather_code != null ? wxCondIcon(c.weather_code)
+    : bft >= 7 ? '🌬' : bft >= 5 ? '💨' : bft >= 3 ? '🌊' : '🌤';
+  const condDesc = c.weather_code != null ? wxCondDesc(c.weather_code)
+    : bft >= 7 ? 'Strong wind' : bft >= 5 ? 'Fresh breeze' : bft >= 3 ? 'Light breeze' : 'Calm';
 
   // All points: up to 3h history + 6h forecast
   const pts = [];
@@ -317,7 +297,6 @@ function render(wx, marine) {
     });
   }
 
-  // Note whether marine data is from fallback coords
   const marineNote = marine && !isDefault()
     ? `<div style="font-size:10px;color:var(--muted);margin-top:6px">⚓ Wave data from nearest offshore cell</div>` : '';
 
@@ -328,13 +307,13 @@ function render(wx, marine) {
   <div style="flex:1">
     <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
-    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAGS_FULL[r.f].color};border-color:${FLAGS_FULL[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
+    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAG_CONFIG.flags[r.f].color};border-color:${FLAG_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
 
 <!-- WIND HERO -->
 <div class="wind-hero">
-  <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">WIND · ${esc(curLoc.label.toUpperCase())}</div>
+  <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">WIND · BIRK${c._obs_time ? ' · ' + String(c._obs_time).slice(11,16) + ' UTC' : ''}</div>
   <div class="wind-cols">
     <div class="wind-data">
       <div class="wind-speed-row">
@@ -351,8 +330,8 @@ function render(wx, marine) {
       </div>
     </div>
     <div class="wind-icon-col">
-      <div style="font-size:36px;line-height:1">${wxCondIcon(c.weather_code)}</div>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${wxCondDesc(c.weather_code)}</div>
+      <div style="font-size:36px;line-height:1">${condIcon}</div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${condDesc}</div>
     </div>
   </div>
   <div class="gust-row">
@@ -363,9 +342,9 @@ function render(wx, marine) {
       </div>
     </div>
     <div style="width:1px;height:36px;background:var(--border)"></div>
-    <div style="text-align:center">
-      <div style="font-size:28px">${wxCondIcon(c.weather_code)}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:3px">${wxCondDesc(c.weather_code)}</div>
+    <div>
+      <div class="gust-lbl">BEAUFORT</div>
+      <div class="gust-val">${bft} <span style="font-size:13px;color:var(--muted)">${wxBftDesc(bft)}</span></div>
     </div>
   </div>
 </div>
@@ -375,7 +354,7 @@ function render(wx, marine) {
   <div class="info-card">
     <div class="info-lbl">AIR TEMPERATURE</div>
     <div class="info-val">${c.temperature_2m != null ? Math.round(c.temperature_2m) : '–'}<span class="unit">°C</span></div>
-    <div class="info-sub">Feels like ${c.apparent_temperature != null ? Math.round(c.apparent_temperature) : '–'}°C</div>
+    <div class="info-sub">BIRK station reading</div>
   </div>
   <div class="info-card">
     <div class="info-lbl">SEA TEMPERATURE</div>
@@ -468,7 +447,6 @@ function renderHourStrip(pts) {
       <div class="h-flag" style="background:${FLAG_COLORS[flagKey]}"></div>
     </div>`;
   }).join('');
-  // Scroll to NOW slot
   setTimeout(() => {
     const nowEl = document.querySelector('.h-slot.now');
     if (nowEl) nowEl.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
@@ -523,7 +501,6 @@ function drawPresChart(pts, nowI) {
   h+=`<path d="${apath}" fill="#a78bfa" opacity="0.08"/>`;
   h+=`<path d="${lpath}" fill="none" stroke="#a78bfa" stroke-width="2"/>`;
   h+=`<line x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
-  // Annotate first, now, last
   valid.forEach((p,j) => {
     if (j===0||p.isNow||j===valid.length-1) {
       h+=`<text x="${xOf(p.pi).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
