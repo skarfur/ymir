@@ -273,8 +273,132 @@
       </div>
     </div>
 
+    <!-- ══ ALERT SETTINGS ════════════════════════════════════════════════════
+         FIX: moved inside <main> / <div class="page"> where it belongs      -->
+    <div class="col-section">
+      <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-title">⚠ OVERDUE ALERTS</div>
+        <span class="col-toggle">▼</span>
+      </div>
+      <div class="col-body hidden" id="alertConfigCard">
+
+        <!-- Master toggle -->
+        <div class="field" style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+          <label class="check-row" style="font-size:13px">
+            <input type="checkbox" id="alertEnabled"> Enable overdue alerts
+          </label>
+          <span style="font-size:11px;color:var(--muted)">
+            Fires when a sailor hasn't returned by their expected time
+          </span>
+        </div>
+
+        <div id="alertConfigFields">
+
+          <!-- Timing row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+            <div class="field">
+              <label>First alert after</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" id="alertFirstMins" min="1" max="120" style="width:72px">
+                <span style="color:var(--muted);font-size:11px">min overdue</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Repeat every</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" id="alertRepeatMins" min="0" max="240" style="width:72px">
+                <span style="color:var(--muted);font-size:11px">min (0 = off)</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Snooze duration</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" id="alertSnoozeMins" min="5" max="240" style="width:72px">
+                <span style="color:var(--muted);font-size:11px">min</span>
+              </div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px">
+                How long the Snooze button hides an alert. Staff see the snooze
+                button only after the first alert has fired.
+              </div>
+            </div>
+          </div>
+
+          <!-- Channels -->
+          <div class="field" style="margin-bottom:14px">
+            <label>Alert channels</label>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+
+              <label class="check-row">
+                <input type="checkbox" id="alertChWeb">
+                <span>
+                  <b>In-app banner</b>
+                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
+                    — red banner on all open staff &amp; admin tabs (polls every 10 min)
+                  </span>
+                </span>
+              </label>
+
+              <label class="check-row">
+                <input type="checkbox" id="alertChEmail">
+                <span>
+                  <b>Email</b>
+                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
+                    — sent via Apps Script MailApp · includes sailor/guardian contact
+                    + Silence &amp; Snooze buttons · requires time trigger
+                  </span>
+                </span>
+              </label>
+
+              <label class="check-row">
+                <input type="checkbox" id="alertChSms" disabled>
+                <span>
+                  <b>SMS</b>
+                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
+                    — requires Twilio/Vonage configured in Code.gs
+                    <a href="https://github.com/skarfur/ymir#sms-setup"
+                       target="_blank" style="color:var(--brass)">setup →</a>
+                  </span>
+                </span>
+              </label>
+
+            </div>
+          </div>
+
+          <!-- Email list -->
+          <div class="field" id="emailListField" style="display:none;margin-bottom:14px">
+            <label>Staff email addresses</label>
+            <textarea id="alertEmailList" rows="3"
+              placeholder="duty@ymir.is&#10;manager@ymir.is"
+              style="width:100%;resize:vertical;font-size:12px"></textarea>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">
+              One address per line. Each address receives a full alert email with
+              sailor/guardian contact and clickable Silence / Snooze buttons.
+            </div>
+          </div>
+
+          <!-- SMS list -->
+          <div class="field" id="smsListField" style="display:none;margin-bottom:14px">
+            <label>Staff phone numbers (SMS)</label>
+            <textarea id="alertSmsList" rows="2"
+              placeholder="+354xxxxxxx&#10;+354yyyyyyy"
+              style="width:100%;resize:vertical;font-size:12px"></textarea>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">
+              International format (+354…). Requires SMS provider in Code.gs.
+            </div>
+          </div>
+
+        </div><!-- /alertConfigFields -->
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <button class="btn btn-primary" id="saveAlertConfigBtn">Save alert settings</button>
+          <span id="alertSaveMsg" style="font-size:12px"></span>
+        </div>
+
+      </div><!-- /col-body -->
+    </div><!-- /col-section -->
+
   </main>
-</div>
+</div><!-- /page -->
 
 <!-- ── MODALS ────────────────────────────────────────────────────────────────── -->
 
@@ -411,129 +535,6 @@
   </div>
 </div>
 
-<!-- ── ALERT SETTINGS SECTION ── -->
-<div class="col-section">
-  <div class="col-head" onclick="toggleSection(this)">
-    <div class="col-title">⚠ OVERDUE ALERTS</div>
-    <span class="col-toggle">▼</span>
-  </div>
-  <div class="col-body hidden" id="alertConfigCard">
-
-    <!-- Master toggle -->
-    <div class="field" style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-      <label class="check-row" style="font-size:13px">
-        <input type="checkbox" id="alertEnabled"> Enable overdue alerts
-      </label>
-      <span style="font-size:11px;color:var(--muted)">
-        Fires when a sailor hasn't returned by their expected time
-      </span>
-    </div>
-
-    <div id="alertConfigFields">
-
-      <!-- Timing row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
-        <div class="field">
-          <label>First alert after</label>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input type="number" id="alertFirstMins" min="1" max="120" style="width:72px">
-            <span style="color:var(--muted);font-size:11px">min overdue</span>
-          </div>
-        </div>
-        <div class="field">
-          <label>Repeat every</label>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input type="number" id="alertRepeatMins" min="0" max="240" style="width:72px">
-            <span style="color:var(--muted);font-size:11px">min (0 = off)</span>
-          </div>
-        </div>
-        <div class="field">
-          <label>Snooze duration</label>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input type="number" id="alertSnoozeMins" min="5" max="240" style="width:72px">
-            <span style="color:var(--muted);font-size:11px">min</span>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px">
-            How long the Snooze button hides an alert. Staff see the snooze
-            button only after the first alert has fired.
-          </div>
-        </div>
-      </div>
-
-      <!-- Channels -->
-      <div class="field" style="margin-bottom:14px">
-        <label>Alert channels</label>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-
-          <label class="check-row">
-            <input type="checkbox" id="alertChWeb">
-            <span>
-              <b>In-app banner</b>
-              <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                — red banner on all open staff &amp; admin tabs (polls every 10 min)
-              </span>
-            </span>
-          </label>
-
-          <label class="check-row">
-            <input type="checkbox" id="alertChEmail">
-            <span>
-              <b>Email</b>
-              <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                — sent via Apps Script MailApp · includes sailor/guardian contact
-                + Silence &amp; Snooze buttons · requires time trigger
-              </span>
-            </span>
-          </label>
-
-          <label class="check-row">
-            <input type="checkbox" id="alertChSms" disabled>
-            <span>
-              <b>SMS</b>
-              <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                — requires Twilio/Vonage configured in Code.gs
-                <a href="https://github.com/skarfur/ymir#sms-setup"
-                   target="_blank" style="color:var(--brass)">setup →</a>
-              </span>
-            </span>
-          </label>
-
-        </div>
-      </div>
-
-      <!-- Email list -->
-      <div class="field" id="emailListField" style="display:none;margin-bottom:14px">
-        <label>Staff email addresses</label>
-        <textarea id="alertEmailList" rows="3"
-          placeholder="duty@ymir.is&#10;manager@ymir.is"
-          style="width:100%;resize:vertical;font-size:12px"></textarea>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">
-          One address per line. Each address receives a full alert email with
-          sailor/guardian contact and clickable Silence / Snooze buttons.
-        </div>
-      </div>
-
-      <!-- SMS list -->
-      <div class="field" id="smsListField" style="display:none;margin-bottom:14px">
-        <label>Staff phone numbers (SMS)</label>
-        <textarea id="alertSmsList" rows="2"
-          placeholder="+354xxxxxxx&#10;+354yyyyyyy"
-          style="width:100%;resize:vertical;font-size:12px"></textarea>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">
-          International format (+354…). Requires SMS provider in Code.gs.
-        </div>
-      </div>
-
-    </div><!-- /alertConfigFields -->
-
-    <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-      <button class="btn btn-primary" id="saveAlertConfigBtn">Save alert settings</button>
-      <span id="alertSaveMsg" style="font-size:12px"></span>
-    </div>
-
-  </div><!-- /col-body -->
-</div><!-- /col-section -->
-  
 <!-- QR modal -->
 <div class="modal-overlay hidden" id="qrModal">
   <div class="modal" style="max-width:400px">
@@ -555,8 +556,19 @@
   </div>
 </div>
 
+<!-- FIX: single unified <script> block — removed duplicate opening tag and
+     stray HTML comment that was sitting inside the previous script block   -->
 <script>
 const user = requireAuth(isStaff);
+
+// FIX: guard stubs for toggleLang / signOut in case shared/api.js doesn't
+// define them — prevents ReferenceError on header button clicks.
+if (typeof toggleLang === "undefined") {
+  window.toggleLang = function() { console.warn("toggleLang() not implemented in shared scripts"); };
+}
+if (typeof signOut === "undefined") {
+  window.signOut = function() { console.warn("signOut() not implemented in shared scripts"); };
+}
 
 let members=[], boats=[], locations=[], clItems=[], actTypes=[];
 let editingId=null, importResult=null;
@@ -591,7 +603,7 @@ function toggleSection(head) {
   const body   = head.nextElementSibling;
   const toggle = head.querySelector(".col-toggle");
   const isOpen = !body.classList.contains("hidden");
-  body.classList.toggle("hidden", isOpen);      // hide if open, show if closed
+  body.classList.toggle("hidden", isOpen);
   head.classList.toggle("open", !isOpen);
   toggle.classList.toggle("open", !isOpen);
 }
@@ -695,17 +707,13 @@ async function deleteMember() { await deactivateMember(editingId); closeMemberMo
 
 // ── Boats ──────────────────────────────────────────────────────────────────────
 const CAT_ORDER  = ["dinghy","keelboat","kayak","rowing shell","rowboat","sup","wingfoil","other"];
-// CAT_EMOJI replaced by boatEmoji() from shared/boats.js
 const CAT_LABELS = { dinghy:"Dinghies", keelboat:"Keelboats", kayak:"Kayaks", "rowing shell":"Rowing Shells", rowboat:"Rowboats", sup:"SUPs", wingfoil:"Wingfoils", other:"Other" };
-
-// catBadgeClass replaced by shared boatCatBadge() from boats.js
 
 function renderBoats() {
   const el     = document.getElementById("boatSections");
   const active = boats.filter(b => bool(b.active));
   if (!active.length) { el.innerHTML=`<div class="empty-state">No boats yet.</div>`; return; }
 
-  // Group by category preserving order
   const groups = {};
   CAT_ORDER.forEach(c => { groups[c] = []; });
   active.forEach(b => { const c=(b.category||"other").toLowerCase(); (groups[c]||groups.other).push(b); });
@@ -924,9 +932,8 @@ async function deleteActType(id) {
   try { await apiPost("deleteActivityType",{id:_id}); actTypes=actTypes.filter(a=>a.id!==_id); renderActTypes(); closeActTypeModal(); }
   catch(e) { alert("Error: "+e.message); }
 }
-<!-- ═══ ADMIN JS — paste contents into existing <script> block ═══ -->
-<script id="alert-config-js-snippet">
 
+// ── Alert config ───────────────────────────────────────────────────────────────
 function loadAlertConfig(cfg) {
   cfg = cfg || {};
   document.getElementById('alertEnabled').checked     = cfg.enabled !== false;
@@ -988,7 +995,7 @@ document.getElementById('saveAlertConfigBtn')?.addEventListener('click', async (
     btn.disabled = false;
   }
 });
-  
+
 // ── CSV Import ─────────────────────────────────────────────────────────────────
 const ABLER = { name:0,gender:1,kennitala:2,birthYear:3,phone:4,address:5,postal:6,email:7,subgroups:8,attendance:9,dateAdded:10,guardianCount:11 };
 function guardianCol(n,f){return 12+(n-1)*4+["name","kennitala","phone","email"].indexOf(f);}
