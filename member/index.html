@@ -240,9 +240,12 @@
           </div>
           <div class="field">
             <label>Expected return</label>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <input type="time" id="lReturnBy" style="flex:1;min-width:90px">
-              <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:90px">
+              <input type="number" id="lReturnByH" min="0" max="23" placeholder="HH" style="width:52px;text-align:center">
+              <span style="color:var(--muted)">:</span>
+              <input type="number" id="lReturnByM" min="0" max="59" placeholder="MM" style="width:52px;text-align:center">
+          </div>
                 <button type="button" class="ret-btn" onclick="setReturnIn(60)">+1h</button>
                 <button type="button" class="ret-btn" onclick="setReturnIn(90)">+1.5h</button>
                 <button type="button" class="ret-btn" onclick="setReturnIn(120)">+2h</button>
