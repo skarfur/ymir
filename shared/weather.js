@@ -198,13 +198,13 @@ async function wxFetch(lat, lon) {
   const hourlyPromise = fetch(hourlyUrl).then(r => r.ok ? r.json() : null).catch(() => null);
 
   // ── 3. Marine API (waves / SST) — unchanged ───────────────────────────────
-  const marineParams = 'wave_height,wave_direction,sea_surface_temperature';
-  const marineUrl    = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=${marineParams}`;
+  const marineParams  = 'wave_height,wave_direction,wave_period,sea_surface_temperature';
+  const marineUrl    = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`;
   const marinePromise = fetch(marineUrl)
     .then(r => {
       if (!r.ok) {
         const fb = WX_MARINE_FALLBACK;
-        return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}`)
+        return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`)
           .then(r2 => r2.ok ? r2.json() : null);
       }
       return r.json();
