@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script src="../shared/boats.js"></script>
+  <script src="../shared/ui.js"></script>
   <style>
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
@@ -159,7 +160,7 @@
           <button class="btn-ghost" onclick="showTab('members','list')">← Back to list</button>
           <span style="font-size:12px;color:var(--muted)">Import from Abler.io CSV</span>
         </div>
-        <div id="importStep1">
+        <div id="importStep1" data-step="1">
           <div class="import-card">
             <div class="col-hint">
               <div style="font-size:10px;color:var(--muted);letter-spacing:1px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.ch-arrow').classList.toggle('open')">
@@ -185,7 +186,7 @@
             </div>
           </div>
         </div>
-        <div id="importStep2" class="hidden">
+        <div id="importStep2" data-step="2" class="hidden">
           <div class="import-card" style="margin-bottom:12px">
             <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Preview — kennitala used to match. Admin/staff roles never overwritten.</div>
             <div class="import-summary" id="importSummary"></div>
@@ -197,7 +198,7 @@
             </div>
           </div>
         </div>
-        <div id="importStep3" class="hidden">
+        <div id="importStep3" data-step="3" class="hidden">
           <div class="import-card" style="text-align:center;padding:36px">
             <div style="font-size:30px;margin-bottom:10px">✓</div>
             <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
@@ -442,9 +443,9 @@
       <input type="checkbox" id="mActive" checked> <label for="mActive">Active</label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeMemberModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeModal('memberModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="mDeleteBtn" onclick="deleteMember()">Deactivate</button>
-      <button class="btn btn-primary" onclick="saveMember()" id="mSaveBtn">Save</button>
+      <button id="saveMemberBtn" class="btn btn-primary" onclick="saveMember()">Save</button>
     </div>
   </div>
 </div>
@@ -476,7 +477,7 @@
       <input type="checkbox" id="bActive" checked> <label for="bActive">Active</label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeBoatModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeModal('boatModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteBoat()">Delete</button>
       <button class="btn btn-primary" onclick="saveBoat()">Save</button>
     </div>
@@ -492,7 +493,7 @@
       <input type="checkbox" id="lActive" checked> <label for="lActive">Active</label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeModal('locationModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="lDeleteBtn" onclick="deleteLocation()">Delete</button>
       <button class="btn btn-primary" onclick="saveLocation()">Save</button>
     </div>
@@ -513,7 +514,7 @@
       <input type="checkbox" id="clActive" checked> <label for="clActive">Active</label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeCLModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeModal('clModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="clDeleteBtn" onclick="deleteCLItem()">Delete</button>
       <button class="btn btn-primary" onclick="saveCLItem()">Save</button>
     </div>
@@ -530,7 +531,7 @@
       <input type="checkbox" id="atActive" checked> <label for="atActive">Active</label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeActTypeModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="closeModal('actTypeModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()">Delete</button>
       <button class="btn btn-primary" onclick="saveActType()">Save</button>
     </div>
@@ -552,32 +553,12 @@
       One code per boat. Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+      <button class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
       <button class="btn btn-primary" onclick="printQR()">🖨 Print / PDF</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════
-     ÝMIR — admin/index.html  (refactored <script> block)
-
-     Drop-in replacement for the existing <script> block at the bottom of
-     admin/index.html.  Everything above the <script> tag (HTML + CSS) is
-     unchanged.
-
-     Changes vs. original
-     ────────────────────
-     1. Removed local bool() / esc() redefinitions — use shared/api.js.
-     2. All openXxxModal / closeXxxModal replaced with openModal(id) /
-        closeModal(id) from shared/api.js.  Guard stubs for toggleLang /
-        signOut also removed — shared/api.js now always defines them.
-     3. Generic saveEntity() helper replaces four near-identical save
-        functions (Boat, Location, ChecklistItem, ActivityType).
-     4. confirmImport() now uses chunk() + Promise.all() for batch sends.
-     5. resetImport / processCSV use showImportStep(n) instead of a
-        hard-coded list of id strings.
-     6. All alert("…") error paths replaced with toast("…","err").
-     ═══════════════════════════════════════════════════════════════════════ -->
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────────
 // shared/api.js guarantees toggleLang() and signOut() exist — no guard stubs needed.
