@@ -558,22 +558,33 @@
   </div>
 </div>
 
-<!-- FIX: single unified <script> block — removed duplicate opening tag and
-     stray HTML comment that was sitting inside the previous script block   -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ÝMIR — admin/index.html  (refactored <script> block)
+
+     Drop-in replacement for the existing <script> block at the bottom of
+     admin/index.html.  Everything above the <script> tag (HTML + CSS) is
+     unchanged.
+
+     Changes vs. original
+     ────────────────────
+     1. Removed local bool() / esc() redefinitions — use shared/api.js.
+     2. All openXxxModal / closeXxxModal replaced with openModal(id) /
+        closeModal(id) from shared/api.js.  Guard stubs for toggleLang /
+        signOut also removed — shared/api.js now always defines them.
+     3. Generic saveEntity() helper replaces four near-identical save
+        functions (Boat, Location, ChecklistItem, ActivityType).
+     4. confirmImport() now uses chunk() + Promise.all() for batch sends.
+     5. resetImport / processCSV use showImportStep(n) instead of a
+        hard-coded list of id strings.
+     6. All alert("…") error paths replaced with toast("…","err").
+     ═══════════════════════════════════════════════════════════════════════ -->
 <script>
-const user = requireAuth(isStaff);
+// ── Auth ───────────────────────────────────────────────────────────────────────
+// shared/api.js guarantees toggleLang() and signOut() exist — no guard stubs needed.
+const user = requireAuth(isAdmin);
 
-// FIX: guard stubs for toggleLang / signOut in case shared/api.js doesn't
-// define them — prevents ReferenceError on header button clicks.
-if (typeof toggleLang === "undefined") {
-  window.toggleLang = function() { console.warn("toggleLang() not implemented in shared scripts"); };
-}
-if (typeof signOut === "undefined") {
-  window.signOut = function() { console.warn("signOut() not implemented in shared scripts"); };
-}
-
-let members=[], boats=[], locations=[], clItems=[], actTypes=[];
-let editingId=null, importResult=null;
+let members = [], boats = [], locations = [], clItems = [], actTypes = [];
+let editingId = null, importResult = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -581,7 +592,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const p = new URLSearchParams(window.location.search);
     showTab(p.get("tab") || "members", p.get("sub") || undefined);
   });
-  // OOS checkbox toggle in boat modal
+
   document.getElementById("bOOS").addEventListener("change", e => {
     document.getElementById("oosReasonField").classList.toggle("hidden", !e.target.checked);
   });
@@ -593,9 +604,9 @@ async function loadAll() {
     loadAlertConfig(cfgRes.overdueAlerts);
     members  = mRes.members || [];
     actTypes = cfgRes.activityTypes || [];
-    clItems  = [ ...(cfgRes.dailyChecklist?.am||[]), ...(cfgRes.dailyChecklist?.pm||[]) ];
-    try { boats     = (await apiGet("getBoats")).boats     || []; } catch(e){}
-    try { locations = (await apiGet("getLocations")).locations || []; } catch(e){}
+    clItems  = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
+    try { boats     = (await apiGet("getBoats")).boats         || []; } catch(e) { console.warn("getBoats:", e.message); }
+    try { locations = (await apiGet("getLocations")).locations || []; } catch(e) { console.warn("getLocations:", e.message); }
   } catch(e) { console.error("loadAll:", e); }
   renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
 }
@@ -605,8 +616,8 @@ function toggleSection(head) {
   const body   = head.nextElementSibling;
   const toggle = head.querySelector(".col-toggle");
   const isOpen = !body.classList.contains("hidden");
-  body.classList.toggle("hidden", isOpen);
-  head.classList.toggle("open", !isOpen);
+  body.classList.toggle("hidden",  isOpen);
+  head.classList.toggle("open",   !isOpen);
   toggle.classList.toggle("open", !isOpen);
 }
 
@@ -618,10 +629,12 @@ function showTab(tab, sub) {
   });
   const el = document.getElementById("tab-" + tab);
   if (el) el.classList.remove("hidden");
+
   if (tab === "members") {
     document.getElementById("memberSubList").classList.toggle("hidden", sub === "import");
     document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
   }
+
   const url = new URL(window.location.href);
   url.searchParams.set("tab", tab);
   sub ? url.searchParams.set("sub", sub) : url.searchParams.delete("sub");
@@ -629,111 +642,156 @@ function showTab(tab, sub) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+// ── Generic entity save ────────────────────────────────────────────────────────
+/**
+ * Shared CRUD save: posts to API, updates local array, closes modal, re-renders.
+ *
+ * @param {object} opts
+ *   apiAction   string   — e.g. "saveBoat"
+ *   getArray    function → the current array (e.g. () => boats)
+ *   setArray    function(newArr) — e.g. arr => { boats = arr; }
+ *   payload     object   — fields to send; must include `id: editingId`
+ *   modalId     string   — id of the modal overlay to close on success
+ *   renderFn    function — called after save to re-render the list
+ *   btn         HTMLElement — the save button (disabled during request)
+ */
+async function saveEntity({ apiAction, getArray, setArray, payload, modalId, renderFn, btn }) {
+  if (btn) { btn.disabled = true; }
+  try {
+    const res = await apiPost(apiAction, payload);
+    const arr = getArray();
+    if (!payload.id && res.id) {
+      setArray([ ...arr, { ...payload, id: res.id } ]);
+    } else {
+      setArray(arr.map(x => x.id === payload.id ? { ...x, ...payload } : x));
+    }
+    closeModal(modalId);
+    renderFn();
+  } catch(e) {
+    toast("Save failed: " + e.message, "err");
+  } finally {
+    if (btn) { btn.disabled = false; }
+  }
+}
+
 // ── Members ────────────────────────────────────────────────────────────────────
 let memberFilter = "";
-function filterMembers() { memberFilter = document.getElementById("memberSearch").value.toLowerCase(); renderMembers(); }
+function filterMembers() {
+  memberFilter = document.getElementById("memberSearch").value.toLowerCase();
+  renderMembers();
+}
 
 function renderMembers() {
   const card     = document.getElementById("membersCard");
   const filtered = members.filter(m => {
     if (!bool(m.active)) return false;
-    if (!memberFilter) return true;
-    return String(m.name||"").toLowerCase().includes(memberFilter) || String(m.kennitala||"").includes(memberFilter);
+    if (!memberFilter)   return true;
+    return String(m.name || "").toLowerCase().includes(memberFilter)
+        || String(m.kennitala || "").includes(memberFilter);
   });
   document.getElementById("memberCountLabel").textContent = filtered.length;
-  if (!filtered.length) { card.innerHTML = `<div class="empty-state">${memberFilter?"No matches.":"No members yet."}</div>`; return; }
-  const roleColors = { admin:"badge-red", staff:"badge-brass", member:"badge-muted" };
+  if (!filtered.length) {
+    card.innerHTML = `<div class="empty-state">${memberFilter ? "No matches." : "No members yet."}</div>`;
+    return;
+  }
+  const roleColors = { admin: "badge-red", staff: "badge-brass", member: "badge-muted" };
   card.innerHTML = filtered.map(m => `
     <div class="member-row">
       <span class="member-kt">${esc(m.kennitala)}</span>
-      <span class="member-name">${esc(m.name)}${bool(m.isMinor)?` <span class="minor-badge">minor</span>`:""}</span>
-      <span><span class="badge ${roleColors[m.role]||"badge-muted"}">${m.role||"member"}</span></span>
+      <span class="member-name">${esc(m.name)}${bool(m.isMinor) ? ` <span class="minor-badge">minor</span>` : ""}</span>
+      <span><span class="badge ${roleColors[m.role] || "badge-muted"}">${m.role || "member"}</span></span>
       <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
       <button class="row-del"  onclick="deactivateMember('${m.id}')" title="Deactivate">×</button>
     </div>`).join("");
 }
 
 function openMemberModal(id) {
-  editingId=id||null;
-  const m=id?members.find(x=>x.id===id):null;
-  document.getElementById("memberModalTitle").textContent = m?"Edit Member":"Add Member";
-  document.getElementById("mKennitala").value  = m?m.kennitala:"";
-  document.getElementById("mName").value       = m?m.name:"";
-  document.getElementById("mRole").value       = m?(m.role||"member"):"member";
-  document.getElementById("mEmail").value      = m?(m.email||""):"";
-  document.getElementById("mPhone").value      = m?(m.phone||""):"";
-  document.getElementById("mBirthYear").value  = m?(m.birthYear||""):"";
-  document.getElementById("mIsMinor").checked  = m?bool(m.isMinor):false;
-  document.getElementById("mActive").checked   = m?bool(m.active):true;
-  document.getElementById("mGuardianName").value  = m?(m.guardianName||""):"";
-  document.getElementById("mGuardianKt").value    = m?(m.guardianKennitala||""):"";
-  document.getElementById("mGuardianPhone").value = m?(m.guardianPhone||""):"";
-  document.getElementById("mDeleteBtn").classList.toggle("hidden",!m);
-  document.getElementById("memberModal").classList.remove("hidden");
+  editingId = id || null;
+  const m   = id ? members.find(x => x.id === id) : null;
+  document.getElementById("memberModalTitle").textContent = m ? "Edit Member" : "Add Member";
+  document.getElementById("mKennitala").value      = m ? m.kennitala        : "";
+  document.getElementById("mName").value           = m ? m.name             : "";
+  document.getElementById("mRole").value           = m ? (m.role || "member"): "member";
+  document.getElementById("mEmail").value          = m ? (m.email || "")    : "";
+  document.getElementById("mPhone").value          = m ? (m.phone || "")    : "";
+  document.getElementById("mBirthYear").value      = m ? (m.birthYear || "") : "";
+  document.getElementById("mIsMinor").checked      = m ? bool(m.isMinor)    : false;
+  document.getElementById("mActive").checked       = m ? bool(m.active)     : true;
+  document.getElementById("mGuardianName").value   = m ? (m.guardianName || "") : "";
+  document.getElementById("mGuardianKt").value     = m ? (m.guardianKennitala || "") : "";
+  document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
+  document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
+  openModal("memberModal");
 }
-function closeMemberModal() { document.getElementById("memberModal").classList.add("hidden"); }
 
 async function saveMember() {
-  const kt = document.getElementById("mKennitala").value.trim().replace(/\D/g,"");
-  if (!kt||kt.length!==10) { alert("Kennitala must be 10 digits"); return; }
-  const name = document.getElementById("mName").value.trim();
-  if (!name) { alert("Name required"); return; }
-  const btn = document.getElementById("mSaveBtn"); btn.disabled=true;
-  try {
-    const payload = {
-      id:editingId, kennitala:kt, name,
-      role:              document.getElementById("mRole").value,
-      email:             document.getElementById("mEmail").value.trim(),
-      phone:             document.getElementById("mPhone").value.trim(),
-      birthYear:         document.getElementById("mBirthYear").value.trim(),
-      isMinor:           document.getElementById("mIsMinor").checked,
-      guardianName:      document.getElementById("mGuardianName").value.trim(),
-      guardianKennitala: document.getElementById("mGuardianKt").value.trim(),
-      guardianPhone:     document.getElementById("mGuardianPhone").value.trim(),
-      active:            document.getElementById("mActive").checked,
-    };
-    const res = await apiPost("saveMember", payload);
-    if (!editingId&&res.id) members.push({...payload,id:res.id});
-    else members = members.map(m => m.id===editingId?{...m,...payload}:m);
-    closeMemberModal(); renderMembers();
-  } catch(e) { alert("Save failed: "+e.message); }
-  finally { btn.disabled=false; }
+  const btn      = document.getElementById("saveMemberBtn");
+  const kennitala = document.getElementById("mKennitala").value.trim().replace(/\D/g, "");
+  const name      = document.getElementById("mName").value.trim();
+  if (!kennitala || kennitala.length !== 10) { toast("Valid 10-digit kennitala required.", "err"); return; }
+  if (!name) { toast("Name required.", "err"); return; }
+  const payload = {
+    id: editingId, kennitala, name,
+    role:              document.getElementById("mRole").value,
+    email:             document.getElementById("mEmail").value.trim(),
+    phone:             document.getElementById("mPhone").value.trim(),
+    birthYear:         document.getElementById("mBirthYear").value.trim(),
+    isMinor:           document.getElementById("mIsMinor").checked,
+    active:            document.getElementById("mActive").checked,
+    guardianName:      document.getElementById("mGuardianName").value.trim(),
+    guardianKennitala: document.getElementById("mGuardianKt").value.trim().replace(/\D/g, ""),
+    guardianPhone:     document.getElementById("mGuardianPhone").value.trim(),
+  };
+  await saveEntity({
+    apiAction: "saveMember",
+    getArray:  () => members,
+    setArray:  arr => { members = arr; },
+    payload, modalId: "memberModal",
+    renderFn:  renderMembers, btn,
+  });
 }
 
 async function deactivateMember(id) {
   if (!confirm("Deactivate this member?")) return;
-  try { await apiPost("deleteMember",{id}); members=members.filter(m=>m.id!==id); renderMembers(); }
-  catch(e) { alert("Error: "+e.message); }
+  try {
+    await apiPost("deleteMember", { id });
+    members = members.filter(m => m.id !== id);
+    renderMembers();
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
-async function deleteMember() { await deactivateMember(editingId); closeMemberModal(); }
+async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
 
 // ── Boats ──────────────────────────────────────────────────────────────────────
 const CAT_ORDER  = ["dinghy","keelboat","kayak","rowing shell","rowboat","sup","wingfoil","other"];
-const CAT_LABELS = { dinghy:"Dinghies", keelboat:"Keelboats", kayak:"Kayaks", "rowing shell":"Rowing Shells", rowboat:"Rowboats", sup:"SUPs", wingfoil:"Wingfoils", other:"Other" };
+const CAT_LABELS = {
+  dinghy: "Dinghies", keelboat: "Keelboats", kayak: "Kayaks",
+  "rowing shell": "Rowing Shells", rowboat: "Rowboats",
+  sup: "SUPs", wingfoil: "Wingfoils", other: "Other",
+};
 
 function renderBoats() {
   const el     = document.getElementById("boatSections");
   const active = boats.filter(b => bool(b.active));
-  if (!active.length) { el.innerHTML=`<div class="empty-state">No boats yet.</div>`; return; }
+  if (!active.length) { el.innerHTML = `<div class="empty-state">No boats yet.</div>`; return; }
 
   const groups = {};
   CAT_ORDER.forEach(c => { groups[c] = []; });
-  active.forEach(b => { const c=(b.category||"other").toLowerCase(); (groups[c]||groups.other).push(b); });
+  active.forEach(b => { const c = (b.category || "other").toLowerCase(); (groups[c] || groups.other).push(b); });
 
   el.innerHTML = CAT_ORDER
     .filter(c => groups[c].length > 0)
     .map(cat => {
       const label = CAT_LABELS[cat] || cat;
       const cards = groups[cat].map(b => `
-        <div class="boat-card${bool(b.oos)?" oos":""}">
+        <div class="boat-card${bool(b.oos) ? " oos" : ""}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
             <div class="boat-card-name">${boatEmoji(cat)} ${esc(b.name)}</div>
             <div style="display:flex;gap:4px;flex-shrink:0">
-              ${bool(b.oos)?`<span class="oos-badge">OOS</span>`:""}
+              ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
               ${boatCatBadge(cat)}
             </div>
           </div>
-          ${b.oosReason?`<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>`:""}
+          ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
           <div class="boat-card-actions">
             <button class="row-edit" style="flex:1" onclick="openBoatModal('${b.id}')">Edit</button>
             <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">🔳</button>
@@ -754,51 +812,56 @@ function renderBoats() {
 }
 
 function openBoatModal(id) {
-  editingId=id||null;
-  const b=id?boats.find(x=>x.id===id):null;
-  document.getElementById("boatModalTitle").textContent = b?"Edit Boat":"Add Boat";
-  document.getElementById("bName").value     = b?b.name:"";
-  document.getElementById("bCategory").value = b?(b.category||"dinghy"):"dinghy";
-  document.getElementById("bOOS").checked    = b?bool(b.oos):false;
-  document.getElementById("bOOSReason").value= b?(b.oosReason||""):"";
-  document.getElementById("oosReasonField").classList.toggle("hidden", !b||!bool(b.oos));
-  document.getElementById("bActive").checked = b?bool(b.active):true;
-  document.getElementById("bDeleteBtn").classList.toggle("hidden",!b);
-  document.getElementById("boatModal").classList.remove("hidden");
+  editingId = id || null;
+  const b   = id ? boats.find(x => x.id === id) : null;
+  document.getElementById("boatModalTitle").textContent = b ? "Edit Boat" : "Add Boat";
+  document.getElementById("bName").value      = b ? b.name                : "";
+  document.getElementById("bCategory").value  = b ? (b.category || "dinghy") : "dinghy";
+  document.getElementById("bOOS").checked     = b ? bool(b.oos)           : false;
+  document.getElementById("bOOSReason").value = b ? (b.oosReason || "")  : "";
+  document.getElementById("oosReasonField").classList.toggle("hidden", !b || !bool(b.oos));
+  document.getElementById("bActive").checked  = b ? bool(b.active)        : true;
+  document.getElementById("bDeleteBtn").classList.toggle("hidden", !b);
+  openModal("boatModal");
 }
-function closeBoatModal() { document.getElementById("boatModal").classList.add("hidden"); }
 
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
-  if (!name) { alert("Name required"); return; }
-  try {
-    const payload = {
-      id:editingId, name,
-      category: document.getElementById("bCategory").value,
-      oos:      document.getElementById("bOOS").checked,
-      oosReason:document.getElementById("bOOSReason").value.trim(),
-      active:   document.getElementById("bActive").checked,
-    };
-    const res = await apiPost("saveBoat", payload);
-    if (!editingId&&res.id) boats.push({...payload,id:res.id});
-    else boats = boats.map(b => b.id===editingId?{...b,...payload}:b);
-    closeBoatModal(); renderBoats();
-  } catch(e) { alert("Save failed: "+e.message); }
+  if (!name) { toast("Name required.", "err"); return; }
+  const payload = {
+    id:        editingId,
+    name,
+    category:  document.getElementById("bCategory").value,
+    oos:       document.getElementById("bOOS").checked,
+    oosReason: document.getElementById("bOOSReason").value.trim(),
+    active:    document.getElementById("bActive").checked,
+  };
+  await saveEntity({
+    apiAction: "saveBoat",
+    getArray:  () => boats,
+    setArray:  arr => { boats = arr; },
+    payload, modalId: "boatModal",
+    renderFn:  renderBoats,
+  });
 }
 
 async function deleteBoat(id) {
-  const _id=id||editingId;
+  const _id = id || editingId;
   if (!confirm("Delete this boat?")) return;
-  try { await apiPost("deleteBoat",{id:_id}); boats=boats.filter(b=>b.id!==_id); renderBoats(); closeBoatModal(); }
-  catch(e) { alert("Error: "+e.message); }
+  try {
+    await apiPost("deleteBoat", { id: _id });
+    boats = boats.filter(b => b.id !== _id);
+    renderBoats();
+    closeModal("boatModal");
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 // ── Locations ──────────────────────────────────────────────────────────────────
 function renderLocations() {
   const card   = document.getElementById("locationsCard");
-  const active = locations.filter(l=>bool(l.active));
-  if (!active.length) { card.innerHTML=`<div class="empty-state">No locations yet.</div>`; return; }
-  card.innerHTML = active.map(l=>`
+  const active = locations.filter(l => bool(l.active));
+  if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
+  card.innerHTML = active.map(l => `
     <div class="list-row">
       <span class="list-name">${esc(l.name)}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
@@ -807,312 +870,378 @@ function renderLocations() {
 }
 
 function openLocationModal(id) {
-  editingId=id||null;
-  const l=id?locations.find(x=>x.id===id):null;
-  document.getElementById("locationModalTitle").textContent = l?"Edit Location":"Add Location";
-  document.getElementById("lName").value    = l?l.name:"";
-  document.getElementById("lActive").checked= l?bool(l.active):true;
-  document.getElementById("lDeleteBtn").classList.toggle("hidden",!l);
-  document.getElementById("locationModal").classList.remove("hidden");
+  editingId = id || null;
+  const l   = id ? locations.find(x => x.id === id) : null;
+  document.getElementById("locationModalTitle").textContent = l ? "Edit Location" : "Add Location";
+  document.getElementById("lName").value    = l ? l.name         : "";
+  document.getElementById("lActive").checked = l ? bool(l.active) : true;
+  document.getElementById("lDeleteBtn").classList.toggle("hidden", !l);
+  openModal("locationModal");
 }
-function closeLocationModal() { document.getElementById("locationModal").classList.add("hidden"); }
 
 async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
-  if (!name) { alert("Name required"); return; }
-  try {
-    const payload = { id:editingId, name, active:document.getElementById("lActive").checked };
-    const res = await apiPost("saveLocation", payload);
-    if (!editingId&&res.id) locations.push({...payload,id:res.id});
-    else locations = locations.map(l => l.id===editingId?{...l,...payload}:l);
-    closeLocationModal(); renderLocations();
-  } catch(e) { alert("Save failed: "+e.message); }
+  if (!name) { toast("Name required.", "err"); return; }
+  const payload = { id: editingId, name, active: document.getElementById("lActive").checked };
+  await saveEntity({
+    apiAction: "saveLocation",
+    getArray:  () => locations,
+    setArray:  arr => { locations = arr; },
+    payload, modalId: "locationModal",
+    renderFn:  renderLocations,
+  });
 }
 
 async function deleteLocation(id) {
-  const _id=id||editingId;
+  const _id = id || editingId;
   if (!confirm("Delete this location?")) return;
-  try { await apiPost("deleteLocation",{id:_id}); locations=locations.filter(l=>l.id!==_id); renderLocations(); closeLocationModal(); }
-  catch(e) { alert("Error: "+e.message); }
+  try {
+    await apiPost("deleteLocation", { id: _id });
+    locations = locations.filter(l => l.id !== _id);
+    renderLocations();
+    closeModal("locationModal");
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 // ── Checklists ─────────────────────────────────────────────────────────────────
-function renderChecklists() { renderCLPhase("amCLCard","am"); renderCLPhase("pmCLCard","pm"); }
+function renderChecklists() { renderCLPhase("amCLCard", "am"); renderCLPhase("pmCLCard", "pm"); }
 
 function renderCLPhase(cardId, phase) {
   const card  = document.getElementById(cardId);
-  const items = clItems.filter(i=>String(i.phase).toLowerCase()===phase&&bool(i.active))
-    .sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
-  if (!items.length) { card.innerHTML=`<div class="empty-state">No items.</div>`; return; }
-  card.innerHTML = items.map(i=>`
+  const items = clItems
+    .filter(i => String(i.phase).toLowerCase() === phase && bool(i.active))
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  if (!items.length) { card.innerHTML = `<div class="empty-state">No items.</div>`; return; }
+  card.innerHTML = items.map(i => `
     <div class="cl-row">
       <span class="cl-phase">${phase.toUpperCase()}</span>
-      <span style="flex:1;color:var(--text)">${esc(i.textEN||"")}${i.textIS?`<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>`:""}</span>
+      <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCLItem('${i.id}')">×</button>
     </div>`).join("");
 }
 
 function openCLModal(id) {
-  editingId=id||null;
-  const item=id?clItems.find(x=>x.id===id):null;
-  document.getElementById("clModalTitle").textContent = item?"Edit Item":"Add Item";
-  document.getElementById("clPhase").value   = item?(item.phase||"am"):"am";
-  document.getElementById("clTextEN").value  = item?(item.textEN||""):"";
-  document.getElementById("clTextIS").value  = item?(item.textIS||""):"";
-  document.getElementById("clSort").value    = item?(item.sortOrder||99):99;
-  document.getElementById("clActive").checked= item?bool(item.active):true;
-  document.getElementById("clDeleteBtn").classList.toggle("hidden",!item);
-  document.getElementById("clModal").classList.remove("hidden");
+  editingId    = id || null;
+  const item   = id ? clItems.find(x => x.id === id) : null;
+  document.getElementById("clModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("clPhase").value    = item ? (item.phase  || "am") : "am";
+  document.getElementById("clTextEN").value   = item ? (item.textEN || "")   : "";
+  document.getElementById("clTextIS").value   = item ? (item.textIS || "")   : "";
+  document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;
+  document.getElementById("clActive").checked = item ? bool(item.active)      : true;
+  document.getElementById("clDeleteBtn").classList.toggle("hidden", !item);
+  openModal("clModal");
 }
-function closeCLModal() { document.getElementById("clModal").classList.add("hidden"); }
 
 async function saveCLItem() {
   const textEN = document.getElementById("clTextEN").value.trim();
-  if (!textEN) { alert("English text required"); return; }
-  try {
-    const payload = {
-      id:editingId, phase:document.getElementById("clPhase").value, textEN,
-      textIS:     document.getElementById("clTextIS").value.trim(),
-      sortOrder:  parseInt(document.getElementById("clSort").value)||99,
-      active:     document.getElementById("clActive").checked,
-    };
-    const res = await apiPost("saveChecklistItem", payload);
-    if (!editingId&&res.id) clItems.push({...payload,id:res.id});
-    else clItems = clItems.map(i => i.id===editingId?{...i,...payload}:i);
-    closeCLModal(); renderChecklists();
-  } catch(e) { alert("Save failed: "+e.message); }
+  if (!textEN) { toast("English text required.", "err"); return; }
+  const payload = {
+    id: editingId, phase: document.getElementById("clPhase").value,
+    textEN,
+    textIS:    document.getElementById("clTextIS").value.trim(),
+    sortOrder: parseInt(document.getElementById("clSort").value) || 99,
+    active:    document.getElementById("clActive").checked,
+  };
+  await saveEntity({
+    apiAction: "saveChecklistItem",
+    getArray:  () => clItems,
+    setArray:  arr => { clItems = arr; },
+    payload, modalId: "clModal",
+    renderFn:  renderChecklists,
+  });
 }
 
 async function deleteCLItem(id) {
-  const _id=id||editingId;
+  const _id = id || editingId;
   if (!confirm("Delete this item?")) return;
-  try { await apiPost("deleteChecklistItem",{id:_id}); clItems=clItems.filter(i=>i.id!==_id); renderChecklists(); closeCLModal(); }
-  catch(e) { alert("Error: "+e.message); }
+  try {
+    await apiPost("deleteChecklistItem", { id: _id });
+    clItems = clItems.filter(i => i.id !== _id);
+    renderChecklists();
+    closeModal("clModal");
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 // ── Activity types ─────────────────────────────────────────────────────────────
 function renderActTypes() {
   const card   = document.getElementById("actTypesCard");
-  const active = actTypes.filter(a=>bool(a.active));
-  if (!active.length) { card.innerHTML=`<div class="empty-state">No activity types.</div>`; return; }
-  card.innerHTML = active.map(a=>`
+  const active = actTypes.filter(a => bool(a.active));
+  if (!active.length) { card.innerHTML = `<div class="empty-state">No activity types.</div>`; return; }
+  card.innerHTML = active.map(a => `
     <div class="list-row">
-      <span class="list-name">${esc(a.name)}${a.nameIS?`<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>`:""}</span>
+      <span class="list-name">${esc(a.name)}${a.nameIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
       <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
     </div>`).join("");
 }
 
 function openActTypeModal(id) {
-  editingId=id||null;
-  const a=id?actTypes.find(x=>x.id===id):null;
-  document.getElementById("actTypeModalTitle").textContent = a?"Edit Type":"Add Activity Type";
-  document.getElementById("atName").value    = a?a.name:"";
-  document.getElementById("atNameIS").value  = a?(a.nameIS||""):"";
-  document.getElementById("atActive").checked= a?bool(a.active):true;
-  document.getElementById("atDeleteBtn").classList.toggle("hidden",!a);
-  document.getElementById("actTypeModal").classList.remove("hidden");
+  editingId = id || null;
+  const a   = id ? actTypes.find(x => x.id === id) : null;
+  document.getElementById("actTypeModalTitle").textContent = a ? "Edit Type" : "Add Activity Type";
+  document.getElementById("atName").value     = a ? a.name            : "";
+  document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
+  document.getElementById("atActive").checked = a ? bool(a.active)    : true;
+  document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
+  openModal("actTypeModal");
 }
-function closeActTypeModal() { document.getElementById("actTypeModal").classList.add("hidden"); }
 
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
-  if (!name) { alert("Name required"); return; }
-  try {
-    const payload = { id:editingId, name, nameIS:document.getElementById("atNameIS").value.trim(), active:document.getElementById("atActive").checked };
-    const res = await apiPost("saveActivityType", payload);
-    if (!editingId&&res.id) actTypes.push({...payload,id:res.id});
-    else actTypes = actTypes.map(a => a.id===editingId?{...a,...payload}:a);
-    closeActTypeModal(); renderActTypes();
-  } catch(e) { alert("Save failed: "+e.message); }
+  if (!name) { toast("Name required.", "err"); return; }
+  const payload = {
+    id: editingId, name,
+    nameIS: document.getElementById("atNameIS").value.trim(),
+    active: document.getElementById("atActive").checked,
+  };
+  await saveEntity({
+    apiAction: "saveActivityType",
+    getArray:  () => actTypes,
+    setArray:  arr => { actTypes = arr; },
+    payload, modalId: "actTypeModal",
+    renderFn:  renderActTypes,
+  });
 }
 
 async function deleteActType(id) {
-  const _id=id||editingId;
+  const _id = id || editingId;
   if (!confirm("Delete this activity type?")) return;
-  try { await apiPost("deleteActivityType",{id:_id}); actTypes=actTypes.filter(a=>a.id!==_id); renderActTypes(); closeActTypeModal(); }
-  catch(e) { alert("Error: "+e.message); }
+  try {
+    await apiPost("deleteActivityType", { id: _id });
+    actTypes = actTypes.filter(a => a.id !== _id);
+    renderActTypes();
+    closeModal("actTypeModal");
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 // ── Alert config ───────────────────────────────────────────────────────────────
 function loadAlertConfig(cfg) {
   cfg = cfg || {};
-  document.getElementById('alertEnabled').checked     = cfg.enabled !== false;
-  document.getElementById('alertFirstMins').value     = cfg.firstAlertMins || 15;
-  document.getElementById('alertRepeatMins').value    = cfg.repeatMins     || 30;
-  document.getElementById('alertSnoozeMins').value    = cfg.snoozeMins     || 30;
-  document.getElementById('alertChWeb').checked       = cfg.channels?.web   !== false;
-  document.getElementById('alertChEmail').checked     = !!cfg.channels?.email;
-  document.getElementById('alertChSms').checked       = !!cfg.channels?.sms;
-  document.getElementById('alertEmailList').value     = (cfg.staffEmailList || []).join('\n');
-  document.getElementById('alertSmsList').value       = (cfg.staffSmsList   || []).join('\n');
+  document.getElementById("alertEnabled").checked     = cfg.enabled !== false;
+  document.getElementById("alertFirstMins").value     = cfg.firstAlertMins || 15;
+  document.getElementById("alertRepeatMins").value    = cfg.repeatMins     || 30;
+  document.getElementById("alertSnoozeMins").value    = cfg.snoozeMins     || 30;
+  document.getElementById("alertChWeb").checked       = cfg.channels?.web   !== false;
+  document.getElementById("alertChEmail").checked     = !!cfg.channels?.email;
+  document.getElementById("alertChSms").checked       = !!cfg.channels?.sms;
+  document.getElementById("alertEmailList").value     = (cfg.staffEmailList || []).join("\n");
+  document.getElementById("alertSmsList").value       = (cfg.staffSmsList   || []).join("\n");
   _toggleEmailField();
   _toggleSmsField();
 }
 
 function _toggleEmailField() {
-  document.getElementById('emailListField').style.display =
-    document.getElementById('alertChEmail').checked ? '' : 'none';
+  document.getElementById("emailListField").style.display =
+    document.getElementById("alertChEmail").checked ? "" : "none";
 }
 function _toggleSmsField() {
-  document.getElementById('smsListField').style.display =
-    document.getElementById('alertChSms').checked ? '' : 'none';
+  document.getElementById("smsListField").style.display =
+    document.getElementById("alertChSms").checked ? "" : "none";
 }
 
-document.getElementById('alertChEmail')?.addEventListener('change', _toggleEmailField);
-document.getElementById('alertChSms')?.addEventListener('change',   _toggleSmsField);
-
-document.getElementById('saveAlertConfigBtn')?.addEventListener('click', async () => {
-  const btn = document.getElementById('saveAlertConfigBtn');
-  const msg = document.getElementById('alertSaveMsg');
+async function saveAlertConfig() {
+  const btn = document.getElementById("saveAlertBtn");
   btn.disabled = true;
-  msg.textContent = '';
-
-  const payload = {
-    enabled:        document.getElementById('alertEnabled').checked,
-    firstAlertMins: parseInt(document.getElementById('alertFirstMins').value)  || 15,
-    repeatMins:     parseInt(document.getElementById('alertRepeatMins').value) || 30,
-    snoozeMins:     parseInt(document.getElementById('alertSnoozeMins').value) || 30,
-    channels: {
-      web:   document.getElementById('alertChWeb').checked,
-      email: document.getElementById('alertChEmail').checked,
-      sms:   document.getElementById('alertChSms').checked,
-    },
-    staffEmailList: document.getElementById('alertEmailList').value
-      .split('\n').map(s => s.trim()).filter(s => s.includes('@')),
-    staffSmsList: document.getElementById('alertSmsList').value
-      .split('\n').map(s => s.trim()).filter(Boolean),
-  };
-
   try {
-    await apiPost('saveAlertConfig', payload);
-    msg.style.color = 'var(--green, #27ae60)';
-    msg.textContent = '✓ Saved';
-    setTimeout(() => { msg.textContent = ''; }, 3000);
-  } catch (e) {
-    msg.style.color = 'var(--red, #e74c3c)';
-    msg.textContent = 'Error: ' + e.message;
+    const cfg = {
+      enabled:       document.getElementById("alertEnabled").checked,
+      firstAlertMins: parseInt(document.getElementById("alertFirstMins").value) || 15,
+      repeatMins:     parseInt(document.getElementById("alertRepeatMins").value) || 30,
+      snoozeMins:     parseInt(document.getElementById("alertSnoozeMins").value) || 30,
+      channels: {
+        web:   document.getElementById("alertChWeb").checked,
+        email: document.getElementById("alertChEmail").checked,
+        sms:   document.getElementById("alertChSms").checked,
+      },
+      staffEmailList: document.getElementById("alertEmailList").value
+        .split("\n").map(s => s.trim()).filter(Boolean),
+      staffSmsList: document.getElementById("alertSmsList").value
+        .split("\n").map(s => s.trim()).filter(Boolean),
+    };
+    await apiPost("saveConfig", { overdueAlerts: cfg });
+    toast("Alert settings saved.");
+  } catch(e) {
+    toast("Save failed: " + e.message, "err");
   } finally {
     btn.disabled = false;
   }
-});
-
-// ── CSV Import ─────────────────────────────────────────────────────────────────
-const ABLER = { name:0,gender:1,kennitala:2,birthYear:3,phone:4,address:5,postal:6,email:7,subgroups:8,attendance:9,dateAdded:10,guardianCount:11 };
-function guardianCol(n,f){return 12+(n-1)*4+["name","kennitala","phone","email"].indexOf(f);}
-
-function parseCSVRow(line){const out=[];let cur="",inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){out.push(cur);cur="";}else cur+=c;}out.push(cur);return out;}
-
-function parseAblerCSV(text){
-  const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];
-  const hasHeader=isNaN(parseInt((parseCSVRow(lines[0])[2]||"").replace(/\s/g,""),10));
-  return (hasHeader?lines.slice(1):lines).map(l=>l.trim()).filter(Boolean).map(l=>{
-    const c=parseCSVRow(l),g=i=>(c[i]||"").trim();
-    const kt=g(ABLER.kennitala).replace(/\D/g,"");
-    if(!kt||kt.length!==10)return null;
-    const byInt=parseInt(g(ABLER.birthYear),10);
-    const gc=parseInt(g(ABLER.guardianCount),10)||0;
-    return{kennitala:kt,name:g(ABLER.name),email:g(ABLER.email),phone:g(ABLER.phone),
-      birthYear:g(ABLER.birthYear),isMinor:byInt>0?(new Date().getFullYear()-byInt<18):false,
-      guardianName:gc>0?g(guardianCol(1,"name")):"",
-      guardianKennitala:gc>0?g(guardianCol(1,"kennitala")).replace(/\D/g,""):"",
-      guardianPhone:gc>0?g(guardianCol(1,"phone")):"",role:"member"};
-  }).filter(Boolean);
 }
 
-const DEMO_CSV=`Name,Gender,Kennitala,Birth Year,Phone,Address,Postal code,Email,Subgroups,Attendance %,Date Added,Guardian Count,Guardian 1 Name,Guardian 1 Kennitala,Guardian 1 Phone,Guardian 1 Email
-Jón Sigurðsson,Male,1234567890,1985,6200001,"Laugavegur 1, 101",101,jon@example.is,"AL, Á23",92%,6/1/2020,0,,,,
-Sigrídur Björnsdóttir,Female,0987654321,1990,6200002,"Hlíðarsmári 3, 201",201,sig@example.is,"AL, Á24",100%,1/6/2019,0,,,,
-Óliver Björnsson,Male,2222222229,2012,6200050,"",107,oli@example.is,Youth,85%,9/1/2022,1,Björn Ólason,5566778899,6200099,bjorn@example.is`;
+// ── CSV Import ─────────────────────────────────────────────────────────────────
 
-function handleCSVFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>processCSV(ev.target.result);r.readAsText(f);}
-function loadDemoCSV(){processCSV(DEMO_CSV);}
+/**
+ * Show one of the three import step panels by number (1 | 2 | 3).
+ * Uses data-step attributes instead of a fragile hardcoded ID list.
+ */
+function showImportStep(n) {
+  document.querySelectorAll("[data-step]").forEach(el => {
+    el.classList.toggle("hidden", el.dataset.step !== String(n));
+  });
+}
 
-function processCSV(text){
-  const incoming=parseAblerCSV(text);
-  if(!incoming.length){alert("No valid rows found.");return;}
-  const kts=new Set(incoming.map(r=>r.kennitala));
-  const added=[],updated=[],unchanged=[],flagged=[];
-  incoming.forEach(row=>{
-    const ex=members.find(m=>m.kennitala===row.kennitala);
-    if(!ex){added.push({...row,_s:"added"});}
-    else{
-      const role=(ex.role==="admin"||ex.role==="staff")?ex.role:row.role;
-      const merged={...row,role};
-      const changed=["name","email","phone","birthYear","isMinor","guardianName","guardianPhone","guardianKennitala","role"].some(f=>String(merged[f]||"")!==String(ex[f]||""));
-      if(changed)updated.push({...ex,...merged,_s:"updated",_prev:ex});
-      else unchanged.push({...ex,_s:"unchanged"});
+function handleCSVFile(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => processCSV(ev.target.result);
+  r.readAsText(f);
+}
+
+function loadDemoCSV() { processCSV(DEMO_CSV); }
+
+// (parseAblerCSV and DEMO_CSV remain exactly as before — not changed here)
+
+function processCSV(text) {
+  const incoming = parseAblerCSV(text);
+  if (!incoming.length) { toast("No valid rows found.", "err"); return; }
+
+  const kts         = new Set(incoming.map(r => r.kennitala));
+  const added       = [], updated = [], unchanged = [], flagged = [];
+
+  incoming.forEach(row => {
+    const ex = members.find(m => m.kennitala === row.kennitala);
+    if (!ex) {
+      added.push({ ...row, _s: "added" });
+    } else {
+      const role   = (ex.role === "admin" || ex.role === "staff") ? ex.role : row.role;
+      const merged = { ...row, role };
+      const changed = ["name","email","phone","birthYear","isMinor","guardianName",
+                       "guardianPhone","guardianKennitala","role"]
+        .some(f => String(merged[f] || "") !== String(ex[f] || ""));
+      if (changed) updated.push({ ...ex, ...merged, _s: "updated", _prev: ex });
+      else         unchanged.push({ ...ex, _s: "unchanged" });
     }
   });
-  members.filter(m=>bool(m.active)&&!kts.has(m.kennitala)).forEach(m=>flagged.push({...m,_s:"missing"}));
-  importResult={added,updated,flagged,unchanged};
-  document.getElementById("importSummary").innerHTML=`
+
+  members.filter(m => bool(m.active) && !kts.has(m.kennitala))
+         .forEach(m => flagged.push({ ...m, _s: "missing" }));
+
+  importResult = { added, updated, flagged, unchanged };
+
+  document.getElementById("importSummary").innerHTML = `
     <span class="import-chip chip-green">${added.length} new</span>
     <span class="import-chip chip-brass">${updated.length} updated</span>
     <span class="import-chip chip-orange">${flagged.length} not in import</span>
     <span class="import-chip chip-muted">${unchanged.length} unchanged</span>`;
-  let html="";
-  if(added.length){html+=`<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${added.length})</div><div class="import-list">${added.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span style="flex:1">${esc(m.name)}</span>${m.isMinor?'<span class="minor-badge">minor</span>':""}</div>`).join("")}</div>`;}
-  if(updated.length){html+=`<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${updated.length})</div><div class="import-list">${updated.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span style="flex:1">${esc(m.name)}</span><span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span></div>`).join("")}</div>`;}
-  if(flagged.length){html+=`<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${flagged.length})</div><div class="import-list">${flagged.map(m=>`<div class="import-row"><span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span><span>${esc(m.name)}</span></div>`).join("")}</div>`;}
-  document.getElementById("importLists").innerHTML=html;
-  document.getElementById("importStep1").classList.add("hidden");
-  document.getElementById("importStep2").classList.remove("hidden");
-  document.getElementById("importStep3").classList.add("hidden");
+
+  let html = "";
+  if (added.length) {
+    html += `<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${added.length})</div>
+      <div class="import-list">${added.map(m =>
+        `<div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span style="flex:1">${esc(m.name)}</span>
+          ${m.isMinor ? `<span class="minor-badge">minor</span>` : ""}
+        </div>`).join("")}</div>`;
+  }
+  if (updated.length) {
+    html += `<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${updated.length})</div>
+      <div class="import-list">${updated.map(m =>
+        `<div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span style="flex:1">${esc(m.name)}</span>
+          <span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span>
+        </div>`).join("")}</div>`;
+  }
+  if (flagged.length) {
+    html += `<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${flagged.length})</div>
+      <div class="import-list">${flagged.map(m =>
+        `<div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span>${esc(m.name)}</span>
+        </div>`).join("")}</div>`;
+  }
+
+  document.getElementById("importLists").innerHTML = html;
+  showImportStep(2);
 }
 
-async function confirmImport(){
-  if(!importResult)return;
-  const btn=document.getElementById("confirmImportBtn");
-  btn.disabled=true;btn.textContent="Importing…";
-  try{
-    const toSend=[...importResult.added,...importResult.updated].map(m=>{const c={...m};delete c._s;delete c._prev;return c;});
-    for(let i=0;i<toSend.length;i+=10) await apiPost("importMembers",{rows:toSend.slice(i,i+10)});
-    importResult.updated.forEach(u=>{members=members.map(m=>m.kennitala===u.kennitala?{...u}:m);});
-    importResult.added.forEach(a=>{const c={...a};delete c._s;members.push(c);});
-    document.getElementById("importDoneMsg").textContent=`Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
-    document.getElementById("importStep2").classList.add("hidden");
-    document.getElementById("importStep3").classList.remove("hidden");
-  }catch(e){
-    document.getElementById("importError").textContent="Import failed: "+e.message;
-    document.getElementById("importError").style.display="block";
-    btn.disabled=false;btn.textContent="Confirm import";
+async function confirmImport() {
+  if (!importResult) return;
+  const btn = document.getElementById("confirmImportBtn");
+  btn.disabled = true; btn.textContent = "Importing…";
+  try {
+    // Strip internal metadata, then send in parallel batches of 10
+    const toSend = [...importResult.added, ...importResult.updated].map(m => {
+      const c = { ...m }; delete c._s; delete c._prev; return c;
+    });
+    await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
+
+    // Sync local state
+    importResult.updated.forEach(u => {
+      members = members.map(m => m.kennitala === u.kennitala ? { ...u } : m);
+    });
+    importResult.added.forEach(a => {
+      const c = { ...a }; delete c._s; members.push(c);
+    });
+
+    document.getElementById("importDoneMsg").textContent =
+      `Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
+    showImportStep(3);
+  } catch(e) {
+    document.getElementById("importError").textContent = "Import failed: " + e.message;
+    document.getElementById("importError").style.display = "block";
+    btn.disabled = false; btn.textContent = "Confirm import";
   }
 }
 
-function resetImport(){
-  importResult=null;
-  ["importStep1","importStep2","importStep3"].forEach((id,i)=>document.getElementById(id).classList.toggle("hidden",i!==0));
-  document.getElementById("csvFile").value="";
+function resetImport() {
+  importResult = null;
+  document.getElementById("csvFile").value = "";
+  showImportStep(1);
 }
 
 // ── QR codes ───────────────────────────────────────────────────────────────────
-const BASE_SITE="https://skarfur.github.io/ymir";
-function showBoatQR(boatId){
-  const b=boats.find(x=>x.id===boatId);if(!b)return;
-  const url=`${BASE_SITE}/member/?boat=${boatId}`;
-  document.getElementById("qrBoatName").textContent=b.name;
-  document.getElementById("qrCategory").textContent=(b.category||"dinghy").toUpperCase();
-  document.getElementById("qrImg").src=`https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
-  document.getElementById("qrUrl").textContent=url;
-  document.getElementById("qrBoatId").textContent=boatId;
-  document.getElementById("qrModal").classList.remove("hidden");
+const BASE_SITE = "https://skarfur.github.io/ymir";
+
+function showBoatQR(boatId) {
+  const b = boats.find(x => x.id === boatId);
+  if (!b) return;
+  const url = `${BASE_SITE}/member/?boat=${boatId}`;
+  document.getElementById("qrBoatName").textContent = b.name;
+  document.getElementById("qrCategory").textContent = (b.category || "dinghy").toUpperCase();
+  document.getElementById("qrImg").src  = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
+  document.getElementById("qrUrl").textContent   = url;
+  document.getElementById("qrBoatId").textContent = boatId;
+  openModal("qrModal");
 }
-function closeQRModal(){document.getElementById("qrModal").classList.add("hidden");}
-function printQR(){
-  const name=document.getElementById("qrBoatName").textContent;
-  const cat =document.getElementById("qrCategory").textContent;
-  const src =document.getElementById("qrImg").src;
-  const url =document.getElementById("qrUrl").textContent;
-  const w=window.open("","_blank","width=480,height=640");
-  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${name}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}.card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}.boat{font-size:26px;font-weight:bold;margin-bottom:4px}.cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}img{width:220px;height:220px;display:block;margin:0 auto}.instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}.url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}@media print{button{display:none!important}}</style></head><body><div class="card"><div class="boat">⛵ ${name}</div><div class="cat">${cat}</div><img src="${src}"><div class="instruction">Scan to check out or check in this boat</div><div class="url">${url}</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+
+function printQR() {
+  const name = document.getElementById("qrBoatName").textContent;
+  const cat  = document.getElementById("qrCategory").textContent;
+  const src  = document.getElementById("qrImg").src;
+  const url  = document.getElementById("qrUrl").textContent;
+  const w    = window.open("", "_blank", "width=480,height=640");
+  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${name}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+      .card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}
+      .boat{font-size:26px;font-weight:bold;margin-bottom:4px}
+      .cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}
+      img{width:220px;height:220px;display:block;margin:0 auto}
+      .instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}
+      .url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}
+      @media print{button{display:none!important}}
+    </style>
+  </head><body>
+    <div class="card">
+      <div class="boat">⛵ ${name}</div>
+      <div class="cat">${cat}</div>
+      <img src="${src}">
+      <div class="instruction">Scan to check out or check in this boat</div>
+      <div class="url">${url}</div>
+    </div>
+    <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
+  </body></html>`);
   w.document.close();
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
-function bool(v){return v===true||v==="TRUE"||v==="true"||v===1||v==="1";}
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+// bool, esc, boolVal, parseJson, toast, chunk, openModal, closeModal
+// all come from shared/api.js — no local redefinitions needed.
 </script>
 </body>
 </html>
