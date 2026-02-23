@@ -170,42 +170,84 @@ function wxPressureTrend(pressureArr, nowIdx) {
 function wxPressureTrendIcon(trend)  { return { rising:'↗', falling:'↘', steady:'→' }[trend] || '→'; }
 function wxPressureTrendColor(trend) { return { rising:'var(--green)', falling:'var(--orange)', steady:'var(--muted)' }[trend] || 'var(--muted)'; }
 
+// ── Direction string → degrees (for wxDirArrow / wxDirLabel compatibility) ────
+// apis.is returns direction as a compass string e.g. "NNE", "S", "Calm"
+const _DIR_TO_DEG = {
+  N:0, NNE:22.5, NE:45, ENE:67.5, E:90, ESE:112.5, SE:135, SSE:157.5,
+  S:180, SSW:202.5, SW:225, WSW:247.5, W:270, WNW:292.5, NW:315, NNW:337.5,
+};
+function wxDirStrToDeg(s) {
+  if (!s || s === 'Calm' || s === '–') return null;
+  return _DIR_TO_DEG[s.toUpperCase()] ?? null;
+}
+
 // ── API fetch ─────────────────────────────────────────────────────────────────
+// Wind/temp/pressure: BIRK (Reykjavík airport) via apis.is station 1478
+// Waves/SST:          Open-Meteo marine API (unchanged)
+// Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart only)
+const BIRK_STATION  = '1478';
+const APIS_IS_OBS   = 'https://apis.is/weather/observations/en';
+
 async function wxFetch(lat, lon) {
-  const atmoParams = [
-    'wind_speed_10m','wind_direction_10m','wind_gusts_10m',
-    'temperature_2m','apparent_temperature','weather_code','surface_pressure',
-  ].join(',');
-  const atmoHourly = [
-    'wind_speed_10m','wind_direction_10m','wind_gusts_10m','surface_pressure',
-  ].join(',');
-  const marineParams = [
-    'wave_height','wave_direction','sea_surface_temperature',
-  ].join(',');
+  // ── 1. BIRK current observations ─────────────────────────────────────────
+  const birkUrl = `${APIS_IS_OBS}?stations=${BIRK_STATION}&time=1h&anytime=1`;
+  const birkPromise = fetch(birkUrl).then(r => {
+    if (!r.ok) throw new Error(`BIRK ${r.status}`);
+    return r.json();
+  });
 
-  const atmoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&current=${atmoParams}&hourly=${atmoHourly}&forecast_hours=9&timezone=auto`;
+  // ── 2. Open-Meteo hourly — wind + pressure for chart only ────────────────
+  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
+  const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&hourly=${hourlyParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
+  const hourlyPromise = fetch(hourlyUrl).then(r => r.ok ? r.json() : null).catch(() => null);
 
-  let marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
-    `&current=${marineParams}`;
-
-  const [atmoRes, marineRes] = await Promise.allSettled([
-    fetch(atmoUrl).then(r => r.json()),
-    fetch(marineUrl).then(r => {
+  // ── 3. Marine API (waves / SST) — unchanged ───────────────────────────────
+  const marineParams = 'wave_height,wave_direction,sea_surface_temperature';
+  const marineUrl    = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=${marineParams}`;
+  const marinePromise = fetch(marineUrl)
+    .then(r => {
       if (!r.ok) {
-        // Fallback to offshore coords
         const fb = WX_MARINE_FALLBACK;
         return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}`)
-          .then(r2 => r2.json());
+          .then(r2 => r2.ok ? r2.json() : null);
       }
       return r.json();
-    }),
+    })
+    .catch(() => null);
+
+  const [birkRes, hourlyData, marine] = await Promise.all([
+    birkPromise, hourlyPromise, marinePromise,
   ]);
 
-  return {
-    wx:     atmoRes.status   === 'fulfilled' ? atmoRes.value   : null,
-    marine: marineRes.status === 'fulfilled' ? marineRes.value : null,
+  // ── Map BIRK observation into the wx.current shape the rest of the code expects
+  const obs = birkRes?.results?.[0] ?? {};
+  const wdDeg = wxDirStrToDeg(obs.D);   // direction degrees (or null if calm)
+  const ws    = parseFloat(obs.F)  || 0;
+  const wg    = parseFloat(obs.FG) || parseFloat(obs.FX) || ws;
+  const temp  = parseFloat(obs.T)  ?? null;
+  const pres  = parseFloat(obs.P)  ?? null;
+
+  const wx = {
+    current: {
+      wind_speed_10m:      ws,
+      wind_direction_10m:  wdDeg,
+      wind_gusts_10m:      wg,
+      temperature_2m:      temp,
+      apparent_temperature: temp,   // BIRK doesn't supply feels-like; use actual temp
+      weather_code:        null,    // no weather code from BIRK
+      surface_pressure:    pres,
+      _source: 'BIRK',
+      _obs_time: obs.time || null,
+    },
+    // Hourly data for chart — from Open-Meteo (or empty fallback)
+    hourly: hourlyData?.hourly ?? {
+      time: [], wind_speed_10m: [], wind_direction_10m: [],
+      wind_gusts_10m: [], surface_pressure: [],
+    },
   };
+
+  return { wx, marine };
 }
 
 // ── Compact widget (member + dailylog) ────────────────────────────────────────
@@ -244,7 +286,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
           <div style="display:flex;align-items:flex-start;gap:14px">
             <!-- wind col -->
             <div style="flex:1">
-              <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${loc.label.toUpperCase()} · CONDITIONS</div>
+              <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
               <!-- row 1: arrow · number · m/s -->
               <div style="display:flex;align-items:center;gap:4px;line-height:1">
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
@@ -265,8 +307,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             </div>
             <!-- icon col (right) -->
             <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:4px">
-              <div style="font-size:30px;line-height:1">${wxCondIcon(c.weather_code)}</div>
-              <div style="font-size:9px;color:var(--muted);text-align:center">${wxCondDesc(c.weather_code)}</div>
+              <div style="font-size:30px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
+              <div style="font-size:9px;color:var(--muted);text-align:center">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
               ${showRefreshBtn ?
                 `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
             </div>
