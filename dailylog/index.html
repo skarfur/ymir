@@ -157,14 +157,17 @@
 </head>
 <body>
 <header>
-  <div class="header-left">
-    <span class="logo">ÝMIR</span>
-    <a id="hubLink" href="../staff/" class="page-title">← Staff hub</a>
-  </div>
-  <div class="header-right">
-    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
-    <button class="btn-ghost" onclick="signOut()">Sign out</button>
-  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <a href="../staff/" style="font-size:11px;color:var(--muted);text-decoration:none" id="hubLink">← Staff hub</a>
+      <span style="color:var(--border)">|</span>
+    <a href="../staff/maintenance.html" style="font-size:11px;color:var(--muted);text-decoration:none">🔧 Maintenance</a>
+      <span style="color:var(--border)">|</span>
+    <a href="../incidents/" style="font-size:11px;color:var(--muted);text-decoration:none">⚠ Incident</a>
+      <span style="color:var(--border)">|</span>
+    <a href="../weather/" style="font-size:11px;color:var(--muted);text-decoration:none">⛅ Weather</a>
+      <button class="btn-ghost" onclick="toggleLang()" style="font-size:11px;padding:5px 8px" id="langBtn">IS</button>
+      <button class="btn-ghost" onclick="signOut()" style="font-size:11px;padding:5px 8px">Sign out</button>
+</div>
 </header>
 
 <main class="page-wrap" id="mainWrap">
@@ -269,9 +272,11 @@
   </div>
 
   <!-- 8. Maintenance -->
-  <div class="section-heading">MAINTENANCE &amp; REPAIRS</div>
-  <div class="content-card" id="maintCard">
-    <div class="empty-state"><span class="spinner"></span></div>
+  <div class="section-heading">
+    <span>MAINTENANCE &amp; REPAIRS</span>
+      <button class="btn-ghost" id="addMaintBtn"
+    style="font-size:11px;padding:3px 10px"
+    onclick="location.href='../staff/maintenance.html?new=1'">+ Report Issue</button>
   </div>
 
   <!-- Save bar -->
