@@ -64,10 +64,13 @@ function fmtTime(iso) {
   catch(e) { return ""; }
 }
 
+/** Current time as "HH:MM" string — used to pre-fill time fields. */
+function fmtTimeNow() { return new Date().toTimeString().slice(0, 5); }
+
+/** Today's date as "YYYY-MM-DD" string. */
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── SHARED UTILITIES ──────────────────────────────────────────────────────────
-// Canonical definitions — previously copy-pasted into every page.
 
 /** HTML-escape a value for safe DOM insertion. */
 function esc(s) {
@@ -81,6 +84,12 @@ function boolVal(v) {
 }
 
 /**
+ * Canonical short alias for boolVal — use this everywhere.
+ * boolVal is kept for backward-compat with shared/maintenance.js etc.
+ */
+const bool = boolVal;
+
+/**
  * Safe JSON parse — returns fallback on any failure.
  * Also accepts already-parsed objects (pass-through).
  */
@@ -88,6 +97,20 @@ function parseJson(v, fallback) {
   if (!v) return fallback;
   try { return typeof v === "string" ? JSON.parse(v) : v; }
   catch(e) { return fallback; }
+}
+
+/**
+ * Split an array into chunks of `size`.
+ * Used for batched API calls (e.g. importMembers).
+ * @param {Array}  arr
+ * @param {number} size
+ * @returns {Array[]}
+ */
+function chunk(arr, size) {
+  return Array.from(
+    { length: Math.ceil(arr.length / size) },
+    (_, i) => arr.slice(i * size, i * size + size)
+  );
 }
 
 /**
@@ -132,3 +155,32 @@ function populateSelect(id, items, labelFn, valueFn, filterFn) {
     sel.appendChild(o);
   });
 }
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
+
+/**
+ * Show a modal overlay by id.
+ * @param {string} id  The id of the .modal-overlay element.
+ */
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
+}
+
+/**
+ * Hide a modal overlay by id.
+ * @param {string} id  The id of the .modal-overlay element.
+ */
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("hidden");
+}
+
+/**
+ * Close all open modal overlays when Escape is pressed.
+ * Registered once here so every page gets it for free.
+ */
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+});
