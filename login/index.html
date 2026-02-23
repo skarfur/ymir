@@ -118,9 +118,9 @@ async function doLogin() {
     const user = data.member;
     setUser(user);
     if (user.role === "admin") {
-      showRolePicker(user, ["admin","staff","member"]);
+      showRolePicker(user, ["member","staff","admin"]);
     } else if (user.role === "staff") {
-      showRolePicker(user, ["staff","member"]);
+      showRolePicker(user, ["member","staff"]);
     } else {
       window.location.href = "../member/";
     }
