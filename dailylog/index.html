@@ -716,20 +716,31 @@ function renderActivitiesReadonly() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MAINTENANCE  — uses shared/maintenance.js (maintRenderRow, boolVal)
+// MAINTENANCE
 // ══════════════════════════════════════════════════════════════════════════════
 async function loadMaintenance() {
-  try {
-    maintenance = ((await apiGet('getMaintenance')).requests || []).filter(r => !boolVal(r.resolved));
-  } catch(e) { maintenance = []; }
+  try { maintenance = ((await apiGet('getMaintenance')).requests || []).filter(r => !r.resolved); }
+  catch(e) { maintenance = []; }
   renderMaintenance();
 }
 
 function renderMaintenance() {
   const card = document.getElementById('maintCard');
-  card.innerHTML = maintenance.length
-    ? maintenance.map(m => maintRenderRow(m)).join('')
-    : `<div class="empty-state">No open maintenance requests.</div>`;
+  if (!maintenance.length) { card.innerHTML = `<div class="empty-state">No open maintenance requests.</div>`; return; }
+  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
+  const catIcon  = { boat:'⛵', equipment:'🦺', facility:'🏠' };
+  card.innerHTML = maintenance.map(m => `
+    <div class="maint-row ${m._done?'resolved':''}" id="mr-${m.id}">
+      <input type="checkbox" ${m._done?'checked':''} onchange="resolveMaint('${m.id}',this.checked)">
+      <div class="maint-info">
+        <div class="maint-boat">
+          ${catIcon[m.category]||'🔧'} ${esc(m.boatName||m.itemName||'—')}
+          <span class="badge ${sevColor[m.severity]||'badge-muted'}" style="margin-left:6px">${m.severity||'—'}</span>
+          ${m.part?`<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>`:''}
+        </div>
+        <div class="maint-desc">${esc(m.description||'')}</div>
+      </div>
+    </div>`).join('');
 }
 
 async function resolveMaint(id, checked) {
