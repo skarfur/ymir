@@ -241,11 +241,7 @@
           <div class="field">
             <label>Expected return</label>
               <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:90px">
-              <input type="number" id="lReturnByH" min="0" max="23" placeholder="HH" style="width:52px;text-align:center">
-              <span style="color:var(--muted)">:</span>
-              <input type="number" id="lReturnByM" min="0" max="59" placeholder="MM" style="width:52px;text-align:center">
-          </div>
+                <input type="time" id="lReturnBy" style="flex:1;min-width:90px">
                 <button type="button" class="ret-btn" onclick="setReturnIn(60)">+1h</button>
                 <button type="button" class="ret-btn" onclick="setReturnIn(90)">+1.5h</button>
                 <button type="button" class="ret-btn" onclick="setReturnIn(120)">+2h</button>
@@ -758,13 +754,6 @@ function updateClProgress(){
   document.getElementById('clCount').textContent=`${checked} / ${total}`;
   boxes.forEach((b,i)=>document.getElementById('cll'+i)?.classList.toggle('checked',b.checked));
 }
-
-function getReturnByValue() {
-  const h = document.getElementById('lReturnByH').value.trim();
-  const m = document.getElementById('lReturnByM').value.trim();
-  if (!h && !m) return '';
-  return String(parseInt(h)||0).padStart(2,'0') + ':' + String(parseInt(m)||0).padStart(2,'0');
-}
   
 async function submitLaunch(){
   const boat=document.getElementById('lBoat');
@@ -784,7 +773,7 @@ async function submitLaunch(){
       locationId:      loc.value,
       locationName:    loc.options[loc.selectedIndex]?.text||'',
       checkedOutAt:    document.getElementById('lTimeOut').value||fmtTimeNow(),
-      expectedReturn:  getReturnByValue(),
+      expectedReturn:  document.getElementById('lReturnBy').value||'',
       crew:            document.getElementById('lCrew').value||1,
       wxSnapshot:          snap,
       preLaunchChecklist:  JSON.stringify(collectChecklist('cl', getChecklist, launchBoat?.category||'dinghy')),
