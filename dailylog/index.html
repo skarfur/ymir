@@ -160,7 +160,7 @@
   <div style="display:flex;gap:6px;align-items:center">
     <a href="../staff/" style="font-size:11px;color:var(--muted);text-decoration:none" id="hubLink">← Staff hub</a>
       <span style="color:var(--border)">|</span>
-    <a href="../staff/maintenance.html" style="font-size:11px;color:var(--muted);text-decoration:none">🔧 Maintenance</a>
+    <a href="../maintenance.html" style="font-size:11px;color:var(--muted);text-decoration:none">🔧 Maintenance</a>
       <span style="color:var(--border)">|</span>
     <a href="../incidents/" style="font-size:11px;color:var(--muted);text-decoration:none">⚠ Incident</a>
       <span style="color:var(--border)">|</span>
@@ -276,7 +276,7 @@
     <span>MAINTENANCE &amp; REPAIRS</span>
       <button class="btn-ghost" id="addMaintBtn"
     style="font-size:11px;padding:3px 10px"
-    onclick="location.href='../staff/maintenance.html?new=1'">+ Report Issue</button>
+    onclick="location.href='../maintenance.html?new=1'">+ Report Issue</button>
   </div>
 
   <!-- Save bar -->
@@ -391,7 +391,7 @@ const DEFAULT_TYPES = [
 document.addEventListener('DOMContentLoaded', async () => {
   if (user) {
     document.getElementById('langBtn').textContent = L === 'EN' ? 'IS' : 'EN';
-    if (isAdmin(user)) {
+    if (user && isAdmin(user)) {
       const lnk = document.getElementById('hubLink');
       lnk.href = '../admin/';
       lnk.textContent = '← Admin panel';
