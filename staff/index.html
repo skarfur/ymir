@@ -11,75 +11,133 @@
   <script src="../shared/weather.js"></script>
   <script src="../shared/boats.js"></script>
   <style>
-    /* boat card styles now in shared/style.css via boats.js */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .nav-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .nav-card:hover { border-color: var(--brass); background: var(--card); }
+    .nav-card .nc-icon  { font-size: 22px; }
+    .nav-card .nc-label { font-size: 12px; font-weight: 500; color: var(--text); letter-spacing: .3px; }
+    .nav-card .nc-desc  { font-size: 10px; color: var(--muted); line-height: 1.4; }
 
-    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
-    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center; }
-    .stat-num  { font-size:28px; color:var(--brass); font-weight:500; }
-    .stat-label{ font-size:11px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
-    .section   { margin-bottom:28px; }
-    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .section-head h3 { font-size:11px; letter-spacing:1px; color:var(--muted); }
-    .empty-note { color:var(--muted); font-size:12px; padding:12px 0; }
-    .checkout-form { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:12px; }
-    .checkout-form h4 { color:var(--brass); font-size:11px; letter-spacing:1px; margin-bottom:16px; }
-    .inline-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .crew-field { display:flex; align-items:center; gap:8px; }
-    .crew-btn { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
-    .crew-btn:hover { border-color:var(--brass); }
-    .crew-num { width:36px; text-align:center; font-size:16px; color:var(--text); }
-    .recent-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border)33; font-size:11px; color:var(--muted); }
-    .recent-row:last-child { border-bottom:none; }
+    .stat-row  { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-num  { font-size: 28px; color: var(--brass); font-weight: 500; }
+    .stat-label{ font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: .5px; }
 
-    /* ── Return-time quick buttons ── */
-    .ret-btn { background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--muted); font-size:10px; padding:4px 7px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:border-color .12s,color .12s; }
-    .ret-btn:hover { border-color:var(--brass); color:var(--brass); }
+    .section { margin-bottom: 28px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .section-head h3 { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); }
+    .empty-note { color: var(--muted); font-size: 12px; padding: 10px 0; }
+
+    .checkout-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-top: 12px; }
+    .checkout-form h4 { color: var(--brass); font-size: 10px; letter-spacing: 1px; margin-bottom: 14px; }
+    .inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .crew-field { display: flex; align-items: center; gap: 10px; }
+    .crew-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center; }
+    .crew-btn:hover { border-color: var(--brass); }
+    .crew-num { width: 36px; text-align: center; font-size: 16px; }
+
+    .recent-row { display: flex; align-items: center; gap: 10px; padding: 7px 0;
+      border-bottom: 1px solid var(--border)33; font-size: 11px; color: var(--muted); }
+    .recent-row:last-child { border-bottom: none; }
+
+    .ret-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--muted); font-size: 10px; padding: 4px 8px; cursor: pointer;
+      font-family: inherit; white-space: nowrap; transition: border-color .12s, color .12s; }
+    .ret-btn:hover { border-color: var(--brass); color: var(--brass); }
+
+    .divider-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border); }
   </style>
 </head>
 <body>
 
 <header class="navbar">
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <button class="btn btn-secondary" onclick="location.href='../dailylog/'">📋 Daily Log</button>
-    <button class="btn btn-secondary" onclick="location.href='maintenance.html'">🔧 Maintenance</button>
-    <button class="btn btn-secondary" onclick="location.href='trips.html'">✓ Trip Review</button>
-    <button class="btn btn-secondary" onclick="location.href='../incidents/'">⚠ Incident</button>
-    <button class="btn btn-secondary" onclick="location.href='../weather/'">⛅ Weather</button>
-    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
-    <button class="btn-ghost" onclick="signOut()">Sign out</button>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="color:var(--brass);font-size:18px;font-weight:bold;letter-spacing:1px">ÝMIR</span>
+    <a href="../member/" class="hbtn" style="font-size:11px">⛵ Member Hub</a>
+    <a id="adminBtn" href="../admin/" class="hbtn" style="font-size:11px;display:none">⚙ Admin</a>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <a href="../weather/" class="hbtn" style="font-size:11px">⛅ Weather</a>
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn" style="font-size:11px">IS</button>
+    <button class="btn-ghost" onclick="signOut()" style="font-size:11px">Sign out</button>
   </div>
 </header>
 
-<div class="page-wrap">
+<div style="max-width:720px;margin:0 auto;padding:20px 16px 60px">
 
-  <!-- Weather widget -->
-  <div class="wx-widget" id="wxWidget" style="margin-bottom:20px">
-    <div style="color:var(--muted);font-size:11px;padding:6px 0">⚓ Loading conditions…</div>
+  <div style="margin-bottom:20px">
+    <div style="font-size:16px;font-weight:500;color:var(--text)">Staff Dashboard</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px" id="userBadge"></div>
   </div>
 
-  <!-- Stats strip -->
+  <div class="wx-widget" id="wxWidget" style="margin-bottom:24px">
+    <div style="color:var(--muted);font-size:11px;padding:6px 0">Loading conditions…</div>
+  </div>
+
+  <div class="divider-label" style="margin-bottom:12px">TOOLS</div>
+  <div class="nav-grid">
+    <a href="../dailylog/" class="nav-card">
+      <span class="nc-icon">📋</span>
+      <span class="nc-label">Daily Log</span>
+      <span class="nc-desc">Weather records, checklists, activities, sign-off</span>
+    </a>
+    <a href="../maintenance/" class="nav-card">
+      <span class="nc-icon">🔧</span>
+      <span class="nc-label">Maintenance</span>
+      <span class="nc-desc">Report and track boat &amp; equipment issues</span>
+    </a>
+    <a href="trips.html" class="nav-card">
+      <span class="nc-icon">✓</span>
+      <span class="nc-label">Trip Review</span>
+      <span class="nc-desc">Verify member logbook entries</span>
+    </a>
+    <a href="../incidents/" class="nav-card">
+      <span class="nc-icon">⚠</span>
+      <span class="nc-label">Incidents</span>
+      <span class="nc-desc">File or review safety incident reports</span>
+    </a>
+  </div>
+
+  <div class="divider-label" style="margin-bottom:20px">FLEET</div>
+
   <div class="stat-row">
     <div class="stat-card"><div class="stat-num" id="statOut">—</div><div class="stat-label">ON WATER</div></div>
     <div class="stat-card"><div class="stat-num" id="statOverdue" style="color:var(--red)">—</div><div class="stat-label">OVERDUE</div></div>
     <div class="stat-card"><div class="stat-num" id="statAvail">—</div><div class="stat-label">AVAILABLE</div></div>
   </div>
 
-  <!-- Active check-outs -->
   <div class="section">
     <div class="section-head">
       <h3>ACTIVE CHECK-OUTS</h3>
-      <button class="btn btn-primary" onclick="toggleCheckoutForm()">+ Check Out Boat</button>
+      <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="toggleCheckoutForm()">+ Check Out</button>
     </div>
     <div id="activeCheckouts"><div class="empty-note">Loading…</div></div>
 
-    <!-- Quick check-out form -->
     <div class="checkout-form hidden" id="coForm">
       <h4>NEW CHECK-OUT</h4>
       <div class="field">
         <label>Member (kennitala or name)</label>
         <input type="text" id="coMember" placeholder="Search member…" oninput="searchMember(this.value)">
         <div id="coMemberSuggestions" style="position:relative"></div>
-        <input type="hidden" id="coMemberKt">
         <div id="coMemberName" style="color:var(--brass);font-size:12px;margin-top:4px"></div>
       </div>
       <div class="inline-fields">
@@ -88,17 +146,17 @@
           <select id="coBoat"><option value="">Select boat…</option></select>
         </div>
         <div class="field">
-          <label>Location / Destination</label>
+          <label>Destination</label>
           <select id="coLocation"><option value="">Select…</option></select>
         </div>
       </div>
       <div class="inline-fields">
         <div class="field"><label>Time out</label><input type="time" id="coTimeOut"></div>
-<div class="field">
+        <div class="field">
           <label>Est. return</label>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <input type="time" id="coReturnBy" style="flex:1;min-width:90px">
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+            <input type="time" id="coReturnBy" style="flex:1;min-width:80px">
+            <div style="display:flex;gap:3px">
               <button type="button" class="ret-btn" onclick="setCoReturnIn(60)">+1h</button>
               <button type="button" class="ret-btn" onclick="setCoReturnIn(90)">+1.5h</button>
               <button type="button" class="ret-btn" onclick="setCoReturnIn(120)">+2h</button>
@@ -123,17 +181,15 @@
         <button class="btn btn-secondary" onclick="toggleCheckoutForm()">Cancel</button>
         <button class="btn btn-primary" onclick="submitCheckout()">Check Out</button>
       </div>
-      <div id="coErr" class="msg msg-err" style="display:none"></div>
+      <div id="coErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
     </div>
   </div>
 
-  <!-- Fleet status -->
   <div class="section">
     <div class="section-head"><h3>FLEET STATUS</h3></div>
-    <div class="fleet-grid" id="fleetGrid"><div class="empty-note">Loading…</div></div>
+    <div id="fleetGrid"><div class="empty-note">Loading…</div></div>
   </div>
 
-  <!-- Recent check-ins -->
   <div class="section">
     <div class="section-head"><h3>RECENT CHECK-INS (24H)</h3></div>
     <div id="recentCheckins"><div class="empty-note">Loading…</div></div>
@@ -145,38 +201,42 @@
 const user = requireAuth(isStaff);
 if (user) {
   document.getElementById("userBadge").textContent = user.name + " · " + user.role;
-  document.getElementById("langBtn").textContent = getLang()==="EN"?"IS":"EN";
-  init();
-  // Weather widget — shared module
-  wxWidget(document.getElementById("wxWidget"), { showRefreshBtn: true }).start();
+  document.getElementById("langBtn").textContent = getLang() === "EN" ? "IS" : "EN";
+  if (isAdmin(user)) document.getElementById("adminBtn").style.display = "";
 }
 
-let boats=[], locations=[], members=[], checkouts=[];
-let crewCount = 1;
-let selectedMemberKt = "";
+let checkouts = [], boats = [], members = [], locations = [];
+let crewCount = 1, selectedMemberKt = "";
 
-async function init() {
+document.addEventListener("DOMContentLoaded", async () => {
+  wxWidget(document.getElementById("wxWidget"), { showRefreshBtn: true });
   try {
-    const [bRes, lRes, mRes, coRes] = await Promise.all([
-      apiGet("getBoats"),
-      apiGet("getLocations"),
-      apiGet("getMembers"),
+    const [coRes, bRes, mRes, lRes] = await Promise.all([
       apiGet("getActiveCheckouts"),
+      apiGet("getBoats"),
+      apiGet("getMembers"),
+      apiGet("getLocations"),
     ]);
-    boats     = (bRes.boats     || []).filter(b => b.active!=="false" && b.active!==false);
-    locations = (lRes.locations || []).filter(l => l.active!=="false" && l.active!==false);
-    members   = mRes.members || [];
     checkouts = coRes.checkouts || [];
+    boats     = (bRes.boats     || []).filter(b => b.active !== false && b.active !== "false");
+    members   = (mRes.members   || []).filter(m => m.active !== false && m.active !== "false");
+    locations = (lRes.locations || []).filter(l => l.active !== false && l.active !== "false");
     populateSelects();
     renderAll();
-  } catch(e) { console.error("init:", e); }
-}
+  } catch(e) {
+    document.getElementById("activeCheckouts").innerHTML =
+      `<div class="empty-note" style="color:var(--red)">Load failed: ${esc(e.message)}</div>`;
+  }
+});
 
 function populateSelects() {
-  const bSel = document.getElementById("coBoat");
-  boats.filter(b => !b.oos && b.oos!=="true").forEach(b => {
-    const o=document.createElement("option"); o.value=b.id;
-    o.textContent=b.name+(b.category?" ("+b.category+")":""); bSel.appendChild(o);
+  const bSel  = document.getElementById("coBoat");
+  const avail = boats.filter(b => !(b.oos===true||b.oos==="true") && !checkouts.find(c=>c.status==="out"&&c.boatId===b.id));
+  avail.forEach(b => {
+    const o = document.createElement("option");
+    o.value = b.id;
+    o.textContent = b.name + (b.category ? " (" + b.category + ")" : "");
+    bSel.appendChild(o);
   });
   const lSel = document.getElementById("coLocation");
   locations.forEach(l => { const o=document.createElement("option"); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
@@ -191,15 +251,17 @@ function renderStats() {
   const overdue = active.filter(c => (c.expectedReturn||c.returnBy) && (c.expectedReturn||c.returnBy) < now);
   document.getElementById("statOut").textContent     = active.length;
   document.getElementById("statOverdue").textContent = overdue.length;
-  document.getElementById("statAvail").textContent   = boats.filter(b => !b.oos && b.oos!=="true" && !active.find(c => c.boatId===b.id)).length;
+  document.getElementById("statOverdue").style.color = overdue.length ? "var(--red)" : "var(--brass)";
+  document.getElementById("statAvail").textContent   = boats.filter(b => {
+    const oos = b.oos===true||b.oos==="true";
+    return !oos && !active.find(c=>c.boatId===b.id);
+  }).length;
 }
 
 function renderCheckouts() {
   const el     = document.getElementById("activeCheckouts");
   const active = checkouts.filter(c => c.status==="out");
   if (!active.length) { el.innerHTML='<div class="empty-note">No boats currently out.</div>'; return; }
-  const now = new Date().toTimeString().slice(0,5);
-
   el.innerHTML = active.map(c => renderCheckoutCard(c, {
     staffView: true,
     onCheckIn: `staffCheckIn('${c.id}')`,
@@ -211,44 +273,43 @@ function renderFleet() {
   const el     = document.getElementById("fleetGrid");
   const active = checkouts.filter(c => c.status==="out");
   const now    = new Date().toTimeString().slice(0,5);
-  if (!boats.length) { el.innerHTML = '<div class="empty-note">No boats found.</div>'; return; }
+  if (!boats.length) { el.innerHTML='<div class="empty-note">No boats found.</div>'; return; }
   el.innerHTML = '<div class="bc-grid">'
     + boats.map(b => {
-        const co      = active.find(c => c.boatId===b.id);
+        const co      = active.find(c=>c.boatId===b.id);
         const overdue = co && (co.expectedReturn||co.returnBy) && (co.expectedReturn||co.returnBy) < now;
-        const oos     = b.oos===true || b.oos==="true";
+        const oos     = b.oos===true||b.oos==="true";
         const status  = co ? (overdue?"overdue":"out") : (oos?"oos":"avail");
         return renderBoatCard(b, { status, checkoutData: co, overdue });
-      }).join("")
-    + '</div>';
+      }).join("") + '</div>';
 }
 
 function renderRecentCheckins() {
   const el     = document.getElementById("recentCheckins");
-  const recent = checkouts.filter(c => c.status==="in").slice(0,10);
+  const recent = checkouts.filter(c=>c.status==="in").slice(0,10);
   if (!recent.length) { el.innerHTML='<div class="empty-note">No check-ins in the last 24 hours.</div>'; return; }
   el.innerHTML = recent.map(c => {
     const tout = (c.checkedOutAt||c.timeOut||"").slice(0,5);
     const tin  = (c.checkedInAt ||c.timeIn  ||"").slice(0,5);
     return `<div class="recent-row">
       <span style="opacity:.4">⛵</span>
-      <div style="flex:1"><span style="color:var(--text);font-weight:500">${esc(c.boatName||c.boatId)}</span> · ${esc(c.memberName||"")} · ${esc(c.locationName||"")}</div>
+      <div style="flex:1"><span style="color:var(--text);font-weight:500">${esc(c.boatName||c.boatId)}</span> · ${esc(c.memberName||"")}${c.locationName?" · "+esc(c.locationName):""}</div>
       <span>${esc(tout)}–${esc(tin)}</span>
     </div>`;
   }).join("");
 }
 
-// ── Check-out form ──────────────────────────────────────────────────────────────
 function toggleCheckoutForm() { document.getElementById("coForm").classList.toggle("hidden"); }
 function adjustCrew(d) { crewCount=Math.max(1,Math.min(20,crewCount+d)); document.getElementById("crewNum").textContent=crewCount; }
 
 function searchMember(q) {
   const box = document.getElementById("coMemberSuggestions");
   if (!q||q.length<2) { box.innerHTML=""; return; }
-  const matches = members.filter(m => m.name.toLowerCase().includes(q.toLowerCase())||m.kennitala.startsWith(q)).slice(0,5);
-  box.innerHTML = matches.length ? `<div style="position:absolute;top:0;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:6px;z-index:100;overflow:hidden">
+  const matches = members.filter(m=>m.name.toLowerCase().includes(q.toLowerCase())||m.kennitala.startsWith(q)).slice(0,5);
+  if (!matches.length) { box.innerHTML=""; return; }
+  box.innerHTML=`<div style="position:absolute;top:0;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:6px;z-index:100;overflow:hidden">
     ${matches.map(m=>`<div onclick="selectMember('${m.kennitala}','${esc(m.name)}')" style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)">${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span></div>`).join("")}
-  </div>` : "";
+  </div>`;
 }
 
 function selectMember(kt, name) {
@@ -259,58 +320,57 @@ function selectMember(kt, name) {
 }
 
 async function submitCheckout() {
-  const kt  = selectedMemberKt || document.getElementById("coMember").value.trim();
-  const bid = document.getElementById("coBoat").value;
-  const lid = document.getElementById("coLocation").value;
-  const err = document.getElementById("coErr");
+  const kt=selectedMemberKt||document.getElementById("coMember").value.trim();
+  const bid=document.getElementById("coBoat").value;
+  const lid=document.getElementById("coLocation").value;
+  const err=document.getElementById("coErr");
   if (!kt||!bid) { err.textContent="Member and boat are required."; err.style.display="block"; return; }
   err.style.display="none";
-  const boat     = boats.find(b=>b.id===bid)||{};
-  const location = locations.find(l=>l.id===lid)||{};
-  const member   = members.find(m=>m.kennitala===kt)||{};
+  const boat=boats.find(b=>b.id===bid)||{};
+  const location=locations.find(l=>l.id===lid)||{};
+  const member=members.find(m=>m.kennitala===kt)||{};
   try {
-    const res = await apiPost("saveCheckout", {
-      memberKennitala: kt, memberName: member.name||kt,
-      boatId: bid, boatName: boat.name||bid,
-      boatCategory: boat.category||"",
-      locationId: lid, locationName: location.name||lid,
-      checkedOutAt: document.getElementById("coTimeOut").value,
-      expectedReturn: document.getElementById("coReturnBy").value,
-      crew: crewCount,
-      notes: document.getElementById("coNotes").value.trim(),
+    await apiPost("saveCheckout",{
+      memberKennitala:kt, memberName:member.name||kt,
+      boatId:bid, boatName:boat.name||bid, boatCategory:boat.category||"",
+      locationId:lid, locationName:location.name||lid,
+      checkedOutAt:document.getElementById("coTimeOut").value,
+      expectedReturn:document.getElementById("coReturnBy").value,
+      crew:crewCount, notes:document.getElementById("coNotes").value.trim(),
     });
-    // Refresh from server to get enriched data (phone, guardian etc.)
-    checkouts = (await apiGet("getActiveCheckouts")).checkouts || [];
-    toggleCheckoutForm();
-    renderAll();
-    showMsg("✓ Checked out.", "ok");
+    checkouts=(await apiGet("getActiveCheckouts")).checkouts||[];
+    toggleCheckoutForm(); renderAll(); showMsg("Checked out.","ok");
   } catch(e) { err.textContent="Error: "+e.message; err.style.display="block"; }
 }
 
-// ── Check-in ────────────────────────────────────────────────────────────────────
 async function staffCheckIn(id) {
   try {
-    const timeIn = new Date().toTimeString().slice(0,5);
-    await apiPost("checkIn", { id, timeIn });
-    const co = checkouts.find(c=>c.id===id);
-    if (co) { co.status="in"; co.checkedInAt=timeIn; co.timeIn=timeIn; }
-    renderAll();
-    showMsg("✓ Checked in.", "ok");
+    const timeIn=new Date().toTimeString().slice(0,5);
+    await apiPost("checkIn",{id,timeIn});
+    const co=checkouts.find(c=>c.id===id);
+    if (co) { co.status="in"; co.checkedInAt=timeIn; }
+    renderAll(); showMsg("Checked in.","ok");
   } catch(e) { alert("Error: "+e.message); }
 }
 
-// ── Delete checkout ─────────────────────────────────────────────────────────────
 async function staffDeleteCheckout(id, boatName) {
-  if (!confirm(`Delete checkout for ${boatName||"this boat"}? This cannot be undone.`)) return;
+  if (!confirm(`Delete checkout for ${boatName||"this boat"}?`)) return;
   try {
-    await apiPost("deleteCheckout", { id });
-    checkouts = checkouts.filter(c => c.id!==id);
-    renderAll();
-    showMsg("Checkout deleted.", "ok");
+    await apiPost("deleteCheckout",{id});
+    checkouts=checkouts.filter(c=>c.id!==id);
+    renderAll(); showMsg("Deleted.","ok");
   } catch(e) { alert("Error: "+e.message); }
 }
 
-function showMsg(text, type) {
+function setCoReturnIn(mins) {
+  const base=document.getElementById("coTimeOut").value||new Date().toTimeString().slice(0,5);
+  const [h,m]=base.split(":").map(Number);
+  const total=h*60+m+mins;
+  const rh=Math.floor(total/60)%24, rm=total%60;
+  document.getElementById("coReturnBy").value=String(rh).padStart(2,"0")+":"+String(rm).padStart(2,"0");
+}
+
+function showMsg(text,type) {
   const el=document.createElement("div");
   el.className=`msg msg-${type}`;
   el.textContent=text;
@@ -319,18 +379,7 @@ function showMsg(text, type) {
   setTimeout(()=>el.remove(),3500);
 }
 
-// ── Return-time quick buttons ────────────────────────────────
-function setCoReturnIn(mins) {
-  const base = document.getElementById('coTimeOut').value || new Date().toTimeString().slice(0,5);
-  const [h, m] = base.split(':').map(Number);
-  const total  = h * 60 + m + mins;
-  const rh = Math.floor(total / 60) % 24;
-  const rm = total % 60;
-  document.getElementById('coReturnBy').value =
-    String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0');
-}
-
-function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 </script>
 </body>
 </html>
