@@ -288,26 +288,71 @@ const user = requireAuth(isStaff);
 const L    = getLang();
 const TODAY = new Date().toISOString().slice(0, 10);
 
+// Fallbacks for shared/ui.js utilities (in case ui.js not yet deployed)
+if (typeof showToast === 'undefined') {
+  window.showToast = (text, type) => console.log('[toast]', type, text);
+}
+if (typeof domRefs === 'undefined') {
+  window.domRefs = (map) => new Proxy({}, { get(_, k) { return document.getElementById(map[k]); } });
+}
+if (typeof replaceWithFragment === 'undefined') {
+  window.replaceWithFragment = (container, items, fn) => {
+    const f = document.createDocumentFragment();
+    items.forEach(item => { const n = fn(item); if (n) f.appendChild(n); });
+    container.replaceChildren(f);
+  };
+}
+if (typeof esc === 'undefined') {
+  window.esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 2 — STATE
-// (all mutable state in one place — never scattered across functions)
+// SECTION 2 — DEFAULT FALLBACK DATA
+// (must be before STATE so state initialisers can reference them)
+// ════════════════════════════════════════════════════════════════════════════
+const DEFAULT_AM = [
+  { id:'am1', textEN:'Check all boats for damage',    textIS:'Athuga alla báta vegna skemmda' },
+  { id:'am2', textEN:'Inspect safety equipment',      textIS:'Skoða öryggisbúnað' },
+  { id:'am3', textEN:'Confirm weather conditions',    textIS:'Staðfesta veðurlag' },
+  { id:'am4', textEN:'Open clubhouse and facilities', textIS:'Opna klúbbhús og aðstöðu' },
+  { id:'am5', textEN:'Check radio / communication',   textIS:'Athuga útvarps- og samskiptabúnað' },
+  { id:'am6', textEN:'Brief duty staff on conditions',textIS:'Kynna starfsfólki aðstæður' },
+];
+const DEFAULT_PM = [
+  { id:'pm1', textEN:'All boats returned and secured',textIS:'Allir bátar komnir og tryggðir' },
+  { id:'pm2', textEN:'Damage reports filed if needed',textIS:'Skemmdarskýrslur lagðar ef þarf' },
+  { id:'pm3', textEN:'Safety equipment stowed',       textIS:'Öryggisbúnaður geymdur' },
+  { id:'pm4', textEN:'Facilities locked and secured', textIS:'Aðstaða læst og tryggð' },
+  { id:'pm5', textEN:'Log completed and signed off',  textIS:'Skráning lokið og undirrituð' },
+];
+const DEFAULT_TYPES = [
+  { id:'t1', name:'Lesson',     nameIS:'Kennsla' },
+  { id:'t2', name:'Race',       nameIS:'Keppni' },
+  { id:'t3', name:'Club event', nameIS:'Félagsviðburður' },
+  { id:'t4', name:'Training',   nameIS:'Þjálfun' },
+  { id:'t5', name:'Maintenance',nameIS:'Viðhald' },
+  { id:'t6', name:'Other',      nameIS:'Annað' },
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 3 — STATE
 // ════════════════════════════════════════════════════════════════════════════
 let viewDate  = TODAY;
 let logId     = null;
 let dirty     = false;
-let wxData    = null;       // latest wx snapshot from widget
-let wxLog     = [];         // [{time, bft, ws, …}]
-let amChecks  = {};         // {id: bool}
+let wxData    = null;
+let wxLog     = [];
+let amChecks  = {};
 let pmChecks  = {};
 let amItems   = DEFAULT_AM;
 let pmItems   = DEFAULT_PM;
 let activities    = [];
 let activityTypes = DEFAULT_TYPES;
-let checkouts     = [];    // active today
-let maintenance   = [];    // open requests
+let checkouts     = [];
+let maintenance   = [];
 
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 3 — DOM REFS (cached, never re-queried)
+// SECTION 4 — DOM REFS (cached, never re-queried)
 // ════════════════════════════════════════════════════════════════════════════
 const dom = domRefs({
   mainWrap:          'mainWrap',
@@ -344,33 +389,6 @@ const dom = domRefs({
   actParticipants:   'actParticipants',
   actNotes:          'actNotes',
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// SECTION 4 — DEFAULT FALLBACK DATA
-// ════════════════════════════════════════════════════════════════════════════
-const DEFAULT_AM = [
-  { id:'am1', textEN:'Check all boats for damage',    textIS:'Athuga alla báta vegna skemmda' },
-  { id:'am2', textEN:'Inspect safety equipment',      textIS:'Skoða öryggisbúnað' },
-  { id:'am3', textEN:'Confirm weather conditions',    textIS:'Staðfesta veðurlag' },
-  { id:'am4', textEN:'Open clubhouse and facilities', textIS:'Opna klúbbhús og aðstöðu' },
-  { id:'am5', textEN:'Check radio / communication',   textIS:'Athuga útvarps- og samskiptabúnað' },
-  { id:'am6', textEN:'Brief duty staff on conditions',textIS:'Kynna starfsfólki aðstæður' },
-];
-const DEFAULT_PM = [
-  { id:'pm1', textEN:'All boats returned and secured',textIS:'Allir bátar komnir og tryggðir' },
-  { id:'pm2', textEN:'Damage reports filed if needed',textIS:'Skemmdarskýrslur lagðar ef þarf' },
-  { id:'pm3', textEN:'Safety equipment stowed',       textIS:'Öryggisbúnaður geymdur' },
-  { id:'pm4', textEN:'Facilities locked and secured', textIS:'Aðstaða læst og tryggð' },
-  { id:'pm5', textEN:'Log completed and signed off',  textIS:'Skráning lokið og undirrituð' },
-];
-const DEFAULT_TYPES = [
-  { id:'t1', name:'Lesson',     nameIS:'Kennsla' },
-  { id:'t2', name:'Race',       nameIS:'Keppni' },
-  { id:'t3', name:'Club event', nameIS:'Félagsviðburður' },
-  { id:'t4', name:'Training',   nameIS:'Þjálfun' },
-  { id:'t5', name:'Maintenance',nameIS:'Viðhald' },
-  { id:'t6', name:'Other',      nameIS:'Annað' },
-];
 
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 5 — RENDERERS
@@ -690,10 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Activity modal buttons
   dom.addActivityBtn.addEventListener('click', openActivityModal);
-  dom.actCancelBtn?.addEventListener('click',  closeActivityModal);
-  dom.actSaveBtn?.addEventListener('click',    saveActivity);
-  document.getElementById('actCancelBtn')?.addEventListener('click', closeActivityModal);
-  document.getElementById('actSaveBtn')?.addEventListener('click', saveActivity);
+  document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
+  document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
 
   // Save bar
   dom.saveDraftBtn.addEventListener('click', saveDraft);
@@ -759,7 +775,6 @@ async function resolveMaint(id, checked) {
 }
 
 // ── Activity modal ───────────────────────────────────────────────────────────
-let _actCancelBtn, _actSaveBtn;
 
 function openActivityModal() {
   _selectedActType = activityTypes[0]?.id || null;
@@ -979,8 +994,17 @@ async function doSave(signOff) {
 // SECTION 11 — INIT
 // ════════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  // Standard header (role-aware)
-  buildHeader('dailylog');
+  // Standard header (role-aware) — requires shared/ui.js
+  if (typeof buildHeader === 'function') buildHeader('dailylog');
+  else {
+    // Fallback: minimal inline header for pages not yet using ui.js
+    const left = document.querySelector('#ym-header .header-left');
+    const right = document.querySelector('#ym-header .header-right');
+    if (left)  left.innerHTML  = `<span class="logo">ÝMIR</span><a href="../staff/" class="hbtn" style="font-size:11px">← Staff</a>`;
+    if (right) right.innerHTML = `<a href="../weather/" class="hbtn" style="font-size:11px">⛅ Weather</a>
+      <button class="btn-ghost" onclick="toggleLang()" style="font-size:11px">${getLang()==='EN'?'IS':'EN'}</button>
+      <button class="btn-ghost" onclick="signOut()" style="font-size:11px">Sign out</button>`;
+  }
 
   // Weather widget — starts polling, feeds wxData for snapshots
   const wxCtrl = wxWidget(dom.wxWidget, {
