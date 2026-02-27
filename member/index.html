@@ -10,6 +10,7 @@
 <script src="../shared/api.js"></script>
 <script src="../shared/weather.js"></script>
 <script src="../shared/boats.js"></script>
+<script src="../shared/certs.js"></script>
 <style>
 /* ── Weather widget ── */
 .wx-widget { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; position:relative; overflow:hidden; }
@@ -137,6 +138,7 @@
   <div class="hub-tabs">
     <button class="hub-tab active" onclick="showTab('fleet')" id="tabBtnFleet">⛵ Fleet</button>
     <button class="hub-tab" onclick="showTab('trips')" id="tabBtnTrips">📋 Log a Recent Trip</button>
+    <button class="hub-tab" onclick="showTab('certs')" id="tabBtnCerts">🎖 Certifications</button>
   </div>
 
   <!-- ═══ TAB: FLEET ═══ -->
@@ -157,6 +159,13 @@
     <div id="clubTrips"><div class="empty-note">Loading recent trips…</div></div>
     <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
       <button class="btn btn-secondary" style="width:100%;font-size:11px" onclick="openManualTripModal()">+ Add trip manually</button>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: CERTIFICATIONS ═══ -->
+  <div id="tab-certs" class="hidden">
+    <div id="certsPanel">
+      <div class="empty-note" style="padding:20px 0">Loading…</div>
     </div>
   </div>
 
@@ -507,23 +516,25 @@ if(user){
   fetchWeatherWidget();
 }
 
-async function init(){
-  try{
-    const[bRes,lRes,coRes]=await Promise.all([
+async function init() {
+  try {
+    const [bRes, lRes, coRes, cfgRes] = await Promise.all([
       apiGet('getBoats'),
       apiGet('getLocations'),
       apiGet('getActiveCheckouts'),
+      apiGet('getConfig'),
     ]);
-    boats    =(bRes.boats    ||[]).filter(b=>String(b.active)!=='false'&&String(b.oos)!=='true');
+    boats         = (bRes.boats     || []).filter(b => String(b.active) !== 'false' && String(b.oos) !== 'true');
     boatRegistry.setBoats(boats);
-    locations=(lRes.locations||[]).filter(l=>String(l.active)!=='false');
-    checkouts= coRes.checkouts||[];
+    locations     = (lRes.locations || []).filter(l => String(l.active) !== 'false');
+    checkouts     = coRes.checkouts || [];
+    memberCertDefs = certDefsFromConfig(cfgRes.certDefs || []);
     populateSelects();
     renderCheckouts();
-    setV('lDate',todayISO()); setV('lTimeOut',fmtTimeNow());
-    setV('mDate',todayISO()); setV('mTimeOut',fmtTimeNow());
+    setV('lDate', todayISO()); setV('lTimeOut', fmtTimeNow());
+    setV('mDate', todayISO()); setV('mTimeOut', fmtTimeNow());
     handleQR();
-  }catch(e){console.error('init',e);}
+  } catch(e) { console.error('init', e); }
 }
 
 function populateSelects(){
@@ -1137,13 +1148,14 @@ async function submitManualTrip(){
 // ══════════════════════════════════════════════════════
 // TAB MANAGEMENT
 // ══════════════════════════════════════════════════════
-function showTab(tab){
-  ['fleet','trips'].forEach(t=>{
-    document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab);
-    const btn=document.getElementById('tabBtn'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(btn)btn.classList.toggle('active',t===tab);
+function showTab(tab) {
+  ['fleet', 'trips', 'certs'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (btn) btn.classList.toggle('active', t === tab);
   });
-  if(tab==='trips') loadTripsTab();
+  if (tab === 'trips') loadTripsTab();
+  if (tab === 'certs') renderMemberCerts();
 }
 
 // showMsg → shared/api.js
@@ -1202,6 +1214,69 @@ function setReturnIn(mins) {
   const rm = total % 60;
   document.getElementById('lReturnBy').value =
     String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0');
+}
+  
+// ── Member hub certifications ─────────────────────────────────────────────────
+let memberCertDefs = [];
+let memberCerts    = [];  // raw array from the logged-in member's record
+
+/**
+ * Call this after loading config and the member's own record.
+ * Renders the read-only certifications panel.
+ */
+function renderMemberCerts() {
+  certInjectStyles();
+  const el      = document.getElementById("certsPanel");
+  if (!el) return;
+  const enriched = enrichMemberCerts(memberCerts, memberCertDefs);
+
+  if (!enriched.length) {
+    el.innerHTML = `
+      <div style="padding:20px 0;text-align:center">
+        <div style="font-size:28px;margin-bottom:8px">🎖</div>
+        <div style="color:var(--muted);font-size:13px">No certifications on file yet.</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:4px">Contact a staff member to have your certifications recorded.</div>
+      </div>`;
+    return;
+  }
+
+  // Group by cert def so multiple subcats of the same category appear together
+  const grouped = {};
+  enriched.forEach(c => {
+    const key = c.certId;
+    if (!grouped[key]) grouped[key] = { def: c.def, items: [] };
+    grouped[key].items.push(c);
+  });
+
+  el.innerHTML = Object.values(grouped).map(group => {
+    const defName = group.def?.name || group.items[0].certId;
+    const rows    = group.items.map(c => {
+      const subLabel  = c.subcat ? ` — ${c.subcat.label}` : "";
+      const expiryStr = c.expiresAt
+        ? (c.expired
+            ? `<span style="color:var(--red);font-size:10px">Expired ${c.expiresAt}</span>`
+            : `<span style="color:var(--muted);font-size:10px">Expires ${c.expiresAt}</span>`)
+        : `<span style="color:var(--muted);font-size:10px">No expiry</span>`;
+      const icon = c.expired ? "✕" : "✓";
+      const iconColor = c.expired ? "var(--red)" : "var(--green)";
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44">
+          <span style="color:${iconColor};font-size:15px;flex-shrink:0">${icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">${esc(defName)}${esc(subLabel)}</div>
+            <div style="display:flex;gap:12px;margin-top:3px;flex-wrap:wrap">
+              ${expiryStr}
+              <span style="color:var(--muted);font-size:10px">Issued ${c.assignedAt || "—"} by ${esc(c.assignedBy || "—")}</span>
+            </div>
+            ${c.def?.description ? `<div style="color:var(--muted);font-size:11px;margin-top:3px;font-style:italic">${esc(c.def.description)}</div>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:9px;color:var(--brass);letter-spacing:1.5px;margin-bottom:4px">${esc(defName.toUpperCase())}</div>
+      ${rows}
+    </div>`;
+  }).join("");
 }
 </script>
 </body>
