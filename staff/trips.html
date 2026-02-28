@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/certs.js"></script>
 <style>
 .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
 .filter-bar input, .filter-bar select { flex:1; min-width:140px; }
@@ -39,16 +41,9 @@
 </head>
 <body>
 
-<header style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--bg)">
-  <div style="display:flex;align-items:center;gap:10px">
-    <a href="index.html" style="color:var(--muted);font-size:12px;text-decoration:none">← Staff Hub</a>
-    <span style="color:var(--muted);font-size:11px">/</span>
-    <span style="color:var(--text);font-size:13px;font-weight:500">Trip Review</span>
-  </div>
-  <div style="display:flex;gap:6px;align-items:center">
-    <span style="color:var(--muted);font-size:11px" id="userBadge"></span>
-    <button class="btn-ghost" onclick="signOut()" style="font-size:11px;padding:5px 8px">Sign out</button>
-  </div>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
 </header>
 
 <div style="max-width:720px;margin:0 auto;padding:16px 14px 48px">
@@ -74,18 +69,63 @@
 
 </div>
 
+<!-- ══ CERT ASSIGNMENT MODAL ══ -->
+<div class="modal-overlay hidden" id="tripCertModal">
+  <div class="modal" style="max-width:440px">
+    <h3>Assign Cert — <span id="tcmMemberName"></span></h3>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT CERTIFICATIONS</div>
+      <div id="tcmCurrentList"><div style="color:var(--muted);font-size:11px;font-style:italic">Loading…</div></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">ASSIGN CERTIFICATION</div>
+      <div class="field">
+        <label>Type</label>
+        <select id="tcmCertType" onchange="tcmCertTypeChanged()">
+          <option value="">Select…</option>
+        </select>
+      </div>
+      <div class="field" id="tcmSubcatField" style="display:none">
+        <label>Level / Subcategory</label>
+        <select id="tcmSubcat"><option value="">Select…</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Assigned date</label>
+          <input type="date" id="tcmAssignedAt">
+        </div>
+        <div class="field" id="tcmExpiryField" style="display:none">
+          <label>Expires</label>
+          <input type="date" id="tcmExpiresAt">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="tcmAssign()">Assign</button>
+    </div>
+
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn btn-secondary" onclick="closeModal('tripCertModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const user = requireAuth(['staff','admin']);
 
 let allTrips = [];
 let filtered = [];
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Cert modal state
+let _tcmCertDefs   = [];
+let _tcmAllMembers = [];
+let _tcmLoaded     = false;
+let _tcmMemberId   = null;
 
-if (user) {
-  document.getElementById('userBadge').textContent = user.name;
+document.addEventListener('DOMContentLoaded', () => {
+  buildHeader('trips');
   init();
-}
+});
 
 async function init() {
   try {
@@ -95,7 +135,7 @@ async function init() {
     applyFilters();
   } catch(e) {
     document.getElementById('tripList').innerHTML =
-      '<div class="empty-note" style="color:var(--red)">Could not load trips: '+esc(e.message)+'</div>';
+      '<div class="empty-note" style="color:var(--red)">Could not load trips: ' + esc(e.message) + '</div>';
   }
 }
 
@@ -131,7 +171,7 @@ function renderTrips() {
     return;
   }
   el.innerHTML = filtered.map(t => {
-    const isVer  = t.verified && t.verified !== 'false';
+    const isVer    = t.verified && t.verified !== 'false';
     const isLinked = t.isLinked === true || t.isLinked === 'true';
     return `<div class="trip-card${isVer?' verified':''}" id="tc-${esc(t.id)}">
       <div class="trip-head">
@@ -164,6 +204,8 @@ function renderTrips() {
       <div class="verify-row" id="vrow-${esc(t.id)}">
         <input type="text" id="comment-${esc(t.id)}" placeholder="Staff comment (optional)…"
           value="${esc(t.staffComment||'')}" style="font-size:12px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;flex-shrink:0"
+          onclick="openTripCertModal('${esc(t.memberId||'')}','${esc(t.memberName||'')}')">🎖 Cert</button>
         ${isVer
           ? `<button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0"
               onclick="unverifyTrip('${esc(t.id)}')">✗ Remove verification</button>`
@@ -176,7 +218,7 @@ function renderTrips() {
 
 async function verifyTrip(id) {
   const comment = document.getElementById('comment-'+id)?.value.trim() || '';
-  const btn = document.querySelector(`#tc-${id} .verify-row button`);
+  const btn = document.querySelector(`#tc-${id} .btn-primary`);
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     await apiPost('saveTrip', { id, verified: true, staffComment: comment, verifiedBy: user.name });
@@ -193,7 +235,7 @@ async function verifyTrip(id) {
 
 async function unverifyTrip(id) {
   const comment = document.getElementById('comment-'+id)?.value.trim() || '';
-  const btn = document.querySelector(`#tc-${id} .verify-row button`);
+  const btn = document.querySelector(`#tc-${id} .verify-row .btn-secondary:last-child`);
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     await apiPost('saveTrip', { id, verified: false, staffComment: comment, verifiedBy: '' });
@@ -206,6 +248,116 @@ async function unverifyTrip(id) {
     if (btn) { btn.disabled = false; btn.textContent = '✗ Remove verification'; }
     showMsg('Error: '+e.message, 'err');
   }
+}
+
+// ── Cert assignment modal ─────────────────────────────────────────────────────
+
+async function _ensureTcmData() {
+  if (_tcmLoaded) return;
+  const [mRes, cfgRes] = await Promise.all([apiGet('getMembers'), apiGet('getConfig')]);
+  _tcmAllMembers = mRes.members || [];
+  _tcmCertDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+  _tcmLoaded = true;
+
+  const sel = document.getElementById('tcmCertType');
+  sel.innerHTML = '<option value="">Select…</option>';
+  _tcmCertDefs.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.id; o.textContent = d.name;
+    sel.appendChild(o);
+  });
+}
+
+async function openTripCertModal(memberId, memberName) {
+  _tcmMemberId = memberId;
+  document.getElementById('tcmMemberName').textContent = memberName || memberId || '—';
+  document.getElementById('tcmAssignedAt').value = todayISO();
+  document.getElementById('tcmCertType').value   = '';
+  document.getElementById('tcmSubcatField').style.display = 'none';
+  document.getElementById('tcmExpiryField').style.display = 'none';
+  document.getElementById('tcmCurrentList').innerHTML =
+    '<div style="color:var(--muted);font-size:11px;font-style:italic">Loading…</div>';
+  openModal('tripCertModal');
+
+  try {
+    await _ensureTcmData();
+    const m  = _tcmAllMembers.find(x => x.id === memberId);
+    const el = document.getElementById('tcmCurrentList');
+    if (!m) { el.innerHTML = '<div style="color:var(--muted);font-size:11px">Member not found.</div>'; return; }
+    const certs = enrichMemberCerts(parseJson(m.certifications, []), _tcmCertDefs);
+    el.innerHTML = certs.length
+      ? certs.map(certBadgeHTML).join('')
+      : '<div style="color:var(--muted);font-size:11px;font-style:italic">None on file.</div>';
+  } catch(e) {
+    document.getElementById('tcmCurrentList').innerHTML =
+      `<div style="color:var(--red);font-size:11px">Load error: ${esc(e.message)}</div>`;
+  }
+}
+
+function tcmCertTypeChanged() {
+  const def    = _tcmCertDefs.find(d => d.id === document.getElementById('tcmCertType').value);
+  const sField = document.getElementById('tcmSubcatField');
+  const eField = document.getElementById('tcmExpiryField');
+
+  if (def?.subcats?.length) {
+    const sSel = document.getElementById('tcmSubcat');
+    sSel.innerHTML = '<option value="">Select…</option>';
+    def.subcats.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.key; o.textContent = s.label;
+      sSel.appendChild(o);
+    });
+    sField.style.display = '';
+  } else {
+    sField.style.display = 'none';
+  }
+
+  if (def?.renewalDays > 0) {
+    const exp = new Date();
+    exp.setDate(exp.getDate() + def.renewalDays);
+    document.getElementById('tcmExpiresAt').value = exp.toISOString().slice(0, 10);
+    eField.style.display = '';
+  } else {
+    eField.style.display = 'none';
+  }
+}
+
+async function tcmAssign() {
+  const certId = document.getElementById('tcmCertType').value;
+  const def    = _tcmCertDefs.find(d => d.id === certId);
+  if (!certId)  { showMsg('Select a certification type.', 'err'); return; }
+  const sub = def?.subcats?.length ? document.getElementById('tcmSubcat').value : null;
+  if (def?.subcats?.length && !sub) { showMsg('Select a subcategory.', 'err'); return; }
+  if (!_tcmMemberId) { showMsg('No member linked to this trip.', 'err'); return; }
+
+  const m = _tcmAllMembers.find(x => x.id === _tcmMemberId);
+  if (!m) { showMsg('Member not found.', 'err'); return; }
+
+  const newCert = {
+    certId, sub: sub || null,
+    assignedBy: user.name,
+    assignedAt: document.getElementById('tcmAssignedAt').value || todayISO(),
+    expiresAt:  document.getElementById('tcmExpiresAt').value  || null,
+  };
+
+  let existing = parseJson(m.certifications, []);
+  existing = applyRankRule(existing, newCert, _tcmCertDefs);
+  existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
+  const updated = [...existing, newCert];
+
+  try {
+    await apiPost('saveMemberCert', { memberId: _tcmMemberId, certifications: updated });
+    const idx = _tcmAllMembers.findIndex(x => x.id === _tcmMemberId);
+    if (idx >= 0) _tcmAllMembers[idx] = { ..._tcmAllMembers[idx], certifications: JSON.stringify(updated) };
+    // Refresh cert list in the modal
+    document.getElementById('tcmCurrentList').innerHTML =
+      enrichMemberCerts(updated, _tcmCertDefs).map(certBadgeHTML).join('');
+    // Reset form
+    document.getElementById('tcmCertType').value = '';
+    document.getElementById('tcmSubcatField').style.display = 'none';
+    document.getElementById('tcmExpiryField').style.display = 'none';
+    showMsg('✓ Certification assigned to ' + m.name + '.', 'ok');
+  } catch(e) { showMsg('Error: ' + e.message, 'err'); }
 }
 
 function showMsg(text, type) {
