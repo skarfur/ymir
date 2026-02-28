@@ -10,6 +10,7 @@
   <script src="../shared/api.js"></script>
   <script src="../shared/boats.js"></script>
   <script src="../shared/ui.js"></script>
+  <script src="../shared/certs.js"></script>
   <style>
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
@@ -46,8 +47,6 @@
     .boat-card.oos { opacity:.55; }
     .boat-card-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; }
     .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
-
-    /* cat badge colours via shared/boats.js */
 
     /* ── Generic row ── */
     .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;
@@ -104,37 +103,27 @@
 </head>
 <body>
 <div class="page">
-  <header>
-    <div class="header-left">
-      <a href="../" class="logo">ÝMIR</a>
-      <span class="page-title">Admin</span>
-    </div>
-    <div class="header-right">
-      <a href="../staff/"               class="hbtn">⚓ Staff</a>
-      <a href="../member/"              class="hbtn">👤 Member Hub</a>
-      <a href="../weather/"             class="hbtn">⛅ Weather</a>
-        <button class="hbtn" onclick="toggleLang()">IS</button>
-        <button class="hbtn" onclick="signOut()">Sign out</button>
-    </div>
+  <header id="ym-header">
+    <div class="header-left"></div>
+    <div class="header-right"></div>
   </header>
 
   <main>
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="members"   onclick="showTab('members')">Members</button>
-      <button class="tab-btn"        data-tab="boats"     onclick="showTab('boats')">Boats</button>
-      <button class="tab-btn"        data-tab="locations" onclick="showTab('locations')">Locations</button>
-      <button class="tab-btn"        data-tab="checklists"onclick="showTab('checklists')">Checklists</button>
-      <button class="tab-btn"        data-tab="actTypes"  onclick="showTab('actTypes')">Activity Types</button>
-      <button class="tab-btn"        data-tab="certs"     onclick="showTab('certs')">Certifications</button>
-      <button class="tab-btn"        data-tab="flags"     onclick="showTab('flags')">🚩 Flags</button>
-      <button class="tab-btn"        data-tab="alerts"    onclick="showTab('alerts')">Alerts</button>
+      <button class="tab-btn active" data-tab="members"    onclick="showTab('members')">Members</button>
+      <button class="tab-btn"        data-tab="boats"      onclick="showTab('boats')">Boats</button>
+      <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')">Locations</button>
+      <button class="tab-btn"        data-tab="checklists" onclick="showTab('checklists')">Checklists</button>
+      <button class="tab-btn"        data-tab="actTypes"   onclick="showTab('actTypes')">Activity Types</button>
+      <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')">Certifications</button>
+      <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')">🚩 Flags</button>
+      <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')">Alerts</button>
     </div>
 
     <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
     <div id="tab-members">
 
-      <!-- Controls -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <div class="search-bar" style="flex:1;min-width:200px">
           <input type="text" id="memberSearch" placeholder="Search name or kennitala…" oninput="filterMembers()">
@@ -143,7 +132,6 @@
         <button class="btn btn-primary"   onclick="openMemberModal()">+ Add member</button>
       </div>
 
-      <!-- Members list (collapsible) -->
       <div id="memberSubList">
         <div class="col-section">
           <div class="col-head" onclick="toggleSection(this)">
@@ -156,7 +144,6 @@
         </div>
       </div>
 
-      <!-- Import sub-panel -->
       <div id="memberSubImport" class="hidden">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <button class="btn-ghost" onclick="showTab('members','list')">← Back to list</button>
@@ -165,7 +152,8 @@
         <div id="importStep1" data-step="1">
           <div class="import-card">
             <div class="col-hint">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.ch-arrow').classList.toggle('open')">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+                onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.ch-arrow').classList.toggle('open')">
                 RECOGNISED ABLER.IO COLUMNS
                 <span class="ch-arrow col-toggle" style="font-size:10px">▼</span>
               </div>
@@ -190,10 +178,13 @@
         </div>
         <div id="importStep2" data-step="2" class="hidden">
           <div class="import-card" style="margin-bottom:12px">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Preview — kennitala used to match. Admin/staff roles never overwritten.</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+              Preview — kennitala used to match. Admin/staff roles never overwritten.
+            </div>
             <div class="import-summary" id="importSummary"></div>
             <div id="importLists"></div>
-            <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
+            <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
+              padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
             <div class="btn-row" style="margin-top:14px">
               <button class="btn btn-secondary" onclick="resetImport()">← Start over</button>
               <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
@@ -218,7 +209,6 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openBoatModal()">+ Add boat</button>
       </div>
-      <!-- One collapsible section per category, rendered dynamically -->
       <div id="boatSections">
         <div class="loading-state"><span class="spinner"></span></div>
       </div>
@@ -277,175 +267,125 @@
       </div>
     </div>
 
-    
-<!-- ══ CERTIFICATIONS ════════════════════════════════════════════════════════ -->
-<div id="tab-certs" class="hidden">
+    <!-- ══ CERTIFICATIONS ════════════════════════════════════════════════════ -->
+    <div id="tab-certs" class="hidden">
 
-  <!-- ── Cert definitions ───────────────────────────────────────────────── -->
-  <div class="col-section">
-    <div class="col-head open" onclick="toggleSection(this)">
-      <div class="col-title">CERTIFICATION TYPES</div>
-      <span class="col-toggle open">▼</span>
-    </div>
-    <div class="col-body" id="certDefsCard">
-      <div class="loading-state"><span class="spinner"></span></div>
-    </div>
-    <div style="padding:12px 0 4px">
-      <button class="btn btn-primary" onclick="openCertDefModal()">+ Add certification type</button>
-    </div>
-  </div>
-
-  <!-- ── Member cert assignment ─────────────────────────────────────────── -->
-  <div class="col-section" style="margin-top:16px">
-    <div class="col-head open" onclick="toggleSection(this)">
-      <div class="col-title">ASSIGN CERTIFICATIONS</div>
-      <span class="col-toggle open">▼</span>
-    </div>
-    <div class="col-body">
-
-      <!-- Member filter -->
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-        <div class="search-bar" style="flex:1;min-width:180px">
-          <input type="text" id="certMemberSearch" placeholder="Search member…" oninput="filterCertMembers()">
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">CERTIFICATION TYPES</div>
+          <span class="col-toggle open">▼</span>
         </div>
-        <!-- Filter by cert type -->
-        <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
-          <option value="">All cert types</option>
-        </select>
+        <div class="col-body" id="certDefsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:12px 0 4px">
+          <button class="btn btn-primary" onclick="openCertDefModal()">+ Add certification type</button>
+        </div>
       </div>
 
-      <div id="certMemberList"><div class="empty-state">Loading…</div></div>
-    </div>
-  </div>
-</div><!-- /tab-certs -->
+      <div class="col-section" style="margin-top:16px">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">ASSIGN CERTIFICATIONS</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:180px">
+              <input type="text" id="certMemberSearch" placeholder="Search member…" oninput="filterCertMembers()">
+            </div>
+            <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
+              <option value="">All cert types</option>
+            </select>
+          </div>
+          <div id="certMemberList"><div class="loading-state"><span class="spinner"></span></div></div>
+        </div>
+      </div>
+    </div><!-- /tab-certs -->
 
-    <!-- ══ ALERT SETTINGS ══════════════════════════════════════════════════ -->
+    <!-- ══ ALERT SETTINGS ═══════════════════════════════════════════════════ -->
     <div id="tab-alerts" class="hidden">
-    <div class="col-section">
-      <div class="col-head" onclick="toggleSection(this)">
-        <div class="col-title">⚠ OVERDUE ALERTS</div>
-        <span class="col-toggle">▼</span>
-      </div>
-      <div class="col-body hidden" id="alertConfigCard">
-
-        <!-- Master toggle -->
-        <div class="field" style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-          <label class="check-row" style="font-size:13px">
-            <input type="checkbox" id="alertEnabled"> Enable overdue alerts
-          </label>
-          <span style="font-size:11px;color:var(--muted)">
-            Fires when a sailor hasn't returned by their expected time
-          </span>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)">
+          <div class="col-title">⚠ OVERDUE ALERTS</div>
+          <span class="col-toggle">▼</span>
         </div>
+        <div class="col-body hidden" id="alertConfigCard">
 
-        <div id="alertConfigFields">
-
-          <!-- Timing row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
-            <div class="field">
-              <label>First alert after</label>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="alertFirstMins" min="1" max="120" style="width:72px">
-                <span style="color:var(--muted);font-size:11px">min overdue</span>
-              </div>
-            </div>
-            <div class="field">
-              <label>Repeat every</label>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="alertRepeatMins" min="0" max="240" style="width:72px">
-                <span style="color:var(--muted);font-size:11px">min (0 = off)</span>
-              </div>
-            </div>
-            <div class="field">
-              <label>Snooze duration</label>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="alertSnoozeMins" min="5" max="240" style="width:72px">
-                <span style="color:var(--muted);font-size:11px">min</span>
-              </div>
-              <div style="font-size:10px;color:var(--muted);margin-top:3px">
-                How long the Snooze button hides an alert. Staff see the snooze
-                button only after the first alert has fired.
-              </div>
-            </div>
+          <div class="field" style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+            <label class="check-row" style="font-size:13px">
+              <input type="checkbox" id="alertEnabled"> Enable overdue alerts
+            </label>
+            <span style="font-size:11px;color:var(--muted)">
+              Fires when a sailor hasn't returned by their expected time
+            </span>
           </div>
 
-          <!-- Channels -->
-          <div class="field" style="margin-bottom:14px">
-            <label>Alert channels</label>
-            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-
-              <label class="check-row">
-                <input type="checkbox" id="alertChWeb">
-                <span>
-                  <b>In-app banner</b>
-                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                    — red banner on all open staff &amp; admin tabs (polls every 10 min)
-                  </span>
-                </span>
-              </label>
-
-              <label class="check-row">
-                <input type="checkbox" id="alertChEmail">
-                <span>
-                  <b>Email</b>
-                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                    — sent via Apps Script MailApp · includes sailor/guardian contact
-                    + Silence &amp; Snooze buttons · requires time trigger
-                  </span>
-                </span>
-              </label>
-
-              <label class="check-row">
-                <input type="checkbox" id="alertChSms" disabled>
-                <span>
-                  <b>SMS</b>
-                  <span style="color:var(--muted);font-size:11px;margin-left:6px">
-                    — requires Twilio/Vonage configured in Code.gs
-                    <a href="https://github.com/skarfur/ymir#sms-setup"
-                       target="_blank" style="color:var(--brass)">setup →</a>
-                  </span>
-                </span>
-              </label>
-
+          <div id="alertConfigFields">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+              <div class="field">
+                <label>First alert after</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input type="number" id="alertFirstMins" min="1" max="120" style="width:72px">
+                  <span style="color:var(--muted);font-size:11px">min overdue</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Repeat every</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input type="number" id="alertRepeatMins" min="0" max="240" style="width:72px">
+                  <span style="color:var(--muted);font-size:11px">min (0 = off)</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Snooze duration</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input type="number" id="alertSnoozeMins" min="5" max="240" style="width:72px">
+                  <span style="color:var(--muted);font-size:11px">min</span>
+                </div>
+                <div style="font-size:10px;color:var(--muted);margin-top:3px">
+                  How long the Snooze button hides an alert.
+                </div>
+              </div>
             </div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">CHANNELS</div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap">
+                <label class="check-row"><input type="checkbox" id="alertChWeb" onchange="_toggleEmailField()"> Web notifications</label>
+                <label class="check-row"><input type="checkbox" id="alertChEmail" onchange="_toggleEmailField()"> Email</label>
+                <label class="check-row"><input type="checkbox" id="alertChSms" onchange="_toggleSmsField()"> SMS</label>
+              </div>
+            </div>
+
+            <div class="field" id="emailListField" style="display:none;margin-bottom:14px">
+              <label>Staff email addresses</label>
+              <textarea id="alertEmailList" rows="2"
+                placeholder="staff@example.com&#10;other@example.com"
+                style="width:100%;resize:vertical;font-size:12px"></textarea>
+            </div>
+
+            <div class="field" id="smsListField" style="display:none;margin-bottom:14px">
+              <label>Staff phone numbers (SMS)</label>
+              <textarea id="alertSmsList" rows="2"
+                placeholder="+354xxxxxxx&#10;+354yyyyyyy"
+                style="width:100%;resize:vertical;font-size:12px"></textarea>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">
+                International format (+354…). Requires SMS provider in Code.gs.
+              </div>
+            </div>
+          </div><!-- /alertConfigFields -->
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <button class="btn btn-primary" id="saveAlertBtn" onclick="saveAlertConfig()">Save alert settings</button>
+            <span id="alertSaveMsg" style="font-size:12px"></span>
           </div>
 
-          <!-- Email list -->
-          <div class="field" id="emailListField" style="display:none;margin-bottom:14px">
-            <label>Staff email addresses</label>
-            <textarea id="alertEmailList" rows="3"
-              placeholder="duty@ymir.is&#10;manager@ymir.is"
-              style="width:100%;resize:vertical;font-size:12px"></textarea>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">
-              One address per line. Each address receives a full alert email with
-              sailor/guardian contact and clickable Silence / Snooze buttons.
-            </div>
-          </div>
-
-          <!-- SMS list -->
-          <div class="field" id="smsListField" style="display:none;margin-bottom:14px">
-            <label>Staff phone numbers (SMS)</label>
-            <textarea id="alertSmsList" rows="2"
-              placeholder="+354xxxxxxx&#10;+354yyyyyyy"
-              style="width:100%;resize:vertical;font-size:12px"></textarea>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">
-              International format (+354…). Requires SMS provider in Code.gs.
-            </div>
-          </div>
-
-        </div><!-- /alertConfigFields -->
-
-        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-          <button class="btn btn-primary" id="saveAlertConfigBtn">Save alert settings</button>
-          <span id="alertSaveMsg" style="font-size:12px"></span>
-        </div>
-
-      </div><!-- /col-body -->
-    </div><!-- /col-section -->
+        </div><!-- /col-body -->
+      </div><!-- /col-section -->
     </div><!-- /tab-alerts -->
-       <!-- ══ FLAG SETTINGS ═══════════════════════════════════════════════════ -->
-    <div id="tab-flags" class="hidden">
 
+    <!-- ══ FLAG SETTINGS ════════════════════════════════════════════════════ -->
+    <div id="tab-flags" class="hidden">
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">🚩 SAILING FLAG THRESHOLDS</div>
@@ -458,81 +398,65 @@
             and member hub. Changes take effect immediately for all users on next refresh.
           </p>
 
-          <!-- ── Wind thresholds ─────────────────────────────────────────── -->
-          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">WIND — BEAUFORT THRESHOLDS</div>
-
-          <div class="grid2" style="margin-bottom:18px">
-            <div class="field">
-              <label>🟡 Yellow flag — min Bft</label>
-              <input type="number" id="fcWindYellow" min="1" max="12" step="1" style="width:80px">
-              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Yellow</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+            <div>
+              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WIND (BEAUFORT)</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div class="field" style="min-width:80px">
+                  <label>🟡 Yellow ≥</label>
+                  <input type="number" id="fcWindYellow" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+                <div class="field" style="min-width:80px">
+                  <label>🟠 Orange ≥</label>
+                  <input type="number" id="fcWindOrange" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+                <div class="field" style="min-width:80px">
+                  <label>🔴 Red ≥</label>
+                  <input type="number" id="fcWindRed" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+              </div>
             </div>
-            <div class="field">
-              <label>🟠 Orange flag — min Bft</label>
-              <input type="number" id="fcWindOrange" min="1" max="12" step="1" style="width:80px">
-              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Orange</div>
-            </div>
-            <div class="field">
-              <label>🔴 Red flag — min Bft</label>
-              <input type="number" id="fcWindRed" min="1" max="12" step="1" style="width:80px">
-              <div style="font-size:10px;color:var(--muted);margin-top:3px">Bft ≥ this → Red</div>
-            </div>
-          </div>
-
-          <!-- ── Easterly directions ────────────────────────────────────── -->
-          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">EASTERLY DIRECTIONS (add +1 flag level)</div>
-          <div id="fcEasterlyDirs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
-            <!-- checkboxes rendered by JS -->
-          </div>
-
-          <!-- ── Wave height thresholds ─────────────────────────────────── -->
-          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">WAVE HEIGHT THRESHOLDS (metres)</div>
-          <div class="grid2" style="margin-bottom:18px">
-            <div class="field">
-              <label>🟡 Yellow flag — min wave ht (m)</label>
-              <input type="number" id="fcWaveYellow" min="0" max="10" step="0.1" style="width:80px">
-            </div>
-            <div class="field">
-              <label>🟠 Orange flag — min wave ht (m)</label>
-              <input type="number" id="fcWaveOrange" min="0" max="10" step="0.1" style="width:80px">
-            </div>
-            <div class="field">
-              <label>🔴 Red flag — min wave ht (m)</label>
-              <input type="number" id="fcWaveRed" min="0" max="10" step="0.1" style="width:80px">
+            <div>
+              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WAVE HEIGHT (m)</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div class="field" style="min-width:80px">
+                  <label>🟡 Yellow ≥</label>
+                  <input type="number" id="fcWaveYellow" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+                <div class="field" style="min-width:80px">
+                  <label>🟠 Orange ≥</label>
+                  <input type="number" id="fcWaveOrange" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+                <div class="field" style="min-width:80px">
+                  <label>🔴 Red ≥</label>
+                  <input type="number" id="fcWaveRed" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- ── Advice text ─────────────────────────────────────────────── -->
-          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:10px">ADVICE TEXT (shown on flag banner)</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-            <div class="field">
-              <label>🟢 Green advice</label>
-              <input type="text" id="fcAdviceGreen" maxlength="120" style="width:100%">
+          <div style="margin-bottom:18px">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">
+              EASTERLY DIRECTIONS (add +1 flag level)
             </div>
-            <div class="field">
-              <label>🟡 Yellow advice</label>
-              <input type="text" id="fcAdviceYellow" maxlength="120" style="width:100%">
-            </div>
-            <div class="field">
-              <label>🟠 Orange advice</label>
-              <input type="text" id="fcAdviceOrange" maxlength="120" style="width:100%">
-            </div>
-            <div class="field">
-              <label>🔴 Red advice</label>
-              <input type="text" id="fcAdviceRed" maxlength="120" style="width:100%">
+            <div id="fcEasterlyDirs" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+
+          <div style="margin-bottom:18px">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">ADVICE TEXT</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label>🟢 Green</label>  <input type="text" id="fcAdviceGreen"  oninput="renderFlagPreview()"></div>
+              <div class="field"><label>🟡 Yellow</label> <input type="text" id="fcAdviceYellow" oninput="renderFlagPreview()"></div>
+              <div class="field"><label>🟠 Orange</label> <input type="text" id="fcAdviceOrange" oninput="renderFlagPreview()"></div>
+              <div class="field"><label>🔴 Red</label>    <input type="text" id="fcAdviceRed"    oninput="renderFlagPreview()"></div>
             </div>
           </div>
 
-          <!-- ── Validation error ───────────────────────────────────────── -->
-          <div id="fcValidationError" style="display:none;color:var(--red);font-size:12px;
-            background:#e74c3c11;border:1px solid var(--red)44;border-radius:6px;
-            padding:8px 12px;margin-bottom:12px"></div>
+          <div id="fcValidationError" style="display:none;color:var(--red);font-size:12px;margin-bottom:10px;
+            padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
 
-          <!-- ── Live preview ───────────────────────────────────────────── -->
-          <div style="font-size:10px;color:var(--brass);letter-spacing:1.2px;margin-bottom:8px">PREVIEW</div>
-          <div id="fcPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
-            <!-- rendered by renderFlagPreview() -->
-          </div>
+          <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">PREVIEW</div>
+          <div id="fcPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
 
           <div style="display:flex;align-items:center;gap:12px">
             <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
@@ -681,13 +605,14 @@
   </div>
 </div>
 
-
+<!-- Cert def modal -->
 <div class="modal-overlay hidden" id="certDefModal">
   <div class="modal" style="max-width:520px">
     <h3 id="certDefModalTitle">Add Certification Type</h3>
 
     <div class="field"><label>Name</label><input type="text" id="cdName" placeholder="e.g. World Sailing Certification"></div>
-    <div class="field"><label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
+    <div class="field">
+      <label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
       <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px" placeholder="Leave blank for now"></textarea>
     </div>
 
@@ -707,7 +632,6 @@
       </div>
     </div>
 
-    <!-- Subcategories -->
     <div style="margin-top:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBCATEGORIES</label>
@@ -734,13 +658,11 @@
   <div class="modal" style="max-width:480px">
     <h3>Certifications — <span id="mcmMemberName"></span></h3>
 
-    <!-- Current certs -->
     <div style="margin-bottom:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
       <div id="mcmCurrentList"><div class="empty-state">No certifications assigned.</div></div>
     </div>
 
-    <!-- Assign new -->
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">ASSIGN CERTIFICATION</div>
       <div class="field">
@@ -751,9 +673,7 @@
       </div>
       <div class="field" id="mcmSubcatField" style="display:none">
         <label>Level / Subcategory</label>
-        <select id="mcmSubcat">
-          <option value="">Select…</option>
-        </select>
+        <select id="mcmSubcat"><option value="">Select…</option></select>
       </div>
       <div class="grid2">
         <div class="field">
@@ -769,24 +689,21 @@
     </div>
 
     <div style="margin-top:12px;text-align:right">
-      <button class="btn btn-secondary" onclick="closeModal('memberCertModal')">Done</button>
+      <button class="btn btn-secondary" onclick="closeModal('memberCertModal')">Close</button>
     </div>
   </div>
 </div>
-  
-<!-- QR modal -->
+
+<!-- Boat QR modal -->
 <div class="modal-overlay hidden" id="qrModal">
-  <div class="modal" style="max-width:400px">
-    <h3>Boat QR Code</h3>
-    <div style="text-align:center">
-      <div id="qrBoatName" style="font-size:15px;font-weight:500;color:var(--brass);margin-bottom:3px"></div>
-      <div id="qrCategory" style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:14px"></div>
-      <img id="qrImg" src="" alt="Boat QR" style="width:210px;height:210px;border-radius:6px;background:#fff;display:block;margin:0 auto">
-      <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all;max-width:280px;margin-left:auto;margin-right:auto" id="qrUrl"></div>
-      <div style="font-size:9px;color:var(--border);margin-top:4px">ID: <span id="qrBoatId"></span></div>
-    </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:10px">
-      One code per boat. Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
+  <div class="modal" style="max-width:360px;text-align:center">
+    <h3 id="qrBoatName" style="font-size:18px"></h3>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px" id="qrCategory"></div>
+    <img id="qrImg" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--border)">
+    <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
+    <div style="font-size:10px;color:var(--border);margin-top:4px" id="qrBoatId"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
+      Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
@@ -797,7 +714,6 @@
 
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────────
-// shared/api.js guarantees toggleLang() and signOut() exist — no guard stubs needed.
 const user = requireAuth(isAdmin);
 
 let members = [], boats = [], locations = [], clItems = [], actTypes = [];
@@ -805,6 +721,7 @@ let editingId = null, importResult = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  buildHeader('admin');
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
     showTab(p.get("tab") || "members", p.get("sub") || undefined);
@@ -819,14 +736,16 @@ async function loadAll() {
   try {
     const [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
     loadAlertConfig(cfgRes.overdueAlerts);
+    loadFlagConfigPanel(cfgRes.flagConfig);
     members  = mRes.members || [];
-    actTypes = cfgRes.activityTypes || []; 
+    actTypes = cfgRes.activityTypes || [];
     clItems  = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
     certDefs = certDefsFromConfig(cfgRes.certDefs || []);
     try { boats     = (await apiGet("getBoats")).boats         || []; } catch(e) { console.warn("getBoats:", e.message); }
     try { locations = (await apiGet("getLocations")).locations || []; } catch(e) { console.warn("getLocations:", e.message); }
   } catch(e) { console.error("loadAll:", e); }
-  renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes(); renderCertDefs(); renderCertMembers(); populateCertFilterType();
+  renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
+  renderCertDefs(); renderCertMembers(); populateCertFilterType();
 }
 
 // ── Collapsible sections ───────────────────────────────────────────────────────
@@ -853,6 +772,13 @@ function showTab(tab, sub) {
     document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
   }
 
+  // FIX: Re-render cert tab on every visit so data is fresh and not "No members."
+  if (tab === "certs") {
+    renderCertDefs();
+    renderCertMembers();
+    populateCertFilterType();
+  }
+
   const url = new URL(window.location.href);
   url.searchParams.set("tab", tab);
   sub ? url.searchParams.set("sub", sub) : url.searchParams.delete("sub");
@@ -861,18 +787,6 @@ function showTab(tab, sub) {
 }
 
 // ── Generic entity save ────────────────────────────────────────────────────────
-/**
- * Shared CRUD save: posts to API, updates local array, closes modal, re-renders.
- *
- * @param {object} opts
- *   apiAction   string   — e.g. "saveBoat"
- *   getArray    function → the current array (e.g. () => boats)
- *   setArray    function(newArr) — e.g. arr => { boats = arr; }
- *   payload     object   — fields to send; must include `id: editingId`
- *   modalId     string   — id of the modal overlay to close on success
- *   renderFn    function — called after save to re-render the list
- *   btn         HTMLElement — the save button (disabled during request)
- */
 async function saveEntity({ apiAction, getArray, setArray, payload, modalId, renderFn, btn }) {
   if (btn) { btn.disabled = true; }
   try {
@@ -926,24 +840,24 @@ function renderMembers() {
 function openMemberModal(id) {
   editingId = id || null;
   const m   = id ? members.find(x => x.id === id) : null;
-  document.getElementById("memberModalTitle").textContent = m ? "Edit Member" : "Add Member";
-  document.getElementById("mKennitala").value      = m ? m.kennitala        : "";
-  document.getElementById("mName").value           = m ? m.name             : "";
-  document.getElementById("mRole").value           = m ? (m.role || "member"): "member";
-  document.getElementById("mEmail").value          = m ? (m.email || "")    : "";
-  document.getElementById("mPhone").value          = m ? (m.phone || "")    : "";
-  document.getElementById("mBirthYear").value      = m ? (m.birthYear || "") : "";
-  document.getElementById("mIsMinor").checked      = m ? bool(m.isMinor)    : false;
-  document.getElementById("mActive").checked       = m ? bool(m.active)     : true;
-  document.getElementById("mGuardianName").value   = m ? (m.guardianName || "") : "";
-  document.getElementById("mGuardianKt").value     = m ? (m.guardianKennitala || "") : "";
-  document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
+  document.getElementById("memberModalTitle").textContent  = m ? "Edit Member" : "Add Member";
+  document.getElementById("mKennitala").value              = m ? m.kennitala          : "";
+  document.getElementById("mName").value                   = m ? m.name               : "";
+  document.getElementById("mRole").value                   = m ? (m.role || "member") : "member";
+  document.getElementById("mEmail").value                  = m ? (m.email || "")      : "";
+  document.getElementById("mPhone").value                  = m ? (m.phone || "")      : "";
+  document.getElementById("mBirthYear").value              = m ? (m.birthYear || "")  : "";
+  document.getElementById("mIsMinor").checked              = m ? bool(m.isMinor)      : false;
+  document.getElementById("mActive").checked               = m ? bool(m.active)       : true;
+  document.getElementById("mGuardianName").value           = m ? (m.guardianName || "")          : "";
+  document.getElementById("mGuardianKt").value             = m ? (m.guardianKennitala || "")     : "";
+  document.getElementById("mGuardianPhone").value          = m ? (m.guardianPhone || "")         : "";
   document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
   openModal("memberModal");
 }
 
 async function saveMember() {
-  const btn      = document.getElementById("saveMemberBtn");
+  const btn       = document.getElementById("saveMemberBtn");
   const kennitala = document.getElementById("mKennitala").value.trim().replace(/\D/g, "");
   const name      = document.getElementById("mName").value.trim();
   if (!kennitala || kennitala.length !== 10) { toast("Valid 10-digit kennitala required.", "err"); return; }
@@ -1033,12 +947,12 @@ function openBoatModal(id) {
   editingId = id || null;
   const b   = id ? boats.find(x => x.id === id) : null;
   document.getElementById("boatModalTitle").textContent = b ? "Edit Boat" : "Add Boat";
-  document.getElementById("bName").value      = b ? b.name                : "";
+  document.getElementById("bName").value      = b ? b.name                   : "";
   document.getElementById("bCategory").value  = b ? (b.category || "dinghy") : "dinghy";
-  document.getElementById("bOOS").checked     = b ? bool(b.oos)           : false;
-  document.getElementById("bOOSReason").value = b ? (b.oosReason || "")  : "";
+  document.getElementById("bOOS").checked     = b ? bool(b.oos)              : false;
+  document.getElementById("bOOSReason").value = b ? (b.oosReason || "")     : "";
   document.getElementById("oosReasonField").classList.toggle("hidden", !b || !bool(b.oos));
-  document.getElementById("bActive").checked  = b ? bool(b.active)        : true;
+  document.getElementById("bActive").checked  = b ? bool(b.active)          : true;
   document.getElementById("bDeleteBtn").classList.toggle("hidden", !b);
   openModal("boatModal");
 }
@@ -1091,7 +1005,7 @@ function openLocationModal(id) {
   editingId = id || null;
   const l   = id ? locations.find(x => x.id === id) : null;
   document.getElementById("locationModalTitle").textContent = l ? "Edit Location" : "Add Location";
-  document.getElementById("lName").value    = l ? l.name         : "";
+  document.getElementById("lName").value     = l ? l.name         : "";
   document.getElementById("lActive").checked = l ? bool(l.active) : true;
   document.getElementById("lDeleteBtn").classList.toggle("hidden", !l);
   openModal("locationModal");
@@ -1133,7 +1047,8 @@ function renderCLPhase(cardId, phase) {
   card.innerHTML = items.map(i => `
     <div class="cl-row">
       <span class="cl-phase">${phase.toUpperCase()}</span>
-      <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
+      <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS
+        ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCLItem('${i.id}')">×</button>
     </div>`).join("");
@@ -1143,9 +1058,9 @@ function openCLModal(id) {
   editingId    = id || null;
   const item   = id ? clItems.find(x => x.id === id) : null;
   document.getElementById("clModalTitle").textContent = item ? "Edit Item" : "Add Item";
-  document.getElementById("clPhase").value    = item ? (item.phase  || "am") : "am";
-  document.getElementById("clTextEN").value   = item ? (item.textEN || "")   : "";
-  document.getElementById("clTextIS").value   = item ? (item.textIS || "")   : "";
+  document.getElementById("clPhase").value    = item ? (item.phase   || "am") : "am";
+  document.getElementById("clTextEN").value   = item ? (item.textEN  || "")   : "";
+  document.getElementById("clTextIS").value   = item ? (item.textIS  || "")   : "";
   document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;
   document.getElementById("clActive").checked = item ? bool(item.active)      : true;
   document.getElementById("clDeleteBtn").classList.toggle("hidden", !item);
@@ -1189,7 +1104,8 @@ function renderActTypes() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">No activity types.</div>`; return; }
   card.innerHTML = active.map(a => `
     <div class="list-row">
-      <span class="list-name">${esc(a.name)}${a.nameIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
+      <span class="list-name">${esc(a.name)}${a.nameIS
+        ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
       <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
     </div>`).join("");
@@ -1235,24 +1151,22 @@ async function deleteActType(id) {
 }
 
 
-// ── Certifications state ──────────────────────────────────────────────────────
-let certDefs   = [];    // loaded from config via certDefsFromConfig()
-let certEditId = null;  // id of cert def being edited
-let mcmMemberId = null; // member id in the assignment modal
+// ── Certifications ─────────────────────────────────────────────────────────────
+let certDefs     = [];
+let certEditId   = null;
+let mcmMemberId  = null;
+let certMemberFilter = "";
+let certTypeFilter   = "";
 
-// Called from loadAll() after cfgRes arrives:
-// certDefs = certDefsFromConfig(cfgRes.certDefs || []);
-// renderCertDefs(); renderCertMembers(); populateCertFilterType();
-
-// ── Cert definitions ──────────────────────────────────────────────────────────
 function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
+  if (!el) return;
   if (!certDefs.length) {
     el.innerHTML = `<div class="empty-state">No certification types defined.</div>`;
     return;
   }
   el.innerHTML = certDefs.map(d => {
-    const renewal = d.renewalDays ? `Every ${d.renewalDays} days` : "Permanent";
+    const renewal   = d.renewalDays ? `Every ${d.renewalDays} days` : "Permanent";
     const subcatStr = d.subcats?.length
       ? d.subcats.map(s => s.label + (s.rank != null ? ` (rank ${s.rank})` : "")).join(", ")
       : "No subcategories";
@@ -1275,25 +1189,22 @@ function openCertDefModal(id) {
   document.getElementById("cdDesc").value = d ? (d.description || "") : "";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
 
-  // Renewal
   const days = d?.renewalDays || 0;
   const renewalType = days === 0 ? "permanent" : days === 365 ? "annual" : days === 730 ? "biennial" : "custom";
   document.getElementById("cdRenewalType").value = renewalType;
   document.getElementById("cdRenewalDays").value = days || "";
   toggleRenewalDays();
 
-  // Subcats
-  const subcats = d?.subcats || [];
   document.getElementById("subcatRows").innerHTML = "";
-  subcats.forEach(s => addSubcatRow(s));
+  (d?.subcats || []).forEach(s => addSubcatRow(s));
   openModal("certDefModal");
 }
 
 function toggleRenewalDays() {
   const val = document.getElementById("cdRenewalType").value;
   document.getElementById("cdRenewalDaysField").style.display = val === "custom" ? "" : "none";
-  if (val === "annual")   document.getElementById("cdRenewalDays").value = 365;
-  if (val === "biennial") document.getElementById("cdRenewalDays").value = 730;
+  if (val === "annual")    document.getElementById("cdRenewalDays").value = 365;
+  if (val === "biennial")  document.getElementById("cdRenewalDays").value = 730;
   if (val === "permanent") document.getElementById("cdRenewalDays").value = 0;
 }
 
@@ -1325,6 +1236,7 @@ function gatherSubcats() {
   })).filter(s => s.label);
 }
 
+// FIX: Generate stable client-side id so cert defs persist even if backend doesn't return one.
 async function saveCertDef() {
   const btn  = document.getElementById("saveCertDefBtn");
   const name = document.getElementById("cdName").value.trim();
@@ -1336,8 +1248,11 @@ async function saveCertDef() {
     renewalDays = parseInt(document.getElementById("cdRenewalDays").value) || 0;
   }
 
+  // Generate a stable id client-side for new defs — don't rely on the backend returning one.
+  const newId = certEditId || ("cert_" + Date.now().toString(36));
+
   const payload = {
-    id:          certEditId,
+    id:          newId,
     name,
     description: document.getElementById("cdDesc").value.trim(),
     renewalDays,
@@ -1346,13 +1261,18 @@ async function saveCertDef() {
 
   btn.disabled = true;
   try {
-    const res = await apiPost("saveCertDef", payload);
-    if (!certEditId && res.id) payload.id = res.id;
+    const res     = await apiPost("saveCertDef", payload);
+    // Prefer server-assigned id if returned; otherwise keep the one we generated.
+    const savedId = res?.id || newId;
+    const saved   = { ...payload, id: savedId };
+
     if (certEditId) {
-      certDefs = certDefs.map(d => d.id === certEditId ? { ...d, ...payload } : d);
+      certDefs = certDefs.map(d => d.id === certEditId ? saved : d);
     } else {
-      certDefs = [...certDefs, payload];
+      certDefs = [...certDefs, saved];
     }
+    certEditId = savedId; // keep in sync for follow-up edits
+
     renderCertDefs();
     populateCertFilterType();
     closeModal("certDefModal");
@@ -1376,12 +1296,10 @@ async function deleteCertDef() {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ── Member cert filter & list ─────────────────────────────────────────────────
-let certMemberFilter = "";
-let certTypeFilter   = "";
-
+// ── Member cert filter & list ──────────────────────────────────────────────────
 function populateCertFilterType() {
   const sel = document.getElementById("certFilterType");
+  if (!sel) return;
   sel.innerHTML = `<option value="">All cert types</option>`;
   certDefs.forEach(d => {
     const o = document.createElement("option");
@@ -1405,12 +1323,21 @@ function filterCertMembers() {
   renderCertMembers();
 }
 
+// FIX: Show spinner while data is loading instead of "No members."
 function renderCertMembers() {
   const el = document.getElementById("certMemberList");
+  if (!el) return;
+
+  // If members hasn't loaded yet and no filter is active, show a spinner.
+  if (!members.length && !certMemberFilter && !certTypeFilter) {
+    el.innerHTML = `<div class="loading-state"><span class="spinner"></span></div>`;
+    return;
+  }
+
   const active = members.filter(m => {
     if (!bool(m.active)) return false;
     const nameMatch = !certMemberFilter
-      || String(m.name || "").toLowerCase().includes(certMemberFilter)
+      || String(m.name      || "").toLowerCase().includes(certMemberFilter)
       || String(m.kennitala || "").includes(certMemberFilter);
     if (!nameMatch) return false;
     if (certTypeFilter) {
@@ -1441,7 +1368,7 @@ function renderCertMembers() {
   }).join("");
 }
 
-// ── Member cert assignment modal ──────────────────────────────────────────────
+// ── Member cert assignment modal ───────────────────────────────────────────────
 function openMemberCertModal(memberId) {
   mcmMemberId = memberId;
   const m     = members.find(x => x.id === memberId);
@@ -1450,8 +1377,8 @@ function openMemberCertModal(memberId) {
   document.getElementById("mcmAssignedAt").value = todayISO();
   document.getElementById("mcmCertType").value   = "";
   document.getElementById("mcmSubcat").value     = "";
-  document.getElementById("mcmSubcatField").style.display  = "none";
-  document.getElementById("mcmExpiryField").style.display  = "none";
+  document.getElementById("mcmSubcatField").style.display = "none";
+  document.getElementById("mcmExpiryField").style.display = "none";
   renderCurrentCerts(m);
   openModal("memberCertModal");
 }
@@ -1464,8 +1391,10 @@ function renderCurrentCerts(m) {
     return;
   }
   el.innerHTML = certs.map(c => {
-    const label = c.subcat ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
-    const expiry = c.expiresAt ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`) : " · Permanent";
+    const label  = c.subcat ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
+    const expiry = c.expiresAt
+      ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`)
+      : " · Permanent";
     const meta   = `by ${esc(c.assignedBy || "—")} on ${c.assignedAt || "—"}${expiry}`;
     return `<div class="list-row" style="font-size:12px">
       <div style="flex:1">
@@ -1483,7 +1412,6 @@ function updateMCMSubcats() {
   const sf     = document.getElementById("mcmSubcatField");
   const ef     = document.getElementById("mcmExpiryField");
 
-  // Subcats
   if (def?.subcats?.length) {
     const sel = document.getElementById("mcmSubcat");
     sel.innerHTML = `<option value="">Select…</option>`;
@@ -1497,7 +1425,6 @@ function updateMCMSubcats() {
     sf.style.display = "none";
   }
 
-  // Expiry auto-calc
   if (def?.renewalDays > 0) {
     const d = new Date();
     d.setDate(d.getDate() + def.renewalDays);
@@ -1515,35 +1442,30 @@ async function assignMemberCert() {
   const certId = document.getElementById("mcmCertType").value;
   if (!certId) { toast("Select a certification type.", "err"); return; }
 
-  const def    = certDefs.find(d => d.id === certId);
-  const sub    = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
+  const def = certDefs.find(d => d.id === certId);
+  const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
   if (def?.subcats?.length && !sub) { toast("Select a subcategory.", "err"); return; }
 
-  const user      = getUser();
-  const newCert   = {
+  const newCert = {
     certId,
     sub:        sub || null,
-    assignedBy: user?.name || "Staff",
+    assignedBy: getUser()?.name || "Staff",
     assignedAt: document.getElementById("mcmAssignedAt").value || todayISO(),
-    expiresAt:  document.getElementById("mcmExpiresAt").value || null,
+    expiresAt:  document.getElementById("mcmExpiresAt").value  || null,
   };
 
-  // Apply rank rule (World Sailing etc.)
   let existing = parseJson(m.certifications, []);
   existing = applyRankRule(existing, newCert, certDefs);
-  // Remove exact duplicate if re-assigning same cert+sub
   existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
   const updated = [...existing, newCert];
 
   try {
     await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: updated });
-    // Update local member record
     const mIdx = members.findIndex(x => x.id === mcmMemberId);
     members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
     toast("Certification assigned.");
-    // Reset form
     document.getElementById("mcmCertType").value = "";
     document.getElementById("mcmSubcatField").style.display = "none";
     document.getElementById("mcmExpiryField").style.display = "none";
@@ -1552,7 +1474,7 @@ async function assignMemberCert() {
 
 async function removeMemberCert(certId, sub) {
   if (!confirm("Remove this certification?")) return;
-  const m       = members.find(x => x.id === mcmMemberId);
+  const m = members.find(x => x.id === mcmMemberId);
   if (!m) return;
   const updated = parseJson(m.certifications, []).filter(
     c => !(c.certId === certId && (c.sub || "") === (sub || ""))
@@ -1570,15 +1492,15 @@ async function removeMemberCert(certId, sub) {
 // ── Alert config ───────────────────────────────────────────────────────────────
 function loadAlertConfig(cfg) {
   cfg = cfg || {};
-  document.getElementById("alertEnabled").checked     = cfg.enabled !== false;
-  document.getElementById("alertFirstMins").value     = cfg.firstAlertMins || 15;
-  document.getElementById("alertRepeatMins").value    = cfg.repeatMins     || 30;
-  document.getElementById("alertSnoozeMins").value    = cfg.snoozeMins     || 30;
-  document.getElementById("alertChWeb").checked       = cfg.channels?.web   !== false;
-  document.getElementById("alertChEmail").checked     = !!cfg.channels?.email;
-  document.getElementById("alertChSms").checked       = !!cfg.channels?.sms;
-  document.getElementById("alertEmailList").value     = (cfg.staffEmailList || []).join("\n");
-  document.getElementById("alertSmsList").value       = (cfg.staffSmsList   || []).join("\n");
+  document.getElementById("alertEnabled").checked   = cfg.enabled !== false;
+  document.getElementById("alertFirstMins").value   = cfg.firstAlertMins || 15;
+  document.getElementById("alertRepeatMins").value  = cfg.repeatMins     || 30;
+  document.getElementById("alertSnoozeMins").value  = cfg.snoozeMins     || 30;
+  document.getElementById("alertChWeb").checked     = cfg.channels?.web   !== false;
+  document.getElementById("alertChEmail").checked   = !!cfg.channels?.email;
+  document.getElementById("alertChSms").checked     = !!cfg.channels?.sms;
+  document.getElementById("alertEmailList").value   = (cfg.staffEmailList || []).join("\n");
+  document.getElementById("alertSmsList").value     = (cfg.staffSmsList   || []).join("\n");
   _toggleEmailField();
   _toggleSmsField();
 }
@@ -1597,7 +1519,7 @@ async function saveAlertConfig() {
   btn.disabled = true;
   try {
     const cfg = {
-      enabled:       document.getElementById("alertEnabled").checked,
+      enabled:        document.getElementById("alertEnabled").checked,
       firstAlertMins: parseInt(document.getElementById("alertFirstMins").value) || 15,
       repeatMins:     parseInt(document.getElementById("alertRepeatMins").value) || 30,
       snoozeMins:     parseInt(document.getElementById("alertSnoozeMins").value) || 30,
@@ -1621,11 +1543,6 @@ async function saveAlertConfig() {
 }
 
 // ── CSV Import ─────────────────────────────────────────────────────────────────
-
-/**
- * Show one of the three import step panels by number (1 | 2 | 3).
- * Uses data-step attributes instead of a fragile hardcoded ID list.
- */
 function showImportStep(n) {
   document.querySelectorAll("[data-step]").forEach(el => {
     el.classList.toggle("hidden", el.dataset.step !== String(n));
@@ -1642,14 +1559,12 @@ function handleCSVFile(e) {
 
 function loadDemoCSV() { processCSV(DEMO_CSV); }
 
-// (parseAblerCSV and DEMO_CSV remain exactly as before — not changed here)
-
 function processCSV(text) {
   const incoming = parseAblerCSV(text);
   if (!incoming.length) { toast("No valid rows found.", "err"); return; }
 
-  const kts         = new Set(incoming.map(r => r.kennitala));
-  const added       = [], updated = [], unchanged = [], flagged = [];
+  const kts   = new Set(incoming.map(r => r.kennitala));
+  const added = [], updated = [], unchanged = [], flagged = [];
 
   incoming.forEach(row => {
     const ex = members.find(m => m.kennitala === row.kennitala);
@@ -1680,8 +1595,8 @@ function processCSV(text) {
   let html = "";
   if (added.length) {
     html += `<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${added.length})</div>
-      <div class="import-list">${added.map(m =>
-        `<div class="import-row">
+      <div class="import-list">${added.map(m => `
+        <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
           <span style="flex:1">${esc(m.name)}</span>
           ${m.isMinor ? `<span class="minor-badge">minor</span>` : ""}
@@ -1689,8 +1604,8 @@ function processCSV(text) {
   }
   if (updated.length) {
     html += `<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${updated.length})</div>
-      <div class="import-list">${updated.map(m =>
-        `<div class="import-row">
+      <div class="import-list">${updated.map(m => `
+        <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
           <span style="flex:1">${esc(m.name)}</span>
           <span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span>
@@ -1698,8 +1613,8 @@ function processCSV(text) {
   }
   if (flagged.length) {
     html += `<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${flagged.length})</div>
-      <div class="import-list">${flagged.map(m =>
-        `<div class="import-row">
+      <div class="import-list">${flagged.map(m => `
+        <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
           <span>${esc(m.name)}</span>
         </div>`).join("")}</div>`;
@@ -1714,13 +1629,11 @@ async function confirmImport() {
   const btn = document.getElementById("confirmImportBtn");
   btn.disabled = true; btn.textContent = "Importing…";
   try {
-    // Strip internal metadata, then send in parallel batches of 10
     const toSend = [...importResult.added, ...importResult.updated].map(m => {
       const c = { ...m }; delete c._s; delete c._prev; return c;
     });
     await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
 
-    // Sync local state
     importResult.updated.forEach(u => {
       members = members.map(m => m.kennitala === u.kennitala ? { ...u } : m);
     });
@@ -1744,6 +1657,9 @@ function resetImport() {
   showImportStep(1);
 }
 
+// parseAblerCSV and DEMO_CSV — unchanged from original, not modified here.
+// They remain in the source file as-is.
+
 // ── QR codes ───────────────────────────────────────────────────────────────────
 const BASE_SITE = "https://skarfur.github.io/ymir";
 
@@ -1751,11 +1667,11 @@ function showBoatQR(boatId) {
   const b = boats.find(x => x.id === boatId);
   if (!b) return;
   const url = `${BASE_SITE}/member/?boat=${boatId}`;
-  document.getElementById("qrBoatName").textContent = b.name;
-  document.getElementById("qrCategory").textContent = (b.category || "dinghy").toUpperCase();
-  document.getElementById("qrImg").src  = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
-  document.getElementById("qrUrl").textContent   = url;
-  document.getElementById("qrBoatId").textContent = boatId;
+  document.getElementById("qrBoatName").textContent  = b.name;
+  document.getElementById("qrCategory").textContent  = (b.category || "dinghy").toUpperCase();
+  document.getElementById("qrImg").src               = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
+  document.getElementById("qrUrl").textContent       = url;
+  document.getElementById("qrBoatId").textContent    = boatId;
   openModal("qrModal");
 }
 
@@ -1789,24 +1705,22 @@ function printQR() {
   </body></html>`);
   w.document.close();
 }
-// ── Flag config admin ─────────────────────────────────────────────────────────
 
+// ── Flag config admin ──────────────────────────────────────────────────────────
 const FC_DEFAULTS = {
-  wind: { yellow: 5, orange: 6, red: 7 },
-  easterlyDirs: ['E', 'NE', 'SE'],
-  wave: { yellow: 0.6, orange: 1.2, red: 2.0 },
+  wind:  { yellow: 5, orange: 6, red: 7 },
+  wave:  { yellow: 0.6, orange: 1.2, red: 2.0 },
+  easterlyDirs: ["E", "NE", "SE"],
   flags: {
-    green:  { advice: 'Good conditions.' },
-    yellow: { advice: 'Marginal — experienced sailors only.' },
-    orange: { advice: 'Difficult — keelboats only, staff auth for dinghies.' },
-    red:    { advice: 'Do not sail — all sailing suspended.' },
+    green:  { advice: "Good conditions." },
+    yellow: { advice: "Marginal — experienced sailors only." },
+    orange: { advice: "Difficult — keelboats only, staff auth for dinghies." },
+    red:    { advice: "Do not sail — all sailing suspended." },
   },
 };
 
-const ALL_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const ALL_DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 
-// Called in loadAll() after getConfig resolves — add this line there:
-//   loadFlagConfigPanel(cfgRes.flagConfig);
 function loadFlagConfigPanel(cfg) {
   cfg = cfg || {};
   const wind  = { ...FC_DEFAULTS.wind,  ...(cfg.wind  || {}) };
@@ -1819,65 +1733,50 @@ function loadFlagConfigPanel(cfg) {
     red:    { ...FC_DEFAULTS.flags.red,    ...(cfg.flags?.red    || {}) },
   };
 
-  // Wind
-  document.getElementById('fcWindYellow').value = wind.yellow;
-  document.getElementById('fcWindOrange').value = wind.orange;
-  document.getElementById('fcWindRed').value    = wind.red;
+  document.getElementById("fcWindYellow").value  = wind.yellow;
+  document.getElementById("fcWindOrange").value  = wind.orange;
+  document.getElementById("fcWindRed").value     = wind.red;
+  document.getElementById("fcWaveYellow").value  = wave.yellow;
+  document.getElementById("fcWaveOrange").value  = wave.orange;
+  document.getElementById("fcWaveRed").value     = wave.red;
+  document.getElementById("fcAdviceGreen").value  = flags.green.advice;
+  document.getElementById("fcAdviceYellow").value = flags.yellow.advice;
+  document.getElementById("fcAdviceOrange").value = flags.orange.advice;
+  document.getElementById("fcAdviceRed").value    = flags.red.advice;
 
-  // Wave
-  document.getElementById('fcWaveYellow').value = wave.yellow;
-  document.getElementById('fcWaveOrange').value = wave.orange;
-  document.getElementById('fcWaveRed').value    = wave.red;
-
-  // Advice text
-  document.getElementById('fcAdviceGreen').value  = flags.green.advice;
-  document.getElementById('fcAdviceYellow').value = flags.yellow.advice;
-  document.getElementById('fcAdviceOrange').value = flags.orange.advice;
-  document.getElementById('fcAdviceRed').value    = flags.red.advice;
-
-  // Easterly direction checkboxes
-  const container = document.getElementById('fcEasterlyDirs');
+  const container = document.getElementById("fcEasterlyDirs");
   container.innerHTML = ALL_DIRS.map(d => `
     <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;
       background:var(--surface);border:1px solid var(--border);border-radius:6px;
       padding:5px 10px;cursor:pointer;user-select:none">
       <input type="checkbox" value="${d}"
-        ${eDirs.includes(d) ? 'checked' : ''}
+        ${eDirs.includes(d) ? "checked" : ""}
         onchange="renderFlagPreview()"
         style="accent-color:var(--brass)">
       ${d}
-    </label>`).join('');
+    </label>`).join("");
 
-  // Live preview
   renderFlagPreview();
-
-  // Re-render preview on any input change
-  ['fcWindYellow','fcWindOrange','fcWindRed',
-   'fcWaveYellow','fcWaveOrange','fcWaveRed',
-   'fcAdviceGreen','fcAdviceYellow','fcAdviceOrange','fcAdviceRed',
-  ].forEach(id => document.getElementById(id)
-    .addEventListener('input', renderFlagPreview));
 }
 
 function getFlagFormValues() {
   return {
     wind: {
-      yellow: parseInt(document.getElementById('fcWindYellow').value) || 5,
-      orange: parseInt(document.getElementById('fcWindOrange').value) || 6,
-      red:    parseInt(document.getElementById('fcWindRed').value)    || 7,
+      yellow: parseInt(document.getElementById("fcWindYellow").value) || 5,
+      orange: parseInt(document.getElementById("fcWindOrange").value) || 6,
+      red:    parseInt(document.getElementById("fcWindRed").value)    || 7,
     },
     wave: {
-      yellow: parseFloat(document.getElementById('fcWaveYellow').value) || 0.6,
-      orange: parseFloat(document.getElementById('fcWaveOrange').value) || 1.2,
-      red:    parseFloat(document.getElementById('fcWaveRed').value)    || 2.0,
+      yellow: parseFloat(document.getElementById("fcWaveYellow").value) || 0.6,
+      orange: parseFloat(document.getElementById("fcWaveOrange").value) || 1.2,
+      red:    parseFloat(document.getElementById("fcWaveRed").value)    || 2.0,
     },
-    easterlyDirs: [...document.querySelectorAll('#fcEasterlyDirs input:checked')]
-      .map(cb => cb.value),
+    easterlyDirs: [...document.querySelectorAll("#fcEasterlyDirs input:checked")].map(cb => cb.value),
     flags: {
-      green:  { advice: document.getElementById('fcAdviceGreen').value.trim() },
-      yellow: { advice: document.getElementById('fcAdviceYellow').value.trim() },
-      orange: { advice: document.getElementById('fcAdviceOrange').value.trim() },
-      red:    { advice: document.getElementById('fcAdviceRed').value.trim() },
+      green:  { advice: document.getElementById("fcAdviceGreen").value.trim() },
+      yellow: { advice: document.getElementById("fcAdviceYellow").value.trim() },
+      orange: { advice: document.getElementById("fcAdviceOrange").value.trim() },
+      red:    { advice: document.getElementById("fcAdviceRed").value.trim() },
     },
   };
 }
@@ -1885,77 +1784,77 @@ function getFlagFormValues() {
 function validateFlagConfig(cfg) {
   const errs = [];
   const { wind, wave } = cfg;
-  if (wind.yellow >= wind.orange) errs.push('Yellow wind threshold must be lower than Orange.');
-  if (wind.orange >= wind.red)    errs.push('Orange wind threshold must be lower than Red.');
-  if (wave.yellow >= wave.orange) errs.push('Yellow wave threshold must be lower than Orange.');
-  if (wave.orange >= wave.red)    errs.push('Orange wave threshold must be lower than Red.');
-  if (wind.red > 12)              errs.push('Max Beaufort scale is 12.');
+  if (wind.yellow >= wind.orange) errs.push("Yellow wind threshold must be lower than Orange.");
+  if (wind.orange >= wind.red)    errs.push("Orange wind threshold must be lower than Red.");
+  if (wave.yellow >= wave.orange) errs.push("Yellow wave threshold must be lower than Orange.");
+  if (wave.orange >= wave.red)    errs.push("Orange wave threshold must be lower than Red.");
+  if (wind.red > 12)              errs.push("Max Beaufort scale is 12.");
   return errs;
 }
 
 function renderFlagPreview() {
-  const cfg  = getFlagFormValues();
+  const cfg    = getFlagFormValues();
   const colors = {
-    green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢', label:'Green'  },
-    yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡', label:'Yellow' },
-    orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠', label:'Orange' },
-    red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴', label:'Red'    },
+    green:  { color:"#27ae60", bg:"#27ae6018", border:"#27ae6044", icon:"🟢", label:"Green"  },
+    yellow: { color:"#f1c40f", bg:"#f1c40f18", border:"#f1c40f44", icon:"🟡", label:"Yellow" },
+    orange: { color:"#e67e22", bg:"#e67e2218", border:"#e67e2244", icon:"🟠", label:"Orange" },
+    red:    { color:"#e74c3c", bg:"#e74c3c18", border:"#e74c3c44", icon:"🔴", label:"Red"    },
   };
-  document.getElementById('fcPreview').innerHTML = ['green','yellow','orange','red'].map(key => {
-    const c = colors[key];
-    const advice = cfg.flags[key]?.advice || '';
-    const windLabel = key === 'green'
+  document.getElementById("fcPreview").innerHTML = ["green","yellow","orange","red"].map(key => {
+    const c      = colors[key];
+    const advice = cfg.flags[key]?.advice || "";
+    const windLabel = key === "green"
       ? `Bft < ${cfg.wind.yellow}`
-      : key === 'yellow' ? `Bft ${cfg.wind.yellow}–${cfg.wind.orange - 1}`
-      : key === 'orange' ? `Bft ${cfg.wind.orange}–${cfg.wind.red - 1}`
+      : key === "yellow" ? `Bft ${cfg.wind.yellow}–${cfg.wind.orange - 1}`
+      : key === "orange" ? `Bft ${cfg.wind.orange}–${cfg.wind.red - 1}`
       : `Bft ≥ ${cfg.wind.red}`;
-    const waveLabel = key === 'green'
+    const waveLabel = key === "green"
       ? `< ${cfg.wave.yellow}m wave`
-      : key === 'yellow' ? `≥ ${cfg.wave.yellow}m wave`
-      : key === 'orange' ? `≥ ${cfg.wave.orange}m wave`
+      : key === "yellow" ? `≥ ${cfg.wave.yellow}m wave`
+      : key === "orange" ? `≥ ${cfg.wave.orange}m wave`
       : `≥ ${cfg.wave.red}m wave`;
     return `<div style="flex:1;min-width:180px;background:${c.bg};border:1px solid ${c.border};
       border-radius:8px;padding:10px 12px;color:${c.color}">
       <div style="font-size:13px;font-weight:500;margin-bottom:4px">${c.icon} ${c.label}</div>
       <div style="font-size:10px;opacity:.8;margin-bottom:4px">${windLabel} · ${waveLabel}</div>
-      <div style="font-size:11px;opacity:.75;font-style:italic">${advice || '—'}</div>
+      <div style="font-size:11px;opacity:.75;font-style:italic">${advice || "—"}</div>
     </div>`;
-  }).join('');
+  }).join("");
 }
 
 async function saveFlagConfig() {
-  const errEl = document.getElementById('fcValidationError');
-  const msgEl = document.getElementById('fcSaveMsg');
-  errEl.style.display = 'none';
-  msgEl.textContent   = '';
+  const errEl = document.getElementById("fcValidationError");
+  const msgEl = document.getElementById("fcSaveMsg");
+  errEl.style.display = "none";
+  msgEl.textContent   = "";
 
   const cfg  = getFlagFormValues();
   const errs = validateFlagConfig(cfg);
   if (errs.length) {
-    errEl.textContent   = errs.join(' ');
-    errEl.style.display = 'block';
+    errEl.textContent   = errs.join(" ");
+    errEl.style.display = "block";
     return;
   }
 
   try {
-    await apiPost('saveConfig', { flagConfig: cfg });
-    // Push into live FLAG_CONFIG so the admin page reflects changes immediately
-    if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg);
-    msgEl.style.color   = 'var(--green)';
-    msgEl.textContent   = '✓ Saved';
-    setTimeout(() => { msgEl.textContent = ''; }, 3000);
+    await apiPost("saveConfig", { flagConfig: cfg });
+    if (typeof wxLoadFlagConfig === "function") wxLoadFlagConfig(cfg);
+    msgEl.style.color   = "var(--green)";
+    msgEl.textContent   = "✓ Saved";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
   } catch(e) {
-    msgEl.style.color   = 'var(--red)';
-    msgEl.textContent   = 'Save failed: ' + e.message;
+    msgEl.style.color   = "var(--red)";
+    msgEl.textContent   = "Save failed: " + e.message;
   }
 }
 
 function resetFlagConfig() {
-  if (!confirm('Reset flag settings to defaults?')) return;
+  if (!confirm("Reset flag settings to defaults?")) return;
   loadFlagConfigPanel(null);
 }
+
 // ── Utilities ──────────────────────────────────────────────────────────────────
-// bool, esc, boolVal, parseJson, toast, chunk, openModal, closeModal
+// bool, esc, parseJson, toast, chunk, openModal, closeModal, todayISO
 // all come from shared/api.js — no local redefinitions needed.
 </script>
 </body>
