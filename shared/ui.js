@@ -1,12 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// ÝMIR — shared/ui.js   v1
+// ÝMIR — shared/ui.js   v2
 //
 // Utilities shared across all pages:
-//   showToast(text, type, ms)       — race-free single toast
-//   esc(s)                          — HTML escape
-//   domRefs(map)                    — cached getElementById proxy
+//   showToast(text, type, ms)                — race-free single toast
+//   esc(s)                                   — HTML escape
+//   domRefs(map)                             — cached getElementById proxy
 //   replaceWithFragment(el, items, buildFn)  — replaceChildren via DocumentFragment
-//   buildHeader(page)               — role-aware standard header
+//   buildHeader(page)                        — role-aware standard header
+//
+// buildHeader layout (v2):
+//   LEFT  = logo · [← Staff if subpage] · role-hub buttons for OTHER hubs user can access
+//   RIGHT = ⛅ Weather · lang toggle · Sign out
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── TOAST (no setTimeout race) ────────────────────────────────────────────────
@@ -33,10 +37,8 @@
 
   window.showToast = function(text, type, ms) {
     ms = ms || 3000;
-    // Cancel in-flight timers (prevents races)
     if (_tid) { clearTimeout(_tid);  _tid = null; }
     if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
-
     const el = ensureEl();
     const palette = {
       ok:   { bg:'var(--card)', border:'var(--green)',  color:'var(--green)'  },
@@ -46,13 +48,9 @@
     };
     const p = palette[type] || palette.info;
     Object.assign(el.style, {
-      background: p.bg,
-      border: `1px solid ${p.border}55`,
-      color: p.color,
-      opacity: '0',
+      background: p.bg, border: `1px solid ${p.border}55`, color: p.color, opacity: '0',
     });
     el.textContent = text;
-    // Separate frame so transition fires
     _raf = requestAnimationFrame(() => { el.style.opacity = '1'; _raf = null; });
     _tid = setTimeout(() => { el.style.opacity = '0'; _tid = null; }, ms);
   };
@@ -66,8 +64,6 @@ window.esc = function(s) {
 
 
 // ── CACHED DOM REFS ───────────────────────────────────────────────────────────
-// Usage: const dom = domRefs({ boatsCard:'boatsCard', amCard:'amCard', ... })
-// Access: dom.boatsCard  → lazily queries and caches on first use
 window.domRefs = function(idMap) {
   const cache = {};
   return new Proxy({}, {
@@ -81,9 +77,6 @@ window.domRefs = function(idMap) {
 
 
 // ── FRAGMENT RENDERER ─────────────────────────────────────────────────────────
-// replaceWithFragment(container, items, buildNodeFn)
-//   buildNodeFn(item) → HTMLElement | null
-//   Builds a DocumentFragment and calls replaceChildren — no innerHTML, no reflow storm.
 window.replaceWithFragment = function(container, items, buildNodeFn) {
   const frag = document.createDocumentFragment();
   for (const item of items) {
@@ -95,17 +88,14 @@ window.replaceWithFragment = function(container, items, buildNodeFn) {
 
 
 // ── STANDARD HEADER ───────────────────────────────────────────────────────────
-// Call from DOMContentLoaded: buildHeader('dailylog') etc.
+// Call from DOMContentLoaded: buildHeader('staff'), buildHeader('trips'), etc.
 //
-// page values: 'staff' | 'dailylog' | 'maintenance' | 'trips' | 'incidents' | 'admin' | 'member'
+// page values:
+//   hub pages    — 'staff' | 'admin' | 'member'
+//   staff sub    — 'dailylog' | 'maintenance' | 'trips' | 'incidents'
 //
-// Header rule: left = logo + back-if-subpage + OTHER hub(s)
-//              right = Weather + lang + sign out
-//   - member role:  can always get to Staff if staff/admin, and Admin if admin
-//   - on member page: show staff/admin links if applicable
-//   - on staff page:  show member + admin (if admin)
-//   - on admin page:  show member + staff
-//   - on sub-pages (dailylog/maintenance/trips/incidents): ← Staff + member + (admin if admin)
+// LEFT  = logo · [← Staff if subpage] · role-hub buttons for OTHER accessible hubs
+// RIGHT = ⛅ Weather · lang · Sign out
 window.buildHeader = function(page) {
   const user = (typeof getUser === 'function') ? getUser() : null;
   const hdr  = document.getElementById('ym-header');
@@ -115,47 +105,59 @@ window.buildHeader = function(page) {
   const right = hdr.querySelector('.header-right');
   if (!left || !right) return;
 
-  // Clear
   left.innerHTML  = '';
   right.innerHTML = '';
 
-  // Logo
-  const logo = document.createElement('span');
-  logo.className = 'logo';
-  logo.textContent = 'ÝMIR';
-  left.appendChild(logo);
-
   function makeLink(href, label, cls) {
-    const a = Object.assign(document.createElement('a'), { href, className: cls || 'hbtn', textContent: label });
+    const a = Object.assign(document.createElement('a'), {
+      href, className: cls || 'hbtn', textContent: label,
+    });
     a.style.fontSize = '11px';
     return a;
   }
   function makeBtn(label, fn) {
-    const b = Object.assign(document.createElement('button'), { className: 'btn-ghost', textContent: label });
+    const b = Object.assign(document.createElement('button'), {
+      className: 'btn-ghost', textContent: label,
+    });
     b.style.fontSize = '11px';
     b.addEventListener('click', fn);
     return b;
   }
 
-  // Sub-pages: back to staff
-  const isSubpage = ['dailylog','maintenance','trips','incidents'].includes(page);
-  if (isSubpage) left.appendChild(makeLink('../staff/', '← Staff'));
+  // Logo
+  const logo = document.createElement('span');
+  logo.className   = 'logo';
+  logo.textContent = 'ÝMIR';
+  left.appendChild(logo);
 
-  // Hub links: which hubs should appear in the header?
-  // Rule: show all hubs the user can access EXCEPT the one we're currently in.
-  const staffHubs  = ['dailylog','maintenance','trips','incidents','staff'];
-  const currentHub = staffHubs.includes(page) ? 'staff' : page; // normalize subpages → 'staff'
+  // Determine current hub
+  const staffSubpages = ['dailylog', 'maintenance', 'trips', 'incidents'];
+  const isSubpage     = staffSubpages.includes(page);
+  const currentHub    = isSubpage ? 'staff' : page;
 
-  if (user) {
-    if (currentHub !== 'member') left.appendChild(makeLink('../member/', '⛵ Member Hub'));
-    if (isStaff(user) && currentHub !== 'staff') left.appendChild(makeLink('../staff/',  '⚓ Staff'));
-    if (isAdmin(user) && currentHub !== 'admin') left.appendChild(makeLink('../admin/',  '⚙ Admin'));
+  // Back arrow on subpages (sits between logo and role buttons)
+  if (isSubpage) {
+    left.appendChild(makeLink('../staff/', '← Staff', 'hbtn'));
   }
 
-  // Right: weather, lang, sign out
+  // Role-hub buttons: every hub the user can reach EXCEPT the one they're in
+  if (user) {
+    if (currentHub !== 'member') {
+      left.appendChild(makeLink('../member/', '⛵ Member'));
+    }
+    if (typeof isStaff === 'function' && isStaff(user) && currentHub !== 'staff') {
+      left.appendChild(makeLink('../staff/', '⚓ Staff'));
+    }
+    if (typeof isAdmin === 'function' && isAdmin(user) && currentHub !== 'admin') {
+      left.appendChild(makeLink('../admin/', '⚙ Admin'));
+    }
+  }
+
+  // Right: Weather · lang · sign out
   right.appendChild(makeLink('../weather/', '⛅ Weather'));
-  const langBtn = makeBtn(getLang() === 'EN' ? 'IS' : 'EN', () => toggleLang());
+  const langLabel = (typeof getLang === 'function' && getLang() === 'EN') ? 'IS' : 'EN';
+  const langBtn   = makeBtn(langLabel, () => { if (typeof toggleLang === 'function') toggleLang(); });
   langBtn.id = 'ym-lang-btn';
   right.appendChild(langBtn);
-  right.appendChild(makeBtn('Sign out', () => signOut()));
+  right.appendChild(makeBtn('Sign out', () => { if (typeof signOut === 'function') signOut(); }));
 };
