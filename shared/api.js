@@ -46,9 +46,26 @@ function signOut() {
 
 // ── LANGUAGE ──────────────────────────────────────────────────────────────────
 
-function getLang()    { return localStorage.getItem("ymirLang") || "EN"; }
-function setLang(l)   { localStorage.setItem("ymirLang", l); }
-function toggleLang() { setLang(getLang() === "EN" ? "IS" : "EN"); location.reload(); }
+function getLang()  { return localStorage.getItem("ymirLang") || "EN"; }
+function setLang(l) { localStorage.setItem("ymirLang", l); }
+
+/**
+ * Toggle language, persist to backend (fire-and-forget), then reload.
+ * If the user isn't logged in the backend call is skipped gracefully.
+ */
+function toggleLang() {
+  const next = getLang() === "EN" ? "IS" : "EN";
+  setLang(next);
+
+  // Persist to backend so email alerts respect this preference.
+  // Fire-and-forget — don't block the reload on it.
+  const u = getUser();
+  if (u?.kennitala) {
+    apiPost("setLang", { kennitala: u.kennitala, lang: next }).catch(() => {});
+  }
+
+  location.reload();
+}
 
 // ── FORMATTING ────────────────────────────────────────────────────────────────
 
@@ -68,119 +85,4 @@ function fmtTime(iso) {
 function fmtTimeNow() { return new Date().toTimeString().slice(0, 5); }
 
 /** Today's date as "YYYY-MM-DD" string. */
-function todayISO() { return new Date().toISOString().slice(0, 10); }
-
-// ── SHARED UTILITIES ──────────────────────────────────────────────────────────
-
-/** HTML-escape a value for safe DOM insertion. */
-function esc(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-/** Coerce sheet boolean values (TRUE / "true" / 1 / true) → JS boolean. */
-function boolVal(v) {
-  return v === true || v === "true" || v === "TRUE" || v === 1 || v === "1";
-}
-
-/**
- * Canonical short alias for boolVal — use this everywhere.
- * boolVal is kept for backward-compat with shared/maintenance.js etc.
- */
-const bool = boolVal;
-
-/**
- * Safe JSON parse — returns fallback on any failure.
- * Also accepts already-parsed objects (pass-through).
- */
-function parseJson(v, fallback) {
-  if (!v) return fallback;
-  try { return typeof v === "string" ? JSON.parse(v) : v; }
-  catch(e) { return fallback; }
-}
-
-/**
- * Split an array into chunks of `size`.
- * Used for batched API calls (e.g. importMembers).
- * @param {Array}  arr
- * @param {number} size
- * @returns {Array[]}
- */
-function chunk(arr, size) {
-  return Array.from(
-    { length: Math.ceil(arr.length / size) },
-    (_, i) => arr.slice(i * size, i * size + size)
-  );
-}
-
-/**
- * Show a transient toast notification at the bottom of the screen.
- * type: "ok" | "err" | "warn"
- *
- * Aliases: toast(msg)          → type "ok"
- *          showMsg(msg, type)  → backward-compat with older pages
- */
-function toast(msg, type) {
-  type = type || "ok";
-  const el = document.createElement("div");
-  el.className = "msg msg-" + type;
-  el.textContent = msg;
-  el.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);"
-                   + "min-width:220px;text-align:center;z-index:9999;font-size:12px;"
-                   + "padding:10px 16px;border-radius:8px;pointer-events:none";
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
-
-/** Backward-compatible alias used in several older pages. */
-function showMsg(msg, type) { toast(msg, type); }
-
-/**
- * Populate a <select> element from an array.
- * @param {string}   id         element id
- * @param {Array}    items      array of objects
- * @param {Function} labelFn    item → option label string
- * @param {Function} [valueFn]  item → option value (default: item.id)
- * @param {Function} [filterFn] optional predicate to skip items
- */
-function populateSelect(id, items, labelFn, valueFn, filterFn) {
-  const sel = document.getElementById(id);
-  if (!sel) return;
-  valueFn  = valueFn  || (item => item.id);
-  filterFn = filterFn || (() => true);
-  items.filter(filterFn).forEach(item => {
-    const o = document.createElement("option");
-    o.value       = valueFn(item);
-    o.textContent = labelFn(item);
-    sel.appendChild(o);
-  });
-}
-
-// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
-
-/**
- * Show a modal overlay by id.
- * @param {string} id  The id of the .modal-overlay element.
- */
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove("hidden");
-}
-
-/**
- * Hide a modal overlay by id.
- * @param {string} id  The id of the .modal-overlay element.
- */
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add("hidden");
-}
-
-/**
- * Close all open modal overlays when Escape is pressed.
- * Registered once here so every page gets it for free.
- */
-document.addEventListener("keydown", e => {
-  if (e.key !== "Escape") return;
-  document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
-});
+function fmtDateNow() { return new Date().toISOString().slice(0, 10); }
