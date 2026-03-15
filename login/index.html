@@ -78,24 +78,6 @@
 
 <script>
 const L = getLang();
-const STRINGS = {
-  subtitle:       { EN:"SAILING CLUB",         IS:"SIGLINGAFÉLAGIÐ" },
-  ktLabel:        { EN:"Kennitala",             IS:"Kennitala" },
-  btnText:        { EN:"Sign In",               IS:"Innskrá" },
-  notFound:       { EN:"Kennitala not found or account inactive.", IS:"Kennitala finnst ekki eða aðgangur er óvirkur." },
-  error:          { EN:"Something went wrong. Try again.", IS:"Eitthvað fór úrskeiðis. Reyndu aftur." },
-  langBtn:        { EN:"IS", IS:"EN" },
-  welcome:        { EN:"Welcome,",             IS:"Velkomin/n," },
-  chooseView:     { EN:"How would you like to sign in?", IS:"Hvernig viltu skrá þig inn?" },
-  backLink:       { EN:"← Sign in as someone else", IS:"← Skrá inn sem annan" },
-  r_admin_label:  { EN:"Admin Panel",          IS:"Stjórnborð" },
-  r_admin_desc:   { EN:"Manage members, boats, locations, settings", IS:"Stjórna félagi, bátum, stöðum, stillingum" },
-  r_staff_label:  { EN:"Staff Dashboard",      IS:"Starfsmannaþjónusta" },
-  r_staff_desc:   { EN:"Daily log, fleet status, incidents", IS:"Daglegur rekstur, flotinn, slys" },
-  r_member_label: { EN:"Member Hub",           IS:"Félagssvæði" },
-  r_member_desc:  { EN:"Check in/out, logbook, my trips", IS:"Inn/útskráning, dagbók, mínar siglingarnar" },
-};
-function s(k) { return STRINGS[k]?.[L] || STRINGS[k]?.EN || k; }
 
 document.getElementById("subtitle").textContent = s("subtitle");
 document.getElementById("ktLabel").textContent   = s("ktLabel");
