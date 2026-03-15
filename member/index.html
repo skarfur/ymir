@@ -99,44 +99,40 @@
 
   <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
-    <button class="act-btn" onclick="openLaunchPicker()">⛵ Launch a Boat</button>
-    <button class="act-btn" onclick="openCheckInPicker()">⚓ Check In</button>
-    <a class="act-btn" href="../maintenance/?new=1" style="border-color:var(--orange)44;color:var(--orange)">🔧 Report Issue</a>
+    <button class="act-btn" onclick="openLaunchPicker()" data-s="member.launchBoat"></button>
+    <button class="act-btn" onclick="openCheckInPicker()" data-s="member.checkIn"></button>
+    <a class="act-btn" href="../maintenance/?new=1" ... data-s="member.reportIssue"></a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS (my boats) ══ -->
   <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:4px 0 8px">
-    MY ACTIVE CHECKOUT
-    <span style="font-weight:normal;font-size:8px;letter-spacing:0"> — tap to check in</span>
+    <span data-s="member.myCheckout"></span>
+    <span style="font-weight:normal;font-size:8px;letter-spacing:0"> — <span data-s="member.myCheckoutSub"></span></span>
   </div>
   <div id="activeList"><div class="empty-note">Loading…</div></div>
 
   <!-- ══ TABS ══ -->
   <div class="hub-tabs" style="margin-top:16px">
-    <button class="hub-tab active" onclick="showTab('fleet')"  id="tabBtnFleet">⛵ Fleet</button>
-    <button class="hub-tab"        onclick="showTab('trips')"  id="tabBtnTrips">📋 Log a Trip</button>
-    <button class="hub-tab"        onclick="showTab('logbook')" id="tabBtnLogbook">📖 Logbook</button>
-    <button class="hub-tab"        onclick="showTab('certs')"  id="tabBtnCerts">🎖 Certifications</button>
+    <button class="hub-tab active" onclick="showTab('fleet')"  id="tabBtnFleet"  data-s="member.tabFleet"></button>
+    <button class="hub-tab"        onclick="showTab('trips')"  id="tabBtnTrips"  data-s="member.tabTrips"></button>
+    <button class="hub-tab"        onclick="showTab('logbook')" id="tabBtnLogbook"  data-s="member.tabLogbook"></button>
+    <button class="hub-tab"        onclick="showTab('certs')"  id="tabBtnCerts" data-s="member.tabCerts"></button>
   </div>
 
   <!-- ═══ TAB: FLEET ═══ -->
   <div id="tab-fleet">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px">
-      AVAILABLE BOATS — tap a category to expand
-    </div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px"  data-s="member.fleetAvail"></div>
     <div id="fleetByCat"></div>
   </div>
 
   <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
   <div id="tab-trips" class="hidden">
-    <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5">
-      Tap a recent trip to add it to your logbook as <strong>crew</strong>, or log a trip manually.
+    <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5" id="tripTabHint">
     </p>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">RECENTLY RETURNED (24H)</div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px"  data-s="member.recentTrips"></div>
     <div id="clubTrips"><div class="empty-note">Loading…</div></div>
     <div style="margin-top:12px">
-      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()">
-        + Log a trip manually
+      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManually">
       </button>
     </div>
   </div>
@@ -144,10 +140,10 @@
   <!-- ═══ TAB: LOGBOOK ═══ -->
   <div id="tab-logbook" class="hidden">
     <div class="stats-grid" id="logbookStats">
-      <div class="stat-box"><div class="sn" id="stTrips">—</div><div class="sl">TOTAL TRIPS</div></div>
-      <div class="stat-box"><div class="sn" id="stHours">—</div><div class="sl">HOURS SAILED</div></div>
-      <div class="stat-box"><div class="sn" id="stBoat">—</div><div class="sl">MOST-SAILED BOAT</div></div>
-      <div class="stat-box"><div class="sn" id="stSeason">—</div><div class="sl">TRIPS THIS SEASON</div></div>
+      <div class="stat-box"><div class="sn" id="stTrips">—</div><div class="sl" data-s="member.statTrips"></div></div>
+      <div class="stat-box"><div class="sn" id="stHours">—</div><div class="sl" data-s="member.statHours"></div></div>
+      <div class="stat-box"><div class="sn" id="stBoat">—</div> <div class="sl" data-s="member.statBoat"></div></div>
+      <div class="stat-box"><div class="sn" id="stSeason">—</div><div class="sl" data-s="member.statSeason"></div></div>
     </div>
     <div id="logbookList"><div class="empty-note">Loading…</div></div>
   </div>
@@ -258,13 +254,15 @@ let boats=[], locations=[], checkouts=[], myTrips=[], allTrips=[];
 let certDefs=[], currentWx=null;
 let launchBoat=null, returnCo=null, pendingCrewTrip=null;
 let tripsLoaded=false, logbookLoaded=false, certsLoaded=false;
-
+const L = getLang();
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
   document.getElementById('welcomeName').textContent = user.name || 'Member Hub';
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';
-
+  applystrings();
+  document.getElementById('tripTabHint').innerHTML = s("member.tripsTapHint").replace('crew','<strong>'+s("member.crewRole")+'</strong>');
+  
   wxWidget(document.getElementById('wxWidget'), {
     onData: snap => { currentWx = snap; },
   }).start();
@@ -284,7 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFleetByCat();
   } catch(e) {
     document.getElementById('activeList').innerHTML =
-      `<div class="empty-note" style="color:var(--red)">Load failed: ${esc(e.message)}</div>`;
+      `<div class="empty-note" style="color:var(--red)"${s("member.noCheckouts")}</div>`;
   }
 });
 
@@ -304,7 +302,7 @@ function showTab(name) {
 function renderFleetByCat() {
   const el     = document.getElementById('fleetByCat');
   const active = checkouts.filter(c => c.status === 'out');
-  if (!boats.length) { el.innerHTML='<div class="empty-note">No boats available.</div>'; return; }
+  if (!boats.length) { el.innerHTML='<div class="empty-note">${s("member.noBoats")}</div>'; return; }
 
   const grouped = {};
   boats.forEach(b => {
@@ -333,7 +331,7 @@ function renderFleetByCat() {
       <div class="boat-cat-toggle" onclick="toggleBoatCat('${catId}')">
         <span class="bct-label">${boatEmoji(cat)} <span style="text-transform:capitalize">${esc(cat)}</span></span>
         <span style="display:flex;align-items:center;gap:8px">
-          <span class="bct-count">${avail} available</span>
+          <span class="bct-count">${s("staff.availCount",{n:avail})}</span>
           <span class="bct-arrow" id="${catId}-arrow">▼</span>
         </span>
       </div>
@@ -374,7 +372,7 @@ async function loadTripsTab() {
     tripsLoaded = true;
     renderRecentTrips();
   } catch(e) {
-    el.innerHTML=`<div class="empty-note" style="color:var(--red)">Could not load trips.</div>`;
+    el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s("toast.loadFailed")}</div>`;
   }
 }
 
@@ -395,7 +393,7 @@ function renderRecentTrips() {
     return true;
   });
 
-  if (!recent.length) { el.innerHTML='<div class="empty-note">No trips in the last 24 hours.</div>'; return; }
+  if (!recent.length) { el.innerHTML='<div class="empty-note">${s("member.noTrips")}</div>'; return; }
 
   el.innerHTML = recent.map(t => {
     const isMe = String(t.kennitala||'') === String(user.kennitala);
@@ -416,7 +414,7 @@ function renderRecentTrips() {
             <span>👥 ${esc(t.crew||1)}</span>
             ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
           </div>
-          ${t.memberName ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">Skipper: ${esc(t.memberName)}</div>` : ''}
+          ${t.memberName ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${s("member.skipper")}: ${esc(t.memberName)}</div>` : ''}
         </div>
         <div>${roleTag}</div>
       </div>
@@ -502,10 +500,10 @@ function renderStats() {
 
 function renderLogbook() {
   const el = document.getElementById('logbookList');
-  if (!myTrips.length) { el.innerHTML='<div class="empty-note">No trips in your logbook yet.</div>'; return; }
+  if (!myTrips.length) { el.innerHTML='<div class="empty-note">${s("member.noTrips")}</div>'; return; }
   el.innerHTML = myTrips.map(t => {
     const roleTag = (t.role==='crew')
-      ? `<span style="font-size:9px;color:var(--muted)"> · crew</span>` : '';
+      ? `<span style="font-size:9px;color:var(--muted)">${s("member.crewRole")}/span>` : '';
     return `<div class="trip-row" onclick="openTripDetail('${esc(t.id)}')">
       <div class="trip-label">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}${roleTag}</div>
       <div class="trip-sub">
@@ -523,17 +521,17 @@ function openTripDetail(id) {
   if (!t) return;
   document.getElementById('tdTitle').textContent = (t.boatName||'Trip') + ' · ' + (t.date||'');
   const rows = [
-    ['Boat',       t.boatName||'—'],
-    ['Location',   t.locationName||'—'],
-    ['Date',       t.date||'—'],
-    ['Departed',   t.timeOut||'—'],
-    ['Returned',   t.timeIn||'—'],
-    ['Duration',   (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],
-    ['Crew',       t.crew||1],
+    [s("lbl.boat"),     t.boatName||'—'],
+    [s("lbl.location"), t.locationName||'—'],
+    [s("lbl.date"),     t.date||'—'],
+    [s("member.departed"), t.timeOut||'—'],
+    [s("member.returned"), t.timeIn||'—'],
+    [s("member.duration"),   (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],
+    [s("lbl.crew"),     t.crew||1],
     t.beaufort ? ['Wind',    `Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`] : null,
     t.notes ? ['Notes',    t.notes] : null,
-    ['Role',       t.role||'skipper'],
-    ['Status',     (t.verified&&t.verified!=='false') ? '✓ Verified' : 'Pending review'],
+    [s("lbl.role"),     t.role||s("member.skipper")],
+    [s("lbl.status"),     (t.verified&&t.verified!=='false') ? s("lbl.verified") : s("lbl.pending")],
     t.staffComment ? ['Staff note', t.staffComment] : null,
   ].filter(Boolean);
   document.getElementById('tdBody').innerHTML = rows.map(([l,v]) =>
@@ -558,7 +556,7 @@ async function loadCertsTab() {
     const member = mRes.member || mRes;
     const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
     if (!certs.length) {
-      el.innerHTML='<div class="empty-note">No certifications on file yet.</div>'; return;
+      el.innerHTML='<div class="empty-note">${s("cert.noCerts")}</div>'; return;
     }
     // Group by cert definition
     const grouped = {};
