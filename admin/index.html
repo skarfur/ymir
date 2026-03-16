@@ -720,7 +720,8 @@ const user = requireAuth(isAdmin);
 let members = [], boats = [], locations = [], clItems = [], actTypes = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
-
+const bool = v => v === true || v === 'true' || v === 1 || v === '1' || v === 'TRUE';
+  
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
