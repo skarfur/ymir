@@ -380,6 +380,7 @@ const dom = domRefs({
   actParticipants:   'actParticipants',
   actNotes:          'actNotes',
   activityModal:     'activityModal',
+  addActivityBtn:    'addActivityBtn',
   addActivityBtn: 'addActivityBtn',
   tideH1Time: 'tideH1Time', tideH1Height: 'tideH1Height',
   tideL1Time: 'tideL1Time', tideL1Height: 'tideL1Height',
@@ -557,15 +558,14 @@ function renderWxLog() {
   replaceWithFragment(dom.wxLogList, wxLog, (snap, i) => {
     const card = document.createElement('div');
     card.className = 'wx-snap-card';
-    card.innerHTML = `<span class="wx-snap-time">${esc(snap.time||'')}</span>
-      <span class="wx-snap-body">
-        ${snap.bft != null ? `Bft ${snap.bft}` : ''}
-        ${snap.dir ? ` ${snap.dir}` : ''}
-        ${snap.ws != null ? ` · ${snap.ws}kn` : ''}
-        ${snap.wv != null ? ` · ${snap.wv}m` : ''}
-        ${snap.flag ? ` ${fi[snap.flag]||''}` : ''}
-      </span>
-      <button class="del-btn" data-delete-wx="${i}" style="font-size:14px">&times;</button>`;
+    var wind=(snap.bft!=null?"Bft "+snap.bft:"")+(snap.dir?" "+snap.dir:"")+(snap.ws!=null?" · "+snap.ws+"m/s":"")+(snap.wg!=null&&snap.wg!==snap.ws?" (g"+snap.wg+")":"");
+    var sea=(snap.wv!=null?"🌊 "+snap.wv+"m":"")+(snap.waveDir?" "+snap.waveDir:"")+(snap.sst!=null?" · SST "+snap.sst+"°C":"");
+    var air=(snap.tc!=null?"🌡 "+snap.tc+"°C":"")+(snap.feels!=null&&snap.feels!==snap.tc?" (feels "+snap.feels+"°C)":"");
+    var prs=(snap.pres!=null?"⏱ "+snap.pres+"hPa":"")+(snap.presTrend?(" "+(snap.presTrend==="rising"?"↗":snap.presTrend==="falling"?"↘":"→")):"");
+    var parts=[wind,sea,air,prs].filter(function(s){return s.trim();});
+    card.innerHTML="<span class=\"wx-snap-time\">"+esc(snap.time||snap.ts&&snap.ts.slice(11,16)||"")+"</span>"+
+      "<span class=\"wx-snap-body\">"+(snap.flag?fi[snap.flag]||"":"")+" "+parts.join(" · ")+"</span>"+
+      "<button class=\"del-btn\" data-delete-wx=\""+i+"\" style=\"font-size:14px\">&times;</button>";
     return card;
   });
 }
@@ -845,6 +845,7 @@ async function loadDay() {
 }
 
 async function loadTodayLog() {
+  renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns(); renderIncidentSection(null);
   try {
     const [logRes, cfgRes] = await Promise.all([
       apiGet('getDailyLog', { date: TODAY }),
