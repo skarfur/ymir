@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
+  <script src="../shared/ui.js"></script>
   <script src="../shared/strings.js"></script>
   <style>
     .mode-btns { display:flex; gap:8px; margin-bottom:20px; }
@@ -40,31 +41,25 @@
     .notes-list { margin-top:8px; }
     .note-item { background:var(--faint); border-radius:6px; padding:8px 12px; margin-bottom:6px; font-size:12px; }
     .note-meta  { color:var(--muted); font-size:11px; margin-top:3px; }
+
+    .page { max-width:720px; margin:0 auto; padding:16px 16px 60px; }
   </style>
 </head>
 <body>
-<div class="page">
-  <header>
-    <div class="header-left">
-      <a href="../" class="logo">ÝMIR</a>
-      <span class="page-title">Incidents</span>
-    </div>
-    <div class="header-right">
-      <a href="../staff/" class="hbtn">⚓ Staff Hub</a>
-      <a href="../weather/" class="hbtn">⛅ Weather</a>
-        <button class="hbtn" onclick="toggleLang()">IS</button>
-        <button class="hbtn" onclick="signOut()">Sign out</button>
-</div>
-  </header>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
 
+<div class="page">
   <main>
-    <!-- MODE: list or new -->
+    <!-- MODE: list, new, or detail -->
     <div class="mode-btns">
       <button class="mode-btn active" id="modeListBtn" onclick="setMode('list')">
-        <span class="icon">📋</span>View incidents
+        <span class="icon">📋</span><span id="modeListLabel"></span>
       </button>
       <button class="mode-btn" id="modeNewBtn" onclick="setMode('new')">
-        <span class="icon">⚠</span>File new report
+        <span class="icon">⚠</span><span id="modeNewLabel"></span>
       </button>
     </div>
 
@@ -81,375 +76,474 @@
 
         <!-- Incident types -->
         <div class="field">
-          <label>Incident type(s)</label>
-          <div class="type-grid" id="typeGrid">
-            <button class="type-toggle" data-v="injury"       onclick="toggleType(this)">🩹 Injury</button>
-            <button class="type-toggle" data-v="capsize"      onclick="toggleType(this)">⛵ Capsize</button>
-            <button class="type-toggle" data-v="collision"    onclick="toggleType(this)">💥 Collision</button>
-            <button class="type-toggle" data-v="equipment"    onclick="toggleType(this)">🔧 Equipment failure</button>
-            <button class="type-toggle" data-v="medical"      onclick="toggleType(this)">🏥 Medical</button>
-            <button class="type-toggle" data-v="nearMiss"     onclick="toggleType(this)">⚡ Near miss</button>
-            <button class="type-toggle" data-v="missing"      onclick="toggleType(this)">🔍 Missing person</button>
-            <button class="type-toggle" data-v="propertyDmg"  onclick="toggleType(this)">🏗 Property damage</button>
-            <button class="type-toggle" data-v="other"        onclick="toggleType(this)">📌 Other</button>
-          </div>
+          <label id="typeLabel"></label>
+          <div class="type-grid" id="typeGrid"></div>
         </div>
 
         <!-- Severity -->
         <div class="field">
-          <label>Severity</label>
-          <div class="sev-btns">
-            <button class="sev-btn" data-v="low"      onclick="setSev(this)">Low</button>
-            <button class="sev-btn" data-v="medium"   onclick="setSev(this)">Medium</button>
-            <button class="sev-btn" data-v="high"     onclick="setSev(this)">High</button>
-            <button class="sev-btn" data-v="critical" onclick="setSev(this)">Critical</button>
-          </div>
+          <label data-s="lbl.severity"></label>
+          <div class="sev-btns" id="sevBtns"></div>
         </div>
 
         <!-- Date / time -->
         <div class="grid2">
-          <div class="field"><label>Date</label><input type="date" id="iDate"></div>
-          <div class="field"><label>Time</label><input type="time" id="iTime"></div>
+          <div class="field"><label data-s="lbl.date"></label><input type="date" id="iDate"></div>
+          <div class="field"><label data-s="lbl.time"></label><input type="time" id="iTime"></div>
         </div>
 
         <!-- Location / boat -->
         <div class="grid2">
           <div class="field">
-            <label>Location</label>
-            <select id="iLocation"><option value="">— select —</option></select>
+            <label data-s="lbl.location"></label>
+            <select id="iLocation"><option value="" id="iLocNone"></option></select>
           </div>
           <div class="field">
-            <label>Boat (if applicable)</label>
-            <select id="iBoat"><option value="">— none —</option></select>
+            <label id="boatLabel"></label>
+            <select id="iBoat"><option value="" id="iBoatNone"></option></select>
           </div>
         </div>
 
         <!-- Description -->
         <div class="field">
-          <label>Description <span style="color:var(--red)">*</span></label>
-          <textarea id="iDesc" rows="4" placeholder="Describe what happened…"></textarea>
+          <label><span data-s="incident.description"></span> <span style="color:var(--red)">*</span></label>
+          <textarea id="iDesc" rows="4"></textarea>
         </div>
 
         <!-- Involved persons -->
         <div class="field">
-          <label>Persons involved</label>
-          <textarea id="iInvolved" rows="2" placeholder="Names, kennitölur, roles…"></textarea>
+          <label data-s="incident.personsInvolved"></label>
+          <textarea id="iInvolved" rows="2"></textarea>
         </div>
 
         <!-- Witnesses -->
         <div class="field">
-          <label>Witnesses</label>
-          <textarea id="iWitnesses" rows="2" placeholder="Names / contact info…"></textarea>
+          <label data-s="incident.witnesses"></label>
+          <textarea id="iWitnesses" rows="2"></textarea>
         </div>
 
         <!-- Immediate action -->
         <div class="field">
-          <label>Immediate action taken</label>
-          <textarea id="iAction" rows="3" placeholder="First aid, evacuation, coastguard called…"></textarea>
+          <label data-s="incident.immediateAction"></label>
+          <textarea id="iAction" rows="3"></textarea>
         </div>
 
         <!-- Follow-up -->
         <div class="field">
-          <label>Follow-up required</label>
-          <textarea id="iFollowUp" rows="2" placeholder="Referral, repair, investigation…"></textarea>
+          <label data-s="incident.followUp"></label>
+          <textarea id="iFollowUp" rows="2"></textarea>
         </div>
 
-        <!-- Hand off -->
+        <!-- Hand-off -->
         <div style="background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Hand-off</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" data-s="incident.handoffSection"></div>
           <div class="grid2">
             <div class="field">
-              <label>Handed off to</label>
+              <label data-s="incident.handoffTo"></label>
               <select id="iHandOffTo">
-                <option value="">— none —</option>
-                <option value="emergency">Emergency services</option>
-                <option value="hospital">Hospital</option>
-                <option value="coastguard">Coastguard</option>
-                <option value="police">Police</option>
-                <option value="parent">Parent / guardian</option>
-                <option value="other">Other</option>
+                <option value="" id="iHandNone"></option>
+                <option value="emergency" id="iHandEmergency"></option>
+                <option value="hospital"  id="iHandHospital"></option>
+                <option value="coastguard" id="iHandCoastguard"></option>
+                <option value="police"    id="iHandPolice"></option>
+                <option value="other"     id="iHandOther"></option>
               </select>
             </div>
             <div class="field">
-              <label>Name / reference</label>
-              <input type="text" id="iHandOffName" placeholder="Contact name or case number">
+              <label data-s="incident.handoffName"></label>
+              <input type="text" id="iHandOffName">
             </div>
           </div>
-          <div class="field" style="margin-bottom:0">
-            <label>Hand-off notes</label>
-            <textarea id="iHandOffNotes" rows="2" placeholder="Details…"></textarea>
+          <div class="field">
+            <label data-s="incident.handoffNotes"></label>
+            <input type="text" id="iHandOffNotes">
           </div>
         </div>
 
-        <!-- Staff notes -->
-        <div class="field">
-          <label>Internal staff notes</label>
-          <textarea id="iStaffNotes" rows="2" placeholder="Not shared externally…"></textarea>
-        </div>
-
-        <div id="saveMsg" style="font-size:12px;min-height:18px;margin-bottom:8px"></div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" onclick="setMode('list')">Cancel</button>
-          <button class="btn btn-primary" onclick="fileReport()" id="fileBtn">File report</button>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-primary" id="fileBtn"></button>
+          <span id="saveMsg" style="font-size:12px;color:var(--muted)"></span>
         </div>
       </div>
     </div>
 
-    <!-- DETAIL VIEW -->
+    <!-- DETAIL MODE -->
     <div id="detailMode" class="hidden">
-      <div style="margin-bottom:12px">
-        <button class="btn-ghost" onclick="setMode('list')">← All incidents</button>
-      </div>
-      <div class="card" id="detailCard"></div>
-
-      <!-- Add note -->
-      <div class="section-heading" style="margin-top:20px">Add note</div>
       <div class="card">
-        <div class="field">
-          <textarea id="noteText" rows="3" placeholder="Follow-up note…"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <button class="btn-ghost" onclick="setMode('list')" id="backToListBtn"></button>
+          <div id="detailStatus" style="margin-left:auto"></div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="addNote()" id="noteBtn">Add note</button>
+        <div id="detailBody"></div>
+
+        <!-- Staff notes -->
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px" data-s="incident.staffNotes"></div>
+          <div class="notes-list" id="notesList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="text" id="noteInput" style="flex:1">
+            <button class="btn btn-secondary" id="addNoteBtn"></button>
+          </div>
+        </div>
+
+        <!-- Resolve / reopen -->
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="resolveBtn" onclick="toggleResolve()"></button>
+          <button class="btn-ghost" onclick="setMode('list')" id="backBtn2"></button>
         </div>
       </div>
     </div>
-
   </main>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════
-     ÝMIR — incidents/index.html  (refactored <script> block)
-
-     Changes vs. original
-     ────────────────────
-     1. Removed local bool() / esc() / sjson() — all come from shared/api.js.
-        sjson was identical to parseJson; all calls replaced with parseJson().
-     2. All alert("…") replaced with toast("…","err").
-     3. Minor: loadData() populates selects via the shared populateSelect()
-        helper instead of innerHTML concatenation loops.
-     ═══════════════════════════════════════════════════════════════════════ -->
 <script>
-const user  = requireAuth(isStaff);
-const L     = getLang();
+const user = requireAuth(isStaff);
+const L    = getLang();
 
-let incidents = [], boats = [], locations = [];
-let selectedTypes = new Set(), selectedSev = "";
-let viewingId = null;
+let incidents    = [];
+let selectedTypes = new Set();
+let selectedSev   = '';
+let boats         = [], locations = [];
+let detailId      = null;
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const now = new Date();
-  document.getElementById("iDate").value = now.toISOString().slice(0, 10);
-  document.getElementById("iTime").value = now.toTimeString().slice(0, 5);
-  await loadData();
-});
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  buildHeader('incidents');
+  applyStrings();
 
-async function loadData() {
+  // Wire labels that depend on runtime values
+  document.getElementById('modeListLabel').textContent  = s('incident.viewList');
+  document.getElementById('modeNewLabel').textContent   = s('incident.fileNew');
+  document.getElementById('typeLabel').textContent      = s('incident.typeLabel');
+  document.getElementById('boatLabel').textContent      = s('incident.boatLabel');
+  document.getElementById('fileBtn').textContent        = s('incident.fileBtn');
+  document.getElementById('backToListBtn').textContent  = '← ' + s('incident.viewList');
+  document.getElementById('addNoteBtn').textContent     = s('incident.addNoteBtn');
+  document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
+
+  // Placeholder text
+  document.getElementById('iDesc').placeholder       = s('lbl.description') + '…';
+  document.getElementById('iInvolved').placeholder   = s('incident.personsInvolved') + '…';
+  document.getElementById('iWitnesses').placeholder  = s('incident.witnessHint');
+  document.getElementById('iAction').placeholder     = s('incident.actionHint');
+  document.getElementById('iFollowUp').placeholder   = s('incident.followUpHint');
+  document.getElementById('noteInput').placeholder   = s('incident.notePlaceholder');
+
+  // Hand-off options
+  document.getElementById('iHandNone').textContent       = s('lbl.noneDash');
+  document.getElementById('iHandEmergency').textContent  = 'Emergency services';
+  document.getElementById('iHandHospital').textContent   = 'Hospital';
+  document.getElementById('iHandCoastguard').textContent = 'Coastguard';
+  document.getElementById('iHandPolice').textContent     = 'Police';
+  document.getElementById('iHandOther').textContent      = s('incident.type.other').replace('📌 ','');
+
+  // Location/boat selects
+  document.getElementById('iLocNone').textContent  = '— ' + s('lbl.selectDots').replace('…','') + ' —';
+  document.getElementById('iBoatNone').textContent = s('lbl.noneDash');
+
+  // Set defaults
+  document.getElementById('iDate').value = fmtDateNow();
+  document.getElementById('iTime').value = fmtTimeNow();
+
+  // Build type grid
+  buildTypeGrid();
+  buildSevBtns();
+
+  // Load data
   try {
     const [iRes, bRes, lRes] = await Promise.all([
-      apiGet("getIncidents"),
-      apiGet("getBoats").catch(() => ({ boats: [] })),
-      apiGet("getLocations").catch(() => ({ locations: [] })),
+      apiGet('getIncidents'),
+      apiGet('getBoats').catch(() => ({ boats: [] })),
+      apiGet('getLocations').catch(() => ({ locations: [] })),
     ]);
     incidents = iRes.incidents || [];
-    boats     = bRes.boats     || [];
-    locations = lRes.locations || [];
+    boats     = (bRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    locations = (lRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+    populateBoatsLocs();
+    renderList();
   } catch(e) {
-    incidents = []; boats = []; locations = [];
-    console.error("loadData:", e);
+    document.getElementById('incidentsList').innerHTML =
+      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
-  populateSelects();
-  renderList();
+
+  // Handle hash → jump to detail
+  if (window.location.hash) {
+    const id = window.location.hash.slice(1);
+    const inc = incidents.find(i => i.id === id);
+    if (inc) openDetail(inc);
+  }
+});
+
+// ── TYPE GRID ─────────────────────────────────────────────────────────────────
+const INCIDENT_TYPES = [
+  { v:'injury',      key:'incident.type.injury' },
+  { v:'capsize',     key:'incident.type.capsize' },
+  { v:'collision',   key:'incident.type.collision' },
+  { v:'equipment',   key:'incident.type.equipment' },
+  { v:'medical',     key:'incident.type.medical' },
+  { v:'nearMiss',    key:'incident.type.nearMiss' },
+  { v:'missing',     key:'incident.type.missing' },
+  { v:'propertyDmg', key:'incident.type.propertyDmg' },
+  { v:'other',       key:'incident.type.other' },
+];
+
+const SEV_LIST = [
+  { v:'low',      key:'incident.sev.low' },
+  { v:'medium',   key:'incident.sev.medium' },
+  { v:'high',     key:'incident.sev.high' },
+  { v:'critical', key:'incident.sev.critical' },
+];
+
+function buildTypeGrid() {
+  const grid = document.getElementById('typeGrid');
+  grid.innerHTML = INCIDENT_TYPES.map(t =>
+    `<button class="type-toggle" data-v="${t.v}" onclick="toggleType(this)">${s(t.key)}</button>`
+  ).join('');
 }
 
-function populateSelects() {
-  // Use shared populateSelect() helper — no manual innerHTML loops
-  populateSelect("iBoat",     boats,     b => b.name, b => b.id, b => bool(b.active));
-  populateSelect("iLocation", locations, l => l.name, l => l.id, l => bool(l.active));
+function buildSevBtns() {
+  const div = document.getElementById('sevBtns');
+  div.innerHTML = SEV_LIST.map(sv =>
+    `<button class="sev-btn" data-v="${sv.v}" onclick="setSev(this)">${s(sv.key)}</button>`
+  ).join('');
 }
 
-// ── Modes ──────────────────────────────────────────────────────────────────────
-function setMode(mode) {
-  document.getElementById("listMode").classList.toggle("hidden",   mode !== "list");
-  document.getElementById("newMode").classList.toggle("hidden",    mode !== "new");
-  document.getElementById("detailMode").classList.toggle("hidden", mode !== "detail");
-  document.getElementById("modeListBtn").classList.toggle("active", mode === "list" || mode === "detail");
-  document.getElementById("modeNewBtn").classList.toggle("active",  mode === "new");
-  if (mode === "list") renderList();
+function populateBoatsLocs() {
+  const bSel = document.getElementById('iBoat');
+  boats.forEach(b => {
+    const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; bSel.appendChild(o);
+  });
+  const lSel = document.getElementById('iLocation');
+  locations.forEach(l => {
+    const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o);
+  });
 }
 
-// ── List ───────────────────────────────────────────────────────────────────────
+// ── RENDER LIST ───────────────────────────────────────────────────────────────
 function renderList() {
-  const card   = document.getElementById("incidentsList");
-  const sorted = [...incidents].sort((a, b) => new Date(b.filedAt || b.date) - new Date(a.filedAt || a.date));
-  if (!sorted.length) { card.innerHTML = `<div class="empty-state">No incidents on record.</div>`; return; }
-
-  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
-  card.innerHTML = sorted.map(i => {
-    const types   = parseJson(i.types, []);
-    const typeStr = Array.isArray(types) ? types.join(", ") : String(types);
-    const date    = i.date
-      ? new Date(i.date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" })
-      : "—";
-    return `<div class="incident-row" onclick="viewIncident('${i.id}')">
+  const el = document.getElementById('incidentsList');
+  if (!incidents.length) {
+    el.innerHTML = `<div class="empty-note">${s('incident.noIncidents')}</div>`;
+    return;
+  }
+  const sevBadge = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
+  el.innerHTML = incidents.map(i => {
+    const types = parseJson(i.types, []);
+    const notes = parseJson(i.notes, []);
+    return `<div class="incident-row" onclick="openDetail(incidentById('${i.id}'))">
       <div class="incident-header">
-        <span class="badge ${sevColor[i.severity] || "badge-muted"}">${i.severity || "—"}</span>
-        <span style="font-weight:bold;flex:1">${esc(typeStr || "Incident")}</span>
-        <span style="font-size:11px;color:var(--muted)">${date}</span>
-        ${bool(i.resolved) ? `<span class="badge badge-green">resolved</span>` : ""}
+        <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
+        <span style="font-weight:500;flex:1">${esc(i.title||s('incident.title'))}</span>
+        <span class="badge ${i.resolved&&i.resolved!=='false' ? 'badge-green':'badge-yellow'}">${i.resolved&&i.resolved!=='false' ? s('incident.resolved') : s('incident.open')}</span>
       </div>
-      <div class="incident-desc">${esc((i.description || "").slice(0, 120))}${(i.description || "").length > 120 ? "…" : ""}</div>
-      <div class="incident-meta">Filed by ${esc(i.filedBy || "—")} · ${esc(i.locationName || "—")}</div>
+      <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'…':''}</div>
+      <div class="incident-meta">
+        ${esc((i.filedAt||'').slice(0,16).replace('T',' '))}
+        ${i.boatName ? ' · '+esc(i.boatName) : ''}
+        ${notes.length ? ` · ${notes.length} note${notes.length===1?'':'s'}` : ''}
+      </div>
     </div>`;
-  }).join("");
+  }).join('');
 }
 
-function viewIncident(id) {
-  viewingId = id;
-  const i   = incidents.find(x => x.id === id);
+function incidentById(id) { return incidents.find(i => i.id === id); }
+
+// ── OPEN DETAIL ───────────────────────────────────────────────────────────────
+function openDetail(i) {
   if (!i) return;
-
-  const sevColor = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
+  detailId = i.id;
+  const notes    = parseJson(i.notes, []);
   const types    = parseJson(i.types, []);
-  const notes    = parseJson(i.staffNotes, []);
+  const resolved = i.resolved && i.resolved !== 'false';
 
-  document.getElementById("detailCard").innerHTML = `
-    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px">
-      <span class="badge ${sevColor[i.severity] || "badge-muted"} badge-lg">${i.severity || "—"}</span>
-      ${(Array.isArray(types) ? types : [types]).map(t => `<span class="badge badge-muted">${esc(t)}</span>`).join("")}
-      ${bool(i.resolved) ? `<span class="badge badge-green">resolved</span>` : ""}
-      <span style="flex:1"></span>
-      <button class="btn btn-secondary" style="font-size:11px" onclick="resolveIncident('${i.id}')">
-        ${bool(i.resolved) ? "Reopen" : "Mark resolved"}
-      </button>
+  document.getElementById('detailStatus').innerHTML =
+    `<span class="badge ${resolved ? 'badge-green' : 'badge-yellow'}">${resolved ? s('incident.resolved') : s('incident.open')}</span>`;
+
+  document.getElementById('resolveBtn').textContent = resolved ? s('incident.markOpen') : s('incident.markResolved');
+
+  const typeLabels = types.map(t => {
+    const def = INCIDENT_TYPES.find(x => x.v === t);
+    return def ? s(def.key) : t;
+  }).join(', ');
+
+  document.getElementById('detailBody').innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-weight:500;font-size:14px;margin-bottom:6px">${esc(i.title||s('incident.title'))}</div>
+      <div style="font-size:11px;color:var(--muted)">${typeLabels}</div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">
-      ${esc(i.date || "")} ${esc(i.time || "")} · ${esc(i.locationName || "—")}
-      ${i.boatName ? ` · ${esc(i.boatName)}` : ""}
-    </div>
-    ${field("Description", i.description)}
-    ${field("Persons involved", i.involved)}
-    ${field("Witnesses", i.witnesses)}
-    ${field("Immediate action", i.immediateAction)}
-    ${field("Follow-up", i.followUp)}
-    ${i.handOffTo ? field("Handed off to", `${i.handOffTo}${i.handOffName ? " — " + i.handOffName : ""} ${i.handOffNotes || ""}`) : ""}
-    ${field("Filed by", i.filedBy + " at " + (i.filedAt ? new Date(i.filedAt).toLocaleString("en-GB") : ""))}
-    ${notes.length ? `
-      <div style="margin-top:16px">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Notes</div>
-        ${notes.map(n => `
-          <div class="note-item">${esc(n.text)}
-            <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
-          </div>`).join("")}
-      </div>` : ""}
+    ${field(s('lbl.date')+' / '+s('lbl.time'), (i.date||'') + (i.time?' '+i.time:''))}
+    ${field(s('lbl.location'), i.locationName)}
+    ${field(s('incident.boatLabel').replace(' (if applicable)',''), i.boatName)}
+    ${field(s('incident.description'), i.description)}
+    ${field(s('incident.personsInvolved'), i.involved)}
+    ${field(s('incident.witnesses'), i.witnesses)}
+    ${field(s('incident.immediateAction'), i.immediateAction)}
+    ${field(s('incident.followUp'), i.followUp)}
+    ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
+    ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? new Date(i.filedAt).toLocaleString(L==='IS'?'is-IS':'en-GB') : ''))}
   `;
-  setMode("detail");
+
+  document.getElementById('notesList').innerHTML = notes.map(n => `
+    <div class="note-item">${esc(n.text)}
+      <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
+    </div>`).join('');
+
+  setMode('detail');
 }
 
 function field(label, val) {
-  if (!val || String(val).trim() === "" || val === "—") return "";
+  if (!val || String(val).trim() === '' || val === '—') return '';
   return `<div style="margin-bottom:12px">
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px">${esc(label)}</div>
     <div style="font-size:13px;white-space:pre-wrap">${esc(val)}</div>
   </div>`;
 }
 
-// ── Type / severity toggles ───────────────────────────────────────────────────
+// ── TYPE / SEVERITY TOGGLES ───────────────────────────────────────────────────
 function toggleType(btn) {
   const v = btn.dataset.v;
-  if (selectedTypes.has(v)) { selectedTypes.delete(v); btn.classList.remove("on"); }
-  else                      { selectedTypes.add(v);    btn.classList.add("on"); }
+  if (selectedTypes.has(v)) { selectedTypes.delete(v); btn.classList.remove('on'); }
+  else                      { selectedTypes.add(v);    btn.classList.add('on'); }
 }
 
 function setSev(btn) {
-  document.querySelectorAll(".sev-btn").forEach(b => b.classList.remove("on"));
-  btn.classList.add("on");
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
   selectedSev = btn.dataset.v;
 }
 
-// ── File report ───────────────────────────────────────────────────────────────
+// ── FILE REPORT ───────────────────────────────────────────────────────────────
 async function fileReport() {
-  const desc = document.getElementById("iDesc").value.trim();
-  if (!desc)               { toast("Description is required.", "err"); return; }
-  if (!selectedTypes.size) { toast("Select at least one incident type.", "err"); return; }
-  if (!selectedSev)        { toast("Select severity.", "err"); return; }
+  const desc = document.getElementById('iDesc').value.trim();
+  if (!desc)               { showToast(s('incident.descRequired'), 'err'); return; }
+  if (!selectedTypes.size) { showToast(s('incident.typeRequired'), 'err'); return; }
+  if (!selectedSev)        { showToast(s('incident.sevRequired'),  'err'); return; }
 
-  const btn = document.getElementById("fileBtn");
-  const msg = document.getElementById("saveMsg");
-  btn.disabled = true; msg.textContent = "";
+  const btn = document.getElementById('fileBtn');
+  const msg = document.getElementById('saveMsg');
+  btn.disabled = true; msg.textContent = '';
 
-  const boatSel = document.getElementById("iBoat");
-  const locSel  = document.getElementById("iLocation");
+  const boatSel = document.getElementById('iBoat');
+  const locSel  = document.getElementById('iLocation');
   const boatOpt = boatSel.options[boatSel.selectedIndex];
   const locOpt  = locSel.options[locSel.selectedIndex];
+  const handTo  = document.getElementById('iHandOffTo').value;
+
+  const typeLabels = [...selectedTypes].map(t => {
+    const def = INCIDENT_TYPES.find(x => x.v === t);
+    return def ? s(def.key) : t;
+  }).join(', ');
 
   try {
-    const payload = {
-      types:          JSON.stringify([...selectedTypes]),
-      severity:       selectedSev,
-      date:           document.getElementById("iDate").value,
-      time:           document.getElementById("iTime").value,
-      locationId:     locSel.value,
-      locationName:   locOpt.text !== "— select —" ? locOpt.text : "",
-      boatId:         boatSel.value,
-      boatName:       boatOpt.text !== "— none —" ? boatOpt.text : "",
-      description:    desc,
-      involved:       document.getElementById("iInvolved").value.trim(),
-      witnesses:      document.getElementById("iWitnesses").value.trim(),
-      immediateAction: document.getElementById("iAction").value.trim(),
-      followUp:       document.getElementById("iFollowUp").value.trim(),
-      handOffTo:      document.getElementById("iHandOffTo").value,
-      handOffName:    document.getElementById("iHandOffName").value.trim(),
-      handOffNotes:   document.getElementById("iHandOffNotes").value.trim(),
-      staffNotes:     JSON.stringify([]),
-      filedBy:        user.name,
-      filedAt:        new Date().toISOString(),
-    };
-    const res = await apiPost("createIncident", payload);
-    if (res.id) {
-      incidents.unshift({ ...payload, id: res.id });
-      viewIncident(res.id);
-    }
+    const res = await apiPost('saveIncident', {
+      types:         JSON.stringify([...selectedTypes]),
+      typeLabels,
+      severity:      selectedSev,
+      date:          document.getElementById('iDate').value,
+      time:          document.getElementById('iTime').value,
+      locationId:    locSel.value,
+      locationName:  locOpt.value ? locOpt.textContent : '',
+      boatId:        boatSel.value,
+      boatName:      boatSel.value ? boatOpt.textContent : '',
+      description:   desc,
+      involved:      document.getElementById('iInvolved').value.trim(),
+      witnesses:     document.getElementById('iWitnesses').value.trim(),
+      immediateAction: document.getElementById('iAction').value.trim(),
+      followUp:      document.getElementById('iFollowUp').value.trim(),
+      handOffTo:     handTo,
+      handOffName:   document.getElementById('iHandOffName').value.trim(),
+      handOffNotes:  document.getElementById('iHandOffNotes').value.trim(),
+      filedBy:       user.name,
+      filedAt:       new Date().toISOString(),
+      title:         typeLabels,
+    });
+    const newInc = { ...res, types: JSON.stringify([...selectedTypes]),
+      description: desc, severity: selectedSev, filedBy: user.name,
+      filedAt: new Date().toISOString(), title: typeLabels };
+    incidents.unshift(newInc);
+    showToast(s('incident.filed'));
+    setMode('list');
+    renderList();
+    resetForm();
   } catch(e) {
-    msg.textContent = "Error: " + e.message;
-    msg.style.color = "var(--red)";
+    msg.textContent = s('toast.error') + ': ' + e.message;
+    showToast(s('toast.saveFailed'), 'err');
+  } finally {
     btn.disabled = false;
   }
 }
 
-async function resolveIncident(id) {
-  const i = incidents.find(x => x.id === id);
-  if (!i) return;
-  const nowResolved = !bool(i.resolved);
-  try {
-    await apiPost("resolveIncident", { id, resolved: nowResolved, resolvedAt: new Date().toISOString() });
-    i.resolved = nowResolved;
-    if (nowResolved) i.resolvedAt = new Date().toISOString();
-    viewIncident(id);
-  } catch(e) { toast("Error: " + e.message, "err"); }
+function resetForm() {
+  selectedTypes.clear();
+  selectedSev = '';
+  document.querySelectorAll('.type-toggle').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('on'));
+  ['iDesc','iInvolved','iWitnesses','iAction','iFollowUp','iHandOffName','iHandOffNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('iHandOffTo').value = '';
+  document.getElementById('iDate').value = fmtDateNow();
+  document.getElementById('iTime').value = fmtTimeNow();
 }
+
+// ── ADD NOTE ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('addNoteBtn').addEventListener('click', addNote);
+  document.getElementById('fileBtn').addEventListener('click', fileReport);
+  document.getElementById('noteInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addNote();
+  });
+});
 
 async function addNote() {
-  const text = document.getElementById("noteText").value.trim();
-  if (!text || !viewingId) return;
-  const btn = document.getElementById("noteBtn");
-  btn.disabled = true;
+  const input = document.getElementById('noteInput');
+  const text  = input.value.trim();
+  if (!text || !detailId) return;
   try {
-    const note = { text, by: user.name, at: new Date().toLocaleString("en-GB") };
-    await apiPost("addIncidentNote", { id: viewingId, note: JSON.stringify(note) });
-    const i = incidents.find(x => x.id === viewingId);
+    await apiPost('addIncidentNote', { id: detailId, by: user.name, text, at: new Date().toISOString() });
+    const i = incidents.find(x => x.id === detailId);
     if (i) {
-      const notes = parseJson(i.staffNotes, []);   // ← was sjson()
-      notes.push(note);
-      i.staffNotes = JSON.stringify(notes);
+      const notes = parseJson(i.notes, []);
+      notes.push({ by: user.name, at: new Date().toLocaleString(L==='IS'?'is-IS':'en-GB'), text });
+      i.notes = JSON.stringify(notes);
+      document.getElementById('notesList').innerHTML += `
+        <div class="note-item">${esc(text)}
+          <div class="note-meta">${esc(user.name)} · ${s('lbl.time')}</div>
+        </div>`;
     }
-    document.getElementById("noteText").value = "";
-    viewIncident(viewingId);
-  } catch(e) { toast("Error: " + e.message, "err"); }
-  finally { btn.disabled = false; }
+    input.value = '';
+    showToast(s('toast.saved'));
+  } catch(e) { showToast(s('toast.error'), 'err'); }
 }
 
-// bool, esc, parseJson, toast, populateSelect — all from shared/api.js.
-// sjson was a local duplicate of parseJson and has been removed.
+// ── RESOLVE / REOPEN ──────────────────────────────────────────────────────────
+async function toggleResolve() {
+  const i = incidents.find(x => x.id === detailId);
+  if (!i) return;
+  const resolved = !(i.resolved && i.resolved !== 'false');
+  try {
+    await apiPost('updateIncident', { id: detailId, resolved, resolvedBy: user.name });
+    i.resolved = resolved;
+    document.getElementById('resolveBtn').textContent = resolved ? s('incident.markOpen') : s('incident.markResolved');
+    document.getElementById('detailStatus').innerHTML =
+      `<span class="badge ${resolved ? 'badge-green' : 'badge-yellow'}">${resolved ? s('incident.resolved') : s('incident.open')}</span>`;
+    showToast(s('toast.saved'));
+  } catch(e) { showToast(s('toast.error'), 'err'); }
+}
+
+// ── MODE SWITCHING ────────────────────────────────────────────────────────────
+function setMode(mode) {
+  document.getElementById('listMode').classList.toggle('hidden',   mode !== 'list');
+  document.getElementById('newMode').classList.toggle('hidden',    mode !== 'new');
+  document.getElementById('detailMode').classList.toggle('hidden', mode !== 'detail');
+  document.getElementById('modeListBtn').classList.toggle('active', mode === 'list');
+  document.getElementById('modeNewBtn').classList.toggle('active',  mode === 'new');
+}
+
+function parseJson(v, fallback) {
+  if (!v) return fallback;
+  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
+}
 </script>
 </body>
 </html>
