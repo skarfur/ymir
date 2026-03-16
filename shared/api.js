@@ -86,3 +86,20 @@ function fmtTimeNow() { return new Date().toTimeString().slice(0, 5); }
 
 /** Today's date as "YYYY-MM-DD" string. */
 function fmtDateNow() { return new Date().toISOString().slice(0, 10); }
+
+// ── SHARED PRIMITIVES — single source of truth for all shared utilities ───────
+
+/** Boolean coercion — mirrors bool_() in Code.gs. Required by boats.js and maintenance.js. */
+window.boolVal = v => v === true || v === "TRUE" || v === "true" || v === 1 || v === "1";
+
+/** Safe JSON parse with fallback. Required by maintenance.js and certs.js. */
+window.parseJson = (v, fallback) => {
+  try { return v ? (typeof v === "string" ? JSON.parse(v) : v) : fallback; }
+  catch(e) { return fallback; }
+};
+
+/** Today as YYYY-MM-DD. Required by certs.js. */
+window.todayISO = () => new Date().toISOString().slice(0, 10);
+
+/** Split array into chunks of size n. */
+window.chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i)
