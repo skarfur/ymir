@@ -571,6 +571,7 @@ function renderWxLog() {
       { lbl:"GUSTS",    val: (snap.wg!=null && snap.wg!==snap.ws) ? snap.wg+"m/s" : null },
       { lbl:"WAVES",    val: snap.wv!=null ? snap.wv+"m"+(snap.waveDir?" "+snap.waveDir:"") : null },
       { lbl:"SEA TEMP", val: snap.sst!=null ? snap.sst+"°C" : null },
+      { lbl:"CONDITIONS", val: snap.cond ? snap.cond.icon+" "+snap.cond.desc : null },
       { lbl:"AIR",      val: snap.tc!=null ? snap.tc+"°C"+(snap.feels!=null&&snap.feels!==snap.tc?" / feels "+snap.feels+"°C":"") : null },
       { lbl:"PRESSURE", val: snap.pres!=null ? snap.pres+"hPa"+(snap.presTrend?" "+(snap.presTrend==="rising"?"↗":snap.presTrend==="falling"?"↘":"→"):"") : null },
     ].filter(function(c) { return c.val; });
@@ -677,7 +678,8 @@ document.addEventListener('DOMContentLoaded', () => {
       wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
                  waveDir:waveDir, sst:sst, flagKey:assessed.flagKey,
                  airT:c.temperature_2m, apparentT:c.apparent_temperature,
-                 pres:c.surface_pressure, presTrend:presObj.trend };
+                 pres:c.surface_pressure, presTrend:presObj.trend,
+                 code:c.weather_code };
     } catch(e) {}
   }
   pollWx();
