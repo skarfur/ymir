@@ -376,45 +376,66 @@ function renderActiveCheckouts() {
 // ══ TRIPS TAB ════════════════════════════════════════════════════════════════
 async function loadTripsTab() {
   const el = document.getElementById('clubTrips');
+  el.innerHTML = '<div class="empty-note"><span class="spinner"></span></div>';
   try {
-    const res = await apiGet('getActiveCheckouts');
-    // Show recently returned trips (in last 24h)
-    allTrips = (res.checkouts||[]).filter(c => c.status==='in');
+    const today = new Date().toISOString().slice(0,10);
+    const res   = await apiGet('getTrips', { date: today, limit: 50 });
+    allTrips    = (res.trips||[]).sort(function(a,b) { return (a.timeOut||"") > (b.timeOut||"") ? -1 : 1; });
     tripsLoaded = true;
     renderClubTrips();
   } catch(e) {
-    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+    el.innerHTML = '<div class="empty-note" style="color:var(--red)">' + s('toast.loadFailed') + ': ' + esc(e.message) + '</div>';
   }
 }
 
 function renderClubTrips() {
   const el = document.getElementById('clubTrips');
-  if (!allTrips.length) { el.innerHTML = `<div class="empty-note">${s('member.noRecent')}</div>`; return; }
-  el.innerHTML = allTrips.map(t => {
-    const isMe = t.memberKennitala === user.kennitala;
-    const roleTag = isMe
-      ? `<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">${s('member.skipper').toUpperCase()}</span>`
-      : `<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">${s('member.addAsCrew')} →</span>`;
-    return `<div class="pub-trip" onclick="${isMe?'void 0':`openCrewModal('${esc(t.id)}')`}"
-      style="cursor:${isMe?'default':'pointer'}">
-      <div class="pub-trip-head">
-        <div>
-          <div class="pub-trip-date">${esc(t.date||'—')}</div>
-          <div class="pub-trip-title">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
-          <div class="pub-trip-meta">
-            <span>${esc(t.timeOut||'')}–${esc(t.timeIn||'')}</span>
-            <span>${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</span>
-            <span>👥 ${esc(t.crew||1)}</span>
-            ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
-          </div>
-          ${t.memberName ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${s('member.skipper')}: ${esc(t.memberName)}</div>` : ''}
-        </div>
-        <div>${roleTag}</div>
-      </div>
-    </div>`;
+  if (!allTrips.length) { el.innerHTML = '<div class="empty-note">' + s('member.noRecent') + '</div>'; return; }
+
+  // Helper: parse wx snapshot from a trip record
+  function parseWxBadge(trip) {
+    var wx = null;
+    if (trip.wxSnapshot) { try { wx = typeof trip.wxSnapshot==='string' ? JSON.parse(trip.wxSnapshot) : trip.wxSnapshot; } catch(e){} }
+    if (!wx && !trip.beaufort) return "";
+    var flags = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+    if (wx) {
+      var flag  = wx.flag ? (flags[wx.flag]||"") : "";
+      var wind  = (wx.dir||"") + (wx.ws!=null ? " "+wx.ws+"m/s" : "") + (wx.bft!=null ? " Bft"+wx.bft : "");
+      var cond  = wx.cond ? " "+wx.cond.icon : "";
+      var waves = wx.wv!=null ? " · 🌊"+wx.wv+"m" : "";
+      return '<div style="font-size:11px;color:var(--muted);margin-top:5px">'
+           + (flag ? '<span style="font-size:12px;margin-right:4px">'+flag+'</span>' : "")
+           + esc(wind.trim()) + cond + waves
+           + '</div>';
+    }
+    // Fallback: just beaufort
+    return '<div style="font-size:11px;color:var(--muted);margin-top:5px">💨 Bft ' + esc(trip.beaufort) + (trip.windDir ? " "+esc(trip.windDir) : "") + '</div>';
+  }
+
+  el.innerHTML = allTrips.map(function(trip) {
+    var isMe = trip.kennitala === user.kennitala || trip.memberKennitala === user.kennitala;
+    var roleTag = isMe
+      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">' + s('member.skipper').toUpperCase() + '</span>'
+      : '<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">' + s('member.addAsCrew') + ' →</span>';
+    var wxBadge = parseWxBadge(trip);
+    return '<div class="pub-trip" onclick="' + (isMe ? 'void 0' : 'openCrewModal(\''+esc(trip.id)+'\')') + '"'
+         + ' style="cursor:' + (isMe ? 'default' : 'pointer') + '">'
+         + '<div class="pub-trip-head">'
+         +   '<div style="flex:1;min-width:0">'
+         +     '<div class="pub-trip-title">' + esc(trip.boatName||'—') + ' · ' + esc(trip.locationName||'—') + '</div>'
+         +     '<div class="pub-trip-meta">'
+         +       '<span>' + esc(trip.timeOut||'')+'–'+esc(trip.timeIn||'') + '</span>'
+         +       '<span>' + (parseFloat(trip.hoursDecimal)||0).toFixed(1) + 'h</span>'
+         +       '<span>👥 ' + esc(trip.crew||1) + '</span>'
+         +     '</div>'
+         +     wxBadge
+         +     (!isMe && trip.memberName ? '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + s('member.skipper') + ': ' + esc(trip.memberName) + '</div>' : '')
+         +   '</div>'
+         +   '<div style="flex-shrink:0;padding-left:8px">' + roleTag + '</div>'
+         + '</div>'
+         + '</div>';
   }).join('');
 }
-
 // ══ CREW MODAL ═══════════════════════════════════════════════════════════════
 function openCrewModal(tripId) {
   const t = allTrips.find(x => x.id === tripId);
@@ -440,6 +461,7 @@ async function submitCrewLog() {
       locationId: t.locationId, locationName: t.locationName,
       timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
       crew: t.crew, beaufort: t.beaufort, windDir: t.windDir,
+      wxSnapshot: t.wxSnapshot || null,
       notes: document.getElementById('crewNotes').value.trim(),
       role: 'crew', isLinked: true, linkedCheckoutId: t.id,
     });
