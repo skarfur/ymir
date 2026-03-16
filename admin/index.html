@@ -738,19 +738,25 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function loadAll() {
+  let mRes, cfgRes;
   try {
-    const [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
-    loadAlertConfig(cfgRes.overdueAlerts);
-    loadFlagConfigPanel(cfgRes.flagConfig);
-    members       = mRes.members || [];
-    actTypes      = cfgRes.activityTypes || [];
-    clItems       = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
-    certDefs      = certDefsFromConfig(cfgRes.certDefs || []);
-    _allBoats     = cfgRes.boats     || [];   // full list incl. inactive
-    _allLocations = cfgRes.locations || [];   // full list incl. inactive
-    boats     = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
-    locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
-  } catch(e) { console.error("loadAll:", e); }
+    [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
+  } catch(e) { console.error("loadAll fetch failed:", e); return; }
+ 
+  // Assign member data first — isolated so nothing below can block it
+  members       = mRes.members || [];
+  actTypes      = cfgRes.activityTypes || [];
+  clItems       = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
+  certDefs      = certDefsFromConfig(cfgRes.certDefs || []);
+  _allBoats     = cfgRes.boats     || [];
+  _allLocations = cfgRes.locations || [];
+  boats         = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
+  locations     = _allLocations.filter(l => l.active !== false && l.active !== 'false');
+ 
+  // Alert + flag config — isolated so errors here don't block member render
+  try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e); }
+  try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e); }
+ 
   renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
 }
