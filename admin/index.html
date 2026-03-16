@@ -738,13 +738,31 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function loadAll() {
-  let mRes, cfgRes;
-  try {
-    [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
-  } catch(e) { console.error("loadAll fetch failed:", e); return; }
+  const statusEl = document.getElementById("membersCard");
  
-  // Assign member data first — isolated so nothing below can block it
-  members       = mRes.members || [];
+  // ── Step 1: members ───────────────────────────────────────────────────────
+  try {
+    if (statusEl) statusEl.innerHTML = '<div class="loading-state"><span class="spinner"></span> Loading members…</div>';
+    const mRes = await apiGet("getMembers");
+    members = mRes.members || [];
+  } catch(e) {
+    console.error("getMembers failed:", e);
+    if (statusEl) statusEl.innerHTML = `<div class="empty-state" style="color:var(--red)">getMembers failed: ${e.message}</div>`;
+    return;
+  }
+ 
+  // ── Step 2: config ────────────────────────────────────────────────────────
+  let cfgRes = {};
+  try {
+    if (statusEl) statusEl.innerHTML = '<div class="loading-state"><span class="spinner"></span> Loading config…</div>';
+    cfgRes = await apiGet("getConfig");
+  } catch(e) {
+    console.error("getConfig failed:", e);
+    if (statusEl) statusEl.innerHTML = `<div class="empty-state" style="color:var(--red)">getConfig failed: ${e.message}</div>`;
+    // Don't return — we still have members, render what we can
+  }
+ 
+  // ── Assign data ───────────────────────────────────────────────────────────
   actTypes      = cfgRes.activityTypes || [];
   clItems       = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
   certDefs      = certDefsFromConfig(cfgRes.certDefs || []);
@@ -753,14 +771,12 @@ async function loadAll() {
   boats         = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
   locations     = _allLocations.filter(l => l.active !== false && l.active !== 'false');
  
-  // Alert + flag config — isolated so errors here don't block member render
-  try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e); }
-  try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e); }
+  try { loadAlertConfig(cfgRes.overdueAlerts); }  catch(e) { console.warn("loadAlertConfig:", e.message); }
+  try { loadFlagConfigPanel(cfgRes.flagConfig); } catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
  
   renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
 }
-
 function _adminWireStrings() {
   // Search placeholder
   const search = document.getElementById('memberSearch');
