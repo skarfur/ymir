@@ -923,7 +923,7 @@ async function doSave(signOff) {
 }
 </script>
 </body>
-</html>
+</html
   // Silent weather poll for snapshots
   let _wxTimer = null;
   async function pollWx() {
@@ -937,12 +937,12 @@ async function doSave(signOff) {
       var wd   = c.wind_direction_10m;
       var bft  = wxMsToBft(ws);
       var wDir = wxDirLabel(wd);
-      var waveH    = (mc.wave_height != null)   ? mc.wave_height   : null;
-      var waveDir  = (mc.wave_direction != null) ? wxDirLabel(mc.wave_direction) : null;
-      var sst      = (mc.sea_surface_temperature != null) ? mc.sea_surface_temperature : null;
-      var nowISO   = new Date().toISOString().slice(0,13);
-      var nowIdx   = Math.max(0, (hr.time||[]).findIndex(function(t) { return t.slice(0,13) === nowISO; }));
-      var presObj  = wxPressureTrend(hr.surface_pressure, nowIdx);
+      var waveH   = mc.wave_height != null ? mc.wave_height : null;
+      var waveDir = mc.wave_direction != null ? wxDirLabel(mc.wave_direction) : null;
+      var sst     = mc.sea_surface_temperature != null ? mc.sea_surface_temperature : null;
+      var nowISO  = new Date().toISOString().slice(0,13);
+      var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(t) { return t.slice(0,13) === nowISO; }));
+      var presObj = wxPressureTrend(hr.surface_pressure, nowIdx);
       var assessed = wxAssessFlag(ws, wDir, waveH || 0);
       wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir,
                  waveH:waveH, waveDir:waveDir, sst:sst,
@@ -953,4 +953,4 @@ async function doSave(signOff) {
   }
   pollWx();
   _wxTimer = setInterval(pollWx, 10 * 60 * 1000);
-  
+  >
