@@ -580,9 +580,48 @@ function renderLaunchPicker(preselectedBoatId) {
       `<div style="margin-bottom:12px">
         <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${boatEmoji(cat)} ${esc(cat)}</div>
         ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
-          onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
+          onclick="renderLaunchChecklist(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
       </div>`
     ).join('');
+}
+
+// Pre-launch checklists by boat category
+var LAUNCH_CHECKLISTS = {
+  dinghy:       ["Life jacket fitted","Buoyancy aid on","Rudder + centreplate fitted","Bailer attached","Capsize drill known"],
+  keelboat:     ["Life jacket fitted","Engine/sail check","VHF charged","Flares aboard","Float plan filed"],
+  kayak:        ["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"],
+  "rowing shell":["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"],
+  rowboat:      ["Life jacket fitted","Oars secured","Bailer aboard"],
+  sup:          ["Leash on","PFD attached to board"],
+  wingfoil:     ["Helmet on","Impact vest on","Leash on","Wind within limits"],
+  other:        ["Life jacket fitted","Safety check complete"],
+};
+
+function renderLaunchChecklist(boat) {
+  if (!boat) return;
+  launchBoat = boat;
+  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
+  const cat   = (boat.category||'other').toLowerCase();
+  const items = LAUNCH_CHECKLISTS[cat] || LAUNCH_CHECKLISTS.other;
+  document.getElementById('launchModalBody').innerHTML =
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH CHECKLIST — ${esc(cat.toUpperCase())}</div>` +
+    items.map((it,i) =>
+      `<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">` +
+      `<input type="checkbox" class="launch-check" data-idx="${i}" style="width:16px;height:16px;accent-color:var(--brass)">` +
+      `<span>${esc(it)}</span></label>`
+    ).join("") +
+    `<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">Please confirm all items before proceeding.</div>` +
+    `<div class="btn-row" style="margin-top:14px">` +
+    `<button class="btn btn-secondary" onclick="renderLaunchPicker()">← Back</button>` +
+    `<button class="btn btn-primary" onclick="advanceLaunchChecklist()">Continue →</button>` +
+    `</div>`;
+}
+
+function advanceLaunchChecklist() {
+  var boxes = document.querySelectorAll('.launch-check');
+  var allChecked = Array.from(boxes).every(function(b) { return b.checked; });
+  if (!allChecked) { document.getElementById('launchCheckErr').style.display='block'; return; }
+  renderLaunchForm(launchBoat);
 }
 
 function renderLaunchForm(boat) {
@@ -590,6 +629,7 @@ function renderLaunchForm(boat) {
   launchBoat = boat;
   document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
   const locOpts = locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
+
   document.getElementById('launchModalBody').innerHTML = `
     <div class="field"><label>${s('lbl.location')}</label>
       <select id="launchLocation"><option value="">${s('lbl.selectDots')}</option>${locOpts}</select></div>
@@ -649,13 +689,38 @@ async function submitLaunch() {
 function renderReturnForm() {
   if (!returnCo) return;
   document.getElementById('returnModalTitle').textContent = s('member.checkInTitle') + ' — ' + (returnCo.boatName||'');
-  document.getElementById('returnModalBody').innerHTML = `
-    <div class="field"><label>${s('lbl.time')}</label><input type="time" id="retTimeIn" value="${fmtTimeNow()}"></div>
-    <div id="retErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('returnModal')" data-s="btn.cancel">${s('btn.cancel')}</button>
-      <button class="btn btn-primary"   onclick="submitReturn('${returnCo.id}')">${s('staff.checkIn')}</button>
+  const coSnap = returnCo.wxSnapshot
+    ? (typeof returnCo.wxSnapshot==='string' ? JSON.parse(returnCo.wxSnapshot) : returnCo.wxSnapshot) : null;
+  const coDesc  = coSnap ? `${coSnap.dir||""} ${coSnap.ws!=null?coSnap.ws+"m/s":""} Bft${coSnap.bft||"?"}`.trim() : null;
+  const nowDesc = currentWx ? `${currentWx.wDir||""} ${Math.round(currentWx.ws||0)}m/s Bft${currentWx.bft||"?"}`.trim() : null;
+  const wxSection =
+    `<div style="margin-bottom:14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">WEATHER RECORD FOR LOGBOOK</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${coDesc ? `<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" style="margin-top:2px;accent-color:var(--brass)"><span><b>At launch:</b> ${esc(coDesc)}</span></label>` : ""}
+        ${nowDesc ? `<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" checked style="margin-top:2px;accent-color:var(--brass)"><span><b>Now:</b> ${esc(nowDesc)}</span></label>` : ""}
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" style="margin-top:2px;accent-color:var(--brass)"><span><b>Manual entry</b></span></label>
+      </div>
+      <div id="wxManualRow" style="display:none;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field"><label>Bft (0–12)</label><input type="number" id="manBft" min="0" max="12"></div>
+        <div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N / SW / ENE…" maxlength="4"></div>
+      </div>
     </div>`;
+  document.getElementById('returnModalBody').innerHTML =
+    `<div class="field"><label>${s('lbl.time')}</label><input type="time" id="retTimeIn" value="${fmtTimeNow()}"></div>` +
+    wxSection +
+    `<div id="retErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>` +
+    `<div class="btn-row">` +
+    `<button class="btn btn-secondary" onclick="closeModal('returnModal')">${s('btn.cancel')}</button>` +
+    `<button class="btn btn-primary" onclick="submitReturn('${returnCo.id}')">${s('staff.checkIn')}</button>` +
+    `</div>`;
+  setTimeout(function() {
+    document.querySelectorAll('[name="wxChoice"]').forEach(function(r) {
+      r.addEventListener('change', function() {
+        document.getElementById('wxManualRow').style.display = r.value==='manual' ? 'grid' : 'none';
+      });
+    });
+  }, 0);
 }
 
 async function submitReturn(coId) {
@@ -663,18 +728,46 @@ async function submitReturn(coId) {
   const err    = document.getElementById('retErr');
   const co     = checkouts.find(c=>c.id===coId);
   if (!co) return;
+  const wxChoice = (document.querySelector('[name="wxChoice"]:checked')||{}).value || 'now';
+  let tripSnap = null;
+  if (wxChoice==='checkout' && co.wxSnapshot) {
+    tripSnap = typeof co.wxSnapshot==='string' ? JSON.parse(co.wxSnapshot) : co.wxSnapshot;
+  } else if (wxChoice==='now' && currentWx) {
+    tripSnap = wxSnapshot(currentWx);
+  } else if (wxChoice==='manual') {
+    const bft = parseInt(document.getElementById('manBft')?.value||'0');
+    const dir = (document.getElementById('manDir')?.value||'').trim();
+    tripSnap  = { bft: isNaN(bft)?null:bft, dir: dir };
+  }
+  const tout = (co.checkedOutAt||co.timeOut||'').slice(0,5);
+  const h    = (tout&&timeIn)
+    ? ((new Date('2000-01-01T'+timeIn) - new Date('2000-01-01T'+tout)) / 3600000) : 0;
+  const today = new Date().toISOString().slice(0,10);
   try {
-    await apiPost('checkIn',{ id:coId, timeIn,
+    await apiPost('checkIn', { id:coId, timeIn, kennitala:user.kennitala,
+      memberName:user.name, boatId:co.boatId, boatName:co.boatName });
+    await apiPost('saveTrip', {
       kennitala:user.kennitala, memberName:user.name,
-      boatId:co.boatId, boatName:co.boatName,
+      memberId:user.id||user.kennitala,
+      date:today, boatId:co.boatId, boatName:co.boatName,
+      locationId:co.locationId||'', locationName:co.locationName||'',
+      timeOut:tout, timeIn:timeIn,
+      hoursDecimal:h>0 ? h.toFixed(2) : '0',
+      crew:co.crew||1,
+      beaufort: tripSnap ? tripSnap.bft : null,
+      windDir:  tripSnap ? (tripSnap.dir||tripSnap.wDir||'') : '',
+      wxSnapshot: tripSnap ? JSON.stringify(tripSnap) : null,
+      role:'skipper', linkedCheckoutId:coId,
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts||[];
     closeModal('returnModal');
-    renderActiveCheckouts();
-    renderFleetByCat();
+    renderActiveCheckouts(); renderFleetByCat();
     logbookLoaded = false;
     showToast(s('toast.checkedIn'));
-  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
+  } catch(e) {
+    err.textContent = s('toast.error')+': '+e.message;
+    err.style.display = 'block';
+  }
 }
 
 // ══ MANUAL TRIP MODAL ════════════════════════════════════════════════════════
