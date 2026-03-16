@@ -272,8 +272,8 @@
 
   <!-- ══ FLEET STATUS (collapsed by category) ══ -->
   <div class="divider-label" style="display:flex;align-items:center;justify-content:space-between">
-    <span>FLEET STATUS</span>
-    <span style="font-size:9px;color:var(--muted);cursor:pointer" onclick="toggleAllFleet()">expand all</span>
+    <span><span data-s="staff.fleet"></span>
+    <span style="font-size:9px;color:var(--muted);cursor:pointer" onclick="toggleAllFleet()"  data-s="staff.expandAll"></span>
   </div>
 
   <!-- Available summary -->
@@ -287,7 +287,7 @@
 
   <!-- Recent check-ins -->
   <div class="section" style="margin-bottom:28px">
-    <div class="section-head"><h3>RECENT CHECK-INS (24H)</h3></div>
+    <div class="section-head"><h3 data-s="staff.recentCheckins"></h3></div>
     <div id="recentCheckins"><div class="empty-note">Loading…</div></div>
   </div>
 
