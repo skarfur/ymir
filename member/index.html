@@ -127,7 +127,7 @@
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.recentTrips"></div>
     <div id="clubTrips"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div style="margin-top:12px">
-      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManually"></button>
+      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManual"></button>
     </div>
   </div>
 
@@ -280,14 +280,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }).start();
 
   try {
-    const [coRes, bRes, lRes] = await Promise.all([
+    const [coRes, cfgRes] = await Promise.all([
       apiGet('getActiveCheckouts'),
-      apiGet('getBoats'),
-      apiGet('getLocations'),
+      apiGet('getConfig'),
     ]);
     checkouts = coRes.checkouts || [];
-    boats     = (bRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
-    locations = (lRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+    boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
 
     populateFormSelects();
     renderActiveCheckouts();
@@ -524,12 +523,12 @@ async function loadCertsTab() {
   const el = document.getElementById('certsList');
   try {
     const [mRes, cfgRes] = await Promise.all([
-      apiGet('getMember', { kennitala: user.kennitala }),
+      apiGet('getMembers'),
       apiGet('getConfig'),
     ]);
     certDefs    = certDefsFromConfig(cfgRes.certDefs||[]);
     certsLoaded = true;
-    const member = mRes.member || mRes;
+    const member = (mRes.members||[]).find(m => m.kennitala === user.kennitala) || {};
     const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
     if (!certs.length) { el.innerHTML = `<div class="empty-note">${s('cert.noCerts')}</div>`; return; }
     const grouped = {};
