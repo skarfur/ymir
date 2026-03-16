@@ -363,13 +363,19 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
 function wxSnapshot(snap) {
   if (!snap) return null;
   return {
-    bft:  snap.bft,
-    ws:   Math.round(snap.ws   || 0),
-    wg:   Math.round(snap.wg   || 0),
-    dir:  snap.wDir || '',
-    wv:   snap.waveH != null ? parseFloat(snap.waveH.toFixed(1)) : null,
-    flag: snap.flagKey || '',
-    tc:   snap.airT   != null ? Math.round(snap.airT)   : null,
-    ts:   new Date().toISOString().slice(0,16),
+    bft:      snap.bft,
+    ws:       Math.round(snap.ws  || 0),
+    wg:       Math.round(snap.wg  || 0),
+    wd:       snap.wd  != null ? Math.round(snap.wd)  : null,
+    dir:      snap.wDir || '',
+    wv:       snap.waveH    != null ? parseFloat(snap.waveH.toFixed(1))    : null,
+    waveDir:  snap.waveDir  != null ? snap.waveDir                         : null,
+    sst:      snap.sst      != null ? parseFloat(snap.sst.toFixed(1))      : null,
+    tc:       snap.airT     != null ? Math.round(snap.airT)                : null,
+    feels:    snap.apparentT!= null ? Math.round(snap.apparentT)           : null,
+    pres:     snap.pres     != null ? Math.round(snap.pres)                : null,
+    presTrend:snap.presTrend || null,
+    flag:     snap.flagKey || '',
+    ts:       new Date().toISOString().slice(0,16),
   };
 }
