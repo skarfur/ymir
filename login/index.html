@@ -30,9 +30,9 @@
     .role-btn .role-icon { font-size:22px; flex-shrink:0; }
     .role-btn .role-label { color:var(--text); font-size:13px; font-weight:500; letter-spacing:.5px; }
     .role-btn .role-desc { color:var(--muted); font-size:11px; margin-top:2px; }
-    .role-btn.role-admin { border-color:#e74c3c44; }
+    .role-btn.role-admin  { border-color:#e74c3c44; }
     .role-btn.role-admin:hover { border-color:#e74c3c; }
-    .role-btn.role-staff { border-color:var(--brass)44; }
+    .role-btn.role-staff  { border-color:var(--brass)44; }
     .role-btn.role-member { border-color:#2ecc7144; }
     .role-btn.role-member:hover { border-color:#2ecc71; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
@@ -43,20 +43,20 @@
 <div class="login-box">
   <div class="login-logo">
     <span class="anchor">⚓</span>
-    <p id="subtitle">SIGLINGAFÉLAGIÐ</p>
+    <p id="subtitle"></p>
     <h1>ÝMIR</h1>
   </div>
 
   <div id="ktScreen">
     <div class="card">
       <div class="field">
-        <label id="ktLabel">Kennitala</label>
+        <label id="ktLabel"></label>
         <input type="text" id="ktInput" class="kt-input" maxlength="10"
-          inputmode="numeric" autocomplete="off" placeholder="0000000000">
+          inputmode="numeric" autocomplete="off">
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">
-          <span id="btnText">Sign In</span>
+          <span id="btnText"></span>
         </button>
       </div>
       <div id="errMsg" class="msg msg-err" style="display:none"></div>
@@ -68,79 +68,98 @@
       <div class="role-greeting" id="roleGreeting"></div>
       <div id="roleBtns"></div>
     </div>
-    <span class="back-link" onclick="goBack()" id="backLink">← Sign in as someone else</span>
+    <span class="back-link" onclick="goBack()" id="backLink"></span>
   </div>
 
   <div class="lang-row">
-    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
+    <button class="btn-ghost" onclick="toggleLang()" id="langBtn"></button>
   </div>
 </div>
 
 <script>
-const L = getLang();
+// Wire all strings on load — no hard-coded text in HTML
+document.getElementById('subtitle').textContent  = s('login.subtitle');
+document.getElementById('ktLabel').textContent   = s('login.kennitala');
+document.getElementById('ktInput').placeholder   = s('login.placeholder');
+document.getElementById('btnText').textContent   = s('login.btn');
+document.getElementById('langBtn').textContent   = s('nav.langToggle');
+document.getElementById('backLink').textContent  = s('login.back');
 
-document.getElementById("subtitle").textContent = s("subtitle");
-document.getElementById("ktLabel").textContent   = s("ktLabel");
-document.getElementById("btnText").textContent   = s("btnText");
-document.getElementById("langBtn").textContent   = s("langBtn");
-document.getElementById("backLink").textContent  = s("backLink");
-document.getElementById("ktInput").addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+document.getElementById('ktInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
 
 async function doLogin() {
-  const kt  = document.getElementById("ktInput").value.trim().replace(/\D/g,"");
-  const btn = document.getElementById("loginBtn");
-  const err = document.getElementById("errMsg");
+  const kt  = document.getElementById('ktInput').value.trim().replace(/\D/g, '');
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('errMsg');
+
   if (kt.length < 10) {
-    err.textContent = L==="EN" ? "Enter your 10-digit kennitala." : "Sláðu inn 10 stafa kennitölu.";
-    err.style.display="block"; return;
+    err.textContent    = s('login.tooShort');
+    err.style.display  = 'block';
+    return;
   }
-  err.style.display="none"; btn.disabled=true;
-  document.getElementById("btnText").innerHTML='<span class="spinner"></span>'+(L==="EN"?"Checking…":"Athuga…");
+
+  err.style.display  = 'none';
+  btn.disabled       = true;
+  document.getElementById('btnText').innerHTML =
+    `<span class="spinner"></span>${s('login.loading')}`;
+
   try {
-    const data = await apiGet("validateMember", { kennitala: kt });
+    const data = await apiGet('validateMember', { kennitala: kt });
     const user = data.member;
     setUser(user);
-    if (user.role === "admin") {
-      showRolePicker(user, ["member","staff","admin"]);
-    } else if (user.role === "staff") {
-      showRolePicker(user, ["member","staff"]);
+
+    if (user.role === 'admin') {
+      showRolePicker(user, ['member', 'staff', 'admin']);
+    } else if (user.role === 'staff') {
+      showRolePicker(user, ['member', 'staff']);
     } else {
-      window.location.href = "../member/";
+      window.location.href = '../member/';
     }
   } catch(e) {
-    err.textContent = (e.message?.includes("Not found")||e.message?.includes("Inactive")) ? s("notFound") : s("error");
-    err.style.display="block"; btn.disabled=false;
-    document.getElementById("btnText").textContent=s("btnText");
+    const isNotFound = e.message?.includes('Not found') || e.message?.includes('Inactive');
+    err.textContent   = isNotFound ? s('login.notFound') : s('login.error');
+    err.style.display = 'block';
+    btn.disabled      = false;
+    document.getElementById('btnText').textContent = s('login.btn');
   }
 }
 
 function showRolePicker(user, roles) {
-  document.getElementById("ktScreen").style.display   = "none";
-  document.getElementById("roleScreen").style.display = "block";
-  document.getElementById("roleGreeting").textContent = s("welcome")+" "+user.name.split(" ")[0]+" — "+s("chooseView");
+  document.getElementById('ktScreen').style.display   = 'none';
+  document.getElementById('roleScreen').style.display = 'block';
+  document.getElementById('roleGreeting').textContent =
+    s('login.welcome') + ' ' + user.name.split(' ')[0] + ' — ' + s('login.chooseView');
+
   const dests = {
-    admin:  { icon:"⚙️", lk:"r_admin_label",  dk:"r_admin_desc",  href:"../admin/",  cls:"role-admin" },
-    staff:  { icon:"🧭", lk:"r_staff_label",  dk:"r_staff_desc",  href:"../staff/",  cls:"role-staff" },
-    member: { icon:"⛵", lk:"r_member_label", dk:"r_member_desc", href:"../member/", cls:"role-member" },
+    admin:  { icon: '⚙️', label: s('login.admin.label'),  desc: s('login.admin.desc'),  href: '../admin/',  cls: 'role-admin'  },
+    staff:  { icon: '🧭', label: s('login.staff.label'),  desc: s('login.staff.desc'),  href: '../staff/',  cls: 'role-staff'  },
+    member: { icon: '⛵', label: s('login.member.label'), desc: s('login.member.desc'), href: '../member/', cls: 'role-member' },
   };
-  const container = document.getElementById("roleBtns");
-  container.innerHTML = "";
+
+  const container = document.getElementById('roleBtns');
+  container.innerHTML = '';
   roles.forEach(r => {
-    const d = dests[r];
-    const btn = document.createElement("button");
-    btn.className = "role-btn "+d.cls;
-    btn.innerHTML = `<span class="role-icon">${d.icon}</span><div><div class="role-label">${s(d.lk)}</div><div class="role-desc">${s(d.dk)}</div></div>`;
+    const d   = dests[r];
+    const btn = document.createElement('button');
+    btn.className = 'role-btn ' + d.cls;
+    btn.innerHTML = `<span class="role-icon">${d.icon}</span>
+      <div>
+        <div class="role-label">${d.label}</div>
+        <div class="role-desc">${d.desc}</div>
+      </div>`;
     btn.onclick = () => { window.location.href = d.href; };
     container.appendChild(btn);
   });
 }
 
 function goBack() {
-  document.getElementById("ktScreen").style.display   = "block";
-  document.getElementById("roleScreen").style.display = "none";
-  document.getElementById("ktInput").value = "";
-  document.getElementById("loginBtn").disabled = false;
-  document.getElementById("btnText").textContent = s("btnText");
+  document.getElementById('ktScreen').style.display   = 'block';
+  document.getElementById('roleScreen').style.display = 'none';
+  document.getElementById('ktInput').value = '';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('btnText').textContent = s('login.btn');
 }
 </script>
 </body>
