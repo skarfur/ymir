@@ -643,15 +643,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Silent weather poll for snapshots
   let _wxTimer = null;
   async function pollWx() {
-    try {
-      const snap = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
-      if (snap) {
-        if (typeof wxLoadFlagConfig === "function") wxLoadFlagConfig(null);
-        wxData = snap;
+        try {
+          var fetched = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
+          var c    = fetched.wx.current;
+          var mc   = (fetched.marine && fetched.marine.current) ? fetched.marine.current : {};
+          var ws   = c.wind_speed_10m || 0;
+          var wg   = c.wind_gusts_10m || ws;
+          var wd   = c.wind_direction_10m;
+          var bft  = wxMsToBft(ws);
+          var wDir = wxDirLabel(wd);
+          var waveH = (mc.wave_height != null) ? mc.wave_height : null;
+          var assessed = wxAssessFlag(ws, wDir, waveH || 0);
+          wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
+                     flagKey:assessed.flagKey, airT:c.temperature_2m, pres:c.surface_pressure };
+        } catch(e) {}
       }
-    } catch(e) {}
-  }
-  pollWx();
+      pollWx();
   _wxTimer = setInterval(pollWx, 10 * 60 * 1000);
 
   navigateToToday();
