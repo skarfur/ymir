@@ -388,6 +388,7 @@ function wxSnapshot(snap) {
     feels:    snap.apparentT!= null ? Math.round(snap.apparentT)           : null,
     pres:     snap.pres     != null ? Math.round(snap.pres)                : null,
     presTrend:snap.presTrend || null,
+    cond:     snap.code != null ? { icon: wxCondIcon(snap.code), desc: wxCondDesc(snap.code) } : null,
     flag:     snap.flagKey || '',
     ts:       new Date().toISOString().slice(0,16),
   };
