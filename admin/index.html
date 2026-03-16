@@ -112,14 +112,14 @@
   <main>
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="members"    onclick="showTab('members')">Members</button>
-      <button class="tab-btn"        data-tab="boats"      onclick="showTab('boats')">Boats</button>
-      <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')">Locations</button>
-      <button class="tab-btn"        data-tab="checklists" onclick="showTab('checklists')">Checklists</button>
-      <button class="tab-btn"        data-tab="actTypes"   onclick="showTab('actTypes')">Activity Types</button>
-      <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')">Certifications</button>
-      <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')">🚩 Flags</button>
-      <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')">Alerts</button>
+      <button class="tab-btn active" data-tab="members"    onclick="showTab('members')"    data-s="admin.tabMembers"></button>
+      <button class="tab-btn"        data-tab="boats"      onclick="showTab('boats')"      data-s="admin.tabBoats"></button>
+      <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')"  data-s="admin.tabLocations"></button>
+      <button class="tab-btn"        data-tab="checklists" onclick="showTab('checklists')" data-s="admin.tabChecklists"></button>
+      <button class="tab-btn"        data-tab="actTypes"   onclick="showTab('actTypes')"   data-s="admin.tabActTypes"></button>
+      <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')"      data-s="admin.tabCerts"></button>
+      <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
+      <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
     </div>
 
     <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
@@ -723,6 +723,8 @@ let editingId = null, importResult = null;
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
+  applyStrings();
+  _adminWireStrings();
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
     showTab(p.get("tab") || "members", p.get("sub") || undefined);
@@ -749,6 +751,28 @@ async function loadAll() {
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
 }
 
+function _adminWireStrings() {
+  // Search placeholder
+  const search = document.getElementById('memberSearch');
+  if (search) search.placeholder = s('admin.searchMembers');
+
+  // Action buttons
+  const importBtn = document.querySelector('[onclick*="showTab(\'members\',\'import\')"]');
+  if (importBtn) importBtn.textContent = s('admin.importCsv');
+
+  const addMemberBtn = document.querySelector('[onclick="openMemberModal()"]');
+  if (addMemberBtn) addMemberBtn.textContent = s('admin.addMember');
+
+  const addBoatBtn = document.querySelector('[onclick="openBoatModal()"]');
+  if (addBoatBtn) addBoatBtn.textContent = s('admin.addBoat');
+
+  const addLocBtn = document.querySelector('[onclick*="openLocationModal"]');
+  if (addLocBtn) addLocBtn.textContent = s('admin.addLocation');
+
+  // Back to list link in import flow
+  const backBtn = document.querySelector('[onclick*="showTab(\'members\',\'list\')"]');
+  if (backBtn && backBtn.classList.contains('btn-ghost')) backBtn.textContent = '← ' + s('admin.backToList').replace('← ','');
+}
 // ── Collapsible sections ───────────────────────────────────────────────────────
 function toggleSection(head) {
   const body   = head.nextElementSibling;
@@ -824,7 +848,7 @@ function renderMembers() {
   });
   document.getElementById("memberCountLabel").textContent = filtered.length;
   if (!filtered.length) {
-    card.innerHTML = `<div class="empty-state">${memberFilter ? "No matches." : "No members yet."}</div>`;
+    card.innerHTML = `<div class="empty-state">${memberFilter ? s('lbl.noData') : s('admin.noMembers')}</div>`;
     return;
   }
   const roleColors = { admin: "badge-red", staff: "badge-brass", member: "badge-muted" };
@@ -841,7 +865,7 @@ function renderMembers() {
 function openMemberModal(id) {
   editingId = id || null;
   const m   = id ? members.find(x => x.id === id) : null;
-  document.getElementById("memberModalTitle").textContent  = m ? "Edit Member" : "Add Member";
+  document.getElementById("memberModalTitle").textContent  = m ? s('admin.memberModal.edit') : s('admin.memberModal.add');
   document.getElementById("mKennitala").value              = m ? m.kennitala          : "";
   document.getElementById("mName").value                   = m ? m.name               : "";
   document.getElementById("mRole").value                   = m ? (m.role || "member") : "member";
@@ -947,7 +971,7 @@ function renderBoats() {
 function openBoatModal(id) {
   editingId = id || null;
   const b   = id ? boats.find(x => x.id === id) : null;
-  document.getElementById("boatModalTitle").textContent = b ? "Edit Boat" : "Add Boat";
+  document.getElementById("boatModalTitle").textContent = b ? s('admin.boatModal.edit') : s('admin.boatModal.add');
   document.getElementById("bName").value      = b ? b.name                   : "";
   document.getElementById("bCategory").value  = b ? (b.category || "dinghy") : "dinghy";
   document.getElementById("bOOS").checked     = b ? bool(b.oos)              : false;
@@ -1005,7 +1029,7 @@ function renderLocations() {
 function openLocationModal(id) {
   editingId = id || null;
   const l   = id ? locations.find(x => x.id === id) : null;
-  document.getElementById("locationModalTitle").textContent = l ? "Edit Location" : "Add Location";
+  document.getElementById("locationModalTitle").textContent = l ? s('admin.locModal.edit') : s('admin.locModal.add');
   document.getElementById("lName").value     = l ? l.name         : "";
   document.getElementById("lActive").checked = l ? bool(l.active) : true;
   document.getElementById("lDeleteBtn").classList.toggle("hidden", !l);
@@ -1588,10 +1612,10 @@ function processCSV(text) {
   importResult = { added, updated, flagged, unchanged };
 
   document.getElementById("importSummary").innerHTML = `
-    <span class="import-chip chip-green">${added.length} new</span>
-    <span class="import-chip chip-brass">${updated.length} updated</span>
-    <span class="import-chip chip-orange">${flagged.length} not in import</span>
-    <span class="import-chip chip-muted">${unchanged.length} unchanged</span>`;
+    <span class="import-chip chip-green">${added.length} ${s('btn.add').replace('+ ','')}</span>
+    <span class="import-chip chip-brass">${updated.length} ${s('admin.importUpdated')}</span>
+    <span class="import-chip chip-orange">${flagged.length} ${s('admin.importMissing')}</span>
+    <span class="import-chip chip-muted">${unchanged.length} ${s('admin.importUnchanged')}</span>`;
 
   let html = "";
   if (added.length) {
