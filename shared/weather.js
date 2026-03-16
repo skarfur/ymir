@@ -191,10 +191,11 @@ async function wxFetch(lat, lon) {
   // ── 1. BIRK current observations — via backend proxy ─────────────────────
   const birkPromise = apiGet('getWeather');
 
-  // ── 2. Open-Meteo hourly — wind + pressure for chart only ────────────────
+  // ── 2. Open-Meteo hourly + current — chart data + fills nulls left by BIRK ──────────
   const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
+  const currentParams = 'wind_gusts_10m,apparent_temperature,surface_pressure,weather_code';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&hourly=${hourlyParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
+    `&hourly=${hourlyParams}&current=${currentParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
   const hourlyPromise = fetch(hourlyUrl).then(r => r.ok ? r.json() : null).catch(() => null);
 
   // ── 3. Marine API (waves / SST) — unchanged ───────────────────────────────
@@ -245,6 +246,18 @@ async function wxFetch(lat, lon) {
     },
   };
 
+  // ── Supplement BIRK nulls with ATM current data ──────────────────────────────────
+  const atmCur = hourlyData?.current;
+  if (atmCur) {
+    if (wx.current.wind_gusts_10m === wx.current.wind_speed_10m && atmCur.wind_gusts_10m != null)
+      wx.current.wind_gusts_10m = atmCur.wind_gusts_10m;
+    if (wx.current.apparent_temperature === wx.current.temperature_2m && atmCur.apparent_temperature != null)
+      wx.current.apparent_temperature = atmCur.apparent_temperature;
+    if (wx.current.surface_pressure == null && atmCur.surface_pressure != null)
+      wx.current.surface_pressure = atmCur.surface_pressure;
+    if (wx.current.weather_code == null && atmCur.weather_code != null)
+      wx.current.weather_code = atmCur.weather_code;
+  }
   return { wx, marine };
 }
 
