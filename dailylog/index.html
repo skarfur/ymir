@@ -8,54 +8,28 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
-<script src="../shared/ui.js"></script>
+<script src="../shared/boats.js"></script>
+<script src="../shared/maintenance.js"></script>
 <style>
-
-/* ── Date hero ── */
-.date-hero { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.date-big  { font-size:26px; font-weight:500; color:var(--text); line-height:1.1; }
-.date-sub  { font-size:11px; color:var(--muted); letter-spacing:1px; margin-top:4px; }
-.date-nav-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:24px; line-height:1; width:40px; height:40px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:color .15s, border-color .15s; }
-.date-nav-btn:hover:not(:disabled) { color:var(--brass); border-color:var(--brass); }
-.date-nav-btn:disabled { opacity:.25; cursor:default; }
-.date-signoff-badge { font-size:10px; padding:4px 10px; border-radius:10px; border:1px solid #27ae6055; background:#27ae6011; color:var(--green); }
-.date-readonly-badge { font-size:10px; padding:4px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
-.today-btn { background:none; border:1px solid var(--brass); color:var(--brass); font-size:10px; padding:2px 8px; border-radius:10px; cursor:pointer; font-family:inherit; letter-spacing:.5px; transition:background .15s, color .15s; }
-.today-btn:hover { background:var(--brass); color:#0b1f38; }
-
-/* ── Tide record ── */
-.tide-record { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:14px; }
-.tide-record-title { font-size:9px; color:var(--muted); letter-spacing:1.2px; margin-bottom:12px; }
-.tide-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
-.tide-field { display:flex; flex-direction:column; gap:4px; }
-.tide-field label { font-size:9px; color:var(--muted); letter-spacing:.8px; }
-.tide-field input { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:7px 10px; color:var(--text); font-family:inherit; font-size:13px; width:100%; }
-.tide-field input:focus { outline:none; border-color:var(--brass); }
-.tide-field input::placeholder { color:var(--border); }
-@media(max-width:480px) { .tide-grid { grid-template-columns:1fr 1fr; } }
-
-/* ── Weather log — LARGER snapshots ── */
-.wxlog-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:4px 0; margin-top:8px; }
-.wxsnap { display:grid; grid-template-columns:auto 1fr; gap:0; padding:12px 16px; border-bottom:1px solid var(--border); align-items:start; position:relative; }
-.wxsnap:last-child { border-bottom:none; }
-.wxsnap-time { font-size:22px; font-weight:500; color:var(--brass); line-height:1; margin-right:16px; padding-top:2px; min-width:48px; }
-.wxsnap-body { display:flex; flex-direction:column; gap:6px; }
-.wxsnap-wind { font-size:18px; font-weight:500; color:var(--text); line-height:1; display:flex; align-items:baseline; gap:6px; }
-.wxsnap-wind .unit { font-size:11px; color:var(--muted); }
-.wxsnap-row2 { font-size:12px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.wxsnap-row2 b { color:var(--text); }
-.wxsnap-grid { display:flex; gap:16px; flex-wrap:wrap; margin-top:2px; }
-.wxsnap-cell { display:flex; flex-direction:column; }
-.wxsnap-cell-val { font-size:13px; color:var(--text); }
-.wxsnap-cell-lbl { font-size:9px; color:var(--muted); letter-spacing:.6px; margin-top:1px; }
-.wxsnap-flag { position:absolute; top:12px; right:14px; font-size:11px; }
-.wxsnap-del { position:absolute; bottom:10px; right:14px; background:none; border:none; color:var(--border); cursor:pointer; font-size:16px; padding:0; line-height:1; transition:color .15s; }
-.wxsnap-del:hover { color:var(--red); }
+/* ── Date nav ── */
+.date-nav { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.date-nav button { background:none; border:1px solid var(--border); border-radius:6px;
+  color:var(--text); font-family:inherit; font-size:12px; padding:5px 12px; cursor:pointer; }
+.date-nav button:hover { border-color:var(--brass); }
+.date-big { font-size:15px; font-weight:500; color:var(--text); flex:1; }
+.signoff-badge { display:inline-flex; align-items:center; gap:6px;
+  background:var(--green)18; border:1px solid var(--green)44; color:var(--green);
+  border-radius:6px; padding:4px 10px; font-size:11px; }
+.readonly-badge { display:inline-flex; align-items:center;
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+  border-radius:6px; padding:4px 10px; font-size:11px; }
 
 /* ── Section headings ── */
-.section-heading { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
+.section-heading { font-size:9px; color:var(--muted); letter-spacing:1.5px;
+  margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
 
 /* ── Cards ── */
 .content-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:4px; }
@@ -81,172 +55,161 @@
 .del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
 .del-btn:hover { color:var(--red); }
 
-/* ── Trips of the day ── */
+/* ── Trips ── */
 .trip-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; }
 .trip-row:last-child { border-bottom:none; }
 .trip-row:hover { background:var(--card); margin:0 -16px; padding-left:16px; padding-right:16px; border-radius:4px; }
 .trip-boat { font-weight:500; flex:1; }
 .trip-meta { color:var(--muted); font-size:11px; margin-top:3px; }
-.trip-times { font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0; }
-.trip-status-out { color:var(--brass); }
-.trip-status-in  { color:var(--green); }
-.trip-overdue    { color:var(--red); font-weight:500; }
-
-/* ── Activity type buttons ── */
-.type-btn { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:5px 10px; font-size:12px; font-family:inherit; cursor:pointer; transition:all .15s; }
-.type-btn.selected,.type-btn:hover { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-.type-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.trip-times { font-size:12px; color:var(--muted); text-align:right; flex-shrink:0; }
 
 /* ── Incident button ── */
-.incident-btn { display:flex; align-items:center; gap:10px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; color:var(--text); font-family:inherit; font-size:13px; cursor:pointer; text-decoration:none; transition:border-color .15s, color .15s; margin-bottom:4px; }
-.incident-btn:hover { border-color:var(--orange); color:var(--orange); }
-.incident-btn .incident-icon { font-size:20px; }
-.incident-btn .incident-label { font-weight:500; }
-.incident-btn .incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.incident-btn { display:flex; align-items:center; gap:12px; padding:12px 16px;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  text-decoration:none; color:var(--text); transition:border-color .15s; margin-bottom:4px; cursor:pointer; }
+.incident-btn:hover { border-color:var(--brass); }
+.incident-icon { font-size:22px; flex-shrink:0; }
+.incident-label { font-size:13px; font-weight:500; }
+.incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* ── Weather log ── */
+.wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:6px;
+  padding:8px 12px; margin-bottom:6px; display:flex; gap:10px; align-items:center; font-size:12px; }
+.wx-snap-time { color:var(--brass); font-weight:500; width:40px; flex-shrink:0; }
+.wx-snap-body { flex:1; color:var(--muted); }
+
+/* ── Tides ── */
+.tide-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.tide-cell { display:flex; flex-direction:column; gap:4px; }
+.tide-label { font-size:9px; color:var(--muted); letter-spacing:.8px; }
+.tide-inputs { display:flex; gap:6px; }
+.tide-inputs input { flex:1; }
 
 /* ── Save bar ── */
-.save-bar { position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--border); padding:12px 0; display:flex; align-items:center; gap:10px; margin-top:24px; }
-.save-ok  { font-size:12px; color:var(--green); flex:1; }
-.save-err { font-size:12px; color:var(--red); flex:1; }
+.save-bar { position:fixed; bottom:0; left:0; right:0; background:var(--card);
+  border-top:1px solid var(--border); padding:10px 16px; display:flex;
+  align-items:center; gap:10px; z-index:100; max-width:720px; margin:0 auto; }
+.save-ok  { color:var(--green); font-size:12px; flex:1; }
+.save-err { color:var(--red);   font-size:12px; flex:1; }
 
-/* ── Read-only mode ── */
-.readonly-mode textarea,
-.readonly-mode input[type=checkbox],
-.readonly-mode .tide-field input { pointer-events:none; opacity:.7; }
-.readonly-mode .btn-ghost,
-.readonly-mode .del-btn,
-.readonly-mode .wxsnap-del,
-.readonly-mode .save-bar { display:none; }
+/* ── Activity type buttons ── */
+.type-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.type-btn { padding:5px 12px; background:var(--surface); border:1px solid var(--border);
+  border-radius:4px; font-size:12px; font-family:inherit; color:var(--text);
+  cursor:pointer; transition:all .15s; }
+.type-btn.selected { background:var(--brass)22; border-color:var(--brass); color:var(--brass); }
 
-@media(max-width:480px) {
-  .date-big { font-size:20px; }
-  .wxsnap-grid { gap:10px; }
-}
+/* ── Trip detail modal ── */
+.dl-drow { display:flex; gap:12px; padding:5px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.dl-drow:last-child { border-bottom:none; }
+.dl-dlbl { font-size:9px; color:var(--muted); letter-spacing:.8px; width:90px; flex-shrink:0; padding-top:2px; }
+.dl-dval { flex:1; color:var(--text); }
 </style>
 </head>
 <body>
-
-<!-- ══ HEADER — populated by buildHeader() ══ -->
 <header id="ym-header">
   <div class="header-left"></div>
   <div class="header-right"></div>
 </header>
 
-<div id="mainWrap" style="max-width:680px;margin:0 auto;padding:16px 14px 40px">
+<div id="mainWrap" style="max-width:720px;margin:0 auto;padding:16px 16px 80px">
 
-  <!-- ══ DATE HERO ══ -->
-  <div class="date-hero">
-    <button class="date-nav-btn" id="prevBtn" title="Previous day">&#8249;</button>
-    <div style="flex:1;text-align:center">
-      <div class="date-big" id="dateBig"></div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px">
-        <span class="date-sub">DAILY LOG</span>
-        <button class="today-btn hidden" id="todayBtn">Today</button>
-      </div>
-    </div>
-    <button class="date-nav-btn" id="nextBtn" title="Next day">&#8250;</button>
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <div id="signoffBadge" class="date-signoff-badge hidden">&#10003; Signed off</div>
-    <div id="readonlyBadge" class="date-readonly-badge hidden">&#128065; Read-only &mdash; past log</div>
+  <!-- ══ DATE NAV ══ -->
+  <div class="date-nav">
+    <button id="prevBtn">◀</button>
+    <div class="date-big" id="dateBig"></div>
+    <button id="nextBtn">▶</button>
+    <button id="todayBtn" data-s="daily.today"></button>
   </div>
 
-  <!-- ══ TIDE RECORD ══ -->
-  <div class="tide-record">
-    <div class="tide-record-title">TIDES · FAXAFLÓI</div>
-    <div class="tide-grid">
-      <div class="tide-field">
-        <label>HIGH 1 · TIME</label>
-        <input type="time" id="tideH1Time" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>HIGH 1 · HEIGHT (m)</label>
-        <input type="number" id="tideH1Height" step="0.01" min="0" max="10" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>LOW 1 · TIME</label>
-        <input type="time" id="tideL1Time" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>LOW 1 · HEIGHT (m)</label>
-        <input type="number" id="tideL1Height" step="0.01" min="0" max="10" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>HIGH 2 · TIME</label>
-        <input type="time" id="tideH2Time" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>HIGH 2 · HEIGHT (m)</label>
-        <input type="number" id="tideH2Height" step="0.01" min="0" max="10" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>LOW 2 · TIME</label>
-        <input type="time" id="tideL2Time" placeholder="—">
-      </div>
-      <div class="tide-field">
-        <label>LOW 2 · HEIGHT (m)</label>
-        <input type="number" id="tideL2Height" step="0.01" min="0" max="10" placeholder="—">
-      </div>
-    </div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="signoff-badge hidden" id="signoffBadge"></div>
+    <div class="readonly-badge hidden" id="readonlyBadge" data-s="daily.readOnly"></div>
   </div>
 
-  <!-- ══ 1. RECORD WEATHER ══ -->
-  <div class="section-heading">
-    <span>WEATHER LOG</span>
-    <span id="wxLogCount" style="font-weight:normal"></span>
-  </div>
-  <div class="content-card">
-    <div id="logWxDesc" style="font-size:12px;color:var(--muted);margin-bottom:10px">Tap to stamp a full weather snapshot into the log.</div>
-    <button class="btn btn-secondary" id="logWxBtn">📋 Record weather snapshot</button>
+  <!-- ══ 1. WEATHER WIDGET ══ -->
+  <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px" data-s="daily.wxLog"></div>
+  <div class="content-card" style="margin-bottom:4px">
     <div id="wxLogList"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+      <button class="btn-ghost" id="logWxBtn" style="font-size:11px;padding:3px 10px" data-s="daily.wxLogBtn"></button>
+      <span id="logWxDesc" style="font-size:10px;color:var(--muted)"></span>
+      <span id="wxLogCount" style="font-size:10px;color:var(--muted);margin-left:auto"></span>
+    </div>
   </div>
 
-  <!-- ══ 2. TRIPS TODAY ══ -->
+  <!-- ══ 2. TIDES ══ -->
+  <div class="section-heading" data-s="daily.tides"></div>
+  <div class="content-card" style="margin-bottom:4px">
+    <div class="tide-grid">
+      <div class="tide-cell">
+        <div class="tide-label">HIGH 1</div>
+        <div class="tide-inputs">
+          <input type="time" id="tideH1Time" style="max-width:100px">
+          <input type="number" id="tideH1Height" placeholder="m" step="0.1" style="max-width:60px">
+        </div>
+      </div>
+      <div class="tide-cell">
+        <div class="tide-label">LOW 1</div>
+        <div class="tide-inputs">
+          <input type="time" id="tideL1Time" style="max-width:100px">
+          <input type="number" id="tideL1Height" placeholder="m" step="0.1" style="max-width:60px">
+        </div>
+      </div>
+      <div class="tide-cell">
+        <div class="tide-label">HIGH 2</div>
+        <div class="tide-inputs">
+          <input type="time" id="tideH2Time" style="max-width:100px">
+          <input type="number" id="tideH2Height" placeholder="m" step="0.1" style="max-width:60px">
+        </div>
+      </div>
+      <div class="tide-cell">
+        <div class="tide-label">LOW 2</div>
+        <div class="tide-inputs">
+          <input type="time" id="tideL2Time" style="max-width:100px">
+          <input type="number" id="tideL2Height" placeholder="m" step="0.1" style="max-width:60px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3. TRIPS TODAY ══ -->
   <div class="section-heading">
-    <span>TRIPS TODAY</span>
+    <span data-s="daily.tripsToday"></span>
     <span id="tripsCount" style="font-weight:normal"></span>
   </div>
   <div class="content-card" id="tripsCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- ══ 3. AM CHECKLIST ══ -->
-  <div class="section-heading">AM CHECKLIST</div>
+  <!-- ══ 4. AM CHECKLIST ══ -->
+  <div class="section-heading" data-s="daily.amChecklist"></div>
   <div class="content-card" id="amCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- ══ 4. ACTIVITIES ══ -->
+  <!-- ══ 5. ACTIVITIES ══ -->
   <div class="section-heading">
-    <span>ACTIVITIES</span>
-    <button class="btn-ghost" id="addActivityBtn" style="font-size:11px;padding:3px 10px">+ Add</button>
+    <span data-s="daily.activities"></span>
+    <button class="btn-ghost" id="addActivityBtn" style="font-size:11px;padding:3px 10px" data-s="daily.addActivity"></button>
   </div>
   <div class="content-card" id="activitiesCard">
-    <div class="empty-state" id="activitiesEmpty">No activities recorded yet.</div>
+    <div class="empty-state" id="activitiesEmpty" data-s="daily.noActivities"></div>
     <div id="activitiesList"></div>
   </div>
 
-  <!-- ══ 5. STAFF NOTES ══ -->
-  <div class="section-heading">STAFF NOTES</div>
+  <!-- ══ 6. STAFF NOTES ══ -->
+  <div class="section-heading" data-s="daily.staffNotes"></div>
   <div class="content-card">
-    <textarea id="narrativeInput" rows="4" placeholder="General notes, conditions summary…" style="width:100%;resize:vertical"></textarea>
+    <textarea id="narrativeInput" rows="4" style="width:100%;resize:vertical"></textarea>
   </div>
 
-  <!-- ══ 6. INCIDENT REPORT ══ -->
-  <div class="section-heading" id="incidentHeading">INCIDENT REPORT</div>
-  <div id="incidentContainer">
-    <a href="../incidents/" class="incident-btn">
-      <span class="incident-icon">⚠️</span>
-      <div>
-        <div class="incident-label">Submit an Incident Report</div>
-        <div class="incident-sub">Injuries, near-misses, property damage, safety concerns</div>
-      </div>
-      <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
-    </a>
-  </div>
+  <!-- ══ 7. INCIDENT REPORT ══ -->
+  <div class="section-heading" id="incidentHeading" data-s="daily.incidentReport"></div>
+  <div id="incidentContainer"></div>
 
-  <!-- ══ 7. PM CHECKLIST ══ -->
-  <div class="section-heading">PM CHECKLIST</div>
+  <!-- ══ 8. PM CHECKLIST ══ -->
+  <div class="section-heading" data-s="daily.pmChecklist"></div>
   <div class="content-card" id="pmCard">
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
@@ -254,8 +217,8 @@
   <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">
     <span id="saveMsg"></span>
-    <button class="btn btn-secondary" id="saveDraftBtn">Save draft</button>
-    <button class="btn btn-primary"   id="signOffBtn">Save &amp; Sign off</button>
+    <button class="btn btn-secondary" id="saveDraftBtn" data-s="btn.saveDraft"></button>
+    <button class="btn btn-primary"   id="signOffBtn"   data-s="btn.signOff"></button>
   </div>
 
 </div><!-- /mainWrap -->
@@ -263,72 +226,67 @@
 <!-- ══ ACTIVITY MODAL ══ -->
 <div class="modal-overlay hidden" id="activityModal">
   <div class="modal">
-    <h3>Add Activity</h3>
+    <h3 data-s="daily.activityModal"></h3>
     <div class="field">
-      <label>Type</label>
+      <label data-s="daily.actType"></label>
       <div class="type-btns" id="actTypeBtns"></div>
     </div>
     <div class="field">
-      <label>Name / description</label>
-      <input type="text" id="actName" placeholder="e.g. Junior lesson, club race…">
+      <label data-s="daily.actNameLabel"></label>
+      <input type="text" id="actName">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="field">
-        <label>Start time</label>
+        <label data-s="daily.startTime"></label>
         <input type="time" id="actStart">
       </div>
       <div class="field">
-        <label>End time</label>
+        <label data-s="daily.endTime"></label>
         <input type="time" id="actEnd">
       </div>
     </div>
     <div class="field">
-      <label>Participants</label>
-      <input type="text" id="actParticipants" placeholder="e.g. 12 juniors, 4 instructors…">
+      <label data-s="daily.actParticipants"></label>
+      <input type="text" id="actParticipants">
     </div>
     <div class="field">
-      <label>Notes</label>
-      <textarea id="actNotes" rows="2" placeholder="Optional notes…"></textarea>
+      <label data-s="daily.actNotes"></label>
+      <input type="text" id="actNotes">
     </div>
-    <div class="btn-row" style="justify-content:flex-end;gap:8px;margin-top:16px">
-      <button class="btn btn-secondary" id="actCancelBtn">Cancel</button>
-      <button class="btn btn-primary"   id="actSaveBtn">Add Activity</button>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
+      <button class="btn btn-primary"   id="actSaveBtn"   data-s="btn.save"></button>
     </div>
   </div>
 </div>
 
 <!-- ══ TRIP DETAIL MODAL ══ -->
-<div class="modal-overlay hidden" id="tripDetailModal" onclick="if(event.target===this)closeTripDetail()">
-  <div class="modal" style="max-width:480px;width:100%;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0;font-size:15px" id="tripDetailTitle">Trip</h3>
-      <button class="btn-ghost" onclick="closeTripDetail()" style="font-size:20px;padding:0 8px;line-height:1;border:none;color:var(--muted)">×</button>
+<div class="modal-overlay hidden" id="tripDetailModal"
+  onclick="if(event.target===this)closeModal('tripDetailModal')">
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0" id="tdTitle"></h3>
+      <button class="btn-ghost" onclick="closeModal('tripDetailModal')"
+        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
       <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">TRIP</div>
-      <div class="dl-drow"><span class="dl-dlbl">BOAT</span><span class="dl-dval" id="tdBoat"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">DESTINATION</span><span class="dl-dval" id="tdLocation"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">DEPARTED</span><span class="dl-dval" id="tdOut"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">EST. RETURN</span><span class="dl-dval" id="tdReturn"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">RETURNED</span><span class="dl-dval" id="tdIn"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">CREW</span><span class="dl-dval" id="tdCrew"></span></div>
-      <div class="dl-drow" id="tdNotesRow"><span class="dl-dlbl">NOTES</span><span class="dl-dval" id="tdNotes"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.boat"></span><span class="dl-dval" id="tdBoat"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.location"></span><span class="dl-dval" id="tdLocation"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" id="tdOutLabel"></span><span class="dl-dval" id="tdOut"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" id="tdReturnLabel"></span><span class="dl-dval" id="tdReturn"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" id="tdInLabel"></span><span class="dl-dval" id="tdIn"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.crew"></span><span class="dl-dval" id="tdCrew"></span></div>
+      <div class="dl-drow" id="tdNotesRow"><span class="dl-dlbl" data-s="lbl.notes"></span><span class="dl-dval" id="tdNotes"></span></div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px" id="tdMemberSection">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">MEMBER</div>
-      <div class="dl-drow"><span class="dl-dlbl">NAME</span><span class="dl-dval" id="tdMember"></span></div>
-      <div class="dl-drow" id="tdPhoneRow"><span class="dl-dlbl">PHONE</span><span class="dl-dval" id="tdPhone"></span></div>
-      <div class="dl-drow" id="tdGuardianRow"><span class="dl-dlbl">GUARDIAN</span><span class="dl-dval" id="tdGuardian"></span></div>
+      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="lbl.member"></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.name"></span><span class="dl-dval" id="tdMember"></span></div>
+      <div class="dl-drow" id="tdPhoneRow"><span class="dl-dlbl" data-s="lbl.phone"></span><span class="dl-dval" id="tdPhone"></span></div>
+      <div class="dl-drow" id="tdGuardianRow"><span class="dl-dlbl" data-s="lbl.guardian"></span><span class="dl-dval" id="tdGuardian"></span></div>
     </div>
   </div>
 </div>
-
-<style>
-.dl-drow { display:flex; gap:12px; padding:5px 0; border-bottom:1px solid var(--border); font-size:13px; }
-.dl-drow:last-child { border-bottom:none; }
-.dl-dlbl { font-size:9px; color:var(--muted); letter-spacing:.8px; width:90px; flex-shrink:0; padding-top:2px; }
-.dl-dval { flex:1; color:var(--text); }
-</style>
 
 <script>
 // ════════════════════════════════════════════════════════════════════════════
@@ -383,12 +341,12 @@ let amItems   = DEFAULT_AM;
 let pmItems   = DEFAULT_PM;
 let activities    = [];
 let activityTypes = DEFAULT_TYPES;
-let tripsData     = [];   // all checkouts for the day (both 'out' and 'in')
-let tideData      = {};   // { h1t, h1h, l1t, l1h, h2t, h2h, l2t, l2h }
+let tripsData     = [];
+let tideData      = {};
 let _selectedActType = null;
 
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 4 — DOM REFS (cached, never re-queried)
+// SECTION 4 — DOM REFS
 // ════════════════════════════════════════════════════════════════════════════
 const dom = domRefs({
   mainWrap:          'mainWrap',
@@ -410,77 +368,57 @@ const dom = domRefs({
   activitiesEmpty:   'activitiesEmpty',
   activitiesList:    'activitiesList',
   narrativeInput:    'narrativeInput',
-  incidentHeading:   'incidentHeading',
   incidentContainer: 'incidentContainer',
+  incidentHeading:   'incidentHeading',
   saveMsg:           'saveMsg',
   saveDraftBtn:      'saveDraftBtn',
   signOffBtn:        'signOffBtn',
-  addActivityBtn:    'addActivityBtn',
-  activityModal:     'activityModal',
   actTypeBtns:       'actTypeBtns',
   actName:           'actName',
   actStart:          'actStart',
   actEnd:            'actEnd',
   actParticipants:   'actParticipants',
   actNotes:          'actNotes',
-  // Tide fields
-  tideH1Time:   'tideH1Time',
-  tideH1Height: 'tideH1Height',
-  tideL1Time:   'tideL1Time',
-  tideL1Height: 'tideL1Height',
-  tideH2Time:   'tideH2Time',
-  tideH2Height: 'tideH2Height',
-  tideL2Time:   'tideL2Time',
-  tideL2Height: 'tideL2Height',
+  activityModal:     'activityModal',
+  tideH1Time: 'tideH1Time', tideH1Height: 'tideH1Height',
+  tideL1Time: 'tideL1Time', tideL1Height: 'tideL1Height',
+  tideH2Time: 'tideH2Time', tideH2Height: 'tideH2Height',
+  tideL2Time: 'tideL2Time', tideL2Height: 'tideL2Height',
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 5 — RENDERERS
+// SECTION 5 — RENDER
 // ════════════════════════════════════════════════════════════════════════════
-
-// ── Trips of the day ────────────────────────────────────────────────────────
 function renderTrips() {
-  const all = tripsData;
-  dom.tripsCount.textContent = all.length ? all.length + (all.length === 1 ? ' trip' : ' trips') : '';
-  if (!all.length) {
-    dom.tripsCard.innerHTML = '<div class="empty-state">No trips recorded today.</div>';
+  const spinner = '<div class="empty-state"><span class="spinner"></span></div>';
+  if (!tripsData.length) {
+    dom.tripsCard.innerHTML = `<div class="empty-state">${s('daily.noTrips')}</div>`;
+    dom.tripsCount.textContent = '';
     return;
   }
-  const now = new Date().toTimeString().slice(0, 5);
-  replaceWithFragment(dom.tripsCard, all, co => {
-    const isOut   = co.status === 'out';
-    const tout    = (co.checkedOutAt || co.timeOut || '').slice(0, 5);
-    const tin     = (co.checkedInAt  || co.timeIn  || '').slice(0, 5);
-    const retBy   = co.expectedReturn || co.returnBy || '';
-    const overdue = isOut && retBy && retBy < now;
-
-    const row = document.createElement('div');
+  dom.tripsCount.textContent = `(${tripsData.length})`;
+  replaceWithFragment(dom.tripsCard, tripsData, co => {
+    const row   = document.createElement('div');
     row.className = 'trip-row';
     row.dataset.tripId = co.id;
-
-    let statusBadge = '';
-    if (isOut && overdue) statusBadge = `<span class="trip-overdue">⚠ OVERDUE</span>`;
-    else if (isOut)       statusBadge = `<span class="trip-status-out">● OUT</span>`;
-    else                  statusBadge = `<span class="trip-status-in">✓ RETURNED</span>`;
-
-    row.innerHTML = `
-      <div style="flex:1">
-        <div class="trip-boat">${esc(co.boatName || co.boatId || '—')} ${statusBadge}</div>
-        <div class="trip-meta">
-          ${esc(co.memberName || '—')}
-          ${co.locationName ? ' · ' + esc(co.locationName) : ''}
-          ${co.crew && co.crew > 1 ? ' · ' + co.crew + ' crew' : ''}
-        </div>
+    const tout  = (co.checkedOutAt||co.timeOut||'').slice(0,5);
+    const tin   = (co.checkedInAt ||co.timeIn ||'').slice(0,5);
+    const retBy = (co.expectedReturn||'').slice(0,5);
+    const overdue = retBy && !tin && retBy < fmtTimeNow();
+    row.innerHTML = `<div style="flex:1">
+      <div class="trip-boat">${esc(co.boatName||co.boatId)}
+        ${co.memberIsMinor ? `<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>` : ''}
       </div>
-      <div class="trip-times">
-        <div>${tout || '—'}</div>
-        ${tin  ? `<div style="color:var(--green)">${tin}</div>` : (retBy ? `<div style="color:${overdue?'var(--red)':'var(--muted)'}">↩${retBy}</div>` : '')}
-      </div>`;
+      <div class="trip-meta">${esc(co.memberName||'')}${co.locationName ? ' · '+esc(co.locationName) : ''}${co.crew && co.crew > 1 ? ' · '+co.crew+' '+s('lbl.crew').toLowerCase() : ''}</div>
+    </div>
+    <div class="trip-times">
+      <div>${tout || '—'}</div>
+      ${tin ? `<div style="color:var(--green)">${tin}</div>` : (retBy ? `<div style="color:${overdue?'var(--red)':'var(--muted)'}">↩${retBy}</div>` : '')}
+    </div>`;
     return row;
   });
 }
 
-// ── Checklists ───────────────────────────────────────────────────────────────
 function renderChecklists() {
   renderCL(dom.amCard, amItems, amChecks, 'am');
   renderCL(dom.pmCard, pmItems, pmChecks, 'pm');
@@ -500,9 +438,7 @@ function renderCL(card, items, state, prefix) {
   prog.innerHTML = `<span>${done}</span> / ${items.length} complete`;
   const barWrap = document.createElement('div'); barWrap.className = 'cl-bar-wrap';
   const bar = document.createElement('div'); bar.className = 'cl-bar'; bar.style.width = pct + '%';
-  barWrap.appendChild(bar);
-  card.appendChild(prog);
-  card.appendChild(barWrap);
+  barWrap.appendChild(bar); card.appendChild(prog); card.appendChild(barWrap);
   items.forEach(it => {
     const row = document.createElement('label');
     row.className = 'checklist-item' + (state[it.id] ? ' done' : '');
@@ -510,8 +446,7 @@ function renderCL(card, items, state, prefix) {
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!state[it.id];
     const txt = document.createElement('span'); txt.className = 'item-text';
     txt.textContent = L === 'IS' && it.textIS ? it.textIS : it.textEN;
-    row.appendChild(cb); row.appendChild(txt);
-    card.appendChild(row);
+    row.appendChild(cb); row.appendChild(txt); card.appendChild(row);
   });
 }
 
@@ -528,22 +463,20 @@ function renderCLReadonly(card, items, state) {
   items.forEach(it => {
     const row = document.createElement('label');
     row.className = 'checklist-item' + (state[it.id] ? ' done' : '');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!state[it.id];
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!state[it.id]; cb.disabled = true;
     const txt = document.createElement('span'); txt.className = 'item-text';
     txt.textContent = L === 'IS' && it.textIS ? it.textIS : it.textEN;
-    row.appendChild(cb); row.appendChild(txt);
-    card.appendChild(row);
+    row.appendChild(cb); row.appendChild(txt); card.appendChild(row);
   });
 }
 
-// ── Activities ───────────────────────────────────────────────────────────────
 function renderActivities() {
   dom.activitiesEmpty.style.display = activities.length ? 'none' : '';
   replaceWithFragment(dom.activitiesList, activities, act => {
     const row = document.createElement('div');
     row.className = 'activity-row';
     const info = document.createElement('div'); info.className = 'activity-info';
-    const meta = [act.type, act.start && act.end ? act.start + '–' + act.end : act.start, act.participants].filter(Boolean).join(' · ');
+    const meta = [act.type, act.start && act.end ? act.start+'–'+act.end : act.start, act.participants].filter(Boolean).join(' · ');
     info.innerHTML = `<div class="activity-name">${esc(act.name)}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
@@ -560,7 +493,7 @@ function renderActivitiesReadonly() {
     const row = document.createElement('div');
     row.className = 'activity-row';
     const info = document.createElement('div'); info.className = 'activity-info';
-    const meta = [act.type, act.start && act.end ? act.start + '–' + act.end : act.start, act.participants].filter(Boolean).join(' · ');
+    const meta = [act.type, act.start && act.end ? act.start+'–'+act.end : act.start, act.participants].filter(Boolean).join(' · ');
     info.innerHTML = `<div class="activity-name">${esc(act.name)}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
@@ -569,34 +502,37 @@ function renderActivitiesReadonly() {
   });
 }
 
-// ── Incident section ─────────────────────────────────────────────────────────
+// ── Incident section — fully bilingual ───────────────────────────────────────
 function renderIncidentSection(incidents) {
   const container = dom.incidentContainer;
   const heading   = dom.incidentHeading;
   if (!incidents) {
-    // Today: show "file" button only
-    heading.textContent = 'INCIDENT REPORT';
+    heading.textContent = s('daily.incidentReport');
     container.innerHTML = `<a href="../incidents/" class="incident-btn">
       <span class="incident-icon">⚠️</span>
-      <div><div class="incident-label">Submit an Incident Report</div>
-        <div class="incident-sub">Injuries, near-misses, property damage, safety concerns</div>
+      <div>
+        <div class="incident-label">${s('daily.fileIncident')}</div>
+        <div class="incident-sub">${s('daily.incidentSub')}</div>
       </div>
-      <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span></a>`;
+      <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
+    </a>`;
     return;
   }
   if (!incidents.length) {
-    heading.textContent = 'INCIDENT REPORT';
-    container.innerHTML = `<div class="content-card" style="color:var(--muted);font-size:12px">No incidents filed this day.</div>`;
+    heading.textContent = s('daily.incidentReport');
+    container.innerHTML = `<div class="content-card" style="color:var(--muted);font-size:12px">${s('daily.noIncidents')}</div>`;
     return;
   }
-  heading.textContent = `INCIDENT REPORT · ${incidents.length}`;
+  heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
   container.innerHTML = incidents.map(inc => `
     <a href="../incidents/#${inc.id}" class="incident-btn">
       <span class="incident-icon">⚠️</span>
-      <div><div class="incident-label">${esc(inc.title || 'Incident')}</div>
-        <div class="incident-sub">${esc((inc.filedAt||'').slice(0,16).replace('T',' '))}${inc.severity ? ` · <span class="badge badge-${inc.severity === 'critical'?'red':inc.severity === 'high'?'orange':'muted'}">${inc.severity}</span>` : ''}</div>
+      <div>
+        <div class="incident-label">${esc(inc.title || s('incident.title'))}</div>
+        <div class="incident-sub">${esc((inc.filedAt||'').slice(0,16).replace('T',' '))}${inc.severity ? ` · <span class="badge badge-${inc.severity === 'critical'?'red':inc.severity === 'high'?'orange':'muted'}">${esc(inc.severity)}</span>` : ''}</div>
       </div>
-      <span style="margin-left:auto;color:var(--brass);font-size:16px">→</span></a>`).join('');
+      <span style="margin-left:auto;color:var(--brass);font-size:16px">→</span>
+    </a>`).join('');
 }
 
 // ── Activity type buttons ─────────────────────────────────────────────────────
@@ -605,84 +541,52 @@ function renderActTypeBtns() {
   activityTypes.forEach(t => {
     const btn = document.createElement('button');
     btn.className = 'type-btn' + (t.id === _selectedActType ? ' selected' : '');
-    btn.dataset.typeId   = t.id;
-    btn.dataset.typeName = L === 'IS' && t.nameIS ? t.nameIS : t.name;
-    btn.textContent = L === 'IS' && t.nameIS ? t.nameIS : t.name;
+    btn.dataset.typeId = t.id;
+    const label = L === 'IS' && t.nameIS ? t.nameIS : t.name;
+    btn.textContent = label;
     dom.actTypeBtns.appendChild(btn);
   });
 }
 
-// ── Weather log — rich snapshot cards ────────────────────────────────────────
+// ── Weather log ───────────────────────────────────────────────────────────────
 function renderWxLog() {
   const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
-  dom.wxLogCount.textContent = wxLog.length ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
-  if (!wxLog.length) { dom.wxLogList.replaceChildren(); return; }
-
-  const card = document.createElement('div');
-  card.className = 'wxlog-card';
-
-  wxLog.forEach((w, idx) => {
-    const snap = document.createElement('div');
-    snap.className = 'wxsnap';
-
-    // Determine flag label
-    const flagLabels = { green:'Green flag', yellow:'Yellow flag', orange:'Orange flag', red:'Red flag' };
-    const flagLabel  = flagLabels[w.flag] || '';
-
-    // Gust in kt
-    const wsKt = w.ws != null ? Math.round(w.ws * 1.944) : null;
-    const wgKt = w.wg != null ? Math.round(w.wg * 1.944) : null;
-
-    snap.innerHTML = `
-      <div class="wxsnap-time">${esc(w.time || '—')}</div>
-      <div class="wxsnap-body">
-        <div class="wxsnap-wind">
-          ${w.dir ? `<span style="font-size:22px">${wxDirArrow ? wxDirArrow(null, w.dir) : '→'}</span>` : ''}
-          ${w.ws != null ? w.ws.toFixed(1) : '—'} <span class="unit">m/s</span>
-          <span style="font-size:14px;color:var(--muted)">${wsKt != null ? wsKt + ' kt' : ''}</span>
-        </div>
-        <div class="wxsnap-row2">
-          <b>${esc(w.dir || '—')}</b>
-          ${w.bft != null ? `<span>· Bft <b>${w.bft}</b></span>` : ''}
-          ${w.wg  != null ? `<span>· Gusts <b>${Math.round(w.wg)} m/s</b> · <b>${wgKt} kt</b></span>` : ''}
-        </div>
-        <div class="wxsnap-grid">
-          ${w.wv != null ? `<div class="wxsnap-cell"><div class="wxsnap-cell-val">🌊 ${w.wv.toFixed(1)} m</div><div class="wxsnap-cell-lbl">WAVE HT</div></div>` : ''}
-          ${w.tc != null ? `<div class="wxsnap-cell"><div class="wxsnap-cell-val">${Math.round(w.tc)}°C</div><div class="wxsnap-cell-lbl">AIR TEMP</div></div>` : ''}
-          ${w.pres != null ? `<div class="wxsnap-cell"><div class="wxsnap-cell-val">${Math.round(w.pres)} hPa</div><div class="wxsnap-cell-lbl">PRESSURE</div></div>` : ''}
-          ${w.sst != null ? `<div class="wxsnap-cell"><div class="wxsnap-cell-val" style="color:#4a9eca">${Math.round(w.sst)}°C</div><div class="wxsnap-cell-lbl">SEA TEMP</div></div>` : ''}
-        </div>
-      </div>
-      <span class="wxsnap-flag">${fi[w.flag] || '⚪'} <span style="font-size:10px;color:var(--muted)">${flagLabel}</span></span>
-      <button class="wxsnap-del" data-delete-wx="${idx}" title="Remove snapshot">&times;</button>`;
-    card.appendChild(snap);
+  dom.wxLogCount.textContent = wxLog.length
+    ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
+  replaceWithFragment(dom.wxLogList, wxLog, (snap, i) => {
+    const card = document.createElement('div');
+    card.className = 'wx-snap-card';
+    card.innerHTML = `<span class="wx-snap-time">${esc(snap.time||'')}</span>
+      <span class="wx-snap-body">
+        ${snap.bft != null ? `Bft ${snap.bft}` : ''}
+        ${snap.dir ? ` ${snap.dir}` : ''}
+        ${snap.ws != null ? ` · ${snap.ws}kn` : ''}
+        ${snap.wv != null ? ` · ${snap.wv}m` : ''}
+        ${snap.flag ? ` ${fi[snap.flag]||''}` : ''}
+      </span>
+      <button class="del-btn" data-delete-wx="${i}" style="font-size:14px">&times;</button>`;
+    return card;
   });
-
-  dom.wxLogList.replaceChildren(card);
-}
-
-// ── Tide fields ──────────────────────────────────────────────────────────────
-function populateTideFields() {
-  const map = { h1t:'tideH1Time', h1h:'tideH1Height', l1t:'tideL1Time', l1h:'tideL1Height',
-                h2t:'tideH2Time', h2h:'tideH2Height', l2t:'tideL2Time', l2h:'tideL2Height' };
-  for (const [key, domKey] of Object.entries(map)) {
-    dom[domKey].value = tideData[key] || '';
-  }
-}
-
-function readTideFields() {
-  return {
-    h1t: dom.tideH1Time.value,   h1h: dom.tideH1Height.value,
-    l1t: dom.tideL1Time.value,   l1h: dom.tideL1Height.value,
-    h2t: dom.tideH2Time.value,   h2h: dom.tideH2Height.value,
-    l2t: dom.tideL2Time.value,   l2h: dom.tideL2Height.value,
-  };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 6 — EVENT DELEGATION
 // ════════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  buildHeader('dailylog');
+  applyStrings(); // ← wire all data-s attributes
+
+  // Placeholders that applyStrings can't reach (attrs)
+  dom.narrativeInput.placeholder = s('daily.notesPlaceholder');
+  dom.actName.placeholder        = s('daily.actNameHint');
+  dom.actParticipants.placeholder = s('daily.actPartHint');
+  dom.actNotes.placeholder       = s('daily.actNotesHint');
+
+  // Trip detail modal label text
+  document.getElementById('tdOutLabel').textContent    = 'OUT';
+  document.getElementById('tdReturnLabel').textContent = s('staff.coDetail.return');
+  document.getElementById('tdInLabel').textContent     = 'IN';
+
   // Checklist toggle
   document.addEventListener('click', e => {
     const item = e.target.closest('[data-toggle]');
@@ -690,14 +594,12 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleCL(item.dataset.prefix, item.dataset.itemId);
   });
 
-  // Delete activity
   dom.activitiesList.addEventListener('click', e => {
     const btn = e.target.closest('[data-delete-activity]');
     if (!btn) return;
     deleteActivity(btn.dataset.deleteActivity);
   });
 
-  // Delete weather snapshot
   dom.wxLogList.addEventListener('click', e => {
     const btn = e.target.closest('[data-delete-wx]');
     if (!btn) return;
@@ -707,7 +609,6 @@ document.addEventListener('DOMContentLoaded', () => {
     markDirty();
   });
 
-  // Activity type selection
   dom.actTypeBtns.addEventListener('click', e => {
     const btn = e.target.closest('[data-type-id]');
     if (!btn) return;
@@ -715,105 +616,94 @@ document.addEventListener('DOMContentLoaded', () => {
     dom.actTypeBtns.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b === btn));
   });
 
-  // Trip row click → detail modal
   dom.tripsCard.addEventListener('click', e => {
     const row = e.target.closest('[data-trip-id]');
     if (!row) return;
     openTripDetail(row.dataset.tripId);
   });
 
-  // Date nav
   dom.prevBtn.addEventListener('click',  () => navigateDay(-1));
   dom.nextBtn.addEventListener('click',  () => navigateDay(1));
   dom.todayBtn.addEventListener('click', () => navigateToToday());
 
-  // Activity modal
   dom.addActivityBtn.addEventListener('click', openActivityModal);
   document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
   document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
 
-  // Save bar
   dom.saveDraftBtn.addEventListener('click', saveDraft);
   dom.signOffBtn.addEventListener('click',   signOffDay);
+  dom.logWxBtn.addEventListener('click',     logCurrentWeather);
 
-  // Weather snapshot button
-  dom.logWxBtn.addEventListener('click', logCurrentWeather);
-
-  // Tide fields → mark dirty
   ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
    'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => {
     dom[id].addEventListener('change', markDirty);
   });
 
-  buildHeader('dailylog');
+  // Silent weather poll for snapshots
+  let _wxTimer = null;
+  async function pollWx() {
+    try {
+      const snap = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
+      if (snap) {
+        await wxLoadFlagConfig().catch(()=>{});
+        const flag = wxCalcFlag(snap);
+        wxData = { ...snap, flagKey: flag.key };
+      }
+    } catch(e) {}
+  }
+  pollWx();
+  _wxTimer = setInterval(pollWx, 10 * 60 * 1000);
 
-  // Weather data feed — reads from staff page's widget via shared/weather.js
-  // The daily log no longer shows the widget, but still needs wxData for snapshots.
-  // We run a silent background poll via wxFetch directly.
-  startSilentWxPoll();
-
-  setInterval(tickTripEtas, 60_000);
-  loadDay();
+  navigateToToday();
 });
 
-// Silent wx poll — no DOM widget, just keeps wxData fresh for snapshot button
-let _wxTimer = null;
-async function startSilentWxPoll() {
-  await fetchWxData();
-  _wxTimer = setInterval(fetchWxData, 10 * 60 * 1000);
-}
-async function fetchWxData() {
-  try {
-    const { wx, marine } = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
-    const c  = wx.current;
-    const mc = marine?.current;
-    const hr = wx.hourly;
-    const ws = c.wind_speed_10m, wd = c.wind_direction_10m, wg = c.wind_gusts_10m;
-    const bft = wxMsToBft(ws), wDir = wxDirLabel(wd);
-    const waveH = mc?.wave_height ?? null;
-    const sst   = mc?.sea_surface_temperature ?? null;
-    const pres  = c.surface_pressure;
-    const { flagKey } = wxAssessFlag(ws, wDir, waveH ?? 0);
-    const nowISO = new Date().toISOString().slice(0,13);
-    const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
-    const { trend } = wxPressureTrend(hr.surface_pressure, nowIdx);
-    wxData = { ws, wd, wg, bft, waveH, wDir, sst, airT: c.temperature_2m,
-               apparentT: c.apparent_temperature, code: c.weather_code,
-               flagKey, pres, presTrend: trend };
-  } catch(e) { console.warn('wx silent poll failed:', e.message); }
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 7 — DATE NAVIGATION
+// ════════════════════════════════════════════════════════════════════════════
+function isToday() { return viewDate === TODAY; }
+
+function updateDateNav() {
+  dom.nextBtn.disabled = isToday();
+  dom.todayBtn.disabled = isToday();
+  dom.mainWrap.classList.toggle('readonly', !isToday());
+  const isEditable = isToday();
+  dom.saveDraftBtn.style.display = isEditable ? '' : 'none';
+  dom.signOffBtn.style.display   = isEditable ? '' : 'none';
+  dom.logWxBtn.parentElement.style.display = 'block';
+  dom.logWxBtn.style.display   = isEditable ? '' : 'none';
+  dom.logWxDesc.style.display  = isEditable ? '' : 'none';
+  if (!isEditable) dom.readonlyBadge.classList.remove('hidden');
+  else             dom.readonlyBadge.classList.add('hidden');
 }
 
-// Tick trip ETAs every minute
-function tickTripEtas() {
-  const now = new Date().toTimeString().slice(0, 5);
-  dom.tripsCard.querySelectorAll('[data-trip-id]').forEach(row => {
-    const id  = row.dataset.tripId;
-    const co  = tripsData.find(c => c.id === id);
-    if (!co || co.status !== 'out') return;
-    const retBy = co.expectedReturn || co.returnBy || '';
-    const overdue = retBy && retBy < now;
-    const statusSpan = row.querySelector('span[class^="trip-status"], span[class^="trip-overdue"]');
-    if (statusSpan) {
-      statusSpan.className = overdue ? 'trip-overdue' : 'trip-status-out';
-      statusSpan.textContent = overdue ? '⚠ OVERDUE' : '● OUT';
-    }
-  });
+function navigateDay(d) {
+  const dt = new Date(viewDate + 'T12:00:00');
+  dt.setDate(dt.getDate() + d);
+  const next = dt.toISOString().slice(0, 10);
+  if (next > TODAY) return;
+  viewDate = next;
+  loadDay();
+}
+
+function navigateToToday() {
+  viewDate = TODAY;
+  loadDay();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 7 — STATE MUTATORS
+// SECTION 8 — CHECKLIST TOGGLE
 // ════════════════════════════════════════════════════════════════════════════
 function toggleCL(prefix, id) {
-  if (prefix === 'am') amChecks[id] = !amChecks[id];
-  else                 pmChecks[id] = !pmChecks[id];
-  const item = dom[prefix + 'Card'].querySelector(`[data-item-id="${id}"]`);
+  if (!isToday()) return;
   const state = prefix === 'am' ? amChecks : pmChecks;
+  state[id] = !state[id];
+  const items = prefix === 'am' ? amItems : pmItems;
+  const item = document.querySelector(`[data-prefix="${prefix}"][data-item-id="${id}"]`);
   if (item) {
     item.classList.toggle('done', !!state[id]);
     const cb = item.querySelector('input[type=checkbox]');
     if (cb) cb.checked = !!state[id];
   }
-  const items = prefix === 'am' ? amItems : pmItems;
   updateCLProgress(prefix === 'am' ? dom.amCard : dom.pmCard, items, state);
   markDirty();
 }
@@ -848,11 +738,11 @@ function closeActivityModal() { dom.activityModal.classList.add('hidden'); }
 function saveActivity() {
   const name = dom.actName.value.trim();
   const typeObj = activityTypes.find(t => t.id === _selectedActType);
-  if (!name)    { showToast('Enter a name for the activity.', 'warn'); return; }
-  if (!typeObj) { showToast('Select an activity type.', 'warn'); return; }
+  if (!name)    { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
+  if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
   activities.push({
-    id:          'act-' + Date.now(),
-    type:        L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
+    id:           'act-' + Date.now(),
+    type:         L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
     name,
     start:        dom.actStart.value || '',
     end:          dom.actEnd.value   || '',
@@ -864,90 +754,55 @@ function saveActivity() {
   markDirty();
 }
 
-// ── Weather snapshot ─────────────────────────────────────────────────────────
 function logCurrentWeather() {
-  if (!wxData) { showToast('Weather data not loaded yet.', 'warn'); return; }
-  const time = new Date().toTimeString().slice(0, 5);
+  if (!wxData) { showToast(s('wx.unavailable'), 'warn'); return; }
   const snap = wxSnapshot(wxData);
   if (snap) {
-    snap.time = time;
-    // Enrich with extra fields available in wxData but not in default wxSnapshot
+    snap.time = new Date().toTimeString().slice(0, 5);
     snap.pres = wxData.pres  != null ? Math.round(wxData.pres)  : null;
-    snap.sst  = wxData.sst   != null ? wxData.sst               : null;
-    snap.app  = wxData.apparentT != null ? Math.round(wxData.apparentT) : null;
-    wxLog.push(snap);
+    wxLog.unshift(snap);
+    renderWxLog();
+    markDirty();
   }
-  renderWxLog();
-  markDirty();
 }
 
 // ── Trip detail modal ─────────────────────────────────────────────────────────
 function openTripDetail(id) {
   const co = tripsData.find(c => c.id === id);
   if (!co) return;
-  const now   = new Date().toTimeString().slice(0, 5);
-  const retBy = co.expectedReturn || co.returnBy || '';
-  const overdue = co.status === 'out' && retBy && retBy < now;
-  const tin   = (co.checkedInAt  || co.timeIn  || '').slice(0, 5);
-
-  document.getElementById('tripDetailTitle').innerHTML =
-    `⛵ ${esc(co.boatName || 'Trip')}` +
-    (overdue ? ` <span style="color:var(--red);font-size:12px;margin-left:8px">⚠ OVERDUE</span>` : '');
-
-  document.getElementById('tdBoat').textContent     = co.boatName     || '—';
-  document.getElementById('tdLocation').textContent = co.locationName || '—';
-  document.getElementById('tdOut').textContent      = (co.checkedOutAt || co.timeOut || '—').slice(0,5);
-  const retEl = document.getElementById('tdReturn');
-  retEl.textContent = retBy ? retBy + (overdue ? ' ⚠' : '') : '—';
-  retEl.style.color = overdue ? 'var(--red)' : 'var(--text)';
-  document.getElementById('tdIn').textContent   = tin  || (co.status === 'out' ? 'Still out' : '—');
-  document.getElementById('tdCrew').textContent = (co.crew || 1) + ' person' + ((co.crew || 1) > 1 ? 's' : '');
+  document.getElementById('tdTitle').textContent    = esc(co.boatName||co.boatId);
+  document.getElementById('tdBoat').textContent     = esc(co.boatName||co.boatId);
+  document.getElementById('tdLocation').textContent = esc(co.locationName||'—');
+  document.getElementById('tdOut').textContent      = (co.checkedOutAt||co.timeOut||'').slice(0,5)||'—';
+  document.getElementById('tdReturn').textContent   = co.expectedReturn||'—';
+  document.getElementById('tdIn').textContent       = (co.checkedInAt||co.timeIn||'')||'—';
+  document.getElementById('tdCrew').textContent     = co.crew||1;
   const notesRow = document.getElementById('tdNotesRow');
   notesRow.style.display = co.notes ? '' : 'none';
-  document.getElementById('tdNotes').textContent = co.notes || '';
-  document.getElementById('tdMember').textContent = co.memberName || '—';
-  const phoneRow = document.getElementById('tdPhoneRow');
-  phoneRow.style.display = co.memberPhone ? '' : 'none';
-  document.getElementById('tdPhone').textContent = co.memberPhone || '';
-  const guardianRow = document.getElementById('tdGuardianRow');
-  const hasGuardian = co.memberIsMinor && co.guardianName;
-  guardianRow.style.display = hasGuardian ? '' : 'none';
-  document.getElementById('tdGuardian').textContent = hasGuardian ? `${co.guardianName} · ${co.guardianPhone || '—'}` : '';
-
-  document.getElementById('tripDetailModal').classList.remove('hidden');
+  document.getElementById('tdNotes').textContent    = co.notes||'';
+  document.getElementById('tdMember').textContent   = esc(co.memberName||co.memberKennitala);
+  document.getElementById('tdPhoneRow').style.display    = co.memberPhone ? '' : 'none';
+  document.getElementById('tdPhone').textContent         = co.memberPhone||'';
+  document.getElementById('tdGuardianRow').style.display = (co.memberIsMinor && co.guardianName) ? '' : 'none';
+  document.getElementById('tdGuardian').textContent      = co.guardianName
+    ? co.guardianName + (co.guardianPhone ? ' · '+co.guardianPhone : '') : '';
+  openModal('tripDetailModal');
 }
-function closeTripDetail() { document.getElementById('tripDetailModal').classList.add('hidden'); }
 
-// ════════════════════════════════════════════════════════════════════════════
-// SECTION 8 — DATE NAVIGATION
-// ════════════════════════════════════════════════════════════════════════════
-function isToday() { return viewDate === TODAY; }
-function timeToMins(t) { if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+(m||0); }
-
-function navigateDay(delta) {
-  if (dirty && !confirm('You have unsaved changes. Leave this day?')) return;
-  const d = new Date(viewDate + 'T12:00:00');
-  d.setDate(d.getDate() + delta);
-  const next = d.toISOString().slice(0, 10);
-  if (next > TODAY) return;
-  viewDate = next;
-  loadDay();
+// ── Tide field helpers ────────────────────────────────────────────────────────
+function readTideFields() {
+  return {
+    h1t: dom.tideH1Time.value, h1h: dom.tideH1Height.value,
+    l1t: dom.tideL1Time.value, l1h: dom.tideL1Height.value,
+    h2t: dom.tideH2Time.value, h2h: dom.tideH2Height.value,
+    l2t: dom.tideL2Time.value, l2h: dom.tideL2Height.value,
+  };
 }
-function navigateToToday() {
-  if (dirty && !confirm('You have unsaved changes. Leave this day?')) return;
-  viewDate = TODAY;
-  loadDay();
-}
-function updateDateNav() {
-  const t = isToday();
-  dom.nextBtn.disabled = t;
-  dom.todayBtn.classList.toggle('hidden', t);
-  dom.readonlyBadge.classList.toggle('hidden', t);
-  dom.mainWrap.classList.toggle('readonly-mode', !t);
-  dom.addActivityBtn.style.display = t ? '' : 'none';
-  dom.logWxBtn.parentElement.style.display = t ? '' : 'block'; // always show snapshots
-  dom.logWxBtn.style.display = t ? '' : 'none';
-  dom.logWxDesc.style.display = t ? '' : 'none';
+function populateTideFields() {
+  dom.tideH1Time.value = tideData.h1t||''; dom.tideH1Height.value = tideData.h1h||'';
+  dom.tideL1Time.value = tideData.l1t||''; dom.tideL1Height.value = tideData.l1h||'';
+  dom.tideH2Time.value = tideData.h2t||''; dom.tideH2Height.value = tideData.h2h||'';
+  dom.tideL2Time.value = tideData.l2t||''; dom.tideL2Height.value = tideData.l2h||'';
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -965,13 +820,13 @@ async function loadDay() {
   amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
-  dom.dateBig.textContent = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB',
+    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   dom.signoffBadge.classList.add('hidden');
-  dom.signoffBadge.textContent = '✓ Signed off';
+  dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
   updateDateNav();
 
-  // Spinners
   const spinner = '<div class="empty-state"><span class="spinner"></span></div>';
   ['tripsCard','amCard','pmCard'].forEach(id => { dom[id].innerHTML = spinner; });
   dom.activitiesEmpty.style.display = '';
@@ -979,8 +834,6 @@ async function loadDay() {
   dom.wxLogList.replaceChildren();
   dom.wxLogCount.textContent = '';
   dom.tripsCount.textContent = '';
-
-  // Clear tide fields
   ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
    'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => { dom[id].value = ''; });
 
@@ -1000,7 +853,6 @@ async function loadTodayLog() {
     applyLogData(logRes.log, cfgRes);
   } catch(e) {
     console.warn('loadTodayLog failed:', e.message);
-    amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
   }
   renderChecklists();
   renderActivities();
@@ -1020,7 +872,6 @@ async function loadPastLog() {
     renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadPastLog failed:', e.message);
-    amItems = DEFAULT_AM; pmItems = DEFAULT_PM; activityTypes = DEFAULT_TYPES;
     renderIncidentSection(null);
   }
   renderChecklistsReadonly();
@@ -1031,37 +882,43 @@ async function loadPastLog() {
 async function loadTodayTrips() {
   try {
     const res = await apiGet('getActiveCheckouts');
-    // All checkouts — both active and recently checked-in
-    const all = res.checkouts || [];
-    tripsData = all;
-  } catch(e) { tripsData = []; console.warn('loadTodayTrips failed:', e.message); }
+    tripsData = res.checkouts || [];
+  } catch(e) { tripsData = []; }
   renderTrips();
 }
 
 async function loadPastTrips() {
   try {
-    // For past days, load checkout history filtered by date
-    // Try getCheckoutHistory first, fall back to getActiveCheckouts
     let all = [];
     try {
       const res = await apiGet('getCheckoutHistory', { date: viewDate });
       all = res.checkouts || res.history || [];
     } catch(e2) {
-      // Fallback: try getting all and filtering by date
       try {
         const res = await apiGet('getCheckouts', { date: viewDate });
         all = res.checkouts || [];
       } catch(e3) { all = []; }
     }
     tripsData = all.filter(c => {
-      const d = (c.checkedOutAt || c.timeOut || c.createdAt || '').slice(0, 10);
+      const d = (c.checkedOutAt||c.timeOut||c.createdAt||'').slice(0,10);
       return d === viewDate;
     });
   } catch(e) { tripsData = []; }
   renderTrips();
 }
 
+async function loadIncidentsForDate(date) {
+  try {
+    const res = await apiGet('getIncidents');
+    return (res.incidents || []).filter(i => (i.filedAt||i.createdAt||'').slice(0,10) === date);
+  } catch(e) { return []; }
+}
+
 function applyLogData(log, cfgRes) {
+  const cfg = cfgRes || {};
+  amItems       = cfg.dailyChecklist?.am  || DEFAULT_AM;
+  pmItems       = cfg.dailyChecklist?.pm  || DEFAULT_PM;
+  activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
   if (log) {
     logId    = log.id;
     amChecks = sjson(log.openingChecks, {});
@@ -1073,21 +930,11 @@ function applyLogData(log, cfgRes) {
     populateTideFields();
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
-      const at = log.signedOffAt ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
-      dom.signoffBadge.textContent = '✓ Signed off by ' + (log.signedOffBy || '') + at;
+      const at = log.signedOffAt
+        ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString(L === 'IS' ? 'is-IS' : 'en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+      dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
     }
   }
-  const cfg = cfgRes || {};
-  amItems       = cfg.dailyChecklist?.am  || DEFAULT_AM;
-  pmItems       = cfg.dailyChecklist?.pm  || DEFAULT_PM;
-  activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
-}
-
-async function loadIncidentsForDate(date) {
-  try {
-    const res = await apiGet('getIncidents');
-    return (res.incidents || []).filter(i => (i.filedAt || i.createdAt || '').slice(0,10) === date);
-  } catch(e) { return []; }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1099,7 +946,10 @@ async function saveDraft()  { if (!isToday()) return; await doSave(false); }
 async function signOffDay() {
   if (!isToday()) return;
   const done = pmItems.filter(i => pmChecks[i.id]).length;
-  if (done < pmItems.length && !confirm(`PM checklist not complete (${done}/${pmItems.length}). Sign off anyway?`)) return;
+  if (done < pmItems.length) {
+    const msg = s('daily.signOffConfirm').replace('{done}',done).replace('{total}',pmItems.length);
+    if (!confirm(msg)) return;
+  }
   await doSave(true);
 }
 
@@ -1107,7 +957,7 @@ async function doSave(signOff) {
   const btn = dom[signOff ? 'signOffBtn' : 'saveDraftBtn'];
   const orig = btn.textContent;
   btn.disabled = true;
-  btn.textContent = signOff ? 'Signing off…' : 'Saving…';
+  btn.textContent = signOff ? s('daily.signOffSaving') : s('daily.saveDraftSaving');
   dom.saveMsg.textContent = '';
 
   try {
@@ -1126,16 +976,16 @@ async function doSave(signOff) {
     if (res.id && !logId) logId = res.id;
     dirty = false;
     dom.saveMsg.className = 'save-ok';
-    dom.saveMsg.textContent = signOff ? '✓ Signed off' : '✓ Saved';
+    dom.saveMsg.textContent = signOff ? s('toast.signedOff') : s('toast.saved');
     if (signOff) {
       dom.signoffBadge.classList.remove('hidden');
-      dom.signoffBadge.textContent = '✓ Signed off by ' + user.name;
+      dom.signoffBadge.textContent = s('daily.signedOffBy') + user.name;
     }
-    showToast(signOff ? '✓ Day signed off.' : '✓ Draft saved.');
+    showToast(signOff ? s('toast.signedOff') : s('toast.saved'));
   } catch(e) {
     dom.saveMsg.className = 'save-err';
-    dom.saveMsg.textContent = 'Error: ' + e.message;
-    showToast('Save failed: ' + e.message, 'err');
+    dom.saveMsg.textContent = s('toast.error') + ': ' + e.message;
+    showToast(s('toast.saveFailed') + ': ' + e.message, 'err');
   } finally {
     btn.disabled = false;
     btn.textContent = orig;
