@@ -382,8 +382,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   }).start();
 
-  wxLoadFlagConfig().catch(() => {});
-
   try {
     const [coRes, cfgRes, mRes, maintRes] = await Promise.all([
       apiGet('getActiveCheckouts'),
@@ -397,6 +395,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     members     = (mRes.members    || []).filter(m => m.active !== false && m.active !== 'false');
     maintenance = (maintRes.requests || maintRes.maintenance || [])
       .filter(r => r.status !== 'resolved' && !r.resolved);
+
+    if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
 
     populateSelects();
     renderAll();
