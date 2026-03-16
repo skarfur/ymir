@@ -262,12 +262,12 @@ const SEV_HINTS = {
 // ── Init (deferred to DOMContentLoaded to avoid race) ─────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const [rRes, bRes] = await Promise.all([
+    const [rRes, cfgRes] = await Promise.all([
       apiGet("getMaintenance"),
-      apiGet("getBoats"),
+      apiGet("getConfig"),
     ]);
     allRequests = rRes.requests || [];
-    boats = (bRes.boats || []).filter(b => b.active !== false && b.active !== "false");
+    boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
     renderStats();
     renderList();
@@ -417,7 +417,14 @@ async function resolveRequest(id) {
     await apiPost("resolveMaintenance", { id, resolvedBy: user.name });
     r.resolved = true; r.resolvedBy = user.name; r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
-      await apiPost("saveBoat", { id: r.boatId, oos: false, oosReason: "" });
+      try {
+        const cfgR = await apiGet("getConfig");
+        const allBoats = cfgR.boats || [];
+        const bi = allBoats.findIndex(b => b.id === r.boatId);
+        if (bi >= 0) allBoats[bi] = { ...allBoats[bi], oos: false, oosReason: "" };
+        await apiPost("saveConfig", { boats: allBoats });
+        boats = allBoats.filter(b => b.active !== false && b.active !== "false");
+      } catch(e2) { console.warn("Could not clear OOS:", e2.message); }
     }
     renderStats(); renderList(); toast("✓ Resolved.");
   } catch(e) { alert("Error: " + e.message); }
@@ -557,7 +564,14 @@ async function submitRequest() {
       source:      "staff",
     });
     if (markOos && boatId) {
-      await apiPost("saveBoat", { id: boatId, oos: true, oosReason: desc.slice(0,80) });
+      try {
+        const cfgR2 = await apiGet("getConfig");
+        const allB2 = cfgR2.boats || [];
+        const bi2 = allB2.findIndex(function(b) { return b.id === boatId; });
+        if (bi2 >= 0) { allB2[bi2] = Object.assign({}, allB2[bi2], { oos: true, oosReason: desc.slice(0,80) }); }
+        await apiPost("saveConfig", { boats: allB2 });
+        boats = allB2.filter(function(b) { return b.active !== false && b.active !== "false"; });
+      } catch(e3) { console.warn("Could not set OOS:", e3.message); }
     }
     closeNewModal();
     const rRes = await apiGet("getMaintenance");
