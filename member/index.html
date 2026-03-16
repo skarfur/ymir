@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -287,6 +287,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+    if (cfgRes.launchChecklists && Object.keys(cfgRes.launchChecklists).length) {
+      _launchChecklists = Object.assign({}, DEFAULT_LAUNCH_CHECKLISTS, cfgRes.launchChecklists);
+    }
 
     populateFormSelects();
     renderActiveCheckouts();
@@ -585,24 +588,27 @@ function renderLaunchPicker(preselectedBoatId) {
     ).join('');
 }
 
-// Pre-launch checklists by boat category
-var LAUNCH_CHECKLISTS = {
-  dinghy:       ["Life jacket fitted","Buoyancy aid on","Rudder + centreplate fitted","Bailer attached","Capsize drill known"],
-  keelboat:     ["Life jacket fitted","Engine/sail check","VHF charged","Flares aboard","Float plan filed"],
-  kayak:        ["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"],
-  "rowing shell":["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"],
-  rowboat:      ["Life jacket fitted","Oars secured","Bailer aboard"],
-  sup:          ["Leash on","PFD attached to board"],
-  wingfoil:     ["Helmet on","Impact vest on","Leash on","Wind within limits"],
-  other:        ["Life jacket fitted","Safety check complete"],
+// Launch + landing checklists — loaded from config, defaults used as fallback
+var DEFAULT_LAUNCH_CHECKLISTS = {
+  dinghy:        { launch:["Life jacket fitted","Buoyancy aid on","Rudder + centreplate fitted","Bailer attached","Capsize drill known"], landing:["Boat rinsed","Rudder + centreplate stowed","Bailer secured","Damage reported if any"] },
+  keelboat:      { launch:["Life jacket fitted","Engine/sail check","VHF charged","Flares aboard","Float plan filed"], landing:["Engine off + secured","Lines made fast","Fuel level noted","Damage reported if any"] },
+  kayak:         { launch:["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"], landing:["Kayak drained","Gear stowed","Paddle secured"] },
+  "rowing shell":{ launch:["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"], landing:["Boat rinsed + stored","Oars stowed","Riggers checked"] },
+  rowboat:       { launch:["Life jacket fitted","Oars secured","Bailer aboard"], landing:["Boat secured","Oars stowed","Damage reported if any"] },
+  sup:           { launch:["Leash on","PFD attached to board"], landing:["Board rinsed","Leash coiled","Fin checked"] },
+  wingfoil:      { launch:["Helmet on","Impact vest on","Leash on","Wind within limits"], landing:["Equipment rinsed","Lines coiled","Wing folded"] },
+  other:         { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
 };
+var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;  // overwritten from config on load
+
 
 function renderLaunchChecklist(boat) {
   if (!boat) return;
   launchBoat = boat;
   document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
   const cat   = (boat.category||'other').toLowerCase();
-  const items = LAUNCH_CHECKLISTS[cat] || LAUNCH_CHECKLISTS.other;
+  const cl = _launchChecklists[cat] || _launchChecklists.other;
+  const items = cl.launch || cl;  // support both {launch:[],landing:[]} and flat []
   document.getElementById('launchModalBody').innerHTML =
     `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH CHECKLIST — ${esc(cat.toUpperCase())}</div>` +
     items.map((it,i) =>
@@ -687,6 +693,39 @@ async function submitLaunch() {
 }
 
 function renderReturnForm() {
+  if (!returnCo) return;
+  // Show landing checklist first
+  const cat2 = (returnCo.boatCategory||'other').toLowerCase();
+  const cl2  = _launchChecklists[cat2] || _launchChecklists.other;
+  const landItems = cl2.landing || [];
+  if (landItems.length) {
+    document.getElementById('returnModalTitle').textContent = s('member.checkInTitle') + ' — ' + (returnCo.boatName||'');
+    document.getElementById('returnModalBody').innerHTML =
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">LANDING CHECKLIST</div>' +
+      landItems.map(function(it,i) {
+        return '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">' +
+          '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">' +
+          '<span>' + esc(it) + '</span></label>';
+      }).join("") +
+      '<div id="landCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">Please confirm all items.</div>' +
+      '<div class="btn-row" style="margin-top:14px">' +
+      '<button class="btn btn-secondary" onclick="closeModal(\'returnModal\')">Cancel</button>' +
+      '<button class="btn btn-primary" onclick="advanceLandingChecklist()">Continue →</button>' +
+      '</div>';
+    return;
+  }
+  renderReturnWeatherForm();
+}
+
+function advanceLandingChecklist() {
+  var boxes = document.querySelectorAll('.land-check');
+  if (!Array.from(boxes).every(function(b) { return b.checked; })) {
+    document.getElementById('landCheckErr').style.display='block'; return;
+  }
+  renderReturnWeatherForm();
+}
+
+function renderReturnWeatherForm() {
   if (!returnCo) return;
   document.getElementById('returnModalTitle').textContent = s('member.checkInTitle') + ' — ' + (returnCo.boatName||'');
   const coSnap = returnCo.wxSnapshot
