@@ -19,7 +19,8 @@
 .date-nav button { background:none; border:1px solid var(--border); border-radius:6px;
   color:var(--text); font-family:inherit; font-size:12px; padding:5px 12px; cursor:pointer; }
 .date-nav button:hover { border-color:var(--brass); }
-.date-big { font-size:15px; font-weight:500; color:var(--text); flex:1; }
+.date-big { font-size:13px; font-weight:400; color:var(--muted); letter-spacing:.5px; flex:1; text-align:center; }
+.date-hero { font-size:28px; font-weight:500; color:var(--text); text-align:center; margin:4px 0 12px; line-height:1.1; }
 .signoff-badge { display:inline-flex; align-items:center; gap:6px;
   background:var(--green)18; border:1px solid var(--green)44; color:var(--green);
   border-radius:6px; padding:4px 10px; font-size:11px; }
@@ -351,6 +352,7 @@ let _selectedActType = null;
 const dom = domRefs({
   mainWrap:          'mainWrap',
   dateBig:           'dateBig',
+  dateHero:          'dateHero',
   prevBtn:           'prevBtn',
   nextBtn:           'nextBtn',
   todayBtn:          'todayBtn',
@@ -644,11 +646,22 @@ document.addEventListener('DOMContentLoaded', () => {
   let _wxTimer = null;
   async function pollWx() {
     try {
-      const snap = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
-      if (snap) {
-        if (typeof wxLoadFlagConfig === "function") wxLoadFlagConfig(null);
-        wxData = snap;
-      }
+      var fetched = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
+      var c = fetched.wx.current, hr = fetched.wx.hourly;
+      var mc = (fetched.marine && fetched.marine.current) ? fetched.marine.current : {};
+      var ws = c.wind_speed_10m || 0, wg = c.wind_gusts_10m || ws, wd = c.wind_direction_10m;
+      var bft = wxMsToBft(ws), wDir = wxDirLabel(wd);
+      var waveH   = mc.wave_height != null ? mc.wave_height : null;
+      var waveDir = mc.wave_direction != null ? wxDirLabel(mc.wave_direction) : null;
+      var sst     = mc.sea_surface_temperature != null ? mc.sea_surface_temperature : null;
+      var nowISO  = new Date().toISOString().slice(0,13);
+      var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(tt) { return tt.slice(0,13) === nowISO; }));
+      var presObj = wxPressureTrend(hr.surface_pressure, nowIdx);
+      var assessed = wxAssessFlag(ws, wDir, waveH || 0);
+      wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
+                 waveDir:waveDir, sst:sst, flagKey:assessed.flagKey,
+                 airT:c.temperature_2m, apparentT:c.apparent_temperature,
+                 pres:c.surface_pressure, presTrend:presObj.trend };
     } catch(e) {}
   }
   pollWx();
@@ -820,8 +833,8 @@ async function loadDay() {
   amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
-  dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB',
-    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
+  dom.dateHero.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { day:'numeric', month:'long', year:'numeric' });
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
