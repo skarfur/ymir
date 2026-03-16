@@ -764,23 +764,34 @@ async function loadDay() {
 }
 
 async function loadTodayLog() {
+  // Render immediately with defaults so UI is not stuck
+  renderChecklists();
+  renderActivities();
+  renderWxLog();
+  renderActTypeBtns();
+  renderIncidentSection(null);
+  // Load data in parallel — update when ready
   try {
     const [logRes, cfgRes] = await Promise.all([
       apiGet('getDailyLog', { date: TODAY }),
       apiGet('getConfig'),
     ]);
     applyLogData(logRes.log, cfgRes);
+    renderChecklists();
+    renderActivities();
+    renderWxLog();
+    renderActTypeBtns();
   } catch(e) {
     console.warn('loadTodayLog failed:', e.message);
   }
-  renderChecklists();
-  renderActivities();
-  renderWxLog();
-  renderActTypeBtns();
-  renderIncidentSection(null);
 }
 
 async function loadPastLog() {
+  // Render immediately with defaults
+  renderChecklistsReadonly();
+  renderActivitiesReadonly();
+  renderWxLog();
+  renderIncidentSection(null);
   try {
     const [logRes, cfgRes] = await Promise.all([
       apiGet('getDailyLog', { date: viewDate }),
@@ -788,14 +799,14 @@ async function loadPastLog() {
     ]);
     applyLogData(logRes.log, cfgRes);
     const incidents = await loadIncidentsForDate(viewDate);
+    renderChecklistsReadonly();
+    renderActivitiesReadonly();
+    renderWxLog();
     renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadPastLog failed:', e.message);
     renderIncidentSection(null);
   }
-  renderChecklistsReadonly();
-  renderActivitiesReadonly();
-  renderWxLog();
 }
 
 async function loadTodayTrips() {
