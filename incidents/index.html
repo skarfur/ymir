@@ -251,14 +251,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load data
   try {
-    const [iRes, bRes, lRes] = await Promise.all([
+    const [iRes, cfgRes] = await Promise.all([
       apiGet('getIncidents'),
-      apiGet('getBoats').catch(() => ({ boats: [] })),
-      apiGet('getLocations').catch(() => ({ locations: [] })),
+      apiGet('getConfig'),
     ]);
     incidents = iRes.incidents || [];
-    boats     = (bRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
-    locations = (lRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+    boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     populateBoatsLocs();
     renderList();
   } catch(e) {
@@ -329,7 +328,7 @@ function renderList() {
   const sevBadge = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
   el.innerHTML = incidents.map(i => {
     const types = parseJson(i.types, []);
-    const notes = parseJson(i.notes, []);
+    const notes = parseJson(i.staffNotes, []);
     return `<div class="incident-row" onclick="openDetail(incidentById('${i.id}'))">
       <div class="incident-header">
         <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
@@ -352,7 +351,7 @@ function incidentById(id) { return incidents.find(i => i.id === id); }
 function openDetail(i) {
   if (!i) return;
   detailId = i.id;
-  const notes    = parseJson(i.notes, []);
+  const notes    = parseJson(i.staffNotes, []);
   const types    = parseJson(i.types, []);
   const resolved = i.resolved && i.resolved !== 'false';
 
@@ -435,7 +434,7 @@ async function fileReport() {
   }).join(', ');
 
   try {
-    const res = await apiPost('saveIncident', {
+    const res = await apiPost('createIncident', {
       types:         JSON.stringify([...selectedTypes]),
       typeLabels,
       severity:      selectedSev,
@@ -503,12 +502,13 @@ async function addNote() {
     await apiPost('addIncidentNote', { id: detailId, by: user.name, text, at: new Date().toISOString() });
     const i = incidents.find(x => x.id === detailId);
     if (i) {
-      const notes = parseJson(i.notes, []);
-      notes.push({ by: user.name, at: new Date().toLocaleString(L==='IS'?'is-IS':'en-GB'), text });
-      i.notes = JSON.stringify(notes);
+      const notes = parseJson(i.staffNotes, []);
+      const timeStr = new Date().toLocaleString(L === 'IS' ? 'is-IS' : 'en-GB');
+      notes.push({ by: user.name, at: timeStr, text });
+      i.staffNotes = JSON.stringify(notes);
       document.getElementById('notesList').innerHTML += `
         <div class="note-item">${esc(text)}
-          <div class="note-meta">${esc(user.name)} · ${s('lbl.time')}</div>
+          <div class="note-meta">${esc(user.name)} · ${esc(timeStr)}</div>
         </div>`;
     }
     input.value = '';
@@ -522,7 +522,7 @@ async function toggleResolve() {
   if (!i) return;
   const resolved = !(i.resolved && i.resolved !== 'false');
   try {
-    await apiPost('updateIncident', { id: detailId, resolved, resolvedBy: user.name });
+    await apiPost('resolveIncident', { id: detailId, resolved, resolvedAt: resolved ? new Date().toISOString() : '' });
     i.resolved = resolved;
     document.getElementById('resolveBtn').textContent = resolved ? s('incident.markOpen') : s('incident.markResolved');
     document.getElementById('detailStatus').innerHTML =
