@@ -74,10 +74,13 @@
 .incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
 
 /* ── Weather log ── */
-.wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:6px;
-  padding:8px 12px; margin-bottom:6px; display:flex; gap:10px; align-items:center; font-size:12px; }
-.wx-snap-time { color:var(--brass); font-weight:500; width:40px; flex-shrink:0; }
-.wx-snap-body { flex:1; color:var(--muted); }
+.wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+.wx-snap-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.wx-snap-time { color:var(--brass); font-weight:500; font-size:14px; flex:1; }
+.wx-snap-flag { font-size:16px; }
+.wx-snap-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; }
+.wx-snap-label { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-bottom:2px; }
+.wx-snap-val { font-size:12px; color:var(--text); font-weight:500; }
 
 /* ── Tides ── */
 .tide-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -555,21 +558,33 @@ function renderActTypeBtns() {
 
 // ── Weather log ───────────────────────────────────────────────────────────────
 function renderWxLog() {
-  const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
+  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
   dom.wxLogCount.textContent = wxLog.length
     ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
-  replaceWithFragment(dom.wxLogList, wxLog, (snap, i) => {
-    const card = document.createElement('div');
-    card.className = 'wx-snap-card';
-    var wind=(snap.bft!=null?"Bft "+snap.bft:"")+(snap.dir?" "+snap.dir:"")+(snap.ws!=null?" · "+snap.ws+"m/s":"")+(snap.wg!=null&&snap.wg!==snap.ws?" (g"+snap.wg+")":"");
-    var sea=(snap.wv!=null?"🌊 "+snap.wv+"m":"")+(snap.waveDir?" "+snap.waveDir:"")+(snap.sst!=null?" · SST "+snap.sst+"°C":"");
-    var air=(snap.tc!=null?"🌡 "+snap.tc+"°C":"")+(snap.feels!=null&&snap.feels!==snap.tc?" (feels "+snap.feels+"°C)":"");
-    var prs=(snap.pres!=null?"⏱ "+snap.pres+"hPa":"")+(snap.presTrend?(" "+(snap.presTrend==="rising"?"↗":snap.presTrend==="falling"?"↘":"→")):"");
-    var parts=[wind,sea,air,prs].filter(function(s){return s.trim();});
-    card.innerHTML="<span class=\"wx-snap-time\">"+esc(snap.time||snap.ts&&snap.ts.slice(11,16)||"")+"</span>"+
-      "<span class=\"wx-snap-body\">"+(snap.flag?fi[snap.flag]||"":"")+" "+parts.join(" · ")+"</span>"+
-      "<button class=\"del-btn\" data-delete-wx=\""+i+"\" style=\"font-size:14px\">&times;</button>";
-    return card;
+  dom.wxLogList.innerHTML = "";
+  wxLog.forEach(function(snap, i) {
+    var card = document.createElement("div");
+    card.className = "wx-snap-card";
+    var time = snap.time || (snap.ts ? snap.ts.slice(11,16) : "");
+    var cells = [
+      { lbl:"WIND",     val: (snap.dir||"") + " " + (snap.ws!=null ? snap.ws+"m/s · Bft "+snap.bft : "—") },
+      { lbl:"GUSTS",    val: (snap.wg!=null && snap.wg!==snap.ws) ? snap.wg+"m/s" : null },
+      { lbl:"WAVES",    val: snap.wv!=null ? snap.wv+"m"+(snap.waveDir?" "+snap.waveDir:"") : null },
+      { lbl:"SEA TEMP", val: snap.sst!=null ? snap.sst+"°C" : null },
+      { lbl:"AIR",      val: snap.tc!=null ? snap.tc+"°C"+(snap.feels!=null&&snap.feels!==snap.tc?" / feels "+snap.feels+"°C":"") : null },
+      { lbl:"PRESSURE", val: snap.pres!=null ? snap.pres+"hPa"+(snap.presTrend?" "+(snap.presTrend==="rising"?"↗":snap.presTrend==="falling"?"↘":"→"):"") : null },
+    ].filter(function(c) { return c.val; });
+    var gridHtml = cells.map(function(c) {
+      return '<div><div class="wx-snap-label">'+c.lbl+'</div><div class="wx-snap-val">'+esc(c.val)+'</div></div>';
+    }).join("");
+    card.innerHTML =
+      '<div class="wx-snap-header">'
+      + '<span class="wx-snap-time">' + esc(time) + '</span>'
+      + '<span class="wx-snap-flag">' + (snap.flag ? fi[snap.flag]||"" : "") + '</span>'
+      + '<button class="del-btn" data-delete-wx="' + i + '" style="font-size:14px">&times;</button>'
+      + '</div>'
+      + '<div class="wx-snap-grid">' + gridHtml + '</div>';
+    dom.wxLogList.appendChild(card);
   });
 }
 
