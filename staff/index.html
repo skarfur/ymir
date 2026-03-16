@@ -385,17 +385,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   wxLoadFlagConfig().catch(() => {});
 
   try {
-    const [coRes, bRes, mRes, lRes, maintRes] = await Promise.all([
+    const [coRes, cfgRes, mRes, maintRes] = await Promise.all([
       apiGet('getActiveCheckouts'),
-      apiGet('getBoats'),
+      apiGet('getConfig'),
       apiGet('getMembers'),
-      apiGet('getLocations'),
       apiGet('getMaintenance').catch(() => ({ requests: [] })),
     ]);
     checkouts   = coRes.checkouts  || [];
-    boats       = (bRes.boats      || []).filter(b => b.active !== false && b.active !== 'false');
+    boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     members     = (mRes.members    || []).filter(m => m.active !== false && m.active !== 'false');
-    locations   = (lRes.locations  || []).filter(l => l.active !== false && l.active !== 'false');
     maintenance = (maintRes.requests || maintRes.maintenance || [])
       .filter(r => r.status !== 'resolved' && !r.resolved);
 
