@@ -652,33 +652,47 @@ function advanceLaunchChecklist() {
   renderLaunchForm(launchBoat);
 }
 
+function _addToLaunchOut(mins) {
+  var base  = document.getElementById("launchTimeOut").value || fmtTimeNow();
+  var parts = base.split(":").map(Number);
+  var total = parts[0]*60 + parts[1] + mins;
+  document.getElementById("launchReturnBy").value =
+    String(Math.floor(total/60)%24).padStart(2,"0") + ":" + String(total%60).padStart(2,"0");
+}
+
 function renderLaunchForm(boat) {
   if (!boat) return;
   launchBoat = boat;
-  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
-  const locOpts = locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
-
-  document.getElementById('launchModalBody').innerHTML = `
-    <div class="field"><label>${s('lbl.location')}</label>
-      <select id="launchLocation"><option value="">${s('lbl.selectDots')}</option>${locOpts}</select></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="field"><label>${s('staff.coForm.departure')}</label><input type="text" id="launchTimeOut" value="${fmtTimeNow()}" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>
-      <div class="field"><label>${s('staff.coForm.estReturn')}</label><input type="text" id="launchReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>
-    </div>
-    <div class="field"><label>${s('staff.coForm.crew')}</label>
-      <div style="display:flex;align-items:center;gap:12px">
-        <button type="button" onclick="adjLaunchCrew(-1)"
-          style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>
-        <span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>
-        <button type="button" onclick="adjLaunchCrew(1)"
-          style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>
-      </div>
-    </div>
-    <div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="renderLaunchPicker()">← ${s('nav.back').replace('← ','')}</button>
-      <button class="btn btn-primary"   onclick="submitLaunch()">⛵ ${s('member.launchBoat').replace('⛵ ','')}</button>
-    </div>`;
+  document.getElementById("launchModalTitle").textContent = s("member.launchTitle") + " — " + boat.name;
+  var locOpts = locations.map(function(l){
+    return '<option value="' + l.id + '">' + esc(l.name) + '</option>';
+  }).join("");
+  document.getElementById("launchModalBody").innerHTML =
+    '<div class="field"><label>' + s("lbl.location") + '</label>' +
+    '<select id="launchLocation"><option value="">' + s("lbl.selectDots") + '</option>' + locOpts + '</select></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+      '<div class="field"><label>' + s("staff.coForm.departure") + '</label>' +
+      '<input type="text" id="launchTimeOut" value="' + fmtTimeNow() +
+      '" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>' +
+      '<div class="field"><label>' + s("staff.coForm.estReturn") + '</label>' +
+      '<input type="text" id="launchReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px">' +
+      '<div style="display:flex;gap:4px;margin-top:5px">' +
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(60)">+1h</button>' +
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(90)">+1.5h</button>' +
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(120)">+2h</button>' +
+      '</div></div>' +
+    '</div>' +
+    '<div class="field"><label>' + s("staff.coForm.crew") + '</label>' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+      '<button type="button" onclick="adjLaunchCrew(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>' +
+      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>' +
+      '<button type="button" onclick="adjLaunchCrew(1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>' +
+    '</div></div>' +
+    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
+    '<div class="btn-row">' +
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← ' + s("nav.back").replace("← ","") + '</button>' +
+      '<button class="btn btn-primary" onclick="submitLaunch()">⛵ ' + s("member.launchBoat").replace("⛵ ","") + '</button>' +
+    '</div>';
   window._launchCrewCount = 1;
 }
 
@@ -747,71 +761,89 @@ function advanceLandingChecklist() {
   renderReturnWeatherForm();
 }
 
+// ── Weather display helper ──────────────────────────────────────────────────
+function _wxSnapHtml(snap) {
+  if (!snap) return '<div style="color:var(--muted);font-size:11px">No data</div>';
+  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+  var rows = [];
+  if (snap.flag)                      rows.push([fi[snap.flag]||"", snap.flag.toUpperCase()]);
+  if (snap.bft != null)               rows.push(["💨", (snap.dir||"") + " " + (snap.ws!=null?snap.ws+"m/s ":"") + "Bft"+snap.bft + (snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
+  if (snap.wv != null)                rows.push(["🌊", snap.wv+"m" + (snap.waveDir?" "+snap.waveDir:"")]);
+  if (snap.tc != null)                rows.push(["🌡", snap.tc+"°C" + (snap.feels!=null?" / feels "+snap.feels+"°C":"")]);
+  if (snap.sst != null)               rows.push(["🌊", "Sea "+snap.sst+"°C"]);
+  if (snap.pres != null)              rows.push(["📊", snap.pres+"hPa" + (snap.presTrend?" "+snap.presTrend:"")]);
+  if (snap.cond && snap.cond.desc)    rows.push([snap.cond.icon||"", snap.cond.desc]);
+  if (!rows.length)                   rows.push(["", "No detail available"]);
+  return rows.map(function(r) {
+    return '<div style="display:flex;gap:6px;font-size:11px;padding:2px 0">' +
+      '<span style="width:16px;flex-shrink:0;text-align:center">' + r[0] + '</span>' +
+      '<span style="color:var(--text)">' + esc(String(r[1])) + '</span></div>';
+  }).join("");
+}
+
+function _updateWxDisplay() {
+  var choice = (document.querySelector('[name="wxChoice"]:checked')||{}).value || "checkout";
+  var panel  = document.getElementById("wxDetailPanel");
+  if (!panel) return;
+  var snap = null;
+  if (choice === "checkout") snap = window._retCoSnap;
+  else if (choice === "now") snap = currentWx ? wxSnapshot(currentWx) : null;
+  else if (choice === "manual") {
+    var bft = parseInt(document.getElementById("manBft")&&document.getElementById("manBft").value||"0");
+    var dir = (document.getElementById("manDir")&&document.getElementById("manDir").value||"").trim();
+    snap = { bft: isNaN(bft)?null:bft, dir: dir, flag: null, ws:null, wg:null, wv:null, tc:null, feels:null, sst:null, pres:null, presTrend:null, cond:null };
+  }
+  panel.innerHTML = _wxSnapHtml(snap);
+  document.getElementById("wxManualFields").style.display = choice === "manual" ? "grid" : "none";
+}
+
 function renderReturnWeatherForm() {
   if (!returnCo) return;
-  document.getElementById('returnModalTitle').textContent = s('member.checkInTitle') + ' — ' + (returnCo.boatName||'');
+  document.getElementById("returnModalTitle").textContent = s("member.checkInTitle") + " — " + (returnCo.boatName||"");
 
-  // Checkout snapshot (default)
-  const coSnap = returnCo.wxSnapshot
-    ? (typeof returnCo.wxSnapshot==='string' ? JSON.parse(returnCo.wxSnapshot) : returnCo.wxSnapshot) : null;
-  const coDesc = coSnap
-    ? (coSnap.dir||"") + " " + (coSnap.ws!=null ? coSnap.ws+"m/s" : "") + " Bft"+(coSnap.bft||"?") + (coSnap.cond ? " · "+coSnap.cond.desc : "")
-    : null;
-  const nowSnap = currentWx ? wxSnapshot(currentWx) : null;
-  const nowDesc = nowSnap
-    ? (nowSnap.dir||"") + " " + (nowSnap.ws!=null ? nowSnap.ws+"m/s" : "") + " Bft"+(nowSnap.bft||"?") + (nowSnap.cond ? " · "+nowSnap.cond.desc : "")
-    : null;
+  var coSnap  = returnCo.wxSnapshot
+    ? (typeof returnCo.wxSnapshot==="string" ? JSON.parse(returnCo.wxSnapshot) : returnCo.wxSnapshot) : null;
+  var nowSnap = currentWx ? wxSnapshot(currentWx) : null;
+  window._retCoSnap = coSnap;
 
-  // Quick return time buttons (+1h, +1.5h, +2h from checkout time)
-  function addMins(base, mins) {
-    const [h,m] = base.split(":").map(Number);
-    const total = h*60 + m + mins;
-    return String(Math.floor(total/60)%24).padStart(2,"0") + ":" + String(total%60).padStart(2,"0");
-  }
-  const tout = (returnCo.checkedOutAt||returnCo.timeOut||"").slice(0,5);
-  const quickBtns = tout
-    ? [60,90,120].map(function(m) {
-        return '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="document.getElementById(\'retTimeIn\').value=\''+ addMins(tout,m) +'\'">+'+(m/60)+'h</button>';
-      }).join("")
-    : "";
+  var coLabel  = coSnap  ? ((coSnap.dir||"")+" "+(coSnap.ws!=null?coSnap.ws+"m/s ":"")+"Bft"+(coSnap.bft||"?")).trim() : "No launch data";
+  var nowLabel = nowSnap ? ((nowSnap.dir||"")+" "+(nowSnap.ws!=null?nowSnap.ws+"m/s ":"")+"Bft"+(nowSnap.bft||"?")).trim() : "No current data";
 
-  document.getElementById('returnModalBody').innerHTML =
-    // Time row
-    '<div class="field" style="margin-bottom:10px">' +
+  document.getElementById("returnModalBody").innerHTML =
+    // Time in — default now, plain editable text
+    '<div class="field" style="margin-bottom:14px">' +
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">TIME IN</label>' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-        '<input type="text" id="retTimeIn" value="' + fmtTimeNow() + '" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px">' +
-        quickBtns +
-      '</div>' +
+      '<input type="text" id="retTimeIn" value="' + fmtTimeNow() + '" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px">' +
     '</div>' +
 
-    // Weather section — checkout snap is default, expand for current/manual
+    // Weather record
     '<div style="margin-bottom:14px">' +
-      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">WEATHER RECORD</div>' +
-      (coDesc
-        ? '<div id="wxDefaultRow" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;display:flex;align-items:center;justify-content:space-between">' +
-            '<span>' + (coSnap.flag ? {green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}[coSnap.flag]||"" : "") + " " + esc(coDesc) + '</span>' +
-            '<button type="button" class="btn-ghost" style="font-size:10px;padding:2px 6px" onclick="document.getElementById(\'wxUpdateRow\').style.display=\'block\'">Update ↓</button>' +
-          '</div>'
-        : "") +
-      '<div id="wxUpdateRow" style="margin-top:8px;' + (coDesc ? "display:none" : "") + '">' +
-        '<div style="display:flex;flex-direction:column;gap:6px">' +
-          (nowDesc
-            ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" ' + (coDesc?"":"checked") + ' style="margin-top:2px;accent-color:var(--brass)"><span><b>Now:</b> ' + esc(nowDesc) + '</span></label>'
-            : "") +
-          (coDesc
-            ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" style="margin-top:2px;accent-color:var(--brass)"><span><b>At launch:</b> ' + esc(coDesc) + '</span></label>'
-            : "") +
-          '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" ' + (!coDesc&&!nowDesc?"checked":"") + ' style="margin-top:2px;accent-color:var(--brass)"><span><b>Manual</b></span></label>' +
-        '</div>' +
-        '<div id="wxManualRow" style="display:none;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-          '<div class="field"><label>Bft (0–12)</label><input type="number" id="manBft" min="0" max="12"></div>' +
-          '<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N / SW / ENE…" maxlength="4"></div>' +
-        '</div>' +
+      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WEATHER RECORD</div>' +
+
+      // Radio options
+      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">' +
+        (coSnap
+          ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" checked style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>At launch:</b> ' + esc(coLabel) + '</span></label>'
+          : "") +
+        (nowSnap
+          ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" ' + (!coSnap?"checked":"") + ' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Current:</b> ' + esc(nowLabel) + '</span></label>'
+          : "") +
+        '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" ' + (!coSnap&&!nowSnap?"checked":"") + ' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Manual</b></span></label>' +
+      '</div>' +
+
+      // Manual fields — hidden unless manual selected
+      '<div id="wxManualFields" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+        '<div class="field"><label>Bft (0–12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>' +
+        '<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N / SW…" maxlength="4" oninput="_updateWxDisplay()"></div>' +
+      '</div>' +
+
+      // Full detail panel — updates on radio change
+      '<div id="wxDetailPanel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;min-height:40px">' +
+        _wxSnapHtml(coSnap || nowSnap) +
       '</div>' +
     '</div>' +
 
-    // Report damage / incident
+    // Report buttons
     '<div style="display:flex;gap:8px;margin-bottom:14px">' +
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" onclick="flagDamageReport()">⚠ Report damage</button>' +
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="flagIncidentReport()">🚨 Report incident</button>' +
@@ -819,21 +851,9 @@ function renderReturnWeatherForm() {
 
     '<div id="retErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
     '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="closeModal(\'returnModal\')">' + s("btn.cancel") + '</button>' +
-      '<button class="btn btn-primary" onclick="submitReturn(\''+ returnCo.id +'\')">' + s("staff.checkIn") + '</button>' +
+      '<button class="btn btn-secondary" onclick="closeModal('returnModal')">' + s("btn.cancel") + '</button>' +
+      '<button class="btn btn-primary" onclick="submitReturn(\'' + returnCo.id + '\')">' + s("staff.checkIn") + '</button>' +
     '</div>';
-
-  // Store coSnap for submitReturn to use as default
-  window._retCoSnap = coSnap;
-
-  // Wire manual row toggle
-  setTimeout(function() {
-    document.querySelectorAll('[name="wxChoice"]').forEach(function(r) {
-      r.addEventListener('change', function() {
-        document.getElementById('wxManualRow').style.display = r.value==='manual' ? 'grid' : 'none';
-      });
-    });
-  }, 0);
 }
 
 // Damage/incident report flags — set before submitReturn, then redirect after check-in
@@ -856,21 +876,17 @@ async function submitReturn(coId) {
   const err    = document.getElementById('retErr');
   const co     = checkouts.find(c=>c.id===coId);
   if (!co) return;
-  // Weather: default is checkout snap (shown as static row), unless user expanded to change it
-  const wxUpdateRow = document.getElementById('wxUpdateRow');
-  const wxIsUpdated = wxUpdateRow && wxUpdateRow.style.display !== 'none';
-  let tripSnap = window._retCoSnap || null;  // default: checkout snapshot
-  if (wxIsUpdated) {
-    const wxChoice = (document.querySelector('[name="wxChoice"]:checked')||{}).value || 'now';
-    if (wxChoice==='now' && currentWx) {
-      tripSnap = wxSnapshot(currentWx);
-    } else if (wxChoice==='checkout' && co.wxSnapshot) {
-      tripSnap = typeof co.wxSnapshot==='string' ? JSON.parse(co.wxSnapshot) : co.wxSnapshot;
-    } else if (wxChoice==='manual') {
-      const bft = parseInt(document.getElementById('manBft')?.value||'0');
-      const dir = (document.getElementById('manDir')?.value||'').trim();
-      tripSnap  = { bft: isNaN(bft)?null:bft, dir: dir };
-    }
+  // Resolve weather from whichever radio is selected
+  var wxChoice = (document.querySelector('[name="wxChoice"]:checked')||{}).value || "checkout";
+  var tripSnap = null;
+  if (wxChoice === "checkout") {
+    tripSnap = window._retCoSnap || null;
+  } else if (wxChoice === "now") {
+    tripSnap = currentWx ? wxSnapshot(currentWx) : null;
+  } else if (wxChoice === "manual") {
+    var manBft = parseInt((document.getElementById("manBft")||{}).value||"0");
+    var manDir = ((document.getElementById("manDir")||{}).value||"").trim();
+    tripSnap = { bft: isNaN(manBft)?null:manBft, dir: manDir };
   }
   const tout = (co.checkedOutAt||co.timeOut||'').slice(0,5);
   const h    = (tout&&timeIn)
