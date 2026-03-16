@@ -250,6 +250,33 @@
         </div>
         <div class="col-body hidden" id="pmCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
+
+      <!-- ── Launch checklists per category ── -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
+          <button class="btn btn-primary" onclick="openLaunchCLModal()">+ Add item</button>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="font-size:11px;color:var(--muted)">Category: </label>
+          <select id="launchCLCatFilter" onchange="renderLaunchCLSections()" style="font-size:11px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)">
+            <option value="dinghy">dinghy</option>
+            <option value="keelboat">keelboat</option>
+            <option value="kayak">kayak</option>
+            <option value="rowing shell">rowing shell</option>
+            <option value="rowboat">rowboat</option>
+            <option value="sup">sup</option>
+            <option value="wingfoil">wingfoil</option>
+            <option value="other">other</option>
+          </select>
+        </div>
+        <div id="launchCLCard">
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">LAUNCH</div>
+          <div id="launchCLLaunchList"></div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin:12px 0 6px">LANDING</div>
+          <div id="launchCLLandingList"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
@@ -589,6 +616,35 @@
   </div>
 </div>
 
+<!-- Launch/landing checklist item modal -->
+<div class="modal-overlay hidden" id="launchCLModal">
+  <div class="modal">
+    <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+    <div class="field"><label>Category</label>
+      <select id="lcCat">
+        <option value="dinghy">dinghy</option>
+        <option value="keelboat">keelboat</option>
+        <option value="kayak">kayak</option>
+        <option value="rowing shell">rowing shell</option>
+        <option value="rowboat">rowboat</option>
+        <option value="sup">sup</option>
+        <option value="wingfoil">wingfoil</option>
+        <option value="other">other</option>
+      </select>
+    </div>
+    <div class="field"><label>Phase</label>
+      <select id="lcPhase"><option value="launch">Launch</option><option value="landing">Landing</option></select>
+    </div>
+    <div class="field"><label>Item text (English)</label><input type="text" id="lcText"></div>
+    <div class="field"><label>Sort order</label><input type="number" id="lcSort" value="99" min="1"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('launchCLModal')">Cancel</button>
+      <button class="btn btn-danger hidden" id="lcDeleteBtn" onclick="deleteLaunchCLItem()">Delete</button>
+      <button class="btn btn-primary" onclick="saveLaunchCLItem()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Activity type modal -->
 <div class="modal-overlay hidden" id="actTypeModal">
   <div class="modal">
@@ -772,6 +828,7 @@ async function loadAll() {
   locations     = _allLocations.filter(l => l.active !== false && l.active !== 'false');
  
   try { loadAlertConfig(cfgRes.overdueAlerts); }  catch(e) { console.warn("loadAlertConfig:", e.message); }
+  try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); } catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
  
   renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
@@ -1106,6 +1163,87 @@ async function deleteLocation(id) {
   
 // ── Checklists ─────────────────────────────────────────────────────────────────
 function renderChecklists() { renderCLPhase("amCLCard", "am"); renderCLPhase("pmCLCard", "pm"); }
+
+// ── Launch / Landing Checklists ───────────────────────────────────────────────
+// Stored in config as: launchChecklists = { dinghy: { launch:[{id,text,sort}], landing:[...] }, ... }
+let _launchCLs = {};  // full object from config
+let _lcEditingId = null;
+
+function loadLaunchChecklists(cfgLaunchChecklists) {
+  _launchCLs = cfgLaunchChecklists || {};
+  renderLaunchCLSections();
+}
+
+function renderLaunchCLSections() {
+  const cat = document.getElementById("launchCLCatFilter")?.value || "dinghy";
+  const catData = _launchCLs[cat] || { launch:[], landing:[] };
+  ["launch","landing"].forEach(function(phase) {
+    const listId = phase === "launch" ? "launchCLLaunchList" : "launchCLLandingList";
+    const el = document.getElementById(listId);
+    if (!el) return;
+    const items = (catData[phase] || []).slice().sort(function(a,b) { return (a.sort||99)-(b.sort||99); });
+    if (!items.length) { el.innerHTML = '<div class="empty-state">No items.</div>'; return; }
+    el.innerHTML = items.map(function(i) {
+      return '<div class="cl-row" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)44">' +
+        '<span style="flex:1;color:var(--text);font-size:13px">' + esc(i.text||"") + '</span>' +
+        '<button class="row-edit" onclick="openLaunchCLModal(\"' + cat + '\",\"' + phase + '\",\"' + i.id + '\")">Edit</button>' +
+        '<button class="row-del" onclick="deleteLaunchCLItem(\"' + cat + '\",\"' + phase + '\",\"' + i.id + '\")">×</button>' +
+      '</div>';
+    }).join("");
+  });
+}
+
+function openLaunchCLModal(cat, phase, id) {
+  _lcEditingId = id || null;
+  const curCat = cat || document.getElementById("launchCLCatFilter")?.value || "dinghy";
+  const curPhase = phase || "launch";
+  let item = null;
+  if (id && _launchCLs[curCat] && _launchCLs[curCat][curPhase]) {
+    item = _launchCLs[curCat][curPhase].find(function(x) { return x.id === id; });
+  }
+  document.getElementById("launchCLModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("lcCat").value   = curCat;
+  document.getElementById("lcPhase").value = curPhase;
+  document.getElementById("lcText").value  = item ? (item.text||"") : "";
+  document.getElementById("lcSort").value  = item ? (item.sort||99) : 99;
+  document.getElementById("lcDeleteBtn").classList.toggle("hidden", !item);
+  openModal("launchCLModal");
+}
+
+async function saveLaunchCLItem() {
+  const cat   = document.getElementById("lcCat").value;
+  const phase = document.getElementById("lcPhase").value;
+  const text  = document.getElementById("lcText").value.trim();
+  const sort  = parseInt(document.getElementById("lcSort").value) || 99;
+  if (!text) { toast("Text required.", "err"); return; }
+  if (!_launchCLs[cat]) _launchCLs[cat] = { launch:[], landing:[] };
+  if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
+  const id   = _lcEditingId || ("lc_" + Date.now().toString(36));
+  const list = _launchCLs[cat][phase];
+  const idx  = list.findIndex(function(x) { return x.id === id; });
+  const item = { id, text, sort };
+  if (idx >= 0) list[idx] = item; else list.push(item);
+  try {
+    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    closeModal("launchCLModal");
+    renderLaunchCLSections();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
+}
+
+async function deleteLaunchCLItem(cat, phase, id) {
+  if (!cat) { cat = document.getElementById("lcCat").value; phase = document.getElementById("lcPhase").value; id = _lcEditingId; }
+  if (!confirm("Delete this item?")) return;
+  if (_launchCLs[cat] && _launchCLs[cat][phase]) {
+    _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(function(x) { return x.id !== id; });
+  }
+  try {
+    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    closeModal("launchCLModal");
+    renderLaunchCLSections();
+    toast(s("toast.deleted"));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
 
 function renderCLPhase(cardId, phase) {
   const card  = document.getElementById(cardId);
