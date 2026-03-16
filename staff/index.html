@@ -115,16 +115,16 @@
 <div style="max-width:720px;margin:0 auto;padding:20px 16px 60px">
 
   <div style="margin-bottom:16px">
-    <div style="font-size:16px;font-weight:500;color:var(--text)">Staff Dashboard</div>
+    <div style="font-size:16px;font-weight:500;color:var(--text)" data-s="staff.dashTitle">Staff Dashboard</div>
     <div style="font-size:11px;color:var(--muted);margin-top:2px" id="userBadge"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
   <div class="wx-widget" id="wxWidget" style="margin-bottom:10px">
-    <div style="color:var(--muted);font-size:11px;padding:6px 0">Loading conditions…</div>
+    <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="lbl.loading"></div>
   </div>
 
-  <!-- ══ FLAG CARD — click to see all level explanations ══ -->
+  <!-- ══ FLAG CARD ══ -->
   <button id="flagCard" onclick="openFlagModal()"
     style="width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);
     border-radius:8px;padding:12px 16px;cursor:pointer;margin-bottom:10px;font-family:inherit;
@@ -132,12 +132,12 @@
     <div style="display:flex;align-items:center;gap:10px">
       <span id="flagCardIcon" style="font-size:20px">🟢</span>
       <div>
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:2px">CURRENT FLAG</div>
-        <div style="font-size:13px;font-weight:500;color:var(--text)" id="flagCardLabel">Green</div>
-        <div style="font-size:11px;color:var(--muted)" id="flagCardAdvice">Good conditions.</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:2px" data-s="flag.currentLabel">CURRENT FLAG</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text)" id="flagCardLabel"></div>
+        <div style="font-size:11px;color:var(--muted)" id="flagCardAdvice"></div>
       </div>
     </div>
-    <span style="font-size:11px;color:var(--muted)">All levels →</span>
+    <span style="font-size:11px;color:var(--muted)" data-s="flag.allLevels">All levels →</span>
   </button>
 
   <!-- ══ FULL FORECAST BUTTON ══ -->
@@ -145,86 +145,85 @@
     border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;
     text-decoration:none;color:var(--brass);font-size:12px;font-family:inherit;
     transition:border-color .15s" onmouseover="this.style.borderColor='var(--brass)'"
-    onmouseout="this.style.borderColor='var(--border)'">
-    ⛅ Full Forecast →
-  </a>
+    onmouseout="this.style.borderColor='var(--border)'"
+    data-s="staff.fullForecast">⛅ Full Forecast →</a>
 
   <!-- ══ TIDES ══ -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;
     padding:14px 18px;margin-bottom:20px">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">TIDES · FAXAFLÓI</div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="staff.tideHeader">TIDES · FAXAFLÓI</div>
     <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px">
       <span style="font-size:20px">🌊</span>
       <div>
-        <div style="color:var(--text)">Tide data coming soon</div>
-        <div style="font-size:10px;margin-top:2px">Real-time tidal predictions for Reykjavík harbour</div>
+        <div style="color:var(--text)" data-s="staff.tideComingSoon">Tide data coming soon</div>
+        <div style="font-size:10px;margin-top:2px" data-s="staff.tideDesc">Real-time tidal predictions for Reykjavík harbour</div>
       </div>
     </div>
   </div>
 
   <!-- ══ TOOLS ══ -->
-  <div class="divider-label">TOOLS</div>
+  <div class="divider-label" data-s="staff.toolsLabel">TOOLS</div>
   <div class="nav-grid">
     <a href="../dailylog/" class="nav-card">
       <span class="nc-icon">📋</span>
-      <span class="nc-label">Daily Log</span>
-      <span class="nc-desc">Tides, weather records, checklists, activities, sign-off</span>
+      <span class="nc-label" data-s="staff.dailyLog"></span>
+      <span class="nc-desc" data-s="staff.dailyLogDesc"></span>
     </a>
-    <a href="logbook-review.html" class="nav-card">
+    <a href="staff_logbook-review.html" class="nav-card">
       <span class="nc-icon">✓</span>
-      <span class="nc-label">Logbook Review &amp; Certs</span>
-      <span class="nc-desc">Verify member trips and assign certifications</span>
+      <span class="nc-label" data-s="staff.logbook"></span>
+      <span class="nc-desc" data-s="staff.logbookDesc"></span>
     </a>
     <a href="../incidents/" class="nav-card">
       <span class="nc-icon">⚠</span>
-      <span class="nc-label">Incidents</span>
-      <span class="nc-desc">File or review safety incident reports</span>
+      <span class="nc-label" data-s="staff.incidents"></span>
+      <span class="nc-desc" data-s="staff.incidentsDesc"></span>
     </a>
     <a href="../maintenance/" class="nav-card">
       <span class="nc-icon">🔧</span>
-      <span class="nc-label">Maintenance</span>
-      <span class="nc-desc">Report and track boat &amp; equipment issues</span>
+      <span class="nc-label" data-s="maint.title"></span>
+      <span class="nc-desc" data-s="staff.maintenanceDesc"></span>
     </a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
-  <div class="divider-label">ACTIVE CHECKOUTS</div>
+  <div class="divider-label" data-s="staff.activeCheckouts">ACTIVE CHECKOUTS</div>
 
   <!-- Stats strip -->
   <div class="stat-row">
-    <div class="stat-cell"><div class="stat-n" id="statBoats">0</div><div class="stat-l">BOATS OUT</div></div>
-    <div class="stat-cell"><div class="stat-n" id="statPeople">0</div><div class="stat-l">PEOPLE OUT</div></div>
-    <div class="stat-cell"><div class="stat-n" id="statOverdue" style="color:var(--muted)">0</div><div class="stat-l">OVERDUE</div></div>
+    <div class="stat-cell"><div class="stat-n" id="statBoats">0</div><div class="stat-l" data-s="staff.statBoats">BOATS OUT</div></div>
+    <div class="stat-cell"><div class="stat-n" id="statPeople">0</div><div class="stat-l" data-s="staff.statPeople">PEOPLE OUT</div></div>
+    <div class="stat-cell"><div class="stat-n" id="statOverdue" style="color:var(--muted)">0</div><div class="stat-l" data-s="staff.statOverdue">OVERDUE</div></div>
   </div>
 
   <div class="section">
     <div class="section-head">
-      <h3>BOATS OUT NOW</h3>
-      <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()">+ Check Out</button>
+      <h3 id="boatsOutNowLabel"></h3>
+      <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn"></button>
     </div>
 
     <!-- Checkout form -->
     <div class="checkout-form hidden" id="coForm">
-      <h4>NEW CHECKOUT</h4>
+      <h4 id="newCheckoutLabel"></h4>
       <div class="field">
-        <label>Member</label>
+        <label id="memberLabel"></label>
         <div style="position:relative">
-          <input type="text" id="coMember" placeholder="Name or kennitala…" autocomplete="off"
-            oninput="searchMember(this.value)">
+          <input type="text" id="coMember" autocomplete="off" oninput="searchMember(this.value)">
           <div id="coMemberSuggestions" style="position:relative"></div>
           <div id="coMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
         </div>
       </div>
       <div class="inline-fields">
-        <div class="field"><label>Boat</label>
-          <select id="coBoat"><option value="">Select…</option></select></div>
-        <div class="field"><label>Location</label>
-          <select id="coLocation"><option value="">Select…</option></select></div>
+        <div class="field"><label id="boatLabel"></label>
+          <select id="coBoat"><option value="" id="selectBoatOpt"></option></select></div>
+        <div class="field"><label id="locationLabel"></label>
+          <select id="coLocation"><option value="" id="selectLocOpt"></option></select></div>
       </div>
       <div class="inline-fields">
-        <div class="field"><label>Departure</label>
+        <div class="field"><label id="departureLabel"></label>
           <input type="time" id="coTimeOut"></div>
-        <div class="field"><label>Est. return</label>
+        <div class="field">
+          <label id="estReturnLabel"></label>
           <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
             <input type="time" id="coReturnBy" style="flex:1;min-width:80px">
             <div style="display:flex;gap:3px">
@@ -237,7 +236,7 @@
         </div>
       </div>
       <div class="field">
-        <label>Crew on board</label>
+        <label id="crewLabel"></label>
         <div class="crew-field">
           <button class="crew-btn" onclick="adjustCrew(-1)">−</button>
           <span class="crew-num" id="crewNum">1</span>
@@ -245,41 +244,41 @@
         </div>
       </div>
       <div class="field">
-        <label>Notes (optional)</label>
-        <input type="text" id="coNotes" placeholder="Any notes…">
+        <label id="notesLabel"></label>
+        <input type="text" id="coNotes">
       </div>
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="toggleCheckoutForm()">Cancel</button>
-        <button class="btn btn-primary" onclick="submitCheckout()">Check Out</button>
+        <button class="btn btn-secondary" onclick="toggleCheckoutForm()" id="cancelCoBtn"></button>
+        <button class="btn btn-primary" onclick="submitCheckout()" id="submitCoBtn"></button>
       </div>
       <div id="coErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
     </div>
 
-    <div id="activeCheckouts"><div class="empty-note">Loading…</div></div>
+    <div id="activeCheckouts"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
   <!-- ══ OPEN MAINTENANCE ══ -->
-  <div class="divider-label">OPEN MAINTENANCE</div>
+  <div class="divider-label" data-s="staff.maintenance">OPEN MAINTENANCE</div>
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
     padding:14px 16px;margin-bottom:16px">
-    <div id="maintList"><div class="empty-note">Loading…</div></div>
+    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)44">
-      <a href="../maintenance/" style="font-size:12px;color:var(--brass);text-decoration:none">View all →</a>
+      <a href="../maintenance/" style="font-size:12px;color:var(--brass);text-decoration:none" id="viewAllMaintLink"></a>
       <span style="color:var(--border);margin:0 8px">·</span>
-      <a href="../maintenance/?new=1" style="font-size:12px;color:var(--brass);text-decoration:none">+ Report issue</a>
+      <a href="../maintenance/?new=1" style="font-size:12px;color:var(--brass);text-decoration:none" id="reportIssueLink"></a>
     </div>
   </div>
 
-  <!-- ══ FLEET STATUS (collapsed by category) ══ -->
+  <!-- ══ FLEET STATUS ══ -->
   <div class="divider-label" style="display:flex;align-items:center;justify-content:space-between">
-    <span><span data-s="staff.fleet"></span>
-    <span style="font-size:9px;color:var(--muted);cursor:pointer" onclick="toggleAllFleet()"  data-s="staff.expandAll"></span>
+    <span data-s="staff.fleet"></span>
+    <span style="font-size:9px;color:var(--muted);cursor:pointer" onclick="toggleAllFleet()" id="fleetToggleBtn"></span>
   </div>
 
   <!-- Available summary -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
     padding:12px 16px;margin-bottom:8px">
-    <div id="availByCat"><div class="empty-note">Loading…</div></div>
+    <div id="availByCat"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
   <!-- Per-category collapsible fleet -->
@@ -288,51 +287,50 @@
   <!-- Recent check-ins -->
   <div class="section" style="margin-bottom:28px">
     <div class="section-head"><h3 data-s="staff.recentCheckins"></h3></div>
-    <div id="recentCheckins"><div class="empty-note">Loading…</div></div>
+    <div id="recentCheckins"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
 </div><!-- /container -->
 
 <!-- ══ FLAG DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="flagModal" onclick="if(event.target===this)closeModal('flagModal')">
-  <div class="modal" style="max-width:440px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0">Sailing Flag Levels</h3>
-      <button class="btn-ghost" onclick="closeModal('flagModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
-    </div>
+  <div class="modal">
+    <h3 data-s="flag.conditions"></h3>
     <div id="flagModalBody"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-secondary" onclick="closeModal('flagModal')" data-s="btn.close"></button>
+    </div>
   </div>
 </div>
 
 <!-- ══ CHECKOUT DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="coDetailModal" onclick="if(event.target===this)closeCoDetail()">
-  <div class="modal" style="max-width:480px;width:100%;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0;font-size:15px" id="coDetailTitle">Checkout</h3>
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0" id="cdTitle"></h3>
       <button class="btn-ghost" onclick="closeCoDetail()"
-        style="font-size:20px;padding:0 8px;line-height:1;border:none;color:var(--muted)">×</button>
+        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">TRIP</div>
-      <div class="dl-drow"><span class="dl-dlbl">BOAT</span><span class="dl-dval" id="cdBoat"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">DESTINATION</span><span class="dl-dval" id="cdLocation"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">DEPARTED</span><span class="dl-dval" id="cdOut"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">EST. RETURN</span><span class="dl-dval" id="cdReturn"></span></div>
-      <div class="dl-drow"><span class="dl-dlbl">CREW</span><span class="dl-dval" id="cdCrew"></span></div>
-      <div class="dl-drow" id="cdNotesRow"><span class="dl-dlbl">NOTES</span><span class="dl-dval" id="cdNotes"></span></div>
+      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="staff.coDetail.tripLabel">TRIP</div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.boat"></span><span class="dl-dval" id="cdBoat"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.location"></span><span class="dl-dval" id="cdLocation"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="staff.coDetail.out"></span><span class="dl-dval" id="cdOut"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="staff.coDetail.return"></span><span class="dl-dval" id="cdReturn"></span></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.crew"></span><span class="dl-dval" id="cdCrew"></span></div>
+      <div class="dl-drow" id="cdNotesRow"><span class="dl-dlbl" data-s="lbl.notes"></span><span class="dl-dval" id="cdNotes"></span></div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">MEMBER</div>
-      <div class="dl-drow"><span class="dl-dlbl">NAME</span><span class="dl-dval" id="cdMember"></span></div>
-      <div class="dl-drow" id="cdPhoneRow"><span class="dl-dlbl">PHONE</span><span class="dl-dval" id="cdPhone"></span></div>
-      <div class="dl-drow" id="cdGuardianRow"><span class="dl-dlbl">GUARDIAN</span><span class="dl-dval" id="cdGuardian"></span></div>
+      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="lbl.member"></div>
+      <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.name"></span><span class="dl-dval" id="cdMember"></span></div>
+      <div class="dl-drow" id="cdPhoneRow"><span class="dl-dlbl" data-s="lbl.phone"></span><span class="dl-dval" id="cdPhone"></span></div>
+      <div class="dl-drow" id="cdGuardianRow"><span class="dl-dlbl" data-s="lbl.guardian"></span><span class="dl-dval" id="cdGuardian"></span></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="staffCheckIn(_detailId);closeCoDetail()"
-        style="flex:1;min-width:120px">✓ Check In</button>
+        style="flex:1;min-width:120px" data-s="staff.checkIn"></button>
       <button class="btn btn-secondary" onclick="staffDeleteCheckout(_detailId,document.getElementById('cdBoat').textContent);closeCoDetail()"
-        style="flex:1;min-width:120px">Delete</button>
+        style="flex:1;min-width:120px" data-s="btn.delete"></button>
     </div>
   </div>
 </div>
@@ -351,6 +349,30 @@ let _fleetAllOpen = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('staff');
+  applyStrings(); // ← wire all data-s attributes
+
+  // ── Wire dynamic string labels that can't use data-s (need live values) ──
+  const L = getLang();
+  document.getElementById('boatsOutNowLabel').textContent    = s('staff.boatsOutNow');
+  document.getElementById('checkOutBtn').textContent         = s('staff.checkOutBtn');
+  document.getElementById('newCheckoutLabel').textContent    = s('staff.newCheckout');
+  document.getElementById('memberLabel').textContent         = s('lbl.member');
+  document.getElementById('boatLabel').textContent           = s('lbl.boat');
+  document.getElementById('locationLabel').textContent       = s('lbl.location');
+  document.getElementById('departureLabel').textContent      = s('staff.coForm.departure');
+  document.getElementById('estReturnLabel').textContent      = s('staff.coForm.estReturn');
+  document.getElementById('crewLabel').textContent           = s('staff.coForm.crew');
+  document.getElementById('notesLabel').textContent          = s('staff.coForm.notes');
+  document.getElementById('cancelCoBtn').textContent         = s('btn.cancel');
+  document.getElementById('submitCoBtn').textContent         = s('staff.coForm.submit');
+  document.getElementById('selectBoatOpt').textContent       = s('lbl.selectDots');
+  document.getElementById('selectLocOpt').textContent        = s('lbl.selectDots');
+  document.getElementById('coMember').placeholder            = s('staff.coForm.memberPlaceholder');
+  document.getElementById('coNotes').placeholder             = s('staff.coForm.notesPlaceholder');
+  document.getElementById('viewAllMaintLink').textContent    = s('btn.viewAll');
+  document.getElementById('reportIssueLink').textContent     = s('staff.reportIssue');
+  document.getElementById('fleetToggleBtn').textContent      = s('staff.expandAll');
+  document.getElementById('cdTitle').textContent             = s('staff.coDetail.title');
 
   wxWidget(document.getElementById('wxWidget'), {
     showRefreshBtn: true,
@@ -360,7 +382,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   }).start();
 
-  // Also pull flag config so the modal has current advice text
   wxLoadFlagConfig().catch(() => {});
 
   try {
@@ -383,11 +404,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderMaintenance();
   } catch(e) {
     document.getElementById('activeCheckouts').innerHTML =
-      `<div class="empty-note" style="color:var(--red)">Load failed: ${esc(e.message)}</div>`;
+      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 });
 
-// ── Flag card ─────────────────────────────────────────────────────────────────
+// ── Flag card — label/advice stay as FLAG_CONFIG (admin-editable) ─────────────
 function updateFlagCard(snap) {
   if (!snap) return;
   const level = snap.flag || 'green';
@@ -419,132 +440,105 @@ function openFlagModal() {
 function populateSelects() {
   const bSel   = document.getElementById('coBoat');
   const active = checkouts.filter(c => c.status === 'out');
-  boats.filter(b => !(b.oos === true || b.oos === 'false') && !active.find(c => c.boatId === b.id))
+  boats.filter(b => !active.find(c => c.boatId === b.id) && !boolVal(b.oos))
     .forEach(b => {
-      const o = document.createElement('option');
-      o.value = b.id;
-      o.textContent = b.name + (b.category ? ' (' + b.category + ')' : '');
-      bSel.appendChild(o);
+      const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; bSel.appendChild(o);
     });
   const lSel = document.getElementById('coLocation');
   locations.forEach(l => {
-    const o = document.createElement('option');
-    o.value = l.id; o.textContent = l.name; lSel.appendChild(o);
+    const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o);
   });
-  document.getElementById('coTimeOut').value = new Date().toTimeString().slice(0, 5);
+  document.getElementById('coTimeOut').value = fmtTimeNow();
 }
 
+// ── Render all ────────────────────────────────────────────────────────────────
 function renderAll() {
   renderStats();
   renderCheckouts();
-  renderAvailByCat();
-  renderFleetByCat();
   renderRecentCheckins();
+  renderFleet();
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
 function renderStats() {
   const active  = checkouts.filter(c => c.status === 'out');
-  const now     = new Date().toTimeString().slice(0, 5);
-  const overdue = active.filter(c => { const r = c.expectedReturn||c.returnBy||''; return r && r < now; });
-  document.getElementById('statBoats').textContent  = active.length;
-  document.getElementById('statPeople').textContent = active.reduce((s,c) => s + (parseInt(c.crew)||1), 0);
-  const odEl = document.getElementById('statOverdue');
-  odEl.textContent  = overdue.length;
-  odEl.style.color  = overdue.length ? 'var(--red)' : 'var(--muted)';
-}
-
-// ── Available by category (summary bar chart) ─────────────────────────────────
-function renderAvailByCat() {
-  const el     = document.getElementById('availByCat');
-  const active = checkouts.filter(c => c.status === 'out');
-  const cats   = _groupBoatsByCat(boats, active);
-  const rows   = Object.entries(cats).sort(([a],[b]) => a.localeCompare(b));
-  if (!rows.length) { el.innerHTML = '<div class="empty-note">No boats in fleet.</div>'; return; }
-
-  el.innerHTML = rows.map(([cat, d]) => {
-    const avail  = d.total - d.out - d.oos;
-    const usable = d.total - d.oos;
-    const pct    = usable > 0 ? Math.round((avail / usable) * 100) : 0;
-    const notes  = [d.out > 0 ? `${d.out} out` : '', d.oos > 0 ? `${d.oos} OOS` : ''].filter(Boolean).join(' · ');
-    return `<div class="cat-row">
-      <div class="cat-label">${boatEmoji(cat)} <span style="text-transform:capitalize">${esc(cat)}</span></div>
-      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div>
-      ${notes ? `<span class="cat-out-note">${esc(notes)}</span>` : ''}
-      <div class="cat-count ${avail > 0 ? 'has-avail' : 'none-avail'}">${avail}</div>
-    </div>`;
-  }).join('');
-}
-
-// ── Fleet by category (collapsible, default hidden) ───────────────────────────
-function renderFleetByCat() {
-  const el     = document.getElementById('fleetByCat');
-  const active = checkouts.filter(c => c.status === 'out');
-  const now    = new Date().toTimeString().slice(0, 5);
-
-  if (!boats.length) { el.innerHTML = ''; return; }
-
-  const grouped = {};
-  boats.forEach(b => {
-    const cat = (b.category || 'other').toLowerCase();
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(b);
+  const overdue = active.filter(c => {
+    if (!c.expectedReturn) return false;
+    return c.expectedReturn < fmtTimeNow();
   });
+  const people  = active.reduce((n, c) => n + (parseInt(c.crew) || 1), 0);
+  document.getElementById('statBoats').textContent   = active.length;
+  document.getElementById('statPeople').textContent  = people;
+  const el = document.getElementById('statOverdue');
+  el.textContent = overdue.length;
+  el.style.color = overdue.length ? 'var(--red)' : 'var(--muted)';
+}
 
-  el.innerHTML = Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([cat, catBoats]) => {
-    const avail = catBoats.filter(b => {
-      const out = active.find(c => c.boatId === b.id);
-      return !out && !(b.oos === true || b.oos === 'true');
-    }).length;
-    const boatCards = catBoats.map(b => {
-      const co  = active.find(c => c.boatId === b.id);
-      const oos = b.oos === true || b.oos === 'true';
-      const status = co ? (now > (co.expectedReturn||co.returnBy||'99:99') ? 'overdue' : 'out')
-                        : (oos ? 'oos' : 'avail');
-      return renderBoatCard(b, { status, checkoutData: co, overdue: status === 'overdue' });
+// ── Fleet ─────────────────────────────────────────────────────────────────────
+function renderFleet() {
+  const active = checkouts.filter(c => c.status === 'out');
+  const cats   = [...new Set(boats.map(b => b.category).filter(Boolean))];
+
+  // Available-by-category summary
+  const availEl = document.getElementById('availByCat');
+  if (!boats.length) { availEl.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
+  availEl.innerHTML = cats.map(cat => {
+    const catBoats = boats.filter(b => b.category === cat);
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id)).length;
+    const pct      = catBoats.length ? Math.round(avail / catBoats.length * 100) : 0;
+    return `<div class="cat-row">
+      <span class="cat-label">${esc(cat)}</span>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div>
+      <span class="cat-count ${avail ? 'has-avail' : 'none-avail'}">${avail}</span>
+      <span class="cat-out-note">${s('staff.availCount',{n:avail})}</span>
+    </div>`;
+  }).join('');
+
+  // Per-category collapsible fleet
+  const fleetEl = document.getElementById('fleetByCat');
+  boatRegistry.setBoats(boats, active);
+  fleetEl.innerHTML = cats.map(cat => {
+    const catBoats = boats.filter(b => b.category === cat);
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id)).length;
+    const body = catBoats.map(b => {
+      const co = active.find(c => c.boatId === b.id);
+      return renderBoatCard(b, {
+        status: boolVal(b.oos) ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail',
+        checkoutData: co,
+      });
     }).join('');
-    const catId = 'fcat-' + cat.replace(/\s+/g,'_');
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-      padding:4px 16px;margin-bottom:8px">
-      <div class="fleet-cat-toggle" onclick="toggleFleetCat('${catId}')">
-        <span class="fct-label">${boatEmoji(cat)} <span style="text-transform:capitalize">${esc(cat)}</span></span>
-        <span style="display:flex;align-items:center;gap:10px">
-          <span class="fct-count">${avail} avail · ${catBoats.length} total</span>
-          <span class="fct-arrow" id="${catId}-arrow">▼</span>
-        </span>
-      </div>
-      <div class="fleet-cat-body" id="${catId}">
-        <div class="fleet-cat-grid">${boatCards}</div>
-      </div>
+    return `<div class="fleet-cat-toggle" onclick="toggleFleetCat(this)">
+      <span class="fct-label">${esc(cat)}</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="fct-count">${avail}/${catBoats.length}</span>
+        <span class="fct-arrow">▼</span>
+      </span>
+    </div>
+    <div class="fleet-cat-body">
+      <div class="fleet-cat-grid">${body}</div>
     </div>`;
   }).join('');
 }
 
-function toggleFleetCat(id) {
-  const body  = document.getElementById(id);
-  const arrow = document.getElementById(id + '-arrow');
-  if (!body) return;
-  const open = body.classList.toggle('open');
-  arrow?.classList.toggle('open', open);
+function toggleFleetCat(toggle) {
+  const body  = toggle.nextElementSibling;
+  const arrow = toggle.querySelector('.fct-arrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
 }
 
 function toggleAllFleet() {
   _fleetAllOpen = !_fleetAllOpen;
-  document.querySelectorAll('.fleet-cat-body').forEach(el => {
-    el.classList.toggle('open', _fleetAllOpen);
-  });
-  document.querySelectorAll('.fct-arrow').forEach(el => {
-    el.classList.toggle('open', _fleetAllOpen);
-  });
-  document.querySelector('[onclick="toggleAllFleet()"]').textContent =
-    _fleetAllOpen ? 'collapse all' : 'expand all';
+  document.querySelectorAll('.fleet-cat-body').forEach(b => b.classList.toggle('open', _fleetAllOpen));
+  document.querySelectorAll('.fct-arrow').forEach(a => a.classList.toggle('open', _fleetAllOpen));
+  document.getElementById('fleetToggleBtn').textContent =
+    _fleetAllOpen ? s('staff.collapseAll') : s('staff.expandAll');
 }
 
 // ── Active checkouts ──────────────────────────────────────────────────────────
 function renderCheckouts() {
   const el     = document.getElementById('activeCheckouts');
   const active = checkouts.filter(c => c.status === 'out');
-  if (!active.length) { el.innerHTML = '<div class="empty-note">No boats currently out.</div>'; return; }
+  if (!active.length) { el.innerHTML = `<div class="empty-note">${s('staff.noOverdue').replace('overdue ','')}</div>`; return; }
   boatRegistry.setCos(active);
   el.innerHTML = active.map(c => {
     const inner = renderCheckoutCard(c, {
@@ -563,7 +557,7 @@ function renderCheckouts() {
 function renderRecentCheckins() {
   const el     = document.getElementById('recentCheckins');
   const recent = checkouts.filter(c => c.status === 'in').slice(0, 10);
-  if (!recent.length) { el.innerHTML = '<div class="empty-note">No check-ins in the last 24 hours.</div>'; return; }
+  if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('staff.recentCheckins')}</div>`; return; }
   el.innerHTML = recent.map(c => {
     const tout = (c.checkedOutAt||c.timeOut||'').slice(0,5);
     const tin  = (c.checkedInAt ||c.timeIn ||'').slice(0,5);
@@ -579,111 +573,67 @@ function renderRecentCheckins() {
 // ── Maintenance ───────────────────────────────────────────────────────────────
 function renderMaintenance() {
   const el = document.getElementById('maintList');
-  if (!maintenance.length) {
-    el.innerHTML = '<div class="empty-note">No open maintenance requests.</div>'; return;
-  }
+  if (!maintenance.length) { el.innerHTML = `<div class="empty-note">${s('staff.noMaint')}</div>`; return; }
   const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
   el.innerHTML = maintenance.map(m => `
     <div class="maint-row">
       <div class="maint-info">
         <div class="maint-boat">${esc(m.boatName||m.itemName||m.target||'—')}
           <span class="badge ${sevColor[m.severity]||'badge-muted'}" style="margin-left:6px">${esc(m.severity||'—')}</span>
-          ${m.category ? `<span class="badge badge-muted" style="margin-left:4px">${esc(m.category)}</span>` : ''}
+          ${m.category ? `<span style="color:var(--muted);font-size:10px;margin-left:4px">${CAT_ICON[m.category]||''} ${esc(m.category)}</span>` : ''}
         </div>
-        <div class="maint-desc">${esc(m.description||m.title||'')}</div>
+        <div class="maint-desc">${esc(m.description||'')}</div>
       </div>
-      <a href="../maintenance/#${m.id}" style="font-size:11px;color:var(--brass);text-decoration:none;
-        white-space:nowrap;flex-shrink:0;padding-top:2px">Details →</a>
     </div>`).join('');
 }
 
-// ── Shared helper ─────────────────────────────────────────────────────────────
-function _groupBoatsByCat(allBoats, active) {
-  const cats = {};
-  allBoats.forEach(b => {
-    const cat = (b.category || 'other').toLowerCase();
-    if (!cats[cat]) cats[cat] = { total:0, out:0, oos:0 };
-    cats[cat].total++;
-    if (active.find(c => c.boatId === b.id)) cats[cat].out++;
-    else if (b.oos === true || b.oos === 'true') cats[cat].oos++;
-  });
-  return cats;
+// ── Checkout form helpers ─────────────────────────────────────────────────────
+function toggleCheckoutForm() {
+  const form = document.getElementById('coForm');
+  form.classList.toggle('hidden');
 }
 
-// ── Checkout detail modal ─────────────────────────────────────────────────────
-function openCoDetail(id, event) {
-  if (event && event.target.closest('button,a')) return;
-  const co = checkouts.find(c => c.id === id);
-  if (!co) return;
-  _detailId = id;
-  const now  = new Date().toTimeString().slice(0,5);
-  const retBy = co.expectedReturn||co.returnBy||'';
-  const overdue = retBy && retBy < now;
-
-  document.getElementById('coDetailTitle').innerHTML =
-    `${boatEmoji(co.boatCategory||'other')} ${esc(co.boatName||'Checkout')}`
-    + (overdue ? ` <span style="color:var(--red);font-size:12px;margin-left:8px">⚠ OVERDUE</span>` : '');
-
-  set('cdBoat',     co.boatName     || '—');
-  set('cdLocation', co.locationName || '—');
-  set('cdOut',      (co.checkedOutAt||co.timeOut||'—').slice(0,5));
-  const retEl = document.getElementById('cdReturn');
-  retEl.textContent = retBy ? retBy+(overdue?' ⚠':'') : '—';
-  retEl.style.color = overdue ? 'var(--red)' : 'var(--text)';
-  set('cdCrew', (co.crew||1) + ' person' + ((co.crew||1)>1?'s':''));
-  document.getElementById('cdNotesRow').style.display   = co.notes ? '' : 'none';
-  set('cdNotes', co.notes||'');
-  set('cdMember', co.memberName||'—');
-  document.getElementById('cdPhoneRow').style.display   = co.memberPhone ? '' : 'none';
-  set('cdPhone', co.memberPhone||'');
-  const hasGuardian = co.memberIsMinor && co.guardianName;
-  document.getElementById('cdGuardianRow').style.display = hasGuardian ? '' : 'none';
-  set('cdGuardian', hasGuardian ? `${co.guardianName} · ${co.guardianPhone||'—'}` : '');
-  document.getElementById('coDetailModal').classList.remove('hidden');
-}
-function closeCoDetail() { document.getElementById('coDetailModal').classList.add('hidden'); }
-function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-
-// ── Form helpers ──────────────────────────────────────────────────────────────
-function toggleCheckoutForm() { document.getElementById('coForm').classList.toggle('hidden'); }
-function adjustCrew(d) {
-  crewCount = Math.max(1, Math.min(20, crewCount + d));
-  document.getElementById('crewNum').textContent = crewCount;
-}
 function searchMember(q) {
   const box = document.getElementById('coMemberSuggestions');
-  if (!q || q.length < 2) { box.innerHTML = ''; return; }
+  if (!q || q.length < 2) { box.innerHTML=''; return; }
   const matches = members.filter(m =>
-    m.name.toLowerCase().includes(q.toLowerCase()) || m.kennitala.startsWith(q)
-  ).slice(0, 5);
-  if (!matches.length) { box.innerHTML = ''; return; }
-  box.innerHTML = `<div style="position:absolute;top:0;left:0;right:0;background:var(--card);
-    border:1px solid var(--border);border-radius:6px;z-index:100;overflow:hidden">
-    ${matches.map(m => `<div onclick="selectMember('${m.kennitala}','${esc(m.name)}')"
-      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)">
-      ${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span></div>`).join('')}
-    </div>`;
+    m.name.toLowerCase().includes(q.toLowerCase()) || String(m.kennitala).includes(q)
+  ).slice(0,6);
+  if (!matches.length) { box.innerHTML=''; return; }
+  box.innerHTML = matches.map(m =>
+    `<div style="padding:6px 10px;cursor:pointer;border:1px solid var(--border);border-top:none;
+      background:var(--card);font-size:12px" onmousedown="selectMember('${m.kennitala}','${esc(m.name)}')"
+    >${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span>${m.isMinor?`<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>`:''}</div>`
+  ).join('');
 }
+
 function selectMember(kt, name) {
   selectedMemberKt = kt;
-  document.getElementById('coMember').value        = name;
-  document.getElementById('coMemberName').textContent = kt;
+  document.getElementById('coMember').value = name;
   document.getElementById('coMemberSuggestions').innerHTML = '';
+  const m = members.find(x => x.kennitala === kt);
+  document.getElementById('coMemberName').textContent = m ? (m.phone||'') : '';
 }
+
+function adjustCrew(d) {
+  crewCount = Math.max(1, crewCount + d);
+  document.getElementById('crewNum').textContent = crewCount;
+}
+
 function setCoReturnIn(mins) {
-  const base  = document.getElementById('coTimeOut').value || new Date().toTimeString().slice(0,5);
-  const [h,m] = base.split(':').map(Number);
-  const total = h*60 + m + mins;
-  const rh = Math.floor(total/60)%24, rm = total%60;
-  document.getElementById('coReturnBy').value =
-    String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0');
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + mins);
+  document.getElementById('coReturnBy').value = now.toTimeString().slice(0,5);
 }
+
 async function submitCheckout() {
-  const kt  = selectedMemberKt || document.getElementById('coMember').value.trim();
+  const kt  = selectedMemberKt;
   const bid = document.getElementById('coBoat').value;
   const lid = document.getElementById('coLocation').value;
   const err = document.getElementById('coErr');
-  if (!kt || !bid) { err.textContent='Member and boat are required.'; err.style.display='block'; return; }
+  if (!kt)  { err.textContent = s('staff.coForm.errMember');   err.style.display='block'; return; }
+  if (!bid) { err.textContent = s('staff.coForm.errBoat');     err.style.display='block'; return; }
+  if (!lid) { err.textContent = s('staff.coForm.errLocation'); err.style.display='block'; return; }
   err.style.display = 'none';
   const boat     = boats.find(b => b.id === bid) || {};
   const location = locations.find(l => l.id === lid) || {};
@@ -704,9 +654,10 @@ async function submitCheckout() {
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     toggleCheckoutForm();
     renderAll();
-    showMsg('Checked out.','ok');
-  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
+    showToast(s('staff.coForm.checkedOut'));
+  } catch(e) { err.textContent=s('toast.error')+': '+e.message; err.style.display='block'; }
 }
+
 async function staffCheckIn(id) {
   try {
     const timeIn = new Date().toTimeString().slice(0,5);
@@ -714,18 +665,50 @@ async function staffCheckIn(id) {
     const co = checkouts.find(c => c.id === id);
     if (co) { co.status='in'; co.checkedInAt=timeIn; }
     renderAll();
-    showMsg('Checked in.','ok');
-  } catch(e) { alert('Error: '+e.message); }
+    showToast(s('toast.checkedIn'));
+  } catch(e) { alert(s('toast.error')+': '+e.message); }
 }
+
 async function staffDeleteCheckout(id, boatName) {
-  if (!confirm(`Delete checkout for ${boatName||'this boat'}?`)) return;
+  if (!confirm(`${s('staff.deleteCheckout')}: ${boatName||''}?`)) return;
   try {
     await apiPost('deleteCheckout', { id });
     checkouts = checkouts.filter(c => c.id !== id);
     renderAll();
-    showMsg('Deleted.','ok');
-  } catch(e) { alert('Error: '+e.message); }
+    showToast(s('toast.deleted'));
+  } catch(e) { alert(s('toast.error')+': '+e.message); }
 }
+
+// ── Checkout detail modal ─────────────────────────────────────────────────────
+function openCoDetail(id, event) {
+  if (event) {
+    const tgt = event.target;
+    if (tgt.closest('button') || tgt.closest('a')) return;
+  }
+  const co = checkouts.find(c => c.id === id);
+  if (!co) return;
+  _detailId = id;
+  document.getElementById('cdTitle').textContent    = esc(co.boatName || co.boatId);
+  document.getElementById('cdBoat').textContent     = esc(co.boatName || co.boatId);
+  document.getElementById('cdLocation').textContent = esc(co.locationName || '—');
+  document.getElementById('cdOut').textContent      = (co.checkedOutAt||co.timeOut||'').slice(0,5) || '—';
+  document.getElementById('cdReturn').textContent   = co.expectedReturn || '—';
+  document.getElementById('cdCrew').textContent     = co.crew || 1;
+  const notesRow = document.getElementById('cdNotesRow');
+  notesRow.style.display = co.notes ? '' : 'none';
+  document.getElementById('cdNotes').textContent    = co.notes || '';
+  document.getElementById('cdMember').textContent   = esc(co.memberName || co.memberKennitala);
+  const phoneRow = document.getElementById('cdPhoneRow');
+  phoneRow.style.display = co.memberPhone ? '' : 'none';
+  document.getElementById('cdPhone').textContent    = co.memberPhone || '';
+  const guardRow = document.getElementById('cdGuardianRow');
+  guardRow.style.display = (co.memberIsMinor && co.guardianName) ? '' : 'none';
+  document.getElementById('cdGuardian').textContent =
+    co.guardianName ? co.guardianName + (co.guardianPhone ? ' · '+co.guardianPhone : '') : '';
+  openModal('coDetailModal');
+}
+
+function closeCoDetail() { closeModal('coDetailModal'); }
 </script>
 </body>
 </html>

@@ -27,7 +27,7 @@
 
 .badge { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid; flex-shrink:0; }
 .badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
-.badge-pending  { color:var(--muted); border-color:var(--border); }
+.badge-pending  { color:var(--muted); border-color:var(--border); background:var(--surface); }
 .badge-linked   { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
 
 .verify-row { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px;
@@ -53,28 +53,28 @@
 <div style="max-width:720px;margin:0 auto;padding:16px 14px 48px">
 
   <div style="margin-bottom:16px">
-    <div style="font-size:16px;font-weight:500;color:var(--text)">Logbook Review</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px">Verify member trips · assign certifications</div>
+    <div style="font-size:16px;font-weight:500;color:var(--text)" data-s="logrev.title"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px" data-s="logrev.subtitle"></div>
   </div>
 
   <div class="stat-strip">
-    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l">TOTAL TRIPS</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sPending">—</div><div class="stat-l">PENDING REVIEW</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l" data-s="logrev.totalTrips"></div></div>
+    <div class="stat-cell"><div class="stat-n" id="sPending">—</div><div class="stat-l" data-s="logrev.pending"></div></div>
+    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l" data-s="logrev.verified"></div></div>
   </div>
 
   <div class="filter-bar">
-    <input type="text" id="filterName" placeholder="Filter by member…" oninput="applyFilters()">
+    <input type="text" id="filterName" oninput="applyFilters()">
     <select id="filterStatus" onchange="applyFilters()">
-      <option value="">All trips</option>
-      <option value="pending">Pending review</option>
-      <option value="verified">Verified</option>
+      <option value="" id="filterOptAll"></option>
+      <option value="pending"  id="filterOptPending"></option>
+      <option value="verified" id="filterOptVerified"></option>
     </select>
-    <input type="date" id="filterFrom" onchange="applyFilters()" title="From date">
-    <input type="date" id="filterTo"   onchange="applyFilters()" title="To date">
+    <input type="date" id="filterFrom" onchange="applyFilters()">
+    <input type="date" id="filterTo"   onchange="applyFilters()">
   </div>
 
-  <div id="tripList"><div class="empty-note">Loading trips…</div></div>
+  <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
 </div>
 
@@ -82,54 +82,53 @@
 <div class="modal-overlay hidden" id="tripCertModal" onclick="if(event.target===this)closeModal('tripCertModal')">
   <div class="modal" style="max-width:440px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0">Assign Cert — <span id="tcmMemberName"></span></h3>
+      <h3 style="margin:0" id="tcmTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('tripCertModal')"
         style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
 
     <div style="margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT CERTIFICATIONS</div>
-      <div id="tcmCurrentList"><div style="color:var(--muted);font-size:11px;font-style:italic">Loading…</div></div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px" data-s="logrev.certModal"></div>
+      <div id="tcmCurrentList"><div style="color:var(--muted);font-size:11px;font-style:italic" data-s="lbl.loading"></div></div>
     </div>
 
     <div style="border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">ASSIGN CERTIFICATION</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="logrev.assignCert"></div>
       <div class="field">
-        <label>Type</label>
+        <label data-s="lbl.type"></label>
         <select id="tcmCertType" onchange="tcmCertTypeChanged()">
-          <option value="">Select…</option>
+          <option value="" id="tcmCertTypeOpt"></option>
         </select>
       </div>
       <div class="field" id="tcmSubcatField" style="display:none">
-        <label>Level / Subcategory</label>
-        <select id="tcmSubcat"><option value="">Select…</option></select>
+        <label data-s="cert.level"></label>
+        <select id="tcmSubcat"><option value="" id="tcmSubcatOpt"></option></select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="field">
-          <label>Assigned date</label>
+          <label data-s="logrev.assignedDate"></label>
           <input type="date" id="tcmAssignedAt">
         </div>
         <div class="field" id="tcmExpiryField" style="display:none">
-          <label>Expires</label>
+          <label data-s="logrev.expires"></label>
           <input type="date" id="tcmExpiresAt">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="tcmAssign()">Assign</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="tcmAssign()" id="tcmAssignBtn"></button>
     </div>
 
     <div style="margin-top:12px;text-align:right">
-      <button class="btn btn-secondary" onclick="closeModal('tripCertModal')">Close</button>
+      <button class="btn btn-secondary" onclick="closeModal('tripCertModal')" data-s="btn.close"></button>
     </div>
   </div>
 </div>
 
 <script>
 const user = requireAuth(isStaff);
+const L = getLang();
 
 let allTrips = [];
 let filtered = [];
-
-// Cert modal state
 let _tcmCertDefs   = [];
 let _tcmAllMembers = [];
 let _tcmLoaded     = false;
@@ -137,6 +136,19 @@ let _tcmMemberId   = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   buildHeader('logbook-review');
+  applyStrings();
+
+  // Wire labels that can't use data-s easily
+  document.getElementById('filterName').placeholder        = s('logrev.filterName');
+  document.getElementById('filterFrom').title              = s('logrev.filterFrom');
+  document.getElementById('filterTo').title                = s('logrev.filterTo');
+  document.getElementById('filterOptAll').textContent      = s('logrev.filterAll');
+  document.getElementById('filterOptPending').textContent  = s('logrev.filterPending');
+  document.getElementById('filterOptVerified').textContent = s('logrev.filterVerified');
+  document.getElementById('tcmCertTypeOpt').textContent    = s('lbl.selectDots');
+  document.getElementById('tcmSubcatOpt').textContent      = s('lbl.selectDots');
+  document.getElementById('tcmAssignBtn').textContent      = s('logrev.assignBtn');
+
   init();
 });
 
@@ -148,7 +160,7 @@ async function init() {
     applyFilters();
   } catch(e) {
     document.getElementById('tripList').innerHTML =
-      '<div class="empty-note" style="color:var(--red)">Could not load trips: ' + esc(e.message) + '</div>';
+      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 }
 
@@ -167,7 +179,7 @@ function applyFilters() {
   const to     = document.getElementById('filterTo').value;
 
   filtered = allTrips.filter(t => {
-    if (name   && !((t.memberName||'').toLowerCase().includes(name))) return false;
+    if (name   && !(t.memberName||'').toLowerCase().includes(name)) return false;
     if (status === 'pending'  && (t.verified && t.verified !== 'false')) return false;
     if (status === 'verified' && (!t.verified || t.verified === 'false')) return false;
     if (from && (t.date||'') < from) return false;
@@ -180,7 +192,8 @@ function applyFilters() {
 function renderTrips() {
   const el = document.getElementById('tripList');
   if (!filtered.length) {
-    el.innerHTML = '<div class="empty-note">No trips match the current filters.</div>'; return;
+    el.innerHTML = `<div class="empty-note">${s('logrev.noTrips')}</div>`;
+    return;
   }
   el.innerHTML = filtered.map(t => {
     const isVer    = t.verified && t.verified !== 'false';
@@ -194,32 +207,33 @@ function renderTrips() {
             <span>${esc(t.timeOut||'')}–${esc(t.timeIn||'')}</span>
             <span>${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</span>
             <span>👥 ${esc(t.crew||1)}</span>
-            ${t.beaufort  ? `<span>💨 Bft ${esc(t.beaufort)}</span>`  : ''}
-            ${t.windDir   ? `<span>${esc(t.windDir)}</span>`           : ''}
+            ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
+            ${t.windDir  ? `<span>${esc(t.windDir)}</span>` : ''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <span class="badge ${isVer?'badge-verified':'badge-pending'}">${isVer?'✓ VERIFIED':'PENDING'}</span>
-          ${isLinked ? '<span class="badge badge-linked">LINKED</span>' : ''}
+          <span class="badge ${isVer?'badge-verified':'badge-pending'}">${isVer ? ('✓ '+s('logrev.verified')) : s('logrev.pending')}</span>
+          ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
         </div>
       </div>
       ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
-          <div class="staff-comment-label">STAFF NOTE</div>
+          <div class="staff-comment-label">${s('incident.staffNotes').toUpperCase()}</div>
           <div style="color:var(--text)">${esc(t.staffComment)}</div>
           ${t.verifiedBy ? `<div style="color:var(--muted);margin-top:3px;font-size:10px">— ${esc(t.verifiedBy)}</div>` : ''}
         </div>` : ''}
       <div class="verify-row" id="vrow-${esc(t.id)}">
-        <input type="text" id="comment-${esc(t.id)}" placeholder="Staff comment (optional)…"
+        <input type="text" id="comment-${esc(t.id)}"
+          placeholder="${s('logrev.staffComment')}"
           value="${esc(t.staffComment||'')}" style="font-size:12px">
         <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;flex-shrink:0"
-          onclick="openTripCertModal('${esc(t.memberId||'')}','${esc(t.memberName||'')}')">🎖 Cert</button>
+          onclick="openTripCertModal('${esc(t.memberId||'')}','${esc(t.memberName||'')}')">🎖 ${s('cert.assign')}</button>
         ${isVer
           ? `<button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0"
-              onclick="unverifyTrip('${esc(t.id)}')">✗ Remove</button>`
+              onclick="unverifyTrip('${esc(t.id)}')">✗ ${s('logrev.unverify')}</button>`
           : `<button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex-shrink:0"
-              onclick="verifyTrip('${esc(t.id)}')">✓ Verify</button>`}
+              onclick="verifyTrip('${esc(t.id)}')">✓ ${s('logrev.verify')}</button>`}
       </div>
     </div>`;
   }).join('');
@@ -234,10 +248,10 @@ async function verifyTrip(id) {
     const idx = allTrips.findIndex(t => t.id === id);
     if (idx >= 0) { allTrips[idx].verified='true'; allTrips[idx].staffComment=comment; allTrips[idx].verifiedBy=user.name; }
     updateStats(); applyFilters();
-    showMsg('✓ Trip verified.','ok');
+    showToast(s('lbl.verified'));
   } catch(e) {
-    if (btn) { btn.disabled=false; btn.textContent='✓ Verify'; }
-    showMsg('Error: '+e.message,'err');
+    if (btn) { btn.disabled=false; btn.textContent='✓ '+s('logrev.verify'); }
+    showToast(s('toast.error'), 'err');
   }
 }
 
@@ -248,47 +262,58 @@ async function unverifyTrip(id) {
     const idx = allTrips.findIndex(t => t.id === id);
     if (idx >= 0) { allTrips[idx].verified='false'; allTrips[idx].staffComment=comment; allTrips[idx].verifiedBy=''; }
     updateStats(); applyFilters();
-    showMsg('Verification removed.','ok');
-  } catch(e) { showMsg('Error: '+e.message,'err'); }
+    showToast(s('logrev.unverify'));
+  } catch(e) { showToast(s('toast.error'), 'err'); }
 }
 
 // ── Cert modal ────────────────────────────────────────────────────────────────
-async function _ensureTcmData() {
-  if (_tcmLoaded) return;
-  const [mRes, cfgRes] = await Promise.all([apiGet('getMembers'), apiGet('getConfig')]);
-  _tcmAllMembers = mRes.members || [];
-  _tcmCertDefs   = certDefsFromConfig(cfgRes.certDefs || []);
-  _tcmLoaded     = true;
-  const sel = document.getElementById('tcmCertType');
-  sel.innerHTML = '<option value="">Select…</option>';
-  _tcmCertDefs.forEach(d => {
-    const o = document.createElement('option');
-    o.value = d.id; o.textContent = d.name; sel.appendChild(o);
-  });
-}
-
 async function openTripCertModal(memberId, memberName) {
-  _tcmMemberId = memberId;
-  document.getElementById('tcmMemberName').textContent = memberName||memberId||'—';
-  document.getElementById('tcmAssignedAt').value = todayISO();
-  document.getElementById('tcmCertType').value   = '';
+  _tcmMemberId = memberId || null;
+  document.getElementById('tcmTitle').textContent =
+    s('cert.assign') + ' — ' + (memberName || '');
+  document.getElementById('tcmCurrentList').innerHTML =
+    `<div style="color:var(--muted);font-size:11px;font-style:italic">${s('lbl.loading')}</div>`;
+  document.getElementById('tcmCertType').value = '';
   document.getElementById('tcmSubcatField').style.display = 'none';
   document.getElementById('tcmExpiryField').style.display = 'none';
-  document.getElementById('tcmCurrentList').innerHTML =
-    '<div style="color:var(--muted);font-size:11px;font-style:italic">Loading…</div>';
   openModal('tripCertModal');
+
+  if (!_tcmLoaded) {
+    try {
+      const [mRes, cfgRes] = await Promise.all([
+        apiGet('getMembers'),
+        apiGet('getConfig'),
+      ]);
+      _tcmAllMembers = mRes.members || [];
+      _tcmCertDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+      _tcmLoaded     = true;
+
+      const sel = document.getElementById('tcmCertType');
+      sel.innerHTML = `<option value="">${s('lbl.selectDots')}</option>`;
+      _tcmCertDefs.forEach(d => {
+        const o = document.createElement('option'); o.value=d.id; o.textContent=d.name; sel.appendChild(o);
+      });
+    } catch(e) {
+      document.getElementById('tcmCurrentList').innerHTML =
+        `<div style="color:var(--red);font-size:11px">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+      return;
+    }
+  }
+
+  if (!memberId) {
+    document.getElementById('tcmCurrentList').innerHTML =
+      `<div style="color:var(--muted);font-size:11px;font-style:italic">${s('logrev.noCerts')}</div>`;
+    return;
+  }
   try {
-    await _ensureTcmData();
-    const m  = _tcmAllMembers.find(x => x.id === memberId);
-    const el = document.getElementById('tcmCurrentList');
-    if (!m) { el.innerHTML='<div style="color:var(--muted);font-size:11px">Member not found.</div>'; return; }
-    const certs = enrichMemberCerts(parseJson(m.certifications,[]), _tcmCertDefs);
-    el.innerHTML = certs.length
+    const m     = _tcmAllMembers.find(x => x.id === memberId);
+    const certs = m ? enrichMemberCerts(parseJson(m.certifications, []), _tcmCertDefs) : [];
+    document.getElementById('tcmCurrentList').innerHTML = certs.length
       ? certs.map(certBadgeHTML).join('')
-      : '<div style="color:var(--muted);font-size:11px;font-style:italic">None on file.</div>';
+      : `<div style="color:var(--muted);font-size:11px;font-style:italic">${s('cert.noCerts')}</div>`;
   } catch(e) {
     document.getElementById('tcmCurrentList').innerHTML =
-      `<div style="color:var(--red);font-size:11px">Load error: ${esc(e.message)}</div>`;
+      `<div style="color:var(--red);font-size:11px">${s('toast.error')}: ${esc(e.message)}</div>`;
   }
 }
 
@@ -298,28 +323,28 @@ function tcmCertTypeChanged() {
   const eField = document.getElementById('tcmExpiryField');
   if (def?.subcats?.length) {
     const sSel = document.getElementById('tcmSubcat');
-    sSel.innerHTML = '<option value="">Select…</option>';
-    def.subcats.forEach(s => {
-      const o = document.createElement('option'); o.value=s.key; o.textContent=s.label; sSel.appendChild(o);
+    sSel.innerHTML = `<option value="">${s('lbl.selectDots')}</option>`;
+    def.subcats.forEach(sc => {
+      const o = document.createElement('option'); o.value=sc.key; o.textContent=sc.label; sSel.appendChild(o);
     });
     sField.style.display = '';
-  } else { sField.style.display='none'; }
+  } else { sField.style.display = 'none'; }
   if (def?.renewalDays > 0) {
     const exp = new Date(); exp.setDate(exp.getDate() + def.renewalDays);
     document.getElementById('tcmExpiresAt').value = exp.toISOString().slice(0,10);
     eField.style.display = '';
-  } else { eField.style.display='none'; }
+  } else { eField.style.display = 'none'; }
 }
 
 async function tcmAssign() {
   const certId = document.getElementById('tcmCertType').value;
   const def    = _tcmCertDefs.find(d => d.id === certId);
-  if (!certId) { showMsg('Select a certification type.','err'); return; }
+  if (!certId)    { showToast(s('lbl.type') + ' required.', 'err'); return; }
   const sub = def?.subcats?.length ? document.getElementById('tcmSubcat').value : null;
-  if (def?.subcats?.length && !sub) { showMsg('Select a subcategory.','err'); return; }
-  if (!_tcmMemberId) { showMsg('No member linked to this trip.','err'); return; }
+  if (def?.subcats?.length && !sub) { showToast(s('cert.level') + ' required.', 'err'); return; }
+  if (!_tcmMemberId) { showToast('No member linked.', 'err'); return; }
   const m = _tcmAllMembers.find(x => x.id === _tcmMemberId);
-  if (!m) { showMsg('Member not found.','err'); return; }
+  if (!m) { showToast('Member not found.', 'err'); return; }
 
   const newCert = {
     certId, sub: sub||null, assignedBy: user.name,
@@ -339,9 +364,16 @@ async function tcmAssign() {
     document.getElementById('tcmCertType').value = '';
     document.getElementById('tcmSubcatField').style.display = 'none';
     document.getElementById('tcmExpiryField').style.display = 'none';
-    showMsg('✓ Certification assigned to ' + m.name + '.','ok');
-  } catch(e) { showMsg('Error: '+e.message,'err'); }
+    showToast('✓ ' + s('cert.assign') + ': ' + m.name);
+  } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
 }
+
+function parseJson(v, fallback) {
+  if (!v) return fallback;
+  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
+}
+
+function todayISO() { return new Date().toISOString().slice(0,10); }
 </script>
 </body>
 </html>
