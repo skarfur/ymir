@@ -551,131 +551,34 @@ function renderActTypeBtns() {
 
 // ── Weather log ───────────────────────────────────────────────────────────────
 function renderWxLog() {
-  const fi = { green:'🟢', yellow:'🟡', orange:'🟠', red:'🔴' };
-  dom.wxLogCount.textContent = wxLog.length
-    ? wxLog.length + (wxLog.length === 1 ? ' snapshot' : ' snapshots') : '';
-  replaceWithFragment(dom.wxLogList, wxLog, (snap, i) => {
-    const card = document.createElement('div');
-    card.className = 'wx-snap-card';
-    card.innerHTML = `<span class="wx-snap-time">${esc(snap.time||'')}</span>
-      <span class="wx-snap-body">
-        ${snap.bft != null ? `Bft ${snap.bft}` : ''}
-        ${snap.dir ? ` ${snap.dir}` : ''}
-        ${snap.ws != null ? ` · ${snap.ws}kn` : ''}
-        ${snap.wv != null ? ` · ${snap.wv}m` : ''}
-        ${snap.flag ? ` ${fi[snap.flag]||''}` : ''}
-      </span>
-      <button class="del-btn" data-delete-wx="${i}" style="font-size:14px">&times;</button>`;
-    return card;
+  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+  dom.wxLogCount.textContent = wxLog.length ? wxLog.length + (wxLog.length === 1 ? " snapshot" : " snapshots") : "";
+  dom.wxLogList.innerHTML = "";
+  wxLog.forEach(function(snap, i) {
+    var card = document.createElement("div");
+    card.className = "wx-snap-card";
+    var windStr = (snap.bft != null ? "Bft " + snap.bft : "") +
+                  (snap.dir ? " " + snap.dir : "") +
+                  (snap.ws != null ? " · " + snap.ws + " m/s" : "") +
+                  (snap.wg != null && snap.wg !== snap.ws ? " (g" + snap.wg + ")" : "");
+    var seaStr  = (snap.wv != null ? "🌊 " + snap.wv + "m" : "") +
+                  (snap.waveDir ? " " + snap.waveDir : "") +
+                  (snap.sst != null ? " · SST " + snap.sst + "°C" : "");
+    var airStr  = (snap.tc != null ? "🌡 " + snap.tc + "°C" : "") +
+                  (snap.feels != null && snap.feels !== snap.tc ? " (feels " + snap.feels + "°C)" : "");
+    var presStr = (snap.pres != null ? "⏱ " + snap.pres + " hPa" : "") +
+                  (snap.presTrend ? " " + (snap.presTrend === "rising" ? "↗" : snap.presTrend === "falling" ? "↘" : "→") : "");
+    var parts = [windStr, seaStr, airStr, presStr].filter(function(s) { return s.trim(); });
+    card.innerHTML =
+      "<span class=\"wx-snap-time\">" + esc(snap.time || snap.ts && snap.ts.slice(11,16) || "") + "</span>" +
+      "<span class=\"wx-snap-body\">" +
+        (snap.flag ? fi[snap.flag] || "" : "") + " " +
+        parts.join(" · ") +
+      "</span>" +
+      "<button class=\"del-btn\" data-delete-wx=\"" + i + "\" style=\"font-size:14px\">&times;</button>";
+    dom.wxLogList.appendChild(card);
   });
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// SECTION 6 — EVENT DELEGATION
-// ════════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  buildHeader('dailylog');
-  applyStrings(); // ← wire all data-s attributes
-
-  // Placeholders that applyStrings can't reach (attrs)
-  dom.narrativeInput.placeholder = s('daily.notesPlaceholder');
-  dom.actName.placeholder        = s('daily.actNameHint');
-  dom.actParticipants.placeholder = s('daily.actPartHint');
-  dom.actNotes.placeholder       = s('daily.actNotesHint');
-
-  // Trip detail modal label text
-  document.getElementById('tdOutLabel').textContent    = 'OUT';
-  document.getElementById('tdReturnLabel').textContent = s('staff.coDetail.return');
-  document.getElementById('tdInLabel').textContent     = 'IN';
-
-  // Checklist toggle
-  document.addEventListener('click', e => {
-    const item = e.target.closest('[data-toggle]');
-    if (!item) return;
-    toggleCL(item.dataset.prefix, item.dataset.itemId);
-  });
-
-  dom.activitiesList.addEventListener('click', e => {
-    const btn = e.target.closest('[data-delete-activity]');
-    if (!btn) return;
-    deleteActivity(btn.dataset.deleteActivity);
-  });
-
-  dom.wxLogList.addEventListener('click', e => {
-    const btn = e.target.closest('[data-delete-wx]');
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.deleteWx);
-    wxLog.splice(idx, 1);
-    renderWxLog();
-    markDirty();
-  });
-
-  dom.actTypeBtns.addEventListener('click', e => {
-    const btn = e.target.closest('[data-type-id]');
-    if (!btn) return;
-    _selectedActType = btn.dataset.typeId;
-    dom.actTypeBtns.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b === btn));
-  });
-
-  dom.tripsCard.addEventListener('click', e => {
-    const row = e.target.closest('[data-trip-id]');
-    if (!row) return;
-    openTripDetail(row.dataset.tripId);
-  });
-
-  dom.prevBtn.addEventListener('click',  () => navigateDay(-1));
-  dom.nextBtn.addEventListener('click',  () => navigateDay(1));
-  dom.todayBtn.addEventListener('click', () => navigateToToday());
-
-  dom.addActivityBtn.addEventListener('click', openActivityModal);
-  document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
-  document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
-
-  dom.saveDraftBtn.addEventListener('click', saveDraft);
-  dom.signOffBtn.addEventListener('click',   signOffDay);
-  dom.logWxBtn.addEventListener('click',     logCurrentWeather);
-
-  ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
-   'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => {
-    dom[id].addEventListener('change', markDirty);
-  });
-
-  // Silent weather poll for snapshots
-  let _wxTimer = null;
-  async function pollWx() {
-        try {
-          var fetched = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
-          var c    = fetched.wx.current;
-          var hr   = fetched.wx.hourly;
-          var mc   = (fetched.marine && fetched.marine.current) ? fetched.marine.current : {};
-          var ws   = c.wind_speed_10m || 0;
-          var wg   = c.wind_gusts_10m || ws;
-          var wd   = c.wind_direction_10m;
-          var bft  = wxMsToBft(ws);
-          var wDir = wxDirLabel(wd);
-          var waveH    = (mc.wave_height != null)   ? mc.wave_height   : null;
-          var waveDir  = (mc.wave_direction != null) ? wxDirLabel(mc.wave_direction) : null;
-          var sst      = (mc.sea_surface_temperature != null) ? mc.sea_surface_temperature : null;
-          var nowISO   = new Date().toISOString().slice(0,13);
-          var nowIdx   = Math.max(0, (hr.time||[]).findIndex(function(t) { return t.slice(0,13) === nowISO; }));
-          var presObj  = wxPressureTrend(hr.surface_pressure, nowIdx);
-          var assessed = wxAssessFlag(ws, wDir, waveH || 0);
-          wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir,
-                     waveH:waveH, waveDir:waveDir, sst:sst,
-                     flagKey:assessed.flagKey,
-                     airT:c.temperature_2m, apparentT:c.apparent_temperature,
-                     pres:c.surface_pressure, presTrend:presObj.trend };
-        } catch(e) {}
-      }
-      pollWx();
-  _wxTimer = setInterval(pollWx, 10 * 60 * 1000);
-
-  navigateToToday();
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// SECTION 7 — DATE NAVIGATION
-// ════════════════════════════════════════════════════════════════════════════
 function isToday() { return viewDate === TODAY; }
 
 function updateDateNav() {
