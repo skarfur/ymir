@@ -15,9 +15,7 @@
 <script src="../shared/certs.js"></script>
 <style>
 /* ── Quick-action header strip ── */
-.member-actions {
-  display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;
-}
+.member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
   flex:1; min-width:100px; background:var(--surface); border:1px solid var(--border);
   border-radius:8px; padding:10px 12px; cursor:pointer; font-family:inherit;
@@ -50,7 +48,7 @@
 .co-title { font-size:12px; font-weight:500; color:var(--text); }
 .co-sub   { font-size:10px; color:var(--muted); margin-top:2px; }
 
-/* ── Recent trips (log-as-crew) ── */
+/* ── Recent trips ── */
 .pub-trip { background:var(--card); border:1px solid var(--border); border-radius:8px;
   padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .15s; }
 .pub-trip:hover { border-color:var(--brass); }
@@ -68,14 +66,12 @@
 
 /* ── Stats card ── */
 .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px; }
-.stat-box { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:14px 12px; text-align:center; }
+.stat-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
 .stat-box .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .stat-box .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
-/* ── Cert badges (from shared/certs.js) ── */
-.cert-section { background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  padding:14px 16px; margin-bottom:12px; }
+/* ── Cert badges ── */
+.cert-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
 .cert-section-title { font-size:9px; color:var(--muted); letter-spacing:1.2px; margin-bottom:10px; }
 </style>
 </head>
@@ -89,51 +85,49 @@
 
   <div style="margin-bottom:14px">
     <div style="font-size:16px;font-weight:500;color:var(--text)" id="welcomeName">Member Hub</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px" id="welcomeSub">Loading…</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px" id="welcomeSub"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
   <div class="wx-widget" id="wxWidget" style="margin-bottom:10px">
-    <div style="color:var(--muted);font-size:11px;padding:6px 0">Loading conditions…</div>
+    <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="wx.loading"></div>
   </div>
 
   <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
-    <button class="act-btn" onclick="openLaunchPicker()" data-s="member.launchBoat"></button>
+    <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
     <button class="act-btn" onclick="openCheckInPicker()" data-s="member.checkIn"></button>
-    <a class="act-btn" href="../maintenance/?new=1" ... data-s="member.reportIssue"></a>
+    <a class="act-btn" href="../maintenance/?new=1"        data-s="member.reportIssue"></a>
   </div>
 
-  <!-- ══ ACTIVE CHECKOUTS (my boats) ══ -->
+  <!-- ══ ACTIVE CHECKOUTS ══ -->
   <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:4px 0 8px">
     <span data-s="member.myCheckout"></span>
     <span style="font-weight:normal;font-size:8px;letter-spacing:0"> — <span data-s="member.myCheckoutSub"></span></span>
   </div>
-  <div id="activeList"><div class="empty-note">Loading…</div></div>
+  <div id="activeList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
   <!-- ══ TABS ══ -->
   <div class="hub-tabs" style="margin-top:16px">
-    <button class="hub-tab active" onclick="showTab('fleet')"  id="tabBtnFleet"  data-s="member.tabFleet"></button>
-    <button class="hub-tab"        onclick="showTab('trips')"  id="tabBtnTrips"  data-s="member.tabTrips"></button>
-    <button class="hub-tab"        onclick="showTab('logbook')" id="tabBtnLogbook"  data-s="member.tabLogbook"></button>
-    <button class="hub-tab"        onclick="showTab('certs')"  id="tabBtnCerts" data-s="member.tabCerts"></button>
+    <button class="hub-tab active" onclick="showTab('fleet')"   id="tabBtnFleet"   data-s="member.tabFleet"></button>
+    <button class="hub-tab"        onclick="showTab('trips')"   id="tabBtnTrips"   data-s="member.tabTrips"></button>
+    <button class="hub-tab"        onclick="showTab('logbook')" id="tabBtnLogbook" data-s="member.tabLogbook"></button>
+    <button class="hub-tab"        onclick="showTab('certs')"   id="tabBtnCerts"   data-s="member.tabCerts"></button>
   </div>
 
   <!-- ═══ TAB: FLEET ═══ -->
   <div id="tab-fleet">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px"  data-s="member.fleetAvail"></div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
     <div id="fleetByCat"></div>
   </div>
 
   <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
   <div id="tab-trips" class="hidden">
-    <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5" id="tripTabHint">
-    </p>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px"  data-s="member.recentTrips"></div>
-    <div id="clubTrips"><div class="empty-note">Loading…</div></div>
+    <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5" id="tripTabHint"></p>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.recentTrips"></div>
+    <div id="clubTrips"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div style="margin-top:12px">
-      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManually">
-      </button>
+      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManually"></button>
     </div>
   </div>
 
@@ -145,17 +139,17 @@
       <div class="stat-box"><div class="sn" id="stBoat">—</div> <div class="sl" data-s="member.statBoat"></div></div>
       <div class="stat-box"><div class="sn" id="stSeason">—</div><div class="sl" data-s="member.statSeason"></div></div>
     </div>
-    <div id="logbookList"><div class="empty-note">Loading…</div></div>
+    <div id="logbookList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
   <!-- ═══ TAB: CERTIFICATIONS ═══ -->
   <div id="tab-certs" class="hidden">
-    <div id="certsList"><div class="empty-note">Loading…</div></div>
+    <div id="certsList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
 </div><!-- /container -->
 
-<!-- ══ TRIP DETAIL MODAL (logbook) ══ -->
+<!-- ══ TRIP DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="tripDetailModal" onclick="if(event.target===this)closeModal('tripDetailModal')">
   <div class="modal" style="max-width:440px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -171,19 +165,19 @@
 <div class="modal-overlay hidden" id="crewModal" onclick="if(event.target===this)closeModal('crewModal')">
   <div class="modal" style="max-width:400px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0">Add to logbook as crew</h3>
+      <h3 style="margin:0" id="crewModalTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('crewModal')"
         style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div id="crewTripSummary" style="background:var(--surface);border:1px solid var(--border);
       border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px"></div>
     <div class="field">
-      <label>Notes (optional)</label>
-      <input type="text" id="crewNotes" placeholder="Any notes about your trip…">
+      <label data-s="lbl.notes"></label>
+      <input type="text" id="crewNotes">
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('crewModal')">Cancel</button>
-      <button class="btn btn-primary"   onclick="submitCrewLog()">Add to my logbook</button>
+      <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary"   onclick="submitCrewLog()"         id="crewSubmitBtn"></button>
     </div>
     <div id="crewErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
   </div>
@@ -193,31 +187,31 @@
 <div class="modal-overlay hidden" id="manualTripModal" onclick="if(event.target===this)closeModal('manualTripModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0">Log a Trip</h3>
+      <h3 style="margin:0" id="manualTripTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('manualTripModal')"
         style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div class="field">
-      <label>Date</label>
+      <label data-s="lbl.date"></label>
       <input type="date" id="rDate">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>Boat</label>
-        <select id="rBoat"><option value="">Select…</option></select></div>
-      <div class="field"><label>Location</label>
-        <select id="rLocation"><option value="">Select…</option></select></div>
+      <div class="field"><label data-s="lbl.boat"></label>
+        <select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
+      <div class="field"><label data-s="lbl.location"></label>
+        <select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>Departed</label><input type="time" id="rTimeOut"></div>
-      <div class="field"><label>Returned</label><input type="time" id="rTimeIn"></div>
+      <div class="field"><label id="rDepartedLabel"></label><input type="time" id="rTimeOut"></div>
+      <div class="field"><label id="rReturnedLabel"></label><input type="time" id="rTimeIn"></div>
     </div>
     <div class="field">
-      <label>Notes</label>
-      <input type="text" id="rNotes" placeholder="Optional…">
+      <label data-s="lbl.notes"></label>
+      <input type="text" id="rNotes">
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('manualTripModal')">Cancel</button>
-      <button class="btn btn-primary"   onclick="submitManualTrip()">Save Trip</button>
+      <button class="btn btn-secondary" onclick="closeModal('manualTripModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary"   onclick="submitManualTrip()"            id="manualTripSaveBtn"></button>
     </div>
     <div id="manualTripErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
   </div>
@@ -227,7 +221,7 @@
 <div class="modal-overlay hidden" id="launchModal" onclick="if(event.target===this)closeModal('launchModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="launchModalTitle">Launch a Boat</h3>
+      <h3 style="margin:0" id="launchModalTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('launchModal')"
         style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
@@ -239,7 +233,7 @@
 <div class="modal-overlay hidden" id="returnModal" onclick="if(event.target===this)closeModal('returnModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0">Check In</h3>
+      <h3 style="margin:0" id="returnModalTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('returnModal')"
         style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
@@ -255,14 +249,32 @@ let certDefs=[], currentWx=null;
 let launchBoat=null, returnCo=null, pendingCrewTrip=null;
 let tripsLoaded=false, logbookLoaded=false, certsLoaded=false;
 const L = getLang();
+
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
-  document.getElementById('welcomeName').textContent = user.name || 'Member Hub';
+  applyStrings(); // ← FIXED: was applystrings() (wrong case)
+
+  document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';
-  applystrings();
-  document.getElementById('tripTabHint').innerHTML = s("member.tripsTapHint").replace('crew','<strong>'+s("member.crewRole")+'</strong>');
-  
+
+  // Wire modal titles and dynamic labels
+  document.getElementById('launchModalTitle').textContent  = s('member.launchTitle');
+  document.getElementById('returnModalTitle').textContent  = s('member.checkInTitle');
+  document.getElementById('manualTripTitle').textContent   = s('member.manualTrip');
+  document.getElementById('crewModalTitle').textContent    = s('member.addAsCrew');
+  document.getElementById('crewSubmitBtn').textContent     = s('member.addAsCrew');
+  document.getElementById('manualTripSaveBtn').textContent = s('btn.save');
+  document.getElementById('rBoatOpt').textContent          = s('lbl.selectDots');
+  document.getElementById('rLocOpt').textContent           = s('lbl.selectDots');
+  document.getElementById('rDepartedLabel').textContent    = s('member.departed');
+  document.getElementById('rReturnedLabel').textContent    = s('member.returned');
+  document.getElementById('crewNotes').placeholder         = s('lbl.optional');
+  document.getElementById('rNotes').placeholder            = s('lbl.optional');
+
+  // Trip tab hint
+  document.getElementById('tripTabHint').textContent = s('member.tripsTapHint');
+
   wxWidget(document.getElementById('wxWidget'), {
     onData: snap => { currentWx = snap; },
   }).start();
@@ -282,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFleetByCat();
   } catch(e) {
     document.getElementById('activeList').innerHTML =
-      `<div class="empty-note" style="color:var(--red)"${s("member.noCheckouts")}</div>`;
+      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 });
 
@@ -302,7 +314,7 @@ function showTab(name) {
 function renderFleetByCat() {
   const el     = document.getElementById('fleetByCat');
   const active = checkouts.filter(c => c.status === 'out');
-  if (!boats.length) { el.innerHTML='<div class="empty-note">${s("member.noBoats")}</div>'; return; }
+  if (!boats.length) { el.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
 
   const grouped = {};
   boats.forEach(b => {
@@ -312,96 +324,75 @@ function renderFleetByCat() {
   });
 
   el.innerHTML = Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat, catBoats]) => {
-    const avail = catBoats.filter(b => {
-      return !active.find(c => c.boatId===b.id) && !(b.oos===true||b.oos==='true');
-    }).length;
+    const avail = catBoats.filter(b => !active.find(c=>c.boatId===b.id) && !boolVal(b.oos)).length;
     const cards = catBoats.map(b => {
-      const co  = active.find(c => c.boatId===b.id);
-      const oos = b.oos===true||b.oos==='true';
-      const status = co ? 'out' : (oos ? 'oos' : 'avail');
-      return `<div class="${status==='avail'?'':''}">` +
-        renderBoatCard(b, {
-          status, checkoutData: co,
-          onClick: status==='avail' ? `launchBoatById('${b.id}')` : null,
-        }) + '</div>';
+      const co     = active.find(c => c.boatId===b.id);
+      const oos    = boolVal(b.oos);
+      const status = oos ? 'oos' : co ? 'out' : 'avail';
+      return renderBoatCard(b, {
+        status, checkoutData: co,
+        onClick: status==='avail' ? `launchBoatById('${b.id}')` : undefined,
+      });
     }).join('');
-    const catId = 'mcat-'+cat.replace(/\s+/g,'_');
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-      padding:4px 16px;margin-bottom:8px">
-      <div class="boat-cat-toggle" onclick="toggleBoatCat('${catId}')">
-        <span class="bct-label">${boatEmoji(cat)} <span style="text-transform:capitalize">${esc(cat)}</span></span>
-        <span style="display:flex;align-items:center;gap:8px">
-          <span class="bct-count">${s("staff.availCount",{n:avail})}</span>
-          <span class="bct-arrow" id="${catId}-arrow">▼</span>
+    return `<div>
+      <div class="boat-cat-toggle" onclick="toggleCat(this)">
+        <span class="bct-label">${boatEmoji(cat)} ${esc(cat)}</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="bct-count">${avail}/${catBoats.length}</span>
+          <span class="bct-arrow">▼</span>
         </span>
       </div>
-      <div class="boat-cat-body" id="${catId}">
+      <div class="boat-cat-body">
         <div class="boat-cat-grid">${cards}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function toggleBoatCat(id) {
-  const body  = document.getElementById(id);
-  const arrow = document.getElementById(id+'-arrow');
+function toggleCat(toggle) {
+  const body  = toggle.nextElementSibling;
+  const arrow = toggle.querySelector('.bct-arrow');
   const open  = body.classList.toggle('open');
-  arrow?.classList.toggle('open', open);
+  arrow.classList.toggle('open', open);
 }
 
 // ══ ACTIVE CHECKOUTS ═════════════════════════════════════════════════════════
 function renderActiveCheckouts() {
   const el   = document.getElementById('activeList');
-  const mine = checkouts.filter(c =>
-    c.status==='out' && c.memberKennitala === user.kennitala
-  );
-  if (!mine.length) { el.innerHTML='<div class="empty-note">No active checkouts.</div>'; return; }
+  const mine = checkouts.filter(c => c.status==='out' && c.memberKennitala===user.kennitala);
+  if (!mine.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
+  boatRegistry.setCos(mine);
   el.innerHTML = mine.map(c =>
     renderCheckoutCard(c, {
+      isMe: true,
+      staffView: false,
       onReturn: `openReturnModal('${c.id}')`,
     })
   ).join('');
 }
 
-// ══ TRIPS TAB — recent 24h, add as crew ══════════════════════════════════════
+// ══ TRIPS TAB ════════════════════════════════════════════════════════════════
 async function loadTripsTab() {
   const el = document.getElementById('clubTrips');
   try {
-    const res = await apiGet('getTrips', { limit: 120 });
-    allTrips   = res.trips || [];
+    const res = await apiGet('getActiveCheckouts');
+    // Show recently returned trips (in last 24h)
+    allTrips = (res.checkouts||[]).filter(c => c.status==='in');
     tripsLoaded = true;
-    renderRecentTrips();
+    renderClubTrips();
   } catch(e) {
-    el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s("toast.loadFailed")}</div>`;
+    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 }
 
-function renderRecentTrips() {
-  const el      = document.getElementById('clubTrips');
-  const now     = Date.now();
-  const cutoff  = now - 24*60*60*1000;
-  const todayStr= new Date().toISOString().slice(0,10);
-  const yestStr = new Date(now-86400000).toISOString().slice(0,10);
-
-  const recent = allTrips.filter(t => {
-    if (!t.date) return false;
-    if (t.date !== todayStr && t.date !== yestStr) return false;
-    if (t.timeIn) {
-      const ts = new Date(t.date+'T'+t.timeIn).getTime();
-      if (!isNaN(ts) && ts < cutoff) return false;
-    }
-    return true;
-  });
-
-  if (!recent.length) { el.innerHTML='<div class="empty-note">${s("member.noTrips")}</div>'; return; }
-
-  el.innerHTML = recent.map(t => {
-    const isMe = String(t.kennitala||'') === String(user.kennitala);
+function renderClubTrips() {
+  const el = document.getElementById('clubTrips');
+  if (!allTrips.length) { el.innerHTML = `<div class="empty-note">${s('member.noRecent')}</div>`; return; }
+  el.innerHTML = allTrips.map(t => {
+    const isMe = t.memberKennitala === user.kennitala;
     const roleTag = isMe
-      ? `<span style="font-size:9px;background:var(--brass)22;color:var(--brass);
-          border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">SKIPPER</span>`
-      : `<span style="font-size:9px;background:var(--surface);color:var(--muted);
-          border:1px solid var(--border);border-radius:8px;padding:1px 6px">Add as crew →</span>`;
+      ? `<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">${s('member.skipper').toUpperCase()}</span>`
+      : `<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">${s('member.addAsCrew')} →</span>`;
     return `<div class="pub-trip" onclick="${isMe?'void 0':`openCrewModal('${esc(t.id)}')`}"
       style="cursor:${isMe?'default':'pointer'}">
       <div class="pub-trip-head">
@@ -414,7 +405,7 @@ function renderRecentTrips() {
             <span>👥 ${esc(t.crew||1)}</span>
             ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
           </div>
-          ${t.memberName ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${s("member.skipper")}: ${esc(t.memberName)}</div>` : ''}
+          ${t.memberName ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${s('member.skipper')}: ${esc(t.memberName)}</div>` : ''}
         </div>
         <div>${roleTag}</div>
       </div>
@@ -422,7 +413,7 @@ function renderRecentTrips() {
   }).join('');
 }
 
-// ── Crew modal ────────────────────────────────────────────────────────────────
+// ══ CREW MODAL ═══════════════════════════════════════════════════════════════
 function openCrewModal(tripId) {
   const t = allTrips.find(x => x.id === tripId);
   if (!t) return;
@@ -430,7 +421,7 @@ function openCrewModal(tripId) {
   document.getElementById('crewTripSummary').innerHTML =
     `<div style="font-weight:500">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
      <div style="color:var(--muted);margin-top:4px">${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
-     <div style="color:var(--muted);font-size:11px;margin-top:3px">Skipper: ${esc(t.memberName||'—')}</div>`;
+     <div style="color:var(--muted);font-size:11px;margin-top:3px">${s('member.skipper')}: ${esc(t.memberName||'—')}</div>`;
   document.getElementById('crewNotes').value = '';
   document.getElementById('crewErr').style.display = 'none';
   openModal('crewModal');
@@ -442,29 +433,18 @@ async function submitCrewLog() {
   if (!t) return;
   try {
     await apiPost('saveTrip', {
-      kennitala:   user.kennitala,
-      memberName:  user.name,
-      memberId:    user.id || user.kennitala,
-      date:        t.date,
-      boatId:      t.boatId,
-      boatName:    t.boatName,
-      locationId:  t.locationId,
-      locationName:t.locationName,
-      timeOut:     t.timeOut,
-      timeIn:      t.timeIn,
-      hoursDecimal:t.hoursDecimal,
-      crew:        t.crew,
-      beaufort:    t.beaufort,
-      windDir:     t.windDir,
-      notes:       document.getElementById('crewNotes').value.trim(),
-      role:        'crew',
-      isLinked:    true,
-      linkedCheckoutId: t.id,
+      kennitala:    user.kennitala, memberName: user.name, memberId: user.id||user.kennitala,
+      date: t.date, boatId: t.boatId, boatName: t.boatName,
+      locationId: t.locationId, locationName: t.locationName,
+      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
+      crew: t.crew, beaufort: t.beaufort, windDir: t.windDir,
+      notes: document.getElementById('crewNotes').value.trim(),
+      role: 'crew', isLinked: true, linkedCheckoutId: t.id,
     });
     closeModal('crewModal');
-    logbookLoaded = false;  // invalidate cache
-    showMsg('✓ Added to your logbook as crew.','ok');
-  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
+    logbookLoaded = false;
+    showToast(s('toast.saved'));
+  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
 }
 
 // ══ LOGBOOK TAB ══════════════════════════════════════════════════════════════
@@ -477,21 +457,17 @@ async function loadLogbookTab() {
     renderStats();
     renderLogbook();
   } catch(e) {
-    el.innerHTML=`<div class="empty-note" style="color:var(--red)">Could not load logbook.</div>`;
+    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 }
 
 function renderStats() {
-  const now  = new Date();
-  const year = now.getFullYear();
+  const year   = new Date().getFullYear();
   const season = myTrips.filter(t => (t.date||'').startsWith(String(year)));
   const hours  = myTrips.reduce((s,t) => s+(parseFloat(t.hoursDecimal)||0), 0);
-
-  // Most-sailed boat
   const boatCount = {};
   myTrips.forEach(t => { if (t.boatName) boatCount[t.boatName] = (boatCount[t.boatName]||0)+1; });
   const topBoat = Object.entries(boatCount).sort(([,a],[,b])=>b-a)[0];
-
   document.getElementById('stTrips').textContent  = myTrips.length;
   document.getElementById('stHours').textContent  = hours.toFixed(0)+'h';
   document.getElementById('stBoat').textContent   = topBoat ? topBoat[0] : '—';
@@ -500,17 +476,17 @@ function renderStats() {
 
 function renderLogbook() {
   const el = document.getElementById('logbookList');
-  if (!myTrips.length) { el.innerHTML='<div class="empty-note">${s("member.noTrips")}</div>'; return; }
+  if (!myTrips.length) { el.innerHTML = `<div class="empty-note">${s('member.noTrips')}</div>`; return; }
   el.innerHTML = myTrips.map(t => {
-    const roleTag = (t.role==='crew')
-      ? `<span style="font-size:9px;color:var(--muted)">${s("member.crewRole")}/span>` : '';
+    const roleTag = t.role==='crew'
+      ? `<span style="font-size:9px;color:var(--muted)"> · ${s('member.crewRole')}</span>` : '';
     return `<div class="trip-row" onclick="openTripDetail('${esc(t.id)}')">
       <div class="trip-label">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}${roleTag}</div>
       <div class="trip-sub">
         ${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} ·
-        ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h ·
-        ${t.beaufort ? `💨 Bft ${esc(t.beaufort)}` : ''}
-        ${t.verified&&t.verified!=='false' ? ' · ✓ verified' : ''}
+        ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h
+        ${t.beaufort ? ` · 💨 Bft ${esc(t.beaufort)}` : ''}
+        ${t.verified&&t.verified!=='false' ? ' · ✓' : ''}
       </div>
     </div>`;
   }).join('');
@@ -521,17 +497,17 @@ function openTripDetail(id) {
   if (!t) return;
   document.getElementById('tdTitle').textContent = (t.boatName||'Trip') + ' · ' + (t.date||'');
   const rows = [
-    [s("lbl.boat"),     t.boatName||'—'],
-    [s("lbl.location"), t.locationName||'—'],
-    [s("lbl.date"),     t.date||'—'],
-    [s("member.departed"), t.timeOut||'—'],
-    [s("member.returned"), t.timeIn||'—'],
-    [s("member.duration"),   (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],
-    [s("lbl.crew"),     t.crew||1],
-    t.beaufort ? ['Wind',    `Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`] : null,
-    t.notes ? ['Notes',    t.notes] : null,
-    [s("lbl.role"),     t.role||s("member.skipper")],
-    [s("lbl.status"),     (t.verified&&t.verified!=='false') ? s("lbl.verified") : s("lbl.pending")],
+    [s('lbl.boat'),        t.boatName||'—'],
+    [s('lbl.location'),    t.locationName||'—'],
+    [s('lbl.date'),        t.date||'—'],
+    [s('member.departed'), t.timeOut||'—'],
+    [s('member.returned'), t.timeIn||'—'],
+    [s('member.duration'), (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],
+    [s('lbl.crew'),        t.crew||1],
+    t.beaufort ? ['Wind', `Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`] : null,
+    t.notes ? [s('lbl.notes'), t.notes] : null,
+    [s('lbl.role'),   t.role||s('member.skipper')],
+    [s('lbl.status'), (t.verified&&t.verified!=='false') ? s('lbl.verified') : s('lbl.pending')],
     t.staffComment ? ['Staff note', t.staffComment] : null,
   ].filter(Boolean);
   document.getElementById('tdBody').innerHTML = rows.map(([l,v]) =>
@@ -555,10 +531,7 @@ async function loadCertsTab() {
     certsLoaded = true;
     const member = mRes.member || mRes;
     const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
-    if (!certs.length) {
-      el.innerHTML='<div class="empty-note">${s("cert.noCerts")}</div>'; return;
-    }
-    // Group by cert definition
+    if (!certs.length) { el.innerHTML = `<div class="empty-note">${s('cert.noCerts')}</div>`; return; }
     const grouped = {};
     certs.forEach(c => {
       const key = c.def?.name || c.certId;
@@ -571,82 +544,61 @@ async function loadCertsTab() {
         <div>${items.map(certBadgeHTML).join('')}</div>
       </div>`).join('');
   } catch(e) {
-    el.innerHTML=`<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>`;
+    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 }
 
-// ══ LAUNCH / RETURN (stubs — wire to shared/boats.js flow) ═══════════════════
-function openLaunchPicker() { openModal('launchModal'); renderLaunchPicker(); }
-function launchBoatById(id) { launchBoat = boats.find(b=>b.id===id)||null; openModal('launchModal'); renderLaunchPicker(id); }
-function openReturnModal(coId) { returnCo = checkouts.find(c=>c.id===coId)||null; openModal('returnModal'); renderReturnForm(); }
-function openCheckInPicker() {
+// ══ LAUNCH / CHECK-IN ════════════════════════════════════════════════════════
+function openLaunchPicker()     { openModal('launchModal'); renderLaunchPicker(); }
+function launchBoatById(id)     { openModal('launchModal'); renderLaunchPicker(id); }
+function openCheckInPicker()    {
   const mine = checkouts.filter(c=>c.status==='out'&&c.memberKennitala===user.kennitala);
-  if (!mine.length) { showMsg('No active checkouts to check in.','warn'); return; }
+  if (!mine.length) { showToast(s('member.noCheckouts'), 'warn'); return; }
   if (mine.length===1) { openReturnModal(mine[0].id); return; }
   openModal('returnModal');
   document.getElementById('returnModalBody').innerHTML =
     mine.map(c=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:8px;text-align:left"
-      onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — out since ${esc((c.checkedOutAt||c.timeOut||'').slice(0,5))}</button>`).join('');
+      onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc((c.checkedOutAt||c.timeOut||'').slice(0,5))}</button>`).join('');
+}
+function openReturnModal(coId) {
+  returnCo = checkouts.find(c=>c.id===coId)||null;
+  openModal('returnModal');
+  renderReturnForm();
 }
 
 function renderLaunchPicker(preselectedBoatId) {
-  const active  = checkouts.filter(c=>c.status==='out');
-  const avail   = boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!(b.oos===true||b.oos==='true'));
+  const active = checkouts.filter(c=>c.status==='out');
+  const avail  = boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
   if (!avail.length) {
-    document.getElementById('launchModalBody').innerHTML='<div class="empty-note">No boats currently available.</div>'; return;
+    document.getElementById('launchModalBody').innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return;
   }
-  // If we have a preselected boat, show the checklist/confirm form
   const selected = preselectedBoatId ? avail.find(b=>b.id===preselectedBoatId) : null;
-  if (selected) {
-    renderLaunchForm(selected);
-  } else {
-    // Show boat picker
-    const grouped={};
-    avail.forEach(b=>{ const cat=(b.category||'other').toLowerCase(); if(!grouped[cat])grouped[cat]=[]; grouped[cat].push(b); });
-    document.getElementById('launchModalBody').innerHTML =
-      Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
-        `<div style="margin-bottom:12px">
-          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${boatEmoji(cat)} ${esc(cat)}</div>
-          ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
-            onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">
-            ⛵ ${esc(b.name)}</button>`).join('')}
-        </div>`
-      ).join('');
-  }
+  if (selected) { renderLaunchForm(selected); return; }
+  const grouped={};
+  avail.forEach(b=>{ const cat=(b.category||'other').toLowerCase(); if(!grouped[cat])grouped[cat]=[]; grouped[cat].push(b); });
+  document.getElementById('launchModalBody').innerHTML =
+    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
+      `<div style="margin-bottom:12px">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${boatEmoji(cat)} ${esc(cat)}</div>
+        ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
+          onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
+      </div>`
+    ).join('');
 }
 
 function renderLaunchForm(boat) {
   if (!boat) return;
   launchBoat = boat;
-  document.getElementById('launchModalTitle').textContent = 'Launch — ' + boat.name;
-  const cat = (boat.category||'dinghy').toLowerCase();
-  const CHECKLISTS = {
-    dinghy:   ['Life jacket fitted and fastened','Buoyancy aid for each crew member','Rudder and tiller attached correctly','Centreboard / daggerboard present','Mainsheet and jib sheets uncoiled','Bailer and paddle on board','Check forecast — conditions acceptable'],
-    keelboat: ['Life jackets for all crew','Engine fuel & oil levels checked','Engine starts and in neutral','Navigation lights operational','VHF radio on and charged','Flares in date and accessible','Safety tether / harness available','MOB equipment ready','Lines and fenders stowed','Check forecast — conditions acceptable'],
-    catamaran:['Life jackets for all crew','Both hulls dry — no ingress','Trampoline secure — no damage','Both rudder assemblies fitted','Both centreboards / foils checked','Mainsheet and traveller free','Check forecast — conditions acceptable'],
-    kayak:    ['Paddle float and spare paddle','Spray deck fitted correctly','Dry bag with emergency kit','Whistle and light attached','Check forecast — conditions acceptable'],
-  };
-  const checklist = CHECKLISTS[cat] || CHECKLISTS.dinghy;
+  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
+  const locOpts = locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
   document.getElementById('launchModalBody').innerHTML = `
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">PRE-LAUNCH CHECKLIST</div>
-    <div style="margin-bottom:14px">
-      ${checklist.map((item,i)=>`
-        <label style="display:flex;align-items:center;gap:10px;padding:6px 0;
-          border-bottom:1px solid var(--border)44;cursor:pointer;font-size:12px">
-          <input type="checkbox" id="cl_${i}" style="width:15px;height:15px;accent-color:var(--green)">
-          ${esc(item)}
-        </label>`).join('')}
+    <div class="field"><label>${s('lbl.location')}</label>
+      <select id="launchLocation"><option value="">${s('lbl.selectDots')}</option>${locOpts}</select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="field"><label>${s('staff.coForm.departure')}</label><input type="time" id="launchTimeOut" value="${fmtTimeNow()}"></div>
+      <div class="field"><label>${s('staff.coForm.estReturn')}</label><input type="time" id="launchReturnBy"></div>
     </div>
-    <div class="field">
-      <label>Location</label>
-      <select id="launchLocation">${locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>Departure</label><input type="time" id="launchTimeOut" value="${new Date().toTimeString().slice(0,5)}"></div>
-      <div class="field"><label>Est. return</label><input type="time" id="launchReturnBy"></div>
-    </div>
-    <div class="field">
-      <label>Crew (incl. yourself)</label>
+    <div class="field"><label>${s('staff.coForm.crew')}</label>
       <div style="display:flex;align-items:center;gap:12px">
         <button type="button" onclick="adjLaunchCrew(-1)"
           style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>
@@ -657,8 +609,8 @@ function renderLaunchForm(boat) {
     </div>
     <div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="renderLaunchPicker()">← Back</button>
-      <button class="btn btn-primary"   onclick="submitLaunch()">Launch ⛵</button>
+      <button class="btn btn-secondary" onclick="renderLaunchPicker()">← ${s('nav.back').replace('← ','')}</button>
+      <button class="btn btn-primary"   onclick="submitLaunch()">⛵ ${s('member.launchBoat').replace('⛵ ','')}</button>
     </div>`;
   window._launchCrewCount = 1;
 }
@@ -673,7 +625,7 @@ async function submitLaunch() {
   const lid = document.getElementById('launchLocation')?.value;
   const tout= document.getElementById('launchTimeOut')?.value;
   const ret = document.getElementById('launchReturnBy')?.value;
-  if (!lid) { err.textContent='Select a location.'; err.style.display='block'; return; }
+  if (!lid) { err.textContent = s('staff.coForm.errLocation'); err.style.display='block'; return; }
   const location = locations.find(l=>l.id===lid)||{};
   const snap = (typeof wxSnapshot==='function') ? wxSnapshot(currentWx) : null;
   try {
@@ -691,59 +643,20 @@ async function submitLaunch() {
     closeModal('launchModal');
     renderActiveCheckouts();
     renderFleetByCat();
-    showMsg('✓ Safe sailing!','ok');
-  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
+    showToast(s('staff.coForm.checkedOut'));
+  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
 }
 
 function renderReturnForm() {
-  const co = returnCo;
-  if (!co) return;
+  if (!returnCo) return;
+  document.getElementById('returnModalTitle').textContent = s('member.checkInTitle') + ' — ' + (returnCo.boatName||'');
   document.getElementById('returnModalBody').innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-      padding:12px 14px;margin-bottom:14px;font-size:12px">
-      <div style="font-weight:500">${esc(co.boatName||'—')}</div>
-      <div style="color:var(--muted);margin-top:3px">
-        Departed ${esc((co.checkedOutAt||co.timeOut||'').slice(0,5))} · ${esc(co.locationName||'—')}
-      </div>
-    </div>
-    <div class="field">
-      <label>Return time</label>
-      <input type="time" id="retTimeIn" value="${new Date().toTimeString().slice(0,5)}">
-    </div>
-    <div class="field">
-      <label>Any damage to report?</label>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button class="btn btn-secondary" id="dmgNone" onclick="setDamage(false)"
-          style="flex:1;border-color:var(--green)55;color:var(--green)">✓ No damage</button>
-        <button class="btn btn-secondary" id="dmgYes"  onclick="setDamage(true)"
-          style="flex:1;border-color:var(--orange)55;color:var(--orange)">⚠ Report issue</button>
-      </div>
-    </div>
-    <div id="damageFields" style="display:none;margin-top:10px">
-      <div class="field"><label>Description</label>
-        <textarea id="dmgDesc" rows="2" style="width:100%;font-size:12px;resize:vertical"></textarea></div>
-      <div class="field"><label>Severity</label>
-        <select id="dmgSev">
-          <option value="low">Low — cosmetic</option>
-          <option value="medium">Medium — affects sailing</option>
-          <option value="high">High — unsafe</option>
-          <option value="critical">Critical — do not use</option>
-        </select>
-      </div>
-    </div>
-    <div id="retErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
-    <div class="btn-row" style="margin-top:12px">
-      <button class="btn btn-secondary" onclick="closeModal('returnModal')">Cancel</button>
-      <button class="btn btn-primary"   onclick="submitReturn('${co.id}')">✓ Check In</button>
+    <div class="field"><label>${s('lbl.time')}</label><input type="time" id="retTimeIn" value="${fmtTimeNow()}"></div>
+    <div id="retErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('returnModal')" data-s="btn.cancel">${s('btn.cancel')}</button>
+      <button class="btn btn-primary"   onclick="submitReturn('${returnCo.id}')">${s('staff.checkIn')}</button>
     </div>`;
-  window._reportDamage = false;
-}
-
-function setDamage(yes) {
-  window._reportDamage = yes;
-  document.getElementById('dmgNone').style.fontWeight = yes ? '' : 'bold';
-  document.getElementById('dmgYes').style.fontWeight  = yes ? 'bold' : '';
-  document.getElementById('damageFields').style.display = yes ? '' : 'none';
 }
 
 async function submitReturn(coId) {
@@ -755,39 +668,23 @@ async function submitReturn(coId) {
     await apiPost('checkIn',{ id:coId, timeIn,
       kennitala:user.kennitala, memberName:user.name,
       boatId:co.boatId, boatName:co.boatName,
-      locationId:co.locationId, locationName:co.locationName,
-      checkedOutAt:co.checkedOutAt||co.timeOut,
-      launchBeaufort:currentWx?.bft ? String(currentWx.bft) : '',
-      launchWindDir:currentWx?.dir || '',
-      launchWaveHeight:currentWx?.wv!=null ? String(currentWx.wv) : '',
     });
-    if (window._reportDamage) {
-      const desc = document.getElementById('dmgDesc')?.value.trim();
-      const sev  = document.getElementById('dmgSev')?.value;
-      if (desc) {
-        await apiPost('saveMaintenance',{
-          category:'boat', boatId:co.boatId, boatName:co.boatName,
-          reportedByKt:user.kennitala, reportedBy:user.name,
-          description:desc, severity:sev, checkoutId:coId, source:'member-checkin',
-        });
-      }
-    }
     checkouts = (await apiGet('getActiveCheckouts')).checkouts||[];
     closeModal('returnModal');
     renderActiveCheckouts();
     renderFleetByCat();
     logbookLoaded = false;
-    showMsg(window._reportDamage?'✓ Return logged. Damage report submitted.':'✓ Safe return logged.','ok');
-  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
+    showToast(s('toast.checkedIn'));
+  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
 }
 
-// ══ MANUAL TRIP ═══════════════════════════════════════════════════════════════
+// ══ MANUAL TRIP MODAL ════════════════════════════════════════════════════════
 function openManualTripModal() {
   document.getElementById('rDate').value    = new Date().toISOString().slice(0,10);
   document.getElementById('rTimeOut').value = '';
   document.getElementById('rTimeIn').value  = '';
   document.getElementById('rNotes').value   = '';
-  document.getElementById('manualTripErr').style.display='none';
+  document.getElementById('manualTripErr').style.display = 'none';
   openModal('manualTripModal');
 }
 
@@ -798,7 +695,7 @@ async function submitManualTrip() {
   const lid   = document.getElementById('rLocation').value;
   const tout  = document.getElementById('rTimeOut').value;
   const tin   = document.getElementById('rTimeIn').value;
-  if (!date||!bid) { err.textContent='Date and boat are required.'; err.style.display='block'; return; }
+  if (!date||!bid) { err.textContent = s('lbl.date')+' + '+s('lbl.boat')+' required.'; err.style.display='block'; return; }
   const boat     = boats.find(b=>b.id===bid)||{};
   const location = locations.find(l=>l.id===lid)||{};
   const h = tout&&tin ? ((new Date('2000-01-01T'+tin).getTime()-new Date('2000-01-01T'+tout).getTime())/3600000) : 0;
@@ -813,34 +710,22 @@ async function submitManualTrip() {
       role:'skipper',
     });
     closeModal('manualTripModal');
-    logbookLoaded=false;
-    showMsg('✓ Trip saved to logbook.','ok');
-  } catch(e) { err.textContent='Error: '+e.message; err.style.display='block'; }
+    logbookLoaded = false;
+    showToast(s('toast.saved'));
+  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
 }
 
 // ══ FORM SELECTS ══════════════════════════════════════════════════════════════
 function populateFormSelects() {
-  ['rBoat','manualBoat'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Select…</option>';
-    boats.forEach(b => {
-      const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; sel.appendChild(o);
-    });
-  });
-  ['rLocation','manualLoc'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Select…</option>';
-    locations.forEach(l => {
-      const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; sel.appendChild(o);
-    });
-  });
-  // Also populate the manual trip modal selects
   const rBoat = document.getElementById('rBoat');
   const rLoc  = document.getElementById('rLocation');
-  if (rBoat) { rBoat.innerHTML='<option value="">Select…</option>'; boats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;rBoat.appendChild(o);}); }
-  if (rLoc)  { rLoc.innerHTML='<option value="">Select…</option>';  locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);}); }
+  boats.forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; rBoat.appendChild(o); });
+  locations.forEach(l=>{ const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; rLoc.appendChild(o); });
+}
+
+function parseJson(v, fallback) {
+  if (!v) return fallback;
+  try { return typeof v==='string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
 }
 </script>
 </body>
