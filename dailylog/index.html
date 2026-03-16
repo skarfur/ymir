@@ -645,9 +645,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const snap = await wxFetch(WX_DEFAULT.lat, WX_DEFAULT.lon);
       if (snap) {
-        await wxLoadFlagConfig().catch(()=>{});
-        const flag = wxCalcFlag(snap);
-        wxData = { ...snap, flagKey: flag.key };
+        if (typeof wxLoadFlagConfig === "function") wxLoadFlagConfig(null);
+        wxData = snap;
       }
     } catch(e) {}
   }
