@@ -718,6 +718,7 @@
 const user = requireAuth(isAdmin);
 
 let members = [], boats = [], locations = [], clItems = [], actTypes = [];
+let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
@@ -740,12 +741,14 @@ async function loadAll() {
     const [mRes, cfgRes] = await Promise.all([ apiGet("getMembers"), apiGet("getConfig") ]);
     loadAlertConfig(cfgRes.overdueAlerts);
     loadFlagConfigPanel(cfgRes.flagConfig);
-    members  = mRes.members || [];
-    actTypes = cfgRes.activityTypes || [];
-    clItems  = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
-    certDefs = certDefsFromConfig(cfgRes.certDefs || []);
-    try { boats     = (await apiGet("getBoats")).boats         || []; } catch(e) { console.warn("getBoats:", e.message); }
-    try { locations = (await apiGet("getLocations")).locations || []; } catch(e) { console.warn("getLocations:", e.message); }
+    members       = mRes.members || [];
+    actTypes      = cfgRes.activityTypes || [];
+    clItems       = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
+    certDefs      = certDefsFromConfig(cfgRes.certDefs || []);
+    _allBoats     = cfgRes.boats     || [];   // full list incl. inactive
+    _allLocations = cfgRes.locations || [];   // full list incl. inactive
+    boats     = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
+    locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
   } catch(e) { console.error("loadAll:", e); }
   renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
@@ -985,31 +988,40 @@ function openBoatModal(id) {
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
+ 
+  const id      = editingId || ("boat_" + Date.now().toString(36));
   const payload = {
-    id:        editingId,
-    name,
+    id, name,
     category:  document.getElementById("bCategory").value,
     oos:       document.getElementById("bOOS").checked,
     oosReason: document.getElementById("bOOSReason").value.trim(),
     active:    document.getElementById("bActive").checked,
   };
-  await saveEntity({
-    apiAction: "saveBoat",
-    getArray:  () => boats,
-    setArray:  arr => { boats = arr; },
-    payload, modalId: "boatModal",
-    renderFn:  renderBoats,
-  });
+ 
+  // Update full list (preserves inactive items)
+  const idx = _allBoats.findIndex(x => x.id === id);
+  if (idx >= 0) _allBoats[idx] = { ..._allBoats[idx], ...payload };
+  else          _allBoats.push(payload);
+ 
+  try {
+    await apiPost("saveConfig", { boats: _allBoats });
+    boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
+    closeModal("boatModal");
+    renderBoats();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
 }
 
 async function deleteBoat(id) {
   const _id = id || editingId;
   if (!confirm("Delete this boat?")) return;
+  _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
   try {
-    await apiPost("deleteBoat", { id: _id });
-    boats = boats.filter(b => b.id !== _id);
+    await apiPost("saveConfig", { boats: _allBoats });
+    boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
     renderBoats();
     closeModal("boatModal");
+    toast(s("toast.deleted"));
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
@@ -1039,27 +1051,36 @@ function openLocationModal(id) {
 async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
-  const payload = { id: editingId, name, active: document.getElementById("lActive").checked };
-  await saveEntity({
-    apiAction: "saveLocation",
-    getArray:  () => locations,
-    setArray:  arr => { locations = arr; },
-    payload, modalId: "locationModal",
-    renderFn:  renderLocations,
-  });
+ 
+  const id      = editingId || ("loc_" + Date.now().toString(36));
+  const payload = { id, name, active: document.getElementById("lActive").checked };
+ 
+  const idx = _allLocations.findIndex(x => x.id === id);
+  if (idx >= 0) _allLocations[idx] = { ..._allLocations[idx], ...payload };
+  else          _allLocations.push(payload);
+ 
+  try {
+    await apiPost("saveConfig", { locations: _allLocations });
+    locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
+    closeModal("locationModal");
+    renderLocations();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
 }
 
 async function deleteLocation(id) {
   const _id = id || editingId;
   if (!confirm("Delete this location?")) return;
+  _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
   try {
-    await apiPost("deleteLocation", { id: _id });
-    locations = locations.filter(l => l.id !== _id);
+    await apiPost("saveConfig", { locations: _allLocations });
+    locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
     renderLocations();
     closeModal("locationModal");
+    toast(s("toast.deleted"));
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
-
+  
 // ── Checklists ─────────────────────────────────────────────────────────────────
 function renderChecklists() { renderCLPhase("amCLCard", "am"); renderCLPhase("pmCLCard", "pm"); }
 
