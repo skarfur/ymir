@@ -729,6 +729,51 @@ async function submitLaunch() {
 }
 
 
+
+// ── Weather display helpers ─────────────────────────────────────────────────
+function _wxSnapHtml(snap) {
+  if (!snap) return '<div style="color:var(--muted);font-size:11px">No data</div>';
+  var dir   = snap.dir   || snap.wDir     || "";
+  var wv    = snap.wv    != null ? snap.wv    : snap.waveH;
+  var tc    = snap.tc    != null ? snap.tc    : snap.airT;
+  var feels = snap.feels != null ? snap.feels : snap.apparentT;
+  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
+  var rows = [];
+  if (snap.flag)               rows.push([fi[snap.flag]||"", snap.flag.toUpperCase()]);
+  if (snap.bft  != null)       rows.push(["💨", dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Bft"+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
+  if (wv   != null)            rows.push(["🌊", wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
+  if (tc   != null)            rows.push(["🌡", tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
+  if (snap.sst  != null)       rows.push(["🌊", "Sea "+snap.sst+"°C"]);
+  if (snap.pres != null)       rows.push(["📊", Math.round(snap.pres)+"hPa"+(snap.presTrend?" "+snap.presTrend:"")]);
+  if (snap.cond&&snap.cond.desc) rows.push([snap.cond.icon||"", snap.cond.desc]);
+  if (!rows.length)            rows.push(["", "No detail available"]);
+  return rows.map(function(r) {
+    return '<div style="display:flex;gap:6px;font-size:11px;padding:2px 0">' +
+      '<span style="width:16px;flex-shrink:0;text-align:center">' + r[0] + '</span>' +
+      '<span style="color:var(--text)">' + esc(String(r[1]).trim()) + '</span></div>';
+  }).join("");
+}
+
+function _updateWxDisplay() {
+  var sel   = document.querySelector('[name="wxChoice"]:checked');
+  var choice = sel ? sel.value : "checkout";
+  var panel  = document.getElementById("wxDetailPanel");
+  var snap = null;
+  if (choice === "checkout")     snap = window._retCoSnap;
+  else if (choice === "now")     snap = currentWx ? wxSnapshot(currentWx) : null;
+  else if (choice === "manual") {
+    var gn=function(id){var el=document.getElementById(id);return el&&el.value!=""?parseFloat(el.value):null;};
+    var gs=function(id){var el=document.getElementById(id);return el?el.value.trim():"";};
+    snap={bft:gn("manBft"),dir:gs("manDir"),ws:gn("manWs"),wg:gn("manWg"),
+      wv:gn("manWv"),waveDir:gs("manWaveDir"),tc:gn("manTc"),feels:gn("manFeels"),
+      pres:gn("manPres"),sst:gn("manSst"),flag:null,cond:null};
+  }
+  if (panel) panel.innerHTML = _wxSnapHtml(snap);
+  var mf = document.getElementById("wxManualFields");
+  if (mf) mf.style.display = choice === "manual" ? "grid" : "none";
+}
+
+
 function renderReturnForm() {
   if (!returnCo) return;
   document.getElementById('returnModalTitle').textContent =
