@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-  setInterval(pollOverdueAlerts, 120000); // poll every 2 min
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -431,6 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
+  setInterval(pollOverdueAlerts, 120000);
 });
 
 // ── Flag card — label/advice stay as FLAG_CONFIG (admin-editable) ─────────────
