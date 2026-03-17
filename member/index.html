@@ -426,7 +426,7 @@ function renderClubTrips() {
   el.innerHTML = allTrips.map(function(trip) {
     var isMe = trip.kennitala === user.kennitala || trip.memberKennitala === user.kennitala;
     var roleTag = isMe
-      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">' + (lang==='IS'?'Skipari':'Skipper').toUpperCase() + '</span>'
+      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">' + (getLang()==='IS'?'Skipari':'Skipper').toUpperCase() + '</span>'
       : '<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">' + s('member.addAsCrew') + ' →</span>';
     var wxBadge = parseWxBadge(trip);
     return '<div class="pub-trip" onclick="' + (isMe ? 'void 0' : 'openCrewModal(\''+esc(trip.id)+'\')') + '"'
@@ -440,7 +440,7 @@ function renderClubTrips() {
          +       '<span>👥 ' + esc(trip.crew||1) + '</span>'
          +     '</div>'
          +     wxBadge
-         +     (!isMe && trip.memberName ? '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + (lang==='IS'?'Skipari':'Skipper') + ': ' + esc(trip.memberName) + '</div>' : '')
+         +     (!isMe && trip.memberName ? '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + (getLang()==='IS'?'Skipari':'Skipper') + ': ' + esc(trip.memberName) + '</div>' : '')
          +   '</div>'
          +   '<div style="flex-shrink:0;padding-left:8px">' + roleTag + '</div>'
          + '</div>'
@@ -455,7 +455,7 @@ function openCrewModal(tripId) {
   document.getElementById('crewTripSummary').innerHTML =
     `<div style="font-weight:500">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
      <div style="color:var(--muted);margin-top:4px">${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
-     <div style="color:var(--muted);font-size:11px;margin-top:3px">${(lang==='IS'?'Skipari':'Skipper')}: ${esc(t.memberName||'—')}</div>`;
+     <div style="color:var(--muted);font-size:11px;margin-top:3px">${(getLang()==='IS'?'Skipari':'Skipper')}: ${esc(t.memberName||'—')}</div>`;
   document.getElementById('crewNotes').value = '';
   document.getElementById('crewErr').style.display = 'none';
   openModal('crewModal');
@@ -541,7 +541,7 @@ function openTripDetail(id) {
     [s('lbl.crew'),        t.crew||1],
     t.beaufort ? ['Wind', `Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`] : null,
     t.notes ? [s('lbl.notes'), t.notes] : null,
-    [s('lbl.role'),   t.role||(lang==='IS'?'Skipari':'Skipper')],
+    [s('lbl.role'),   t.role||(getLang()==='IS'?'Skipari':'Skipper')],
     [s('lbl.status'), (t.verified&&t.verified!=='false') ? s('lbl.verified') : s('lbl.pending')],
     t.staffComment ? ['Staff note', t.staffComment] : null,
   ].filter(Boolean);
