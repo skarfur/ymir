@@ -35,8 +35,12 @@ async function apiPost(action, payload) {
 async function _call(action, payload) {
   payload = payload || {};
   var body = JSON.stringify(Object.assign({ action: action, token: API_TOKEN }, payload));
-  var url  = SCRIPT_URL + "?p=" + encodeURIComponent(body);
-  var res  = await fetch(url, { redirect: "follow" });
+  var res  = await fetch(SCRIPT_URL, {
+    method:   "POST",
+    redirect: "follow",
+    headers:  { "Content-Type": "text/plain" },
+    body:     body,
+  });
   if (!res.ok) throw new Error("HTTP " + res.status);
   var data = await res.json();
   if (!data.success) throw new Error(data.error || action + " failed");
