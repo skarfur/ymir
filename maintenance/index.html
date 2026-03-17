@@ -223,9 +223,6 @@
 </div>
 
 <script>
-// ── Auth ───────────────────────────────────────────────────────────────────────
-requireAuth(isStaff);
-  buildHeader('maintenance');
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let allRequests = [];
@@ -243,7 +240,12 @@ const SEV_HINTS = {
 };
 
 // ── Init (deferred to DOMContentLoaded to avoid race) ─────────────────────────
+document.d to avoid race) ─────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
+  buildHeader('maintenance');
+  applyStrings();
+
+
   try {
     const [rRes, cfgRes] = await Promise.all([
       apiGet("getMaintenance"),
