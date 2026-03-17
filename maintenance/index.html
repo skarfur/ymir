@@ -118,25 +118,17 @@
 <body>
 
 <!-- ══ HEADER ══ -->
-<header class="navbar">
-  <div style="display:flex;align-items:center;gap:12px">
-    <span style="color:var(--brass);font-size:18px;font-weight:bold">ÝMIR</span>
-    <span style="color:var(--muted);font-size:12px" id="userBadge"></span>
-  </div>
-  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="openNewRequest()">+ New Request</button>
-    <button class="btn btn-secondary" id="hubBtn" onclick="location.href='../staff/'">← Staff Hub</button>
-    <button class="btn btn-secondary" onclick="location.href='../dailylog/'">📋 Daily Log</button>
-    <button class="btn btn-secondary" onclick="location.href='../staff/trips.html'">✓ Trips</button>
-    <button class="btn btn-secondary" onclick="location.href='../incidents/'">⚠ Incident</button>
-    <button class="btn-ghost" onclick="toggleLang()" id="langBtn">IS</button>
-    <button class="btn-ghost" onclick="signOut()">Sign out</button>
-  </div>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
 </header>
 
 <div class="page-wrap">
 
   <!-- Stats -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn btn-primary" onclick="openNewRequest()">+ New Request</button>
+  </div>
   <div class="stat-strip">
     <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
     <div class="stat-card"><div class="stat-num" id="statCritical" style="color:var(--red)">—</div><div class="stat-label">CRITICAL</div></div>
