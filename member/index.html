@@ -639,7 +639,7 @@ var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;  // overwritten from config o
 function renderLaunchChecklist(boat) {
   if (!boat) return;
   launchBoat = boat;
-  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} — ${boat.name}`;
+  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} - ${boat.name}`;
   const cat   = (boat.category||'other').toLowerCase();
   const cl = _launchChecklists[cat] || _launchChecklists.other;
   const items = cl.launch || cl;  // support both {launch:[],landing:[]} and flat []
@@ -675,7 +675,7 @@ function _addToLaunchOut(mins) {
 function renderLaunchForm(boat) {
   if (!boat) return;
   launchBoat = boat;
-  document.getElementById("launchModalTitle").textContent = s("member.launchTitle") + " — " + boat.name;
+  document.getElementById("launchModalTitle").textContent = s("member.launchTitle") + " - " + boat.name;
   var locOpts = locations.map(function(l){
     return '<option value="' + l.id + '">' + esc(l.name) + '</option>';
   }).join("");
@@ -797,6 +797,13 @@ function renderReturnForm() {
         : returnCo.wxSnapshot)
     : null;
   var nowSnap = currentWx ? wxSnapshot(currentWx) : null;
+  // Fill gaps in coSnap from current wx where fields are missing
+  if (coSnap && nowSnap) {
+    var fill = ["waveDir","sst","feels","pres","presTrend","cond"];
+    fill.forEach(function(k) {
+      if (coSnap[k] == null && nowSnap[k] != null) coSnap[k] = nowSnap[k];
+    });
+  }
   window._retCoSnap = coSnap;
   window._retTimeIn = null;
   window._retWxSnap = null;
