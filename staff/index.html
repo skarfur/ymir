@@ -248,7 +248,7 @@
         <div class="field">
           <label id="estReturnLabel"></label>
           <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="coReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px" style="flex:1;min-width:80px">
+            <input type="text" id="coReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="flex:1;min-width:80px" oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;">
             <div style="display:flex;gap:3px">
               <button type="button" class="ret-btn" onclick="setCoReturnIn(60)">+1h</button>
               <button type="button" class="ret-btn" onclick="setCoReturnIn(90)">+1.5h</button>
@@ -574,7 +574,7 @@ function renderCheckouts() {
     });
     return inner.replace(
       'class="bc-checkout-card"',
-      `class="bc-checkout-card" style="cursor:pointer" onclick="openCoDetail('${c.id}',event)"`
+      `class="bc-checkout-card" data-checkout-id="${c.id}" style="cursor:pointer" onclick="openCoDetail('${c.id}',event)"`
     );
   }).join('');
 }
@@ -743,6 +743,10 @@ async function resolveAlertAction(checkoutId, op, btnEl) {
   btnEl.disabled = true;
   try {
     await apiPost('resolveAlert', { checkoutId, op });
+    // Remove the checkout card from the active list immediately
+    if (op === 'checkInAndClose') {
+      document.querySelectorAll('[data-checkout-id="' + checkoutId + '"]').forEach(el => el.remove());
+    }
     // Immediately re-render — the checkout status will update on next refresh
     // For check-in, optimistically remove the alert card
     const card = btnEl.closest('.ob-alert');
