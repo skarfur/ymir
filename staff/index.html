@@ -405,6 +405,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('activeCheckouts').innerHTML =
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
+
+  warmContainer();
 });
 
 // ── Flag card — label/advice stay as FLAG_CONFIG (admin-editable) ─────────────
