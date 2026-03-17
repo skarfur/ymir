@@ -73,6 +73,18 @@
 /* ── Cert badges ── */
 .cert-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
 .cert-section-title { font-size:9px; color:var(--muted); letter-spacing:1.2px; margin-bottom:10px; }
+/* ── Inline report form styles ── */
+.cat-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit; cursor:pointer; text-align:center; transition:all .15s; }
+.cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
+.sev-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.sev-btn { flex:1; min-width:60px; padding:7px 4px; border-radius:6px; border:1px solid; font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .15s; }
+.sev-btn[data-sev="low"]      { color:var(--green);  border-color:var(--green)55;  background:var(--green)11;  }
+.sev-btn[data-sev="medium"]   { color:var(--yellow); border-color:var(--yellow)55; background:var(--yellow)11; }
+.sev-btn[data-sev="high"]     { color:var(--orange); border-color:var(--orange)55; background:var(--orange)11; }
+.sev-btn[data-sev="critical"] { color:var(--red);    border-color:var(--red)55;    background:var(--red)11;    }
+.sev-btn.selected { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
+.ir-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -894,7 +906,7 @@ function advanceToChecklist() {
 function renderLandingChecklist() {
   if (!returnCo) return;
   document.getElementById('returnModalTitle').textContent =
-    s('member.checkInTitle') + ' \u2014 ' + (returnCo.boatName || '');
+    s('member.checkInTitle') + ' — ' + (returnCo.boatName || '');
   var cat   = (returnCo.boatCategory || 'other').toLowerCase();
   var cl    = _launchChecklists[cat] || _launchChecklists.other;
   var items = (cl && cl.landing) ? cl.landing : [];
@@ -1011,31 +1023,42 @@ function _irSelectSev(sev) {
 
 function _incidentFormHtml() {
   var types = [
-    ['injury','Injury'],['capsize','Capsize'],['collision','Collision'],
-    ['equipment','Equipment failure'],['medical','Medical'],['nearMiss','Near miss'],
-    ['missing','Missing person'],['propertyDmg','Property damage'],['other','Other']
+    ["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],
+    ["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡ Near miss"],
+    ["missing","🔍 Missing person"],["propertyDmg","🏗 Property damage"],["other","📌 Other"]
   ];
-  var typeBoxes = types.map(function (tp) {
-    return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 0">' +
+  var typeBoxes = types.map(function(tp) {
+    return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0">' +
       '<input type="checkbox" class="ir-type-box" value="' + tp[0] + '" style="accent-color:var(--brass)">' +
       '<span>' + tp[1] + '</span></label>';
-  }).join('');
-  var sevBtns = ['low','medium','high','critical'].map(function (s) {
-    return '<button class="sev-btn" data-sev="' + s + '" onclick="_irSelectSev(\'' + s + '\')">' + s.toUpperCase() + '</button>';
-  }).join('');
+  }).join("");
+  var sevBtns = ["low","medium","high","critical"].map(function(s) {
+    return '<button class="sev-btn" data-sev="' + s + '" onclick="_irSelectSev(\''+ s +'\')">'+ s.toUpperCase() +'</button>';
+  }).join("");
+  var boatOpts = boats.map(function(b) {
+    return '<option value="' + b.id + '">' + esc(b.name) + '</option>';
+  }).join("");
   return '<div class="field"><label>Type (select all that apply)</label>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">' + typeBoxes + '</div></div>' +
+    '<div class="ir-type-grid">' + typeBoxes + '</div></div>' +
     '<div class="field"><label>Severity</label>' +
-      '<div class="sev-btns">' + sevBtns + '</div></div>' +
+    '<div class="sev-btns">' + sevBtns + '</div></div>' +
+    '<div class="field"><label>Boat involved (optional)</label>' +
+    '<select id="irIncBoat"><option value="">None</option>' + boatOpts + '</select></div>' +
+    '<div class="field"><label>Location</label>' +
+    '<input type="text" id="irLocation" placeholder="e.g. Fossvogur, outer mark..."></div>' +
     '<div class="field"><label>Description</label>' +
-      '<textarea id="irDesc" rows="3" placeholder="Describe what happened..."' +
-        ' style="width:100%;resize:none;font-size:12px;background:var(--surface);' +
-        'border:1px solid var(--border);border-radius:6px;color:var(--text);' +
-        'padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>' +
-    '<div class="field"><label>Location (optional)</label>' +
-      '<input type="text" id="irLocation" placeholder="e.g. Fossvogur, outer mark..."></div>' +
+    '<textarea id="irDesc" rows="3" placeholder="Describe what happened..."' +
+      ' style="width:100%;resize:none;font-size:12px;background:var(--surface);' +
+      'border:1px solid var(--border);border-radius:6px;color:var(--text);' +
+      'padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>' +
     '<div class="field"><label>People involved (optional)</label>' +
-      '<input type="text" id="irPeople" placeholder="Names or count..."></div>';
+    '<input type="text" id="irPeople" placeholder="Names or count..."></div>' +
+    '<div class="field"><label>Injuries (optional)</label>' +
+    '<input type="text" id="irInjuries" placeholder="Describe any injuries..."></div>' +
+    '<div class="field"><label>Immediate action taken (optional)</label>' +
+    '<input type="text" id="irAction" placeholder="e.g. First aid given, coastguard called..."></div>' +
+    '<div class="field"><label>Contact / handoff notes (optional)</label>' +
+    '<input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>';
 }
 
 async function submitInlineReport(type) {
@@ -1062,11 +1085,17 @@ async function submitInlineReport(type) {
       var types = Array.from(document.querySelectorAll('.ir-type-box:checked')).map(function(el){return el.value;});
       if (!types.length) types = ['other'];
       var sev2 = window._irSev || 'medium';
+      var irBoat = document.getElementById('irIncBoat');
+      var irBoatId = irBoat ? irBoat.value : (co.boatId||'');
+      var irBoatName = irBoatId ? (boats.find(function(b){return b.id===irBoatId;})||{name:''}).name : '';
       await apiPost('createIncident', {
         types: types, severity: sev2, description: desc,
-        boatId: co.boatId || '', boatName: co.boatName || '',
-        location: (document.getElementById('irLocation') || {}).value || '',
-        involvedPersons: (document.getElementById('irPeople') || {}).value || '',
+        boatId: irBoatId, boatName: irBoatName,
+        location: (document.getElementById('irLocation')||{}).value||'',
+        involvedPersons: (document.getElementById('irPeople')||{}).value||'',
+        injuries: (document.getElementById('irInjuries')||{}).value||'',
+        actionTaken: (document.getElementById('irAction')||{}).value||'',
+        handoffNotes: (document.getElementById('irHandoff')||{}).value||'',
         reportedBy: user.name, source: 'member-checkin',
       });
     }
