@@ -23,7 +23,9 @@ async function apiGet(action, params) {
 async function apiPost(action, payload) {
   payload = payload || {};
   // Invalidate config cache when config is saved
-  if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember') {
+  if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember' ||
+      action === 'saveActivityType' || action === 'deleteActivityType' ||
+      action === 'saveChecklistItem' || action === 'deleteChecklistItem') {
     try { 
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
