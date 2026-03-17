@@ -797,25 +797,19 @@ async function loadAll() {
   const statusEl = document.getElementById("membersCard");
  
   // ── Step 1: members ───────────────────────────────────────────────────────
-  try {
-    if (statusEl) statusEl.innerHTML = '<div class="loading-state"><span class="spinner"></span> Loading members…</div>';
-    const mRes = await apiGet("getMembers");
-    members = mRes.members || [];
-  } catch(e) {
-    console.error("getMembers failed:", e);
-    if (statusEl) statusEl.innerHTML = `<div class="empty-state" style="color:var(--red)">getMembers failed: ${e.message}</div>`;
-    return;
-  }
- 
-  // ── Step 2: config ────────────────────────────────────────────────────────
   let cfgRes = {};
   try {
-    if (statusEl) statusEl.innerHTML = '<div class="loading-state"><span class="spinner"></span> Loading config…</div>';
-    cfgRes = await apiGet("getConfig");
+    if (statusEl) statusEl.innerHTML = '<div class="spinner"></div>';
+    const [mRes, cfgRes_] = await Promise.all([
+      apiGet("getMembers"),
+      apiGet("getConfig"),
+    ]);
+    members  = mRes.members || [];
+    cfgRes   = cfgRes_;
   } catch(e) {
-    console.error("getConfig failed:", e);
-    if (statusEl) statusEl.innerHTML = `<div class="empty-state" style="color:var(--red)">getConfig failed: ${e.message}</div>`;
-    // Don't return — we still have members, render what we can
+    console.error("loadAll failed:", e);
+    if (statusEl) statusEl.innerHTML = `<div class="empty-state">Load failed: ${e.message}</div>`;
+    return;
   }
  
   // ── Assign data ───────────────────────────────────────────────────────────
