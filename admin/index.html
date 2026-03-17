@@ -791,6 +791,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("bOOS").addEventListener("change", e => {
     document.getElementById("oosReasonField").classList.toggle("hidden", !e.target.checked);
   });
+
+  warmContainer();
 });
 
 async function loadAll() {
