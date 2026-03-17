@@ -126,6 +126,52 @@
 .ob-btn-snooze   { background:#e67e22; color:#fff; }
 .ob-btn-silence  { background:#444; color:#ccc; }
 .ob-btn:disabled { opacity:0.5; cursor:default; }
+
+/* ── Fleet status blocks ────────────────────────────────────────────────── */
+.fleet-status-block { margin-bottom:6px; }
+.fsb-header {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; cursor:pointer; border-radius:6px;
+  background:var(--surface); transition:background .15s;
+}
+.fsb-header:hover { background:var(--surface2,#132233); }
+.fsb-label { font-size:12px; color:var(--muted); min-width:80px; text-transform:uppercase; letter-spacing:.04em; }
+.fsb-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.fsb-bar { height:100%; background:var(--green); border-radius:3px; transition:width .3s; }
+.fsb-count { font-size:12px; font-weight:bold; min-width:32px; text-align:right; }
+.fsb-count.has-avail { color:var(--green); }
+.fsb-count.none-avail { color:var(--muted); }
+.fsb-arrow { font-size:11px; color:var(--muted); transition:transform .15s; }
+.fsb-body { padding:6px 0 4px 0; }
+
+/* Compact boat cards in fleet status */
+.fleet-cat-grid { display:flex; flex-wrap:wrap; gap:6px; padding:4px 4px; }
+.bc-boat-card {
+  border-radius:5px; padding:7px 10px; min-width:90px; border:1px solid transparent;
+  font-size:12px; transition:all .15s;
+}
+.bc-boat-card.status-avail { background:#0d2e1a; border-color:var(--green); }
+.bc-boat-card.status-avail:hover { background:#143d22; transform:translateY(-1px); }
+.bc-boat-card.status-out { background:#1a1f0d; border-color:var(--brass,#c8a84b); }
+.bc-boat-card.status-overdue { background:#2e0d0d; border-color:var(--red); }
+.bc-boat-card.status-oos { background:var(--surface); border-color:var(--border); opacity:.5; }
+.bc-boat-name { font-weight:600; color:var(--text); margin-bottom:2px; }
+.bc-boat-status { font-size:11px; color:var(--muted); }
+.bc-boat-status.avail-label { color:var(--green); }
+
+/* Recent checkins row ───────────────────────────────────────────────────── */
+.recent-row {
+  display:grid;
+  grid-template-columns:42px 1fr 1fr 1fr 48px;
+  gap:8px; align-items:center;
+  padding:6px 4px; border-bottom:1px solid var(--border); font-size:12px;
+}
+.recent-row:last-child { border-bottom:none; }
+.recent-time { font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
+.recent-name { color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.recent-boat { color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.recent-loc  { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.recent-dur  { color:var(--muted); text-align:right; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
@@ -295,21 +341,11 @@
   <!-- ══ FLEET STATUS ══ -->
   <div class="divider-label" style="display:flex;align-items:center;justify-content:space-between">
     <span data-s="staff.fleet"></span>
-    <span style="font-size:9px;color:var(--muted);cursor:pointer" onclick="toggleAllFleet()" id="fleetToggleBtn"></span>
+    
   </div>
 
-  <!-- Available summary -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-    padding:12px 16px;margin-bottom:8px">
-    <div id="availByCat"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
-
-  <!-- Per-category collapsible fleet -->
-  <div id="fleetByCat" style="margin-bottom:12px"></div>
-
-  <!-- Recent check-ins -->
-  <div class="section" style="margin-bottom:28px">
-    <div class="section-head"><h3 data-s="staff.recentCheckins"></h3></div>
+  <!-- Fleet status (bars + expandable boat cards) -->
+  <div id="fleetStatus"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div id="recentCheckins"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
@@ -394,7 +430,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('coNotes').placeholder             = s('staff.coForm.notesPlaceholder');
   document.getElementById('viewAllMaintLink').textContent    = s('btn.viewAll');
   document.getElementById('reportIssueLink').textContent     = s('staff.reportIssue');
-  document.getElementById('fleetToggleBtn').textContent      = s('staff.expandAll');
   document.getElementById('cdTitle').textContent             = s('staff.coDetail.title');
 
   wxWidget(document.getElementById('wxWidget'), {
@@ -503,62 +538,62 @@ function renderStats() {
 function renderFleet() {
   const active = checkouts.filter(c => c.status === 'out');
   const cats   = [...new Set(boats.map(b => b.category).filter(Boolean))];
+  const el     = document.getElementById('fleetStatus');
+  if (!boats.length) { el.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
 
-  // Available-by-category summary
-  const availEl = document.getElementById('availByCat');
-  if (!boats.length) { availEl.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
-  availEl.innerHTML = cats.map(cat => {
+  el.innerHTML = cats.map(cat => {
     const catBoats = boats.filter(b => b.category === cat);
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id)).length;
-    const pct      = catBoats.length ? Math.round(avail / catBoats.length * 100) : 0;
-    return `<div class="cat-row">
-      <span class="cat-label">${esc(cat)}</span>
-      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div>
-      <span class="cat-count ${avail ? 'has-avail' : 'none-avail'}">${avail}</span>
-      <span class="cat-out-note">${s('staff.availCount',{n:avail})}</span>
-    </div>`;
-  }).join('');
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id));
+    const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
+    const hasAvail = avail.length > 0;
+    const catId    = 'fcat-' + cat.replace(/\s+/g,'_');
 
-  // Per-category collapsible fleet
-  const fleetEl = document.getElementById('fleetByCat');
-  boatRegistry.setBoats(boats, active);
-  fleetEl.innerHTML = cats.map(cat => {
-    const catBoats = boats.filter(b => b.category === cat);
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id)).length;
-    const body = catBoats.map(b => {
-      const co = active.find(c => c.boatId === b.id);
-      return renderBoatCard(b, {
-        status: boolVal(b.oos) ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail',
-        checkoutData: co,
-      });
+    const cards = catBoats.map(b => {
+      const co  = active.find(c => c.boatId === b.id);
+      const oos = boolVal(b.oos);
+      if (oos) {
+        return `<div class="bc-boat-card status-oos" title="${esc(b.name||b.id)}">
+          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
+          <div class="bc-boat-status muted">OOS</div>
+        </div>`;
+      } else if (co) {
+        const overdue = co.expectedReturn && co.expectedReturn < fmtTimeNow();
+        return `<div class="bc-boat-card ${overdue?'status-overdue':'status-out'}">
+          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
+          <div class="bc-boat-status">${esc(co.memberName||'')} · ${esc(co.expectedReturn||'')}</div>
+        </div>`;
+      } else {
+        return `<div class="bc-boat-card status-avail" style="cursor:pointer"
+          onclick="selectBoatForCheckout('${esc(b.id)}')">
+          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
+          <div class="bc-boat-status avail-label">${s('staff.availCount',{n:1}).replace('1','')}</div>
+        </div>`;
+      }
     }).join('');
-    return `<div class="fleet-cat-toggle" onclick="toggleFleetCat(this)">
-      <span class="fct-label">${esc(cat)}</span>
-      <span style="display:flex;align-items:center;gap:8px">
-        <span class="fct-count">${avail}/${catBoats.length}</span>
-        <span class="fct-arrow">▼</span>
-      </span>
-    </div>
-    <div class="fleet-cat-body">
-      <div class="fleet-cat-grid">${body}</div>
+
+    return `<div class="fleet-status-block">
+      <div class="fsb-header" onclick="toggleFleetCat(this)" data-cat="${catId}">
+        <span class="fsb-label">${esc(cat)}</span>
+        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%"></div></div>
+        <span class="fsb-count ${hasAvail?'has-avail':'none-avail'}">${avail.length}/${catBoats.length}</span>
+        <span class="fsb-arrow">▾</span>
+      </div>
+      <div class="fsb-body" id="${catId}">
+        <div class="fleet-cat-grid">${cards}</div>
+      </div>
     </div>`;
   }).join('');
 }
 
-function toggleFleetCat(toggle) {
-  const body  = toggle.nextElementSibling;
-  const arrow = toggle.querySelector('.fct-arrow');
-  const open  = body.classList.toggle('open');
-  arrow.classList.toggle('open', open);
+function toggleFleetCat(hdr) {
+  const body = hdr.nextElementSibling;
+  const arrow = hdr.querySelector('.fsb-arrow, .fct-arrow');
+  const open = body.style.display !== 'none' && body.style.display !== '';
+  body.style.display = open ? 'none' : '';
+  if (arrow) arrow.textContent = open ? '▾' : '▴';
 }
 
-function toggleAllFleet() {
-  _fleetAllOpen = !_fleetAllOpen;
-  document.querySelectorAll('.fleet-cat-body').forEach(b => b.classList.toggle('open', _fleetAllOpen));
-  document.querySelectorAll('.fct-arrow').forEach(a => a.classList.toggle('open', _fleetAllOpen));
-  document.getElementById('fleetToggleBtn').textContent =
-    _fleetAllOpen ? s('staff.collapseAll') : s('staff.expandAll');
-}
+
 
 // ── Active checkouts ──────────────────────────────────────────────────────────
 function renderCheckouts() {
@@ -585,13 +620,23 @@ function renderRecentCheckins() {
   const recent = checkouts.filter(c => c.status === 'in').slice(0, 10);
   if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('staff.recentCheckins')}</div>`; return; }
   el.innerHTML = recent.map(c => {
-    const tout = (c.checkedOutAt||c.timeOut||'').slice(0,5);
     const tin  = (c.checkedInAt ||c.timeIn ||'').slice(0,5);
+    const tout = (c.checkedOutAt||c.timeOut||'').slice(0,5);
+    // Duration in minutes
+    let dur = '';
+    if (tout && tin) {
+      const [oh,om] = tout.split(':').map(Number);
+      const [ih,im] = tin.split(':').map(Number);
+      let mins = (ih*60+im) - (oh*60+om);
+      if (mins < 0) mins += 1440;
+      dur = mins >= 60 ? Math.floor(mins/60)+'h'+(mins%60?String(mins%60).padStart(2,'0'):'') : mins+'min';
+    }
     return `<div class="recent-row">
-      <span style="opacity:.4">⛵</span>
-      <div style="flex:1"><span style="font-weight:500">${esc(c.boatName||c.boatId)}</span>
-        · ${esc(c.memberName||'')}${c.locationName ? ' · '+esc(c.locationName) : ''}</div>
-      <span>${esc(tout)}–${esc(tin)}</span>
+      <span class="recent-time">${esc(tin)||'—'}</span>
+      <span class="recent-name">${esc(c.memberName||'')}</span>
+      <span class="recent-boat">${esc(c.boatName||c.boatId||'')}</span>
+      <span class="recent-loc muted">${esc(c.locationName||'')}</span>
+      <span class="recent-dur muted">${dur}</span>
     </div>`;
   }).join('');
 }
@@ -820,6 +865,25 @@ async function pollOverdueAlerts() {
   } catch(e) { /* silent fail — don't disrupt the page */ }
 }
 
+
+// ── Select a boat directly from fleet status to begin checkout ───────────────
+function selectBoatForCheckout(boatId) {
+  // Show and scroll to checkout form
+  const formEl = document.getElementById('coForm');
+  if (formEl && formEl.style.display === 'none') {
+    document.getElementById('checkOutBtn')?.click();
+  }
+  // Pre-select the boat
+  const boatSel = document.getElementById('coBoat');
+  if (boatSel) {
+    boatSel.value = boatId;
+    boatSel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  // Scroll into view
+  setTimeout(() => {
+    (formEl || document.getElementById('checkOutBtn'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 80);
+}
 </script>
 </body>
 </html>
