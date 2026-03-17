@@ -4,8 +4,29 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENS
 const API_TOKEN  = "ymirsc2026";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
-async function apiGet(action, params) { params = params || {}; return _call(action, params); }
-async function apiPost(action, payload) { payload = payload || {}; return _call(action, payload); }
+async function apiGet(action, params) {
+  params = params || {};
+  // Cache getConfig in sessionStorage for 60s — called on every page load
+  if (action === 'getConfig' && !params._fresh) {
+    try {
+      var _ck = 'ymir_cfg_' + (params.token || '');
+      var _cs = sessionStorage.getItem(_ck);
+      if (_cs) { var _cp = JSON.parse(_cs); if (Date.now() - _cp.ts < 60000) return _cp.data; }
+      var _cr = await _call(action, params);
+      sessionStorage.setItem(_ck, JSON.stringify({ ts: Date.now(), data: _cr }));
+      return _cr;
+    } catch(e) { /* fall through */ }
+  }
+  return _call(action, params);
+}
+async function apiPost(action, payload) {
+  payload = payload || {};
+  // Invalidate config cache when config is saved
+  if (action === 'saveConfig') {
+    try { sessionStorage.removeItem('ymir_cfg_'); } catch(e) {}
+  }
+  return _call(action, payload);
+}
 
 async function _call(action, payload) {
   payload = payload || {};
