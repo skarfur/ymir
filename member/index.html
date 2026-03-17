@@ -309,6 +309,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('activeList').innerHTML =
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
+
+  warmContainer();
 });
 
 // ══ TAB SWITCHING ════════════════════════════════════════════════════════════
