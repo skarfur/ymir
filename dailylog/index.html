@@ -923,24 +923,13 @@ async function loadTodayTrips() {
 
 async function loadPastTrips() {
   try {
-    let all = [];
-    try {
-      const res = await apiGet('getCheckoutHistory', { date: viewDate });
-      all = res.checkouts || res.history || [];
-    } catch(e2) {
-      try {
-        const res = await apiGet('getCheckouts', { date: viewDate });
-        all = res.checkouts || [];
-      } catch(e3) { all = []; }
-    }
-    tripsData = all.filter(c => {
-      const d = (c.checkedOutAt||c.timeOut||c.createdAt||'').slice(0,10);
-      return d === viewDate;
-    });
-  } catch(e) { tripsData = []; }
+    const res = await apiGet('getTrips', { date: viewDate });
+    tripsData = (res.trips || []).filter(t => t.timeIn); // only completed trips
+  } catch(e) {
+    tripsData = [];
+  }
   renderTrips();
 }
-
 async function loadIncidentsForDate(date) {
   try {
     const res = await apiGet('getIncidents');
