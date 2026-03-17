@@ -165,6 +165,8 @@ const STRINGS = {
   'member.boatAvail':    { EN:'Available',           IS:'Tiltækur' },
   'member.skipper':      { EN:'skipper',             IS:'skipstjóri' },
   'member.crewRole':     { EN:'crew',                IS:'áhöfn' },
+  'member.addAsCrew':        { EN:'Add as crew',                IS:'Bæta við sem áhöfn' },
+  'member.tripsTapHint':     { EN:'Tap a trip for details',     IS:'Smelltu á ferð til að sjá nánar' },
   'member.departed':     { EN:'Departed',            IS:'Fór' },
   'member.returned':     { EN:'Returned',            IS:'Kom til baka' },
   'member.duration':     { EN:'Duration',            IS:'Tímalengd' },
