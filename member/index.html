@@ -1023,9 +1023,7 @@ function parseJson(v, fallback) {
   if (!v) return fallback;
   try { return typeof v==='string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
 }
-</script>
-</body>
-</html>// Damage/incident — flagged for post-check-in redirect
+// Damage/incident — flagged for post-check-in redirect
 var _afterReturnAction = null;
 
 function flagDamageReport() {
