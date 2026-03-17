@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+  setInterval(pollOverdueAlerts, 120000); // poll every 2 min
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -104,9 +105,32 @@
 .flag-icon { font-size:22px; flex-shrink:0; margin-top:1px; }
 .flag-label { font-size:13px; font-weight:500; margin-bottom:3px; }
 .flag-advice { font-size:12px; color:var(--muted); line-height:1.5; }
+
+/* ── Overdue alert banner ───────────────────────────────────────────────── */
+#overdue-banner { display:none; position:sticky; top:0; z-index:200; }
+#overdue-banner.has-alerts { display:block; }
+.ob-alert {
+  background:#7b1a1a; border-bottom:2px solid #e74c3c;
+  padding:14px 16px; display:flex; align-items:flex-start; gap:14px;
+}
+.ob-alert + .ob-alert { border-top:1px solid #a93226; }
+.ob-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+.ob-body { flex:1; min-width:0; }
+.ob-title { font-weight:bold; font-size:14px; color:#fff; margin-bottom:4px; }
+.ob-meta  { font-size:12px; color:#f5a9a9; line-height:1.5; }
+.ob-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.ob-btn {
+  padding:6px 14px; border:none; border-radius:4px; font-size:12px;
+  font-weight:bold; cursor:pointer; font-family:inherit;
+}
+.ob-btn-checkin  { background:#27ae60; color:#fff; }
+.ob-btn-snooze   { background:#e67e22; color:#fff; }
+.ob-btn-silence  { background:#444; color:#ccc; }
+.ob-btn:disabled { opacity:0.5; cursor:default; }
 </style>
 </head>
 <body>
+<div id="overdue-banner"></div>
 <header id="ym-header">
   <div class="header-left"></div>
   <div class="header-right"></div>
@@ -458,6 +482,7 @@ function renderAll() {
   renderCheckouts();
   renderRecentCheckins();
   renderFleet();
+  pollOverdueAlerts();
 }
 
 function renderStats() {
@@ -710,6 +735,87 @@ function openCoDetail(id, event) {
 }
 
 function closeCoDetail() { closeModal('coDetailModal'); }
+
+// ── Overdue alert banner ────────────────────────────────────────────────────
+let _snoozeMins = 30;
+
+async function resolveAlertAction(checkoutId, op, btnEl) {
+  btnEl.disabled = true;
+  try {
+    await apiPost('resolveAlert', { checkoutId, op });
+    // Immediately re-render — the checkout status will update on next refresh
+    // For check-in, optimistically remove the alert card
+    const card = btnEl.closest('.ob-alert');
+    if (card) card.remove();
+    // Update banner visibility
+    const banner = document.getElementById('overdue-banner');
+    if (banner && !banner.querySelector('.ob-alert')) banner.classList.remove('has-alerts');
+    // Force a data refresh after a short delay
+    setTimeout(() => load(), 1500);
+  } catch(e) {
+    btnEl.disabled = false;
+    alert(gs_('error') + ': ' + e.message);
+  }
+}
+
+function renderOverdueBanner(alerts) {
+  const banner = document.getElementById('overdue-banner');
+  if (!banner) return;
+  const L = document.documentElement.lang || 'EN';
+  const IS = L === 'IS';
+
+  if (!alerts || alerts.length === 0) {
+    banner.innerHTML = '';
+    banner.classList.remove('has-alerts');
+    return;
+  }
+
+  banner.innerHTML = alerts.map(a => {
+    const hrs = Math.floor(a.minutesOverdue / 60);
+    const min = a.minutesOverdue % 60;
+    const overdueStr = hrs > 0
+      ? (IS ? hrs+'klst '+min+'mín' : hrs+'h '+min+'min')
+      : (IS ? min+' mín' : min+' min');
+    const phoneStr = a.isMinor
+      ? (IS ? 'Sími forráðamanns' : 'Guardian') + ': ' + (a.guardianPhone || '—')
+      : (IS ? 'Sími' : 'Phone') + ': ' + (a.memberPhone || '—');
+    return `<div class="ob-alert">
+      <div class="ob-icon">⚠️</div>
+      <div class="ob-body">
+        <div class="ob-title">${a.memberName} — ${a.boatName}${a.isMinor ? ' ⚠️' : ''}</div>
+        <div class="ob-meta">
+          ${IS ? 'Skilar klukkan' : 'Expected back'}: ${a.expectedReturn} &nbsp;·&nbsp;
+          ${IS ? 'Seinn um' : 'Overdue by'}: <strong>${overdueStr}</strong> &nbsp;·&nbsp;
+          ${a.locationName} &nbsp;·&nbsp; ${phoneStr}
+        </div>
+        <div class="ob-actions">
+          <button class="ob-btn ob-btn-checkin"
+            onclick="resolveAlertAction('${a.checkoutId}','checkInAndClose',this)">
+            ${IS ? '✓ Skrá inn og loka' : '✓ Check in & close'}
+          </button>
+          <button class="ob-btn ob-btn-snooze"
+            onclick="resolveAlertAction('${a.checkoutId}','snooze',this)">
+            ${IS ? '⏱ Fresta ('+_snoozeMins+' mín)' : '⏱ Snooze ('+_snoozeMins+' min)'}
+          </button>
+          <button class="ob-btn ob-btn-silence"
+            onclick="resolveAlertAction('${a.checkoutId}','silence',this)">
+            ${IS ? '🔕 Þagga' : '🔕 Silence'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  banner.classList.add('has-alerts');
+}
+
+async function pollOverdueAlerts() {
+  try {
+    const result = await apiGet('getOverdueAlerts');
+    _snoozeMins = result.snoozeMins || 30;
+    renderOverdueBanner(result.alerts || []);
+  } catch(e) { /* silent fail — don't disrupt the page */ }
+}
+
 </script>
 </body>
 </html>
