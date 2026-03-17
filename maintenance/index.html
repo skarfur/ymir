@@ -126,14 +126,14 @@
 <div class="page-wrap">
 
   <!-- Stats -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button class="btn btn-primary" onclick="openNewRequest()">+ New Request</button>
-  </div>
   <div class="stat-strip">
     <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
     <div class="stat-card"><div class="stat-num" id="statCritical" style="color:var(--red)">—</div><div class="stat-label">CRITICAL</div></div>
     <div class="stat-card"><div class="stat-num" id="statOos" style="color:var(--red)">—</div><div class="stat-label">BOATS OOS</div></div>
     <div class="stat-card"><div class="stat-num" id="statResolved" style="color:var(--green)">—</div><div class="stat-label">RESOLVED</div></div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin:12px 0">
+    <button class="btn btn-primary" onclick="openNewRequest()">+ New Request</button>
   </div>
 
   <!-- Filter bar -->
@@ -226,17 +226,7 @@
 
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────────
-const user = requireAuth(isStaff);
-if (user) {
-  document.getElementById("userBadge").textContent = user.name;
-  document.getElementById("langBtn").textContent = getLang() === "EN" ? "IS" : "EN";
-  // Admins get link to admin panel instead
-  if (isAdmin(user)) {
-    const btn = document.getElementById("hubBtn");
-    btn.textContent = "🛠 Admin";
-    btn.onclick = () => location.href = "../admin/";
-  }
-}
+requireAuth(isStaff);
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let allRequests = [];
