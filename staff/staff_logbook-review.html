@@ -59,10 +59,14 @@
 
   <div class="stat-strip">
     <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l" data-s="logrev.totalTrips"></div></div>
-    <div class="stat-cell"><div class="stat-n" id="sPending">—</div><div class="stat-l" data-s="logrev.pending"></div></div>
+    <div class="stat-cell"><div class="stat-n" id="sRequested" style="color:var(--brass)">—</div><div class="stat-l">REQUESTED</div></div>
     <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l" data-s="logrev.verified"></div></div>
   </div>
 
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div style="font-size:11px;color:var(--muted)" id="reviewModeLabel">Showing: validation requests</div>
+    <button onclick="toggleShowAll()" id="showAllBtn" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">Show all trips</button>
+  </div>
   <div class="filter-bar">
     <input type="text" id="filterName" oninput="applyFilters()">
     <select id="filterStatus" onchange="applyFilters()">
@@ -75,6 +79,31 @@
   </div>
 
   <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
+
+  <!-- ══ CERTIFICATIONS ══════════════════════════════════════════════════════ -->
+  <div style="margin-top:28px">
+    <div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px">CERTIFICATIONS</div>
+    <!-- Member search -->
+    <div style="position:relative;margin-bottom:14px">
+      <input type="text" id="certMemberSearch" placeholder="Search member name…"
+        style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:9px 12px"
+        oninput="searchCertMember(this.value)">
+      <div id="certMemberDrop" style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;z-index:100;display:none;max-height:200px;overflow-y:auto"></div>
+    </div>
+    <!-- Selected member certs panel -->
+    <div id="certMemberPanel" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:14px;font-weight:500" id="certPanelName"></div>
+          <div style="font-size:11px;color:var(--muted)" id="certPanelMeta"></div>
+        </div>
+        <button onclick="openTripCertModal(_certPanelMemberId, document.getElementById('certPanelName').textContent)"
+          class="btn btn-primary" style="font-size:11px;padding:5px 12px">+ Add / Change cert</button>
+      </div>
+      <div id="certPanelList"></div>
+    </div>
+    <div id="certMemberEmpty" style="display:none;color:var(--muted);font-size:12px;padding:8px 0">Search for a member above to view their certifications.</div>
+  </div>
 
 </div>
 
@@ -129,6 +158,8 @@ const L = getLang();
 
 let allTrips = [];
 let filtered = [];
+let _showAllTrips = false;
+let _certPanelMemberId = null;
 let _tcmCertDefs   = [];
 let _tcmAllMembers = [];
 let _tcmLoaded     = false;
@@ -172,6 +203,13 @@ function updateStats() {
   document.getElementById('sVerified').textContent   = verified;
 }
 
+function toggleShowAll() {
+  _showAllTrips = !_showAllTrips;
+  document.getElementById('showAllBtn').textContent = _showAllTrips ? 'Show requested only' : 'Show all trips';
+  document.getElementById('reviewModeLabel').textContent = 'Showing: ' + (_showAllTrips ? 'all trips' : 'validation requests');
+  applyFilters();
+}
+
 function applyFilters() {
   const name   = document.getElementById('filterName').value.trim().toLowerCase();
   const status = document.getElementById('filterStatus').value;
@@ -179,6 +217,8 @@ function applyFilters() {
   const to     = document.getElementById('filterTo').value;
 
   filtered = allTrips.filter(t => {
+    // By default only show trips with validation requested
+    if (!_showAllTrips && t.validationRequested !== true && t.validationRequested !== 'true') return false;
     if (name   && !(t.memberName||'').toLowerCase().includes(name)) return false;
     if (status === 'pending'  && (t.verified && t.verified !== 'false')) return false;
     if (status === 'verified' && (!t.verified || t.verified === 'false')) return false;
@@ -227,8 +267,7 @@ function renderTrips() {
         <input type="text" id="comment-${esc(t.id)}"
           placeholder="${s('logrev.staffComment')}"
           value="${esc(t.staffComment||'')}" style="font-size:12px">
-        <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;flex-shrink:0"
-          onclick="openTripCertModal('${esc(t.memberId||'')}','${esc(t.memberName||'')}')">🎖 ${s('cert.assign')}</button>
+        
         ${isVer
           ? `<button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0"
               onclick="unverifyTrip('${esc(t.id)}')">✗ ${s('logrev.unverify')}</button>`
@@ -374,6 +413,54 @@ function parseJson(v, fallback) {
 }
 
 function todayISO() { return new Date().toISOString().slice(0,10); }
+
+// ── Cert section ────────────────────────────────────────────────────────────────────────────
+function searchCertMember(q) {
+  var drop = document.getElementById("certMemberDrop");
+  if (!q || q.length < 2) { drop.style.display = "none"; return; }
+  var matches = (_tcmAllMembers || []).filter(function(m) { return m.name && m.name.toLowerCase().includes(q.toLowerCase()); }).slice(0, 8);
+  if (!matches.length) { drop.style.display = "none"; return; }
+  drop.innerHTML = matches.map(function(m) {
+    var id = m.id || m.kennitala || "";
+    var kt = m.kennitala || m.id || "";
+    return "<div style=\"padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px\"" +
+      " onmouseover=\"this.style.background='var(--card)'\" onmouseout=\"this.style.background=''\"" +
+      " onclick=\"selectCertMember('" + id + "','" + esc(m.name) + "','" + esc(kt) + "')\">" +
+      esc(m.name) + "<span style=\"color:var(--muted);margin-left:8px;font-size:10px\">" + esc(kt) + "</span></div>";
+  }).join("");
+  drop.style.display = "block";
+}
+
+async function selectCertMember(id, name, kennitala) {
+  document.getElementById("certMemberSearch").value = name;
+  document.getElementById("certMemberDrop").style.display = "none";
+  _certPanelMemberId = id;
+  document.getElementById("certPanelName").textContent = name;
+  document.getElementById("certPanelMeta").textContent = kennitala || "";
+  document.getElementById("certMemberPanel").style.display = "";
+  document.getElementById("certMemberEmpty").style.display = "none";
+  if (!_tcmLoaded) {
+    try {
+      var results = await Promise.all([apiGet("getMembers"), apiGet("getConfig")]);
+      _tcmAllMembers = results[0].members || [];
+      _tcmCertDefs   = certDefsFromConfig(results[1].certDefs || []);
+      _tcmLoaded     = true;
+    } catch(e) { showToast("Error loading certs", "err"); return; }
+  }
+  renderCertPanel(id);
+}
+
+function renderCertPanel(memberId) {
+  var panel = document.getElementById("certPanelList");
+  var m = (_tcmAllMembers || []).find(function(x) { return x.id === memberId || x.kennitala === memberId; });
+  if (!m) { panel.innerHTML = "<div style=\"color:var(--muted);font-size:12px\">Member not found.</div>"; return; }
+  var certs = enrichMemberCerts(parseJson(m.certifications, []), _tcmCertDefs);
+  if (!certs.length) {
+    panel.innerHTML = "<div style=\"color:var(--muted);font-size:12px;padding:8px 0\">No certifications on record.</div>";
+    return;
+  }
+  panel.innerHTML = certs.map(certBadgeHTML).join("");
+}
 </script>
 </body>
 </html>
