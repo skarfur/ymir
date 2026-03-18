@@ -1180,7 +1180,7 @@ function renderGroupCard(c) {
   const actBadge   = actName   ? '<span class="gc-badge">'  + esc(actName)   + '</span>' : '';
   const staffBadge = firstStaff? '<span style="font-size:12px;font-weight:500;color:var(--text)">' + esc(firstStaff) + '</span>' : '';
   const boatsBadge = '<span style="font-size:11px;color:var(--muted)">' + boatCount + ' ' + (IS ? (boatCount===1?'bátur':'bátar') : (boatCount===1?'boat':'boats')) + '</span>';
-  const totalBadge = '<span style="font-size:11px;color:var(--muted)">' + total + ' ' + (IS?'á sjó':'on water') + '</span>';
+  const peopleBadge = '<span style="font-size:11px;color:var(--muted)">' + total + ' ' + (IS?'manns á sjó':'people on water') + '</span>';
 
   // Right: return time
   const retHtml = retBy
@@ -1193,11 +1193,13 @@ function renderGroupCard(c) {
   div.dataset.checkoutId = c.id;
   div.innerHTML =
     '<div class="gc-header">'
-    + '<div style="display:flex;flex-direction:column;gap:5px">'
+    + '<div style="display:flex;flex-direction:column;gap:4px">'
+    + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
     +   actBadge
     +   staffBadge
+    + '</div>'
     + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-    +   boatsBadge + totalBadge
+    +   boatsBadge + peopleBadge
     + '</div>'
     + '</div>'
     + '<div class="gc-ret">' + retHtml + '</div>'
