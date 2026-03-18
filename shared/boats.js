@@ -267,3 +267,67 @@ function renderCheckoutCard(co, opts) {
 function _besc(s) {
   return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
+
+// ── Shared fleet-status renderer ──────────────────────────────────────────────
+/*
+  renderFleetStatus(containerId, boats, active, opts)
+
+  Renders the unified fleet status section — category bars with expandable
+  boat cards underneath. Used on both the staff hub and the member fleet tab.
+
+  opts:
+    onAvailClick  string of JS to call with boatId, e.g. "selectBoatForCheckout"
+    collapsed     bool — start collapsed (default: true)
+    toggleFn      name of the toggle function to call onclick (default: "toggleFleetCat")
+*/
+function renderFleetStatus(containerId, boats, active, opts) {
+  opts = opts || {};
+  const el         = document.getElementById(containerId);
+  if (!el) return;
+  const onAvail    = opts.onAvailClick || null;
+  const collapsed  = opts.collapsed !== false;
+  const toggleFn   = opts.toggleFn   || 'toggleFleetCat';
+
+  if (!boats || !boats.length) {
+    el.innerHTML = '<div class="empty-note">—</div>';
+    return;
+  }
+
+  // Group by category preserving insertion order (or sort alpha)
+  const cats = [...new Set(boats.map(b => b.category).filter(Boolean))].sort();
+
+  el.innerHTML = cats.map(cat => {
+    const key      = cat.toLowerCase();
+    const col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+    const emoji    = boatEmoji(key);
+    const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id));
+    const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
+    const catId    = containerId + '-fcat-' + encodeURIComponent(key);
+
+    const cards = catBoats.map(b => {
+      const co  = active.find(c => c.boatId === b.id);
+      const oos = boolVal(b.oos);
+      const status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
+      const clickOpts = (status === 'avail' && onAvail)
+        ? { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) }
+        : {};
+      return renderBoatCard(b, Object.assign({ status, checkoutData: co }, clickOpts));
+    }).join('');
+
+    return `<div class="fleet-status-block">
+      <div class="fsb-header" onclick="${toggleFn}(this)" data-target="${catId}" style="border-left:3px solid ${col.color}">
+        <span class="fsb-emoji">${emoji}</span>
+        <span class="fsb-label">${_besc(cat)}</span>
+        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%;background:${col.color}"></div></div>
+        <span class="fsb-count ${avail.length?'has-avail':'none-avail'}" style="color:${avail.length?col.color:'var(--muted)'}">${avail.length}/${catBoats.length}</span>
+        <span class="fsb-arrow">▾</span>
+      </div>
+      <div class="fsb-body" id="${catId}" style="display:${collapsed?'none':''}">
+        <div class="fleet-cat-grid">${cards}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// (boolVal defined in shared/api.js)
