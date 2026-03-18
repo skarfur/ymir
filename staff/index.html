@@ -319,10 +319,10 @@
           <button class="crew-btn" onclick="adjustCrew(1)">+</button>
         </div>
       </div>
-      <div class="field" style="margin-top:4px">
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Crew names <span style="font-weight:400;opacity:.6">(optional)</span></label>
-        <textarea id="coCrewNames" rows="2" placeholder="One name per line — auto-logged as crew in their logbook" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px"></textarea>
-        <div style="font-size:10px;color:var(--muted);margin-top:3px">Named crew get this trip automatically added to their logbook.</div>
+      <div id="coCrewSection" style="margin-top:10px;display:none">
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>
+        <div id="coCrewInputs"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
       </div>
       <div class="field">
         <label id="notesLabel"></label>
@@ -671,6 +671,7 @@ function selectMember(kt, name) {
 function adjustCrew(d) {
   crewCount = Math.max(1, crewCount + d);
   document.getElementById('crewNum').textContent = crewCount;
+  renderCoCrewInputs();
 }
 
 function setCoReturnIn(mins) {
@@ -679,7 +680,60 @@ function setCoReturnIn(mins) {
   document.getElementById('coReturnBy').value = now.toTimeString().slice(0,5);
 }
 
-async function submitCheckout() {
+async function renderCoCrewInputs() {
+  const n    = crewCount - 1;
+  const sec  = document.getElementById('coCrewSection');
+  const wrap = document.getElementById('coCrewInputs');
+  if (!sec || !wrap) return;
+  if (n < 1) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const existing = Array.from(wrap.querySelectorAll('input')).map(i => ({ val: i.value, kt: i.dataset.kennitala||'' }));
+  wrap.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div');
+    row.style.cssText = 'position:relative;margin-bottom:6px';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'Crew member ' + (i+1) + ' — search by name…';
+    inp.value = (existing[i] && existing[i].val) || '';
+    inp.dataset.kennitala = (existing[i] && existing[i].kt) || '';
+    inp.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    const drop = document.createElement('div');
+    drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:200;max-height:160px;overflow-y:auto;display:none';
+    inp.addEventListener('input', function() { searchCoCrewMembers(this, drop); });
+    inp.addEventListener('blur',  function() { setTimeout(function(){ drop.style.display='none'; }, 200); });
+    row.appendChild(inp);
+    row.appendChild(drop);
+    wrap.appendChild(row);
+  }
+}
+function searchCoCrewMembers(inp, drop) {
+  const q = inp.value.trim().toLowerCase();
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+  const skip = selectedMemberKt; // exclude the skipper
+  const matches = (members||[]).filter(m =>
+    m.name && m.name.toLowerCase().includes(q) && m.kennitala !== skip
+  ).slice(0, 8);
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = '';
+  matches.forEach(function(m) {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)';
+    item.textContent = m.name;
+    item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });
+    item.addEventListener('mouseout',  function(){ this.style.background = ''; });
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      inp.value = m.name;
+      inp.dataset.kennitala = m.kennitala || '';
+      drop.style.display = 'none';
+    });
+    drop.appendChild(item);
+  });
+  drop.style.display = '';
+}
+
+function submitCheckout() {
   const kt  = selectedMemberKt;
   const bid = document.getElementById('coBoat').value;
   const lid = document.getElementById('coLocation').value;
@@ -706,8 +760,9 @@ async function submitCheckout() {
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     // Save crew trips for named crew members
-    const _crewNames = (document.getElementById('coCrewNames')?.value || '')
-      .split('\n').map(n => n.trim()).filter(Boolean);
+    const _crewNames = Array.from(document.querySelectorAll('#coCrewInputs input'))
+      .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
+      .filter(c => c.name);
     if (_crewNames.length) {
       const _tripBase = {
         linkedCheckoutId: res?.checkoutId || res?.id || '',
@@ -718,7 +773,7 @@ async function submitCheckout() {
         role: 'crew', isLinked: true, wxSnapshot: snap,
       };
       for (const _cn of _crewNames) {
-        try { await apiPost('saveTrip', Object.assign({}, _tripBase, { crewMemberName: _cn }));
+        try { await apiPost('saveTrip', Object.assign({}, _tripBase, { crewMemberName: _cn.name, crewMemberKennitala: _cn.kennitala }));
         } catch(e2) { console.warn('crew trip save failed for', _cn, e2.message); }
       }
     }
