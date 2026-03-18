@@ -320,7 +320,8 @@ function tripCard(t){
         <div class="trip-boat">${esc(t.boatName||'—')}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
-          ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
+          ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
+          ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
         </div>
@@ -585,6 +586,17 @@ async function reload(){
       '<div class="empty-note" style="color:var(--red)">Could not load: '+esc(e.message)+'</div>';
   }
 })();
+
+async function requestTripValidation(id) {
+  try {
+    await apiPost('saveTrip', { id, validationRequested: true });
+    // Update local trip data
+    const t = myTrips.find(x => x.id === id);
+    if (t) t.validationRequested = true;
+    applyFilter();
+    showToast(IS ? 'Óskað eftir staðfestingu' : 'Validation requested');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
 </script>
 </body>
 </html>
