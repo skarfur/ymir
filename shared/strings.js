@@ -211,6 +211,7 @@ const STRINGS = {
   'staff.activeCheckouts':   { EN:'ACTIVE CHECKOUTS',         IS:'VIRKAR ÚTSKRÁNINGAR' },
   'staff.boatsOutNow':       { EN:'BOATS OUT NOW',            IS:'BÁTAR Á SJÓNUM' },
   'staff.checkOutBtn':       { EN:'+ Check Out',              IS:'+ Útskrá' },
+  'staff.groupCheckout':    { EN:'Group',              IS:'Hópur' },
   'staff.newCheckout':       { EN:'NEW CHECKOUT',             IS:'NÝ ÚTSKRÁNING' },
   'staff.statBoats':         { EN:'BOATS OUT',                IS:'BÁTAR Á SJÓ' },
   'staff.statPeople':        { EN:'PEOPLE OUT',               IS:'FÓLK Á SJÓ' },
