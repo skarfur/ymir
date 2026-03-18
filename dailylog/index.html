@@ -236,6 +236,13 @@
       <label data-s="daily.actType"></label>
       <div class="type-btns" id="actTypeBtns"></div>
     </div>
+    <!-- Subtype template -->
+    <div class="field" id="actSubtypeField" style="display:none">
+      <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Template</label>
+      <select id="actSubtype" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px" onchange="applyActSubtype()">
+        <option value="">— No template —</option>
+      </select>
+    </div>
     <div class="field">
       <label data-s="daily.actNameLabel"></label>
       <input type="text" id="actName">
@@ -258,9 +265,33 @@
       <label data-s="daily.actNotes"></label>
       <input type="text" id="actNotes">
     </div>
+    <!-- Abler checkbox -->
+    <div class="check-row" style="margin:10px 0">
+      <input type="checkbox" id="actAbler">
+      <label for="actAbler" style="font-size:12px">Activity details registered in Abler</label>
+    </div>
+    <!-- Group checkout link -->
+    <div id="actGroupLinkSection" style="margin-bottom:12px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Linked group checkouts</div>
+      <div id="actGroupLinkCards" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+      <button type="button" onclick="openGroupLinkPicker()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">+ Link group checkout</button>
+    </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   id="actSaveBtn"   data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GROUP LINK PICKER ══ -->
+<div class="modal-overlay hidden" id="groupLinkModal" onclick="if(event.target===this)closeModal('groupLinkModal')">
+  <div class="modal" style="max-width:480px">
+    <h3 style="margin-bottom:14px">Link Group Checkout</h3>
+    <div id="groupLinkPickerCards" style="margin-bottom:14px"></div>
+    <div id="groupLinkEmpty" style="display:none;color:var(--muted);font-size:12px;margin-bottom:14px">No active group checkouts today.</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('groupLinkModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmGroupLink()">Link selected</button>
     </div>
   </div>
 </div>
@@ -484,10 +515,13 @@ function renderActivities() {
     const row = document.createElement('div');
     row.className = 'activity-row';
     const info = document.createElement('div'); info.className = 'activity-info';
-    const meta = [act.type, act.start && act.end ? act.start+'–'+act.end : act.start, act.participants].filter(Boolean).join(' · ');
-    info.innerHTML = `<div class="activity-name">${esc(act.name)}</div>
+    const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
+    const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:#1a3a1a;border:1px solid #2e7d32;color:#4caf50;border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
+    const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
+      ? '<span style="font-size:9px;background:var(--card);border:1px solid #2e86c155;border-left:2px solid #2e86c1;border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' group' + (act.linkedGroupCheckoutIds.length>1?'s':'') + '</span>' : '';
+    info.innerHTML = `<div class="activity-name">${esc(act.name)}${ablerBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
-      ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
+      ${act.notes ? `<div class="activity-nity-note">${esc(act.notes)}</div>` : ''}`;
     const del = document.createElement('button');
     del.className = 'del-btn'; del.dataset.deleteActivity = act.id; del.innerHTML = '&times;';
     row.appendChild(info); row.appendChild(del);
@@ -552,6 +586,11 @@ function renderActTypeBtns() {
     btn.dataset.typeId = t.id;
     const label = L === 'IS' && t.nameIS ? t.nameIS : t.name;
     btn.textContent = label;
+    btn.addEventListener('click', function() {
+      _selectedActType = t.id;
+      renderActTypeBtns();
+      populateActSubtypes();
+    });
     dom.actTypeBtns.appendChild(btn);
   });
 }
@@ -758,12 +797,16 @@ function deleteActivity(id) {
 
 function openActivityModal() {
   _selectedActType = activityTypes[0]?.id || null;
+  _linkedGroupCheckoutIds = [];
   renderActTypeBtns();
+  populateActSubtypes();
   dom.actName.value = '';
   dom.actStart.value = '';
   dom.actEnd.value = '';
   dom.actParticipants.value = '';
   dom.actNotes.value = '';
+  document.getElementById('actAbler').checked = false;
+  renderGroupLinkCards();
   dom.activityModal.classList.remove('hidden');
 }
 function closeActivityModal() { dom.activityModal.classList.add('hidden'); }
@@ -773,14 +816,21 @@ function saveActivity() {
   const typeObj = activityTypes.find(t => t.id === _selectedActType);
   if (!name)    { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
   if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
+  const selSubtype = document.getElementById('actSubtype').value;
+  const subtypeObj = selSubtype ? (typeObj.subtypes || []).find(st => st.id === selSubtype) : null;
   activities.push({
-    id:           'act-' + Date.now(),
-    type:         L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
+    id:                    'act-' + Date.now(),
+    activityTypeId:        typeObj.id,
+    subtypeId:             selSubtype || '',
+    subtypeName:           subtypeObj ? (L==='IS'&&subtypeObj.nameIS?subtypeObj.nameIS:subtypeObj.name) : '',
+    type:                  L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
     name,
-    start:        dom.actStart.value || '',
-    end:          dom.actEnd.value   || '',
-    participants: dom.actParticipants.value || '',
-    notes:        dom.actNotes.value.trim(),
+    start:                 dom.actStart.value || '',
+    end:                   dom.actEnd.value   || '',
+    participants:          dom.actParticipants.value || '',
+    notes:                 dom.actNotes.value.trim(),
+    ablerRegistered:       document.getElementById('actAbler').checked,
+    linkedGroupCheckoutIds: _linkedGroupCheckoutIds.slice(),
   });
   renderActivities();
   closeActivityModal();
@@ -915,7 +965,7 @@ async function loadPastLog() {
 
 async function loadTodayTrips() {
   try {
-    const res = await apiGet('getActiveCheckouts');
+    const res = await apiGet('getActiveCheckouts').then(r => { window._activeCheckouts = (r.checkouts||[]); return r; });
     tripsData = res.checkouts || [];
   } catch(e) { tripsData = []; }
   renderTrips();
@@ -1014,6 +1064,94 @@ async function doSave(signOff) {
     btn.textContent = orig;
   }
 }
+
+// ── Activity subtype + group link helpers ────────────────────────────────────
+let _linkedGroupCheckoutIds = [];
+let _groupLinkPickerSelected = new Set();
+
+function populateActSubtypes() {
+  const typeObj = activityTypes.find(t => t.id === _selectedActType);
+  const sel     = document.getElementById('actSubtype');
+  const field   = document.getElementById('actSubtypeField');
+  if (!sel || !field) return;
+  const subs = typeObj && typeObj.subtypes
+    ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
+    : [];
+  if (!subs.length) { field.style.display = 'none'; sel.value = ''; return; }
+  field.style.display = '';
+  sel.innerHTML = '<option value="">— No template —</option>';
+  subs.forEach(function(st) {
+    const o = document.createElement('option');
+    o.value = st.id;
+    o.textContent = (L==='IS' && st.nameIS ? st.nameIS : st.name) +
+      (st.defaultStart ? '  ' + st.defaultStart + (st.defaultEnd ? '–'+st.defaultEnd : '') : '');
+    sel.appendChild(o);
+  });
+}
+
+function applyActSubtype() {
+  const typeObj = activityTypes.find(t => t.id === _selectedActType);
+  const subs    = typeObj && typeObj.subtypes
+    ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
+    : [];
+  const stId  = document.getElementById('actSubtype').value;
+  const st    = subs.find(s => s.id === stId);
+  if (!st) return;
+  if (st.name   && !dom.actName.value)  dom.actName.value  = L==='IS'&&st.nameIS ? st.nameIS : st.name;
+  if (st.defaultStart) dom.actStart.value = st.defaultStart;
+  if (st.defaultEnd)   dom.actEnd.value   = st.defaultEnd;
+}
+
+function renderGroupLinkCards() {
+  const wrap = document.getElementById('actGroupLinkCards');
+  if (!wrap) return;
+  if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
+    return '<div style="background:var(--card);border:1px solid #2e86c155;border-left:3px solid #2e86c1;border-radius:6px;padding:6px 10px;font-size:11px;display:flex;align-items:center;justify-content:space-between">' +
+      '<span>⛵ Group checkout ' + esc(id.slice(-6)) + '</span>' +
+      '<button onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>' +
+      '</div>';
+  }).join('');
+}
+
+function openGroupLinkPicker() {
+  _groupLinkPickerSelected = new Set(_linkedGroupCheckoutIds);
+  const wrap  = document.getElementById('groupLinkPickerCards');
+  const empty = document.getElementById('groupLinkEmpty');
+  // Get today's group checkouts from the active checkouts in memory
+  const groups = (window._activeCheckouts || []).filter(function(c) {
+    return (c.isGroup === true || c.isGroup === 'true') && c.status === 'out';
+  });
+  if (!groups.length) {
+    wrap.innerHTML = '';
+    empty.style.display = '';
+  } else {
+    empty.style.display = 'none';
+    wrap.innerHTML = groups.map(function(c) {
+      let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
+      let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
+      const sel = _groupLinkPickerSelected.has(c.id);
+      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border:1px solid ' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;border-radius:6px;padding:8px 12px;cursor:pointer;margin-bottom:6px">' +
+        '<div style="font-size:12px;font-weight:500">' + esc(boatArr.join(', ')) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+  openModal('groupLinkModal');
+}
+
+function toggleGroupLinkPick(id) {
+  if (_groupLinkPickerSelected.has(id)) _groupLinkPickerSelected.delete(id);
+  else _groupLinkPickerSelected.add(id);
+  openGroupLinkPicker();
+}
+
+function confirmGroupLink() {
+  _linkedGroupCheckoutIds = Array.from(_groupLinkPickerSelected);
+  renderGroupLinkCards();
+  closeModal('groupLinkModal');
+}
+
 </script>
 </body>
 </html>
