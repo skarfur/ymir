@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ýmir — Logbook Review</title>
+<title>Ãmir â Logbook Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
@@ -66,14 +66,14 @@
 
   <!-- Stats row 1 -->
   <div class="stat-strip" style="margin-bottom:8px">
-    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l">YTD TRIPS</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sRequested" style="color:var(--brass)">—</div><div class="stat-l">AWAITING REVIEW</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">â</div><div class="stat-l">YTD TRIPS</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sRequested" style="color:var(--brass)">â</div><div class="stat-l">AWAITING REVIEW</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sVerified">â</div><div class="stat-l">VERIFIED</div></div>
   </div>
   <!-- Stats row 2 -->
   <div class="stat-strip" style="margin-bottom:16px">
-    <div class="stat-cell"><div class="stat-n" id="sTotalPersons">—</div><div class="stat-l">PERSONS ON WATER</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sUniquePersons">—</div><div class="stat-l">UNIQUE MEMBERS</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sTotalPersons">â</div><div class="stat-l">PERSONS ON WATER</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sUniquePersons">â</div><div class="stat-l">UNIQUE MEMBERS</div></div>
     <div class="stat-cell" style="text-align:left;padding:8px 10px"><div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">BY BOAT TYPE</div><div id="sBoatCats" style="font-size:11px;color:var(--text);line-height:1.8"></div></div>
   </div>
   <!-- Trips section header + single show-all toggle -->
@@ -85,7 +85,7 @@
   </div>
   <!-- Filters -->
   <div class="filter-bar">
-    <input type="text" id="filterName" placeholder="Member name…" oninput="applyFilters()">
+    <input type="text" id="filterName" placeholder="Member nameâ¦" oninput="applyFilters()">
     <select id="filterStatus" onchange="applyFilters()">
       <option value="">All statuses</option>
       <option value="pending">Unverified</option>
@@ -97,12 +97,12 @@
 
   <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
-  <!-- ══ CERTIFICATIONS ══════════════════════════════════════════════════════ -->
+  <!-- ââ CERTIFICATIONS ââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
   <div style="margin-top:28px">
     <div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px">CERTIFICATIONS</div>
     <!-- Member search -->
     <div style="position:relative;margin-bottom:14px">
-      <input type="text" id="certMemberSearch" placeholder="Search member name…"
+      <input type="text" id="certMemberSearch" placeholder="Search member nameâ¦"
         style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:9px 12px"
         oninput="searchCertMember(this.value)">
       <div id="certMemberDrop" style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;z-index:100;display:none;max-height:200px;overflow-y:auto"></div>
@@ -124,13 +124,13 @@
 
 </div>
 
-<!-- ══ CERT ASSIGNMENT MODAL ══ -->
+<!-- ââ CERT ASSIGNMENT MODAL ââ -->
 <div class="modal-overlay hidden" id="tripCertModal" onclick="if(event.target===this)closeModal('tripCertModal')">
   <div class="modal" style="max-width:440px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h3 style="margin:0" id="tcmTitle"></h3>
       <button class="btn-ghost" onclick="closeModal('tripCertModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">Ã</button>
     </div>
 
     <div style="margin-bottom:14px">
@@ -240,14 +240,14 @@ function updateStats() {
     catCounts[c] = (catCounts[c]||0)+1;
   });
   const catHtml = Object.entries(catCounts).sort((a,b)=>b[1]-a[1])
-    .map(function(e){ return '<span><strong>'+e[1]+'</strong> '+esc(e[0])+'</span>'; }).join(' &nbsp;·&nbsp; ');
+    .map(function(e){ return '<span><strong>'+e[1]+'</strong> '+esc(e[0])+'</span>'; }).join(' &nbsp;Â·&nbsp; ');
   var el;
   el=document.getElementById('sTotalTrips');    if(el) el.textContent=ytd.length;
   el=document.getElementById('sRequested');     if(el) el.textContent=requested;
   el=document.getElementById('sVerified');      if(el) el.textContent=verified;
   el=document.getElementById('sTotalPersons');  if(el) el.textContent=totalPersons;
   el=document.getElementById('sUniquePersons'); if(el) el.textContent=uniqueIds.size;
-  el=document.getElementById('sBoatCats');      if(el) el.innerHTML=catHtml||'—';
+  el=document.getElementById('sBoatCats');      if(el) el.innerHTML=catHtml||'â';
 }
 
 function applyFilters() {
@@ -256,7 +256,7 @@ function applyFilters() {
   const from   = document.getElementById('filterFrom').value;
   const to     = document.getElementById('filterTo').value;
 
-  const showAll = document.getElementById('showAllTrips')?.checked;
+  const showAll = document.getElementById('showAllTrips')?.checked ?? true;
   filtered = allTrips.filter(t => {
     if (!showAll && t.validationRequested !== true && t.validationRequested !== 'true') return false;
     if (name   && !(t.memberName||'').toLowerCase().includes(name)) return false;
@@ -281,27 +281,27 @@ function renderTrips() {
     return `<div class="trip-card${isVer?' verified':''}" id="tc-${esc(t.id)}">
       <div class="trip-head">
         <div>
-          <div class="trip-date">${esc(t.date||'—')} · <span style="color:var(--text)">${esc(t.memberName||'—')}</span></div>
-          <div class="trip-title">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
+          <div class="trip-date">${esc(t.date||'â')} Â· <span style="color:var(--text)">${esc(t.memberName||'â')}</span></div>
+          <div class="trip-title">${esc(t.boatName||'â')} Â· ${esc(t.locationName||'â')}</div>
           <div class="trip-meta">
-            <span>${esc(t.timeOut||'')}–${esc(t.timeIn||'')}</span>
+            <span>${esc(t.timeOut||'')}â${esc(t.timeIn||'')}</span>
             <span>${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</span>
-            <span>👥 ${esc(t.crew||1)}</span>
-            ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
+            <span>ð¥ ${esc(t.crew||1)}</span>
+            ${t.beaufort ? `<span>ð¨ Bft ${esc(t.beaufort)}</span>` : ''}
             ${t.windDir  ? `<span>${esc(t.windDir)}</span>` : ''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <span class="badge ${isVer?'badge-verified':'badge-pending'}">${isVer ? ('✓ '+s('logrev.verified')) : s('logrev.pending')}</span>
+          <span class="badge ${isVer?'badge-verified':'badge-pending'}">${isVer ? ('â '+s('logrev.verified')) : s('logrev.pending')}</span>
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
         </div>
       </div>
-      ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
+      ${t.notes ? `<div class="trip-notes">ð ${esc(t.notes)}</div>` : ''}
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
           <div class="staff-comment-label">${s('incident.staffNotes').toUpperCase()}</div>
           <div style="color:var(--text)">${esc(t.staffComment)}</div>
-          ${t.verifiedBy ? `<div style="color:var(--muted);margin-top:3px;font-size:10px">— ${esc(t.verifiedBy)}</div>` : ''}
+          ${t.verifiedBy ? `<div style="color:var(--muted);margin-top:3px;font-size:10px">â ${esc(t.verifiedBy)}</div>` : ''}
         </div>` : ''}
       <div class="verify-row" id="vrow-${esc(t.id)}">
         <input type="text" id="comment-${esc(t.id)}"
@@ -310,9 +310,9 @@ function renderTrips() {
         
         ${isVer
           ? `<button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0"
-              onclick="unverifyTrip('${esc(t.id)}')">✗ ${s('logrev.unverify')}</button>`
+              onclick="unverifyTrip('${esc(t.id)}')">â ${s('logrev.unverify')}</button>`
           : `<button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex-shrink:0"
-              onclick="verifyTrip('${esc(t.id)}')">✓ ${s('logrev.verify')}</button>`}
+              onclick="verifyTrip('${esc(t.id)}')">â ${s('logrev.verify')}</button>`}
       </div>
     </div>`;
   }).join('');
@@ -321,7 +321,7 @@ function renderTrips() {
 async function verifyTrip(id) {
   const comment = document.getElementById('comment-'+id)?.value.trim() || '';
   const btn = document.querySelector(`#tc-${id} .btn-primary`);
-  if (btn) { btn.disabled=true; btn.textContent='…'; }
+  if (btn) { btn.disabled=true; btn.textContent='â¦'; }
   try {
     await apiPost('saveTrip', { id, verified: true, staffComment: comment, verifiedBy: user.name });
     const idx = allTrips.findIndex(t => t.id === id);
@@ -329,7 +329,7 @@ async function verifyTrip(id) {
     updateStats(); applyFilters();
     showToast(s('lbl.verified'));
   } catch(e) {
-    if (btn) { btn.disabled=false; btn.textContent='✓ '+s('logrev.verify'); }
+    if (btn) { btn.disabled=false; btn.textContent='â '+s('logrev.verify'); }
     showToast(s('toast.error'), 'err');
   }
 }
@@ -345,11 +345,11 @@ async function unverifyTrip(id) {
   } catch(e) { showToast(s('toast.error'), 'err'); }
 }
 
-// ── Cert modal ────────────────────────────────────────────────────────────────
+// ââ Cert modal ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 async function openTripCertModal(memberId, memberName) {
   _tcmMemberId = memberId || null;
   document.getElementById('tcmTitle').textContent =
-    s('cert.assign') + ' — ' + (memberName || '');
+    s('cert.assign') + ' â ' + (memberName || '');
   document.getElementById('tcmCurrentList').innerHTML =
     `<div style="color:var(--muted);font-size:11px;font-style:italic">${s('lbl.loading')}</div>`;
   document.getElementById('tcmCertType').value = '';
@@ -443,7 +443,7 @@ async function tcmAssign() {
     document.getElementById('tcmCertType').value = '';
     document.getElementById('tcmSubcatField').style.display = 'none';
     document.getElementById('tcmExpiryField').style.display = 'none';
-    showToast('✓ ' + s('cert.assign') + ': ' + m.name);
+    showToast('â ' + s('cert.assign') + ': ' + m.name);
   } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
 }
 
@@ -454,55 +454,7 @@ function parseJson(v, fallback) {
 
 function todayISO() { return new Date().toISOString().slice(0,10); }
 
-// ── Cert section ────────────────────────────────────────────────────────────────────────────
-function searchCertMember(q) {
-  var drop = document.getElementById("certMemberDrop");
-  if (!q || q.length < 2) { drop.style.display = "none"; return; }
-  var matches = (_tcmAllMembers || []).filter(function(m) { return m.name && m.name.toLowerCase().includes(q.toLowerCase()); }).slice(0, 8);
-  if (!matches.length) { drop.style.display = "none"; return; }
-  drop.innerHTML = matches.map(function(m) {
-    var id = m.id || m.kennitala || "";
-    var kt = m.kennitala || m.id || "";
-    return "<div style=\"padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px\"" +
-      " onmouseover=\"this.style.background='var(--card)'\" onmouseout=\"this.style.background=''\"" +
-      " onclick=\"selectCertMember('" + id + "','" + esc(m.name) + "','" + esc(kt) + "')\">" +
-      esc(m.name) + "<span style=\"color:var(--muted);margin-left:8px;font-size:10px\">" + esc(kt) + "</span></div>";
-  }).join("");
-  drop.style.display = "block";
-}
-
-async function selectCertMember(id, name, kennitala) {
-  document.getElementById("certMemberSearch").value = name;
-  document.getElementById("certMemberDrop").style.display = "none";
-  _certPanelMemberId = id;
-  document.getElementById("certPanelName").textContent = name;
-  document.getElementById("certPanelMeta").textContent = kennitala || "";
-  document.getElementById("certMemberPanel").style.display = "";
-  document.getElementById("certMemberEmpty").style.display = "none";
-  if (!_tcmLoaded) {
-    try {
-      var results = await Promise.all([apiGet("getMembers"), apiGet("getConfig")]);
-      _tcmAllMembers = results[0].members || [];
-      _tcmCertDefs   = certDefsFromConfig(results[1].certDefs || []);
-      _tcmLoaded     = true;
-    } catch(e) { showToast("Error loading certs", "err"); return; }
-  }
-  renderCertPanel(id);
-}
-
-function renderCertPanel(memberId) {
-  var panel = document.getElementById("certPanelList");
-  var m = (_tcmAllMembers || []).find(function(x) { return x.id === memberId || x.kennitala === memberId; });
-  if (!m) { panel.innerHTML = "<div style=\"color:var(--muted);font-size:12px\">Member not found.</div>"; return; }
-  var certs = enrichMemberCerts(parseJson(m.certifications, []), _tcmCertDefs);
-  if (!certs.length) {
-    panel.innerHTML = "<div style=\"color:var(--muted);font-size:12px;padding:8px 0\">No certifications on record.</div>";
-    return;
-  }
-  panel.innerHTML = certs.map(certBadgeHTML).join("");
-}
-
-// ── Certifications section ───────────────────────────────────────────────────
+// ââ Certifications section âââââââââââââââââââââââââââââââââââââââââââââââââââ
 let _certSelectedMember = null;
 
 function searchCertMember(q) {
@@ -532,8 +484,20 @@ async function selectCertMember(memberId, memberName) {
   _certSelectedMember = { id: memberId, name: memberName };
   document.getElementById('certMemberName').textContent = memberName;
   document.getElementById('certMemberPanel').style.display = '';
-  // Ensure cert defs + members loaded
-  if (!_tcmLoaded) await openTripCertModal('', '');
+  // Load data if needed, without opening the assign modal
+  if (!_tcmLoaded) {
+    try {
+      const [mRes, cfgRes] = await Promise.all([apiGet('getMembers'), apiGet('getConfig')]);
+      _tcmAllMembers = mRes.members || [];
+      _tcmCertDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+      _tcmLoaded     = true;
+      const sel = document.getElementById('tcmCertType');
+      if (sel) {
+        sel.innerHTML = '<option value="">' + s('lbl.selectDots') + '</option>';
+        _tcmCertDefs.forEach(d => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; sel.appendChild(o); });
+      }
+    } catch(e) { showToast('Error loading certs', 'err'); return; }
+  }
   renderMemberCertList(memberId);
 }
 
@@ -551,11 +515,11 @@ function renderMemberCertList(memberId) {
     const sub = c.subcatKey && def.subcats ? def.subcats.find(s => s.key === c.subcatKey) : null;
     const expiry = c.expiresAt ? (new Date(c.expiresAt) < new Date() ? '<span style="color:var(--red)">Expired ' + esc(c.expiresAt) + '</span>' : 'Expires ' + esc(c.expiresAt)) : 'Permanent';
     return '<div class="cert-row">' +
-      '<div><div class="cert-name">' + esc(def.name || c.certId) + (sub ? ' — ' + esc(sub.label) : '') + '</div>' +
-      '<div class="cert-meta">' + expiry + (c.issuedAt ? ' · Issued ' + esc(c.issuedAt) : '') + '</div></div>' +
+      '<div><div class="cert-name">' + esc(def.name || c.certId) + (sub ? ' â ' + esc(sub.label) : '') + '</div>' +
+      '<div class="cert-meta">' + expiry + (c.issuedAt ? ' Â· Issued ' + esc(c.issuedAt) : '') + '</div></div>' +
       '<div class="cert-actions">' +
       '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="editCert(\'' + esc(c.certId) + '\',\'' + esc(c.subcatKey||'')+'\')">Edit</button>' +
-      '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="deleteCert(\'' + esc(c.certId) + '\',\'' + esc(c.subcatKey||'') + '\')">✕</button>' +
+      '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="deleteCert(\'' + esc(c.certId) + '\',\'' + esc(c.subcatKey||'') + '\')">â</button>' +
       '</div></div>';
   }).join('');
 }
