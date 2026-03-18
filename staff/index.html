@@ -1078,7 +1078,7 @@ function addGmStaffRow() {
   inp.dataset.kennitala = '';
   const drop = document.createElement('div');
   drop.className = 'gm-drop';
-  inp.addEventListener('input', function() { searchGmStaff(this, drop); });
+  inp.addEventListener('input', function() { this.dataset.kennitala=''; this.style.borderColor=''; searchGmStaff(this, drop); });
   inp.addEventListener('blur',  function() { setTimeout(function(){ drop.style.display='none'; }, 200); });
   wrap.appendChild(inp); wrap.appendChild(drop);
   sec.appendChild(wrap);
@@ -1101,6 +1101,7 @@ function searchGmStaff(inp, drop) {
       e.preventDefault();
       inp.value = m.name;
       inp.dataset.kennitala = m.kennitala || '';
+      inp.style.borderColor = 'var(--green)';
       drop.style.display = 'none';
       updateGmTotalNote();
     });
@@ -1123,6 +1124,10 @@ async function submitGroupCheckout() {
   const snap = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
     .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala || '' })).filter(s => s.name);
+  if (!staffEntries.length) { err.textContent = (getLang()==='IS'?'Þarf að skrá a.m.k. einn starfsmann.':'At least one staff member on water is required.'); err.style.display = ''; return; }
+  // Warn if any staff entry was typed but not selected from DB
+  const unmatched = staffEntries.filter(s => !s.kennitala);
+  if (unmatched.length && members.length > 0) { err.textContent = 'Please select staff from the list: ' + unmatched.map(s=>s.name).join(', '); err.style.display = ''; return; }
   const boatIds   = Array.from(_groupBoats);
   const boatNames = boatIds.map(id => (boats.find(b => b.id === id) || {}).name || id);
   const totalAboard = _groupParticipants + staffEntries.length;
@@ -1258,7 +1263,7 @@ function renderGroupCard(c) {
 
     <!-- Staff on water -->
     <div class="gm-section">
-      <div class="gm-section-label">Staff on water (optional)</div>
+      <div class="gm-section-label" id="gmStaffLabel">Staff on water <span style="font-size:9px;color:var(--red)">*required</span></div>
       <div id="gmStaffSection"></div>
       <button onclick="addGmStaffRow()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:4px">+ Add another</button>
     </div>
