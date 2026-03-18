@@ -698,6 +698,11 @@ function renderLaunchForm(boat) {
       '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>' +
       '<button type="button" onclick="adjLaunchCrew(1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>' +
     '</div></div>' +
+    '<div class="field" style="margin-top:12px">' +
+      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Crew names <span style="font-weight:400;opacity:.6">(optional)</span></label>' +
+      '<textarea id="launchCrewNames" rows="2" placeholder="One name per line — auto-logged as crew" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px"></textarea>' +
+      '<div style="font-size:10px;color:var(--muted);margin-top:3px">Named crew get this trip automatically added to their logbook.</div>' +
+    '</div>' +
     '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
     '<div class="btn-row">' +
       '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← ' + s("nav.back").replace("← ","") + '</button>' +
