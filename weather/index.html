@@ -201,8 +201,7 @@ function render(wx, marine) {
     });
   }
 
-  const marineNote = marine && !isDefault()
-    ? `<div style="font-size:10px;color:var(--muted);margin-top:6px">⚓ Wave data from nearest offshore cell</div>` : '';
+  const marineNote = ''
 
   document.getElementById('mainContent').innerHTML = `
 
