@@ -308,8 +308,10 @@
   <div class="section">
     <div class="section-head">
       <h3 id="boatsOutNowLabel"></h3>
-      <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn"></button>
-      <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="openGroupModal()" id="groupCheckOutBtn" data-s="staff.groupCheckout"></button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn" data-s="staff.checkOutBtn"></button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="openGroupModal()" id="groupCheckOutBtn" data-s="staff.groupCheckout"></button>
+      </div>
     </div>
 
     <!-- Checkout form -->
@@ -460,7 +462,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Wire dynamic string labels that can't use data-s (need live values) ──
   const L = getLang();
   document.getElementById('boatsOutNowLabel').textContent    = s('staff.boatsOutNow');
-  document.getElementById('checkOutBtn').textContent         = s('staff.checkOutBtn');
   document.getElementById('newCheckoutLabel').textContent    = s('staff.newCheckout');
   document.getElementById('memberLabel').textContent         = s('lbl.member');
   document.getElementById('boatLabel').textContent           = s('lbl.boat');
@@ -574,7 +575,14 @@ function renderStats() {
     return c.expectedReturn < fmtTimeNow();
   });
   const people  = active.reduce((n, c) => n + (parseInt(c.crew) || 1), 0);
-  document.getElementById('statBoats').textContent   = active.length;
+  // Count total boats: group checkouts may have multiple boats
+  const totalBoats = active.reduce((n, c) => {
+    if (c.isGroup === true || c.isGroup === 'true') {
+      try { const bn = c.boatNames ? (typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames) : [c.boatName]; return n + bn.length; } catch(e){ return n+1; }
+    }
+    return n + 1;
+  }, 0);
+  document.getElementById('statBoats').textContent   = totalBoats;
   document.getElementById('statPeople').textContent  = people;
   const el = document.getElementById('statOverdue');
   el.textContent = overdue.length;
@@ -1001,13 +1009,14 @@ function openGroupModal() {
   const grid = document.getElementById('gmBoatGrid');
   const active = checkouts.filter(c => c.status === 'out');
   grid.innerHTML = '';
-  boats.filter(b => !boolVal(b.oos)).forEach(b => {
+  boats.filter(b => b.active !== false && b.active !== 'false').forEach(b => {
     const out = active.find(c => c.boatId === b.id);
     const btn = document.createElement('button');
     btn.className = 'gm-boat-btn';
     btn.textContent = boatEmoji((b.category||'').toLowerCase()) + ' ' + (b.name || b.id);
     btn.dataset.id = b.id;
-    if (out) { btn.disabled = true; btn.title = 'Already out'; }
+    if (boolVal(b.oos)) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Out of service'; }
+    else if (out) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Already out'; }
     else btn.addEventListener('click', function() { toggleGmBoat(this); });
     grid.appendChild(btn);
   });
@@ -1232,12 +1241,7 @@ function renderGroupCard(c) {
     <!-- Staff on water -->
     <div class="gm-section">
       <div class="gm-section-label">Staff on water (optional)</div>
-      <div id="gmStaffSection">
-        <div class="gm-staff-wrap" id="gmStaffRow0">
-          <input class="gm-staff-input" type="text" placeholder="Search staff name…" data-idx="0">
-          <div class="gm-drop" id="gmStaffDrop0"></div>
-        </div>
-      </div>
+      <div id="gmStaffSection"></div>
       <button onclick="addGmStaffRow()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:4px">+ Add another</button>
     </div>
 
