@@ -85,6 +85,26 @@
 .sev-btn[data-sev="critical"] { color:var(--red);    border-color:var(--red)55;    background:var(--red)11;    }
 .sev-btn.selected { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
 .ir-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; }
+/* ── Fleet status (shared with staff page) ─────────────────────────── */
+.fleet-status-block { margin-bottom:4px; }
+.fsb-header { display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:6px;background:var(--surface);transition:background .15s;border-left:3px solid transparent; }
+.fsb-header:hover { background:var(--surface2,#132233); }
+.fsb-emoji { font-size:14px;flex-shrink:0; }
+.fsb-label { font-size:12px;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.04em; }
+.fsb-bar-wrap { width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden; }
+.fsb-bar { height:100%;border-radius:3px;transition:width .3s; }
+.fsb-count { font-size:12px;font-weight:bold;min-width:32px;text-align:right; }
+.fsb-count.has-avail { color:var(--green); }
+.fsb-count.none-avail { color:var(--muted); }
+.fsb-arrow { font-size:11px;color:var(--muted); }
+.fsb-body { padding:4px 0; }
+.fleet-cat-grid { display:flex;flex-wrap:wrap;gap:6px;padding:4px; }
+.bc-card { background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px; }
+.bc-avail { border-left:3px solid #2ecc71;cursor:pointer; }
+.bc-avail:hover { background:var(--surface2,#132233); }
+.bc-out { border-left:3px solid var(--brass); }
+.bc-overdue { border-left:3px solid var(--red); }
+.bc-oos { opacity:.5; }
 </style>
 </head>
 <body>
@@ -327,48 +347,23 @@ function showTab(name) {
 
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
-  const el     = document.getElementById('fleetByCat');
   const active = checkouts.filter(c => c.status === 'out');
-  if (!boats.length) { el.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
-
-  const grouped = {};
-  boats.forEach(b => {
-    const cat = (b.category||'other').toLowerCase();
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(b);
+  renderFleetStatus('fleetByCat', boats, active, {
+    onAvailClick: 'launchBoatById',
+    toggleFn:     'toggleFleetCat',
+    collapsed:    true,
   });
-
-  el.innerHTML = Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat, catBoats]) => {
-    const avail = catBoats.filter(b => !active.find(c=>c.boatId===b.id) && !boolVal(b.oos)).length;
-    const cards = catBoats.map(b => {
-      const co     = active.find(c => c.boatId===b.id);
-      const oos    = boolVal(b.oos);
-      const status = oos ? 'oos' : co ? 'out' : 'avail';
-      return renderBoatCard(b, {
-        status, checkoutData: co,
-        onClick: status==='avail' ? `launchBoatById('${b.id}')` : undefined,
-      });
-    }).join('');
-    return `<div>
-      <div class="boat-cat-toggle" onclick="toggleCat(this)">
-        <span class="bct-label">${boatEmoji(cat)} ${esc(cat)}</span>
-        <span style="display:flex;align-items:center;gap:6px">
-          <span class="bct-count">${avail}/${catBoats.length}</span>
-          <span class="bct-arrow">▼</span>
-        </span>
-      </div>
-      <div class="boat-cat-body">
-        <div class="boat-cat-grid">${cards}</div>
-      </div>
-    </div>`;
-  }).join('');
 }
 
-function toggleCat(toggle) {
-  const body  = toggle.nextElementSibling;
-  const arrow = toggle.querySelector('.bct-arrow');
-  const open  = body.classList.toggle('open');
-  arrow.classList.toggle('open', open);
+function toggleCat(el) { toggleFleetCat(el); }
+function toggleFleetCat(toggle) {
+  const targetId = toggle.dataset.target;
+  const body  = targetId ? document.getElementById(targetId) : toggle.nextElementSibling;
+  const arrow = toggle.querySelector('.fsb-arrow,.bct-arrow,.fct-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
 }
 
 // ══ ACTIVE CHECKOUTS ═════════════════════════════════════════════════════════
