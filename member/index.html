@@ -720,7 +720,7 @@ async function submitLaunch() {
   const location = locations.find(l=>l.id===lid)||{};
   const snap = (typeof wxSnapshot==='function') ? wxSnapshot(currentWx) : null;
   try {
-    await apiPost('saveCheckout',{
+    const res = await apiPost('saveCheckout',{
       memberKennitala:user.kennitala, memberName:user.name,
       boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
       locationId:lid, locationName:location.name||lid,
@@ -731,6 +731,19 @@ async function submitLaunch() {
       wxSnapshot:snap,
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts||[];
+    const _crewNames = (document.getElementById('launchCrewNames')?.value||'')
+      .split('\n').map(n=>n.trim()).filter(Boolean);
+    if (_crewNames.length) {
+      const _trip = { boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
+        locationId:lid, locationName:location.name||lid,
+        timeOut:tout, expectedReturn:ret, role:'crew', isLinked:true, wxSnapshot:snap };
+      for (const _cn of _crewNames) {
+        try { await apiPost('saveTrip', Object.assign({}, _trip, {
+          linkedCheckoutId: res?.checkoutId||res?.id||'',
+          crewMemberName: _cn,
+        })); } catch(e2) { console.warn('crew trip:', _cn, e2.message); }
+      }
+    }
     closeModal('launchModal');
     renderActiveCheckouts();
     renderFleetByCat();
