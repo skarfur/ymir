@@ -754,24 +754,36 @@ function renderCrewInputs() {
 }
 function searchCrewMembers(inp, drop) {
   const q = inp.value.trim().toLowerCase();
-  if (!q || q.length < 2) { drop.style.display='none'; return; }
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
   const matches = (window._launchMembers||[]).filter(m =>
     m.name && m.name.toLowerCase().includes(q) && m.kennitala !== user.kennitala
   ).slice(0, 8);
-  if (!matches.length) { drop.style.display='none'; return; }
-  drop.innerHTML = matches.map(m =>
-    '<div style="padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)44" ' +
-    'onmousedown="pickCrewMember(this,\'' + esc(m.name) + '\',\'' + esc(m.kennitala) + '\')" ' +
-    'onmouseover="this.style.background='\'var(--card)\''" onmouseout="this.style.background=\'\'">' +
-    esc(m.name) + '</div>'
-  ).join('');
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = '';
+  matches.forEach(function(m) {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)';
+    item.textContent = m.name;
+    item.dataset.name = m.name;
+    item.dataset.kennitala = m.kennitala || '';
+    item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });
+    item.addEventListener('mouseout',  function(){ this.style.background = ''; });
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      inp.value = this.dataset.name;
+      inp.dataset.kennitala = this.dataset.kennitala;
+      drop.style.display = 'none';
+    });
+    drop.appendChild(item);
+  });
   drop.style.display = '';
 }
 function pickCrewMember(el, name, kennitala) {
-  const row  = el.closest('div[style*="position:relative"]');
-  const inp  = row?.querySelector('input');
+  const row = el.closest('div[style*="position:relative"]');
+  const inp = row && row.querySelector('input');
   if (inp) { inp.value = name; inp.dataset.kennitala = kennitala; }
-  el.closest('div[id^="crewDrop"]').style.display = 'none';
+  const d = el.closest('[id^="crewDrop"]');
+  if (d) d.style.display = 'none';
 }
 
 async function submitLaunch() {
