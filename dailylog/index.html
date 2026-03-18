@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-    // Handle ?linkCheckout= redirect from staff group checkout
-    const _lcParam = new URLSearchParams(location.search).get('linkCheckout');
-    if (_lcParam) {
-      _linkedGroupCheckoutIds = [_lcParam];
-      setTimeout(function(){ openActivityModal(); }, 500);
-    }
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -242,12 +236,9 @@
       <label data-s="daily.actType"></label>
       <div class="type-btns" id="actTypeBtns"></div>
     </div>
-    <!-- Subtype template -->
+    <!-- Subtype buttons -->
     <div class="field" id="actSubtypeField" style="display:none">
-      <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Template</label>
-      <select id="actSubtype" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px" onchange="applyActSubtype()">
-        <option value="">— No template —</option>
-      </select>
+      <div class="type-btns" id="actSubtypeBtns"></div>
     </div>
     <div class="field">
       <label data-s="daily.actNameLabel"></label>
@@ -732,7 +723,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   navigateToToday();
 
+  // Handle ?linkCheckout= redirect from staff group checkout
+  const _lcParam = new URLSearchParams(location.search).get('linkCheckout');
+  if (_lcParam) {
+    _linkedGroupCheckoutIds = [_lcParam];
+    setTimeout(function(){ openActivityModal(); }, 800);
+  }
+
   warmContainer();
+  // Auto-save every 30s when dirty
+  setInterval(function(){ if (dirty && isToday()) saveDraft(); }, 30000);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -804,6 +804,7 @@ function deleteActivity(id) {
 function openActivityModal() {
   _selectedActType = activityTypes[0]?.id || null;
   _linkedGroupCheckoutIds = [];
+  _selectedSubtype = null;
   renderActTypeBtns();
   populateActSubtypes();
   dom.actName.value = '';
@@ -822,8 +823,8 @@ function saveActivity() {
   const typeObj = activityTypes.find(t => t.id === _selectedActType);
   if (!name)    { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
   if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
-  const selSubtype = document.getElementById('actSubtype').value;
-  const subtypeObj = selSubtype ? (typeObj.subtypes || []).find(st => st.id === selSubtype) : null;
+  const selSubtype = _selectedSubtype || '';
+  const subtypeObj = selSubtype ? (Array.isArray(typeObj.subtypes)?typeObj.subtypes:JSON.parse(typeObj.subtypes||'[]')).find(st => st.id === selSubtype) : null;
   activities.push({
     id:                    'act-' + Date.now(),
     activityTypeId:        typeObj.id,
@@ -841,7 +842,9 @@ function saveActivity() {
   renderActivities();
   closeActivityModal();
   markDirty();
+  saveDraft(); // auto-save when activity added
 }
+
 
 function logCurrentWeather() {
   if (!wxData) { showToast(s('wx.unavailable'), 'warn'); return; }
@@ -1073,37 +1076,48 @@ async function doSave(signOff) {
 
 // ── Activity subtype + group link helpers ────────────────────────────────────
 let _linkedGroupCheckoutIds = [];
+let _selectedSubtype = null;
 let _groupLinkPickerSelected = new Set();
 
 function populateActSubtypes() {
   const typeObj = activityTypes.find(t => t.id === _selectedActType);
-  const sel     = document.getElementById('actSubtype');
+  const grid    = document.getElementById('actSubtypeBtns');
   const field   = document.getElementById('actSubtypeField');
-  if (!sel || !field) return;
+  if (!grid || !field) return;
   const subs = typeObj && typeObj.subtypes
     ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
     : [];
-  if (!subs.length) { field.style.display = 'none'; sel.value = ''; return; }
+  if (!subs.length) { field.style.display = 'none'; grid.innerHTML = ''; return; }
   field.style.display = '';
-  sel.innerHTML = '<option value="">— No template —</option>';
+  grid.innerHTML = '';
   subs.forEach(function(st) {
-    const o = document.createElement('option');
-    o.value = st.id;
-    o.textContent = (L==='IS' && st.nameIS ? st.nameIS : st.name) +
-      (st.defaultStart ? '  ' + st.defaultStart + (st.defaultEnd ? '–'+st.defaultEnd : '') : '');
-    sel.appendChild(o);
+    const btn = document.createElement('button');
+    btn.className = 'type-btn';
+    btn.dataset.subtypeId = st.id;
+    const label = L==='IS' && st.nameIS ? st.nameIS : st.name;
+    const times = st.defaultStart ? '\n' + st.defaultStart + (st.defaultEnd ? '\u2013'+st.defaultEnd : '') : '';
+    btn.textContent = label + times;
+    btn.style.whiteSpace = 'pre';
+    btn.addEventListener('click', function() {
+      // Toggle selection
+      const already = btn.classList.contains('selected');
+      grid.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+      if (!already) {
+        btn.classList.add('selected');
+        _selectedSubtype = st.id;
+        applyActSubtype(st);
+      } else {
+        _selectedSubtype = null;
+      }
+    });
+    grid.appendChild(btn);
   });
 }
 
-function applyActSubtype() {
-  const typeObj = activityTypes.find(t => t.id === _selectedActType);
-  const subs    = typeObj && typeObj.subtypes
-    ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
-    : [];
-  const stId  = document.getElementById('actSubtype').value;
-  const st    = subs.find(s => s.id === stId);
+function applyActSubtype(st) {
   if (!st) return;
-  if (st.name   && !dom.actName.value)  dom.actName.value  = L==='IS'&&st.nameIS ? st.nameIS : st.name;
+  // Pre-fill name only if empty
+  if (!dom.actName.value) dom.actName.value = L==='IS'&&st.nameIS ? st.nameIS : st.name;
   if (st.defaultStart) dom.actStart.value = st.defaultStart;
   if (st.defaultEnd)   dom.actEnd.value   = st.defaultEnd;
 }
