@@ -14,7 +14,6 @@
 <script src="../shared/boats.js"></script>
 <script src="../shared/maintenance.js"></script>
 <script src="../shared/certs.js"></script>
-  <script src="../shared/boats.js"></script>
 <style>
 /* ── Tool nav cards ── */
 .nav-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px; }
@@ -733,7 +732,7 @@ function searchCoCrewMembers(inp, drop) {
   drop.style.display = '';
 }
 
-function submitCheckout() {
+async function submitCheckout() {
   const kt  = selectedMemberKt;
   const bid = document.getElementById('coBoat').value;
   const lid = document.getElementById('coLocation').value;
