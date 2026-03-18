@@ -178,6 +178,40 @@
 .recent-header span { font-weight:600; }
 /* Fleet status bar — emoji pip */
 .fsb-emoji { font-size:14px; flex-shrink:0; }
+/* ── Group checkout modal ────────────────────────────────────────── */
+.group-modal-overlay{position:fixed;inset:0;background:#00000099;z-index:400;display:flex;align-items:flex-end;justify-content:center}
+.group-modal-overlay.hidden{display:none}
+.group-modal-sheet{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto}
+.group-modal-title{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.gm-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+.gm-section{margin-bottom:16px}
+.gm-section-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.gm-boat-grid{display:flex;flex-wrap:wrap;gap:6px}
+.gm-boat-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--text);transition:all .15s;display:flex;align-items:center;gap:6px}
+.gm-boat-btn.selected{border-color:var(--brass);background:var(--brass)18;color:var(--text)}
+.gm-boat-btn:disabled{opacity:.4;cursor:not-allowed}
+.gm-stepper{display:flex;align-items:center;gap:14px}
+.gm-stepper-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}
+.gm-stepper-val{font-size:20px;font-weight:500;min-width:32px;text-align:center}
+.gm-staff-wrap{position:relative;margin-bottom:6px}
+.gm-staff-input{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px}
+.gm-drop{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:500;max-height:160px;overflow-y:auto;display:none}
+.gm-drop-item{padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)}
+.gm-field label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px}
+.gm-field input,.gm-field select{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px}
+.gm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gm-activity-link{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.gm-activity-link .link-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
+/* Group card in active checkouts */
+.bc-group-card{background:var(--surface);border:1px solid var(--brass)66;border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.bc-group-card.overdue{border-color:var(--red)}
+.gc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.gc-boats{font-size:13px;font-weight:500;color:var(--text)}
+.gc-badge{font-size:9px;letter-spacing:.5px;padding:2px 7px;border-radius:10px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass)}
+.gc-ret{font-size:13px;font-weight:500;text-align:right}
+.gc-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.gc-staff{font-size:11px;color:var(--muted)}
+
 </style>
 </head>
 <body>
@@ -275,6 +309,7 @@
     <div class="section-head">
       <h3 id="boatsOutNowLabel"></h3>
       <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn"></button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="openGroupModal()" id="groupCheckOutBtn" data-s="staff.groupCheckout"></button>
     </div>
 
     <!-- Checkout form -->
@@ -572,19 +607,25 @@ function toggleFleetCat(hdr) {
 function renderCheckouts() {
   const el     = document.getElementById('activeCheckouts');
   const active = checkouts.filter(c => c.status === 'out');
-  if (!active.length) { el.innerHTML = `<div class="empty-note">${s('staff.noOverdue').replace('overdue ','')}</div>`; return; }
-  boatRegistry.setCos(active);
-  el.innerHTML = active.map(c => {
+  if (!active.length) { el.innerHTML = '<div class="empty-note">' + s('staff.noOverdue').replace('overdue ','') + '</div>'; return; }
+  el.innerHTML = '';
+  const groups  = active.filter(c => c.isGroup === true || c.isGroup === 'true');
+  const singles = active.filter(c => c.isGroup !== true && c.isGroup !== 'true');
+  boatRegistry.setCos(singles);
+  groups.forEach(c => { el.appendChild(renderGroupCard(c)); });
+  singles.forEach(c => {
     const inner = renderCheckoutCard(c, {
       staffView: true,
-      onCheckIn: `staffCheckIn('${c.id}')`,
-      onDelete:  `staffDeleteCheckout('${c.id}','${esc(c.boatName||'')}')`,
+      onCheckIn: "staffCheckIn('" + c.id + "')",
+      onDelete:  "staffDeleteCheckout('" + c.id + "','" + esc(c.boatName||'') + "')",
     });
-    return inner.replace(
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = inner.replace(
       'class="bc-checkout-card"',
-      `class="bc-checkout-card" data-checkout-id="${c.id}" style="cursor:pointer" onclick="openCoDetail('${c.id}',event)"`
+      'class="bc-checkout-card" data-checkout-id="' + c.id + '" style="cursor:pointer" onclick="openCoDetail(\'' + c.id + '\',event)"'
     );
-  }).join('');
+    el.appendChild(wrapper.firstElementChild);
+  });
 }
 
 // ── Recent check-ins ──────────────────────────────────────────────────────────
@@ -938,6 +979,272 @@ function selectBoatForCheckout(boatId) {
   }, 80);
 }
 
+
+// ══ GROUP CHECKOUT ═══════════════════════════════════════════════════════════
+let _groupBoats = new Set();
+let _groupParticipants = 0;
+
+function openGroupModal() {
+  const IS = getLang() === 'IS';
+  document.getElementById('groupModalTitle').textContent = IS ? 'Hópaúthlutun' : 'Group Checkout';
+  document.getElementById('gmBoatsLabel').textContent    = IS ? 'Veldu báta' : 'Select boats';
+  document.getElementById('gmParticLabel').textContent   = IS ? 'Iðkendur' : 'Participants (Iðkendur)';
+  document.getElementById('gmLocLabel').textContent      = IS ? 'Staðsetning' : 'Location';
+  document.getElementById('gmActivityLabel').textContent = IS ? 'Tegund' : 'Activity type';
+  _groupBoats = new Set();
+  _groupParticipants = 0;
+  document.getElementById('gmParticCount').textContent = '0';
+  document.getElementById('gmTotalNote').textContent = '';
+  document.getElementById('gmErr').style.display = 'none';
+  document.getElementById('gmTimeOut').value = fmtTimeNow();
+  document.getElementById('gmReturnBy').value = '';
+  const grid = document.getElementById('gmBoatGrid');
+  const active = checkouts.filter(c => c.status === 'out');
+  grid.innerHTML = '';
+  boats.filter(b => !boolVal(b.oos)).forEach(b => {
+    const out = active.find(c => c.boatId === b.id);
+    const btn = document.createElement('button');
+    btn.className = 'gm-boat-btn';
+    btn.textContent = boatEmoji((b.category||'').toLowerCase()) + ' ' + (b.name || b.id);
+    btn.dataset.id = b.id;
+    if (out) { btn.disabled = true; btn.title = 'Already out'; }
+    else btn.addEventListener('click', function() { toggleGmBoat(this); });
+    grid.appendChild(btn);
+  });
+  const lSel = document.getElementById('gmLocation');
+  lSel.innerHTML = '<option value="">—</option>';
+  locations.forEach(l => { const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+  const foss = locations.find(l => l.name && l.name.toLowerCase().includes('fossvogur'));
+  if (foss) lSel.value = foss.id;
+  const aSel = document.getElementById('gmActivity');
+  aSel.innerHTML = '<option value="">— None —</option>';
+  (window._activityTypes || []).forEach(t => {
+    const o=document.createElement('option'); o.value=t.id;
+    o.textContent = getLang()==='IS' ? (t.nameIS||t.name) : t.name;
+    aSel.appendChild(o);
+  });
+  const sec = document.getElementById('gmStaffSection');
+  sec.innerHTML = '';
+  addGmStaffRow();
+  document.getElementById('groupModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGroupModal() {
+  document.getElementById('groupModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function toggleGmBoat(btn) {
+  const id = btn.dataset.id;
+  if (_groupBoats.has(id)) { _groupBoats.delete(id); btn.classList.remove('selected'); }
+  else { _groupBoats.add(id); btn.classList.add('selected'); }
+  updateGmTotalNote();
+}
+
+function adjGroupCount(type, d) {
+  if (type === 'participants') {
+    _groupParticipants = Math.max(0, _groupParticipants + d);
+    document.getElementById('gmParticCount').textContent = _groupParticipants;
+    updateGmTotalNote();
+  }
+}
+
+function updateGmTotalNote() {
+  const staffCount = document.querySelectorAll('#gmStaffSection input[type=text]').length;
+  const total = _groupParticipants + staffCount;
+  const n = document.getElementById('gmTotalNote');
+  n.textContent = total > 0 ? (total + ' on water total, ' + _groupBoats.size + ' boat' + (_groupBoats.size!==1?'s':'')) : '';
+}
+
+function addGmStaffRow() {
+  const sec = document.getElementById('gmStaffSection');
+  const idx = sec.children.length;
+  const wrap = document.createElement('div');
+  wrap.className = 'gm-staff-wrap';
+  const inp = document.createElement('input');
+  inp.className = 'gm-staff-input';
+  inp.type = 'text';
+  inp.placeholder = 'Search staff name…';
+  inp.dataset.kennitala = '';
+  const drop = document.createElement('div');
+  drop.className = 'gm-drop';
+  inp.addEventListener('input', function() { searchGmStaff(this, drop); });
+  inp.addEventListener('blur',  function() { setTimeout(function(){ drop.style.display='none'; }, 200); });
+  wrap.appendChild(inp); wrap.appendChild(drop);
+  sec.appendChild(wrap);
+  updateGmTotalNote();
+}
+
+function searchGmStaff(inp, drop) {
+  const q = inp.value.trim().toLowerCase();
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+  const matches = (members || []).filter(m => m.name && m.name.toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = '';
+  matches.forEach(function(m) {
+    const item = document.createElement('div');
+    item.className = 'gm-drop-item';
+    item.textContent = m.name;
+    item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });
+    item.addEventListener('mouseout',  function(){ this.style.background = ''; });
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      inp.value = m.name;
+      inp.dataset.kennitala = m.kennitala || '';
+      drop.style.display = 'none';
+      updateGmTotalNote();
+    });
+    drop.appendChild(item);
+  });
+  drop.style.display = '';
+}
+
+async function submitGroupCheckout() {
+  const err = document.getElementById('gmErr');
+  err.style.display = 'none';
+  if (_groupBoats.size === 0) { err.textContent = 'Select at least one boat.'; err.style.display = ''; return; }
+  const lid = document.getElementById('gmLocation').value;
+  if (!lid) { err.textContent = 'Select a location.'; err.style.display = ''; return; }
+  const tout  = document.getElementById('gmTimeOut').value || fmtTimeNow();
+  const retBy = document.getElementById('gmReturnBy').value;
+  const actId = document.getElementById('gmActivity').value;
+  const actName = document.getElementById('gmActivity').selectedOptions[0]?.text || '';
+  const loc = locations.find(l => l.id === lid) || {};
+  const snap = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
+  const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
+    .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala || '' })).filter(s => s.name);
+  const boatIds   = Array.from(_groupBoats);
+  const boatNames = boatIds.map(id => (boats.find(b => b.id === id) || {}).name || id);
+  const totalAboard = _groupParticipants + staffEntries.length;
+  try {
+    await apiPost('saveGroupCheckout', {
+      boatIds, boatNames,
+      locationId: lid, locationName: loc.name || lid,
+      checkedOutAt: tout, expectedReturn: retBy,
+      participants: _groupParticipants,
+      staffNames: staffEntries.map(s => s.name),
+      staffKennitalar: staffEntries.map(s => s.kennitala).filter(Boolean),
+      crew: totalAboard,
+      activityTypeId: actId, activityTypeName: actName,
+      wxSnapshot: snap,
+    });
+    checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
+    closeGroupModal();
+    renderAll();
+    showToast('Group launched ✓');
+  } catch(e) { err.textContent = e.message; err.style.display = ''; }
+}
+
+async function staffGroupCheckIn(id) {
+  try {
+    const timeIn = new Date().toTimeString().slice(0, 5);
+    await apiPost('groupCheckIn', { id, timeIn });
+    checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
+    renderAll();
+    showToast(s('toast.checkedIn'));
+  } catch(e) { alert(s('toast.error') + ': ' + e.message); }
+}
+
+function renderGroupCard(c) {
+  const IS = getLang() === 'IS';
+  const now = new Date().toTimeString().slice(0, 5);
+  const retBy = c.expectedReturn || c.returnBy || '';
+  const overdue = retBy && retBy < now;
+  let boatList;
+  try { boatList = (c.boatNames ? (typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames) : [c.boatName||'']).join(', '); } catch(e){ boatList=c.boatName||'—'; }
+  let staffArr;
+  try { staffArr = c.staffNames ? (typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames) : []; } catch(e){ staffArr=[]; }
+  const staffStr = staffArr.join(', ');
+  const partic   = parseInt(c.participants) || 0;
+  const total    = partic + staffArr.length;
+  const tout     = (c.checkedOutAt || c.timeOut || '').slice(0, 5);
+  const actName  = c.activityTypeName || '';
+  const div = document.createElement('div');
+  div.className = 'bc-group-card' + (overdue ? ' overdue' : '');
+  div.dataset.checkoutId = c.id;
+  const retHtml = retBy ? '<div style="font-size:13px;font-weight:500;color:' + (overdue?'var(--red)':' var(--text)') + '">\u21a9 ' + esc(retBy) + '</div>' + (overdue?'<div style="font-size:9px;color:var(--red)">OVERDUE</div>':'') : '';
+  const actBadge = actName ? '<span class="gc-badge" style="border-color:var(--muted)44;color:var(--muted)">' + esc(actName) + '</span>' : '';
+  div.innerHTML = '<div class="gc-header"><div>' +
+    '<div class="gc-boats">\u26f5 ' + esc(boatList) + '</div>' +
+    '<div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap"><span class="gc-badge">GROUP</span>' + actBadge +
+    '<span style="font-size:11px;color:var(--muted)">' + total + ' ' + (IS?'á sjó':'on water') + '</span></div>' +
+    '</div><div class="gc-ret">' + retHtml + '</div></div>' +
+    '<div class="gc-meta">' + esc(c.locationName||'—') + ' \u00b7 Out ' + esc(tout) + ' \u00b7 ' + partic + ' ' + (IS?'iðkendur':'participants') + (staffStr?' \u00b7 '+staffStr:'') + '</div>' +
+    '<div style="display:flex;gap:6px;margin-top:10px">' +
+    '<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="staffGroupCheckIn(\'' + esc(c.id) + '\')">\u2693 ' + (IS?'Taka inn':'Check In All') + '</button>' +
+    '<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="staffDeleteCheckout(\'' + esc(c.id) + '\',\'' + esc(boatList) + '\')">\u2715</button>' +
+    '</div>';
+  return div;
+}
+
 </script>
+
+<!-- ══ GROUP CHECKOUT MODAL ══════════════════════════════════════════════ -->
+<div class="group-modal-overlay hidden" id="groupModal">
+  <div class="group-modal-sheet">
+    <div class="group-modal-title">
+      <span id="groupModalTitle">Group Checkout</span>
+      <button class="gm-close" onclick="closeGroupModal()">✕</button>
+    </div>
+
+    <!-- Boats -->
+    <div class="gm-section">
+      <div class="gm-section-label" id="gmBoatsLabel">Select boats</div>
+      <div class="gm-boat-grid" id="gmBoatGrid"></div>
+    </div>
+
+    <!-- Location + Times -->
+    <div class="gm-row" style="margin-bottom:16px">
+      <div class="gm-field">
+        <label id="gmLocLabel">Location</label>
+        <select id="gmLocation"><option value="">—</option></select>
+      </div>
+      <div class="gm-field">
+        <label id="gmActivityLabel">Activity type</label>
+        <select id="gmActivity"><option value="">— None —</option></select>
+      </div>
+    </div>
+    <div class="gm-row" style="margin-bottom:16px">
+      <div class="gm-field">
+        <label>Departure</label>
+        <input type="text" id="gmTimeOut" placeholder="HH:MM" maxlength="5"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;">
+      </div>
+      <div class="gm-field">
+        <label>Expected return</label>
+        <input type="text" id="gmReturnBy" placeholder="HH:MM" maxlength="5"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;">
+      </div>
+    </div>
+
+    <!-- Participants stepper -->
+    <div class="gm-section">
+      <div class="gm-section-label" id="gmParticLabel">Participants (Iðkendur)</div>
+      <div class="gm-stepper">
+        <button class="gm-stepper-btn" onclick="adjGroupCount('participants',-1)">−</button>
+        <span class="gm-stepper-val" id="gmParticCount">0</span>
+        <button class="gm-stepper-btn" onclick="adjGroupCount('participants',1)">+</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px" id="gmTotalNote"></span>
+      </div>
+    </div>
+
+    <!-- Staff on water -->
+    <div class="gm-section">
+      <div class="gm-section-label">Staff on water (optional)</div>
+      <div id="gmStaffSection">
+        <div class="gm-staff-wrap" id="gmStaffRow0">
+          <input class="gm-staff-input" type="text" placeholder="Search staff name…" data-idx="0">
+          <div class="gm-drop" id="gmStaffDrop0"></div>
+        </div>
+      </div>
+      <button onclick="addGmStaffRow()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:4px">+ Add another</button>
+    </div>
+
+    <div id="gmErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="submitGroupCheckout()">⛵ Launch group</button>
+  </div>
+</div>
+
 </body>
 </html>
