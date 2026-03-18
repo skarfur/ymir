@@ -168,7 +168,6 @@ const L = getLang();
 
 let allTrips = [];
 let filtered = [];
-let _showAllTrips = false;
 let _certPanelMemberId = null;
 let _tcmCertDefs   = [];
 let _tcmAllMembers = [];
@@ -220,18 +219,11 @@ async function init() {
 }
 
 function updateStats() {
-  const pending  = allTrips.filter(t => !t.verified || t.verified === 'false').length;
-  const verified = allTrips.filter(t =>  t.verified && t.verified !== 'false').length;
+  const pendingVal = allTrips.filter(t => (t.validationRequested === true || t.validationRequested === 'true') && (!t.verified || t.verified === 'false')).length;
+  const verified   = allTrips.filter(t =>  t.verified && t.verified !== 'false').length;
   document.getElementById('sTotalTrips').textContent = allTrips.length;
-  document.getElementById('sPending').textContent    = pending;
+  document.getElementById('sPending').textContent    = pendingVal;
   document.getElementById('sVerified').textContent   = verified;
-}
-
-function toggleShowAll() {
-  _showAllTrips = !_showAllTrips;
-  document.getElementById('showAllBtn').textContent = _showAllTrips ? 'Show requested only' : 'Show all trips';
-  document.getElementById('reviewModeLabel').textContent = 'Showing: ' + (_showAllTrips ? 'all trips' : 'validation requests');
-  applyFilters();
 }
 
 function applyFilters() {
@@ -242,9 +234,7 @@ function applyFilters() {
 
   const showAll = document.getElementById('showAllTrips')?.checked;
   filtered = allTrips.filter(t => {
-    if (!showAll && !t.validationRequested && t.validationRequested !== 'true') return false;
-    // By default only show trips with validation requested
-    if (!_showAllTrips && t.validationRequested !== true && t.validationRequested !== 'true') return false;
+    if (!showAll && t.validationRequested !== true && t.validationRequested !== 'true') return false;
     if (name   && !(t.memberName||'').toLowerCase().includes(name)) return false;
     if (status === 'pending'  && (t.verified && t.verified !== 'false')) return false;
     if (status === 'verified' && (!t.verified || t.verified === 'false')) return false;
