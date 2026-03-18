@@ -247,10 +247,12 @@ function renderCheckoutCard(co, opts) {
                 + `</div>`;
   }
 
-  // Card border accent
+  // Card border accent — brass for individual staff checkouts, red for overdue
   const borderStyle = overdue
-    ? "border-left:3px solid var(--red)"
-    : (isMe && !staffView ? "border-left:3px solid var(--brass)" : "");
+    ? "border-left:4px solid var(--red)"
+    : staffView
+    ? "border-left:4px solid var(--brass)"
+    : (isMe ? "border-left:4px solid var(--brass)" : "border-left:4px solid var(--border)");
 
   return `<div class="bc-checkout-card" style="${borderStyle}">`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
