@@ -172,6 +172,12 @@
 .recent-boat { color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recent-loc  { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recent-dur  { color:var(--muted); text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Recent checkins column header */
+.recent-header { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding-bottom:2px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+.recent-header span { font-weight:600; }
+/* Fleet status bar — emoji pip */
+.fsb-emoji { font-size:14px; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -346,6 +352,7 @@
 
   <!-- Fleet status (bars + expandable boat cards) -->
   <div id="fleetStatus"><div class="empty-note" data-s="lbl.loading"></div></div>
+  <div class="divider-label" style="margin-top:16px"><span data-s="staff.recentCheckins"></span></div>
     <div id="recentCheckins"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
@@ -542,43 +549,47 @@ function renderFleet() {
   if (!boats.length) { el.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
 
   el.innerHTML = cats.map(cat => {
+    const accent   = catAccent(cat);
+    const emoji    = boatEmoji(cat);
     const catBoats = boats.filter(b => b.category === cat);
     const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id));
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const hasAvail = avail.length > 0;
-    const catId    = 'fcat-' + cat.replace(/\s+/g,'_');
+    const catId    = 'fcat-' + encodeURIComponent(cat);
 
     const cards = catBoats.map(b => {
       const co  = active.find(c => c.boatId === b.id);
       const oos = boolVal(b.oos);
+      const acc = b.color || accent;
       if (oos) {
-        return `<div class="bc-boat-card status-oos" title="${esc(b.name||b.id)}">
-          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
-          <div class="bc-boat-status muted">OOS</div>
+        return `<div class="bc-boat-card status-oos" style="border-color:${acc}40">
+          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
+          <div class="bc-boat-status">OOS</div>
         </div>`;
       } else if (co) {
         const overdue = co.expectedReturn && co.expectedReturn < fmtTimeNow();
-        return `<div class="bc-boat-card ${overdue?'status-overdue':'status-out'}">
-          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
+        return `<div class="bc-boat-card ${overdue?'status-overdue':'status-out'}" style="border-color:${overdue?'var(--red)':acc}">
+          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
           <div class="bc-boat-status">${esc(co.memberName||'')} · ${esc(co.expectedReturn||'')}</div>
         </div>`;
       } else {
-        return `<div class="bc-boat-card status-avail" style="cursor:pointer"
+        return `<div class="bc-boat-card status-avail" style="border-color:${acc};cursor:pointer"
           onclick="selectBoatForCheckout('${esc(b.id)}')">
-          <div class="bc-boat-name">${esc(b.name||b.id)}</div>
-          <div class="bc-boat-status avail-label">${s('staff.availCount',{n:1}).replace('1','')}</div>
+          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
+          <div class="bc-boat-status avail-label">Laust / Available</div>
         </div>`;
       }
     }).join('');
 
     return `<div class="fleet-status-block">
-      <div class="fsb-header" onclick="toggleFleetCat(this)" data-cat="${catId}">
+      <div class="fsb-header" onclick="toggleFleetCat(this)" data-target="${catId}">
+        <span class="fsb-emoji">${emoji}</span>
         <span class="fsb-label">${esc(cat)}</span>
-        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%"></div></div>
+        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%;background:${accent}"></div></div>
         <span class="fsb-count ${hasAvail?'has-avail':'none-avail'}">${avail.length}/${catBoats.length}</span>
         <span class="fsb-arrow">▾</span>
       </div>
-      <div class="fsb-body" id="${catId}">
+      <div class="fsb-body" id="${catId}" style="display:none">
         <div class="fleet-cat-grid">${cards}</div>
       </div>
     </div>`;
@@ -586,11 +597,13 @@ function renderFleet() {
 }
 
 function toggleFleetCat(hdr) {
-  const body = hdr.nextElementSibling;
-  const arrow = hdr.querySelector('.fsb-arrow, .fct-arrow');
-  const open = body.style.display !== 'none' && body.style.display !== '';
-  body.style.display = open ? 'none' : '';
-  if (arrow) arrow.textContent = open ? '▾' : '▴';
+  const targetId = hdr.dataset.target;
+  const body  = targetId ? document.getElementById(targetId) : hdr.nextElementSibling;
+  const arrow = hdr.querySelector('.fsb-arrow,.fct-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
 }
 
 
@@ -618,11 +631,18 @@ function renderCheckouts() {
 function renderRecentCheckins() {
   const el     = document.getElementById('recentCheckins');
   const recent = checkouts.filter(c => c.status === 'in').slice(0, 10);
+  const IS     = document.documentElement.lang === 'IS' || getLang() === 'IS';
   if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('staff.recentCheckins')}</div>`; return; }
-  el.innerHTML = recent.map(c => {
+  const header = `<div class="recent-row recent-header">
+    <span>${IS?'Inn':'In'}</span>
+    <span>${IS?'Félagi':'Member'}</span>
+    <span>${IS?'Bát':'Boat'}</span>
+    <span>${IS?'Svæði':'Location'}</span>
+    <span>${IS?'Tími':'Duration'}</span>
+  </div>`;
+  const rows = recent.map(c => {
     const tin  = (c.checkedInAt ||c.timeIn ||'').slice(0,5);
     const tout = (c.checkedOutAt||c.timeOut||'').slice(0,5);
-    // Duration in minutes
     let dur = '';
     if (tout && tin) {
       const [oh,om] = tout.split(':').map(Number);
@@ -635,10 +655,11 @@ function renderRecentCheckins() {
       <span class="recent-time">${esc(tin)||'—'}</span>
       <span class="recent-name">${esc(c.memberName||'')}</span>
       <span class="recent-boat">${esc(c.boatName||c.boatId||'')}</span>
-      <span class="recent-loc muted">${esc(c.locationName||'')}</span>
-      <span class="recent-dur muted">${dur}</span>
+      <span class="recent-loc">${esc(c.locationName||'')}</span>
+      <span class="recent-dur">${dur}</span>
     </div>`;
   }).join('');
+  el.innerHTML = header + rows;
 }
 
 // ── Maintenance ───────────────────────────────────────────────────────────────
@@ -883,6 +904,32 @@ function selectBoatForCheckout(boatId) {
   setTimeout(() => {
     (formEl || document.getElementById('checkOutBtn'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, 80);
+}
+
+// ── Category emoji + colour helpers ─────────────────────────────────────────
+function boatEmoji(cat) {
+  if (!cat) return '⛵';
+  var c = cat.toLowerCase();
+  if (c.includes('kayak') || c.includes('kajak'))  return '🚣';
+  if (c.includes('sail')  || c.includes('segling') || c.includes('siglingur')) return '⛵';
+  if (c.includes('wind')  || c.includes('surf'))    return '🏄';
+  if (c.includes('row')   || c.includes('róður'))   return '🚤';
+  if (c.includes('canoe') || c.includes('kanó'))    return '🛶';
+  if (c.includes('motor') || c.includes('power'))   return '⚡';
+  if (c.includes('stand') || c.includes('sup'))     return '🏊';
+  return '⛵';
+}
+function catAccent(cat) {
+  if (!cat) return '#c8a84b';
+  var c = cat.toLowerCase();
+  if (c.includes('kayak') || c.includes('kajak'))  return '#2e86c1';
+  if (c.includes('sail')  || c.includes('segling') || c.includes('siglingur')) return '#1abc9c';
+  if (c.includes('wind')  || c.includes('surf'))    return '#8e44ad';
+  if (c.includes('row')   || c.includes('róður'))   return '#e67e22';
+  if (c.includes('canoe') || c.includes('kanó'))    return '#27ae60';
+  if (c.includes('motor') || c.includes('power'))   return '#e74c3c';
+  if (c.includes('stand') || c.includes('sup'))     return '#16a085';
+  return '#c8a84b';
 }
 </script>
 </body>
