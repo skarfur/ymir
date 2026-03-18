@@ -214,6 +214,16 @@
 
 #groupCheckOutBtn{background:#2e86c1;border-color:#2e86c1;color:#fff}
 #groupCheckOutBtn:hover{background:#1a6fa8;border-color:#1a6fa8}
+.dl-link-overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.dl-link-overlay.hidden{display:none}
+.dl-link-sheet{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:680px;max-height:80vh;overflow-y:auto}
+.dl-link-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.dl-link-sub{font-size:11px;color:var(--muted);margin-bottom:16px}
+.dl-act-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.dl-act-card:hover{border-color:var(--brass)}
+.dl-act-card.selected{border-color:var(--brass);background:var(--card)}
+.dl-act-name{font-size:13px;font-weight:500}
+.dl-act-meta{font-size:11px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body>
@@ -1145,10 +1155,13 @@ async function submitGroupCheckout() {
       activityTypeId: actId, activityTypeName: actName,
       wxSnapshot: snap,
     });
-    checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
+    const _gcRes = await apiGet('getActiveCheckouts');
+    checkouts = _gcRes.checkouts || [];
+    const _newGrpId = (_gcRes.checkouts||[]).slice().reverse().find(function(c){ return c.isGroup===true||c.isGroup==='true'; })?.id || null;
     closeGroupModal();
     renderAll();
     showToast('Group launched ✓');
+    if (_newGrpId) setTimeout(function(){ openDlLinkModal(_newGrpId); }, 600);
   } catch(e) { err.textContent = e.message; err.style.display = ''; }
 }
 
@@ -1214,6 +1227,73 @@ function renderGroupCard(c) {
   return div;
 }
 
+
+// ── Daily log link after group checkout ──────────────────────────────────────
+let _dlLinkCheckoutId  = null;
+let _dlLinkSelectedAct = null;
+let _dlLinkTodayActs   = [];
+
+async function openDlLinkModal(checkoutId) {
+  _dlLinkCheckoutId  = checkoutId;
+  _dlLinkSelectedAct = null;
+  // Fetch today's daily log activities
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const res   = await apiGet('getDailyLog', { date: today });
+    const log   = res.log || {};
+    _dlLinkTodayActs = (typeof log.activities === 'string' ? JSON.parse(log.activities||'[]') : (log.activities||[]));
+  } catch(e) { _dlLinkTodayActs = []; }
+
+  const list = document.getElementById('dlLinkActList');
+  if (!_dlLinkTodayActs.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No activities in today\u2019s log yet.</div>';
+    document.getElementById('dlLinkConfirmBtn').style.display = 'none';
+  } else {
+    document.getElementById('dlLinkConfirmBtn').style.display = '';
+    list.innerHTML = _dlLinkTodayActs.map(function(act) {
+      const meta = [act.type, act.start && act.end ? act.start+'\u2013'+act.end : act.start].filter(Boolean).join(' \u00b7 ');
+      return '<div class="dl-act-card" data-actid="' + esc(act.id) + '" onclick="selectDlAct(\''  + act.id + '\')">' +
+        '<div class="dl-act-name">' + esc(act.name) + '</div>' +
+        '<div class="dl-act-meta">' + esc(meta) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+  document.getElementById('dlLinkModal').classList.remove('hidden');
+}
+
+function selectDlAct(actId) {
+  _dlLinkSelectedAct = actId;
+  document.querySelectorAll('.dl-act-card').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.actid === actId);
+  });
+}
+
+async function confirmDlLink() {
+  if (!_dlLinkSelectedAct || !_dlLinkCheckoutId) { closeDlLinkModal(); return; }
+  try {
+    await apiPost('linkGroupCheckoutToActivity', {
+      checkoutId:  _dlLinkCheckoutId,
+      activityId:  _dlLinkSelectedAct,
+    });
+    showToast('Linked to daily log \u2713');
+  } catch(e) {
+    showToast('Link saved locally — sync when online', 'warn');
+  }
+  closeDlLinkModal();
+}
+
+function closeDlLinkModal() {
+  document.getElementById('dlLinkModal').classList.add('hidden');
+  _dlLinkCheckoutId  = null;
+  _dlLinkSelectedAct = null;
+}
+
+function openDailyLogForNew() {
+  // Navigate to daily log; pass checkout id so it can pre-link
+  closeDlLinkModal();
+  window.location.href = '../dailylog/?linkCheckout=' + encodeURIComponent(_dlLinkCheckoutId || '');
+}
+
 </script>
 
 <!-- ══ GROUP CHECKOUT MODAL ══════════════════════════════════════════════ -->
@@ -1277,5 +1357,19 @@ function renderGroupCard(c) {
   </div>
 </div>
 
+
+<!-- ══ DAILY LOG LINK MODAL ══════════════════════════════════════════════ -->
+<div class="dl-link-overlay hidden" id="dlLinkModal">
+  <div class="dl-link-sheet">
+    <div class="dl-link-title">Link to daily log activity?</div>
+    <div class="dl-link-sub">This group checkout can be linked to an activity in today's log.</div>
+    <div id="dlLinkActList" style="margin-bottom:12px"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-primary" onclick="confirmDlLink()" id="dlLinkConfirmBtn" style="width:100%">Link selected activity</button>
+      <button class="btn btn-secondary" onclick="openDailyLogForNew()" style="width:100%;font-size:11px">Create new log activity →</button>
+      <button onclick="closeDlLinkModal()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px">Skip for now</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
