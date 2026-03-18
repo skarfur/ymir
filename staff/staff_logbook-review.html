@@ -47,6 +47,8 @@
 .cert-name{font-size:13px;font-weight:500;color:var(--text)}
 .cert-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .cert-actions{display:flex;gap:6px;flex-shrink:0}
+#sBoatCatsCell { cursor:default; }
+.stat-strip + .stat-strip { margin-top:-8px; }
 </style>
 </head>
 <body>
@@ -62,31 +64,36 @@
     <div style="font-size:11px;color:var(--muted);margin-top:2px" data-s="logrev.subtitle"></div>
   </div>
 
-  <div class="stat-strip">
-    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l" data-s="logrev.totalTrips"></div></div>
-    <div class="stat-cell"><div class="stat-n" id="sRequested" style="color:var(--brass)">—</div><div class="stat-l">REQUESTED</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l" data-s="logrev.verified"></div></div>
+  <!-- Stats row 1 -->
+  <div class="stat-strip" style="margin-bottom:8px">
+    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l">YTD TRIPS</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sRequested" style="color:var(--brass)">—</div><div class="stat-l">AWAITING REVIEW</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
   </div>
-
+  <!-- Stats row 2 -->
+  <div class="stat-strip" style="margin-bottom:16px">
+    <div class="stat-cell"><div class="stat-n" id="sTotalPersons">—</div><div class="stat-l">PERSONS ON WATER</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sUniquePersons">—</div><div class="stat-l">UNIQUE MEMBERS</div></div>
+    <div class="stat-cell" style="text-align:left;padding:8px 10px"><div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">BY BOAT TYPE</div><div id="sBoatCats" style="font-size:11px;color:var(--text);line-height:1.8"></div></div>
+  </div>
+  <!-- Trips section header + single show-all toggle -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-    <div style="font-size:11px;color:var(--muted)" id="reviewModeLabel">Showing: validation requests</div>
-    <button onclick="toggleShowAll()" id="showAllBtn" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">Show all trips</button>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)">
-      <input type="checkbox" id="showAllTrips" onchange="applyFilters()"> Show all trips (not just validation requests)
+    <div style="font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase">Validation requests</div>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--muted)">
+      <input type="checkbox" id="showAllTrips" onchange="applyFilters()"> Show all trips
     </label>
   </div>
+  <!-- Filters -->
   <div class="filter-bar">
-    <input type="text" id="filterName" oninput="applyFilters()">
+    <input type="text" id="filterName" placeholder="Member name…" oninput="applyFilters()">
     <select id="filterStatus" onchange="applyFilters()">
-      <option value="" id="filterOptAll"></option>
-      <option value="pending"  id="filterOptPending"></option>
-      <option value="verified" id="filterOptVerified"></option>
+      <option value="">All statuses</option>
+      <option value="pending">Unverified</option>
+      <option value="verified">Verified</option>
     </select>
-    <input type="date" id="filterFrom" onchange="applyFilters()">
-    <input type="date" id="filterTo"   onchange="applyFilters()">
-  </div>
+    <input type="date" id="filterFrom" onchange="applyFilters()" title="From">
+    <input type="date" id="filterTo"   onchange="applyFilters()" title="To">
+  </div>  </div>
 
   <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
@@ -219,11 +226,28 @@ async function init() {
 }
 
 function updateStats() {
-  const pendingVal = allTrips.filter(t => (t.validationRequested === true || t.validationRequested === 'true') && (!t.verified || t.verified === 'false')).length;
-  const verified   = allTrips.filter(t =>  t.verified && t.verified !== 'false').length;
-  document.getElementById('sTotalTrips').textContent = allTrips.length;
-  document.getElementById('sPending').textContent    = pendingVal;
-  document.getElementById('sVerified').textContent   = verified;
+  const yr  = new Date().getFullYear() + '';
+  const ytd = allTrips.filter(t => (t.date||'').startsWith(yr));
+  const requested = allTrips.filter(t =>
+    (t.validationRequested===true||t.validationRequested==='true') && (!t.verified||t.verified==='false')
+  ).length;
+  const verified = allTrips.filter(t => t.verified && t.verified!=='false').length;
+  const totalPersons = ytd.reduce(function(n,t){ return n+(parseInt(t.crew)||1); }, 0);
+  const uniqueIds = new Set(ytd.map(t => t.memberKennitala||t.memberId||t.memberName||'').filter(Boolean));
+  const catCounts = {};
+  ytd.forEach(function(t){
+    var c = (t.boatCategory||'').trim()||'Other';
+    catCounts[c] = (catCounts[c]||0)+1;
+  });
+  const catHtml = Object.entries(catCounts).sort((a,b)=>b[1]-a[1])
+    .map(function(e){ return '<span><strong>'+e[1]+'</strong> '+esc(e[0])+'</span>'; }).join(' &nbsp;·&nbsp; ');
+  var el;
+  el=document.getElementById('sTotalTrips');    if(el) el.textContent=ytd.length;
+  el=document.getElementById('sRequested');     if(el) el.textContent=requested;
+  el=document.getElementById('sVerified');      if(el) el.textContent=verified;
+  el=document.getElementById('sTotalPersons');  if(el) el.textContent=totalPersons;
+  el=document.getElementById('sUniquePersons'); if(el) el.textContent=uniqueIds.size;
+  el=document.getElementById('sBoatCats');      if(el) el.innerHTML=catHtml||'—';
 }
 
 function applyFilters() {
