@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+    // Handle ?linkCheckout= redirect from staff group checkout
+    const _lcParam = new URLSearchParams(location.search).get('linkCheckout');
+    if (_lcParam) {
+      _linkedGroupCheckoutIds = [_lcParam];
+      setTimeout(function(){ openActivityModal(); }, 500);
+    }
 <html lang="en">
 <head>
 <meta charset="UTF-8">
