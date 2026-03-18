@@ -36,6 +36,7 @@ const STRINGS = {
   'nav.memberHub':     { EN:'⛵ Members',         IS:'⛵ Félagsmenn' },
   'nav.admin':         { EN:'⚙ Admin',            IS:'⚙ Stjórnborð' },
   'nav.weather':       { EN:'⛅ Weather',          IS:'⛅ Veður' },
+  'nav.logbook':       { EN:'📖 Logbook',         IS:'📖 Siglingabók' },
   'nav.back':          { EN:'← Staff',            IS:'← Starfsmenn' },
   'nav.signOut':       { EN:'Sign out',            IS:'Útskrá' },
   'nav.langToggle':    { EN:'IS',                  IS:'EN' },
