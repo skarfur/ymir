@@ -37,8 +37,8 @@
 .trip-card:hover{border-color:var(--brass)}
 .trip-card-main{display:grid;grid-template-columns:52px 1fr auto;align-items:stretch}
 .trip-date-col{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;text-align:center}
-.trip-date-day{font-size:20px;font-weight:500;color:var(--text);line-height:1}
-.trip-date-mon{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.trip-date-day{font-size:16px;font-weight:500;color:var(--text);line-height:1}
+.trip-date-mon{font-size:14px;font-weight:500;color:var(--text);text-transform:uppercase;margin-top:2px}
 .trip-date-yr{font-size:9px;color:var(--muted)}
 .trip-body{padding:10px 12px;min-width:0}
 .trip-boat{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
@@ -264,14 +264,51 @@ async function renderCerts(){
 }
 
 // ── Trip card ─────────────────────────────────────────────────────────────────
+function dirArrow(dir) {
+  if (!dir) return '';
+  const dirs = { N:'↓', NE:'↙', E:'←', SE:'↖', S:'↑', SW:'↗', W:'→', NW:'↘' };
+  return dirs[dir.toUpperCase()] || '';
+}
 function tripCard(t){
-  const p=parseDateParts(t.date);
-  const dur=t.hoursDecimal?(parseFloat(t.hoursDecimal)||0).toFixed(1)+'h':'—';
-  const isSki=!t.role||t.role==='skipper';
-  const isVer=t.verified&&t.verified!=='false';
-  const bft=t.beaufort?'💨 Bft '+t.beaufort+(t.windDir?' '+t.windDir:''):'';
-  const wx=t.wxSnapshot?JSON.parse(t.wxSnapshot||'{}'):null;
-  const live=wx&&wx.ws?'💨 '+Math.round(wx.ws)+'m/s':bft;
+  const p   = parseDateParts(t.date);
+  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
+  const isSki = !t.role || t.role==='skipper';
+  const isVer = t.verified && t.verified!=='false';
+
+  // Parse wx snapshot
+  let wx = null;
+  try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
+
+  // Card-face wind: prefer snapshot ws, fall back to beaufort
+  const cardWs  = wx?.ws != null ? Math.round(wx.ws)+'m/s' : (t.beaufort ? 'Bft '+t.beaufort : '');
+  const cardDir = wx?.dir || t.windDir || '';
+  const cardArrow = dirArrow(cardDir);
+  const windLine = [cardArrow && `<span style="font-size:16px;line-height:1">${cardArrow}</span>`,
+                    cardWs   && `<span>${esc(cardWs)}</span>`,
+                    cardDir  && `<span style="opacity:.7">${esc(cardDir)}</span>`
+                   ].filter(Boolean).join('');
+
+  // Expanded wx detail
+  const wxRows = wx ? [
+    wx.ws     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Bft '+wx.bft:''}</span></div>` : '',
+    wx.wg     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${Math.round(wx.wg)} m/s</span></div>` : '',
+    wx.dir              ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx.dir)} ${esc(wx.dir)}</span></div>` : '',
+    wx.wv     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '',
+    wx.tc     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '',
+    wx.sst    != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '',
+    wx.feels  != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '',
+    wx.pres   != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '',
+    wx.cond?.desc       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '',
+  ].filter(Boolean).join('') : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft ${esc(t.beaufort)}${t.windDir?' · '+esc(t.windDir):''}<br><small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
+
+  // Crew members: look for linked crew trips in myTrips
+  const linkedCrew = myTrips.filter(x =>
+    x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId && x.id !== t.id && x.role==='crew'
+  );
+  const crewNamesHtml = linkedCrew.length
+    ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Crew members</span><span class="trip-exp-val">${linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ')}</span></div>`
+    : '';
+
   return `<div class="trip-card" onclick="this.classList.toggle('open')">
     <div class="trip-card-main">
       <div class="trip-date-col">
@@ -285,7 +322,7 @@ function tripCard(t){
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
           <span>${esc(dur)}</span>
-          ${live?'<span>'+esc(live)+'</span>':''}
+          ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
         </div>
       </div>
       <div class="trip-arrow">▾</div>
@@ -295,13 +332,15 @@ function tripCard(t){
         <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
         <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
         <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
-        ${t.beaufort?'<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft '+esc(t.beaufort)+(t.windDir?' · '+esc(t.windDir):'')+'<br><small style=\"color:var(--muted)\">'+bftLabel(t.beaufort)+'</small></span></div>':''}
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew aboard</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
+        ${wxRows}
+        ${crewNamesHtml}
         ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
       </div>
     </div>
   </div>`;
 }
+
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 function bftGroup(b){
