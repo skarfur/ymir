@@ -42,6 +42,11 @@
   padding:12px 10px; text-align:center; }
 .stat-n { font-size:22px; color:var(--brass); font-weight:500; }
 .stat-l { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
+.cert-row{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:10px}
+.cert-row:last-child{border-bottom:none}
+.cert-name{font-size:13px;font-weight:500;color:var(--text)}
+.cert-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.cert-actions{display:flex;gap:6px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -66,6 +71,11 @@
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
     <div style="font-size:11px;color:var(--muted)" id="reviewModeLabel">Showing: validation requests</div>
     <button onclick="toggleShowAll()" id="showAllBtn" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">Show all trips</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)">
+      <input type="checkbox" id="showAllTrips" onchange="applyFilters()"> Show all trips (not just validation requests)
+    </label>
   </div>
   <div class="filter-bar">
     <input type="text" id="filterName" oninput="applyFilters()">
@@ -187,6 +197,20 @@ async function init() {
   try {
     const res = await apiGet('getTrips', { limit: 200 });
     allTrips = (res.trips || []).sort((a,b) => b.date > a.date ? 1 : -1);
+  // Pre-load members + cert defs for the certifications section
+  if (!_tcmLoaded) {
+    try {
+      const [mRes, cfgRes] = await Promise.all([apiGet('getMembers'), apiGet('getConfig')]);
+      _tcmAllMembers = mRes.members || [];
+      _tcmCertDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+      _tcmLoaded = true;
+      const sel = document.getElementById('tcmCertType');
+      if (sel) {
+        sel.innerHTML = `<option value="">${s('lbl.selectDots')}</option>`;
+        _tcmCertDefs.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; sel.appendChild(o); });
+      }
+    } catch(e) { console.warn('cert preload failed', e); }
+  }
     updateStats();
     applyFilters();
   } catch(e) {
@@ -216,7 +240,9 @@ function applyFilters() {
   const from   = document.getElementById('filterFrom').value;
   const to     = document.getElementById('filterTo').value;
 
+  const showAll = document.getElementById('showAllTrips')?.checked;
   filtered = allTrips.filter(t => {
+    if (!showAll && !t.validationRequested && t.validationRequested !== 'true') return false;
     // By default only show trips with validation requested
     if (!_showAllTrips && t.validationRequested !== true && t.validationRequested !== 'true') return false;
     if (name   && !(t.memberName||'').toLowerCase().includes(name)) return false;
@@ -461,6 +487,94 @@ function renderCertPanel(memberId) {
   }
   panel.innerHTML = certs.map(certBadgeHTML).join("");
 }
+
+// ── Certifications section ───────────────────────────────────────────────────
+let _certSelectedMember = null;
+
+function searchCertMember(q) {
+  const drop = document.getElementById('certMemberDrop');
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+  const matches = (_tcmAllMembers || []).filter(m => m.name && m.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.map(m =>
+    '<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" ' +
+    'onmouseover="this.style.background=''var(--card)''" onmouseout="this.style.background=''''" ' +
+    'onclick="selectCertMember(\'' + m.id + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>'
+  ).join('');
+  drop.style.display = 'block';
+}
+
+async function selectCertMember(memberId, memberName) {
+  document.getElementById('certMemberSearch').value = memberName;
+  document.getElementById('certMemberDrop').style.display = 'none';
+  _certSelectedMember = { id: memberId, name: memberName };
+  document.getElementById('certMemberName').textContent = memberName;
+  document.getElementById('certMemberPanel').style.display = '';
+  // Ensure cert defs + members loaded
+  if (!_tcmLoaded) await openTripCertModal('', '');
+  renderMemberCertList(memberId);
+}
+
+function renderMemberCertList(memberId) {
+  const el = document.getElementById('certMemberList');
+  const m  = (_tcmAllMembers || []).find(x => x.id === memberId);
+  if (!m) { el.innerHTML = '<div class="empty-note">Member not found.</div>'; return; }
+  const certs = enrichMemberCerts(parseJson(m.certifications, []), _tcmCertDefs || []);
+  if (!certs.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No certifications yet.</div>';
+    return;
+  }
+  el.innerHTML = certs.map(function(c) {
+    const def = (_tcmCertDefs || []).find(d => d.id === c.certId) || {};
+    const sub = c.subcatKey && def.subcats ? def.subcats.find(s => s.key === c.subcatKey) : null;
+    const expiry = c.expiresAt ? (new Date(c.expiresAt) < new Date() ? '<span style="color:var(--red)">Expired ' + esc(c.expiresAt) + '</span>' : 'Expires ' + esc(c.expiresAt)) : 'Permanent';
+    return '<div class="cert-row">' +
+      '<div><div class="cert-name">' + esc(def.name || c.certId) + (sub ? ' — ' + esc(sub.label) : '') + '</div>' +
+      '<div class="cert-meta">' + expiry + (c.issuedAt ? ' · Issued ' + esc(c.issuedAt) : '') + '</div></div>' +
+      '<div class="cert-actions">' +
+      '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="editCert(\'' + esc(c.certId) + '\',\'' + esc(c.subcatKey||'')+'\')">Edit</button>' +
+      '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="deleteCert(\'' + esc(c.certId) + '\',\'' + esc(c.subcatKey||'') + '\')">✕</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function openAddCertModal() {
+  if (!_certSelectedMember) return;
+  openTripCertModal(_certSelectedMember.id, _certSelectedMember.name);
+  // After the modal saves, refresh the list
+  window._certModalCallback = function() { renderMemberCertList(_certSelectedMember.id); };
+}
+
+function editCert(certId, subcatKey) {
+  if (!_certSelectedMember) return;
+  openTripCertModal(_certSelectedMember.id, _certSelectedMember.name);
+  // Pre-select the cert type
+  setTimeout(function() {
+    const sel = document.getElementById('tcmCertType');
+    if (sel) { sel.value = certId; sel.dispatchEvent(new Event('change')); }
+    if (subcatKey) setTimeout(function() {
+      const sub = document.getElementById('tcmSubcat');
+      if (sub) sub.value = subcatKey;
+    }, 200);
+  }, 300);
+  window._certModalCallback = function() { renderMemberCertList(_certSelectedMember.id); };
+}
+
+async function deleteCert(certId, subcatKey) {
+  if (!_certSelectedMember) return;
+  if (!confirm('Remove this certification?')) return;
+  const m = (_tcmAllMembers || []).find(x => x.id === _certSelectedMember.id);
+  if (!m) return;
+  let certs = parseJson(m.certifications, []);
+  certs = certs.filter(c => !(c.certId === certId && (c.subcatKey || '') === (subcatKey || '')));
+  try {
+    await apiPost('saveMember', { id: m.id, certifications: JSON.stringify(certs) });
+    m.certifications = JSON.stringify(certs);
+    renderMemberCertList(_certSelectedMember.id);
+    showToast('Certification removed');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
 </script>
 </body>
 </html>
