@@ -1160,30 +1160,48 @@ function renderGroupCard(c) {
   const now = new Date().toTimeString().slice(0, 5);
   const retBy = c.expectedReturn || c.returnBy || '';
   const overdue = retBy && retBy < now;
-  let boatList;
-  try { boatList = (c.boatNames ? (typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames) : [c.boatName||'']).join(', '); } catch(e){ boatList=c.boatName||'—'; }
+  let boatArr;
+  try { boatArr = c.boatNames ? (typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames) : [c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
   let staffArr;
   try { staffArr = c.staffNames ? (typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames) : []; } catch(e){ staffArr=[]; }
-  const staffStr = staffArr.join(', ');
-  const partic   = parseInt(c.participants) || 0;
-  const total    = partic + staffArr.length;
-  const tout     = (c.checkedOutAt || c.timeOut || '').slice(0, 5);
-  const actName  = c.activityTypeName || '';
+  const firstStaff = staffArr[0] || '';
+  const partic     = parseInt(c.participants) || 0;
+  const total      = partic + staffArr.length;
+  const boatCount  = boatArr.length;
+  const tout       = (c.checkedOutAt || c.timeOut || '').slice(0, 5);
+  const actName    = c.activityTypeName || '';
+
+  // Left column pills: activity → first staff → boats → total
+  const actBadge   = actName   ? '<span class="gc-badge">'  + esc(actName)   + '</span>' : '';
+  const staffBadge = firstStaff? '<span style="font-size:12px;font-weight:500;color:var(--text)">' + esc(firstStaff) + '</span>' : '';
+  const boatsBadge = '<span style="font-size:11px;color:var(--muted)">' + boatCount + ' ' + (IS ? (boatCount===1?'bátur':'bátar') : (boatCount===1?'boat':'boats')) + '</span>';
+  const totalBadge = '<span style="font-size:11px;color:var(--muted)">' + total + ' ' + (IS?'á sjó':'on water') + '</span>';
+
+  // Right: return time
+  const retHtml = retBy
+    ? '<div style="font-size:16px;font-weight:500;color:' + (overdue?'var(--red)':' var(--text)') + '">\u21a9 ' + esc(retBy) + '</div>'
+    + (overdue ? '<div style="font-size:9px;letter-spacing:.5px;color:var(--red);text-align:right">OVERDUE</div>' : '')
+    : '';
+
   const div = document.createElement('div');
   div.className = 'bc-group-card' + (overdue ? ' overdue' : '');
   div.dataset.checkoutId = c.id;
-  const retHtml = retBy ? '<div style="font-size:13px;font-weight:500;color:' + (overdue?'var(--red)':' var(--text)') + '">\u21a9 ' + esc(retBy) + '</div>' + (overdue?'<div style="font-size:9px;color:var(--red)">OVERDUE</div>':'') : '';
-  const actBadge = actName ? '<span class="gc-badge" style="border-color:var(--muted)44;color:var(--muted)">' + esc(actName) + '</span>' : '';
-  div.innerHTML = '<div class="gc-header"><div>' +
-    '<div class="gc-boats">\u26f5 ' + esc(boatList) + '</div>' +
-    '<div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap"><span class="gc-badge">GROUP</span>' + actBadge +
-    '<span style="font-size:11px;color:var(--muted)">' + total + ' ' + (IS?'á sjó':'on water') + '</span></div>' +
-    '</div><div class="gc-ret">' + retHtml + '</div></div>' +
-    '<div class="gc-meta">' + esc(c.locationName||'—') + ' \u00b7 Out ' + esc(tout) + ' \u00b7 ' + partic + ' ' + (IS?'iðkendur':'participants') + (staffStr?' \u00b7 '+staffStr:'') + '</div>' +
-    '<div style="display:flex;gap:6px;margin-top:10px">' +
-    '<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="staffGroupCheckIn(\'' + esc(c.id) + '\')">\u2693 ' + (IS?'Taka inn':'Check In All') + '</button>' +
-    '<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="staffDeleteCheckout(\'' + esc(c.id) + '\',\'' + esc(boatList) + '\')">\u2715</button>' +
-    '</div>';
+  div.innerHTML =
+    '<div class="gc-header">'
+    + '<div style="display:flex;flex-direction:column;gap:5px">'
+    +   actBadge
+    +   staffBadge
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +   boatsBadge + totalBadge
+    + '</div>'
+    + '</div>'
+    + '<div class="gc-ret">' + retHtml + '</div>'
+    + '</div>'
+    + '<div class="gc-meta">' + esc(c.locationName||'—') + ' \u00b7 Out ' + esc(tout) + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:10px">'
+    + '<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="staffGroupCheckIn(\'' + esc(c.id) + '\')">\u2693 ' + (IS?'Taka inn':'Check In All') + '</button>'
+    + '<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="staffDeleteCheckout(\'' + esc(c.id) + '\',\'' + esc(boatArr.join(', ')) + '\')">\u2715</button>'
+    + '</div>';
   return div;
 }
 
