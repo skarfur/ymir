@@ -319,6 +319,11 @@
           <button class="crew-btn" onclick="adjustCrew(1)">+</button>
         </div>
       </div>
+      <div class="field" style="margin-top:4px">
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Crew names <span style="font-weight:400;opacity:.6">(optional)</span></label>
+        <textarea id="coCrewNames" rows="2" placeholder="One name per line — auto-logged as crew in their logbook" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px"></textarea>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Named crew get this trip automatically added to their logbook.</div>
+      </div>
       <div class="field">
         <label id="notesLabel"></label>
         <input type="text" id="coNotes">
@@ -688,7 +693,7 @@ async function submitCheckout() {
   const member   = members.find(m => m.kennitala === kt) || {};
   const snap     = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   try {
-    await apiPost('saveCheckout', {
+    const res = await apiPost('saveCheckout', {
       memberKennitala: kt, memberName: member.name||kt,
       boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
       locationId: lid, locationName: location.name||lid,
@@ -700,6 +705,23 @@ async function submitCheckout() {
       wxSnapshot: snap,
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
+    // Save crew trips for named crew members
+    const _crewNames = (document.getElementById('coCrewNames')?.value || '')
+      .split('\n').map(n => n.trim()).filter(Boolean);
+    if (_crewNames.length) {
+      const _tripBase = {
+        linkedCheckoutId: res?.checkoutId || res?.id || '',
+        boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
+        locationId: lid, locationName: location.name||lid,
+        timeOut: document.getElementById('coTimeOut').value,
+        expectedReturn: document.getElementById('coReturnBy').value,
+        role: 'crew', isLinked: true, wxSnapshot: snap,
+      };
+      for (const _cn of _crewNames) {
+        try { await apiPost('saveTrip', Object.assign({}, _tripBase, { crewMemberName: _cn }));
+        } catch(e2) { console.warn('crew trip save failed for', _cn, e2.message); }
+      }
+    }
     toggleCheckoutForm();
     renderAll();
     showToast(s('staff.coForm.checkedOut'));
