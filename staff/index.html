@@ -14,6 +14,7 @@
 <script src="../shared/boats.js"></script>
 <script src="../shared/maintenance.js"></script>
 <script src="../shared/certs.js"></script>
+  <script src="../shared/boats.js"></script>
 <style>
 /* ── Tool nav cards ── */
 .nav-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px; }
@@ -544,56 +545,11 @@ function renderStats() {
 // ── Fleet ─────────────────────────────────────────────────────────────────────
 function renderFleet() {
   const active = checkouts.filter(c => c.status === 'out');
-  const cats   = [...new Set(boats.map(b => b.category).filter(Boolean))];
-  const el     = document.getElementById('fleetStatus');
-  if (!boats.length) { el.innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return; }
-
-  el.innerHTML = cats.map(cat => {
-    const accent   = catAccent(cat);
-    const emoji    = boatEmoji(cat);
-    const catBoats = boats.filter(b => b.category === cat);
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id));
-    const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
-    const hasAvail = avail.length > 0;
-    const catId    = 'fcat-' + encodeURIComponent(cat);
-
-    const cards = catBoats.map(b => {
-      const co  = active.find(c => c.boatId === b.id);
-      const oos = boolVal(b.oos);
-      const acc = b.color || accent;
-      if (oos) {
-        return `<div class="bc-boat-card status-oos" style="border-color:${acc}40">
-          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
-          <div class="bc-boat-status">OOS</div>
-        </div>`;
-      } else if (co) {
-        const overdue = co.expectedReturn && co.expectedReturn < fmtTimeNow();
-        return `<div class="bc-boat-card ${overdue?'status-overdue':'status-out'}" style="border-color:${overdue?'var(--red)':acc}">
-          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
-          <div class="bc-boat-status">${esc(co.memberName||'')} · ${esc(co.expectedReturn||'')}</div>
-        </div>`;
-      } else {
-        return `<div class="bc-boat-card status-avail" style="border-color:${acc};cursor:pointer"
-          onclick="selectBoatForCheckout('${esc(b.id)}')">
-          <div class="bc-boat-name">${emoji} ${esc(b.name||b.id)}</div>
-          <div class="bc-boat-status avail-label">Laust / Available</div>
-        </div>`;
-      }
-    }).join('');
-
-    return `<div class="fleet-status-block">
-      <div class="fsb-header" onclick="toggleFleetCat(this)" data-target="${catId}">
-        <span class="fsb-emoji">${emoji}</span>
-        <span class="fsb-label">${esc(cat)}</span>
-        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%;background:${accent}"></div></div>
-        <span class="fsb-count ${hasAvail?'has-avail':'none-avail'}">${avail.length}/${catBoats.length}</span>
-        <span class="fsb-arrow">▾</span>
-      </div>
-      <div class="fsb-body" id="${catId}" style="display:none">
-        <div class="fleet-cat-grid">${cards}</div>
-      </div>
-    </div>`;
-  }).join('');
+  renderFleetStatus('fleetStatus', boats, active, {
+    onAvailClick: 'selectBoatForCheckout',
+    toggleFn:     'toggleFleetCat',
+    collapsed:    true,
+  });
 }
 
 function toggleFleetCat(hdr) {
@@ -906,31 +862,6 @@ function selectBoatForCheckout(boatId) {
   }, 80);
 }
 
-// ── Category emoji + colour helpers ─────────────────────────────────────────
-function boatEmoji(cat) {
-  if (!cat) return '⛵';
-  var c = cat.toLowerCase();
-  if (c.includes('kayak') || c.includes('kajak'))  return '🚣';
-  if (c.includes('sail')  || c.includes('segling') || c.includes('siglingur')) return '⛵';
-  if (c.includes('wind')  || c.includes('surf'))    return '🏄';
-  if (c.includes('row')   || c.includes('róður'))   return '🚤';
-  if (c.includes('canoe') || c.includes('kanó'))    return '🛶';
-  if (c.includes('motor') || c.includes('power'))   return '⚡';
-  if (c.includes('stand') || c.includes('sup'))     return '🏊';
-  return '⛵';
-}
-function catAccent(cat) {
-  if (!cat) return '#c8a84b';
-  var c = cat.toLowerCase();
-  if (c.includes('kayak') || c.includes('kajak'))  return '#2e86c1';
-  if (c.includes('sail')  || c.includes('segling') || c.includes('siglingur')) return '#1abc9c';
-  if (c.includes('wind')  || c.includes('surf'))    return '#8e44ad';
-  if (c.includes('row')   || c.includes('róður'))   return '#e67e22';
-  if (c.includes('canoe') || c.includes('kanó'))    return '#27ae60';
-  if (c.includes('motor') || c.includes('power'))   return '#e74c3c';
-  if (c.includes('stand') || c.includes('sup'))     return '#16a085';
-  return '#c8a84b';
-}
 </script>
 </body>
 </html>
