@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Logbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/strings.js"></script>
+<script src="../shared/certs.js"></script>
+<script src="../shared/boats.js"></script>
+<style>
+.page { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+
+/* ── Back nav ── */
+.back-nav { font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; margin-bottom:20px; }
+.back-nav:hover { color:var(--text); }
+
+/* ── Stats strip ── */
+.stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; text-align:center; }
+.stat-val { font-size:22px; font-weight:500; color:var(--text); line-height:1; }
+.stat-lbl { font-size:9px; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; margin-top:4px; }
+
+/* ── Category hours ── */
+.cat-hours { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:16px; }
+.cat-hours-title { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+.cat-hour-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:12px; }
+.cat-hour-bar-wrap { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.cat-hour-bar { height:100%; border-radius:3px; transition:width .3s; }
+.cat-hour-val { font-size:11px; color:var(--muted); min-width:32px; text-align:right; }
+
+/* ── Section header ── */
+.section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
+
+/* ── Certs ── */
+.cert-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+.filter-bar select, .filter-bar input {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  color:var(--text); font-family:inherit; font-size:11px; padding:5px 9px;
+  height:30px; outline:none; transition:border-color .15s;
+}
+.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); }
+.filter-bar input { flex:1; min-width:120px; }
+.filter-count { font-size:10px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+
+/* ── Trip card ── */
+.trip-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  margin-bottom:8px; overflow:hidden; cursor:pointer; transition:border-color .15s;
+}
+.trip-card:hover { border-color:var(--brass); }
+.trip-card-main { display:grid; grid-template-columns:52px 1fr auto; gap:0; align-items:stretch; }
+.trip-date-col {
+  background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:10px 6px; text-align:center;
+}
+.trip-date-day  { font-size:20px; font-weight:500; color:var(--text); line-height:1; }
+.trip-date-mon  { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+.trip-date-yr   { font-size:9px; color:var(--muted); letter-spacing:.3px; }
+.trip-body { padding:10px 12px; min-width:0; }
+.trip-boat { font-size:14px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+.trip-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:11px; color:var(--muted); align-items:center; }
+.trip-badge {
+  font-size:9px; letter-spacing:.6px; padding:2px 6px; border-radius:8px; border:1px solid;
+  text-transform:uppercase; flex-shrink:0;
+}
+.badge-skipper { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
+.badge-crew    { color:var(--muted); border-color:var(--border);   background:var(--surface); }
+.badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+.trip-wind { display:flex; align-items:center; gap:4px; }
+.trip-expand { display:none; padding:0 12px 12px; }
+.trip-card.open .trip-expand { display:block; }
+.trip-expand-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;
+  font-size:11px; border-top:1px solid var(--border); padding-top:10px; margin-top:2px;
+}
+.trip-exp-row { display:flex; flex-direction:column; gap:1px; padding:4px 0; }
+.trip-exp-lbl { font-size:9px; color:var(--muted); letter-spacing:.6px; text-transform:uppercase; }
+.trip-exp-val { color:var(--text); }
+.trip-arrow { padding:10px 10px 10px 0; display:flex; align-items:center; color:var(--muted); font-size:11px; transition:transform .2s; flex-shrink:0; }
+.trip-card.open .trip-arrow { transform:rotate(180deg); }
+
+/* ── Empty ── */
+.empty-note { font-size:12px; color:var(--muted); padding:20px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <a class="back-nav" href="../member/">← Member Hub</a>
+
+  <!-- Stats strip -->
+  <div class="stat-strip" id="statStrip">
+    <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl" data-s="lbl.trips">Trips</div></div>
+    <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
+    <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
+    <div class="stat-card"><div class="stat-val" id="stBoat">—</div><div class="stat-lbl">Top boat</div></div>
+  </div>
+
+  <!-- Hours by category -->
+  <div class="cat-hours" id="catHours" style="display:none">
+    <div class="cat-hours-title">Hours by category</div>
+    <div id="catHoursList"></div>
+  </div>
+
+  <!-- Certifications -->
+  <div class="section-hdr">
+    <span>Certifications</span>
+  </div>
+  <div id="certsList"><div class="empty-note" data-s="lbl.loading">Loading…</div></div>
+
+  <!-- Trip list -->
+  <div class="section-hdr" style="margin-top:24px">
+    <span id="logbookTitle">Logbook</span>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <select id="filterYear">
+      <option value="">All years</option>
+    </select>
+    <select id="filterCat">
+      <option value="">All boats</option>
+    </select>
+    <select id="filterRole">
+      <option value="">Skipper &amp; Crew</option>
+      <option value="skipper">Skipper only</option>
+      <option value="crew">Crew only</option>
+    </select>
+    <input id="filterText" type="text" placeholder="Search…">
+    <span class="filter-count" id="filterCount"></span>
+  </div>
+
+  <div id="tripList"><div class="empty-note" data-s="lbl.loading">Loading…</div></div>
+
+</div>
+<script>
+// ── Auth guard ────────────────────────────────────────────────────────────────
+requireAuth('../logbook/');
+const user = getUser();
+const IS   = getLang() === 'IS';
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+let myTrips  = [];
+let certDefs = [];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function bftDir(t) {
+  const parts = [];
+  if (t.beaufort) parts.push('💨 Bft ' + t.beaufort);
+  if (t.windDir)  parts.push(t.windDir);
+  return parts.join(' · ');
+}
+function parseDateParts(dateStr) {
+  if (!dateStr) return { day:'—', mon:'', yr:'' };
+  const d = new Date(dateStr);
+  if (isNaN(d)) return { day: dateStr.slice(8,10)||'—', mon: dateStr.slice(5,7)||'', yr: dateStr.slice(0,4)||'' };
+  return {
+    day: String(d.getDate()).padStart(2,'0'),
+    mon: d.toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),
+    yr:  String(d.getFullYear()),
+  };
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const year   = new Date().getFullYear();
+  const season = myTrips.filter(t=>(t.date||'').startsWith(String(year)));
+  const hours  = myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const boatCount = {};
+  myTrips.forEach(t=>{ if(t.boatName) boatCount[t.boatName]=(boatCount[t.boatName]||0)+1; });
+  const topBoat = Object.entries(boatCount).sort(([,a],[,b])=>b-a)[0];
+
+  document.getElementById('stTrips').textContent  = myTrips.length;
+  document.getElementById('stHours').textContent  = hours.toFixed(0)+'h';
+  document.getElementById('stSeason').textContent = season.length;
+  document.getElementById('stBoat').textContent   = topBoat ? topBoat[0] : '—';
+
+  // Hours by category
+  const catHours = {};
+  myTrips.forEach(t => {
+    if (!t.boatCategory && !t.category) return;
+    const cat = t.boatCategory || t.category || 'Other';
+    catHours[cat] = (catHours[cat]||0) + (parseFloat(t.hoursDecimal)||0);
+  });
+  const catEntries = Object.entries(catHours).sort(([,a],[,b])=>b-a);
+  if (catEntries.length > 1) {
+    const maxH = catEntries[0][1];
+    document.getElementById('catHoursList').innerHTML = catEntries.map(([cat,h])=>{
+      const col = BOAT_CAT_COLORS[(cat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
+      const pct = maxH ? Math.round(h/maxH*100) : 0;
+      return `<div class="cat-hour-row">
+        <span style="font-size:14px;width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
+        <span style="min-width:80px;color:var(--text)">${esc(cat)}</span>
+        <div class="cat-hour-bar-wrap"><div class="cat-hour-bar" style="width:${pct}%;background:${col.color}"></div></div>
+        <span class="cat-hour-val">${h.toFixed(0)}h</span>
+      </div>`;
+    }).join('');
+    document.getElementById('catHours').style.display = '';
+  }
+}
+
+// ── Certifications ────────────────────────────────────────────────────────────
+async function renderCerts() {
+  const el = document.getElementById('certsList');
+  try {
+    const [mRes, cfgRes] = await Promise.all([
+      apiGet('getMembers'),
+      apiGet('getConfig'),
+    ]);
+    certDefs = certDefsFromConfig(cfgRes.certDefs||[]);
+    const member = (mRes.members||[]).find(m=>m.kennitala===user.kennitala) || {};
+    const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
+    if (!certs.length) {
+      el.innerHTML = '<div class="empty-note">No certifications on record.</div>';
+      return;
+    }
+    const grouped = {};
+    certs.forEach(c => {
+      const key = c.def?.name || c.certId;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(c);
+    });
+    el.innerHTML = '<div class="cert-grid">' +
+      Object.entries(grouped).map(([,items]) => items.map(certBadgeHTML).join('')).join('') +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>';
+  }
+}
+
+// ── Trip card ─────────────────────────────────────────────────────────────────
+function tripCard(t) {
+  const p   = parseDateParts(t.date);
+  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
+  const wind = bftDir(t);
+  const isSki = !t.role || t.role==='skipper';
+  const isVer = t.verified && t.verified!=='false';
+
+  const expanded = `
+    <div class="trip-expand">
+      <div class="trip-expand-grid">
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
+        ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
+        ${t.staffComment?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Staff note</span><span class="trip-exp-val">'+esc(t.staffComment)+'</span></div>':''}
+      </div>
+    </div>`;
+
+  return `<div class="trip-card" onclick="toggleCard(this)">
+    <div class="trip-card-main">
+      <div class="trip-date-col">
+        <div class="trip-date-day">${esc(p.day)}</div>
+        <div class="trip-date-mon">${esc(p.mon)}</div>
+        <div class="trip-date-yr">${esc(p.yr)}</div>
+      </div>
+      <div class="trip-body">
+        <div class="trip-boat">${esc(t.boatName||'—')}</div>
+        <div class="trip-meta">
+          <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
+          ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
+          <span>${esc(dur)}</span>
+          ${wind?'<span class="trip-wind">'+esc(wind)+'</span>':''}
+        </div>
+      </div>
+      <div class="trip-arrow">▾</div>
+    </div>
+    ${expanded}
+  </div>`;
+}
+
+function toggleCard(el) {
+  el.classList.toggle('open');
+}
+
+// ── Filter & render ───────────────────────────────────────────────────────────
+function applyFilter() {
+  const yr   = document.getElementById('filterYear').value;
+  const cat  = document.getElementById('filterCat').value;
+  const role = document.getElementById('filterRole').value;
+  const txt  = document.getElementById('filterText').value.toLowerCase();
+
+  const filtered = myTrips.filter(t => {
+    if (yr   && !(t.date||'').startsWith(yr)) return false;
+    const tc = (t.boatCategory||t.category||'').toLowerCase();
+    if (cat  && tc !== cat.toLowerCase()) return false;
+    if (role === 'skipper' && t.role === 'crew') return false;
+    if (role === 'crew'    && t.role !== 'crew') return false;
+    if (txt) {
+      const hay = [t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes].join(' ').toLowerCase();
+      if (!hay.includes(txt)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('tripList').innerHTML = filtered.length
+    ? filtered.map(tripCard).join('')
+    : '<div class="empty-note">No trips match this filter.</div>';
+  document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+}
+
+function buildFilters() {
+  // Years
+  const years = [...new Set(myTrips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const yrSel = document.getElementById('filterYear');
+  years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; yrSel.appendChild(o); });
+  // Current year default
+  const thisYear = String(new Date().getFullYear());
+  if (years.includes(thisYear)) yrSel.value = thisYear;
+
+  // Categories
+  const cats = [...new Set(myTrips.map(t=>(t.boatCategory||t.category||'')).filter(Boolean))].sort();
+  const catSel = document.getElementById('filterCat');
+  cats.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=boatEmoji(c.toLowerCase())+' '+c; catSel.appendChild(o); });
+
+  // Wire listeners
+  ['filterYear','filterCat','filterRole'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilter));
+  document.getElementById('filterText').addEventListener('input',applyFilter);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async function init() {
+  applyStrings();
+  buildHeader('member');
+
+  try {
+    const res = await apiGet('getClubTrips');
+    myTrips = (res.trips||[])
+      .filter(t => t.memberKennitala===user.kennitala || t.kennitala===user.kennitala)
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+    renderStats();
+    buildFilters();
+    applyFilter();
+    renderCerts();
+    warmContainer();
+  } catch(e) {
+    document.getElementById('tripList').innerHTML =
+      '<div class="empty-note" style="color:var(--red)">Could not load logbook: '+esc(e.message)+'</div>';
+  }
+})();
+</script>
+</body>
+</html>
