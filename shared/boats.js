@@ -203,8 +203,7 @@ function renderCheckoutCard(co, opts) {
   }
 
   // Sub-line
-  const subLine = `${_besc(co.memberName||"—")} · ${_besc(co.locationName||"—")} · Out ${_besc(tout)}`
-                + `${retBy?" · ↩ "+_besc(retBy):""}  · ${_besc(co.crew||1)} aboard`;
+  const subLine = `${_besc(co.locationName||"—")} · Out ${_besc(tout)}`;
 
   // Wx snapshot (staff)
   let wxHtml = "";
@@ -255,8 +254,16 @@ function renderCheckoutCard(co, opts) {
 
   return `<div class="bc-checkout-card" style="${borderStyle}">`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
+       + `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">`
        + `<div style="font-size:13px;font-weight:500;color:var(--text)">${emoji} ${_besc(co.boatName||co.boatId||"—")} ${boatCatBadge(cat)}</div>`
-       + topBadge
+       + `<div style="font-size:13px;font-weight:500;color:var(--text)">${_besc(co.memberName||"—")}</div>`
+       + `<div style="font-size:11px;color:var(--muted)">${_besc(co.crew||1)} aboard</div>`
+       + `</div>`
+       + `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">`
+       + (retBy ? `<div style="font-size:13px;font-weight:500;color:${overdue?"var(--red)":"var(--text)"}">↩ ${_besc(retBy)}</div>` : "")
+       + (overdue && staffView ? `<div style="font-size:9px;letter-spacing:.6px;color:var(--red)">OVERDUE</div>` : "")
+       + `</div>`
+       + (!staffView ? topBadge : "")
        + `</div>`
        + `<div style="font-size:11px;color:var(--muted);margin-top:3px">${subLine}</div>`
        + wxHtml + contactHtml + actionsHtml
