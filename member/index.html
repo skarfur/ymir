@@ -698,22 +698,80 @@ function renderLaunchForm(boat) {
       '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>' +
       '<button type="button" onclick="adjLaunchCrew(1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>' +
     '</div></div>' +
-    '<div class="field" style="margin-top:12px">' +
-      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px">Crew names <span style="font-weight:400;opacity:.6">(optional)</span></label>' +
-      '<textarea id="launchCrewNames" rows="2" placeholder="One name per line — auto-logged as crew" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px"></textarea>' +
-      '<div style="font-size:10px;color:var(--muted);margin-top:3px">Named crew get this trip automatically added to their logbook.</div>' +
+    '<div id="launchCrewSection" style="display:none;margin-top:12px">' +
+      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>' +
+      '<div id="launchCrewInputs"></div>' +
+      '<div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>' +
     '</div>' +
     '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
     '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← ' + s("nav.back").replace("← ","") + '</button>' +
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← ' + (L==='IS'?'Til baka':'Back') + '</button>' +
       '<button class="btn btn-primary" onclick="submitLaunch()">⛵ ' + s("member.launchBoat").replace("⛵ ","") + '</button>' +
     '</div>';
   window._launchCrewCount = 1;
+  renderCrewInputs();
+  // Pre-fetch members for crew search if not already loaded
+  if (!window._launchMembers) {
+    apiGet('getMembers').then(function(r){
+      window._launchMembers = r.members || [];
+    }).catch(function(){});
+  }
 }
 
 function adjLaunchCrew(d) {
   window._launchCrewCount = Math.max(1, Math.min(20, (window._launchCrewCount||1)+d));
   document.getElementById('launchCrewNum').textContent = window._launchCrewCount;
+  renderCrewInputs();
+}
+function renderCrewInputs() {
+  const n    = (window._launchCrewCount||1) - 1; // additional crew (excl. skipper)
+  const sec  = document.getElementById('launchCrewSection');
+  const wrap = document.getElementById('launchCrewInputs');
+  if (!sec || !wrap) return;
+  if (n < 1) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  // Keep existing values if re-rendering
+  const existing = Array.from(wrap.querySelectorAll('input')).map(i => i.value);
+  wrap.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div');
+    row.style.cssText = 'position:relative;margin-bottom:6px';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'Crew member ' + (i+1) + ' name…';
+    inp.value = existing[i] || '';
+    inp.dataset.crewIdx = i;
+    inp.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    const drop = document.createElement('div');
+    drop.id = 'crewDrop' + i;
+    drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
+    inp.addEventListener('input', function() { searchCrewMembers(this, drop); });
+    inp.addEventListener('blur', function() { setTimeout(function(){ drop.style.display='none'; }, 200); });
+    row.appendChild(inp);
+    row.appendChild(drop);
+    wrap.appendChild(row);
+  }
+}
+function searchCrewMembers(inp, drop) {
+  const q = inp.value.trim().toLowerCase();
+  if (!q || q.length < 2) { drop.style.display='none'; return; }
+  const matches = (window._launchMembers||[]).filter(m =>
+    m.name && m.name.toLowerCase().includes(q) && m.kennitala !== user.kennitala
+  ).slice(0, 8);
+  if (!matches.length) { drop.style.display='none'; return; }
+  drop.innerHTML = matches.map(m =>
+    '<div style="padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)44" ' +
+    'onmousedown="pickCrewMember(this,\'' + esc(m.name) + '\',\'' + esc(m.kennitala) + '\')" ' +
+    'onmouseover="this.style.background='\'var(--card)\''" onmouseout="this.style.background=\'\'">' +
+    esc(m.name) + '</div>'
+  ).join('');
+  drop.style.display = '';
+}
+function pickCrewMember(el, name, kennitala) {
+  const row  = el.closest('div[style*="position:relative"]');
+  const inp  = row?.querySelector('input');
+  if (inp) { inp.value = name; inp.dataset.kennitala = kennitala; }
+  el.closest('div[id^="crewDrop"]').style.display = 'none';
 }
 
 async function submitLaunch() {
@@ -736,8 +794,9 @@ async function submitLaunch() {
       wxSnapshot:snap,
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts||[];
-    const _crewNames = (document.getElementById('launchCrewNames')?.value||'')
-      .split('\n').map(n=>n.trim()).filter(Boolean);
+    const _crewNames = Array.from(document.querySelectorAll('#launchCrewInputs input'))
+      .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
+      .filter(c => c.name);
     if (_crewNames.length) {
       const _trip = { boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
         locationId:lid, locationName:location.name||lid,
@@ -745,7 +804,8 @@ async function submitLaunch() {
       for (const _cn of _crewNames) {
         try { await apiPost('saveTrip', Object.assign({}, _trip, {
           linkedCheckoutId: res?.checkoutId||res?.id||'',
-          crewMemberName: _cn,
+          crewMemberName: _cn.name,
+          crewMemberKennitala: _cn.kennitala,
         })); } catch(e2) { console.warn('crew trip:', _cn, e2.message); }
       }
     }
