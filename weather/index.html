@@ -23,26 +23,7 @@
 .top-bar-right { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
 /* ── Location picker ── */
-.loc-picker {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius:10px;
-  padding:16px 18px;
-  margin-bottom:16px;
-}
-.loc-picker h4 { font-size:11px; color:var(--muted); letter-spacing:1.2px; margin:0 0 12px; }
-.loc-presets { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-.loc-preset-btn {
-  background:var(--surface); border:1px solid var(--border); color:var(--text);
-  border-radius:6px; padding:6px 12px; font-size:12px; font-family:inherit;
-  cursor:pointer; transition:all .15s;
-}
-.loc-preset-btn:hover, .loc-preset-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-.loc-divider { font-size:10px; color:var(--muted); margin-bottom:10px; letter-spacing:.5px; }
-.loc-manual { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
-.loc-manual .field { flex:1; min-width:100px; }
-.loc-manual .field label { font-size:10px; color:var(--muted); display:block; margin-bottom:5px; letter-spacing:.5px; }
-.loc-manual .field input { width:100%; box-sizing:border-box; }
+
 
 /* ── Flag banner ── */
 .flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; }
@@ -130,37 +111,14 @@ svg.chart { width:100%; overflow:visible; display:block; }
       <div class="loc-row">
         <span class="loc-name" id="locName">Fossvogur</span>
         <span class="loc-coords" id="locCoords">64.1188°N 21.9376°W</span>
-        <span class="loc-default-badge hidden" id="customBadge">CUSTOM</span>
       </div>
       <div style="font-size:10px;color:var(--muted)" id="updatedAt">Loading…</div>
     </div>
     <div class="top-bar-right">
-      <button class="btn btn-secondary" onclick="togglePicker()" id="pickerBtn" style="font-size:11px;padding:6px 12px">📍 Location</button>
       <button class="btn btn-secondary" onclick="fetchAll()" id="refreshBtn" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
     </div>
   </div>
 
-  <!-- ══ LOCATION PICKER (hidden by default) ══ -->
-  <div class="loc-picker hidden" id="locPicker">
-    <h4>CHOOSE LOCATION</h4>
-    <div class="loc-presets" id="locPresets"></div>
-    <div class="loc-divider">OR ENTER CUSTOM COORDINATES</div>
-    <div class="loc-manual">
-      <div class="field">
-        <label>LATITUDE</label>
-        <input type="number" id="manualLat" step="0.0001" min="60" max="70" placeholder="64.1188">
-      </div>
-      <div class="field">
-        <label>LONGITUDE</label>
-        <input type="number" id="manualLon" step="0.0001" min="-26" max="-10" placeholder="-21.9376">
-      </div>
-      <div class="field" style="flex:2;min-width:120px">
-        <label>LABEL</label>
-        <input type="text" id="manualLabel" placeholder="Custom location" maxlength="30">
-      </div>
-      <button class="btn btn-primary" onclick="applyManual()" style="font-size:12px;padding:8px 14px;align-self:flex-end">Go</button>
-    </div>
-  </div>
 
   <!-- ══ WEATHER CONTENT ══ -->
   <div id="mainContent">
@@ -173,64 +131,9 @@ svg.chart { width:100%; overflow:visible; display:block; }
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCATION SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
-const PRESETS = [
-  { label:'Fossvogur',        lat: 64.1188, lon:-21.9376, isDefault:true  },
-  { label:'Keflavík / BIKF',  lat: 63.9850, lon:-22.6056, isDefault:false },
-  { label:'Akureyri / BIAR',  lat: 65.6596, lon:-18.0727, isDefault:false },
-  { label:'Hafnarfjörður',    lat: 64.0667, lon:-21.9500, isDefault:false },
-  { label:'Álftanes',         lat: 64.1000, lon:-22.0500, isDefault:false },
-];
+const FOSSVOGUR = { lat: 64.1188, lon: -21.9376, label: 'Fossvogur' };
 
-let curLoc = { ...PRESETS[0] };
 
-function isDefault() {
-  return curLoc.lat === WX_DEFAULT.lat && curLoc.lon === WX_DEFAULT.lon;
-}
-
-function setLocation(loc, refetch) {
-  curLoc = { ...loc };
-  document.getElementById('locName').textContent    = loc.label;
-  document.getElementById('locCoords').textContent  = `${loc.lat.toFixed(4)}°N ${Math.abs(loc.lon).toFixed(4)}°W`;
-  document.getElementById('customBadge').classList.toggle('hidden', isDefault());
-  renderPresetBtns();
-  if (refetch) { closePicker(); fetchAll(); }
-}
-
-function renderPresetBtns() {
-  const isHome = isDefault();
-  document.getElementById('locPresets').innerHTML = PRESETS.map(p => {
-    const active = p.lat === curLoc.lat && p.lon === curLoc.lon;
-    return `<button class="loc-preset-btn${active?' active':''}" onclick="setLocation(${JSON.stringify(p)}, true)">${p.label}${p.isDefault?' ⚓':''}</button>`;
-  }).join('') + (!isHome ? `<button class="loc-preset-btn" style="border-color:var(--brass);color:var(--brass)" onclick="backToDefault()">← Back to Fossvogur</button>` : '');
-}
-
-function backToDefault() {
-  setLocation(PRESETS[0], true);
-}
-
-function togglePicker() {
-  const el = document.getElementById('locPicker');
-  const hidden = el.classList.contains('hidden');
-  el.classList.toggle('hidden', !hidden);
-  if (!el.classList.contains('hidden')) {
-    renderPresetBtns();
-    document.getElementById('manualLat').value   = '';
-    document.getElementById('manualLon').value   = '';
-    document.getElementById('manualLabel').value = '';
-  }
-}
-function closePicker() { document.getElementById('locPicker').classList.add('hidden'); }
-
-function applyManual() {
-  const lat   = parseFloat(document.getElementById('manualLat').value);
-  const lon   = parseFloat(document.getElementById('manualLon').value);
-  const label = document.getElementById('manualLabel').value.trim() || `${lat.toFixed(2)}°N`;
-  if (isNaN(lat) || isNaN(lon) || lat < 60 || lat > 70) {
-    alert('Enter a valid latitude (60–70°N) and longitude.');
-    return;
-  }
-  setLocation({ lat, lon, label, isDefault: false }, true);
-}
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtT(t) { return t ? t.slice(11,16) : '–'; }
@@ -244,7 +147,7 @@ async function fetchAll() {
   document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓ Fetching weather data…</div>';
   document.getElementById('updatedAt').textContent = 'Updating…';
   try {
-    const { wx, marine } = await wxFetch(curLoc.lat, curLoc.lon);
+    const { wx, marine } = await wxFetch(FOSSVOGUR.lat, FOSSVOGUR.lon);
     render(wx, marine);
     document.getElementById('updatedAt').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
@@ -511,9 +414,7 @@ function drawPresChart(pts, nowI) {
   svg.innerHTML=h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-setLocation(PRESETS[0], false);
-fetchAll();
+// ─── Init ─────────────────────────────────────────────────────────────────────fetchAll();
 </script>
 </body>
 </html>
