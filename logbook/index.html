@@ -13,191 +13,230 @@
 <script src="../shared/certs.js"></script>
 <script src="../shared/boats.js"></script>
 <style>
-.page { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+.page{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+.back-nav{font-size:11px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:20px}
+.back-nav:hover{color:var(--text)}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.stat-val{font-size:22px;font-weight:500;color:var(--text);line-height:1}
+.stat-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:4px}
+.cat-hours{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.cat-hours-title{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.cat-hour-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12px}
+.cat-hour-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.cat-hour-bar{height:100%;border-radius:3px;transition:width .3s}
+.cat-hour-val{font-size:11px;color:var(--muted);min-width:32px;text-align:right}
+.section-hdr{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin:20px 0 8px;display:flex;align-items:center;justify-content:space-between}
+.cert-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filter-bar select,.filter-bar input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 9px;height:30px;outline:none;transition:border-color .15s}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--brass)}
+.filter-bar input{flex:1;min-width:100px}
+.filter-count{font-size:10px;color:var(--muted);white-space:nowrap}
+.trip-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.trip-card:hover{border-color:var(--brass)}
+.trip-card-main{display:grid;grid-template-columns:52px 1fr auto;align-items:stretch}
+.trip-date-col{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;text-align:center}
+.trip-date-day{font-size:20px;font-weight:500;color:var(--text);line-height:1}
+.trip-date-mon{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.trip-date-yr{font-size:9px;color:var(--muted)}
+.trip-body{padding:10px 12px;min-width:0}
+.trip-boat{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.trip-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
+.trip-badge{font-size:9px;letter-spacing:.6px;padding:2px 6px;border-radius:8px;border:1px solid;text-transform:uppercase;flex-shrink:0}
+.badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
+.badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
+.badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
+.trip-expand{display:none;padding:0 12px 12px}
+.trip-card.open .trip-expand{display:block}
+.trip-expand-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
+.trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.trip-exp-val{color:var(--text)}
+.trip-arrow{padding:10px 10px 10px 0;display:flex;align-items:center;color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
+.trip-card.open .trip-arrow{transform:rotate(180deg)}
+.empty-note{font-size:12px;color:var(--muted);padding:20px;text-align:center}
+.load-more{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:4px}
+.load-more:hover{border-color:var(--brass);color:var(--text)}
 
-/* ── Back nav ── */
-.back-nav { font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; margin-bottom:20px; }
-.back-nav:hover { color:var(--text); }
-
-/* ── Stats strip ── */
-.stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
-.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; text-align:center; }
-.stat-val { font-size:22px; font-weight:500; color:var(--text); line-height:1; }
-.stat-lbl { font-size:9px; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; margin-top:4px; }
-
-/* ── Category hours ── */
-.cat-hours { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:16px; }
-.cat-hours-title { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
-.cat-hour-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:12px; }
-.cat-hour-bar-wrap { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
-.cat-hour-bar { height:100%; border-radius:3px; transition:width .3s; }
-.cat-hour-val { font-size:11px; color:var(--muted); min-width:32px; text-align:right; }
-
-/* ── Section header ── */
-.section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
-
-/* ── Certs ── */
-.cert-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
-
-/* ── Filter bar ── */
-.filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
-.filter-bar select, .filter-bar input {
-  background:var(--surface); border:1px solid var(--border); border-radius:6px;
-  color:var(--text); font-family:inherit; font-size:11px; padding:5px 9px;
-  height:30px; outline:none; transition:border-color .15s;
-}
-.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); }
-.filter-bar input { flex:1; min-width:120px; }
-.filter-count { font-size:10px; color:var(--muted); margin-left:auto; white-space:nowrap; }
-
-/* ── Trip card ── */
-.trip-card {
-  background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  margin-bottom:8px; overflow:hidden; cursor:pointer; transition:border-color .15s;
-}
-.trip-card:hover { border-color:var(--brass); }
-.trip-card-main { display:grid; grid-template-columns:52px 1fr auto; gap:0; align-items:stretch; }
-.trip-date-col {
-  background:var(--card); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:10px 6px; text-align:center;
-}
-.trip-date-day  { font-size:20px; font-weight:500; color:var(--text); line-height:1; }
-.trip-date-mon  { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
-.trip-date-yr   { font-size:9px; color:var(--muted); letter-spacing:.3px; }
-.trip-body { padding:10px 12px; min-width:0; }
-.trip-boat { font-size:14px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
-.trip-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:11px; color:var(--muted); align-items:center; }
-.trip-badge {
-  font-size:9px; letter-spacing:.6px; padding:2px 6px; border-radius:8px; border:1px solid;
-  text-transform:uppercase; flex-shrink:0;
-}
-.badge-skipper { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
-.badge-crew    { color:var(--muted); border-color:var(--border);   background:var(--surface); }
-.badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
-.trip-wind { display:flex; align-items:center; gap:4px; }
-.trip-expand { display:none; padding:0 12px 12px; }
-.trip-card.open .trip-expand { display:block; }
-.trip-expand-grid {
-  display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;
-  font-size:11px; border-top:1px solid var(--border); padding-top:10px; margin-top:2px;
-}
-.trip-exp-row { display:flex; flex-direction:column; gap:1px; padding:4px 0; }
-.trip-exp-lbl { font-size:9px; color:var(--muted); letter-spacing:.6px; text-transform:uppercase; }
-.trip-exp-val { color:var(--text); }
-.trip-arrow { padding:10px 10px 10px 0; display:flex; align-items:center; color:var(--muted); font-size:11px; transition:transform .2s; flex-shrink:0; }
-.trip-card.open .trip-arrow { transform:rotate(180deg); }
-
-/* ── Empty ── */
-.empty-note { font-size:12px; color:var(--muted); padding:20px; text-align:center; }
+/* Log manually modal */
+.modal-overlay{position:fixed;inset:0;background:#00000088;display:flex;align-items:flex-end;justify-content:center;z-index:500;padding:0}
+.modal-overlay.hidden{display:none}
+.modal-sheet{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 40px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0}
+.form-field{margin-bottom:12px}
+.form-field label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px}
+.form-field input,.form-field select,.form-field textarea{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--brass)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-primary{background:var(--brass);color:#000;border:none;border-radius:8px;padding:11px 20px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;width:100%}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-family:inherit;font-size:12px;color:var(--text);cursor:pointer;width:100%}
+.trip-pick-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:12px;transition:border-color .15s}
+.trip-pick-card:hover,.trip-pick-card.selected{border-color:var(--brass);background:var(--card)}
+.trip-pick-card .tpc-boat{font-weight:500;margin-bottom:3px}
+.trip-pick-card .tpc-sub{color:var(--muted);font-size:11px}
+.wx-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 </style>
 </head>
 <body>
 <div class="page">
-
   <a class="back-nav" href="../member/">← Member Hub</a>
 
-  <!-- Stats strip -->
-  <div class="stat-strip" id="statStrip">
-    <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl" data-s="lbl.trips">Trips</div></div>
+  <!-- Stats -->
+  <div class="stat-strip">
+    <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl">Trips</div></div>
     <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
     <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
-    <div class="stat-card"><div class="stat-val" id="stBoat">—</div><div class="stat-lbl">Top boat</div></div>
+    <div class="stat-card"><div class="stat-val" id="stSkipper">—</div><div class="stat-lbl">As skipper</div></div>
   </div>
-
-  <!-- Hours by category -->
   <div class="cat-hours" id="catHours" style="display:none">
     <div class="cat-hours-title">Hours by category</div>
     <div id="catHoursList"></div>
   </div>
 
   <!-- Certifications -->
-  <div class="section-hdr">
-    <span>Certifications</span>
-  </div>
-  <div id="certsList"><div class="empty-note" data-s="lbl.loading">Loading…</div></div>
+  <div class="section-hdr"><span>Certifications</span></div>
+  <div id="certsList"><div class="empty-note">Loading…</div></div>
 
-  <!-- Trip list -->
+  <!-- Logbook header -->
   <div class="section-hdr" style="margin-top:24px">
-    <span id="logbookTitle">Logbook</span>
+    <span>Logbook</span>
+    <button class="btn-secondary" style="width:auto;padding:5px 12px;font-size:11px" onclick="openLogModal()">+ Log manually</button>
   </div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
-    <select id="filterYear">
-      <option value="">All years</option>
+    <select id="fYear"><option value="">All years</option></select>
+    <select id="fCat"><option value="">All boats</option></select>
+    <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+    <select id="fWind">
+      <option value="">Any wind</option>
+      <option value="calm">Calm (Bft 0–2)</option>
+      <option value="light">Light (Bft 3–4)</option>
+      <option value="moderate">Moderate (Bft 5–6)</option>
+      <option value="strong">Strong (Bft 7+)</option>
+      <option value="gt4">Above Bft 4</option>
+      <option value="lte4">Bft 4 or under</option>
     </select>
-    <select id="filterCat">
-      <option value="">All boats</option>
-    </select>
-    <select id="filterRole">
-      <option value="">Skipper &amp; Crew</option>
-      <option value="skipper">Skipper only</option>
-      <option value="crew">Crew only</option>
-    </select>
-    <input id="filterText" type="text" placeholder="Search…">
+    <input id="fText" type="text" placeholder="Search…">
     <span class="filter-count" id="filterCount"></span>
   </div>
-
-  <div id="tripList"><div class="empty-note" data-s="lbl.loading">Loading…</div></div>
-
+  <div id="tripList"><div class="empty-note">Loading…</div></div>
 </div>
+
+<!-- Log manually modal -->
+<div class="modal-overlay hidden" id="logModal">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span id="logModalTitle">Log a trip</span>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+
+    <!-- Step 1: pick a trip or enter manually -->
+    <div id="logStep1">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Join a recent club trip as crew, or enter a trip manually.</p>
+      <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
+      <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
+      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR ENTER MANUALLY —</div>
+      <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
+    </div>
+
+    <!-- Step 2: manual entry form -->
+    <div id="logStep2" style="display:none">
+      <button onclick="showStep1()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-bottom:12px;padding:0">← Back</button>
+      <div class="form-row">
+        <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
+        <div class="form-field"><label>Role</label>
+          <select id="mRole"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+        </div>
+      </div>
+      <div class="form-field"><label>Boat</label>
+        <select id="mBoat"><option value="">Select boat…</option></select>
+      </div>
+      <div class="form-field"><label>Location</label>
+        <select id="mLocation"><option value="">Select location…</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v"></div>
+        <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v"></div>
+      </div>
+      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1"></div>
+      <!-- Weather -->
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER (OPTIONAL)</div>
+      <div class="wx-row">
+        <div class="form-field"><label>Beaufort</label>
+          <select id="mBft">
+            <option value="">—</option>
+            <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
+            <option value="2">2 – Light breeze</option><option value="3">3 – Gentle</option>
+            <option value="4">4 – Moderate</option><option value="5">5 – Fresh</option>
+            <option value="6">6 – Strong</option><option value="7">7 – Near gale</option>
+            <option value="8">8 – Gale</option><option value="9">9+</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Direction</label>
+          <select id="mWindDir">
+            <option value="">—</option>
+            <option>N</option><option>NE</option><option>E</option><option>SE</option>
+            <option>S</option><option>SW</option><option>W</option><option>NW</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
+      </div>
+      <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
+      <div id="mErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+      <button class="btn-primary" onclick="submitManual()">Save to logbook</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ── Auth guard ────────────────────────────────────────────────────────────────
-requireAuth('../logbook/');
+requireAuth();
 const user = getUser();
 const IS   = getLang() === 'IS';
 
-// ── Data ──────────────────────────────────────────────────────────────────────
 let myTrips  = [];
-let certDefs = [];
+let allBoats = [], allLocs = [];
+let allRecentTrips = [];
+let recentOffset   = 0;
+const RECENT_PAGE  = 10;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function bftDir(t) {
-  const parts = [];
-  if (t.beaufort) parts.push('💨 Bft ' + t.beaufort);
-  if (t.windDir)  parts.push(t.windDir);
-  return parts.join(' · ');
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function parseDateParts(d){
+  if(!d) return{day:'—',mon:'',yr:''};
+  return{day:d.slice(8,10)||'—',mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),yr:d.slice(0,4)};
 }
-function parseDateParts(dateStr) {
-  if (!dateStr) return { day:'—', mon:'', yr:'' };
-  const d = new Date(dateStr);
-  if (isNaN(d)) return { day: dateStr.slice(8,10)||'—', mon: dateStr.slice(5,7)||'', yr: dateStr.slice(0,4)||'' };
-  return {
-    day: String(d.getDate()).padStart(2,'0'),
-    mon: d.toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),
-    yr:  String(d.getFullYear()),
-  };
+function bftLabel(b){
+  const n=parseInt(b);
+  return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n]||'Bft '+b;
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-function renderStats() {
-  const year   = new Date().getFullYear();
-  const season = myTrips.filter(t=>(t.date||'').startsWith(String(year)));
-  const hours  = myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const boatCount = {};
-  myTrips.forEach(t=>{ if(t.boatName) boatCount[t.boatName]=(boatCount[t.boatName]||0)+1; });
-  const topBoat = Object.entries(boatCount).sort(([,a],[,b])=>b-a)[0];
+function renderStats(){
+  const year=String(new Date().getFullYear());
+  const season=myTrips.filter(t=>(t.date||'').startsWith(year));
+  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const skipperTrips=myTrips.filter(t=>!t.role||t.role==='skipper');
+  document.getElementById('stTrips').textContent   = myTrips.length;
+  document.getElementById('stHours').textContent   = hours.toFixed(0)+'h';
+  document.getElementById('stSeason').textContent  = season.length;
+  document.getElementById('stSkipper').textContent = skipperTrips.length;
 
-  document.getElementById('stTrips').textContent  = myTrips.length;
-  document.getElementById('stHours').textContent  = hours.toFixed(0)+'h';
-  document.getElementById('stSeason').textContent = season.length;
-  document.getElementById('stBoat').textContent   = topBoat ? topBoat[0] : '—';
-
-  // Hours by category
-  const catHours = {};
-  myTrips.forEach(t => {
-    if (!t.boatCategory && !t.category) return;
-    const cat = t.boatCategory || t.category || 'Other';
-    catHours[cat] = (catHours[cat]||0) + (parseFloat(t.hoursDecimal)||0);
+  const catH={};
+  myTrips.forEach(t=>{
+    const c=t.boatCategory||'Other';
+    catH[c]=(catH[c]||0)+(parseFloat(t.hoursDecimal)||0);
   });
-  const catEntries = Object.entries(catHours).sort(([,a],[,b])=>b-a);
-  if (catEntries.length > 1) {
-    const maxH = catEntries[0][1];
-    document.getElementById('catHoursList').innerHTML = catEntries.map(([cat,h])=>{
-      const col = BOAT_CAT_COLORS[(cat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
-      const pct = maxH ? Math.round(h/maxH*100) : 0;
+  const entries=Object.entries(catH).sort(([,a],[,b])=>b-a);
+  if(entries.length>1){
+    const max=entries[0][1];
+    document.getElementById('catHoursList').innerHTML=entries.map(([cat,h])=>{
+      const col=BOAT_CAT_COLORS[(cat||'').toLowerCase()]||BOAT_CAT_COLORS.other;
+      const pct=max?Math.round(h/max*100):0;
       return `<div class="cat-hour-row">
         <span style="font-size:14px;width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
         <span style="min-width:80px;color:var(--text)">${esc(cat)}</span>
@@ -205,60 +244,35 @@ function renderStats() {
         <span class="cat-hour-val">${h.toFixed(0)}h</span>
       </div>`;
     }).join('');
-    document.getElementById('catHours').style.display = '';
+    document.getElementById('catHours').style.display='';
   }
 }
 
-// ── Certifications ────────────────────────────────────────────────────────────
-async function renderCerts() {
-  const el = document.getElementById('certsList');
-  try {
-    const [mRes, cfgRes] = await Promise.all([
-      apiGet('getMembers'),
-      apiGet('getConfig'),
-    ]);
-    certDefs = certDefsFromConfig(cfgRes.certDefs||[]);
-    const member = (mRes.members||[]).find(m=>m.kennitala===user.kennitala) || {};
-    const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
-    if (!certs.length) {
-      el.innerHTML = '<div class="empty-note">No certifications on record.</div>';
-      return;
-    }
-    const grouped = {};
-    certs.forEach(c => {
-      const key = c.def?.name || c.certId;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(c);
-    });
-    el.innerHTML = '<div class="cert-grid">' +
-      Object.entries(grouped).map(([,items]) => items.map(certBadgeHTML).join('')).join('') +
-      '</div>';
-  } catch(e) {
-    el.innerHTML = '<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>';
+// ── Certs ─────────────────────────────────────────────────────────────────────
+async function renderCerts(){
+  const el=document.getElementById('certsList');
+  try{
+    const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
+    const certDefs=certDefsFromConfig(cfgRes.certDefs||[]);
+    const member=(mRes.members||[]).find(m=>m.kennitala===user.kennitala)||{};
+    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
+    if(!certs.length){el.innerHTML='<div class="empty-note">No certifications on record.</div>';return;}
+    el.innerHTML='<div class="cert-grid">'+certs.map(certBadgeHTML).join('')+'</div>';
+  }catch(e){
+    el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>';
   }
 }
 
 // ── Trip card ─────────────────────────────────────────────────────────────────
-function tripCard(t) {
-  const p   = parseDateParts(t.date);
-  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
-  const wind = bftDir(t);
-  const isSki = !t.role || t.role==='skipper';
-  const isVer = t.verified && t.verified!=='false';
-
-  const expanded = `
-    <div class="trip-expand">
-      <div class="trip-expand-grid">
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
-        ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
-        ${t.staffComment?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Staff note</span><span class="trip-exp-val">'+esc(t.staffComment)+'</span></div>':''}
-      </div>
-    </div>`;
-
-  return `<div class="trip-card" onclick="toggleCard(this)">
+function tripCard(t){
+  const p=parseDateParts(t.date);
+  const dur=t.hoursDecimal?(parseFloat(t.hoursDecimal)||0).toFixed(1)+'h':'—';
+  const isSki=!t.role||t.role==='skipper';
+  const isVer=t.verified&&t.verified!=='false';
+  const bft=t.beaufort?'💨 Bft '+t.beaufort+(t.windDir?' '+t.windDir:''):'';
+  const wx=t.wxSnapshot?JSON.parse(t.wxSnapshot||'{}'):null;
+  const live=wx&&wx.ws?'💨 '+Math.round(wx.ws)+'m/s':bft;
+  return `<div class="trip-card" onclick="this.classList.toggle('open')">
     <div class="trip-card-main">
       <div class="trip-date-col">
         <div class="trip-date-day">${esc(p.day)}</div>
@@ -271,83 +285,265 @@ function tripCard(t) {
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
           <span>${esc(dur)}</span>
-          ${wind?'<span class="trip-wind">'+esc(wind)+'</span>':''}
+          ${live?'<span>'+esc(live)+'</span>':''}
         </div>
       </div>
       <div class="trip-arrow">▾</div>
     </div>
-    ${expanded}
+    <div class="trip-expand">
+      <div class="trip-expand-grid">
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
+        ${t.beaufort?'<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft '+esc(t.beaufort)+(t.windDir?' · '+esc(t.windDir):'')+'<br><small style=\"color:var(--muted)\">'+bftLabel(t.beaufort)+'</small></span></div>':''}
+        ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
+      </div>
+    </div>
   </div>`;
 }
 
-function toggleCard(el) {
-  el.classList.toggle('open');
+// ── Filters ───────────────────────────────────────────────────────────────────
+function bftGroup(b){
+  const n=parseInt(b)||0;
+  if(n<=2) return 'calm';
+  if(n<=4) return 'light';
+  if(n<=6) return 'moderate';
+  return 'strong';
 }
 
-// ── Filter & render ───────────────────────────────────────────────────────────
-function applyFilter() {
-  const yr   = document.getElementById('filterYear').value;
-  const cat  = document.getElementById('filterCat').value;
-  const role = document.getElementById('filterRole').value;
-  const txt  = document.getElementById('filterText').value.toLowerCase();
+function applyFilter(){
+  const yr  = document.getElementById('fYear').value;
+  const cat = document.getElementById('fCat').value;
+  const role= document.getElementById('fRole').value;
+  const wind= document.getElementById('fWind').value;
+  const txt = document.getElementById('fText').value.toLowerCase().trim();
 
-  const filtered = myTrips.filter(t => {
-    if (yr   && !(t.date||'').startsWith(yr)) return false;
-    const tc = (t.boatCategory||t.category||'').toLowerCase();
-    if (cat  && tc !== cat.toLowerCase()) return false;
-    if (role === 'skipper' && t.role === 'crew') return false;
-    if (role === 'crew'    && t.role !== 'crew') return false;
-    if (txt) {
-      const hay = [t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes].join(' ').toLowerCase();
-      if (!hay.includes(txt)) return false;
+  const filtered=myTrips.filter(t=>{
+    if(yr  && !(t.date||'').startsWith(yr)) return false;
+    if(cat && (t.boatCategory||'').toLowerCase()!==cat.toLowerCase()) return false;
+    if(role==='skipper' && t.role==='crew') return false;
+    if(role==='crew'    && t.role!=='crew') return false;
+    if(wind){
+      const b=parseInt(t.beaufort)||0;
+      if(wind==='gt4'  && b<=4)  return false;
+      if(wind==='lte4' && b>4)   return false;
+      if(['calm','light','moderate','strong'].includes(wind) && bftGroup(b)!==wind) return false;
+    }
+    if(txt){
+      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.boatCategory].join(' ').toLowerCase();
+      if(!hay.includes(txt)) return false;
     }
     return true;
   });
-
-  document.getElementById('tripList').innerHTML = filtered.length
+  document.getElementById('tripList').innerHTML=filtered.length
     ? filtered.map(tripCard).join('')
     : '<div class="empty-note">No trips match this filter.</div>';
-  document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+  document.getElementById('filterCount').textContent=filtered.length+' / '+myTrips.length;
 }
 
-function buildFilters() {
-  // Years
-  const years = [...new Set(myTrips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
-  const yrSel = document.getElementById('filterYear');
-  years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; yrSel.appendChild(o); });
-  // Current year default
-  const thisYear = String(new Date().getFullYear());
-  if (years.includes(thisYear)) yrSel.value = thisYear;
+function buildFilters(){
+  const years=[...new Set(myTrips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const yrSel=document.getElementById('fYear');
+  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;yrSel.appendChild(o);});
+  const thisYear=String(new Date().getFullYear());
+  if(years.includes(thisYear)) yrSel.value=thisYear;
 
-  // Categories
-  const cats = [...new Set(myTrips.map(t=>(t.boatCategory||t.category||'')).filter(Boolean))].sort();
-  const catSel = document.getElementById('filterCat');
-  cats.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=boatEmoji(c.toLowerCase())+' '+c; catSel.appendChild(o); });
+  const cats=[...new Set(myTrips.map(t=>t.boatCategory||'').filter(Boolean))].sort();
+  const cSel=document.getElementById('fCat');
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
-  // Wire listeners
-  ['filterYear','filterCat','filterRole'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilter));
-  document.getElementById('filterText').addEventListener('input',applyFilter);
+  ['fYear','fCat','fRole','fWind'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilter));
+  document.getElementById('fText').addEventListener('input',applyFilter);
+}
+
+// ── Log manually modal ────────────────────────────────────────────────────────
+let allClubTrips = [], clubTripsOffset = 0;
+const CLUB_PAGE = 10;
+
+async function openLogModal(){
+  document.getElementById('logModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+  showStep1();
+  // Load recent club trips if not already
+  if(!allClubTrips.length){
+    try{
+      const res=await apiGet('getTrips',{limit:100});
+      // All trips by anyone, excluding already-linked ones for this user
+      const myIds=new Set(myTrips.map(t=>t.linkedTripId||t.linkedCheckoutId||t.id).filter(Boolean));
+      allClubTrips=(res.trips||[])
+        .filter(t=>t.kennitala!==user.kennitala && !myIds.has(t.id))
+        .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    }catch(e){allClubTrips=[];}
+  }
+  clubTripsOffset=0;
+  renderClubTripsList();
+}
+
+function closeLogModal(){
+  document.getElementById('logModal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+function showStep1(){
+  document.getElementById('logStep1').style.display='';
+  document.getElementById('logStep2').style.display='none';
+}
+function showManualForm(){
+  document.getElementById('logStep1').style.display='none';
+  document.getElementById('logStep2').style.display='';
+  document.getElementById('mDate').value=new Date().toISOString().slice(0,10);
+  // Populate boats + locations
+  const bSel=document.getElementById('mBoat');
+  bSel.innerHTML='<option value="">Select boat…</option>';
+  allBoats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=(b.name||b.id);bSel.appendChild(o);});
+  const lSel=document.getElementById('mLocation');
+  lSel.innerHTML='<option value="">Select location…</option>';
+  allLocs.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
+}
+
+function renderClubTripsList(){
+  const el=document.getElementById('recentTripsList');
+  const page=allClubTrips.slice(0, clubTripsOffset+CLUB_PAGE);
+  if(!allClubTrips.length){
+    el.innerHTML='<div class="empty-note">No recent club trips found.</div>';
+    document.getElementById('loadMoreTripsBtn').style.display='none';
+    return;
+  }
+  el.innerHTML=page.map(t=>`
+    <div class="trip-pick-card" onclick="joinTripAsCrew('${esc(t.id)}',this)">
+      <div class="tpc-boat">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
+      <div class="tpc-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')}
+        ${t.beaufort?' · 💨 Bft '+esc(t.beaufort):''}
+        · ${esc(t.memberName||'?')} (skipper)
+      </div>
+    </div>`).join('');
+  document.getElementById('loadMoreTripsBtn').style.display=
+    allClubTrips.length>clubTripsOffset+CLUB_PAGE?'':'none';
+}
+function loadMoreTrips(){
+  clubTripsOffset+=CLUB_PAGE;
+  renderClubTripsList();
+}
+
+async function joinTripAsCrew(tripId, el){
+  if(el.classList.contains('selected')){el.classList.remove('selected');return;}
+  document.querySelectorAll('.trip-pick-card.selected').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const t=allClubTrips.find(x=>x.id===tripId);
+  if(!t) return;
+  try{
+    await apiPost('saveTrip',{
+      linkedTripId: t.id,
+      linkedCheckoutId: t.linkedCheckoutId||'',
+      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
+      locationId: t.locationId, locationName: t.locationName,
+      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
+      crew: t.crew, role: 'crew',
+      beaufort: t.beaufort||'', windDir: t.windDir||'',
+      notes: '',
+    });
+    showToast('Added to your logbook as crew ✓','success');
+    closeLogModal();
+    reload();
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+    el.classList.remove('selected');
+  }
+}
+
+async function submitManual(){
+  const errEl=document.getElementById('mErr');
+  errEl.style.display='none';
+  const date  = document.getElementById('mDate').value;
+  const boatId= document.getElementById('mBoat').value;
+  const boatName=document.getElementById('mBoat').selectedOptions[0]?.text||'';
+  const locId = document.getElementById('mLocation').value;
+  const locName=document.getElementById('mLocation').selectedOptions[0]?.text||'';
+  const timeOut=document.getElementById('mTimeOut').value;
+  const timeIn =document.getElementById('mTimeIn').value;
+  const crew   =parseInt(document.getElementById('mCrew').value)||1;
+  const role   =document.getElementById('mRole').value;
+  const bft    =document.getElementById('mBft').value;
+  const wdir   =document.getElementById('mWindDir').value;
+  const wave   =document.getElementById('mWave').value;
+  const notes  =document.getElementById('mNotes').value.trim();
+
+  if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
+  if(!boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
+
+  // Compute hours
+  let hoursDecimal=0;
+  if(timeOut&&timeIn){
+    const [oh,om]=timeOut.split(':').map(Number);
+    const [ih,im]=timeIn.split(':').map(Number);
+    let mins=(ih*60+im)-(oh*60+om);
+    if(mins<0) mins+=1440;
+    hoursDecimal=+(mins/60).toFixed(2);
+  }
+
+  // Build wxSnapshot if wave present
+  let wxSnapshot='';
+  if(wave){
+    wxSnapshot=JSON.stringify({wh:parseFloat(wave)||0});
+  }
+
+  try{
+    await apiPost('saveTrip',{
+      date, boatId, boatName,
+      locationId:locId, locationName:locName,
+      timeOut, timeIn, hoursDecimal, crew, role,
+      beaufort:bft, windDir:wdir, notes, wxSnapshot,
+    });
+    showToast('Trip saved ✓','success');
+    closeLogModal();
+    reload();
+  }catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display='';
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-(async function init() {
+async function reload(){
+  try{
+    const res=await apiGet('getTrips',{limit:500});
+    myTrips=(res.trips||[])
+      .filter(t=>t.kennitala===user.kennitala)
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    renderStats();
+    buildFilters();
+    applyFilter();
+  }catch(e){
+    document.getElementById('tripList').innerHTML=
+      '<div class="empty-note" style="color:var(--red)">Could not load logbook: '+esc(e.message)+'</div>';
+  }
+}
+
+(async function init(){
   applyStrings();
   buildHeader('member');
-
-  try {
-    const res = await apiGet('getClubTrips');
-    myTrips = (res.trips||[])
-      .filter(t => t.memberKennitala===user.kennitala || t.kennitala===user.kennitala)
+  try{
+    const [tripsRes,cfgRes]=await Promise.all([
+      apiGet('getTrips',{limit:500}),
+      apiGet('getConfig'),
+    ]);
+    myTrips=(tripsRes.trips||[])
+      .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-
+    // Load boats + locations for manual form
+    const boats=cfgRes.boats||[];
+    const locs =cfgRes.locations||[];
+    allBoats=boats.filter(b=>!b.oos&&b.oos!=='true');
+    allLocs =locs;
     renderStats();
     buildFilters();
     applyFilter();
     renderCerts();
     warmContainer();
-  } catch(e) {
-    document.getElementById('tripList').innerHTML =
-      '<div class="empty-note" style="color:var(--red)">Could not load logbook: '+esc(e.message)+'</div>';
+  }catch(e){
+    document.getElementById('tripList').innerHTML=
+      '<div class="empty-note" style="color:var(--red)">Could not load: '+esc(e.message)+'</div>';
   }
 })();
 </script>
