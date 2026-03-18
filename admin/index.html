@@ -654,6 +654,10 @@
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="atActive" checked> <label for="atActive">Active</label>
     </div>
+    <!-- Subtypes -->
+    <div style="margin:14px 0 4px;font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase">Subtypes / Templates</div>
+    <div id="atSubtypesList" style="margin-bottom:8px"></div>
+    <button type="button" onclick="addAtSubtypeRow()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;margin-bottom:12px">+ Add subtype</button>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('actTypeModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()">Delete</button>
@@ -1322,6 +1326,9 @@ function openActTypeModal(id) {
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
+  // Populate subtypes
+  window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(a.subtypes)) : [];
+  renderAtSubtypes();
   openModal("actTypeModal");
 }
 
@@ -1332,6 +1339,7 @@ async function saveActType() {
     id: editingId, name,
     nameIS: document.getElementById("atNameIS").value.trim(),
     active: document.getElementById("atActive").checked,
+    subtypes: JSON.stringify(window._atSubtypes || []),
   };
   await saveEntity({
     apiAction: "saveActivityType",
@@ -1353,6 +1361,43 @@ async function deleteActType(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
+
+function tryParse_(v, fallback) { try { return JSON.parse(v); } catch(e) { return fallback; } }
+
+function renderAtSubtypes() {
+  const list = document.getElementById("atSubtypesList");
+  if (!list) return;
+  if (!window._atSubtypes.length) { list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">No subtypes yet.</div>'; return; }
+  list.innerHTML = window._atSubtypes.map((st, i) => `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">NAME (EN)</label>
+          <input type="text" value="${esc(st.name||"")}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            onchange="window._atSubtypes[${i}].name=this.value"></div>
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">NAME (IS)</label>
+          <input type="text" value="${esc(st.nameIS||"")}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            onchange="window._atSubtypes[${i}].nameIS=this.value"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT START</label>
+          <input type="text" value="${esc(st.defaultStart||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultStart=this.value"
+            ></div>
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT END</label>
+          <input type="text" value="${esc(st.defaultEnd||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultEnd=this.value"
+            ></div>
+        <button onclick="window._atSubtypes.splice(${i},1);renderAtSubtypes()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function addAtSubtypeRow() {
+  if (!window._atSubtypes) window._atSubtypes = [];
+  window._atSubtypes.push({ id: "st-"+Date.now(), name: "", nameIS: "", defaultStart: "", defaultEnd: "" });
+  renderAtSubtypes();
+}
 
 // ── Certifications ─────────────────────────────────────────────────────────────
 let certDefs     = [];
@@ -2061,4 +2106,4 @@ function resetFlagConfig() {
 // all come from shared/api.js — no local redefinitions needed.
 </script>
 </body>
-</html>
+</html>${(() => { const subs = Array.isArray(a.subtypes)?a.subtypes:tryParse_(a.subtypes,[]); return subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:2px 0 2px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join(''); })()}
