@@ -37,8 +37,8 @@ const STRINGS = {
   'nav.admin':         { EN:'⚙ Admin',            IS:'⚙ Stjórnborð' },
   'nav.weather':       { EN:'⛅ Weather',          IS:'⛅ Veður' },
   'nav.logbook':       { EN:'📖 Logbook',         IS:'📖 Siglingabók' },
-  'nav.back':          { EN:'← Staff',            IS:'← Starfsmenn' },
-  'nav.signOut':       { EN:'Sign out',            IS:'Útskrá' },
+  'nav.back':          { EN:'← Back',            IS:'← Tilbaka },
+  'nav.signOut':       { EN:'Sign out',            IS:'Skrá út' },
   'nav.langToggle':    { EN:'IS',                  IS:'EN' },
 
   // ── Generic buttons ────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const STRINGS = {
 
   // ── Generic labels ─────────────────────────────────────────────────────────
   'lbl.loading':       { EN:'Loading…',            IS:'Hleður…' },
-  'lbl.noData':        { EN:'No data.',            IS:'Engar upplýsingar.' },
+  'lbl.noData':        { EN:'No data',            IS:'Engar upplýsingar' },
   'lbl.name':          { EN:'Name',                IS:'Nafn' },
   'lbl.date':          { EN:'Date',                IS:'Dagsetning' },
   'lbl.time':          { EN:'Time',                IS:'Tími' },
@@ -89,9 +89,9 @@ const STRINGS = {
   'lbl.noneDash':      { EN:'— none —',            IS:'— ekkert —' },
 
   // ── Toast / feedback ───────────────────────────────────────────────────────
-  'toast.saved':       { EN:'Saved.',              IS:'Vistað.' },
+  'toast.saved':       { EN:'Saved',              IS:'Vistað' },
   'toast.saveFailed':  { EN:'Save failed',         IS:'Vistun mistókst' },
-  'toast.deleted':     { EN:'Deleted.',            IS:'Eytt.' },
+  'toast.deleted':     { EN:'Deleted',            IS:'Eytt' },
   'toast.error':       { EN:'Something went wrong. Try again.', IS:'Eitthvað fór úrskeiðis. Reyndu aftur.' },
   'toast.loadFailed':  { EN:'Load failed',         IS:'Hleðsla mistókst' },
   'toast.signedOff':   { EN:'Signed off ✓',        IS:'Undirritað ✓' },
@@ -113,16 +113,16 @@ const STRINGS = {
 
   // ── Weather widget ─────────────────────────────────────────────────────────
   'wx.wind':           { EN:'WIND',                IS:'VINDUR' },
-  'wx.gusts':          { EN:'GUSTS',               IS:'VINDUR Í BYLGJUM' },
+  'wx.gusts':          { EN:'GUSTS',               IS:'HVIÐA' },
   'wx.waves':          { EN:'WAVES',               IS:'BYLGJUR' },
   'wx.pressure':       { EN:'PRESSURE',            IS:'LOFTÞRÝSTINGUR' },
   'wx.loading':        { EN:'Loading conditions…', IS:'Hleður veðurfarsgögnum…' },
   'wx.unavailable':    { EN:'⚠ Weather unavailable', IS:'⚠ Veður ekki tiltækt' },
-  'wx.fullForecast':   { EN:'Full forecast →',     IS:'Heildarlíkan →' },
+  'wx.fullForecast':   { EN:'Full forecast →',     IS:'Heildarspá →' },
   'wx.updated':        { EN:'Updated',             IS:'Uppfært' },
 
   // ── Login ──────────────────────────────────────────────────────────────────
-  'login.title':       { EN:'Ýmir Sailing Club',   IS:'Ýmir Siglingafélag' },
+  'login.title':       { EN:'Ýmir Sailing Club',   IS:'Siglingafélagið Ýmir' },
   'login.subtitle':    { EN:'Member & Staff Portal', IS:'Gátt félaga og starfsmanna' },
   'login.kennitala':   { EN:'Kennitala',            IS:'Kennitala' },
   'login.placeholder': { EN:'0000000000',           IS:'0000000000' },
@@ -150,7 +150,7 @@ const STRINGS = {
   'member.tabFleet':     { EN:'Fleet',               IS:'Flotinn' },
   'member.tabTrips':     { EN:'Log a Trip',          IS:'Skrá ferð' },
   'member.tabLogbook':   { EN:'Logbook',             IS:'Dagbók' },
-  'member.tabCerts':     { EN:'Certs',               IS:'Skírteini' },
+  'member.tabCerts':     { EN:'Certifications',               IS:'Skírteini' },
   'member.fleetAvail':   { EN:'AVAILABLE BOATS',     IS:'TILTÆKIR BÁTAR' },
   'member.tripTabHint':  { EN:'Tap a recent trip below to add it to your logbook as crew, or log a trip manually.', IS:'Ýttu á nýlega ferð til að bæta henni við dagbókina þína sem áhöfn, eða skráðu ferð handvirkt.' },
   'member.statTrips':    { EN:'TOTAL TRIPS',         IS:'SAMTALS FERÐIR' },
@@ -174,7 +174,7 @@ const STRINGS = {
   'member.loadFailed':   { EN:'Load failed',         IS:'Hleðsla mistókst' },
   'member.logManual':    { EN:'+ Log manually',      IS:'+ Skrá handvirkt' },
   'member.recentTrips':  { EN:'RECENT PUBLIC TRIPS', IS:'NÝLEGAR FERÐIR' },
-  'member.noRecent':     { EN:'No recent trips.',    IS:'Engar nýlegar ferðir.' },
+  'member.noRecent':     { EN:'No recent trips',    IS:'Engar nýlegar ferðir' },
   'member.myLogbook':    { EN:'MY LOGBOOK',          IS:'MÍN DAGBÓK' },
   'member.myCerts':      { EN:'MY CERTIFICATIONS',  IS:'MÍN SKÍRTEINI' },
   'member.launchTitle':  { EN:'Launch a Boat',       IS:'Fara á sjó' },
@@ -384,10 +384,14 @@ const STRINGS = {
   'logrev.assignBtn':      { EN:'Assign',                  IS:'Úthluta' },
   'logrev.certModal':      { EN:'Certifications',          IS:'Skírteini' },
   'logrev.noCerts':        { EN:'No certifications on file.', IS:'Engin skírteini skráð.' },
-
-  // ── Admin panel ────────────────────────────────────────────────────────────
+  'logrev.validationRequests':    { EN:'Validation requests',                                       IS:'Beiðnir um staðfestingu'                                   },
+  'logrev.showAll':               { EN:'Show all trips',                                             IS:'Sýna allar ferðir'                                         },
+  'logrev.certSearch':            { EN:'Search for a member above to view their certifications.',   IS:'Leitaðu að félaga hér að ofan til að skoða skírteini.'     },
+  'logrev.certSearchPlaceholder': { EN:'Search member name...',                                     IS:'Leita að nafni félaga...'   }, 
+  
+    // ── Admin panel ────────────────────────────────────────────────────────────
   'admin.tabMembers':      { EN:'Members',                 IS:'Félagar' },
-  'admin.tabBoats':        { EN:'Boats',                   IS:'Bátar' },
+  'admin.tabBoats':        { EN:'Boats',                   IS:'Bátar' },                               
   'admin.tabLocations':    { EN:'Locations',               IS:'Staðir' },
   'admin.tabChecklists':   { EN:'Checklists',              IS:'Gátlistar' },
   'admin.tabActTypes':     { EN:'Activity Types',          IS:'Tegundir starfsemi' },
