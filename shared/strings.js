@@ -37,7 +37,7 @@ const STRINGS = {
   'nav.admin':         { EN:'⚙ Admin',            IS:'⚙ Stjórnborð' },
   'nav.weather':       { EN:'⛅ Weather',          IS:'⛅ Veður' },
   'nav.logbook':       { EN:'📖 Logbook',         IS:'📖 Siglingabók' },
-  'nav.back':          { EN:'← Back',            IS:'← Tilbaka },
+  'nav.back':          { EN:'← Back',            IS:'← Tilbaka' },
   'nav.signOut':       { EN:'Sign out',            IS:'Skrá út' },
   'nav.langToggle':    { EN:'IS',                  IS:'EN' },
 
