@@ -692,7 +692,15 @@
         <input type="number" id="cdRenewalDays" min="1" placeholder="365">
       </div>
     </div>
-
+    <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="cdStaffOnly"> Staff-only cert
+      </label>
+        <label style="display:flex;align-items:center;gap:8px">Card colour
+        <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
+        <span style="font-size:10px;color:var(--muted)">auto if blank</span>
+      </label>
+    </div>
     <div style="margin-top:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBCATEGORIES</label>
@@ -1424,7 +1432,7 @@ function renderCertDefs() {
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)} · ${renewal}</div>
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
-      <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
+      <button class="row-edit" onclick="Modal('${d.id}')">Edit</button>
     </div>`;
   }).join("");
 }
@@ -1435,6 +1443,8 @@ function openCertDefModal(id) {
   document.getElementById("certDefModalTitle").textContent = d ? "Edit Certification Type" : "Add Certification Type";
   document.getElementById("cdName").value = d ? d.name : "";
   document.getElementById("cdDesc").value = d ? (d.description || "") : "";
+  document.getElementById('cdStaffOnly').checked = d ? !!d.staffOnly : false;
+  document.getElementById('cdColor').value = d?.color || '#b5890a';
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
 
   const days = d?.renewalDays || 0;
@@ -1505,7 +1515,10 @@ async function saveCertDef() {
     description: document.getElementById("cdDesc").value.trim(),
     renewalDays,
     subcats:     gatherSubcats(),
+    staffOnly: document.getElementById('cdStaffOnly').checked,
+    color:     document.getElementById('cdColor').value,
   };
+  
 
   btn.disabled = true;
   try {
