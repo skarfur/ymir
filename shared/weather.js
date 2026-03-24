@@ -320,15 +320,20 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
           </div>
-        <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
           </div>
-          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
             <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">Surface</div>
+          </div>
+          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
+            <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : '–'}</div>
+            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
           </div>
         </div>
         <!-- footer: flag · refresh · forecast -->
