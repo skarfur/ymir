@@ -643,8 +643,8 @@ function _parseJson(v, fallback) {
 
   function populateCertFilterType() {
   const sel = document.getElementById('certFilterType');
-  if (!sel || !_certDefs.length) return;
-  sel.innerHTML = `<option value="">All certifications</option>`;
+  if (!sel) return;
+  sel.innerHTML = `<option value="">— Select certification —</option>`;
   _certDefs.forEach(d => {
     if (d.subcats?.length) {
       d.subcats.forEach(sc => {
