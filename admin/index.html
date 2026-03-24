@@ -829,8 +829,14 @@ async function saveEntity({ apiAction, getArray, setArray, payload, modalId, ren
 
 // ── Populate selects driven by boatCats ───────────────────────────────────────
 function populateCategorySelects() {
-  const L = getLang();
-  const opts = boatCats.map(c =>
+  const L      = getLang();
+  const locale = L === 'IS' ? 'is' : 'en';
+  const sorted = boatCats.slice().sort((a, b) => {
+    const la = (L === 'IS' && a.labelIS ? a.labelIS : a.labelEN) || '';
+    const lb = (L === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
+    return la.localeCompare(lb, locale, { sensitivity: 'base' });
+  });
+  const opts = sorted.map(c =>
     `<option value="${esc(c.key)}">${esc(c.emoji || '')} ${esc(L === 'IS' && c.labelIS ? c.labelIS : c.labelEN)}</option>`
   ).join('');
 
@@ -1036,7 +1042,6 @@ function renderBoats() {
 
   const L = getLang();
   el.innerHTML = boatCats
-    .filter(cat => (groups[cat.key] || []).length > 0)
     .map(cat => {
       const label = (L === 'IS' && cat.labelIS) ? cat.labelIS : cat.labelEN;
       const cards = (groups[cat.key] || []).map(b => `
