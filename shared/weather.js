@@ -294,8 +294,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
         <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-        <!-- row 1: wind · air temp · conditions -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <!-- 2-row grid, columns locked -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
           <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">WIND</div>
             <div style="display:flex;align-items:center;gap:3px;line-height:1">
@@ -320,10 +320,22 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
           </div>
+        <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
+            <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
+            <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
+          </div>
+          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
+            <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
+            <div style="font-size:10px;color:var(--muted)">Surface</div>
+          </div>
+          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
+            <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : '–'}</div>
+            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
+          </div>
         </div>
-        <!-- row 2: waves · sea · pressure -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-top:10px;border-top:1px solid var(--border)">
-          <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
