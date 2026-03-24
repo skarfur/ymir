@@ -187,11 +187,9 @@
     <div class="empty-state"><span class="spinner"></span></div>
   </div>
 
-  <!-- ══ 4. AM CHECKLIST ══ -->
-  <div class="section-heading" data-s="daily.amChecklist"></div>
+  <!-- ══ 4. OPENING CHECKLIST ══ -->
+  <div class="section-heading" data-s="daily.openingChecklist"></div>
   <div class="content-card" id="amCard">
-    <div class="empty-state"><span class="spinner"></span></div>
-  </div>
 
   <!-- ══ 5. ACTIVITIES ══ -->
   <div class="section-heading">
@@ -213,11 +211,9 @@
   <div class="section-heading" id="incidentHeading" data-s="daily.incidentReport"></div>
   <div id="incidentContainer"></div>
 
-  <!-- ══ 8. PM CHECKLIST ══ -->
-  <div class="section-heading" data-s="daily.pmChecklist"></div>
+  <!-- ══ 8. CLOSING CHECKLIST ══ -->
+  <div class="section-heading" data-s="daily.closingChecklist"></div>
   <div class="content-card" id="pmCard">
-    <div class="empty-state"><span class="spinner"></span></div>
-  </div>
 
   <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">
@@ -456,12 +452,12 @@ function renderTrips() {
 }
 
 function renderChecklists() {
-  renderCL(dom.amCard, amItems, amChecks, 'am');
+  renderCL(dom.amCard, , amChecks, 'am');
   renderCL(dom.pmCard, pmItems, pmChecks, 'pm');
 }
 
 function renderChecklistsReadonly() {
-  renderCLReadonly(dom.amCard, amItems, amChecks);
+  renderCLReadonly(dom.amCard, , amChecks);
   renderCLReadonly(dom.pmCard, pmItems, pmChecks);
 }
 
@@ -773,16 +769,19 @@ function navigateToToday() {
 // ════════════════════════════════════════════════════════════════════════════
 function toggleCL(prefix, id) {
   if (!isToday()) return;
-  const state = prefix === 'am' ? amChecks : pmChecks;
+  // normalise new phase names (opening/closing) to internal am/pm keys
+  const _p    = (prefix === 'opening') ? 'am' : (prefix === 'closing') ? 'pm' : prefix;
+  const state = _p === 'am' ?
+  amChecks : pmChecks;
   state[id] = !state[id];
-  const items = prefix === 'am' ? amItems : pmItems;
+  const items = _p === 'am' ? amItems : pmItems;
   const item = document.querySelector(`[data-prefix="${prefix}"][data-item-id="${id}"]`);
   if (item) {
     item.classList.toggle('done', !!state[id]);
     const cb = item.querySelector('input[type=checkbox]');
     if (cb) cb.checked = !!state[id];
   }
-  updateCLProgress(prefix === 'am' ? dom.amCard : dom.pmCard, items, state);
+  updateCLProgress(_p === 'am' ? dom.amCard : dom.pmCard, items, state);
   markDirty();
 }
 
@@ -909,7 +908,7 @@ async function loadDay() {
   logId = null; dirty = false;
   wxLog = []; amChecks = {}; pmChecks = {};
   activities = []; tripsData = []; tideData = {};
-  amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
+   = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
@@ -998,8 +997,8 @@ async function loadIncidentsForDate(date) {
 
 function applyLogData(log, cfgRes) {
   const cfg = cfgRes || {};
-  amItems       = cfg.dailyChecklist?.am  || DEFAULT_AM;
-  pmItems       = cfg.dailyChecklist?.pm  || DEFAULT_PM;
+  amItems       = cfg.dailyChecklist?.opening || cfg.dailyChecklist?.am  || DEFAULT_AM;
+  pmItems       = cfg.dailyChecklist?.closing  || cfg.dailyChecklist?.pm  || DEFAULT_PM;
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
   if (log) {
     logId    = log.id;
