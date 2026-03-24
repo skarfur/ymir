@@ -298,17 +298,20 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- row 1: arrow · number · m/s -->
-              <div style="display:flex;align-items:center;gap:4px;line-height:1">
+              <!-- row 1: arrow · speed · m/s · conditions icon · air temp -->
+              <div style="display:flex;align-items:center;gap:8px;line-height:1;flex-wrap:wrap">
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
                 <span style="font-size:13px;color:var(--muted)">m/s</span>
+                <span style="margin-left:6px;font-size:28px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</span>
+                <span style="font-size:20px;font-weight:500;color:var(--text)">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</span>
               </div>
               <!-- row 2: dir · kt -->
               <div style="font-size:13px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:6px">
                 <b style="color:var(--text)">${wDir}</b>
                 <span style="color:var(--border)">·</span>
                 <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
+                ${c.weather_code != null ? `<span style="color:var(--border)">·</span><span style="font-size:11px">${wxCondDesc(c.weather_code)}</span>` : ''}
               </div>
               <!-- gusts row -->
               <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
@@ -316,21 +319,10 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
                 <span>Bft <b style="color:var(--text)">${bft}</b> — ${wxBftDesc(bft)}</span>
               </div>
             </div>
-            <!-- icon col (right) -->
-            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:4px">
-              <div style="font-size:30px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
-              <div style="font-size:9px;color:var(--muted);text-align:center">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
-              ${showRefreshBtn ?
-                `<button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}
-            </div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:10px">
-          <div class="wx-cell">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR</div>
-            <div style="font-size:17px;color:var(--text)">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">Feels ${c.apparent_temperature != null ? Math.round(c.apparent_temperature)+'°C' : '–'}</div>
-          </div>
+        <!-- secondary cells: sea · waves · pressure -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
             <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
@@ -347,13 +339,14 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+        <!-- footer: flag pill · refresh · full forecast -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500">
             ${flag.icon} ${flag.label} — ${flag.advice}
           </span>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>
-            <a href="../weather/" style="font-size:11px;color:var(--brass);text-decoration:none">Full forecast →</a>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit" aria-label="Refresh weather">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
+            <a href="../weather/" style="font-size:12px;font-weight:500;color:#fff;background:var(--brass);border-radius:6px;padding:4px 12px;text-decoration:none;white-space:nowrap">⛅ Full forecast →</a>
           </div>
         </div>`;
       targetEl._wxRefresh = refresh;
