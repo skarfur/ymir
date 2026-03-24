@@ -757,7 +757,7 @@ async function loadAll() {
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
 
-  renderMembers(); renderBoatCats(); renderBoats(); renderLocations();
+  renderMembers(); renderBoats(); renderLocations();
   renderChecklists(); renderActTypes();
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
   populateCategorySelects();
