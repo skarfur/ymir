@@ -504,18 +504,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(pollOverdueAlerts, 120000);
 });
 
-// ── Flag card — label/advice stay as FLAG_CONFIG (admin-editable) ─────────────
-function updateFlagCard(snap) {
-  if (!snap) return;
-  const level = snap.flag || 'green';
-  const fc    = FLAG_CONFIG.flags[level] || FLAG_CONFIG.flags.green;
-  document.getElementById('flagCardIcon').textContent   = fc.icon;
-  document.getElementById('flagCardLabel').textContent  = fc.label;
-  document.getElementById('flagCardAdvice').textContent = fc.advice;
-  const card = document.getElementById('flagCard');
-  card.style.borderColor = fc.color + '66';
-  card.style.background  = fc.bg;
-}
+// Flag info now lives inside the wx widget — nothing extra to update here.
+function updateFlagCard(snap) {}
 
 function openFlagModal() {
   const levels = ['green','yellow','orange','red'];
