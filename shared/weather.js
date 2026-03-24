@@ -298,13 +298,19 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- row 1: arrow · speed · m/s · conditions icon · air temp -->
-              <div style="display:flex;align-items:center;gap:8px;line-height:1;flex-wrap:wrap">
-                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
+              <!-- row 1: arrow · speed · m/s · divider · conditions icon · air temp · feels like -->
+              <div style="display:flex;align-items:center;gap:0;line-height:1;flex-wrap:wrap">
+                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1;margin-right:4px">${wxDirArrow(wd)}</span>
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
-                <span style="font-size:13px;color:var(--muted)">m/s</span>
-                <span style="margin-left:6px;font-size:28px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</span>
-                <span style="font-size:20px;font-weight:500;color:var(--text)">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</span>
+                <span style="font-size:13px;color:var(--muted);margin-left:5px;margin-right:16px">m/s</span>
+                <span style="width:1px;height:32px;background:var(--border);margin-right:16px;flex-shrink:0"></span>
+                <span style="font-size:28px;line-height:1;margin-right:10px">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</span>
+                <span style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:20px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</span>
+                  ${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m
+                    ? `<span style="font-size:10px;color:var(--muted);line-height:1">feels ${Math.round(c.apparent_temperature)}°</span>`
+                    : ''}
+                </span>
               </div>
               <!-- row 2: dir · kt -->
               <div style="font-size:13px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:6px">
