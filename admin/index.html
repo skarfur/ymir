@@ -668,13 +668,17 @@
 
 <!-- Cert def modal -->
 <div class="modal-overlay hidden" id="certDefModal">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:540px">
     <h3 id="certDefModalTitle">Add Certification Type</h3>
 
-    <div class="field"><label>Name</label><input type="text" id="cdName" placeholder="e.g. World Sailing Certification"></div>
+    <div class="field"><label>Name (EN)</label><input type="text" id="cdName" placeholder="e.g. World Sailing Certification"></div>
     <div class="field">
       <label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
       <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px" placeholder="Leave blank for now"></textarea>
+    </div>
+    <div class="field">
+      <label>Issuing Authority <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
+      <input type="text" id="cdIssuingAuthority" placeholder="e.g. World Sailing, Íslandssælan">
     </div>
 
     <div class="grid2">
@@ -692,23 +696,25 @@
         <input type="number" id="cdRenewalDays" min="1" placeholder="365">
       </div>
     </div>
+
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="cdStaffOnly"> Staff-only cert
       </label>
-        <label style="display:flex;align-items:center;gap:8px">Card colour
+      <label style="display:flex;align-items:center;gap:8px">Card colour
         <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
         <span style="font-size:10px;color:var(--muted)">auto if blank</span>
       </label>
     </div>
-    <div style="margin-top:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBCATEGORIES</label>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addSubcatRow()">+ Add</button>
       </div>
       <div id="subcatRows"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">
-        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic.
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px">
+        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority, renewal days, or a fixed expiry date will override the parent values.
       </div>
     </div>
 
@@ -721,7 +727,6 @@
     </div>
   </div>
 </div>
-
 <!-- Member cert assignment modal -->
 <div class="modal-overlay hidden" id="memberCertModal">
   <div class="modal" style="max-width:480px">
@@ -1422,17 +1427,26 @@ function renderCertDefs() {
     return;
   }
   el.innerHTML = certDefs.map(d => {
-    const renewal   = d.renewalDays ? `Every ${d.renewalDays} days` : "Permanent";
-    const subcatStr = d.subcats?.length
-      ? d.subcats.map(s => s.label + (s.rank != null ? ` (rank ${s.rank})` : "")).join(", ")
+    const renewal    = d.renewalDays ? `Every ${d.renewalDays} days` : "Permanent";
+    const authority  = d.issuingAuthority ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+    const subcatStr  = d.subcats?.length
+      ? d.subcats.map(s => {
+          const parts = [s.label];
+          if (s.rank != null) parts.push(`rank ${s.rank}`);
+          if (s.renewalDays)  parts.push(`${s.renewalDays}d`);
+          if (s.expiryDate)   parts.push(`exp. ${s.expiryDate}`);
+          if (s.issuingAuthority) parts.push(s.issuingAuthority);
+          return parts.join(" · ");
+        }).join(", ")
       : "No subcategories";
     return `<div class="list-row">
       <div style="flex:1">
-        <div class="list-name">${esc(d.name)}</div>
+        <div class="list-name">${esc(d.name)}${authority}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)} · ${renewal}</div>
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
-      <button class="row-edit" onclick="Modal('${d.id}')">Edit</button>
+      <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
+      <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">×</button>
     </div>`;
   }).join("");
 }
@@ -1441,10 +1455,11 @@ function openCertDefModal(id) {
   certEditId = id || null;
   const d    = id ? certDefs.find(x => x.id === id) : null;
   document.getElementById("certDefModalTitle").textContent = d ? "Edit Certification Type" : "Add Certification Type";
-  document.getElementById("cdName").value = d ? d.name : "";
-  document.getElementById("cdDesc").value = d ? (d.description || "") : "";
-  document.getElementById('cdStaffOnly').checked = d ? !!d.staffOnly : false;
-  document.getElementById('cdColor').value = d?.color || '#b5890a';
+  document.getElementById("cdName").value              = d ? d.name : "";
+  document.getElementById("cdDesc").value              = d ? (d.description || "") : "";
+  document.getElementById("cdIssuingAuthority").value  = d ? (d.issuingAuthority || "") : "";
+  document.getElementById("cdStaffOnly").checked       = d ? !!d.staffOnly : false;
+  document.getElementById("cdColor").value             = d?.color || "#b5890a";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
 
   const days = d?.renewalDays || 0;
@@ -1472,26 +1487,53 @@ function addSubcatRow(s) {
   const row = document.createElement("div");
   row.className = "list-row";
   row.id = `scrow_${i}`;
-  row.style.gap = "8px";
+  row.style.cssText = "flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-bottom:1px solid var(--border)44";
   row.innerHTML = `
-    <input type="text"   placeholder="Label (e.g. Level 1)" value="${esc(s?.label || "")}"
-      style="flex:2;font-size:12px" data-field="label">
-    <input type="text"   placeholder="Description"          value="${esc(s?.description || "")}"
-      style="flex:3;font-size:12px" data-field="desc">
-    <input type="number" placeholder="Rank" min="1" max="99" value="${s?.rank ?? ""}"
-      style="width:54px;font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
-    <button class="row-del" onclick="this.closest('.list-row').remove()" title="Remove">×</button>
+    <div style="display:grid;grid-template-columns:2fr 3fr 60px auto;gap:8px;align-items:center">
+      <input type="text"   placeholder="Label (e.g. Level 1)" value="${esc(s?.label || "")}"
+        style="font-size:12px" data-field="label">
+      <input type="text"   placeholder="Description"          value="${esc(s?.description || "")}"
+        style="font-size:12px" data-field="desc">
+      <input type="number" placeholder="Rank" min="1" max="99" value="${s?.rank ?? ""}"
+        style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
+      <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove subtype" style="font-size:16px;padding:2px 6px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div>
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
+        <input type="text" placeholder="e.g. World Sailing" value="${esc(s?.issuingAuthority || "")}"
+          style="width:100%;box-sizing:border-box;font-size:12px" data-field="issuingAuthority">
+      </div>
+      <div>
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">RENEWAL (days, overrides parent)</label>
+        <input type="number" placeholder="e.g. 365" min="1" value="${s?.renewalDays ?? ""}"
+          style="width:100%;box-sizing:border-box;font-size:12px" data-field="renewalDays">
+      </div>
+      <div>
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">FIXED EXPIRY DATE (overrides renewal)</label>
+        <input type="date" value="${esc(s?.expiryDate || "")}"
+          style="width:100%;box-sizing:border-box;font-size:12px" data-field="expiryDate">
+      </div>
+    </div>
   `;
   document.getElementById("subcatRows").appendChild(row);
 }
 
 function gatherSubcats() {
-  return [...document.querySelectorAll("#subcatRows .list-row")].map(row => ({
-    key:         row.querySelector('[data-field="label"]').value.trim().toLowerCase().replace(/\s+/g, "_"),
-    label:       row.querySelector('[data-field="label"]').value.trim(),
-    description: row.querySelector('[data-field="desc"]').value.trim(),
-    rank:        parseInt(row.querySelector('[data-field="rank"]').value) || null,
-  })).filter(s => s.label);
+  return [...document.querySelectorAll("#subcatRows .list-row")].map(row => {
+    const label           = row.querySelector('[data-field="label"]').value.trim();
+    const renewalDaysRaw  = row.querySelector('[data-field="renewalDays"]').value;
+    const expiryDate      = row.querySelector('[data-field="expiryDate"]').value.trim();
+    return {
+      key:              label.toLowerCase().replace(/\s+/g, "_"),
+      label,
+      description:      row.querySelector('[data-field="desc"]').value.trim(),
+      rank:             parseInt(row.querySelector('[data-field="rank"]').value) || null,
+      issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
+      renewalDays:      renewalDaysRaw ? (parseInt(renewalDaysRaw) || null) : null,
+      expiryDate:       expiryDate || null,
+    };
+  }).filter(s => s.label);
 }
 
 // FIX: Generate stable client-side id so cert defs persist even if backend doesn't return one.
@@ -1509,14 +1551,15 @@ async function saveCertDef() {
   // Generate a stable id client-side for new defs — don't rely on the backend returning one.
   const newId = certEditId || ("cert_" + Date.now().toString(36));
 
-  const payload = {
-    id:          newId,
+    const payload = {
+    id:               newId,
     name,
-    description: document.getElementById("cdDesc").value.trim(),
+    description:      document.getElementById("cdDesc").value.trim(),
+    issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     renewalDays,
-    subcats:     gatherSubcats(),
-    staffOnly: document.getElementById('cdStaffOnly').checked,
-    color:     document.getElementById('cdColor').value,
+    subcats:          gatherSubcats(),
+    staffOnly:        document.getElementById("cdStaffOnly").checked,
+    color:            document.getElementById("cdColor").value,
   };
   
 
@@ -1556,7 +1599,17 @@ async function deleteCertDef() {
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
-
+  
+async function deleteCertDefById(id) {
+  if (!confirm("Delete this certification type? This won't remove existing assignments.")) return;
+  try {
+    await apiPost("deleteCertDef", { id });
+    certDefs = certDefs.filter(d => d.id !== id);
+    renderCertDefs();
+    populateCertFilterType();
+    toast("Deleted.");
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
 // ── Member cert filter & list ──────────────────────────────────────────────────
 function populateCertFilterType() {
   const sel = document.getElementById("certFilterType");
