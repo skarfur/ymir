@@ -330,26 +330,6 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">Surface</div>
           </div>
-          <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
-            <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : '–'}</div>
-            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
-          </div>
-        </div>
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
-            <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
-          </div>
-          <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
-            <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">Surface</div>
-          </div>
-          <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
-            <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : '–'}</div>
-            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
-          </div>
         </div>
         <!-- footer: flag · refresh · forecast -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
