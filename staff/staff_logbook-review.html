@@ -668,6 +668,16 @@ function _parseJson(v, fallback) {
   });
 }
 
+function setCertMode(mode) {
+  const isMember = mode === 'member';
+  document.getElementById('certPanelModeA').style.display  = isMember ? '' : 'none';
+  document.getElementById('certPanelModeB').style.display  = isMember ? 'none' : '';
+  document.getElementById('certModeByMember').style.background = isMember ? 'var(--brass)' : 'var(--surface)';
+  document.getElementById('certModeByMember').style.color      = isMember ? '#fff' : 'var(--muted)';
+  document.getElementById('certModeByType').style.background   = isMember ? 'var(--surface)' : 'var(--brass)';
+  document.getElementById('certModeByType').style.color        = isMember ? 'var(--muted)' : '#fff';
+}
+  
 function applyCertFilter() {
   const el = document.getElementById('certFilterResults');
   const val = document.getElementById('certFilterType').value;
