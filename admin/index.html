@@ -203,17 +203,6 @@
         <button class="btn btn-primary"   onclick="openBoatModal()">+ Add boat</button>
       </div>
 
-      <!-- Category management -->
-      <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">BOAT CATEGORIES</div>
-          <span class="col-toggle">▼</span>
-        </div>
-        <div class="col-body hidden" id="boatCatsCard">
-          <div class="loading-state"><span class="spinner"></span></div>
-        </div>
-      </div>
-
       <!-- Boats by category -->
       <div id="boatSections">
         <div class="loading-state"><span class="spinner"></span></div>
@@ -1070,7 +1059,10 @@ function renderBoats() {
       return `<div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)} <strong>${label}</strong></div>
-          <span class="col-toggle">▼</span>
+          <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
+            <button class="row-edit" onclick="openBoatCatModal('${cat.key}')">Edit</button>
+            <span class="col-toggle">▼</span>
+          </div>
         </div>
         <div class="col-body hidden">
           <div class="boat-grid">${cards}</div>
