@@ -298,42 +298,47 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- wind hero: large speed + direction, gusts beneath -->
-              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px">
-                <div>
+              <!-- 3×2 grid: wind spans col 1-2 row 1-2, conditions and temp fill row 1, secondary fill row 2 -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto;gap:6px">
+
+                <!-- WIND — spans 2 cols, 2 rows -->
+                <div class="wx-cell" style="grid-column:1/3;grid-row:1/3;display:flex;flex-direction:column;justify-content:center">
+                  <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">WIND</div>
                   <div style="display:flex;align-items:center;gap:4px;line-height:1">
                     <span style="font-size:42px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
                     <span style="font-size:42px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
                     <span style="font-size:14px;color:var(--muted);margin-left:2px">m/s</span>
                   </div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:5px">
+                  <div style="font-size:12px;color:var(--muted);margin-top:6px">
                     <b style="color:var(--text)">${wDir}</b>
                     <span style="color:var(--border)"> · </span>
                     <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
                     <span style="color:var(--border)"> · </span>
                     Bft <b style="color:var(--text)">${bft}</b>
                   </div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:3px">
+                  <div style="font-size:11px;color:var(--muted);margin-top:4px">
                     Gusts <b style="color:var(--text)">${Math.round(wg)} m/s · ${wxMsToKt(wg)} kt</b>
-                    <span style="color:var(--border)"> · </span>
-                    ${wxBftDesc(bft)}
+                    <span style="color:var(--border)"> · </span>${wxBftDesc(bft)}
                   </div>
                 </div>
-                <div style="text-align:right;flex-shrink:0">
-                  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-                    <div>
-                      <div style="font-size:22px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
-                      <div style="font-size:10px;color:var(--muted);margin-top:2px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
-                    </div>
-                    <div>
-                      <div style="font-size:42px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
-                      <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:center">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
-                    </div>
-                  </div>
+
+                <!-- CONDITIONS — col 3, row 1 -->
+                <div class="wx-cell" style="grid-column:3;grid-row:1;text-align:center">
+                  <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">CONDITIONS</div>
+                  <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:4px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
                 </div>
+
+                <!-- AIR TEMP — col 3, row 2 -->
+                <div class="wx-cell" style="grid-column:3;grid-row:2;text-align:center">
+                  <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR</div>
+                  <div style="font-size:22px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:4px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
+                </div>
+
               </div>
-        <!-- secondary cells: air temp · waves · sea · pressure -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-top:10px;border-top:1px solid var(--border)">
+        <!-- secondary row: waves · sea · pressure -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
@@ -350,16 +355,6 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
           </div>
         </div>
-        <!-- footer: flag pill · refresh · full forecast -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
-          <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500">
-            ${flag.icon} ${flag.label} — ${flag.advice}
-          </span>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit" aria-label="Refresh weather">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
-            <a href="../weather/" style="font-size:12px;font-weight:500;color:#fff;background:var(--brass);border-radius:6px;padding:4px 12px;text-decoration:none;white-space:nowrap">⛅ Full forecast →</a>
-          </div>
-        </div>`;
       targetEl._wxRefresh = refresh;
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
