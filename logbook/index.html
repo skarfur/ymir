@@ -254,10 +254,10 @@ async function renderCerts(){
   try{
     const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
     const certDefs=certDefsFromConfig(cfgRes.certDefs||[]);
-    const member=(mRes.members||[]).find(m=>m.kennitala===user.kennitala)||{};
+    const member=(mRes.members||[]).find(m=>String(m.kennitala)===String(user.kennitala))||{};
     const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
     if(!certs.length){el.innerHTML='<div class="empty-note">No certifications on record.</div>';return;}
-    el.innerHTML='<div class="cert-grid">'+certs.map(certBadgeHTML).join('')+'</div>';
+    certInjectStyles();     el.innerHTML=certs.map(certCardHTML).join('');
   }catch(e){
     el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>';
   }
