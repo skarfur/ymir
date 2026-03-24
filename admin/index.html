@@ -59,7 +59,7 @@
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
-    .cl-phase { width:32px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+    .cl-phase { width:50px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
 
     /* ── Action buttons ── */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
@@ -152,36 +152,27 @@
         </div>
         <div id="importStep1" data-step="1">
           <div class="import-card">
-            <div class="col-hint">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
-                onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.ch-arrow').classList.toggle('open')">
-                RECOGNISED ABLER.IO COLUMNS
-                <span class="ch-arrow col-toggle" style="font-size:10px">▼</span>
-              </div>
-              <div class="hidden" style="margin-top:8px">
-                <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">col 2</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">col 0</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">email / phone</span><span class="col-hint-vals">cols 7 / 4</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">birthYear</span><span class="col-hint-vals">col 3</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">guardian</span><span class="col-hint-vals">cols 12–14</span></div>
-              </div>
+            <div class="col-hint" style="margin-bottom:16px">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">EXPECTED COLUMNS</div>
+              <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">Full name (required)</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">10-digit ID (required)</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">Phone number</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">dob</span><span class="col-hint-vals">Date of birth (YYYY-MM-DD)</span></div>
+              <div class="col-hint-row"><span class="col-hint-field">membership_type</span><span class="col-hint-vals">e.g. full, junior, family</span></div>
             </div>
-            <input type="file" id="csvFile" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVFile(event)">
-            <div class="upload-zone" onclick="document.getElementById('csvFile').click()">
-              <span style="font-size:30px">⇪</span>
-              <span style="font-size:13px">Click to upload CSV</span>
-              <span style="font-size:11px;color:var(--muted)">.csv · .tsv · .txt</span>
-            </div>
-            <div style="text-align:center;margin-top:10px">
-              <button class="btn-ghost" onclick="loadDemoCSV()" style="font-size:11px">Load demo data</button>
-            </div>
+            <label class="upload-zone" for="csvFile">
+              <div style="font-size:24px">📄</div>
+              <div style="font-size:13px;font-weight:500">Drop CSV here or click to browse</div>
+              <div style="font-size:11px;color:var(--muted)">UTF-8 encoded, comma or semicolon delimited</div>
+              <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+            </label>
           </div>
         </div>
         <div id="importStep2" data-step="2" class="hidden">
-          <div class="import-card" style="margin-bottom:12px">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-              Preview — kennitala used to match. Admin/staff roles never overwritten.
-            </div>
+          <div class="import-card">
+            <div style="font-size:13px;font-weight:500;margin-bottom:10px">Review import</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Admin/staff roles never overwritten.</div>
             <div class="import-summary" id="importSummary"></div>
             <div id="importLists"></div>
             <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
@@ -207,9 +198,23 @@
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
     <div id="tab-boats" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openBoatModal()">+ Add boat</button>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
+        <button class="btn btn-primary"   onclick="openBoatModal()">+ Add boat</button>
       </div>
+
+      <!-- Category management -->
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)">
+          <div class="col-title">BOAT CATEGORIES</div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="boatCatsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+      </div>
+
+      <!-- Boats by category -->
       <div id="boatSections">
         <div class="loading-state"><span class="spinner"></span></div>
       </div>
@@ -233,41 +238,36 @@
 
     <!-- ══ CHECKLISTS ═══════════════════════════════════════════════════════ -->
     <div id="tab-checklists" class="hidden">
+
+      <!-- Opening / Closing checklists -->
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openCLModal()">+ Add item</button>
       </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">AM — OPENING CHECKLIST</div>
+          <div class="col-title">OPENING CHECKLIST</div>
           <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body hidden" id="amCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+        <div class="col-body hidden" id="openingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">PM — CLOSING CHECKLIST</div>
+          <div class="col-title">CLOSING CHECKLIST</div>
           <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body hidden" id="pmCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+        <div class="col-body hidden" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
 
-      <!-- ── Launch checklists per category ── -->
+      <!-- Launch / Landing checklists per category -->
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
           <button class="btn btn-primary" onclick="openLaunchCLModal()">+ Add item</button>
         </div>
-        <div style="margin-bottom:8px">
-          <label style="font-size:11px;color:var(--muted)">Category: </label>
-          <select id="launchCLCatFilter" onchange="renderLaunchCLSections()" style="font-size:11px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)">
-            <option value="dinghy">dinghy</option>
-            <option value="keelboat">keelboat</option>
-            <option value="kayak">kayak</option>
-            <option value="rowing shell">rowing shell</option>
-            <option value="rowboat">rowboat</option>
-            <option value="sup">sup</option>
-            <option value="wingfoil">wingfoil</option>
-            <option value="other">other</option>
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+          <label style="font-size:11px;color:var(--muted)">Category:</label>
+          <select id="launchCLCatFilter" onchange="renderLaunchCLSections()"
+            style="font-size:11px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)">
           </select>
         </div>
         <div id="launchCLCard">
@@ -328,7 +328,7 @@
           <div id="certMemberList"><div class="loading-state"><span class="spinner"></span></div></div>
         </div>
       </div>
-    </div><!-- /tab-certs -->
+    </div>
 
     <!-- ══ ALERT SETTINGS ═══════════════════════════════════════════════════ -->
     <div id="tab-alerts" class="hidden">
@@ -337,175 +337,85 @@
           <div class="col-title">⚠ OVERDUE ALERTS</div>
           <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body hidden" id="alertConfigCard">
-
-          <div class="field" style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-            <label class="check-row" style="font-size:13px">
-              <input type="checkbox" id="alertEnabled"> Enable overdue alerts
-            </label>
-            <span style="font-size:11px;color:var(--muted)">
-              Fires when a sailor hasn't returned by their expected time
-            </span>
+        <div class="col-body hidden" id="alertsCard">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div class="field">
+              <label data-s="admin.alertFirstMins"></label>
+              <input type="number" id="alertFirstMins" min="1" max="999" value="30">
+            </div>
+            <div class="field">
+              <label data-s="admin.alertRepeatMins"></label>
+              <input type="number" id="alertRepeatMins" min="1" max="999" value="15">
+            </div>
+            <div class="field">
+              <label data-s="admin.alertSnoozeMins"></label>
+              <input type="number" id="alertSnoozeMins" min="1" max="999" value="10">
+            </div>
+            <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:20px">
+              <input type="checkbox" id="alertEnabled" checked>
+              <label for="alertEnabled" data-s="admin.alertEnabled"></label>
+            </div>
           </div>
+          <button class="btn btn-primary" onclick="saveAlertConfig()">Save alert settings</button>
+          <span id="alertSaveMsg" style="font-size:11px;color:var(--green);margin-left:10px"></span>
+        </div>
+      </div>
+    </div>
 
-          <div id="alertConfigFields">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
-              <div class="field">
-                <label>First alert after</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="number" id="alertFirstMins" min="1" max="120" style="width:72px">
-                  <span style="color:var(--muted);font-size:11px">min overdue</span>
-                </div>
-              </div>
-              <div class="field">
-                <label>Repeat every</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="number" id="alertRepeatMins" min="0" max="240" style="width:72px">
-                  <span style="color:var(--muted);font-size:11px">min (0 = off)</span>
-                </div>
-              </div>
-              <div class="field">
-                <label>Snooze duration</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="number" id="alertSnoozeMins" min="5" max="240" style="width:72px">
-                  <span style="color:var(--muted);font-size:11px">min</span>
-                </div>
-                <div style="font-size:10px;color:var(--muted);margin-top:3px">
-                  How long the Snooze button hides an alert.
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-bottom:14px">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">CHANNELS</div>
-              <div style="display:flex;gap:16px;flex-wrap:wrap">
-                <label class="check-row"><input type="checkbox" id="alertChWeb" onchange="_toggleEmailField()"> Web notifications</label>
-                <label class="check-row"><input type="checkbox" id="alertChEmail" onchange="_toggleEmailField()"> Email</label>
-                <label class="check-row"><input type="checkbox" id="alertChSms" onchange="_toggleSmsField()"> SMS</label>
-              </div>
-            </div>
-
-            <div class="field" id="emailListField" style="display:none;margin-bottom:14px">
-              <label>Staff email addresses</label>
-              <textarea id="alertEmailList" rows="2"
-                placeholder="staff@example.com&#10;other@example.com"
-                style="width:100%;resize:vertical;font-size:12px"></textarea>
-            </div>
-
-            <div class="field" id="smsListField" style="display:none;margin-bottom:14px">
-              <label>Staff phone numbers (SMS)</label>
-              <textarea id="alertSmsList" rows="2"
-                placeholder="+354xxxxxxx&#10;+354yyyyyyy"
-                style="width:100%;resize:vertical;font-size:12px"></textarea>
-              <div style="font-size:11px;color:var(--muted);margin-top:4px">
-                International format (+354…). Requires SMS provider in Code.gs.
-              </div>
-            </div>
-          </div><!-- /alertConfigFields -->
-
-          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-            <button class="btn btn-primary" id="saveAlertBtn" onclick="saveAlertConfig()">Save alert settings</button>
-            <span id="alertSaveMsg" style="font-size:12px"></span>
-          </div>
-
-        </div><!-- /col-body -->
-      </div><!-- /col-section -->
-    </div><!-- /tab-alerts -->
-
-    <!-- ══ FLAG SETTINGS ════════════════════════════════════════════════════ -->
+    <!-- ══ FLAGS ════════════════════════════════════════════════════════════ -->
     <div id="tab-flags" class="hidden">
       <div class="col-section">
-        <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">🚩 SAILING FLAG THRESHOLDS</div>
-          <span class="col-toggle open">▼</span>
+        <div class="col-head" onclick="toggleSection(this)">
+          <div class="col-title" data-s="admin.flagThresholds"></div>
+          <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body" id="flagConfigCard">
-
-          <p style="font-size:12px;color:var(--muted);margin:0 0 18px;line-height:1.6">
-            These thresholds control the automatic flag displayed on the weather page
-            and member hub. Changes take effect immediately for all users on next refresh.
-          </p>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-            <div>
-              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WIND (BEAUFORT)</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <div class="field" style="min-width:80px">
-                  <label>🟡 Yellow ≥</label>
-                  <input type="number" id="fcWindYellow" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-                <div class="field" style="min-width:80px">
-                  <label>🟠 Orange ≥</label>
-                  <input type="number" id="fcWindOrange" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-                <div class="field" style="min-width:80px">
-                  <label>🔴 Red ≥</label>
-                  <input type="number" id="fcWindRed" min="1" max="12" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-              </div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WAVE HEIGHT (m)</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <div class="field" style="min-width:80px">
-                  <label>🟡 Yellow ≥</label>
-                  <input type="number" id="fcWaveYellow" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-                <div class="field" style="min-width:80px">
-                  <label>🟠 Orange ≥</label>
-                  <input type="number" id="fcWaveOrange" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-                <div class="field" style="min-width:80px">
-                  <label>🔴 Red ≥</label>
-                  <input type="number" id="fcWaveRed" min="0" max="10" step="0.1" style="width:60px" oninput="renderFlagPreview()">
-                </div>
-              </div>
-            </div>
+        <div class="col-body hidden" id="flagsCard">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div class="field"><label data-s="admin.windYellow"></label><input type="number" id="fcWindY" min="1" max="12"></div>
+            <div class="field"><label data-s="admin.windOrange"></label><input type="number" id="fcWindO" min="1" max="12"></div>
+            <div class="field"><label data-s="admin.windRed"></label>  <input type="number" id="fcWindR" min="1" max="12"></div>
+            <div class="field"><label data-s="admin.waveYellow"></label><input type="number" id="fcWaveY" min="0" step="0.1"></div>
+            <div class="field"><label data-s="admin.waveOrange"></label><input type="number" id="fcWaveO" min="0" step="0.1"></div>
+            <div class="field"><label data-s="admin.waveRed"></label>  <input type="number" id="fcWaveR" min="0" step="0.1"></div>
           </div>
-
-          <div style="margin-bottom:18px">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">
-              EASTERLY DIRECTIONS (add +1 flag level)
-            </div>
-            <div id="fcEasterlyDirs" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-
-          <div style="margin-bottom:18px">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">ADVICE TEXT</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div class="field"><label>🟢 Green</label>  <input type="text" id="fcAdviceGreen"  oninput="renderFlagPreview()"></div>
-              <div class="field"><label>🟡 Yellow</label> <input type="text" id="fcAdviceYellow" oninput="renderFlagPreview()"></div>
-              <div class="field"><label>🟠 Orange</label> <input type="text" id="fcAdviceOrange" oninput="renderFlagPreview()"></div>
-              <div class="field"><label>🔴 Red</label>    <input type="text" id="fcAdviceRed"    oninput="renderFlagPreview()"></div>
-            </div>
-          </div>
-
-          <div id="fcValidationError" style="display:none;color:var(--red);font-size:12px;margin-bottom:10px;
-            padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
-
-          <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">PREVIEW</div>
-          <div id="fcPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
-
-          <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">FLAG ADVICE TEXT</div>
+          <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+          <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+          <div id="fcValidationError" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+          <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
             <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
-            <span id="fcSaveMsg" style="font-size:12px"></span>
+            <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
           </div>
+        </div>
+      </div>
+    </div>
 
-        </div><!-- /col-body -->
-      </div><!-- /col-section -->
-    </div><!-- /tab-flags -->
   </main>
-</div><!-- /page -->
+</div>
 
-<!-- ── MODALS ────────────────────────────────────────────────────────────────── -->
+<!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
 <!-- Member modal -->
 <div class="modal-overlay hidden" id="memberModal">
-  <div class="modal">
+  <div class="modal" style="max-width:520px">
     <h3 id="memberModalTitle">Add Member</h3>
     <div class="grid2">
-      <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10" placeholder="0000000000"></div>
+      <div class="field"><label>Name</label><input type="text" id="mName"></div>
+      <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10"></div>
+      <div class="field"><label>Email</label><input type="email" id="mEmail"></div>
+      <div class="field"><label>Phone</label><input type="tel" id="mPhone"></div>
+      <div class="field"><label>Date of birth</label><input type="date" id="mDob"></div>
+      <div class="field"><label>Membership type</label>
+        <select id="mMembershipType">
+          <option value="full">Full</option>
+          <option value="junior">Junior</option>
+          <option value="family">Family</option>
+          <option value="student">Student</option>
+          <option value="honorary">Honorary</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
       <div class="field"><label>Role</label>
         <select id="mRole">
           <option value="member">Member</option>
@@ -514,20 +424,8 @@
         </select>
       </div>
     </div>
-    <div class="field"><label>Full name</label><input type="text" id="mName"></div>
-    <div class="grid2">
-      <div class="field"><label>Email</label><input type="email" id="mEmail"></div>
-      <div class="field"><label>Phone</label><input type="tel" id="mPhone"></div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>Birth year</label><input type="number" id="mBirthYear" placeholder="1990" min="1900" max="2020"></div>
-      <div class="field" style="justify-content:flex-end;padding-top:22px">
-        <label class="check-row"><input type="checkbox" id="mIsMinor"> Minor (under 18)</label>
-      </div>
-    </div>
-    <div id="guardianFields">
-      <div class="divider"></div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Guardian</div>
+    <div id="minorFields" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">Guardian</div>
       <div class="field"><label>Guardian name</label><input type="text" id="mGuardianName"></div>
       <div class="grid2">
         <div class="field"><label>Guardian kennitala</label><input type="text" id="mGuardianKt" maxlength="10"></div>
@@ -545,22 +443,37 @@
   </div>
 </div>
 
+<!-- Boat category modal -->
+<div class="modal-overlay hidden" id="boatCatModal">
+  <div class="modal">
+    <h3 id="boatCatModalTitle">Add Boat Category</h3>
+    <div class="grid2">
+      <div class="field"><label>Name (English)</label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
+      <div class="field"><label>Name (Íslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Emoji</label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
+      <div class="field"><label>Key (auto-set)</label><input type="text" id="bcKey" placeholder="dinghy" style="color:var(--muted)"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">The key is used internally to link boats and checklists. It cannot be changed after boats are assigned.</div>
+    <div class="check-row" style="margin-bottom:12px">
+      <input type="checkbox" id="bcActive" checked> <label for="bcActive">Active</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('boatCatModal')">Cancel</button>
+      <button class="btn btn-danger hidden" id="bcDeleteBtn" onclick="deleteBoatCat()">Delete</button>
+      <button class="btn btn-primary" onclick="saveBoatCat()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Boat modal -->
 <div class="modal-overlay hidden" id="boatModal">
   <div class="modal">
     <h3 id="boatModalTitle">Add Boat</h3>
     <div class="field"><label>Name</label><input type="text" id="bName"></div>
     <div class="field"><label>Category</label>
-      <select id="bCategory">
-        <option value="dinghy">Dinghy</option>
-        <option value="keelboat">Keelboat</option>
-        <option value="kayak">Kayak</option>
-        <option value="rowing shell">Rowing Shell</option>
-        <option value="rowboat">Rowboat</option>
-        <option value="sup">SUP</option>
-        <option value="wingfoil">Wingfoil</option>
-        <option value="other">Other</option>
-      </select>
+      <select id="bCategory"></select>
     </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
@@ -595,12 +508,15 @@
   </div>
 </div>
 
-<!-- Checklist item modal -->
+<!-- Opening/closing checklist item modal -->
 <div class="modal-overlay hidden" id="clModal">
   <div class="modal">
     <h3 id="clModalTitle">Add Checklist Item</h3>
     <div class="field"><label>Phase</label>
-      <select id="clPhase"><option value="am">AM — Opening</option><option value="pm">PM — Closing</option></select>
+      <select id="clPhase">
+        <option value="opening">Opening</option>
+        <option value="closing">Closing</option>
+      </select>
     </div>
     <div class="field"><label>Text (English)</label><input type="text" id="clTextEN"></div>
     <div class="field"><label>Text (Íslenska)</label><input type="text" id="clTextIS"></div>
@@ -621,21 +537,13 @@
   <div class="modal">
     <h3 id="launchCLModalTitle">Add Checklist Item</h3>
     <div class="field"><label>Category</label>
-      <select id="lcCat">
-        <option value="dinghy">dinghy</option>
-        <option value="keelboat">keelboat</option>
-        <option value="kayak">kayak</option>
-        <option value="rowing shell">rowing shell</option>
-        <option value="rowboat">rowboat</option>
-        <option value="sup">sup</option>
-        <option value="wingfoil">wingfoil</option>
-        <option value="other">other</option>
-      </select>
+      <select id="lcCat"></select>
     </div>
     <div class="field"><label>Phase</label>
       <select id="lcPhase"><option value="launch">Launch</option><option value="landing">Landing</option></select>
     </div>
-    <div class="field"><label>Item text (English)</label><input type="text" id="lcText"></div>
+    <div class="field"><label>Text (English)</label><input type="text" id="lcText"></div>
+    <div class="field"><label>Text (Íslenska)</label><input type="text" id="lcTextIS"></div>
     <div class="field"><label>Sort order</label><input type="number" id="lcSort" value="99" min="1"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('launchCLModal')">Cancel</button>
@@ -647,18 +555,23 @@
 
 <!-- Activity type modal -->
 <div class="modal-overlay hidden" id="actTypeModal">
-  <div class="modal">
+  <div class="modal" style="max-width:520px">
     <h3 id="actTypeModalTitle">Add Activity Type</h3>
-    <div class="field"><label>Name (English)</label><input type="text" id="atName"></div>
-    <div class="field"><label>Name (Íslenska)</label><input type="text" id="atNameIS"></div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="grid2">
+      <div class="field"><label>Name (EN)</label><input type="text" id="atName"></div>
+      <div class="field"><label>Name (IS)</label><input type="text" id="atNameIS"></div>
+    </div>
+    <div class="check-row" style="margin-bottom:10px">
       <input type="checkbox" id="atActive" checked> <label for="atActive">Active</label>
     </div>
-    <!-- Subtypes -->
-    <div style="margin:14px 0 4px;font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase">Subtypes / Templates</div>
-    <div id="atSubtypesList" style="margin-bottom:8px"></div>
-    <button type="button" onclick="addAtSubtypeRow()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;margin-bottom:12px">+ Add subtype</button>
-    <div class="btn-row">
+    <div style="margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBTYPES</label>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtSubtypeRow()">+ Add</button>
+      </div>
+      <div id="atSubtypesList"></div>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-secondary" onclick="closeModal('actTypeModal')">Cancel</button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()">Delete</button>
       <button class="btn btn-primary" onclick="saveActType()">Save</button>
@@ -666,12 +579,14 @@
   </div>
 </div>
 
-<!-- Cert def modal -->
+<!-- Certification type modal -->
 <div class="modal-overlay hidden" id="certDefModal">
-  <div class="modal" style="max-width:540px">
+  <div class="modal" style="max-width:560px">
     <h3 id="certDefModalTitle">Add Certification Type</h3>
-
-    <div class="field"><label>Name (EN)</label><input type="text" id="cdName" placeholder="e.g. World Sailing Certification"></div>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="cdName" placeholder="e.g. World Sailing Certification">
+    </div>
     <div class="field">
       <label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
       <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px" placeholder="Leave blank for now"></textarea>
@@ -679,22 +594,6 @@
     <div class="field">
       <label>Issuing Authority <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
       <input type="text" id="cdIssuingAuthority" placeholder="e.g. World Sailing, Íslandssælan">
-    </div>
-
-    <div class="grid2">
-      <div class="field">
-        <label>Renewal</label>
-        <select id="cdRenewalType" onchange="toggleRenewalDays()">
-          <option value="permanent">Permanent</option>
-          <option value="annual">Annual (365 days)</option>
-          <option value="biennial">Biennial (730 days)</option>
-          <option value="custom">Custom…</option>
-        </select>
-      </div>
-      <div class="field" id="cdRenewalDaysField" style="display:none">
-        <label>Days until expiry</label>
-        <input type="number" id="cdRenewalDays" min="1" placeholder="365">
-      </div>
     </div>
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
@@ -714,7 +613,7 @@
       </div>
       <div id="subcatRows"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px">
-        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority, renewal days, or a fixed expiry date will override the parent values.
+        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority or a fixed expiry date will override the parent values.
       </div>
     </div>
 
@@ -727,6 +626,7 @@
     </div>
   </div>
 </div>
+
 <!-- Member cert assignment modal -->
 <div class="modal-overlay hidden" id="memberCertModal">
   <div class="modal" style="max-width:480px">
@@ -754,8 +654,8 @@
           <label>Assigned date</label>
           <input type="date" id="mcmAssignedAt">
         </div>
-        <div class="field" id="mcmExpiryField" style="display:none">
-          <label>Expires <span style="color:var(--muted);font-size:10px">(auto-calc)</span></label>
+        <div class="field">
+          <label>Expiry date <span style="color:var(--muted);font-size:10px">(leave blank if permanent)</span></label>
           <input type="date" id="mcmExpiresAt">
         </div>
       </div>
@@ -794,7 +694,22 @@ let members = [], boats = [], locations = [], clItems = [], actTypes = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 const bool = v => v === true || v === 'true' || v === 1 || v === '1' || v === 'TRUE';
-  
+
+// ── Default boat categories (seeded if none in config) ────────────────────────
+const DEFAULT_BOAT_CATS = [
+  { key:'dinghy',        labelEN:'Dinghy',        labelIS:'Skíðbátur',    emoji:'⛵', active:true },
+  { key:'keelboat',      labelEN:'Keelboat',      labelIS:'Kjölbátur',    emoji:'⛵', active:true },
+  { key:'kayak',         labelEN:'Kayak',         labelIS:'Kajak',        emoji:'🛶', active:true },
+  { key:'rowing shell',  labelEN:'Rowing Shell',  labelIS:'Róðrarbátur',  emoji:'🚣', active:true },
+  { key:'rowboat',       labelEN:'Rowboat',       labelIS:'Árabátur',     emoji:'🚣', active:true },
+  { key:'sup',           labelEN:'SUP',           labelIS:'SUP',          emoji:'🏄', active:true },
+  { key:'wingfoil',      labelEN:'Wingfoil',      labelIS:'Wingfoil',     emoji:'🪁', active:true },
+  { key:'other',         labelEN:'Other',         labelIS:'Annað',        emoji:'🚤', active:true },
+];
+let _allBoatCats = [];   // full list including inactive
+let boatCats     = [];   // active only
+let _bcEditingId = null;
+
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
@@ -809,13 +724,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("oosReasonField").classList.toggle("hidden", !e.target.checked);
   });
 
+  // Auto-generate key from EN label in category modal
+  document.getElementById("bcLabelEN").addEventListener("input", e => {
+    if (!_bcEditingId) {
+      document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, '-');
+    }
+  });
+
   warmContainer();
 });
 
 async function loadAll() {
   const statusEl = document.getElementById("membersCard");
- 
-  // ── Step 1: members ───────────────────────────────────────────────────────
   let cfgRes = {};
   try {
     if (statusEl) statusEl.innerHTML = '<div class="spinner"></div>';
@@ -830,45 +750,35 @@ async function loadAll() {
     if (statusEl) statusEl.innerHTML = `<div class="empty-state">Load failed: ${e.message}</div>`;
     return;
   }
- 
+
   // ── Assign data ───────────────────────────────────────────────────────────
-  actTypes      = cfgRes.activityTypes || [];
-  clItems       = [ ...(cfgRes.dailyChecklist?.am || []), ...(cfgRes.dailyChecklist?.pm || []) ];
-  certDefs      = certDefsFromConfig(cfgRes.certDefs || []);
-  _allBoats     = cfgRes.boats     || [];
-  _allLocations = cfgRes.locations || [];
-  boats         = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
-  locations     = _allLocations.filter(l => l.active !== false && l.active !== 'false');
- 
-  try { loadAlertConfig(cfgRes.overdueAlerts); }  catch(e) { console.warn("loadAlertConfig:", e.message); }
+  actTypes       = cfgRes.activityTypes || [];
+  // Support both old phase values (am/pm) and new (opening/closing) for back-compat
+  clItems        = [ ...(cfgRes.dailyChecklist?.opening || cfgRes.dailyChecklist?.am || []),
+                     ...(cfgRes.dailyChecklist?.closing  || cfgRes.dailyChecklist?.pm || []) ];
+  certDefs       = certDefsFromConfig(cfgRes.certDefs || []);
+  _allBoats      = cfgRes.boats      || [];
+  _allLocations  = cfgRes.locations  || [];
+  _allBoatCats   = cfgRes.boatCategories?.length ? cfgRes.boatCategories : JSON.parse(JSON.stringify(DEFAULT_BOAT_CATS));
+  boats          = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
+  locations      = _allLocations.filter(l => l.active !== false && l.active !== 'false');
+  boatCats       = _allBoatCats .filter(c => c.active !== false && c.active !== 'false');
+
+  try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
-  try { loadFlagConfigPanel(cfgRes.flagConfig); } catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
- 
-  renderMembers(); renderBoats(); renderLocations(); renderChecklists(); renderActTypes();
+  try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
+
+  renderMembers(); renderBoatCats(); renderBoats(); renderLocations();
+  renderChecklists(); renderActTypes();
   renderCertDefs(); renderCertMembers(); populateCertFilterType();
+  populateCategorySelects();
 }
+
 function _adminWireStrings() {
-  // Search placeholder
   const search = document.getElementById('memberSearch');
   if (search) search.placeholder = s('admin.searchMembers');
-
-  // Action buttons
-  const importBtn = document.querySelector('[onclick*="showTab(\'members\',\'import\')"]');
-  if (importBtn) importBtn.textContent = s('admin.importCsv');
-
-  const addMemberBtn = document.querySelector('[onclick="openMemberModal()"]');
-  if (addMemberBtn) addMemberBtn.textContent = s('admin.addMember');
-
-  const addBoatBtn = document.querySelector('[onclick="openBoatModal()"]');
-  if (addBoatBtn) addBoatBtn.textContent = s('admin.addBoat');
-
-  const addLocBtn = document.querySelector('[onclick*="openLocationModal"]');
-  if (addLocBtn) addLocBtn.textContent = s('admin.addLocation');
-
-  // Back to list link in import flow
-  const backBtn = document.querySelector('[onclick*="showTab(\'members\',\'list\')"]');
-  if (backBtn && backBtn.classList.contains('btn-ghost')) backBtn.textContent = '← ' + s('admin.backToList').replace('← ','');
 }
+
 // ── Collapsible sections ───────────────────────────────────────────────────────
 function toggleSection(head) {
   const body   = head.nextElementSibling;
@@ -893,7 +803,6 @@ function showTab(tab, sub) {
     document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
   }
 
-  // FIX: Re-render cert tab on every visit so data is fresh and not "No members."
   if (tab === "certs") {
     renderCertDefs();
     renderCertMembers();
@@ -909,99 +818,124 @@ function showTab(tab, sub) {
 
 // ── Generic entity save ────────────────────────────────────────────────────────
 async function saveEntity({ apiAction, getArray, setArray, payload, modalId, renderFn, btn }) {
-  if (btn) { btn.disabled = true; }
+  if (btn) btn.disabled = true;
   try {
     const res = await apiPost(apiAction, payload);
     const arr = getArray();
     if (!payload.id && res.id) {
-      setArray([ ...arr, { ...payload, id: res.id } ]);
+      setArray([...arr, { ...payload, id: res.id }]);
     } else {
       setArray(arr.map(x => x.id === payload.id ? { ...x, ...payload } : x));
+      if (!arr.find(x => x.id === payload.id)) setArray([...arr, payload]);
     }
-    closeModal(modalId);
-    renderFn();
+    if (modalId) closeModal(modalId);
+    if (renderFn) renderFn();
+    toast(s("toast.saved"));
   } catch(e) {
     toast("Save failed: " + e.message, "err");
   } finally {
-    if (btn) { btn.disabled = false; }
+    if (btn) btn.disabled = false;
   }
 }
 
-// ── Members ────────────────────────────────────────────────────────────────────
-let memberFilter = "";
+// ── Populate selects driven by boatCats ───────────────────────────────────────
+function populateCategorySelects() {
+  const L = getLang();
+  const opts = boatCats.map(c =>
+    `<option value="${esc(c.key)}">${esc(c.emoji || '')} ${esc(L === 'IS' && c.labelIS ? c.labelIS : c.labelEN)}</option>`
+  ).join('');
+
+  // Boat modal category select
+  const bCat = document.getElementById("bCategory");
+  if (bCat) bCat.innerHTML = opts;
+
+  // Launch CL category filter
+  const lcFilter = document.getElementById("launchCLCatFilter");
+  if (lcFilter) {
+    const prev = lcFilter.value;
+    lcFilter.innerHTML = opts;
+    if (boatCats.find(c => c.key === prev)) lcFilter.value = prev;
+  }
+
+  // Launch CL modal category select
+  const lcCat = document.getElementById("lcCat");
+  if (lcCat) lcCat.innerHTML = opts;
+}
+
+// ══ MEMBERS ══════════════════════════════════════════════════════════════════
+
 function filterMembers() {
-  memberFilter = document.getElementById("memberSearch").value.toLowerCase();
-  renderMembers();
+  const q = document.getElementById("memberSearch").value.toLowerCase();
+  const active = members.filter(m => bool(m.active) &&
+    (String(m.name||"").toLowerCase().includes(q) || String(m.kennitala||"").includes(q)));
+  renderMemberList(active);
 }
 
 function renderMembers() {
-  const card     = document.getElementById("membersCard");
-  const filtered = members.filter(m => {
-    if (!bool(m.active)) return false;
-    if (!memberFilter)   return true;
-    return String(m.name || "").toLowerCase().includes(memberFilter)
-        || String(m.kennitala || "").includes(memberFilter);
-  });
-  document.getElementById("memberCountLabel").textContent = filtered.length;
-  if (!filtered.length) {
-    card.innerHTML = `<div class="empty-state">${memberFilter ? s('lbl.noData') : s('admin.noMembers')}</div>`;
-    return;
-  }
-  const roleColors = { admin: "badge-red", staff: "badge-brass", member: "badge-muted" };
-  card.innerHTML = filtered.map(m => `
+  const active = members.filter(m => bool(m.active));
+  document.getElementById("memberCountLabel").textContent = `(${active.length})`;
+  renderMemberList(active);
+}
+
+function renderMemberList(list) {
+  const card = document.getElementById("membersCard");
+  if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
+  card.innerHTML = list.map(m => `
     <div class="member-row">
-      <span class="member-kt">${esc(m.kennitala)}</span>
-      <span class="member-name">${esc(m.name)}${bool(m.isMinor) ? ` <span class="minor-badge">minor</span>` : ""}</span>
-      <span><span class="badge ${roleColors[m.role] || "badge-muted"}">${m.role || "member"}</span></span>
+      <span class="member-name">${esc(m.name || "—")}</span>
+      <span class="member-kt">${esc(m.kennitala || "")}</span>
+      <span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>
       <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
-      <button class="row-del"  onclick="deactivateMember('${m.id}')" title="Deactivate">×</button>
     </div>`).join("");
 }
 
 function openMemberModal(id) {
   editingId = id || null;
   const m   = id ? members.find(x => x.id === id) : null;
-  document.getElementById("memberModalTitle").textContent  = m ? s('admin.memberModal.edit') : s('admin.memberModal.add');
-  document.getElementById("mKennitala").value              = m ? m.kennitala          : "";
-  document.getElementById("mName").value                   = m ? m.name               : "";
-  document.getElementById("mRole").value                   = m ? (m.role || "member") : "member";
-  document.getElementById("mEmail").value                  = m ? (m.email || "")      : "";
-  document.getElementById("mPhone").value                  = m ? (m.phone || "")      : "";
-  document.getElementById("mBirthYear").value              = m ? (m.birthYear || "")  : "";
-  document.getElementById("mIsMinor").checked              = m ? bool(m.isMinor)      : false;
-  document.getElementById("mActive").checked               = m ? bool(m.active)       : true;
-  document.getElementById("mGuardianName").value           = m ? (m.guardianName || "")          : "";
-  document.getElementById("mGuardianKt").value             = m ? (m.guardianKennitala || "")     : "";
-  document.getElementById("mGuardianPhone").value          = m ? (m.guardianPhone || "")         : "";
+  document.getElementById("memberModalTitle").textContent = m ? s('admin.memberModal.edit') : s('admin.memberModal.add');
+  document.getElementById("mName").value           = m ? (m.name         || "") : "";
+  document.getElementById("mKennitala").value      = m ? (m.kennitala    || "") : "";
+  document.getElementById("mEmail").value          = m ? (m.email        || "") : "";
+  document.getElementById("mPhone").value          = m ? (m.phone        || "") : "";
+  document.getElementById("mDob").value            = m ? (m.dob          || "") : "";
+  document.getElementById("mMembershipType").value = m ? (m.membershipType || m.membership_type || "full") : "full";
+  document.getElementById("mRole").value           = m ? (m.role         || "member") : "member";
+  document.getElementById("mGuardianName").value   = m ? (m.guardianName  || "") : "";
+  document.getElementById("mGuardianKt").value     = m ? (m.guardianKt   || "") : "";
+  document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
+  document.getElementById("mActive").checked       = m ? bool(m.active)  : true;
   document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
   openModal("memberModal");
 }
 
 async function saveMember() {
-  const btn       = document.getElementById("saveMemberBtn");
-  const kennitala = document.getElementById("mKennitala").value.trim().replace(/\D/g, "");
   const name      = document.getElementById("mName").value.trim();
-  if (!kennitala || kennitala.length !== 10) { toast("Valid 10-digit kennitala required.", "err"); return; }
-  if (!name) { toast("Name required.", "err"); return; }
+  const kennitala = document.getElementById("mKennitala").value.trim();
+  if (!name || !kennitala) { toast("Name and kennitala required.", "err"); return; }
+
+  const id      = editingId || ("mbr_" + Date.now().toString(36));
   const payload = {
-    id: editingId, kennitala, name,
-    role:              document.getElementById("mRole").value,
-    email:             document.getElementById("mEmail").value.trim(),
-    phone:             document.getElementById("mPhone").value.trim(),
-    birthYear:         document.getElementById("mBirthYear").value.trim(),
-    isMinor:           document.getElementById("mIsMinor").checked,
-    active:            document.getElementById("mActive").checked,
-    guardianName:      document.getElementById("mGuardianName").value.trim(),
-    guardianKennitala: document.getElementById("mGuardianKt").value.trim().replace(/\D/g, ""),
-    guardianPhone:     document.getElementById("mGuardianPhone").value.trim(),
+    id, name, kennitala,
+    email:          document.getElementById("mEmail").value.trim(),
+    phone:          document.getElementById("mPhone").value.trim(),
+    dob:            document.getElementById("mDob").value,
+    membershipType: document.getElementById("mMembershipType").value,
+    role:           document.getElementById("mRole").value,
+    guardianName:   document.getElementById("mGuardianName").value.trim(),
+    guardianKt:     document.getElementById("mGuardianKt").value.trim(),
+    guardianPhone:  document.getElementById("mGuardianPhone").value.trim(),
+    active:         document.getElementById("mActive").checked,
   };
-  await saveEntity({
-    apiAction: "saveMember",
-    getArray:  () => members,
-    setArray:  arr => { members = arr; },
-    payload, modalId: "memberModal",
-    renderFn:  renderMembers, btn,
-  });
+
+  try {
+    await apiPost("saveMember", payload);
+    const idx = members.findIndex(x => x.id === id);
+    if (idx >= 0) members[idx] = { ...members[idx], ...payload };
+    else          members.push(payload);
+    closeModal("memberModal");
+    renderMembers();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
 }
 
 async function deactivateMember(id) {
@@ -1014,13 +948,82 @@ async function deactivateMember(id) {
 }
 async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
 
-// ── Boats ──────────────────────────────────────────────────────────────────────
-const CAT_ORDER  = ["dinghy","keelboat","kayak","rowing shell","rowboat","sup","wingfoil","other"];
-const CAT_LABELS = {
-  dinghy: "Dinghies", keelboat: "Keelboats", kayak: "Kayaks",
-  "rowing shell": "Rowing Shells", rowboat: "Rowboats",
-  sup: "SUPs", wingfoil: "Wingfoils", other: "Other",
-};
+// ══ BOAT CATEGORIES ══════════════════════════════════════════════════════════
+
+function renderBoatCats() {
+  const card   = document.getElementById("boatCatsCard");
+  const active = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+  if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
+  card.innerHTML = active.map(c => `
+    <div class="list-row">
+      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
+      <span class="list-name">
+        <strong>${esc(c.labelEN)}</strong>
+        ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
+        <span style="color:var(--border);font-size:10px;margin-left:8px">${esc(c.key)}</span>
+      </span>
+      <button class="row-edit" onclick="openBoatCatModal('${c.key}')">Edit</button>
+    </div>`).join("");
+}
+
+function openBoatCatModal(key) {
+  _bcEditingId = key || null;
+  const c = key ? _allBoatCats.find(x => x.key === key) : null;
+  document.getElementById("boatCatModalTitle").textContent = c ? "Edit Category" : "Add Boat Category";
+  document.getElementById("bcLabelEN").value   = c ? (c.labelEN || "") : "";
+  document.getElementById("bcLabelIS").value   = c ? (c.labelIS || "") : "";
+  document.getElementById("bcEmoji").value     = c ? (c.emoji   || "") : "";
+  document.getElementById("bcKey").value       = c ? c.key : "";
+  document.getElementById("bcKey").readOnly    = !!c;  // key immutable after creation
+  document.getElementById("bcActive").checked  = c ? bool(c.active) : true;
+  document.getElementById("bcDeleteBtn").classList.toggle("hidden", !c);
+  openModal("boatCatModal");
+}
+
+async function saveBoatCat() {
+  const labelEN = document.getElementById("bcLabelEN").value.trim();
+  const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
+  if (!labelEN || !key) { toast("Name and key required.", "err"); return; }
+
+  const payload = {
+    key,
+    labelEN,
+    labelIS:  document.getElementById("bcLabelIS").value.trim(),
+    emoji:    document.getElementById("bcEmoji").value.trim(),
+    active:   document.getElementById("bcActive").checked,
+  };
+
+  const idx = _allBoatCats.findIndex(x => x.key === key);
+  if (idx >= 0) _allBoatCats[idx] = { ..._allBoatCats[idx], ...payload };
+  else          _allBoatCats.push(payload);
+
+  try {
+    await apiPost("saveConfig", { boatCategories: _allBoatCats });
+    boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+    closeModal("boatCatModal");
+    renderBoatCats();
+    renderBoats();
+    populateCategorySelects();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
+}
+
+async function deleteBoatCat() {
+  const key = _bcEditingId;
+  if (!key || !confirm("Remove this category? Boats assigned to it will still exist but may show under 'other'.")) return;
+  _allBoatCats = _allBoatCats.map(c => c.key === key ? { ...c, active: false } : c);
+  try {
+    await apiPost("saveConfig", { boatCategories: _allBoatCats });
+    boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+    closeModal("boatCatModal");
+    renderBoatCats();
+    renderBoats();
+    populateCategorySelects();
+    toast(s("toast.deleted"));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+// ══ BOATS ═════════════════════════════════════════════════════════════════════
 
 function renderBoats() {
   const el     = document.getElementById("boatSections");
@@ -1028,20 +1031,25 @@ function renderBoats() {
   if (!active.length) { el.innerHTML = `<div class="empty-state">No boats yet.</div>`; return; }
 
   const groups = {};
-  CAT_ORDER.forEach(c => { groups[c] = []; });
-  active.forEach(b => { const c = (b.category || "other").toLowerCase(); (groups[c] || groups.other).push(b); });
+  boatCats.forEach(c => { groups[c.key] = []; });
+  groups['other'] = groups['other'] || [];
+  active.forEach(b => {
+    const k = (b.category || 'other').toLowerCase();
+    if (groups[k]) groups[k].push(b); else groups['other'].push(b);
+  });
 
-  el.innerHTML = CAT_ORDER
-    .filter(c => groups[c].length > 0)
+  const L = getLang();
+  el.innerHTML = boatCats
+    .filter(cat => (groups[cat.key] || []).length > 0)
     .map(cat => {
-      const label = CAT_LABELS[cat] || cat;
-      const cards = groups[cat].map(b => `
+      const label = (L === 'IS' && cat.labelIS) ? cat.labelIS : cat.labelEN;
+      const cards = (groups[cat.key] || []).map(b => `
         <div class="boat-card${bool(b.oos) ? " oos" : ""}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
-            <div class="boat-card-name">${boatEmoji(cat)} ${esc(b.name)}</div>
+            <div class="boat-card-name">${cat.emoji || boatEmoji(cat.key)} ${esc(b.name)}</div>
             <div style="display:flex;gap:4px;flex-shrink:0">
               ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
-              ${boatCatBadge(cat)}
+              ${boatCatBadge(cat.key)}
             </div>
           </div>
           ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
@@ -1054,7 +1062,7 @@ function renderBoats() {
 
       return `<div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">${boatEmoji(cat)} ${boatCatBadge(cat)} <strong>${label}</strong></div>
+          <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)} <strong>${label}</strong></div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden">
@@ -1068,12 +1076,13 @@ function openBoatModal(id) {
   editingId = id || null;
   const b   = id ? boats.find(x => x.id === id) : null;
   document.getElementById("boatModalTitle").textContent = b ? s('admin.boatModal.edit') : s('admin.boatModal.add');
-  document.getElementById("bName").value      = b ? b.name                   : "";
-  document.getElementById("bCategory").value  = b ? (b.category || "dinghy") : "dinghy";
-  document.getElementById("bOOS").checked     = b ? bool(b.oos)              : false;
-  document.getElementById("bOOSReason").value = b ? (b.oosReason || "")     : "";
+  populateCategorySelects();  // ensure select is fresh
+  document.getElementById("bName").value      = b ? b.name                     : "";
+  document.getElementById("bCategory").value  = b ? (b.category || boatCats[0]?.key || "dinghy") : (boatCats[0]?.key || "dinghy");
+  document.getElementById("bOOS").checked     = b ? bool(b.oos)                : false;
+  document.getElementById("bOOSReason").value = b ? (b.oosReason || "")       : "";
   document.getElementById("oosReasonField").classList.toggle("hidden", !b || !bool(b.oos));
-  document.getElementById("bActive").checked  = b ? bool(b.active)          : true;
+  document.getElementById("bActive").checked  = b ? bool(b.active)            : true;
   document.getElementById("bDeleteBtn").classList.toggle("hidden", !b);
   openModal("boatModal");
 }
@@ -1081,7 +1090,7 @@ function openBoatModal(id) {
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
- 
+
   const id      = editingId || ("boat_" + Date.now().toString(36));
   const payload = {
     id, name,
@@ -1090,12 +1099,11 @@ async function saveBoat() {
     oosReason: document.getElementById("bOOSReason").value.trim(),
     active:    document.getElementById("bActive").checked,
   };
- 
-  // Update full list (preserves inactive items)
+
   const idx = _allBoats.findIndex(x => x.id === id);
   if (idx >= 0) _allBoats[idx] = { ..._allBoats[idx], ...payload };
   else          _allBoats.push(payload);
- 
+
   try {
     await apiPost("saveConfig", { boats: _allBoats });
     boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
@@ -1118,7 +1126,30 @@ async function deleteBoat(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ── Locations ──────────────────────────────────────────────────────────────────
+function showBoatQR(id) {
+  const b = boats.find(x => x.id === id);
+  if (!b) return;
+  const url = `${BASE_URL}/member/?boat=${id}`;
+  document.getElementById("qrBoatName").textContent = b.name;
+  document.getElementById("qrCategory").textContent = b.category || "";
+  document.getElementById("qrUrl").textContent = url;
+  document.getElementById("qrBoatId").textContent = id;
+  document.getElementById("qrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
+  openModal("qrModal");
+}
+
+function printQR() {
+  const img = document.getElementById("qrImg").src;
+  const name = document.getElementById("qrBoatName").textContent;
+  const w = window.open("", "_blank");
+  w.document.write(`<html><body style="text-align:center;font-family:monospace;padding:20px">
+    <h2>${name}</h2><img src="${img}" style="width:200px"><br>
+    <small>${document.getElementById("qrUrl").textContent}</small>
+    <script>window.print();window.close();<\/script></body></html>`);
+}
+
+// ══ LOCATIONS ════════════════════════════════════════════════════════════════
+
 function renderLocations() {
   const card   = document.getElementById("locationsCard");
   const active = locations.filter(l => bool(l.active));
@@ -1133,7 +1164,7 @@ function renderLocations() {
 
 function openLocationModal(id) {
   editingId = id || null;
-  const l   = id ? locations.find(x => x.id === id) : null;
+  const l   = id ? _allLocations.find(x => x.id === id) : null;
   document.getElementById("locationModalTitle").textContent = l ? s('admin.locModal.edit') : s('admin.locModal.add');
   document.getElementById("lName").value     = l ? l.name         : "";
   document.getElementById("lActive").checked = l ? bool(l.active) : true;
@@ -1144,14 +1175,14 @@ function openLocationModal(id) {
 async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
- 
+
   const id      = editingId || ("loc_" + Date.now().toString(36));
   const payload = { id, name, active: document.getElementById("lActive").checked };
- 
+
   const idx = _allLocations.findIndex(x => x.id === id);
   if (idx >= 0) _allLocations[idx] = { ..._allLocations[idx], ...payload };
   else          _allLocations.push(payload);
- 
+
   try {
     await apiPost("saveConfig", { locations: _allLocations });
     locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
@@ -1173,100 +1204,28 @@ async function deleteLocation(id) {
     toast(s("toast.deleted"));
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
-  
-// ── Checklists ─────────────────────────────────────────────────────────────────
-function renderChecklists() { renderCLPhase("amCLCard", "am"); renderCLPhase("pmCLCard", "pm"); }
 
-// ── Launch / Landing Checklists ───────────────────────────────────────────────
-// Stored in config as: launchChecklists = { dinghy: { launch:[{id,text,sort}], landing:[...] }, ... }
-let _launchCLs = {};  // full object from config
-let _lcEditingId = null;
+// ══ OPENING / CLOSING CHECKLISTS ═════════════════════════════════════════════
+// Items stored in dailyChecklist.opening[] and dailyChecklist.closing[] in config.
+// Phase field on each item is "opening" or "closing".
+// Back-compat: legacy "am"/"pm" values are normalised on load in loadAll().
 
-function loadLaunchChecklists(cfgLaunchChecklists) {
-  _launchCLs = cfgLaunchChecklists || {};
-  renderLaunchCLSections();
-}
-
-function renderLaunchCLSections() {
-  const cat = document.getElementById("launchCLCatFilter")?.value || "dinghy";
-  const catData = _launchCLs[cat] || { launch:[], landing:[] };
-  ["launch","landing"].forEach(function(phase) {
-    const listId = phase === "launch" ? "launchCLLaunchList" : "launchCLLandingList";
-    const el = document.getElementById(listId);
-    if (!el) return;
-    const items = (catData[phase] || []).slice().sort(function(a,b) { return (a.sort||99)-(b.sort||99); });
-    if (!items.length) { el.innerHTML = '<div class="empty-state">No items.</div>'; return; }
-    el.innerHTML = items.map(function(i) {
-      return '<div class="cl-row" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)44">' +
-        '<span style="flex:1;color:var(--text);font-size:13px">' + esc(i.text||"") + '</span>' +
-        '<button class="row-edit" onclick="openLaunchCLModal(\"' + cat + '\",\"' + phase + '\",\"' + i.id + '\")">Edit</button>' +
-        '<button class="row-del" onclick="deleteLaunchCLItem(\"' + cat + '\",\"' + phase + '\",\"' + i.id + '\")">×</button>' +
-      '</div>';
-    }).join("");
-  });
-}
-
-function openLaunchCLModal(cat, phase, id) {
-  _lcEditingId = id || null;
-  const curCat = cat || document.getElementById("launchCLCatFilter")?.value || "dinghy";
-  const curPhase = phase || "launch";
-  let item = null;
-  if (id && _launchCLs[curCat] && _launchCLs[curCat][curPhase]) {
-    item = _launchCLs[curCat][curPhase].find(function(x) { return x.id === id; });
-  }
-  document.getElementById("launchCLModalTitle").textContent = item ? "Edit Item" : "Add Item";
-  document.getElementById("lcCat").value   = curCat;
-  document.getElementById("lcPhase").value = curPhase;
-  document.getElementById("lcText").value  = item ? (item.text||"") : "";
-  document.getElementById("lcSort").value  = item ? (item.sort||99) : 99;
-  document.getElementById("lcDeleteBtn").classList.toggle("hidden", !item);
-  openModal("launchCLModal");
-}
-
-async function saveLaunchCLItem() {
-  const cat   = document.getElementById("lcCat").value;
-  const phase = document.getElementById("lcPhase").value;
-  const text  = document.getElementById("lcText").value.trim();
-  const sort  = parseInt(document.getElementById("lcSort").value) || 99;
-  if (!text) { toast("Text required.", "err"); return; }
-  if (!_launchCLs[cat]) _launchCLs[cat] = { launch:[], landing:[] };
-  if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
-  const id   = _lcEditingId || ("lc_" + Date.now().toString(36));
-  const list = _launchCLs[cat][phase];
-  const idx  = list.findIndex(function(x) { return x.id === id; });
-  const item = { id, text, sort };
-  if (idx >= 0) list[idx] = item; else list.push(item);
-  try {
-    await apiPost("saveConfig", { launchChecklists: _launchCLs });
-    closeModal("launchCLModal");
-    renderLaunchCLSections();
-    toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
-}
-
-async function deleteLaunchCLItem(cat, phase, id) {
-  if (!cat) { cat = document.getElementById("lcCat").value; phase = document.getElementById("lcPhase").value; id = _lcEditingId; }
-  if (!confirm("Delete this item?")) return;
-  if (_launchCLs[cat] && _launchCLs[cat][phase]) {
-    _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(function(x) { return x.id !== id; });
-  }
-  try {
-    await apiPost("saveConfig", { launchChecklists: _launchCLs });
-    closeModal("launchCLModal");
-    renderLaunchCLSections();
-    toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+function renderChecklists() {
+  renderCLPhase("openingCLCard", "opening");
+  renderCLPhase("closingCLCard", "closing");
 }
 
 function renderCLPhase(cardId, phase) {
   const card  = document.getElementById(cardId);
+  // Normalise legacy am→opening, pm→closing for display
+  const norm  = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : p);
   const items = clItems
-    .filter(i => String(i.phase).toLowerCase() === phase && bool(i.active))
+    .filter(i => norm(String(i.phase).toLowerCase()) === phase && bool(i.active))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   if (!items.length) { card.innerHTML = `<div class="empty-state">No items.</div>`; return; }
   card.innerHTML = items.map(i => `
     <div class="cl-row">
-      <span class="cl-phase">${phase.toUpperCase()}</span>
+      <span class="cl-phase">${phase === 'opening' ? 'OPEN' : 'CLOSE'}</span>
       <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS
         ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
@@ -1277,12 +1236,13 @@ function renderCLPhase(cardId, phase) {
 function openCLModal(id) {
   editingId    = id || null;
   const item   = id ? clItems.find(x => x.id === id) : null;
+  const norm   = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : (p || 'opening'));
   document.getElementById("clModalTitle").textContent = item ? "Edit Item" : "Add Item";
-  document.getElementById("clPhase").value    = item ? (item.phase   || "am") : "am";
-  document.getElementById("clTextEN").value   = item ? (item.textEN  || "")   : "";
-  document.getElementById("clTextIS").value   = item ? (item.textIS  || "")   : "";
+  document.getElementById("clPhase").value    = item ? norm(item.phase) : "opening";
+  document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
+  document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
   document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;
-  document.getElementById("clActive").checked = item ? bool(item.active)      : true;
+  document.getElementById("clActive").checked = item ? bool(item.active) : true;
   document.getElementById("clDeleteBtn").classList.toggle("hidden", !item);
   openModal("clModal");
 }
@@ -1291,7 +1251,8 @@ async function saveCLItem() {
   const textEN = document.getElementById("clTextEN").value.trim();
   if (!textEN) { toast("English text required.", "err"); return; }
   const payload = {
-    id: editingId, phase: document.getElementById("clPhase").value,
+    id:        editingId,
+    phase:     document.getElementById("clPhase").value,   // "opening" or "closing"
     textEN,
     textIS:    document.getElementById("clTextIS").value.trim(),
     sortOrder: parseInt(document.getElementById("clSort").value) || 99,
@@ -1317,18 +1278,117 @@ async function deleteCLItem(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ── Activity types ─────────────────────────────────────────────────────────────
+// ══ LAUNCH / LANDING CHECKLISTS ══════════════════════════════════════════════
+// Stored in config as: launchChecklists = {
+//   dinghy: { launch:[{id,text,textIS,sort}], landing:[...] }, ...
+// }
+let _launchCLs   = {};
+let _lcEditingId = null;
+
+function loadLaunchChecklists(cfgLaunchChecklists) {
+  _launchCLs = cfgLaunchChecklists || {};
+  populateCategorySelects();   // filter may not be populated yet on first load
+  renderLaunchCLSections();
+}
+
+function renderLaunchCLSections() {
+  const cat     = document.getElementById("launchCLCatFilter")?.value || boatCats[0]?.key || "dinghy";
+  const catData = _launchCLs[cat] || { launch:[], landing:[] };
+  ["launch", "landing"].forEach(phase => {
+    const el    = document.getElementById(phase === "launch" ? "launchCLLaunchList" : "launchCLLandingList");
+    if (!el) return;
+    const items = (catData[phase] || []).slice().sort((a, b) => (a.sort || 99) - (b.sort || 99));
+    if (!items.length) { el.innerHTML = '<div class="empty-state">No items.</div>'; return; }
+    el.innerHTML = items.map(i => `
+      <div class="cl-row">
+        <span style="flex:1;color:var(--text)">${esc(i.text || "")}${i.textIS
+          ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
+        <button class="row-edit" onclick="openLaunchCLModal('${esc(cat)}','${phase}','${esc(i.id)}')">Edit</button>
+        <button class="row-del"  onclick="deleteLaunchCLItem('${esc(cat)}','${phase}','${esc(i.id)}')">×</button>
+      </div>`).join("");
+  });
+}
+
+function openLaunchCLModal(cat, phase, id) {
+  _lcEditingId  = id || null;
+  const curCat  = cat   || document.getElementById("launchCLCatFilter")?.value || boatCats[0]?.key || "dinghy";
+  const curPhase = phase || "launch";
+  let item = null;
+  if (id && _launchCLs[curCat]?.[curPhase]) {
+    item = _launchCLs[curCat][curPhase].find(x => x.id === id);
+  }
+  populateCategorySelects();
+  document.getElementById("launchCLModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("lcCat").value    = curCat;
+  document.getElementById("lcPhase").value  = curPhase;
+  document.getElementById("lcText").value   = item ? (item.text   || "") : "";
+  document.getElementById("lcTextIS").value = item ? (item.textIS || "") : "";
+  document.getElementById("lcSort").value   = item ? (item.sort   || 99) : 99;
+  document.getElementById("lcDeleteBtn").classList.toggle("hidden", !item);
+  openModal("launchCLModal");
+}
+
+async function saveLaunchCLItem() {
+  const cat    = document.getElementById("lcCat").value;
+  const phase  = document.getElementById("lcPhase").value;
+  const text   = document.getElementById("lcText").value.trim();
+  const textIS = document.getElementById("lcTextIS").value.trim();
+  const sort   = parseInt(document.getElementById("lcSort").value) || 99;
+  if (!text) { toast("English text required.", "err"); return; }
+  if (!_launchCLs[cat])        _launchCLs[cat] = { launch:[], landing:[] };
+  if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
+
+  const id   = _lcEditingId || ("lc_" + Date.now().toString(36));
+  const list = _launchCLs[cat][phase];
+  const idx  = list.findIndex(x => x.id === id);
+  const item = { id, text, textIS, sort };
+  if (idx >= 0) list[idx] = item; else list.push(item);
+
+  try {
+    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    closeModal("launchCLModal");
+    renderLaunchCLSections();
+    toast(s("toast.saved"));
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
+}
+
+async function deleteLaunchCLItem(cat, phase, id) {
+  // Can be called directly from row button (args supplied) or from modal delete btn
+  if (!cat) {
+    cat   = document.getElementById("lcCat").value;
+    phase = document.getElementById("lcPhase").value;
+    id    = _lcEditingId;
+  }
+  if (!confirm("Delete this item?")) return;
+  if (_launchCLs[cat]?.[phase]) {
+    _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(x => x.id !== id);
+  }
+  try {
+    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    closeModal("launchCLModal");
+    renderLaunchCLSections();
+    toast(s("toast.deleted"));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+// ══ ACTIVITY TYPES ════════════════════════════════════════════════════════════
+
 function renderActTypes() {
   const card   = document.getElementById("actTypesCard");
   const active = actTypes.filter(a => bool(a.active));
   if (!active.length) { card.innerHTML = `<div class="empty-state">No activity types.</div>`; return; }
-  card.innerHTML = active.map(a => `
-    <div class="list-row">
-      <span class="list-name">${esc(a.name)}${a.nameIS
-        ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
-      <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
-      <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
-    </div>`).join("");
+  card.innerHTML = active.map(a => {
+    const subs = Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, []);
+    return `<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="list-name">${esc(a.name)}${a.nameIS
+          ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
+        <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
+        <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
+      </div>
+      ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
+    </div>`;
+  }).join("");
 }
 
 function openActTypeModal(id) {
@@ -1339,8 +1399,9 @@ function openActTypeModal(id) {
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
-  // Populate subtypes
-  window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(a.subtypes)) : [];
+  window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(
+    Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, [])
+  )) : [];
   renderAtSubtypes();
   openModal("actTypeModal");
 }
@@ -1350,8 +1411,8 @@ async function saveActType() {
   if (!name) { toast("Name required.", "err"); return; }
   const payload = {
     id: editingId, name,
-    nameIS: document.getElementById("atNameIS").value.trim(),
-    active: document.getElementById("atActive").checked,
+    nameIS:   document.getElementById("atNameIS").value.trim(),
+    active:   document.getElementById("atActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
   };
   await saveEntity({
@@ -1374,13 +1435,15 @@ async function deleteActType(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-
 function tryParse_(v, fallback) { try { return JSON.parse(v); } catch(e) { return fallback; } }
 
 function renderAtSubtypes() {
   const list = document.getElementById("atSubtypesList");
   if (!list) return;
-  if (!window._atSubtypes.length) { list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">No subtypes yet.</div>'; return; }
+  if (!window._atSubtypes.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">No subtypes yet.</div>';
+    return;
+  }
   list.innerHTML = window._atSubtypes.map((st, i) => `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
@@ -1394,16 +1457,13 @@ function renderAtSubtypes() {
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
         <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT START</label>
           <input type="text" value="${esc(st.defaultStart||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
-            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultStart=this.value"
-            ></div>
+            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultStart=this.value"></div>
         <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT END</label>
           <input type="text" value="${esc(st.defaultEnd||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
-            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultEnd=this.value"
-            ></div>
+            oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultEnd=this.value"></div>
         <button onclick="window._atSubtypes.splice(${i},1);renderAtSubtypes()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
 function addAtSubtypeRow() {
@@ -1412,7 +1472,11 @@ function addAtSubtypeRow() {
   renderAtSubtypes();
 }
 
-// ── Certifications ─────────────────────────────────────────────────────────────
+// ══ CERTIFICATIONS ════════════════════════════════════════════════════════════
+// Renewal / renewalDays concept is removed.
+// Each cert type and subcat can have an optional absolute expiryDate set at assign-time.
+// Subcats supercede the parent: the most specific expiry shown/used is the subcat's.
+
 let certDefs     = [];
 let certEditId   = null;
 let mcmMemberId  = null;
@@ -1427,22 +1491,21 @@ function renderCertDefs() {
     return;
   }
   el.innerHTML = certDefs.map(d => {
-    const renewal    = d.renewalDays ? `Every ${d.renewalDays} days` : "Permanent";
-    const authority  = d.issuingAuthority ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
-    const subcatStr  = d.subcats?.length
-      ? d.subcats.map(s => {
-          const parts = [s.label];
-          if (s.rank != null) parts.push(`rank ${s.rank}`);
-          if (s.renewalDays)  parts.push(`${s.renewalDays}d`);
-          if (s.expiryDate)   parts.push(`exp. ${s.expiryDate}`);
-          if (s.issuingAuthority) parts.push(s.issuingAuthority);
+    const authority = d.issuingAuthority
+      ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+    const subcatStr = d.subcats?.length
+      ? d.subcats.map(sc => {
+          const parts = [sc.label];
+          if (sc.rank != null) parts.push(`rank ${sc.rank}`);
+          if (sc.expiryDate)   parts.push(`exp. ${sc.expiryDate}`);
+          if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
           return parts.join(" · ");
         }).join(", ")
       : "No subcategories";
     return `<div class="list-row">
       <div style="flex:1">
         <div class="list-name">${esc(d.name)}${authority}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)} · ${renewal}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)}</div>
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
       <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
@@ -1455,128 +1518,44 @@ function openCertDefModal(id) {
   certEditId = id || null;
   const d    = id ? certDefs.find(x => x.id === id) : null;
   document.getElementById("certDefModalTitle").textContent = d ? "Edit Certification Type" : "Add Certification Type";
-  document.getElementById("cdName").value              = d ? d.name : "";
-  document.getElementById("cdDesc").value              = d ? (d.description || "") : "";
-  document.getElementById("cdIssuingAuthority").value  = d ? (d.issuingAuthority || "") : "";
-  document.getElementById("cdStaffOnly").checked       = d ? !!d.staffOnly : false;
-  document.getElementById("cdColor").value             = d?.color || "#b5890a";
+  document.getElementById("cdName").value             = d ? d.name : "";
+  document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
+  document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
+  document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
+  document.getElementById("cdColor").value            = d?.color || "#b5890a";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
-
-  const days = d?.renewalDays || 0;
-  const renewalType = days === 0 ? "permanent" : days === 365 ? "annual" : days === 730 ? "biennial" : "custom";
-  document.getElementById("cdRenewalType").value = renewalType;
-  document.getElementById("cdRenewalDays").value = days || "";
-  toggleRenewalDays();
-
   document.getElementById("subcatRows").innerHTML = "";
-  (d?.subcats || []).forEach(s => addSubcatRow(s));
+  (d?.subcats || []).forEach(sc => addSubcatRow(sc));
   openModal("certDefModal");
 }
 
-function toggleRenewalDays() {
-  const val = document.getElementById("cdRenewalType").value;
-  document.getElementById("cdRenewalDaysField").style.display = val === "custom" ? "" : "none";
-  if (val === "annual")    document.getElementById("cdRenewalDays").value = 365;
-  if (val === "biennial")  document.getElementById("cdRenewalDays").value = 730;
-  if (val === "permanent") document.getElementById("cdRenewalDays").value = 0;
-}
-
-let _subcatCounter = 0;
-function addSubcatRow(s) {
-  const i   = _subcatCounter++;
-  const row = document.createElement("div");
-  row.className = "list-row";
-  row.id = `scrow_${i}`;
-  row.style.cssText = "flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-bottom:1px solid var(--border)44";
-  row.innerHTML = `
-    <div style="display:grid;grid-template-columns:2fr 3fr 60px auto;gap:8px;align-items:center">
-      <input type="text"   placeholder="Label (e.g. Level 1)" value="${esc(s?.label || "")}"
-        style="font-size:12px" data-field="label">
-      <input type="text"   placeholder="Description"          value="${esc(s?.description || "")}"
-        style="font-size:12px" data-field="desc">
-      <input type="number" placeholder="Rank" min="1" max="99" value="${s?.rank ?? ""}"
-        style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
-      <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove subtype" style="font-size:16px;padding:2px 6px">×</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div>
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
-        <input type="text" placeholder="e.g. World Sailing" value="${esc(s?.issuingAuthority || "")}"
-          style="width:100%;box-sizing:border-box;font-size:12px" data-field="issuingAuthority">
-      </div>
-      <div>
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">RENEWAL (days, overrides parent)</label>
-        <input type="number" placeholder="e.g. 365" min="1" value="${s?.renewalDays ?? ""}"
-          style="width:100%;box-sizing:border-box;font-size:12px" data-field="renewalDays">
-      </div>
-      <div>
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">FIXED EXPIRY DATE (overrides renewal)</label>
-        <input type="date" value="${esc(s?.expiryDate || "")}"
-          style="width:100%;box-sizing:border-box;font-size:12px" data-field="expiryDate">
-      </div>
-    </div>
-  `;
-  document.getElementById("subcatRows").appendChild(row);
-}
-
-function gatherSubcats() {
-  return [...document.querySelectorAll("#subcatRows .list-row")].map(row => {
-    const label           = row.querySelector('[data-field="label"]').value.trim();
-    const renewalDaysRaw  = row.querySelector('[data-field="renewalDays"]').value;
-    const expiryDate      = row.querySelector('[data-field="expiryDate"]').value.trim();
-    return {
-      key:              label.toLowerCase().replace(/\s+/g, "_"),
-      label,
-      description:      row.querySelector('[data-field="desc"]').value.trim(),
-      rank:             parseInt(row.querySelector('[data-field="rank"]').value) || null,
-      issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
-      renewalDays:      renewalDaysRaw ? (parseInt(renewalDaysRaw) || null) : null,
-      expiryDate:       expiryDate || null,
-    };
-  }).filter(s => s.label);
-}
-
-// FIX: Generate stable client-side id so cert defs persist even if backend doesn't return one.
 async function saveCertDef() {
   const btn  = document.getElementById("saveCertDefBtn");
   const name = document.getElementById("cdName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
 
-  const renewalType = document.getElementById("cdRenewalType").value;
-  let renewalDays   = 0;
-  if (renewalType === "custom" || renewalType === "annual" || renewalType === "biennial") {
-    renewalDays = parseInt(document.getElementById("cdRenewalDays").value) || 0;
-  }
-
-  // Generate a stable id client-side for new defs — don't rely on the backend returning one.
-  const newId = certEditId || ("cert_" + Date.now().toString(36));
-
-    const payload = {
+  const newId   = certEditId || ("cert_" + Date.now().toString(36));
+  const payload = {
     id:               newId,
     name,
     description:      document.getElementById("cdDesc").value.trim(),
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
-    renewalDays,
     subcats:          gatherSubcats(),
     staffOnly:        document.getElementById("cdStaffOnly").checked,
     color:            document.getElementById("cdColor").value,
   };
-  
 
   btn.disabled = true;
   try {
     const res     = await apiPost("saveCertDef", payload);
-    // Prefer server-assigned id if returned; otherwise keep the one we generated.
     const savedId = res?.id || newId;
     const saved   = { ...payload, id: savedId };
-
     if (certEditId) {
       certDefs = certDefs.map(d => d.id === certEditId ? saved : d);
     } else {
       certDefs = [...certDefs, saved];
     }
-    certEditId = savedId; // keep in sync for follow-up edits
-
+    certEditId = savedId;
     renderCertDefs();
     populateCertFilterType();
     closeModal("certDefModal");
@@ -1599,7 +1578,7 @@ async function deleteCertDef() {
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
-  
+
 async function deleteCertDefById(id) {
   if (!confirm("Delete this certification type? This won't remove existing assignments.")) return;
   try {
@@ -1610,6 +1589,55 @@ async function deleteCertDefById(id) {
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
+
+// Subcat row — no renewalDays field; expiry is an absolute date only on the subcat
+let _subcatCounter = 0;
+function addSubcatRow(sc) {
+  const i   = _subcatCounter++;
+  const row = document.createElement("div");
+  row.className = "list-row";
+  row.id = `scrow_${i}`;
+  row.style.cssText = "flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-bottom:1px solid var(--border)44";
+  row.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 3fr 60px auto;gap:8px;align-items:center">
+      <input type="text"   placeholder="Label (e.g. Level 1)" value="${esc(sc?.label || "")}"
+        style="font-size:12px" data-field="label">
+      <input type="text"   placeholder="Description"          value="${esc(sc?.description || "")}"
+        style="font-size:12px" data-field="desc">
+      <input type="number" placeholder="Rank" min="1" max="99" value="${sc?.rank ?? ""}"
+        style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
+      <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove" style="font-size:16px;padding:2px 6px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
+        <input type="text" placeholder="e.g. World Sailing" value="${esc(sc?.issuingAuthority || "")}"
+          style="width:100%;box-sizing:border-box;font-size:12px" data-field="issuingAuthority">
+      </div>
+      <div>
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">FIXED EXPIRY DATE (overrides parent)</label>
+        <input type="date" value="${esc(sc?.expiryDate || "")}"
+          style="width:100%;box-sizing:border-box;font-size:12px" data-field="expiryDate">
+      </div>
+    </div>`;
+  document.getElementById("subcatRows").appendChild(row);
+}
+
+function gatherSubcats() {
+  return [...document.querySelectorAll("#subcatRows .list-row")].map(row => {
+    const label      = row.querySelector('[data-field="label"]').value.trim();
+    const expiryDate = row.querySelector('[data-field="expiryDate"]').value.trim();
+    return {
+      key:              label.toLowerCase().replace(/\s+/g, "_"),
+      label,
+      description:      row.querySelector('[data-field="desc"]').value.trim(),
+      rank:             parseInt(row.querySelector('[data-field="rank"]').value) || null,
+      issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
+      expiryDate:       expiryDate || null,
+    };
+  }).filter(sc => sc.label);
+}
+
 // ── Member cert filter & list ──────────────────────────────────────────────────
 function populateCertFilterType() {
   const sel = document.getElementById("certFilterType");
@@ -1620,7 +1648,6 @@ function populateCertFilterType() {
     o.value = d.id; o.textContent = d.name;
     sel.appendChild(o);
   });
-  // Also populate the assignment modal select
   const typeSel = document.getElementById("mcmCertType");
   if (!typeSel) return;
   typeSel.innerHTML = `<option value="">Select…</option>`;
@@ -1637,17 +1664,13 @@ function filterCertMembers() {
   renderCertMembers();
 }
 
-// FIX: Show spinner while data is loading instead of "No members."
 function renderCertMembers() {
   const el = document.getElementById("certMemberList");
   if (!el) return;
-
-  // If members hasn't loaded yet and no filter is active, show a spinner.
   if (!members.length && !certMemberFilter && !certTypeFilter) {
     el.innerHTML = `<div class="loading-state"><span class="spinner"></span></div>`;
     return;
   }
-
   const active = members.filter(m => {
     if (!bool(m.active)) return false;
     const nameMatch = !certMemberFilter
@@ -1660,52 +1683,47 @@ function renderCertMembers() {
     }
     return true;
   });
-
   if (!active.length) {
     el.innerHTML = `<div class="empty-state">${certMemberFilter || certTypeFilter ? "No matches." : "No members."}</div>`;
     return;
   }
-
   el.innerHTML = active.map(m => {
     const certs    = enrichMemberCerts(parseJson(m.certifications, []), certDefs);
     const badgeStr = certs.length
-      ? certs.map(certBadgeHTML).join("")
-      : `<span style="color:var(--muted);font-size:11px;font-style:italic">None</span>`;
-    return `<div class="list-row" style="align-items:flex-start;flex-direction:column;gap:6px;padding:10px 0">
-      <div style="display:flex;align-items:center;gap:10px;width:100%">
-        <span class="member-kt">${esc(m.kennitala)}</span>
-        <span class="member-name">${esc(m.name)}</span>
-        <button class="row-edit" style="margin-left:auto" onclick="openMemberCertModal('${m.id}')">Manage</button>
+      ? certs.map(c => certBadgeHTML(c)).join(" ")
+      : `<span style="font-size:11px;color:var(--muted)">${s('cert.noCerts')}</span>`;
+    return `<div class="list-row" style="flex-wrap:wrap;gap:6px">
+      <div style="min-width:140px;flex:1">
+        <div style="font-size:12px;font-weight:500">${esc(m.name || "—")}</div>
+        <div style="font-size:10px;color:var(--muted)">${esc(m.kennitala || "")}</div>
       </div>
-      <div>${badgeStr}</div>
+      <div style="flex:2;min-width:180px">${badgeStr}</div>
+      <button class="row-edit" onclick="openMemberCertModal('${m.id}')">Manage</button>
     </div>`;
   }).join("");
 }
 
-// ── Member cert assignment modal ───────────────────────────────────────────────
 function openMemberCertModal(memberId) {
   mcmMemberId = memberId;
   const m     = members.find(x => x.id === memberId);
   if (!m) return;
-  document.getElementById("mcmMemberName").textContent = m.name;
+  document.getElementById("mcmMemberName").textContent = m.name || "";
   document.getElementById("mcmAssignedAt").value = todayISO();
+  document.getElementById("mcmExpiresAt").value  = "";
   document.getElementById("mcmCertType").value   = "";
-  document.getElementById("mcmSubcat").value     = "";
   document.getElementById("mcmSubcatField").style.display = "none";
-  document.getElementById("mcmExpiryField").style.display = "none";
   renderCurrentCerts(m);
+  populateCertFilterType();
   openModal("memberCertModal");
 }
 
 function renderCurrentCerts(m) {
   const el    = document.getElementById("mcmCurrentList");
   const certs = enrichMemberCerts(parseJson(m.certifications, []), certDefs);
-  if (!certs.length) {
-    el.innerHTML = `<div class="empty-state">No certifications assigned.</div>`;
-    return;
-  }
+  if (!certs.length) { el.innerHTML = `<div class="empty-state">No certifications assigned.</div>`; return; }
   el.innerHTML = certs.map(c => {
-    const label  = c.subcat ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
+    const label  = c.subcat
+      ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
     const expiry = c.expiresAt
       ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`)
       : " · Permanent";
@@ -1720,34 +1738,26 @@ function renderCurrentCerts(m) {
   }).join("");
 }
 
+// updateMCMSubcats: no auto-calc of expiry — always manual
 function updateMCMSubcats() {
   const certId = document.getElementById("mcmCertType").value;
   const def    = certDefs.find(d => d.id === certId);
   const sf     = document.getElementById("mcmSubcatField");
-  const ef     = document.getElementById("mcmExpiryField");
 
   if (def?.subcats?.length) {
     const sel = document.getElementById("mcmSubcat");
     sel.innerHTML = `<option value="">Select…</option>`;
-    def.subcats.forEach(s => {
+    def.subcats.forEach(sc => {
       const o = document.createElement("option");
-      o.value = s.key; o.textContent = s.label;
+      o.value = sc.key; o.textContent = sc.label;
       sel.appendChild(o);
     });
     sf.style.display = "";
   } else {
     sf.style.display = "none";
   }
-
-  if (def?.renewalDays > 0) {
-    const d = new Date();
-    d.setDate(d.getDate() + def.renewalDays);
-    document.getElementById("mcmExpiresAt").value = d.toISOString().slice(0, 10);
-    ef.style.display = "";
-  } else {
-    document.getElementById("mcmExpiresAt").value = "";
-    ef.style.display = "none";
-  }
+  // Expiry field is always visible — no auto-calc
+  document.getElementById("mcmExpiresAt").value = "";
 }
 
 async function assignMemberCert() {
@@ -1760,12 +1770,17 @@ async function assignMemberCert() {
   const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
   if (def?.subcats?.length && !sub) { toast("Select a subcategory.", "err"); return; }
 
+  // Use subcat expiryDate as default if defined; otherwise use whatever admin entered
+  const subcatDef  = sub ? def.subcats.find(sc => sc.key === sub) : null;
+  const enteredExp = document.getElementById("mcmExpiresAt").value || null;
+  const finalExp   = enteredExp || subcatDef?.expiryDate || null;
+
   const newCert = {
     certId,
     sub:        sub || null,
     assignedBy: getUser()?.name || "Staff",
     assignedAt: document.getElementById("mcmAssignedAt").value || todayISO(),
-    expiresAt:  document.getElementById("mcmExpiresAt").value  || null,
+    expiresAt:  finalExp,
   };
 
   let existing = parseJson(m.certifications, []);
@@ -1780,356 +1795,128 @@ async function assignMemberCert() {
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
     toast("Certification assigned.");
-    document.getElementById("mcmCertType").value = "";
-    document.getElementById("mcmSubcatField").style.display = "none";
-    document.getElementById("mcmExpiryField").style.display = "none";
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 async function removeMemberCert(certId, sub) {
   if (!confirm("Remove this certification?")) return;
   const m = members.find(x => x.id === mcmMemberId);
   if (!m) return;
-  const updated = parseJson(m.certifications, []).filter(
-    c => !(c.certId === certId && (c.sub || "") === (sub || ""))
-  );
+  let certs = parseJson(m.certifications, []);
+  certs = certs.filter(c => !(c.certId === certId && (c.sub || "") === (sub || "")));
   try {
-    await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: updated });
+    await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: certs });
     const mIdx = members.findIndex(x => x.id === mcmMemberId);
-    members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
+    members[mIdx] = { ...m, certifications: JSON.stringify(certs) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
-    toast("Certification removed.");
+    toast("Removed.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ── Alert config ───────────────────────────────────────────────────────────────
-function loadAlertConfig(cfg) {
-  cfg = cfg || {};
-  document.getElementById("alertEnabled").checked   = cfg.enabled !== false;
-  document.getElementById("alertFirstMins").value   = cfg.firstAlertMins || 15;
-  document.getElementById("alertRepeatMins").value  = cfg.repeatMins     || 30;
-  document.getElementById("alertSnoozeMins").value  = cfg.snoozeMins     || 30;
-  document.getElementById("alertChWeb").checked     = cfg.channels?.web   !== false;
-  document.getElementById("alertChEmail").checked   = !!cfg.channels?.email;
-  document.getElementById("alertChSms").checked     = !!cfg.channels?.sms;
-  document.getElementById("alertEmailList").value   = (cfg.staffEmailList || []).join("\n");
-  document.getElementById("alertSmsList").value     = (cfg.staffSmsList   || []).join("\n");
-  _toggleEmailField();
-  _toggleSmsField();
-}
+// ══ ALERT SETTINGS ════════════════════════════════════════════════════════════
 
-function _toggleEmailField() {
-  document.getElementById("emailListField").style.display =
-    document.getElementById("alertChEmail").checked ? "" : "none";
-}
-function _toggleSmsField() {
-  document.getElementById("smsListField").style.display =
-    document.getElementById("alertChSms").checked ? "" : "none";
+function loadAlertConfig(cfg) {
+  if (!cfg) return;
+  document.getElementById("alertFirstMins").value  = cfg.firstAlertMins  || 30;
+  document.getElementById("alertRepeatMins").value = cfg.repeatMins       || 15;
+  document.getElementById("alertSnoozeMins").value = cfg.snoozeMins       || 10;
+  document.getElementById("alertEnabled").checked  = cfg.enabled !== false;
 }
 
 async function saveAlertConfig() {
-  const btn = document.getElementById("saveAlertBtn");
-  btn.disabled = true;
+  const cfg = {
+    firstAlertMins: parseInt(document.getElementById("alertFirstMins").value)  || 30,
+    repeatMins:     parseInt(document.getElementById("alertRepeatMins").value)  || 15,
+    snoozeMins:     parseInt(document.getElementById("alertSnoozeMins").value)  || 10,
+    enabled:        document.getElementById("alertEnabled").checked,
+  };
   try {
-    const cfg = {
-      enabled:        document.getElementById("alertEnabled").checked,
-      firstAlertMins: parseInt(document.getElementById("alertFirstMins").value) || 15,
-      repeatMins:     parseInt(document.getElementById("alertRepeatMins").value) || 30,
-      snoozeMins:     parseInt(document.getElementById("alertSnoozeMins").value) || 30,
-      channels: {
-        web:   document.getElementById("alertChWeb").checked,
-        email: document.getElementById("alertChEmail").checked,
-        sms:   document.getElementById("alertChSms").checked,
-      },
-      staffEmailList: document.getElementById("alertEmailList").value
-        .split("\n").map(s => s.trim()).filter(Boolean),
-      staffSmsList: document.getElementById("alertSmsList").value
-        .split("\n").map(s => s.trim()).filter(Boolean),
-    };
     await apiPost("saveConfig", { overdueAlerts: cfg });
-    toast("Alert settings saved.");
-  } catch(e) {
-    toast("Save failed: " + e.message, "err");
-  } finally {
-    btn.disabled = false;
-  }
+    const msg = document.getElementById("alertSaveMsg");
+    msg.textContent = "✓ Saved";
+    setTimeout(() => { msg.textContent = ""; }, 2500);
+  } catch(e) { toast("Save failed: " + e.message, "err"); }
 }
 
-// ── CSV Import ─────────────────────────────────────────────────────────────────
-function showImportStep(n) {
-  document.querySelectorAll("[data-step]").forEach(el => {
-    el.classList.toggle("hidden", el.dataset.step !== String(n));
-  });
-}
-
-function handleCSVFile(e) {
-  const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = ev => processCSV(ev.target.result);
-  r.readAsText(f);
-}
-
-function loadDemoCSV() { processCSV(DEMO_CSV); }
-
-function processCSV(text) {
-  const incoming = parseAblerCSV(text);
-  if (!incoming.length) { toast("No valid rows found.", "err"); return; }
-
-  const kts   = new Set(incoming.map(r => r.kennitala));
-  const added = [], updated = [], unchanged = [], flagged = [];
-
-  incoming.forEach(row => {
-    const ex = members.find(m => m.kennitala === row.kennitala);
-    if (!ex) {
-      added.push({ ...row, _s: "added" });
-    } else {
-      const role   = (ex.role === "admin" || ex.role === "staff") ? ex.role : row.role;
-      const merged = { ...row, role };
-      const changed = ["name","email","phone","birthYear","isMinor","guardianName",
-                       "guardianPhone","guardianKennitala","role"]
-        .some(f => String(merged[f] || "") !== String(ex[f] || ""));
-      if (changed) updated.push({ ...ex, ...merged, _s: "updated", _prev: ex });
-      else         unchanged.push({ ...ex, _s: "unchanged" });
-    }
-  });
-
-  members.filter(m => bool(m.active) && !kts.has(m.kennitala))
-         .forEach(m => flagged.push({ ...m, _s: "missing" }));
-
-  importResult = { added, updated, flagged, unchanged };
-
-  document.getElementById("importSummary").innerHTML = `
-    <span class="import-chip chip-green">${added.length} ${s('btn.add').replace('+ ','')}</span>
-    <span class="import-chip chip-brass">${updated.length} ${s('admin.importUpdated')}</span>
-    <span class="import-chip chip-orange">${flagged.length} ${s('admin.importMissing')}</span>
-    <span class="import-chip chip-muted">${unchanged.length} ${s('admin.importUnchanged')}</span>`;
-
-  let html = "";
-  if (added.length) {
-    html += `<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${added.length})</div>
-      <div class="import-list">${added.map(m => `
-        <div class="import-row">
-          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
-          <span style="flex:1">${esc(m.name)}</span>
-          ${m.isMinor ? `<span class="minor-badge">minor</span>` : ""}
-        </div>`).join("")}</div>`;
-  }
-  if (updated.length) {
-    html += `<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${updated.length})</div>
-      <div class="import-list">${updated.map(m => `
-        <div class="import-row">
-          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
-          <span style="flex:1">${esc(m.name)}</span>
-          <span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span>
-        </div>`).join("")}</div>`;
-  }
-  if (flagged.length) {
-    html += `<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${flagged.length})</div>
-      <div class="import-list">${flagged.map(m => `
-        <div class="import-row">
-          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
-          <span>${esc(m.name)}</span>
-        </div>`).join("")}</div>`;
-  }
-
-  document.getElementById("importLists").innerHTML = html;
-  showImportStep(2);
-}
-
-async function confirmImport() {
-  if (!importResult) return;
-  const btn = document.getElementById("confirmImportBtn");
-  btn.disabled = true; btn.textContent = "Importing…";
-  try {
-    const toSend = [...importResult.added, ...importResult.updated].map(m => {
-      const c = { ...m }; delete c._s; delete c._prev; return c;
-    });
-    await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
-
-    importResult.updated.forEach(u => {
-      members = members.map(m => m.kennitala === u.kennitala ? { ...u } : m);
-    });
-    importResult.added.forEach(a => {
-      const c = { ...a }; delete c._s; members.push(c);
-    });
-
-    document.getElementById("importDoneMsg").textContent =
-      `Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
-    showImportStep(3);
-  } catch(e) {
-    document.getElementById("importError").textContent = "Import failed: " + e.message;
-    document.getElementById("importError").style.display = "block";
-    btn.disabled = false; btn.textContent = "Confirm import";
-  }
-}
-
-function resetImport() {
-  importResult = null;
-  document.getElementById("csvFile").value = "";
-  showImportStep(1);
-}
-
-// parseAblerCSV and DEMO_CSV — unchanged from original, not modified here.
-// They remain in the source file as-is.
-
-// ── QR codes ───────────────────────────────────────────────────────────────────
-const BASE_SITE = "https://skarfur.github.io/ymir";
-
-function showBoatQR(boatId) {
-  const b = boats.find(x => x.id === boatId);
-  if (!b) return;
-  const url = `${BASE_SITE}/member/?boat=${boatId}`;
-  document.getElementById("qrBoatName").textContent  = b.name;
-  document.getElementById("qrCategory").textContent  = (b.category || "dinghy").toUpperCase();
-  document.getElementById("qrImg").src               = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&margin=10&data=${encodeURIComponent(url)}`;
-  document.getElementById("qrUrl").textContent       = url;
-  document.getElementById("qrBoatId").textContent    = boatId;
-  openModal("qrModal");
-}
-
-function printQR() {
-  const name = document.getElementById("qrBoatName").textContent;
-  const cat  = document.getElementById("qrCategory").textContent;
-  const src  = document.getElementById("qrImg").src;
-  const url  = document.getElementById("qrUrl").textContent;
-  const w    = window.open("", "_blank", "width=480,height=640");
-  w.document.write(`<!DOCTYPE html><html><head><title>QR — ${name}</title>
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:monospace;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-      .card{border:3px solid #000;border-radius:12px;padding:24px;text-align:center;width:320px}
-      .boat{font-size:26px;font-weight:bold;margin-bottom:4px}
-      .cat{font-size:12px;color:#555;letter-spacing:2px;margin-bottom:20px}
-      img{width:220px;height:220px;display:block;margin:0 auto}
-      .instruction{font-size:13px;margin-top:16px;line-height:1.5;color:#333}
-      .url{font-size:8px;color:#aaa;margin-top:12px;word-break:break-all}
-      @media print{button{display:none!important}}
-    </style>
-  </head><body>
-    <div class="card">
-      <div class="boat">⛵ ${name}</div>
-      <div class="cat">${cat}</div>
-      <img src="${src}">
-      <div class="instruction">Scan to check out or check in this boat</div>
-      <div class="url">${url}</div>
-    </div>
-    <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
-  </body></html>`);
-  w.document.close();
-}
-
-// ── Flag config admin ──────────────────────────────────────────────────────────
-const FC_DEFAULTS = {
-  wind:  { yellow: 5, orange: 6, red: 7 },
-  wave:  { yellow: 0.6, orange: 1.2, red: 2.0 },
-  easterlyDirs: ["E", "NE", "SE"],
-  flags: {
-    green:  { advice: "Good conditions." },
-    yellow: { advice: "Marginal — experienced sailors only." },
-    orange: { advice: "Difficult — keelboats only, staff auth for dinghies." },
-    red:    { advice: "Do not sail — all sailing suspended." },
-  },
-};
-
-const ALL_DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+// ══ FLAG CONFIG ═══════════════════════════════════════════════════════════════
 
 function loadFlagConfigPanel(cfg) {
-  cfg = cfg || {};
-  const wind  = { ...FC_DEFAULTS.wind,  ...(cfg.wind  || {}) };
-  const wave  = { ...FC_DEFAULTS.wave,  ...(cfg.wave  || {}) };
-  const eDirs = cfg.easterlyDirs || FC_DEFAULTS.easterlyDirs;
-  const flags = {
-    green:  { ...FC_DEFAULTS.flags.green,  ...(cfg.flags?.green  || {}) },
-    yellow: { ...FC_DEFAULTS.flags.yellow, ...(cfg.flags?.yellow || {}) },
-    orange: { ...FC_DEFAULTS.flags.orange, ...(cfg.flags?.orange || {}) },
-    red:    { ...FC_DEFAULTS.flags.red,    ...(cfg.flags?.red    || {}) },
-  };
+  const c = cfg || {};
+  const w = c.wind || {};
+  const v = c.wave || {};
+  document.getElementById("fcWindY").value = w.yellow ?? FLAG_CONFIG.wind.yellow;
+  document.getElementById("fcWindO").value = w.orange  ?? FLAG_CONFIG.wind.orange;
+  document.getElementById("fcWindR").value = w.red     ?? FLAG_CONFIG.wind.red;
+  document.getElementById("fcWaveY").value = v.yellow  ?? FLAG_CONFIG.wave.yellow;
+  document.getElementById("fcWaveO").value = v.orange  ?? FLAG_CONFIG.wave.orange;
+  document.getElementById("fcWaveR").value = v.red     ?? FLAG_CONFIG.wave.red;
 
-  document.getElementById("fcWindYellow").value  = wind.yellow;
-  document.getElementById("fcWindOrange").value  = wind.orange;
-  document.getElementById("fcWindRed").value     = wind.red;
-  document.getElementById("fcWaveYellow").value  = wave.yellow;
-  document.getElementById("fcWaveOrange").value  = wave.orange;
-  document.getElementById("fcWaveRed").value     = wave.red;
-  document.getElementById("fcAdviceGreen").value  = flags.green.advice;
-  document.getElementById("fcAdviceYellow").value = flags.yellow.advice;
-  document.getElementById("fcAdviceOrange").value = flags.orange.advice;
-  document.getElementById("fcAdviceRed").value    = flags.red.advice;
-
-  const container = document.getElementById("fcEasterlyDirs");
-  container.innerHTML = ALL_DIRS.map(d => `
-    <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;
-      background:var(--surface);border:1px solid var(--border);border-radius:6px;
-      padding:5px 10px;cursor:pointer;user-select:none">
-      <input type="checkbox" value="${d}"
-        ${eDirs.includes(d) ? "checked" : ""}
-        onchange="renderFlagPreview()"
-        style="accent-color:var(--brass)">
-      ${d}
-    </label>`).join("");
-
-  renderFlagPreview();
+  const adviceEl = document.getElementById("fcFlagAdvice");
+  if (adviceEl) {
+    adviceEl.innerHTML = ['green','yellow','orange','red'].map(key => {
+      const fc = c.flags?.[key] || FLAG_CONFIG.flags[key];
+      return `<div style="display:flex;align-items:center;gap:8px">
+        <span style="width:60px;font-size:11px;color:${fc.color}">${fc.icon} ${fc.label}</span>
+        <input type="text" id="fcAdvice_${key}" value="${esc(fc.advice || "")}"
+          style="flex:1;font-size:11px" placeholder="Advice text…">
+      </div>`;
+    }).join("");
+  }
+  updateFlagPreview(c);
 }
 
 function getFlagFormValues() {
-  return {
+  const cfg = {
     wind: {
-      yellow: parseInt(document.getElementById("fcWindYellow").value) || 5,
-      orange: parseInt(document.getElementById("fcWindOrange").value) || 6,
-      red:    parseInt(document.getElementById("fcWindRed").value)    || 7,
+      yellow: parseInt(document.getElementById("fcWindY").value) || 5,
+      orange: parseInt(document.getElementById("fcWindO").value) || 6,
+      red:    parseInt(document.getElementById("fcWindR").value) || 7,
     },
     wave: {
-      yellow: parseFloat(document.getElementById("fcWaveYellow").value) || 0.6,
-      orange: parseFloat(document.getElementById("fcWaveOrange").value) || 1.2,
-      red:    parseFloat(document.getElementById("fcWaveRed").value)    || 2.0,
+      yellow: parseFloat(document.getElementById("fcWaveY").value) || 0.6,
+      orange: parseFloat(document.getElementById("fcWaveO").value) || 1.2,
+      red:    parseFloat(document.getElementById("fcWaveR").value) || 2.0,
     },
-    easterlyDirs: [...document.querySelectorAll("#fcEasterlyDirs input:checked")].map(cb => cb.value),
-    flags: {
-      green:  { advice: document.getElementById("fcAdviceGreen").value.trim() },
-      yellow: { advice: document.getElementById("fcAdviceYellow").value.trim() },
-      orange: { advice: document.getElementById("fcAdviceOrange").value.trim() },
-      red:    { advice: document.getElementById("fcAdviceRed").value.trim() },
-    },
+    flags: {},
   };
+  ['green','yellow','orange','red'].forEach(key => {
+    const el = document.getElementById(`fcAdvice_${key}`);
+    if (el) cfg.flags[key] = { advice: el.value.trim() };
+  });
+  return cfg;
 }
 
 function validateFlagConfig(cfg) {
   const errs = [];
-  const { wind, wave } = cfg;
-  if (wind.yellow >= wind.orange) errs.push("Yellow wind threshold must be lower than Orange.");
-  if (wind.orange >= wind.red)    errs.push("Orange wind threshold must be lower than Red.");
-  if (wave.yellow >= wave.orange) errs.push("Yellow wave threshold must be lower than Orange.");
-  if (wave.orange >= wave.red)    errs.push("Orange wave threshold must be lower than Red.");
-  if (wind.red > 12)              errs.push("Max Beaufort scale is 12.");
+  const w = cfg.wind;
+  if (w.yellow >= w.orange) errs.push("Yellow wind must be < orange.");
+  if (w.orange >= w.red)    errs.push("Orange wind must be < red.");
   return errs;
 }
 
-function renderFlagPreview() {
-  const cfg    = getFlagFormValues();
-  const colors = {
-    green:  { color:"#27ae60", bg:"#27ae6018", border:"#27ae6044", icon:"🟢", label:"Green"  },
-    yellow: { color:"#f1c40f", bg:"#f1c40f18", border:"#f1c40f44", icon:"🟡", label:"Yellow" },
-    orange: { color:"#e67e22", bg:"#e67e2218", border:"#e67e2244", icon:"🟠", label:"Orange" },
-    red:    { color:"#e74c3c", bg:"#e74c3c18", border:"#e74c3c44", icon:"🔴", label:"Red"    },
-  };
-  document.getElementById("fcPreview").innerHTML = ["green","yellow","orange","red"].map(key => {
-    const c      = colors[key];
-    const advice = cfg.flags[key]?.advice || "";
+function updateFlagPreview(cfg) {
+  const c = cfg || {};
+  const preview = document.getElementById("fcFlagPreview");
+  if (!preview) return;
+  preview.innerHTML = ['green','yellow','orange','red'].map(key => {
+    const fc     = FLAG_CONFIG.flags[key];
+    const advice = c.flags?.[key]?.advice || fc.advice;
+    const wCfg   = c.wind || FLAG_CONFIG.wind;
+    const vCfg   = c.wave || FLAG_CONFIG.wave;
     const windLabel = key === "green"
-      ? `Bft < ${cfg.wind.yellow}`
-      : key === "yellow" ? `Bft ${cfg.wind.yellow}–${cfg.wind.orange - 1}`
-      : key === "orange" ? `Bft ${cfg.wind.orange}–${cfg.wind.red - 1}`
-      : `Bft ≥ ${cfg.wind.red}`;
+      ? `Bft < ${wCfg.yellow}`
+      : key === "yellow" ? `Bft ${wCfg.yellow}–${wCfg.orange - 1}`
+      : key === "orange" ? `Bft ${wCfg.orange}–${wCfg.red - 1}`
+      : `Bft ≥ ${wCfg.red}`;
     const waveLabel = key === "green"
-      ? `< ${cfg.wave.yellow}m wave`
-      : key === "yellow" ? `≥ ${cfg.wave.yellow}m wave`
-      : key === "orange" ? `≥ ${cfg.wave.orange}m wave`
-      : `≥ ${cfg.wave.red}m wave`;
-    return `<div style="flex:1;min-width:180px;background:${c.bg};border:1px solid ${c.border};
-      border-radius:8px;padding:10px 12px;color:${c.color}">
-      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${c.icon} ${c.label}</div>
+      ? `< ${vCfg.yellow}m wave`
+      : key === "yellow" ? `≥ ${vCfg.yellow}m wave`
+      : key === "orange" ? `≥ ${vCfg.orange}m wave`
+      : `≥ ${vCfg.red}m wave`;
+    return `<div style="flex:1;min-width:180px;background:${fc.bg};border:1px solid ${fc.border};
+      border-radius:8px;padding:10px 12px;color:${fc.color}">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${fc.icon} ${fc.label}</div>
       <div style="font-size:10px;opacity:.8;margin-bottom:4px">${windLabel} · ${waveLabel}</div>
       <div style="font-size:11px;opacity:.75;font-style:italic">${advice || "—"}</div>
     </div>`;
@@ -2167,9 +1954,143 @@ function resetFlagConfig() {
   loadFlagConfigPanel(null);
 }
 
+// ══ CSV IMPORT ════════════════════════════════════════════════════════════════
+
+function showImportStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById("importStep" + i).classList.toggle("hidden", i !== n);
+  });
+}
+
+function handleCSVUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      importResult = parseAblerCSV(e.target.result, members);
+      renderImportPreview(importResult);
+    } catch(err) {
+      document.getElementById("importError").textContent = "Parse error: " + err.message;
+      document.getElementById("importError").style.display = "block";
+    }
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+function parseAblerCSV(text, existing) {
+  const lines  = text.split(/\r?\n/).filter(l => l.trim());
+  const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/\s+/g,'_'));
+  const col    = k => header.indexOf(k);
+  const rows   = lines.slice(1).map(l => {
+    const vals = l.split(/[,;]/);
+    const get  = k => (vals[col(k)] || "").trim().replace(/^"|"$/g,'');
+    return {
+      kennitala:      get('kennitala'),
+      name:           get('name') || get('full_name') || get('nafn'),
+      email:          get('email') || get('netfang'),
+      phone:          get('phone') || get('simi'),
+      dob:            get('dob') || get('date_of_birth'),
+      membershipType: get('membership_type') || get('membership') || get('tegund'),
+    };
+  }).filter(r => r.kennitala && r.name);
+
+  const added   = [], updated = [], unchanged = [], flagged = [];
+  const existKt = new Map(existing.map(m => [m.kennitala, m]));
+  rows.forEach(r => {
+    const ex = existKt.get(r.kennitala);
+    if (!ex) { added.push(r); }
+    else if (ex.name !== r.name || ex.email !== r.email) {
+      updated.push({ ...r, id: ex.id, _prev: ex });
+    } else { unchanged.push(r); }
+  });
+  existing.forEach(m => {
+    if (['admin','staff'].includes(m.role)) return;
+    if (!rows.find(r => r.kennitala === m.kennitala)) flagged.push(m);
+  });
+  return { added, updated, unchanged, flagged };
+}
+
+function renderImportPreview(res) {
+  const chips = [
+    { label: `${res.added.length} new`,         cls: 'chip-green'  },
+    { label: `${res.updated.length} updated`,   cls: 'chip-brass'  },
+    { label: `${res.unchanged.length} unchanged`,cls: 'chip-muted' },
+    { label: `${res.flagged.length} not in import`, cls: 'chip-orange' },
+  ];
+  document.getElementById("importSummary").innerHTML = chips.map(c =>
+    `<span class="import-chip ${c.cls}">${c.label}</span>`).join("");
+
+  let html = "";
+  if (res.added.length) {
+    html += `<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${res.added.length})</div>
+      <div class="import-list">${res.added.map(m => `
+        <div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span style="flex:1">${esc(m.name)}</span>
+          ${m.dob && (new Date().getFullYear() - parseInt((m.dob||"").slice(0,4))) < 18
+            ? `<span class="minor-badge">minor</span>` : ""}
+        </div>`).join("")}</div>`;
+  }
+  if (res.updated.length) {
+    html += `<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${res.updated.length})</div>
+      <div class="import-list">${res.updated.map(m => `
+        <div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span style="flex:1">${esc(m.name)}</span>
+          <span style="color:var(--muted);font-size:11px">was: ${esc(m._prev.name)}</span>
+        </div>`).join("")}</div>`;
+  }
+  if (res.flagged.length) {
+    html += `<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${res.flagged.length})</div>
+      <div class="import-list">${res.flagged.map(m => `
+        <div class="import-row">
+          <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
+          <span>${esc(m.name)}</span>
+        </div>`).join("")}</div>`;
+  }
+
+  document.getElementById("importLists").innerHTML = html;
+  document.getElementById("importError").style.display = "none";
+  showImportStep(2);
+}
+
+async function confirmImport() {
+  if (!importResult) return;
+  const btn = document.getElementById("confirmImportBtn");
+  btn.disabled = true; btn.textContent = "Importing…";
+  try {
+    const toSend = [...importResult.added, ...importResult.updated].map(m => {
+      const c = { ...m }; delete c._s; delete c._prev; return c;
+    });
+    await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
+
+    importResult.updated.forEach(u => {
+      members = members.map(m => m.kennitala === u.kennitala ? { ...u } : m);
+    });
+    importResult.added.forEach(a => {
+      const c = { ...a }; delete c._s; members.push(c);
+    });
+
+    document.getElementById("importDoneMsg").textContent =
+      `Import complete: ${importResult.added.length} added, ${importResult.updated.length} updated.`;
+    showImportStep(3);
+  } catch(e) {
+    document.getElementById("importError").textContent = "Import failed: " + e.message;
+    document.getElementById("importError").style.display = "block";
+    btn.disabled = false; btn.textContent = "Confirm import";
+  }
+}
+
+function resetImport() {
+  importResult = null;
+  document.getElementById("csvFile").value = "";
+  showImportStep(1);
+}
+
 // ── Utilities ──────────────────────────────────────────────────────────────────
 // bool, esc, parseJson, toast, chunk, openModal, closeModal, todayISO
-// all come from shared/api.js — no local redefinitions needed.
+// all come from shared/api.js and shared/ui.js — no local redefinitions needed.
 </script>
 </body>
-</html>${(() => { const subs = Array.isArray(a.subtypes)?a.subtypes:tryParse_(a.subtypes,[]); return subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:2px 0 2px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join(''); })()}
+</html>
