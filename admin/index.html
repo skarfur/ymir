@@ -952,19 +952,16 @@ async function deleteMember() { await deactivateMember(editingId); closeModal("m
 
 function renderBoatCats() {
   const card   = document.getElementById("boatCatsCard");
-  const active = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+  const locale = getLang() === 'IS' ? 'is' : 'en';
+  const active = _allBoatCats
+    .filter(c => c.active !== false && c.active !== 'false')
+    .sort((a, b) => {
+      const la = (getLang() === 'IS' && a.labelIS ? a.labelIS : a.labelEN) || '';
+      const lb = (getLang() === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
+      return la.localeCompare(lb, locale, { sensitivity: 'base' });
+    });
   if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
-  card.innerHTML = active.map(c => `
-    <div class="list-row">
-      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
-      <span class="list-name">
-        <strong>${esc(c.labelEN)}</strong>
-        ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
-        <span style="color:var(--border);font-size:10px;margin-left:8px">${esc(c.key)}</span>
-      </span>
-      <button class="row-edit" onclick="openBoatCatModal('${c.key}')">Edit</button>
-    </div>`).join("");
-}
+ 
 
 function openBoatCatModal(key) {
   _bcEditingId = key || null;
@@ -1152,7 +1149,10 @@ function printQR() {
 
 function renderLocations() {
   const card   = document.getElementById("locationsCard");
-  const active = locations.filter(l => bool(l.active));
+  const locale = getLang() === 'IS' ? 'is' : 'en';
+  const active = locations
+    .filter(l => bool(l.active))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' }));
   if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
@@ -1375,7 +1375,14 @@ async function deleteLaunchCLItem(cat, phase, id) {
 
 function renderActTypes() {
   const card   = document.getElementById("actTypesCard");
-  const active = actTypes.filter(a => bool(a.active));
+  const locale = getLang() === 'IS' ? 'is' : 'en';
+  const active = actTypes
+    .filter(a => bool(a.active))
+    .sort((a, b) => {
+      const la = (getLang() === 'IS' && a.nameIS ? a.nameIS : a.name) || '';
+      const lb = (getLang() === 'IS' && b.nameIS ? b.nameIS : b.name) || '';
+      return la.localeCompare(lb, locale, { sensitivity: 'base' });
+    });
   if (!active.length) { card.innerHTML = `<div class="empty-state">No activity types.</div>`; return; }
   card.innerHTML = active.map(a => {
     const subs = Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, []);
@@ -1490,7 +1497,11 @@ function renderCertDefs() {
     el.innerHTML = `<div class="empty-state">No certification types defined.</div>`;
     return;
   }
-  el.innerHTML = certDefs.map(d => {
+  const locale = getLang() === 'IS' ? 'is' : 'en';
+  const sortedCertDefs = certDefs.slice().sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' })
+  );
+  el.innerHTML = sortedCertDefs.map(d => {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
     const subcatStr = d.subcats?.length
