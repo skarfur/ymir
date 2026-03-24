@@ -961,7 +961,17 @@ function renderBoatCats() {
       return la.localeCompare(lb, locale, { sensitivity: 'base' });
     });
   if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
- 
+   card.innerHTML = active.map(c => `
+    <div class="list-row">
+      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
+      <span class="list-name">
+        <strong>${esc(c.labelEN)}</strong>
+        ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
+        <span style="color:var(--border);font-size:10px;margin-left:8px">${esc(c.key)}</span>
+      </span>
+      <button class="row-edit" onclick="openBoatCatModal('${c.key}')">Edit</button>
+    </div>`).join("");
+}
 
 function openBoatCatModal(key) {
   _bcEditingId = key || null;
