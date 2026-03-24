@@ -1246,7 +1246,8 @@ async function confirmCheckIn(coId) {
       memberName: user.name, boatId: co.boatId, boatName: co.boatName,
     });
     await apiPost('saveTrip', {
-      kennitala: user.kennitala, memberName: user.name, memberId: user.id || user^kennitala,
+      kennitala: user.kennitala, memberName: user.name, memberId: user.id || user?.kennitala || user.kennitala
+,
       date: today, boatId: co.boatId, boatName: co.boatName,
       locationId: co.locationId || '', locationName: co.locationName || '',
       timeOut: tout, timeIn, hoursDecimal: h > 0 ? h.toFixed(2) : '0', crew: co.crew || 1,
