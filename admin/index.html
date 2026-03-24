@@ -200,7 +200,6 @@
     <div id="tab-boats" class="hidden">
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
-        <button class="btn btn-primary"   onclick="openBoatModal()">+ Add boat</button>
       </div>
 
       <!-- Boats by category -->
@@ -1040,8 +1039,14 @@ function renderBoats() {
     if (groups[k]) groups[k].push(b); else groups['other'].push(b);
   });
 
-  const L = getLang();
-  el.innerHTML = boatCats
+  const L      = getLang();
+  const locale = L === 'IS' ? 'is' : 'en';
+  const sortedCats = boatCats.slice().sort((a, b) => {
+    const la = (L === 'IS' && a.labelIS ? a.labelIS : a.labelEN) || '';
+    const lb = (L === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
+    return la.localeCompare(lb, locale, { sensitivity: 'base' });
+  });
+  el.innerHTML = sortedCats
     .map(cat => {
       const label = (L === 'IS' && cat.labelIS) ? cat.labelIS : cat.labelEN;
       const cards = (groups[cat.key] || []).map(b => `
@@ -1065,6 +1070,7 @@ function renderBoats() {
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)} <strong>${label}</strong></div>
           <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
+            <button class="row-edit" onclick="openBoatModalForCat('${cat.key}')">+ Add boat</button>
             <button class="row-edit" onclick="openBoatCatModal('${cat.key}')">Edit</button>
             <span class="col-toggle">▼</span>
           </div>
