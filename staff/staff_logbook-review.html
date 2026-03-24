@@ -68,7 +68,23 @@
       <div id="sBoatCats" style="font-size:11px;color:var(--text);line-height:1.8"></div>
     </div>
   </div>
-
+  
+  <!-- ══ CERT FILTER ══ -->
+  <div style="margin-bottom:20px">
+    <div style="font-size:9px;letter-spacing:1.2px;color:var(--muted);margin-bottom:8px">CERT FILTER</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <select id="certFilterType" onchange="applyCertFilter()" style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px">
+        <option value="">All certifications</option>
+      </select>
+      <select id="certFilterRole" onchange="applyCertFilter()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px">
+        <option value="">Members + Staff</option>
+        <option value="member">Members only</option>
+        <option value="staff">Staff only</option>
+      </select>
+    </div>
+    <div id="certFilterResults"></div>
+  </div>
+  
   <!-- Trips section header + show-all toggle -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
     <div style="font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase" data-s="logrev.validationRequests"></div>
@@ -615,6 +631,57 @@ async function deleteCert(certId, subcatKey) {
 function _parseJson(v, fallback) {
   if (!v) return fallback;
   try { return typeof v === 'string' ? JSON.parse(v) : v; } catch { return fallback; }
+}
+
+  function populateCertFilterType() {
+  const sel = document.getElementById('certFilterType');
+  if (!sel || !_certDefs.length) return;
+  sel.innerHTML = `<option value="">All certifications</option>`;
+  _certDefs.forEach(d => {
+    if (d.subcats?.length) {
+      d.subcats.forEach(sc => {
+        const o = document.createElement('option');
+        o.value = d.id + '|' + sc.key;
+        o.textContent = d.name + ' — ' + sc.label;
+        sel.appendChild(o);
+      });
+    } else {
+      const o = document.createElement('option');
+      o.value = d.id + '|';
+      o.textContent = d.name;
+      sel.appendChild(o);
+    }
+  });
+}
+
+function applyCertFilter() {
+  const el = document.getElementById('certFilterResults');
+  const val = document.getElementById('certFilterType').value;
+  const role = document.getElementById('certFilterRole').value;
+  if (!val) { el.innerHTML = ''; return; }
+  const [certId, sub] = val.split('|');
+  const def = _certDefs.find(d => d.id === certId);
+  const matches = (_allMembers || []).filter(m => {
+    if (role === 'member' && (m.role === 'staff' || m.role === 'admin')) return false;
+    if (role === 'staff' && m.role !== 'staff' && m.role !== 'admin') return false;
+    const certs = _parseJson(m.certifications, []);
+    return certs.some(c => c.certId === certId && (sub ? c.sub === sub : true));
+  });
+  if (!matches.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">No members found with this certification.</div>`;
+    return;
+  }
+  const color = certColor(def || {});
+  el.innerHTML = `<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${matches.length} member${matches.length!==1?'s':''}</div>` +
+    matches.map(m => {
+      const certs = _parseJson(m.certifications, []);
+      const c = certs.find(c => c.certId === certId && (sub ? c.sub === sub : true));
+      const expiry = c?.expiresAt ? (c.expiresAt < todayISO() ? `<span style="color:var(--red);font-size:10px"> · expired</span>` : `<span style="color:var(--muted);font-size:10px"> · exp. ${c.expiresAt}</span>`) : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)44">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+        <div style="flex:1;font-size:13px">${esc(m.name)}<span style="font-size:10px;color:var(--muted);margin-left:6px">${esc(m.role||'')}</span>${expiry}</div>
+      </div>`;
+    }).join('');
 }
 </script>
 </body>
