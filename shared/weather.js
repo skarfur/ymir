@@ -298,37 +298,38 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- row 1: 3-col grid matching secondary cells -->
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;line-height:1">
-                <div class="wx-cell">
-                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WIND</div>
-                  <div style="display:flex;align-items:center;gap:4px">
-                    <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
-                    <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
-                    <span style="font-size:12px;color:var(--muted)">m/s</span>
+              <!-- wind hero: large speed + direction, gusts beneath -->
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px">
+                <div>
+                  <div style="display:flex;align-items:center;gap:4px;line-height:1">
+                    <span style="font-size:42px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
+                    <span style="font-size:42px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
+                    <span style="font-size:14px;color:var(--muted);margin-left:2px">m/s</span>
                   </div>
-                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${wDir} · ${wxMsToKt(ws)} kt</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:5px">
+                    <b style="color:var(--text)">${wDir}</b>
+                    <span style="color:var(--border)"> · </span>
+                    <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
+                    <span style="color:var(--border)"> · </span>
+                    Bft <b style="color:var(--text)">${bft}</b>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:3px">
+                    Gusts <b style="color:var(--text)">${Math.round(wg)} m/s · ${wxMsToKt(wg)} kt</b>
+                    <span style="color:var(--border)"> · </span>
+                    ${wxBftDesc(bft)}
+                  </div>
                 </div>
-                <div class="wx-cell">
-                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">CONDITIONS</div>
-                  <div style="font-size:24px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
+                <div style="text-align:right;flex-shrink:0">
+                  <div style="font-size:28px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
                   <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
                 </div>
-                <div class="wx-cell">
-                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR TEMP</div>
-                  <div style="font-size:24px;color:var(--text);font-weight:500;line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</div>
-                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-        <!-- secondary cells: gusts · waves · sea · pressure -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px">
+        <!-- secondary cells: air temp · waves · sea · pressure -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding-top:10px;border-top:1px solid var(--border)">
           <div class="wx-cell">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">GUSTS</div>
-            <div style="font-size:17px;color:var(--text)">${Math.round(wg)}<span style="font-size:11px;color:var(--muted)"> m/s</span></div>
-            <div style="font-size:10px;color:var(--muted)">Bft ${bft} — ${wxBftDesc(bft)}</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR</div>
+            <div style="font-size:17px;color:var(--text)">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
+            <div style="font-size:10px;color:var(--muted)">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
           </div>
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
