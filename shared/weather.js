@@ -355,6 +355,9 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
           </div>
         </div>
+            </div>
+          </div>
+        </div>`;
       targetEl._wxRefresh = refresh;
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
