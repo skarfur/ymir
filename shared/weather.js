@@ -333,7 +333,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
                 <div class="wx-cell" style="grid-column:3;grid-row:2;text-align:center">
                   <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR</div>
                   <div style="font-size:22px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
-                  <div style="font-size:10px;color:var(--muted);margin-top:4px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:4px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? 'feels ' + Math.round(c.apparent_temperature) + '°' : ''}</div>
                 </div>
 
               </div>
