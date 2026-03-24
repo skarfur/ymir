@@ -244,6 +244,22 @@
   <div class="wx-widget" id="wxWidget" style="margin-bottom:10px">
     <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="lbl.loading"></div>
   </div>
+  
+  <!-- ══ FLAG CARD ══ -->
+  <button id="flagCard" onclick="openFlagModal()"
+    style="width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:12px 16px;cursor:pointer;margin-bottom:10px;font-family:inherit;
+    display:flex;align-items:center;justify-content:space-between;transition:border-color .15s">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="flagCardIcon" style="font-size:20px">🟢</span>
+      <div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:2px" data-s="flag.currentLabel">CURRENT FLAG</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text)" id="flagCardLabel"></div>
+        <div style="font-size:11px;color:var(--muted)" id="flagCardAdvice"></div>
+      </div>
+    </div>
+    <span style="font-size:11px;color:var(--muted)" data-s="flag.allLevels">All levels →</span>
+  </button>
 
   <!-- ══ FULL FORECAST BUTTON ══ -->
   <a href="../weather/" style="display:block;text-align:center;background:var(--surface);
