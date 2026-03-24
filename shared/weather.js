@@ -298,46 +298,47 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- row 1: arrow · speed · m/s · conditions icon · air temp -->
-              <div style="display:flex;align-items:center;gap:6px;line-height:1;flex-wrap:wrap">
-                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1;margin-right:4px">${wxDirArrow(wd)}</span>
-                <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
-                <span style="font-size:13px;color:var(--muted);margin-left:5px;margin-right:16px">m/s</span>
-                <span style="width:1px;height:32px;background:var(--border);margin-right:16px;flex-shrink:0"></span>
-                <span style="font-size:28px;line-height:1;margin-right:10px">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</span>
-                <span style="display:flex;flex-direction:column;gap:2px">
-                  <span style="font-size:20px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</span>
-                  ${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m
-                    ? `<span style="font-size:10px;color:var(--muted);line-height:1">feels ${Math.round(c.apparent_temperature)}°</span>`
-                    : ''}
-                </span>
-              </div>
-              <!-- row 2: dir · kt -->
-              <div style="font-size:13px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:6px">
-                <b style="color:var(--text)">${wDir}</b>
-                <span style="color:var(--border)">·</span>
-                <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt
-                ${c.weather_code != null ? `<span style="color:var(--border)">·</span><span style="font-size:11px">${wxCondDesc(c.weather_code)}</span>` : ''}
-              </div>
-              <!-- gusts row -->
-              <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap">
-                <span>Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)} kt</b></span>
-                <span>Bft <b style="color:var(--text)">${bft}</b> — ${wxBftDesc(bft)}</span>
+              <!-- row 1: 3-col grid matching secondary cells -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;line-height:1">
+                <div class="wx-cell">
+                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WIND</div>
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
+                    <span style="font-size:28px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
+                    <span style="font-size:12px;color:var(--muted)">m/s</span>
+                  </div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${wDir} · ${wxMsToKt(ws)} kt</div>
+                </div>
+                <div class="wx-cell">
+                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">CONDITIONS</div>
+                  <div style="font-size:24px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
+                </div>
+                <div class="wx-cell">
+                  <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR TEMP</div>
+                  <div style="font-size:24px;color:var(--text);font-weight:500;line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- secondary cells: sea · waves · pressure -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">
+        <!-- secondary cells: gusts · waves · sea · pressure -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px">
           <div class="wx-cell">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
-            <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">Surface</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">GUSTS</div>
+            <div style="font-size:17px;color:var(--text)">${Math.round(wg)}<span style="font-size:11px;color:var(--muted)"> m/s</span></div>
+            <div style="font-size:10px;color:var(--muted)">Bft ${bft} — ${wxBftDesc(bft)}</div>
           </div>
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
+          </div>
+          <div class="wx-cell">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
+            <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
+            <div style="font-size:10px;color:var(--muted)">Surface</div>
           </div>
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
