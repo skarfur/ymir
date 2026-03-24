@@ -310,12 +310,12 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
               Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${wxBftDesc(bft)}
             </div>
           </div>
-          <div class="wx-cell" style="text-align:center">
+          <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">AIR TEMP</div>
             <div style="font-size:28px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? 'feels ' + Math.round(c.apparent_temperature) + '°' : ''}</div>
           </div>
-          <div class="wx-cell" style="text-align:center">
+          <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">CONDITIONS</div>
             <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
