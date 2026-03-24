@@ -323,6 +323,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cfgRes.launchChecklists && Object.keys(cfgRes.launchChecklists).length) {
       _launchChecklists = Object.assign({}, DEFAULT_LAUNCH_CHECKLISTS, cfgRes.launchChecklists);
     }
+    if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
+      _boatCategories = cfgRes.boatCategories.filter(function(c) {
+        return c.active !== false && c.active !== 'false';
+      });
+    }
 
     populateFormSelects();
     renderActiveCheckouts();
@@ -613,8 +618,7 @@ function renderLaunchPicker(preselectedBoatId) {
   document.getElementById('launchModalBody').innerHTML =
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
       `<div style="margin-bottom:12px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${boatEmoji(cat)} ${esc(cat)}</div>
-        ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${_fmtCatLabel(cat)}</div>
           onclick="renderLaunchChecklist(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
       </div>`
     ).join('');
@@ -632,21 +636,35 @@ var DEFAULT_LAUNCH_CHECKLISTS = {
   other:         { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
 };
 var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;  // overwritten from config on load
+var _boatCategories   = null;  // [{key,labelEN,labelIS,emoji}] — loaded from config
 
 
+function _fmtCatLabel(cat) {
+  var c = _boatCategories && _boatCategories.find(function(x) { return x.key === cat; });
+  var lbl = c ? (getLang() === 'IS' && c.labelIS ? c.labelIS : c.labelEN) : cat;
+  var ico = (c && c.emoji) ? c.emoji : boatEmoji(cat);
+  return ico + ' ' + esc(lbl.toUpperCase());
+}
+ 
+// Helper: resolve display label from a checklist item (object or legacy plain string)
+function _clItemLabel(it) {
+  if (typeof it === 'string') return it;
+  return (getLang() === 'IS' && it.textIS) ? it.textIS : (it.text || '');
+}
+ 
 function renderLaunchChecklist(boat) {
   if (!boat) return;
   launchBoat = boat;
   document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} - ${boat.name}`;
   const cat   = (boat.category||'other').toLowerCase();
-  const cl = _launchChecklists[cat] || _launchChecklists.other;
-  const items = cl.launch || cl;  // support both {launch:[],landing:[]} and flat []
+  const cl    = _launchChecklists[cat] || _launchChecklists.other;
+  const items = (cl.launch || cl).slice().sort(function(a,b){ return (a.sort||0)-(b.sort||0); });
   document.getElementById('launchModalBody').innerHTML =
-    `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH CHECKLIST — ${esc(cat.toUpperCase())}</div>` +
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH — ${_fmtCatLabel(cat)}</div>` +
     items.map((it,i) =>
       `<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">` +
       `<input type="checkbox" class="launch-check" data-idx="${i}" style="width:16px;height:16px;accent-color:var(--brass)">` +
-      `<span>${esc(it)}</span></label>`
+      `<span>${esc(_clItemLabel(it))}</span></label>`
     ).join("") +
     `<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">Please confirm all items before proceeding.</div>` +
     `<div class="btn-row" style="margin-top:14px">` +
@@ -1004,16 +1022,17 @@ function renderLandingChecklist() {
     s('member.checkInTitle') + ' — ' + (returnCo.boatName || '');
   var cat   = (returnCo.boatCategory || 'other').toLowerCase();
   var cl    = _launchChecklists[cat] || _launchChecklists.other;
-  var items = (cl && cl.landing) ? cl.landing : [];
+  var rawItems = (cl && cl.landing) ? cl.landing : [];
+  var items = rawItems.slice().sort(function(a,b){ return (a.sort||0)-(b.sort||0); });
   var checks = items.map(function (it) {
     return '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;' +
       'border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">' +
       '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">' +
-      '<span>' + esc(it) + '</span></label>';
+      '<span>' + esc(_clItemLabel(it)) + '</span></label>';
   }).join('');
   document.getElementById('returnModalBody').innerHTML =
     (items.length
-      ? '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING CHECKLIST</div>' + checks
+      ? '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING — ' + _fmtCatLabel(cat) + '</div>' + checks
       : '') +
     '<div id="landCheckErr" style="display:none;font-size:11px;color:var(--red);margin:6px 0">Please confirm all items.</div>' +
     '<div style="display:flex;gap:8px;margin:12px 0">' +
