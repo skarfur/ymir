@@ -387,7 +387,11 @@ const STRINGS = {
   'logrev.validationRequests':    { EN:'Validation requests',                                       IS:'Beiðnir um staðfestingu'                                   },
   'logrev.showAll':               { EN:'Show all trips',                                             IS:'Sýna allar ferðir'                                         },
   'logrev.certSearch':            { EN:'Search for a member above to view their certifications.',   IS:'Leitaðu að félaga hér að ofan til að skoða skírteini.'     },
-  'logrev.certSearchPlaceholder': { EN:'Search member name...',                                     IS:'Leita að nafni félaga...'   }, 
+  'logrev.certSearchPlaceholder': { EN:'Search member name...',                                     IS:'Leita að nafni félaga...'   },
+  'logrev.certModeByMember':      { EN:'By member',                                                 IS:'Eftir félaga'                                              },
+  'logrev.certModeByType':        { EN:'By certification',                                          IS:'Eftir skírteini'                                           },
+  'logrev.certSelectType':        { EN:'— Select certification —',                                  IS:'— Veldu skírteini —'                                       },
+  'logrev.certNoMatches':         { EN:'No members found with this certification.',                  IS:'Engir félagar fundust með þetta skírteini.'                },
   
     // ── Admin panel ────────────────────────────────────────────────────────────
   'admin.tabMembers':      { EN:'Members',                 IS:'Félagar' },
