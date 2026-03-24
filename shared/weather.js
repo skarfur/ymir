@@ -298,8 +298,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <!-- wind col -->
             <div style="flex:1">
               <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
-              <!-- row 1: arrow · speed · m/s · divider · conditions icon · air temp · feels like -->
-              <div style="display:flex;align-items:center;gap:0;line-height:1;flex-wrap:wrap">
+              <!-- row 1: arrow · speed · m/s · conditions icon · air temp -->
+              <div style="display:flex;align-items:center;gap:6px;line-height:1;flex-wrap:wrap">
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1;margin-right:4px">${wxDirArrow(wd)}</span>
                 <span style="font-size:36px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
                 <span style="font-size:13px;color:var(--muted);margin-left:5px;margin-right:16px">m/s</span>
