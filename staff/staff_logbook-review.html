@@ -241,7 +241,7 @@ async function init() {
     _dataLoaded = true;
 
     // Populate cert-type dropdown once
-    _buildCertTypeSelect();
+    populateCertFilterType();
 
     // Enrich trips with resolved member name where missing
     allTrips = (tripsRes.trips || [])
