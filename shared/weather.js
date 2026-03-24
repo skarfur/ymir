@@ -320,17 +320,20 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
                   </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0">
-                  <div style="font-size:28px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
-                  <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
+                  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+                    <div>
+                      <div style="font-size:22px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
+                      <div style="font-size:10px;color:var(--muted);margin-top:2px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
+                    </div>
+                    <div>
+                      <div style="font-size:42px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
+                      <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:center">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
         <!-- secondary cells: air temp · waves · sea · pressure -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding-top:10px;border-top:1px solid var(--border)">
-          <div class="wx-cell">
-            <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">AIR</div>
-            <div style="font-size:17px;color:var(--text)">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°C' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? `feels ${Math.round(c.apparent_temperature)}°` : '&nbsp;'}</div>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-top:10px;border-top:1px solid var(--border)">
           <div class="wx-cell">
             <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
