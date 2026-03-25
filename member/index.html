@@ -1007,6 +1007,7 @@ function _renderMemberStaffStatus() {
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + boatBg + ';color:' + boatCol + '">'
     + '⛵ ' + (IS ? 'Björunarbátur' : 'Support boat') + '</span>'
     + '</div>';
+  document.getElementById('wxWidget')?._wxRefreshBadges?.();
 }
 
 
