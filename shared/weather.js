@@ -459,7 +459,7 @@ async function wxFetch(lat, lon) {
 // targetEl  : DOM element to render into (must have class wx-widget in CSS)
 // onData    : optional callback(snapshot)
 // Returns { refresh(), start(), stop() }
-function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
+function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStatus } = {}) {
   const loc = { lat: WX_DEFAULT.lat, lon: WX_DEFAULT.lon, label: label || WX_DEFAULT.label };
   let timer = null;
 
@@ -546,21 +546,52 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
         </div>`;
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown };
-      // Render duty status badges if available
+      // ── Inject modal HTML once per page ──
+      if (!document.getElementById('wxFlagModal')) {
+        const _md = document.createElement('div');
+        _md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)this.classList.add(\'hidden\')">'
+          + '<div class="modal" style="max-width:480px">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+          + '<div id="wxFlagModalTitle" style="font-weight:600;font-size:15px"></div>'
+          + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">×</button>'
+          + '</div><div id="wxFlagModalBody"></div>'
+          + '<div style="margin-top:16px"><button class="btn btn-secondary" style="width:100%" onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')">'
+          + (typeof getLang==='function'&&getLang()==='IS' ? 'Loka' : 'Close')
+          + '</button></div></div></div>';
+        document.body.appendChild(_md.firstElementChild);
+      }
+
+      // ── Wire flag pill click — uses snap stored on this element ──
+      const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
+      if (pill) pill.onclick = () => {
+        const IS     = typeof getLang === 'function' ? getLang() === 'IS' : false;
+        const snap   = targetEl._wxResult;
+        const ss     = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
+        const body   = document.getElementById('wxFlagModalBody');
+        const title  = document.getElementById('wxFlagModalTitle');
+        if (!body || !snap) return;
+        const r = wxScoreFlag(snap.ws, snap.wDir, snap.waveH ?? 0, snap.temperature_2m, snap.sst, snap.wg, 'good');
+        if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' stig';
+        body.innerHTML = wxFlagDetailHtml(r, ss, IS ? 'IS' : 'EN');
+        if (typeof openModal === 'function') openModal('wxFlagModal');
+        else document.getElementById('wxFlagModal')?.classList.remove('hidden');
+      };
+
+      // ── Render duty status badges ──
       const _ssBadges = targetEl.querySelector('.wx-status-badges');
       if (_ssBadges) {
-        const _ss  = typeof window._wxGetStaffStatus === 'function' ? window._wxGetStaffStatus() : null;
+        const _ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         const _isB = typeof getLang === 'function' && getLang() === 'IS';
         const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
         if (_ss) {
-          const _dc  = _ss.onDuty      ? '#27ae60'                          : 'var(--muted)';
-          const _bc  = _ss.supportBoat ? '#5dade2'                          : 'var(--muted)';
+          const _dc  = _ss.onDuty      ? '#27ae60' : 'var(--muted)';
+          const _bc  = _ss.supportBoat ? '#5dade2'  : 'var(--muted)';
           const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
           const _bbg = _ss.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
-          const _dtx = _isB ? (_ss.onDuty      ? 'Starfsmaður á vakt'  : 'Enginn starfsmaður')
-                            : (_ss.onDuty      ? 'Staff on duty'                  : 'No staff on duty');
-          const _btx = _isB ? (_ss.supportBoat ? 'Björunarbátur'            : 'Enginn björunarbátur')
-                            : (_ss.supportBoat ? 'Support boat out'              : 'No support boat');
+          const _dtx = _isB ? (_ss.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
+                            : (_ss.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
+          const _btx = _isB ? (_ss.supportBoat ? 'Björunarbátur'           : 'Enginn björunarbátur')
+                            : (_ss.supportBoat ? 'Support boat out'             : 'No support boat');
           _ssBadges.innerHTML =
             '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
             + ' '
@@ -569,9 +600,6 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
           _ssBadges.innerHTML = '';
         }
       }
-      // Attach flag pill click listener
-      const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
-      if (pill) pill.onclick = () => { if (window.wxOpenFlagDetail) window.wxOpenFlagDetail(); };
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
