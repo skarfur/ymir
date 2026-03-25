@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(r => r.status !== 'resolved' && !r.resolved);
 
     if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
-    if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); }
+    if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); document.getElementById('wxWidget')?._wxRefreshBadges?.(); }
 
     populateSelects();
     renderAll();
@@ -1280,6 +1280,7 @@ async function toggleStaffStatus(field) {
   _staffStatus.updatedAt = new Date().toISOString();
   _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
   renderStaffStatusStrip();
+  document.getElementById('wxWidget')?._wxRefreshBadges?.();
   try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
   catch(e) { showToast('Status saved — sync when online', 'warn'); }
 }
