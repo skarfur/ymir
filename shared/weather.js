@@ -29,64 +29,96 @@ let WX_LABEL = WX_DEFAULT.label;
 // FLAG CONFIG — single source of truth for all flag logic
 // Admin-editable via admin → Flags tab.  wxLoadFlagConfig() merges saved values.
 // ═══════════════════════════════════════════════════════════════════════════════
-const FLAG_CONFIG = {
-  // Beaufort thresholds — the minimum Bft to trigger each level
-  wind: {
-    yellow: 5,   // Bft ≥ 5 → yellow
-    orange: 6,   // Bft ≥ 6 → orange
-    red:    7,   // Bft ≥ 7 → red
-  },
-  // Easterly directions add +1 to the flag level
-  easterlyDirs: ['E', 'NE', 'SE'],
-  // Wave height thresholds (metres)
-  wave: {
-    yellow: 0.6,
-    orange: 1.2,
-    red:    2.0,
-  },
-  // Display labels & advice — editable by admin
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCORE_CONFIG — single source of truth for all flag/scoring logic.
+// Admin-editable via admin → Flags tab. wxLoadFlagConfig() merges saved values.
+// wxScoreFlag()  computes total score → flag + full breakdown.
+// wxAssessFlag() is a backwards-compatible wrapper for legacy call sites.
+// ═══════════════════════════════════════════════════════════════════════════════
+const SCORE_CONFIG = {
+  thresholds: { yellow: 25, orange: 45, red: 65, black: 80 },
+  wind: [
+    { maxBft: 3,  pts: 0  },
+    { maxBft: 4,  pts: 8  },
+    { maxBft: 5,  pts: 16 },
+    { maxBft: 6,  pts: 22 },
+    { maxBft: 7,  pts: 28 },
+    { maxBft: 12, pts: 35 },
+  ],
+  easterlyDirs:    ['E', 'NE', 'SE', 'ENE', 'ESE'],
+  easterlyPts:     5,
+  gustModifierPts: 4,
+  waves: [
+    { maxM: 0.5,  pts: 0  },
+    { maxM: 1.0,  pts: 8  },
+    { maxM: 1.5,  pts: 14 },
+    { maxM: 2.0,  pts: 18 },
+    { maxM: 99,   pts: 22 },
+  ],
+  sst: [
+    { minC: 12,  pts: 0  },
+    { minC: 8,   pts: 5  },
+    { minC: 5,   pts: 10 },
+    { minC: -99, pts: 15 },
+  ],
+  feelsLike: [
+    { minC: 10,  pts: 0  },
+    { minC: 5,   pts: 3  },
+    { minC: 0,   pts: 6  },
+    { minC: -99, pts: 10 },
+  ],
+  visibility: { good: 0, reduced: 3, poor: 5 },
   flags: {
-    green:  {
-      color: '#27ae60', bg: '#27ae6018', border: '#27ae6044',
-      icon: '🟢', label: 'Green',
-      advice: 'Good conditions.',
-    },
-    yellow: {
-      color: '#f1c40f', bg: '#f1c40f18', border: '#f1c40f44',
-      icon: '🟡', label: 'Yellow',
-      advice: 'Marginal — experienced sailors only.',
-    },
-    orange: {
-      color: '#e67e22', bg: '#e67e2218', border: '#e67e2244',
-      icon: '🟠', label: 'Orange',
-      advice: 'Difficult — keelboats only, staff auth for dinghies.',
-    },
-    red: {
-      color: '#e74c3c', bg: '#e74c3c18', border: '#e74c3c44',
-      icon: '🔴', label: 'Red',
-      advice: 'Do not sail — all sailing suspended.',
-    },
+    green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢',
+              label:'Green',  labelIS:'Grænn',
+              advice:'Good conditions — open to all qualified members.',
+              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.' },
+    yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
+              label:'Yellow', labelIS:'Gulur',
+              advice:'Marginal — experienced sailors only.',
+              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.' },
+    orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠',
+              label:'Orange', labelIS:'Appelsínugulur',
+              advice:'Difficult — keelboats only; staff auth required for dinghies.',
+              adviceIS:'Erfiðar aðstæður — kjölbátar einungis; starfsmaður þarfnast á skrúббur.' },
+    red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴',
+              label:'Red',    labelIS:'Rauður',
+              advice:'No self-service sailing — staff must approve each checkout.',
+              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.' },
+    black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⛔',
+              label:'Closed', labelIS:'Lokað',
+              advice:'Water closed — all sailing suspended.',
+              adviceIS:'Sjór lokaður — allar siglingar staðvaðar.' },
   },
 };
 
-/**
- * Merge saved flag config from the backend into FLAG_CONFIG.
- * Call this once after auth, before any weather fetch.
- * @param {object} saved — the flagConfig object from getConfig response
- */
 function wxLoadFlagConfig(saved) {
   if (!saved) return;
-  if (saved.wind)        Object.assign(FLAG_CONFIG.wind,  saved.wind);
-  if (saved.wave)        Object.assign(FLAG_CONFIG.wave,  saved.wave);
-  if (saved.easterlyDirs) FLAG_CONFIG.easterlyDirs = saved.easterlyDirs;
+  if (saved.thresholds)            Object.assign(SCORE_CONFIG.thresholds, saved.thresholds);
+  if (saved.wind)                  SCORE_CONFIG.wind          = saved.wind;
+  if (saved.waves)                 SCORE_CONFIG.waves         = saved.waves;
+  if (saved.sst)                   SCORE_CONFIG.sst           = saved.sst;
+  if (saved.feelsLike)             SCORE_CONFIG.feelsLike     = saved.feelsLike;
+  if (saved.visibility)            Object.assign(SCORE_CONFIG.visibility, saved.visibility);
+  if (saved.easterlyDirs)          SCORE_CONFIG.easterlyDirs  = saved.easterlyDirs;
+  if (saved.easterlyPts    != null) SCORE_CONFIG.easterlyPts      = saved.easterlyPts;
+  if (saved.gustModifierPts != null) SCORE_CONFIG.gustModifierPts  = saved.gustModifierPts;
   if (saved.flags) {
-    for (const key of ['green','yellow','orange','red']) {
-      if (saved.flags[key]) Object.assign(FLAG_CONFIG.flags[key], saved.flags[key]);
+    for (const key of ['green','yellow','orange','red','black']) {
+      if (saved.flags[key]) Object.assign(SCORE_CONFIG.flags[key], saved.flags[key]);
     }
   }
 }
 
-// ── Unit helpers ──────────────────────────────────────────────────────────────
+// Backwards-compat shim
+const FLAG_CONFIG = {
+  get flags()        { return SCORE_CONFIG.flags; },
+  get easterlyDirs() { return SCORE_CONFIG.easterlyDirs; },
+  get wind()  { return { yellow: SCORE_CONFIG.thresholds.yellow, orange: SCORE_CONFIG.thresholds.orange, red: SCORE_CONFIG.thresholds.red }; },
+  get wave()  { const w = SCORE_CONFIG.waves; return { yellow:(w[1]||{}).maxM||0.5, orange:(w[2]||{}).maxM||1.0, red:(w[3]||{}).maxM||1.5 }; },
+};
+
+// ── Unit helpers ───────────────────────────────────────────────────────────────────────────────
 function wxMsToBft(ms) {
   const T = [0,0.3,1.6,3.4,5.5,8.0,10.8,13.9,17.2,20.8,24.5,28.5,32.7];
   for (let i = T.length - 1; i >= 0; i--) if (ms >= T[i]) return i;
@@ -108,58 +140,165 @@ function wxCondDesc(c)  {
   if ([95,96,99].includes(c)) return 'Thunderstorm'; return '–';
 }
 
-// ── Core flag assessment — reads from FLAG_CONFIG ─────────────────────────────
 /**
- * Assess the sailing flag level from weather data.
- * @param {number} ws     — wind speed m/s
- * @param {string} wDir   — compass direction label e.g. 'NE'
- * @param {number} waveH  — wave height metres (0 if unknown)
- * @returns {{ flagKey, flag, reasons }}
+ * wxScoreFlag — points-based flag assessment.
+ * @param {number} ws      wind speed m/s
+ * @param {string} wDir    compass direction e.g. 'NE'
+ * @param {number} waveH   wave height metres (null/0 if unknown)
+ * @param {number} airT    feels-like air temp °C (null if unknown)
+ * @param {number} sst     sea surface temp °C (null if unknown)
+ * @param {number} wg      wind gusts m/s (null if unknown)
+ * @param {string} visKey  'good'|'reduced'|'poor' (default 'good')
+ * @returns {{ flagKey, flag, score, breakdown, reasons }}
  */
-function wxAssessFlag(ws, wDir, waveH) {
-  const cfg  = FLAG_CONFIG;
-  let lv     = 0;
-  const reasons = [];
-  const bft  = wxMsToBft(ws || 0);
-  const east = cfg.easterlyDirs.includes((wDir || '').toUpperCase());
+function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
+  const cfg = SCORE_CONFIG;
+  const breakdown = [];
+  let score = 0;
 
-  // Wind assessment
-  if (bft >= cfg.wind.red) {
-    lv = 3;
-    reasons.push({ f: 'red',    t: `Force ${bft} — all sailing suspended` });
-  } else if (bft >= cfg.wind.orange) {
-    lv = 2;
-    reasons.push({ f: 'orange', t: `Force ${bft} — difficult conditions` });
-    if (east) { lv = 3; reasons.push({ f: 'red', t: `Easterly F${bft} — amplified hazard` }); }
-  } else if (bft >= cfg.wind.yellow) {
-    lv = 1;
-    reasons.push({ f: 'yellow', t: `Force ${bft} — marginal` });
-    if (east) { lv = Math.max(lv, 2); reasons.push({ f: 'orange', t: `Easterly F${bft} — elevated risk` }); }
-  } else if (bft === cfg.wind.yellow - 1 && east) {
-    // One Bft below yellow but easterly — still flag yellow
-    lv = 1;
-    reasons.push({ f: 'yellow', t: `Easterly F${bft} — warrants caution` });
+  const bft = wxMsToBft(ws || 0);
+  const wBand = cfg.wind.find(b => bft <= b.maxBft) || cfg.wind[cfg.wind.length - 1];
+  if (wBand.pts > 0) {
+    score += wBand.pts;
+    breakdown.push({ factor:'wind', pts:wBand.pts,
+      label:'Wind Bft '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Bft '+bft });
   }
 
-  // Wave assessment
+  const dir = (wDir || '').toUpperCase().trim();
+  if (dir && cfg.easterlyDirs.includes(dir) && bft > 0) {
+    score += cfg.easterlyPts;
+    breakdown.push({ factor:'direction', pts:cfg.easterlyPts,
+      label:'Easterly wind ('+dir+')', labelIS:'Austurlæg vindátt ('+dir+')' });
+  }
+
+  if (wg != null && ws != null && wxMsToBft(wg) > bft) {
+    score += cfg.gustModifierPts;
+    breakdown.push({ factor:'gusts', pts:cfg.gustModifierPts,
+      label:'Gusts Bft '+wxMsToBft(wg)+' (sustained Bft '+bft+')',
+      labelIS:'Vindhviður Bft '+wxMsToBft(wg) });
+  }
+
   const wh = waveH || 0;
-  if (wh >= cfg.wave.red) {
-    lv = Math.max(lv, 3);
-    reasons.push({ f: 'red',    t: `Waves ${wh.toFixed(1)}m — very rough` });
-  } else if (wh >= cfg.wave.orange) {
-    lv = Math.max(lv, 2);
-    reasons.push({ f: 'orange', t: `Waves ${wh.toFixed(1)}m — rough` });
-  } else if (wh >= cfg.wave.yellow) {
-    lv = Math.max(lv, 1);
-    reasons.push({ f: 'yellow', t: `Waves ${wh.toFixed(1)}m — moderate` });
+  if (wh > 0) {
+    const wvBand = cfg.waves.find(b => wh <= b.maxM) || cfg.waves[cfg.waves.length - 1];
+    if (wvBand.pts > 0) {
+      score += wvBand.pts;
+      breakdown.push({ factor:'waves', pts:wvBand.pts,
+        label:'Waves '+wh.toFixed(1)+' m', labelIS:'Bylgjur '+wh.toFixed(1)+' m' });
+    }
   }
 
-  const keys    = ['green', 'yellow', 'orange', 'red'];
-  const flagKey = keys[lv];
-  return { flagKey, flag: cfg.flags[flagKey], reasons };
+  if (sst != null) {
+    const sBand = cfg.sst.find(b => sst >= b.minC) || cfg.sst[cfg.sst.length - 1];
+    if (sBand.pts > 0) {
+      score += sBand.pts;
+      breakdown.push({ factor:'sst', pts:sBand.pts,
+        label:'Sea temp '+sst.toFixed(1)+'°C', labelIS:'Sjávarhiti '+sst.toFixed(1)+'°C' });
+    }
+  }
+
+  if (airT != null) {
+    const fBand = cfg.feelsLike.find(b => airT >= b.minC) || cfg.feelsLike[cfg.feelsLike.length - 1];
+    if (fBand.pts > 0) {
+      score += fBand.pts;
+      breakdown.push({ factor:'feelsLike', pts:fBand.pts,
+        label:'Feels like '+Math.round(airT)+'°C', labelIS:'Líður eins og '+Math.round(airT)+'°C' });
+    }
+  }
+
+  const vPts = cfg.visibility[visKey || 'good'] || 0;
+  if (vPts > 0) {
+    score += vPts;
+    breakdown.push({ factor:'visibility', pts:vPts,
+      label: visKey === 'poor' ? 'Poor visibility' : 'Reduced visibility',
+      labelIS: visKey === 'poor' ? 'Slæm sín' : 'Skert sín' });
+  }
+
+  const t = cfg.thresholds;
+  const flagKey = score >= t.black ? 'black' : score >= t.red ? 'red' : score >= t.orange ? 'orange' : score >= t.yellow ? 'yellow' : 'green';
+  return { flagKey, flag: cfg.flags[flagKey], score, breakdown,
+    reasons: breakdown.map(b => ({ f: flagKey, t: b.label })) };
 }
 
-// ── Pressure trend ────────────────────────────────────────────────────────────
+// Backwards-compat wrapper
+function wxAssessFlag(ws, wDir, waveH) {
+  return wxScoreFlag(ws, wDir, waveH, null, null, null, 'good');
+}
+
+// ── Staff status badge HTML ─────────────────────────────────────────────────────────────────────
+function wxStaffStatusHtml(status, lang) {
+  if (!status) return '';
+  const IS = lang === 'IS';
+  const badges = [];
+  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+(IS?'Starfsmaður á vakt':'Staff on duty')+'</span>');
+  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+(IS?'Björunarbátur á sjó':'Support boat out')+'</span>');
+  if (!badges.length) return '';
+  let ago = '';
+  if (status.updatedAt) {
+    const mins = Math.round((Date.now() - new Date(status.updatedAt)) / 60000);
+    ago = mins < 2 ? (IS ? 'Rétt í ûessu' : 'just now')
+        : mins < 60 ? (IS ? 'fyrir '+mins+' mín' : mins+' min ago')
+        : (IS ? 'fyrir '+Math.floor(mins/60)+' klst' : Math.floor(mins/60)+'h ago');
+  }
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">'
+    + badges.join('') + (ago ? '<span style="font-size:10px;color:var(--muted)">'+ago+'</span>' : '') + '</div>';
+}
+
+// ── Flag score detail panel HTML ───────────────────────────────────────────────────────────────
+function wxFlagDetailHtml(result, staffStatus, lang) {
+  const IS = lang === 'IS';
+  const flag   = result.flag;
+  const label  = (IS && flag.labelIS)  ? flag.labelIS  : flag.label;
+  const advice = (IS && flag.adviceIS) ? flag.adviceIS : flag.advice;
+  const t = SCORE_CONFIG.thresholds;
+  const maxScore = t.black + 20;
+  const pct = Math.min(100, Math.round(result.score / maxScore * 100));
+  const markers = [
+    { pct: Math.round(t.yellow/maxScore*100), key:'yellow' },
+    { pct: Math.round(t.orange/maxScore*100), key:'orange' },
+    { pct: Math.round(t.red   /maxScore*100), key:'red'    },
+    { pct: Math.round(t.black /maxScore*100), key:'black'  },
+  ];
+  const markerHtml = markers.map(m =>
+    '<div style="position:absolute;left:'+m.pct+'%;top:0;bottom:0;width:1px;background:'+SCORE_CONFIG.flags[m.key].color+'55"></div>'
+  ).join('');
+  const barHtml =
+    '<div style="position:relative;height:10px;background:var(--border);border-radius:5px;margin:12px 0 4px;overflow:hidden">'
+    + markerHtml
+    + '<div style="height:100%;width:'+pct+'%;background:'+flag.color+';border-radius:5px"></div></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:14px">'
+    + '<span>0</span>'
+    + markers.map(m => '<span style="color:'+SCORE_CONFIG.flags[m.key].color+'">'+t[m.key]+'</span>').join('')
+    + '</div>';
+  const rows = result.breakdown.length
+    ? result.breakdown.map(b =>
+        '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)44;font-size:12px">'
+        + '<span style="color:var(--text)">'+(IS && b.labelIS ? b.labelIS : b.label)+'</span>'
+        + '<span style="color:'+flag.color+';font-weight:500;min-width:36px;text-align:right">+'+b.pts+'</span></div>'
+      ).join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+(IS?'Engin stigagjöf.':'No scoring factors.')+'</div>';
+  const totalRow =
+    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500">'
+    + '<span>'+(IS?'Heildarstig':'Total score')+'</span>'
+    + '<span style="color:'+flag.color+'">'+result.score+'</span></div>';
+  let staffHtml = '';
+  if (staffStatus) {
+    staffHtml =
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
+      + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STAÐA STARFSMANNA':'STAFF STATUS')+'</div>'
+      + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
+      + '<span style="font-size:12px;color:'+(staffStatus.onDuty?'#27ae60':'var(--muted)')+'">🧑 '+(IS?'Starfsmaður á vakt':'Staff on duty')+': <b>'+(staffStatus.onDuty?(IS?'Já':'Yes'):(IS?'Nei':'No'))+'</b></span>'
+      + '<span style="font-size:12px;color:'+(staffStatus.supportBoat?'#5dade2':'var(--muted)')+'">⛵ '+(IS?'Björunarbátur':'Support boat')+': <b>'+(staffStatus.supportBoat?(IS?'Á sjó':'Out'):(IS?'Ekki á sjó':'Not out'))+'</b></span>'
+      + '</div></div>';
+  }
+  return '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
+    + '<div style="font-size:18px;margin-bottom:4px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
+    + '<div style="font-size:12px;color:'+flag.color+';opacity:.85">'+advice+'</div></div>'
+    + barHtml
+    + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+(IS?'STIGAÚTREIKNINGUR':'SCORE BREAKDOWN')+'</div>'
+    + rows + totalRow + staffHtml;
+}
+
 function wxPressureTrend(pressureArr, nowIdx) {
   if (!pressureArr || pressureArr.length < 4) return { trend: 'steady', diff: 0 };
   const past = pressureArr[Math.max(0, nowIdx - 3)];
