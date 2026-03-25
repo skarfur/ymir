@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
-  wxInitFlagModal(() => window._latestWxResult, () => _staffStatus);
+  wxInitFlagModal(() => _staffStatus);
   setInterval(pollOverdueAlerts, 120000);
 });
 
