@@ -336,6 +336,9 @@ function wxInitFlagModal(getSnap, getStaffStatus) {
     document.body.appendChild(div.firstElementChild);
   }
   // Wire global opener
+  // Store staff status getter on widget element for badge rendering
+  const _wxEl = document.getElementById('wxWidget');
+  if (_wxEl) _wxEl._getStaffStatus = getStaffStatus;
   window.wxOpenFlagDetail = function() {
     const snap        = typeof getSnap        === 'function' ? getSnap()        : getSnap;
     const staffStatus = typeof getStaffStatus === 'function' ? getStaffStatus() : getStaffStatus;
@@ -533,6 +536,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${IS?(trend==='rising'?'úrlag':(trend==='falling'?'ðfall':'stöðugt')):trend}</div>
           </div>
         </div>
+        <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
         <!-- footer: flag · refresh · forecast -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
@@ -545,6 +549,25 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
         </div>`;
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown };
+      // Render duty status badges if available
+      const _ssBadges = targetEl.querySelector('.wx-status-badges');
+      if (_ssBadges) {
+        const _ss = typeof targetEl._getStaffStatus === 'function' ? targetEl._getStaffStatus() : null;
+        if (_ss) {
+          const _isB = typeof getLang === 'function' && getLang() === 'IS';
+          const _dc = _ss.onDuty    ? '#27ae60' : 'var(--muted)';
+          const _bc = _ss.supportBoat ? '#5dade2' : 'var(--muted)';
+          const _dbg = _ss.onDuty    ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
+          const _bbg = _ss.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
+          const _bstyle = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;cursor:default;';
+          _ssBadges.innerHTML =
+            '<span style="'+_bstyle+'background:'+_dbg+';color:'+_dc+'">🧑 '+(_isB?'Starfsmaður á vakt':'Staff on duty')+'</span>'
+            + ' '
+            + '<span style="'+_bstyle+'background:'+_bbg+';color:'+_bc+'">⛵ '+(_isB?'Björunarbátur':'Support boat')+'</span>';
+        } else {
+          _ssBadges.innerHTML = '';
+        }
+      }
       // Attach flag pill click listener
       const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
       if (pill) pill.onclick = () => { if (window.wxOpenFlagDetail) window.wxOpenFlagDetail(); };
