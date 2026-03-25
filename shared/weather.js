@@ -103,10 +103,10 @@ const SCORE_CONFIG = {
 function wxLoadFlagConfig(saved) {
   if (!saved) return;
   if (saved.thresholds)            Object.assign(SCORE_CONFIG.thresholds, saved.thresholds);
-  if (saved.wind)                  SCORE_CONFIG.wind          = saved.wind;
-  if (saved.waves)                 SCORE_CONFIG.waves         = saved.waves;
-  if (saved.sst)                   SCORE_CONFIG.sst           = saved.sst;
-  if (saved.feelsLike)             SCORE_CONFIG.feelsLike     = saved.feelsLike;
+  if (saved.wind)                  if (saved.wind?.length) SCORE_CONFIG.wind = saved.wind;
+  if (saved.waves)                 if (saved.waves?.length) SCORE_CONFIG.waves = saved.waves;
+  if (saved.sst)                   if (saved.sst?.length) SCORE_CONFIG.sst = saved.sst;
+  if (saved.feelsLike)             if (saved.feelsLike?.length) SCORE_CONFIG.feelsLike = saved.feelsLike;
   if (saved.visibility)            Object.assign(SCORE_CONFIG.visibility, saved.visibility);
   if (saved.easterlyDirs)          SCORE_CONFIG.easterlyDirs  = saved.easterlyDirs;
   if (saved.easterlyPts    != null) SCORE_CONFIG.easterlyPts      = saved.easterlyPts;
@@ -208,7 +208,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 
   if (airT != null) {
     const fBand = cfg.feelsLike.find(b => airT >= b.minC) || cfg.feelsLike[cfg.feelsLike.length - 1];
-    if (fBand.pts > 0) {
+    if (fBand && fBand.pts > 0) {
       score += fBand.pts;
       breakdown.push({ factor:'feelsLike', pts:fBand.pts,
         label:'Feels like '+Math.round(airT)+'°C', labelIS:'Líður eins og '+Math.round(airT)+'°C' });
