@@ -260,7 +260,7 @@
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
-let _staffStatus = null;
+let _staffStatus = { onDuty: false, supportBoat: false };
 let boats=[], locations=[], checkouts=[], myTrips=[], allTrips=[];
 let certDefs=[], currentWx=null;
 let launchBoat=null, returnCo=null, pendingCrewTrip=null;
