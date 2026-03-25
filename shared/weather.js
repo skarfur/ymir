@@ -504,7 +504,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
         </div>
         <!-- footer: flag · refresh · forecast -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
-          <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500">
+          <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
             ${flag.icon} ${flag.label} — ${flag.advice}
           </span>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -515,7 +515,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown };
       // Attach flag pill click listener
-      const pill = targetEl.querySelector('#wxFlagPill');
+      const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
       if (pill) pill.onclick = () => { if (window.wxOpenFlagDetail) window.wxOpenFlagDetail(); };
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
