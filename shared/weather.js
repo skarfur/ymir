@@ -169,7 +169,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (wBand.pts > 0) {
     score += wBand.pts;
     breakdown.push({ factor:'wind', pts:wBand.pts,
-      label:'Wind Bft '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Bft '+bft });
+      label:'Wind Force '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Force '+bft });
   }
 
   const dir = (wDir || '').toUpperCase().trim();
@@ -182,8 +182,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (wg != null && ws != null && wxMsToBft(wg) > bft) {
     score += cfg.gustModifierPts;
     breakdown.push({ factor:'gusts', pts:cfg.gustModifierPts,
-      label:'Gusts Bft '+wxMsToBft(wg)+' (sustained Bft '+bft+')',
-      labelIS:'Vindhviður Bft '+wxMsToBft(wg) });
+      label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
+      labelIS:'Vindhviður Force '+wxMsToBft(wg) });
   }
 
   const wh = waveH || 0;
@@ -470,7 +470,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
               <span style="font-size:12px;color:var(--muted);margin-left:2px">m/s</span>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:5px">
-              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · Bft <b style="color:var(--text)">${bft}</b>
+              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · Force <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
               Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${wxBftDesc(bft)}
