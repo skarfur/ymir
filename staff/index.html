@@ -503,6 +503,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(r => r.status !== 'resolved' && !r.resolved);
 
     if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
+    if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); }
 
     populateSelects();
     renderAll();
