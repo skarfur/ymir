@@ -7,37 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
-<script src="../shared/api.js">
-// ══ STAFF STATUS + FLAG DETAIL (member page) ══════════════════════════════════════════════════
-
-function _renderMemberStaffStatus() {
-  const el = document.getElementById('memberStaffStatus');
-  if (!el) return;
-  el.innerHTML = typeof wxStaffStatusHtml === 'function'
-    ? wxStaffStatusHtml(_staffStatus, getLang())
-    : '';
-}
-
-function openMemberFlagDetail() {
-  const IS   = getLang() === 'IS';
-  const snap = window._memberWxSnap;
-  const body = document.getElementById('memberFlagModalBody');
-  const title = document.getElementById('memberFlagModalTitle');
-  if (!body) return;
-  if (!snap || typeof wxScoreFlag !== 'function') {
-    body.innerHTML = '<div style="color:var(--muted);font-size:12px">No weather data yet.</div>';
-    openModal('memberFlagModal');
-    return;
-  }
-  const r = wxScoreFlag(snap.ws||0, snap.wDir||'', snap.waveH||0, snap.apparentT, snap.sst, snap.wg, 'good');
-  if (title) title.textContent = (IS ? r.flag.labelIS || r.flag.label : r.flag.label) + ' · ' + r.score + ' pts';
-  body.innerHTML = typeof wxFlagDetailHtml === 'function'
-    ? wxFlagDetailHtml(r, _staffStatus, IS ? 'IS' : 'EN')
-    : '';
-  openModal('memberFlagModal');
-}
-
-</script>
+<script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
@@ -1020,6 +990,36 @@ function populateFormSelects() {
   locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
 }
 function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
+
+// ══ STAFF STATUS + FLAG DETAIL (member page) ══════════════════════════════════════════════════
+
+function _renderMemberStaffStatus() {
+  const el = document.getElementById('memberStaffStatus');
+  if (!el) return;
+  el.innerHTML = typeof wxStaffStatusHtml === 'function'
+    ? wxStaffStatusHtml(_staffStatus, getLang())
+    : '';
+}
+
+function openMemberFlagDetail() {
+  const IS   = getLang() === 'IS';
+  const snap = window._memberWxSnap;
+  const body = document.getElementById('memberFlagModalBody');
+  const title = document.getElementById('memberFlagModalTitle');
+  if (!body) return;
+  if (!snap || typeof wxScoreFlag !== 'function') {
+    body.innerHTML = '<div style="color:var(--muted);font-size:12px">No weather data yet.</div>';
+    openModal('memberFlagModal');
+    return;
+  }
+  const r = wxScoreFlag(snap.ws||0, snap.wDir||'', snap.waveH||0, snap.apparentT, snap.sst, snap.wg, 'good');
+  if (title) title.textContent = (IS ? r.flag.labelIS || r.flag.label : r.flag.label) + ' · ' + r.score + ' pts';
+  body.innerHTML = typeof wxFlagDetailHtml === 'function'
+    ? wxFlagDetailHtml(r, _staffStatus, IS ? 'IS' : 'EN')
+    : '';
+  openModal('memberFlagModal');
+}
+
 </script>
 
 <!-- ══ FLAG DETAIL MODAL ══ -->
