@@ -173,7 +173,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
       label:'Wind Force '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Vindstig '+bft });
   }
 
-  const dir = (wDir || '').toUpperCase().trim();
+  const dir = (typeof wDir === 'number' ? wxDirLabel(wDir) : (wDir || '')).toUpperCase().trim();
   if (dir && cfg.easterlyDirs.includes(dir) && bft > 0) {
     score += cfg.easterlyPts;
     breakdown.push({ factor:'direction', pts:cfg.easterlyPts,
@@ -302,6 +302,24 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   }
   const desc = IS && flag.descriptionIS ? flag.descriptionIS : (flag.description || '');
   // Considerations: factors that contributed points
+  // Staff status badges (shown if staffStatus passed)
+  const _ssBadgesHtml = (() => {
+    if (!staffStatus) return '';
+    const IS2   = lang === 'IS';
+    const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
+    const dCol  = staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
+    const bCol  = staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
+    const dBg   = staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+    const bBg   = staffStatus.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+    const dTx   = IS2 ? (staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
+                      : (staffStatus.onDuty      ? 'Staff on duty'                : 'No staff on duty');
+    const bTx   = IS2 ? (staffStatus.supportBoat ? 'Björunarbátur'           : 'Enginn björunarbátur')
+                      : (staffStatus.supportBoat ? 'Support boat out'            : 'No support boat');
+    return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
+      + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">🧑 '+dTx+'</span>'
+      + '<span style="'+bst+'background:'+bBg+';color:'+bCol+'">⛵ '+bTx+'</span>'
+      + '</div>';
+  })();
   const considerations = result.breakdown.filter(b => b.pts > 0);
   const chipsHtml = considerations.length
     ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'
@@ -313,7 +331,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
         ).join('')
       + '</div>'
     : '';
-  return '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
+  return _ssBadgesHtml + '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
     + '<div style="font-size:18px;margin-bottom:6px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
     + '<div style="font-size:12px;color:'+flag.color+';opacity:.85;margin-bottom:6px">'+advice+'</div>'
     + (desc ? '<div style="font-size:12px;color:var(--text);line-height:1.55;border-top:1px solid '+flag.border+';padding-top:10px;margin-top:4px">'+desc+'</div>' : '')
@@ -585,10 +603,10 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const _isB = typeof getLang === 'function' && getLang() === 'IS';
         const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
         if (_ss) {
-          const _dc  = _ss.onDuty      ? '#27ae60' : 'var(--muted)';
-          const _bc  = _ss.supportBoat ? '#5dade2'  : 'var(--muted)';
-          const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
-          const _bbg = _ss.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
+          const _dc  = _ss.onDuty      ? '#27ae60' : '#e74c3c';
+          const _bc  = _ss.supportBoat ? '#27ae60' : '#e74c3c';
+          const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+          const _bbg = _ss.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
           const _dtx = _isB ? (_ss.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
                             : (_ss.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
           const _btx = _isB ? (_ss.supportBoat ? 'Björunarbátur'           : 'Enginn björunarbátur')
@@ -609,10 +627,10 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const _is2  = typeof getLang === 'function' && getLang() === 'IS';
         const _bst2 = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
         if (_ss2) {
-          const _dc2  = _ss2.onDuty      ? '#27ae60' : 'var(--muted)';
-          const _bc2  = _ss2.supportBoat ? '#5dade2'  : 'var(--muted)';
-          const _dbg2 = _ss2.onDuty      ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
-          const _bbg2 = _ss2.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
+          const _dc2  = _ss2.onDuty      ? '#27ae60' : '#e74c3c';
+          const _bc2  = _ss2.supportBoat ? '#27ae60' : '#e74c3c';
+          const _dbg2 = _ss2.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+          const _bbg2 = _ss2.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
           const _is2B = typeof getLang === 'function' && getLang() === 'IS';
           const _dtx2 = _is2B ? (_ss2.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
                               : (_ss2.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
