@@ -7,7 +7,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
-<script src="../shared/api.js"></script>
+<script src="../shared/api.js">
+// ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
+function renderStaffStatusStrip() {
+  const IS = getLang() === 'IS';
+  const btnDuty = document.getElementById('btnStaffOnDuty');
+  const btnBoat = document.getElementById('btnSupportBoat');
+  const upd     = document.getElementById('staffStatusUpdated');
+  if (!btnDuty || !btnBoat) return;
+  function styleBtn(btn, active, off, on, col) {
+    btn.textContent = active ? on : off;
+    btn.style.background  = active ? col+'22' : 'var(--surface)';
+    btn.style.borderColor = active ? col+'88' : 'var(--border)';
+    btn.style.color       = active ? col       : 'var(--muted)';
+  }
+  styleBtn(btnDuty, _staffStatus.onDuty,
+    IS ? '🧑 Starfsmaður á vakt' : '🧑 Staff on duty',
+    IS ? '🧑 Starfsmaður á vakt ✓' : '🧑 Staff on duty ✓', '#27ae60');
+  styleBtn(btnBoat, _staffStatus.supportBoat,
+    IS ? '⛵ Björunarbátur á sjó' : '⛵ Support boat out',
+    IS ? '⛵ Björunarbátur á sjó ✓' : '⛵ Support boat out ✓', '#5dade2');
+  if (upd && _staffStatus.updatedAt) {
+    const mins = Math.round((Date.now() - new Date(_staffStatus.updatedAt)) / 60000);
+    upd.textContent = (mins < 2 ? (IS?'Rétt í ûessu':'just now') : mins < 60 ? (IS?'fyrir '+mins+' mín':mins+' min ago') : (IS?'fyrir '+Math.floor(mins/60)+' klst':Math.floor(mins/60)+'h ago'));
+    if (_staffStatus.updatedByName) upd.textContent = _staffStatus.updatedByName + ' · ' + upd.textContent;
+  } else if (upd) { upd.textContent = ''; }
+}
+async function toggleStaffStatus(field) {
+  _staffStatus[field] = !_staffStatus[field];
+  _staffStatus.updatedAt = new Date().toISOString();
+  _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
+  renderStaffStatusStrip();
+  try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
+  catch(e) { showToast('Status saved — sync when online', 'warn'); }
+}
+
+</script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
@@ -245,7 +280,17 @@ border-bottom:1px solid var(--border)44; }
     <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="lbl.loading"></div>
   </div>
 
-  <!-- ══ TIDES ══ -->
+  <!-- ══ STAFF STATUS ══ -->
+  <div id="staffStatusStrip" style="margin-bottom:12px">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s">🧑 Staff on duty</button>
+      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s">⛵ Support boat out</button>
+      <span id="staffStatusUpdated" style="font-size:10px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+    <!-- ══ TIDES ══ -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;
     padding:14px 18px;margin-bottom:20px">
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="staff.tideHeader">TIDES · FAXAFLÓI</div>
@@ -437,6 +482,8 @@ if (user) {
   document.getElementById('userBadge').textContent = user.name + (isAdmin(user) ? ' · Admin' : ' · Staff');
 }
 
+let _staffStatus = { onDuty: false, supportBoat: false, updatedAt: null, updatedByName: null };
+let _latestWxResult = null;
 let checkouts = [], boats = [], members = [], locations = [], maintenance = [];
 let crewCount = 1, selectedMemberKt = '';
 let wxData = null;
@@ -508,17 +555,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 function updateFlagCard(snap) {}
 
 function openFlagModal() {
-  const levels = ['green','yellow','orange','red'];
-  document.getElementById('flagModalBody').innerHTML = levels.map(level => {
-    const fc = FLAG_CONFIG.flags[level];
-    return `<div class="flag-level-row">
-      <div class="flag-icon">${fc.icon}</div>
-      <div>
-        <div class="flag-label" style="color:${fc.color}">${fc.label}</div>
-        <div class="flag-advice">${esc(fc.advice)}</div>
-      </div>
-    </div>`;
-  }).join('');
+  const IS   = getLang() === 'IS';
+  const body = document.getElementById('flagModalBody');
+  if (!body) return;
+  if (!_latestWxResult) { body.innerHTML = '<div style="color:var(--muted);font-size:12px">No weather data yet.</div>'; openModal('flagModal'); return; }
+  const r = wxScoreFlag(_latestWxResult.ws||0, _latestWxResult.wDir||'', _latestWxResult.waveH||0, _latestWxResult.apparentT, _latestWxResult.sst, _latestWxResult.wg, 'good');
+  body.innerHTML = wxFlagDetailHtml(r, _staffStatus, IS ? 'IS' : 'EN');
   openModal('flagModal');
 }
 
