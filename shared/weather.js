@@ -72,13 +72,13 @@ const SCORE_CONFIG = {
     green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢',
               label:'Green',  labelIS:'Grænn',
               advice:'Good conditions — open to all qualified members.',
-              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.' 
+              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.',
               description:'Conditions are suitable for sailing. All qualified members may use boats according to their certification level.',
               descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
     yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
               label:'Yellow', labelIS:'Gulur',
               advice:'Marginal — experienced sailors only.',
-              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.' 
+              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.',
               description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Ensure someone ashore knows your plans and expected return time.',
               descriptionIS:'Aðstæður eru á mörkum. Aðeins reyndir siglingar ættu að fara út. Gerið ráð fyrir óvæntum breytingum og tryggist að einhver á landi viti af þíðum ykkar.' },
     orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠',
@@ -88,13 +88,13 @@ const SCORE_CONFIG = {
     red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴',
               label:'Red',    labelIS:'Rauður',
               advice:'No self-service sailing — staff must approve each checkout.',
-              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.' 
+              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.',
               description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
               descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlægingu personuðlega.' },
     black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⛔',
               label:'Closed', labelIS:'Lokað',
               advice:'Water closed — all sailing suspended.',
-              adviceIS:'Sjór lokaður — allar siglingar staðvaðar.' 
+              adviceIS:'Sjór lokaður — allar siglingar staðvaðar.',
               description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
               descriptionIS:'Sjór er lokaður öllum siglingu. Allir bátar verða að vera á landi eða snara aftur til hafnar þegar í stað.' },
   },
