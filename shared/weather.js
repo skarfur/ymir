@@ -286,7 +286,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       ).join('')
     : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+(IS?'Engin stigagjöf.':'No scoring factors.')+'</div>';
   const totalRow =
-    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500;cursor:pointer" onclick="if(window.wxOpenFlagDetail)wxOpenFlagDetail()" title="Tap for details">'
+    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500;cursor:pointer" id="wxFlagPill" title="Tap for details">'
     + '<span>'+(IS?'Heildarstig':'Total score')+'</span>'
     + '<span style="color:'+flag.color+'">'+result.score+'</span></div>';
   let staffHtml = '';
@@ -300,11 +300,24 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       + '</div></div>';
   }
   const desc = IS && flag.descriptionIS ? flag.descriptionIS : (flag.description || '');
+  // Considerations: factors that contributed points
+  const considerations = result.breakdown.filter(b => b.pts > 0);
+  const chipsHtml = considerations.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'
+      + considerations.map(b =>
+          '<span style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid '
+          + flag.border+';color:'+flag.color+';background:'+flag.bg+'">'
+          + (IS && b.labelIS ? b.labelIS : b.label)
+          + ' <b>+'+b.pts+'</b></span>'
+        ).join('')
+      + '</div>'
+    : '';
   return '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
     + '<div style="font-size:18px;margin-bottom:6px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
     + '<div style="font-size:12px;color:'+flag.color+';opacity:.85;margin-bottom:6px">'+advice+'</div>'
     + (desc ? '<div style="font-size:12px;color:var(--text);line-height:1.55;border-top:1px solid '+flag.border+';padding-top:10px;margin-top:4px">'+desc+'</div>' : '')
     + '</div>'
+    + chipsHtml
     + barHtml
     + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+(IS?'STIGAÚTREIKNINGUR':'SCORE BREAKDOWN')+'</div>'
     + rows + totalRow + staffHtml;
@@ -501,6 +514,9 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
         </div>`;
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown };
+      // Attach flag pill click listener
+      const pill = targetEl.querySelector('#wxFlagPill');
+      if (pill) pill.onclick = () => { if (window.wxOpenFlagDetail) window.wxOpenFlagDetail(); };
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
