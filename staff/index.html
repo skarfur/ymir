@@ -397,18 +397,6 @@ border-bottom:1px solid var(--border)44; }
   </div>
 
 </div><!-- /container -->
-
-<!-- ══ FLAG DETAIL MODAL ══ -->
-<div class="modal-overlay hidden" id="flagModal" onclick="if(event.target===this)closeModal('flagModal')">
-  <div class="modal">
-    <h3 data-s="flag.conditions"></h3>
-    <div id="flagModalBody"></div>
-    <div class="btn-row" style="margin-top:16px">
-      <button class="btn btn-secondary" onclick="closeModal('flagModal')" data-s="btn.close"></button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ CHECKOUT DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="coDetailModal" onclick="if(event.target===this)closeCoDetail()">
   <div class="modal" style="max-width:480px">
@@ -514,22 +502,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
-  window.wxOpenFlagDetail = openFlagModal;
+  wxInitFlagModal(() => window._latestWxResult, () => _staffStatus);
   setInterval(pollOverdueAlerts, 120000);
 });
 
 // Flag info now lives inside the wx widget — nothing extra to update here.
 function updateFlagCard(snap) {}
 
-function openFlagModal() {
-  const IS   = getLang() === 'IS';
-  const body = document.getElementById('flagModalBody');
-  if (!body) return;
-  if (!_latestWxResult) { body.innerHTML = '<div style="color:var(--muted);font-size:12px">No weather data yet.</div>'; openModal('flagModal'); return; }
-  const r = wxScoreFlag(_latestWxResult.ws||0, _latestWxResult.wDir||'', _latestWxResult.waveH||0, _latestWxResult.apparentT, _latestWxResult.sst, _latestWxResult.wg, 'good');
-  body.innerHTML = wxFlagDetailHtml(r, _staffStatus, IS ? 'IS' : 'EN');
-  openModal('flagModal');
-}
+
 
 // ── Selects ───────────────────────────────────────────────────────────────────
 function populateSelects() {
