@@ -85,7 +85,7 @@
 .sev-btn[data-sev="critical"] { color:var(--red);    border-color:var(--red)55;    background:var(--red)11;    }
 .sev-btn.selected { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
 .ir-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; }
-/* ── Fleet status (shared with staff page) ─────────────────────────── */
+/* ── Fleet status ─────────────────────────── */
 .fleet-status-block { margin-bottom:4px; }
 .fsb-header { display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:6px;background:var(--surface);transition:background .15s;border-left:3px solid transparent; }
 .fsb-header:hover { background:var(--surface2,#132233); }
@@ -129,8 +129,8 @@
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
     <a class="act-btn" href="../maintenance/?new=1"        data-s="member.reportIssue"></a>
-    <a class="act-btn" href="../weather/"             data-s="nav.weather"></a>
-    <a class="act-btn" href="../logbook/"             data-s="nav.logbook"></a>
+    <a class="act-btn" href="../weather/"                  data-s="nav.weather"></a>
+    <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -154,7 +154,7 @@
     <div id="fleetByCat"></div>
   </div>
 
-  <!-- ═══ TAB: LOG A RECENT TRIP ═══ -->
+  <!-- ═══ TAB: TRIPS ═══ -->
   <div id="tab-trips" class="hidden">
     <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5" id="tripTabHint"></p>
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.recentTrips"></div>
@@ -166,7 +166,7 @@
 
   <!-- ═══ TAB: LOGBOOK ═══ -->
   <div id="tab-logbook" class="hidden">
-    <div class="stats-grid" id="logbookStats">
+    <div class="stats-grid">
       <div class="stat-box"><div class="sn" id="stTrips">—</div><div class="sl" data-s="member.statTrips"></div></div>
       <div class="stat-box"><div class="sn" id="stHours">—</div><div class="sl" data-s="member.statHours"></div></div>
       <div class="stat-box"><div class="sn" id="stBoat">—</div> <div class="sl" data-s="member.statBoat"></div></div>
@@ -180,15 +180,14 @@
     <div id="certsList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
-</div><!-- /container -->
+</div>
 
 <!-- ══ TRIP DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="tripDetailModal" onclick="if(event.target===this)closeModal('tripDetailModal')">
   <div class="modal" style="max-width:440px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 style="margin:0" id="tdTitle">Trip</h3>
-      <button class="btn-ghost" onclick="closeModal('tripDetailModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+      <button class="btn-ghost" onclick="closeModal('tripDetailModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div id="tdBody" style="font-size:13px"></div>
   </div>
@@ -199,15 +198,10 @@
   <div class="modal" style="max-width:400px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 style="margin:0" id="crewModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('crewModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+      <button class="btn-ghost" onclick="closeModal('crewModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
-    <div id="crewTripSummary" style="background:var(--surface);border:1px solid var(--border);
-      border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px"></div>
-    <div class="field">
-      <label data-s="lbl.notes"></label>
-      <input type="text" id="crewNotes">
-    </div>
+    <div id="crewTripSummary" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px"></div>
+    <div class="field"><label data-s="lbl.notes"></label><input type="text" id="crewNotes"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   onclick="submitCrewLog()"         id="crewSubmitBtn"></button>
@@ -221,27 +215,18 @@
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 style="margin:0" id="manualTripTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('manualTripModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+      <button class="btn-ghost" onclick="closeModal('manualTripModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
-    <div class="field">
-      <label data-s="lbl.date"></label>
-      <input type="date" id="rDate">
-    </div>
+    <div class="field"><label data-s="lbl.date"></label><input type="date" id="rDate"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label data-s="lbl.boat"></label>
-        <select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
-      <div class="field"><label data-s="lbl.location"></label>
-        <select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
+      <div class="field"><label data-s="lbl.boat"></label><select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
+      <div class="field"><label data-s="lbl.location"></label><select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="field"><label id="rDepartedLabel"></label><input type="text" id="rTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
       <div class="field"><label id="rReturnedLabel"></label><input type="text" id="rTimeIn"  pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
     </div>
-    <div class="field">
-      <label data-s="lbl.notes"></label>
-      <input type="text" id="rNotes">
-    </div>
+    <div class="field"><label data-s="lbl.notes"></label><input type="text" id="rNotes"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('manualTripModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   onclick="submitManualTrip()"            id="manualTripSaveBtn"></button>
@@ -255,8 +240,7 @@
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 style="margin:0" id="launchModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('launchModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+      <button class="btn-ghost" onclick="closeModal('launchModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div id="launchModalBody"></div>
   </div>
@@ -267,8 +251,7 @@
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 style="margin:0" id="returnModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('returnModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+      <button class="btn-ghost" onclick="closeModal('returnModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
     </div>
     <div id="returnModalBody"></div>
   </div>
@@ -291,7 +274,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';
 
-  // Wire modal titles and dynamic labels
   document.getElementById('launchModalTitle').textContent  = s('member.launchTitle');
   document.getElementById('returnModalTitle').textContent  = s('member.checkInTitle');
   document.getElementById('manualTripTitle').textContent   = s('member.manualTrip');
@@ -304,13 +286,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('rReturnedLabel').textContent    = s('member.returned');
   document.getElementById('crewNotes').placeholder         = s('lbl.optional');
   document.getElementById('rNotes').placeholder            = s('lbl.optional');
+  document.getElementById('tripTabHint').textContent       = s('member.tripsTapHint');
 
-  // Trip tab hint
-  document.getElementById('tripTabHint').textContent = s('member.tripsTapHint');
-
-  wxWidget(document.getElementById('wxWidget'), {
-    onData: snap => { currentWx = snap; },
-  }).start();
+  wxWidget(document.getElementById('wxWidget'), { onData: snap => { currentWx = snap; } }).start();
 
   try {
     const [coRes, cfgRes] = await Promise.all([
@@ -321,16 +299,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
 
-    // FIX 2: Always apply config checklists if present; fall back to defaults only
-    // for categories not explicitly configured in admin.
+    // Merge config checklists over defaults — config wins per-category,
+    // defaults fill in for any category not yet configured in admin.
     if (cfgRes.launchChecklists) {
       _launchChecklists = Object.assign({}, DEFAULT_LAUNCH_CHECKLISTS, cfgRes.launchChecklists);
     }
 
     if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
-      _boatCategories = cfgRes.boatCategories.filter(function(c) {
-        return c.active !== false && c.active !== 'false';
-      });
+      _boatCategories = cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false');
     }
 
     populateFormSelects();
@@ -348,8 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function showTab(name) {
   ['fleet','trips','logbook','certs'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
-    document.getElementById('tabBtn'+t.charAt(0).toUpperCase()+t.slice(1))
-      ?.classList.toggle('active', t === name);
+    document.getElementById('tabBtn'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('active', t === name);
   });
   if (name === 'trips'   && !tripsLoaded)   loadTripsTab();
   if (name === 'logbook' && !logbookLoaded) loadLogbookTab();
@@ -359,13 +334,8 @@ function showTab(name) {
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
   const active = checkouts.filter(c => c.status === 'out');
-  renderFleetStatus('fleetByCat', boats, active, {
-    onAvailClick: 'launchBoatById',
-    toggleFn:     'toggleFleetCat',
-    collapsed:    true,
-  });
+  renderFleetStatus('fleetByCat', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true });
 }
-
 function toggleCat(el) { toggleFleetCat(el); }
 function toggleFleetCat(toggle) {
   const targetId = toggle.dataset.target;
@@ -383,13 +353,7 @@ function renderActiveCheckouts() {
   const mine = checkouts.filter(c => c.status==='out' && c.memberKennitala===user.kennitala);
   if (!mine.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
   boatRegistry.setCos(mine);
-  el.innerHTML = mine.map(c =>
-    renderCheckoutCard(c, {
-      isMe: true,
-      staffView: false,
-      onReturn: `openReturnModal('${c.id}')`,
-    })
-  ).join('');
+  el.innerHTML = mine.map(c => renderCheckoutCard(c, { isMe:true, staffView:false, onReturn:`openReturnModal('${c.id}')` })).join('');
 }
 
 // ══ TRIPS TAB ════════════════════════════════════════════════════════════════
@@ -399,7 +363,7 @@ async function loadTripsTab() {
   try {
     const today = new Date().toISOString().slice(0,10);
     const res   = await apiGet('getTrips', { date: today, limit: 50 });
-    allTrips    = (res.trips||[]).sort(function(a,b) { return (a.timeOut||"") > (b.timeOut||"") ? -1 : 1; });
+    allTrips    = (res.trips||[]).sort((a,b) => (a.timeOut||"") > (b.timeOut||"") ? -1 : 1);
     tripsLoaded = true;
     renderClubTrips();
   } catch(e) {
@@ -410,7 +374,6 @@ async function loadTripsTab() {
 function renderClubTrips() {
   const el = document.getElementById('clubTrips');
   if (!allTrips.length) { el.innerHTML = '<div class="empty-note">' + s('member.noRecent') + '</div>'; return; }
-
   function parseWxBadge(trip) {
     var wx = null;
     if (trip.wxSnapshot) { try { wx = typeof trip.wxSnapshot==='string' ? JSON.parse(trip.wxSnapshot) : trip.wxSnapshot; } catch(e){} }
@@ -421,894 +384,603 @@ function renderClubTrips() {
       var wind  = (wx.dir||"") + (wx.ws!=null ? " "+wx.ws+"m/s" : "") + (wx.bft!=null ? " Bft"+wx.bft : "");
       var cond  = wx.cond ? " "+wx.cond.icon : "";
       var waves = wx.wv!=null ? " · 🌊"+wx.wv+"m" : "";
-      return '<div style="font-size:11px;color:var(--muted);margin-top:5px">'
-           + (flag ? '<span style="font-size:12px;margin-right:4px">'+flag+'</span>' : "")
-           + esc(wind.trim()) + cond + waves
-           + '</div>';
+      return '<div style="font-size:11px;color:var(--muted);margin-top:5px">'+(flag?'<span style="font-size:12px;margin-right:4px">'+flag+'</span>':"")+esc(wind.trim())+cond+waves+'</div>';
     }
-    return '<div style="font-size:11px;color:var(--muted);margin-top:5px">💨 Bft ' + esc(trip.beaufort) + (trip.windDir ? " "+esc(trip.windDir) : "") + '</div>';
+    return '<div style="font-size:11px;color:var(--muted);margin-top:5px">💨 Bft '+esc(trip.beaufort)+(trip.windDir?" "+esc(trip.windDir):"")+' </div>';
   }
-
   el.innerHTML = allTrips.map(function(trip) {
-    var isMe = trip.kennitala === user.kennitala || trip.memberKennitala === user.kennitala;
+    var isMe = trip.kennitala===user.kennitala || trip.memberKennitala===user.kennitala;
     var roleTag = isMe
-      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">' + (getLang()==='IS'?'Skipari':'Skipper').toUpperCase() + '</span>'
-      : '<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">' + s('member.addAsCrew') + ' →</span>';
+      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">'+(getLang()==='IS'?'Skipari':'Skipper').toUpperCase()+'</span>'
+      : '<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">'+s('member.addAsCrew')+' →</span>';
     var wxBadge = parseWxBadge(trip);
-    return '<div class="pub-trip" onclick="' + (isMe ? 'void 0' : 'openCrewModal(\''+esc(trip.id)+'\')') + '"'
-         + ' style="cursor:' + (isMe ? 'default' : 'pointer') + '">'
-         + '<div class="pub-trip-head">'
-         +   '<div style="flex:1;min-width:0">'
-         +     '<div class="pub-trip-title">' + esc(trip.boatName||'—') + ' · ' + esc(trip.locationName||'—') + '</div>'
-         +     '<div class="pub-trip-meta">'
-         +       '<span>' + esc(trip.timeOut||'')+'–'+esc(trip.timeIn||'') + '</span>'
-         +       '<span>' + (parseFloat(trip.hoursDecimal)||0).toFixed(1) + 'h</span>'
-         +       '<span>👥 ' + esc(trip.crew||1) + '</span>'
-         +     '</div>'
-         +     wxBadge
-         +     (!isMe && trip.memberName ? '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + (getLang()==='IS'?'Skipari':'Skipper') + ': ' + esc(trip.memberName) + '</div>' : '')
-         +   '</div>'
-         +   '<div style="flex-shrink:0;padding-left:8px">' + roleTag + '</div>'
-         + '</div>'
-         + '</div>';
+    return '<div class="pub-trip" onclick="'+(isMe?'void 0':'openCrewModal(\''+esc(trip.id)+'\')')+'" style="cursor:'+(isMe?'default':'pointer')+'">'
+      +'<div class="pub-trip-head"><div style="flex:1;min-width:0">'
+      +'<div class="pub-trip-title">'+esc(trip.boatName||'—')+' · '+esc(trip.locationName||'—')+'</div>'
+      +'<div class="pub-trip-meta"><span>'+esc(trip.timeOut||'')+'–'+esc(trip.timeIn||'')+'</span><span>'+(parseFloat(trip.hoursDecimal)||0).toFixed(1)+'h</span><span>👥 '+esc(trip.crew||1)+'</span></div>'
+      +wxBadge
+      +(!isMe&&trip.memberName?'<div style="font-size:10px;color:var(--muted);margin-top:3px">'+(getLang()==='IS'?'Skipari':'Skipper')+': '+esc(trip.memberName)+'</div>':'')
+      +'</div><div style="flex-shrink:0;padding-left:8px">'+roleTag+'</div></div></div>';
   }).join('');
 }
 
 // ══ CREW MODAL ═══════════════════════════════════════════════════════════════
 function openCrewModal(tripId) {
-  const t = allTrips.find(x => x.id === tripId);
+  const t = allTrips.find(x => x.id===tripId);
   if (!t) return;
   pendingCrewTrip = t;
   document.getElementById('crewTripSummary').innerHTML =
     `<div style="font-weight:500">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
      <div style="color:var(--muted);margin-top:4px">${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
-     <div style="color:var(--muted);font-size:11px;margin-top:3px">${(getLang()==='IS'?'Skipari':'Skipper')}: ${esc(t.memberName||'—')}</div>`;
+     <div style="color:var(--muted);font-size:11px;margin-top:3px">${getLang()==='IS'?'Skipari':'Skipper'}: ${esc(t.memberName||'—')}</div>`;
   document.getElementById('crewNotes').value = '';
   document.getElementById('crewErr').style.display = 'none';
   openModal('crewModal');
 }
-
 async function submitCrewLog() {
-  const t   = pendingCrewTrip;
-  const err = document.getElementById('crewErr');
+  const t=pendingCrewTrip, err=document.getElementById('crewErr');
   if (!t) return;
   try {
-    await apiPost('saveTrip', {
-      kennitala:    user.kennitala, memberName: user.name, memberId: user.id||user.kennitala,
-      date: t.date, boatId: t.boatId, boatName: t.boatName,
-      locationId: t.locationId, locationName: t.locationName,
-      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
-      crew: t.crew, beaufort: t.beaufort, windDir: t.windDir,
-      wxSnapshot: t.wxSnapshot || null,
-      notes: document.getElementById('crewNotes').value.trim(),
-      role: 'crew', isLinked: true, linkedCheckoutId: t.id,
-    });
-    closeModal('crewModal');
-    logbookLoaded = false;
-    showToast(s('toast.saved'));
-  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
+    await apiPost('saveTrip',{ kennitala:user.kennitala, memberName:user.name, memberId:user.id||user.kennitala,
+      date:t.date, boatId:t.boatId, boatName:t.boatName, locationId:t.locationId, locationName:t.locationName,
+      timeOut:t.timeOut, timeIn:t.timeIn, hoursDecimal:t.hoursDecimal, crew:t.crew, beaufort:t.beaufort,
+      windDir:t.windDir, wxSnapshot:t.wxSnapshot||null, notes:document.getElementById('crewNotes').value.trim(),
+      role:'crew', isLinked:true, linkedCheckoutId:t.id });
+    closeModal('crewModal'); logbookLoaded=false; showToast(s('toast.saved'));
+  } catch(e){ err.textContent=s('toast.error')+': '+e.message; err.style.display='block'; }
 }
 
 // ══ LOGBOOK TAB ══════════════════════════════════════════════════════════════
 async function loadLogbookTab() {
   const el = document.getElementById('logbookList');
   try {
-    const res = await apiGet('getTrips', { kennitala: user.kennitala, limit: 200 });
-    myTrips     = (res.trips||[]).sort((a,b) => b.date>a.date?1:-1);
-    logbookLoaded = true;
-    renderStats();
-    renderLogbook();
-  } catch(e) {
-    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
-  }
+    const res = await apiGet('getTrips', { kennitala:user.kennitala, limit:200 });
+    myTrips = (res.trips||[]).sort((a,b)=>b.date>a.date?1:-1);
+    logbookLoaded=true; renderStats(); renderLogbook();
+  } catch(e) { el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`; }
 }
-
 function renderStats() {
-  const year   = new Date().getFullYear();
-  const season = myTrips.filter(t => (t.date||'').startsWith(String(year)));
-  const hours  = myTrips.reduce((s,t) => s+(parseFloat(t.hoursDecimal)||0), 0);
-  const boatCount = {};
-  myTrips.forEach(t => { if (t.boatName) boatCount[t.boatName] = (boatCount[t.boatName]||0)+1; });
-  const topBoat = Object.entries(boatCount).sort(([,a],[,b])=>b-a)[0];
-  document.getElementById('stTrips').textContent  = myTrips.length;
-  document.getElementById('stHours').textContent  = hours.toFixed(0)+'h';
-  document.getElementById('stBoat').textContent   = topBoat ? topBoat[0] : '—';
-  document.getElementById('stSeason').textContent = season.length;
+  const year=new Date().getFullYear();
+  const season=myTrips.filter(t=>(t.date||'').startsWith(String(year)));
+  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const bc={}; myTrips.forEach(t=>{if(t.boatName)bc[t.boatName]=(bc[t.boatName]||0)+1;});
+  const top=Object.entries(bc).sort(([,a],[,b])=>b-a)[0];
+  document.getElementById('stTrips').textContent=myTrips.length;
+  document.getElementById('stHours').textContent=hours.toFixed(0)+'h';
+  document.getElementById('stBoat').textContent=top?top[0]:'—';
+  document.getElementById('stSeason').textContent=season.length;
 }
-
 function renderLogbook() {
-  const el = document.getElementById('logbookList');
-  if (!myTrips.length) { el.innerHTML = `<div class="empty-note">${s('member.noTrips')}</div>`; return; }
-  el.innerHTML = myTrips.map(t => {
-    const roleTag = t.role==='crew'
-      ? `<span style="font-size:9px;color:var(--muted)"> · ${s('member.crewRole')}</span>` : '';
+  const el=document.getElementById('logbookList');
+  if (!myTrips.length){el.innerHTML=`<div class="empty-note">${s('member.noTrips')}</div>`;return;}
+  el.innerHTML=myTrips.map(t=>{
+    const roleTag=t.role==='crew'?`<span style="font-size:9px;color:var(--muted)"> · ${s('member.crewRole')}</span>`:'';
     return `<div class="trip-row" onclick="openTripDetail('${esc(t.id)}')">
       <div class="trip-label">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}${roleTag}</div>
-      <div class="trip-sub">
-        ${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} ·
-        ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h
-        ${t.beaufort ? ` · 💨 Bft ${esc(t.beaufort)}` : ''}
-        ${t.verified&&t.verified!=='false' ? ' · ✓' : ''}
-      </div>
+      <div class="trip-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h${t.beaufort?` · 💨 Bft ${esc(t.beaufort)}`:''}${t.verified&&t.verified!=='false'?' · ✓':''}</div>
     </div>`;
   }).join('');
 }
-
 function openTripDetail(id) {
-  const t = myTrips.find(x => x.id===id);
-  if (!t) return;
-  document.getElementById('tdTitle').textContent = (t.boatName||'Trip') + ' · ' + (t.date||'');
-  const rows = [
-    [s('lbl.boat'),        t.boatName||'—'],
-    [s('lbl.location'),    t.locationName||'—'],
-    [s('lbl.date'),        t.date||'—'],
-    [s('member.departed'), t.timeOut||'—'],
-    [s('member.returned'), t.timeIn||'—'],
-    [s('member.duration'), (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],
-    [s('lbl.crew'),        t.crew||1],
-    t.beaufort ? ['Wind', `Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`] : null,
-    t.notes ? [s('lbl.notes'), t.notes] : null,
-    [s('lbl.role'),   t.role||(getLang()==='IS'?'Skipari':'Skipper')],
-    [s('lbl.status'), (t.verified&&t.verified!=='false') ? s('lbl.verified') : s('lbl.pending')],
-    t.staffComment ? ['Staff note', t.staffComment] : null,
+  const t=myTrips.find(x=>x.id===id); if(!t)return;
+  document.getElementById('tdTitle').textContent=(t.boatName||'Trip')+' · '+(t.date||'');
+  const rows=[
+    [s('lbl.boat'),t.boatName||'—'],[s('lbl.location'),t.locationName||'—'],[s('lbl.date'),t.date||'—'],
+    [s('member.departed'),t.timeOut||'—'],[s('member.returned'),t.timeIn||'—'],
+    [s('member.duration'),(parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],[s('lbl.crew'),t.crew||1],
+    t.beaufort?['Wind',`Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`]:null,
+    t.notes?[s('lbl.notes'),t.notes]:null,
+    [s('lbl.role'),t.role||(getLang()==='IS'?'Skipari':'Skipper')],
+    [s('lbl.status'),(t.verified&&t.verified!=='false')?s('lbl.verified'):s('lbl.pending')],
+    t.staffComment?['Staff note',t.staffComment]:null,
   ].filter(Boolean);
-  document.getElementById('tdBody').innerHTML = rows.map(([l,v]) =>
+  document.getElementById('tdBody').innerHTML=rows.map(([l,v])=>
     `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;font-size:12px">
       <span style="font-size:9px;color:var(--muted);letter-spacing:.8px;width:80px;flex-shrink:0;padding-top:2px">${esc(l.toUpperCase())}</span>
-      <span style="flex:1;color:var(--text)">${esc(String(v))}</span>
-    </div>`
-  ).join('');
+      <span style="flex:1;color:var(--text)">${esc(String(v))}</span></div>`).join('');
   openModal('tripDetailModal');
 }
 
 // ══ CERTIFICATIONS TAB ═══════════════════════════════════════════════════════
 async function loadCertsTab() {
-  const el = document.getElementById('certsList');
+  const el=document.getElementById('certsList');
   try {
-    const [mRes, cfgRes] = await Promise.all([
-      apiGet('getMembers'),
-      apiGet('getConfig'),
-    ]);
-    certDefs    = certDefsFromConfig(cfgRes.certDefs||[]);
-    certsLoaded = true;
-    const member = (mRes.members||[]).find(m => m.kennitala === user.kennitala) || {};
-    const certs  = enrichMemberCerts(parseJson(member.certifications,[]), certDefs);
-    if (!certs.length) { el.innerHTML = `<div class="empty-note">${s('cert.noCerts')}</div>`; return; }
-    const grouped = {};
-    certs.forEach(c => {
-      const key = c.def?.name || c.certId;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(c);
-    });
-    el.innerHTML = Object.entries(grouped).map(([name, items]) => `
-      <div class="cert-section">
-        <div class="cert-section-title">${esc(name)}</div>
-        <div>${items.map(certBadgeHTML).join('')}</div>
-      </div>`).join('');
-  } catch(e) {
-    el.innerHTML = `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
-  }
+    const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
+    certDefs=certDefsFromConfig(cfgRes.certDefs||[]); certsLoaded=true;
+    const member=(mRes.members||[]).find(m=>m.kennitala===user.kennitala)||{};
+    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
+    if(!certs.length){el.innerHTML=`<div class="empty-note">${s('cert.noCerts')}</div>`;return;}
+    const grouped={}; certs.forEach(c=>{const k=c.def?.name||c.certId;if(!grouped[k])grouped[k]=[];grouped[k].push(c);});
+    el.innerHTML=Object.entries(grouped).map(([name,items])=>
+      `<div class="cert-section"><div class="cert-section-title">${esc(name)}</div><div>${items.map(certBadgeHTML).join('')}</div></div>`).join('');
+  } catch(e){ el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`; }
 }
 
-// ══ LAUNCH / CHECK-IN ════════════════════════════════════════════════════════
-function openLaunchPicker()     { openModal('launchModal'); renderLaunchPicker(); }
-function launchBoatById(id)     { openModal('launchModal'); renderLaunchPicker(id); }
-function openCheckInPicker()    {
-  const mine = checkouts.filter(c=>c.status==='out'&&c.memberKennitala===user.kennitala);
-  if (!mine.length) { showToast(s('member.noCheckouts'), 'warn'); return; }
-  if (mine.length===1) { openReturnModal(mine[0].id); return; }
+// ══ LAUNCH FLOW ══════════════════════════════════════════════════════════════
+// Step 1: boat picker  →  Step 2: form (time/crew/location)  →  Step 3: pre-launch checklist  →  submit
+
+function openLaunchPicker() { openModal('launchModal'); renderLaunchPicker(); }
+function launchBoatById(id) { openModal('launchModal'); renderLaunchPicker(id); }
+function openCheckInPicker() {
+  const mine=checkouts.filter(c=>c.status==='out'&&c.memberKennitala===user.kennitala);
+  if(!mine.length){showToast(s('member.noCheckouts'),'warn');return;}
+  if(mine.length===1){openReturnModal(mine[0].id);return;}
   openModal('returnModal');
-  document.getElementById('returnModalBody').innerHTML =
-    mine.map(c=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:8px;text-align:left"
+  document.getElementById('returnModalBody').innerHTML=mine.map(c=>
+    `<button class="btn btn-secondary" style="width:100%;margin-bottom:8px;text-align:left"
       onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc((c.checkedOutAt||c.timeOut||'').slice(0,5))}</button>`).join('');
 }
 function openReturnModal(coId) {
-  returnCo = checkouts.find(c=>c.id===coId)||null;
-  openModal('returnModal');
-  renderReturnForm();
+  returnCo=checkouts.find(c=>c.id===coId)||null;
+  openModal('returnModal'); renderReturnForm();
 }
 
+// Step 1 — boat picker
 function renderLaunchPicker(preselectedBoatId) {
-  const active = checkouts.filter(c=>c.status==='out');
-  const avail  = boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
-  if (!avail.length) {
-    document.getElementById('launchModalBody').innerHTML = `<div class="empty-note">${s('member.noBoats')}</div>`; return;
+  const active=checkouts.filter(c=>c.status==='out');
+  const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
+  if(!avail.length){
+    document.getElementById('launchModalBody').innerHTML=`<div class="empty-note">${s('member.noBoats')}</div>`; return;
   }
-  const selected = preselectedBoatId ? avail.find(b=>b.id===preselectedBoatId) : null;
-  // FIX 1: Always route through the checklist, even when a boat is pre-selected
-  // (e.g. via QR scan or fleet grid tap).
-  if (selected) { renderLaunchChecklist(selected); return; }
+  const selected=preselectedBoatId?avail.find(b=>b.id===preselectedBoatId):null;
+  // Pre-selected boat (QR scan / fleet grid) goes straight to the form.
+  if(selected){renderLaunchForm(selected);return;}
   const grouped={};
-  avail.forEach(b=>{ const cat=(b.category||'other').toLowerCase(); if(!grouped[cat])grouped[cat]=[]; grouped[cat].push(b); });
-  document.getElementById('launchModalBody').innerHTML =
+  avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
+  document.getElementById('launchModalBody').innerHTML=
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
       `<div style="margin-bottom:12px">
         <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${_fmtCatLabel(cat)}</div>
         ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
-          onclick="renderLaunchChecklist(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
-      </div>`
-    ).join('');
+          onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
+      </div>`).join('');
 }
 
-// Launch + landing checklists — loaded from config, defaults used as fallback
+// ── Checklists — config wins per-category; defaults fill missing categories ──
 var DEFAULT_LAUNCH_CHECKLISTS = {
-  dinghy:        { launch:["Life jacket fitted","Buoyancy aid on","Rudder + centreplate fitted","Bailer attached","Capsize drill known"], landing:["Boat rinsed","Rudder + centreplate stowed","Bailer secured","Damage reported if any"] },
-  keelboat:      { launch:["Life jacket fitted","Engine/sail check","VHF charged","Flares aboard","Float plan filed"], landing:["Engine off + secured","Lines made fast","Fuel level noted","Damage reported if any"] },
-  kayak:         { launch:["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"], landing:["Kayak drained","Gear stowed","Paddle secured"] },
-  "rowing shell":{ launch:["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"], landing:["Boat rinsed + stored","Oars stowed","Riggers checked"] },
-  rowboat:       { launch:["Life jacket fitted","Oars secured","Bailer aboard"], landing:["Boat secured","Oars stowed","Damage reported if any"] },
-  sup:           { launch:["Leash on","PFD attached to board"], landing:["Board rinsed","Leash coiled","Fin checked"] },
-  wingfoil:      { launch:["Helmet on","Impact vest on","Leash on","Wind within limits"], landing:["Equipment rinsed","Lines coiled","Wing folded"] },
-  other:         { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
+  dinghy:         { launch:["Life jacket fitted","Buoyancy aid on","Rudder + centreplate fitted","Bailer attached","Capsize drill known"], landing:["Boat rinsed","Rudder + centreplate stowed","Bailer secured","Damage reported if any"] },
+  keelboat:       { launch:["Life jacket fitted","Engine/sail check","VHF charged","Flares aboard","Float plan filed"], landing:["Engine off + secured","Lines made fast","Fuel level noted","Damage reported if any"] },
+  kayak:          { launch:["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"], landing:["Kayak drained","Gear stowed","Paddle secured"] },
+  "rowing shell": { launch:["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"], landing:["Boat rinsed + stored","Oars stowed","Riggers checked"] },
+  rowboat:        { launch:["Life jacket fitted","Oars secured","Bailer aboard"], landing:["Boat secured","Oars stowed","Damage reported if any"] },
+  sup:            { launch:["Leash on","PFD attached to board"], landing:["Board rinsed","Leash coiled","Fin checked"] },
+  wingfoil:       { launch:["Helmet on","Impact vest on","Leash on","Wind within limits"], landing:["Equipment rinsed","Lines coiled","Wing folded"] },
+  other:          { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
 };
-var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;  // overwritten from config on load
-var _boatCategories   = null;  // [{key,labelEN,labelIS,emoji}] — loaded from config
+var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;
+var _boatCategories   = null;
 
 function _fmtCatLabel(cat) {
-  var c = _boatCategories && _boatCategories.find(function(x) { return x.key === cat; });
-  var lbl = c ? (getLang() === 'IS' && c.labelIS ? c.labelIS : c.labelEN) : cat;
-  var ico = (c && c.emoji) ? c.emoji : boatEmoji(cat);
-  return ico + ' ' + esc(lbl.toUpperCase());
+  var c=_boatCategories&&_boatCategories.find(x=>x.key===cat);
+  var lbl=c?(getLang()==='IS'&&c.labelIS?c.labelIS:c.labelEN):cat;
+  var ico=(c&&c.emoji)?c.emoji:boatEmoji(cat);
+  return ico+' '+esc(lbl.toUpperCase());
 }
-
-// Helper: resolve display label from a checklist item (object or legacy plain string)
+// Handles both config objects {text, textIS, sort} and legacy plain strings.
 function _clItemLabel(it) {
-  if (typeof it === 'string') return it;
-  return (getLang() === 'IS' && it.textIS) ? it.textIS : (it.text || '');
+  if(typeof it==='string') return it;
+  return (getLang()==='IS'&&it.textIS)?it.textIS:(it.text||'');
 }
 
+// Step 2 — time / crew / location form
+function renderLaunchForm(boat) {
+  if(!boat) return;
+  launchBoat=boat;
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+boat.name;
+  var locOpts=locations.map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+      '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
+      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
+      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">'+
+      '<div style="display:flex;gap:4px;margin-top:5px">'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(60)">+1h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(90)">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(120)">+2h</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
+    '<div style="display:flex;align-items:center;gap:12px">'+
+      '<button type="button" onclick="adjLaunchCrew(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>'+
+      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>'+
+      '<button type="button" onclick="adjLaunchCrew(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
+    '</div></div>'+
+    '<div id="launchCrewSection" style="display:none;margin-top:12px">'+
+      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
+      '<div id="launchCrewInputs"></div>'+
+      '<div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
+    '</div>'+
+    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
+      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">Continue →</button>'+
+    '</div>';
+  window._launchCrewCount=1;
+  renderCrewInputs();
+  if(!window._launchMembers){
+    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
+  }
+}
+
+// Validate form then stash values and advance to step 3.
+function advanceToLaunchChecklist() {
+  var err=document.getElementById('launchErr');
+  var lid=document.getElementById('launchLocation')?.value;
+  if(!lid){err.textContent=s('staff.coForm.errLocation');err.style.display='block';return;}
+  err.style.display='none';
+  // Stash form values — they survive the step transition to the checklist.
+  window._launchFormValues={
+    lid,
+    tout: document.getElementById('launchTimeOut')?.value||'',
+    ret:  document.getElementById('launchReturnBy')?.value||'',
+    crew: window._launchCrewCount||1,
+    crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input'))
+      .map(i=>({name:i.value.trim(),kennitala:i.dataset.kennitala||''}))
+      .filter(c=>c.name),
+  };
+  renderLaunchChecklist(launchBoat);
+}
+
+// Step 3 — pre-launch checklist
 function renderLaunchChecklist(boat) {
-  if (!boat) return;
-  launchBoat = boat;
-  document.getElementById('launchModalTitle').textContent = `${s('member.launchTitle')} - ${boat.name}`;
-  const cat   = (boat.category||'other').toLowerCase();
-  const cl    = _launchChecklists[cat] || _launchChecklists.other;
-  const items = (cl.launch || cl).slice().sort(function(a,b){ return (a.sort||0)-(b.sort||0); });
-  document.getElementById('launchModalBody').innerHTML =
-    `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH — ${_fmtCatLabel(cat)}</div>` +
-    items.map((it,i) =>
-      `<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">` +
-      `<input type="checkbox" class="launch-check" data-idx="${i}" style="width:16px;height:16px;accent-color:var(--brass)">` +
-      `<span>${esc(_clItemLabel(it))}</span></label>`
-    ).join("") +
-    `<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">Please confirm all items before proceeding.</div>` +
-    `<div class="btn-row" style="margin-top:14px">` +
-    `<button class="btn btn-secondary" onclick="renderLaunchPicker()">← Back</button>` +
-    `<button class="btn btn-primary" onclick="advanceLaunchChecklist()">Continue →</button>` +
-    `</div>`;
-}
+  if(!boat) return;
+  launchBoat=boat;
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+boat.name;
+  var cat=(boat.category||'other').toLowerCase();
+  var cl=_launchChecklists[cat]||_launchChecklists.other||{};
+  // cl.launch is an array of {id,text,textIS,sort} objects (config) or plain strings (defaults).
+  var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
 
-function advanceLaunchChecklist() {
-  var boxes = document.querySelectorAll('.launch-check');
-  var allChecked = Array.from(boxes).every(function(b) { return b.checked; });
-  if (!allChecked) { document.getElementById('launchCheckErr').style.display='block'; return; }
-  renderLaunchForm(launchBoat);
+  document.getElementById('launchModalBody').innerHTML=
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
+    (!items.length
+      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+(L==='IS'?'Enginn gátlisti stilltur fyrir þennan flokk.':'No pre-launch checklist configured for this category.')+'</div>'
+      :items.map((it,i)=>
+          '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+          '<input type="checkbox" class="launch-check" data-idx="'+i+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+          '<span>'+esc(_clItemLabel(it))+'</span></label>').join('')
+    )+
+    '<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
+    '<div class="btn-row" style="margin-top:14px">'+
+      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
+      '<button class="btn btn-primary" onclick="submitLaunch()">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
+    '</div>';
 }
 
 function _addToLaunchOut(mins) {
-  var base  = document.getElementById("launchTimeOut").value || fmtTimeNow();
-  var parts = base.split(":").map(Number);
-  var total = parts[0]*60 + parts[1] + mins;
-  document.getElementById("launchReturnBy").value =
-    String(Math.floor(total/60)%24).padStart(2,"0") + ":" + String(total%60).padStart(2,"0");
+  var base=document.getElementById('launchTimeOut').value||fmtTimeNow();
+  var parts=base.split(':').map(Number);
+  var total=parts[0]*60+parts[1]+mins;
+  document.getElementById('launchReturnBy').value=String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
-
-function renderLaunchForm(boat) {
-  if (!boat) return;
-  launchBoat = boat;
-  document.getElementById("launchModalTitle").textContent = s("member.launchTitle") + " - " + boat.name;
-  var locOpts = locations.map(function(l){
-    return '<option value="' + l.id + '">' + esc(l.name) + '</option>';
-  }).join("");
-  document.getElementById("launchModalBody").innerHTML =
-    '<div class="field"><label>' + s("lbl.location") + '</label>' +
-    '<select id="launchLocation"><option value="">' + s("lbl.selectDots") + '</option>' + locOpts + '</select></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
-      '<div class="field"><label>' + s("staff.coForm.departure") + '</label>' +
-      '<input type="text" id="launchTimeOut" value="' + fmtTimeNow() +
-      '" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>' +
-      '<div class="field"><label>' + s("staff.coForm.estReturn") + '</label>' +
-      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">' +
-      '<div style="display:flex;gap:4px;margin-top:5px">' +
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(60)">+1h</button>' +
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(90)">+1.5h</button>' +
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(120)">+2h</button>' +
-      '</div></div>' +
-    '</div>' +
-    '<div class="field"><label>' + s("staff.coForm.crew") + '</label>' +
-    '<div style="display:flex;align-items:center;gap:12px">' +
-      '<button type="button" onclick="adjLaunchCrew(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>' +
-      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>' +
-      '<button type="button" onclick="adjLaunchCrew(1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>' +
-    '</div></div>' +
-    '<div id="launchCrewSection" style="display:none;margin-top:12px">' +
-      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>' +
-      '<div id="launchCrewInputs"></div>' +
-      '<div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>' +
-    '</div>' +
-    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
-    '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← ' + (L==='IS'?'Til baka':'Back') + '</button>' +
-      '<button class="btn btn-primary" onclick="submitLaunch()">⛵ ' + s("member.launchBoat").replace("⛵ ","") + '</button>' +
-    '</div>';
-  window._launchCrewCount = 1;
-  renderCrewInputs();
-  if (!window._launchMembers) {
-    apiGet('getMembers').then(function(r){
-      window._launchMembers = r.members || [];
-    }).catch(function(){});
-  }
-}
-
 function adjLaunchCrew(d) {
-  window._launchCrewCount = Math.max(1, Math.min(20, (window._launchCrewCount||1)+d));
-  document.getElementById('launchCrewNum').textContent = window._launchCrewCount;
+  window._launchCrewCount=Math.max(1,Math.min(20,(window._launchCrewCount||1)+d));
+  document.getElementById('launchCrewNum').textContent=window._launchCrewCount;
   renderCrewInputs();
 }
 function renderCrewInputs() {
-  const n    = (window._launchCrewCount||1) - 1;
-  const sec  = document.getElementById('launchCrewSection');
-  const wrap = document.getElementById('launchCrewInputs');
-  if (!sec || !wrap) return;
-  if (n < 1) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-  const existing = Array.from(wrap.querySelectorAll('input')).map(i => i.value);
-  wrap.innerHTML = '';
-  for (let i = 0; i < n; i++) {
-    const row = document.createElement('div');
-    row.style.cssText = 'position:relative;margin-bottom:6px';
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = 'Crew member ' + (i+1) + ' name…';
-    inp.value = existing[i] || '';
-    inp.dataset.crewIdx = i;
-    inp.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
-    const drop = document.createElement('div');
-    drop.id = 'crewDrop' + i;
-    drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
-    inp.addEventListener('input', function() { searchCrewMembers(this, drop); });
-    inp.addEventListener('blur', function() { setTimeout(function(){ drop.style.display='none'; }, 200); });
-    row.appendChild(inp);
-    row.appendChild(drop);
-    wrap.appendChild(row);
+  const n=(window._launchCrewCount||1)-1;
+  const sec=document.getElementById('launchCrewSection');
+  const wrap=document.getElementById('launchCrewInputs');
+  if(!sec||!wrap) return;
+  if(n<1){sec.style.display='none';return;}
+  sec.style.display='';
+  const existing=Array.from(wrap.querySelectorAll('input')).map(i=>i.value);
+  wrap.innerHTML='';
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div'); row.style.cssText='position:relative;margin-bottom:6px';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.placeholder='Crew member '+(i+1)+' name…'; inp.value=existing[i]||'';
+    inp.dataset.crewIdx=i;
+    inp.style.cssText='width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    const drop=document.createElement('div'); drop.id='crewDrop'+i;
+    drop.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
+    inp.addEventListener('input',function(){searchCrewMembers(this,drop);});
+    inp.addEventListener('blur', function(){setTimeout(()=>{drop.style.display='none';},200);});
+    row.appendChild(inp); row.appendChild(drop); wrap.appendChild(row);
   }
 }
-function searchCrewMembers(inp, drop) {
-  const q = inp.value.trim().toLowerCase();
-  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
-  const matches = (window._launchMembers||[]).filter(m =>
-    m.name && m.name.toLowerCase().includes(q) && m.kennitala !== user.kennitala
-  ).slice(0, 8);
-  if (!matches.length) { drop.style.display = 'none'; return; }
-  drop.innerHTML = '';
-  matches.forEach(function(m) {
-    const item = document.createElement('div');
-    item.style.cssText = 'padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)';
-    item.textContent = m.name;
-    item.dataset.name = m.name;
-    item.dataset.kennitala = m.kennitala || '';
-    item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });
-    item.addEventListener('mouseout',  function(){ this.style.background = ''; });
-    item.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      inp.value = this.dataset.name;
-      inp.dataset.kennitala = this.dataset.kennitala;
-      drop.style.display = 'none';
-    });
+function searchCrewMembers(inp,drop) {
+  const q=inp.value.trim().toLowerCase();
+  if(!q||q.length<2){drop.style.display='none';return;}
+  const matches=(window._launchMembers||[]).filter(m=>m.name&&m.name.toLowerCase().includes(q)&&m.kennitala!==user.kennitala).slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML='';
+  matches.forEach(m=>{
+    const item=document.createElement('div');
+    item.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)';
+    item.textContent=m.name; item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||'';
+    item.addEventListener('mouseover',function(){this.style.background='var(--card)';});
+    item.addEventListener('mouseout', function(){this.style.background='';});
+    item.addEventListener('mousedown',function(e){e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;drop.style.display='none';});
     drop.appendChild(item);
   });
-  drop.style.display = 'block';
-}
-function pickCrewMember(el, name, kennitala) {
-  const row = el.closest('div[style*="position:relative"]');
-  const inp = row && row.querySelector('input');
-  if (inp) { inp.value = name; inp.dataset.kennitala = kennitala; }
-  const d = el.closest('[id^="crewDrop"]');
-  if (d) d.style.display = 'none';
+  drop.style.display='block';
 }
 
+// Submit — reads stashed form values so they survive the step-3 checklist transition.
 async function submitLaunch() {
-  const err = document.getElementById('launchErr');
-  const lid = document.getElementById('launchLocation')?.value;
-  const tout= document.getElementById('launchTimeOut')?.value;
-  const ret = document.getElementById('launchReturnBy')?.value;
-  if (!lid) { err.textContent = s('staff.coForm.errLocation'); err.style.display='block'; return; }
-  const location = locations.find(l=>l.id===lid)||{};
-  const snap = (typeof wxSnapshot==='function') ? wxSnapshot(currentWx) : null;
+  var boxes=document.querySelectorAll('.launch-check');
+  if(boxes.length&&!Array.from(boxes).every(b=>b.checked)){
+    document.getElementById('launchCheckErr').style.display='block'; return;
+  }
+  var fv=window._launchFormValues||{};
+  var lid=fv.lid, tout=fv.tout, ret=fv.ret, crewCount=fv.crew||1, crewNames=fv.crewNames||[];
+  if(!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
+  var location=locations.find(l=>l.id===lid)||{};
+  var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
   try {
-    const res = await apiPost('saveCheckout',{
+    var res=await apiPost('saveCheckout',{
       memberKennitala:user.kennitala, memberName:user.name,
       boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
       locationId:lid, locationName:location.name||lid,
-      checkedOutAt:tout, expectedReturn:ret,
-      crew:window._launchCrewCount||1,
+      checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
       memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
     });
-    checkouts = (await apiGet('getActiveCheckouts')).checkouts||[];
-    const _crewNames = Array.from(document.querySelectorAll('#launchCrewInputs input'))
-      .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
-      .filter(c => c.name);
-    if (_crewNames.length) {
-      const _trip = { boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
-        locationId:lid, locationName:location.name||lid,
-        timeOut:tout, expectedReturn:ret, role:'crew', isLinked:true, wxSnapshot:snap };
-      for (const _cn of _crewNames) {
-        try { await apiPost('saveTrip', Object.assign({}, _trip, {
-          linkedCheckoutId: res?.checkoutId||res?.id||'',
-          crewMemberName: _cn.name,
-          crewMemberKennitala: _cn.kennitala,
-        })); } catch(e2) { console.warn('crew trip:', _cn, e2.message); }
+    checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
+    if(crewNames.length){
+      var _trip={boatId:launchBoat.id,boatName:launchBoat.name,boatCategory:launchBoat.category||'',
+        locationId:lid,locationName:location.name||lid,timeOut:tout,expectedReturn:ret,role:'crew',isLinked:true,wxSnapshot:snap};
+      for(var i=0;i<crewNames.length;i++){
+        var cn=crewNames[i];
+        try{await apiPost('saveTrip',Object.assign({},_trip,{linkedCheckoutId:res?.checkoutId||res?.id||'',crewMemberName:cn.name,crewMemberKennitala:cn.kennitala}));}
+        catch(e2){console.warn('crew trip:',cn,e2.message);}
       }
     }
-    closeModal('launchModal');
-    renderActiveCheckouts();
-    renderFleetByCat();
+    window._launchFormValues=null;
+    closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
     showToast(s('staff.coForm.checkedOut'));
-  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
-}
-
-// ── Weather display helpers ─────────────────────────────────────────────────
-function _wxSnapHtml(snap) {
-  if (!snap) return '<div style="color:var(--muted);font-size:11px">No data</div>';
-  var dir   = snap.dir   || snap.wDir     || "";
-  var wv    = snap.wv    != null ? snap.wv    : snap.waveH;
-  var tc    = snap.tc    != null ? snap.tc    : snap.airT;
-  var feels = snap.feels != null ? snap.feels : snap.apparentT;
-  var fi = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
-  var rows = [];
-  if (snap.flag)               rows.push([fi[snap.flag]||"", snap.flag.toUpperCase()]);
-  if (snap.bft  != null)       rows.push(["💨", dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Bft"+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
-  if (wv   != null)            rows.push(["🌊", wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
-  if (tc   != null)            rows.push(["🌡", tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
-  if (snap.sst  != null)       rows.push(["🌊", "Sea "+snap.sst+"°C"]);
-  if (snap.pres != null)       rows.push(["📊", Math.round(snap.pres)+"hPa"+(snap.presTrend?" "+snap.presTrend:"")]);
-  if (snap.cond&&snap.cond.desc) rows.push([snap.cond.icon||"", snap.cond.desc]);
-  if (!rows.length)            rows.push(["", "No detail available"]);
-  return rows.map(function(r) {
-    return '<div style="display:flex;gap:6px;font-size:11px;padding:2px 0">' +
-      '<span style="width:16px;flex-shrink:0;text-align:center">' + r[0] + '</span>' +
-      '<span style="color:var(--text)">' + esc(String(r[1]).trim()) + '</span></div>';
-  }).join("");
-}
-
-function _updateWxDisplay() {
-  var sel   = document.querySelector('[name="wxChoice"]:checked');
-  var choice = sel ? sel.value : "checkout";
-  var panel  = document.getElementById("wxDetailPanel");
-  var snap = null;
-  if (choice === "checkout")     snap = window._retCoSnap;
-  else if (choice === "now")     snap = currentWx ? wxSnapshot(currentWx) : null;
-  else if (choice === "manual") {
-    var gn=function(id){var el=document.getElementById(id);return el&&el.value!=""?parseFloat(el.value):null;};
-    var gs=function(id){var el=document.getElementById(id);return el?el.value.trim():"";};
-    snap={bft:gn("manBft"),dir:gs("manDir"),ws:gn("manWs"),wg:gn("manWg"),
-      wv:gn("manWv"),waveDir:gs("manWaveDir"),tc:gn("manTc"),feels:gn("manFeels"),
-      pres:gn("manPres"),sst:gn("manSst"),flag:null,cond:null};
+  } catch(e){
+    var errEl=document.getElementById('launchCheckErr');
+    if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}
   }
-  if (panel) panel.innerHTML = _wxSnapHtml(snap);
-  var mf = document.getElementById("wxManualFields");
-  if (mf) mf.style.display = choice === "manual" ? "grid" : "none";
+}
+
+// ══ RETURN / CHECK-IN FLOW ════════════════════════════════════════════════════
+function _wxSnapHtml(snap) {
+  if(!snap) return '<div style="color:var(--muted);font-size:11px">No data</div>';
+  var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
+  var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
+  if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
+  if(snap.bft!=null)      rows.push(["💨",dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Bft"+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
+  if(wv!=null)            rows.push(["🌊",wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
+  if(tc!=null)            rows.push(["🌡",tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
+  if(snap.sst!=null)      rows.push(["🌊","Sea "+snap.sst+"°C"]);
+  if(snap.pres!=null)     rows.push(["📊",Math.round(snap.pres)+"hPa"+(snap.presTrend?" "+snap.presTrend:"")]);
+  if(snap.cond&&snap.cond.desc) rows.push([snap.cond.icon||"",snap.cond.desc]);
+  if(!rows.length)        rows.push(["","No detail available"]);
+  return rows.map(r=>'<div style="display:flex;gap:6px;font-size:11px;padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
+}
+function _updateWxDisplay() {
+  var sel=document.querySelector('[name="wxChoice"]:checked'), choice=sel?sel.value:"checkout";
+  var panel=document.getElementById("wxDetailPanel"), snap=null;
+  if(choice==="checkout") snap=window._retCoSnap;
+  else if(choice==="now") snap=currentWx?wxSnapshot(currentWx):null;
+  else if(choice==="manual"){
+    var gn=id=>{var el=document.getElementById(id);return el&&el.value!==""?parseFloat(el.value):null;};
+    var gs=id=>{var el=document.getElementById(id);return el?el.value.trim():"";};
+    snap={bft:gn("manBft"),dir:gs("manDir"),ws:gn("manWs"),wg:gn("manWg"),wv:gn("manWv"),waveDir:gs("manWaveDir"),tc:gn("manTc"),feels:gn("manFeels"),pres:gn("manPres"),sst:gn("manSst"),flag:null,cond:null};
+  }
+  if(panel) panel.innerHTML=_wxSnapHtml(snap);
+  var mf=document.getElementById("wxManualFields"); if(mf) mf.style.display=choice==="manual"?"grid":"none";
 }
 
 function renderReturnForm() {
-  if (!returnCo) return;
-  document.getElementById('returnModalTitle').textContent =
-    s('member.checkInTitle') + ' — ' + (returnCo.boatName || '');
-
-  var coSnap = returnCo.wxSnapshot
-    ? (typeof returnCo.wxSnapshot === 'string'
-        ? JSON.parse(returnCo.wxSnapshot)
-        : returnCo.wxSnapshot)
-    : null;
-  var nowSnap = currentWx ? wxSnapshot(currentWx) : null;
-  if (coSnap && nowSnap) {
-    var fill = ["waveDir","sst","feels","pres","presTrend","cond"];
-    fill.forEach(function(k) {
-      if (coSnap[k] == null && nowSnap[k] != null) coSnap[k] = nowSnap[k];
-    });
-  }
-  window._retCoSnap = coSnap;
-  window._retTimeIn = null;
-  window._retWxSnap = null;
-
-  function shortDesc(sn) {
-    if (!sn) return 'No data';
-    var d = sn.dir || sn.wDir || '';
-    var w = sn.ws != null ? sn.ws + 'm/s ' : '';
-    return (d + ' ' + w + 'Bft' + (sn.bft || '?')).trim();
-  }
-
-  var def = coSnap ? 'checkout' : nowSnap ? 'now' : 'manual';
-
-  var coR = coSnap
-    ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px">' +
-      '<input type="radio" name="wxChoice" value="checkout" ' + (def === 'checkout' ? 'checked' : '') +
-      ' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()">' +
-      '<span><b>At launch:</b> ' + esc(shortDesc(coSnap)) + '</span></label>'
-    : '';
-  var nowR = nowSnap
-    ? '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px">' +
-      '<input type="radio" name="wxChoice" value="now" ' + (def === 'now' ? 'checked' : '') +
-      ' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()">' +
-      '<span><b>Current:</b> ' + esc(shortDesc(nowSnap)) + '</span></label>'
-    : '';
-  var manR =
-    '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px">' +
-    '<input type="radio" name="wxChoice" value="manual" ' + (def === 'manual' ? 'checked' : '') +
-    ' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()">' +
-    '<span><b>Manual</b></span></label>';
-
-  var manF =
-    '<div id="wxManualFields" style="display:' + (def === 'manual' ? 'grid' : 'none') +
-    ';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
-    '<div class="field"><label>Bft (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Wind m/s</label><input type="number" id="manWs" min="0" max="50" step="0.5" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Gusts m/s</label><input type="number" id="manWg" min="0" max="80" step="0.5" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Waves m</label><input type="number" id="manWv" min="0" max="15" step="0.1" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Wave dir</label><input type="text" id="manWaveDir" placeholder="N/SW" maxlength="4" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Air C</label><input type="number" id="manTc" step="0.5" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Feels C</label><input type="number" id="manFeels" step="0.5" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Pressure hPa</label><input type="number" id="manPres" min="900" max="1050" oninput="_updateWxDisplay()"></div>' +
-    '<div class="field"><label>Sea C</label><input type="number" id="manSst" step="0.5" oninput="_updateWxDisplay()"></div>' +
-    '</div>';
-
-  document.getElementById('returnModalBody').innerHTML =
-    '<div class="field" style="margin-bottom:14px">' +
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">TIME IN</label>' +
-      '<input type="text" id="retTimeIn" value="' + fmtTimeNow() + '" maxlength="5"' +
-      ' placeholder="HH:MM" style="width:80px"' +
-      ' oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">' +
-    '</div>' +
-    '<div style="margin-bottom:14px">' +
-      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WEATHER RECORD</div>' +
-      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">' +
-        coR + nowR + manR +
-      '</div>' +
-      manF +
-      '<div id="wxDetailPanel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px">' +
-        _wxSnapHtml(coSnap || nowSnap) +
-      '</div>' +
-    '</div>' +
-    '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="closeModal(\'returnModal\')">Cancel</button>' +
-      '<button class="btn btn-primary" onclick="advanceToChecklist()">Continue →</button>' +
-    '</div>';
-
-  setTimeout(function () {
-    var wx = currentWx; if (!wx) return;
-    function sf(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; }
-    sf('manBft',    wx.bft);
-    sf('manDir',    wx.wDir || wx.dir || '');
-    sf('manWs',     wx.ws      != null ? Math.round(wx.ws      * 10) / 10 : null);
-    sf('manWg',     wx.wg      != null ? Math.round(wx.wg      * 10) / 10 : null);
-    sf('manWv',     wx.waveH   != null ? Math.round(wx.waveH   * 10) / 10 : null);
-    sf('manWaveDir',wx.waveDir || '');
-    sf('manTc',     wx.airT      != null ? Math.round(wx.airT      * 10) / 10 : null);
-    sf('manFeels',  wx.apparentT != null ? Math.round(wx.apparentT * 10) / 10 : null);
-    sf('manPres',   wx.pres      != null ? Math.round(wx.pres)           : null);
-    sf('manSst',    wx.sst       != null ? Math.round(wx.sst       * 10) / 10 : null);
-  }, 0);
+  if(!returnCo) return;
+  document.getElementById('returnModalTitle').textContent=s('member.checkInTitle')+' — '+(returnCo.boatName||'');
+  var coSnap=returnCo.wxSnapshot?(typeof returnCo.wxSnapshot==='string'?JSON.parse(returnCo.wxSnapshot):returnCo.wxSnapshot):null;
+  var nowSnap=currentWx?wxSnapshot(currentWx):null;
+  if(coSnap&&nowSnap){["waveDir","sst","feels","pres","presTrend","cond"].forEach(k=>{if(coSnap[k]==null&&nowSnap[k]!=null)coSnap[k]=nowSnap[k];});}
+  window._retCoSnap=coSnap; window._retTimeIn=null; window._retWxSnap=null;
+  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',w=sn.ws!=null?sn.ws+'m/s ':'';return(d+' '+w+'Bft'+(sn.bft||'?')).trim();}
+  var def=coSnap?'checkout':nowSnap?'now':'manual';
+  var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
+  var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
+  var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Manual</b></span></label>';
+  var manF='<div id="wxManualFields" style="display:'+(def==='manual'?'grid':'none')+';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="field"><label>Bft (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Wind m/s</label><input type="number" id="manWs" min="0" max="50" step="0.5" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Gusts m/s</label><input type="number" id="manWg" min="0" max="80" step="0.5" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Waves m</label><input type="number" id="manWv" min="0" max="15" step="0.1" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Wave dir</label><input type="text" id="manWaveDir" placeholder="N/SW" maxlength="4" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Air °C</label><input type="number" id="manTc" step="0.5" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Feels °C</label><input type="number" id="manFeels" step="0.5" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Pressure hPa</label><input type="number" id="manPres" min="900" max="1050" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Sea °C</label><input type="number" id="manSst" step="0.5" oninput="_updateWxDisplay()"></div>'
+    +'</div>';
+  document.getElementById('returnModalBody').innerHTML=
+    '<div class="field" style="margin-bottom:14px">'
+      +'<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">TIME IN</label>'
+      +'<input type="text" id="retTimeIn" value="'+fmtTimeNow()+'" maxlength="5" placeholder="HH:MM" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">'
+    +'</div>'
+    +'<div style="margin-bottom:14px">'
+      +'<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WEATHER RECORD</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">'+coR+nowR+manR+'</div>'
+      +manF
+      +'<div id="wxDetailPanel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px">'+_wxSnapHtml(coSnap||nowSnap)+'</div>'
+    +'</div>'
+    +'<div class="btn-row">'
+      +'<button class="btn btn-secondary" onclick="closeModal(\'returnModal\')">Cancel</button>'
+      +'<button class="btn btn-primary" onclick="advanceToChecklist()">Continue →</button>'
+    +'</div>';
+  setTimeout(()=>{
+    var wx=currentWx; if(!wx) return;
+    function sf(id,v){var el=document.getElementById(id);if(el&&v!=null&&v!=='')el.value=v;}
+    sf('manBft',wx.bft); sf('manDir',wx.wDir||wx.dir||'');
+    sf('manWs',  wx.ws!=null?Math.round(wx.ws*10)/10:null);
+    sf('manWg',  wx.wg!=null?Math.round(wx.wg*10)/10:null);
+    sf('manWv',  wx.waveH!=null?Math.round(wx.waveH*10)/10:null);
+    sf('manWaveDir',wx.waveDir||'');
+    sf('manTc',  wx.airT!=null?Math.round(wx.airT*10)/10:null);
+    sf('manFeels',wx.apparentT!=null?Math.round(wx.apparentT*10)/10:null);
+    sf('manPres', wx.pres!=null?Math.round(wx.pres):null);
+    sf('manSst',  wx.sst!=null?Math.round(wx.sst*10)/10:null);
+  },0);
 }
 
 function advanceToChecklist() {
-  var retEl = document.getElementById('retTimeIn');
-  window._retTimeIn = retEl && /^[0-9]{2}:[0-9]{2}$/.test(retEl.value) ? retEl.value : fmtTimeNow();
-  var sel = document.querySelector('[name="wxChoice"]:checked');
-  var wxC = sel ? sel.value : 'checkout';
-  if (wxC === 'checkout') {
-    window._retWxSnap = window._retCoSnap || null;
-  } else if (wxC === 'now') {
-    window._retWxSnap = currentWx ? wxSnapshot(currentWx) : null;
-  } else {
-    var mn = function (id) { var el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : null; };
-    var ms = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    window._retWxSnap = {
-      bft: mn('manBft'), dir: ms('manDir'), ws: mn('manWs'), wg: mn('manWg'),
-      wv: mn('manWv'), waveDir: ms('manWaveDir'), tc: mn('manTc'), feels: mn('manFeels'),
-      pres: mn('manPres'), sst: mn('manSst'), flag: null, cond: null
-    };
+  var retEl=document.getElementById('retTimeIn');
+  window._retTimeIn=retEl&&/^[0-9]{2}:[0-9]{2}$/.test(retEl.value)?retEl.value:fmtTimeNow();
+  var sel=document.querySelector('[name="wxChoice"]:checked'), wxC=sel?sel.value:'checkout';
+  if(wxC==='checkout') window._retWxSnap=window._retCoSnap||null;
+  else if(wxC==='now') window._retWxSnap=currentWx?wxSnapshot(currentWx):null;
+  else {
+    var mn=id=>{var el=document.getElementById(id);return el&&el.value!==''?parseFloat(el.value):null;};
+    var ms=id=>{var el=document.getElementById(id);return el?el.value.trim():'';};
+    window._retWxSnap={bft:mn('manBft'),dir:ms('manDir'),ws:mn('manWs'),wg:mn('manWg'),wv:mn('manWv'),waveDir:ms('manWaveDir'),tc:mn('manTc'),feels:mn('manFeels'),pres:mn('manPres'),sst:mn('manSst'),flag:null,cond:null};
   }
   renderLandingChecklist();
 }
 
 function renderLandingChecklist() {
-  if (!returnCo) return;
-  document.getElementById('returnModalTitle').textContent =
-    s('member.checkInTitle') + ' — ' + (returnCo.boatName || '');
-  var cat      = (returnCo.boatCategory || 'other').toLowerCase();
-  var cl       = _launchChecklists[cat] || _launchChecklists.other;
-  var rawItems = (cl && cl.landing) ? cl.landing : [];
-  var items    = rawItems.slice().sort(function(a,b){ return (a.sort||0)-(b.sort||0); });
-  var checks   = items.map(function (it) {
-    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;' +
-      'border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">' +
-      '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">' +
-      '<span>' + esc(_clItemLabel(it)) + '</span></label>';
-  }).join('');
-  document.getElementById('returnModalBody').innerHTML =
-    (items.length
-      ? '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING — ' + _fmtCatLabel(cat) + '</div>' + checks
-      : '') +
-    '<div id="landCheckErr" style="display:none;font-size:11px;color:var(--red);margin:6px 0">Please confirm all items.</div>' +
-    '<div style="display:flex;gap:8px;margin:12px 0">' +
-      '<button type="button" class="btn btn-secondary"' +
-        ' style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55"' +
-        ' onclick="openInlineReport(\'damage\')">&#9888; Report damage</button>' +
-      '<button type="button" class="btn btn-secondary"' +
-        ' style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55"' +
-        ' onclick="openInlineReport(\'incident\')">&#128680; Report incident</button>' +
-    '</div>' +
-    '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>' +
-    '<div class="field" style="margin-bottom:14px">' +
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">PERSONAL NOTE</label>' +
-      '<textarea id="retNotes" rows="2" placeholder="Optional note for your logbook"' +
-        ' style="width:100%;resize:none;font-size:12px;background:var(--surface);' +
-        'border:1px solid var(--border);border-radius:6px;color:var(--text);' +
-        'padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>' +
-    '</div>' +
-    '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; Back</button>' +
-      '<button class="btn btn-primary" onclick="confirmCheckIn(\'' + returnCo.id + '\')">&#10003; Check In</button>' +
+  if(!returnCo) return;
+  document.getElementById('returnModalTitle').textContent=s('member.checkInTitle')+' — '+(returnCo.boatName||'');
+  var cat=(returnCo.boatCategory||'other').toLowerCase();
+  var cl=_launchChecklists[cat]||_launchChecklists.other||{};
+  var items=Array.isArray(cl.landing)?cl.landing.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
+  var checks=items.map(it=>
+    '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+    '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
+    '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
+  document.getElementById('returnModalBody').innerHTML=
+    (items.length?'<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
+    '<div id="landCheckErr" style="display:none;font-size:11px;color:var(--red);margin:6px 0">Please confirm all items.</div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0">'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" onclick="openInlineReport(\'damage\')">&#9888; Report damage</button>'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; Report incident</button>'+
+    '</div>'+
+    '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
+    '<div class="field" style="margin-bottom:14px">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">PERSONAL NOTE</label>'+
+      '<textarea id="retNotes" rows="2" placeholder="Optional note for your logbook" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+    '</div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; Back</button>'+
+      '<button class="btn btn-primary" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; Check In</button>'+
     '</div>';
 }
 
 // ── Inline report forms ───────────────────────────────────────────────────────
 function openInlineReport(type) {
-  document.getElementById('returnModalTitle').textContent =
-    type === 'damage' ? 'Report Damage' : 'Report Incident';
-
-  var body = type === 'damage'
-    ? _maintFormHtml()
-    : _incidentFormHtml();
-
-  document.getElementById('returnModalBody').innerHTML =
-    body +
-    '<div id="irErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>' +
-    '<div class="btn-row">' +
-      '<button class="btn btn-secondary" onclick="renderLandingChecklist()">&#8592; Back</button>' +
-      '<button class="btn btn-primary" onclick="submitInlineReport(\'' + type + '\')">Submit</button>' +
-    '</div>';
-
-  if (type === 'damage') {
-    setTimeout(function () {
-      _irSelectCat('boat');
-      var boatSel = document.getElementById('irBoat');
-      if (boatSel && returnCo && returnCo.boatId) boatSel.value = returnCo.boatId;
-    }, 0);
-  }
+  document.getElementById('returnModalTitle').textContent=type==='damage'?'Report Damage':'Report Incident';
+  document.getElementById('returnModalBody').innerHTML=
+    (type==='damage'?_maintFormHtml():_incidentFormHtml())+
+    '<div id="irErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row"><button class="btn btn-secondary" onclick="renderLandingChecklist()">&#8592; Back</button><button class="btn btn-primary" onclick="submitInlineReport(\''+type+'\')">Submit</button></div>';
+  if(type==='damage'){setTimeout(()=>{_irSelectCat('boat');var bs=document.getElementById('irBoat');if(bs&&returnCo&&returnCo.boatId)bs.value=returnCo.boatId;},0);}
 }
-
 function _maintFormHtml() {
-  var catBtns = ['boat', 'equipment', 'facility'].map(function (c) {
-    return '<button class="cat-btn" data-cat="' + c + '" onclick="_irSelectCat(\'' + c + '\')">' +
-      (c === 'boat' ? '⛵' : c === 'equipment' ? '🧰' : '🏠') + ' ' + c + '</button>';
-  }).join('');
-  var sevBtns = ['low', 'medium', 'high', 'critical'].map(function (s) {
-    return '<button class="sev-btn" data-sev="' + s + '" onclick="_irSelectSev(\'' + s + '\')">' + s.toUpperCase() + '</button>';
-  }).join('');
-  var boatOpts = boats.map(function (b) {
-    return '<option value="' + b.id + '">' + esc(b.name) + '</option>';
-  }).join('');
-  return '<div class="field"><label>Category</label>' +
-      '<div class="cat-btns">' + catBtns + '</div></div>' +
-    '<div class="field hidden" id="irBoatField"><label>Boat</label>' +
-      '<select id="irBoat"><option value="">Select boat...</option>' + boatOpts + '</select></div>' +
-    '<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label>' +
-      '<input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>' +
-    '<div class="field"><label>Part / area (optional)</label>' +
-      '<input type="text" id="irPart" placeholder="e.g. rudder, mast, zipper..."></div>' +
-    '<div class="field"><label>Severity</label>' +
-      '<div class="sev-btns">' + sevBtns + '</div></div>' +
-    '<div class="field"><label>Description</label>' +
-      '<textarea id="irDesc" rows="3" placeholder="Describe the issue..."' +
-        ' style="width:100%;resize:none;font-size:12px;background:var(--surface);' +
-        'border:1px solid var(--border);border-radius:6px;color:var(--text);' +
-        'padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>';
+  var catBtns=['boat','equipment','facility'].map(c=>'<button class="cat-btn" data-cat="'+c+'" onclick="_irSelectCat(\''+c+'\')"> '+(c==='boat'?'⛵':c==='equipment'?'🧰':'🏠')+' '+c+'</button>').join('');
+  var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
+  var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  return '<div class="field"><label>Category</label><div class="cat-btns">'+catBtns+'</div></div>'
+    +'<div class="field hidden" id="irBoatField"><label>Boat</label><select id="irBoat"><option value="">Select boat...</option>'+boatOpts+'</select></div>'
+    +'<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label><input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>'
+    +'<div class="field"><label>Part / area (optional)</label><input type="text" id="irPart" placeholder="e.g. rudder, mast, zipper..."></div>'
+    +'<div class="field"><label>Severity</label><div class="sev-btns">'+sevBtns+'</div></div>'
+    +'<div class="field"><label>Description</label><textarea id="irDesc" rows="3" placeholder="Describe the issue..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>';
 }
-
 function _irSelectCat(cat) {
-  window._irCat = cat;
-  document.querySelectorAll('.cat-btn').forEach(function (b) {
-    b.classList.toggle('selected', b.dataset.cat === cat);
-  });
-  var bf  = document.getElementById('irBoatField');
-  var itf = document.getElementById('irItemField');
-  if (bf)  bf.classList.toggle('hidden',  cat !== 'boat');
-  if (itf) itf.classList.toggle('hidden', cat === 'boat');
-  if (cat !== 'boat' && document.getElementById('irItemLabel'))
-    document.getElementById('irItemLabel').textContent =
-      cat === 'equipment' ? 'Equipment item' : 'Location / area';
+  window._irCat=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('selected',b.dataset.cat===cat));
+  var bf=document.getElementById('irBoatField'), itf=document.getElementById('irItemField');
+  if(bf) bf.classList.toggle('hidden',cat!=='boat');
+  if(itf) itf.classList.toggle('hidden',cat==='boat');
+  if(cat!=='boat'&&document.getElementById('irItemLabel'))document.getElementById('irItemLabel').textContent=cat==='equipment'?'Equipment item':'Location / area';
 }
-
-function _irSelectSev(sev) {
-  window._irSev = sev;
-  document.querySelectorAll('.sev-btn').forEach(function (b) {
-    b.classList.toggle('selected', b.dataset.sev === sev);
-  });
-}
-
+function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
 function _incidentFormHtml() {
-  var types = [
-    ["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],
-    ["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡ Near miss"],
-    ["missing","🔍 Missing person"],["propertyDmg","🏗 Property damage"],["other","📌 Other"]
-  ];
-  var typeBoxes = types.map(function(tp) {
-    return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0">' +
-      '<input type="checkbox" class="ir-type-box" value="' + tp[0] + '" style="accent-color:var(--brass)">' +
-      '<span>' + tp[1] + '</span></label>';
-  }).join("");
-  var sevBtns = ["low","medium","high","critical"].map(function(s) {
-    return '<button class="sev-btn" data-sev="' + s + '" onclick="_irSelectSev(\''+ s +'\')">'+ s.toUpperCase() +'</button>';
-  }).join("");
-  var boatOpts = boats.map(function(b) {
-    return '<option value="' + b.id + '">' + esc(b.name) + '</option>';
-  }).join("");
-  return '<div class="field"><label>Type (select all that apply)</label>' +
-    '<div class="ir-type-grid">' + typeBoxes + '</div></div>' +
-    '<div class="field"><label>Severity</label>' +
-    '<div class="sev-btns">' + sevBtns + '</div></div>' +
-    '<div class="field"><label>Boat involved (optional)</label>' +
-    '<select id="irIncBoat"><option value="">None</option>' + boatOpts + '</select></div>' +
-    '<div class="field"><label>Location</label>' +
-    '<input type="text" id="irLocation" placeholder="e.g. Fossvogur, outer mark..."></div>' +
-    '<div class="field"><label>Description</label>' +
-    '<textarea id="irDesc" rows="3" placeholder="Describe what happened..."' +
-      ' style="width:100%;resize:none;font-size:12px;background:var(--surface);' +
-      'border:1px solid var(--border);border-radius:6px;color:var(--text);' +
-      'padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>' +
-    '<div class="field"><label>People involved (optional)</label>' +
-    '<input type="text" id="irPeople" placeholder="Names or count..."></div>' +
-    '<div class="field"><label>Injuries (optional)</label>' +
-    '<input type="text" id="irInjuries" placeholder="Describe any injuries..."></div>' +
-    '<div class="field"><label>Immediate action taken (optional)</label>' +
-    '<input type="text" id="irAction" placeholder="e.g. First aid given, coastguard called..."></div>' +
-    '<div class="field"><label>Contact / handoff notes (optional)</label>' +
-    '<input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>';
+  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗 Property damage"],["other","📌 Other"]];
+  var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
+  var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
+  var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  return '<div class="field"><label>Type (select all that apply)</label><div class="ir-type-grid">'+typeBoxes+'</div></div>'
+    +'<div class="field"><label>Severity</label><div class="sev-btns">'+sevBtns+'</div></div>'
+    +'<div class="field"><label>Boat involved (optional)</label><select id="irIncBoat"><option value="">None</option>'+boatOpts+'</select></div>'
+    +'<div class="field"><label>Location</label><input type="text" id="irLocation" placeholder="e.g. Fossvogur, outer mark..."></div>'
+    +'<div class="field"><label>Description</label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'
+    +'<div class="field"><label>People involved (optional)</label><input type="text" id="irPeople" placeholder="Names or count..."></div>'
+    +'<div class="field"><label>Injuries (optional)</label><input type="text" id="irInjuries" placeholder="Describe any injuries..."></div>'
+    +'<div class="field"><label>Immediate action taken (optional)</label><input type="text" id="irAction" placeholder="e.g. First aid given, coastguard called..."></div>'
+    +'<div class="field"><label>Contact / handoff notes (optional)</label><input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>';
 }
-
 async function submitInlineReport(type) {
-  var errEl = document.getElementById('irErr');
-  var desc  = (document.getElementById('irDesc') || {}).value || '';
-  if (!desc.trim()) {
-    errEl.textContent = 'Description required.'; errEl.style.display = 'block'; return;
-  }
-  var co = returnCo;
+  var errEl=document.getElementById('irErr'), desc=(document.getElementById('irDesc')||{}).value||'';
+  if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
+  var co=returnCo;
   try {
-    if (type === 'damage') {
-      var cat  = window._irCat || 'boat';
-      var sev  = window._irSev || 'medium';
-      var bid  = cat === 'boat' ? ((document.getElementById('irBoat') || {}).value || co.boatId || '') : '';
-      var bnm  = cat === 'boat' ? (boats.find(function(b){return b.id===bid;})||{name:co.boatName||''}).name : '';
-      var item = cat !== 'boat' ? ((document.getElementById('irItem') || {}).value || '') : '';
-      var part = (document.getElementById('irPart') || {}).value || '';
-      await apiPost('saveMaintenance', {
-        category: cat, boatId: bid, boatName: bnm, itemName: item,
-        part: part, severity: sev, description: desc,
-        markOos: false, reportedBy: user.name, source: 'member-checkin',
-      });
+    if(type==='damage'){
+      var cat=window._irCat||'boat', sev=window._irSev||'medium';
+      var bid=cat==='boat'?((document.getElementById('irBoat')||{}).value||co.boatId||''):'';
+      var bnm=cat==='boat'?(boats.find(b=>b.id===bid)||{name:co.boatName||''}).name:'';
+      var item=cat!=='boat'?((document.getElementById('irItem')||{}).value||''):'';
+      await apiPost('saveMaintenance',{category:cat,boatId:bid,boatName:bnm,itemName:item,part:(document.getElementById('irPart')||{}).value||'',severity:sev,description:desc,markOos:false,reportedBy:user.name,source:'member-checkin'});
     } else {
-      var types = Array.from(document.querySelectorAll('.ir-type-box:checked')).map(function(el){return el.value;});
-      if (!types.length) types = ['other'];
-      var sev2 = window._irSev || 'medium';
-      var irBoat = document.getElementById('irIncBoat');
-      var irBoatId = irBoat ? irBoat.value : (co.boatId||'');
-      var irBoatName = irBoatId ? (boats.find(function(b){return b.id===irBoatId;})||{name:''}).name : '';
-      await apiPost('createIncident', {
-        types: types, severity: sev2, description: desc,
-        boatId: irBoatId, boatName: irBoatName,
-        location: (document.getElementById('irLocation')||{}).value||'',
-        involvedPersons: (document.getElementById('irPeople')||{}).value||'',
-        injuries: (document.getElementById('irInjuries')||{}).value||'',
-        actionTaken: (document.getElementById('irAction')||{}).value||'',
-        handoffNotes: (document.getElementById('irHandoff')||{}).value||'',
-        reportedBy: user.name, source: 'member-checkin',
-      });
+      var types=Array.from(document.querySelectorAll('.ir-type-box:checked')).map(el=>el.value);
+      if(!types.length)types=['other'];
+      var sev2=window._irSev||'medium', irBoat=document.getElementById('irIncBoat');
+      var irBoatId=irBoat?irBoat.value:(co.boatId||'');
+      var irBoatName=irBoatId?(boats.find(b=>b.id===irBoatId)||{name:''}).name:'';
+      await apiPost('createIncident',{types,severity:sev2,description:desc,boatId:irBoatId,boatName:irBoatName,location:(document.getElementById('irLocation')||{}).value||'',involvedPersons:(document.getElementById('irPeople')||{}).value||'',injuries:(document.getElementById('irInjuries')||{}).value||'',actionTaken:(document.getElementById('irAction')||{}).value||'',handoffNotes:(document.getElementById('irHandoff')||{}).value||'',reportedBy:user.name,source:'member-checkin'});
     }
     renderLandingChecklist();
-    setTimeout(function () {
-      var note = document.getElementById('reportFlagNote');
-      if (note) {
-        note.textContent = type === 'damage' ? '✓ Damage report submitted.' : '✓ Incident report submitted.';
-        note.style.color = 'var(--green)'; note.style.display = 'block';
-      }
-    }, 50);
-  } catch (e) {
-    errEl.textContent = 'Error: ' + e.message; errEl.style.display = 'block';
-  }
+    setTimeout(()=>{var note=document.getElementById('reportFlagNote');if(note){note.textContent=type==='damage'?'✓ Damage report submitted.':'✓ Incident report submitted.';note.style.color='var(--green)';note.style.display='block';}},50);
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
 }
 
 async function confirmCheckIn(coId) {
-  var boxes = document.querySelectorAll('.land-check');
-  if (boxes.length && !Array.from(boxes).every(function (b) { return b.checked; })) {
-    document.getElementById('landCheckErr').style.display = 'block'; return;
-  }
-  var timeIn   = window._retTimeIn || fmtTimeNow();
-  var tripSnap = window._retWxSnap || null;
-  var notes    = (document.getElementById('retNotes') || {}).value || '';
-  var co = checkouts.find(function (c) { return c.id === coId; });
-  if (!co) return;
-  var tout  = (co.checkedOutAt || co.timeOut || '').slice(0, 5);
-  var h     = (tout && timeIn) ? ((new Date('2000-01-01T' + timeIn) - new Date('2000-01-01T' + tout)) / 3600000) : 0;
-  var today = new Date().toISOString().slice(0, 10);
-  var errEl = document.getElementById('landCheckErr');
+  var boxes=document.querySelectorAll('.land-check');
+  if(boxes.length&&!Array.from(boxes).every(b=>b.checked)){document.getElementById('landCheckErr').style.display='block';return;}
+  var timeIn=window._retTimeIn||fmtTimeNow(), tripSnap=window._retWxSnap||null;
+  var notes=(document.getElementById('retNotes')||{}).value||'';
+  var co=checkouts.find(c=>c.id===coId); if(!co) return;
+  var tout=(co.checkedOutAt||co.timeOut||'').slice(0,5);
+  var h=(tout&&timeIn)?((new Date('2000-01-01T'+timeIn)-new Date('2000-01-01T'+tout))/3600000):0;
+  var today=new Date().toISOString().slice(0,10), errEl=document.getElementById('landCheckErr');
   try {
-    await apiPost('checkIn', {
-      id: coId, timeIn, kennitala: user.kennitala,
-      memberName: user.name, boatId: co.boatId, boatName: co.boatName,
-    });
-    await apiPost('saveTrip', {
-      kennitala: user.kennitala, memberName: user.name, memberId: user.id || user.kennitala,
-      date: today, boatId: co.boatId, boatName: co.boatName,
-      locationId: co.locationId || '', locationName: co.locationName || '',
-      timeOut: tout, timeIn, hoursDecimal: h > 0 ? h.toFixed(2) : '0', crew: co.crew || 1,
-      beaufort:   tripSnap ? tripSnap.bft : null,
-      windDir:    tripSnap ? (tripSnap.dir || tripSnap.wDir || '') : '',
-      wxSnapshot: tripSnap ? JSON.stringify(tripSnap) : null,
-      notes, role: 'skipper', linkedCheckoutId: coId,
-    });
-    checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
-    closeModal('returnModal');
-    renderActiveCheckouts(); renderFleetByCat();
-    logbookLoaded = false;
-    showToast(s('toast.checkedIn'));
-  } catch (e) {
-    if (errEl) { errEl.textContent = s('toast.error') + ': ' + e.message; errEl.style.display = 'block'; }
-  }
+    await apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName});
+    await apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
+      date:today,boatId:co.boatId,boatName:co.boatName,locationId:co.locationId||'',locationName:co.locationName||'',
+      timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
+      beaufort:tripSnap?tripSnap.bft:null,windDir:tripSnap?(tripSnap.dir||tripSnap.wDir||''):'',
+      wxSnapshot:tripSnap?JSON.stringify(tripSnap):null,notes,role:'skipper',linkedCheckoutId:coId});
+    checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
+    closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
+    logbookLoaded=false; showToast(s('toast.checkedIn'));
+  } catch(e){ if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';} }
 }
 
 // ══ MANUAL TRIP MODAL ════════════════════════════════════════════════════════
 function openManualTripModal() {
-  document.getElementById('rDate').value    = new Date().toISOString().slice(0,10);
-  document.getElementById('rTimeOut').value = '';
-  document.getElementById('rTimeIn').value  = '';
-  document.getElementById('rNotes').value   = '';
-  document.getElementById('manualTripErr').style.display = 'none';
+  document.getElementById('rDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('rTimeOut').value=''; document.getElementById('rTimeIn').value='';
+  document.getElementById('rNotes').value=''; document.getElementById('manualTripErr').style.display='none';
   openModal('manualTripModal');
 }
-
 async function submitManualTrip() {
-  const err   = document.getElementById('manualTripErr');
-  const date  = document.getElementById('rDate').value;
-  const bid   = document.getElementById('rBoat').value;
-  const lid   = document.getElementById('rLocation').value;
-  const tout  = document.getElementById('rTimeOut').value;
-  const tin   = document.getElementById('rTimeIn').value;
-  if (!date||!bid) { err.textContent = s('lbl.date')+' + '+s('lbl.boat')+' required.'; err.style.display='block'; return; }
-  const boat     = boats.find(b=>b.id===bid)||{};
-  const location = locations.find(l=>l.id===lid)||{};
-  const h = tout&&tin ? ((new Date('2000-01-01T'+tin).getTime()-new Date('2000-01-01T'+tout).getTime())/3600000) : 0;
+  const err=document.getElementById('manualTripErr'),date=document.getElementById('rDate').value,bid=document.getElementById('rBoat').value,lid=document.getElementById('rLocation').value,tout=document.getElementById('rTimeOut').value,tin=document.getElementById('rTimeIn').value;
+  if(!date||!bid){err.textContent=s('lbl.date')+' + '+s('lbl.boat')+' required.';err.style.display='block';return;}
+  const boat=boats.find(b=>b.id===bid)||{},location=locations.find(l=>l.id===lid)||{};
+  const h=tout&&tin?((new Date('2000-01-01T'+tin).getTime()-new Date('2000-01-01T'+tout).getTime())/3600000):0;
   try {
-    await apiPost('saveTrip',{
-      kennitala:user.kennitala, memberName:user.name, memberId:user.id||user.kennitala,
-      date, boatId:bid, boatName:boat.name||bid,
-      locationId:lid, locationName:location.name||lid,
-      timeOut:tout, timeIn:tin,
-      hoursDecimal: h>0 ? h.toFixed(2) : '',
-      notes:document.getElementById('rNotes').value.trim(),
-      role:'skipper',
-    });
-    closeModal('manualTripModal');
-    logbookLoaded = false;
-    showToast(s('toast.saved'));
-  } catch(e) { err.textContent = s('toast.error')+': '+e.message; err.style.display='block'; }
+    await apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,date,boatId:bid,boatName:boat.name||bid,locationId:lid,locationName:location.name||lid,timeOut:tout,timeIn:tin,hoursDecimal:h>0?h.toFixed(2):'',notes:document.getElementById('rNotes').value.trim(),role:'skipper'});
+    closeModal('manualTripModal'); logbookLoaded=false; showToast(s('toast.saved'));
+  } catch(e){err.textContent=s('toast.error')+': '+e.message;err.style.display='block';}
 }
 
-// ══ FORM SELECTS ══════════════════════════════════════════════════════════════
+// ══ FORM SELECTS / UTILS ══════════════════════════════════════════════════════
 function populateFormSelects() {
-  const rBoat = document.getElementById('rBoat');
-  const rLoc  = document.getElementById('rLocation');
-  boats.forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; rBoat.appendChild(o); });
-  locations.forEach(l=>{ const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; rLoc.appendChild(o); });
+  const rBoat=document.getElementById('rBoat'),rLoc=document.getElementById('rLocation');
+  boats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;rBoat.appendChild(o);});
+  locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
 }
-
-function parseJson(v, fallback) {
-  if (!v) return fallback;
-  try { return typeof v==='string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
-}
+function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
 </script>
 </body>
 </html>
