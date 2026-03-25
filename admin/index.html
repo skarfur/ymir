@@ -1081,7 +1081,13 @@ function renderBoats() {
       </div>`;
     }).join("");
 }
-
+  
+function openBoatModalForCat(catKey) {
+  openBoatModal();
+  const sel = document.getElementById('bCategory');
+  if (sel) sel.value = catKey;
+}
+  
 function openBoatModal(id) {
   editingId = id || null;
   const b   = id ? boats.find(x => x.id === id) : null;
