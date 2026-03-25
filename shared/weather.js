@@ -72,11 +72,15 @@ const SCORE_CONFIG = {
     green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢',
               label:'Green',  labelIS:'Grænn',
               advice:'Good conditions — open to all qualified members.',
-              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.' },
+              adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.' 
+              description:'Conditions are suitable for sailing. All qualified members may use boats according to their certification level.',
+              descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
     yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
               label:'Yellow', labelIS:'Gulur',
               advice:'Marginal — experienced sailors only.',
-              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.' },
+              adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.' 
+              description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Ensure someone ashore knows your plans and expected return time.',
+              descriptionIS:'Aðstæður eru á mörkum. Aðeins reyndir siglingar ættu að fara út. Gerið ráð fyrir óvæntum breytingum og tryggist að einhver á landi viti af þíðum ykkar.' },
     orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠',
               label:'Orange', labelIS:'Appelsínugulur',
               advice:'Difficult — keelboats only; staff auth required for dinghies.',
@@ -84,11 +88,15 @@ const SCORE_CONFIG = {
     red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴',
               label:'Red',    labelIS:'Rauður',
               advice:'No self-service sailing — staff must approve each checkout.',
-              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.' },
+              adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.' 
+              description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
+              descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlægingu personuðlega.' },
     black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⛔',
               label:'Closed', labelIS:'Lokað',
               advice:'Water closed — all sailing suspended.',
-              adviceIS:'Sjór lokaður — allar siglingar staðvaðar.' },
+              adviceIS:'Sjór lokaður — allar siglingar staðvaðar.' 
+              description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
+              descriptionIS:'Sjór er lokaður öllum siglingu. Allir bátar verða að vera á landi eða snara aftur til hafnar þegar í stað.' },
   },
 };
 
@@ -291,9 +299,12 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       + '<span style="font-size:12px;color:'+(staffStatus.supportBoat?'#5dade2':'var(--muted)')+'">⛵ '+(IS?'Björunarbátur':'Support boat')+': <b>'+(staffStatus.supportBoat?(IS?'Á sjó':'Out'):(IS?'Ekki á sjó':'Not out'))+'</b></span>'
       + '</div></div>';
   }
+  const desc = IS && flag.descriptionIS ? flag.descriptionIS : (flag.description || '');
   return '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
-    + '<div style="font-size:18px;margin-bottom:4px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
-    + '<div style="font-size:12px;color:'+flag.color+';opacity:.85">'+advice+'</div></div>'
+    + '<div style="font-size:18px;margin-bottom:6px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
+    + '<div style="font-size:12px;color:'+flag.color+';opacity:.85;margin-bottom:6px">'+advice+'</div>'
+    + (desc ? '<div style="font-size:12px;color:var(--text);line-height:1.55;border-top:1px solid '+flag.border+';padding-top:10px;margin-top:4px">'+desc+'</div>' : '')
+    + '</div>'
     + barHtml
     + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+(IS?'STIGAÚTREIKNINGUR':'SCORE BREAKDOWN')+'</div>'
     + rows + totalRow + staffHtml;
@@ -420,14 +431,17 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       const waveH = mc?.wave_height ?? null;
       const sst   = mc?.sea_surface_temperature ?? null;
       const pres  = c.surface_pressure;
-      const { flagKey, flag, reasons } = wxAssessFlag(ws, wDir, waveH ?? 0);
+      const { flagKey, flag, score, breakdown, reasons } = wxScoreFlag(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, 'good');
 
       const nowISO = new Date().toISOString().slice(0,13);
       const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
       const { trend, diff } = wxPressureTrend(hr.surface_pressure, nowIdx);
 
       if (onData) onData({ ws, wd, wg, bft, waveH, wDir, sst, airT: c.temperature_2m,
-        apparentT: c.apparent_temperature, code: c.weather_code, flagKey, pres, presTrend: trend });
+        apparentT: c.apparent_temperature, code: c.weather_code, flagKey, score, breakdown,
+        pres, presTrend: trend,
+        flagResult: { flagKey, flag, score, breakdown },
+      });
 
       const updTime = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
       targetEl.className = `wx-widget flag-${flagKey}`;
@@ -486,6 +500,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
           </div>
         </div>`;
       targetEl._wxRefresh = refresh;
+      targetEl._wxResult  = { flagKey, flag, score, breakdown };
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
