@@ -328,23 +328,20 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
 // ── Shared flag detail modal ─────────────────────────────────────────────────
 // Each page calls wxInitFlagModal(getSnap, getStaffStatus) once on load.
 // getSnap / getStaffStatus are zero-arg functions returning current values.
-function wxInitFlagModal(getSnap, getStaffStatus) {
-  // Inject modal HTML once
+function wxInitFlagModal(getStaffStatus) {
   if (!document.getElementById('wxFlagModal')) {
     const div = document.createElement('div');
     div.innerHTML = "<!-- ══ FLAG DETAIL MODAL ══ -->\n<div class=\"modal-overlay hidden\" id=\"wxFlagModal\" onclick=\"if(event.target===this)closeModal('wxFlagModal')\">\n  <div class=\"modal\" style=\"max-width:480px\">\n    <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:14px\">\n      <h3 style=\"margin:0\" id=\"wxFlagModalTitle\"></h3>\n      <button class=\"btn-ghost\" onclick=\"closeModal('wxFlagModal')\" style=\"font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)\">×</button>\n    </div>\n    <div id=\"wxFlagModalBody\"></div>\n    <div class=\"btn-row\" style=\"margin-top:16px\">\n      <button class=\"btn btn-secondary\" onclick=\"closeModal('wxFlagModal')\" data-s=\"btn.close\"></button>\n    </div>\n  </div>\n</div>";
     document.body.appendChild(div.firstElementChild);
   }
-  // Wire global opener
-  // Store staff status getter on widget element for badge rendering
-  const _wxEl = document.getElementById('wxWidget');
-  if (_wxEl) _wxEl._getStaffStatus = getStaffStatus;
+  window._wxGetStaffStatus = typeof getStaffStatus === 'function' ? getStaffStatus : () => getStaffStatus;
   window.wxOpenFlagDetail = function() {
-    const snap        = typeof getSnap        === 'function' ? getSnap()        : getSnap;
-    const staffStatus = typeof getStaffStatus === 'function' ? getStaffStatus() : getStaffStatus;
-    const IS   = typeof getLang === 'function' ? getLang() === 'IS' : false;
-    const body  = document.getElementById('wxFlagModalBody');
-    const title = document.getElementById('wxFlagModalTitle');
+    const wxEl        = document.getElementById('wxWidget');
+    const snap        = wxEl && wxEl._wxResult;
+    const staffStatus = typeof window._wxGetStaffStatus === 'function' ? window._wxGetStaffStatus() : null;
+    const IS          = typeof getLang === 'function' ? getLang() === 'IS' : false;
+    const body        = document.getElementById('wxFlagModalBody');
+    const title       = document.getElementById('wxFlagModalTitle');
     if (!body || !snap) return;
     const result = wxScoreFlag(snap.ws, snap.wDir, snap.waveH ?? 0,
       snap.temperature_2m, snap.sst, snap.wg, 'good');
@@ -552,18 +549,22 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       // Render duty status badges if available
       const _ssBadges = targetEl.querySelector('.wx-status-badges');
       if (_ssBadges) {
-        const _ss = typeof targetEl._getStaffStatus === 'function' ? targetEl._getStaffStatus() : null;
+        const _ss  = typeof window._wxGetStaffStatus === 'function' ? window._wxGetStaffStatus() : null;
+        const _isB = typeof getLang === 'function' && getLang() === 'IS';
+        const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
         if (_ss) {
-          const _isB = typeof getLang === 'function' && getLang() === 'IS';
-          const _dc = _ss.onDuty    ? '#27ae60' : 'var(--muted)';
-          const _bc = _ss.supportBoat ? '#5dade2' : 'var(--muted)';
-          const _dbg = _ss.onDuty    ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
+          const _dc  = _ss.onDuty      ? '#27ae60'                          : 'var(--muted)';
+          const _bc  = _ss.supportBoat ? '#5dade2'                          : 'var(--muted)';
+          const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
           const _bbg = _ss.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
-          const _bstyle = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;cursor:default;';
+          const _dtx = _isB ? (_ss.onDuty      ? 'Starfsmaður á vakt'  : 'Enginn starfsmaður')
+                            : (_ss.onDuty      ? 'Staff on duty'                  : 'No staff on duty');
+          const _btx = _isB ? (_ss.supportBoat ? 'Björunarbátur'            : 'Enginn björunarbátur')
+                            : (_ss.supportBoat ? 'Support boat out'              : 'No support boat');
           _ssBadges.innerHTML =
-            '<span style="'+_bstyle+'background:'+_dbg+';color:'+_dc+'">🧑 '+(_isB?'Starfsmaður á vakt':'Staff on duty')+'</span>'
+            '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
             + ' '
-            + '<span style="'+_bstyle+'background:'+_bbg+';color:'+_bc+'">⛵ '+(_isB?'Björunarbátur':'Support boat')+'</span>';
+            + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">⛵ '+_btx+'</span>';
         } else {
           _ssBadges.innerHTML = '';
         }
