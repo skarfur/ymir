@@ -184,7 +184,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     score += cfg.gustModifierPts;
     breakdown.push({ factor:'gusts', pts:cfg.gustModifierPts,
       label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
-      labelIS:'Vindhviður Vindstig '+wxMsToBft(wg) });
+      labelIS:'Hviður Vindstig '+wxMsToBft(wg) });
   }
 
   const wh = waveH || 0;
@@ -475,7 +475,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
               <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${IS?'Vindstig':'Force'} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${IS?'Vindhviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
+              ${IS?'Hviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
