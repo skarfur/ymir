@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('reportIssueLink').textContent     = s('staff.reportIssue');
   document.getElementById('cdTitle').textContent             = s('staff.coDetail.title');
 
-  wxWidget(document.getElementById('wxWidget'), {
+  wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus,
     showRefreshBtn: true,
     onData: snap => {
       wxData = snap;
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
-  wxInitFlagModal(() => _staffStatus);
+  // wxInitFlagModal removed — modal and badges now built into wxWidget
   setInterval(pollOverdueAlerts, 120000);
 });
 
