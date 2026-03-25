@@ -125,9 +125,6 @@
     <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="wx.loading"></div>
   </div>
 
-  <!-- ══ STAFF STATUS ══ -->
-  <div id="memberStaffStatus" style="margin-bottom:10px"></div>
-
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
@@ -996,9 +993,20 @@ function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='stri
 function _renderMemberStaffStatus() {
   const el = document.getElementById('memberStaffStatus');
   if (!el) return;
-  el.innerHTML = typeof wxStaffStatusHtml === 'function'
-    ? wxStaffStatusHtml(_staffStatus, getLang())
-    : '';
+  const IS = getLang() === 'IS';
+  if (!_staffStatus) { el.innerHTML = ''; return; }
+  const onDuty = _staffStatus.onDuty;
+  const boat   = _staffStatus.supportBoat;
+  const dutyCol  = onDuty ? '#27ae60' : 'var(--muted)';
+  const boatCol  = boat   ? '#5dade2'  : 'var(--muted)';
+  const dutyBg   = onDuty ? '#27ae6018;border-color:#27ae6044' : 'var(--surface);border-color:var(--border)';
+  const boatBg   = boat   ? '#2980b918;border-color:#2980b944' : 'var(--surface);border-color:var(--border)';
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px">'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + dutyBg + ';color:' + dutyCol + '">'
+    + '🧑 ' + (IS ? 'Starfsmaður á vakt' : 'Staff on duty') + '</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + boatBg + ';color:' + boatCol + '">'
+    + '⛵ ' + (IS ? 'Björunarbátur' : 'Support boat') + '</span>'
+    + '</div>';
 }
 
 function openMemberFlagDetail() {
