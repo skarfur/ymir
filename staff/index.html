@@ -7,42 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
-<script src="../shared/api.js">
-// ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
-function renderStaffStatusStrip() {
-  const IS = getLang() === 'IS';
-  const btnDuty = document.getElementById('btnStaffOnDuty');
-  const btnBoat = document.getElementById('btnSupportBoat');
-  const upd     = document.getElementById('staffStatusUpdated');
-  if (!btnDuty || !btnBoat) return;
-  function styleBtn(btn, active, off, on, col) {
-    btn.textContent = active ? on : off;
-    btn.style.background  = active ? col+'22' : 'var(--surface)';
-    btn.style.borderColor = active ? col+'88' : 'var(--border)';
-    btn.style.color       = active ? col       : 'var(--muted)';
-  }
-  styleBtn(btnDuty, _staffStatus.onDuty,
-    IS ? '🧑 Starfsmaður á vakt' : '🧑 Staff on duty',
-    IS ? '🧑 Starfsmaður á vakt ✓' : '🧑 Staff on duty ✓', '#27ae60');
-  styleBtn(btnBoat, _staffStatus.supportBoat,
-    IS ? '⛵ Björunarbátur á sjó' : '⛵ Support boat out',
-    IS ? '⛵ Björunarbátur á sjó ✓' : '⛵ Support boat out ✓', '#5dade2');
-  if (upd && _staffStatus.updatedAt) {
-    const mins = Math.round((Date.now() - new Date(_staffStatus.updatedAt)) / 60000);
-    upd.textContent = (mins < 2 ? (IS?'Rétt í ûessu':'just now') : mins < 60 ? (IS?'fyrir '+mins+' mín':mins+' min ago') : (IS?'fyrir '+Math.floor(mins/60)+' klst':Math.floor(mins/60)+'h ago'));
-    if (_staffStatus.updatedByName) upd.textContent = _staffStatus.updatedByName + ' · ' + upd.textContent;
-  } else if (upd) { upd.textContent = ''; }
-}
-async function toggleStaffStatus(field) {
-  _staffStatus[field] = !_staffStatus[field];
-  _staffStatus.updatedAt = new Date().toISOString();
-  _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
-  renderStaffStatusStrip();
-  try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
-  catch(e) { showToast('Status saved — sync when online', 'warn'); }
-}
-
-</script>
+<script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
@@ -1301,6 +1266,41 @@ function openDailyLogForNew() {
   // Navigate to daily log; pass checkout id so it can pre-link
   closeDlLinkModal();
   window.location.href = '../dailylog/?linkCheckout=' + encodeURIComponent(_dlLinkCheckoutId || '');
+}
+
+
+// ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
+function renderStaffStatusStrip() {
+  const IS = getLang() === 'IS';
+  const btnDuty = document.getElementById('btnStaffOnDuty');
+  const btnBoat = document.getElementById('btnSupportBoat');
+  const upd     = document.getElementById('staffStatusUpdated');
+  if (!btnDuty || !btnBoat) return;
+  function styleBtn(btn, active, off, on, col) {
+    btn.textContent = active ? on : off;
+    btn.style.background  = active ? col+'22' : 'var(--surface)';
+    btn.style.borderColor = active ? col+'88' : 'var(--border)';
+    btn.style.color       = active ? col       : 'var(--muted)';
+  }
+  styleBtn(btnDuty, _staffStatus.onDuty,
+    IS ? '🧑 Starfsmaður á vakt' : '🧑 Staff on duty',
+    IS ? '🧑 Starfsmaður á vakt ✓' : '🧑 Staff on duty ✓', '#27ae60');
+  styleBtn(btnBoat, _staffStatus.supportBoat,
+    IS ? '⛵ Björunarbátur á sjó' : '⛵ Support boat out',
+    IS ? '⛵ Björunarbátur á sjó ✓' : '⛵ Support boat out ✓', '#5dade2');
+  if (upd && _staffStatus.updatedAt) {
+    const mins = Math.round((Date.now() - new Date(_staffStatus.updatedAt)) / 60000);
+    upd.textContent = (mins < 2 ? (IS?'Rétt í ûessu':'just now') : mins < 60 ? (IS?'fyrir '+mins+' mín':mins+' min ago') : (IS?'fyrir '+Math.floor(mins/60)+' klst':Math.floor(mins/60)+'h ago'));
+    if (_staffStatus.updatedByName) upd.textContent = _staffStatus.updatedByName + ' · ' + upd.textContent;
+  } else if (upd) { upd.textContent = ''; }
+}
+async function toggleStaffStatus(field) {
+  _staffStatus[field] = !_staffStatus[field];
+  _staffStatus.updatedAt = new Date().toISOString();
+  _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
+  renderStaffStatusStrip();
+  try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
+  catch(e) { showToast('Status saved — sync when online', 'warn'); }
 }
 
 </script>
