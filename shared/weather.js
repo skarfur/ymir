@@ -169,7 +169,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (wBand.pts > 0) {
     score += wBand.pts;
     breakdown.push({ factor:'wind', pts:wBand.pts,
-      label:'Wind Force '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Force '+bft });
+      label:'Wind Force '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Vindstig '+bft });
   }
 
   const dir = (wDir || '').toUpperCase().trim();
@@ -183,7 +183,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     score += cfg.gustModifierPts;
     breakdown.push({ factor:'gusts', pts:cfg.gustModifierPts,
       label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
-      labelIS:'Vindhviður Force '+wxMsToBft(wg) });
+      labelIS:'Vindhviður Vindstig '+wxMsToBft(wg) });
   }
 
   const wh = waveH || 0;
@@ -434,6 +434,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
   let timer = null;
 
   async function refresh() {
+    const IS = typeof getLang === 'function' && getLang() === 'IS';
     try {
       const { wx, marine } = await wxFetch(loc.lat, loc.lon);
       const c    = wx.current;
@@ -459,53 +460,53 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
       const updTime = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">BIRK · CONDITIONS${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${IS?'BIRK · Aðstæður':'BIRK · CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
         <!-- 2-row grid, columns locked -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">WIND</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'VINDUR':'WIND'}</div>
             <div style="display:flex;align-items:center;gap:3px;line-height:1">
               <span style="font-size:32px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
               <span style="font-size:32px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
               <span style="font-size:12px;color:var(--muted);margin-left:2px">m/s</span>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:5px">
-              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · Force <b style="color:var(--text)">${bft}</b>
+              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${IS?'Vindstig':'Force'} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              Gusts <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${wxBftDesc(bft)}
+              ${IS?'Vindhviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?'Vindstig '+bft:wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">AIR TEMP</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'LOFTHITI':'AIR TEMP'}</div>
             <div style="font-size:28px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? 'feels ' + Math.round(c.apparent_temperature) + '°' : ''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? (IS?'líður eins og ':'feels ') + Math.round(c.apparent_temperature) + '°' : ''}</div>
           </div>
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">CONDITIONS</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'AÐSTÆÐUR':'CONDITIONS'}</div>
             <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '🌬'}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : 'BIRK obs'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : IS?'BIRK mælingar':'BIRK obs'}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">WAVES</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'BYLGJUR':'WAVES'}</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : '–'}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : '–'}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">SEA</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'SJÓR':'SEA'}</div>
             <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : '–'}</div>
-            <div style="font-size:10px;color:var(--muted)">Surface</div>
+            <div style="font-size:10px;color:var(--muted)">${IS?'Yfirborð':'Surface'}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">PRESSURE</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'LUÐÞÍNG':'PRESSURE'}</div>
             <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : '–'}</div>
-            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${trend}</div>
+            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${IS?(trend==='rising'?'úrlag':(trend==='falling'?'ðfall':'stöðugt')):trend}</div>
           </div>
         </div>
         <!-- footer: flag · refresh · forecast -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
-            ${flag.icon} ${flag.label} — ${flag.advice}
+            ${flag.icon} ${flag.label} — ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
           </span>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
