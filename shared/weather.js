@@ -136,6 +136,7 @@ function wxMsToKt(ms)   { return Math.round(ms * 1.944); }
 function wxDirLabel(d)  { if (d == null) return '–'; return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
 function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
 function wxBftDesc(b)   { return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b] || ''; }
+function wxBftDescIS(b)  { return ['Logn','Andvari','Kul','Gola','Stinningsgola','Kaldi','Stinningskaldi','Allhvass vindur','Hvassvirði','Stormur','Rok','Ofsaveður','Fárvirði'][b] || ''; }
 function wxCondIcon(c)  {
   if (c === 0) return '☀️'; if (c === 1) return '🌤'; if (c === 2) return '⛅'; if (c === 3) return '☁️';
   if ([45,48].includes(c)) return '🌫'; if ([51,53,55,61,63,65,80,81,82].includes(c)) return '🌧';
@@ -474,7 +475,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label } = {}) {
               <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${IS?'Vindstig':'Force'} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${IS?'Vindhviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?'Vindstig '+bft:wxBftDesc(bft)}
+              ${IS?'Vindhviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
