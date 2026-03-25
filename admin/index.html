@@ -350,37 +350,91 @@
       </div>
     </div>
 
-    <!-- ══ FLAGS ════════════════════════════════════════════════════════════ -->
+    <!-- ══ FLAGS ════════════════════════════════════════════════════════════════ -->
     <div id="tab-flags" class="hidden">
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title" data-s="admin.flagThresholds"></div>
-          <span class="col-toggle">▼</span>
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title">SCORE THRESHOLDS <span style="font-size:10px;color:var(--muted);font-weight:normal">(total points → flag level)</span></div>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="flagsCard">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-            <div class="field"><label data-s="admin.windYellow"></label><input type="number" id="fcWindY" min="1" max="12"></div>
-            <div class="field"><label data-s="admin.windOrange"></label><input type="number" id="fcWindO" min="1" max="12"></div>
-            <div class="field"><label data-s="admin.windRed"></label>  <input type="number" id="fcWindR" min="1" max="12"></div>
-            <div class="field"><label data-s="admin.waveYellow"></label><input type="number" id="fcWaveY" min="0" step="0.1"></div>
-            <div class="field"><label data-s="admin.waveOrange"></label><input type="number" id="fcWaveO" min="0" step="0.1"></div>
-            <div class="field"><label data-s="admin.waveRed"></label>  <input type="number" id="fcWaveR" min="0" step="0.1"></div>
-          </div>
-          <div style="font-size:10px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">FLAG ADVICE TEXT</div>
-          <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
-          <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-          <div id="fcValidationError" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
-            <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
-            <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
+        <div class="col-body" id="flagThresholdsCard">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+            <div class="field"><label style="color:#f1c40f">🟡 Yellow ≥</label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e67e22">🟠 Orange ≥</label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e74c3c">🔴 Red ≥</label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#999">⛔ Closed ≥</label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WIND SCORING (Beaufort → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagWindCard">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Bft ≤ maxBft. List in ascending order.</div>
+          <div id="fcWindBands" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWindBand()">+ Add band</button>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">DIRECTION &amp; GUST MODIFIERS</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagDirCard">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="field"><label>Easterly modifier (pts)</label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when wind is from an easterly sector</div></div>
+            <div class="field"><label>Gust modifier (pts)</label><input type="number" id="fcGustPts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts exceed sustained by ≥ 1 Bft</div></div>
+          </div>
+          <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagWaveCard">
+          <div id="fcWaveBands" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWaveBand()">+ Add band</button>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">SEA TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagSstCard">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">First band where SST ≥ minC applies. List highest minC first.</div>
+          <div id="fcSstBands" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddSstBand()">+ Add band</button>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR FEELS-LIKE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagFeelsCard">
+          <div id="fcFeelsBands" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddFeelsBand()">+ Add band</button>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">VISIBILITY SCORING</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagVisCard">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+            <div class="field"><label>Good (pts)</label><input type="number" id="fcVisGood" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
+            <div class="field"><label>Reduced (pts)</label><input type="number" id="fcVisReduced" min="0" max="20" value="3" oninput="updateFlagPreview()"></div>
+            <div class="field"><label>Poor &lt;500m (pts)</label><input type="number" id="fcVisPoor" min="0" max="20" value="5" oninput="updateFlagPreview()"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">FLAG LABELS &amp; ADVICE TEXT</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagAdviceCard">
+          <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px"></div>
+        </div>
+      </div>
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)"><div class="col-title">LIVE PREVIEW</div><span class="col-toggle open">▼</span></div>
+        <div class="col-body" id="flagPreviewCard">
+          <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+        </div>
+      </div>
+      <div id="fcValidationError" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px">
+        <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
+        <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
+        <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
+      </div>
     </div>
-
-  </main>
-</div>
 
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
@@ -1871,118 +1925,71 @@ async function saveAlertConfig() {
 
 // ══ FLAG CONFIG ═══════════════════════════════════════════════════════════════
 
-function loadFlagConfigPanel(cfg) {
-  const c = cfg || {};
-  const w = c.wind || {};
-  const v = c.wave || {};
-  document.getElementById("fcWindY").value = w.yellow ?? FLAG_CONFIG.wind.yellow;
-  document.getElementById("fcWindO").value = w.orange  ?? FLAG_CONFIG.wind.orange;
-  document.getElementById("fcWindR").value = w.red     ?? FLAG_CONFIG.wind.red;
-  document.getElementById("fcWaveY").value = v.yellow  ?? FLAG_CONFIG.wave.yellow;
-  document.getElementById("fcWaveO").value = v.orange  ?? FLAG_CONFIG.wave.orange;
-  document.getElementById("fcWaveR").value = v.red     ?? FLAG_CONFIG.wave.red;
-
-  const adviceEl = document.getElementById("fcFlagAdvice");
-  if (adviceEl) {
-    adviceEl.innerHTML = ['green','yellow','orange','red'].map(key => {
-      const fc = c.flags?.[key] || FLAG_CONFIG.flags[key];
-      return `<div style="display:flex;align-items:center;gap:8px">
-        <span style="width:60px;font-size:11px;color:${fc.color}">${fc.icon} ${fc.label}</span>
-        <input type="text" id="fcAdvice_${key}" value="${esc(fc.advice || "")}"
-          style="flex:1;font-size:11px" placeholder="Advice text…">
-      </div>`;
-    }).join("");
-  }
-  updateFlagPreview(c);
+function _fcBandRow(cId,idx,fields,removeFn){
+  return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'+fields.map(function(f){return '<div class="field" style="flex:1;min-width:80px;margin-bottom:0"><label style="font-size:10px">'+esc(f.label)+'</label><input type="number" id="'+cId+'_'+f.key+'_'+idx+'" value="'+f.val+'" step="'+(f.step||1)+'" min="'+(f.min!=null?f.min:-99)+'" style="width:100%" oninput="updateFlagPreview()"></div>';}).join('')+'<button onclick="'+removeFn+'('+idx+')" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;margin-top:14px">×</button></div>';
 }
-
-function getFlagFormValues() {
-  const cfg = {
-    wind: {
-      yellow: parseInt(document.getElementById("fcWindY").value) || 5,
-      orange: parseInt(document.getElementById("fcWindO").value) || 6,
-      red:    parseInt(document.getElementById("fcWindR").value) || 7,
-    },
-    wave: {
-      yellow: parseFloat(document.getElementById("fcWaveY").value) || 0.6,
-      orange: parseFloat(document.getElementById("fcWaveO").value) || 1.2,
-      red:    parseFloat(document.getElementById("fcWaveR").value) || 2.0,
-    },
-    flags: {},
-  };
-  ['green','yellow','orange','red'].forEach(key => {
-    const el = document.getElementById(`fcAdvice_${key}`);
-    if (el) cfg.flags[key] = { advice: el.value.trim() };
-  });
+function _fcReadBands(cId,keys){var rows=[],idx=0;while(document.getElementById(cId+'_'+keys[0]+'_'+idx)!==null){var row={};keys.forEach(function(k){var el=document.getElementById(cId+'_'+k+'_'+idx);row[k]=el?parseFloat(el.value):0;});rows.push(row);idx++;}return rows;}
+var _fcWindBands=[],_fcWaveBands=[],_fcSstBands=[],_fcFeelsBands=[];
+function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!el)return;el.innerHTML=_fcWindBands.map(function(b,i){return _fcBandRow('fcWind',i,[{key:'maxBft',label:'Max Bft',val:b.maxBft,min:0},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWindBand');}).join('');}
+function fcRenderWaveBands(){var el=document.getElementById('fcWaveBands');if(!el)return;el.innerHTML=_fcWaveBands.map(function(b,i){return _fcBandRow('fcWave',i,[{key:'maxM',label:'Max m',val:b.maxM,min:0,step:0.1},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWaveBand');}).join('');}
+function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
+function fcRenderFeelsBands(){var el=document.getElementById('fcFeelsBands');if(!el)return;el.innerHTML=_fcFeelsBands.map(function(b,i){return _fcBandRow('fcFeels',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveFeelsBand');}).join('');}
+function fcAddWindBand(){_fcWindBands.push({maxBft:12,pts:0});fcRenderWindBands();updateFlagPreview();}
+function fcRemoveWindBand(i){_fcWindBands.splice(i,1);fcRenderWindBands();updateFlagPreview();}
+function fcReadWindBands(){return _fcReadBands('fcWind',['maxBft','pts']).map(function(r){return{maxBft:r.maxBft,pts:r.pts};});}
+function fcAddWaveBand(){_fcWaveBands.push({maxM:99,pts:0});fcRenderWaveBands();updateFlagPreview();}
+function fcRemoveWaveBand(i){_fcWaveBands.splice(i,1);fcRenderWaveBands();updateFlagPreview();}
+function fcReadWaveBands(){return _fcReadBands('fcWave',['maxM','pts']).map(function(r){return{maxM:r.maxM,pts:r.pts};});}
+function fcAddSstBand(){_fcSstBands.push({minC:-99,pts:0});fcRenderSstBands();updateFlagPreview();}
+function fcRemoveSstBand(i){_fcSstBands.splice(i,1);fcRenderSstBands();updateFlagPreview();}
+function fcReadSstBands(){return _fcReadBands('fcSst',['minC','pts']).map(function(r){return{minC:r.minC,pts:r.pts};});}
+function fcAddFeelsBand(){_fcFeelsBands.push({minC:-99,pts:0});fcRenderFeelsBands();updateFlagPreview();}
+function fcRemoveFeelsBand(i){_fcFeelsBands.splice(i,1);fcRenderFeelsBands();updateFlagPreview();}
+function fcReadFeelsBands(){return _fcReadBands('fcFeels',['minC','pts']).map(function(r){return{minC:r.minC,pts:r.pts};});}
+function loadFlagConfigPanel(c){
+  c=c||{};var sc=SCORE_CONFIG;var t=c.thresholds||sc.thresholds;
+  document.getElementById('fcThreshY').value=t.yellow!=null?t.yellow:25;
+  document.getElementById('fcThreshO').value=t.orange!=null?t.orange:45;
+  document.getElementById('fcThreshR').value=t.red!=null?t.red:65;
+  document.getElementById('fcThreshB').value=t.black!=null?t.black:80;
+  _fcWindBands=(c.wind||sc.wind).map(function(b){return{maxBft:b.maxBft,pts:b.pts};});
+  _fcWaveBands=(c.waves||sc.waves).map(function(b){return{maxM:b.maxM,pts:b.pts};});
+  _fcSstBands=(c.sst||sc.sst).map(function(b){return{minC:b.minC,pts:b.pts};});
+  _fcFeelsBands=(c.feelsLike||sc.feelsLike).map(function(b){return{minC:b.minC,pts:b.pts};});
+  fcRenderWindBands();fcRenderWaveBands();fcRenderSstBands();fcRenderFeelsBands();
+  document.getElementById('fcEasterlyPts').value=c.easterlyPts!=null?c.easterlyPts:sc.easterlyPts;
+  document.getElementById('fcGustPts').value=c.gustModifierPts!=null?c.gustModifierPts:sc.gustModifierPts;
+  document.getElementById('fcEasterlyDirs').value=(c.easterlyDirs||sc.easterlyDirs).join(',');
+  var vis=c.visibility||sc.visibility;
+  document.getElementById('fcVisGood').value=vis.good!=null?vis.good:0;
+  document.getElementById('fcVisReduced').value=vis.reduced!=null?vis.reduced:3;
+  document.getElementById('fcVisPoor').value=vis.poor!=null?vis.poor:5;
+  var advEl=document.getElementById('fcFlagAdvice');
+  if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+fc.label+'</div><div class="field" style="margin-bottom:6px"><label style="font-size:10px">Advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div><div class="field" style="margin-bottom:0"><label style="font-size:10px">Ráðlegging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div></div>';}).join('');}
+  updateFlagPreview();
+}
+function getFlagFormValues(){
+  var t={yellow:parseInt(document.getElementById('fcThreshY').value)||25,orange:parseInt(document.getElementById('fcThreshO').value)||45,red:parseInt(document.getElementById('fcThreshR').value)||65,black:parseInt(document.getElementById('fcThreshB').value)||80};
+  var easterlyDirs=(document.getElementById('fcEasterlyDirs').value||'').split(',').map(function(s){return s.trim().toUpperCase();}).filter(Boolean);
+  var cfg={thresholds:t,wind:fcReadWindBands(),waves:fcReadWaveBands(),sst:fcReadSstBands(),feelsLike:fcReadFeelsBands(),easterlyDirs:easterlyDirs,easterlyPts:parseInt(document.getElementById('fcEasterlyPts').value)||0,gustModifierPts:parseInt(document.getElementById('fcGustPts').value)||0,visibility:{good:parseInt(document.getElementById('fcVisGood').value)||0,reduced:parseInt(document.getElementById('fcVisReduced').value)||0,poor:parseInt(document.getElementById('fcVisPoor').value)||0},flags:{}};
+  ['green','yellow','orange','red','black'].forEach(function(key){var en=document.getElementById('fcAdvice_'+key),is=document.getElementById('fcAdviceIS_'+key);cfg.flags[key]={advice:en?en.value.trim():'',adviceIS:is?is.value.trim():''};});
   return cfg;
 }
-
-function validateFlagConfig(cfg) {
-  const errs = [];
-  const w = cfg.wind;
-  if (w.yellow >= w.orange) errs.push("Yellow wind must be < orange.");
-  if (w.orange >= w.red)    errs.push("Orange wind must be < red.");
-  return errs;
+function validateFlagConfig(cfg){var errs=[],t=cfg.thresholds;if(t.yellow>=t.orange)errs.push('Yellow must be < orange.');if(t.orange>=t.red)errs.push('Orange must be < red.');if(t.red>=t.black)errs.push('Red must be < closed.');if(!cfg.wind.length)errs.push('At least one wind band required.');return errs;}
+function updateFlagPreview(){
+  var preview=document.getElementById('fcFlagPreview');if(!preview)return;
+  var examples=[{label:'Bft 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Bft 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Bft 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Bft 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Bft 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
+  var snap=JSON.parse(JSON.stringify(SCORE_CONFIG));
+  try{wxLoadFlagConfig(getFlagFormValues());}catch(e){}
+  preview.innerHTML=examples.map(function(ex){var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'"><div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' · <b>'+r.score+'</b> pts</div><div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';}).join('');
+  Object.assign(SCORE_CONFIG,snap);
 }
-
-function updateFlagPreview(cfg) {
-  const c = cfg || {};
-  const preview = document.getElementById("fcFlagPreview");
-  if (!preview) return;
-  preview.innerHTML = ['green','yellow','orange','red'].map(key => {
-    const fc     = FLAG_CONFIG.flags[key];
-    const advice = c.flags?.[key]?.advice || fc.advice;
-    const wCfg   = c.wind || FLAG_CONFIG.wind;
-    const vCfg   = c.wave || FLAG_CONFIG.wave;
-    const windLabel = key === "green"
-      ? `Bft < ${wCfg.yellow}`
-      : key === "yellow" ? `Bft ${wCfg.yellow}–${wCfg.orange - 1}`
-      : key === "orange" ? `Bft ${wCfg.orange}–${wCfg.red - 1}`
-      : `Bft ≥ ${wCfg.red}`;
-    const waveLabel = key === "green"
-      ? `< ${vCfg.yellow}m wave`
-      : key === "yellow" ? `≥ ${vCfg.yellow}m wave`
-      : key === "orange" ? `≥ ${vCfg.orange}m wave`
-      : `≥ ${vCfg.red}m wave`;
-    return `<div style="flex:1;min-width:180px;background:${fc.bg};border:1px solid ${fc.border};
-      border-radius:8px;padding:10px 12px;color:${fc.color}">
-      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${fc.icon} ${fc.label}</div>
-      <div style="font-size:10px;opacity:.8;margin-bottom:4px">${windLabel} · ${waveLabel}</div>
-      <div style="font-size:11px;opacity:.75;font-style:italic">${advice || "—"}</div>
-    </div>`;
-  }).join("");
+async function saveFlagConfig(){
+  var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
+  var cfg=getFlagFormValues(),errs=validateFlagConfig(cfg);if(errs.length){errEl.textContent=errs.join(' ');errEl.style.display='block';return;}
+  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
 }
-
-async function saveFlagConfig() {
-  const errEl = document.getElementById("fcValidationError");
-  const msgEl = document.getElementById("fcSaveMsg");
-  errEl.style.display = "none";
-  msgEl.textContent   = "";
-
-  const cfg  = getFlagFormValues();
-  const errs = validateFlagConfig(cfg);
-  if (errs.length) {
-    errEl.textContent   = errs.join(" ");
-    errEl.style.display = "block";
-    return;
-  }
-
-  try {
-    await apiPost("saveConfig", { flagConfig: cfg });
-    if (typeof wxLoadFlagConfig === "function") wxLoadFlagConfig(cfg);
-    msgEl.style.color   = "var(--green)";
-    msgEl.textContent   = "✓ Saved";
-    setTimeout(() => { msgEl.textContent = ""; }, 3000);
-  } catch(e) {
-    msgEl.style.color   = "var(--red)";
-    msgEl.textContent   = "Save failed: " + e.message;
-  }
-}
-
-function resetFlagConfig() {
-  if (!confirm("Reset flag settings to defaults?")) return;
-  loadFlagConfigPanel(null);
-}
+function resetFlagConfig(){if(!confirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
 
 // ══ CSV IMPORT ════════════════════════════════════════════════════════════════
 
