@@ -545,7 +545,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
         </div>`;
       targetEl._wxRefresh = refresh;
-      targetEl._wxResult  = { flagKey, flag, score, breakdown, snap: c };
+      targetEl._wxResult  = { flagKey, flag, score, breakdown, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
       // ── Inject modal HTML once per page ──
       if (!document.getElementById('wxFlagModal')) {
         const _md = document.createElement('div');
