@@ -324,6 +324,35 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     + rows + totalRow + staffHtml;
 }
 
+
+// ── Shared flag detail modal ─────────────────────────────────────────────────
+// Each page calls wxInitFlagModal(getSnap, getStaffStatus) once on load.
+// getSnap / getStaffStatus are zero-arg functions returning current values.
+function wxInitFlagModal(getSnap, getStaffStatus) {
+  // Inject modal HTML once
+  if (!document.getElementById('wxFlagModal')) {
+    const div = document.createElement('div');
+    div.innerHTML = "<!-- ══ FLAG DETAIL MODAL ══ -->\n<div class=\"modal-overlay hidden\" id=\"wxFlagModal\" onclick=\"if(event.target===this)closeModal('wxFlagModal')\">\n  <div class=\"modal\" style=\"max-width:480px\">\n    <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:14px\">\n      <h3 style=\"margin:0\" id=\"wxFlagModalTitle\"></h3>\n      <button class=\"btn-ghost\" onclick=\"closeModal('wxFlagModal')\" style=\"font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)\">×</button>\n    </div>\n    <div id=\"wxFlagModalBody\"></div>\n    <div class=\"btn-row\" style=\"margin-top:16px\">\n      <button class=\"btn btn-secondary\" onclick=\"closeModal('wxFlagModal')\" data-s=\"btn.close\"></button>\n    </div>\n  </div>\n</div>";
+    document.body.appendChild(div.firstElementChild);
+  }
+  // Wire global opener
+  window.wxOpenFlagDetail = function() {
+    const snap        = typeof getSnap        === 'function' ? getSnap()        : getSnap;
+    const staffStatus = typeof getStaffStatus === 'function' ? getStaffStatus() : getStaffStatus;
+    const IS   = typeof getLang === 'function' ? getLang() === 'IS' : false;
+    const body  = document.getElementById('wxFlagModalBody');
+    const title = document.getElementById('wxFlagModalTitle');
+    if (!body || !snap) return;
+    const result = wxScoreFlag(snap.ws, snap.wDir, snap.waveH ?? 0,
+      snap.temperature_2m, snap.sst, snap.wg, 'good');
+    if (title) title.textContent = (IS && result.flag.labelIS ? result.flag.labelIS : result.flag.label)
+      + ' · ' + result.score + ' stig';
+    body.innerHTML = wxFlagDetailHtml(result, staffStatus, IS ? 'IS' : 'EN');
+    if (typeof openModal === 'function') openModal('wxFlagModal');
+    else document.getElementById('wxFlagModal')?.classList.remove('hidden');
+  };
+}
+
 function wxPressureTrend(pressureArr, nowIdx) {
   if (!pressureArr || pressureArr.length < 4) return { trend: 'steady', diff: 0 };
   const past = pressureArr[Math.max(0, nowIdx - 3)];
