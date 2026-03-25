@@ -370,7 +370,7 @@
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WIND SCORING (Beaufort → points)</div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWindCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Bft ≤ maxBft. List in ascending order.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Force ≤ maxForce. List in ascending order.</div>
           <div id="fcWindBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWindBand()">+ Add band</button>
         </div>
@@ -380,7 +380,7 @@
         <div class="col-body hidden" id="flagDirCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
             <div class="field"><label>Easterly modifier (pts)</label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when wind is from an easterly sector</div></div>
-            <div class="field"><label>Gust modifier (pts)</label><input type="number" id="fcGustPts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts exceed sustained by ≥ 1 Bft</div></div>
+            <div class="field"><label>Gust modifier (pts)</label><input type="number" id="fcGustPts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts exceed sustained by ≥ 1 Force</div></div>
           </div>
           <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
@@ -1931,7 +1931,7 @@ function _fcBandRow(cId,idx,fields,removeFn){
 }
 function _fcReadBands(cId,keys){var rows=[],idx=0;while(document.getElementById(cId+'_'+keys[0]+'_'+idx)!==null){var row={};keys.forEach(function(k){var el=document.getElementById(cId+'_'+k+'_'+idx);row[k]=el?parseFloat(el.value):0;});rows.push(row);idx++;}return rows;}
 var _fcWindBands=[],_fcWaveBands=[],_fcSstBands=[],_fcFeelsBands=[];
-function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!el)return;el.innerHTML=_fcWindBands.map(function(b,i){return _fcBandRow('fcWind',i,[{key:'maxBft',label:'Max Bft',val:b.maxBft,min:0},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWindBand');}).join('');}
+function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!el)return;el.innerHTML=_fcWindBands.map(function(b,i){return _fcBandRow('fcWind',i,[{key:'maxBft',label:'Max Force',val:b.maxBft,min:0},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWindBand');}).join('');}
 function fcRenderWaveBands(){var el=document.getElementById('fcWaveBands');if(!el)return;el.innerHTML=_fcWaveBands.map(function(b,i){return _fcBandRow('fcWave',i,[{key:'maxM',label:'Max m',val:b.maxM,min:0,step:0.1},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWaveBand');}).join('');}
 function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
 function fcRenderFeelsBands(){var el=document.getElementById('fcFeelsBands');if(!el)return;el.innerHTML=_fcFeelsBands.map(function(b,i){return _fcBandRow('fcFeels',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveFeelsBand');}).join('');}
@@ -1982,7 +1982,7 @@ function updateFlagPreview(){
   if(typeof wxScoreFlag!=='function'||typeof wxLoadFlagConfig!=='function'){
     preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Preview requires weather.js — check script imports.</div>';return;
   }
-  var examples=[{label:'Bft 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Bft 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Bft 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Bft 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Bft 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
+  var examples=[{label:'Force 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Force 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Force 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Force 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Force 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
   // Deep-clone SCORE_CONFIG, apply form values, render, then restore
   var snap=JSON.parse(JSON.stringify(SCORE_CONFIG));
   try{
