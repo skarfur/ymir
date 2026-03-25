@@ -10,6 +10,7 @@
   <script src="../shared/api.js"></script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/boats.js"></script>
+  <script src="../shared/weather.js"></script>
   <script src="../shared/ui.js"></script>
   <script src="../shared/certs.js"></script>
   <style>
@@ -400,8 +401,8 @@
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR FEELS-LIKE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
-        <div class="col-body hidden" id="flagFeelsCard">
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="flagFeelsCard" data-note="uses apparent_temperature, falls back to temperature_2m">
           <div id="fcFeelsBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddFeelsBand()">+ Add band</button>
         </div>
@@ -1934,17 +1935,17 @@ function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!e
 function fcRenderWaveBands(){var el=document.getElementById('fcWaveBands');if(!el)return;el.innerHTML=_fcWaveBands.map(function(b,i){return _fcBandRow('fcWave',i,[{key:'maxM',label:'Max m',val:b.maxM,min:0,step:0.1},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWaveBand');}).join('');}
 function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
 function fcRenderFeelsBands(){var el=document.getElementById('fcFeelsBands');if(!el)return;el.innerHTML=_fcFeelsBands.map(function(b,i){return _fcBandRow('fcFeels',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveFeelsBand');}).join('');}
-function fcAddWindBand(){_fcWindBands.push({maxBft:12,pts:0});fcRenderWindBands();updateFlagPreview();}
-function fcRemoveWindBand(i){_fcWindBands.splice(i,1);fcRenderWindBands();updateFlagPreview();}
+function fcAddWindBand(){_fcWindBands=fcReadWindBands();_fcWindBands.push({maxBft:12,pts:0});fcRenderWindBands();updateFlagPreview();}
+function fcRemoveWindBand(i){_fcWindBands=fcReadWindBands();_fcWindBands.splice(i,1);fcRenderWindBands();updateFlagPreview();}
 function fcReadWindBands(){return _fcReadBands('fcWind',['maxBft','pts']).map(function(r){return{maxBft:r.maxBft,pts:r.pts};});}
-function fcAddWaveBand(){_fcWaveBands.push({maxM:99,pts:0});fcRenderWaveBands();updateFlagPreview();}
-function fcRemoveWaveBand(i){_fcWaveBands.splice(i,1);fcRenderWaveBands();updateFlagPreview();}
+function fcAddWaveBand(){_fcWaveBands=fcReadWaveBands();_fcWaveBands.push({maxM:99,pts:0});fcRenderWaveBands();updateFlagPreview();}
+function fcRemoveWaveBand(i){_fcWaveBands=fcReadWaveBands();_fcWaveBands.splice(i,1);fcRenderWaveBands();updateFlagPreview();}
 function fcReadWaveBands(){return _fcReadBands('fcWave',['maxM','pts']).map(function(r){return{maxM:r.maxM,pts:r.pts};});}
-function fcAddSstBand(){_fcSstBands.push({minC:-99,pts:0});fcRenderSstBands();updateFlagPreview();}
-function fcRemoveSstBand(i){_fcSstBands.splice(i,1);fcRenderSstBands();updateFlagPreview();}
+function fcAddSstBand(){_fcSstBands=fcReadSstBands();_fcSstBands.push({minC:-99,pts:0});fcRenderSstBands();updateFlagPreview();}
+function fcRemoveSstBand(i){_fcSstBands=fcReadSstBands();_fcSstBands.splice(i,1);fcRenderSstBands();updateFlagPreview();}
 function fcReadSstBands(){return _fcReadBands('fcSst',['minC','pts']).map(function(r){return{minC:r.minC,pts:r.pts};});}
-function fcAddFeelsBand(){_fcFeelsBands.push({minC:-99,pts:0});fcRenderFeelsBands();updateFlagPreview();}
-function fcRemoveFeelsBand(i){_fcFeelsBands.splice(i,1);fcRenderFeelsBands();updateFlagPreview();}
+function fcAddFeelsBand(){_fcFeelsBands=fcReadFeelsBands();_fcFeelsBands.push({minC:-99,pts:0});fcRenderFeelsBands();updateFlagPreview();}
+function fcRemoveFeelsBand(i){_fcFeelsBands=fcReadFeelsBands();_fcFeelsBands.splice(i,1);fcRenderFeelsBands();updateFlagPreview();}
 function fcReadFeelsBands(){return _fcReadBands('fcFeels',['minC','pts']).map(function(r){return{minC:r.minC,pts:r.pts};});}
 function loadFlagConfigPanel(c){
   c=c||{};var sc=SCORE_CONFIG;var t=c.thresholds||sc.thresholds;
@@ -1978,11 +1979,38 @@ function getFlagFormValues(){
 function validateFlagConfig(cfg){var errs=[],t=cfg.thresholds;if(t.yellow>=t.orange)errs.push('Yellow must be < orange.');if(t.orange>=t.red)errs.push('Orange must be < red.');if(t.red>=t.black)errs.push('Red must be < closed.');if(!cfg.wind.length)errs.push('At least one wind band required.');return errs;}
 function updateFlagPreview(){
   var preview=document.getElementById('fcFlagPreview');if(!preview)return;
+  if(typeof wxScoreFlag!=='function'||typeof wxLoadFlagConfig!=='function'){
+    preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Preview requires weather.js — check script imports.</div>';return;
+  }
   var examples=[{label:'Bft 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Bft 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Bft 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Bft 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Bft 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
+  // Deep-clone SCORE_CONFIG, apply form values, render, then restore
   var snap=JSON.parse(JSON.stringify(SCORE_CONFIG));
-  try{wxLoadFlagConfig(getFlagFormValues());}catch(e){}
-  preview.innerHTML=examples.map(function(ex){var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'"><div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' · <b>'+r.score+'</b> pts</div><div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';}).join('');
-  Object.assign(SCORE_CONFIG,snap);
+  try{
+    var cfg=getFlagFormValues();
+    // Apply temporarily without persisting
+    Object.assign(SCORE_CONFIG.thresholds,cfg.thresholds);
+    SCORE_CONFIG.wind=cfg.wind;SCORE_CONFIG.waves=cfg.waves;
+    SCORE_CONFIG.sst=cfg.sst;SCORE_CONFIG.feelsLike=cfg.feelsLike;
+    Object.assign(SCORE_CONFIG.visibility,cfg.visibility);
+    SCORE_CONFIG.easterlyDirs=cfg.easterlyDirs;
+    SCORE_CONFIG.easterlyPts=cfg.easterlyPts;
+    SCORE_CONFIG.gustModifierPts=cfg.gustModifierPts;
+  }catch(e){}
+  preview.innerHTML=examples.map(function(ex){
+    var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');
+    var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];
+    return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'">'
+      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' · <b>'+r.score+'</b> pts</div>'
+      +'<div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';
+  }).join('');
+  // Restore
+  Object.assign(SCORE_CONFIG.thresholds,snap.thresholds);
+  SCORE_CONFIG.wind=snap.wind;SCORE_CONFIG.waves=snap.waves;
+  SCORE_CONFIG.sst=snap.sst;SCORE_CONFIG.feelsLike=snap.feelsLike;
+  Object.assign(SCORE_CONFIG.visibility,snap.visibility);
+  SCORE_CONFIG.easterlyDirs=snap.easterlyDirs;
+  SCORE_CONFIG.easterlyPts=snap.easterlyPts;
+  SCORE_CONFIG.gustModifierPts=snap.gustModifierPts;
 }
 async function saveFlagConfig(){
   var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
