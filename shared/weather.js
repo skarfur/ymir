@@ -286,7 +286,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       ).join('')
     : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+(IS?'Engin stigagjöf.':'No scoring factors.')+'</div>';
   const totalRow =
-    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500">'
+    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500;cursor:pointer" onclick="if(window.wxOpenFlagDetail)wxOpenFlagDetail()" title="Tap for details">'
     + '<span>'+(IS?'Heildarstig':'Total score')+'</span>'
     + '<span style="color:'+flag.color+'">'+result.score+'</span></div>';
   let staffHtml = '';
