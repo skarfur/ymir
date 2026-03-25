@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('rNotes').placeholder            = s('lbl.optional');
   document.getElementById('tripTabHint').textContent       = s('member.tripsTapHint');
 
-  wxWidget(document.getElementById('wxWidget'), { onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
+  wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
 
   try {
     const [coRes, cfgRes] = await Promise.all([
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
-  wxInitFlagModal(() => _staffStatus);
+  // wxInitFlagModal removed — modal and badges now built into wxWidget
 });
 
 // ══ TAB SWITCHING ════════════════════════════════════════════════════════════
