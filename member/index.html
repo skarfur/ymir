@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   warmContainer();
-  window.wxOpenFlagDetail = openMemberFlagDetail;
+  wxInitFlagModal(() => window._memberWxSnap, () => _staffStatus);
 });
 
 // ══ TAB SWITCHING ════════════════════════════════════════════════════════════
@@ -1009,40 +1009,8 @@ function _renderMemberStaffStatus() {
     + '</div>';
 }
 
-function openMemberFlagDetail() {
-  const IS   = getLang() === 'IS';
-  const snap = window._memberWxSnap;
-  const body = document.getElementById('memberFlagModalBody');
-  const title = document.getElementById('memberFlagModalTitle');
-  if (!body) return;
-  if (!snap || typeof wxScoreFlag !== 'function') {
-    body.innerHTML = '<div style="color:var(--muted);font-size:12px">No weather data yet.</div>';
-    openModal('memberFlagModal');
-    return;
-  }
-  const r = wxScoreFlag(snap.ws||0, snap.wDir||'', snap.waveH||0, snap.apparentT, snap.sst, snap.wg, 'good');
-  if (title) title.textContent = (IS ? r.flag.labelIS || r.flag.label : r.flag.label) + ' · ' + r.score + ' pts';
-  body.innerHTML = typeof wxFlagDetailHtml === 'function'
-    ? wxFlagDetailHtml(r, _staffStatus, IS ? 'IS' : 'EN')
-    : '';
-  openModal('memberFlagModal');
-}
+
 
 </script>
-
-<!-- ══ FLAG DETAIL MODAL ══ -->
-<div class="modal-overlay hidden" id="memberFlagModal" onclick="if(event.target===this)closeModal('memberFlagModal')">
-  <div class="modal" style="max-width:480px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="memberFlagModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('memberFlagModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
-    </div>
-    <div id="memberFlagModalBody"></div>
-    <div class="btn-row" style="margin-top:16px">
-      <button class="btn btn-secondary" onclick="closeModal('memberFlagModal')" data-s="btn.close"></button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
