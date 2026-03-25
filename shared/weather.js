@@ -533,19 +533,19 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${IS?(trend==='rising'?'úrlag':(trend==='falling'?'ðfall':'stöðugt')):trend}</div>
           </div>
         </div>
-        <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
         <!-- footer: flag · refresh · forecast -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
             ${flag.icon} ${flag.label} — ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
           </span>
+          <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
             <a href="../weather/" style="font-size:12px;font-weight:500;color:#fff;background:var(--brass);border-radius:6px;padding:4px 12px;text-decoration:none;white-space:nowrap">⛅ Full forecast →</a>
           </div>
         </div>`;
       targetEl._wxRefresh = refresh;
-      targetEl._wxResult  = { flagKey, flag, score, breakdown };
+      targetEl._wxResult  = { flagKey, flag, score, breakdown, snap: c };
       // ── Inject modal HTML once per page ──
       if (!document.getElementById('wxFlagModal')) {
         const _md = document.createElement('div');
@@ -565,7 +565,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
       if (pill) pill.onclick = () => {
         const IS     = typeof getLang === 'function' ? getLang() === 'IS' : false;
-        const snap   = targetEl._wxResult;
+        const _wr    = targetEl._wxResult;
+        const snap   = _wr?.snap;
         const ss     = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         const body   = document.getElementById('wxFlagModalBody');
         const title  = document.getElementById('wxFlagModalTitle');
