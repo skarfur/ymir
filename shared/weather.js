@@ -601,6 +601,29 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           _ssBadges.innerHTML = '';
         }
       }
+      // Expose badge-only re-render so pages can call after toggling duty status
+      targetEl._wxRefreshBadges = () => {
+        const _b = targetEl.querySelector('.wx-status-badges');
+        if (!_b) return;
+        const _ss2  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
+        const _is2  = typeof getLang === 'function' && getLang() === 'IS';
+        const _bst2 = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
+        if (_ss2) {
+          const _dc2  = _ss2.onDuty      ? '#27ae60' : 'var(--muted)';
+          const _bc2  = _ss2.supportBoat ? '#5dade2'  : 'var(--muted)';
+          const _dbg2 = _ss2.onDuty      ? '#27ae6015;border-color:#27ae6040' : 'var(--surface);border-color:var(--border)';
+          const _bbg2 = _ss2.supportBoat ? '#2980b915;border-color:#2980b940' : 'var(--surface);border-color:var(--border)';
+          const _is2B = typeof getLang === 'function' && getLang() === 'IS';
+          const _dtx2 = _is2B ? (_ss2.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
+                              : (_ss2.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
+          const _btx2 = _is2B ? (_ss2.supportBoat ? 'Björunarbátur'           : 'Enginn björunarbátur')
+                              : (_ss2.supportBoat ? 'Support boat out'             : 'No support boat');
+          _b.innerHTML =
+            '<span style="'+_bst2+'background:'+_dbg2+';color:'+_dc2+'">🧑 '+_dtx2+'</span>'
+            + ' '
+            + '<span style="'+_bst2+'background:'+_bbg2+';color:'+_bc2+'">⛵ '+_btx2+'</span>';
+        } else { _b.innerHTML = ''; }
+      };
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable — <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
