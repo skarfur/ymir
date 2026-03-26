@@ -86,6 +86,14 @@ function maintOpenDetail(r, currentUser) {
     document.body.appendChild(el);
   }
 
+  // Resolve user name safely — never throws
+  function getBy() {
+    return currentUser
+      || window._maintUser?.name
+      || (typeof user !== 'undefined' ? user?.name : null)
+      || 'Staff';
+  }
+
   function doConfirm(msg, cb) {
     document.getElementById('maintConfirmMsg').textContent = msg;
     document.getElementById('maintConfirmOk').onclick = () => { closeModal('maintConfirmModal'); cb(); };
@@ -93,9 +101,7 @@ function maintOpenDetail(r, currentUser) {
   }
 
   function wireCard() {
-    const by = currentUser || (typeof user !== 'undefined' && user?.name) || 'Staff';
-
-    // Severity dropdown toggle
+    // Severity dropdown
     const cur  = document.getElementById('mdSevCurrent');
     const drop = document.getElementById('mdSevDropdown');
     if (cur && drop) {
@@ -136,18 +142,21 @@ function maintOpenDetail(r, currentUser) {
       });
     });
 
-    // Comment post
+    // Comment post — uses addMaintenanceComment (correct backend action)
     const postComment = async () => {
       const input = document.getElementById('mdCommentInput');
       const text  = (input?.value||'').trim();
       if (!text) return;
-      const now      = new Date().toISOString().slice(0,16);
-      const existing = parseJson(r.comments, []);
-      const updated  = [...existing, {text, by, at:now}];
-      await apiPost('saveMaintenance', {id:r.id, comments:JSON.stringify(updated)});
-      r.comments = JSON.stringify(updated);
-      if (input) input.value = '';
-      renderAndWire();
+      const by = getBy();
+      try {
+        await apiPost('addMaintenanceComment', {id:r.id, by, text});
+        // Update local record so re-render shows new comment immediately
+        const existing = parseJson(r.comments, []);
+        const now = new Date().toISOString().slice(0,16);
+        r.comments = JSON.stringify([...existing, {text, by, at:now}]);
+        if (input) input.value = '';
+        renderAndWire();
+      } catch(e) { console.error('Comment failed', e); }
     };
     document.getElementById('mdCommentBtn')?.addEventListener('click', postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown', e => {
@@ -158,7 +167,8 @@ function maintOpenDetail(r, currentUser) {
     document.getElementById('mdResolveBtn')?.addEventListener('click', () => {
       doConfirm('Mark this issue as resolved?', async () => {
         const now = new Date().toISOString().slice(0,16);
-        await apiPost('saveMaintenance', {id:r.id, resolved:true, resolvedAt:now, resolvedBy:by});
+        const by  = getBy();
+        await apiPost('resolveMaintenance', {id:r.id, by});
         r.resolved=true; r.resolvedAt=now; r.resolvedBy=by;
         renderAndWire();
         if (typeof renderMaintenance==='function') renderMaintenance();
