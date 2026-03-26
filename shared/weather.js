@@ -47,7 +47,8 @@ const SCORE_CONFIG = {
   ],
   easterlyDirs:    ['E', 'NE', 'SE', 'ENE', 'ESE'],
   easterlyPts:     5,
-  gustModifierPts: 4,
+  gustModifier1Pts: 4,   // gusts exactly 1 Force level higher than sustained
+  gustModifier2Pts: 8,   // gusts 2+ Force levels higher than sustained
   waves: [
     { maxM: 0.5,  pts: 0  },
     { maxM: 1.0,  pts: 8  },
@@ -181,10 +182,14 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   }
 
   if (wg != null && ws != null && wxMsToBft(wg) > bft) {
-    score += cfg.gustModifierPts;
-    breakdown.push({ factor:'gusts', pts:cfg.gustModifierPts,
-      label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
-      labelIS:'Hviður Vindstig '+wxMsToBft(wg) });
+    const _gustDiff = wxMsToBft(wg) - bft;
+    const _gustPts  = _gustDiff >= 2 ? cfg.gustModifier2Pts : cfg.gustModifier1Pts;
+    if (_gustPts > 0) {
+      score += _gustPts;
+      breakdown.push({ factor:'gusts', pts:_gustPts,
+        label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
+        labelIS:'Hviður Vindstig '+wxMsToBft(wg) });
+    }
   }
 
   const wh = waveH || 0;
