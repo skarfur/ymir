@@ -380,8 +380,7 @@ border-bottom:1px solid var(--border)44; }
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)44">
       <a href="../maintenance/" style="font-size:12px;color:var(--brass);text-decoration:none" id="viewAllMaintLink"></a>
-      <span style="color:var(--border);margin:0 8px">·</span>
-      <a href="../maintenance/?new=1" style="font-size:12px;color:var(--brass);text-decoration:none" id="reportIssueLink"></a>
+      
     </div>
   </div>
 
@@ -466,8 +465,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('coMember').placeholder            = s('staff.coForm.memberPlaceholder');
   document.getElementById('coNotes').placeholder             = s('staff.coForm.notesPlaceholder');
   document.getElementById('viewAllMaintLink').textContent    = s('btn.viewAll');
-  document.getElementById('reportIssueLink').textContent     = s('staff.reportIssue');
-  document.getElementById('cdTitle').textContent             = s('staff.coDetail.title');
 
   wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus,
     showRefreshBtn: true,
@@ -641,18 +638,23 @@ function renderRecentCheckins() {
 // ── Maintenance ───────────────────────────────────────────────────────────────
 function renderMaintenance() {
   const el = document.getElementById('maintList');
-  if (!maintenance.length) { el.innerHTML = `<div class="empty-note">${s('staff.noMaint')}</div>`; return; }
-  const sevColor = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
-  el.innerHTML = maintenance.map(m => `
-    <div class="maint-row">
-      <div class="maint-info">
-        <div class="maint-boat">${esc(m.boatName||m.itemName||m.target||'—')}
-          <span class="badge ${sevColor[m.severity]||'badge-muted'}" style="margin-left:6px">${esc(m.severity||'—')}</span>
-          ${m.category ? `<span style="color:var(--muted);font-size:10px;margin-left:4px">${CAT_ICON[m.category]||''} ${esc(m.category)}</span>` : ''}
-        </div>
-        <div class="maint-desc">${esc(m.description||'')}</div>
-      </div>
-    </div>`).join('');
+  if (!el) return;
+  const open = (maintenance || []).filter(r => !boolVal(r.resolved));
+  if (!open.length) {
+    el.innerHTML = `<div class="empty-note">${s('staff.noMaint')}</div>`;
+    return;
+  }
+  el.innerHTML = open.map(r => maintRenderCard(r)).join('');
+  // Wire click-to-detail on each card
+  el.querySelectorAll('.maint-card').forEach((card, idx) => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', e => {
+      if (e.target.closest('button, a, input')) return; // let action buttons work
+      const r = open[idx];
+      document.getElementById('maintDetailBody').innerHTML = maintRenderRow(r);
+      openModal('maintDetailModal');
+    });
+  });
 }
 
 // ── Checkout form helpers ─────────────────────────────────────────────────────
@@ -1353,5 +1355,16 @@ async function toggleStaffStatus(field) {
     </div>
   </div>
 </div>
+
+  <!-- Maintenance detail modal -->
+  <div id="maintDetailModal" class="modal hidden" onclick="if(event.target===this)closeModal('maintDetailModal')">
+    <div class="modal-box" style="max-width:520px;padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">
+        <span style="font-weight:600;font-size:14px" data-s="staff.maintDetail">Issue Detail</span>
+        <button onclick="closeModal('maintDetailModal')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0 4px">&times;</button>
+      </div>
+      <div id="maintDetailBody" style="padding:16px;overflow-y:auto;max-height:70vh"></div>
+    </div>
+  </div>
 </body>
 </html>
