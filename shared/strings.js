@@ -190,7 +190,7 @@ const STRINGS = {
   'staff.overdue':           { EN:'OVERDUE',                  IS:'YFIRTÍMA' },
   'staff.overdueMinor':      { EN:'OVERDUE — MINOR',          IS:'YFIRTÍMA — BARN' },
   'staff.maintenance':       { EN:'OPEN MAINTENANCE',         IS:'OPIÐ VIÐHALD' },
-  'staff.reportIssue':       { EN:'+ Report issue',           IS:'+ Tilkynna vandamál' },
+  'staff.maintDetail':        { en: 'Issue Detail',           is: 'Vandamálsupplýsingar' },
   'staff.dailyLog':          { EN:'Daily Log',                IS:'Dagleg skráning' },
   'staff.dailyLogDesc':      { EN:'Tides, weather records, checklists, activities, sign-off', IS:'Flóð, veðurskráning, gátlistar, starfsemi, undirskrift' },
   'staff.logbook':           { EN:'Logbook Review',           IS:'Dagbókarskoðun' },
