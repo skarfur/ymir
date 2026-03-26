@@ -263,8 +263,8 @@ border-bottom:1px solid var(--border)44; }
   <div id="staffStatusStrip" style="margin-bottom:12px">
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c">🧑 No staff on duty</button>
-      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c">⛵ No support boat</button>
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">🧑 No staff on duty</button>
+      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">⛵ No support boat</button>
       <span id="staffStatusUpdated" style="font-size:10px;color:var(--muted)"></span>
     </div>
   </div>
@@ -1252,14 +1252,14 @@ function openDailyLogForNew() {
 
 // ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
 function renderStaffStatusStrip() {
-  const IS       = getLang() === 'IS';
-  const btnDuty  = document.getElementById('btnStaffOnDuty');
-  const btnBoat  = document.getElementById('btnSupportBoat');
-  const upd      = document.getElementById('staffStatusUpdated');
+  const IS      = getLang() === 'IS';
+  const btnDuty = document.getElementById('btnStaffOnDuty');
+  const btnBoat = document.getElementById('btnSupportBoat');
+  const upd     = document.getElementById('staffStatusUpdated');
   if (!btnDuty || !btnBoat) return;
-  const base = 'display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;';
-  const on   = 'background:#27ae6015;border-color:#27ae6040;color:#27ae60';
-  const off  = 'background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c';
+  const base = 'display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;';
+  const on   = 'background:#27ae60;color:#fff;';
+  const off  = 'background:#e74c3c;color:#fff;';
   btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? on : off));
   btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? on : off));
   btnDuty.innerHTML = '🧑 ' + (IS ? (_staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður') : (_staffStatus.onDuty      ? 'Staff on duty'   : 'No staff on duty'));
