@@ -330,67 +330,14 @@ function renderList() {
 }
 
 function renderCard(r) {
-  const resolved  = boolVal(r.resolved);
-  const sevClass  = "sev-" + (r.severity||"low");
-  const sevBadge  = { low:"badge-green", medium:"badge-yellow", high:"badge-orange", critical:"badge-red" };
-  const catIcon   = { boat:"⛵", equipment:"🦺", facility:"🏠" };
-  const comments  = parseJson(r.comments, []);
-
-  const commentHtml = comments.length ? `
-    <div class="comment-thread">
-      ${comments.map(c => `
-        <div class="comment-item">
-          <span class="comment-by">${esc(c.by)}</span>
-          <span style="color:var(--border)"> · </span>
-          <span>${esc((c.at||"").slice(0,16).replace("T"," "))}</span>
-          <span style="color:var(--border)"> · </span>
-          ${esc(c.text)}
-        </div>`).join("")}
-    </div>` : "";
-
-  const commentInput = !resolved ? `
-    <div class="comment-add">
-      <input type="text" placeholder="Add a comment…" id="ci-${r.id}"
-        onkeydown="if(event.key==='Enter')addComment('${r.id}')">
-      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px" onclick="addComment('${r.id}')">Add</button>
-    </div>` : "";
-
-  const resolveBtn = !resolved
-    ? `<button class="btn btn-primary" style="font-size:11px;padding:6px 14px"
-         onclick="resolveRequest('${r.id}')">✓ Mark Resolved</button>`
-    : `<span style="font-size:11px;color:var(--green)">✓ Resolved by ${esc(r.resolvedBy||"—")} · ${esc((r.resolvedAt||"").slice(0,10))}</span>`;
-
-  const oosTag = boolVal(r.markOos) && r.category === "boat" && !resolved
-    ? `<span class="oos-badge">⛔ OOS</span>` : "";
-
-  const subjectLabel = r.category === "boat"
-    ? esc(r.boatName || r.boatId || "—")
-    : esc(r.itemName || "—");
-
-  return `
-  <div class="req-card ${sevClass} ${resolved ? "resolved" : ""}" id="card-${r.id}">
-    <div class="req-header">
-      <div>
-        <div class="req-title">
-          ${catIcon[r.category]||"🔧"} ${subjectLabel}
-          ${r.part ? `<span style="color:var(--muted);font-size:12px"> · ${esc(r.part)}</span>` : ""}
-          ${oosTag}
-        </div>
-        <div class="req-meta">
-          <span class="badge ${sevBadge[r.severity]||"badge-muted"}">${(r.severity||"—").toUpperCase()}</span>
-          <span>by ${esc(r.reportedBy||"—")}</span>
-          <span>${esc((r.createdAt||"").slice(0,10))}</span>
-          ${r.source ? `<span class="badge badge-muted">${esc(r.source)}</span>` : ""}
-        </div>
-      </div>
-    </div>
-    ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ""}
-    ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" alt="photo"
-      onclick="viewPhoto('${esc(r.photoUrl)}')">` : ""}
-    ${commentHtml}
-    ${commentInput}
-    <div class="req-actions">${resolveBtn}</div>
-  </div>`;
+  const div = document.createElement('div');
+  div.innerHTML = maintRenderCard(r);
+  div.style.cursor = 'pointer';
+  div.addEventListener('click', e => {
+    if (e.target.closest('button, a, input')) return;
+    maintOpenDetail(r, window._maintUser?.name);
+  });
+  return div;
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────────
@@ -399,8 +346,8 @@ async function resolveRequest(id) {
   const r = allRequests.find(x => x.id === id);
   if (!r) return;
   try {
-    await apiPost("resolveMaintenance", { id, resolvedBy: user.name });
-    r.resolved = true; r.resolvedBy = user.name; r.resolvedAt = new Date().toISOString();
+    await apiPost("resolveMaintenance", { id, resolvedBy: (window._maintUser?.name||'Staff') });
+    r.resolved = true; r.resolvedBy = (window._maintUser?.name||'Staff'); r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
       try {
         const cfgR = await apiGet("getConfig");
@@ -421,11 +368,11 @@ async function addComment(id) {
   const text = input.value.trim();
   if (!text) return;
   try {
-    await apiPost("addMaintenanceComment", { id, by: user.name, text });
+    await apiPost("addMaintenanceComment", { id, by: (window._maintUser?.name || 'Staff'), text });
     const r = allRequests.find(x => x.id === id);
     if (r) {
       const comments = parseJson(r.comments, []);
-      comments.push({ by: user.name, at: new Date().toISOString(), text });
+      comments.push({ by: (window._maintUser?.name || 'Staff'), at: new Date().toISOString(), text });
       r.comments = JSON.stringify(comments);
     }
     renderList(); toast("Comment added.");
@@ -545,7 +492,7 @@ async function submitRequest() {
       description: desc,
       markOos,
       photoData:   photoDataUrl,
-      reportedBy:  user.name,
+      reportedBy:  (window._maintUser?.name||'Staff'),
       source:      "staff",
     });
     if (markOos && boatId) {
