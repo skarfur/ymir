@@ -2422,12 +2422,40 @@ async function prLoadTimesheets() {
 }
 
 function prAdminEditTime(id, currentTs, currentMins) {
-  const newTs = prompt('Edit clock-out time (ISO format):', currentTs);
-  if (!newTs || newTs===currentTs) return;
-  const newMins = prompt('Duration in minutes:', currentMins);
-  apiPost('adminEditTime', { id, timestamp: newTs, durationMinutes: +newMins, note: 'admin edit' })
-    .then(()=>prLoadTimesheets())
-    .catch(e=>alert(e.message));
+  // Show inline edit row
+  const row = document.querySelector('[data-time-id="' + id + '"]');
+  if (!row) return;
+  const tsShort = currentTs ? currentTs.substring(0,16) : '';
+  row.innerHTML = '<td colspan="7" style="padding:6px 8px">'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + '<input id="prEditTs_'+id+'" type="datetime-local" value="'+tsShort+'" style="font-size:11px">'
+    + '<input id="prEditMins_'+id+'" type="number" value="'+currentMins+'" min="0" placeholder="mins" style="width:70px;font-size:11px">'
+    + '<button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="prSaveTimeEdit(''+id+'')">Save</button>'
+    + '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prLoadTimesheets()">Cancel</button>'
+    + '<button class="btn" style="font-size:11px;padding:3px 10px;background:var(--red);color:#fff" onclick="prDeleteTime(''+id+'')">Delete</button>'
+    + '</div></td>';
+}
+
+async function prSaveTimeEdit(id) {
+  const tsEl   = document.getElementById('prEditTs_'+id);
+  const minsEl = document.getElementById('prEditMins_'+id);
+  if (!tsEl) return;
+  const newTs   = tsEl.value ? new Date(tsEl.value).toISOString() : '';
+  const newMins = +minsEl.value;
+  try {
+    await apiPost('adminEditTime', { id, timestamp: newTs, durationMinutes: newMins, note: 'admin edit' });
+    showToast(s('toast.saved'));
+    prLoadTimesheets();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+async function prDeleteTime(id) {
+  if (!confirm(s('btn.delete') + '?')) return;
+  try {
+    await apiPost('deleteTimeEntry', { id });
+    showToast(s('toast.deleted'));
+    prLoadTimesheets();
+  } catch(e) { showToast(e.message, 'err'); }
 }
 
 // ── Pay Periods ────────────────────────────────────────────────
@@ -2483,6 +2511,8 @@ async function prLoadPeriods() {
   }
 }
 
+function prClosePeriod() { prRunClose(); }
+
 async function prRunClose() {
   const period = document.getElementById('prClosePeriod').value;
   if (!period) return;
@@ -2495,6 +2525,8 @@ async function prRunClose() {
     prLoadPeriods();
   } catch(e) { msg.textContent = e.message; msg.style.color='var(--red)'; }
 }
+
+function prViewPayslip(employeeId, period) { prDownloadPayslip(employeeId, period); }
 
 async function prDownloadPayslip(employeeId, period) {
   try {
