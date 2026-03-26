@@ -2256,6 +2256,7 @@ function resetImport() {
 
 // ════════════════════════════════════════════════════════════════
 // PAYROLL ADMIN
+function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 // ════════════════════════════════════════════════════════════════
 
 // Sub-tab switching
@@ -2295,11 +2296,11 @@ async function prLoadEmployees() {
       const enabled = emp.payrollEnabled===true||emp.payrollEnabled==='true';
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
         + '<div style="flex:1;min-width:0">'
-        + '<div style="font-weight:600;font-size:13px">' + esc(emp.name||'') + '</div>'
-        + '<div style="font-size:11px;color:var(--muted)">' + esc(emp.title||'–') + ' · ' + esc(emp.bankAccount||'no bank') + ' · ' + (emp.baseRateKr||'–') + ' kr/hr</div>'
+        + '<div style="font-weight:600;font-size:13px">' + _e(emp.name||'') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted)">' + _e(emp.title||'–') + ' · ' + _e(emp.bankAccount||'no bank') + ' · ' + (emp.baseRateKr||'–') + ' kr/hr</div>'
         + '</div>'
         + '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + (enabled?'var(--green)':'var(--surface)') + ';color:' + (enabled?'#fff':'var(--muted)') + '">' + (enabled?'Payroll':'Inactive') + '</span>'
-        + '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="prEditEmployee('' + esc(emp.id) + '')">Edit</button>'
+        + '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="prEditEmployee('' + _e(emp.id) + '')">Edit</button>'
         + '</div>';
     }).join('');
   } catch(e) {
@@ -2406,7 +2407,7 @@ async function prLoadTimesheets() {
           const dur = p.out.durationMinutes ? Math.floor(p.out.durationMinutes/60)+'h '+String(Math.round(p.out.durationMinutes%60)).padStart(2,'0')+'m' : '–';
           const orig = p.out.originalTimestamp ? '⚠️ edited (was '+p.out.originalTimestamp.slice(0,16).replace('T',' ')+')' : '';
           return '<tr style="border-bottom:1px solid var(--border)">'
-            + '<td style="padding:5px 6px;font-weight:600">' + esc(p.emp) + '</td>'
+            + '<td style="padding:5px 6px;font-weight:600">' + _e(p.emp) + '</td>'
             + '<td style="padding:5px 6px;text-align:center">' + (p.in?p.in.timestamp.slice(11,16):'–') + '</td>'
             + '<td style="padding:5px 6px;text-align:center">' + p.out.timestamp.slice(11,16) + '</td>'
             + '<td style="padding:5px 6px;text-align:center;font-weight:600">' + dur + '</td>'
@@ -2456,7 +2457,7 @@ async function prLoadPeriods() {
         const emp = _prEmps.find(e=>e.id===r.employeeId)||{name:r.employeeId};
         const ytd = r._ytd || {};
         return '<tr style="font-size:11px;border-bottom:1px solid var(--border)">'
-          + '<td style="padding:4px 8px">' + esc(emp.name||r.employeeId) + '</td>'
+          + '<td style="padding:4px 8px">' + _e(emp.name||r.employeeId) + '</td>'
           + '<td style="padding:4px 8px;text-align:right">' + (Number(r.hoursRegular||0)+Number(r.hoursOT133||0)+Number(r.hoursOT155||0)).toFixed(1) + 'h</td>'
           + '<td style="padding:4px 8px;text-align:right">' + kr(r.grossTotal||0) + '</td>'
           + '<td style="padding:4px 8px;text-align:right">' + kr(r.stadgreidslaSkattur||0) + '</td>'
@@ -2482,7 +2483,7 @@ async function prLoadPeriods() {
   }
 }
 
-async function prClosePeriod() {
+async function prRunClose() {
   const period = document.getElementById('prClosePeriod').value;
   if (!period) return;
   const msg = document.getElementById('prCloseMsg');
