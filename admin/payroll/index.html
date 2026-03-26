@@ -392,7 +392,7 @@ async function prLoadTsEntries(){
   var endDow=(lastDay.getDay()+6)%7;
   var rangeEnd=new Date(_calYear,_calMonth+1,7-endDow);
   try{
-    var params={from:rangeStart.toISOString().slice(0,10),to:rangeEnd.toISOString().slice(0,10),period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')};
+    var params = {from: rangeStart.toISOString().slice(0,10), to: rangeEnd.toISOString().slice(0,10)};
     if(empId) params.employeeId=empId;
     var res=await apiGet('getTimeEntries',params);
     _tsEntries=res.entries||res.timeEntries||[];
