@@ -71,9 +71,7 @@ function maintOpenDetail(r, currentUser) {
       <div id="maintDetailBody" style="overflow-y:auto;padding:18px 20px;flex:1"></div>
     </div>`;
     el.addEventListener('click', e => { if (e.target===el) closeModal('maintDetailModal'); });
-    document.getElementById('maintDetailClose')?.addEventListener('click', ()=>closeModal('maintDetailModal'));
     document.body.appendChild(el);
-    // wire close button after appending
     el.querySelector('#maintDetailClose').addEventListener('click', ()=>closeModal('maintDetailModal'));
   }
   if (!document.getElementById('maintConfirmModal')) {
@@ -106,17 +104,16 @@ function maintOpenDetail(r, currentUser) {
   }
 
   function renderAndWire() {
-    const SEV_CSS    = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
-    const catIcon    = CAT_ICON[r.category] || '🔧';
-    const isOos      = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
-    const resolved   = boolVal(r.resolved);
-    const comments   = parseJson(r.comments, []);
+    const catIcon  = CAT_ICON[r.category] || '🔧';
+    const isOos    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
+    const resolved = boolVal(r.resolved);
+    const comments = parseJson(r.comments, []);
     const subjectLabel = r.category==='boat'
       ? esc(r.boatName||r.boatId||'—')
       : esc(r.itemName||'—');
 
-    document.getElementById('maintDetailTitle').textContent = catIcon+' '+subjectLabel
-      +(r.part ? ' · '+r.part : '');
+    document.getElementById('maintDetailTitle').textContent =
+      catIcon+' '+subjectLabel+(r.part ? ' · 🔧 '+r.part : '');
 
     // Severity dropdown
     const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
@@ -124,15 +121,17 @@ function maintOpenDetail(r, currentUser) {
       `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]}" style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
     ).join('');
 
-    // OOS toggle (boat only, unresolved)
+    // OOS: "OOS" when active, "In service" when inactive
     const oosBtn = (r.category==='boat' && !resolved)
-      ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?'OOS — return to service':'Mark OOS'}</button>`
+      ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?'OOS':'In service'}</button>`
       : '';
 
-    const commentHtml = comments.map(c=>`
-      <div class="comment-item">
-        <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
-        <span>${esc(c.text||'')}</span>
+    // Comments: text first, then 👤 name · 📅 timestamp, × to delete
+    const commentHtml = comments.map((c,idx)=>`
+      <div class="comment-item" style="position:relative;padding-right:24px">
+        <div style="font-size:13px;margin-bottom:3px">${esc(c.text||'')}</div>
+        <div style="font-size:11px;color:var(--muted)">👤 ${esc(c.by||'')} · 📅 ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
+        ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Delete comment">&times;</button>` : ''}
       </div>`).join('');
 
     document.getElementById('maintDetailBody').innerHTML = `
@@ -147,25 +146,27 @@ function maintOpenDetail(r, currentUser) {
         ${oosBtn}
       </div>
       <div class="req-meta" style="margin-bottom:12px">
-        ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
-        ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
-        ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`              : ''}
-        ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>`  : ''}
+        ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
+        ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
+        ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`              : ''}
+        ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>`  : ''}
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
       ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
       ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-      ${!resolved ? `<div class="comment-add" style="margin-top:12px">
+      ${!resolved ? `
+      <div class="comment-add" style="margin-top:12px">
         <input id="mdCommentInput" type="text" placeholder="Add comment…">
         <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
       </div>
-      <div class="req-actions" style="margin-top:10px">
+      <div class="req-actions" style="margin-top:10px;justify-content:space-between">
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>
-        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c">Delete</button>
-      </div>` : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
+        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">Delete</button>
+      </div>`
+      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by 👤 ${esc(r.resolvedBy||'')}</div>`}
     `;
 
-    // Severity dropdown
+    // Severity dropdown toggle
     const cur  = document.getElementById('mdSevCurrent');
     const drop = document.getElementById('mdSevDropdown');
     if (cur && drop) {
@@ -205,8 +206,21 @@ function maintOpenDetail(r, currentUser) {
       });
     });
 
-    // Comment
-    const postComment = async ()=>{
+    // Delete individual comment
+    document.querySelectorAll('#maintDetailBody [data-cidx]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.cidx);
+        doConfirm('Delete this comment?', async () => {
+          const updated = parseJson(r.comments,[]).filter((_,i)=>i!==idx);
+          await apiPost('saveMaintenance',{id:r.id,comments:JSON.stringify(updated)});
+          r.comments=JSON.stringify(updated); renderAndWire();
+        });
+      });
+    });
+
+    // Post comment
+    const postComment = async () => {
       const input = document.getElementById('mdCommentInput');
       const text  = (input?.value||'').trim();
       if(!text) return;
@@ -233,7 +247,7 @@ function maintOpenDetail(r, currentUser) {
       });
     });
 
-    // Delete
+    // Delete issue
     document.getElementById('mdDeleteBtn')?.addEventListener('click',()=>{
       doConfirm('Delete this issue? This cannot be undone.', async ()=>{
         await apiPost('deleteMaintenance',{id:r.id});
@@ -258,33 +272,33 @@ function maintRenderCard(r) {
     : esc(r.itemName||'—');
   const oosTag = isOos ? '<span class="oos-badge">OOS</span>' : '';
 
-  const comments    = parseJson(r.comments, []);
+  const comments = parseJson(r.comments, []);
   const commentHtml = comments.map(c=>`
     <div class="comment-item">
-      <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
-      <span>${esc(c.text||'')}</span>
+      <div style="font-size:13px;margin-bottom:3px">${esc(c.text||'')}</div>
+      <div style="font-size:11px;color:var(--muted)">👤 ${esc(c.by||'')} · 📅 ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
     </div>`).join('');
 
   return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
     <div class="req-header">
       <div style="flex:1;min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel}
-          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
+          ${catIcon} ${subjectLabel}
+          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · 🔧 ${esc(r.part)}</span>` : ''}
           ${oosTag}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
-          ${r.category==='boat' && r.itemName ? `<span>${esc(r.itemName)}</span>` : ''}
-          ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>` : ''}
-          ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>` : ''}
+          ${r.category==='boat'&&r.itemName ? `<span>🔧 ${esc(r.itemName)}</span>` : ''}
+          ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>` : ''}
+          ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>` : ''}
         </div>
       </div>
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by 👤 ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 
