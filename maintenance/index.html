@@ -248,6 +248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       apiGet("getConfig"),
     ]);
     allRequests = rRes.requests || [];
+    window._maintUser = window.user;
     boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
     renderStats();
