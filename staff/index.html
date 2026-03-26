@@ -514,8 +514,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const empRes = await apiGet('getEmployees');
         const me = (empRes.employees||[]).find(e =>
-          String(e.memberId) === String(window.user?.id) ||
-          String(e.kt) === String(window.user?.kennitala)
+          (e.memberId && String(e.memberId) === String(window.user?.id)) ||
+          (e.kt && String(e.kt).replace(/[^0-9]/g,'') === String(window.user?.kennitala||'').replace(/[^0-9]/g,'')) ||
+          (e.name && window.user?.name && e.name.trim() === window.user.name.trim())
         );
         if (me && (me.payrollEnabled === true || me.payrollEnabled === 'true')) {
           punchClockWidget(document.getElementById('punchClockWidget'), me.id);
