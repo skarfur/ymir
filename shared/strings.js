@@ -506,43 +506,63 @@ const STRINGS = {
   'cert.nameRequired':         { EN:'Name required.',                   IS:'Nafn vantar.' },
   'cert.typeRequired':         { EN:'Select a certification type.',     IS:'Veldu tegund skírteinis.' },
   'cert.levelRequired':        { EN:'Select a level / subcategory.',    IS:'Veldu stig / undirflokk.' },
-  // ── Payroll / Punch clock ─────────────────────────────────────────────────
-  'payroll.clockIn':         { EN:'Clock In',           IS:'Stimpla inn' },
-  'payroll.clockOut':        { EN:'Clock Out',          IS:'Stimpla út' },
-  'payroll.currentShift':    { EN:'Current shift',      IS:'Núverandi vakt' },
-  'payroll.recentShifts':    { EN:'Recent shifts',      IS:'Nýlegar vaktir' },
-  'payroll.noShifts':        { EN:'No shifts recorded', IS:'Engar vaktir skráðar' },
-  'payroll.section':         { EN:'Time & Pay',         IS:'Tími & laun' },
-  'payroll.employees':       { EN:'Employees',          IS:'Starfsmenn' },
-  'payroll.timesheets':      { EN:'Timesheets',         IS:'Tímaskráning' },
-  'payroll.payPeriods':      { EN:'Pay Periods',        IS:'Launatímabil' },
-  'payroll.launamidlar':     { EN:'Launamiðlar',     IS:'Launamiðlar' },
-  'payroll.closePeriod':     { EN:'Close Period',       IS:'Loka tímabili' },
-  'payroll.payslip':         { EN:'Payslip',            IS:'Launaseðill' },
-  'payroll.generateXml':     { EN:'Generate XML',       IS:'Mynda XML' },
-  'payroll.baseRate':        { EN:'Base rate',          IS:'Taxti' },
-  'payroll.enablePayroll':   { EN:'Enable payroll',     IS:'Virkja í launakerfi' },
-  'payroll.notEnabled':      { EN:'Not in payroll',     IS:'Ekki í launakerfi' },
-  'payroll.grossTotal':      { EN:'Gross total',        IS:'Heildarlaun' },
-  'payroll.holidayPay':      { EN:'Holiday pay',        IS:'Orlof' },
-  'payroll.pension':         { EN:'Pension',            IS:'Lífeyrissjóður' },
-  'payroll.taxWithheld':     { EN:'Tax withheld',       IS:'Staðgreiðsla' },
-  'payroll.ytd':             { EN:'YTD',                IS:'Frá áramótum' },
+  
+  // ── Payroll — tab labels (renamed) ──────────────────────────────────────────
+  'payroll.tabTimeReporting': { EN:'Time Reporting', IS:'Tímaskráning' },
+  'payroll.tabTimesheets':    { EN:'Timesheets / Payslips', IS:'Launaseðlar' },
+  'payroll.tabEmployees':     { EN:'Employees', IS:'Starfsmenn' },
+  'payroll.tabLaunamidlar':   { EN:'Launamiðlar', IS:'Launamiðlar' },
 
-};
+  // ── Payroll — period & approval flow ────────────────────────────────────────
+  'payroll.definePeriod':      { EN:'Define Pay Period', IS:'Skilgreina launatímabil' },
+  'payroll.periodFrom':        { EN:'From', IS:'Frá' },
+  'payroll.periodTo':          { EN:'To', IS:'Til' },
+  'payroll.previewPayslips':   { EN:'Preview Payslips', IS:'Forskoða launaseðla' },
+  'payroll.approvePeriod':     { EN:'Approve & Close Period', IS:'Samþykkja og loka tímabili' },
+  'payroll.approveConfirm':    { EN:'Approve payslips for all employees and close this period?', IS:'Samþykkja launaseðla allra starfsmanna og loka þessu tímabili?' },
+  'payroll.periodClosed':      { EN:'Period closed ✓', IS:'Tímabili lokað ✓' },
+  'payroll.exportPdf':         { EN:'Export PDF', IS:'Sækja PDF' },
+  'payroll.exportXml':         { EN:'Export XML', IS:'Sækja XML' },
+  'payroll.noPeriodDefined':   { EN:'No pay period defined yet.', IS:'Ekkert launatímabil skilgreint enn.' },
+  'payroll.noClosedPeriods':   { EN:'No closed periods yet.', IS:'Engin lokuð tímabil enn.' },
+  'payroll.hoursFromSheets':   { EN:'Hours from timesheets', IS:'Tímar úr tímaskráningu' },
+  'payroll.hoursConfirm':      { EN:'Confirm hours before approving', IS:'Staðfestu tíma áður en samþykkt er' },
+  'payroll.manualLines':       { EN:'Manual line items', IS:'Handvirðar línur' },
+  'payroll.addLine':           { EN:'+ Add line', IS:'+ Bæta við línu' },
+  'payroll.lineDescription':   { EN:'Description', IS:'Lýsing' },
+  'payroll.lineDescriptionIS': { EN:'Description (IS)', IS:'Lýsing (IS)' },
+  'payroll.lineAmount':        { EN:'Amount (kr)', IS:'Upphæð (kr)' },
+  'payroll.regularHours':      { EN:'Regular hours', IS:'Dagvinna (klst)' },
+  'payroll.ot1Hours':          { EN:'Overtime 1.33×', IS:'Eftirvinna 1,33' },
+  'payroll.ot2Hours':          { EN:'Overtime 1.55×', IS:'Eftirvinna 1,55' },
+  'payroll.correctedHours':    { EN:'Corrected hours', IS:'Leiðréttir tímar' },
+  'payroll.hoursNote':         { EN:'Note / reason for correction', IS:'Athugasemd / ástæða leiðréttingar' },
+  'payroll.confirmHours':      { EN:'Confirm hours', IS:'Staðfesta tíma' },
+  'payroll.periodApproved':    { EN:'Approved', IS:'Samþykkt' },
+  'payroll.periodOpen':        { EN:'Open', IS:'Opið' },
+  'payroll.periodLabel':       { EN:'Pay period', IS:'Launatímabil' },
+  'payroll.employeeCount':     { EN:'{n} employees', IS:'{n} starfsmenn' },
+  'payroll.grossLabel':        { EN:'Gross', IS:'Heildarlaun' },
+  'payroll.netLabel':          { EN:'Net', IS:'Útborgun' },
+  'payroll.paymentDate':       { EN:'Payment date', IS:'Greiðsludagur' },
+  'payroll.slipNumber':        { EN:'Slip no.', IS:'Seðilnúmer' },
+  'payroll.personuafslattr':   { EN:'Personal tax credit (kr/month)', IS:'Persónuafsláttur (kr/mán.)' },
+  'payroll.personuafslattrPct':{ EN:'% of standard credit used here', IS:'% af staðlaðri upphæð hér' },
+  'payroll.configTitle':       { EN:'Payroll Config', IS:'Stillingar launakerfis' },
+  'payroll.ot1Rate':           { EN:'Overtime tier 1 multiplier', IS:'Eftirvinna þrep 1 margfaldari' },
+  'payroll.ot2Rate':           { EN:'Overtime tier 2 multiplier', IS:'Eftirvinna þrep 2 margfaldari' },
+  'payroll.orlofsRate':        { EN:'Holiday pay rate', IS:'Orlofslaun hlutfall' },
+  'payroll.empPensionRate':    { EN:'Employee pension %', IS:'Lífeyrissjóður starfsmann %' },
+  'payroll.emplPensionRate':   { EN:'Employer pension %', IS:'Mótframlag lífeyrissjóður %' },
+  'payroll.taxBracket1':       { EN:'Tax bracket 1 rate (up to 583,854 kr)', IS:'Skattstigi 1 (upp að 583.854 kr)' },
+  'payroll.taxBracket2':       { EN:'Tax bracket 2 rate (up to 1,645,733 kr)', IS:'Skattstigi 2 (upp að 1.645.733 kr)' },
+  'payroll.taxBracket3':       { EN:'Tax bracket 3 rate', IS:'Skattstigi 3' },
+  'payroll.unionDuesRate':     { EN:'Union dues rate', IS:'Stéttarfélagsgjald hlutfall' },
+  'payroll.hoursTotal':        { EN:'Total hours', IS:'Heildartímar' },
+  'payroll.editEntry':         { EN:'Edit', IS:'Breyta' },
+  'payroll.notEnabled':        { EN:'Not in payroll', IS:'Ekki í launakerfi' },
+  'payroll.enablePayroll':     { EN:'Enable payroll', IS:'Virkja í launakerfi' },
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PUBLIC API
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Look up a string by key.
- *
- * @param {string}  key  - Dot-namespaced key, e.g. "btn.save"
- * @param {object}  vars - Optional interpolation vars: s("staff.minsOverdue", {n:5})
- * @param {string}  lang - Override language (default: getLang())
- * @returns {string}
- */
 window.s = function s(key, vars, lang) {
   const L   = lang || (typeof getLang === 'function' ? getLang() : 'EN');
   const entry = STRINGS[key];
