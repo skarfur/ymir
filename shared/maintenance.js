@@ -98,8 +98,7 @@ function maintOpenDetail(r, currentUser) {
 
   function getBy() {
     return currentUser
-      || window._maintUser?.name
-      || (typeof user!=='undefined' ? user?.name : null)
+      || (typeof getUser==='function' ? getUser()?.name : null)
       || 'Staff';
   }
 
@@ -330,8 +329,8 @@ async function maintResolve(id) {
   const r = (window._maintRequests || []).find(x => x.id === id);
   if (!r) return;
   try {
-    await apiPost("resolveMaintenance", { id, resolvedBy: window._maintUser.name });
-    r.resolved = true; r.resolvedBy = window._maintUser.name; r.resolvedAt = new Date().toISOString();
+    await apiPost("resolveMaintenance", { id, resolvedBy: (typeof getUser==='function'?getUser()?.name:'Staff') });
+    r.resolved = true; r.resolvedBy = (typeof getUser==='function'?getUser()?.name:'Staff'); r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
       await apiPost("saveBoat", { id: r.boatId, oos: false, oosReason: "" });
     }
@@ -351,11 +350,11 @@ async function maintAddComment(id) {
   const text = input.value.trim();
   if (!text) return;
   try {
-    await apiPost("addMaintenanceComment", { id, by: window._maintUser.name, text });
+    await apiPost("addMaintenanceComment", { id, by: (typeof getUser==='function'?getUser()?.name:'Staff'), text });
     const r = (window._maintRequests || []).find(x => x.id === id);
     if (r) {
       const comments = parseJson(r.comments, []);
-      comments.push({ by: window._maintUser.name, at: new Date().toISOString(), text });
+      comments.push({ by: (typeof getUser==='function'?getUser()?.name:'Staff'), at: new Date().toISOString(), text });
       r.comments = JSON.stringify(comments);
     }
     if (typeof renderList === "function") renderList();
