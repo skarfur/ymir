@@ -644,16 +644,9 @@ function renderMaintenance() {
     el.innerHTML = `<div class="empty-note">${s('staff.noMaint')}</div>`;
     return;
   }
-  el.innerHTML = open.map(r => maintRenderCard(r)).join('');
-  // Wire click-to-detail on each card
-  el.querySelectorAll('.maint-card').forEach((card, idx) => {
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', e => {
-      if (e.target.closest('button, a, input')) return; // let action buttons work
-      const r = open[idx];
-      document.getElementById('maintDetailBody').innerHTML = maintRenderRow(r);
-      openModal('maintDetailModal');
-    });
+  el.innerHTML = open.map(r => maintRenderCardCompact(r)).join('');
+  el.querySelectorAll('.maint-card-compact').forEach((card, idx) => {
+    card.addEventListener('click', () => maintOpenDetail(open[idx], user?.name));
   });
 }
 
@@ -1356,15 +1349,5 @@ async function toggleStaffStatus(field) {
   </div>
 </div>
 
-  <!-- Maintenance detail modal -->
-  <div id="maintDetailModal" class="modal hidden" onclick="if(event.target===this)closeModal('maintDetailModal')">
-    <div class="modal-box" style="max-width:520px;padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">
-        <span style="font-weight:600;font-size:14px" data-s="staff.maintDetail">Issue Detail</span>
-        <button onclick="closeModal('maintDetailModal')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0 4px">&times;</button>
-      </div>
-      <div id="maintDetailBody" style="padding:16px;overflow-y:auto;max-height:70vh"></div>
-    </div>
-  </div>
 </body>
 </html>
