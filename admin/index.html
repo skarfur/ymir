@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ýmir — Admin</title>
+  <title>Ãmir â Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/style.css">
@@ -14,7 +14,7 @@
   <script src="../shared/ui.js"></script>
   <script src="../shared/certs.js"></script>
   <style>
-    /* ── Tab bar ── */
+    /* ââ Tab bar ââ */
     .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
       font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
@@ -22,7 +22,7 @@
     .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
-    /* ── Collapsible section ── */
+    /* ââ Collapsible section ââ */
     .col-section { margin-bottom:16px; }
     .col-head { display:flex; align-items:center; justify-content:space-between;
       padding:10px 14px; background:var(--surface); border:1px solid var(--border);
@@ -36,33 +36,33 @@
     .col-body { border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px;
       padding:14px 16px; background:var(--card); }
 
-    /* ── Member rows ── */
+    /* ââ Member rows ââ */
     .member-row { display:flex; align-items:center; gap:10px; padding:9px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .member-row:last-child { border-bottom:none; }
     .member-name { font-weight:500; flex:1; color:var(--text); }
     .member-kt   { color:var(--muted); font-size:11px; width:88px; flex-shrink:0; }
 
-    /* ── Boat cards ── */
+    /* ââ Boat cards ââ */
     .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
     .boat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
     .boat-card.oos { opacity:.55; }
     .boat-card-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; }
     .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
 
-    /* ── Generic row ── */
+    /* ââ Generic row ââ */
     .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .list-row:last-child { border-bottom:none; }
     .list-name { flex:1; color:var(--text); }
 
-    /* ── Checklist rows ── */
+    /* ââ Checklist rows ââ */
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
     .cl-phase { width:50px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
 
-    /* ── Action buttons ── */
+    /* ââ Action buttons ââ */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
       font-size:11px; font-family:inherit; padding:3px 8px; border-radius:4px; transition:all .15s; }
     .row-edit:hover { color:var(--brass); border-color:var(--brass)55; }
@@ -70,13 +70,13 @@
       font-size:16px; padding:2px 4px; line-height:1; transition:color .15s; }
     .row-del:hover { color:var(--red); }
 
-    /* ── Search ── */
+    /* ââ Search ââ */
     .search-bar { position:relative; }
     .search-bar input { padding-left:30px; }
-    .search-bar::before { content:"⌕"; position:absolute; left:10px; top:50%;
+    .search-bar::before { content:"â"; position:absolute; left:10px; top:50%;
       transform:translateY(-50%); color:var(--muted); font-size:15px; pointer-events:none; }
 
-    /* ── Import ── */
+    /* ââ Import ââ */
     .import-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; }
     .upload-zone { border:2px dashed var(--border); border-radius:8px; padding:28px;
       text-align:center; cursor:pointer; transition:border-color .2s;
@@ -124,14 +124,14 @@
       <button class="tab-btn"        data-tab="payroll"    onclick="showTab('payroll')"    data-s="admin.tabPayroll"></button>
     </div>
 
-    <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
+    <!-- ââ MEMBERS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-members">
 
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <div class="search-bar" style="flex:1;min-width:200px">
-          <input type="text" id="memberSearch" placeholder="Search name or kennitala…" oninput="filterMembers()">
+          <input type="text" id="memberSearch" placeholder="Search name or kennitalaâ¦" oninput="filterMembers()">
         </div>
-        <button class="btn btn-secondary" onclick="showTab('members','import')">⇪ Import CSV</button>
+        <button class="btn btn-secondary" onclick="showTab('members','import')">âª Import CSV</button>
         <button class="btn btn-primary"   onclick="openMemberModal()">+ Add member</button>
       </div>
 
@@ -139,7 +139,7 @@
         <div class="col-section">
           <div class="col-head" onclick="toggleSection(this)">
             <div class="col-title">MEMBERS <strong id="memberCountLabel"></strong></div>
-            <span class="col-toggle">▼</span>
+            <span class="col-toggle">â¼</span>
           </div>
           <div class="col-body hidden" id="membersCard">
             <div class="loading-state"><span class="spinner"></span></div>
@@ -149,7 +149,7 @@
 
       <div id="memberSubImport" class="hidden">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <button class="btn-ghost" onclick="showTab('members','list')">← Back to list</button>
+          <button class="btn-ghost" onclick="showTab('members','list')">â Back to list</button>
           <span style="font-size:12px;color:var(--muted)">Import from Abler.io CSV</span>
         </div>
         <div id="importStep1" data-step="1">
@@ -164,7 +164,7 @@
               <div class="col-hint-row"><span class="col-hint-field">membership_type</span><span class="col-hint-vals">e.g. full, junior, family</span></div>
             </div>
             <label class="upload-zone" for="csvFile">
-              <div style="font-size:24px">📄</div>
+              <div style="font-size:24px">ð</div>
               <div style="font-size:13px;font-weight:500">Drop CSV here or click to browse</div>
               <div style="font-size:11px;color:var(--muted)">UTF-8 encoded, comma or semicolon delimited</div>
               <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
@@ -180,14 +180,14 @@
             <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
               padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
             <div class="btn-row" style="margin-top:14px">
-              <button class="btn btn-secondary" onclick="resetImport()">← Start over</button>
+              <button class="btn btn-secondary" onclick="resetImport()">â Start over</button>
               <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
             </div>
           </div>
         </div>
         <div id="importStep3" data-step="3" class="hidden">
           <div class="import-card" style="text-align:center;padding:36px">
-            <div style="font-size:30px;margin-bottom:10px">✓</div>
+            <div style="font-size:30px;margin-bottom:10px">â</div>
             <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
             <div style="margin-top:18px">
               <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
@@ -198,7 +198,7 @@
       </div>
     </div>
 
-    <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
+    <!-- ââ BOATS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-boats" class="hidden">
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
@@ -210,7 +210,7 @@
       </div>
     </div>
 
-    <!-- ══ LOCATIONS ════════════════════════════════════════════════════════ -->
+    <!-- ââ LOCATIONS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-locations" class="hidden">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openLocationModal()">+ Add location</button>
@@ -218,7 +218,7 @@
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">LOCATIONS</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle">â¼</span>
         </div>
         <div class="col-body hidden" id="locationsCard">
           <div class="loading-state"><span class="spinner"></span></div>
@@ -226,7 +226,7 @@
       </div>
     </div>
 
-    <!-- ══ CHECKLISTS ═══════════════════════════════════════════════════════ -->
+    <!-- ââ CHECKLISTS âââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-checklists" class="hidden">
 
       <!-- Opening / Closing checklists -->
@@ -236,14 +236,14 @@
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">OPENING CHECKLIST</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle">â¼</span>
         </div>
         <div class="col-body hidden" id="openingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">CLOSING CHECKLIST</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle">â¼</span>
         </div>
         <div class="col-body hidden" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
@@ -269,7 +269,7 @@
       </div>
     </div>
 
-    <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
+    <!-- ââ ACTIVITY TYPES ââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-actTypes" class="hidden">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button class="btn btn-primary" onclick="openActTypeModal()">+ Add type</button>
@@ -277,7 +277,7 @@
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">ACTIVITY TYPES</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle">â¼</span>
         </div>
         <div class="col-body hidden" id="actTypesCard">
           <div class="loading-state"><span class="spinner"></span></div>
@@ -285,13 +285,13 @@
       </div>
     </div>
 
-    <!-- ══ CERTIFICATIONS ════════════════════════════════════════════════════ -->
+    <!-- ââ CERTIFICATIONS ââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-certs" class="hidden">
 
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">CERTIFICATION TYPES</div>
-          <span class="col-toggle open">▼</span>
+          <span class="col-toggle open">â¼</span>
         </div>
         <div class="col-body" id="certDefsCard">
           <div class="loading-state"><span class="spinner"></span></div>
@@ -304,12 +304,12 @@
       <div class="col-section" style="margin-top:16px">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">ASSIGN CERTIFICATIONS</div>
-          <span class="col-toggle open">▼</span>
+          <span class="col-toggle open">â¼</span>
         </div>
         <div class="col-body">
           <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
             <div class="search-bar" style="flex:1;min-width:180px">
-              <input type="text" id="certMemberSearch" placeholder="Search member…" oninput="filterCertMembers()">
+              <input type="text" id="certMemberSearch" placeholder="Search memberâ¦" oninput="filterCertMembers()">
             </div>
             <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
               <option value="">All cert types</option>
@@ -320,12 +320,12 @@
       </div>
     </div>
 
-    <!-- ══ ALERT SETTINGS ═══════════════════════════════════════════════════ -->
+    <!-- ââ ALERT SETTINGS âââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-alerts" class="hidden">
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">⚠ OVERDUE ALERTS</div>
-          <span class="col-toggle">▼</span>
+          <div class="col-title">â  OVERDUE ALERTS</div>
+          <span class="col-toggle">â¼</span>
         </div>
         <div class="col-body hidden" id="alertsCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -352,32 +352,32 @@
       </div>
     </div>
 
-    <!-- ══ FLAGS ════════════════════════════════════════════════════════════════ -->
+    <!-- ââ FLAGS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
     <div id="tab-flags" class="hidden">
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">SCORE THRESHOLDS <span style="font-size:10px;color:var(--muted);font-weight:normal">(total points → flag level)</span></div>
-          <span class="col-toggle open">▼</span>
+          <div class="col-title">SCORE THRESHOLDS <span style="font-size:10px;color:var(--muted);font-weight:normal">(total points â flag level)</span></div>
+          <span class="col-toggle open">â¼</span>
         </div>
         <div class="col-body" id="flagThresholdsCard">
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-            <div class="field"><label style="color:#f1c40f">🟡 Yellow ≥</label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e67e22">🟠 Orange ≥</label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e74c3c">🔴 Red ≥</label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#999">⛔ Closed ≥</label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#f1c40f">ð¡ Yellow â¥</label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e67e22">ð  Orange â¥</label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e74c3c">ð´ Red â¥</label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#999">â Closed â¥</label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WIND SCORING (Force → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WIND SCORING (Force â points)</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagWindCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Force ≤ maxForce. List in ascending order.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Force â¤ maxForce. List in ascending order.</div>
           <div id="fcWindBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWindBand()">+ Add band</button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">DIRECTION &amp; GUST MODIFIERS</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">DIRECTION &amp; GUST MODIFIERS</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagDirCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
             <div class="field"><label>Easterly modifier (pts)</label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when wind is from an easterly sector</div></div>
@@ -386,29 +386,29 @@
           <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres â points)</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagWaveCard">
           <div id="fcWaveBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWaveBand()">+ Add band</button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">SEA TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">SEA TEMPERATURE SCORING (Â°C â points)</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagSstCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">First band where SST ≥ minC applies. List highest minC first.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">First band where SST â¥ minC applies. List highest minC first.</div>
           <div id="fcSstBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddSstBand()">+ Add band</button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR TEMPERATURE SCORING (Â°C â points)</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagFeelsCard" data-note="uses apparent_temperature, falls back to temperature_2m">
           <div id="fcFeelsBands" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddFeelsBand()">+ Add band</button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">VISIBILITY SCORING</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">VISIBILITY SCORING</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagVisCard">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
             <div class="field"><label>Good (pts)</label><input type="number" id="fcVisGood" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
@@ -418,13 +418,13 @@
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">FLAG LABELS &amp; ADVICE TEXT</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">FLAG LABELS &amp; ADVICE TEXT</div><span class="col-toggle">â¼</span></div>
         <div class="col-body hidden" id="flagAdviceCard">
           <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px"></div>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head open" onclick="toggleSection(this)"><div class="col-title">LIVE PREVIEW</div><span class="col-toggle open">▼</span></div>
+        <div class="col-head open" onclick="toggleSection(this)"><div class="col-title">LIVE PREVIEW</div><span class="col-toggle open">â¼</span></div>
         <div class="col-body" id="flagPreviewCard">
           <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
         </div>
@@ -437,7 +437,7 @@
       </div>
     </div>
 
-<!-- ══ PAYROLL ══ -->
+<!-- ââ PAYROLL ââ -->
     <div id="tab-payroll" class="hidden">
 
       <!-- Sub-tab nav -->
@@ -448,29 +448,29 @@
         <button class="pr-sub"        data-sub="launamidlar" onclick="prShowSub('launamidlar')" data-s="payroll.launamidlar"></button>
       </div>
 
-      <!-- EMPLOYEES ─────────────────────────────────────────────────────── -->
+      <!-- EMPLOYEES âââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
       <div id="pr-employees">
         <div class="col-section">
-          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.employees"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.employees"></div><span class="col-toggle open">â¾</span></div>
           <div class="col-body" id="prEmployeesList">
             <div class="empty-note" data-s="lbl.loading"></div>
           </div>
         </div>
         <!-- Employee edit panel -->
         <div id="prEmployeeEdit" class="col-section hidden" style="margin-top:12px">
-          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" id="prEditTitle">Edit Employee</div><span class="col-toggle open">▾</span></div>
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" id="prEditTitle">Edit Employee</div><span class="col-toggle open">â¾</span></div>
           <div class="col-body">
             <input type="hidden" id="prEditId">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
               <div class="field"><label>Name</label><input id="prEditName" type="text" readonly style="background:var(--surface)"></div>
               <div class="field"><label>Kennitala</label><input id="prEditKt" type="text" readonly style="background:var(--surface)"></div>
-              <div class="field"><label>Title / Role</label><input id="prEditTitle2" type="text" placeholder="e.g. Frístundaleiðbeinandi"></div>
+              <div class="field"><label>Title / Role</label><input id="prEditTitle2" type="text" placeholder="e.g. FrÃ­stundaleiÃ°beinandi"></div>
               <div class="field"><label>Base rate (kr/hr)</label><input id="prEditRate" type="number" min="0"></div>
               <div class="field"><label>Bank account</label><input id="prEditBank" type="text" placeholder="0101-26-123456"></div>
               <div class="field"><label>Orlofsreikningur</label><input id="prEditOrlof" type="text" placeholder="0101-18-123456"></div>
               <div class="field"><label>Union</label><input id="prEditUnion" type="text" placeholder="VR, SGS, ..."></div>
-              <div class="field"><label>Lífeyrir %</label><input id="prEditLifeyrir" type="number" min="0" max="10" step="0.5" value="4"></div>
-              <div class="field"><label>Séreignarsjóður %</label><input id="prEditSereign" type="number" min="0" max="4" step="0.5" value="0"></div>
+              <div class="field"><label>LÃ­feyrir %</label><input id="prEditLifeyrir" type="number" min="0" max="10" step="0.5" value="4"></div>
+              <div class="field"><label>SÃ©reignarsjÃ³Ã°ur %</label><input id="prEditSereign" type="number" min="0" max="4" step="0.5" value="0"></div>
               <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:20px">
                 <input id="prEditEnabled" type="checkbox">
                 <label for="prEditEnabled" data-s="payroll.enablePayroll"></label>
@@ -485,10 +485,10 @@
         </div>
       </div>
 
-      <!-- TIMESHEETS ─────────────────────────────────────────────────────── -->
+      <!-- TIMESHEETS âââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
       <div id="pr-timesheets" class="hidden">
         <div class="col-section">
-          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.timesheets"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.timesheets"></div><span class="col-toggle open">â¾</span></div>
           <div class="col-body">
             <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
               <select id="prTsEmployee" onchange="prLoadTimesheets()" style="min-width:160px"><option value="">All staff</option></select>
@@ -499,10 +499,10 @@
         </div>
       </div>
 
-      <!-- PAY PERIODS ────────────────────────────────────────────────────── -->
+      <!-- PAY PERIODS ââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
       <div id="pr-periods" class="hidden">
         <div class="col-section">
-          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.payPeriods"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.payPeriods"></div><span class="col-toggle open">â¾</span></div>
           <div class="col-body">
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
               <input id="prClosePeriod" type="month" style="min-width:140px">
@@ -514,10 +514,10 @@
         </div>
       </div>
 
-      <!-- LAUNAMIÐLAR ────────────────────────────────────────────────────── -->
+      <!-- LAUNAMIÃLAR ââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
       <div id="pr-launamidlar" class="hidden">
         <div class="col-section">
-          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.launamidlar"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.launamidlar"></div><span class="col-toggle open">â¾</span></div>
           <div class="col-body">
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
               <input id="prXmlYear" type="number" value="2026" min="2024" max="2030" style="width:90px">
@@ -531,7 +531,7 @@
 
     </div><!-- /tab-payroll -->
 
-<!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
+<!-- ââ MODALS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
 
 <!-- Member modal -->
 <div class="modal-overlay hidden" id="memberModal">
@@ -586,10 +586,10 @@
     <h3 id="boatCatModalTitle">Add Boat Category</h3>
     <div class="grid2">
       <div class="field"><label>Name (English)</label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
-      <div class="field"><label>Name (Íslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
+      <div class="field"><label>Name (Ãslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. SkÃ­Ã°bÃ¡tur"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Emoji</label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
+      <div class="field"><label>Emoji</label><input type="text" id="bcEmoji" placeholder="âµ" maxlength="4"></div>
       <div class="field"><label>Key (auto-set)</label><input type="text" id="bcKey" placeholder="dinghy" style="color:var(--muted)"></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:10px">The key is used internally to link boats and checklists. It cannot be changed after boats are assigned.</div>
@@ -656,7 +656,7 @@
       </select>
     </div>
     <div class="field"><label>Text (English)</label><input type="text" id="clTextEN"></div>
-    <div class="field"><label>Text (Íslenska)</label><input type="text" id="clTextIS"></div>
+    <div class="field"><label>Text (Ãslenska)</label><input type="text" id="clTextIS"></div>
     <div class="field"><label>Sort order</label><input type="number" id="clSort" value="99" min="1"></div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="clActive" checked> <label for="clActive">Active</label>
@@ -680,7 +680,7 @@
       <select id="lcPhase"><option value="launch">Launch</option><option value="landing">Landing</option></select>
     </div>
     <div class="field"><label>Text (English)</label><input type="text" id="lcText"></div>
-    <div class="field"><label>Text (Íslenska)</label><input type="text" id="lcTextIS"></div>
+    <div class="field"><label>Text (Ãslenska)</label><input type="text" id="lcTextIS"></div>
     <div class="field"><label>Sort order</label><input type="number" id="lcSort" value="99" min="1"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('launchCLModal')">Cancel</button>
@@ -730,7 +730,7 @@
     </div>
     <div class="field">
       <label>Issuing Authority <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
-      <input type="text" id="cdIssuingAuthority" placeholder="e.g. World Sailing, Íslandssælan">
+      <input type="text" id="cdIssuingAuthority" placeholder="e.g. World Sailing, ÃslandssÃ¦lan">
     </div>
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
@@ -767,7 +767,7 @@
 <!-- Member cert assignment modal -->
 <div class="modal-overlay hidden" id="memberCertModal">
   <div class="modal" style="max-width:480px">
-    <h3>Certifications — <span id="mcmMemberName"></span></h3>
+    <h3>Certifications â <span id="mcmMemberName"></span></h3>
 
     <div style="margin-bottom:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
@@ -779,12 +779,12 @@
       <div class="field">
         <label>Type</label>
         <select id="mcmCertType" onchange="updateMCMSubcats()">
-          <option value="">Select…</option>
+          <option value="">Selectâ¦</option>
         </select>
       </div>
       <div class="field" id="mcmSubcatField" style="display:none">
         <label>Level / Subcategory</label>
-        <select id="mcmSubcat"><option value="">Select…</option></select>
+        <select id="mcmSubcat"><option value="">Selectâ¦</option></select>
       </div>
       <div class="grid2">
         <div class="field">
@@ -814,17 +814,17 @@
     <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
     <div style="font-size:10px;color:var(--border);margin-top:4px" id="qrBoatId"></div>
     <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
-      Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
+      Scan â available: launch flow Â· your boat out: return flow Â· someone else's: shows status.
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
-      <button class="btn btn-primary" onclick="printQR()">🖨 Print / PDF</button>
+      <button class="btn btn-primary" onclick="printQR()">ð¨ Print / PDF</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── Auth ───────────────────────────────────────────────────────────────────────
+// ââ Auth âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const user = requireAuth(isAdmin);
 
 let members = [], boats = [], locations = [], clItems = [], actTypes = [];
@@ -832,22 +832,22 @@ let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 const bool = v => v === true || v === 'true' || v === 1 || v === '1' || v === 'TRUE';
 
-// ── Default boat categories (seeded if none in config) ────────────────────────
+// ââ Default boat categories (seeded if none in config) ââââââââââââââââââââââââ
 const DEFAULT_BOAT_CATS = [
-  { key:'dinghy',        labelEN:'Dinghy',        labelIS:'Skíðbátur',    emoji:'⛵', active:true },
-  { key:'keelboat',      labelEN:'Keelboat',      labelIS:'Kjölbátur',    emoji:'⛵', active:true },
-  { key:'kayak',         labelEN:'Kayak',         labelIS:'Kajak',        emoji:'🛶', active:true },
-  { key:'rowing shell',  labelEN:'Rowing Shell',  labelIS:'Róðrarbátur',  emoji:'🚣', active:true },
-  { key:'rowboat',       labelEN:'Rowboat',       labelIS:'Árabátur',     emoji:'🚣', active:true },
-  { key:'sup',           labelEN:'SUP',           labelIS:'SUP',          emoji:'🏄', active:true },
-  { key:'wingfoil',      labelEN:'Wingfoil',      labelIS:'Wingfoil',     emoji:'🪁', active:true },
-  { key:'other',         labelEN:'Other',         labelIS:'Annað',        emoji:'🚤', active:true },
+  { key:'dinghy',        labelEN:'Dinghy',        labelIS:'SkÃ­Ã°bÃ¡tur',    emoji:'âµ', active:true },
+  { key:'keelboat',      labelEN:'Keelboat',      labelIS:'KjÃ¶lbÃ¡tur',    emoji:'âµ', active:true },
+  { key:'kayak',         labelEN:'Kayak',         labelIS:'Kajak',        emoji:'ð¶', active:true },
+  { key:'rowing shell',  labelEN:'Rowing Shell',  labelIS:'RÃ³Ã°rarbÃ¡tur',  emoji:'ð£', active:true },
+  { key:'rowboat',       labelEN:'Rowboat',       labelIS:'ÃrabÃ¡tur',     emoji:'ð£', active:true },
+  { key:'sup',           labelEN:'SUP',           labelIS:'SUP',          emoji:'ð', active:true },
+  { key:'wingfoil',      labelEN:'Wingfoil',      labelIS:'Wingfoil',     emoji:'ðª', active:true },
+  { key:'other',         labelEN:'Other',         labelIS:'AnnaÃ°',        emoji:'ð¤', active:true },
 ];
 let _allBoatCats = [];   // full list including inactive
 let boatCats     = [];   // active only
 let _bcEditingId = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ââ Init âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
   applyStrings();
@@ -888,7 +888,7 @@ async function loadAll() {
     return;
   }
 
-  // ── Assign data ───────────────────────────────────────────────────────────
+  // ââ Assign data âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   actTypes       = cfgRes.activityTypes || [];
   // Support both old phase values (am/pm) and new (opening/closing) for back-compat
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || cfgRes.dailyChecklist?.am || []),
@@ -916,7 +916,7 @@ function _adminWireStrings() {
   if (search) search.placeholder = s('admin.searchMembers');
 }
 
-// ── Collapsible sections ───────────────────────────────────────────────────────
+// ââ Collapsible sections âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function toggleSection(head) {
   const body   = head.nextElementSibling;
   const toggle = head.querySelector(".col-toggle");
@@ -926,7 +926,7 @@ function toggleSection(head) {
   toggle.classList.toggle("open", !isOpen);
 }
 
-// ── Tab switching ──────────────────────────────────────────────────────────────
+// ââ Tab switching ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function showTab(tab, sub) {
   document.querySelectorAll("[id^='tab-']").forEach(el => el.classList.add("hidden"));
   document.querySelectorAll(".tab-btn").forEach(b => {
@@ -953,7 +953,7 @@ function showTab(tab, sub) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// ── Generic entity save ────────────────────────────────────────────────────────
+// ââ Generic entity save ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 async function saveEntity({ apiAction, getArray, setArray, payload, modalId, renderFn, btn }) {
   if (btn) btn.disabled = true;
   try {
@@ -975,7 +975,7 @@ async function saveEntity({ apiAction, getArray, setArray, payload, modalId, ren
   }
 }
 
-// ── Populate selects driven by boatCats ───────────────────────────────────────
+// ââ Populate selects driven by boatCats âââââââââââââââââââââââââââââââââââââââ
 function populateCategorySelects() {
   const L      = getLang();
   const locale = L === 'IS' ? 'is' : 'en';
@@ -1005,7 +1005,7 @@ function populateCategorySelects() {
   if (lcCat) lcCat.innerHTML = opts;
 }
 
-// ══ MEMBERS ══════════════════════════════════════════════════════════════════
+// ââ MEMBERS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function filterMembers() {
   const q = document.getElementById("memberSearch").value.toLowerCase();
@@ -1025,7 +1025,7 @@ function renderMemberList(list) {
   if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
   card.innerHTML = list.map(m => `
     <div class="member-row">
-      <span class="member-name">${esc(m.name || "—")}</span>
+      <span class="member-name">${esc(m.name || "â")}</span>
       <span class="member-kt">${esc(m.kennitala || "")}</span>
       <span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>
       <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
@@ -1091,7 +1091,7 @@ async function deactivateMember(id) {
 }
 async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
 
-// ══ BOAT CATEGORIES ══════════════════════════════════════════════════════════
+// ââ BOAT CATEGORIES ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function renderBoatCats() {
   const card   = document.getElementById("boatCatsCard");
@@ -1106,7 +1106,7 @@ function renderBoatCats() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
    card.innerHTML = active.map(c => `
     <div class="list-row">
-      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
+      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || 'âµ')}</span>
       <span class="list-name">
         <strong>${esc(c.labelEN)}</strong>
         ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
@@ -1173,7 +1173,7 @@ async function deleteBoatCat() {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ══ BOATS ═════════════════════════════════════════════════════════════════════
+// ââ BOATS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function renderBoats() {
   const el     = document.getElementById("boatSections");
@@ -1210,8 +1210,8 @@ function renderBoats() {
           ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
           <div class="boat-card-actions">
             <button class="row-edit" style="flex:1" onclick="openBoatModal('${b.id}')">Edit</button>
-            <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">🔳</button>
-            <button class="row-del"  onclick="deleteBoat('${b.id}')" title="Delete">×</button>
+            <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">ð³</button>
+            <button class="row-del"  onclick="deleteBoat('${b.id}')" title="Delete">Ã</button>
           </div>
         </div>`).join("");
 
@@ -1221,7 +1221,7 @@ function renderBoats() {
           <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
             <button class="row-edit" onclick="openBoatModalForCat(${cat.key})">+ Add boat</button>
             <button class="row-edit" onclick="openBoatCatModal('${cat.key}')">Edit</button>
-            <span class="col-toggle">▼</span>
+            <span class="col-toggle">â¼</span>
           </div>
         </div>
         <div class="col-body hidden">
@@ -1313,7 +1313,7 @@ function printQR() {
     <script>window.print();window.close();<\/script></body></html>`);
 }
 
-// ══ LOCATIONS ════════════════════════════════════════════════════════════════
+// ââ LOCATIONS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function renderLocations() {
   const card   = document.getElementById("locationsCard");
@@ -1326,7 +1326,7 @@ function renderLocations() {
     <div class="list-row">
       <span class="list-name">${esc(l.name)}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
-      <button class="row-del"  onclick="deleteLocation('${l.id}')">×</button>
+      <button class="row-del"  onclick="deleteLocation('${l.id}')">Ã</button>
     </div>`).join("");
 }
 
@@ -1373,7 +1373,7 @@ async function deleteLocation(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ══ OPENING / CLOSING CHECKLISTS ═════════════════════════════════════════════
+// ââ OPENING / CLOSING CHECKLISTS âââââââââââââââââââââââââââââââââââââââââââââ
 // Items stored in dailyChecklist.opening[] and dailyChecklist.closing[] in config.
 // Phase field on each item is "opening" or "closing".
 // Back-compat: legacy "am"/"pm" values are normalised on load in loadAll().
@@ -1385,7 +1385,7 @@ function renderChecklists() {
 
 function renderCLPhase(cardId, phase) {
   const card  = document.getElementById(cardId);
-  // Normalise legacy am→opening, pm→closing for display
+  // Normalise legacy amâopening, pmâclosing for display
   const norm  = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : p);
   const items = clItems
     .filter(i => norm(String(i.phase).toLowerCase()) === phase && bool(i.active))
@@ -1397,7 +1397,7 @@ function renderCLPhase(cardId, phase) {
       <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS
         ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
-      <button class="row-del"  onclick="deleteCLItem('${i.id}')">×</button>
+      <button class="row-del"  onclick="deleteCLItem('${i.id}')">Ã</button>
     </div>`).join("");
 }
 
@@ -1446,7 +1446,7 @@ async function deleteCLItem(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ══ LAUNCH / LANDING CHECKLISTS ══════════════════════════════════════════════
+// ââ LAUNCH / LANDING CHECKLISTS ââââââââââââââââââââââââââââââââââââââââââââââ
 // Stored in config as: launchChecklists = {
 //   dinghy: { launch:[{id,text,textIS,sort}], landing:[...] }, ...
 // }
@@ -1472,7 +1472,7 @@ function renderLaunchCLSections() {
         <span style="flex:1;color:var(--text)">${esc(i.text || "")}${i.textIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
         <button class="row-edit" onclick="openLaunchCLModal('${esc(cat)}','${phase}','${esc(i.id)}')">Edit</button>
-        <button class="row-del"  onclick="deleteLaunchCLItem('${esc(cat)}','${phase}','${esc(i.id)}')">×</button>
+        <button class="row-del"  onclick="deleteLaunchCLItem('${esc(cat)}','${phase}','${esc(i.id)}')">Ã</button>
       </div>`).join("");
   });
 }
@@ -1539,7 +1539,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ══ ACTIVITY TYPES ════════════════════════════════════════════════════════════
+// ââ ACTIVITY TYPES ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function renderActTypes() {
   const card   = document.getElementById("actTypesCard");
@@ -1559,9 +1559,9 @@ function renderActTypes() {
         <span class="list-name">${esc(a.name)}${a.nameIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
         <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
-        <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
+        <button class="row-del"  onclick="deleteActType('${a.id}')">Ã</button>
       </div>
-      ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
+      ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">â ${esc(st.name)}${st.defaultStart?' Â· '+esc(st.defaultStart)+(st.defaultEnd?'â'+esc(st.defaultEnd):''):''}</div>`).join('')}
     </div>`;
   }).join("");
 }
@@ -1636,7 +1636,7 @@ function renderAtSubtypes() {
         <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT END</label>
           <input type="text" value="${esc(st.defaultEnd||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
             oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultEnd=this.value"></div>
-        <button onclick="window._atSubtypes.splice(${i},1);renderAtSubtypes()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+        <button onclick="window._atSubtypes.splice(${i},1);renderAtSubtypes()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">â</button>
       </div>
     </div>`).join("");
 }
@@ -1647,7 +1647,7 @@ function addAtSubtypeRow() {
   renderAtSubtypes();
 }
 
-// ══ CERTIFICATIONS ════════════════════════════════════════════════════════════
+// ââ CERTIFICATIONS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Renewal / renewalDays concept is removed.
 // Each cert type and subcat can have an optional absolute expiryDate set at assign-time.
 // Subcats supercede the parent: the most specific expiry shown/used is the subcat's.
@@ -1671,14 +1671,14 @@ function renderCertDefs() {
   );
   el.innerHTML = sortedCertDefs.map(d => {
     const authority = d.issuingAuthority
-      ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+      ? `<span style="color:var(--muted)"> Â· ${esc(d.issuingAuthority)}</span>` : "";
     const subcatStr = d.subcats?.length
       ? d.subcats.map(sc => {
           const parts = [sc.label];
           if (sc.rank != null) parts.push(`rank ${sc.rank}`);
           if (sc.expiryDate)   parts.push(`exp. ${sc.expiryDate}`);
           if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
-          return parts.join(" · ");
+          return parts.join(" Â· ");
         }).join(", ")
       : "No subcategories";
     return `<div class="list-row">
@@ -1688,7 +1688,7 @@ function renderCertDefs() {
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
       <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
-      <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">×</button>
+      <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">Ã</button>
     </div>`;
   }).join("");
 }
@@ -1769,7 +1769,7 @@ async function deleteCertDefById(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// Subcat row — no renewalDays field; expiry is an absolute date only on the subcat
+// Subcat row â no renewalDays field; expiry is an absolute date only on the subcat
 let _subcatCounter = 0;
 function addSubcatRow(sc) {
   const i   = _subcatCounter++;
@@ -1785,7 +1785,7 @@ function addSubcatRow(sc) {
         style="font-size:12px" data-field="desc">
       <input type="number" placeholder="Rank" min="1" max="99" value="${sc?.rank ?? ""}"
         style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
-      <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove" style="font-size:16px;padding:2px 6px">×</button>
+      <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove" style="font-size:16px;padding:2px 6px">Ã</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div>
@@ -1817,7 +1817,7 @@ function gatherSubcats() {
   }).filter(sc => sc.label);
 }
 
-// ── Member cert filter & list ──────────────────────────────────────────────────
+// ââ Member cert filter & list ââââââââââââââââââââââââââââââââââââââââââââââââââ
 function populateCertFilterType() {
   const sel = document.getElementById("certFilterType");
   if (!sel) return;
@@ -1829,7 +1829,7 @@ function populateCertFilterType() {
   });
   const typeSel = document.getElementById("mcmCertType");
   if (!typeSel) return;
-  typeSel.innerHTML = `<option value="">Select…</option>`;
+  typeSel.innerHTML = `<option value="">Selectâ¦</option>`;
   certDefs.forEach(d => {
     const o = document.createElement("option");
     o.value = d.id; o.textContent = d.name;
@@ -1873,7 +1873,7 @@ function renderCertMembers() {
       : `<span style="font-size:11px;color:var(--muted)">${s('cert.noCerts')}</span>`;
     return `<div class="list-row" style="flex-wrap:wrap;gap:6px">
       <div style="min-width:140px;flex:1">
-        <div style="font-size:12px;font-weight:500">${esc(m.name || "—")}</div>
+        <div style="font-size:12px;font-weight:500">${esc(m.name || "â")}</div>
         <div style="font-size:10px;color:var(--muted)">${esc(m.kennitala || "")}</div>
       </div>
       <div style="flex:2;min-width:180px">${badgeStr}</div>
@@ -1902,22 +1902,22 @@ function renderCurrentCerts(m) {
   if (!certs.length) { el.innerHTML = `<div class="empty-state">No certifications assigned.</div>`; return; }
   el.innerHTML = certs.map(c => {
     const label  = c.subcat
-      ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
+      ? `${c.def?.name || c.certId} â ${c.subcat.label}` : (c.def?.name || c.certId);
     const expiry = c.expiresAt
-      ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`)
-      : " · Permanent";
-    const meta   = `by ${esc(c.assignedBy || "—")} on ${c.assignedAt || "—"}${expiry}`;
+      ? (c.expired ? ` Â· <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` Â· exp. ${c.expiresAt}`)
+      : " Â· Permanent";
+    const meta   = `by ${esc(c.assignedBy || "â")} on ${c.assignedAt || "â"}${expiry}`;
     return `<div class="list-row" style="font-size:12px">
       <div style="flex:1">
         <div>${esc(label)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${meta}</div>
       </div>
-      <button class="row-del" onclick="removeMemberCert('${c.certId}','${c.sub || ""}')" title="Remove">×</button>
+      <button class="row-del" onclick="removeMemberCert('${c.certId}','${c.sub || ""}')" title="Remove">Ã</button>
     </div>`;
   }).join("");
 }
 
-// updateMCMSubcats: no auto-calc of expiry — always manual
+// updateMCMSubcats: no auto-calc of expiry â always manual
 function updateMCMSubcats() {
   const certId = document.getElementById("mcmCertType").value;
   const def    = certDefs.find(d => d.id === certId);
@@ -1925,7 +1925,7 @@ function updateMCMSubcats() {
 
   if (def?.subcats?.length) {
     const sel = document.getElementById("mcmSubcat");
-    sel.innerHTML = `<option value="">Select…</option>`;
+    sel.innerHTML = `<option value="">Selectâ¦</option>`;
     def.subcats.forEach(sc => {
       const o = document.createElement("option");
       o.value = sc.key; o.textContent = sc.label;
@@ -1935,7 +1935,7 @@ function updateMCMSubcats() {
   } else {
     sf.style.display = "none";
   }
-  // Expiry field is always visible — no auto-calc
+  // Expiry field is always visible â no auto-calc
   document.getElementById("mcmExpiresAt").value = "";
 }
 
@@ -1993,7 +1993,7 @@ async function removeMemberCert(certId, sub) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-// ══ ALERT SETTINGS ════════════════════════════════════════════════════════════
+// ââ ALERT SETTINGS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function loadAlertConfig(cfg) {
   if (!cfg) return;
@@ -2013,22 +2013,22 @@ async function saveAlertConfig() {
   try {
     await apiPost("saveConfig", { overdueAlerts: cfg });
     const msg = document.getElementById("alertSaveMsg");
-    msg.textContent = "✓ Saved";
+    msg.textContent = "â Saved";
     setTimeout(() => { msg.textContent = ""; }, 2500);
   } catch(e) { toast("Save failed: " + e.message, "err"); }
 }
 
-// ══ FLAG CONFIG ═══════════════════════════════════════════════════════════════
+// ââ FLAG CONFIG âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function _fcBandRow(cId,idx,fields,removeFn){
-  return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'+fields.map(function(f){return '<div class="field" style="flex:1;min-width:80px;margin-bottom:0"><label style="font-size:10px">'+esc(f.label)+'</label><input type="number" id="'+cId+'_'+f.key+'_'+idx+'" value="'+f.val+'" step="'+(f.step||1)+'" min="'+(f.min!=null?f.min:-99)+'" style="width:100%" oninput="updateFlagPreview()"></div>';}).join('')+'<button onclick="'+removeFn+'('+idx+')" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;margin-top:14px">×</button></div>';
+  return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'+fields.map(function(f){return '<div class="field" style="flex:1;min-width:80px;margin-bottom:0"><label style="font-size:10px">'+esc(f.label)+'</label><input type="number" id="'+cId+'_'+f.key+'_'+idx+'" value="'+f.val+'" step="'+(f.step||1)+'" min="'+(f.min!=null?f.min:-99)+'" style="width:100%" oninput="updateFlagPreview()"></div>';}).join('')+'<button onclick="'+removeFn+'('+idx+')" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;margin-top:14px">Ã</button></div>';
 }
 function _fcReadBands(cId,keys){var rows=[],idx=0;while(document.getElementById(cId+'_'+keys[0]+'_'+idx)!==null){var row={};keys.forEach(function(k){var el=document.getElementById(cId+'_'+k+'_'+idx);row[k]=el?parseFloat(el.value):0;});rows.push(row);idx++;}return rows;}
 var _fcWindBands=[],_fcWaveBands=[],_fcSstBands=[],_fcFeelsBands=[];
 function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!el)return;el.innerHTML=_fcWindBands.map(function(b,i){return _fcBandRow('fcWind',i,[{key:'maxBft',label:'Max Force',val:b.maxBft,min:0},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWindBand');}).join('');}
 function fcRenderWaveBands(){var el=document.getElementById('fcWaveBands');if(!el)return;el.innerHTML=_fcWaveBands.map(function(b,i){return _fcBandRow('fcWave',i,[{key:'maxM',label:'Max m',val:b.maxM,min:0,step:0.1},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWaveBand');}).join('');}
-function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
-function fcRenderFeelsBands(){var el=document.getElementById('fcFeelsBands');if(!el)return;el.innerHTML=_fcFeelsBands.map(function(b,i){return _fcBandRow('fcFeels',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveFeelsBand');}).join('');}
+function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min Â°C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
+function fcRenderFeelsBands(){var el=document.getElementById('fcFeelsBands');if(!el)return;el.innerHTML=_fcFeelsBands.map(function(b,i){return _fcBandRow('fcFeels',i,[{key:'minC',label:'Min Â°C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveFeelsBand');}).join('');}
 function fcAddWindBand(){_fcWindBands=fcReadWindBands();_fcWindBands.push({maxBft:12,pts:0});fcRenderWindBands();updateFlagPreview();}
 function fcRemoveWindBand(i){_fcWindBands=fcReadWindBands();_fcWindBands.splice(i,1);fcRenderWindBands();updateFlagPreview();}
 function fcReadWindBands(){return _fcReadBands('fcWind',['maxBft','pts']).map(function(r){return{maxBft:r.maxBft,pts:r.pts};});}
@@ -2061,7 +2061,7 @@ function loadFlagConfigPanel(c){
   document.getElementById('fcVisReduced').value=vis.reduced!=null?vis.reduced:3;
   document.getElementById('fcVisPoor').value=vis.poor!=null?vis.poor:5;
   var advEl=document.getElementById('fcFlagAdvice');
-  if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px;margin-bottom:4px">'+'<div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+fc.label+'</div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Short advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Stutt ráðlegging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Full description (EN)</label><textarea id="fcDesc_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.description||fc.description||'')+'</textarea></div>'+'<div class="field" style="margin-bottom:0"><label style="font-size:10px">Full lýsingartexti (IS)</label><textarea id="fcDescIS_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.descriptionIS||fc.descriptionIS||'')+'</textarea></div>'+'</div>';}).join('');}
+  if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px;margin-bottom:4px">'+'<div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+fc.label+'</div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Short advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Stutt rÃ¡Ã°legging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Full description (EN)</label><textarea id="fcDesc_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.description||fc.description||'')+'</textarea></div>'+'<div class="field" style="margin-bottom:0"><label style="font-size:10px">Full lÃ½singartexti (IS)</label><textarea id="fcDescIS_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.descriptionIS||fc.descriptionIS||'')+'</textarea></div>'+'</div>';}).join('');}
   updateFlagPreview();
 }
 function getFlagFormValues(){
@@ -2076,9 +2076,9 @@ function validateFlagConfig(cfg){var errs=[],t=cfg.thresholds;if(t.yellow>=t.ora
 function updateFlagPreview(){
   var preview=document.getElementById('fcFlagPreview');if(!preview)return;
   if(typeof wxScoreFlag!=='function'||typeof wxLoadFlagConfig!=='function'){
-    preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Preview requires weather.js — check script imports.</div>';return;
+    preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Preview requires weather.js â check script imports.</div>';return;
   }
-  var examples=[{label:'Force 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Force 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Force 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Force 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Force 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
+  var examples=[{label:'Force 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Force 4, 0.6m, 8Â°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Force 5 NE, 1m, 4Â°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Force 7 E, 1.8m, -2Â°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Force 8, 2.2m, -5Â°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
   // Deep-clone SCORE_CONFIG, apply form values, render, then restore
   var snap=JSON.parse(JSON.stringify(SCORE_CONFIG));
   try{
@@ -2096,7 +2096,7 @@ function updateFlagPreview(){
     var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');
     var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];
     return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'">'
-      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' · <b>'+r.score+'</b> pts</div>'
+      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' Â· <b>'+r.score+'</b> pts</div>'
       +'<div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';
   }).join('');
   // Restore
@@ -2111,11 +2111,11 @@ function updateFlagPreview(){
 async function saveFlagConfig(){
   var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
   var cfg=getFlagFormValues(),errs=validateFlagConfig(cfg);if(errs.length){errEl.textContent=errs.join(' ');errEl.style.display='block';return;}
-  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
+  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='â Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
 }
 function resetFlagConfig(){if(!confirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
 
-// ══ CSV IMPORT ════════════════════════════════════════════════════════════════
+// ââ CSV IMPORT ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function showImportStep(n) {
   [1,2,3].forEach(i => {
@@ -2219,7 +2219,7 @@ function renderImportPreview(res) {
 async function confirmImport() {
   if (!importResult) return;
   const btn = document.getElementById("confirmImportBtn");
-  btn.disabled = true; btn.textContent = "Importing…";
+  btn.disabled = true; btn.textContent = "Importingâ¦";
   try {
     const toSend = [...importResult.added, ...importResult.updated].map(m => {
       const c = { ...m }; delete c._s; delete c._prev; return c;
@@ -2249,15 +2249,15 @@ function resetImport() {
   showImportStep(1);
 }
 
-// ── Utilities ──────────────────────────────────────────────────────────────────
+// ââ Utilities ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // bool, esc, parseJson, toast, chunk, openModal, closeModal, todayISO
-// all come from shared/api.js and shared/ui.js — no local redefinitions needed.
+// all come from shared/api.js and shared/ui.js â no local redefinitions needed.
 
 
-// ════════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // PAYROLL ADMIN
 function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-// ════════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 // Sub-tab switching
 function prShowSub(sub) {
@@ -2280,7 +2280,7 @@ function prShowSub(sub) {
   document.head.appendChild(s);
 })();
 
-// ── Employees ─────────────────────────────────────────────────
+// ââ Employees âââââââââââââââââââââââââââââââââââââââââââââââââ
 let _prEmps = [];
 
 async function prLoadEmployees() {
@@ -2297,10 +2297,10 @@ async function prLoadEmployees() {
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
         + '<div style="flex:1;min-width:0">'
         + '<div style="font-weight:600;font-size:13px">' + _e(emp.name||'') + '</div>'
-        + '<div style="font-size:11px;color:var(--muted)">' + _e(emp.title||'–') + ' · ' + _e(emp.bankAccount||'no bank') + ' · ' + (emp.baseRateKr||'–') + ' kr/hr</div>'
+        + '<div style="font-size:11px;color:var(--muted)">' + _e(emp.title||'â') + ' Â· ' + _e(emp.bankAccount||'no bank') + ' Â· ' + (emp.baseRateKr||'â') + ' kr/hr</div>'
         + '</div>'
         + `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${enabled?'var(--green)':'var(--surface)'};color:${enabled?'#fff':'var(--muted)'}">` + (enabled ? 'Payroll' : 'Inactive') + `</span>`
-        + '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="prEditEmployee('' + _e(emp.id) + '')">Edit</button>'
+        + `<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="prEditEmployee('${_e(emp.id)}')">Edit</button>`
         + '</div>';
     }).join('');
   } catch(e) {
@@ -2346,7 +2346,7 @@ async function prSaveEmployee() {
   msg.textContent = 'Saving...';
   try {
     await apiPost('saveEmployee', payload);
-    msg.textContent = 'Saved ✓';
+    msg.textContent = 'Saved â';
     setTimeout(()=>{ msg.textContent=''; }, 2000);
     prLoadEmployees();
   } catch(e) { msg.textContent = e.message; msg.style.color='var(--red)'; }
@@ -2356,7 +2356,7 @@ function prCancelEdit() {
   document.getElementById('prEmployeeEdit').classList.add('hidden');
 }
 
-// ── Timesheets ─────────────────────────────────────────────────
+// ââ Timesheets âââââââââââââââââââââââââââââââââââââââââââââââââ
 async function prLoadEmployeesIntoSelect() {
   const sel = document.getElementById('prTsEmployee');
   if (!sel || sel.options.length > 1) return; // already populated
@@ -2404,14 +2404,14 @@ async function prLoadTimesheets() {
       + '<th style="padding:4px 6px"></th>'
       + '</tr></thead><tbody>'
       + pairs.map(p => {
-          const dur = p.out.durationMinutes ? Math.floor(p.out.durationMinutes/60)+'h '+String(Math.round(p.out.durationMinutes%60)).padStart(2,'0')+'m' : '–';
-          const orig = p.out.originalTimestamp ? '⚠️ edited (was '+p.out.originalTimestamp.slice(0,16).replace('T',' ')+')' : '';
+          const dur = p.out.durationMinutes ? Math.floor(p.out.durationMinutes/60)+'h '+String(Math.round(p.out.durationMinutes%60)).padStart(2,'0')+'m' : 'â';
+          const orig = p.out.originalTimestamp ? 'â ï¸ edited (was '+p.out.originalTimestamp.slice(0,16).replace('T',' ')+')' : '';
           return '<tr style="border-bottom:1px solid var(--border)">'
             + '<td style="padding:5px 6px;font-weight:600">' + _e(p.emp) + '</td>'
-            + '<td style="padding:5px 6px;text-align:center">' + (p.in?p.in.timestamp.slice(11,16):'–') + '</td>'
+            + '<td style="padding:5px 6px;text-align:center">' + (p.in?p.in.timestamp.slice(11,16):'â') + '</td>'
             + '<td style="padding:5px 6px;text-align:center">' + p.out.timestamp.slice(11,16) + '</td>'
             + '<td style="padding:5px 6px;text-align:center;font-weight:600">' + dur + '</td>'
-            + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + (p.out.source==='admin'?'✏️ admin':'staff') + '</td>'
+            + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + (p.out.source==='admin'?'âï¸ admin':'staff') + '</td>'
             + '<td style="padding:5px 6px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prAdminEditTime('' + p.out.id + '','' + p.out.timestamp + '',' + (p.out.durationMinutes||0) + ')">Edit</button>' + (orig?'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+orig+'</span>':'') + '</td>'
             + '</tr>';
         }).join('')
@@ -2430,7 +2430,7 @@ function prAdminEditTime(id, currentTs, currentMins) {
     .catch(e=>alert(e.message));
 }
 
-// ── Pay Periods ────────────────────────────────────────────────
+// ââ Pay Periods ââââââââââââââââââââââââââââââââââââââââââââââââ
 async function prLoadPeriods() {
   const list = document.getElementById('prPeriodsList');
   if (!list) return;
@@ -2463,13 +2463,13 @@ async function prLoadPeriods() {
           + '<td style="padding:4px 8px;text-align:right">' + kr(r.stadgreidslaSkattur||0) + '</td>'
           + '<td style="padding:4px 8px;text-align:right;font-weight:600">' + kr(r.netPay||0) + '</td>'
           + '<td style="padding:4px 8px;text-align:right;color:var(--muted);font-size:10px">' + kr(ytd.grossTotal||0) + '</td>'
-          + '<td style="padding:4px 8px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prDownloadPayslip('' + r.employeeId + '','' + period + '')">📄</button></td>'
+          + '<td style="padding:4px 8px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prDownloadPayslip('' + r.employeeId + '','' + period + '')">ð</button></td>'
           + '</tr>';
       }).join('');
       return '<div style="margin-bottom:16px">'
         + '<div style="font-weight:700;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline">'
         + '<span>' + period + '</span>'
-        + '<span style="font-size:11px;color:var(--muted)">Gross: ' + kr(totGross) + ' · Net: ' + kr(totNet) + ' · Total cost: ' + kr(totCost) + '</span>'
+        + '<span style="font-size:11px;color:var(--muted)">Gross: ' + kr(totGross) + ' Â· Net: ' + kr(totNet) + ' Â· Total cost: ' + kr(totCost) + '</span>'
         + '</div>'
         + '<table style="width:100%;border-collapse:collapse">'
         + '<thead><tr style="font-size:10px;color:var(--muted)">'
@@ -2490,7 +2490,7 @@ async function prRunClose() {
   msg.textContent = 'Closing period...';
   try {
     const res = await apiPost('closePayPeriod', { period, by: getUser()?.name||'admin' });
-    msg.textContent = 'Closed: '+res.rows+' payslips ✓';
+    msg.textContent = 'Closed: '+res.rows+' payslips â';
     setTimeout(()=>{ msg.textContent=''; }, 4000);
     prLoadPeriods();
   } catch(e) { msg.textContent = e.message; msg.style.color='var(--red)'; }
@@ -2507,7 +2507,7 @@ async function prDownloadPayslip(employeeId, period) {
   } catch(e) { alert(e.message); }
 }
 
-// ── Launamiðlar ────────────────────────────────────────────────
+// ââ LaunamiÃ°lar ââââââââââââââââââââââââââââââââââââââââââââââââ
 async function prGenerateXml() {
   const year = document.getElementById('prXmlYear').value;
   const out  = document.getElementById('prXmlOutput');
