@@ -84,7 +84,7 @@
 </div>
 <script>/* PAYROLL_MAIN */
 var user = requireAuth(isAdmin);
-if (user) { buildHeader('admin'); applyStrings(document.body); }
+if (user) { buildHeader('payroll'); applyStrings(document.body); }
 var _members=[],_empData={},_empByMember={},_closedPeriods=new Set(),_tsEditId=null;
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
