@@ -541,7 +541,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
         </div>`;
       targetEl._wxRefresh = refresh;
-      targetEl._wxResult  = { flagKey, flag, score, breakdown, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
+      targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
       // ── Inject modal HTML once per page ──
       if (!document.getElementById('wxFlagModal')) {
         const _md = document.createElement('div');
@@ -560,14 +560,12 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       // ── Wire flag pill click — uses snap stored on this element ──
       const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
       if (pill) pill.onclick = () => {
-        const IS     = typeof getLang === 'function' ? getLang() === 'IS' : false;
-        const _wr    = targetEl._wxResult;
-        const snap   = _wr?.snap;
-        const ss     = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
-        const body   = document.getElementById('wxFlagModalBody');
-        const title  = document.getElementById('wxFlagModalTitle');
-        if (!body || !snap) return;
-        const r = wxScoreFlag(snap.ws, snap.wDir, snap.waveH ?? 0, snap.temperature_2m, snap.sst, snap.wg, 'good');
+        const IS  = typeof getLang === 'function' ? getLang() === 'IS' : false;
+        const r   = targetEl._wxResult;  // exact result that drew this pill
+        const ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
+        const body  = document.getElementById('wxFlagModalBody');
+        const title = document.getElementById('wxFlagModalTitle');
+        if (!body || !r) return;
         if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' stig';
         body.innerHTML = wxFlagDetailHtml(r, ss, IS ? 'IS' : 'EN');
         if (typeof openModal === 'function') openModal('wxFlagModal');
