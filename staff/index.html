@@ -499,6 +499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
+  window._maintUser = window.user;
   warmContainer();
   setInterval(pollOverdueAlerts, 120000);
 });
