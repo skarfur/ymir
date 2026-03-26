@@ -401,6 +401,7 @@ const STRINGS = {
   'admin.tabActTypes':     { EN:'Activity Types',          IS:'Tegundir starfsemi' },
   'admin.tabCerts':        { EN:'Certifications',          IS:'Skírteini' },
   'admin.tabAlerts':       { EN:'Alerts',                  IS:'Viðvaranir' },
+  'admin.tabPayroll':      { EN:'💰 Payroll',             IS:'💰 Launakerfi' },
   'admin.tabFlags':        { EN:'🚩 Flags',                IS:'🚩 Fánar' },
   'admin.importCsv':       { EN:'⇪ Import CSV',            IS:'⇪ Flytja inn CSV' },
   'admin.searchMembers':   { EN:'Search name or kennitala…', IS:'Leita að nafni eða kennitölu…' },
