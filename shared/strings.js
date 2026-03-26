@@ -563,6 +563,8 @@ const STRINGS = {
   'payroll.notEnabled':        { EN:'Not in payroll', IS:'Ekki í launakerfi' },
   'payroll.enablePayroll':     { EN:'Enable payroll', IS:'Virkja í launakerfi' },
 
+};
+
 window.s = function s(key, vars, lang) {
   const L   = lang || (typeof getLang === 'function' ? getLang() : 'EN');
   const entry = STRINGS[key];
