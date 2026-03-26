@@ -562,7 +562,20 @@ const STRINGS = {
   'payroll.editEntry':         { EN:'Edit', IS:'Breyta' },
   'payroll.notEnabled':        { EN:'Not in payroll', IS:'Ekki í launakerfi' },
   'payroll.enablePayroll':     { EN:'Enable payroll', IS:'Virkja í launakerfi' },
-
+  'payroll.calView':           { EN:'Calendar',            IS:'Dagatal' },
+  'payroll.listView':          { EN:'List',                IS:'Listi' },
+  'payroll.addEntry':          { EN:'+ Add entry',         IS:'+ Bæta við færslu' },
+  'payroll.deleteEntry':       { EN:'Delete',              IS:'Eyða' },
+  'payroll.deleteConfirm':     { EN:'Delete this time entry?', IS:'Eyða þessari tímafærslu?' },
+  'payroll.allStaff':          { EN:'All staff',           IS:'Allir starfsmenn' },
+  'payroll.employee':          { EN:'Employee',            IS:'Starfsmaður' },
+  'payroll.totalHours':        { EN:'total',               IS:'samtals' },
+  'payroll.clockInLabel':      { EN:'Clock in',            IS:'Stimpla inn' },
+  'payroll.clockOutLabel':     { EN:'Clock out',           IS:'Stimpla út' },
+  'payroll.minsLabel':         { EN:'Duration (minutes)',  IS:'Tímalengd (mínútur)' },
+  'payroll.noteOptional':      { EN:'Note (optional)',     IS:'Athugasemd (valfrjálst)' },
+  'payroll.notePlaceholder':   { EN:'e.g. forgotten punch-in', IS:'t.d. gleymt innstimpl' },
+  'payroll.autoCalc':          { EN:'auto-calculated, override if needed', IS:'reiknast sjálft, hnekktu ef þarf' },
 };
 
 window.s = function s(key, vars, lang) {
