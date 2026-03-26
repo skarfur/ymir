@@ -174,6 +174,16 @@ function maintOpenDetail(r, currentUser) {
         if (typeof renderMaintenance==='function') renderMaintenance();
       });
     });
+    // Delete / cancel
+    document.getElementById('mdDeleteBtn')?.addEventListener('click', () => {
+      doConfirm('Delete / cancel this issue? This cannot be undone.', async () => {
+        await apiPost('deleteMaintenance', {id: r.id});
+        closeModal('maintDetailModal');
+        if (typeof renderMaintenance === 'function') renderMaintenance();
+        if (typeof renderList === 'function') renderList();
+      });
+    });
+
   }
 
   function renderAndWire() {
@@ -188,62 +198,71 @@ function maintOpenDetail(r, currentUser) {
 }
 
 function maintRenderCard(r) {
-  const SEV_CSS    = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
-  const resolved   = boolVal(r.resolved);
-  const sevClass   = 'sev-' + (r.severity||'low');
-  const catIcon    = CAT_ICON[r.category] || '🔧';
-  const isOos      = boolVal(r.markOos) && r.category==='boat' && !resolved;
-  const borderCol  = SEV_CSS[r.severity] || 'var(--green)';
+  const resolved  = boolVal(r.resolved);
+  const sevClass  = 'sev-' + (r.severity||'low');
+  const catIcon   = CAT_ICON[r.category] || '🔧';
+  const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
 
-  const oosTag = boolVal(r.markOos) && r.category==='boat' && !resolved
-    ? `<span id="mdOosBadge" style="display:inline-block;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;cursor:pointer;user-select:none" title="Click to return to service">OOS</span>`
-    : (r.category==='boat' && !resolved
-        ? `<span id="mdOosBadge" style="display:inline-block;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;cursor:pointer;user-select:none" title="Click to mark OOS">Mark OOS</span>`
-        : '');
+  // OOS badge — clickable (wired by maintOpenDetail after inject)
+  const oosTag = (r.category==='boat' && !resolved)
+    ? `<span id="mdOosBadge" class="oos-badge" style="cursor:pointer;user-select:none"
+         title="${isOos?'Click to return to service':'Click to mark OOS'}">${isOos?'OOS':'Mark OOS'}</span>`
+    : (isOos ? '<span class="oos-badge">OOS</span>' : '');
 
-  const comments  = parseJson(r.comments, []);
+  // Severity dropdown — current badge shown, click reveals others (wired by maintOpenDetail)
+  const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
+  const dropItems  = sevOptions.map(sv =>
+    `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]||'badge-green'}"
+       style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
+  ).join('');
+
+  const comments   = parseJson(r.comments, []);
   const commentHtml = comments.map(c => `
-    <div style="padding:7px 0;border-top:1px solid var(--border)">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
-      <div style="font-size:13px">${esc(c.text||'')}</div>
+    <div class="comment-item">
+      <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
+      <span>${esc(c.text||'')}</span>
     </div>`).join('');
 
   const resolveBtn = !resolved
-    ? `<button id="mdResolveBtn" style="width:100%;margin-top:12px;padding:9px;border:none;border-radius:8px;background:#27ae60;color:#fff;font-weight:600;cursor:pointer;font-size:13px">Mark Resolved</button>`
-    : `<div style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center">Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`;
+    ? '<button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>'
+    : `<span style="font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</span>`;
 
-  // Severity dropdown — current badge shown with caret, others hidden until click
-  const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
-  const dropItems  = sevOptions.map(sv =>
-    `<div data-sev="${sv}" class="${SEV_BADGE[sv]||'badge-green'}" style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
-  ).join('');
+  const deleteBtn = !resolved
+    ? '<button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 16px;color:#e74c3c">Delete / Cancel</button>'
+    : '';
 
-  return `<div style="border-left:4px solid ${borderCol};padding-left:12px">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <div style="position:relative;display:inline-block" id="mdSevWrapper">
-        <span id="mdSevCurrent" class="${SEV_BADGE[r.severity]||'badge-green'}" style="cursor:pointer;font-size:11px;user-select:none">${r.severity||'low'} ▾</span>
-        <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
-          ${dropItems}
+  return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
+    <div class="req-header">
+      <div>
+        <div class="req-title">${catIcon} ${esc(r.itemName||r.name||'')}</div>
+        <div class="req-meta">
+          <div style="position:relative;display:inline-block">
+            <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
+              style="cursor:pointer;user-select:none"
+              title="Click to change severity">${r.severity||'low'} ▾</span>
+            <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+              ${dropItems}
+            </div>
+          </div>
+          ${oosTag}
+          ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
+          ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
+          ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`              : ''}
+          ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>`  : ''}
         </div>
       </div>
-      ${catIcon} <strong>${esc(r.itemName||r.name||'')}</strong>
-      ${oosTag}
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap">
-      ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
-      ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
-      ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`             : ''}
-      ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>` : ''}
+    ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
+    ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
+    ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
+    <div class="comment-add">
+      <input id="mdCommentInput" type="text" placeholder="Add comment…">
+      <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
     </div>
-    ${r.description ? `<p style="font-size:13px;margin:0 0 12px;line-height:1.5">${esc(r.description)}</p>` : ''}
-    ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:12px;cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
-    ${commentHtml ? `<div>${commentHtml}</div>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <input id="mdCommentInput" type="text" placeholder="Add comment…"
-        style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text)">
-      <button id="mdCommentBtn" style="padding:7px 14px;border:none;border-radius:6px;background:var(--brass);color:#fff;font-weight:600;cursor:pointer;font-size:13px">Post</button>
+    <div class="req-actions">
+      ${resolveBtn}
+      ${deleteBtn}
     </div>
-    ${resolveBtn}
   </div>`;
 }
 
