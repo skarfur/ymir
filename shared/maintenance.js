@@ -198,25 +198,28 @@ function maintOpenDetail(r, currentUser) {
 }
 
 function maintRenderCard(r) {
-  const resolved  = boolVal(r.resolved);
-  const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '🔧';
-  const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
+  const resolved      = boolVal(r.resolved);
+  const sevClass      = 'sev-' + (r.severity||'low');
+  const catIcon       = CAT_ICON[r.category] || '🔧';
+  const isOos         = boolVal(r.markOos) && r.category==='boat' && !resolved;
+  // Primary label: boat name for boat issues, item name otherwise
+  const subjectLabel  = r.category === 'boat'
+    ? esc(r.boatName || r.boatId || '—')
+    : esc(r.itemName || '—');
 
-  // OOS badge — clickable (wired by maintOpenDetail after inject)
+  // OOS badge — clickable (wired by maintOpenDetail)
   const oosTag = (r.category==='boat' && !resolved)
-    ? `<span id="mdOosBadge" class="oos-badge" style="cursor:pointer;user-select:none"
-         title="${isOos?'Click to return to service':'Click to mark OOS'}">${isOos?'OOS':'Mark OOS'}</span>`
+    ? `<span id="mdOosBadge" class="oos-badge" style="cursor:pointer;user-select:none">${isOos?'OOS':'Mark OOS'}</span>`
     : (isOos ? '<span class="oos-badge">OOS</span>' : '');
 
-  // Severity dropdown — current badge shown, click reveals others (wired by maintOpenDetail)
+  // Severity dropdown — current badge shown, click reveals others
   const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
   const dropItems  = sevOptions.map(sv =>
     `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]||'badge-green'}"
        style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
   ).join('');
 
-  const comments   = parseJson(r.comments, []);
+  const comments    = parseJson(r.comments, []);
   const commentHtml = comments.map(c => `
     <div class="comment-item">
       <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
@@ -233,22 +236,23 @@ function maintRenderCard(r) {
 
   return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
     <div class="req-header">
-      <div>
-        <div class="req-title">${catIcon} ${esc(r.itemName||r.name||'')}</div>
+      <div style="flex:1;min-width:0">
+        <div class="req-title">
+          ${catIcon} ${subjectLabel}
+          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
+          ${oosTag}
+        </div>
         <div class="req-meta">
           <div style="position:relative;display:inline-block">
             <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
-              style="cursor:pointer;user-select:none"
-              title="Click to change severity">${r.severity||'low'} ▾</span>
+              style="cursor:pointer;user-select:none">${r.severity||'low'} ▾</span>
             <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
               ${dropItems}
             </div>
           </div>
-          ${oosTag}
-          ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
-          ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
-          ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`              : ''}
-          ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>`  : ''}
+          ${r.category==='boat' && r.itemName ? `<span>${esc(r.itemName)}</span>` : ''}
+          ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>` : ''}
+          ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>` : ''}
         </div>
       </div>
     </div>
