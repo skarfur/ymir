@@ -13,6 +13,7 @@
 <script src="../shared/weather.js"></script>
 <script src="../shared/boats.js"></script>
 <script src="../shared/maintenance.js"></script>
+  <script src="../shared/payroll.js"></script>
 <script src="../shared/certs.js"></script>
 <style>
 /* ── Tool nav cards ── */
@@ -373,6 +374,14 @@ border-bottom:1px solid var(--border)44; }
     </a>
   </div>
   
+  <!-- ══ PUNCH CLOCK ══ -->
+  <div class="divider-label" data-s="payroll.section"></div>
+  <div id="punchClockCard" style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+    <div id="punchClockWidget">
+      <div class="empty-note" data-s="lbl.loading"></div>
+    </div>
+  </div>
+
   <!-- ══ OPEN MAINTENANCE ══ -->
   <div class="divider-label" data-s="staff.maintenance">OPEN MAINTENANCE</div>
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
@@ -500,6 +509,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window._maintUser = window.user;
+    // Init punch clock — find this employee's payroll record
+    (async () => {
+      try {
+        const empRes = await apiGet('getEmployees');
+        const me = (empRes.employees||[]).find(e =>
+          String(e.memberId) === String(window.user?.id) ||
+          String(e.kt) === String(window.user?.kennitala)
+        );
+        if (me && (me.payrollEnabled === true || me.payrollEnabled === 'true')) {
+          punchClockWidget(document.getElementById('punchClockWidget'), me.id);
+        } else {
+          const el = document.getElementById('punchClockWidget');
+          if (el) el.innerHTML = '<div class="empty-note" data-s="payroll.notEnabled"></div>';
+          applyStrings(document.getElementById('punchClockWidget'));
+        }
+      } catch(e) {
+        const el = document.getElementById('punchClockWidget');
+        if (el) el.innerHTML = '<div class="empty-note">Payroll not available — deploy backend first</div>';
+      }
+    })();
   warmContainer();
   setInterval(pollOverdueAlerts, 120000);
 });
