@@ -1310,7 +1310,7 @@ function printQR() {
   w.document.write(`<html><body style="text-align:center;font-family:monospace;padding:20px">
     <h2>${name}</h2><img src="${img}" style="width:200px"><br>
     <small>${document.getElementById("qrUrl").textContent}</small>
-    <script>window.print();window.close();<\/script></body></html>`);
+    \x3cscript>window.print();window.close();<\/script></body></html>`);
 }
 
 // ══ LOCATIONS ════════════════════════════════════════════════════════════════
