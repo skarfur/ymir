@@ -22,10 +22,39 @@
     .pr-badge-off{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
     .emp-fields{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;padding:10px 0 4px}
     .emp-fields .field{margin:0}.emp-fields label{font-size:10px}
+    /* Calendar */
+    .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .cal-nav button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2}
+    .cal-nav button:hover{border-color:var(--brass);color:var(--brass)}
+    .cal-month{font-weight:700;font-size:15px;min-width:160px;text-align:center}
+    .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;letter-spacing:.5px}
+    .cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:6px;padding:5px;background:var(--surface)44;cursor:pointer;transition:background .1s}
+    .cal-cell:hover{background:var(--surface);border-color:var(--brass)66}
+    .cal-cell.other-mo{opacity:.3}
+    .cal-cell.today{border-color:var(--brass);background:var(--brass)11}
+    .cal-daynum{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px}
+    .cal-cell.today .cal-daynum{color:var(--brass)}
+    .cal-pill{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;line-height:1.5;border:1px solid transparent}
+    .cal-pill:hover{filter:brightness(1.15)}
+    .cal-more{font-size:9px;color:var(--muted);padding-left:2px;margin-top:1px}
+    /* View toggle */
+    .view-tog{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .view-tog button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .1s}
+    .view-tog button.active{background:var(--brass);color:#fff}
+    /* List */
     .ts-table{width:100%;border-collapse:collapse;font-size:12px}
     .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
     .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
     .ts-table tr:last-child td{border-bottom:none}
+    /* Entry modal */
+    .modal-bg{position:fixed;inset:0;background:#00000077;z-index:200;display:flex;align-items:center;justify-content:center}
+    .modal-box{background:var(--card);border-radius:12px;padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:0 8px 40px #00000055}
+    .modal-box h3{margin:0 0 16px;font-size:15px}
+    .modal-box .field{margin-bottom:10px}
+    .modal-box label{font-size:11px;font-weight:600;display:block;margin-bottom:3px;color:var(--muted)}
+    .modal-box input,.modal-box select{width:100%;box-sizing:border-box}
+    .modal-foot{display:flex;gap:8px;margin-top:16px;align-items:center}
+    /* Periods */
     .period-card{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
     .period-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);cursor:pointer}
     .period-title{font-weight:600;font-size:13px}.period-meta{font-size:11px;color:var(--muted)}
@@ -44,7 +73,7 @@
     .lm-table th:first-child{text-align:left}.lm-table td{padding:5px 10px;border-bottom:1px solid var(--border)44;text-align:right}
     .lm-table td:first-child{text-align:left;font-weight:500}
     .lm-table tr.lm-total td{font-weight:700;border-top:2px solid var(--border);border-bottom:none;background:var(--surface)}
-    .btn-del{font-size:10px;padding:2px 7px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
+    .btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -67,17 +96,39 @@
       <div id="prEmpList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
 
-    <!-- TIME REPORTING / TÍMASKRÁNING -->
+    <!-- TIME REPORTING -->
     <div id="pr-timesheets" class="hidden">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <select id="prTsEmp" onchange="prLoadTimesheets()" style="min-width:160px">
+        <select id="prTsEmp" onchange="prTsFilter()" style="min-width:160px">
           <option value="">All staff</option>
         </select>
-        <input id="prTsFrom" type="date" onchange="prLoadTimesheets()" style="min-width:140px">
-        <span style="font-size:12px;color:var(--muted)">&#8211;</span>
-        <input id="prTsTo" type="date" onchange="prLoadTimesheets()" style="min-width:140px">
+        <div class="view-tog">
+          <button id="btnCal" class="active" onclick="prSetView('cal')">&#128197; Calendar</button>
+          <button id="btnList" onclick="prSetView('list')">&#9776; List</button>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span id="prTsTotal" style="font-size:11px;color:var(--muted)"></span>
+          <button class="btn btn-primary" style="font-size:11px" onclick="prOpenModal(null,null)">+ Add entry</button>
+        </div>
       </div>
-      <div id="prTsList"><div class="empty-note" data-s="lbl.loading"></div></div>
+      <!-- Calendar view -->
+      <div id="prCalView">
+        <div class="cal-nav">
+          <button onclick="prCalMove(-1)">&#8249;</button>
+          <span class="cal-month" id="prCalLabel"></span>
+          <button onclick="prCalMove(1)">&#8250;</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">
+          <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
+          <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
+          <div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+        </div>
+        <div id="prCalDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+      </div>
+      <!-- List view -->
+      <div id="prListView" class="hidden">
+        <div id="prTsList"><div class="empty-note" data-s="lbl.loading"></div></div>
+      </div>
     </div>
 
     <!-- TIMESHEETS / LAUNASEÐLAR -->
@@ -118,21 +169,50 @@
     </div>
   </main>
 </div>
+
+<!-- Entry modal (add / edit / delete) -->
+<div id="prModal" class="modal-bg hidden" onclick="if(event.target===this)prCloseModal()">
+  <div class="modal-box">
+    <h3 id="prModalTitle">Add time entry</h3>
+    <div class="field"><label>Employee / Starfsma&#240;ur</label>
+      <select id="meEmp"></select></div>
+    <div class="field"><label>Clock in / Stimpla inn</label>
+      <input id="meIn" type="datetime-local"></div>
+    <div class="field"><label>Clock out / Stimpla &#250;t</label>
+      <input id="meOut" type="datetime-local" onchange="meCalcMins()"></div>
+    <div class="field"><label>Duration (minutes — auto-calculated, override if needed)</label>
+      <input id="meMins" type="number" min="0"></div>
+    <div class="field"><label>Note / Athugasemd</label>
+      <input id="meNote" type="text" placeholder="e.g. forgotten punch-in"></div>
+    <div id="meErr" style="font-size:11px;color:var(--red);min-height:14px"></div>
+    <div class="modal-foot">
+      <button id="meDelBtn" class="btn-del" style="display:none;margin-right:auto" onclick="meDelete()">Delete</button>
+      <button class="btn btn-secondary" onclick="prCloseModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="meSave()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ── Helpers ──────────────────────────────────────────────────────────────── */
+/* ── Helpers ── */
 function prHide(id){var el=document.getElementById(id);if(el)el.classList.add('hidden');}
 function prShow(id){var el=document.getElementById(id);if(el)el.classList.remove('hidden');}
 function prToggleId(id){var el=document.getElementById(id);if(el)el.classList.toggle('hidden');}
 
-/* ── Bootstrap ───────────────────────────────────────────────────────────── */
+/* ── Bootstrap ── */
 var user=requireAuth(isAdmin);
 if(user){buildHeader('payroll');applyStrings(document.body);}
 var _members=[],_empData={},_empByMember={},_previewData={},_tsEmployees=[],_closedPeriods=new Set();
+var _tsEntries=[],_calYear=new Date().getFullYear(),_calMonth=new Date().getMonth(),_calView='cal',_editId=null;
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
+function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+var EMP_COLORS=['#4e9a8c','#7b5ea7','#c97c3a','#3a79c9','#b84a4a','#5a9e47','#a04a7c','#7a8a3a'];
+function empColor(eid){var i=_tsEmployees.findIndex(function(x){return x.id===eid;});return EMP_COLORS[Math.max(0,i)%EMP_COLORS.length];}
+function empName(eid){var e=_tsEmployees.find(function(x){return x.id===eid;});return e?e.name:eid;}
 
-/* ── Tab router ──────────────────────────────────────────────────────────── */
+/* ── Tab router ── */
 function prTab(tab){
   ['employees','timesheets','periods','launamidlar'].forEach(function(t){
     document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);
@@ -223,8 +303,8 @@ async function prSaveEmployee(memberId){
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
 
-/* ══ TIME REPORTING — full CRUD ═════════════════════════════════════════════
-   Reads punch clock entries (same source as staff hub clock-in/out).
+/* ══ TIME REPORTING — calendar + list, full CRUD ════════════════════════════
+   Reads the same punch-clock entries used by the staff hub.
    Admin can add / edit / delete any entry for any employee.
 ══════════════════════════════════════════════════════════════════════════ */
 async function prInitTimesheets(){
@@ -233,159 +313,214 @@ async function prInitTimesheets(){
       var res=await apiGet('getEmployees');
       _tsEmployees=(res.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
       var sel=document.getElementById('prTsEmp');
+      var meSel=document.getElementById('meEmp');
       _tsEmployees.forEach(function(e){
-        var opt=document.createElement('option');opt.value=e.id;opt.textContent=e.name;sel.appendChild(opt);
+        var o1=document.createElement('option');o1.value=e.id;o1.textContent=e.name;sel.appendChild(o1);
+        var o2=document.createElement('option');o2.value=e.id;o2.textContent=e.name;meSel.appendChild(o2);
       });
     }catch(e){}
   }
-  var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
-  var fromEl=document.getElementById('prTsFrom'),toEl=document.getElementById('prTsTo');
-  if(fromEl&&!fromEl.value) fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value)     toEl.value=now.toISOString().slice(0,10);
-  prLoadTimesheets();
+  prRenderCalHeader();
+  prLoadTsEntries();
 }
-async function prLoadTimesheets(){
-  var list=document.getElementById('prTsList');
-  list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
+
+function prTsFilter(){prLoadTsEntries();}
+
+function prSetView(v){
+  _calView=v;
+  document.getElementById('btnCal').classList.toggle('active',v==='cal');
+  document.getElementById('btnList').classList.toggle('active',v==='list');
+  document.getElementById('prCalView').classList.toggle('hidden',v!=='cal');
+  document.getElementById('prListView').classList.toggle('hidden',v!=='list');
+  if(v==='list') prRenderList();
+  else           prRenderCalDays();
+}
+
+async function prLoadTsEntries(){
   var empId=document.getElementById('prTsEmp').value;
-  var from =document.getElementById('prTsFrom').value;
-  var to   =document.getElementById('prTsTo').value;
+  // Calculate full display range for the month (Mon-Sun grid)
+  var first=new Date(_calYear,_calMonth,1);
+  var startOff=(first.getDay()+6)%7;
+  var rangeStart=new Date(_calYear,_calMonth,1-startOff);
+  var last=new Date(_calYear,_calMonth+1,0);
+  var endOff=(last.getDay()+6)%7;
+  var rangeEnd=new Date(_calYear,_calMonth+1,6-endOff);
+  var from=rangeStart.toISOString().slice(0,10);
+  var to  =rangeEnd.toISOString().slice(0,10);
   try{
-    var params={};
-    if(empId) params.employeeId=empId;
-    if(from)  params.from=from;
-    if(to)    params.to=to;
-    if(from)  params.period=from.slice(0,7);
+    var params={from:from,to:to,period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')};
+    if(empId)params.employeeId=empId;
     var res=await apiGet('getTimeEntries',params);
-    var entries=res.entries||res.timeEntries||[];
-    var byEmp={};
-    entries.forEach(function(e){
-      var k=e.employeeId||'unknown';
-      if(!byEmp[k])byEmp[k]={name:e.employeeName||k,entries:[]};
-      byEmp[k].entries.push(e);
-    });
-    var now=new Date(),off=now.getTimezoneOffset()*60000;
-    var localNow=new Date(now-off).toISOString().slice(0,16);
-    var localHourAgo=new Date(now-3600000-off).toISOString().slice(0,16);
-    var empOpts=_tsEmployees.map(function(e){return '<option value="'+_e(e.id)+'">'+_e(e.name)+'</option>';}).join('');
-    var addBar='<div style="display:flex;justify-content:flex-end;margin-bottom:10px">'
-      +'<button class="btn btn-primary" style="font-size:11px" onclick="prToggleId(\'prAddForm\')">'
-      +'+ Add entry / B\u00e6ta vi\u00f0 f\u00e6rslu</button></div>'
-      +'<div id="prAddForm" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px">'
-      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:10px">'
-      +'<div class="field"><label>Employee</label><select id="newTsEmp">'+empOpts+'</select></div>'
-      +'<div class="field"><label>Clock in</label><input id="newTsIn" type="datetime-local" value="'+localHourAgo+'"></div>'
-      +'<div class="field"><label>Clock out</label><input id="newTsOut" type="datetime-local" value="'+localNow+'"></div>'
-      +'<div class="field"><label>Note (optional)</label><input id="newTsNote" type="text" placeholder="e.g. forgotten punch-in"></div>'
-      +'</div>'
-      +'<div style="display:flex;gap:8px;align-items:center">'
-      +'<button class="btn btn-primary" style="font-size:11px" onclick="prSubmitAddEntry()">Save entry</button>'
-      +'<button class="btn btn-secondary" style="font-size:11px" onclick="prHide(\'prAddForm\')">Cancel</button>'
-      +'<span id="newTsMsg" style="font-size:11px;color:var(--red);margin-left:4px"></span>'
-      +'</div></div>';
-    if(!Object.keys(byEmp).length){
-      list.innerHTML=addBar+'<div class="empty-note">No entries found.</div>';
-      applyStrings(list);return;
-    }
-    list.innerHTML=addBar+Object.keys(byEmp).map(function(eid){
-      var grp=byEmp[eid];
-      var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
-      var rows=grp.entries.map(function(e){return prTsRow(e);}).join('');
-      return '<div style="margin-bottom:22px">'
-        +'<div style="font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'
-        +'<span>'+_e(grp.name)+'</span>'
-        +'<span style="font-size:11px;color:var(--muted)">'+fmtMins(tot)+' total</span>'
-        +'</div>'
-        +'<table class="ts-table"><thead><tr>'
-        +'<th>Date</th><th>Clock in</th><th>Clock out</th><th>Duration</th><th>Source</th>'
-        +'<th style="text-align:right">Actions</th>'
-        +'</tr></thead><tbody id="tsBody_'+_e(eid)+'">'+rows+'</tbody></table></div>';
-    }).join('');
-    applyStrings(list);
-  }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
+    _tsEntries=res.entries||res.timeEntries||[];
+    var tot=_tsEntries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    document.getElementById('prTsTotal').textContent=tot?fmtMins(tot)+' total':'';
+    if(_calView==='cal') prRenderCalDays();
+    else prRenderList();
+  }catch(e){
+    document.getElementById('prTsTotal').textContent='';
+    if(_calView==='list')
+      document.getElementById('prTsList').innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';
+  }
 }
-function prTsRow(entry){
-  var id=entry.id;
-  var clockIn =entry.clockIn  ? new Date(entry.clockIn)  : null;
-  var clockOut=entry.timestamp? new Date(entry.timestamp) : null;
-  var dateStr=clockIn?clockIn.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
-  var inT =clockIn ?clockIn.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
-  var outT=clockOut?clockOut.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
-  var dur =entry.durationMinutes?fmtMins(+entry.durationMinutes):'--';
-  var src =entry.source==='admin'?'<span style="color:var(--brass)">\u270e admin</span>':'staff';
-  var edited=entry.originalTimestamp?'<span style="font-size:9px;color:var(--muted);margin-left:3px">edited</span>':'';
-  var inISO=JSON.stringify(entry.clockIn||'');
-  var outISO=JSON.stringify(entry.timestamp||'');
-  var mins=+(entry.durationMinutes||0);
-  var sid=JSON.stringify(id);
-  return '<tr data-tsid="'+_e(id)+'">'
-    +'<td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+src+'</td>'
-    +'<td style="text-align:right;white-space:nowrap">'
-    +'<button class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="prEditTsInline('+sid+','+inISO+','+outISO+','+mins+')">Edit</button>'
-    +' <button class="btn-del" onclick="prDeleteTs('+sid+')">Delete</button>'
-    +'</td></tr>';
+
+/* ── Calendar ── */
+function prCalMove(dir){
+  _calMonth+=dir;
+  if(_calMonth>11){_calMonth=0;_calYear++;}
+  if(_calMonth<0) {_calMonth=11;_calYear--;}
+  prRenderCalHeader();
+  prLoadTsEntries();
 }
-async function prSubmitAddEntry(){
-  var msg=document.getElementById('newTsMsg');
-  var empId=document.getElementById('newTsEmp').value;
-  var inVal=document.getElementById('newTsIn').value;
-  var outVal=document.getElementById('newTsOut').value;
-  var note=document.getElementById('newTsNote').value.trim();
-  if(!empId||!inVal||!outVal){if(msg)msg.textContent='All fields required';return;}
-  var inISO=new Date(inVal).toISOString();
-  var outISO=new Date(outVal).toISOString();
-  var mins=Math.round((new Date(outVal)-new Date(inVal))/60000);
-  if(mins<=0){if(msg)msg.textContent='Clock-out must be after clock-in';return;}
-  if(msg)msg.textContent='\u2026';
-  try{
-    await apiPost('adminAddTime',{employeeId:empId,clockIn:inISO,timestamp:outISO,durationMinutes:mins,note:note||'admin entry',source:'admin'});
-    prHide('prAddForm');prLoadTimesheets();
-  }catch(e){if(msg)msg.textContent=e.message;}
-}
-function prEditTsInline(id,clockInISO,clockOutISO,currentMins){
-  document.querySelectorAll('.ts-edit-row').forEach(function(r){r.remove();});
-  document.querySelectorAll('[data-tsid]').forEach(function(r){r.style.display='';});
-  var row=document.querySelector('[data-tsid="'+id+'"]');if(!row)return;
-  row.style.display='none';
-  function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-  var sid=JSON.stringify(id);
-  var editRow=document.createElement('tr');editRow.className='ts-edit-row';
-  editRow.innerHTML='<td colspan="6" style="padding:8px 4px;background:var(--surface)">'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-    +'<label style="font-size:11px">Clock in</label>'
-    +'<input id="editIn_'+_e(id)+'" type="datetime-local" value="'+_e(toLocal(clockInISO))+'" style="font-size:11px">'
-    +'<label style="font-size:11px">Clock out</label>'
-    +'<input id="editOut_'+_e(id)+'" type="datetime-local" value="'+_e(toLocal(clockOutISO))+'" style="font-size:11px" onchange="prAutoMins('+sid+')">'
-    +'<label style="font-size:11px">Mins</label>'
-    +'<input id="editMins_'+_e(id)+'" type="number" value="'+currentMins+'" min="0" style="width:70px;font-size:11px">'
-    +'<button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="prSaveTs('+sid+')" data-s="btn.save"></button>'
-    +'<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prLoadTimesheets()" data-s="btn.cancel"></button>'
-    +'<span id="editMsg_'+_e(id)+'" style="font-size:11px;color:var(--red)"></span>'
-    +'</div></td>';
-  row.parentNode.insertBefore(editRow,row.nextSibling);applyStrings(editRow);
-}
-function prAutoMins(id){
-  var i=document.getElementById('editIn_'+id),o=document.getElementById('editOut_'+id),m=document.getElementById('editMins_'+id);
-  if(i&&o&&m){var d=Math.round((new Date(o.value)-new Date(i.value))/60000);if(d>0)m.value=d;}
-}
-async function prSaveTs(id){
-  var inEl=document.getElementById('editIn_'+id),outEl=document.getElementById('editOut_'+id),minsEl=document.getElementById('editMins_'+id);
-  var msg=document.getElementById('editMsg_'+id);
-  var newIn=inEl&&inEl.value?new Date(inEl.value).toISOString():'';
-  var newOut=outEl&&outEl.value?new Date(outEl.value).toISOString():'';
-  var newMins=minsEl?+(minsEl.value):0;
-  try{
-    await apiPost('adminEditTime',{id:id,clockIn:newIn,timestamp:newOut,durationMinutes:newMins,note:'admin edit',source:'admin'});
-    showToast(s('toast.saved'));prLoadTimesheets();
-  }catch(e){if(msg)msg.textContent=e.message;else showToast(e.message,'err');}
-}
-async function prDeleteTs(id){
+function prRenderCalHeader(){
   var IS=(typeof getLang==='function')&&getLang()==='IS';
-  if(!confirm(IS?'Ey\u00f0a \u00fe essari t\u00edmaf\u00e6rslu?':'Delete this time entry?'))return;
+  var mo_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var mo_IS=['Jan\u00far','Febr\u00far','Mars','Apr\u00edl','Ma\u00ed','J\u00fan\u00ed','J\u00fal\u00ed','\u00c1g\u00fast','September','Okt\u00f3ber','N\u00f3vember','Desember'];
+  document.getElementById('prCalLabel').textContent=(IS?mo_IS:mo_EN)[_calMonth]+' '+_calYear;
+}
+function prRenderCalDays(){
+  var container=document.getElementById('prCalDays');
+  var empId=document.getElementById('prTsEmp').value;
+  var today=new Date();today.setHours(0,0,0,0);
+  var first=new Date(_calYear,_calMonth,1);
+  var startOff=(first.getDay()+6)%7;
+  var lastDate=new Date(_calYear,_calMonth+1,0).getDate();
+  // Index entries by date
+  var byDate={};
+  _tsEntries.forEach(function(e){
+    if(empId&&e.employeeId!==empId)return;
+    var d=(e.clockIn||e.timestamp||'').slice(0,10);
+    if(!d)return;
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(e);
+  });
+  var endOff=(new Date(_calYear,_calMonth+1,0).getDay()+6)%7;
+  var total=startOff+lastDate+(endOff<6?6-endOff:0);
+  var html='';
+  for(var i=0;i<total;i++){
+    var day=i-startOff+1;
+    var cellDate=new Date(_calYear,_calMonth,day);
+    var isOther=day<1||day>lastDate;
+    var isToday=cellDate.getTime()===today.getTime();
+    var dateStr=cellDate.toISOString().slice(0,10);
+    var dayEntries=byDate[dateStr]||[];
+    var cls='cal-cell'+(isOther?' other-mo':'')+(isToday?' today':'');
+    var shown=dayEntries.slice(0,3);
+    var pills=shown.map(function(e){
+      var inT=e.clockIn?new Date(e.clockIn).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'?';
+      var outT=e.timestamp?new Date(e.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'?';
+      var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
+      var col=empColor(e.employeeId);
+      var label=empId?(inT+'\u2013'+outT+(dur?' '+dur:'')):(empName(e.employeeId));
+      var edata=JSON.stringify(e).replace(/"/g,'&quot;');
+      return '<span class="cal-pill" style="background:'+col+'22;color:'+col+';border-color:'+col+'44"'
+        +' onclick=\'event.stopPropagation();prOpenModal(JSON.parse(this.dataset.e),null)\''
+        +' data-e="'+edata+'"'
+        +' title="'+_e(empName(e.employeeId))+' '+inT+'\u2013'+outT+(dur?' ('+dur+')')+'">'+_e(label)+'</span>';
+    }).join('');
+    if(dayEntries.length>3)pills+='<div class="cal-more">+'+(dayEntries.length-3)+' more</div>';
+    html+='<div class="'+cls+'" onclick="prOpenModal(null,\''+dateStr+'\')">'
+      +'<div class="cal-daynum">'+cellDate.getDate()+'</div>'+pills+'</div>';
+  }
+  container.innerHTML=html;
+}
+
+/* ── List view ── */
+function prRenderList(){
+  var list=document.getElementById('prTsList');
+  var empId=document.getElementById('prTsEmp').value;
+  var entries=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
+  if(!entries.length){list.innerHTML='<div class="empty-note">No entries found.</div>';return;}
+  var byEmp={};
+  entries.forEach(function(e){
+    var k=e.employeeId||'?';
+    if(!byEmp[k])byEmp[k]={name:e.employeeName||empName(k),entries:[]};
+    byEmp[k].entries.push(e);
+  });
+  list.innerHTML=Object.keys(byEmp).map(function(eid){
+    var grp=byEmp[eid];
+    var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    var sorted=grp.entries.slice().sort(function(a,b){return(a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;});
+    var rows=sorted.map(function(e){
+      var ci=e.clockIn?new Date(e.clockIn):null;
+      var co=e.timestamp?new Date(e.timestamp):null;
+      var dt=ci?ci.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
+      var inT=ci?ci.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
+      var outT=co?co.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
+      var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
+      var src=e.source==='admin'?'<span style="color:var(--brass)">\u270e admin</span>':'staff';
+      var edited=e.originalTimestamp?'<span style="font-size:9px;color:var(--muted);margin-left:3px">edited</span>':'';
+      var edata=JSON.stringify(e).replace(/"/g,'&quot;');
+      return '<tr><td>'+dt+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+src+'</td>'
+        +'<td style="text-align:right"><button class="btn btn-secondary" style="font-size:10px;padding:2px 7px"'
+        +' onclick=\'prOpenModal(JSON.parse(this.dataset.e),null)\' data-e="'+edata+'">Edit</button></td></tr>';
+    }).join('');
+    return '<div style="margin-bottom:22px">'
+      +'<div style="font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between">'
+      +'<span>'+_e(grp.name)+'</span><span style="font-size:11px;color:var(--muted)">'+fmtMins(tot)+' total</span></div>'
+      +'<table class="ts-table"><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Source</th><th></th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table></div>';
+  }).join('');
+}
+
+/* ══ ENTRY MODAL ════════════════════════════════════════════════════════════ */
+function prOpenModal(entry,dateStr){
+  _editId=entry?entry.id:null;
+  var IS=(typeof getLang==='function')&&getLang()==='IS';
+  document.getElementById('prModalTitle').textContent=entry
+    ?(IS?'Breyta t\u00edmaf\u00e6rslu':'Edit time entry')
+    :(IS?'B\u00e6ta vi\u00f0 t\u00edmaf\u00e6rslu':'Add time entry');
+  document.getElementById('meDelBtn').style.display=entry?'inline-block':'none';
+  document.getElementById('meErr').textContent='';
+  var empSel=document.getElementById('meEmp');
+  if(entry&&entry.employeeId)empSel.value=entry.employeeId;
+  else if(_tsEmployees.length)empSel.value=_tsEmployees[0].id;
+  if(entry){
+    document.getElementById('meIn').value=toLocal(entry.clockIn||'');
+    document.getElementById('meOut').value=toLocal(entry.timestamp||'');
+    document.getElementById('meMins').value=entry.durationMinutes||'';
+    document.getElementById('meNote').value=entry.note||'';
+  }else{
+    var base=dateStr?new Date(dateStr+'T09:00'):new Date();
+    var baseEnd=dateStr?new Date(dateStr+'T17:00'):new Date(Date.now()+3600000);
+    document.getElementById('meIn').value=toLocal(base.toISOString());
+    document.getElementById('meOut').value=toLocal(baseEnd.toISOString());
+    document.getElementById('meMins').value='480';
+    document.getElementById('meNote').value='';
+  }
+  prShow('prModal');
+}
+function prCloseModal(){prHide('prModal');_editId=null;}
+function meCalcMins(){
+  var i=document.getElementById('meIn').value,o=document.getElementById('meOut').value;
+  if(i&&o){var d=Math.round((new Date(o)-new Date(i))/60000);if(d>0)document.getElementById('meMins').value=d;}
+}
+async function meSave(){
+  var err=document.getElementById('meErr');err.textContent='';
+  var empId=document.getElementById('meEmp').value;
+  var inV=document.getElementById('meIn').value;
+  var outV=document.getElementById('meOut').value;
+  var mins=+(document.getElementById('meMins').value)||0;
+  var note=document.getElementById('meNote').value.trim();
+  if(!empId||!inV||!outV){err.textContent='Employee, clock-in and clock-out required.';return;}
+  var inISO=new Date(inV).toISOString(),outISO=new Date(outV).toISOString();
+  if(!mins)mins=Math.round((new Date(outV)-new Date(inV))/60000);
+  if(mins<=0){err.textContent='Clock-out must be after clock-in.';return;}
   try{
-    await apiPost('adminDeleteTime',{id:id});
-    showToast(IS?'Eytt':'Deleted');prLoadTimesheets();
-  }catch(e){showToast(e.message,'err');}
+    if(_editId){
+      await apiPost('adminEditTime',{id:_editId,clockIn:inISO,timestamp:outISO,durationMinutes:mins,note:note||'admin edit',source:'admin'});
+    }else{
+      await apiPost('adminAddTime',{employeeId:empId,clockIn:inISO,timestamp:outISO,durationMinutes:mins,note:note||'admin entry',source:'admin'});
+    }
+    prCloseModal();showToast(s('toast.saved'));prLoadTsEntries();
+  }catch(e){err.textContent=e.message;}
+}
+async function meDelete(){
+  var IS=(typeof getLang==='function')&&getLang()==='IS';
+  if(!_editId||!confirm(IS?'Ey\u00f0a \u00feessari t\u00edmaf\u00e6rslu?':'Delete this time entry?'))return;
+  try{
+    await apiPost('adminDeleteTime',{id:_editId});
+    prCloseModal();showToast(IS?'Eytt':'Deleted');prLoadTsEntries();
+  }catch(e){document.getElementById('meErr').textContent=e.message;}
 }
 
 /* ══ TIMESHEETS / LAUNASEÐLAR ═══════════════════════════════════════════════ */
@@ -395,9 +530,9 @@ async function prLoadPeriods(){
   var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
   var lastDay=new Date(y,now.getMonth()+1,0).getDate();
   var fromEl=document.getElementById('prPeriodFrom'),toEl=document.getElementById('prPeriodTo'),payEl=document.getElementById('prPaymentDate');
-  if(fromEl&&!fromEl.value) fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value)     toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
-  if(payEl&&!payEl.value)   payEl.value=new Date(y,now.getMonth()+1,1).toISOString().slice(0,10);
+  if(fromEl&&!fromEl.value)fromEl.value=y+'-'+mo+'-01';
+  if(toEl&&!toEl.value)toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
+  if(payEl&&!payEl.value)payEl.value=new Date(y,now.getMonth()+1,1).toISOString().slice(0,10);
   try{
     var res=await apiGet('getPayroll');
     var rows=res.payroll||[];
@@ -405,8 +540,7 @@ async function prLoadPeriods(){
     var byPeriod={};
     rows.forEach(function(r){
       var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):r.period;
-      if(!byPeriod[k])byPeriod[k]=[];
-      byPeriod[k].push(r);
+      if(!byPeriod[k])byPeriod[k]=[];byPeriod[k].push(r);
       _closedPeriods.add(r.period||r.periodFrom);
     });
     list.innerHTML=Object.keys(byPeriod).sort().reverse().map(function(p){
@@ -422,8 +556,7 @@ async function prLoadPeriods(){
           +'<td style="text-align:right">'+kr(r.taxWithheld||r.stadgreidslaSkattur||0)+'</td>'
           +'<td style="text-align:right">'+kr(r.netPay)+'</td>'
           +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px"'
-          +' onclick="prViewPayslip(this)" data-row="'+_e(JSON.stringify(r))+'">PDF</button></td>'
-          +'</tr>';
+          +' onclick="prViewPayslip(this)" data-row="'+_e(JSON.stringify(r))+'">PDF</button></td></tr>';
       }).join('');
       return '<div class="period-card">'
         +'<div class="period-head" onclick="prToggleId(\'pb_'+pid+'\')">'
@@ -433,11 +566,9 @@ async function prLoadPeriods(){
         +'<span class="'+(isApproved?'pill-ok':'pill-open')+'">'+(isApproved?'Approved':'Open')+'</span>'
         +'</div></div>'
         +'<div class="period-body hidden" id="pb_'+pid+'">'
-        +'<table class="ts-table"><thead><tr>'
-        +'<th>Employee</th><th style="text-align:right">Hours</th>'
+        +'<table class="ts-table"><thead><tr><th>Employee</th><th style="text-align:right">Hours</th>'
         +'<th style="text-align:right">Gross</th><th style="text-align:right">Tax</th>'
-        +'<th style="text-align:right">Net</th><th></th>'
-        +'</tr></thead><tbody>'+empRows+'</tbody></table>'
+        +'<th style="text-align:right">Net</th><th></th></tr></thead><tbody>'+empRows+'</tbody></table>'
         +'<div class="action-bar" style="margin-top:8px">'
         +'<button class="btn btn-secondary" style="font-size:11px" onclick="prExportXml(\''+_e(p)+'\')" data-s="payroll.exportXml"></button>'
         +'</div></div></div>';
@@ -446,16 +577,14 @@ async function prLoadPeriods(){
   }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 async function prBuildPreview(){
-  var from=document.getElementById('prPeriodFrom').value;
-  var to  =document.getElementById('prPeriodTo').value;
-  var payDate=document.getElementById('prPaymentDate').value;
+  var from=document.getElementById('prPeriodFrom').value,to=document.getElementById('prPeriodTo').value,payDate=document.getElementById('prPaymentDate').value;
   if(!from||!to){showToast('Set From and To dates first','err');return;}
   var panel=document.getElementById('prPreviewPanel'),listEl=document.getElementById('prPreviewList');
   listEl.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(listEl);
   panel.classList.remove('hidden');
   try{
     var empRes=await apiGet('getEmployees');
-    var tsRes =await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)});
+    var tsRes=await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)});
     var employees=(empRes.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
     var entries=tsRes.entries||tsRes.timeEntries||[];
     var minsByEmp={};
@@ -504,10 +633,8 @@ function prRecalc(empId){
   d.regularMins=hrs*60;d.ot1Mins=ot1*60;d.ot2Mins=ot2*60;d.manualLines=manual;d.calc=calc;
   var el=document.getElementById('pCalc_'+empId);
   if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong>'
-    +' \u00b7 Tax: '+kr(calc.taxAfterCredit)
-    +' \u00b7 Pension: '+kr(calc.employeePension)
-    +' \u00b7 Orlof \u00ed banki: '+kr(calc.orlofIBanki)
-    +' \u00b7 <strong>Net: '+kr(calc.netPay)+'</strong>'
+    +' \u00b7 Tax: '+kr(calc.taxAfterCredit)+' \u00b7 Pension: '+kr(calc.employeePension)
+    +' \u00b7 Orlof \u00ed banki: '+kr(calc.orlofIBanki)+' \u00b7 <strong>Net: '+kr(calc.netPay)+'</strong>'
     +' &nbsp;<button class="btn btn-secondary" style="font-size:10px;padding:2px 8px;margin-left:8px"'
     +' onclick="prPreviewLocal(\''+_e(empId)+'\')">&#128196; Preview PDF</button>';
 }
@@ -538,9 +665,8 @@ async function prApprovePeriod(){
       grossTotal:c.grossTotal,dagvinna:c.dagvinna,eftirvinna1:c.eftirvinna1,eftirvinna2:c.eftirvinna2,
       orlofslaun:c.orlofslaun,orlofsRate:c.orlofsRate,manualTotal:c.manualTotal,
       employeePension:c.employeePension,sereignarsjodur:c.sereignarsjodur,sereignRate:c.sereignRate,
-      unionDues:c.unionDues,unionRate:c.unionRate,
-      taxBase:c.taxBase,taxGross:c.taxGross,personalCredit:c.personalCredit,
-      taxWithheld:c.taxAfterCredit,taxAfterCredit:c.taxAfterCredit,
+      unionDues:c.unionDues,unionRate:c.unionRate,taxBase:c.taxBase,taxGross:c.taxGross,
+      personalCredit:c.personalCredit,taxWithheld:c.taxAfterCredit,taxAfterCredit:c.taxAfterCredit,
       orlofIBanki:c.orlofIBanki,totalDeductions:c.totalDeductions,netPay:c.netPay,
       employerPension:c.employerPensionAmt,endurhaefingarsjodur:c.endurhaefingarsjodur,
       regularHrs:c.regularHrs,ot1Hrs:c.ot1Hrs,ot2Hrs:c.ot2Hrs,pensionRate:c.pensionRate,approved:true};
@@ -553,25 +679,22 @@ async function prApprovePeriod(){
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
 
-/* ── Payslip PDF ─────────────────────────────────────────────────────────── */
+/* ── Payslip PDF ── */
 function prViewPayslip(btn){
   var r=JSON.parse(btn.dataset.row||'{}');
-  var emp={name:r.employeeName||'',kt:r.kt||'',title:r.title||'',
-    bankAccount:r.bankAccount||'',orlofsreikningur:r.orlofsreikningur||'',
-    baseRateKr:r.baseRateKr||0,lifeyrir:r.pensionRate||0.04,personuafslattr:r.personalCredit||68681};
+  var emp={name:r.employeeName||'',kt:r.kt||'',title:r.title||'',bankAccount:r.bankAccount||'',
+    orlofsreikningur:r.orlofsreikningur||'',baseRateKr:r.baseRateKr||0,
+    lifeyrir:r.pensionRate||0.04,personuafslattr:r.personalCredit||68681};
   var calc={grossTotal:r.grossTotal||0,dagvinna:r.dagvinna||r.grossTotal||0,
     eftirvinna1:r.eftirvinna1||0,eftirvinna2:r.eftirvinna2||0,
     orlofslaun:r.orlofslaun||0,orlofsRate:r.orlofsRate||0.1017,
     manualLines:r.manualLines||[],manualTotal:r.manualTotal||0,
     employeePension:r.employeePension||0,sereignarsjodur:r.sereignarsjodur||0,sereignRate:r.sereignRate||0,
-    unionDues:r.unionDues||0,unionRate:r.unionRate||0,
-    taxBase:r.taxBase||0,taxGross:r.taxGross||0,personalCredit:r.personalCredit||68681,
-    taxAfterCredit:r.taxAfterCredit||r.taxWithheld||0,
+    unionDues:r.unionDues||0,unionRate:r.unionRate||0,taxBase:r.taxBase||0,taxGross:r.taxGross||0,
+    personalCredit:r.personalCredit||68681,taxAfterCredit:r.taxAfterCredit||r.taxWithheld||0,
     orlofIBanki:r.orlofIBanki||0,totalDeductions:r.totalDeductions||0,netPay:r.netPay||0,
-    pensionRate:r.pensionRate||0.04,
-    regularHrs:r.regularHrs||(r.regularMinutes||0)/60,
-    ot1Hrs:r.ot1Hrs||(r.ot1Minutes||0)/60,
-    ot2Hrs:r.ot2Hrs||(r.ot2Minutes||0)/60,
+    pensionRate:r.pensionRate||0.04,regularHrs:r.regularHrs||(r.regularMinutes||0)/60,
+    ot1Hrs:r.ot1Hrs||(r.ot1Minutes||0)/60,ot2Hrs:r.ot2Hrs||(r.ot2Minutes||0)/60,
     employerPensionAmt:r.employerPension||0,endurhaefingarsjodur:r.endurhaefingarsjodur||0};
   var html=renderPayslip({employee:emp,calc:calc,ytd:{},period:r.periodFrom||'',
     employer:{employerName:'',employerKt:'',employerAddress:''},
@@ -613,7 +736,10 @@ async function prLoadLaunamidlar(){
         +'<th data-s="payroll.grossLabel"></th><th data-s="payroll.pension"></th>'
         +'<th data-s="payroll.taxWithheld"></th><th data-s="payroll.netLabel"></th>'
         +'</tr></thead><tbody>'
-        +emps.map(function(r){return '<tr><td>'+_e(r.name||r.employeeId||'')+'</td><td style="color:var(--muted);font-size:11px">'+_e(r.kt||'')+'</td><td>'+kr(r.grossTotal)+'</td><td>'+kr(r.pension)+'</td><td>'+kr(r.taxWithheld)+'</td><td>'+kr(r.netPay)+'</td></tr>';}).join('')
+        +emps.map(function(r){return '<tr><td>'+_e(r.name||r.employeeId||'')+'</td>'
+          +'<td style="color:var(--muted);font-size:11px">'+_e(r.kt||'')+'</td>'
+          +'<td>'+kr(r.grossTotal)+'</td><td>'+kr(r.pension)+'</td>'
+          +'<td>'+kr(r.taxWithheld)+'</td><td>'+kr(r.netPay)+'</td></tr>';}).join('')
         +'</tbody><tfoot><tr class="lm-total"><td colspan="2">Total '+_e(String(year))+'</td>'
         +'<td>'+kr(tG)+'</td><td>'+kr(tP)+'</td><td>'+kr(tT)+'</td><td>'+kr(tN)+'</td>'
         +'</tr></tfoot></table>';
