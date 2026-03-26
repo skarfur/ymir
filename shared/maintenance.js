@@ -39,8 +39,9 @@ const CAT_ICON = { boat: "⛵", equipment: "🦺", facility: "🏠" };
 
 // maintRenderCardCompact — staff hub summary card (2 lines, click for detail)
 function maintRenderCardCompact(r) {
-  const SEV_CSS  = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
+  const SEV_CSS   = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
   const borderCol = SEV_CSS[r.severity] || 'var(--green)';
+  const catIcon   = CAT_ICON[r.category] || '🔧';
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
     ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">OOS</span>' : '';
   const boat = esc(r.boatName||r.boatId||r.itemName||r.name||'');
@@ -48,7 +49,8 @@ function maintRenderCardCompact(r) {
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
     style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s"
     onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''">
-    <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:6px;overflow:hidden">
+    <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden">
+      <span style="flex-shrink:0">${catIcon}</span>
       <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${boat}</span>
       ${part ? `<span style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
     </div>
@@ -176,7 +178,7 @@ function maintOpenDetail(r, currentUser) {
     });
     // Delete / cancel
     document.getElementById('mdDeleteBtn')?.addEventListener('click', () => {
-      doConfirm('Delete / cancel this issue? This cannot be undone.', async () => {
+      doConfirm('Cancel and delete this issue? This cannot be undone.', async () => {
         await apiPost('deleteMaintenance', {id: r.id});
         closeModal('maintDetailModal');
         if (typeof renderMaintenance === 'function') renderMaintenance();
@@ -202,17 +204,14 @@ function maintRenderCard(r) {
   const sevClass      = 'sev-' + (r.severity||'low');
   const catIcon       = CAT_ICON[r.category] || '🔧';
   const isOos         = boolVal(r.markOos) && r.category==='boat' && !resolved;
-  // Primary label: boat name for boat issues, item name otherwise
   const subjectLabel  = r.category === 'boat'
     ? esc(r.boatName || r.boatId || '—')
     : esc(r.itemName || '—');
 
-  // OOS badge — clickable (wired by maintOpenDetail)
   const oosTag = (r.category==='boat' && !resolved)
     ? `<span id="mdOosBadge" class="oos-badge" style="cursor:pointer;user-select:none">${isOos?'OOS':'Mark OOS'}</span>`
     : (isOos ? '<span class="oos-badge">OOS</span>' : '');
 
-  // Severity dropdown — current badge shown, click reveals others
   const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
   const dropItems  = sevOptions.map(sv =>
     `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]||'badge-green'}"
@@ -230,13 +229,15 @@ function maintRenderCard(r) {
     ? '<button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>'
     : `<span style="font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</span>`;
 
-  const deleteBtn = !resolved
-    ? '<button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 16px;color:#e74c3c">Delete / Cancel</button>'
+  // × delete button top-right (only on unresolved)
+  const deleteX = !resolved
+    ? '<button id="mdDeleteBtn" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:var(--muted);padding:0 2px" title="Delete / Cancel">&times;</button>'
     : '';
 
-  return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
+  return `<div class="req-card ${sevClass}${resolved?' resolved':''}" style="position:relative">
+    ${deleteX}
     <div class="req-header">
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0;padding-right:${!resolved?'24px':'0'}">
         <div class="req-title">
           ${catIcon} ${subjectLabel}
           ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
@@ -265,7 +266,6 @@ function maintRenderCard(r) {
     </div>
     <div class="req-actions">
       ${resolveBtn}
-      ${deleteBtn}
     </div>
   </div>`;
 }
