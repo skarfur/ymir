@@ -66,12 +66,15 @@ function maintOpenDetail(r, currentUser) {
     el.innerHTML = `<div class="modal" style="max-width:580px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:88vh">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
         <span id="maintDetailTitle" style="font-weight:600;font-size:14px"></span>
-        <button onclick="closeModal('maintDetailModal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;padding:0 4px">&times;</button>
+        <button id="maintDetailClose" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;padding:0 4px">&times;</button>
       </div>
       <div id="maintDetailBody" style="overflow-y:auto;padding:18px 20px;flex:1"></div>
     </div>`;
     el.addEventListener('click', e => { if (e.target===el) closeModal('maintDetailModal'); });
+    document.getElementById('maintDetailClose')?.addEventListener('click', ()=>closeModal('maintDetailModal'));
     document.body.appendChild(el);
+    // wire close button after appending
+    el.querySelector('#maintDetailClose').addEventListener('click', ()=>closeModal('maintDetailModal'));
   }
   if (!document.getElementById('maintConfirmModal')) {
     const el = document.createElement('div');
@@ -81,19 +84,12 @@ function maintOpenDetail(r, currentUser) {
       <p id="maintConfirmMsg" style="margin:0 0 18px;font-size:14px;line-height:1.5"></p>
       <div style="display:flex;gap:10px;justify-content:center">
         <button id="maintConfirmOk" style="padding:7px 22px;border:none;border-radius:20px;background:var(--brass);color:#fff;font-weight:600;cursor:pointer;font-size:13px">Confirm</button>
-        <button onclick="closeModal('maintConfirmModal')" style="padding:7px 22px;border:1px solid var(--border);border-radius:20px;background:none;cursor:pointer;font-size:13px">Cancel</button>
+        <button id="maintConfirmCancel" style="padding:7px 22px;border:1px solid var(--border);border-radius:20px;background:none;cursor:pointer;font-size:13px">Cancel</button>
       </div>
     </div>`;
     el.addEventListener('click', e => { if (e.target===el) closeModal('maintConfirmModal'); });
+    el.querySelector('#maintConfirmCancel').addEventListener('click', ()=>closeModal('maintConfirmModal'));
     document.body.appendChild(el);
-  }
-
-  // Resolve user name safely — never throws
-  function getBy() {
-    return currentUser
-      || window._maintUser?.name
-      || (typeof user !== 'undefined' ? user?.name : null)
-      || 'Staff';
   }
 
   function doConfirm(msg, cb) {
@@ -102,7 +98,73 @@ function maintOpenDetail(r, currentUser) {
     openModal('maintConfirmModal');
   }
 
-  function wireCard() {
+  function getBy() {
+    return currentUser
+      || window._maintUser?.name
+      || (typeof user!=='undefined' ? user?.name : null)
+      || 'Staff';
+  }
+
+  function renderAndWire() {
+    const SEV_CSS    = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
+    const catIcon    = CAT_ICON[r.category] || '🔧';
+    const isOos      = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
+    const resolved   = boolVal(r.resolved);
+    const comments   = parseJson(r.comments, []);
+    const subjectLabel = r.category==='boat'
+      ? esc(r.boatName||r.boatId||'—')
+      : esc(r.itemName||'—');
+
+    document.getElementById('maintDetailTitle').textContent = catIcon+' '+subjectLabel
+      +(r.part ? ' · '+r.part : '');
+
+    // Severity dropdown
+    const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
+    const dropItems  = sevOptions.map(sv=>
+      `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]}" style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
+    ).join('');
+
+    // OOS toggle (boat only, unresolved)
+    const oosBtn = (r.category==='boat' && !resolved)
+      ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?'OOS — return to service':'Mark OOS'}</button>`
+      : '';
+
+    const commentHtml = comments.map(c=>`
+      <div class="comment-item">
+        <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
+        <span>${esc(c.text||'')}</span>
+      </div>`).join('');
+
+    document.getElementById('maintDetailBody').innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="position:relative;display:inline-block">
+          <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
+            style="cursor:pointer;user-select:none">${r.severity||'low'} ▾</span>
+          <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+            ${dropItems}
+          </div>
+        </div>
+        ${oosBtn}
+      </div>
+      <div class="req-meta" style="margin-bottom:12px">
+        ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
+        ${r.part       ? `<span>🔧 ${esc(r.part)}</span>`                    : ''}
+        ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>`              : ''}
+        ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>`  : ''}
+      </div>
+      ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
+      ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
+      ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
+      ${!resolved ? `<div class="comment-add" style="margin-top:12px">
+        <input id="mdCommentInput" type="text" placeholder="Add comment…">
+        <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
+      </div>
+      <div class="req-actions" style="margin-top:10px">
+        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>
+        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c">Delete</button>
+      </div>` : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
+    `;
+
     // Severity dropdown
     const cur  = document.getElementById('mdSevCurrent');
     const drop = document.getElementById('mdSevDropdown');
@@ -112,87 +174,74 @@ function maintOpenDetail(r, currentUser) {
         drop.style.display = drop.style.display==='none' ? 'block' : 'none';
       });
       document.addEventListener('click', function _close() {
-        drop.style.display = 'none';
-        document.removeEventListener('click', _close);
+        drop.style.display='none';
+        document.removeEventListener('click',_close);
       });
       drop.querySelectorAll('[data-sev]').forEach(el => {
         el.addEventListener('click', e => {
           e.stopPropagation();
-          drop.style.display = 'none';
+          drop.style.display='none';
           const newSev = el.dataset.sev;
           doConfirm(`Change severity to "${newSev}" without resolving?`, async () => {
-            await apiPost('saveMaintenance', {id:r.id, severity:newSev});
-            r.severity = newSev;
-            renderAndWire();
-            if (typeof renderMaintenance==='function') renderMaintenance();
+            await apiPost('saveMaintenance',{id:r.id,severity:newSev});
+            r.severity=newSev; renderAndWire();
+            if(typeof renderList==='function') renderList();
+            if(typeof renderMaintenance==='function') renderMaintenance();
           });
         });
       });
     }
 
     // OOS toggle
-    document.getElementById('mdOosBadge')?.addEventListener('click', () => {
-      const isOos = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
-      const msg   = isOos
-        ? 'Return to service without resolving the issue?'
-        : 'Mark as Out of Service without resolving the issue?';
-      doConfirm(msg, async () => {
-        await apiPost('saveMaintenance', {id:r.id, markOos:!isOos});
-        r.markOos = !isOos;
-        renderAndWire();
-        if (typeof renderMaintenance==='function') renderMaintenance();
+    document.getElementById('mdOosBtn')?.addEventListener('click', ()=>{
+      const msg = isOos
+        ? 'Return to service without resolving?'
+        : 'Mark as Out of Service without resolving?';
+      doConfirm(msg, async ()=>{
+        await apiPost('saveMaintenance',{id:r.id,markOos:!isOos});
+        r.markOos=!isOos; renderAndWire();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderMaintenance==='function') renderMaintenance();
       });
     });
 
-    // Comment post — uses addMaintenanceComment (correct backend action)
-    const postComment = async () => {
+    // Comment
+    const postComment = async ()=>{
       const input = document.getElementById('mdCommentInput');
       const text  = (input?.value||'').trim();
-      if (!text) return;
+      if(!text) return;
       const by = getBy();
-      try {
-        await apiPost('addMaintenanceComment', {id:r.id, by, text});
-        // Update local record so re-render shows new comment immediately
-        const existing = parseJson(r.comments, []);
-        const now = new Date().toISOString().slice(0,16);
-        r.comments = JSON.stringify([...existing, {text, by, at:now}]);
-        if (input) input.value = '';
-        renderAndWire();
-      } catch(e) { console.error('Comment failed', e); }
+      await apiPost('addMaintenanceComment',{id:r.id,by,text});
+      const existing = parseJson(r.comments,[]);
+      r.comments = JSON.stringify([...existing,{text,by,at:new Date().toISOString().slice(0,16)}]);
+      if(input) input.value='';
+      renderAndWire();
     };
-    document.getElementById('mdCommentBtn')?.addEventListener('click', postComment);
-    document.getElementById('mdCommentInput')?.addEventListener('keydown', e => {
-      if (e.key==='Enter') postComment();
-    });
+    document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
+    document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});
 
     // Resolve
-    document.getElementById('mdResolveBtn')?.addEventListener('click', () => {
-      doConfirm('Mark this issue as resolved?', async () => {
-        const now = new Date().toISOString().slice(0,16);
-        const by  = getBy();
-        await apiPost('resolveMaintenance', {id:r.id, by});
-        r.resolved=true; r.resolvedAt=now; r.resolvedBy=by;
+    document.getElementById('mdResolveBtn')?.addEventListener('click',()=>{
+      doConfirm('Mark this issue as resolved?', async ()=>{
+        const now=new Date().toISOString().slice(0,16);
+        const by=getBy();
+        await apiPost('resolveMaintenance',{id:r.id,by});
+        r.resolved=true;r.resolvedAt=now;r.resolvedBy=by;
         renderAndWire();
-        if (typeof renderMaintenance==='function') renderMaintenance();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderMaintenance==='function') renderMaintenance();
       });
     });
-    // Delete / cancel
-    document.getElementById('mdDeleteBtn')?.addEventListener('click', () => {
-      doConfirm('Cancel and delete this issue? This cannot be undone.', async () => {
-        await apiPost('deleteMaintenance', {id: r.id});
+
+    // Delete
+    document.getElementById('mdDeleteBtn')?.addEventListener('click',()=>{
+      doConfirm('Delete this issue? This cannot be undone.', async ()=>{
+        await apiPost('deleteMaintenance',{id:r.id});
         closeModal('maintDetailModal');
-        if (typeof renderMaintenance === 'function') renderMaintenance();
-        if (typeof renderList === 'function') renderList();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderMaintenance==='function') renderMaintenance();
       });
     });
-
-  }
-
-  function renderAndWire() {
-    const catIcon = CAT_ICON[r.category] || '🔧';
-    document.getElementById('maintDetailTitle').textContent = catIcon+' '+(r.itemName||r.name||'');
-    document.getElementById('maintDetailBody').innerHTML = maintRenderCard(r);
-    wireCard();
   }
 
   renderAndWire();
@@ -200,57 +249,32 @@ function maintOpenDetail(r, currentUser) {
 }
 
 function maintRenderCard(r) {
-  const resolved      = boolVal(r.resolved);
-  const sevClass      = 'sev-' + (r.severity||'low');
-  const catIcon       = CAT_ICON[r.category] || '🔧';
-  const isOos         = boolVal(r.markOos) && r.category==='boat' && !resolved;
-  const subjectLabel  = r.category === 'boat'
-    ? esc(r.boatName || r.boatId || '—')
-    : esc(r.itemName || '—');
-
-  const oosTag = (r.category==='boat' && !resolved)
-    ? `<span id="mdOosBadge" class="oos-badge" style="cursor:pointer;user-select:none">${isOos?'OOS':'Mark OOS'}</span>`
-    : (isOos ? '<span class="oos-badge">OOS</span>' : '');
-
-  const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
-  const dropItems  = sevOptions.map(sv =>
-    `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]||'badge-green'}"
-       style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
-  ).join('');
+  const resolved  = boolVal(r.resolved);
+  const sevClass  = 'sev-' + (r.severity||'low');
+  const catIcon   = CAT_ICON[r.category] || '🔧';
+  const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
+  const subjectLabel = r.category==='boat'
+    ? esc(r.boatName||r.boatId||'—')
+    : esc(r.itemName||'—');
+  const oosTag = isOos ? '<span class="oos-badge">OOS</span>' : '';
 
   const comments    = parseJson(r.comments, []);
-  const commentHtml = comments.map(c => `
+  const commentHtml = comments.map(c=>`
     <div class="comment-item">
       <span class="comment-by">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</span>
       <span>${esc(c.text||'')}</span>
     </div>`).join('');
 
-  const resolveBtn = !resolved
-    ? '<button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>'
-    : `<span style="font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</span>`;
-
-  // × delete button top-right (only on unresolved)
-  const deleteX = !resolved
-    ? '<button id="mdDeleteBtn" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:var(--muted);padding:0 2px" title="Delete / Cancel">&times;</button>'
-    : '';
-
-  return `<div class="req-card ${sevClass}${resolved?' resolved':''}" style="position:relative">
-    ${deleteX}
+  return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
     <div class="req-header">
-      <div style="flex:1;min-width:0;padding-right:${!resolved?'24px':'0'}">
+      <div style="flex:1;min-width:0">
         <div class="req-title">
           ${catIcon} ${subjectLabel}
           ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
           ${oosTag}
         </div>
         <div class="req-meta">
-          <div style="position:relative;display:inline-block">
-            <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
-              style="cursor:pointer;user-select:none">${r.severity||'low'} ▾</span>
-            <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
-              ${dropItems}
-            </div>
-          </div>
+          <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
           ${r.category==='boat' && r.itemName ? `<span>${esc(r.itemName)}</span>` : ''}
           ${r.reportedBy ? `<span>👤 ${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>📅 ${(r.createdAt||'').slice(0,10)}</span>` : ''}
@@ -260,13 +284,7 @@ function maintRenderCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-    <div class="comment-add">
-      <input id="mdCommentInput" type="text" placeholder="Add comment…">
-      <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
-    </div>
-    <div class="req-actions">
-      ${resolveBtn}
-    </div>
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 
