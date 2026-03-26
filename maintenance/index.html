@@ -327,7 +327,6 @@ function renderList() {
   el.onclick = e => {
     const card = e.target.closest('.maint-card-clickable');
     if (!card) return;
-    if (e.target.closest('button, a, input')) return;
     const r = allRequests.find(x => x.id === card.dataset.id);
     if (r) maintOpenDetail(r, window._maintUser?.name);
   };
