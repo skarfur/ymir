@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ddddddddddddd<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2499,13 +2499,11 @@ async function prRunClose() {
 async function prDownloadPayslip(employeeId, period) {
   try {
     const res = await apiPost('generatePayslipData', { employeeId, period });
-    const html = renderPayslip(res.payslip);
-    const win = window.open('', '_blank');
-    win.document.write('<html><head><title>Payslip '+period+'</title>'
-      + '<style>body{font-family:system-ui,sans-serif;padding:20px;background:#fff;color:#000}'
-      + '.req-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#666}'
-      + '</style></head><body>'+html+'<script>window.print()<'+'/script></body></html>');
-    win.document.close();
+    const css = 'body{font-family:system-ui,sans-serif;padding:20px}';
+    const full = '<!DOCTYPE html><html><head><title>Payslip ' + period + '</title>'
+      + '<style>' + css + '</style></head><body>' + renderPayslip(res.payslip) + '</body></html>';
+    const blob = new Blob([full], {type:'text/html'});
+    window.open(URL.createObjectURL(blob), '_blank');
   } catch(e) { alert(e.message); }
 }
 
