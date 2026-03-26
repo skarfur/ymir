@@ -246,14 +246,6 @@ border-bottom:1px solid var(--border)44; }
   </div>
 
   <!-- ══ STAFF STATUS ══ -->
-  <div id="staffStatusStrip" style="margin-bottom:12px">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s">🧑 Staff on duty</button>
-      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s">⛵ Support boat out</button>
-      <span id="staffStatusUpdated" style="font-size:10px;color:var(--muted)"></span>
-    </div>
-  </div>
 
     <!-- ══ TIDES ══ -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;
@@ -265,6 +257,15 @@ border-bottom:1px solid var(--border)44; }
         <div style="color:var(--text)" data-s="staff.tideComingSoon">Tide data coming soon</div>
         <div style="font-size:10px;margin-top:2px" data-s="staff.tideDesc">Real-time tidal predictions for Reykjavík harbour</div>
       </div>
+    </div>
+  </div>
+
+  <div id="staffStatusStrip" style="margin-bottom:12px">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c">🧑 No staff on duty</button>
+      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c">⛵ No support boat</button>
+      <span id="staffStatusUpdated" style="font-size:10px;color:var(--muted)"></span>
     </div>
   </div>
 
@@ -1251,28 +1252,19 @@ function openDailyLogForNew() {
 
 // ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
 function renderStaffStatusStrip() {
-  const IS = getLang() === 'IS';
-  const btnDuty = document.getElementById('btnStaffOnDuty');
-  const btnBoat = document.getElementById('btnSupportBoat');
-  const upd     = document.getElementById('staffStatusUpdated');
+  const IS       = getLang() === 'IS';
+  const btnDuty  = document.getElementById('btnStaffOnDuty');
+  const btnBoat  = document.getElementById('btnSupportBoat');
+  const upd      = document.getElementById('staffStatusUpdated');
   if (!btnDuty || !btnBoat) return;
-  function styleBtn(btn, active, off, on, col) {
-    btn.textContent = active ? on : off;
-    btn.style.background  = active ? col+'22' : 'var(--surface)';
-    btn.style.borderColor = active ? col+'88' : 'var(--border)';
-    btn.style.color       = active ? col       : 'var(--muted)';
-  }
-  styleBtn(btnDuty, _staffStatus.onDuty,
-    IS ? '🧑 Starfsmaður á vakt' : '🧑 Staff on duty',
-    IS ? '🧑 Starfsmaður á vakt ✓' : '🧑 Staff on duty ✓', '#27ae60');
-  styleBtn(btnBoat, _staffStatus.supportBoat,
-    IS ? '⛵ Björunarbátur á sjó' : '⛵ Support boat out',
-    IS ? '⛵ Björunarbátur á sjó ✓' : '⛵ Support boat out ✓', '#5dade2');
-  if (upd && _staffStatus.updatedAt) {
-    const mins = Math.round((Date.now() - new Date(_staffStatus.updatedAt)) / 60000);
-    upd.textContent = (mins < 2 ? (IS?'Rétt í ûessu':'just now') : mins < 60 ? (IS?'fyrir '+mins+' mín':mins+' min ago') : (IS?'fyrir '+Math.floor(mins/60)+' klst':Math.floor(mins/60)+'h ago'));
-    if (_staffStatus.updatedByName) upd.textContent = _staffStatus.updatedByName + ' · ' + upd.textContent;
-  } else if (upd) { upd.textContent = ''; }
+  const base = 'display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;font-family:inherit;';
+  const on   = 'background:#27ae6015;border-color:#27ae6040;color:#27ae60';
+  const off  = 'background:#e74c3c15;border-color:#e74c3c40;color:#e74c3c';
+  btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? on : off));
+  btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? on : off));
+  btnDuty.innerHTML = '🧑 ' + (IS ? (_staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður') : (_staffStatus.onDuty      ? 'Staff on duty'   : 'No staff on duty'));
+  btnBoat.innerHTML = '⛵ '        + (IS ? (_staffStatus.supportBoat ? 'Björunarbátur'           : 'Enginn björunarbátur') : (_staffStatus.supportBoat ? 'Support boat out' : 'No support boat'));
+  if (upd && _staffStatus.updatedAt) upd.textContent = (IS ? 'Uppf.' : 'Upd.') + ' ' + _staffStatus.updatedAt.slice(11,16) + ' UTC';
 }
 async function toggleStaffStatus(field) {
   _staffStatus[field] = !_staffStatus[field];
