@@ -121,6 +121,7 @@
       <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')"      data-s="admin.tabCerts"></button>
       <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
       <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
+      <button class="tab-btn"        data-tab="payroll"    onclick="showTab('payroll')"    data-s="admin.tabPayroll"></button>
     </div>
 
     <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
@@ -435,6 +436,100 @@
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
     </div>
+
+<!-- ══ PAYROLL ══ -->
+    <div id="tab-payroll" class="hidden">
+
+      <!-- Sub-tab nav -->
+      <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+        <button class="pr-sub active" data-sub="employees"  onclick="prShowSub('employees')"  data-s="payroll.employees"></button>
+        <button class="pr-sub"        data-sub="timesheets" onclick="prShowSub('timesheets')" data-s="payroll.timesheets"></button>
+        <button class="pr-sub"        data-sub="periods"    onclick="prShowSub('periods')"    data-s="payroll.payPeriods"></button>
+        <button class="pr-sub"        data-sub="launamidlar" onclick="prShowSub('launamidlar')" data-s="payroll.launamidlar"></button>
+      </div>
+
+      <!-- EMPLOYEES ─────────────────────────────────────────────────────── -->
+      <div id="pr-employees">
+        <div class="col-section">
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.employees"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-body" id="prEmployeesList">
+            <div class="empty-note" data-s="lbl.loading"></div>
+          </div>
+        </div>
+        <!-- Employee edit panel -->
+        <div id="prEmployeeEdit" class="col-section hidden" style="margin-top:12px">
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" id="prEditTitle">Edit Employee</div><span class="col-toggle open">▾</span></div>
+          <div class="col-body">
+            <input type="hidden" id="prEditId">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div class="field"><label>Name</label><input id="prEditName" type="text" readonly style="background:var(--surface)"></div>
+              <div class="field"><label>Kennitala</label><input id="prEditKt" type="text" readonly style="background:var(--surface)"></div>
+              <div class="field"><label>Title / Role</label><input id="prEditTitle2" type="text" placeholder="e.g. Frístundaleiðbeinandi"></div>
+              <div class="field"><label>Base rate (kr/hr)</label><input id="prEditRate" type="number" min="0"></div>
+              <div class="field"><label>Bank account</label><input id="prEditBank" type="text" placeholder="0101-26-123456"></div>
+              <div class="field"><label>Orlofsreikningur</label><input id="prEditOrlof" type="text" placeholder="0101-18-123456"></div>
+              <div class="field"><label>Union</label><input id="prEditUnion" type="text" placeholder="VR, SGS, ..."></div>
+              <div class="field"><label>Lífeyrir %</label><input id="prEditLifeyrir" type="number" min="0" max="10" step="0.5" value="4"></div>
+              <div class="field"><label>Séreignarsjóður %</label><input id="prEditSereign" type="number" min="0" max="4" step="0.5" value="0"></div>
+              <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:20px">
+                <input id="prEditEnabled" type="checkbox">
+                <label for="prEditEnabled" data-s="payroll.enablePayroll"></label>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" onclick="prSaveEmployee()">Save</button>
+              <button class="btn btn-secondary" onclick="prCancelEdit()">Cancel</button>
+            </div>
+            <span id="prEditMsg" style="font-size:11px;color:var(--green);margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMESHEETS ─────────────────────────────────────────────────────── -->
+      <div id="pr-timesheets" class="hidden">
+        <div class="col-section">
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.timesheets"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-body">
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <select id="prTsEmployee" onchange="prLoadTimesheets()" style="min-width:160px"><option value="">All staff</option></select>
+              <input id="prTsPeriod" type="month" onchange="prLoadTimesheets()" style="min-width:140px">
+            </div>
+            <div id="prTimesheetsList"><div class="empty-note" data-s="lbl.loading"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAY PERIODS ────────────────────────────────────────────────────── -->
+      <div id="pr-periods" class="hidden">
+        <div class="col-section">
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.payPeriods"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-body">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+              <input id="prClosePeriod" type="month" style="min-width:140px">
+              <button class="btn btn-primary" onclick="prClosePeriod()" data-s="payroll.closePeriod"></button>
+              <span id="prCloseMsg" style="font-size:11px;color:var(--green)"></span>
+            </div>
+            <div id="prPeriodsList"><div class="empty-note" data-s="lbl.loading"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAUNAMIÐLAR ────────────────────────────────────────────────────── -->
+      <div id="pr-launamidlar" class="hidden">
+        <div class="col-section">
+          <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="payroll.launamidlar"></div><span class="col-toggle open">▾</span></div>
+          <div class="col-body">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+              <input id="prXmlYear" type="number" value="2026" min="2024" max="2030" style="width:90px">
+              <button class="btn btn-primary" onclick="prGenerateXml()" data-s="payroll.generateXml"></button>
+            </div>
+            <pre id="prXmlOutput" style="font-size:10px;background:var(--surface);padding:12px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;display:none"></pre>
+            <a id="prXmlDownload" style="display:none" class="btn btn-secondary">Download XML</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-payroll -->
 
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
@@ -2157,6 +2252,291 @@ function resetImport() {
 // ── Utilities ──────────────────────────────────────────────────────────────────
 // bool, esc, parseJson, toast, chunk, openModal, closeModal, todayISO
 // all come from shared/api.js and shared/ui.js — no local redefinitions needed.
+
+
+// ════════════════════════════════════════════════════════════════
+// PAYROLL ADMIN
+// ════════════════════════════════════════════════════════════════
+
+// Sub-tab switching
+function prShowSub(sub) {
+  ['employees','timesheets','periods','launamidlar'].forEach(s => {
+    document.getElementById('pr-'+s)?.classList.toggle('hidden', s!==sub);
+  });
+  document.querySelectorAll('.pr-sub').forEach(b => b.classList.toggle('active', b.dataset.sub===sub));
+  if (sub==='employees')   prLoadEmployees();
+  if (sub==='timesheets')  prLoadEmployeesIntoSelect();
+  if (sub==='periods')     prLoadPeriods();
+}
+
+// Style sub-tab buttons
+(function addPrStyle(){
+  if (document.getElementById('prSubStyle')) return;
+  const s = document.createElement('style');
+  s.id = 'prSubStyle';
+  s.textContent = '.pr-sub{padding:5px 14px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);}'
+    + '.pr-sub.active{background:var(--brass);color:#fff;border-color:var(--brass);}';
+  document.head.appendChild(s);
+})();
+
+// ── Employees ─────────────────────────────────────────────────
+let _prEmps = [];
+
+async function prLoadEmployees() {
+  const list = document.getElementById('prEmployeesList');
+  if (!list) return;
+  list.innerHTML = '<div class="empty-note" data-s="lbl.loading"></div>';
+  applyStrings(list);
+  try {
+    const res = await apiGet('getEmployees');
+    _prEmps = res.employees || [];
+    if (!_prEmps.length) { list.innerHTML = '<div class="empty-note">No employees yet. Deploy backend first.</div>'; return; }
+    list.innerHTML = _prEmps.map(emp => {
+      const enabled = emp.payrollEnabled===true||emp.payrollEnabled==='true';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-weight:600;font-size:13px">' + esc(emp.name||'') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted)">' + esc(emp.title||'–') + ' · ' + esc(emp.bankAccount||'no bank') + ' · ' + (emp.baseRateKr||'–') + ' kr/hr</div>'
+        + '</div>'
+        + '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + (enabled?'var(--green)':'var(--surface)') + ';color:' + (enabled?'#fff':'var(--muted)') + '">' + (enabled?'Payroll':'Inactive') + '</span>'
+        + '<button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="prEditEmployee('' + esc(emp.id) + '')">Edit</button>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="empty-note" style="color:var(--red)">' + e.message + '</div>';
+  }
+}
+
+function prEditEmployee(id) {
+  const emp = _prEmps.find(e=>e.id===id);
+  if (!emp) return;
+  document.getElementById('prEditId').value     = emp.id;
+  document.getElementById('prEditTitle').textContent = 'Edit: ' + (emp.name||'');
+  document.getElementById('prEditName').value   = emp.name||'';
+  document.getElementById('prEditKt').value     = emp.kt||'';
+  document.getElementById('prEditTitle2').value = emp.title||'';
+  document.getElementById('prEditRate').value   = emp.baseRateKr||'';
+  document.getElementById('prEditBank').value   = emp.bankAccount||'';
+  document.getElementById('prEditOrlof').value  = emp.orlofsreikningur||'';
+  document.getElementById('prEditUnion').value  = emp.union||'';
+  document.getElementById('prEditLifeyrir').value = +(emp.lifeyrir||0.04)*100;
+  document.getElementById('prEditSereign').value  = +(emp.sereignarsjodur||0)*100;
+  document.getElementById('prEditEnabled').checked = emp.payrollEnabled===true||emp.payrollEnabled==='true';
+  document.getElementById('prEmployeeEdit').classList.remove('hidden');
+  document.getElementById('prEmployeeEdit').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function prSaveEmployee() {
+  const id = document.getElementById('prEditId').value;
+  const emp = _prEmps.find(e=>e.id===id);
+  if (!emp) return;
+  const payload = {
+    id,
+    title:            document.getElementById('prEditTitle2').value.trim(),
+    baseRateKr:       +document.getElementById('prEditRate').value,
+    bankAccount:      document.getElementById('prEditBank').value.trim(),
+    orlofsreikningur: document.getElementById('prEditOrlof').value.trim(),
+    union:            document.getElementById('prEditUnion').value.trim(),
+    lifeyrir:         +document.getElementById('prEditLifeyrir').value / 100,
+    sereignarsjodur:  +document.getElementById('prEditSereign').value / 100,
+    payrollEnabled:   document.getElementById('prEditEnabled').checked,
+  };
+  const msg = document.getElementById('prEditMsg');
+  msg.textContent = 'Saving...';
+  try {
+    await apiPost('saveEmployee', payload);
+    msg.textContent = 'Saved ✓';
+    setTimeout(()=>{ msg.textContent=''; }, 2000);
+    prLoadEmployees();
+  } catch(e) { msg.textContent = e.message; msg.style.color='var(--red)'; }
+}
+
+function prCancelEdit() {
+  document.getElementById('prEmployeeEdit').classList.add('hidden');
+}
+
+// ── Timesheets ─────────────────────────────────────────────────
+async function prLoadEmployeesIntoSelect() {
+  const sel = document.getElementById('prTsEmployee');
+  if (!sel || sel.options.length > 1) return; // already populated
+  try {
+    const res = await apiGet('getEmployees');
+    _prEmps = res.employees || [];
+    _prEmps.forEach(emp => {
+      const opt = document.createElement('option');
+      opt.value = emp.id; opt.textContent = emp.name;
+      sel.appendChild(opt);
+    });
+    // Default period to current month
+    const now = new Date();
+    document.getElementById('prTsPeriod').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    prLoadTimesheets();
+  } catch(e) {}
+}
+
+async function prLoadTimesheets() {
+  const list = document.getElementById('prTimesheetsList');
+  const empId = document.getElementById('prTsEmployee').value;
+  const period = document.getElementById('prTsPeriod').value;
+  if (!list) return;
+  list.innerHTML = '<div class="empty-note" data-s="lbl.loading"></div>';
+  applyStrings(list);
+  try {
+    const url = 'getTimeEntries?' + (empId?'employeeId='+empId+'&':'') + (period?'period='+period:'');
+    const res = await apiGet(url);
+    const entries = (res.entries||[]).sort((a,b)=>a.timestamp>b.timestamp?1:-1);
+    if (!entries.length) { list.innerHTML = '<div class="empty-note">No entries for this period.</div>'; return; }
+    // Pair ins and outs
+    const ins  = entries.filter(e=>e.type==='in');
+    const outs = entries.filter(e=>e.type==='out');
+    const pairs = outs.map(out => {
+      const matchIn = ins.slice().reverse().find(i=>i.timestamp<out.timestamp&&i.employeeId===out.employeeId);
+      return { in: matchIn, out, emp: (_prEmps.find(e=>e.id===out.employeeId)||{}).name||out.employeeId };
+    });
+    list.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+      + '<thead><tr style="color:var(--muted);font-size:11px">'
+      + '<th style="text-align:left;padding:4px 6px">Employee</th>'
+      + '<th style="padding:4px 6px">Clock In</th>'
+      + '<th style="padding:4px 6px">Clock Out</th>'
+      + '<th style="padding:4px 6px">Duration</th>'
+      + '<th style="padding:4px 6px">Source</th>'
+      + '<th style="padding:4px 6px"></th>'
+      + '</tr></thead><tbody>'
+      + pairs.map(p => {
+          const dur = p.out.durationMinutes ? Math.floor(p.out.durationMinutes/60)+'h '+String(Math.round(p.out.durationMinutes%60)).padStart(2,'0')+'m' : '–';
+          const orig = p.out.originalTimestamp ? '⚠️ edited (was '+p.out.originalTimestamp.slice(0,16).replace('T',' ')+')' : '';
+          return '<tr style="border-bottom:1px solid var(--border)">'
+            + '<td style="padding:5px 6px;font-weight:600">' + esc(p.emp) + '</td>'
+            + '<td style="padding:5px 6px;text-align:center">' + (p.in?p.in.timestamp.slice(11,16):'–') + '</td>'
+            + '<td style="padding:5px 6px;text-align:center">' + p.out.timestamp.slice(11,16) + '</td>'
+            + '<td style="padding:5px 6px;text-align:center;font-weight:600">' + dur + '</td>'
+            + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + (p.out.source==='admin'?'✏️ admin':'staff') + '</td>'
+            + '<td style="padding:5px 6px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prAdminEditTime('' + p.out.id + '','' + p.out.timestamp + '',' + (p.out.durationMinutes||0) + ')">Edit</button>' + (orig?'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+orig+'</span>':'') + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  } catch(e) {
+    list.innerHTML = '<div class="empty-note" style="color:var(--red)">' + e.message + '</div>';
+  }
+}
+
+function prAdminEditTime(id, currentTs, currentMins) {
+  const newTs = prompt('Edit clock-out time (ISO format):', currentTs);
+  if (!newTs || newTs===currentTs) return;
+  const newMins = prompt('Duration in minutes:', currentMins);
+  apiPost('adminEditTime', { id, timestamp: newTs, durationMinutes: +newMins, note: 'admin edit' })
+    .then(()=>prLoadTimesheets())
+    .catch(e=>alert(e.message));
+}
+
+// ── Pay Periods ────────────────────────────────────────────────
+async function prLoadPeriods() {
+  const list = document.getElementById('prPeriodsList');
+  if (!list) return;
+  // Default close period to current month
+  const now = new Date();
+  const monthStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('prClosePeriod').value = monthStr;
+  list.innerHTML = '<div class="empty-note" data-s="lbl.loading"></div>';
+  applyStrings(list);
+  try {
+    const res = await apiGet('getPayroll');
+    const rows = res.payroll || [];
+    if (!rows.length) { list.innerHTML = '<div class="empty-note">No closed periods yet.</div>'; return; }
+    // Group by period
+    const byPeriod = {};
+    rows.forEach(r => { if (!byPeriod[r.period]) byPeriod[r.period]=[]; byPeriod[r.period].push(r); });
+    const kr = n => Math.round(n).toLocaleString('is-IS');
+    list.innerHTML = Object.keys(byPeriod).sort().reverse().map(period => {
+      const periodRows = byPeriod[period];
+      const totGross = periodRows.reduce((s,r)=>s+Number(r.grossTotal||0),0);
+      const totNet   = periodRows.reduce((s,r)=>s+Number(r.netPay||0),0);
+      const totCost  = periodRows.reduce((s,r)=>s+Number(r.totalEmployerCost||0),0);
+      const empRows  = periodRows.map(r => {
+        const emp = _prEmps.find(e=>e.id===r.employeeId)||{name:r.employeeId};
+        const ytd = r._ytd || {};
+        return '<tr style="font-size:11px;border-bottom:1px solid var(--border)">'
+          + '<td style="padding:4px 8px">' + esc(emp.name||r.employeeId) + '</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + (Number(r.hoursRegular||0)+Number(r.hoursOT133||0)+Number(r.hoursOT155||0)).toFixed(1) + 'h</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + kr(r.grossTotal||0) + '</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + kr(r.stadgreidslaSkattur||0) + '</td>'
+          + '<td style="padding:4px 8px;text-align:right;font-weight:600">' + kr(r.netPay||0) + '</td>'
+          + '<td style="padding:4px 8px;text-align:right;color:var(--muted);font-size:10px">' + kr(ytd.grossTotal||0) + '</td>'
+          + '<td style="padding:4px 8px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prDownloadPayslip('' + r.employeeId + '','' + period + '')">📄</button></td>'
+          + '</tr>';
+      }).join('');
+      return '<div style="margin-bottom:16px">'
+        + '<div style="font-weight:700;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline">'
+        + '<span>' + period + '</span>'
+        + '<span style="font-size:11px;color:var(--muted)">Gross: ' + kr(totGross) + ' · Net: ' + kr(totNet) + ' · Total cost: ' + kr(totCost) + '</span>'
+        + '</div>'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<thead><tr style="font-size:10px;color:var(--muted)">'
+        + '<th style="text-align:left;padding:3px 8px">Employee</th><th style="text-align:right;padding:3px 8px">Hours</th>'
+        + '<th style="text-align:right;padding:3px 8px">Gross</th><th style="text-align:right;padding:3px 8px">Tax</th>'
+        + '<th style="text-align:right;padding:3px 8px">Net</th><th style="text-align:right;padding:3px 8px">YTD gross</th>'
+        + '<th style="padding:3px 8px"></th></tr></thead><tbody>' + empRows + '</tbody></table></div>';
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="empty-note" style="color:var(--red)">' + e.message + '</div>';
+  }
+}
+
+async function prClosePeriod() {
+  const period = document.getElementById('prClosePeriod').value;
+  if (!period) return;
+  const msg = document.getElementById('prCloseMsg');
+  msg.textContent = 'Closing period...';
+  try {
+    const res = await apiPost('closePayPeriod', { period, by: getUser()?.name||'admin' });
+    msg.textContent = 'Closed: '+res.rows+' payslips ✓';
+    setTimeout(()=>{ msg.textContent=''; }, 4000);
+    prLoadPeriods();
+  } catch(e) { msg.textContent = e.message; msg.style.color='var(--red)'; }
+}
+
+async function prDownloadPayslip(employeeId, period) {
+  try {
+    const res = await apiPost('generatePayslipData', { employeeId, period });
+    const html = renderPayslip(res.payslip);
+    const win = window.open('', '_blank');
+    win.document.write('<html><head><title>Payslip '+period+'</title>'
+      + '<style>body{font-family:system-ui,sans-serif;padding:20px;background:#fff;color:#000}'
+      + '.req-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#666}'
+      + '</style></head><body>'+html+'<script>window.print()<\/script></body></html>');
+    win.document.close();
+  } catch(e) { alert(e.message); }
+}
+
+// ── Launamiðlar ────────────────────────────────────────────────
+async function prGenerateXml() {
+  const year = document.getElementById('prXmlYear').value;
+  const out  = document.getElementById('prXmlOutput');
+  const dl   = document.getElementById('prXmlDownload');
+  out.textContent = 'Generating...';
+  out.style.display = 'block';
+  dl.style.display  = 'none';
+  try {
+    const res = await apiPost('generateLaunamidlar', { year });
+    out.textContent = res.xml;
+    // Create download link
+    const blob = new Blob([res.xml], {type:'application/xml'});
+    dl.href = URL.createObjectURL(blob);
+    dl.download = 'launamidlar-'+year+'.xml';
+    dl.style.display = 'inline-block';
+  } catch(e) { out.textContent = 'Error: '+e.message; }
+}
+
+// Auto-load employees when payroll tab is first shown
+const _origShowTab = showTab;
+window.showTab = function(tab, sub) {
+  _origShowTab(tab, sub);
+  if (tab==='payroll') {
+    applyStrings(document.getElementById('tab-payroll'));
+    prShowSub('employees');
+  }
+};
+
 </script>
 </body>
 </html>
