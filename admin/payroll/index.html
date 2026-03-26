@@ -339,7 +339,7 @@ async function prLoadPeriods(){
           +'<td style="text-align:right">'+kr(r.grossTotal)+'</td>'
           +'<td style="text-align:right">'+kr(r.taxWithheld||r.stadgreidslaSkattur||0)+'</td>'
           +'<td style="text-align:right">'+kr(r.netPay)+'</td>'
-          +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px" onclick="prViewPayslip('+epid+','+epf+','+ept+')">PDF</button></td></tr>';
+          +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px" onclick="prViewPayslipRow('+epid+','+epf+','+ept+','+JSON.stringify(r)+')" data-s="payroll.payslip"></button></td></tr>';
       }).join('');
       var pp=JSON.stringify(p);
       return '<div class="period-card">'
@@ -422,7 +422,7 @@ function prRecalcPreview(empId){
   var calc=window.calculatePayslip(d.emp,hrs*60,ot1*60,ot2*60,manual);
   d.regularMins=hrs*60;d.ot1Mins=ot1*60;d.ot2Mins=ot2*60;d.manualLines=manual;d.calc=calc;
   var el=document.getElementById('pCalc_'+empId);
-  if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong> · Tax: '+kr(calc.taxAfterCredit)+' · Pension: '+kr(calc.employeePension)+' · Orlof í banki: '+kr(calc.orlofIBanki)+' · <strong>Net: '+kr(calc.netPay)+'</strong>';
+  if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong> · Tax: '+kr(calc.taxAfterCredit)+' · Pension: '+kr(calc.employeePension)+' · Orlof í banki: '+kr(calc.orlofIBanki)+' · <strong>Net: '+kr(calc.netPay)+'</strong>'+' &nbsp;<button class="btn btn-secondary" style="font-size:10px;padding:2px 8px;margin-left:8px" onclick="prPreviewPayslipLocal('+JSON.stringify(empId)+')">&#128196; Preview PDF</button>';
 }
 function prAddManualLine(empId){
   var c=document.getElementById('pManual_'+empId);if(!c)return;
@@ -459,22 +459,64 @@ async function prApprovePeriod(){
     setTimeout(function(){prLoadPeriods();},1200);
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
-async function prViewPayslip(employeeId,periodFrom,periodTo){
+async function prViewPayslip(employeeId,periodFrom,periodTo,rowData){
+  // rowData is passed directly from the closed period list — no API call needed
   try{
-    var res=await apiPost('generatePayslipData',{employeeId:employeeId,period:periodFrom,periodFrom:periodFrom,periodTo:periodTo});
-    var psl=res.payslip||res,emp=psl.employee||{},calc=psl.calc;
-    if(!calc&&psl.pay){
-      calc={grossTotal:psl.pay.grossTotal||0,dagvinna:psl.pay.grossWage||0,orlofslaun:psl.pay.orlofsfe||0,
-        employeePension:psl.pay.lifeyrir||0,taxAfterCredit:psl.pay.stadgreidslaSkattur||0,
-        netPay:psl.pay.netPay||0,regularHrs:(psl.pay.grossWage||(emp.baseRateKr||1))/(emp.baseRateKr||1),
-        ot1Hrs:0,ot2Hrs:0,manualLines:[],orlofsRate:0.1017,
-        pensionRate:emp.lifeyrir||0.04,taxBase:psl.pay.grossTotal||0,taxGross:psl.pay.stadgreidslaSkattur||0,
-        personalCredit:68681,orlofIBanki:psl.pay.orlofIBanki||0,
-        totalDeductions:(psl.pay.lifeyrir||0)+(psl.pay.stadgreidslaSkattur||0)+(psl.pay.orlofIBanki||0),
-        sereignarsjodur:0,unionDues:0,sereignRate:0,unionRate:0,
-        employerPensionAmt:0,endurhaefingarsjodur:0};
+    var calc=null,emp={},ytd={},employer={},paymentDate='',slipNumber='';
+    if(rowData){
+      emp={name:rowData.employeeName||'',kt:rowData.kt||'',
+        title:rowData.title||'',bankAccount:rowData.bankAccount||'',
+        orlofsreikningur:rowData.orlofsreikningur||'',
+        baseRateKr:rowData.baseRateKr||0,
+        lifeyrir:rowData.pensionRate||0.04,
+        personuafslattr:rowData.personuafslattr||68681};
+      paymentDate=rowData.paymentDate||'';
+      slipNumber=rowData.slipNumber||'';
+      // Reconstruct calc from stored row values
+      calc={
+        grossTotal:rowData.grossTotal||0,
+        dagvinna:rowData.dagvinna||rowData.grossTotal||0,
+        eftirvinna1:rowData.eftirvinna1||0,eftirvinna2:rowData.eftirvinna2||0,
+        orlofslaun:rowData.orlofslaun||0,orlofsRate:rowData.orlofsRate||0.1017,
+        manualLines:rowData.manualLines||[],manualTotal:rowData.manualTotal||0,
+        employeePension:rowData.employeePension||0,
+        sereignarsjodur:rowData.sereignarsjodur||0,sereignRate:rowData.sereignRate||0,
+        unionDues:rowData.unionDues||0,unionRate:rowData.unionRate||0,
+        taxBase:rowData.taxBase||0,taxGross:rowData.taxGross||0,
+        personalCredit:rowData.personalCredit||68681,
+        taxAfterCredit:rowData.taxWithheld||0,
+        orlofIBanki:rowData.orlofIBanki||0,
+        totalDeductions:rowData.totalDeductions||0,
+        netPay:rowData.netPay||0,
+        pensionRate:rowData.pensionRate||0.04,
+        regularHrs:rowData.regularHrs||(rowData.regularMinutes||0)/60,
+        ot1Hrs:rowData.ot1Hrs||(rowData.ot1Minutes||0)/60,
+        ot2Hrs:rowData.ot2Hrs||(rowData.ot2Minutes||0)/60,
+        employerPensionAmt:rowData.employerPension||0,
+        endurhaefingarsjodur:rowData.endurhaefingarsjodur||0
+      };
+    } else {
+      // Fallback: try API
+      var res=await apiPost('generatePayslipData',{employeeId:employeeId,period:periodFrom,periodFrom:periodFrom,periodTo:periodTo});
+      var psl=res.payslip||res;
+      emp=psl.employee||{};calc=psl.calc;employer=psl.employer||{};
+      paymentDate=psl.paymentDate||'';slipNumber=psl.slipNumber||'';ytd=psl.ytd||{};
+      if(!calc&&psl.pay){
+        calc={grossTotal:psl.pay.grossTotal||0,dagvinna:psl.pay.grossWage||0,
+          orlofslaun:psl.pay.orlofsfe||0,orlofsRate:0.1017,
+          employeePension:psl.pay.lifeyrir||0,taxAfterCredit:psl.pay.stadgreidslaSkattur||0,
+          netPay:psl.pay.netPay||0,regularHrs:(psl.pay.grossWage||0)/(emp.baseRateKr||1),
+          ot1Hrs:0,ot2Hrs:0,manualLines:[],pensionRate:emp.lifeyrir||0.04,
+          taxBase:psl.pay.grossTotal||0,taxGross:psl.pay.stadgreidslaSkattur||0,
+          personalCredit:68681,orlofIBanki:psl.pay.orlofIBanki||0,
+          totalDeductions:(psl.pay.lifeyrir||0)+(psl.pay.stadgreidslaSkattur||0)+(psl.pay.orlofIBanki||0),
+          eftirvinna1:0,eftirvinna2:0,sereignarsjodur:0,unionDues:0,sereignRate:0,unionRate:0,
+          employerPensionAmt:0,endurhaefingarsjodur:0};
+      }
     }
-    var html=renderPayslip({employee:emp,calc:calc,ytd:psl.ytd||{},period:periodFrom,employer:psl.employer||{},paymentDate:psl.paymentDate||'',slipNumber:psl.slipNumber||''});
+    if(!calc){showToast('No payslip data available','err');return;}
+    var html=renderPayslip({employee:emp,calc:calc,ytd:ytd,period:periodFrom,
+      employer:employer,paymentDate:paymentDate,slipNumber:slipNumber});
     var blob=new Blob([html],{type:'text/html'});
     window.open(URL.createObjectURL(blob),'_blank');
   }catch(e){showToast(e.message,'err');}
@@ -515,6 +557,21 @@ async function prLoadLaunamidlar(){
       dl.href=URL.createObjectURL(blob);dl.download='launamidlar-'+year+'.xml';dl.style.display='inline-block';
     }
   }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
+}
+function prPreviewPayslipLocal(empId){
+  var d=(_previewData.employees||{})[empId];if(!d||!d.calc){showToast('Run preview first','err');return;}
+  var cfg=window.PAYROLL_CONFIG||{};
+  var html=renderPayslip({
+    employee:d.emp,calc:d.calc,ytd:{},
+    period:_previewData.from||'',
+    employer:{employerName:'',employerKt:'',employerAddress:''},
+    paymentDate:_previewData.payDate||'',slipNumber:'PREVIEW'
+  });
+  var blob=new Blob([html],{type:'text/html'});
+  window.open(URL.createObjectURL(blob),'_blank');
+}
+function prViewPayslipRow(employeeId,periodFrom,periodTo,rowData){
+  prViewPayslip(employeeId,periodFrom,periodTo,rowData);
 }
 (function(){var p=new URLSearchParams(window.location.search);prTab(p.get('tab')||'employees');})();
 </script>
