@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ýmir — Payroll</title>
   <link rel="stylesheet" href="../../shared/style.css">
-  <script src="../../shared/api.js"><\/script>
-  <script src="../../shared/strings.js"><\/script>
-  <script src="../../shared/ui.js"><\/script>
-  <script src="../../shared/payroll.js"><\/script>
+  <script src="../../shared/api.js"></script>
+  <script src="../../shared/strings.js"></script>
+  <script src="../../shared/ui.js"></script>
+  <script src="../../shared/payroll.js"></script>
   <style>
     .pr-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
     .pr-tab{padding:6px 16px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .15s}
@@ -26,7 +26,6 @@
     .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
     .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
     .ts-table tr:last-child td{border-bottom:none}
-    .ts-locked{color:var(--muted);font-size:10px}
     .period-card{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
     .period-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);cursor:pointer}
     .period-title{font-weight:600;font-size:13px}.period-meta{font-size:11px;color:var(--muted)}
@@ -61,16 +60,26 @@
       <button class="pr-tab"        data-tab="periods"     onclick="prTab('periods')"     data-s="payroll.tabTimesheets"></button>
       <button class="pr-tab"        data-tab="launamidlar" onclick="prTab('launamidlar')" data-s="payroll.tabLaunamidlar"></button>
     </div>
-    <div id="pr-employees"><div id="prEmpList"><div class="empty-note" data-s="lbl.loading"></div></div></div>
+
+    <!-- EMPLOYEES -->
+    <div id="pr-employees">
+      <div id="prEmpList"><div class="empty-note" data-s="lbl.loading"></div></div>
+    </div>
+
+    <!-- TIME REPORTING -->
     <div id="pr-timesheets" class="hidden">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <select id="prTsEmp" onchange="prLoadTimesheets()" style="min-width:160px"><option value="">All staff</option></select>
+        <select id="prTsEmp" onchange="prLoadTimesheets()" style="min-width:160px">
+          <option value="">All staff</option>
+        </select>
         <input id="prTsFrom" type="date" onchange="prLoadTimesheets()" style="min-width:140px">
         <span style="font-size:12px;color:var(--muted)">&#8211;</span>
         <input id="prTsTo" type="date" onchange="prLoadTimesheets()" style="min-width:140px">
       </div>
       <div id="prTsList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
+
+    <!-- TIMESHEETS / LAUNASEDLAR -->
     <div id="pr-periods" class="hidden">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div class="sec-lbl" data-s="payroll.definePeriod"></div>
@@ -95,6 +104,8 @@
       <div class="sec-lbl" style="margin-top:20px">Past periods / Fyrri tímabil</div>
       <div id="prPeriodsList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
+
+    <!-- LAUNAMIDLAR -->
     <div id="pr-launamidlar" class="hidden">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <label style="font-size:12px;font-weight:600">Year</label>
@@ -105,27 +116,27 @@
       <div id="prLmTable"><div class="empty-note">Select year and generate.</div></div>
     </div>
   </main>
-</div><script>
+</div>
+<script>
 var user=requireAuth(isAdmin);
 if(user){buildHeader('payroll');applyStrings(document.body);}
 var _members=[],_empData={},_empByMember={},_tsEditId=null,_previewData={},_closedPeriods=new Set();
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
-function fmtDate(d){return d?new Date(d).toLocaleDateString('is-IS',{day:'2-digit',month:'short',year:'numeric'}):'–';}
-function fmtTime(d){return d?new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'–';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
 
-/* ── Tab router ─────────────────────────────────────────────────────────── */
 function prTab(tab){
-  ['employees','timesheets','periods','launamidlar'].forEach(function(t){document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);});
+  ['employees','timesheets','periods','launamidlar'].forEach(function(t){
+    document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);
+  });
   document.querySelectorAll('.pr-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
   var url=new URL(window.location.href);url.searchParams.set('tab',tab);history.replaceState(null,'',url);
-  if(tab==='employees') prLoadEmployees();
+  if(tab==='employees')  prLoadEmployees();
   if(tab==='timesheets') prInitTimesheets();
-  if(tab==='periods') prLoadPeriods();
+  if(tab==='periods')    prLoadPeriods();
 }
 
-/* ═══════════════════ EMPLOYEES ════════════════════════════════════════════ */
+/* === EMPLOYEES === */
 async function prLoadEmployees(){
   var list=document.getElementById('prEmpList');
   list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
@@ -135,41 +146,50 @@ async function prLoadEmployees(){
     _empData={};_empByMember={};
     (res[1].employees||[]).forEach(function(e){_empData[e.id]=e;if(e.memberId)_empByMember[e.memberId]=e;});
     if(!_members.length){list.innerHTML='<div class="empty-note">No staff found.</div>';return;}
-    list.innerHTML=_members.map(function(m){var emp=_empByMember[m.id]||null;var act=emp&&(emp.payrollEnabled===true||emp.payrollEnabled==='true');return prEmpRowHTML(m,emp,act);}).join('');
+    list.innerHTML=_members.map(function(m){
+      var emp=_empByMember[m.id]||null;
+      var act=emp&&(emp.payrollEnabled===true||emp.payrollEnabled==='true');
+      return prEmpRowHTML(m,emp,act);
+    }).join('');
     applyStrings(list);
   }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 function prEmpRowHTML(m,emp,act){
   var mid=_e(m.id);
   var cfg=window.PAYROLL_CONFIG||{};
-  return '<div class="emp-row" id="emprow_'+mid+'">'
-    +'<span class="emp-name">'+_e(m.name)+'</span>'
-    +'<span class="emp-kt">'+_e(m.kennitala||'')+'</span>'
-    +'<span class="'+(act?'pr-badge-on':'pr-badge-off')+'">'+(act?s('payroll.tabEmployees'):s('payroll.notEnabled'))+'</span>'
-    +'<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prToggleEdit('+JSON.stringify(m.id)+')" data-s="btn.edit"></button>'
-    +'</div>'
-    +'<div id="empedit_'+mid+'" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
-    +'<strong style="font-size:13px">'+_e(m.name)+'</strong>'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">'
-    +'<input type="checkbox" id="prEnabled_'+mid+'" '+(act?'checked ':'')+' onchange="prToggleFields('+JSON.stringify(m.id)+')">'
-    +'<span data-s="payroll.enablePayroll"></span></label></div>'
-    +'<div class="emp-fields" id="prFields_'+mid+'"'+(!act?' style="display:none"':'')+' >'
-    +'<div class="field"><label>Title</label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title?emp.title:'')+'" placeholder="e.g. Frístundaleiðbeinandi"></div>'
-    +'<div class="field"><label>Base rate (kr/hr)</label><input id="prRate_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.baseRateKr?emp.baseRateKr:''))+'"></div>'
-    +'<div class="field"><label>Bank account</label><input id="prBank_'+mid+'" type="text" value="'+_e(emp&&emp.bankAccount?emp.bankAccount:'')+'" placeholder="0101-26-123456"></div>'
-    +'<div class="field"><label>Orlofsreikningur</label><input id="prOrlof_'+mid+'" type="text" value="'+_e(emp&&emp.orlofsreikningur?emp.orlofsreikningur:'')+'"></div>'
-    +'<div class="field"><label>Union / Stéttarfélag</label><input id="prUnion_'+mid+'" type="text" value="'+_e(emp&&emp.union?emp.union:'')+'" placeholder="VR, SGS…"></div>'
-    +'<div class="field"><label>Lífeyrir % (employee)</label><input id="prLifeyrir_'+mid+'" type="number" min="0" max="15" step="0.5" value="'+((emp&&emp.lifeyrir?emp.lifeyrir:cfg.employeePension||0.04)*100).toFixed(1)+'"></div>'
-    +'<div class="field"><label>Séreign %</label><input id="prSereign_'+mid+'" type="number" min="0" max="4" step="0.5" value="'+((emp&&emp.sereignarsjodur?emp.sereignarsjodur:0)*100).toFixed(1)+'"></div>'
-    +'<div class="field"><label>Persónuafsláttur (kr/mán)</label><input id="prPersona_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.personuafslattr!=null?emp.personuafslattr:(cfg.personuafslattr||68681)))+'"></div>'
-    +'<div class="field"><label>Union dues rate %</label><input id="prUnionDues_'+mid+'" type="number" min="0" max="5" step="0.1" value="'+((emp&&emp.unionDuesRate?emp.unionDuesRate:cfg.unionDuesRate||0)*100).toFixed(1)+'"></div>'
-    +'</div>'
-    +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="btn btn-primary" style="font-size:11px" onclick="prSaveEmployee('+JSON.stringify(m.id)+')" data-s="btn.save"></button>'
-    +'<button class="btn btn-secondary" style="font-size:11px" onclick="prToggleEdit('+JSON.stringify(m.id)+')" data-s="btn.cancel"></button>'
-    +'<span id="prMsg_'+mid+'" style="font-size:11px;margin-left:4px"></span>'
-    +'</div></div>';
+  var defPension=((emp&&emp.lifeyrir!=null?emp.lifeyrir:cfg.employeePension||0.04)*100).toFixed(1);
+  var defSereign=((emp&&emp.sereignarsjodur?emp.sereignarsjodur:0)*100).toFixed(1);
+  var defPersona=_e(String(emp&&emp.personuafslattr!=null?emp.personuafslattr:cfg.personuafslattr||68681));
+  var defUnionDues=((emp&&emp.unionDuesRate?emp.unionDuesRate:cfg.unionDuesRate||0)*100).toFixed(1);
+  var html='<div class="emp-row" id="emprow_'+mid+'">';
+  html+='<span class="emp-name">'+_e(m.name)+'</span>';
+  html+='<span class="emp-kt">'+_e(m.kennitala||'')+'</span>';
+  html+='<span class="'+(act?'pr-badge-on':'pr-badge-off')+'">'+(act?s('payroll.tabEmployees'):s('payroll.notEnabled'))+'</span>';
+  html+='<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prToggleEdit('+JSON.stringify(m.id)+')" data-s="btn.edit"></button>';
+  html+='</div>';
+  html+='<div id="empedit_'+mid+'" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px">';
+  html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  html+='<strong style="font-size:13px">'+_e(m.name)+'</strong>';
+  html+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">';
+  html+='<input type="checkbox" id="prEnabled_'+mid+'" '+(act?'checked':'')+' onchange="prToggleFields('+JSON.stringify(m.id)+')">';
+  html+='<span data-s="payroll.enablePayroll"></span></label></div>';
+  html+='<div class="emp-fields" id="prFields_'+mid+'"'+(!act?' style="display:none"':'')+' >';
+  html+='<div class="field"><label>Title / Starfsheiti</label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title?emp.title:'')+'"></div>';
+  html+='<div class="field"><label>Base rate (kr/hr)</label><input id="prRate_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.baseRateKr?emp.baseRateKr:''))+'"></div>';
+  html+='<div class="field"><label>Bank account / Launareikningur</label><input id="prBank_'+mid+'" type="text" value="'+_e(emp&&emp.bankAccount?emp.bankAccount:'')+'"></div>';
+  html+='<div class="field"><label>Orlofsreikningur</label><input id="prOrlof_'+mid+'" type="text" value="'+_e(emp&&emp.orlofsreikningur?emp.orlofsreikningur:'')+'"></div>';
+  html+='<div class="field"><label>Union / Stéttarfélag</label><input id="prUnion_'+mid+'" type="text" value="'+_e(emp&&emp.union?emp.union:'')+'"></div>';
+  html+='<div class="field"><label>Lífeyrir % (employee)</label><input id="prLifeyrir_'+mid+'" type="number" min="0" max="15" step="0.5" value="'+defPension+'"></div>';
+  html+='<div class="field"><label>Séreign %</label><input id="prSereign_'+mid+'" type="number" min="0" max="4" step="0.5" value="'+defSereign+'"></div>';
+  html+='<div class="field"><label>Persónuafsláttur (kr/mán)</label><input id="prPersona_'+mid+'" type="number" min="0" value="'+defPersona+'"></div>';
+  html+='<div class="field"><label>Union dues %</label><input id="prUnionDues_'+mid+'" type="number" min="0" max="5" step="0.1" value="'+defUnionDues+'"></div>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:8px;margin-top:10px">';
+  html+='<button class="btn btn-primary" style="font-size:11px" onclick="prSaveEmployee('+JSON.stringify(m.id)+')" data-s="btn.save"></button>';
+  html+='<button class="btn btn-secondary" style="font-size:11px" onclick="prToggleEdit('+JSON.stringify(m.id)+')" data-s="btn.cancel"></button>';
+  html+='<span id="prMsg_'+mid+'" style="font-size:11px;margin-left:4px"></span>';
+  html+='</div></div>';
+  return html;
 }
 function prToggleEdit(mid){var el=document.getElementById('empedit_'+mid);if(!el)return;var was=el.classList.toggle('hidden');if(!was)applyStrings(el);}
 function prToggleFields(mid){var cb=document.getElementById('prEnabled_'+mid);var f=document.getElementById('prFields_'+mid);if(f)f.style.display=(cb&&cb.checked)?'':'none';}
@@ -180,7 +200,6 @@ async function prSaveEmployee(memberId){
   var empId=existing?existing.id:('emp_'+Date.now().toString(36));
   function fv(pre){var el=document.getElementById(pre+'_'+memberId);return el?el.value.trim():'';}
   function fn(pre){var el=document.getElementById(pre+'_'+memberId);return el?+(el.value):0;}
-  var cfg=window.PAYROLL_CONFIG||{};
   var payload={id:empId,memberId:memberId,name:member.name,kt:member.kennitala||'',
     title:fv('prTitle'),baseRateKr:fn('prRate'),bankAccount:fv('prBank'),
     orlofsreikningur:fv('prOrlof'),union:fv('prUnion'),
@@ -195,7 +214,9 @@ async function prSaveEmployee(memberId){
     setTimeout(function(){prLoadEmployees();},800);
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
-/* ═══════════════════ TIME REPORTING ══════════════════════════════════════ */
+</script>
+<script>
+/* === TIME REPORTING === */
 async function prInitTimesheets(){
   var sel=document.getElementById('prTsEmp');
   if(sel&&sel.options.length<=1){
@@ -206,12 +227,10 @@ async function prInitTimesheets(){
       });
     }catch(e){}
   }
-  // Default to current month: first day to today
-  var now=new Date();
-  var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
+  var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
   var fromEl=document.getElementById('prTsFrom'),toEl=document.getElementById('prTsTo');
-  if(fromEl&&!fromEl.value) fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value) toEl.value=now.toISOString().slice(0,10);
+  if(fromEl&&!fromEl.value)fromEl.value=y+'-'+mo+'-01';
+  if(toEl&&!toEl.value)toEl.value=now.toISOString().slice(0,10);
   prLoadTimesheets();
 }
 async function prLoadTimesheets(){
@@ -222,11 +241,10 @@ async function prLoadTimesheets(){
   list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);_tsEditId=null;
   try{
     var params={};
-    if(empId) params.employeeId=empId;
-    if(from)  params.from=from;
-    if(to)    params.to=to;
-    // Fallback: use period param if API doesn't support from/to
-    if(from&&to) params.period=from.slice(0,7);
+    if(empId)params.employeeId=empId;
+    if(from)params.from=from;
+    if(to)params.to=to;
+    if(from)params.period=from.slice(0,7);
     var res=await apiGet('getTimeEntries',params);
     var entries=res.entries||res.timeEntries||[];
     if(!entries.length){list.innerHTML='<div class="empty-note">No entries found.</div>';return;}
@@ -239,31 +257,26 @@ async function prLoadTimesheets(){
     list.innerHTML=Object.keys(byEmp).map(function(eid){
       var grp=byEmp[eid];
       var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+      var rows=grp.entries.map(function(entry){
+        var clockIn=entry.clockIn?new Date(entry.clockIn):null;
+        var clockOut=entry.timestamp?new Date(entry.timestamp):null;
+        var dateStr=clockIn?clockIn.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
+        var inT=clockIn?clockIn.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
+        var outT=clockOut?clockOut.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
+        var dur=entry.durationMinutes?fmtMins(+entry.durationMinutes):'--';
+        var src=entry.source==='admin'?'&#9998; admin':'staff';
+        var edited=entry.originalTimestamp?'<span style="font-size:9px;color:var(--muted);margin-left:4px">edited</span>':'';
+        var eid2=JSON.stringify(entry.id),ets=JSON.stringify(entry.timestamp||''),emins=+(entry.durationMinutes||0);
+        return '<tr data-tsid="'+_e(entry.id)+'"><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+src+'</td>'
+          +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prEditTs('+eid2+','+ets+','+emins+')">Edit</button></td></tr>';
+      }).join('');
       return '<div style="margin-bottom:20px">'
         +'<div style="font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between">'
-        +'<span>'+_e(grp.name)+'</span>'
-        +'<span style="font-size:11px;color:var(--muted)">'+fmtMins(tot)+' total</span></div>'
-        +'<table class="ts-table"><thead><tr>'
-        +'<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Source</th><th></th>'
-        +'</tr></thead><tbody id="tsBody_'+_e(eid)+'">'
-        +grp.entries.map(function(entry){return prTsRow(entry);}).join('')
-        +'</tbody></table></div>';
+        +'<span>'+_e(grp.name)+'</span><span style="font-size:11px;color:var(--muted)">'+fmtMins(tot)+' total</span></div>'
+        +'<table class="ts-table"><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Source</th><th></th></tr></thead>'
+        +'<tbody id="tsBody_'+_e(eid)+'">'+rows+'</tbody></table></div>';
     }).join('');
   }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
-}
-function prTsRow(entry){
-  var clockIn =entry.clockIn  ? new Date(entry.clockIn)  : null;
-  var clockOut=entry.timestamp? new Date(entry.timestamp) : null;
-  var dateStr =clockIn ? clockIn.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '–';
-  var inT  =clockIn  ? clockIn.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '–';
-  var outT =clockOut ? clockOut.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '–';
-  var dur  =entry.durationMinutes ? fmtMins(+entry.durationMinutes) : '–';
-  var src  =entry.source==='admin'?'&#9998;&#65039; admin':'staff';
-  var edited=entry.originalTimestamp?'<span style="font-size:9px;color:var(--muted);margin-left:4px">edited</span>':'';
-  return '<tr data-tsid="'+_e(entry.id)+'">'
-    +'<td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+src+'</td>'
-    +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prEditTs('+JSON.stringify(entry.id)+','+JSON.stringify(entry.timestamp||'')+','+(+(entry.durationMinutes||0))+')">Edit</button></td>'
-    +'</tr>';
 }
 function prEditTs(id,currentTs,currentMins){
   document.querySelectorAll('.ts-edit-row').forEach(function(r){r.remove();});
@@ -272,46 +285,37 @@ function prEditTs(id,currentTs,currentMins){
   row.style.display='none';_tsEditId=id;
   var tsShort=currentTs?currentTs.substring(0,16):'';
   var editRow=document.createElement('tr');editRow.className='ts-edit-row';
+  var sid=JSON.stringify(id);
   editRow.innerHTML='<td colspan="6" style="padding:8px;background:var(--surface)">'
     +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
     +'<label style="font-size:11px">Clock-out</label>'
     +'<input id="prEditTs_'+_e(id)+'" type="datetime-local" value="'+_e(tsShort)+'" style="font-size:11px">'
     +'<label style="font-size:11px">Mins</label>'
     +'<input id="prEditMins_'+_e(id)+'" type="number" value="'+currentMins+'" min="0" style="width:70px;font-size:11px">'
-    +'<button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="prSaveTs('+JSON.stringify(id)+')" data-s="btn.save"></button>'
+    +'<button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="prSaveTs('+sid+')" data-s="btn.save"></button>'
     +'<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prLoadTimesheets()" data-s="btn.cancel"></button>'
     +'</div></td>';
   row.parentNode.insertBefore(editRow,row.nextSibling);applyStrings(editRow);
 }
 async function prSaveTs(id){
-  var tsEl=document.getElementById('prEditTs_'+id);
-  var minsEl=document.getElementById('prEditMins_'+id);
+  var tsEl=document.getElementById('prEditTs_'+id),minsEl=document.getElementById('prEditMins_'+id);
   if(!tsEl)return;
-  var newTs=tsEl.value?new Date(tsEl.value).toISOString():'';
-  var newMins=minsEl?+(minsEl.value):0;
-  try{
-    await apiPost('adminEditTime',{id:id,timestamp:newTs,durationMinutes:newMins,note:'admin edit'});
-    showToast(s('toast.saved'));prLoadTimesheets();
-  }catch(e){showToast(e.message,'err');}
+  var newTs=tsEl.value?new Date(tsEl.value).toISOString():'',newMins=minsEl?+(minsEl.value):0;
+  try{await apiPost('adminEditTime',{id:id,timestamp:newTs,durationMinutes:newMins,note:'admin edit'});showToast(s('toast.saved'));prLoadTimesheets();}
+  catch(e){showToast(e.message,'err');}
 }
-/* ═══════════════════ TIMESHEETS / LAUNASEÐLAR ════════════════════════════ */
+</script>
+<script>
+/* === PERIODS / LAUNASEDLAR === */
 async function prLoadPeriods(){
   var list=document.getElementById('prPeriodsList');
   list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
-  // Default period dates to current month if blank
-  var now=new Date();
-  var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
+  var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
   var lastDay=new Date(y,now.getMonth()+1,0).getDate();
-  var fromEl=document.getElementById('prPeriodFrom');
-  var toEl  =document.getElementById('prPeriodTo');
-  var payEl =document.getElementById('prPaymentDate');
-  if(fromEl&&!fromEl.value) fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value)     toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
-  if(payEl&&!payEl.value){
-    // Default payment to 1st of next month
-    var nextMo=new Date(y,now.getMonth()+1,1);
-    payEl.value=nextMo.toISOString().slice(0,10);
-  }
+  var fromEl=document.getElementById('prPeriodFrom'),toEl=document.getElementById('prPeriodTo'),payEl=document.getElementById('prPaymentDate');
+  if(fromEl&&!fromEl.value)fromEl.value=y+'-'+mo+'-01';
+  if(toEl&&!toEl.value)toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
+  if(payEl&&!payEl.value){var nm=new Date(y,now.getMonth()+1,1);payEl.value=nm.toISOString().slice(0,10);}
   try{
     var res=await apiGet('getPayroll');
     var rows=res.payroll||[];
@@ -329,15 +333,15 @@ async function prLoadPeriods(){
       var totN=pr.reduce(function(s,r){return s+(+(r.netPay||0));},0);
       var isApproved=pr[0]&&pr[0].approved;
       var empRows=pr.map(function(r){
+        var epid=JSON.stringify(r.employeeId),epf=JSON.stringify(r.period||r.periodFrom),ept=JSON.stringify(r.periodTo||'');
         return '<tr><td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
           +'<td style="text-align:right">'+_e(r.totalHours||'–')+'</td>'
           +'<td style="text-align:right">'+kr(r.grossTotal)+'</td>'
           +'<td style="text-align:right">'+kr(r.taxWithheld||r.stadgreidslaSkattur||0)+'</td>'
           +'<td style="text-align:right">'+kr(r.netPay)+'</td>'
-          +'<td style="text-align:right">'
-          +'<button class="btn btn-secondary" style="font-size:10px;padding:2px 6px" onclick="prViewPayslip('+JSON.stringify(r.employeeId)+','+JSON.stringify(r.period||r.periodFrom)+','+JSON.stringify(r.periodTo||'')+')">PDF</button>'
-          +'</td></tr>';
+          +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px" onclick="prViewPayslip('+epid+','+epf+','+ept+')">PDF</button></td></tr>';
       }).join('');
+      var pp=JSON.stringify(p);
       return '<div class="period-card">'
         +'<div class="period-head" onclick="this.nextElementSibling.classList.toggle('hidden')">'
         +'<span class="period-title">'+_e(p)+'</span>'
@@ -352,134 +356,101 @@ async function prLoadPeriods(){
         +'<th style="text-align:right">Net</th><th></th>'
         +'</tr></thead><tbody>'+empRows+'</tbody></table>'
         +'<div class="action-bar" style="margin-top:8px">'
-        +'<button class="btn btn-secondary" style="font-size:11px" onclick="prExportPeriodXml('+JSON.stringify(p)+')" data-s="payroll.exportXml"></button>'
-        +'</div>'
-        +'</div></div>';
+        +'<button class="btn btn-secondary" style="font-size:11px" onclick="prExportPeriodXml('+pp+')" data-s="payroll.exportXml"></button>'
+        +'</div></div></div>';
     }).join('');
     applyStrings(list);
   }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 
-/* ── Build preview: fetch hours, present per-employee confirmation UI ────── */
 async function prBuildPreview(){
   var from=document.getElementById('prPeriodFrom').value;
-  var to  =document.getElementById('prPeriodTo').value;
+  var to=document.getElementById('prPeriodTo').value;
   var payDate=document.getElementById('prPaymentDate').value;
   if(!from||!to){showToast('Set From and To dates first','err');return;}
-  var panel=document.getElementById('prPreviewPanel');
-  var listEl=document.getElementById('prPreviewList');
+  var panel=document.getElementById('prPreviewPanel'),listEl=document.getElementById('prPreviewList');
   listEl.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(listEl);
   panel.classList.remove('hidden');
   try{
-    // Load employees + time entries for the period
-    var [empRes,tsRes]=await Promise.all([
-      apiGet('getEmployees'),
-      apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)})
-    ]);
+    var empRes=await apiGet('getEmployees');
+    var tsRes=await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)});
     var employees=(empRes.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
     var entries=tsRes.entries||tsRes.timeEntries||[];
-    // Aggregate minutes per employee
     var minsByEmp={};
-    entries.forEach(function(e){
-      var k=e.employeeId;if(!k)return;
-      if(!minsByEmp[k])minsByEmp[k]=0;
-      minsByEmp[k]+=(+(e.durationMinutes||0));
-    });
+    entries.forEach(function(e){var k=e.employeeId;if(!k)return;if(!minsByEmp[k])minsByEmp[k]=0;minsByEmp[k]+=(+(e.durationMinutes||0));});
     if(!employees.length){listEl.innerHTML='<div class="empty-note">No payroll employees found.</div>';return;}
     _previewData={from:from,to:to,payDate:payDate,employees:{}};
     listEl.innerHTML=employees.map(function(emp){
-      var mins=minsByEmp[emp.id]||0;
-      var hrs=(mins/60).toFixed(2);
+      var mins=minsByEmp[emp.id]||0,hrs=(mins/60).toFixed(2);
       _previewData.employees[emp.id]={emp:emp,regularMins:mins,ot1Mins:0,ot2Mins:0,manualLines:[]};
+      var eid=JSON.stringify(emp.id);
       return '<div class="confirm-row" id="prevrow_'+_e(emp.id)+'">'
         +'<div class="confirm-emp">'+_e(emp.name)+'<div style="font-size:10px;color:var(--muted)">'+_e(emp.title||'')+'</div></div>'
         +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
         +'<label style="font-size:11px">Regular hrs</label>'
-        +'<input class="hrs-inp" id="pHrs_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="'+hrs+'" onchange="prRecalcPreview('+JSON.stringify(emp.id)+')">'
+        +'<input class="hrs-inp" id="pHrs_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="'+hrs+'" onchange="prRecalcPreview('+eid+')">'
         +'<label style="font-size:11px">OT 1.33×</label>'
-        +'<input class="hrs-inp" id="pOt1_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalcPreview('+JSON.stringify(emp.id)+')">'
+        +'<input class="hrs-inp" id="pOt1_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalcPreview('+eid+')">'
         +'<label style="font-size:11px">OT 1.55×</label>'
-        +'<input class="hrs-inp" id="pOt2_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalcPreview('+JSON.stringify(emp.id)+')">'
+        +'<input class="hrs-inp" id="pOt2_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalcPreview('+eid+')">'
         +'</div>'
         +'<div style="width:100%;margin-top:6px">'
         +'<div id="pManual_'+_e(emp.id)+'" style="margin-bottom:4px"></div>'
-        +'<button style="font-size:10px;color:var(--brass);background:none;border:none;cursor:pointer;padding:0" onclick="prAddManualLine('+JSON.stringify(emp.id)+')">+ Add line</button>'
+        +'<button style="font-size:10px;color:var(--brass);background:none;border:none;cursor:pointer;padding:0" onclick="prAddManualLine('+eid+')">+ Add line / bæta við línu</button>'
         +'</div>'
         +'<div id="pCalc_'+_e(emp.id)+'" style="width:100%;font-size:11px;color:var(--muted);margin-top:4px"></div>'
         +'</div>';
     }).join('');
-    // Show initial calculations
     employees.forEach(function(emp){prRecalcPreview(emp.id);});
   }catch(e){listEl.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 function prGetManualLines(empId){
-  var container=document.getElementById('pManual_'+empId);
-  if(!container)return[];
+  var c=document.getElementById('pManual_'+empId);if(!c)return[];
   var lines=[];
-  container.querySelectorAll('.ml-row').forEach(function(row){
-    var en=row.querySelector('.ml-en');var is=row.querySelector('.ml-is');var amt=row.querySelector('.ml-amt');
+  c.querySelectorAll('.ml-row').forEach(function(row){
+    var en=row.querySelector('.ml-en'),is=row.querySelector('.ml-is'),amt=row.querySelector('.ml-amt');
     if(en&&amt)lines.push({label:en.value,labelIS:is?is.value:en.value,amount:+(amt.value)||0});
   });
   return lines;
 }
 function prRecalcPreview(empId){
-  var emp=(_previewData.employees[empId]||{}).emp;if(!emp)return;
-  var hrsEl=document.getElementById('pHrs_'+empId);
-  var ot1El=document.getElementById('pOt1_'+empId);
-  var ot2El=document.getElementById('pOt2_'+empId);
-  var hrs=hrsEl?+(hrsEl.value)||0:0;
-  var ot1=ot1El?+(ot1El.value)||0:0;
-  var ot2=ot2El?+(ot2El.value)||0:0;
-  var manualLines=prGetManualLines(empId);
-  var calc=window.calculatePayslip(emp,hrs*60,ot1*60,ot2*60,manualLines);
-  if(_previewData.employees[empId]){
-    _previewData.employees[empId].regularMins=hrs*60;
-    _previewData.employees[empId].ot1Mins=ot1*60;
-    _previewData.employees[empId].ot2Mins=ot2*60;
-    _previewData.employees[empId].manualLines=manualLines;
-    _previewData.employees[empId].calc=calc;
-  }
+  var d=(_previewData.employees||{})[empId];if(!d)return;
+  var hrs=+(document.getElementById('pHrs_'+empId)||{value:0}).value||0;
+  var ot1=+(document.getElementById('pOt1_'+empId)||{value:0}).value||0;
+  var ot2=+(document.getElementById('pOt2_'+empId)||{value:0}).value||0;
+  var manual=prGetManualLines(empId);
+  var calc=window.calculatePayslip(d.emp,hrs*60,ot1*60,ot2*60,manual);
+  d.regularMins=hrs*60;d.ot1Mins=ot1*60;d.ot2Mins=ot2*60;d.manualLines=manual;d.calc=calc;
   var el=document.getElementById('pCalc_'+empId);
-  if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong> &nbsp;·&nbsp; '
-    +'Tax: '+kr(calc.taxAfterCredit)+' &nbsp;·&nbsp; '
-    +'Pension: '+kr(calc.employeePension)+' &nbsp;·&nbsp; '
-    +'Orlof í banki: '+kr(calc.orlofIBanki)+' &nbsp;·&nbsp; '
-    +'<strong>Net: '+kr(calc.netPay)+'</strong>';
+  if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong> · Tax: '+kr(calc.taxAfterCredit)+' · Pension: '+kr(calc.employeePension)+' · Orlof í banki: '+kr(calc.orlofIBanki)+' · <strong>Net: '+kr(calc.netPay)+'</strong>';
 }
 function prAddManualLine(empId){
-  var container=document.getElementById('pManual_'+empId);if(!container)return;
+  var c=document.getElementById('pManual_'+empId);if(!c)return;
   var row=document.createElement('div');row.className='ml-row';
+  var eid=JSON.stringify(empId);
   row.innerHTML='<input class="ml-en" type="text" placeholder="Description (EN)" style="font-size:11px">'
-    +'<input class="ml-is" type="text" placeholder="Lýsing (IS)" style="font-size:11px">'
-    +'<input class="ml-amt" type="number" placeholder="kr" style="font-size:11px;text-align:right" onchange="prRecalcPreview('+JSON.stringify(empId)+')">'
-    +'<button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px" onclick="this.parentNode.remove();prRecalcPreview('+JSON.stringify(empId)+')">×</button>';
-  container.appendChild(row);
+    +'<input class="ml-is" type="text" placeholder="Lýsing (ÍS)" style="font-size:11px">'
+    +'<input class="ml-amt" type="number" placeholder="kr" style="font-size:11px;text-align:right" onchange="prRecalcPreview('+eid+')">'
+    +'<button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0" onclick="this.parentNode.remove();prRecalcPreview('+eid+')">×</button>';
+  c.appendChild(row);
 }
-
-/* ── Approve & close period ──────────────────────────────────────────────── */
 async function prApprovePeriod(){
-  var from=document.getElementById('prPeriodFrom').value;
-  var to  =document.getElementById('prPeriodTo').value;
-  var payDate=document.getElementById('prPaymentDate').value;
+  var from=document.getElementById('prPeriodFrom').value,to=document.getElementById('prPeriodTo').value,payDate=document.getElementById('prPaymentDate').value;
   if(!from||!to){showToast('Define a period first','err');return;}
   var IS=(typeof getLang==='function')&&getLang()==='IS';
-  var confirmMsg=IS?'Samþykkja launaseðla allra starfsmanna og loka þessu tímabili?':'Approve payslips for all employees and close this period?';
-  if(!confirm(confirmMsg))return;
+  if(!confirm(IS?'Samþykkja launaseðla allra starfsmanna og loka þessu tímabili?':'Approve payslips for all employees and close this period?'))return;
   var msg=document.getElementById('prApproveMsg');
   if(msg){msg.textContent='Closing…';msg.style.color='var(--muted)';}
-  // Build payslip rows from preview data
   var rows=Object.keys(_previewData.employees||{}).map(function(empId){
     var d=_previewData.employees[empId];
     var calc=d.calc||window.calculatePayslip(d.emp,d.regularMins,d.ot1Mins,d.ot2Mins,d.manualLines);
     return {employeeId:empId,employeeName:d.emp.name,kt:d.emp.kt,
       periodFrom:from,periodTo:to,paymentDate:payDate,
-      regularMinutes:d.regularMins,ot1Minutes:d.ot1Mins,ot2Minutes:d.ot2Mins,
-      manualLines:d.manualLines,
+      regularMinutes:d.regularMins,ot1Minutes:d.ot1Mins,ot2Minutes:d.ot2Mins,manualLines:d.manualLines,
       grossTotal:calc.grossTotal,employeePension:calc.employeePension,
       taxWithheld:calc.taxAfterCredit,netPay:calc.netPay,
       orlofIBanki:calc.orlofIBanki,employerPension:calc.employerPensionAmt,
-      totalDeductions:calc.totalDeductions,
-      approved:true};
+      totalDeductions:calc.totalDeductions,approved:true};
   });
   try{
     var res=await apiPost('closePayPeriod',{periodFrom:from,periodTo:to,paymentDate:payDate,by:user?user.name:'admin',rows:rows});
@@ -488,36 +459,26 @@ async function prApprovePeriod(){
     setTimeout(function(){prLoadPeriods();},1200);
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
-
-/* ── View payslip (opens print-ready HTML in new tab) ───────────────────── */
 async function prViewPayslip(employeeId,periodFrom,periodTo){
   try{
     var res=await apiPost('generatePayslipData',{employeeId:employeeId,period:periodFrom,periodFrom:periodFrom,periodTo:periodTo});
-    // Use our local renderPayslip with the calc engine
-    var psl=res.payslip||res;
-    var emp=psl.employee||{};
-    var calc=psl.calc;
+    var psl=res.payslip||res,emp=psl.employee||{},calc=psl.calc;
     if(!calc&&psl.pay){
-      // Legacy format — convert
-      calc={grossTotal:psl.pay.grossTotal,dagvinna:psl.pay.grossWage,orlofslaun:psl.pay.orlofsfe,
-        employeePension:psl.pay.lifeyrir,taxAfterCredit:psl.pay.stadgreidslaSkattur,
-        netPay:psl.pay.netPay,regularHrs:(psl.pay.grossWage/(emp.baseRateKr||1)),
+      calc={grossTotal:psl.pay.grossTotal||0,dagvinna:psl.pay.grossWage||0,orlofslaun:psl.pay.orlofsfe||0,
+        employeePension:psl.pay.lifeyrir||0,taxAfterCredit:psl.pay.stadgreidslaSkattur||0,
+        netPay:psl.pay.netPay||0,regularHrs:(psl.pay.grossWage||(emp.baseRateKr||1))/(emp.baseRateKr||1),
         ot1Hrs:0,ot2Hrs:0,manualLines:[],orlofsRate:0.1017,
-        pensionRate:emp.lifeyrir||0.04,taxBase:psl.pay.grossTotal,taxGross:psl.pay.stadgreidslaSkattur,
-        personalCredit:psl.pay.personuafslattr||68681,orlofIBanki:psl.pay.orlofIBanki||0,
+        pensionRate:emp.lifeyrir||0.04,taxBase:psl.pay.grossTotal||0,taxGross:psl.pay.stadgreidslaSkattur||0,
+        personalCredit:68681,orlofIBanki:psl.pay.orlofIBanki||0,
         totalDeductions:(psl.pay.lifeyrir||0)+(psl.pay.stadgreidslaSkattur||0)+(psl.pay.orlofIBanki||0),
         sereignarsjodur:0,unionDues:0,sereignRate:0,unionRate:0,
         employerPensionAmt:0,endurhaefingarsjodur:0};
     }
-    var html=renderPayslip({employee:emp,calc:calc,ytd:psl.ytd||{},
-      period:periodFrom,employer:psl.employer||{},
-      paymentDate:psl.paymentDate||'',slipNumber:psl.slipNumber||''});
+    var html=renderPayslip({employee:emp,calc:calc,ytd:psl.ytd||{},period:periodFrom,employer:psl.employer||{},paymentDate:psl.paymentDate||'',slipNumber:psl.slipNumber||''});
     var blob=new Blob([html],{type:'text/html'});
     window.open(URL.createObjectURL(blob),'_blank');
   }catch(e){showToast(e.message,'err');}
 }
-
-/* ── Export period XML ───────────────────────────────────────────────────── */
 async function prExportPeriodXml(periodKey){
   try{
     var res=await apiPost('generatePayrollXml',{period:periodKey});
@@ -525,15 +486,12 @@ async function prExportPeriodXml(periodKey){
       var blob=new Blob([res.xml],{type:'application/xml'});
       var a=document.createElement('a');a.href=URL.createObjectURL(blob);
       a.download='payroll-'+periodKey.replace(/[^\w-]/g,'-')+'.xml';a.click();
-    }else{showToast('No XML returned','err');}
+    }else showToast('No XML returned','err');
   }catch(e){showToast(e.message,'err');}
 }
-
-/* ═══════════════════ LAUNAMIÐLAR ══════════════════════════════════════════ */
 async function prLoadLaunamidlar(){
   var year=document.getElementById('prLmYear')?document.getElementById('prLmYear').value:new Date().getFullYear();
-  var div=document.getElementById('prLmTable');
-  var dl=document.getElementById('prLmDownload');
+  var div=document.getElementById('prLmTable'),dl=document.getElementById('prLmDownload');
   div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);dl.style.display='none';
   try{
     var res=await apiPost('generateLaunamidlar',{year:year});
@@ -558,12 +516,7 @@ async function prLoadLaunamidlar(){
     }
   }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
-
-/* ── Init ── */
-(function init(){
-  var params=new URLSearchParams(window.location.search);
-  prTab(params.get('tab')||'employees');
-})();
-<\/script>
+(function(){var p=new URLSearchParams(window.location.search);prTab(p.get('tab')||'employees');})();
+</script>
 </body>
 </html>
