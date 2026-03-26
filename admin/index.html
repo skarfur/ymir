@@ -2412,7 +2412,7 @@ async function prLoadTimesheets() {
             + '<td style="padding:5px 6px;text-align:center">' + p.out.timestamp.slice(11,16) + '</td>'
             + '<td style="padding:5px 6px;text-align:center;font-weight:600">' + dur + '</td>'
             + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + (p.out.source==='admin'?'✏️ admin':'staff') + '</td>'
-            + '<td style="padding:5px 6px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prAdminEditTime('' + p.out.id + '','' + p.out.timestamp + '',' + (p.out.durationMinutes||0) + ')">Edit</button>' + (orig?'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+orig+'</span>':'') + '</td>'
+            + '<td style="padding:5px 6px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prAdminEditTime('+p.out.id+','+p.out.timestamp+',' + (p.out.durationMinutes||0) + ')">Edit</button>' + (orig?'<span style="font-size:9px;color:var(--muted);margin-left:4px">'+orig+'</span>':'') + '</td>'
             + '</tr>';
         }).join('')
       + '</tbody></table>';
@@ -2463,7 +2463,7 @@ async function prLoadPeriods() {
           + '<td style="padding:4px 8px;text-align:right">' + kr(r.stadgreidslaSkattur||0) + '</td>'
           + '<td style="padding:4px 8px;text-align:right;font-weight:600">' + kr(r.netPay||0) + '</td>'
           + '<td style="padding:4px 8px;text-align:right;color:var(--muted);font-size:10px">' + kr(ytd.grossTotal||0) + '</td>'
-          + '<td style="padding:4px 8px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prDownloadPayslip('' + r.employeeId + '','' + period + '')">📄</button></td>'
+          + '<td style="padding:4px 8px"><button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prDownloadPayslip('+r.employeeId+','+period+')">📄</button></td>'
           + '</tr>';
       }).join('');
       return '<div style="margin-bottom:16px">'
