@@ -645,8 +645,12 @@ function renderMaintenance() {
     return;
   }
   el.innerHTML = open.map(r => maintRenderCardCompact(r)).join('');
-  el.querySelectorAll('.maint-card-compact').forEach((card, idx) => {
-    card.addEventListener('click', () => maintOpenDetail(open[idx], user?.name));
+  el.querySelectorAll('.maint-card-compact').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      const r  = (maintenance || []).find(x => x.id === id);
+      if (r) maintOpenDetail(r, user?.name);
+    });
   });
 }
 
