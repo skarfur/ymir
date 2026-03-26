@@ -328,17 +328,19 @@ function renderList() {
     return (b.createdAt||"") > (a.createdAt||"") ? 1 : -1;
   });
   el.innerHTML = items.map(r => renderCard(r)).join("");
+  el.onclick = e => {
+    const card = e.target.closest('.maint-card-clickable');
+    if (!card) return;
+    if (e.target.closest('button, a, input')) return;
+    const r = allRequests.find(x => x.id === card.dataset.id);
+    if (r) maintOpenDetail(r, window._maintUser?.name);
+  };
 }
 
 function renderCard(r) {
-  const div = document.createElement('div');
-  div.innerHTML = maintRenderCard(r);
-  div.style.cursor = 'pointer';
-  div.addEventListener('click', e => {
-    if (e.target.closest('button, a, input')) return;
-    maintOpenDetail(r, window._maintUser?.name);
-  });
-  return div;
+  return '<div class="maint-card-clickable" data-id="' + esc(r.id||'') + '">'
+    + maintRenderCard(r)
+    + '</div>';
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────────
