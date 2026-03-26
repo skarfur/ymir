@@ -118,9 +118,12 @@ window.buildHeader = function (page) {
   }
 
   // ── classify current page ──
-  const STAFF_SUBPAGES = ['dailylog', 'maintenance', 'logbook-review', 'incidents'];
+  const STAFF_SUBPAGES  = ['dailylog', 'maintenance', 'logbook-review', 'incidents'];
+  const ADMIN_SUBPAGES  = ['payroll'];
   const isSubpage  = STAFF_SUBPAGES.includes(page);
-  const currentHub = isSubpage ? 'staff' : page;  // 'staff' | 'admin' | 'member'
+  const isAdminSub = ADMIN_SUBPAGES.includes(page);
+  const currentHub = isSubpage ? 'staff' : isAdminSub ? 'admin' : page;  // 'staff' | 'admin' | 'member'
+  const depth = isAdminSub ? '../../' : '../';  // extra level for admin subpages
 
   // ── LEFT: logo ──
   const logo = document.createElement('span');
@@ -131,6 +134,9 @@ window.buildHeader = function (page) {
   if (isSubpage) {
     left.appendChild(link('../staff/', '← Staff', 'hbtn'));
   }
+  if (isAdminSub) {
+    left.appendChild(link('../../admin/', '← Admin', 'hbtn'));
+  }
 
   // ── LEFT: hub-switch buttons (staff/admin only, always shown on ALL pages) ──
   if (user) {
@@ -139,22 +145,22 @@ window.buildHeader = function (page) {
 
     // Staff button — shown to staff/admin when not currently on a staff page
     if (canStaff && currentHub !== 'staff') {
-      left.appendChild(link('../staff/', '⚓ Staff Hub', 'hbtn'));
+      left.appendChild(link(depth + 'staff/', '⚓ Staff Hub', 'hbtn'));
     }
 
     // Member button — shown to staff/admin when not currently on member page
     if (canStaff && currentHub !== 'member') {
-      left.appendChild(link('../member/', '⛵ Members', 'hbtn'));
+      left.appendChild(link(depth + 'member/', '⛵ Members', 'hbtn'));
     }
 
     // Admin button — shown to admins when not currently on admin page
     if (canAdmin && currentHub !== 'admin') {
-      left.appendChild(link('../admin/', '⚙ Admin', 'hbtn'));
+      left.appendChild(link(depth + 'admin/', '⚙ Admin', 'hbtn'));
     }
   }
 
   // ── RIGHT: Weather · lang · sign out (always present) ──
-  right.appendChild(link('../weather/', '⛅ Weather', 'hbtn'));
+  right.appendChild(link(depth + 'weather/', '⛅ Weather', 'hbtn'));
 
   const langLabel = (typeof getLang === 'function' && getLang() === 'EN') ? 'IS' : 'EN';
   right.appendChild(btn(langLabel, () => { if (typeof toggleLang === 'function') toggleLang(); }));
