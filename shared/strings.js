@@ -505,6 +505,30 @@ const STRINGS = {
   'cert.nameRequired':         { EN:'Name required.',                   IS:'Nafn vantar.' },
   'cert.typeRequired':         { EN:'Select a certification type.',     IS:'Veldu tegund skírteinis.' },
   'cert.levelRequired':        { EN:'Select a level / subcategory.',    IS:'Veldu stig / undirflokk.' },
+  // ── Payroll / Punch clock ─────────────────────────────────────────────────
+  'payroll.clockIn':         { EN:'Clock In',           IS:'Stimpla inn' },
+  'payroll.clockOut':        { EN:'Clock Out',          IS:'Stimpla út' },
+  'payroll.currentShift':    { EN:'Current shift',      IS:'Núverandi vakt' },
+  'payroll.recentShifts':    { EN:'Recent shifts',      IS:'Nýlegar vaktir' },
+  'payroll.noShifts':        { EN:'No shifts recorded', IS:'Engar vaktir skráðar' },
+  'payroll.section':         { EN:'Time & Pay',         IS:'Tími & laun' },
+  'payroll.employees':       { EN:'Employees',          IS:'Starfsmenn' },
+  'payroll.timesheets':      { EN:'Timesheets',         IS:'Tímaskráning' },
+  'payroll.payPeriods':      { EN:'Pay Periods',        IS:'Launatímabil' },
+  'payroll.launamidlar':     { EN:'Launamiðlar',     IS:'Launamiðlar' },
+  'payroll.closePeriod':     { EN:'Close Period',       IS:'Loka tímabili' },
+  'payroll.payslip':         { EN:'Payslip',            IS:'Launaseðill' },
+  'payroll.generateXml':     { EN:'Generate XML',       IS:'Mynda XML' },
+  'payroll.baseRate':        { EN:'Base rate',          IS:'Grunntaxti' },
+  'payroll.enablePayroll':   { EN:'Enable payroll',     IS:'Virkja í launakerfi' },
+  'payroll.notEnabled':      { EN:'Not in payroll',     IS:'Ekki í launakerfi' },
+  'payroll.grossTotal':      { EN:'Gross total',        IS:'Heildarlaunagreiðsla' },
+  'payroll.netPay':          { EN:'Net pay',            IS:'Nettó til útgreiðslu' },
+  'payroll.holidayPay':      { EN:'Holiday pay',        IS:'Orlofsfé' },
+  'payroll.pension':         { EN:'Pension',            IS:'Lífeyrissjóður' },
+  'payroll.taxWithheld':     { EN:'Tax withheld',       IS:'Staðgreiðsla' },
+  'payroll.ytd':             { EN:'YTD',                IS:'Frá áramótum' },
+
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -551,28 +575,4 @@ window.applyStrings = function applyStrings(root) {
     if (attr) el.setAttribute(attr, val);
     else      el.textContent = val;
   });
-  // ── Payroll / Punch clock ─────────────────────────────────────────────────
-  'payroll.clockIn':         { EN:'Clock In',           IS:'Stimpla inn' },
-  'payroll.clockOut':        { EN:'Clock Out',          IS:'Stimpla út' },
-  'payroll.currentShift':    { EN:'Current shift',      IS:'Núverandi vakt' },
-  'payroll.recentShifts':    { EN:'Recent shifts',      IS:'Nýlegar vaktir' },
-  'payroll.noShifts':        { EN:'No shifts recorded', IS:'Engar vaktir skráðar' },
-  'payroll.section':         { EN:'Time & Pay',         IS:'Tími & laun' },
-  'payroll.employees':       { EN:'Employees',          IS:'Starfsmenn' },
-  'payroll.timesheets':      { EN:'Timesheets',         IS:'Tímaskráning' },
-  'payroll.payPeriods':      { EN:'Pay Periods',        IS:'Launatímabil' },
-  'payroll.launamidlar':     { EN:'Launamiðlar',        IS:'Launamiðlar' },
-  'payroll.closePeriod':     { EN:'Close Period',       IS:'Loka tímabili' },
-  'payroll.payslip':         { EN:'Payslip',            IS:'Launaseðill' },
-  'payroll.generateXml':     { EN:'Generate XML',       IS:'Mynda XML' },
-  'payroll.baseRate':        { EN:'Base rate',          IS:'Grunntaxti' },
-  'payroll.enablePayroll':   { EN:'Enable payroll',     IS:'Virkja í launakerfi' },
-  'payroll.notEnabled':      { EN:'Not in payroll',     IS:'Ekki í launakerfi' },
-  'payroll.grossTotal':      { EN:'Gross total',        IS:'Heildarlaunagreiðsla' },
-  'payroll.netPay':          { EN:'Net pay',            IS:'Nettó til útgreiðslu' },
-  'payroll.holidayPay':      { EN:'Holiday pay',        IS:'Orlofsfé' },
-  'payroll.pension':         { EN:'Pension',            IS:'Lífeyrissjóður' },
-  'payroll.taxWithheld':     { EN:'Tax withheld',       IS:'Staðgreiðsla' },
-  'payroll.ytd':             { EN:'YTD',                IS:'Frá áramótum' },
-
 };
