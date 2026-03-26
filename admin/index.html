@@ -380,7 +380,7 @@
         <div class="col-body hidden" id="flagDirCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
             <div class="field"><label>Easterly modifier (pts)</label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when wind is from an easterly sector</div></div>
-            <div class="field"><label>Gust modifier (pts)</label><input type="number" id="fcGustPts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts exceed sustained by ≥ 1 Force</div></div>
+            <div class="field"><label>Gust modifier +1 Force (pts)</label><input type="number" id="fcGust1Pts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts are exactly 1 Force level above sustained</div></div><div class="field"><label>Gust modifier +2 Force (pts)</label><input type="number" id="fcGust2Pts" min="0" max="20" value="8" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts are 2+ Force levels above sustained</div></div></div>
           </div>
           <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
@@ -1959,7 +1959,8 @@ function loadFlagConfigPanel(c){
   _fcFeelsBands=(c.feelsLike||sc.feelsLike).map(function(b){return{minC:b.minC,pts:b.pts};});
   fcRenderWindBands();fcRenderWaveBands();fcRenderSstBands();fcRenderFeelsBands();
   document.getElementById('fcEasterlyPts').value=c.easterlyPts!=null?c.easterlyPts:sc.easterlyPts;
-  document.getElementById('fcGustPts').value=c.gustModifierPts!=null?c.gustModifierPts:sc.gustModifierPts;
+  document.getElementById('fcGust1Pts').value=(c.gustModifier1Pts??sc.gustModifier1Pts)??4;
+  document.getElementById('fcGust2Pts').value=(c.gustModifier2Pts??sc.gustModifier2Pts)??8;
   document.getElementById('fcEasterlyDirs').value=(c.easterlyDirs||sc.easterlyDirs).join(',');
   var vis=c.visibility||sc.visibility;
   document.getElementById('fcVisGood').value=vis.good!=null?vis.good:0;
@@ -1972,7 +1973,8 @@ function loadFlagConfigPanel(c){
 function getFlagFormValues(){
   var t={yellow:parseInt(document.getElementById('fcThreshY').value)||25,orange:parseInt(document.getElementById('fcThreshO').value)||45,red:parseInt(document.getElementById('fcThreshR').value)||65,black:parseInt(document.getElementById('fcThreshB').value)||80};
   var easterlyDirs=(document.getElementById('fcEasterlyDirs').value||'').split(',').map(function(s){return s.trim().toUpperCase();}).filter(Boolean);
-  var cfg={thresholds:t,wind:fcReadWindBands(),waves:fcReadWaveBands(),sst:fcReadSstBands(),feelsLike:fcReadFeelsBands(),easterlyDirs:easterlyDirs,easterlyPts:parseInt(document.getElementById('fcEasterlyPts').value)||0,gustModifierPts:parseInt(document.getElementById('fcGustPts').value)||0,visibility:{good:parseInt(document.getElementById('fcVisGood').value)||0,reduced:parseInt(document.getElementById('fcVisReduced').value)||0,poor:parseInt(document.getElementById('fcVisPoor').value)||0},flags:{}};
+  var cfg={thresholds:t,wind:fcReadWindBands(),waves:fcReadWaveBands(),sst:fcReadSstBands(),feelsLike:fcReadFeelsBands(),easterlyDirs:easterlyDirs,easterlyPts:parseInt(document.getElementById('fcEasterlyPts').value)||0,gustModifier1Pts:parseInt(document.getElementById('fcGust1Pts').value)||0,
+      gustModifier2Pts:parseInt(document.getElementById('fcGust2Pts').value)||0,visibility:{good:parseInt(document.getElementById('fcVisGood').value)||0,reduced:parseInt(document.getElementById('fcVisReduced').value)||0,poor:parseInt(document.getElementById('fcVisPoor').value)||0},flags:{}};
   ['green','yellow','orange','red','black'].forEach(function(key){var en=document.getElementById('fcAdvice_'+key),is=document.getElementById('fcAdviceIS_'+key);var de=document.getElementById('fcDesc_'+key),dis=document.getElementById('fcDescIS_'+key);cfg.flags[key]={advice:en?en.value.trim():'',adviceIS:is?is.value.trim():'',description:de?de.value.trim():'',descriptionIS:dis?dis.value.trim():''};});
   return cfg;
 }
