@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ýmir — Sign In</title>
+  <title>�mir  Sign In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/style.css">
@@ -42,9 +42,9 @@
 <body>
 <div class="login-box">
   <div class="login-logo">
-    <span class="anchor">⚓</span>
+    <span class="anchor">�</span>
     <p id="subtitle"></p>
-    <h1>ÝMIR</h1>
+    <h1>�MIR</h1>
   </div>
 
   <div id="ktScreen">
@@ -77,7 +77,7 @@
 </div>
 
 <script>
-// Wire all strings on load — no hard-coded text in HTML
+// Wire all strings on load  no hard-coded text in HTML
 document.getElementById('subtitle').textContent  = s('login.subtitle');
 document.getElementById('ktLabel').textContent   = s('login.kennitala');
 document.getElementById('ktInput').placeholder   = s('login.placeholder');
@@ -130,12 +130,12 @@ function showRolePicker(user, roles) {
   document.getElementById('ktScreen').style.display   = 'none';
   document.getElementById('roleScreen').style.display = 'block';
   document.getElementById('roleGreeting').textContent =
-    s('login.welcome') + ' ' + user.name.split(' ')[0] + ' — ' + s('login.chooseView');
+    s('login.welcome') + ' ' + user.name.split(' ')[0] + '  ' + s('login.chooseView');
 
   const dests = {
-    admin:  { icon: '⚙️', label: s('login.admin.label'),  desc: s('login.admin.desc'),  href: '../admin/',  cls: 'role-admin'  },
-    staff:  { icon: '🧭', label: s('login.staff.label'),  desc: s('login.staff.desc'),  href: '../staff/',  cls: 'role-staff'  },
-    member: { icon: '⛵', label: s('login.member.label'), desc: s('login.member.desc'), href: '../member/', cls: 'role-member' },
+    admin:  { icon: '�', label: s('login.admin.label'),  desc: s('login.admin.desc'),  href: '../admin/',  cls: 'role-admin'  },
+    staff:  { icon: '>', label: s('login.staff.label'),  desc: s('login.staff.desc'),  href: '../staff/',  cls: 'role-staff'  },
+    member: { icon: '�', label: s('login.member.label'), desc: s('login.member.desc'), href: '../member/', cls: 'role-member' },
   };
 
   const container = document.getElementById('roleBtns');
