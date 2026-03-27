@@ -613,6 +613,17 @@ const STRINGS = {
   'lbl.friShort':           { EN:'Fri',                         IS:'F\u00f6s' },
   'lbl.satShort':           { EN:'Sat',                         IS:'Lau' },
   'lbl.sunShort':           { EN:'Sun',                         IS:'Sun' },
+  'payroll.earningsSection':   { EN:'Earnings',          IS:'Laun' },
+  'payroll.deductionsSection': { EN:'Deductions',        IS:'Fr\u00e1dr\u00e1ttur' },
+  'payroll.accumulatedSection':{ EN:'Accumulated',       IS:'Til uppsafnanar' },
+  'payroll.employerSection':   { EN:'Employer contribution', IS:'Framlag launagrei\u00f0anda' },
+  'payroll.ytdSection':        { EN:'Year to date',      IS:'\u00c1r til \u00fea gs' },
+  'payroll.totalDeductions':   { EN:'Total deductions',  IS:'Heildarf r\u00e1dr\u00e1ttur' },
+  'payroll.orlofslaun':        { EN:'Holiday pay (bank)',IS:'Orlof \u00ed banka' },
+  'payroll.earningsSection':   { EN:'Earnings',          IS:'Laun' },
+  'payroll.payslip':           { EN:'Payslip',           IS:'Launase\u00f0ill' },
+  'payroll.baseRate':          { EN:'Base rate (kr/hr)', IS:'Grunntaxti (kr/klst)' },
+  'payroll.unionDuesRate':     { EN:'Union dues %',      IS:'St\u00e9ttarf\u00e9lagsgjald %' },
 };
 
 window.s = function s(key, vars, lang) {
