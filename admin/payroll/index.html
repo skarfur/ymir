@@ -98,19 +98,20 @@
         <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
       </div>
 
-      <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
-      </div>
-
       <div class="sec-lbl" data-s="payroll.exportPensionCsv"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="prCsvPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
+          <button class="btn btn-primary" style="font-size:11px" onclick="prExportPensionCsv()" data-s="payroll.exportCsv"></button>
+        </div>
+      </div>
+
+      <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="prXmlPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
+          <button class="btn btn-primary" style="font-size:11px" onclick="prExportStadgreidslaXml()" data-s="payroll.exportXml"></button>
+        </div>
       </div>
 
       <div class="sec-lbl" data-s="payroll.exportLaunamidlar"></div>
@@ -120,6 +121,11 @@
           <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; <span data-s="payroll.exportXml"></span></a>
         </div>
         <div id="prLmTable"><div class="empty-note" data-s="payroll.noPeriodDefined"></div></div>
+      </div>
+
+      <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
       </div>
     </div>
 
@@ -195,7 +201,11 @@ if(user){buildHeader('payroll');applyStrings(document.body);}
 var _members=[],_empData={},_empByMember={},_previewData={},_tsEmployees=[],_closedPeriods=new Set();
 var _tsEntries=[],_calYear=new Date().getFullYear(),_calMonth=new Date().getMonth(),_calView='cal',_editId=null;
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
+function _fmtEU(n){var v=Math.round(n||0),neg=v<0,s=Math.abs(v).toString(),out='';for(var i=0;i<s.length;i++){if(i>0&&(s.length-i)%3===0)out+='.';out+=s[i];}return neg?'-'+out:out;}
+function _fmtTime(iso){if(!iso)return'';var d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+var _MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function _fmtDateDMY(iso){if(!iso)return'';var d=new Date(iso);return d.getDate()+'-'+_MONTHS[d.getMonth()]+'-'+d.getFullYear();}
+function kr(n){return _fmtEU(n)+'\u00a0kr.';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
 function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
 function locale(){return (typeof getLang==='function')&&getLang()==='IS'?'is-IS':'en-GB';}
@@ -210,10 +220,11 @@ function prTab(tab){
   });
   document.querySelectorAll('.pr-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
   var url=new URL(window.location.href);url.searchParams.set('tab',tab);history.replaceState(null,'',url);
-  if(tab==='employees')  prLoadEmployees();
-  if(tab==='timesheets') prInitTimesheets();
-  if(tab==='periods')    prLoadPeriods();
-  if(tab==='config')     prLoadConfig();
+  if(tab==='employees')   prLoadEmployees();
+  if(tab==='timesheets')  prInitTimesheets();
+  if(tab==='periods')     prLoadPeriods();
+  if(tab==='export-data') prLoadExportData();
+  if(tab==='config')      prLoadConfig();
 }
 
 /* == EMPLOYEES == */
@@ -312,8 +323,12 @@ async function prSaveEmployee(memberId){
 async function prInitTimesheets(){
   if(_tsEmployees.length===0){
     try{
-      var res=await apiGet('getEmployees');
-      _tsEmployees=(res.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
+      var empRes=await apiGet('getEmployees');
+      if(!_members.length){var mRes=await apiGet('getMembers');_members=(mRes.members||[]).filter(function(m){return m.role==='staff'||m.role==='admin';});}
+      _tsEmployees=(empRes.employees||[]).filter(function(e){
+        if(!(e.payrollEnabled===true||e.payrollEnabled==='true'))return false;
+        return !_members.length||_members.some(function(m){return m.id===e.memberId;});
+      });
       var sel=document.getElementById('prTsEmp'),meSel=document.getElementById('meEmp');
       _tsEmployees.forEach(function(e){
         var o=document.createElement('option');o.value=e.id;o.textContent=e.name;sel.appendChild(o);
@@ -388,10 +403,11 @@ function prRenderCalDays(){
     var shown=dayEntries.slice(0,3);
     var pills=shown.map(function(e){
       var col=empColor(e.employeeId);
-      var inT=e.clockIn?new Date(e.clockIn).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
-      var outT=e.timestamp?new Date(e.timestamp).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
+      var inT=e.clockIn?_fmtTime(e.clockIn):'?';
+      var outT=e.timestamp?_fmtTime(e.timestamp):'?';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
-      var label=empId?(inT+'\u2013'+outT):(empName(e.employeeId));
+      var firstName=empName(e.employeeId).split(' ')[0];
+      var label=firstName+'\u00a0'+inT+'\u2013'+outT;
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<span class="cal-pill" style="background:'+col+'22;color:'+col+';border-color:'+col+'44"'
         +' onclick="event.stopPropagation();prOpenModal(JSON.parse(this.dataset.e),null)" data-e="'+edata+'"'
@@ -415,10 +431,9 @@ function prRenderList(){
     var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     var rows=grp.entries.slice().sort(function(a,b){return (a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;}).map(function(e){
       var ci=e.clockIn?new Date(e.clockIn):null,co=e.timestamp?new Date(e.timestamp):null;
-      var loc=locale();
-      var dateStr=ci?ci.toLocaleDateString(loc,{day:'2-digit',month:'short',year:'numeric'}):'--';
-      var inT=ci?ci.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
-      var outT=co?co.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
+      var dateStr=e.clockIn?_fmtDateDMY(e.clockIn):'--';
+      var inT=e.clockIn?_fmtTime(e.clockIn):'--';
+      var outT=e.timestamp?_fmtTime(e.timestamp):'--';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
       var srcLabel=e.source==='admin'?('<span class="src-admin">\u270e '+s('lbl.admin')+'</span>'):s('lbl.staff');
       var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
@@ -630,7 +645,7 @@ function prCalcHTML(calc,ytd,empId){
   var ytdGross=(ytd.grossTotal||0)+calc.grossTotal;
   var ytdDeduct=(ytd.totalDeductions||0)+calc.totalDeductions;
   var ytdNet=(ytd.netPay||0)+calc.netPay;
-  function n(v){return Math.round(v||0).toLocaleString('is-IS');}
+  function n(v){return _fmtEU(v);}
   function pct(v){return ((v||0)*100).toFixed(2).replace(/\.?0+$/,'')+'%';}
   var h='<div class="psc-samtolur"><div class="psc-samtolur-grid">';
   h+='<div></div><div class="psc-col-hdr" data-s="payroll.periodLabel"></div><div class="psc-col-hdr" data-s="payroll.ytdSection"></div>';
@@ -805,6 +820,94 @@ async function prExportXml(periodKey){
     var res=await apiPost('generatePayrollXml',{period:periodKey});
     if(res.xml){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));a.download='payroll-'+periodKey.replace(/[^\w-]/g,'-')+'.xml';a.click();}
     else showToast(s('toast.error'),'err');
+  }catch(e){showToast(e.message,'err');}
+}
+
+/* == EXPORT DATA == */
+async function prLoadExportData(){
+  try{
+    var res=await apiGet('getPayroll');
+    var rows=res.payroll||[];
+    // Build unique period keys from closed payroll records
+    var periods=[];var seen=new Set();
+    rows.forEach(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');
+      if(k&&!seen.has(k)){seen.add(k);periods.push(k);}
+    });
+    periods.sort().reverse();
+    ['prCsvPeriod','prXmlPeriod'].forEach(function(selId){
+      var sel=document.getElementById(selId);if(!sel)return;
+      // Keep the first placeholder option, replace the rest
+      while(sel.options.length>1)sel.remove(1);
+      periods.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+    });
+  }catch(e){}
+}
+function _xmlEsc(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function prExportPensionCsv(){
+  var periodKey=document.getElementById('prCsvPeriod').value;
+  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  try{
+    var res=await apiGet('getPayroll');
+    var rows=(res.payroll||[]).filter(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
+    });
+    if(!rows.length){showToast(s('lbl.noData'),'err');return;}
+    var cfg=window.PAYROLL_CONFIG||{};
+    // Get Bru fund rates from config
+    var bruFund=(cfg.pensionFunds||[]).find(function(f){return f.id==='fund_bru';})||{lines:[]};
+    var empLine=bruFund.lines.find(function(l){return (l.employeeRate||0)>0;})||{employeeRate:0.04};
+    var emrLine=bruFund.lines.find(function(l){return (l.employerRate||0)>0;})||{employerRate:0.115};
+    var empRate=empLine.employeeRate||0.04;
+    var emrRate=emrLine.employerRate||0.115;
+    var header=['Kennitala','Nafn','Launatímabil','Laun','Iðgjald starfsmanns %','Iðgjald starfsmanns','Mótframlag launagreiðanda %','Mótframlag launagreiðanda'];
+    var csvRows=[header];
+    rows.forEach(function(r){
+      // Only include employees assigned to Bru (or with no explicit fund — use Bru as default)
+      var emp=_empData[r.employeeId];
+      var fundIds=emp&&emp.pensionFundIds&&emp.pensionFundIds.length?emp.pensionFundIds:['fund_bru'];
+      if(fundIds.indexOf('fund_bru')===-1)return;
+      var gross=+(r.grossTotal)||0;
+      var eAmt=Math.round(gross*empRate);
+      var erAmt=Math.round(gross*emrRate);
+      var period=r.periodFrom?r.periodFrom.slice(0,7):(r.period||'').slice(0,7);
+      csvRows.push([r.kt||'',r.employeeName||r.employeeId||'',period,gross,(empRate*100).toFixed(2)+'%',eAmt,(emrRate*100).toFixed(2)+'%',erAmt]);
+    });
+    var csv=csvRows.map(function(row){return row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='bru-pension-'+periodKey.replace(/[^\w-]/g,'-')+'.csv';a.click();
+  }catch(e){showToast(e.message,'err');}
+}
+async function prExportStadgreidslaXml(){
+  var periodKey=document.getElementById('prXmlPeriod').value;
+  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  try{
+    var res=await apiGet('getPayroll');
+    var rows=(res.payroll||[]).filter(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
+    });
+    if(!rows.length){showToast(s('lbl.noData'),'err');return;}
+    var cfg=window.PAYROLL_CONFIG||{};
+    var timabil=(rows[0].periodFrom||rows[0].period||'').slice(0,7);
+    var lines=['<?xml version="1.0" encoding="UTF-8"?>','<Stadgreidsla>'];
+    lines.push('  <Timabil>'+_xmlEsc(timabil)+'</Timabil>');
+    lines.push('  <Launthegar>');
+    rows.forEach(function(r){
+      lines.push('    <Launtakandi>');
+      lines.push('      <Kennitala>'+_xmlEsc(r.kt||r.employeeId||'')+'</Kennitala>');
+      lines.push('      <Nafn>'+_xmlEsc(r.employeeName||r.employeeId||'')+'</Nafn>');
+      lines.push('      <Laun>'+Math.round(+(r.grossTotal)||0)+'</Laun>');
+      lines.push('      <Personuafslattr>'+Math.round(+(r.personalCredit)||0)+'</Personuafslattr>');
+      lines.push('      <Stadgr>'+Math.round(+(r.taxWithheld||r.taxAfterCredit)||0)+'</Stadgr>');
+      lines.push('    </Launtakandi>');
+    });
+    lines.push('  </Launthegar>');
+    lines.push('</Stadgreidsla>');
+    var xml=lines.join('\n');
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));
+    a.download='stadgreidsla-'+timabil+'.xml';a.click();
   }catch(e){showToast(e.message,'err');}
 }
 

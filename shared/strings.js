@@ -671,6 +671,8 @@ const STRINGS = {
   'payroll.exportPensionCsv':  { EN:'CSV — Pension data',             IS:'CSV — Lífeyrissjóðsgögn' },
   'payroll.exportLaunamidlar': { EN:'XML — Launamiðlar',              IS:'XML — Launamiðlar' },
   'payroll.exportPlaceholder': { EN:'Not yet implemented — coming soon', IS:'Ekki tilbúið — kemur bráðlega' },
+  'payroll.selectPeriod':      { EN:'— Select period —',                 IS:'— Velja tímabil —' },
+  'payroll.exportCsv':         { EN:'Export CSV',                        IS:'Sækja CSV' },
   'payroll.taxWithheld':       { EN:'Tax withheld',                   IS:'Staðgreiðsla' },
 
 };
