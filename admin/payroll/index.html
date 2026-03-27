@@ -98,17 +98,6 @@
         <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
       </div>
 
-      <div class="sec-lbl" data-s="payroll.stadEmployerInfo"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
-          <div class="field"><label data-s="payroll.stadKt"></label><input id="prStadKt" type="text" oninput="prSaveStadConfig()"></div>
-          <div class="field"><label data-s="payroll.stadEmail"></label><input id="prStadEmail" type="email" oninput="prSaveStadConfig()"></div>
-          <div class="field"><label data-s="payroll.stadVeflykill"></label><input id="prStadVeflykill" type="text" oninput="prSaveStadConfig()"></div>
-          <div class="field"><label data-s="payroll.stadForrit"></label><input id="prStadForrit" type="text" placeholder="Ymir 1.0" oninput="prSaveStadConfig()"></div>
-          <div class="field"><label data-s="payroll.stadIsat"></label><input id="prStadIsat" type="text" placeholder="e.g. 50200" oninput="prSaveStadConfig()"></div>
-        </div>
-      </div>
-
       <div class="sec-lbl" data-s="payroll.exportPensionCsv"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -119,10 +108,13 @@
 
       <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <label style="font-size:11px;white-space:nowrap" data-s="payroll.stadIsat"></label>
+          <input id="prStadIsat" type="text" placeholder="e.g. 50200" style="width:90px;font-size:11px" oninput="prSaveStadConfig()">
           <select id="prXmlPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
-          <button class="btn btn-primary" style="font-size:11px" onclick="prExportStadgreidslaXml()" data-s="payroll.exportXml"></button>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowStadgreidsla()" data-s="lbl.view"></button>
         </div>
+        <div id="prStadTable"></div>
       </div>
 
       <div class="sec-lbl" data-s="payroll.exportLaunamidlar"></div>
@@ -840,17 +832,10 @@ async function prExportXml(periodKey){
 
 /* == EXPORT DATA == */
 function prSaveStadConfig(){
-  var cfg={kt:(document.getElementById('prStadKt')||{}).value||'',email:(document.getElementById('prStadEmail')||{}).value||'',veflykill:(document.getElementById('prStadVeflykill')||{}).value||'',forrit:(document.getElementById('prStadForrit')||{}).value||'',isat:(document.getElementById('prStadIsat')||{}).value||''};
-  try{localStorage.setItem('ymir_stad_cfg',JSON.stringify(cfg));}catch(e){}
+  try{localStorage.setItem('ymir_stad_cfg',JSON.stringify({isat:(document.getElementById('prStadIsat')||{}).value||''}));}catch(e){}
 }
 function prLoadStadConfig(){
-  try{
-    var cfg=JSON.parse(localStorage.getItem('ymir_stad_cfg')||'{}');
-    ['kt','email','veflykill','forrit','isat'].forEach(function(k){
-      var el=document.getElementById('prStad'+k.charAt(0).toUpperCase()+k.slice(1));
-      if(el&&cfg[k])el.value=cfg[k];
-    });
-  }catch(e){}
+  try{var cfg=JSON.parse(localStorage.getItem('ymir_stad_cfg')||'{}');var el=document.getElementById('prStadIsat');if(el&&cfg.isat)el.value=cfg.isat;}catch(e){}
 }
 async function prLoadExportData(){
   prLoadStadConfig();
@@ -870,7 +855,6 @@ async function prLoadExportData(){
     });
   }catch(e){}
 }
-function _xmlEsc(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 async function prExportPensionCsv(){
   var periodKey=document.getElementById('prCsvPeriod').value;
   if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
@@ -906,87 +890,64 @@ async function prExportPensionCsv(){
     a.download='bru-pension-'+periodKey.replace(/[^\w-]/g,'-')+'.csv';a.click();
   }catch(e){showToast(e.message,'err');}
 }
-async function prExportStadgreidslaXml(){
+async function prShowStadgreidsla(){
   var periodKey=document.getElementById('prXmlPeriod').value;
   if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  var kt=(document.getElementById('prStadKt')||{}).value||'';
-  var veflykill=(document.getElementById('prStadVeflykill')||{}).value||'';
-  var forrit=((document.getElementById('prStadForrit')||{}).value||'Ymir 1.0').trim();
-  var email=(document.getElementById('prStadEmail')||{}).value||'';
   var isat=(document.getElementById('prStadIsat')||{}).value||'';
-  if(!kt){showToast(s('payroll.stadKtRequired'),'err');return;}
+  var div=document.getElementById('prStadTable');
+  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
   try{
     var res=await apiGet('getPayroll');
     var rows=(res.payroll||[]).filter(function(r){
       var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
     });
-    if(!rows.length){showToast(s('lbl.noData'),'err');return;}
+    if(!rows.length){div.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(div);return;}
     var cfg=window.PAYROLL_CONFIG||{};
     var tryggRate=cfg.tryggingagjaldRate||0.0685;
-    // Timabil in YYYYMM format
-    var timabil=(rows[0].periodFrom||rows[0].period||'').slice(0,7).replace('-','');
-    var totalLaun=0,totalStadgr=0,totalTrygg=0;
-    var launamennLines=[];
-    rows.forEach(function(r){
+    var totLaun=0,totEmpP=0,totEmrP=0,totTrygg=0;
+    var tbRows=rows.map(function(r){
       var gross=+(r.grossTotal)||0;
-      var pension=+(r.employeePension)||0;
-      var taxWh=+(r.taxWithheld||r.taxAfterCredit)||0;
-      var credit=+(r.personalCredit)||0;
-      var taxBase=gross-pension;
-      // TharafThrep: each bracket's share of taxBase (sum must equal taxBase)
-      var rowCfg=cfg;
-      try{if(r.configSnapshot)rowCfg=Object.assign({},cfg,JSON.parse(r.configSnapshot));}catch(e){}
-      var brackets=(rowCfg.taxBrackets||cfg.taxBrackets||[]);
-      var threp=[0,0,0];var rem=taxBase,prev=0;
-      brackets.slice(0,3).forEach(function(b,i){
-        var top=(b.upTo===null||b.upTo===Infinity)?Infinity:+(b.upTo);
-        var inBand=Math.max(0,Math.min(rem,top-prev));
-        threp[i]=Math.round(inBand);rem-=inBand;prev=top===Infinity?prev:top;
-      });
-      // Per-employee profile for extra fields
+      var empP=+(r.employeePension)||0;
+      var emrP=+(r.employerPension)||0;
+      var trygg=Math.round(gross*tryggRate);
       var emp=_empData[r.employeeId]||{};
+      var personaPct=Math.round((emp.personuafslattr!=null?+(emp.personuafslattr):1)*100)+'%';
       var starfshl=+(emp.starfshlutfall)||100;
-      var istarf=emp.istarf95||'';
-      totalLaun+=gross;totalStadgr+=taxWh;
-      totalTrygg+=Math.round(gross*tryggRate);
-      var L=['    <Launamenn>'];
-      L.push('      <Kennitala>'+_xmlEsc(r.kt||r.employeeId||'')+'</Kennitala>');
-      L.push('      <Starfshlutfall>'+starfshl+'</Starfshlutfall>');
-      if(isat)L.push('      <Isat95>'+_xmlEsc(isat)+'</Isat95>');
-      if(istarf)L.push('      <Istarf95>'+_xmlEsc(istarf)+'</Istarf95>');
-      L.push('      <Laun>'+Math.round(gross)+'</Laun>');
-      L.push('      <Greitt_i_lifeyrissjod>'+Math.round(pension)+'</Greitt_i_lifeyrissjod>');
-      L.push('      <StadgreidslaLaunam>'+Math.round(taxWh)+'</StadgreidslaLaunam>');
-      L.push('      <Personuafslattur>'+Math.round(credit)+'</Personuafslattur>');
-      L.push('      <TharafThrep1>'+threp[0]+'</TharafThrep1>');
-      L.push('      <TharafThrep2>'+threp[1]+'</TharafThrep2>');
-      L.push('      <TharafThrep3>0</TharafThrep3>');
-      L.push('    </Launamenn>');
-      launamennLines.push(L.join('\n'));
-    });
-    var xml=['<?xml version="1.0" encoding="UTF-8"?>','<Skilagrein>'];
-    xml.push('  <KennitalaLaunagr>'+_xmlEsc(kt)+'</KennitalaLaunagr>');
-    xml.push('  <Timabil>'+_xmlEsc(timabil)+'</Timabil>');
-    xml.push('  <Veflykill>'+_xmlEsc(veflykill)+'</Veflykill>');
-    xml.push('  <Tegund>1</Tegund>');
-    xml.push('  <ForritUtgafa>'+_xmlEsc(forrit)+'</ForritUtgafa>');
-    if(email)xml.push('  <Tolvupostfang>'+_xmlEsc(email)+'</Tolvupostfang>');
-    xml.push('  <Sundurlidun>');
-    xml.push(launamennLines.join('\n'));
-    xml.push('  </Sundurlidun>');
-    xml.push('  <FjoldiLaunamanna>'+rows.length+'</FjoldiLaunamanna>');
-    xml.push('  <Stadgreidsla_heild>'+Math.round(totalStadgr)+'</Stadgreidsla_heild>');
-    xml.push('  <Stadgreidsla_laun>'+Math.round(totalStadgr)+'</Stadgreidsla_laun>');
-    xml.push('  <Stadgreidsla_endurgj>0</Stadgreidsla_endurgj>');
-    xml.push('  <Tryggingagjald>'+Math.round(totalTrygg)+'</Tryggingagjald>');
-    xml.push('  <Heildar_laun>'+Math.round(totalLaun)+'</Heildar_laun>');
-    xml.push('  <Reiknad_endurgj>0</Reiknad_endurgj>');
-    xml.push('  <Engin_laun>'+(rows.length?0:1)+'</Engin_laun>');
-    xml.push('</Skilagrein>');
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([xml.join('\n')],{type:'application/xml'}));
-    a.download='stadgreidsla-'+timabil+'.xml';a.click();
-  }catch(e){showToast(e.message,'err');}
+      var istarf=_e(emp.istarf95||'');
+      var empIsat=_e(emp.isat95||isat);
+      totLaun+=gross;totEmpP+=empP;totEmrP+=emrP;totTrygg+=trygg;
+      return '<tr>'
+        +'<td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
+        +'<td>'+_e(r.kt||'')+'</td>'
+        +'<td>'+empIsat+'</td>'
+        +'<td class="num">'+starfshl+'</td>'
+        +'<td>'+istarf+'</td>'
+        +'<td class="num">'+kr(gross)+'</td>'
+        +'<td class="num">'+kr(empP)+'</td>'
+        +'<td class="num">'+personaPct+'</td>'
+        +'<td class="num">'+kr(emrP)+'</td>'
+        +'<td class="num">'+kr(trygg)+'</td>'
+        +'</tr>';
+    }).join('');
+    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
+      +'<th>Nafn</th><th>Kennitala</th><th>ISAT95</th>'
+      +'<th class="num">Starfshl.%</th><th>ISTARF95</th>'
+      +'<th class="num">Heildarlaun</th>'
+      +'<th class="num">Lífeyrir&nbsp;4%</th>'
+      +'<th class="num">Persónuafslátt.</th>'
+      +'<th class="num">Mótframlag&nbsp;11,5%</th>'
+      +'<th class="num">Tryggingagjald</th>'
+      +'</tr></thead><tbody>'+tbRows+'</tbody>'
+      +'<tfoot><tr style="font-weight:700">'
+      +'<td colspan="5" data-s="payroll.totalHours" style="color:var(--muted)"></td>'
+      +'<td class="num">'+kr(totLaun)+'</td>'
+      +'<td class="num">'+kr(totEmpP)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totEmrP)+'</td>'
+      +'<td class="num">'+kr(totTrygg)+'</td>'
+      +'</tr></tfoot></table></div>';
+    applyStrings(div);
+  }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 
 /* == LAUNAMIDLAR == */

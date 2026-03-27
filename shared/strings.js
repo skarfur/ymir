@@ -590,6 +590,7 @@ const STRINGS = {
   'lbl.year':               { EN:'Year',                        IS:'\u00c1r' },
   'lbl.duration':           { EN:'Duration',                    IS:'T\u00edmal\u00e6ngd' },
   'lbl.edited':             { EN:'edited',                      IS:'breytt' },
+  'lbl.view':               { EN:'View',                        IS:'Sj\u00e1' },
   'lbl.admin':              { EN:'admin',                       IS:'stjórnandi' },
   'lbl.staff':              { EN:'staff',                       IS:'starfsma\u00f0ur' },
   'lbl.monShort':           { EN:'Mon',                         IS:'M\u00e1n' },
