@@ -37,7 +37,7 @@
 .wind-cols { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
 .wind-data { flex:1; }
 .wind-speed-row { display:flex; align-items:center; gap:6px; line-height:1; }
-.dir-arrow { font-size:56px; color:var(--brass); line-height:1; font-weight:500; }
+.dir-arrow { font-size:56px; color:var(--brass); line-height:1; font-weight:700; }
 .wind-ms   { font-size:56px; font-weight:500; color:var(--brass); line-height:1; }
 .wind-unit { font-size:18px; color:var(--muted); }
 .wind-sub  { font-size:16px; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:6px; }
@@ -147,8 +147,12 @@ async function fetchAll() {
   document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓ Fetching weather data…</div>';
   document.getElementById('updatedAt').textContent = 'Updating…';
   try {
-    const { wx, marine } = await wxFetch(FOSSVOGUR.lat, FOSSVOGUR.lon);
-    render(wx, marine);
+    const [{ wx, marine }, cfgRes] = await Promise.all([
+      wxFetch(FOSSVOGUR.lat, FOSSVOGUR.lon),
+      apiGet('getConfig').catch(() => null),
+    ]);
+    const staffStatus = cfgRes?.staffStatus ?? null;
+    render(wx, marine, staffStatus);
     document.getElementById('updatedAt').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
   } catch(e) {
@@ -161,7 +165,7 @@ async function fetchAll() {
   }
 }
 
-function render(wx, marine) {
+function render(wx, marine, staffStatus) {
   const c   = wx.current, hr  = wx.hourly;
   const mc  = marine?.current, mhr = marine?.hourly;
 
@@ -204,7 +208,8 @@ function render(wx, marine) {
 
   const marineNote = ''
 
-  window._wfFlagResult = { flagKey, flag, score, breakdown };
+  window._wfFlagResult  = { flagKey, flag, score, breakdown };
+  window._wfStaffStatus = staffStatus;
   document.getElementById('mainContent').innerHTML = `
 
 <div class="flag-banner" onclick="openWfFlagModal()" style="background:${flag.bg};border-color:${flag.border};color:${flag.color};cursor:pointer" title="Tap for score breakdown">
@@ -215,6 +220,7 @@ function render(wx, marine) {
     ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAG_CONFIG.flags[r.f].color};border-color:${FLAG_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
+${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
 
 <!-- WIND HERO -->
 <div class="wind-hero">
@@ -235,7 +241,7 @@ function render(wx, marine) {
       </div>
     </div>
     <div class="wind-icon-col">
-      <div style="font-size:36px;line-height:1">${condIcon}</div>
+      <div style="font-size:52px;line-height:1">${condIcon}</div>
       <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${condDesc}</div>
     </div>
   </div>
@@ -380,6 +386,11 @@ function drawWindChart(pts, nowI) {
   h+=`<text x="${nowX}" y="${H-P.b+11}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#d4af37">NOW</text>`;
   pts.forEach((p,i) => {
     h+=`<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2.5" fill="${p.isPast?'#6b92b8':'#d4af37'}" opacity="0.8"/>`;
+    if (p.isNow||i===0||i===pts.length-1) {
+      h+=`<text x="${xOf(i).toFixed(1)}" y="${(yOf(p.ws)-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="#d4af37" font-family="DM Mono,monospace">${Math.round(p.ws)}</text>`;
+      if (p.mWH != null)
+        h+=`<text x="${xOf(i).toFixed(1)}" y="${(yOf(p.mWH)-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="#4a9eca" font-family="DM Mono,monospace">${p.mWH.toFixed(1)}</text>`;
+    }
     if (p.isNow||i===0||i===pts.length-1||i%2===0)
       h+=`<text x="${xOf(i).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
   });
@@ -428,7 +439,7 @@ function openWfFlagModal() {
   const r = window._wfFlagResult;
   if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' pts';
   body.innerHTML = typeof wxFlagDetailHtml === 'function'
-    ? wxFlagDetailHtml(r, null, IS ? 'IS' : 'EN')
+    ? wxFlagDetailHtml(r, window._wfStaffStatus ?? null, IS ? 'IS' : 'EN')
     : '<div style="color:var(--muted);font-size:12px">Detail unavailable.</div>';
   document.getElementById('wfFlagModal')?.classList.remove('hidden');
 }
