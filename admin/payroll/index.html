@@ -3,117 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ãmir â Payroll</title>
+  <title>ÃÂmir Ã¢ÂÂ Payroll</title>
   <link rel="stylesheet" href="../../shared/style.css">
   <script src="../../shared/api.js"></script>
   <script src="../../shared/strings.js"></script>
   <script src="../../shared/ui.js"></script>
   <script src="../../shared/payroll.js"></script>
-  <style>
-    .pr-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
-    .pr-tab{padding:6px 16px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .15s}
-    .pr-tab.active{background:var(--brass);color:#fff;border-color:var(--brass)}
-    .pr-tab:hover:not(.active){border-color:var(--brass);color:var(--brass)}
-    .emp-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)44;flex-wrap:wrap}
-    .emp-row:last-child{border-bottom:none}
-    .emp-name{font-weight:600;font-size:13px;flex:1;min-width:120px}
-    .emp-kt{font-size:11px;color:var(--muted);width:90px;flex-shrink:0}
-    .pr-badge-on{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
-    .pr-badge-off{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
-    .emp-fields{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;padding:10px 0 4px}
-    .emp-fields .field{margin:0}
-    .emp-fields label{font-size:10px}
-    .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-    .cal-nav button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2;font-family:inherit}
-    .cal-nav button:hover{border-color:var(--brass);color:var(--brass)}
-    .cal-month{font-weight:700;font-size:15px;min-width:160px;text-align:center}
-    .cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
-    .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;letter-spacing:.5px}
-    .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-    .cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:6px;padding:5px;background:var(--surface)44;cursor:pointer;transition:background .1s}
-    .cal-cell:hover{background:var(--surface);border-color:var(--brass)66}
-    .cal-cell.other-month{opacity:.3}
-    .cal-cell.today{border-color:var(--brass);background:var(--brass)11}
-    .cal-day-num{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:block}
-    .cal-cell.today .cal-day-num{color:var(--brass)}
-    .cal-pill{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;line-height:1.5;border:1px solid transparent}
-    .cal-pill:hover{filter:brightness(1.1)}
-    .cal-more{font-size:9px;color:var(--muted);margin-top:1px;padding-left:2px}
-    .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-    .view-toggle button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .1s}
-    .view-toggle button.active{background:var(--brass);color:#fff}
-    .ts-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:22px}
-    .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
-    .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
-    .ts-table tr:last-child td{border-bottom:none}
-    .src-admin{color:var(--brass)}
-    .modal-bg{position:fixed;inset:0;background:#00000077;z-index:200;display:flex;align-items:center;justify-content:center}
-    .modal-box{background:var(--card);border-radius:12px;padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:0 8px 40px #00000055}
-    .modal-title{margin:0 0 16px;font-size:15px;font-weight:700}
-    .modal-err{font-size:11px;color:var(--red);min-height:14px;margin-bottom:2px}
-    .modal-actions{display:flex;gap:8px;margin-top:16px;align-items:center}
-    .period-card{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
-    .period-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);cursor:pointer}
-    .period-title{font-weight:600;font-size:13px}
-    .period-meta{font-size:11px;color:var(--muted)}
-    .period-body{padding:12px 14px}
-    .sec-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
-    .pill-ok{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
-    .pill-open{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
-    .confirm-row{background:var(--surface);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-    .confirm-emp{font-weight:600;font-size:13px;min-width:160px;padding-top:2px}
-    .confirm-emp-title{font-size:10px;color:var(--muted)}
-    .hrs-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .hrs-label{font-size:11px}
-    .hrs-inp{width:72px;text-align:right;font-size:12px}
-    .ml-row{display:grid;grid-template-columns:1fr 1fr 80px 28px;gap:6px;align-items:center;margin-bottom:4px}
-    .ml-row input{font-size:11px}
-    .calc-summary{width:100%;font-size:11px;color:var(--muted);margin-top:4px}
-    .action-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    .lm-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
-    .lm-table th{text-align:right;padding:4px 10px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border)}
-    .lm-table th:first-child{text-align:left}
-    .lm-table td{padding:5px 10px;border-bottom:1px solid var(--border)44;text-align:right}
-    .lm-table td:first-child{text-align:left;font-weight:500}
-    .lm-table tr.lm-total td{font-weight:700;border-top:2px solid var(--border);border-bottom:none;background:var(--surface)}
-    .btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
-    .edited-badge{font-size:9px;color:var(--muted);margin-left:3px}
-    /* Payslip cards */
-    .payslip-card{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden}
-    .psc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:2px solid var(--border);background:var(--surface)}
-    .psc-identity .psc-name{font-weight:700;font-size:14px}
-    .psc-identity .psc-sub{font-size:11px;color:var(--muted);margin-top:1px}
-    .psc-hrs{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-    .psc-hrs label{font-size:10px;color:var(--muted);white-space:nowrap}
-    .psc-hrs input{width:60px;font-size:11px;padding:2px 4px;text-align:right}
-    .psc-samtolur{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)88}
-    .psc-samtolur-grid{display:grid;grid-template-columns:1fr auto auto;gap:3px 16px;font-size:12px;align-items:center;max-width:400px}
-    .psc-col-hdr{font-size:10px;font-weight:700;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:.4px}
-    .psc-num{text-align:right;font-weight:500;white-space:nowrap}
-    .psc-net-val{font-weight:700;color:var(--green)}
-    .psc-ytd-val{color:var(--brass)}
-    .psc-table{width:100%;border-collapse:collapse;font-size:11px}
-    .psc-table th,.psc-table td{padding:3px 8px;border-bottom:1px solid var(--border)22;vertical-align:middle}
-    .psc-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)66;background:var(--surface)88}
-    .psc-table .num{text-align:right}
-    .psc-table td:first-child,.psc-table td:nth-child(2){color:var(--muted)}
-    .psc-total-row td,.psc-total-row th{font-weight:700;border-top:2px solid var(--border)66;border-bottom:2px solid var(--border)66;background:var(--surface);color:var(--text)!important}
-    .psc-total-row .psc-ytd-val{color:var(--brass)!important}
-    .psc-section-hdr td,.psc-section-hdr th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface)55;padding-top:8px;border-top:2px solid var(--border)}
-    .btn-link{background:none;border:none;cursor:pointer;color:var(--brass);font-size:10px;padding:0 14px 10px;font-family:inherit;display:block}
-    /* Period filter */
-    .period-filter-card{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px}
-    .filter-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
-    .filter-date{min-width:130px;font-size:11px}
-    /* Config */
-    .cfg-fund,.cfg-union{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
-    .cfg-fund-header,.cfg-union-header{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
-    .cfg-line-row{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
-    .cfg-line-hdr{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-    .cfg-ot-row{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
-    .cfg-ot-hdr{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-  </style>
-</head>
+  </head>
 <body>
 <div class="page">
   <header id="ym-header"><div class="header-left"></div><div class="header-right"></div></header>
@@ -241,7 +137,7 @@
       <input id="meIn" type="datetime-local" style="width:100%"></div>
     <div class="field"><label data-s="payroll.clockOutLabel"></label>
       <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> â <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
+    <div class="field"><label><span data-s="payroll.minsLabel"></span> Ã¢ÂÂ <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
       <input id="meMins" type="number" min="0" style="width:100%"></div>
     <div class="field"><label data-s="payroll.noteOptional"></label>
       <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
@@ -336,10 +232,10 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
-  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">Ã¢ÂÂ</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
-  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">Ã¢ÂÂ</option>';
   unions.forEach(function(u){var sel=(emp&&emp.unionId===u.id)?'selected':'';h+='<option value="'+_e(u.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?u.name:u.nameEN||u.name)+'</option>';});
   h+='</select></div>';
   h+='</div>';
@@ -726,8 +622,8 @@ function prCalcHTML(calc,ytd,empId){
   h+=tr(per,s('payroll.dagvinna'),calc.regularHrs.toFixed(2),n(rateKr),calc.dagvinna,ytdReg.toFixed(2),(ytd.dagvinna||0)+calc.dagvinna);
   h+=tr(per,s('payroll.ot1Label'),calc.ot1Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna1||1.33)),calc.eftirvinna1,ytdOt1.toFixed(2),(ytd.eftirvinna1||0)+calc.eftirvinna1);
   h+=tr(per,s('payroll.ot2Label'),calc.ot2Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna2||1.55)),calc.eftirvinna2,ytdOt2.toFixed(2),(ytd.eftirvinna2||0)+calc.eftirvinna2);
-  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'â','â',l.amount,'â',0);});
-  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'â','â',calc.orlofslaun,'â',(ytd.orlofslaun||0)+calc.orlofslaun);
+  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'Ã¢ÂÂ','Ã¢ÂÂ',l.amount,'Ã¢ÂÂ',0);});
+  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'Ã¢ÂÂ','Ã¢ÂÂ',calc.orlofslaun,'Ã¢ÂÂ',(ytd.orlofslaun||0)+calc.orlofslaun);
   h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
     +'<td class="num">'+n(calc.grossTotal)+'</td><td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
   h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
@@ -1173,7 +1069,7 @@ function cfgSaveUnion(ui){
       <input id="meIn" type="datetime-local" style="width:100%"></div>
     <div class="field"><label data-s="payroll.clockOutLabel"></label>
       <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> â <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
+    <div class="field"><label><span data-s="payroll.minsLabel"></span> Ã¢ÂÂ <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
       <input id="meMins" type="number" min="0" style="width:100%"></div>
     <div class="field"><label data-s="payroll.noteOptional"></label>
       <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
@@ -1268,10 +1164,10 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
-  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">Ã¢ÂÂ</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
-  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">Ã¢ÂÂ</option>';
   unions.forEach(function(u){var sel=(emp&&emp.unionId===u.id)?'selected':'';h+='<option value="'+_e(u.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?u.name:u.nameEN||u.name)+'</option>';});
   h+='</select></div>';
   h+='</div>';
@@ -1658,8 +1554,8 @@ function prCalcHTML(calc,ytd,empId){
   h+=tr(per,s('payroll.dagvinna'),calc.regularHrs.toFixed(2),n(rateKr),calc.dagvinna,ytdReg.toFixed(2),(ytd.dagvinna||0)+calc.dagvinna);
   h+=tr(per,s('payroll.ot1Label'),calc.ot1Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna1||1.33)),calc.eftirvinna1,ytdOt1.toFixed(2),(ytd.eftirvinna1||0)+calc.eftirvinna1);
   h+=tr(per,s('payroll.ot2Label'),calc.ot2Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna2||1.55)),calc.eftirvinna2,ytdOt2.toFixed(2),(ytd.eftirvinna2||0)+calc.eftirvinna2);
-  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'â','â',l.amount,'â',0);});
-  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'â','â',calc.orlofslaun,'â',(ytd.orlofslaun||0)+calc.orlofslaun);
+  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'Ã¢ÂÂ','Ã¢ÂÂ',l.amount,'Ã¢ÂÂ',0);});
+  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'Ã¢ÂÂ','Ã¢ÂÂ',calc.orlofslaun,'Ã¢ÂÂ',(ytd.orlofslaun||0)+calc.orlofslaun);
   h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
     +'<td class="num">'+n(calc.grossTotal)+'</td><td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
   h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
