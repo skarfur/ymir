@@ -820,30 +820,163 @@ function prViewPayslip(btn){
   window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
 }
   
-  function prPayslipCard(emp,calc,ytd,regularMins){
-  var eid=_e(emp.id);
-  var h='<div class="payslip-card" id="prevrow_'+eid+'">';
+  function prPayslipCard(emp, calc, ytd, regularMins){
+  var eid = _e(emp.id);
+  var h = '<div class="payslip-card" id="prevrow_'+eid+'">';
 
-  // ── Header
-  h+='<div class="psc-header">';
-  h+='<div><div class="psc-name">'+_e(emp.name)+'</div>';
-  h+='<div class="psc-title">'+_e(emp.title||'')+'</div></div>';
-  h+='<div class="psc-hrs">';
-  h+='<label class="hrs-label" data-s="payroll.regularHours"></label>';
-  h+='<input class="hrs-inp" id="pHrs_'+eid+'" type="number" min="0" step="0.25" value="'+(regularMins/60).toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
-  h+='<label class="hrs-label" data-s="payroll.ot1Hours"></label>';
-  h+='<input class="hrs-inp" id="pOt1_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
-  h+='<label class="hrs-label" data-s="payroll.ot2Hours"></label>';
-  h+='<input class="hrs-inp" id="pOt2_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
-  h+='</div></div>';
+  // ── Header row: name + hour inputs
+  h += '<div class="psc-header">';
+  h += '<div class="psc-identity">';
+  h += '<div class="psc-name">'+_e(emp.name)+'</div>';
+  h += '<div class="psc-sub">'+_e(emp.title||'')+'</div>';
+  h += '<div class="psc-sub">'+s('payroll.bankAccount')+': '+_e(emp.bankAccount||'—')+'</div>';
+  h += '</div>';
+  h += '<div class="psc-hrs">';
+  h += '<label class="hrs-label" data-s="payroll.regularHours"></label>';
+  h += '<input class="hrs-inp" id="pHrs_'+eid+'" type="number" min="0" step="0.25" value="'+(regularMins/60).toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
+  h += '<label class="hrs-label" data-s="payroll.ot1Hours"></label>';
+  h += '<input class="hrs-inp" id="pOt1_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
+  h += '<label class="hrs-label" data-s="payroll.ot2Hours"></label>';
+  h += '<input class="hrs-inp" id="pOt2_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
+  h += '</div></div>';
 
   // ── Manual lines
-  h+='<div id="pManual_'+eid+'" style="margin:6px 0"></div>';
-  h+='<button class="btn-link" onclick="prAddLine(\''+eid+'\')" data-s="payroll.addLine"></button>';
+  h += '<div id="pManual_'+eid+'" style="margin:4px 0"></div>';
+  h += '<button class="btn-link" onclick="prAddLine(\''+eid+'\')" data-s="payroll.addLine"></button>';
 
-  // ── Payslip breakdown (re-rendered by prRecalc)
-  h+='<div id="pCalc_'+eid+'">'+prCalcHTML(calc,ytd)+'</div>';
-  h+='</div>';
+  // ── Live calc breakdown (re-rendered by prRecalc)
+  h += '<div id="pCalc_'+eid+'">'+prCalcHTML(calc, ytd, emp.id)+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function prCalcHTML(calc, ytd, empId){
+  var cfg = window.PAYROLL_CONFIG || {};
+  var loc = locale();
+
+  function n(v){ return Math.round(v||0).toLocaleString('is-IS'); }
+  function pct(v){ return ((v||0)*100).toFixed(2).replace(/\.?0+$/,'')+'%'; }
+
+  // ── Samtölur box (top summary like the payslip header box)
+  var ytdGross  = (ytd.grossTotal||0) + calc.grossTotal;
+  var ytdDeduct = (ytd.totalDeductions||0) + calc.totalDeductions;
+  var ytdNet    = (ytd.netPay||0) + calc.netPay;
+
+  var h = '<div class="psc-samtolur">';
+  h += '<div class="psc-samtolur-grid">';
+  h += '<div></div><div class="psc-col-hdr" data-s="payroll.periodLabel"></div><div class="psc-col-hdr" data-s="payroll.ytdSection"></div>';
+  h += '<div data-s="payroll.grossLabel"></div><div class="psc-num">'+n(calc.grossTotal)+'</div><div class="psc-num psc-ytd-val">'+n(ytdGross)+'</div>';
+  h += '<div data-s="payroll.totalDeductions"></div><div class="psc-num">'+n(calc.totalDeductions)+'</div><div class="psc-num psc-ytd-val">'+n(ytdDeduct)+'</div>';
+  h += '<div data-s="payroll.netLabel"></div><div class="psc-num psc-net-val">'+n(calc.netPay)+'</div><div class="psc-num psc-ytd-val">'+n(ytdNet)+'</div>';
+  h += '</div></div>';
+
+  // ── Laun section
+  h += '<table class="psc-table">';
+  h += '<thead><tr>';
+  h += '<th data-s="payroll.periodLabel"></th>';
+  h += '<th data-s="lbl.type"></th>';
+  h += '<th class="num" data-s="payroll.units"></th>';
+  h += '<th class="num" data-s="payroll.rate"></th>';
+  h += '<th class="num" data-s="payroll.amount"></th>';
+  h += '<th class="num" data-s="payroll.ytdUnits"></th>';
+  h += '<th class="num">ISK</th>';
+  h += '</tr></thead><tbody>';
+
+  var period = _previewData.from ? _previewData.from.slice(0,7).replace('-','.')+'–'+(_previewData.to||'').slice(0,7).replace('-','.') : '';
+  var rateKr = emp&&emp.baseRateKr ? emp.baseRateKr : (calc.dagvinna&&calc.regularHrs>0 ? Math.round(calc.dagvinna/calc.regularHrs) : 0);
+
+  function tr(period, type, units, rate, amt, ytdUnits, ytdAmt, bold){
+    var cls = bold ? ' class="psc-total-row"' : '';
+    return '<tr'+cls+'>'
+      +'<td>'+_e(period)+'</td>'
+      +'<td>'+_e(type)+'</td>'
+      +'<td class="num">'+_e(String(units))+'</td>'
+      +'<td class="num">'+_e(String(rate))+'</td>'
+      +'<td class="num">'+n(amt)+'</td>'
+      +'<td class="num psc-ytd-val">'+_e(String(ytdUnits))+'</td>'
+      +'<td class="num psc-ytd-val">'+n(ytdAmt)+'</td>'
+      +'</tr>';
+  }
+
+  var ytdReg  = (ytd.regularHrs||0) + calc.regularHrs;
+  var ytdOt1  = (ytd.ot1Hrs||0)     + calc.ot1Hrs;
+  var ytdOt2  = (ytd.ot2Hrs||0)     + calc.ot2Hrs;
+  var ytdDag  = (ytd.dagvinna||0)   + calc.dagvinna;
+  var ytdEt1  = (ytd.eftirvinna1||0)+ calc.eftirvinna1;
+  var ytdEt2  = (ytd.eftirvinna2||0)+ calc.eftirvinna2;
+  var ytdOrlof= (ytd.orlofslaun||0) + calc.orlofslaun;
+
+  h += tr(period, s('payroll.dagvinna'), calc.regularHrs.toFixed(2), n(rateKr), calc.dagvinna, ytdReg.toFixed(2), ytdDag);
+  h += tr(period, s('payroll.ot1Label'), calc.ot1Hrs.toFixed(2), n(Math.round(rateKr*1.33)), calc.eftirvinna1, ytdOt1.toFixed(2), ytdEt1);
+  h += tr(period, s('payroll.ot2Label'), calc.ot2Hrs.toFixed(2), n(Math.round(rateKr*1.55)), calc.eftirvinna2, ytdOt2.toFixed(2), ytdEt2);
+
+  // Manual lines
+  if(calc.manualLines && calc.manualLines.length){
+    calc.manualLines.forEach(function(l){
+      h += tr(period, _e(l.label), '—', '—', l.amount, '—', 0);
+    });
+  }
+
+  h += tr(period, s('payroll.orlofsRate')+' '+pct(calc.orlofsRate), '—', '—', calc.orlofslaun, '—', ytdOrlof);
+  h += '<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
+    +'<td class="num">'+n(calc.grossTotal)+'</td>'
+    +'<td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
+
+  // ── Frádráttur section header
+  h += '<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
+    +'<th class="num" data-s="payroll.units"></th>'
+    +'<th class="num" data-s="payroll.rate"></th>'
+    +'<th class="num" data-s="payroll.amount"></th>'
+    +'<td colspan="2" class="num">ISK</td></tr>';
+
+  var ytdPension = (ytd.employeePension||0) + calc.employeePension;
+  var ytdTax     = (ytd.taxWithheld||0)     + calc.taxAfterCredit;
+  var ytdOrlofB  = (ytd.orlofIBanki||0)     + calc.orlofIBanki;
+
+  h += tr('', s('payroll.empPensionRate')+' '+pct(calc.pensionRate), n(calc.grossTotal), pct(calc.pensionRate), calc.employeePension, '', ytdPension);
+  if(calc.sereignarsjodur>0) h += tr('', s('payroll.sereignRate')+' '+pct(calc.sereignRate), n(calc.grossTotal), pct(calc.sereignRate), calc.sereignarsjodur, '', (ytd.sereignarsjodur||0)+calc.sereignarsjodur);
+  if(calc.unionDues>0)       h += tr('', s('payroll.union'), '—', pct(calc.unionRate), calc.unionDues, '', (ytd.unionDues||0)+calc.unionDues);
+
+  // Tax brackets
+  cfg.taxBrackets && cfg.taxBrackets.forEach(function(b, i){
+    h += tr('', s('payroll.taxBracket'+(i+1)), n(calc.taxBase), pct(b.rate), calc.taxGross && i===0 ? calc.taxGross : 0, '', 0);
+  });
+
+  h += tr('', s('payroll.taxComputed'), '—', '—', calc.taxGross, '', (ytd.taxGross||0)+calc.taxGross);
+  h += tr('', s('payroll.personuafslattr'), n(calc.personalCredit), '1,00', -calc.personalCredit, '', -(ytd.personalCredit||calc.personalCredit));
+  h += tr('', s('payroll.taxWithheld'), '—', '—', calc.taxAfterCredit, '', ytdTax);
+  h += tr('', s('payroll.orlofslaun'), '—', '—', calc.orlofIBanki, '', ytdOrlofB);
+
+  h += '<tr class="psc-total-row"><td colspan="4" data-s="payroll.totalDeductions"></td>'
+    +'<td class="num">'+n(calc.totalDeductions)+'</td>'
+    +'<td class="num psc-ytd-val" colspan="2">'+n(ytdDeduct)+'</td></tr>';
+
+  // ── Framlag launagreiðanda
+  h += '<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.employerSection"></td>'
+    +'<td></td><th class="num" data-s="payroll.rate"></th><th class="num" data-s="payroll.amount"></th>'
+    +'<td colspan="2" class="num">ISK</td></tr>';
+
+  var ytdEmpPen = (ytd.employerPension||0) + calc.employerPensionAmt;
+  var ytdEndur  = (ytd.endurhaefingarsjodur||0) + calc.endurhaefingarsjodur;
+
+  h += tr('', s('payroll.employerPension')+' '+pct(cfg.employerPension||0.115), '—', pct(cfg.employerPension||0.115), calc.employerPensionAmt, '', ytdEmpPen);
+  h += tr('', s('payroll.endurhaefingarsjodur')+' '+pct(cfg.endurhaefingarsjodur||0.001), '—', pct(cfg.endurhaefingarsjodur||0.001), calc.endurhaefingarsjodur, '', ytdEndur);
+
+  // ── Til uppsöfnunar
+  h += '<tr class="psc-section-hdr"><td colspan="5" data-s="payroll.accumulatedSection"></td>'
+    +'<td class="num" data-s="payroll.now"></td><td class="num" data-s="payroll.ytdSection"></td></tr>';
+  h += '<tr><td colspan="4" data-s="payroll.orlofslaun"></td>'
+    +'<td></td>'
+    +'<td class="num psc-ytd-val">'+n(calc.orlofIBanki)+'</td>'
+    +'<td class="num psc-ytd-val">'+n(ytdOrlofB)+'</td></tr>';
+
+  h += '</tbody></table>';
+
+  // ── Preview button
+  h += '<div style="margin-top:10px;display:flex;gap:8px">';
+  h += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" onclick="prPreviewLocal(\''+_e(empId||'')+'\')">&#128196; <span data-s="payroll.exportPdf"></span></button>';
+  h += '</div>';
+
   return h;
 }
   
