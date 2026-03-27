@@ -79,6 +79,11 @@
 <script>
 // Wire all strings on load — no hard-coded text in HTML
 document.getElementById('subtitle').textContent  = s('login.subtitle');
+// EN: title above subtitle; IS: subtitle above title
+if (getLang() !== 'IS') {
+  var logo = document.querySelector('.login-logo');
+  logo.appendChild(document.getElementById('subtitle'));
+}
 document.getElementById('ktLabel').textContent   = s('login.kennitala');
 document.getElementById('ktInput').placeholder   = s('login.placeholder');
 document.getElementById('btnText').textContent   = s('login.btn');
