@@ -140,74 +140,12 @@
   </div>
   <div id="activeList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
-  <!-- ══ TABS ══ -->
-  <div class="hub-tabs" style="margin-top:16px">
-    <button class="hub-tab active" onclick="showTab('fleet')"   id="tabBtnFleet"   data-s="member.tabFleet"></button>
-    <button class="hub-tab"        onclick="showTab('trips')"   id="tabBtnTrips"   data-s="member.tabTrips"></button>
-    <button class="hub-tab"        onclick="showTab('logbook')" id="tabBtnLogbook" data-s="member.tabLogbook"></button>
-    <button class="hub-tab"        onclick="showTab('certs')"   id="tabBtnCerts"   data-s="member.tabCerts"></button>
-  </div>
-
-  <!-- ═══ TAB: FLEET ═══ -->
-  <div id="tab-fleet">
+  <!-- ═══ FLEET ═══ -->
+  <div id="tab-fleet" style="margin-top:16px">
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
     <div id="fleetByCat"></div>
   </div>
 
-  <!-- ═══ TAB: TRIPS ═══ -->
-  <div id="tab-trips" class="hidden">
-    <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5" id="tripTabHint"></p>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.recentTrips"></div>
-    <div id="clubTrips"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="margin-top:12px">
-      <button class="btn btn-secondary" style="width:100%" onclick="openManualTripModal()" data-s="member.logManual"></button>
-    </div>
-  </div>
-
-  <!-- ═══ TAB: LOGBOOK ═══ -->
-  <div id="tab-logbook" class="hidden">
-    <div class="stats-grid">
-      <div class="stat-box"><div class="sn" id="stTrips">—</div><div class="sl" data-s="member.statTrips"></div></div>
-      <div class="stat-box"><div class="sn" id="stHours">—</div><div class="sl" data-s="member.statHours"></div></div>
-      <div class="stat-box"><div class="sn" id="stBoat">—</div> <div class="sl" data-s="member.statBoat"></div></div>
-      <div class="stat-box"><div class="sn" id="stSeason">—</div><div class="sl" data-s="member.statSeason"></div></div>
-    </div>
-    <div id="logbookList"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
-
-  <!-- ═══ TAB: CERTIFICATIONS ═══ -->
-  <div id="tab-certs" class="hidden">
-    <div id="certsList"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
-
-</div>
-
-<!-- ══ TRIP DETAIL MODAL ══ -->
-<div class="modal-overlay hidden" id="tripDetailModal" onclick="if(event.target===this)closeModal('tripDetailModal')">
-  <div class="modal" style="max-width:440px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="tdTitle">Trip</h3>
-      <button class="btn-ghost" onclick="closeModal('tripDetailModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
-    </div>
-    <div id="tdBody" style="font-size:13px"></div>
-  </div>
-</div>
-
-<!-- ══ ADD AS CREW MODAL ══ -->
-<div class="modal-overlay hidden" id="crewModal" onclick="if(event.target===this)closeModal('crewModal')">
-  <div class="modal" style="max-width:400px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="crewModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('crewModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
-    </div>
-    <div id="crewTripSummary" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px"></div>
-    <div class="field"><label data-s="lbl.notes"></label><input type="text" id="crewNotes"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-primary"   onclick="submitCrewLog()"         id="crewSubmitBtn"></button>
-    </div>
-    <div id="crewErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
-  </div>
 </div>
 
 <!-- ══ MANUAL TRIP MODAL ══ -->
@@ -261,10 +199,9 @@
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
-let boats=[], locations=[], checkouts=[], myTrips=[], allTrips=[];
-let certDefs=[], currentWx=null;
-let launchBoat=null, returnCo=null, pendingCrewTrip=null;
-let tripsLoaded=false, logbookLoaded=false, certsLoaded=false;
+let boats=[], locations=[], checkouts=[];
+let currentWx=null;
+let launchBoat=null, returnCo=null;
 const L = getLang();
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
@@ -278,16 +215,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('launchModalTitle').textContent  = s('member.launchTitle');
   document.getElementById('returnModalTitle').textContent  = s('member.checkInTitle');
   document.getElementById('manualTripTitle').textContent   = s('member.manualTrip');
-  document.getElementById('crewModalTitle').textContent    = s('member.addAsCrew');
-  document.getElementById('crewSubmitBtn').textContent     = s('member.addAsCrew');
   document.getElementById('manualTripSaveBtn').textContent = s('btn.save');
   document.getElementById('rBoatOpt').textContent          = s('lbl.selectDots');
   document.getElementById('rLocOpt').textContent           = s('lbl.selectDots');
   document.getElementById('rDepartedLabel').textContent    = s('member.departed');
   document.getElementById('rReturnedLabel').textContent    = s('member.returned');
-  document.getElementById('crewNotes').placeholder         = s('lbl.optional');
   document.getElementById('rNotes').placeholder            = s('lbl.optional');
-  document.getElementById('tripTabHint').textContent       = s('member.tripsTapHint');
 
   wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
 
@@ -325,17 +258,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   warmContainer();
 });
 
-// ══ TAB SWITCHING ════════════════════════════════════════════════════════════
-function showTab(name) {
-  ['fleet','trips','logbook','certs'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
-    document.getElementById('tabBtn'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('active', t === name);
-  });
-  if (name === 'trips'   && !tripsLoaded)   loadTripsTab();
-  if (name === 'logbook' && !logbookLoaded) loadLogbookTab();
-  if (name === 'certs'   && !certsLoaded)   loadCertsTab();
-}
-
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
   const active = checkouts.filter(c => c.status === 'out');
@@ -359,146 +281,6 @@ function renderActiveCheckouts() {
   if (!mine.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
   boatRegistry.setCos(mine);
   el.innerHTML = mine.map(c => renderCheckoutCard(c, { isMe:true, staffView:false, onReturn:`openReturnModal('${c.id}')` })).join('');
-}
-
-// ══ TRIPS TAB ════════════════════════════════════════════════════════════════
-async function loadTripsTab() {
-  const el = document.getElementById('clubTrips');
-  el.innerHTML = '<div class="empty-note"><span class="spinner"></span></div>';
-  try {
-    const today = new Date().toISOString().slice(0,10);
-    const res   = await apiGet('getTrips', { date: today, limit: 50 });
-    allTrips    = (res.trips||[]).sort((a,b) => (a.timeOut||"") > (b.timeOut||"") ? -1 : 1);
-    tripsLoaded = true;
-    renderClubTrips();
-  } catch(e) {
-    el.innerHTML = '<div class="empty-note" style="color:var(--red)">' + s('toast.loadFailed') + ': ' + esc(e.message) + '</div>';
-  }
-}
-
-function renderClubTrips() {
-  const el = document.getElementById('clubTrips');
-  if (!allTrips.length) { el.innerHTML = '<div class="empty-note">' + s('member.noRecent') + '</div>'; return; }
-  function parseWxBadge(trip) {
-    var wx = null;
-    if (trip.wxSnapshot) { try { wx = typeof trip.wxSnapshot==='string' ? JSON.parse(trip.wxSnapshot) : trip.wxSnapshot; } catch(e){} }
-    if (!wx && !trip.beaufort) return "";
-    var flags = { green:"🟢", yellow:"🟡", orange:"🟠", red:"🔴" };
-    if (wx) {
-      var flag  = wx.flag ? (flags[wx.flag]||"") : "";
-      var wind  = (wx.dir||"") + (wx.ws!=null ? " "+wx.ws+"m/s" : "") + (wx.bft!=null ? " Bft"+wx.bft : "");
-      var cond  = wx.cond ? " "+wx.cond.icon : "";
-      var waves = wx.wv!=null ? " · 🌊"+wx.wv+"m" : "";
-      return '<div style="font-size:11px;color:var(--muted);margin-top:5px">'+(flag?'<span style="font-size:12px;margin-right:4px">'+flag+'</span>':"")+esc(wind.trim())+cond+waves+'</div>';
-    }
-    return '<div style="font-size:11px;color:var(--muted);margin-top:5px">💨 Bft '+esc(trip.beaufort)+(trip.windDir?" "+esc(trip.windDir):"")+' </div>';
-  }
-  el.innerHTML = allTrips.map(function(trip) {
-    var isMe = trip.kennitala===user.kennitala || trip.memberKennitala===user.kennitala;
-    var roleTag = isMe
-      ? '<span style="font-size:9px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;border-radius:8px;padding:1px 6px">'+(getLang()==='IS'?'Skipari':'Skipper').toUpperCase()+'</span>'
-      : '<span style="font-size:9px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px">'+s('member.addAsCrew')+' →</span>';
-    var wxBadge = parseWxBadge(trip);
-    return '<div class="pub-trip" onclick="'+(isMe?'void 0':'openCrewModal(\''+esc(trip.id)+'\')')+'" style="cursor:'+(isMe?'default':'pointer')+'">'
-      +'<div class="pub-trip-head"><div style="flex:1;min-width:0">'
-      +'<div class="pub-trip-title">'+esc(trip.boatName||'—')+' · '+esc(trip.locationName||'—')+'</div>'
-      +'<div class="pub-trip-meta"><span>'+esc(trip.timeOut||'')+'–'+esc(trip.timeIn||'')+'</span><span>'+(parseFloat(trip.hoursDecimal)||0).toFixed(1)+'h</span><span>👥 '+esc(trip.crew||1)+'</span></div>'
-      +wxBadge
-      +(!isMe&&trip.memberName?'<div style="font-size:10px;color:var(--muted);margin-top:3px">'+(getLang()==='IS'?'Skipari':'Skipper')+': '+esc(trip.memberName)+'</div>':'')
-      +'</div><div style="flex-shrink:0;padding-left:8px">'+roleTag+'</div></div></div>';
-  }).join('');
-}
-
-// ══ CREW MODAL ═══════════════════════════════════════════════════════════════
-function openCrewModal(tripId) {
-  const t = allTrips.find(x => x.id===tripId);
-  if (!t) return;
-  pendingCrewTrip = t;
-  document.getElementById('crewTripSummary').innerHTML =
-    `<div style="font-weight:500">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
-     <div style="color:var(--muted);margin-top:4px">${esc(t.date||'')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h</div>
-     <div style="color:var(--muted);font-size:11px;margin-top:3px">${getLang()==='IS'?'Skipari':'Skipper'}: ${esc(t.memberName||'—')}</div>`;
-  document.getElementById('crewNotes').value = '';
-  document.getElementById('crewErr').style.display = 'none';
-  openModal('crewModal');
-}
-async function submitCrewLog() {
-  const t=pendingCrewTrip, err=document.getElementById('crewErr');
-  if (!t) return;
-  try {
-    await apiPost('saveTrip',{ kennitala:user.kennitala, memberName:user.name, memberId:user.id||user.kennitala,
-      date:t.date, boatId:t.boatId, boatName:t.boatName, locationId:t.locationId, locationName:t.locationName,
-      timeOut:t.timeOut, timeIn:t.timeIn, hoursDecimal:t.hoursDecimal, crew:t.crew, beaufort:t.beaufort,
-      windDir:t.windDir, wxSnapshot:t.wxSnapshot||null, notes:document.getElementById('crewNotes').value.trim(),
-      role:'crew', isLinked:true, linkedCheckoutId:t.id });
-    closeModal('crewModal'); logbookLoaded=false; showToast(s('toast.saved'));
-  } catch(e){ err.textContent=s('toast.error')+': '+e.message; err.style.display='block'; }
-}
-
-// ══ LOGBOOK TAB ══════════════════════════════════════════════════════════════
-async function loadLogbookTab() {
-  const el = document.getElementById('logbookList');
-  try {
-    const res = await apiGet('getTrips', { kennitala:user.kennitala, limit:200 });
-    myTrips = (res.trips||[]).sort((a,b)=>b.date>a.date?1:-1);
-    logbookLoaded=true; renderStats(); renderLogbook();
-  } catch(e) { el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`; }
-}
-function renderStats() {
-  const year=new Date().getFullYear();
-  const season=myTrips.filter(t=>(t.date||'').startsWith(String(year)));
-  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const bc={}; myTrips.forEach(t=>{if(t.boatName)bc[t.boatName]=(bc[t.boatName]||0)+1;});
-  const top=Object.entries(bc).sort(([,a],[,b])=>b-a)[0];
-  document.getElementById('stTrips').textContent=myTrips.length;
-  document.getElementById('stHours').textContent=hours.toFixed(0)+'h';
-  document.getElementById('stBoat').textContent=top?top[0]:'—';
-  document.getElementById('stSeason').textContent=season.length;
-}
-function renderLogbook() {
-  const el=document.getElementById('logbookList');
-  if (!myTrips.length){el.innerHTML=`<div class="empty-note">${s('member.noTrips')}</div>`;return;}
-  el.innerHTML=myTrips.map(t=>{
-    const roleTag=t.role==='crew'?`<span style="font-size:9px;color:var(--muted)"> · ${s('member.crewRole')}</span>`:'';
-    return `<div class="trip-row" onclick="openTripDetail('${esc(t.id)}')">
-      <div class="trip-label">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}${roleTag}</div>
-      <div class="trip-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')} · ${(parseFloat(t.hoursDecimal)||0).toFixed(1)}h${t.beaufort?` · 💨 Bft ${esc(t.beaufort)}`:''}${t.verified&&t.verified!=='false'?' · ✓':''}</div>
-    </div>`;
-  }).join('');
-}
-function openTripDetail(id) {
-  const t=myTrips.find(x=>x.id===id); if(!t)return;
-  document.getElementById('tdTitle').textContent=(t.boatName||'Trip')+' · '+(t.date||'');
-  const rows=[
-    [s('lbl.boat'),t.boatName||'—'],[s('lbl.location'),t.locationName||'—'],[s('lbl.date'),t.date||'—'],
-    [s('member.departed'),t.timeOut||'—'],[s('member.returned'),t.timeIn||'—'],
-    [s('member.duration'),(parseFloat(t.hoursDecimal)||0).toFixed(1)+'h'],[s('lbl.crew'),t.crew||1],
-    t.beaufort?['Wind',`Bft ${t.beaufort}${t.windDir?' · '+t.windDir:''}`]:null,
-    t.notes?[s('lbl.notes'),t.notes]:null,
-    [s('lbl.role'),t.role||(getLang()==='IS'?'Skipari':'Skipper')],
-    [s('lbl.status'),(t.verified&&t.verified!=='false')?s('lbl.verified'):s('lbl.pending')],
-    t.staffComment?['Staff note',t.staffComment]:null,
-  ].filter(Boolean);
-  document.getElementById('tdBody').innerHTML=rows.map(([l,v])=>
-    `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;font-size:12px">
-      <span style="font-size:9px;color:var(--muted);letter-spacing:.8px;width:80px;flex-shrink:0;padding-top:2px">${esc(l.toUpperCase())}</span>
-      <span style="flex:1;color:var(--text)">${esc(String(v))}</span></div>`).join('');
-  openModal('tripDetailModal');
-}
-
-// ══ CERTIFICATIONS TAB ═══════════════════════════════════════════════════════
-async function loadCertsTab() {
-  const el=document.getElementById('certsList');
-  try {
-    const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
-    certDefs=certDefsFromConfig(cfgRes.certDefs||[]); certsLoaded=true;
-    const member=(mRes.members||[]).find(m=>m.kennitala===user.kennitala)||{};
-    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
-    if(!certs.length){el.innerHTML=`<div class="empty-note">${s('cert.noCerts')}</div>`;return;}
-    const grouped={}; certs.forEach(c=>{const k=c.def?.name||c.certId;if(!grouped[k])grouped[k]=[];grouped[k].push(c);});
-    el.innerHTML=Object.entries(grouped).map(([name,items])=>
-      `<div class="cert-section"><div class="cert-section-title">${esc(name)}</div><div>${items.map(certBadgeHTML).join('')}</div></div>`).join('');
-  } catch(e){ el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`; }
 }
 
 // ══ LAUNCH FLOW ══════════════════════════════════════════════════════════════

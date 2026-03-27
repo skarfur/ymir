@@ -636,7 +636,7 @@ function renderRecentCheckins() {
   const el     = document.getElementById('recentCheckins');
   const recent = checkouts.filter(c => c.status === 'in').slice(0, 10);
   const IS     = document.documentElement.lang === 'IS' || getLang() === 'IS';
-  if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('staff.recentCheckins')}</div>`; return; }
+  if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('lbl.noData')}</div>`; return; }
   const header = `<div class="recent-row recent-header">
     <span>${IS?'Inn':'In'}</span>
     <span>${IS?'Félagi':'Member'}</span>
