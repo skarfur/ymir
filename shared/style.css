@@ -1,8 +1,8 @@
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   ÃMIR â shared/style.css
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ÝMIR — shared/style.css
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ââ RESET & BASE âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── RESET & BASE ─────────────────────────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,7 +35,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ââ LAYOUT âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── LAYOUT ───────────────────────────────────────────────────────────────────── */
 
 .page { min-height: 100vh; display: flex; flex-direction: column; }
 
@@ -81,7 +81,7 @@ main {
 
 main.wide { max-width: 1100px; }
 
-/* ââ HEADER BUTTONS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── HEADER BUTTONS ───────────────────────────────────────────────────────────── */
 
 .hbtn {
   background: none;
@@ -99,7 +99,7 @@ main.wide { max-width: 1100px; }
 .hbtn:hover       { color: var(--brass); border-color: var(--brass); }
 .hbtn.active      { color: var(--brass); border-color: var(--brass); }
 
-/* ââ CARDS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── CARDS ────────────────────────────────────────────────────────────────────── */
 
 .card {
   background: var(--card);
@@ -135,7 +135,7 @@ main.wide { max-width: 1100px; }
   background: var(--border);
 }
 
-/* ââ FORMS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── FORMS ────────────────────────────────────────────────────────────────────── */
 
 .field { margin-bottom: 14px; }
 .field:last-child { margin-bottom: 0; }
@@ -183,7 +183,7 @@ textarea { min-height: 70px; }
   .grid2, .grid3 { grid-template-columns: 1fr; }
 }
 
-/* ââ BUTTONS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── BUTTONS ──────────────────────────────────────────────────────────────────── */
 
 .btn {
   border: none;
@@ -225,7 +225,7 @@ textarea { min-height: 70px; }
 .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; text-align: center; }
 
-/* ââ BADGES âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── BADGES ───────────────────────────────────────────────────────────────────── */
 
 .badge {
   display: inline-block;
@@ -245,7 +245,7 @@ textarea { min-height: 70px; }
 .badge-brass  { color: var(--brass);  border-color: #d4af3750; background: #d4af3712; }
 .badge-muted  { color: var(--muted);  border-color: var(--border); background: var(--faint); }
 
-/* ââ TABLE ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── TABLE ────────────────────────────────────────────────────────────────────── */
 
 .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tbl th {
@@ -267,7 +267,7 @@ textarea { min-height: 70px; }
 .tbl tr:hover td      { background: #ffffff06; }
 .tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
 
-/* ââ MESSAGES âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── MESSAGES ─────────────────────────────────────────────────────────────────── */
 
 .msg {
   padding: 10px 14px;
@@ -279,7 +279,7 @@ textarea { min-height: 70px; }
 .msg-err  { background: #e74c3c18; color: var(--red);   border: 1px solid #e74c3c40; }
 .msg-warn { background: #e67e2218; color: var(--orange); border: 1px solid #e67e2240; }
 
-/* ââ MODAL ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── MODAL ────────────────────────────────────────────────────────────────────── */
 
 .modal-overlay {
   position: fixed; inset: 0;
@@ -301,7 +301,7 @@ textarea { min-height: 70px; }
 }
 .modal h3 { color: var(--brass); margin-bottom: 18px; font-size: 16px; }
 
-/* ââ MISC âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── MISC ─────────────────────────────────────────────────────────────────────── */
 
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
@@ -345,9 +345,9 @@ textarea { min-height: 70px; }
   flex-shrink: 0;
 }
 
-/* ââ BOAT CARDS (shared/boats.js) âââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── BOAT CARDS (shared/boats.js) ─────────────────────────────────────────────── */
 
-/* Fleet card â available / out / oos */
+/* Fleet card — available / out / oos */
 .bc-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -360,7 +360,7 @@ textarea { min-height: 70px; }
 .bc-card.bc-overdue { border-left: 3px solid var(--red); }
 .bc-card.bc-oos     { opacity: .55; }
 
-/* Checkout card â active checkouts */
+/* Checkout card — active checkouts */
 .bc-checkout-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -387,7 +387,7 @@ textarea { min-height: 70px; }
 
 .hidden { display: none !important; }
 
-/* ââ Payslip preview cards ââ */
+/* ── Payslip preview cards ── */
 /* ── PAYROLL PAGE ──────────────────────────────────────────────────────────────────────────── */
 
 .pr-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
@@ -472,7 +472,7 @@ textarea { min-height: 70px; }
 .psc-num{text-align:right;font-weight:500;white-space:nowrap}
 .psc-net-val{font-weight:700;color:var(--green)}
 .psc-ytd-val{color:var(--brass)}
-.psc-table{width:100%;border-collapse:collapse;font-size:11px}
+.psc-table{width:100%;border-collapse:collapse;font-size:11px;padding:0 14px 12px}
 .psc-table th,.psc-table td{padding:3px 8px;border-bottom:1px solid var(--border)22;vertical-align:middle}
 .psc-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)66;background:var(--surface)88}
 .psc-table .num{text-align:right}
@@ -491,23 +491,4 @@ textarea { min-height: 70px; }
 .cfg-line-row{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
 .cfg-line-hdr{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
 .cfg-ot-row{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
-.cfg-ot-hdr{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-
-/* SamtÃ¶lur summary box */
-.psc-samtolur{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)88}
-.psc-samtolur-grid{display:grid;grid-template-columns:1fr auto auto;gap:3px 16px;font-size:12px;align-items:center;max-width:400px}
-.psc-col-hdr{font-size:10px;font-weight:700;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:.4px}
-.psc-num{text-align:right;font-weight:500;white-space:nowrap}
-.psc-net-val{font-weight:700;color:var(--green)}
-.psc-ytd-val{color:var(--brass)}
-
-/* Main payslip table */
-.psc-table{width:100%;border-collapse:collapse;font-size:11px;padding:0 14px 12px}
-.psc-table th,.psc-table td{padding:3px 8px;border-bottom:1px solid var(--border)22;vertical-align:middle}
-.psc-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)66;background:var(--surface)88}
-.psc-table .num{text-align:right}
-.psc-table td:first-child,.psc-table td:nth-child(2){color:var(--muted)}
-.psc-total-row td,.psc-total-row th{font-weight:700;border-top:2px solid var(--border)66;border-bottom:2px solid var(--border)66;background:var(--surface);color:var(--text)!important}
-.psc-total-row .psc-ytd-val{color:var(--brass)!important}
-.psc-section-hdr td,.psc-section-hdr th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface)55;padding-top:8px;border-top:2px solid var(--border)}
-.btn-link{background:none;border:none;cursor:pointer;color:var(--brass);font-size:10px;padding:0 14px 10px;font-family:inherit;display:block}
+.cfg-ot-hdr{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4pxerit;display:block}
