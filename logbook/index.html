@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>�mir  Logbook</title>
+<title>Ýmir — Logbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
@@ -82,14 +82,14 @@
 </head>
 <body>
 <div class="page">
-  <a class="back-nav" href="../member/">� Member Hub</a>
+  <a class="back-nav" href="../member/">← Member Hub</a>
 
   <!-- Stats -->
   <div class="stat-strip">
-    <div class="stat-card"><div class="stat-val" id="stTrips"></div><div class="stat-lbl">Trips</div></div>
-    <div class="stat-card"><div class="stat-val" id="stHours"></div><div class="stat-lbl">Hours</div></div>
-    <div class="stat-card"><div class="stat-val" id="stSeason"></div><div class="stat-lbl">This year</div></div>
-    <div class="stat-card"><div class="stat-val" id="stSkipper"></div><div class="stat-lbl">As skipper</div></div>
+    <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl">Trips</div></div>
+    <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
+    <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
+    <div class="stat-card"><div class="stat-val" id="stSkipper">—</div><div class="stat-lbl">As skipper</div></div>
   </div>
   <div class="cat-hours" id="catHours" style="display:none">
     <div class="cat-hours-title">Hours by category</div>
@@ -98,7 +98,7 @@
 
   <!-- Certifications -->
   <div class="section-hdr"><span>Certifications</span></div>
-  <div id="certsList"><div class="empty-note">Loading&</div></div>
+  <div id="certsList"><div class="empty-note">Loading…</div></div>
 
   <!-- Logbook header -->
   <div class="section-hdr" style="margin-top:24px">
@@ -113,17 +113,17 @@
     <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
     <select id="fWind">
       <option value="">Any wind</option>
-      <option value="calm">Calm (Bft 02)</option>
-      <option value="light">Light (Bft 34)</option>
-      <option value="moderate">Moderate (Bft 56)</option>
+      <option value="calm">Calm (Bft 0–2)</option>
+      <option value="light">Light (Bft 3–4)</option>
+      <option value="moderate">Moderate (Bft 5–6)</option>
       <option value="strong">Strong (Bft 7+)</option>
       <option value="gt4">Above Bft 4</option>
       <option value="lte4">Bft 4 or under</option>
     </select>
-    <input id="fText" type="text" placeholder="Search&">
+    <input id="fText" type="text" placeholder="Search…">
     <span class="filter-count" id="filterCount"></span>
   </div>
-  <div id="tripList"><div class="empty-note">Loading&</div></div>
+  <div id="tripList"><div class="empty-note">Loading…</div></div>
 </div>
 
 <!-- Log manually modal -->
@@ -131,21 +131,21 @@
   <div class="modal-sheet">
     <div class="modal-title">
       <span id="logModalTitle">Log a trip</span>
-      <button class="modal-close" onclick="closeLogModal()"></button>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
     </div>
 
     <!-- Step 1: pick a trip or enter manually -->
     <div id="logStep1">
       <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Join a recent club trip as crew, or enter a trip manually.</p>
-      <div id="recentTripsList"><div class="empty-note">Loading recent trips&</div></div>
-      <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more&</button>
-      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px"> OR ENTER MANUALLY </div>
+      <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
+      <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
+      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR ENTER MANUALLY —</div>
       <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
     </div>
 
     <!-- Step 2: manual entry form -->
     <div id="logStep2" style="display:none">
-      <button onclick="showStep1()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-bottom:12px;padding:0">� Back</button>
+      <button onclick="showStep1()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-bottom:12px;padding:0">← Back</button>
       <div class="form-row">
         <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="form-field"><label>Role</label>
@@ -153,10 +153,10 @@
         </div>
       </div>
       <div class="form-field"><label>Boat</label>
-        <select id="mBoat"><option value="">Select boat&</option></select>
+        <select id="mBoat"><option value="">Select boat…</option></select>
       </div>
       <div class="form-field"><label>Location</label>
-        <select id="mLocation"><option value="">Select location&</option></select>
+        <select id="mLocation"><option value="">Select location…</option></select>
       </div>
       <div class="form-row">
         <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM"
@@ -170,24 +170,24 @@
       <div class="wx-row">
         <div class="form-field"><label>Beaufort</label>
           <select id="mBft">
-            <option value=""></option>
-            <option value="0">0  Calm</option><option value="1">1  Light air</option>
-            <option value="2">2  Light breeze</option><option value="3">3  Gentle</option>
-            <option value="4">4  Moderate</option><option value="5">5  Fresh</option>
-            <option value="6">6  Strong</option><option value="7">7  Near gale</option>
-            <option value="8">8  Gale</option><option value="9">9+</option>
+            <option value="">—</option>
+            <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
+            <option value="2">2 – Light breeze</option><option value="3">3 – Gentle</option>
+            <option value="4">4 – Moderate</option><option value="5">5 – Fresh</option>
+            <option value="6">6 – Strong</option><option value="7">7 – Near gale</option>
+            <option value="8">8 – Gale</option><option value="9">9+</option>
           </select>
         </div>
         <div class="form-field"><label>Direction</label>
           <select id="mWindDir">
-            <option value=""></option>
+            <option value="">—</option>
             <option>N</option><option>NE</option><option>E</option><option>SE</option>
             <option>S</option><option>SW</option><option>W</option><option>NW</option>
           </select>
         </div>
         <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
       </div>
-      <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes&"></textarea></div>
+      <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
       <div id="mErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
       <button class="btn-primary" onclick="submitManual()">Save to logbook</button>
     </div>
@@ -207,15 +207,15 @@ const RECENT_PAGE  = 10;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function parseDateParts(d){
-  if(!d) return{day:'',mon:'',yr:''};
-  return{day:d.slice(8,10)||'',mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),yr:d.slice(0,4)};
+  if(!d) return{day:'—',mon:'',yr:''};
+  return{day:d.slice(8,10)||'—',mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),yr:d.slice(0,4)};
 }
 function bftLabel(b){
   const n=parseInt(b);
   return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n]||'Bft '+b;
 }
 
-//    Stats                                                                      
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function renderStats(){
   const year=String(new Date().getFullYear());
   const season=myTrips.filter(t=>(t.date||'').startsWith(year));
@@ -248,7 +248,7 @@ function renderStats(){
   }
 }
 
-//    Certs                                                                      
+// ── Certs ─────────────────────────────────────────────────────────────────────
 async function renderCerts(){
   const el=document.getElementById('certsList');
   try{
@@ -263,15 +263,15 @@ async function renderCerts(){
   }
 }
 
-//    Trip card                                                                  
+// ── Trip card ─────────────────────────────────────────────────────────────────
 function dirArrow(dir) {
   if (!dir) return '';
-  const dirs = { N:'�', NE:'�', E:'�', SE:'�', S:'�', SW:'�', W:'�', NW:'�' };
+  const dirs = { N:'↓', NE:'↙', E:'←', SE:'↖', S:'↑', SW:'↗', W:'→', NW:'↘' };
   return dirs[dir.toUpperCase()] || '';
 }
 function tripCard(t){
   const p   = parseDateParts(t.date);
-  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '';
+  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
   const isSki = !t.role || t.role==='skipper';
   const isVer = t.verified && t.verified!=='false';
 
@@ -290,16 +290,16 @@ function tripCard(t){
 
   // Expanded wx detail
   const wxRows = wx ? [
-    wx.ws     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' � Bft '+wx.bft:''}</span></div>` : '',
+    wx.ws     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Bft '+wx.bft:''}</span></div>` : '',
     wx.wg     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${Math.round(wx.wg)} m/s</span></div>` : '',
     wx.dir              ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx.dir)} ${esc(wx.dir)}</span></div>` : '',
     wx.wv     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '',
-    wx.tc     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}�C</span></div>` : '',
-    wx.sst    != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}�C</span></div>` : '',
-    wx.feels  != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}�C</span></div>` : '',
-    wx.pres   != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' � '+wx.presTrend:''}</span></div>` : '',
+    wx.tc     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '',
+    wx.sst    != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '',
+    wx.feels  != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '',
+    wx.pres   != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '',
     wx.cond?.desc       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '',
-  ].filter(Boolean).join('') : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft ${esc(t.beaufort)}${t.windDir?' � '+esc(t.windDir):''}<br><small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
+  ].filter(Boolean).join('') : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft ${esc(t.beaufort)}${t.windDir?' · '+esc(t.windDir):''}<br><small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
 
   // Crew members: look for linked crew trips in myTrips
   const linkedCrew = myTrips.filter(x =>
@@ -317,22 +317,22 @@ function tripCard(t){
         <div class="trip-date-yr">${esc(p.yr)}</div>
       </div>
       <div class="trip-body">
-        <div class="trip-boat">${esc(t.boatName||'')}</div>
+        <div class="trip-boat">${esc(t.boatName||'—')}</div>
         <div class="trip-meta">
-          <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'�h�fn':'Crew')}</span>
-          ${isVer?'<span class="trip-badge badge-verified"></span>':'' }
-          ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">� Validation pending</span>' : ''}
+          <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
+          ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
+          ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
         </div>
       </div>
-      <div class="trip-arrow">�</div>
+      <div class="trip-arrow">▾</div>
     </div>
     <div class="trip-expand">
       <div class="trip-expand-grid">
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
         <div class="trip-exp-row"><span class="trip-exp-lbl">Crew aboard</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
         ${wxRows}
         ${crewNamesHtml}
@@ -343,7 +343,7 @@ function tripCard(t){
 }
 
 
-//    Filters                                                                    
+// ── Filters ───────────────────────────────────────────────────────────────────
 function bftGroup(b){
   const n=parseInt(b)||0;
   if(n<=2) return 'calm';
@@ -397,7 +397,7 @@ function buildFilters(){
   document.getElementById('fText').addEventListener('input',applyFilter);
 }
 
-//    Log manually modal                                                         
+// ── Log manually modal ────────────────────────────────────────────────────────
 let allClubTrips = [], clubTripsOffset = 0;
 const CLUB_PAGE = 10;
 
@@ -435,10 +435,10 @@ function showManualForm(){
   document.getElementById('mDate').value=new Date().toISOString().slice(0,10);
   // Populate boats + locations
   const bSel=document.getElementById('mBoat');
-  bSel.innerHTML='<option value="">Select boat&</option>';
+  bSel.innerHTML='<option value="">Select boat…</option>';
   allBoats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=(b.name||b.id);bSel.appendChild(o);});
   const lSel=document.getElementById('mLocation');
-  lSel.innerHTML='<option value="">Select location&</option>';
+  lSel.innerHTML='<option value="">Select location…</option>';
   allLocs.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
 }
 
@@ -452,10 +452,10 @@ function renderClubTripsList(){
   }
   el.innerHTML=page.map(t=>`
     <div class="trip-pick-card" onclick="joinTripAsCrew('${esc(t.id)}',this)">
-      <div class="tpc-boat">${esc(t.boatName||'')} � ${esc(t.locationName||'')}</div>
-      <div class="tpc-sub">${esc(t.date||'')} � ${esc(t.timeOut||'')}${esc(t.timeIn||'')}
-        ${t.beaufort?' � = Bft '+esc(t.beaufort):''}
-        � ${esc(t.memberName||'?')} (skipper)
+      <div class="tpc-boat">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
+      <div class="tpc-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')}
+        ${t.beaufort?' · 💨 Bft '+esc(t.beaufort):''}
+        · ${esc(t.memberName||'?')} (skipper)
       </div>
     </div>`).join('');
   document.getElementById('loadMoreTripsBtn').style.display=
@@ -483,7 +483,7 @@ async function joinTripAsCrew(tripId, el){
       beaufort: t.beaufort||'', windDir: t.windDir||'',
       notes: '',
     });
-    showToast('Added to your logbook as crew ','success');
+    showToast('Added to your logbook as crew ✓','success');
     closeLogModal();
     reload();
   }catch(e){
@@ -535,7 +535,7 @@ async function submitManual(){
       timeOut, timeIn, hoursDecimal, crew, role,
       beaufort:bft, windDir:wdir, notes, wxSnapshot,
     });
-    showToast('Trip saved ','success');
+    showToast('Trip saved ✓','success');
     closeLogModal();
     reload();
   }catch(e){
@@ -544,7 +544,7 @@ async function submitManual(){
   }
 }
 
-//    Init                                                                       
+// ── Init ──────────────────────────────────────────────────────────────────────
 async function reload(){
   try{
     const res=await apiGet('getTrips',{limit:500});
@@ -594,7 +594,7 @@ async function requestTripValidation(id) {
     const t = myTrips.find(x => x.id === id);
     if (t) t.validationRequested = true;
     applyFilter();
-    showToast(IS ? '�ska� eftir sta�festingu' : 'Validation requested');
+    showToast(IS ? 'Óskað eftir staðfestingu' : 'Validation requested');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 </script>
