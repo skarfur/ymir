@@ -698,4 +698,7 @@ window.applyStrings = function applyStrings(root) {
   'payroll.pensionFundIds': { EN:'Pension fund(s)',                IS:'Lífeyrissjóður' },
   'payroll.unionId': { EN:'Union',                          IS:'Stéttarfélag' },
   'payroll.none': { EN:'None',                           IS:'Ekkert' },
+  // ── Payroll config & new UI keys added 2026-03-27
+  'payroll.personuafslattrFraction': { EN:'Personal credit fraction',     IS:'Hlutfall persónuafsláttar' },
+
 };
