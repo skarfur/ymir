@@ -668,44 +668,18 @@ function calcTax_(gross, lif, ser) {
 }
 
 function closePayPeriod_(b) {
-  if (!b.period) return failJ('period required e.g. 2026-03');
-  const cfg = payrollCfg_(), t = TAX_2026_;
-  const emps = readAll_(TABS_.employees).filter(function(r){ return r.payrollEnabled===true||r.payrollEnabled==='true'; });
-  const outs = readAll_(TABS_.timeClock).filter(function(r){ return r.periodKey===b.period && r.type==='out'; });
+  // Frontend sends pre-calculated rows — store them directly so the committed
+  // payslip always reflects the config values that were in effect at approval time.
+  const rows = b.rows;
+  if (!rows || !rows.length) return failJ('rows array required');
   const results = [];
-  emps.forEach(function(emp) {
-    const empOuts = outs.filter(function(e){ return e.employeeId===emp.id; });
-    const mins    = empOuts.reduce(function(s,e){ return s+Number(e.durationMinutes||0); },0);
-    const hrs     = mins/60;
-    const base    = Number(emp.baseRateKr)||cfg.baseRateKr;
-    const lif     = Number(emp.lifeyrir)||t.lifeyrir;
-    const ser     = Number(emp.sereignarsjodur)||0;
-    const others  = JSON.parse(emp.otherWithholdings||'[]');
-    const otherTot= others.reduce(function(s,o){ return s+Number(o.amount||0); },0);
-    const hReg    = Math.min(hrs, cfg.otThreshold133);
-    const hOT133  = Math.max(0, Math.min(hrs,cfg.otThreshold155)-cfg.otThreshold133);
-    const hOT155  = Math.max(0, hrs-cfg.otThreshold155);
-    const gWage   = Math.round(hReg*base + hOT133*base*cfg.ot133multiplier + hOT155*base*cfg.ot155multiplier);
-    const oFee    = Math.round(gWage*t.orlofsfe);
-    const gTotal  = gWage+oFee;
-    const lifD    = Math.round(gTotal*lif);
-    const serD    = Math.round(gTotal*ser);
-    const stadgr  = calcTax_(gTotal,lif,ser);
-    const net     = gTotal-lifD-serD-stadgr-otherTot;
-    const trygg   = Math.round(gTotal*t.tryggingagjald);
-    const motfr   = Math.round(gTotal*t.motframlag);
-    const row = { id:uid_(), employeeId:emp.id, period:b.period,
-      hoursRegular:Math.round(hReg*100)/100, hoursOT133:Math.round(hOT133*100)/100,
-      hoursOT155:Math.round(hOT155*100)/100, grossWage:gWage, orlofsfe:oFee,
-      grossTotal:gTotal, lifeyrir:lifD, sereignarsjodur:serD,
-      otherWithholdings:JSON.stringify(others), stadgreidslaSkattur:stadgr,
-      netPay:net, tryggingagjald:trygg, motframlag:motfr,
-      totalEmployerCost:gTotal+trygg+motfr, generatedBy:b.by||'admin' };
-    insertRow_(TABS_.payroll,row);
+  rows.forEach(function(r) {
+    const row = Object.assign({}, r, { id: uid_(), generatedBy: b.by || 'admin' });
+    insertRow_(TABS_.payroll, row);
     results.push(row);
   });
   cDel_('payroll');
-  return okJ({ period:b.period, rows:results.length, results:results });
+  return okJ({ periodFrom: b.periodFrom, periodTo: b.periodTo, rows: results.length });
 }
 
 function getPayroll_(b) {
@@ -1499,156 +1473,6 @@ function checkAndSendOverdueAlerts() {
   Object.keys(props.getProperties()).forEach(k => {
     if (k.startsWith('lastAlert_') && !activeKeys.has(k)) props.deleteProperty(k);
   });
-}
-
-function resolveFromEmail_(b) {
-  try {
-    const sig = b.sig, id = b.id, action = b.action || 'silence';
-    const secret = PropertiesService.getScriptProperties().getProperty('EMAIL_SECRET');
-    const expected = Utilities.base64Encode(Utilities.computeHmacSha256Signature(id + '|' + action, secret));
-    if (sig !== expected) return HtmlService.createHtmlOutput('<h2>Invalid or expired link.</h2>');
-    // Find the checkout row
-    const sheet = getSheet_('checkouts');
-    const data  = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const col = h => headers.indexOf(h);
-    const rowIdx = data.findIndex((r, i) => i > 0 && String(r[col('id')]) === String(id));
-    if (rowIdx > 0) {
-      // Silence the alert
-      sheet.getRange(rowIdx+1, col('alertSilenced')+1).setValue(true);
-      if (action === 'checkInAndClose') {
-        const L = CLUB_LANG_;
-          const note = L === 'IS' ? 'Skráð inn sjálfvirkt í gegnum tölvupóstviðvörun.' : 'Checked in automatically via email alert.';
-        sheet.getRange(rowIdx+1, col('status')+1).setValue('in');
-        sheet.getRange(rowIdx+1, col('checkedInAt')+1).setValue(now);
-        sheet.getRange(rowIdx+1, col('notes')+1).setValue(note);
-        cDel_('checkouts');
-        const L2 = CLUB_LANG_;
-        return HtmlService.createHtmlOutput(`<h2 style="font-family:sans-serif;color:#27ae60">${L2==='IS'?'Bát skráður inn.':'Boat checked in.'}</h2><p>${note}</p>`);
-      } else if (action === 'snooze') {
-        const cfg = getAlertConfig_();
-        const snoozeUntil = new Date(Date.now() + (cfg.snoozeMins||30)*60000).toISOString();
-        sheet.getRange(rowIdx+1, col('snoozedUntil')+1).setValue(snoozeUntil);
-        cDel_('checkouts');
-        const L2 = CLUB_LANG_;
-        return HtmlService.createHtmlOutput(`<h2 style="font-family:sans-serif;color:#e67e22">${L2==='IS'?'Viðvörun frestað.':'Alert snoozed.'}</h2>`);
-      }
-    }
-    const L = CLUB_LANG_;
-    return HtmlService.createHtmlOutput(`<h2 style="font-family:sans-serif">${L==='IS'?'Lokið.':'Done.'}</h2>`);
-  } catch(e) {
-    return HtmlService.createHtmlOutput('<h2>Error: ' + e.message + '</h2>');
-  }
-}
-
-function handleAlertAction_(b) {
-  // Web-based alert action — token-authenticated, no HMAC needed
-  try {
-    const id = b.id, action = b.action || 'silence';
-    if (!id) return failJ('Missing id');
-    const sheet   = getSheet_('checkouts');
-    const data    = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const col     = h => headers.indexOf(h);
-    const rowIdx  = data.findIndex((r, i) => i > 0 && String(r[col('id')]) === String(id));
-    if (rowIdx < 1) return failJ('Checkout not found');
-    const L = CLUB_LANG_;
-    sheet.getRange(rowIdx+1, col('alertSilenced')+1).setValue(true);
-    if (action === 'checkInAndClose') {
-      const now = now_();
-      const note = L === 'IS' ? 'Skráð inn af starfsmanni í gegnum vefalert.' : 'Checked in by staff via web alert.';
-      const checkedInAt = now_().slice(11, 16);
-      sheet.getRange(rowIdx+1, col('status')+1).setValue('in');
-      sheet.getRange(rowIdx+1, col('checkedInAt')+1).setValue(checkedInAt);
-      sheet.getRange(rowIdx+1, col('notes')+1).setValue(note);
-      cDel_('checkouts');
-      return okJ({ action, done: true, note });
-    } else if (action === 'snooze') {
-      const cfg = getAlertConfig_();
-      const snoozeUntil = new Date(Date.now() + (cfg.snoozeMins||30)*60000).toISOString();
-      sheet.getRange(rowIdx+1, col('alertSnoozedUntil')+1).setValue(snoozeUntil);
-      cDel_('checkouts');
-      return okJ({ action, done: true, snoozedUntil: snoozeUntil });
-    }
-    cDel_('checkouts');
-    return okJ({ action, done: true });
-  } catch(e) { return failJ('handleAlertAction failed: ' + e.message); }
-}
-
-function emailResponseHtml_(message, ok, lang) {
-  const L = lang || CLUB_LANG_;
-  const color = ok ? '#27ae60' : '#e74c3c';
-  const icon = ok ? '✓' : '⚠';
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ÝMIR</title>
-<style>body{font-family:monospace;background:#071526;color:#d6e4f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-.card{background:#0b1f38;border:1px solid #1e3a5a;border-radius:12px;padding:36px 40px;max-width:420px;text-align:center}
-.icon{font-size:32px;color:${color};margin-bottom:16px}.msg{font-size:14px;line-height:1.6}
-.sub{font-size:11px;color:#6b92b8;margin-top:16px}a{color:#d4af37}</style></head>
-<body><div class="card"><div class="icon">${icon}</div><div class="msg">${message}</div>
-<div class="sub"><a href="https://skarfur.github.io/ymir/staff/">${htmlEsc_(gs_('resolve.portal', null, L))}</a></div>
-</div></body></html>`;
-}
-
-function htmlEsc_(s) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function sendEmailAlert_(alert, cfg) {
-  const L = CLUB_LANG_;
-  // Action URL — points to Apps Script doGet which calls resolveFromEmail_
-  const relayUrl = 'https://skarfur.github.io/ymir/alert-action/';
-  function actionUrl(op) {
-    return relayUrl + '?op=' + op + '&id=' + encodeURIComponent(alert.checkoutId) + '&token=' + API_TOKEN_;
-  }
-  const hrs = Math.floor(alert.minutesOverdue / 60);
-  const min = alert.minutesOverdue % 60;
-  const overdueDisplay = hrs > 0
-    ? (L==='IS' ? hrs+'klst '+min+'mín' : hrs+'h '+min+'min')
-    : (L==='IS' ? min+' mínútur' : min+' min');
-  const contactRow = alert.isMinor
-    ? '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Forráðamaður':'Guardian') + '</td><td style="color:#fff;padding:5px 0">' + (alert.guardianName||'—') + '</td></tr>'
-    + '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Sími forráðamanns':'Guardian phone') + '</td><td style="color:#fff;padding:5px 0">' + (alert.guardianPhone||'—') + '</td></tr>'
-    : '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Sími':'Phone') + '</td><td style="color:#fff;padding:5px 0">' + (alert.memberPhone||'—') + '</td></tr>';
-  const minorBadge = alert.isMinor ? '  ⚠️ ' + (L==='IS'?'Unglingur':'Minor') : '';
-  const subject = L==='IS'
-    ? '⚠️ Bát yfir tíma: ' + alert.memberName + ' — ' + alert.boatName
-    : '⚠️ Overdue boat: ' + alert.memberName + ' — ' + alert.boatName;
-  const body = subject;
-  const htmlBody =
-    '<!DOCTYPE html><html><head><meta charset="UTF-8"></head>' +
-    '<body style="margin:0;padding:20px;background:#071526;font-family:Courier New,monospace">' +
-    '<div style="max-width:560px;margin:0 auto">' +
-      '<div style="background:#e74c3c;color:#fff;padding:14px 20px;border-radius:6px 6px 0 0;font-size:16px;font-weight:bold">' +
-        (L==='IS'?'⚠️ Bát yfir tíma':'⚠️ Boat Overdue') +
-      '</div>' +
-      '<div style="background:#0b1f38;border:1px solid #1e3a5a;border-top:none;padding:20px 24px">' +
-        '<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:20px">' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0;width:42%">' + (L==='IS'?'Félagi':'Member') + '</td><td style="color:#fff;padding:5px 0">' + alert.memberName + minorBadge + '</td></tr>' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Bát':'Boat') + '</td><td style="color:#fff;padding:5px 0">' + alert.boatName + '</td></tr>' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Siglingasvæði':'Sailing area') + '</td><td style="color:#fff;padding:5px 0">' + alert.locationName + '</td></tr>' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Lagði af stað':'Launched') + '</td><td style="color:#fff;padding:5px 0">' + (alert.launchTime||'—') + '</td></tr>' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Skilar klukkan':'Expected back') + '</td><td style="color:#fff;padding:5px 0">' + alert.expectedReturn + '</td></tr>' +
-          '<tr><td style="color:#7a9cbe;padding:5px 0">' + (L==='IS'?'Seinn um':'Overdue by') + '</td><td style="color:#e74c3c;padding:5px 0;font-weight:bold">' + overdueDisplay + '</td></tr>' +
-          contactRow +
-        '</table>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-          '<a href="' + actionUrl('checkInAndClose') + '" style="flex:1;min-width:160px;display:block;background:#27ae60;color:#fff;text-align:center;padding:12px 16px;border-radius:5px;text-decoration:none;font-weight:bold;font-size:13px">' +
-            (L==='IS'?'✓ Skrá inn og loka':'✓ Check in & close') +
-          '</a>' +
-          '<a href="' + actionUrl('snooze') + '" style="flex:1;min-width:120px;display:block;background:#e67e22;color:#fff;text-align:center;padding:12px 16px;border-radius:5px;text-decoration:none;font-weight:bold;font-size:13px">' +
-            (L==='IS'?'⏱ Fresta (' + cfg.snoozeMins + ' mín)':'⏱ Snooze (' + cfg.snoozeMins + ' min)') +
-          '</a>' +
-        '</div>' +
-      '</div>' +
-    '</div></body></html>';
-  MailApp.sendEmail({
-    to: cfg.staffEmailList.join(','),
-    subject,
-    body,
-    htmlBody,
-    name: L==='IS' ? 'Ýmir Siglingafélagið' : 'Ýmir Sailing Club',
-  });
-  Logger.log('Alert email sent for ' + alert.checkoutId + ' (' + alert.boatName + ')');
 }
 
 function resolveFromEmail_(b) {

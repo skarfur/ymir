@@ -19,13 +19,13 @@ window.PAYROLL_CONFIG = {
     { upTo: 1645733, rate: 0.3799 },
     { upTo: Infinity,rate: 0.4629 },
   ],
-  otRules: {
-    ot1: { label: 'Eftirvinna 1', labelEN: 'Overtime 1', multiplier: 1.33,
-           periods: [{ days:[1,2,3,4], fromHour:17, toHour:24 }] },
-    ot2: { label: 'Eftirvinna 2', labelEN: 'Overtime 2', multiplier: 1.55,
-           periods: [{ days:[5,6,0], fromHour:0, toHour:24 },
-                     { days:[1,2,3,4], fromHour:17, toHour:24, tier2:true }] },
-  },
+  otRules: [
+    { id:'ot1', label:'Eftirvinna 1', labelEN:'Overtime 1', multiplier:1.33,
+      periods:[{ days:[1,2,3,4], fromHour:17, toHour:24 }] },
+    { id:'ot2', label:'Eftirvinna 2', labelEN:'Overtime 2', multiplier:1.55,
+      periods:[{ days:[5,6,0], fromHour:0, toHour:24 },
+               { days:[1,2,3,4], fromHour:17, toHour:24 }] },
+  ],
   pensionFunds: [
     { id:'fund_bru', name:'Brú lífeyrissjóður', nameEN:'Bru Pension Fund',
       lines:[
@@ -52,40 +52,21 @@ window.fmtDurationMins = function(mins) {
 };
 
 /* PP OT SPLITTER ═════════════════════════════════════════════════════════════
-   Given an array of completed time entries (with clockIn / durationMinutes)
-   and the otRules config, returns {regularMins, ot1Mins, ot2Mins}.
-   Days: 0=Sun, 1=Mon ... 6=Sat (JS getDay()). Iceland runs UTC+0 year-round.
+   otRules is now an ordered array of tier objects {id, label, labelEN, multiplier, periods}.
+   Higher index = higher priority (checked first). Returns {regularMins, otMins, ot1Mins, ot2Mins}.
+   Backward-compat aliases ot1Mins/ot2Mins map to tiers[0]/tiers[1] by position.
 ══════════════════════════════════════════════════════════════════════════════ */
-window.splitOTMinutes = function(entries, otRules) {
-  var regularMins = 0, ot1Mins = 0, ot2Mins = 0;
-  (entries || []).forEach(function(entry) {
-    if (!entry.clockIn || !+entry.durationMinutes) return;
-    var cursor    = new Date(entry.clockIn);
-    var remaining = +entry.durationMinutes;
-    while (remaining > 0) {
-      var cls     = _classifyMinute(cursor, otRules);
-      var runMins = _runLength(cursor, remaining, cls, otRules);
-      if      (cls === 2) ot2Mins     += runMins;
-      else if (cls === 1) ot1Mins     += runMins;
-      else                regularMins += runMins;
-      cursor    = new Date(cursor.getTime() + runMins * 60000);
-      remaining -= runMins;
-    }
+function _legacyOtRulesToArray(rules) {
+  if (!rules) return [];
+  if (Array.isArray(rules)) return rules;
+  // Legacy object {ot1:{...}, ot2:{...}} → ordered array
+  var arr = [];
+  if (rules.ot1) arr.push(Object.assign({ id:'ot1' }, rules.ot1));
+  if (rules.ot2) arr.push(Object.assign({ id:'ot2' }, rules.ot2));
+  Object.keys(rules).forEach(function(k) {
+    if (k !== 'ot1' && k !== 'ot2') arr.push(Object.assign({ id:k }, rules[k]));
   });
-  return {
-    regularMins: Math.round(regularMins),
-    ot1Mins:     Math.round(ot1Mins),
-    ot2Mins:     Math.round(ot2Mins),
-  };
-};
-
-function _classifyMinute(dt, rules) {
-  var day  = dt.getUTCDay();
-  var hour = dt.getUTCHours() + dt.getUTCMinutes() / 60;
-  var r    = rules || (window.PAYROLL_CONFIG || {}).otRules || {};
-  if (_inPeriods(day, hour, (r.ot2 || {}).periods)) return 2;
-  if (_inPeriods(day, hour, (r.ot1 || {}).periods)) return 1;
-  return 0;
+  return arr;
 }
 
 function _inPeriods(day, hour, periods) {
@@ -95,34 +76,106 @@ function _inPeriods(day, hour, periods) {
   });
 }
 
-function _runLength(start, maxMins, cls, rules) {
+function _classifyMinuteDynamic(dt, tiersArr) {
+  var day  = dt.getUTCDay();
+  var hour = dt.getUTCHours() + dt.getUTCMinutes() / 60;
+  for (var i = tiersArr.length - 1; i >= 0; i--) {
+    if (_inPeriods(day, hour, tiersArr[i].periods)) return i;
+  }
+  return -1;
+}
+
+function _runLengthDynamic(start, maxMins, cls, tiersArr) {
   var step = Math.min(maxMins, 60);
   for (var i = 1; i <= step; i++) {
-    if (_classifyMinute(new Date(start.getTime() + i * 60000), rules) !== cls) return i;
+    if (_classifyMinuteDynamic(new Date(start.getTime() + i * 60000), tiersArr) !== cls) return i;
   }
   return step;
 }
 
+window.splitOTMinutes = function(entries, otRules) {
+  var tiersArr = _legacyOtRulesToArray(otRules || (window.PAYROLL_CONFIG || {}).otRules);
+  var regularMins = 0;
+  var otMins = {};
+  tiersArr.forEach(function(t) { otMins[t.id] = 0; });
+
+  (entries || []).forEach(function(entry) {
+    if (!entry.clockIn || !+entry.durationMinutes) return;
+    var cursor    = new Date(entry.clockIn);
+    var remaining = +entry.durationMinutes;
+    while (remaining > 0) {
+      var cls     = _classifyMinuteDynamic(cursor, tiersArr);
+      var runMins = _runLengthDynamic(cursor, remaining, cls, tiersArr);
+      if (cls >= 0 && tiersArr[cls]) {
+        otMins[tiersArr[cls].id] = (otMins[tiersArr[cls].id] || 0) + runMins;
+      } else {
+        regularMins += runMins;
+      }
+      cursor    = new Date(cursor.getTime() + runMins * 60000);
+      remaining -= runMins;
+    }
+  });
+
+  var result = { regularMins: Math.round(regularMins), otMins: {} };
+  tiersArr.forEach(function(t) { result.otMins[t.id] = Math.round(otMins[t.id] || 0); });
+  // Backward-compat aliases
+  result.ot1Mins = result.otMins[tiersArr[0] && tiersArr[0].id] || 0;
+  result.ot2Mins = result.otMins[tiersArr[1] && tiersArr[1].id] || 0;
+  return result;
+};
+
 /* PP CALCULATE PAYSLIP ════════════════════════════════════════════════════════
-   emp fields: baseRateKr, personuafslattr (fraction of personuafslattrUnit),
-               pensionFundIds (array), unionId, otEligible (bool)
-   Returns full breakdown object for UI rendering and payslip generation.
+   New signature: calculatePayslip(emp, regularMinutes, otMinutes, manualLines, cfg)
+     otMinutes: object {[tierId]: minutes}  — OR —
+   Legacy:     calculatePayslip(emp, regularMinutes, ot1Min, ot2Min, manualLines, cfg)
+     (detected when 3rd arg is a number)
+   Returns full breakdown; includes otLines[] array + backward-compat ot1/ot2 aliases.
 ══════════════════════════════════════════════════════════════════════════════ */
-window.calculatePayslip = function(emp, regularMinutes, ot1Minutes, ot2Minutes, manualLines, cfg) {
+window.calculatePayslip = function(emp, regularMinutes, otMinutesOrOt1, manualLinesOrOt2, cfgOrManual, cfgLegacy) {
+  var otMins, manualLines, cfg;
+  if (typeof otMinutesOrOt1 === 'object' && !Array.isArray(otMinutesOrOt1) && otMinutesOrOt1 !== null) {
+    // New call: (emp, regular, {ot1:x,...}, manual, cfg)
+    otMins      = otMinutesOrOt1 || {};
+    manualLines = manualLinesOrOt2 || [];
+    cfg         = cfgOrManual;
+  } else {
+    // Legacy call: (emp, regular, ot1, ot2, manual, cfg)
+    var _tiers = _legacyOtRulesToArray((window.PAYROLL_CONFIG || {}).otRules);
+    otMins = {};
+    if (_tiers[0]) otMins[_tiers[0].id] = +otMinutesOrOt1  || 0;
+    if (_tiers[1]) otMins[_tiers[1].id] = +manualLinesOrOt2 || 0;
+    manualLines = cfgOrManual || [];
+    cfg         = cfgLegacy;
+  }
   cfg            = Object.assign({}, window.PAYROLL_CONFIG, cfg || {});
   regularMinutes = +regularMinutes || 0;
-  ot1Minutes     = +ot1Minutes     || 0;
-  ot2Minutes     = +ot2Minutes     || 0;
-  manualLines    = manualLines     || [];
+  manualLines    = manualLines || [];
 
-  var baseRate    = +(emp.baseRateKr) || 0;
-  var regularHrs  = regularMinutes / 60;
-  var ot1Hrs      = ot1Minutes / 60;
-  var ot2Hrs      = ot2Minutes / 60;
-  var dagvinna    = Math.round(regularHrs * baseRate);
-  var eftirvinna1 = Math.round(ot1Hrs * baseRate * cfg.eftirvinna1);
-  var eftirvinna2 = Math.round(ot2Hrs * baseRate * cfg.eftirvinna2);
-  var basePay     = dagvinna + eftirvinna1 + eftirvinna2;
+  var tiersArr = _legacyOtRulesToArray(cfg.otRules);
+  var baseRate  = +(emp.baseRateKr) || 0;
+  var regularHrs = regularMinutes / 60;
+  var dagvinna   = Math.round(regularHrs * baseRate);
+
+  // Dynamic OT lines
+  var otLines = tiersArr.map(function(tier) {
+    var mins     = +(otMins[tier.id] || 0);
+    var hrs      = mins / 60;
+    var earnings = Math.round(hrs * baseRate * (tier.multiplier || 1));
+    return { id:tier.id, label:tier.label, labelEN:tier.labelEN,
+             multiplier:tier.multiplier, hrs:hrs, mins:mins, earnings:earnings };
+  });
+  var otEarnings = otLines.reduce(function(s, l) { return s + l.earnings; }, 0);
+  var basePay    = dagvinna + otEarnings;
+
+  // Backward-compat aliases (first two tiers)
+  var ot1Line = otLines[0] || { hrs:0, mins:0, earnings:0 };
+  var ot2Line = otLines[1] || { hrs:0, mins:0, earnings:0 };
+  var ot1Minutes  = ot1Line.mins;
+  var ot2Minutes  = ot2Line.mins;
+  var ot1Hrs      = ot1Line.hrs;
+  var ot2Hrs      = ot2Line.hrs;
+  var eftirvinna1 = ot1Line.earnings;
+  var eftirvinna2 = ot2Line.earnings;
   var manualTotal = manualLines.reduce(function(s, l) { return s + (+l.amount || 0); }, 0);
   var orlofslaun  = Math.round(basePay * cfg.orlofslaun);
   var grossTotal  = basePay + manualTotal + orlofslaun;
@@ -195,6 +248,7 @@ window.calculatePayslip = function(emp, regularMinutes, ot1Minutes, ot2Minutes, 
   return {
     regularMinutes, ot1Minutes, ot2Minutes,
     regularHrs, ot1Hrs, ot2Hrs,
+    otLines, otMins,
     dagvinna, eftirvinna1, eftirvinna2, basePay,
     manualLines, manualTotal,
     orlofslaun, grossTotal, orlofsRate: cfg.orlofslaun,
@@ -434,8 +488,11 @@ function renderPayslip(data) {
     + '</div>'
     + '<table class="det"><thead><tr><th style="text-align:left" colspan="4">' + T.earnings + '</th><th>' + T.period + '</th><th>' + T.ytd + '</th></tr></thead><tbody>'
     + row('Regular (' + calc.regularHrs.toFixed(2) + 'h \u00d7 ' + kr(emp.baseRateKr || 0) + ' kr/h)', 'Dagvinna (' + calc.regularHrs.toFixed(2) + 'klst \u00d7 ' + kr(emp.baseRateKr || 0) + ' kr)', calc.dagvinna, ytd.dagvinna || 0)
-    + (calc.eftirvinna1 > 0 ? row('Overtime 1.33\u00d7 (' + calc.ot1Hrs.toFixed(2) + 'h)', 'Eftirvinna 1,33 (' + calc.ot1Hrs.toFixed(2) + 'klst)', calc.eftirvinna1, ytd.eftirvinna1 || 0) : '')
-    + (calc.eftirvinna2 > 0 ? row('Overtime 1.55\u00d7 (' + calc.ot2Hrs.toFixed(2) + 'h)', 'Eftirvinna 1,55 (' + calc.ot2Hrs.toFixed(2) + 'klst)', calc.eftirvinna2, ytd.eftirvinna2 || 0) : '')
+    + (calc.otLines || []).filter(function(l) { return l.earnings > 0; }).map(function(l) {
+        var en = (l.labelEN || l.label) + ' ' + (l.multiplier || '') + '\u00d7 (' + l.hrs.toFixed(2) + 'h)';
+        var is = (l.label || l.labelEN) + ' (' + l.hrs.toFixed(2) + 'klst)';
+        return row(en, is, l.earnings, 0);
+      }).join('')
     + mRows
     + row('Holiday pay (' + pct(calc.orlofsRate || 0) + ')', 'Orlofslaun (' + pct(calc.orlofsRate || 0) + ')', calc.orlofslaun, ytd.orlofslaun || 0)
     + row('Gross total', T.grossTot, calc.grossTotal, ytd.grossTotal || 0, { bold: true })

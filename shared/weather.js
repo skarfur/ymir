@@ -244,7 +244,7 @@ function wxStaffStatusHtml(status, lang) {
   if (!status) return '';
   const IS = lang === 'IS';
   const badges = [];
-  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">⚓ '+(IS?'Starfsmaður á vakt':'Staff on duty')+'</span>');
+  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+(IS?'Starfsmaður á vakt':'Staff on duty')+'</span>');
   if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+(IS?'Björgunarbátur á sjó':'Support boat out')+'</span>');
   if (!badges.length) return '';
   let ago = '';
@@ -321,7 +321,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     const bTx   = IS2 ? (staffStatus.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
                       : (staffStatus.supportBoat ? 'Support boat out'            : 'No support boat');
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
-      + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">⚓ '+dTx+'</span>'
+      + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">🧑 '+dTx+'</span>'
       + '<span style="'+bst+'background:'+bBg+';color:'+bCol+'">⛵ '+bTx+'</span>'
       + '</div>';
   })();
@@ -588,7 +588,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           const _btx = _isB ? (_ss.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
                             : (_ss.supportBoat ? 'Support boat out'             : 'No support boat');
           _ssBadges.innerHTML =
-            '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">⚓ '+_dtx+'</span>'
+            '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
             + ' '
             + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">⛵ '+_btx+'</span>';
         } else {
@@ -613,7 +613,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           const _btx2 = _is2B ? (_ss2.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
                               : (_ss2.supportBoat ? 'Support boat out'             : 'No support boat');
           _b.innerHTML =
-            '<span style="'+_bst2+'background:'+_dbg2+';color:'+_dc2+'">⚓ '+_dtx2+'</span>'
+            '<span style="'+_bst2+'background:'+_dbg2+';color:'+_dc2+'">🧑 '+_dtx2+'</span>'
             + ' '
             + '<span style="'+_bst2+'background:'+_bbg2+';color:'+_bc2+'">⛵ '+_btx2+'</span>';
         } else { _b.innerHTML = ''; }

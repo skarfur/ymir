@@ -511,7 +511,7 @@ const STRINGS = {
   'payroll.tabTimeReporting': { EN:'Time Reporting', IS:'Tímaskráning' },
   'payroll.tabTimesheets':    { EN:'Timesheets / Payslips', IS:'Launaseðlar' },
   'payroll.tabEmployees':     { EN:'Employees', IS:'Starfsmenn' },
-  'payroll.tabLaunamidlar':   { EN:'Launamiðlar', IS:'Launamiðlar' },
+  'payroll.tabLaunamidlar':   { EN:'Export Data', IS:'Útflutningur' },
 
   // ── Payroll — period & approval flow ────────────────────────────────────────
   'payroll.definePeriod':      { EN:'Define Pay Period', IS:'Skilgreina launatímabil' },
@@ -647,6 +647,30 @@ const STRINGS = {
   // ── Payroll config & new UI keys added 2026-03-27
   'payroll.personuafslattrFraction': { EN:'Personal credit fraction',     IS:'Hlutfall persónuafsláttar' },
 
+  // ── Payroll — punch clock section label (was missing, caused raw key display)
+  'payroll.section':           { EN:'TIME CLOCK',                     IS:'STIMPILKLUKKA' },
+
+  // ── Payroll — dynamic OT tiers
+  'payroll.otTierLabel':       { EN:'Label',                          IS:'Heiti' },
+  'payroll.otTierLabelEN':     { EN:'Label (EN)',                     IS:'Heiti (EN)' },
+  'payroll.addOTTier':         { EN:'+ Add OT tier',                  IS:'+ Bæta við yfirvinnuþrepi' },
+  'payroll.deleteOTTier':      { EN:'Remove',                         IS:'Fjarlægja' },
+
+  // ── Payroll — tax brackets (dynamic)
+  'payroll.taxBrackets':       { EN:'Tax brackets',                   IS:'Skattþrep' },
+  'payroll.taxBracketUpTo':    { EN:'Up to (kr)',                     IS:'Upp að (kr)' },
+  'payroll.taxBracketRate':    { EN:'Rate (%)',                       IS:'Hlutfall (%)' },
+  'payroll.taxBracketUnlimited':{ EN:'∞ (top bracket)',              IS:'∞ (hæsta þrep)' },
+  'payroll.addTaxBracket':     { EN:'+ Add bracket',                  IS:'+ Bæta við þrepi' },
+
+  // ── Payroll — export data tab
+  'payroll.tabExportData':     { EN:'Export Data',                    IS:'Útflutningur' },
+  'payroll.exportWithholding': { EN:'XML — Withholding (Staðgreiðsla)', IS:'XML — Staðgreiðsla' },
+  'payroll.exportPayslipXml':  { EN:'XML — Payslip data',             IS:'XML — Launaseðlagögn' },
+  'payroll.exportPensionCsv':  { EN:'CSV — Pension data',             IS:'CSV — Lífeyrissjóðsgögn' },
+  'payroll.exportLaunamidlar': { EN:'XML — Launamiðlar',              IS:'XML — Launamiðlar' },
+  'payroll.exportPlaceholder': { EN:'Not yet implemented — coming soon', IS:'Ekki tilbúið — kemur bráðlega' },
+  'payroll.taxWithheld':       { EN:'Tax withheld',                   IS:'Staðgreiðsla' },
 
 };
 
