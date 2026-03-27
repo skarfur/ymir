@@ -392,10 +392,17 @@ async function prLoadTsEntries(){
   var endDow=(lastDay.getDay()+6)%7;
   var rangeEnd=new Date(_calYear,_calMonth+1,7-endDow);
   try{
-    var params = {from: rangeStart.toISOString().slice(0,10), to: rangeEnd.toISOString().slice(0,10)};
+    var params={
+      from:rangeStart.toISOString().slice(0,10),
+      to:rangeEnd.toISOString().slice(0,10),
+      period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-01'
+    };
     if(empId) params.employeeId=empId;
     var res=await apiGet('getTimeEntries',params);
-    _tsEntries=res.entries||res.timeEntries||[];
+    _tsEntries=(res.entries||res.timeEntries||[]).map(function(e){
+      if(!e.clockIn&&e.originalTimestamp) e.clockIn=e.originalTimestamp;
+      return e;
+    });
     var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
     var totalMins=filtered.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours');
@@ -403,6 +410,7 @@ async function prLoadTsEntries(){
     else                 prRenderList();
   }catch(e){document.getElementById('prTsTotal').textContent='';}
 }
+  
 function prRenderCalDays(){
   var container=document.getElementById('prCalDays');
   var empId=document.getElementById('prTsEmp').value;
