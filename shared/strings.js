@@ -624,6 +624,20 @@ const STRINGS = {
   'payroll.payslip':           { EN:'Payslip',           IS:'Launase\u00f0ill' },
   'payroll.baseRate':          { EN:'Base rate (kr/hr)', IS:'Grunntaxti (kr/klst)' },
   'payroll.unionDuesRate':     { EN:'Union dues %',      IS:'St\u00e9ttarf\u00e9lagsgjald %' },
+  'payroll.dagvinna':            { EN:'Regular time',           IS:'Dagvinna' },
+  'payroll.ot1Label':            { EN:'Overtime 1.33\u00d7',    IS:'Eftirvinna 1,33' },
+  'payroll.ot2Label':            { EN:'Overtime 1.55\u00d7',    IS:'Eftirvinna 1,55' },
+  'payroll.units':               { EN:'Units',                  IS:'Einingar' },
+  'payroll.rate':                { EN:'Rate',                   IS:'Taxti' },
+  'payroll.amount':              { EN:'Amount',                 IS:'Upph\u00e6\u00f0' },
+  'payroll.ytdUnits':            { EN:'YTD units',              IS:'Einingar (\u00e1r)' },
+  'payroll.taxBracket1':         { EN:'Tax bracket 1',          IS:'Sta\u00f0greiðsla þrep 1' },
+  'payroll.taxBracket2':         { EN:'Tax bracket 2',          IS:'Sta\u00f0greiðsla þrep 2' },
+  'payroll.taxBracket3':         { EN:'Tax bracket 3',          IS:'Sta\u00f0greiðsla þrep 3' },
+  'payroll.taxComputed':         { EN:'Computed tax',           IS:'Reiknuð sta\u00f0greiðsla' },
+  'payroll.employerPension':     { EN:'Employer pension',       IS:'M\u00f3tframlag l\u00edfeyriss' },
+  'payroll.endurhaefingarsjodur':{ EN:'Rehabilitation fund',    IS:'Endurhæfingarsj\u00f3\u00f0ur' },
+  'payroll.now':                 { EN:'Now',                    IS:'N\u00fa' },
 };
 
 window.s = function s(key, vars, lang) {
