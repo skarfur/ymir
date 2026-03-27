@@ -120,10 +120,9 @@
       <div class="sec-lbl" data-s="payroll.exportLaunamidlar"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" style="font-size:11px" onclick="prLoadLaunamidlar()"><span data-s="payroll.exportXml"></span></button>
-          <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; <span data-s="payroll.exportXml"></span></a>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowLaunamidlar()" data-s="lbl.view"></button>
         </div>
-        <div id="prLmTable"><div class="empty-note" data-s="payroll.noPeriodDefined"></div></div>
+        <div id="prLmTable"></div>
       </div>
 
       <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
@@ -951,33 +950,73 @@ async function prShowStadgreidsla(){
 }
 
 /* == LAUNAMIDLAR == */
-async function prLoadLaunamidlar(){
-  var year=document.getElementById('prLmYear').value||new Date().getFullYear();
-  var div=document.getElementById('prLmTable'),dl=document.getElementById('prLmDownload');
-  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);dl.style.display='none';
+async function prShowLaunamidlar(){
+  var year=+(document.getElementById('prLmYear').value)||new Date().getFullYear();
+  var div=document.getElementById('prLmTable');
+  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
   try{
-    var res=await apiPost('generateLaunamidlar',{year:year});
-    var emps=res.employees||[];
-    if(emps.length){
-      var tG=emps.reduce(function(s,r){return s+(+(r.grossTotal||0));},0);
-      var tT=emps.reduce(function(s,r){return s+(+(r.taxWithheld||0));},0);
-      var tP=emps.reduce(function(s,r){return s+(+(r.pension||0));},0);
-      var tN=emps.reduce(function(s,r){return s+(+(r.netPay||0));},0);
-      div.innerHTML='<table class="lm-table"><thead><tr>'
-        +'<th data-s="lbl.name"></th><th>kt.</th>'
-        +'<th data-s="payroll.grossLabel"></th><th data-s="payroll.pension"></th>'
-        +'<th data-s="payroll.taxWithheld"></th><th data-s="payroll.netLabel"></th>'
-        +'</tr></thead><tbody>'
-        +emps.map(function(r){return '<tr><td>'+_e(r.name||r.employeeId||'')+'</td>'
-          +'<td style="color:var(--muted);font-size:11px">'+_e(r.kt||'')+'</td>'
-          +'<td>'+kr(r.grossTotal)+'</td><td>'+kr(r.pension)+'</td>'
-          +'<td>'+kr(r.taxWithheld)+'</td><td>'+kr(r.netPay)+'</td></tr>';}).join('')
-        +'</tbody><tfoot><tr class="lm-total"><td colspan="2">'+s('lbl.year')+' '+_e(String(year))+'</td>'
-        +'<td>'+kr(tG)+'</td><td>'+kr(tP)+'</td><td>'+kr(tT)+'</td><td>'+kr(tN)+'</td>'
-        +'</tr></tfoot></table>';
-      applyStrings(div);
-    }else div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';
-    if(res.xml){dl.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));dl.download='launamidlar-'+year+'.xml';dl.style.display='inline-block';}
+    // Ensure employee data is loaded for fund lookups
+    if(!Object.keys(_empData).length){
+      var er=await apiGet('getEmployees');
+      (er.employees||[]).forEach(function(e){_empData[e.id]=e;if(e.memberId)_empByMember[e.memberId]=e;});
+    }
+    var res=await apiGet('getPayroll');
+    var cfg=window.PAYROLL_CONFIG||{};
+    // Group closed period rows by employee, filtered to selected year
+    var byEmp={};
+    (res.payroll||[]).forEach(function(r){
+      var pf=r.periodFrom||r.period||'';
+      if(+pf.slice(0,4)!==year)return;
+      var eid=r.employeeId;if(!eid)return;
+      if(!byEmp[eid])byEmp[eid]={kt:r.kt||'',name:r.employeeName||eid,laun:0,pension:0,sereign:0,stadgr:0};
+      byEmp[eid].laun   +=(+(r.grossTotal)||0);
+      byEmp[eid].pension+=(+(r.employeePension)||0);
+      byEmp[eid].sereign+=(+(r.sereignarsjodur)||0);
+      byEmp[eid].stadgr +=(+(r.taxWithheld||r.taxAfterCredit)||0);
+    });
+    var eids=Object.keys(byEmp);
+    if(!eids.length){div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';applyStrings(div);return;}
+    // Resolve fund names from employee records
+    function fundName(eid){
+      var emp=_empData[eid]||{};
+      var fids=emp.pensionFundIds||[];
+      if(!fids.length)return'';
+      var f=(cfg.pensionFunds||[]).find(function(x){return x.id===fids[0];});
+      return f?(f.name||f.nameEN||f.id):'';
+    }
+    var totLaun=0,totPension=0,totSereign=0,totStadgr=0;
+    var rows=eids.map(function(eid){
+      var d=byEmp[eid];
+      var fn=_e(fundName(eid));
+      totLaun+=d.laun;totPension+=d.pension;totSereign+=d.sereign;totStadgr+=d.stadgr;
+      return '<tr>'
+        +'<td><div style="font-weight:600">'+_e(d.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted)">'+_e(d.kt)+'</div></td>'
+        +'<td class="num">'+kr(d.laun)+'</td>'
+        +'<td class="num">'+kr(d.pension)+'</td>'
+        +'<td>'+fn+'</td>'
+        +(d.sereign?'<td class="num">'+kr(d.sereign)+'</td>'+'<td>'+fn+'</td>':'<td class="num">—</td><td>—</td>')
+        +'<td class="num">'+kr(d.stadgr)+'</td>'
+        +'</tr>';
+    }).join('');
+    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
+      +'<th>01 Nafn / Kennitala</th>'
+      +'<th class="num">02 Laun</th>'
+      +'<th class="num">03 Lífeyrissjóðsiðgjald</th>'
+      +'<th>08 Númer lífeyrissjóðs</th>'
+      +'<th class="num">63 Séreignarsparnaður</th>'
+      +'<th>64 Númer séreignarsjóðs</th>'
+      +'<th class="num">71 Staðgreiðsla</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody>'
+      +'<tfoot><tr style="font-weight:700">'
+      +'<td>'+s('lbl.year')+' '+year+'</td>'
+      +'<td class="num">'+kr(totLaun)+'</td>'
+      +'<td class="num">'+kr(totPension)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totSereign)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totStadgr)+'</td>'
+      +'</tr></tfoot></table></div>';
   }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 
