@@ -685,6 +685,28 @@ const STRINGS = {
   'payroll.istarf95':          { EN:'Job code (ISTARF)',                  IS:'Starfaflokkun (ISTARF)' },
   'payroll.taxWithheld':       { EN:'Tax withheld',                   IS:'Staðgreiðsla' },
 
+  // ── Keelboat / logbook expanded (Phase 1) ──────────────────────────────────
+  'logbook.distanceNm':      { EN:'Distance (nm)',                         IS:'Vegalengd (sjómílur)' },
+  'logbook.departurePort':   { EN:'Departure port',                        IS:'Brottfararstaður' },
+  'logbook.arrivalPort':     { EN:'Arrival port',                          IS:'Komustaður' },
+  'logbook.portsOptional':   { EN:'Ports — optional',                      IS:'Höfnar — valfrjálst' },
+  'logbook.addPort':         { EN:'+ Add "{name}" to ports list',          IS:'+ Bæta „{name}" við höfnalista' },
+  'logbook.gpsTrack':        { EN:'GPS Track — GPX / KML / KMZ',           IS:'GPS-leið — GPX / KML / KMZ' },
+  'logbook.photos':          { EN:'Photos',                                IS:'Myndir' },
+  'logbook.trackReady':      { EN:'Ready: {name}',                         IS:'Tilbúið: {name}' },
+  'logbook.trackAttached':   { EN:'📍 GPS track',                          IS:'📍 GPS-leið' },
+  'logbook.portSame':        { EN:'⚓ {port}',                             IS:'⚓ {port}' },
+  'logbook.portRoute':       { EN:'⚓ {from} → {to}',                      IS:'⚓ {from} → {to}' },
+  'logbook.noDriveConfig':   { EN:'File upload not configured — trip saved without attachment.',
+                               IS:'Skráarupphal ekki stillt — ferð vistuð án viðhengis.' },
+  'boat.registrationNo':     { EN:'Registration no.',                      IS:'Skráningarnúmer' },
+  'boat.loa':                { EN:'LOA (ft)',                              IS:'Heildarlengd (fet)' },
+  'boat.typeModel':          { EN:'Type / model',                          IS:'Tegund / gerð' },
+  'boat.defaultPort':        { EN:'Default port',                          IS:'Heimahöfn' },
+  'location.type':           { EN:'Type',                                  IS:'Tegund' },
+  'location.typePort':       { EN:'Port',                                  IS:'Höfn' },
+  'location.typeLocation':   { EN:'Location',                              IS:'Staðsetning' },
+
 };
 
 window.s = function s(key, vars, lang) {
