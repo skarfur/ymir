@@ -103,6 +103,18 @@
     /* ── Misc ── */
     .btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
     .edited-badge{font-size:9px;color:var(--muted);margin-left:3px}
+    .period-filter-card{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;}
+    .filter-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+    .filter-date{min-width:130px;font-size:11px;}
+    .psc-hrs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+    .psc-hrs label{font-size:10px;color:var(--muted);white-space:nowrap;}
+    .psc-hrs input{width:60px;font-size:11px;padding:2px 4px;text-align:right;}
+    .cfg-fund,.cfg-union{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+    .cfg-fund-header,.cfg-union-header{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+    .cfg-line-row{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;}
+    .cfg-line-hdr{display:grid;grid-template-columns:1fr 1fr 80px 80px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+    .cfg-ot-row{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;}
+    .cfg-ot-hdr{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
   </style>
 </head>
 <body>
@@ -118,6 +130,7 @@
       <button class="pr-tab"        data-tab="timesheets"  onclick="prTab('timesheets')"  data-s="payroll.tabTimeReporting"></button>
       <button class="pr-tab"        data-tab="periods"     onclick="prTab('periods')"     data-s="payroll.tabTimesheets"></button>
       <button class="pr-tab"        data-tab="launamidlar" onclick="prTab('launamidlar')" data-s="payroll.tabLaunamidlar"></button>
+      <button class="pr-tab" data-tab="config" onclick="prTab('config')" data-s="payroll.config"></button>
     </div>
 
     <!-- EMPLOYEES -->
@@ -164,17 +177,14 @@
 
     <!-- TIMESHEETS / LAUNASEDLAR -->
     <div id="pr-periods" class="hidden">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div class="sec-lbl" data-s="payroll.definePeriod"></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-          <label style="font-size:11px;font-weight:600" data-s="payroll.periodFrom"></label>
-          <input id="prPeriodFrom" type="date" style="min-width:140px">
-          <label style="font-size:11px;font-weight:600" data-s="payroll.periodTo"></label>
-          <input id="prPeriodTo" type="date" style="min-width:140px">
-          <label style="font-size:11px;font-weight:600" data-s="payroll.paymentDate"></label>
-          <input id="prPaymentDate" type="date" style="min-width:140px">
-          <button class="btn btn-primary" style="font-size:11px" onclick="prBuildPreview()" data-s="payroll.previewPayslips"></button>
-        </div>
+      <div class="period-filter-card">
+        <label class="filter-lbl" data-s="payroll.periodFrom"></label>
+        <input id="prPeriodFrom" type="date" class="filter-date">
+        <label class="filter-lbl" data-s="payroll.periodTo"></label>
+        <input id="prPeriodTo" type="date" class="filter-date">
+        <label class="filter-lbl" data-s="payroll.paymentDate"></label>
+        <input id="prPaymentDate" type="date" class="filter-date">
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="prBuildPreview()" data-s="payroll.previewPayslips"></button>
       </div>
       <div id="prPreviewPanel" class="hidden">
         <div class="sec-lbl" data-s="payroll.hoursConfirm"></div>
@@ -197,6 +207,28 @@
         <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; <span data-s="payroll.exportXml"></span></a>
       </div>
       <div id="prLmTable"><div class="empty-note" data-s="payroll.noPeriodDefined"></div></div>
+    </div>
+    <!-- CONFIG -->
+    <div id="pr-config" class="hidden">
+      <div class="sec-lbl" data-s="payroll.personuafslattrUnit"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+        <input id="cfgCrUnit" type="number" min="1" style="width:120px">
+        <span style="font-size:11px;color:var(--muted)">kr = 1.0</span>
+        <button class="btn btn-primary" style="font-size:11px" onclick="cfgSaveUnit()" data-s="btn.save"></button>
+        <span id="cfgCrUnitMsg" style="font-size:11px;color:var(--green)"></span>
+      </div>
+      <div class="sec-lbl" data-s="payroll.otRules"></div>
+      <div id="cfgOTPanel" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
+        <button class="btn btn-primary" style="font-size:11px" onclick="cfgSaveOT()" data-s="btn.save"></button>
+        <span id="cfgOTMsg" style="font-size:11px;color:var(--green)"></span>
+      </div>
+      <div class="sec-lbl" data-s="payroll.pensionFunds"></div>
+      <div id="cfgFundsPanel"></div>
+      <button class="btn btn-secondary" style="font-size:11px;margin-top:6px" onclick="cfgAddFund()" data-s="payroll.addFund"></button>
+      <div class="sec-lbl" style="margin-top:20px" data-s="payroll.unions"></div>
+      <div id="cfgUnionsPanel"></div>
+      <button class="btn btn-secondary" style="font-size:11px;margin-top:6px" onclick="cfgAddUnion()" data-s="payroll.addUnion"></button>
     </div>
   </main>
 </div>
@@ -257,7 +289,7 @@ function empName(eid){var e=_tsEmployees.find(function(x){return x.id===eid;});r
 
 /* ── Tab router ──────────────────────────────────────────────────────────── */
 function prTab(tab){
-  ['employees','timesheets','periods','launamidlar'].forEach(function(t){
+  ['employees','timesheets','periods','launamidlar','config'].forEach(function(t){
     document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);
   });
   document.querySelectorAll('.pr-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
@@ -265,6 +297,7 @@ function prTab(tab){
   if(tab==='employees')  prLoadEmployees();
   if(tab==='timesheets') prInitTimesheets();
   if(tab==='periods')    prLoadPeriods();
+  if(tab==='config')     prLoadConfig();
 }
 
 /* ══ EMPLOYEES ══════════════════════════════════════════════════════════════ */
@@ -661,12 +694,16 @@ async function prBuildPreview(){
     _previewData={from:from,to:to,payDate:payDate,employees:{}};
 
     listEl.innerHTML=employees.map(function(emp){
-      var mins=minsByEmp[emp.id]||0;
+      var empEntries=entriesByEmp[emp.id]||[];
+      var otOk=emp.otEligible===true||emp.otEligible==='true';
+      var split=otOk&&typeof splitOTMinutes==='function'
+        ?splitOTMinutes(empEntries,(window.PAYROLL_CONFIG||{}).otRules)
+        :{regularMins:empEntries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0),ot1Mins:0,ot2Mins:0};
       var ytd=ytdByEmp[emp.id]||{grossTotal:0,taxWithheld:0,employeePension:0,netPay:0,orlofIBanki:0,employerPension:0};
-      _previewData.employees[emp.id]={emp:emp,regularMins:mins,ot1Mins:0,ot2Mins:0,manualLines:[],ytd:ytd};
-      var calc=calculatePayslip(emp,mins,0,0,[]);
+      _previewData.employees[emp.id]={emp:emp,regularMins:split.regularMins,ot1Mins:split.ot1Mins,ot2Mins:split.ot2Mins,manualLines:[],ytd:ytd};
+      var calc=calculatePayslip(emp,split.regularMins,split.ot1Mins,split.ot2Mins,[]);
       _previewData.employees[emp.id].calc=calc;
-      return prPayslipCard(emp,calc,ytd,mins);
+      return prPayslipCard(emp,calc,ytd,split.regularMins);
     }).join('');
     applyStrings(listEl);
   }catch(e){listEl.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
@@ -1035,6 +1072,204 @@ async function prLoadLaunamidlar(){
 
 /* ── Init ── */
 (function(){var p=new URLSearchParams(window.location.search);prTab(p.get('tab')||'employees');})();
+/* == CONFIG TAB == */
+async function prLoadConfig(){
+  var cfg=window.PAYROLL_CONFIG||{};
+  var u=document.getElementById('cfgCrUnit');
+  if(u)u.value=cfg.personuafslattrUnit||68681;
+  cfgRenderOT();cfgRenderFunds();cfgRenderUnions();
+}
+function cfgRenderOT(){
+  var cfg=window.PAYROLL_CONFIG||{};var rules=cfg.otRules||{};
+  var div=document.getElementById('cfgOTPanel');if(!div)return;
+  var html='';
+  ['ot1','ot2'].forEach(function(key){
+    var rule=rules[key]||{multiplier:1.33,periods:[]};
+    var mult=_e(String(rule.multiplier||1));
+    html+='<div class="cfg-fund"><div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">';
+    html+='<strong style="font-size:12px;min-width:40px">'+_e(key.toUpperCase())+'</strong>';
+    html+='<label style="font-size:11px">'+s('payroll.otMultiplier')+'</label>';
+    html+='<input id="cfgOT_'+key+'_m" type="number" min="1" max="5" step="0.01" value="'+mult+'" style="width:70px;font-size:11px"></div>';
+    var daysLbl=s('payroll.otDays'),fromLbl=s('payroll.otFrom'),toLbl=s('payroll.otTo');
+    html+='<div class="cfg-ot-hdr"><span>'+daysLbl+'</span><span>'+fromLbl+'</span><span>'+toLbl+'</span><span></span><span></span></div>';
+    (rule.periods||[]).forEach(function(p,pi){
+      var days=_e((p.days||[]).join(','));
+      var frm=_e(String(p.fromHour||0)),too=_e(String(p.toHour||24));
+      var delBtn='cfgRemoveOTP(\''+key+'\','+pi+')';
+      var addOTP='cfgAddOTP(\''+key+'\')';
+      html+='<div class="cfg-ot-row">';
+      html+='<input id="cfgOT_'+key+'_'+pi+'_d" type="text" value="'+days+'" style="font-size:11px">';
+      html+='<input id="cfgOT_'+key+'_'+pi+'_f" type="number" min="0" max="24" value="'+frm+'" style="font-size:11px">';
+      html+='<input id="cfgOT_'+key+'_'+pi+'_t" type="number" min="0" max="24" value="'+too+'" style="font-size:11px">';
+      html+='<button class="btn-del" onclick="'+delBtn+'">x</button><span></span></div>';
+    });
+    var addOTPKey='cfgAddOTP(\''+key+'\')';
+    html+='<button class="btn-link" style="margin-top:4px" onclick="'+addOTPKey+'">+ '+s('payroll.otPeriods')+'</button></div>';
+  });
+  div.innerHTML=html;
+}
+function cfgAddOTP(key){
+  var cfg=window.PAYROLL_CONFIG||{};cfg.otRules=cfg.otRules||{};
+  cfg.otRules[key]=cfg.otRules[key]||{multiplier:1.33,periods:[]};
+  cfg.otRules[key].periods.push({days:[1,2,3,4],fromHour:17,toHour:24});
+  cfgRenderOT();
+}
+function cfgRemoveOTP(key,idx){
+  var cfg=window.PAYROLL_CONFIG||{};
+  if(cfg.otRules&&cfg.otRules[key])cfg.otRules[key].periods.splice(idx,1);
+  cfgRenderOT();
+}
+function cfgSaveOT(){
+  var cfg=window.PAYROLL_CONFIG||{};
+  ['ot1','ot2'].forEach(function(key){
+    cfg.otRules=cfg.otRules||{};cfg.otRules[key]=cfg.otRules[key]||{periods:[]};
+    var m=document.getElementById('cfgOT_'+key+'_m');
+    if(m)cfg.otRules[key].multiplier=+(m.value)||1;
+    (cfg.otRules[key].periods||[]).forEach(function(p,pi){
+      var d=document.getElementById('cfgOT_'+key+'_'+pi+'_d');
+      var f=document.getElementById('cfgOT_'+key+'_'+pi+'_f');
+      var t=document.getElementById('cfgOT_'+key+'_'+pi+'_t');
+      if(d)p.days=(d.value||'').split(',').map(function(x){return +x.trim();}).filter(function(x){return !isNaN(x);});
+      if(f)p.fromHour=+(f.value)||0;
+      if(t)p.toHour=+(t.value)||24;
+    });
+  });
+  cfgPersist();
+  var omsg=document.getElementById('cfgOTMsg');
+  if(omsg){omsg.textContent='\u2713';setTimeout(function(){omsg.textContent='';},2000);}
+}
+async function cfgSaveUnit(){
+  var el=document.getElementById('cfgCrUnit');if(!el)return;
+  (window.PAYROLL_CONFIG=window.PAYROLL_CONFIG||{}).personuafslattrUnit=+(el.value)||68681;
+  await cfgPersist();
+  var umsg=document.getElementById('cfgCrUnitMsg');
+  if(umsg){umsg.textContent='\u2713';setTimeout(function(){umsg.textContent='';},2000);}
+}
+async function cfgPersist(){
+  try{await apiPost('saveConfig',{payrollConfig:JSON.stringify(window.PAYROLL_CONFIG||{})});showToast(s('toast.saved'));}
+  catch(e){showToast(e.message,'err');}
+}
+/* -- Pension funds -- */
+function cfgRenderFunds(){
+  var cfg=window.PAYROLL_CONFIG||{};var funds=cfg.pensionFunds||[];
+  var div=document.getElementById('cfgFundsPanel');if(!div)return;
+  div.innerHTML=funds.map(function(fund,fi){
+    var h='<div class="cfg-fund">';
+    var fnLbl=s('payroll.fundName'),feLbl=s('payroll.fundNameEN');
+    var delFund='cfgRemoveFund('+fi+')';
+    h+='<div class="cfg-fund-header">';
+    h+='<input id="cfgF_'+fi+'_n" type="text" value="'+_e(fund.name||'')+'" placeholder="'+fnLbl+'" style="flex:1;font-size:12px;font-weight:600">';
+    h+='<input id="cfgF_'+fi+'_ne" type="text" value="'+_e(fund.nameEN||'')+'" placeholder="'+feLbl+'" style="flex:1;font-size:12px">';
+    h+='<button class="btn-del" onclick="'+delFund+'">×</button></div>';
+    var llLbl=s('payroll.lineLabel'),lleLbl=s('payroll.lineLabelEN'),eLbl=s('payroll.empRate'),erLbl=s('payroll.emprRate');
+    h+='<div class="cfg-line-hdr"><span>'+llLbl+'</span><span>'+lleLbl+'</span><span>'+eLbl+'</span><span>'+erLbl+'</span><span></span></div>';
+    (fund.lines||[]).forEach(function(l,li){
+      var delLine='cfgRemoveFundLine('+fi+','+li+')';
+      h+='<div class="cfg-line-row">';
+      h+='<input id="cfgF_'+fi+'_'+li+'_l" type="text" value="'+_e(l.label||'')+'" style="font-size:11px">';
+      h+='<input id="cfgF_'+fi+'_'+li+'_le" type="text" value="'+_e(l.labelEN||'')+'" style="font-size:11px">';
+      h+='<input id="cfgF_'+fi+'_'+li+'_e" type="number" value="'+((l.employeeRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
+      h+='<input id="cfgF_'+fi+'_'+li+'_er" type="number" value="'+((l.employerRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
+      h+='<button class="btn-del" onclick="'+delLine+'">×</button></div>';
+    });
+    var addLine='cfgAddFundLine('+fi+')',saveFund='cfgSaveFund('+fi+')';
+    h+='<div style="display:flex;gap:8px;margin-top:6px">';
+    h+='<button class="btn-link" onclick="'+addLine+'">+ '+s('payroll.addLine')+'</button>';
+    h+='<button class="btn btn-secondary" style="font-size:10px" onclick="'+saveFund+'">'+s('btn.save')+'</button></div></div>';
+    return h;
+  }).join('');
+  applyStrings(div);
+}
+function cfgAddFund(){
+  var cfg=window.PAYROLL_CONFIG||{};cfg.pensionFunds=cfg.pensionFunds||[];
+  var id='fund_'+Date.now().toString(36);
+  var lid='l_'+Date.now().toString(36);
+  cfg.pensionFunds.push({id:id,name:'',nameEN:'',lines:[{id:lid,label:'',labelEN:'',employeeRate:0.04,employerRate:0.115}]});
+  cfgRenderFunds();
+}
+function cfgRemoveFund(fi){var cfg=window.PAYROLL_CONFIG||{};if(cfg.pensionFunds)cfg.pensionFunds.splice(fi,1);cfgRenderFunds();cfgPersist();}
+function cfgAddFundLine(fi){
+  var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(!f)return;
+  f.lines=f.lines||[];f.lines.push({id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0,employerRate:0});
+  cfgRenderFunds();
+}
+function cfgRemoveFundLine(fi,li){var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(f)f.lines.splice(li,1);cfgRenderFunds();}
+function cfgSaveFund(fi){
+  var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(!f)return;
+  var n=document.getElementById('cfgF_'+fi+'_n'),ne=document.getElementById('cfgF_'+fi+'_ne');
+  if(n)f.name=n.value.trim();if(ne)f.nameEN=ne.value.trim();
+  (f.lines||[]).forEach(function(l,li){
+    var el=document.getElementById('cfgF_'+fi+'_'+li+'_l');
+    var ele=document.getElementById('cfgF_'+fi+'_'+li+'_le');
+    var ee=document.getElementById('cfgF_'+fi+'_'+li+'_e');
+    var er=document.getElementById('cfgF_'+fi+'_'+li+'_er');
+    if(el)l.label=el.value.trim();if(ele)l.labelEN=ele.value.trim();
+    if(ee)l.employeeRate=(+(ee.value)||0)/100;
+    if(er)l.employerRate=(+(er.value)||0)/100;
+  });
+  cfgPersist();
+}
+/* -- Unions -- */
+function cfgRenderUnions(){
+  var cfg=window.PAYROLL_CONFIG||{};var unions=cfg.unions||[];
+  var div=document.getElementById('cfgUnionsPanel');if(!div)return;
+  div.innerHTML=unions.map(function(union,ui){
+    var h='<div class="cfg-union">';
+    var unLbl=s('payroll.unionName'),ueLbl=s('payroll.fundNameEN');
+    var delU='cfgRemoveUnion('+ui+')';
+    h+='<div class="cfg-union-header">';
+    h+='<input id="cfgU_'+ui+'_n" type="text" value="'+_e(union.name||'')+'" placeholder="'+unLbl+'" style="flex:1;font-size:12px;font-weight:600">';
+    h+='<input id="cfgU_'+ui+'_ne" type="text" value="'+_e(union.nameEN||'')+'" placeholder="'+ueLbl+'" style="flex:1;font-size:12px">';
+    h+='<button class="btn-del" onclick="'+delU+'">×</button></div>';
+    var llLbl=s('payroll.lineLabel'),lleLbl=s('payroll.lineLabelEN'),eLbl=s('payroll.empRate'),erLbl=s('payroll.emprRate');
+    h+='<div class="cfg-line-hdr"><span>'+llLbl+'</span><span>'+lleLbl+'</span><span>'+eLbl+'</span><span>'+erLbl+'</span><span></span></div>';
+    (union.lines||[]).forEach(function(l,li){
+      var delL='cfgRemoveUnionLine('+ui+','+li+')';
+      h+='<div class="cfg-line-row">';
+      h+='<input id="cfgU_'+ui+'_'+li+'_l" type="text" value="'+_e(l.label||'')+'" style="font-size:11px">';
+      h+='<input id="cfgU_'+ui+'_'+li+'_le" type="text" value="'+_e(l.labelEN||'')+'" style="font-size:11px">';
+      h+='<input id="cfgU_'+ui+'_'+li+'_e" type="number" value="'+((l.employeeRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
+      h+='<input id="cfgU_'+ui+'_'+li+'_er" type="number" value="'+((l.employerRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
+      h+='<button class="btn-del" onclick="'+delL+'">×</button></div>';
+    });
+    var addL='cfgAddUnionLine('+ui+')',saveU='cfgSaveUnion('+ui+')';
+    h+='<div style="display:flex;gap:8px;margin-top:6px">';
+    h+='<button class="btn-link" onclick="'+addL+'">+ '+s('payroll.addLine')+'</button>';
+    h+='<button class="btn btn-secondary" style="font-size:10px" onclick="'+saveU+'">'+s('btn.save')+'</button></div></div>';
+    return h;
+  }).join('');
+  applyStrings(div);
+}
+function cfgAddUnion(){
+  var cfg=window.PAYROLL_CONFIG||{};cfg.unions=cfg.unions||[];
+  var id='union_'+Date.now().toString(36);
+  var lid='l_'+Date.now().toString(36);
+  cfg.unions.push({id:id,name:'',nameEN:'',lines:[{id:lid,label:'',labelEN:'',employeeRate:0,employerRate:0}]});
+  cfgRenderUnions();
+}
+function cfgRemoveUnion(ui){var cfg=window.PAYROLL_CONFIG||{};if(cfg.unions)cfg.unions.splice(ui,1);cfgRenderUnions();cfgPersist();}
+function cfgAddUnionLine(ui){
+  var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(!u)return;
+  u.lines=u.lines||[];u.lines.push({id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0,employerRate:0});
+  cfgRenderUnions();
+}
+function cfgRemoveUnionLine(ui,li){var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(u)u.lines.splice(li,1);cfgRenderUnions();}
+function cfgSaveUnion(ui){
+  var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(!u)return;
+  var n=document.getElementById('cfgU_'+ui+'_n'),ne=document.getElementById('cfgU_'+ui+'_ne');
+  if(n)u.name=n.value.trim();if(ne)u.nameEN=ne.value.trim();
+  (u.lines||[]).forEach(function(l,li){
+    var el=document.getElementById('cfgU_'+ui+'_'+li+'_l');
+    var ele=document.getElementById('cfgU_'+ui+'_'+li+'_le');
+    var ee=document.getElementById('cfgU_'+ui+'_'+li+'_e');
+    var er=document.getElementById('cfgU_'+ui+'_'+li+'_er');
+    if(el)l.label=el.value.trim();if(ele)l.labelEN=ele.value.trim();
+    if(ee)l.employeeRate=(+(ee.value)||0)/100;
+    if(er)l.employerRate=(+(er.value)||0)/100;
+  });
+  cfgPersist();
+}
+
 </script>
 </body>
 </html>
