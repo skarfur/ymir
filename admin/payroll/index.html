@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ãmir â Payroll</title>
+  <title>Ýmir — Payroll</title>
   <link rel="stylesheet" href="../../shared/style.css">
   <script src="../../shared/api.js"></script>
   <script src="../../shared/strings.js"></script>
@@ -137,7 +137,7 @@
       <input id="meIn" type="datetime-local" style="width:100%"></div>
     <div class="field"><label data-s="payroll.clockOutLabel"></label>
       <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> â <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
+    <div class="field"><label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
       <input id="meMins" type="number" min="0" style="width:100%"></div>
     <div class="field"><label data-s="payroll.noteOptional"></label>
       <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
@@ -232,10 +232,10 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
-  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">—</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
-  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">—</option>';
   unions.forEach(function(u){var sel=(emp&&emp.unionId===u.id)?'selected':'';h+='<option value="'+_e(u.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?u.name:u.nameEN||u.name)+'</option>';});
   h+='</select></div>';
   h+='</div>';
@@ -622,8 +622,8 @@ function prCalcHTML(calc,ytd,empId){
   h+=tr(per,s('payroll.dagvinna'),calc.regularHrs.toFixed(2),n(rateKr),calc.dagvinna,ytdReg.toFixed(2),(ytd.dagvinna||0)+calc.dagvinna);
   h+=tr(per,s('payroll.ot1Label'),calc.ot1Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna1||1.33)),calc.eftirvinna1,ytdOt1.toFixed(2),(ytd.eftirvinna1||0)+calc.eftirvinna1);
   h+=tr(per,s('payroll.ot2Label'),calc.ot2Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna2||1.55)),calc.eftirvinna2,ytdOt2.toFixed(2),(ytd.eftirvinna2||0)+calc.eftirvinna2);
-  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'â','â',l.amount,'â',0);});
-  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'â','â',calc.orlofslaun,'â',(ytd.orlofslaun||0)+calc.orlofslaun);
+  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'—','—',l.amount,'—',0);});
+  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'—','—',calc.orlofslaun,'—',(ytd.orlofslaun||0)+calc.orlofslaun);
   h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
     +'<td class="num">'+n(calc.grossTotal)+'</td><td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
   h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
@@ -1069,7 +1069,7 @@ function cfgSaveUnion(ui){
       <input id="meIn" type="datetime-local" style="width:100%"></div>
     <div class="field"><label data-s="payroll.clockOutLabel"></label>
       <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> â <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
+    <div class="field"><label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
       <input id="meMins" type="number" min="0" style="width:100%"></div>
     <div class="field"><label data-s="payroll.noteOptional"></label>
       <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
@@ -1164,10 +1164,10 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
-  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">—</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
-  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">â</option>';
+  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">—</option>';
   unions.forEach(function(u){var sel=(emp&&emp.unionId===u.id)?'selected':'';h+='<option value="'+_e(u.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?u.name:u.nameEN||u.name)+'</option>';});
   h+='</select></div>';
   h+='</div>';
@@ -1554,8 +1554,8 @@ function prCalcHTML(calc,ytd,empId){
   h+=tr(per,s('payroll.dagvinna'),calc.regularHrs.toFixed(2),n(rateKr),calc.dagvinna,ytdReg.toFixed(2),(ytd.dagvinna||0)+calc.dagvinna);
   h+=tr(per,s('payroll.ot1Label'),calc.ot1Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna1||1.33)),calc.eftirvinna1,ytdOt1.toFixed(2),(ytd.eftirvinna1||0)+calc.eftirvinna1);
   h+=tr(per,s('payroll.ot2Label'),calc.ot2Hrs.toFixed(2),n(Math.round(rateKr*(window.PAYROLL_CONFIG||{}).eftirvinna2||1.55)),calc.eftirvinna2,ytdOt2.toFixed(2),(ytd.eftirvinna2||0)+calc.eftirvinna2);
-  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'â','â',l.amount,'â',0);});
-  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'â','â',calc.orlofslaun,'â',(ytd.orlofslaun||0)+calc.orlofslaun);
+  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'—','—',l.amount,'—',0);});
+  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'—','—',calc.orlofslaun,'—',(ytd.orlofslaun||0)+calc.orlofslaun);
   h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
     +'<td class="num">'+n(calc.grossTotal)+'</td><td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
   h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
