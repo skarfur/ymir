@@ -111,93 +111,120 @@
   </header>
 
   <main>
-    <!-- Tab bar -->
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="members"    onclick="showTab('members')"    data-s="admin.tabMembers"></button>
-      <button class="tab-btn"        data-tab="boats"      onclick="showTab('boats')"      data-s="admin.tabBoats"></button>
-      <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')"  data-s="admin.tabLocations"></button>
-      <button class="tab-btn"        data-tab="checklists" onclick="showTab('checklists')" data-s="admin.tabChecklists"></button>
-      <button class="tab-btn"        data-tab="actTypes"   onclick="showTab('actTypes')"   data-s="admin.tabActTypes"></button>
-      <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')"      data-s="admin.tabCerts"></button>
-      <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
-      <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
+    <!-- Top-level tab bar -->
+    <div class="tab-bar" id="topTabBar">
+      <button class="tab-btn active" data-top="members"  onclick="showTopTab('members')"  data-s="admin.tabMembers"></button>
+      <button class="tab-btn"        data-top="settings" onclick="showTopTab('settings')" data-s="admin.tabSettings"></button>
+      <button class="tab-btn"        data-top="payroll"  onclick="showTopTab('payroll')"  data-s="admin.tabPayroll"></button>
     </div>
 
-    <a href="payroll/" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;text-decoration:none">💰 Payroll</a>
+    <!-- ══ TOP: MEMBERS ══════════════════════════════════════════════════════ -->
+    <div id="top-members">
+      <div id="tab-members">
 
-    <!-- ══ MEMBERS ══════════════════════════════════════════════════════════ -->
-    <div id="tab-members">
-
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <div class="search-bar" style="flex:1;min-width:200px">
-          <input type="text" id="memberSearch" placeholder="Search name or kennitala…" oninput="filterMembers()">
-        </div>
-        <button class="btn btn-secondary" onclick="showTab('members','import')">⇪ Import CSV</button>
-        <button class="btn btn-primary"   onclick="openMemberModal()">+ Add member</button>
-      </div>
-
-      <div id="memberSubList">
-        <div class="col-section">
-          <div class="col-head" onclick="toggleSection(this)">
-            <div class="col-title">MEMBERS <strong id="memberCountLabel"></strong></div>
-            <span class="col-toggle">▼</span>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <div class="search-bar" style="flex:1;min-width:200px">
+            <input type="text" id="memberSearch" oninput="filterMembers()">
           </div>
-          <div class="col-body hidden" id="membersCard">
-            <div class="loading-state"><span class="spinner"></span></div>
-          </div>
+          <button class="btn btn-secondary" onclick="showMemberSub('import')" data-s="admin.importCsv"></button>
+          <button class="btn btn-primary"   onclick="openMemberModal()" data-s="admin.addMember"></button>
         </div>
-      </div>
 
-      <div id="memberSubImport" class="hidden">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <button class="btn-ghost" onclick="showTab('members','list')">← Back to list</button>
-          <span style="font-size:12px;color:var(--muted)">Import from Abler.io CSV</span>
-        </div>
-        <div id="importStep1" data-step="1">
-          <div class="import-card">
-            <div class="col-hint" style="margin-bottom:16px">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">EXPECTED COLUMNS</div>
-              <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">Full name (required)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">10-digit ID (required)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">Phone number</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">dob</span><span class="col-hint-vals">Date of birth (YYYY-MM-DD)</span></div>
-              <div class="col-hint-row"><span class="col-hint-field">membership_type</span><span class="col-hint-vals">e.g. full, junior, family</span></div>
+        <div id="memberSubList">
+          <div class="col-section">
+            <div class="col-head" onclick="toggleSection(this)">
+              <div class="col-title">MEMBERS <strong id="memberCountLabel"></strong></div>
+              <span class="col-toggle">▼</span>
             </div>
-            <label class="upload-zone" for="csvFile">
-              <div style="font-size:24px">📄</div>
-              <div style="font-size:13px;font-weight:500">Drop CSV here or click to browse</div>
-              <div style="font-size:11px;color:var(--muted)">UTF-8 encoded, comma or semicolon delimited</div>
-              <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
-            </label>
-          </div>
-        </div>
-        <div id="importStep2" data-step="2" class="hidden">
-          <div class="import-card">
-            <div style="font-size:13px;font-weight:500;margin-bottom:10px">Review import</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Admin/staff roles never overwritten.</div>
-            <div class="import-summary" id="importSummary"></div>
-            <div id="importLists"></div>
-            <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
-              padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
-            <div class="btn-row" style="margin-top:14px">
-              <button class="btn btn-secondary" onclick="resetImport()">← Start over</button>
-              <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
+            <div class="col-body hidden" id="membersCard">
+              <div class="loading-state"><span class="spinner"></span></div>
             </div>
           </div>
         </div>
-        <div id="importStep3" data-step="3" class="hidden">
-          <div class="import-card" style="text-align:center;padding:36px">
-            <div style="font-size:30px;margin-bottom:10px">✓</div>
-            <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
-            <div style="margin-top:18px">
-              <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
-              <button class="btn btn-primary" onclick="showTab('members','list')" style="margin-left:8px">View members</button>
+
+        <div id="memberSubImport" class="hidden">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <button class="btn-ghost" onclick="showMemberSub('list')" data-s="admin.backToList"></button>
+            <span style="font-size:12px;color:var(--muted)" data-s="admin.importFromCsv"></span>
+          </div>
+          <div id="importStep1" data-step="1">
+            <div class="import-card">
+              <div class="col-hint" style="margin-bottom:16px">
+                <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">EXPECTED COLUMNS</div>
+                <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">Full name (required)</span></div>
+                <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">10-digit ID (required)</span></div>
+                <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
+                <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">Phone number</span></div>
+                <div class="col-hint-row"><span class="col-hint-field">dob</span><span class="col-hint-vals">Date of birth (YYYY-MM-DD)</span></div>
+                <div class="col-hint-row"><span class="col-hint-field">membership_type</span><span class="col-hint-vals">e.g. full, junior, family</span></div>
+              </div>
+              <label class="upload-zone" for="csvFile">
+                <div style="font-size:24px">📄</div>
+                <div style="font-size:13px;font-weight:500">Drop CSV here or click to browse</div>
+                <div style="font-size:11px;color:var(--muted)">UTF-8 encoded, comma or semicolon delimited</div>
+                <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+              </label>
+            </div>
+          </div>
+          <div id="importStep2" data-step="2" class="hidden">
+            <div class="import-card">
+              <div style="font-size:13px;font-weight:500;margin-bottom:10px">Review import</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Admin/staff roles never overwritten.</div>
+              <div class="import-summary" id="importSummary"></div>
+              <div id="importLists"></div>
+              <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
+                padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
+              <div class="btn-row" style="margin-top:14px">
+                <button class="btn btn-secondary" onclick="resetImport()" data-s="admin.backToList"></button>
+                <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
+              </div>
+            </div>
+          </div>
+          <div id="importStep3" data-step="3" class="hidden">
+            <div class="import-card" style="text-align:center;padding:36px">
+              <div style="font-size:30px;margin-bottom:10px">✓</div>
+              <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
+              <div style="margin-top:18px">
+                <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
+                <button class="btn btn-primary" onclick="showMemberSub('list')" style="margin-left:8px">View members</button>
+              </div>
             </div>
           </div>
         </div>
+      </div><!-- /tab-members -->
+
+      <!-- ══ ASSIGN CERTIFICATIONS ══ -->
+      <div class="col-section" style="margin-top:20px">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title" data-s="admin.certAssign"></div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:180px">
+              <input type="text" id="certMemberSearch" oninput="filterCertMembers()">
+            </div>
+            <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
+              <option value="" data-s="admin.certAllTypes"></option>
+            </select>
+          </div>
+          <div id="certMemberList"><div class="loading-state"><span class="spinner"></span></div></div>
+        </div>
       </div>
-    </div>
+    </div><!-- /top-members -->
+
+    <!-- ══ TOP: SETTINGS ═════════════════════════════════════════════════════ -->
+    <div id="top-settings" class="hidden">
+      <!-- Settings inner tab bar -->
+      <div class="tab-bar" id="settingsTabBar">
+        <button class="tab-btn active" data-tab="boats"      onclick="showTab('boats')"      data-s="admin.tabBoats"></button>
+        <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')"  data-s="admin.tabLocations"></button>
+        <button class="tab-btn"        data-tab="checklists" onclick="showTab('checklists')" data-s="admin.tabChecklists"></button>
+        <button class="tab-btn"        data-tab="actTypes"   onclick="showTab('actTypes')"   data-s="admin.tabActTypes"></button>
+        <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')"      data-s="admin.tabCerts"></button>
+        <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
+        <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
+      </div>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
     <div id="tab-boats" class="hidden">
@@ -214,14 +241,14 @@
     <!-- ══ LOCATIONS ════════════════════════════════════════════════════════ -->
     <div id="tab-locations" class="hidden">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openLocationModal()">+ Add location</button>
+        <button class="btn btn-primary" onclick="openLocationModal()" data-s="admin.addLocation"></button>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">LOCATIONS</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="locationsCard">
+        <div class="col-body" id="locationsCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
       </div>
@@ -232,7 +259,7 @@
 
       <!-- Opening / Closing checklists -->
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openCLModal()">+ Add item</button>
+        <button class="btn btn-primary" onclick="openCLModal()" data-s="admin.addItem"></button>
       </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
@@ -273,14 +300,14 @@
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-actTypes" class="hidden">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openActTypeModal()">+ Add type</button>
+        <button class="btn btn-primary" onclick="openActTypeModal()" data-s="admin.addType"></button>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">ACTIVITY TYPES</div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="actTypesCard">
+        <div class="col-body" id="actTypesCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
       </div>
@@ -298,27 +325,10 @@
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:12px 0 4px">
-          <button class="btn btn-primary" onclick="openCertDefModal()">+ Add certification type</button>
+          <button class="btn btn-primary" onclick="openCertDefModal()" data-s="admin.certAddType"></button>
         </div>
       </div>
 
-      <div class="col-section" style="margin-top:16px">
-        <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">ASSIGN CERTIFICATIONS</div>
-          <span class="col-toggle open">▼</span>
-        </div>
-        <div class="col-body">
-          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-            <div class="search-bar" style="flex:1;min-width:180px">
-              <input type="text" id="certMemberSearch" placeholder="Search member…" oninput="filterCertMembers()">
-            </div>
-            <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
-              <option value="">All cert types</option>
-            </select>
-          </div>
-          <div id="certMemberList"><div class="loading-state"><span class="spinner"></span></div></div>
-        </div>
-      </div>
     </div>
 
     <!-- ══ ALERT SETTINGS ═══════════════════════════════════════════════════ -->
@@ -403,6 +413,7 @@
           </div>
           <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
+      </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres → points)</div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWaveCard">
@@ -453,7 +464,8 @@
         <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
-    </div>
+    </div><!-- /tab-flags -->
+    </div><!-- /top-settings -->
 
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
@@ -778,7 +790,9 @@ document.addEventListener("DOMContentLoaded", () => {
   _adminWireStrings();
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
-    showTab(p.get("tab") || "members", p.get("sub") || undefined);
+    const top = p.get('top') || 'members';
+    showTopTab(top);
+    if (top === 'settings') showTab(p.get('tab') || 'boats');
   });
 
   document.getElementById("bOOS").addEventListener("change", e => {
@@ -838,6 +852,10 @@ async function loadAll() {
 function _adminWireStrings() {
   const search = document.getElementById('memberSearch');
   if (search) search.placeholder = s('admin.searchMembers');
+  const certSearch = document.getElementById('certMemberSearch');
+  if (certSearch) certSearch.placeholder = s('admin.certSearchMember');
+  const certFilter = document.getElementById('certFilterType');
+  if (certFilter && certFilter.options[0]) certFilter.options[0].textContent = s('admin.certAllTypes');
 }
 
 // ── Collapsible sections ───────────────────────────────────────────────────────
@@ -850,31 +868,42 @@ function toggleSection(head) {
   toggle.classList.toggle("open", !isOpen);
 }
 
-// ── Tab switching ──────────────────────────────────────────────────────────────
-function showTab(tab, sub) {
-  document.querySelectorAll("[id^='tab-']").forEach(el => el.classList.add("hidden"));
-  document.querySelectorAll(".tab-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.tab === tab);
+// ── Top-level tab switching ────────────────────────────────────────────────────
+function showTopTab(top) {
+  if (top === 'payroll') { location.href = 'payroll/'; return; }
+  document.querySelectorAll('#topTabBar .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.top === top);
   });
-  const el = document.getElementById("tab-" + tab);
-  if (el) el.classList.remove("hidden");
+  document.getElementById('top-members').classList.toggle('hidden', top !== 'members');
+  document.getElementById('top-settings').classList.toggle('hidden', top !== 'settings');
+  const url = new URL(window.location.href);
+  url.searchParams.set('top', top);
+  url.searchParams.delete('tab');
+  history.replaceState(null, '', url);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  if (tab === "members") {
-    document.getElementById("memberSubList").classList.toggle("hidden", sub === "import");
-    document.getElementById("memberSubImport").classList.toggle("hidden", sub !== "import");
-  }
+// ── Settings sub-tab switching ─────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  const el = document.getElementById('tab-' + tab);
+  if (el) el.classList.remove('hidden');
 
-  if (tab === "certs") {
-    renderCertDefs();
-    renderCertMembers();
-    populateCertFilterType();
-  }
+  if (tab === 'certs') renderCertDefs();
 
   const url = new URL(window.location.href);
-  url.searchParams.set("tab", tab);
-  sub ? url.searchParams.set("sub", sub) : url.searchParams.delete("sub");
-  history.replaceState(null, "", url);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  url.searchParams.set('tab', tab);
+  history.replaceState(null, '', url);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Member sub-navigation ──────────────────────────────────────────────────────
+function showMemberSub(sub) {
+  document.getElementById('memberSubList').classList.toggle('hidden', sub === 'import');
+  document.getElementById('memberSubImport').classList.toggle('hidden', sub !== 'import');
 }
 
 // ── Generic entity save ────────────────────────────────────────────────────────

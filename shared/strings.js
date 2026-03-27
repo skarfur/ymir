@@ -395,6 +395,7 @@ const STRINGS = {
   
     // ── Admin panel ────────────────────────────────────────────────────────────
   'admin.tabMembers':      { EN:'Members',                 IS:'Félagar' },
+  'admin.tabSettings':     { EN:'Settings',                IS:'Stillingar' },
   'admin.tabBoats':        { EN:'Boats',                   IS:'Bátar' },                               
   'admin.tabLocations':    { EN:'Locations',               IS:'Staðir' },
   'admin.tabChecklists':   { EN:'Checklists',              IS:'Gátlistar' },
