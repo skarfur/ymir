@@ -754,7 +754,7 @@ function prRecalc(empId){
   var calc=window.calculatePayslip(d.emp,hrs*60,ot1*60,ot2*60,manual);
   d.regularMins=hrs*60;d.ot1Mins=ot1*60;d.ot2Mins=ot2*60;d.manualLines=manual;d.calc=calc;
   var el=document.getElementById('pCalc_'+empId);
-  if(el){el.innerHTML=prCalcHTML(calc,d.ytd||{});applyStrings(el);}
+  if(el){el.innerHTML=prCalcHTML(calc,d.ytd||{},empId);applyStrings(el);}
 }
   
 function prAddLine(empId){
@@ -883,7 +883,7 @@ function prCalcHTML(calc, ytd, empId){
   h += '</tr></thead><tbody>';
 
   var period = _previewData.from ? _previewData.from.slice(0,7).replace('-','.')+'–'+(_previewData.to||'').slice(0,7).replace('-','.') : '';
-  var rateKr = emp&&emp.baseRateKr ? emp.baseRateKr : (calc.dagvinna&&calc.regularHrs>0 ? Math.round(calc.dagvinna/calc.regularHrs) : 0);
+  var rateKr = calc.regularHrs > 0 ? Math.round(calc.dagvinna / calc.regularHrs) : 0;
 
   function tr(period, type, units, rate, amt, ytdUnits, ytdAmt, bold){
     var cls = bold ? ' class="psc-total-row"' : '';
