@@ -98,28 +98,36 @@
         <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
       </div>
 
-      <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
-      </div>
-
       <div class="sec-lbl" data-s="payroll.exportPensionCsv"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="prCsvPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
+          <button class="btn btn-primary" style="font-size:11px" onclick="prExportPensionCsv()" data-s="payroll.exportCsv"></button>
+        </div>
+      </div>
+
+      <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <label style="font-size:11px;white-space:nowrap" data-s="payroll.stadIsat"></label>
+          <input id="prStadIsat" type="text" placeholder="e.g. 50200" style="width:90px;font-size:11px" oninput="prSaveStadConfig()">
+          <select id="prXmlPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowStadgreidsla()" data-s="lbl.view"></button>
+        </div>
+        <div id="prStadTable"></div>
       </div>
 
       <div class="sec-lbl" data-s="payroll.exportLaunamidlar"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" style="font-size:11px" onclick="prLoadLaunamidlar()"><span data-s="payroll.exportXml"></span></button>
-          <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; <span data-s="payroll.exportXml"></span></a>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowLaunamidlar()" data-s="lbl.view"></button>
         </div>
-        <div id="prLmTable"><div class="empty-note" data-s="payroll.noPeriodDefined"></div></div>
+        <div id="prLmTable"></div>
+      </div>
+
+      <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
       </div>
     </div>
 
@@ -195,7 +203,11 @@ if(user){buildHeader('payroll');applyStrings(document.body);}
 var _members=[],_empData={},_empByMember={},_previewData={},_tsEmployees=[],_closedPeriods=new Set();
 var _tsEntries=[],_calYear=new Date().getFullYear(),_calMonth=new Date().getMonth(),_calView='cal',_editId=null;
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
+function _fmtEU(n){var v=Math.round(n||0),neg=v<0,s=Math.abs(v).toString(),out='';for(var i=0;i<s.length;i++){if(i>0&&(s.length-i)%3===0)out+='.';out+=s[i];}return neg?'-'+out:out;}
+function _fmtTime(iso){if(!iso)return'';var d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+var _MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function _fmtDateDMY(iso){if(!iso)return'';var d=new Date(iso);return d.getDate()+'-'+_MONTHS[d.getMonth()]+'-'+d.getFullYear();}
+function kr(n){return _fmtEU(n)+'\u00a0kr.';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
 function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
 function locale(){return (typeof getLang==='function')&&getLang()==='IS'?'is-IS':'en-GB';}
@@ -210,10 +222,11 @@ function prTab(tab){
   });
   document.querySelectorAll('.pr-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
   var url=new URL(window.location.href);url.searchParams.set('tab',tab);history.replaceState(null,'',url);
-  if(tab==='employees')  prLoadEmployees();
-  if(tab==='timesheets') prInitTimesheets();
-  if(tab==='periods')    prLoadPeriods();
-  if(tab==='config')     prLoadConfig();
+  if(tab==='employees')   prLoadEmployees();
+  if(tab==='timesheets')  prInitTimesheets();
+  if(tab==='periods')     prLoadPeriods();
+  if(tab==='export-data') prLoadExportData();
+  if(tab==='config')      prLoadConfig();
 }
 
 /* == EMPLOYEES == */
@@ -264,6 +277,8 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
+  h+='<div class="field"><label data-s="payroll.starfshlutfall"></label><input id="prStarfs_'+mid+'" type="number" min="0" max="100" step="1" value="'+_e(String(emp&&emp.starfshlutfall!=null?emp.starfshlutfall:100))+'"></div>';
+  h+='<div class="field"><label data-s="payroll.istarf95"></label><input id="prIstarf_'+mid+'" type="text" value="'+_e(emp&&emp.istarf95||'')+'"></div>';
   h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">—</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
@@ -296,6 +311,8 @@ async function prSaveEmployee(memberId){
     personuafslattr:fn('prPersona'),
     sereignarsjodur:fn('prSereign'),
     otEligible:fc('prOT'),
+    starfshlutfall:fn('prStarfs')||100,
+    istarf95:fv('prIstarf'),
     pensionFundIds:fundEl&&fundEl.value?[fundEl.value]:[],
     unionId:unionEl?unionEl.value:'',
     payrollEnabled:!!(document.getElementById('prEnabled_'+memberId)&&document.getElementById('prEnabled_'+memberId).checked)};
@@ -312,8 +329,12 @@ async function prSaveEmployee(memberId){
 async function prInitTimesheets(){
   if(_tsEmployees.length===0){
     try{
-      var res=await apiGet('getEmployees');
-      _tsEmployees=(res.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
+      var empRes=await apiGet('getEmployees');
+      if(!_members.length){var mRes=await apiGet('getMembers');_members=(mRes.members||[]).filter(function(m){return m.role==='staff'||m.role==='admin';});}
+      _tsEmployees=(empRes.employees||[]).filter(function(e){
+        if(!(e.payrollEnabled===true||e.payrollEnabled==='true'))return false;
+        return !_members.length||_members.some(function(m){return m.id===e.memberId;});
+      });
       var sel=document.getElementById('prTsEmp'),meSel=document.getElementById('meEmp');
       _tsEmployees.forEach(function(e){
         var o=document.createElement('option');o.value=e.id;o.textContent=e.name;sel.appendChild(o);
@@ -388,10 +409,11 @@ function prRenderCalDays(){
     var shown=dayEntries.slice(0,3);
     var pills=shown.map(function(e){
       var col=empColor(e.employeeId);
-      var inT=e.clockIn?new Date(e.clockIn).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
-      var outT=e.timestamp?new Date(e.timestamp).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
+      var inT=e.clockIn?_fmtTime(e.clockIn):'?';
+      var outT=e.timestamp?_fmtTime(e.timestamp):'?';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
-      var label=empId?(inT+'\u2013'+outT):(empName(e.employeeId));
+      var firstName=empName(e.employeeId).split(' ')[0];
+      var label=firstName+'\u00a0'+inT+'\u2013'+outT;
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<span class="cal-pill" style="background:'+col+'22;color:'+col+';border-color:'+col+'44"'
         +' onclick="event.stopPropagation();prOpenModal(JSON.parse(this.dataset.e),null)" data-e="'+edata+'"'
@@ -415,10 +437,9 @@ function prRenderList(){
     var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     var rows=grp.entries.slice().sort(function(a,b){return (a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;}).map(function(e){
       var ci=e.clockIn?new Date(e.clockIn):null,co=e.timestamp?new Date(e.timestamp):null;
-      var loc=locale();
-      var dateStr=ci?ci.toLocaleDateString(loc,{day:'2-digit',month:'short',year:'numeric'}):'--';
-      var inT=ci?ci.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
-      var outT=co?co.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
+      var dateStr=e.clockIn?_fmtDateDMY(e.clockIn):'--';
+      var inT=e.clockIn?_fmtTime(e.clockIn):'--';
+      var outT=e.timestamp?_fmtTime(e.timestamp):'--';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
       var srcLabel=e.source==='admin'?('<span class="src-admin">\u270e '+s('lbl.admin')+'</span>'):s('lbl.staff');
       var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
@@ -630,7 +651,7 @@ function prCalcHTML(calc,ytd,empId){
   var ytdGross=(ytd.grossTotal||0)+calc.grossTotal;
   var ytdDeduct=(ytd.totalDeductions||0)+calc.totalDeductions;
   var ytdNet=(ytd.netPay||0)+calc.netPay;
-  function n(v){return Math.round(v||0).toLocaleString('is-IS');}
+  function n(v){return _fmtEU(v);}
   function pct(v){return ((v||0)*100).toFixed(2).replace(/\.?0+$/,'')+'%';}
   var h='<div class="psc-samtolur"><div class="psc-samtolur-grid">';
   h+='<div></div><div class="psc-col-hdr" data-s="payroll.periodLabel"></div><div class="psc-col-hdr" data-s="payroll.ytdSection"></div>';
@@ -808,34 +829,194 @@ async function prExportXml(periodKey){
   }catch(e){showToast(e.message,'err');}
 }
 
-/* == LAUNAMIDLAR == */
-async function prLoadLaunamidlar(){
-  var year=document.getElementById('prLmYear').value||new Date().getFullYear();
-  var div=document.getElementById('prLmTable'),dl=document.getElementById('prLmDownload');
-  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);dl.style.display='none';
+/* == EXPORT DATA == */
+function prSaveStadConfig(){
+  try{localStorage.setItem('ymir_stad_cfg',JSON.stringify({isat:(document.getElementById('prStadIsat')||{}).value||''}));}catch(e){}
+}
+function prLoadStadConfig(){
+  try{var cfg=JSON.parse(localStorage.getItem('ymir_stad_cfg')||'{}');var el=document.getElementById('prStadIsat');if(el&&cfg.isat)el.value=cfg.isat;}catch(e){}
+}
+async function prLoadExportData(){
+  prLoadStadConfig();
   try{
-    var res=await apiPost('generateLaunamidlar',{year:year});
-    var emps=res.employees||[];
-    if(emps.length){
-      var tG=emps.reduce(function(s,r){return s+(+(r.grossTotal||0));},0);
-      var tT=emps.reduce(function(s,r){return s+(+(r.taxWithheld||0));},0);
-      var tP=emps.reduce(function(s,r){return s+(+(r.pension||0));},0);
-      var tN=emps.reduce(function(s,r){return s+(+(r.netPay||0));},0);
-      div.innerHTML='<table class="lm-table"><thead><tr>'
-        +'<th data-s="lbl.name"></th><th>kt.</th>'
-        +'<th data-s="payroll.grossLabel"></th><th data-s="payroll.pension"></th>'
-        +'<th data-s="payroll.taxWithheld"></th><th data-s="payroll.netLabel"></th>'
-        +'</tr></thead><tbody>'
-        +emps.map(function(r){return '<tr><td>'+_e(r.name||r.employeeId||'')+'</td>'
-          +'<td style="color:var(--muted);font-size:11px">'+_e(r.kt||'')+'</td>'
-          +'<td>'+kr(r.grossTotal)+'</td><td>'+kr(r.pension)+'</td>'
-          +'<td>'+kr(r.taxWithheld)+'</td><td>'+kr(r.netPay)+'</td></tr>';}).join('')
-        +'</tbody><tfoot><tr class="lm-total"><td colspan="2">'+s('lbl.year')+' '+_e(String(year))+'</td>'
-        +'<td>'+kr(tG)+'</td><td>'+kr(tP)+'</td><td>'+kr(tT)+'</td><td>'+kr(tN)+'</td>'
-        +'</tr></tfoot></table>';
-      applyStrings(div);
-    }else div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';
-    if(res.xml){dl.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));dl.download='launamidlar-'+year+'.xml';dl.style.display='inline-block';}
+    var res=await apiGet('getPayroll');
+    var rows=res.payroll||[];
+    var periods=[];var seen=new Set();
+    rows.forEach(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');
+      if(k&&!seen.has(k)){seen.add(k);periods.push(k);}
+    });
+    periods.sort().reverse();
+    ['prCsvPeriod','prXmlPeriod'].forEach(function(selId){
+      var sel=document.getElementById(selId);if(!sel)return;
+      while(sel.options.length>1)sel.remove(1);
+      periods.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+    });
+  }catch(e){}
+}
+async function prExportPensionCsv(){
+  var periodKey=document.getElementById('prCsvPeriod').value;
+  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  try{
+    var res=await apiGet('getPayroll');
+    var rows=(res.payroll||[]).filter(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
+    });
+    if(!rows.length){showToast(s('lbl.noData'),'err');return;}
+    var cfg=window.PAYROLL_CONFIG||{};
+    // Get Bru fund rates from config
+    var bruFund=(cfg.pensionFunds||[]).find(function(f){return f.id==='fund_bru';})||{lines:[]};
+    var empLine=bruFund.lines.find(function(l){return (l.employeeRate||0)>0;})||{employeeRate:0.04};
+    var emrLine=bruFund.lines.find(function(l){return (l.employerRate||0)>0;})||{employerRate:0.115};
+    var empRate=empLine.employeeRate||0.04;
+    var emrRate=emrLine.employerRate||0.115;
+    var header=['Kennitala','Nafn','Launatímabil','Laun','Iðgjald starfsmanns %','Iðgjald starfsmanns','Mótframlag launagreiðanda %','Mótframlag launagreiðanda'];
+    var csvRows=[header];
+    rows.forEach(function(r){
+      // Only include employees assigned to Bru (or with no explicit fund — use Bru as default)
+      var emp=_empData[r.employeeId];
+      var fundIds=emp&&emp.pensionFundIds&&emp.pensionFundIds.length?emp.pensionFundIds:['fund_bru'];
+      if(fundIds.indexOf('fund_bru')===-1)return;
+      var gross=+(r.grossTotal)||0;
+      var eAmt=Math.round(gross*empRate);
+      var erAmt=Math.round(gross*emrRate);
+      var period=r.periodFrom?r.periodFrom.slice(0,7):(r.period||'').slice(0,7);
+      csvRows.push([r.kt||'',r.employeeName||r.employeeId||'',period,gross,(empRate*100).toFixed(2)+'%',eAmt,(emrRate*100).toFixed(2)+'%',erAmt]);
+    });
+    var csv=csvRows.map(function(row){return row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='bru-pension-'+periodKey.replace(/[^\w-]/g,'-')+'.csv';a.click();
+  }catch(e){showToast(e.message,'err');}
+}
+async function prShowStadgreidsla(){
+  var periodKey=document.getElementById('prXmlPeriod').value;
+  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  var isat=(document.getElementById('prStadIsat')||{}).value||'';
+  var div=document.getElementById('prStadTable');
+  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
+  try{
+    var res=await apiGet('getPayroll');
+    var rows=(res.payroll||[]).filter(function(r){
+      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
+    });
+    if(!rows.length){div.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(div);return;}
+    var cfg=window.PAYROLL_CONFIG||{};
+    var tryggRate=cfg.tryggingagjaldRate||0.0685;
+    var totLaun=0,totEmpP=0,totEmrP=0,totTrygg=0;
+    var tbRows=rows.map(function(r){
+      var gross=+(r.grossTotal)||0;
+      var empP=+(r.employeePension)||0;
+      var emrP=+(r.employerPension)||0;
+      var trygg=Math.round(gross*tryggRate);
+      var emp=_empData[r.employeeId]||{};
+      var personaPct=Math.round((emp.personuafslattr!=null?+(emp.personuafslattr):1)*100)+'%';
+      var starfshl=+(emp.starfshlutfall)||100;
+      var istarf=_e(emp.istarf95||'');
+      var empIsat=_e(emp.isat95||isat);
+      totLaun+=gross;totEmpP+=empP;totEmrP+=emrP;totTrygg+=trygg;
+      return '<tr>'
+        +'<td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
+        +'<td>'+_e(r.kt||'')+'</td>'
+        +'<td>'+empIsat+'</td>'
+        +'<td class="num">'+starfshl+'</td>'
+        +'<td>'+istarf+'</td>'
+        +'<td class="num">'+kr(gross)+'</td>'
+        +'<td class="num">'+kr(empP)+'</td>'
+        +'<td class="num">'+personaPct+'</td>'
+        +'<td class="num">'+kr(emrP)+'</td>'
+        +'<td class="num">'+kr(trygg)+'</td>'
+        +'</tr>';
+    }).join('');
+    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
+      +'<th>Nafn</th><th>Kennitala</th><th>ISAT95</th>'
+      +'<th class="num">Starfshl.%</th><th>ISTARF95</th>'
+      +'<th class="num">Heildarlaun</th>'
+      +'<th class="num">Lífeyrir&nbsp;4%</th>'
+      +'<th class="num">Persónuafslátt.</th>'
+      +'<th class="num">Mótframlag&nbsp;11,5%</th>'
+      +'<th class="num">Tryggingagjald</th>'
+      +'</tr></thead><tbody>'+tbRows+'</tbody>'
+      +'<tfoot><tr style="font-weight:700">'
+      +'<td colspan="5" data-s="payroll.totalHours" style="color:var(--muted)"></td>'
+      +'<td class="num">'+kr(totLaun)+'</td>'
+      +'<td class="num">'+kr(totEmpP)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totEmrP)+'</td>'
+      +'<td class="num">'+kr(totTrygg)+'</td>'
+      +'</tr></tfoot></table></div>';
+    applyStrings(div);
+  }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
+}
+
+/* == LAUNAMIDLAR == */
+async function prShowLaunamidlar(){
+  var year=+(document.getElementById('prLmYear').value)||new Date().getFullYear();
+  var div=document.getElementById('prLmTable');
+  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
+  try{
+    // Ensure employee data is loaded for fund lookups
+    if(!Object.keys(_empData).length){
+      var er=await apiGet('getEmployees');
+      (er.employees||[]).forEach(function(e){_empData[e.id]=e;if(e.memberId)_empByMember[e.memberId]=e;});
+    }
+    var res=await apiGet('getPayroll');
+    var cfg=window.PAYROLL_CONFIG||{};
+    // Group closed period rows by employee, filtered to selected year
+    var byEmp={};
+    (res.payroll||[]).forEach(function(r){
+      var pf=r.periodFrom||r.period||'';
+      if(+pf.slice(0,4)!==year)return;
+      var eid=r.employeeId;if(!eid)return;
+      if(!byEmp[eid])byEmp[eid]={kt:r.kt||'',name:r.employeeName||eid,laun:0,pension:0,sereign:0,stadgr:0};
+      byEmp[eid].laun   +=(+(r.grossTotal)||0);
+      byEmp[eid].pension+=(+(r.employeePension)||0);
+      byEmp[eid].sereign+=(+(r.sereignarsjodur)||0);
+      byEmp[eid].stadgr +=(+(r.taxWithheld||r.taxAfterCredit)||0);
+    });
+    var eids=Object.keys(byEmp);
+    if(!eids.length){div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';applyStrings(div);return;}
+    // Resolve fund names from employee records
+    function fundName(eid){
+      var emp=_empData[eid]||{};
+      var fids=emp.pensionFundIds||[];
+      if(!fids.length)return'';
+      var f=(cfg.pensionFunds||[]).find(function(x){return x.id===fids[0];});
+      return f?(f.name||f.nameEN||f.id):'';
+    }
+    var totLaun=0,totPension=0,totSereign=0,totStadgr=0;
+    var rows=eids.map(function(eid){
+      var d=byEmp[eid];
+      var fn=_e(fundName(eid));
+      totLaun+=d.laun;totPension+=d.pension;totSereign+=d.sereign;totStadgr+=d.stadgr;
+      return '<tr>'
+        +'<td><div style="font-weight:600">'+_e(d.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted)">'+_e(d.kt)+'</div></td>'
+        +'<td class="num">'+kr(d.laun)+'</td>'
+        +'<td class="num">'+kr(d.pension)+'</td>'
+        +'<td>'+fn+'</td>'
+        +(d.sereign?'<td class="num">'+kr(d.sereign)+'</td>'+'<td>'+fn+'</td>':'<td class="num">—</td><td>—</td>')
+        +'<td class="num">'+kr(d.stadgr)+'</td>'
+        +'</tr>';
+    }).join('');
+    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
+      +'<th>01 Nafn / Kennitala</th>'
+      +'<th class="num">02 Laun</th>'
+      +'<th class="num">03 Lífeyrissjóðsiðgjald</th>'
+      +'<th>08 Númer lífeyrissjóðs</th>'
+      +'<th class="num">63 Séreignarsparnaður</th>'
+      +'<th>64 Númer séreignarsjóðs</th>'
+      +'<th class="num">71 Staðgreiðsla</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody>'
+      +'<tfoot><tr style="font-weight:700">'
+      +'<td>'+s('lbl.year')+' '+year+'</td>'
+      +'<td class="num">'+kr(totLaun)+'</td>'
+      +'<td class="num">'+kr(totPension)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totSereign)+'</td>'
+      +'<td></td>'
+      +'<td class="num">'+kr(totStadgr)+'</td>'
+      +'</tr></tfoot></table></div>';
   }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
 

@@ -11,6 +11,7 @@ window.PAYROLL_CONFIG = {
   orlofslaun:           0.1017,
   employerPension:      0.115,
   endurhaefingarsjodur: 0.001,
+  tryggingagjaldRate:   0.0685,
   eftirvinna1:          1.33,
   eftirvinna2:          1.55,
   personuafslattrUnit:  68681,
@@ -44,7 +45,17 @@ window.PAYROLL_CONFIG = {
 };
 
 /* PP SHARED FORMATTING HELPERS ═══════════════════════════════════════════════ */
-window.fmtKr  = function(n) { return Math.round(n || 0).toLocaleString('is-IS'); };
+// Explicit European integer formatter: period=thousands, no decimal (ISK amounts are always integers)
+function _fmtEU(n) {
+  var val = Math.round(n || 0), neg = val < 0;
+  var s = Math.abs(val).toString(), out = '';
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) out += '.';
+    out += s[i];
+  }
+  return neg ? '-' + out : out;
+}
+window.fmtKr  = function(n) { return _fmtEU(n); };
 window.fmtPct = function(r) { return ((r || 0) * 100).toFixed(2).replace(/\.?0+$/, '') + '%'; };
 window.fmtDurationMins = function(mins) {
   var h = Math.floor(+mins / 60), m = Math.round(+mins % 60);
@@ -381,7 +392,7 @@ function renderPayslip(data) {
   var IS = (typeof getLang === 'function') ? getLang() === 'IS' : true;
 
   // Print-safe helpers (self-contained  —  no site deps)
-  function kr(n)  { return Math.round(n || 0).toLocaleString('is-IS'); }
+  function kr(n)  { return _fmtEU(n); }
   function esc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function pct(r) { return ((r || 0) * 100).toFixed(2).replace(/\.?0+$/, '') + '%'; }
 
