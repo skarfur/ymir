@@ -228,21 +228,17 @@
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
     <div id="tab-boats" class="hidden">
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
-      </div>
-
       <!-- Boats by category -->
       <div id="boatSections">
         <div class="loading-state"><span class="spinner"></span></div>
+      </div>
+      <div style="padding:8px 0 4px">
+        <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
       </div>
     </div>
 
     <!-- ══ LOCATIONS ════════════════════════════════════════════════════════ -->
     <div id="tab-locations" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openLocationModal()" data-s="admin.addLocation"></button>
-      </div>
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">LOCATIONS</div>
@@ -251,6 +247,9 @@
         <div class="col-body" id="locationsCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" onclick="openLocationModal()" data-s="admin.addLocation"></button>
+        </div>
       </div>
     </div>
 
@@ -258,9 +257,7 @@
     <div id="tab-checklists" class="hidden">
 
       <!-- Opening / Closing checklists -->
-      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openCLModal()" data-s="admin.addItem"></button>
-      </div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">DAILY CHECKLISTS</div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">OPENING CHECKLIST</div>
@@ -275,13 +272,13 @@
         </div>
         <div class="col-body hidden" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
+      <div style="padding:8px 0 12px">
+        <button class="btn btn-primary" onclick="openCLModal()" data-s="admin.addItem"></button>
+      </div>
 
       <!-- Launch / Landing checklists per category -->
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
-          <button class="btn btn-primary" onclick="openLaunchCLModal()">+ Add item</button>
-        </div>
+      <div style="margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
           <label style="font-size:11px;color:var(--muted)">Category:</label>
           <select id="launchCLCatFilter" onchange="renderLaunchCLSections()"
@@ -294,14 +291,14 @@
           <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin:12px 0 6px">LANDING</div>
           <div id="launchCLLandingList"></div>
         </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" onclick="openLaunchCLModal()">+ Add item</button>
+        </div>
       </div>
     </div>
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-actTypes" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="openActTypeModal()" data-s="admin.addType"></button>
-      </div>
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">ACTIVITY TYPES</div>
@@ -309,6 +306,9 @@
         </div>
         <div class="col-body" id="actTypesCard">
           <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" onclick="openActTypeModal()" data-s="admin.addType"></button>
         </div>
       </div>
     </div>
@@ -413,7 +413,6 @@
           </div>
           <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
-      </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres → points)</div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWaveCard">
