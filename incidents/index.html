@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>�mir  Incident Report</title>
+  <title>Ýmir — Incident Report</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/style.css">
@@ -56,10 +56,10 @@
     <!-- MODE: list, new, or detail -->
     <div class="mode-btns">
       <button class="mode-btn active" id="modeListBtn" onclick="setMode('list')">
-        <span class="icon">=</span><span id="modeListLabel"></span>
+        <span class="icon">📋</span><span id="modeListLabel"></span>
       </button>
       <button class="mode-btn" id="modeNewBtn" onclick="setMode('new')">
-        <span class="icon">�</span><span id="modeNewLabel"></span>
+        <span class="icon">⚠</span><span id="modeNewLabel"></span>
       </button>
     </div>
 
@@ -206,7 +206,7 @@ let selectedSev   = '';
 let boats         = [], locations = [];
 let detailId      = null;
 
-//    INIT                                                                       
+// ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('incidents');
   applyStrings();
@@ -217,13 +217,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('typeLabel').textContent      = s('incident.typeLabel');
   document.getElementById('boatLabel').textContent      = s('incident.boatLabel');
   document.getElementById('fileBtn').textContent        = s('incident.fileBtn');
-  document.getElementById('backToListBtn').textContent  = '� ' + s('incident.viewList');
+  document.getElementById('backToListBtn').textContent  = '← ' + s('incident.viewList');
   document.getElementById('addNoteBtn').textContent     = s('incident.addNoteBtn');
-  document.getElementById('backBtn2').textContent       = '� ' + s('incident.viewList');
+  document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
 
   // Placeholder text
-  document.getElementById('iDesc').placeholder       = s('lbl.description') + '&';
-  document.getElementById('iInvolved').placeholder   = s('incident.personsInvolved') + '&';
+  document.getElementById('iDesc').placeholder       = s('lbl.description') + '…';
+  document.getElementById('iInvolved').placeholder   = s('incident.personsInvolved') + '…';
   document.getElementById('iWitnesses').placeholder  = s('incident.witnessHint');
   document.getElementById('iAction').placeholder     = s('incident.actionHint');
   document.getElementById('iFollowUp').placeholder   = s('incident.followUpHint');
@@ -235,10 +235,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('iHandHospital').textContent   = 'Hospital';
   document.getElementById('iHandCoastguard').textContent = 'Coastguard';
   document.getElementById('iHandPolice').textContent     = 'Police';
-  document.getElementById('iHandOther').textContent      = s('incident.type.other').replace('= ','');
+  document.getElementById('iHandOther').textContent      = s('incident.type.other').replace('📌 ','');
 
   // Location/boat selects
-  document.getElementById('iLocNone').textContent  = ' ' + s('lbl.selectDots').replace('&','') + ' ';
+  document.getElementById('iLocNone').textContent  = '— ' + s('lbl.selectDots').replace('…','') + ' —';
   document.getElementById('iBoatNone').textContent = s('lbl.noneDash');
 
   // Set defaults
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
-  // Handle hash � jump to detail
+  // Handle hash → jump to detail
   if (window.location.hash) {
     const id = window.location.hash.slice(1);
     const inc = incidents.find(i => i.id === id);
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   warmContainer();
 });
 
-//    TYPE GRID                                                                  
+// ── TYPE GRID ─────────────────────────────────────────────────────────────────
 const INCIDENT_TYPES = [
   { v:'injury',      key:'incident.type.injury' },
   { v:'capsize',     key:'incident.type.capsize' },
@@ -320,7 +320,7 @@ function populateBoatsLocs() {
   });
 }
 
-//    RENDER LIST                                                                
+// ── RENDER LIST ───────────────────────────────────────────────────────────────
 function renderList() {
   const el = document.getElementById('incidentsList');
   if (!incidents.length) {
@@ -337,11 +337,11 @@ function renderList() {
         <span style="font-weight:500;flex:1">${esc(i.title||s('incident.title'))}</span>
         <span class="badge ${i.resolved&&i.resolved!=='false' ? 'badge-green':'badge-yellow'}">${i.resolved&&i.resolved!=='false' ? s('incident.resolved') : s('incident.open')}</span>
       </div>
-      <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'&':''}</div>
+      <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'…':''}</div>
       <div class="incident-meta">
         ${esc((i.filedAt||'').slice(0,16).replace('T',' '))}
-        ${i.boatName ? ' � '+esc(i.boatName) : ''}
-        ${notes.length ? ` � ${notes.length} note${notes.length===1?'':'s'}` : ''}
+        ${i.boatName ? ' · '+esc(i.boatName) : ''}
+        ${notes.length ? ` · ${notes.length} note${notes.length===1?'':'s'}` : ''}
       </div>
     </div>`;
   }).join('');
@@ -349,7 +349,7 @@ function renderList() {
 
 function incidentById(id) { return incidents.find(i => i.id === id); }
 
-//    OPEN DETAIL                                                                
+// ── OPEN DETAIL ───────────────────────────────────────────────────────────────
 function openDetail(i) {
   if (!i) return;
   detailId = i.id;
@@ -380,27 +380,27 @@ function openDetail(i) {
     ${field(s('incident.witnesses'), i.witnesses)}
     ${field(s('incident.immediateAction'), i.immediateAction)}
     ${field(s('incident.followUp'), i.followUp)}
-    ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? '  '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
+    ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
     ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? new Date(i.filedAt).toLocaleString(L==='IS'?'is-IS':'en-GB') : ''))}
   `;
 
   document.getElementById('notesList').innerHTML = notes.map(n => `
     <div class="note-item">${esc(n.text)}
-      <div class="note-meta">${esc(n.by)} � ${esc(n.at)}</div>
+      <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
     </div>`).join('');
 
   setMode('detail');
 }
 
 function field(label, val) {
-  if (!val || String(val).trim() === '' || val === '') return '';
+  if (!val || String(val).trim() === '' || val === '—') return '';
   return `<div style="margin-bottom:12px">
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px">${esc(label)}</div>
     <div style="font-size:13px;white-space:pre-wrap">${esc(val)}</div>
   </div>`;
 }
 
-//    TYPE / SEVERITY TOGGLES                                                    
+// ── TYPE / SEVERITY TOGGLES ───────────────────────────────────────────────────
 function toggleType(btn) {
   const v = btn.dataset.v;
   if (selectedTypes.has(v)) { selectedTypes.delete(v); btn.classList.remove('on'); }
@@ -413,7 +413,7 @@ function setSev(btn) {
   selectedSev = btn.dataset.v;
 }
 
-//    FILE REPORT                                                                
+// ── FILE REPORT ───────────────────────────────────────────────────────────────
 async function fileReport() {
   const desc = document.getElementById('iDesc').value.trim();
   if (!desc)               { showToast(s('incident.descRequired'), 'err'); return; }
@@ -487,7 +487,7 @@ function resetForm() {
   document.getElementById('iTime').value = fmtTimeNow();
 }
 
-//    ADD NOTE                                                                   
+// ── ADD NOTE ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addNoteBtn').addEventListener('click', addNote);
   document.getElementById('fileBtn').addEventListener('click', fileReport);
@@ -510,7 +510,7 @@ async function addNote() {
       i.staffNotes = JSON.stringify(notes);
       document.getElementById('notesList').innerHTML += `
         <div class="note-item">${esc(text)}
-          <div class="note-meta">${esc(user.name)} � ${esc(timeStr)}</div>
+          <div class="note-meta">${esc(user.name)} · ${esc(timeStr)}</div>
         </div>`;
     }
     input.value = '';
@@ -518,7 +518,7 @@ async function addNote() {
   } catch(e) { showToast(s('toast.error'), 'err'); }
 }
 
-//    RESOLVE / REOPEN                                                           
+// ── RESOLVE / REOPEN ──────────────────────────────────────────────────────────
 async function toggleResolve() {
   const i = incidents.find(x => x.id === detailId);
   if (!i) return;
@@ -533,7 +533,7 @@ async function toggleResolve() {
   } catch(e) { showToast(s('toast.error'), 'err'); }
 }
 
-//    MODE SWITCHING                                                             
+// ── MODE SWITCHING ────────────────────────────────────────────────────────────
 function setMode(mode) {
   document.getElementById('listMode').classList.toggle('hidden',   mode !== 'list');
   document.getElementById('newMode').classList.toggle('hidden',    mode !== 'new');
