@@ -189,7 +189,7 @@
 
   <!-- ══ 4. OPENING CHECKLIST ══ -->
   <div class="section-heading" data-s="daily.openingChecklist"></div>
-  <div class="content-card" id="amCard">
+  <div class="content-card" id="amCard"></div>
 
   <!-- ══ 5. ACTIVITIES ══ -->
   <div class="section-heading">
@@ -213,7 +213,7 @@
 
   <!-- ══ 8. CLOSING CHECKLIST ══ -->
   <div class="section-heading" data-s="daily.closingChecklist"></div>
-  <div class="content-card" id="pmCard">
+  <div class="content-card" id="pmCard"></div>
 
   <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">
@@ -452,12 +452,12 @@ function renderTrips() {
 }
 
 function renderChecklists() {
-  renderCL(dom.amCard, , amChecks, 'am');
+  renderCL(dom.amCard, amItems, amChecks, 'am');
   renderCL(dom.pmCard, pmItems, pmChecks, 'pm');
 }
 
 function renderChecklistsReadonly() {
-  renderCLReadonly(dom.amCard, , amChecks);
+  renderCLReadonly(dom.amCard, amItems, amChecks);
   renderCLReadonly(dom.pmCard, pmItems, pmChecks);
 }
 
@@ -908,7 +908,7 @@ async function loadDay() {
   logId = null; dirty = false;
   wxLog = []; amChecks = {}; pmChecks = {};
   activities = []; tripsData = []; tideData = {};
-   = DEFAULT_AM; pmItems = DEFAULT_PM;
+  amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
