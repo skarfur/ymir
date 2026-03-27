@@ -135,7 +135,7 @@ function wxMsToBft(ms) {
 }
 function wxMsToKt(ms)   { return Math.round(ms * 1.944); }
 function wxDirLabel(d)  { if (d == null) return ''; return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
-function wxDirArrow(d)  { if (d == null) return ''; return ['↑','↗','→','↘','↓','↙','←','↖'][Math.round(d/45)%8]; }
+function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
 function wxBftDesc(b)   { return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b] || ''; }
 function wxBftDescIS(b)  { return ['Logn','Andvari','Kul','Gola','Stinningsgola','Kaldi','Stinningskaldi','Allhvass vindur','Hvassviðri','Stormur','Rok','Ofsaveður','Fárviðri'][b] || ''; }
 function wxCondIcon(c)  {
@@ -500,7 +500,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
               <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${IS?'Vindstig':'Force'} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${IS?'Hviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
+              ${IS?'Hviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
