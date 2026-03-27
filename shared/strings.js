@@ -123,7 +123,7 @@ const STRINGS = {
 
   // ── Login ──────────────────────────────────────────────────────────────────
   'login.title':       { EN:'Ýmir Sailing Club',   IS:'Siglingafélagið Ýmir' },
-  'login.subtitle':    { EN:'Member & Staff Portal', IS:'Gátt félaga og starfsmanna' },
+  'login.subtitle':    { EN:'Sailing Club', IS:'Siglingafélagið' },
   'login.kennitala':   { EN:'Kennitala',            IS:'Kennitala' },
   'login.placeholder': { EN:'0000000000',           IS:'0000000000' },
   'login.btn':         { EN:'Sign in',              IS:'Skrá inn' },
