@@ -41,12 +41,12 @@ const boatRegistry = {
 const BOAT_EMOJI = {
   dinghy:        "⛵",
   keelboat:      "⛵",
-  kayak:         "=",
-  "rowing shell":"=",
-  rowboat:       "=",
-  sup:           "<",
-  wingfoil:      ">",
-  other:         "=",
+  kayak:         "🛶",
+  "rowing shell":"🚣",
+  rowboat:       "🚣",
+  sup:           "🏄",
+  wingfoil:      "🪁",
+  other:         "🚤",
 };
 
 const BOAT_CAT_COLORS = {
