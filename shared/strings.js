@@ -673,6 +673,15 @@ const STRINGS = {
   'payroll.exportPlaceholder': { EN:'Not yet implemented — coming soon', IS:'Ekki tilbúið — kemur bráðlega' },
   'payroll.selectPeriod':      { EN:'— Select period —',                 IS:'— Velja tímabil —' },
   'payroll.exportCsv':         { EN:'Export CSV',                        IS:'Sækja CSV' },
+  'payroll.stadEmployerInfo':  { EN:'Employer info (Staðgreiðsla)',       IS:'Upplýsingar um launagreiðanda (Staðgreiðsla)' },
+  'payroll.stadKt':            { EN:'Employer kennitala',                 IS:'Kennitala launagreiðanda' },
+  'payroll.stadEmail':         { EN:'Contact email',                      IS:'Tölvupóstfang' },
+  'payroll.stadVeflykill':     { EN:'Web key (Veflykill)',                IS:'Veflykill (frá RSK)' },
+  'payroll.stadForrit':        { EN:'Software ID (ForritUtgafa)',         IS:'Kerfisheiti (ForritUtgafa)' },
+  'payroll.stadIsat':          { EN:'Industry code (ISAT 2008)',          IS:'Atvinnuvegaflokkun (ISAT 2008)' },
+  'payroll.stadKtRequired':    { EN:'Employer kennitala is required',     IS:'Kennitala launagreiðanda vantar' },
+  'payroll.starfshlutfall':    { EN:'Employment % (Starfshlutfall)',      IS:'Starfshlutfall (%)' },
+  'payroll.istarf95':          { EN:'Job code (ISTARF)',                  IS:'Starfaflokkun (ISTARF)' },
   'payroll.taxWithheld':       { EN:'Tax withheld',                   IS:'Staðgreiðsla' },
 
 };

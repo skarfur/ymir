@@ -98,6 +98,17 @@
         <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
       </div>
 
+      <div class="sec-lbl" data-s="payroll.stadEmployerInfo"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
+          <div class="field"><label data-s="payroll.stadKt"></label><input id="prStadKt" type="text" oninput="prSaveStadConfig()"></div>
+          <div class="field"><label data-s="payroll.stadEmail"></label><input id="prStadEmail" type="email" oninput="prSaveStadConfig()"></div>
+          <div class="field"><label data-s="payroll.stadVeflykill"></label><input id="prStadVeflykill" type="text" oninput="prSaveStadConfig()"></div>
+          <div class="field"><label data-s="payroll.stadForrit"></label><input id="prStadForrit" type="text" placeholder="Ymir 1.0" oninput="prSaveStadConfig()"></div>
+          <div class="field"><label data-s="payroll.stadIsat"></label><input id="prStadIsat" type="text" placeholder="e.g. 50200" oninput="prSaveStadConfig()"></div>
+        </div>
+      </div>
+
       <div class="sec-lbl" data-s="payroll.exportPensionCsv"></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -275,6 +286,8 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
   h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
   h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
+  h+='<div class="field"><label data-s="payroll.starfshlutfall"></label><input id="prStarfs_'+mid+'" type="number" min="0" max="100" step="1" value="'+_e(String(emp&&emp.starfshlutfall!=null?emp.starfshlutfall:100))+'"></div>';
+  h+='<div class="field"><label data-s="payroll.istarf95"></label><input id="prIstarf_'+mid+'" type="text" value="'+_e(emp&&emp.istarf95||'')+'"></div>';
   h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">—</option>';
   funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
   h+='</select></div>';
@@ -307,6 +320,8 @@ async function prSaveEmployee(memberId){
     personuafslattr:fn('prPersona'),
     sereignarsjodur:fn('prSereign'),
     otEligible:fc('prOT'),
+    starfshlutfall:fn('prStarfs')||100,
+    istarf95:fv('prIstarf'),
     pensionFundIds:fundEl&&fundEl.value?[fundEl.value]:[],
     unionId:unionEl?unionEl.value:'',
     payrollEnabled:!!(document.getElementById('prEnabled_'+memberId)&&document.getElementById('prEnabled_'+memberId).checked)};
@@ -824,11 +839,24 @@ async function prExportXml(periodKey){
 }
 
 /* == EXPORT DATA == */
+function prSaveStadConfig(){
+  var cfg={kt:(document.getElementById('prStadKt')||{}).value||'',email:(document.getElementById('prStadEmail')||{}).value||'',veflykill:(document.getElementById('prStadVeflykill')||{}).value||'',forrit:(document.getElementById('prStadForrit')||{}).value||'',isat:(document.getElementById('prStadIsat')||{}).value||''};
+  try{localStorage.setItem('ymir_stad_cfg',JSON.stringify(cfg));}catch(e){}
+}
+function prLoadStadConfig(){
+  try{
+    var cfg=JSON.parse(localStorage.getItem('ymir_stad_cfg')||'{}');
+    ['kt','email','veflykill','forrit','isat'].forEach(function(k){
+      var el=document.getElementById('prStad'+k.charAt(0).toUpperCase()+k.slice(1));
+      if(el&&cfg[k])el.value=cfg[k];
+    });
+  }catch(e){}
+}
 async function prLoadExportData(){
+  prLoadStadConfig();
   try{
     var res=await apiGet('getPayroll');
     var rows=res.payroll||[];
-    // Build unique period keys from closed payroll records
     var periods=[];var seen=new Set();
     rows.forEach(function(r){
       var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');
@@ -837,7 +865,6 @@ async function prLoadExportData(){
     periods.sort().reverse();
     ['prCsvPeriod','prXmlPeriod'].forEach(function(selId){
       var sel=document.getElementById(selId);if(!sel)return;
-      // Keep the first placeholder option, replace the rest
       while(sel.options.length>1)sel.remove(1);
       periods.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
     });
@@ -882,6 +909,12 @@ async function prExportPensionCsv(){
 async function prExportStadgreidslaXml(){
   var periodKey=document.getElementById('prXmlPeriod').value;
   if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  var kt=(document.getElementById('prStadKt')||{}).value||'';
+  var veflykill=(document.getElementById('prStadVeflykill')||{}).value||'';
+  var forrit=((document.getElementById('prStadForrit')||{}).value||'Ymir 1.0').trim();
+  var email=(document.getElementById('prStadEmail')||{}).value||'';
+  var isat=(document.getElementById('prStadIsat')||{}).value||'';
+  if(!kt){showToast(s('payroll.stadKtRequired'),'err');return;}
   try{
     var res=await apiGet('getPayroll');
     var rows=(res.payroll||[]).filter(function(r){
@@ -889,24 +922,69 @@ async function prExportStadgreidslaXml(){
     });
     if(!rows.length){showToast(s('lbl.noData'),'err');return;}
     var cfg=window.PAYROLL_CONFIG||{};
-    var timabil=(rows[0].periodFrom||rows[0].period||'').slice(0,7);
-    var lines=['<?xml version="1.0" encoding="UTF-8"?>','<Stadgreidsla>'];
-    lines.push('  <Timabil>'+_xmlEsc(timabil)+'</Timabil>');
-    lines.push('  <Launthegar>');
+    var tryggRate=cfg.tryggingagjaldRate||0.0685;
+    // Timabil in YYYYMM format
+    var timabil=(rows[0].periodFrom||rows[0].period||'').slice(0,7).replace('-','');
+    var totalLaun=0,totalStadgr=0,totalTrygg=0;
+    var launamennLines=[];
     rows.forEach(function(r){
-      lines.push('    <Launtakandi>');
-      lines.push('      <Kennitala>'+_xmlEsc(r.kt||r.employeeId||'')+'</Kennitala>');
-      lines.push('      <Nafn>'+_xmlEsc(r.employeeName||r.employeeId||'')+'</Nafn>');
-      lines.push('      <Laun>'+Math.round(+(r.grossTotal)||0)+'</Laun>');
-      lines.push('      <Personuafslattr>'+Math.round(+(r.personalCredit)||0)+'</Personuafslattr>');
-      lines.push('      <Stadgr>'+Math.round(+(r.taxWithheld||r.taxAfterCredit)||0)+'</Stadgr>');
-      lines.push('    </Launtakandi>');
+      var gross=+(r.grossTotal)||0;
+      var pension=+(r.employeePension)||0;
+      var taxWh=+(r.taxWithheld||r.taxAfterCredit)||0;
+      var credit=+(r.personalCredit)||0;
+      var taxBase=gross-pension;
+      // TharafThrep: each bracket's share of taxBase (sum must equal taxBase)
+      var rowCfg=cfg;
+      try{if(r.configSnapshot)rowCfg=Object.assign({},cfg,JSON.parse(r.configSnapshot));}catch(e){}
+      var brackets=(rowCfg.taxBrackets||cfg.taxBrackets||[]);
+      var threp=[0,0,0];var rem=taxBase,prev=0;
+      brackets.slice(0,3).forEach(function(b,i){
+        var top=(b.upTo===null||b.upTo===Infinity)?Infinity:+(b.upTo);
+        var inBand=Math.max(0,Math.min(rem,top-prev));
+        threp[i]=Math.round(inBand);rem-=inBand;prev=top===Infinity?prev:top;
+      });
+      // Per-employee profile for extra fields
+      var emp=_empData[r.employeeId]||{};
+      var starfshl=+(emp.starfshlutfall)||100;
+      var istarf=emp.istarf95||'';
+      totalLaun+=gross;totalStadgr+=taxWh;
+      totalTrygg+=Math.round(gross*tryggRate);
+      var L=['    <Launamenn>'];
+      L.push('      <Kennitala>'+_xmlEsc(r.kt||r.employeeId||'')+'</Kennitala>');
+      L.push('      <Starfshlutfall>'+starfshl+'</Starfshlutfall>');
+      if(isat)L.push('      <Isat95>'+_xmlEsc(isat)+'</Isat95>');
+      if(istarf)L.push('      <Istarf95>'+_xmlEsc(istarf)+'</Istarf95>');
+      L.push('      <Laun>'+Math.round(gross)+'</Laun>');
+      L.push('      <Greitt_i_lifeyrissjod>'+Math.round(pension)+'</Greitt_i_lifeyrissjod>');
+      L.push('      <StadgreidslaLaunam>'+Math.round(taxWh)+'</StadgreidslaLaunam>');
+      L.push('      <Personuafslattur>'+Math.round(credit)+'</Personuafslattur>');
+      L.push('      <TharafThrep1>'+threp[0]+'</TharafThrep1>');
+      L.push('      <TharafThrep2>'+threp[1]+'</TharafThrep2>');
+      L.push('      <TharafThrep3>0</TharafThrep3>');
+      L.push('    </Launamenn>');
+      launamennLines.push(L.join('\n'));
     });
-    lines.push('  </Launthegar>');
-    lines.push('</Stadgreidsla>');
-    var xml=lines.join('\n');
+    var xml=['<?xml version="1.0" encoding="UTF-8"?>','<Skilagrein>'];
+    xml.push('  <KennitalaLaunagr>'+_xmlEsc(kt)+'</KennitalaLaunagr>');
+    xml.push('  <Timabil>'+_xmlEsc(timabil)+'</Timabil>');
+    xml.push('  <Veflykill>'+_xmlEsc(veflykill)+'</Veflykill>');
+    xml.push('  <Tegund>1</Tegund>');
+    xml.push('  <ForritUtgafa>'+_xmlEsc(forrit)+'</ForritUtgafa>');
+    if(email)xml.push('  <Tolvupostfang>'+_xmlEsc(email)+'</Tolvupostfang>');
+    xml.push('  <Sundurlidun>');
+    xml.push(launamennLines.join('\n'));
+    xml.push('  </Sundurlidun>');
+    xml.push('  <FjoldiLaunamanna>'+rows.length+'</FjoldiLaunamanna>');
+    xml.push('  <Stadgreidsla_heild>'+Math.round(totalStadgr)+'</Stadgreidsla_heild>');
+    xml.push('  <Stadgreidsla_laun>'+Math.round(totalStadgr)+'</Stadgreidsla_laun>');
+    xml.push('  <Stadgreidsla_endurgj>0</Stadgreidsla_endurgj>');
+    xml.push('  <Tryggingagjald>'+Math.round(totalTrygg)+'</Tryggingagjald>');
+    xml.push('  <Heildar_laun>'+Math.round(totalLaun)+'</Heildar_laun>');
+    xml.push('  <Reiknad_endurgj>0</Reiknad_endurgj>');
+    xml.push('  <Engin_laun>'+(rows.length?0:1)+'</Engin_laun>');
+    xml.push('</Skilagrein>');
     var a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));
+    a.href=URL.createObjectURL(new Blob([xml.join('\n')],{type:'application/xml'}));
     a.download='stadgreidsla-'+timabil+'.xml';a.click();
   }catch(e){showToast(e.message,'err');}
 }

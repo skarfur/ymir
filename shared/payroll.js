@@ -11,6 +11,7 @@ window.PAYROLL_CONFIG = {
   orlofslaun:           0.1017,
   employerPension:      0.115,
   endurhaefingarsjodur: 0.001,
+  tryggingagjaldRate:   0.0685,
   eftirvinna1:          1.33,
   eftirvinna2:          1.55,
   personuafslattrUnit:  68681,
