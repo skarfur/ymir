@@ -10,10 +10,13 @@
   <script src="../../shared/ui.js"></script>
   <script src="../../shared/payroll.js"></script>
   <style>
+    /* ── Payroll tabs ── */
     .pr-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
     .pr-tab{padding:6px 16px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .15s}
     .pr-tab.active{background:var(--brass);color:#fff;border-color:var(--brass)}
     .pr-tab:hover:not(.active){border-color:var(--brass);color:var(--brass)}
+
+    /* ── Employee list ── */
     .emp-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)44;flex-wrap:wrap}
     .emp-row:last-child{border-bottom:none}
     .emp-name{font-weight:600;font-size:13px;flex:1;min-width:120px}
@@ -21,58 +24,85 @@
     .pr-badge-on{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
     .pr-badge-off{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
     .emp-fields{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;padding:10px 0 4px}
-    .emp-fields .field{margin:0}.emp-fields label{font-size:10px}
-    /* Calendar */
+    .emp-fields .field{margin:0}
+    .emp-fields label{font-size:10px}
+
+    /* ── Time reporting toolbar ── */
+    .ts-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+    .ts-toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .ts-total{font-size:11px;color:var(--muted)}
+    .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .view-toggle button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .1s}
+    .view-toggle button.active{background:var(--brass);color:#fff}
+
+    /* ── Calendar ── */
     .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-    .cal-nav button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2;font-family:inherit}
-    .cal-nav button:hover{border-color:var(--brass);color:var(--brass)}
-    .cal-month-label{font-weight:700;font-size:15px;min-width:160px;text-align:center}
+    .cal-nav-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2;font-family:inherit}
+    .cal-nav-btn:hover{border-color:var(--brass);color:var(--brass)}
+    .cal-month{font-weight:700;font-size:15px;min-width:160px;text-align:center}
+    .cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
     .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;letter-spacing:.5px}
+    .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
     .cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:6px;padding:5px;background:var(--surface)44;cursor:pointer;transition:background .1s}
     .cal-cell:hover{background:var(--surface);border-color:var(--brass)66}
     .cal-cell.other-month{opacity:.3}
     .cal-cell.today{border-color:var(--brass);background:var(--brass)11}
-    .cal-day-num{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px}
+    .cal-day-num{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:block}
     .cal-cell.today .cal-day-num{color:var(--brass)}
     .cal-pill{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;line-height:1.5;border:1px solid transparent}
     .cal-pill:hover{filter:brightness(1.1)}
     .cal-more{font-size:9px;color:var(--muted);margin-top:1px;padding-left:2px}
-    /* View toggle */
-    .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-    .view-toggle button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .1s}
-    .view-toggle button.active{background:var(--brass);color:#fff}
-    /* List */
-    .ts-table{width:100%;border-collapse:collapse;font-size:12px}
+
+    /* ── List view ── */
+    .ts-group-header{font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+    .ts-group-total{font-size:11px;color:var(--muted)}
+    .ts-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:22px}
     .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
     .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
     .ts-table tr:last-child td{border-bottom:none}
-    /* Modal */
+    .src-admin{color:var(--brass)}
+
+    /* ── Modal ── */
     .modal-bg{position:fixed;inset:0;background:#00000077;z-index:200;display:flex;align-items:center;justify-content:center}
     .modal-box{background:var(--card);border-radius:12px;padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:0 8px 40px #00000055}
-    .modal-box h3{margin:0 0 16px;font-size:15px}
-    .modal-box .field{margin-bottom:10px}
-    .modal-box label{font-size:11px;font-weight:600;display:block;margin-bottom:3px;color:var(--muted)}
+    .modal-title{margin:0 0 16px;font-size:15px;font-weight:700}
+    .modal-err{font-size:11px;color:var(--red);min-height:14px;margin-bottom:2px}
     .modal-actions{display:flex;gap:8px;margin-top:16px;align-items:center}
-    /* Periods */
+    .modal-actions .spacer{margin-left:auto}
+
+    /* ── Periods / Payslips ── */
     .period-card{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
     .period-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);cursor:pointer}
-    .period-title{font-weight:600;font-size:13px}.period-meta{font-size:11px;color:var(--muted)}
+    .period-title{font-weight:600;font-size:13px}
+    .period-meta{font-size:11px;color:var(--muted)}
     .period-body{padding:12px 14px}
     .sec-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
-    .confirm-row{background:var(--surface);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-    .confirm-emp{font-weight:600;font-size:13px;min-width:160px;padding-top:2px}
-    .hrs-inp{width:72px;text-align:right;font-size:12px}
-    .ml-row{display:grid;grid-template-columns:1fr 1fr 80px 28px;gap:6px;align-items:center;margin-bottom:4px}
-    .ml-row input{font-size:11px}
     .pill-ok{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
     .pill-open{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+
+    /* ── Payslip preview rows ── */
+    .confirm-row{background:var(--surface);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .confirm-emp{font-weight:600;font-size:13px;min-width:160px;padding-top:2px}
+    .confirm-emp-title{font-size:10px;color:var(--muted)}
+    .hrs-inp{width:72px;text-align:right;font-size:12px}
+    .hrs-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .hrs-label{font-size:11px}
+    .ml-row{display:grid;grid-template-columns:1fr 1fr 80px 28px;gap:6px;align-items:center;margin-bottom:4px}
+    .ml-row input{font-size:11px}
+    .calc-summary{width:100%;font-size:11px;color:var(--muted);margin-top:4px}
     .action-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+
+    /* ── Launamiðlar ── */
     .lm-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
     .lm-table th{text-align:right;padding:4px 10px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border)}
-    .lm-table th:first-child{text-align:left}.lm-table td{padding:5px 10px;border-bottom:1px solid var(--border)44;text-align:right}
+    .lm-table th:first-child{text-align:left}
+    .lm-table td{padding:5px 10px;border-bottom:1px solid var(--border)44;text-align:right}
     .lm-table td:first-child{text-align:left;font-weight:500}
     .lm-table tr.lm-total td{font-weight:700;border-top:2px solid var(--border);border-bottom:none;background:var(--surface)}
+
+    /* ── Misc ── */
     .btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
+    .edited-badge{font-size:9px;color:var(--muted);margin-left:3px}
   </style>
 </head>
 <body>
@@ -97,40 +127,42 @@
 
     <!-- TIME REPORTING -->
     <div id="pr-timesheets" class="hidden">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div class="ts-toolbar">
         <select id="prTsEmp" onchange="prTsFilter()" style="min-width:160px">
-          <option value="">All staff</option>
+          <option value="" data-s="payroll.allStaff"></option>
         </select>
         <div class="view-toggle">
-          <button id="btnCal" class="active" onclick="prSetView('cal')">&#128197; Calendar</button>
-          <button id="btnList" onclick="prSetView('list')">&#9776; List</button>
+          <button id="btnCal" class="active" onclick="prSetView('cal')" data-s="payroll.calView"></button>
+          <button id="btnList" onclick="prSetView('list')" data-s="payroll.listView"></button>
         </div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <span id="prTsTotal" style="font-size:11px;color:var(--muted)"></span>
-          <button class="btn btn-primary" style="font-size:11px" onclick="prOpenModal(null,null)">+ Add entry</button>
+        <div class="ts-toolbar-right">
+          <span id="prTsTotal" class="ts-total"></span>
+          <button class="btn btn-primary" style="font-size:11px" onclick="prOpenModal(null,null)" data-s="payroll.addEntry"></button>
         </div>
       </div>
-      <!-- Calendar view -->
       <div id="prCalView">
         <div class="cal-nav">
-          <button onclick="prCalMove(-1)">&#8249;</button>
-          <span class="cal-month-label" id="prCalLabel"></span>
-          <button onclick="prCalMove(1)">&#8250;</button>
+          <button class="cal-nav-btn" onclick="prCalMove(-1)">&#8249;</button>
+          <span class="cal-month" id="prCalLabel"></span>
+          <button class="cal-nav-btn" onclick="prCalMove(1)">&#8250;</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">
-          <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
-          <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
-          <div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+        <div class="cal-dows">
+          <div class="cal-dow" data-s="lbl.monShort"></div>
+          <div class="cal-dow" data-s="lbl.tueShort"></div>
+          <div class="cal-dow" data-s="lbl.wedShort"></div>
+          <div class="cal-dow" data-s="lbl.thuShort"></div>
+          <div class="cal-dow" data-s="lbl.friShort"></div>
+          <div class="cal-dow" data-s="lbl.satShort"></div>
+          <div class="cal-dow" data-s="lbl.sunShort"></div>
         </div>
-        <div id="prCalDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+        <div id="prCalDays" class="cal-days"></div>
       </div>
-      <!-- List view -->
       <div id="prListView" class="hidden">
         <div id="prTsList"><div class="empty-note" data-s="lbl.loading"></div></div>
       </div>
     </div>
 
-    <!-- TIMESHEETS / LAUNASEÐLAR -->
+    <!-- TIMESHEETS / LAUNASEDLAR -->
     <div id="pr-periods" class="hidden">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div class="sec-lbl" data-s="payroll.definePeriod"></div>
@@ -152,42 +184,53 @@
           <span id="prApproveMsg" style="font-size:11px;color:var(--green)"></span>
         </div>
       </div>
-      <div class="sec-lbl" style="margin-top:20px">Past periods / Fyrri t&#237;mabil</div>
+      <div class="sec-lbl" style="margin-top:20px" data-s="payroll.pastPeriods"></div>
       <div id="prPeriodsList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
 
-    <!-- LAUNAMIÐLAR -->
+    <!-- LAUNAMIDLAR -->
     <div id="pr-launamidlar" class="hidden">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <label style="font-size:12px;font-weight:600">Year</label>
+        <label style="font-size:12px;font-weight:600" data-s="lbl.year"></label>
         <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
         <button class="btn btn-primary" onclick="prLoadLaunamidlar()" data-s="payroll.exportXml"></button>
-        <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; Download XML</a>
+        <a id="prLmDownload" class="btn btn-secondary" style="display:none;font-size:11px">&#11015; <span data-s="payroll.exportXml"></span></a>
       </div>
-      <div id="prLmTable"><div class="empty-note">Select year and generate.</div></div>
+      <div id="prLmTable"><div class="empty-note" data-s="payroll.noPeriodDefined"></div></div>
     </div>
   </main>
 </div>
 
-<!-- Entry modal (add / edit / delete) -->
+<!-- Entry modal -->
 <div id="prModal" class="modal-bg hidden" onclick="if(event.target===this)prCloseModal()">
   <div class="modal-box">
-    <h3 id="prModalTitle">Add time entry</h3>
-    <div class="field"><label>Employee / Starfsma&#240;ur</label>
-      <select id="meEmp" style="width:100%"></select></div>
-    <div class="field"><label>Clock in / Stimpla inn</label>
-      <input id="meIn" type="datetime-local" style="width:100%"></div>
-    <div class="field"><label>Clock out / Stimpla &#250;t</label>
-      <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()"></div>
-    <div class="field"><label>Duration (minutes) — auto-calculated, override if needed</label>
-      <input id="meMins" type="number" min="0" style="width:100%"></div>
-    <div class="field"><label>Note / Athugasemd</label>
-      <input id="meNote" type="text" style="width:100%" placeholder="e.g. forgotten punch-in"></div>
-    <div id="meErr" style="font-size:11px;color:var(--red);min-height:14px"></div>
+    <h3 class="modal-title" id="prModalTitle"></h3>
+    <div class="field">
+      <label data-s="payroll.employee"></label>
+      <select id="meEmp" style="width:100%"></select>
+    </div>
+    <div class="field">
+      <label data-s="payroll.clockInLabel"></label>
+      <input id="meIn" type="datetime-local" style="width:100%">
+    </div>
+    <div class="field">
+      <label data-s="payroll.clockOutLabel"></label>
+      <input id="meOut" type="datetime-local" style="width:100%" onchange="meCalcMins()">
+    </div>
+    <div class="field">
+      <label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
+      <input id="meMins" type="number" min="0" style="width:100%">
+    </div>
+    <div class="field">
+      <label data-s="payroll.noteOptional"></label>
+      <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder">
+    </div>
+    <div id="meErr" class="modal-err"></div>
     <div class="modal-actions">
-      <button id="meDelBtn" class="btn-del" style="display:none;margin-right:auto" onclick="meDelete()">Delete</button>
-      <button class="btn btn-secondary" onclick="prCloseModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="meSave()">Save</button>
+      <button id="meDelBtn" class="btn-del" style="display:none" onclick="meDelete()" data-s="payroll.deleteEntry"></button>
+      <span class="spacer"></span>
+      <button class="btn btn-secondary" onclick="prCloseModal()" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="meSave()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -207,6 +250,7 @@ function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 function kr(n){return Math.round(n||0).toLocaleString('is-IS')+' kr.';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
 function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+function locale(){return (typeof getLang==='function')&&getLang()==='IS'?'is-IS':'en-GB';}
 var EMP_COLORS=['#4e9a8c','#7b5ea7','#c97c3a','#3a79c9','#b84a4a','#5a9e47','#a04a7c','#7a8a3a'];
 function empColor(eid){var i=_tsEmployees.findIndex(function(x){return x.id===eid;});return EMP_COLORS[Math.max(0,i)%EMP_COLORS.length];}
 function empName(eid){var e=_tsEmployees.find(function(x){return x.id===eid;});return e?e.name:eid;}
@@ -232,7 +276,7 @@ async function prLoadEmployees(){
     _members=(res[0].members||[]).filter(function(m){return m.role==='staff'||m.role==='admin';});
     _empData={};_empByMember={};
     (res[1].employees||[]).forEach(function(e){_empData[e.id]=e;if(e.memberId)_empByMember[e.memberId]=e;});
-    if(!_members.length){list.innerHTML='<div class="empty-note">No staff found.</div>';return;}
+    if(!_members.length){list.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(list);return;}
     list.innerHTML=_members.map(function(m){
       var emp=_empByMember[m.id]||null;
       var act=emp&&(emp.payrollEnabled===true||emp.payrollEnabled==='true');
@@ -251,7 +295,7 @@ function prEmpRowHTML(m,emp,act){
   var h='<div class="emp-row" id="emprow_'+mid+'">';
   h+='<span class="emp-name">'+_e(m.name)+'</span>';
   h+='<span class="emp-kt">'+_e(m.kennitala||'')+'</span>';
-  h+='<span class="'+(act?'pr-badge-on':'pr-badge-off')+'">'+(act?s('payroll.tabEmployees'):s('payroll.notEnabled'))+'</span>';
+  h+='<span class="'+(act?'pr-badge-on':'pr-badge-off')+'" data-s="'+(act?'payroll.tabEmployees':'payroll.notEnabled')+'"></span>';
   h+='<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" onclick="prToggleEdit(\''+mid+'\')" data-s="btn.edit"></button>';
   h+='</div>';
   h+='<div id="empedit_'+mid+'" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px">';
@@ -261,15 +305,15 @@ function prEmpRowHTML(m,emp,act){
   h+='<input type="checkbox" id="prEnabled_'+mid+'" '+(act?'checked':'')+' onchange="prToggleFields(\''+mid+'\')">';
   h+='<span data-s="payroll.enablePayroll"></span></label></div>';
   h+='<div class="emp-fields" id="prFields_'+mid+'"'+(!act?' style="display:none"':'')+' >';
-  h+='<div class="field"><label>Title / Starfsheiti</label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title||'')+'"></div>';
-  h+='<div class="field"><label>Base rate (kr/hr)</label><input id="prRate_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.baseRateKr||''))+'"></div>';
-  h+='<div class="field"><label>Bank / Launareikningur</label><input id="prBank_'+mid+'" type="text" value="'+_e(emp&&emp.bankAccount||'')+'"></div>';
-  h+='<div class="field"><label>Orlofsreikningur</label><input id="prOrlof_'+mid+'" type="text" value="'+_e(emp&&emp.orlofsreikningur||'')+'"></div>';
-  h+='<div class="field"><label>Union / St\u00e9ttarf\u00e9lag</label><input id="prUnion_'+mid+'" type="text" value="'+_e(emp&&emp.union||'')+'"></div>';
-  h+='<div class="field"><label>L\u00edfeyrir % (employee)</label><input id="prLifeyrir_'+mid+'" type="number" min="0" max="15" step="0.5" value="'+defP+'"></div>';
-  h+='<div class="field"><label>S\u00e9reign %</label><input id="prSereign_'+mid+'" type="number" min="0" max="4" step="0.5" value="'+defS+'"></div>';
-  h+='<div class="field"><label>Pers\u00f3nuafsl\u00e1ttur (kr/m\u00e1n)</label><input id="prPersona_'+mid+'" type="number" min="0" value="'+_e(defA)+'"></div>';
-  h+='<div class="field"><label>Union dues %</label><input id="prUnionDues_'+mid+'" type="number" min="0" max="5" step="0.1" value="'+defU+'"></div>';
+  h+='<div class="field"><label data-s="payroll.titleField"></label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title||'')+'"></div>';
+  h+='<div class="field"><label data-s="payroll.baseRate"></label><input id="prRate_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.baseRateKr||''))+'"></div>';
+  h+='<div class="field"><label data-s="payroll.bankAccount"></label><input id="prBank_'+mid+'" type="text" value="'+_e(emp&&emp.bankAccount||'')+'"></div>';
+  h+='<div class="field"><label data-s="payroll.orlofsreikningur"></label><input id="prOrlof_'+mid+'" type="text" value="'+_e(emp&&emp.orlofsreikningur||'')+'"></div>';
+  h+='<div class="field"><label data-s="payroll.union"></label><input id="prUnion_'+mid+'" type="text" value="'+_e(emp&&emp.union||'')+'"></div>';
+  h+='<div class="field"><label data-s="payroll.empPensionRate"></label><input id="prLifeyrir_'+mid+'" type="number" min="0" max="15" step="0.5" value="'+defP+'"></div>';
+  h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="4" step="0.5" value="'+defS+'"></div>';
+  h+='<div class="field"><label data-s="payroll.personuafslattr"></label><input id="prPersona_'+mid+'" type="number" min="0" value="'+_e(defA)+'"></div>';
+  h+='<div class="field"><label data-s="payroll.unionDuesRate"></label><input id="prUnionDues_'+mid+'" type="number" min="0" max="5" step="0.1" value="'+defU+'"></div>';
   h+='</div>';
   h+='<div style="display:flex;gap:8px;margin-top:10px">';
   h+='<button class="btn btn-primary" style="font-size:11px" onclick="prSaveEmployee(\''+mid+'\')" data-s="btn.save"></button>';
@@ -293,7 +337,7 @@ async function prSaveEmployee(memberId){
     lifeyrir:fn('prLifeyrir')/100,sereignarsjodur:fn('prSereign')/100,
     personuafslattr:fn('prPersona'),unionDuesRate:fn('prUnionDues')/100,
     payrollEnabled:!!(document.getElementById('prEnabled_'+memberId)&&document.getElementById('prEnabled_'+memberId).checked)};
-  if(msg)msg.textContent='\u2026';
+  if(msg)msg.textContent=s('lbl.loading');
   try{
     await apiPost('saveEmployee',payload);
     _empData[empId]=payload;_empByMember[memberId]=payload;
@@ -302,18 +346,15 @@ async function prSaveEmployee(memberId){
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
 }
 
-/* ══ TIME REPORTING ═════════════════════════════════════════════════════════
-   Calendar + list, full CRUD. Source: punch-clock entries from staff hub.
-══════════════════════════════════════════════════════════════════════════ */
+/* ══ TIME REPORTING ═════════════════════════════════════════════════════════ */
 async function prInitTimesheets(){
   if(_tsEmployees.length===0){
     try{
       var res=await apiGet('getEmployees');
       _tsEmployees=(res.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
-      var sel=document.getElementById('prTsEmp');
-      var meSel=document.getElementById('meEmp');
+      var sel=document.getElementById('prTsEmp'),meSel=document.getElementById('meEmp');
       _tsEmployees.forEach(function(e){
-        var o1=document.createElement('option');o1.value=e.id;o1.textContent=e.name;sel.appendChild(o1);
+        var o=document.createElement('option');o.value=e.id;o.textContent=e.name;sel.appendChild(o);
         var o2=document.createElement('option');o2.value=e.id;o2.textContent=e.name;meSel.appendChild(o2);
       });
     }catch(e){}
@@ -334,41 +375,42 @@ function prSetView(v){
 function prCalMove(dir){
   _calMonth+=dir;
   if(_calMonth>11){_calMonth=0;_calYear++;}
-  if(_calMonth<0) {_calMonth=11;_calYear--;}
+  if(_calMonth<0){_calMonth=11;_calYear--;}
   prRenderCalLabel();
   prLoadTsEntries();
 }
 function prRenderCalLabel(){
-  var months_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var months_IS=['\u00danvar','Febr\u00baar','\u00mars','Apr\u00edl','Ma\u00ed','J\u00fan\u00ed','J\u00fal\u00ed','\u00c1g\u00fast','September','\u00d3kt\u00f3ber','N\u00f3vember','Desember'];
-  var IS=(typeof getLang==='function')&&getLang()==='IS';
-  document.getElementById('prCalLabel').textContent=(IS?months_IS:months_EN)[_calMonth]+' '+_calYear;
+  var d=new Date(_calYear,_calMonth,1);
+  document.getElementById('prCalLabel').textContent=d.toLocaleDateString(locale(),{month:'long',year:'numeric'});
 }
 async function prLoadTsEntries(){
   var empId=document.getElementById('prTsEmp').value;
-  // Build date range: full weeks covering the month
   var firstDay=new Date(_calYear,_calMonth,1);
-  var startDow=(firstDay.getDay()+6)%7; // Mon=0
+  var startDow=(firstDay.getDay()+6)%7;
   var rangeStart=new Date(_calYear,_calMonth,1-startDow);
   var lastDay=new Date(_calYear,_calMonth+1,0);
   var endDow=(lastDay.getDay()+6)%7;
   var rangeEnd=new Date(_calYear,_calMonth+1,7-endDow);
-  var from=rangeStart.toISOString().slice(0,10);
-  var to=rangeEnd.toISOString().slice(0,10);
   try{
-    var params={from:from,to:to,period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')};
+    var params={
+      from:rangeStart.toISOString().slice(0,10),
+      to:rangeEnd.toISOString().slice(0,10),
+      period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-01'
+    };
     if(empId) params.employeeId=empId;
     var res=await apiGet('getTimeEntries',params);
-    _tsEntries=res.entries||res.timeEntries||[];
+    _tsEntries=(res.entries||res.timeEntries||[]).map(function(e){
+      if(!e.clockIn&&e.originalTimestamp) e.clockIn=e.originalTimestamp;
+      return e;
+    });
     var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
     var totalMins=filtered.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
-    document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' total';
+    document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours');
     if(_calView==='cal') prRenderCalDays();
     else                 prRenderList();
-  }catch(e){
-    document.getElementById('prTsTotal').textContent='';
-  }
+  }catch(e){document.getElementById('prTsTotal').textContent='';}
 }
+  
 function prRenderCalDays(){
   var container=document.getElementById('prCalDays');
   var empId=document.getElementById('prTsEmp').value;
@@ -377,13 +419,12 @@ function prRenderCalDays(){
   var startDow=(firstDay.getDay()+6)%7;
   var lastDay=new Date(_calYear,_calMonth+1,0).getDate();
   var endDow=(new Date(_calYear,_calMonth+1,0).getDay()+6)%7;
-  // Index entries by date
   var byDate={};
   _tsEntries.forEach(function(e){
-    if(empId&&e.employeeId!==empId) return;
+    if(empId&&e.employeeId!==empId)return;
     var d=(e.clockIn||e.timestamp||'').slice(0,10);
-    if(!d) return;
-    if(!byDate[d]) byDate[d]=[];
+    if(!d)return;
+    if(!byDate[d])byDate[d]=[];
     byDate[d].push(e);
   });
   var totalCells=startDow+lastDay+(endDow<6?6-endDow:0);
@@ -399,8 +440,8 @@ function prRenderCalDays(){
     var shown=dayEntries.slice(0,3);
     var pills=shown.map(function(e){
       var col=empColor(e.employeeId);
-      var inT=e.clockIn?new Date(e.clockIn).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'?';
-      var outT=e.timestamp?new Date(e.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'?';
+      var inT=e.clockIn?new Date(e.clockIn).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
+      var outT=e.timestamp?new Date(e.timestamp).toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}):'?';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
       var label=empId?(inT+'\u2013'+outT):(empName(e.employeeId));
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
@@ -408,9 +449,9 @@ function prRenderCalDays(){
         +' onclick="event.stopPropagation();prOpenModal(JSON.parse(this.dataset.e),null)" data-e="'+edata+'"'
         +' title="'+_e(empName(e.employeeId))+' '+inT+'\u2013'+outT+' ('+dur+')">'+_e(label)+'</span>';
     }).join('');
-    if(dayEntries.length>3) pills+='<div class="cal-more">+' +(dayEntries.length-3)+' more</div>';
+    if(dayEntries.length>3)pills+='<div class="cal-more">+'+(dayEntries.length-3)+' '+s('payroll.moreEntries')+'</div>';
     html+='<div class="'+cls+'" onclick="prOpenModal(null,\''+dateStr+'\')">'
-      +'<div class="cal-day-num">'+cellDate.getDate()+'</div>'+pills+'</div>';
+      +'<span class="cal-day-num">'+cellDate.getDate()+'</span>'+pills+'</div>';
   }
   container.innerHTML=html;
 }
@@ -418,7 +459,7 @@ function prRenderList(){
   var list=document.getElementById('prTsList');
   var empId=document.getElementById('prTsEmp').value;
   var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
-  if(!filtered.length){list.innerHTML='<div class="empty-note">No entries found.</div>';return;}
+  if(!filtered.length){list.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(list);return;}
   var byEmp={};
   filtered.forEach(function(e){
     var k=e.employeeId||'unknown';
@@ -432,46 +473,48 @@ function prRenderList(){
       return (a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;
     }).map(function(e){
       var ci=e.clockIn?new Date(e.clockIn):null,co=e.timestamp?new Date(e.timestamp):null;
-      var dateStr=ci?ci.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
-      var inT=ci?ci.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
-      var outT=co?co.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'--';
+      var loc=locale();
+      var dateStr=ci?ci.toLocaleDateString(loc,{day:'2-digit',month:'short',year:'numeric'}):'--';
+      var inT=ci?ci.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
+      var outT=co?co.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}):'--';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
-      var src=e.source==='admin'?'<span style="color:var(--brass)">\u270e admin</span>':'staff';
-      var edited=e.originalTimestamp?'<span style="font-size:9px;color:var(--muted);margin-left:3px">edited</span>':'';
+      var srcLabel=e.source==='admin'?('<span class="src-admin">\u270e '+s('lbl.admin')+'</span>'):s('lbl.staff');
+      var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
-      return '<tr><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+src+'</td>'
+      return '<tr><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+srcLabel+'</td>'
         +'<td style="text-align:right"><button class="btn btn-secondary" style="font-size:10px;padding:2px 7px"'
-        +' onclick="prOpenModal(JSON.parse(this.dataset.e),null)" data-e="'+edata+'">Edit</button></td></tr>';
+        +' onclick="prOpenModal(JSON.parse(this.dataset.e),null)" data-e="'+edata+'" data-s="btn.edit"></button></td></tr>';
     }).join('');
-    return '<div style="margin-bottom:22px">'
-      +'<div style="font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between">'
-      +'<span>'+_e(grp.name)+'</span><span style="font-size:11px;color:var(--muted)">'+fmtMins(tot)+' total</span></div>'
+    return '<div><div class="ts-group-header"><span>'+_e(grp.name)+'</span>'
+      +'<span class="ts-group-total">'+fmtMins(tot)+' '+s('payroll.totalHours')+'</span></div>'
       +'<table class="ts-table"><thead><tr>'
-      +'<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Source</th><th></th>'
+      +'<th data-s="lbl.date"></th><th data-s="payroll.clockInLabel"></th>'
+      +'<th data-s="payroll.clockOutLabel"></th><th data-s="lbl.duration"></th>'
+      +'<th data-s="lbl.type"></th><th></th>'
       +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }).join('');
+  applyStrings(list);
 }
 
 /* ── Entry modal ── */
-function prOpenModal(entry, dateStr){
+function prOpenModal(entry,dateStr){
   _editId=entry?entry.id:null;
-  var IS=(typeof getLang==='function')&&getLang()==='IS';
-  document.getElementById('prModalTitle').textContent=entry?(IS?'Breyta t\u00edmaf\u00e6rslu':'Edit time entry'):(IS?'B\u00e6ta vi\u00f0 t\u00edmaf\u00e6rslu':'Add time entry');
+  document.getElementById('prModalTitle').textContent=entry?s('payroll.editEntry'):s('payroll.addEntry');
   document.getElementById('meDelBtn').style.display=entry?'inline-block':'none';
   var meSel=document.getElementById('meEmp');
-  if(entry&&entry.employeeId) meSel.value=entry.employeeId;
-  else if(_tsEmployees.length) meSel.value=_tsEmployees[0].id;
+  if(entry&&entry.employeeId)meSel.value=entry.employeeId;
+  else if(_tsEmployees.length)meSel.value=_tsEmployees[0].id;
   if(entry){
     document.getElementById('meIn').value=toLocal(entry.clockIn||'');
     document.getElementById('meOut').value=toLocal(entry.timestamp||'');
     document.getElementById('meMins').value=entry.durationMinutes||'';
     document.getElementById('meNote').value=entry.note||'';
-  } else {
+  }else{
+    var off=new Date().getTimezoneOffset()*60000;
     var base=dateStr?new Date(dateStr+'T09:00'):new Date();
     var baseEnd=dateStr?new Date(dateStr+'T17:00'):new Date(Date.now()+3600000);
-    var off=base.getTimezoneOffset()*60000;
-    document.getElementById('meIn').value=new Date(base-off).toISOString().slice(0,16);
-    document.getElementById('meOut').value=new Date(baseEnd-off).toISOString().slice(0,16);
+    document.getElementById('meIn').value=new Date(base-base.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    document.getElementById('meOut').value=new Date(baseEnd-baseEnd.getTimezoneOffset()*60000).toISOString().slice(0,16);
     document.getElementById('meMins').value='480';
     document.getElementById('meNote').value='';
   }
@@ -481,9 +524,9 @@ function prOpenModal(entry, dateStr){
 function prCloseModal(){prHide('prModal');_editId=null;}
 function meCalcMins(){
   var i=document.getElementById('meIn').value,o=document.getElementById('meOut').value;
-  if(!i||!o) return;
+  if(!i||!o)return;
   var d=Math.round((new Date(o)-new Date(i))/60000);
-  if(d>0) document.getElementById('meMins').value=d;
+  if(d>0)document.getElementById('meMins').value=d;
 }
 async function meSave(){
   var err=document.getElementById('meErr');err.textContent='';
@@ -492,38 +535,37 @@ async function meSave(){
   var outV=document.getElementById('meOut').value;
   var mins=+(document.getElementById('meMins').value)||0;
   var note=document.getElementById('meNote').value.trim();
-  if(!empId||!inV||!outV){err.textContent='Employee, clock-in and clock-out are required.';return;}
-  if(!mins) mins=Math.round((new Date(outV)-new Date(inV))/60000);
-  if(mins<=0){err.textContent='Clock-out must be after clock-in.';return;}
+  if(!empId||!inV||!outV){err.textContent=s('payroll.entryRequired');return;}
+  if(!mins)mins=Math.round((new Date(outV)-new Date(inV))/60000);
+  if(mins<=0){err.textContent=s('payroll.clockOutAfterIn');return;}
   try{
     if(_editId){
       await apiPost('adminEditTime',{id:_editId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin edit',source:'admin'});
-    } else {
+    }else{
       await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin entry',source:'admin'});
     }
     prCloseModal();showToast(s('toast.saved'));prLoadTsEntries();
   }catch(e){err.textContent=e.message;}
 }
 async function meDelete(){
-  if(!_editId) return;
-  var IS=(typeof getLang==='function')&&getLang()==='IS';
-  if(!confirm(IS?'Ey\u00f0a \u00fe essari t\u00edmaf\u00e6rslu?':'Delete this time entry?')) return;
+  if(!_editId)return;
+  if(!confirm(s('payroll.deleteConfirm')))return;
   try{
     await apiPost('adminDeleteTime',{id:_editId});
-    prCloseModal();showToast(IS?'Eytt':'Deleted');prLoadTsEntries();
+    prCloseModal();showToast(s('toast.deleted'));prLoadTsEntries();
   }catch(e){document.getElementById('meErr').textContent=e.message;}
 }
 
-/* ══ TIMESHEETS / LAUNASEÐLAR ═══════════════════════════════════════════════ */
+/* ══ TIMESHEETS / LAUNASEDLAR ═══════════════════════════════════════════════ */
 async function prLoadPeriods(){
   var list=document.getElementById('prPeriodsList');
   list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
   var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
   var lastDay=new Date(y,now.getMonth()+1,0).getDate();
   var fromEl=document.getElementById('prPeriodFrom'),toEl=document.getElementById('prPeriodTo'),payEl=document.getElementById('prPaymentDate');
-  if(fromEl&&!fromEl.value) fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value)     toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
-  if(payEl&&!payEl.value)   payEl.value=new Date(y,now.getMonth()+1,1).toISOString().slice(0,10);
+  if(fromEl&&!fromEl.value)fromEl.value=y+'-'+mo+'-01';
+  if(toEl&&!toEl.value)toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
+  if(payEl&&!payEl.value)payEl.value=new Date(y,now.getMonth()+1,1).toISOString().slice(0,10);
   try{
     var res=await apiGet('getPayroll');
     var rows=res.payroll||[];
@@ -548,21 +590,22 @@ async function prLoadPeriods(){
           +'<td style="text-align:right">'+kr(r.taxWithheld||r.stadgreidslaSkattur||0)+'</td>'
           +'<td style="text-align:right">'+kr(r.netPay)+'</td>'
           +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px"'
-          +' onclick="prViewPayslip(this)" data-row="'+_e(JSON.stringify(r))+'">PDF</button></td>'
+          +' onclick="prViewPayslip(this)" data-row="'+_e(JSON.stringify(r))+'" data-s="payroll.payslip"></button></td>'
           +'</tr>';
       }).join('');
       return '<div class="period-card">'
         +'<div class="period-head" onclick="prToggleId(\'pb_'+pid+'\')">'
         +'<span class="period-title">'+_e(p)+'</span>'
         +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span class="period-meta">Gross: '+kr(totG)+' \u00b7 Net: '+kr(totN)+' \u00b7 '+pr.length+' empl.</span>'
-        +'<span class="'+(isApproved?'pill-ok':'pill-open')+'">'+(isApproved?'Approved':'Open')+'</span>'
+        +'<span class="period-meta">'+s('payroll.grossLabel')+': '+kr(totG)+' \u00b7 '+s('payroll.netLabel')+': '+kr(totN)+' \u00b7 '+pr.length+'</span>'
+        +'<span class="'+(isApproved?'pill-ok':'pill-open')+'" data-s="'+(isApproved?'payroll.periodApproved':'payroll.periodOpen')+'"></span>'
         +'</div></div>'
         +'<div class="period-body hidden" id="pb_'+pid+'">'
         +'<table class="ts-table"><thead><tr>'
-        +'<th>Employee</th><th style="text-align:right">Hours</th>'
-        +'<th style="text-align:right">Gross</th><th style="text-align:right">Tax</th>'
-        +'<th style="text-align:right">Net</th><th></th>'
+        +'<th data-s="lbl.name"></th><th style="text-align:right" data-s="payroll.hoursTotal"></th>'
+        +'<th style="text-align:right" data-s="payroll.grossLabel"></th>'
+        +'<th style="text-align:right" data-s="payroll.taxWithheld"></th>'
+        +'<th style="text-align:right" data-s="payroll.netLabel"></th><th></th>'
         +'</tr></thead><tbody>'+empRows+'</tbody></table>'
         +'<div class="action-bar" style="margin-top:8px">'
         +'<button class="btn btn-secondary" style="font-size:11px" onclick="prExportXml(\''+_e(p)+'\')" data-s="payroll.exportXml"></button>'
@@ -575,42 +618,123 @@ async function prBuildPreview(){
   var from=document.getElementById('prPeriodFrom').value;
   var to  =document.getElementById('prPeriodTo').value;
   var payDate=document.getElementById('prPaymentDate').value;
-  if(!from||!to){showToast('Set From and To dates first','err');return;}
+  if(!from||!to){showToast(s('payroll.noPeriodDefined'),'err');return;}
   var panel=document.getElementById('prPreviewPanel'),listEl=document.getElementById('prPreviewList');
   listEl.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(listEl);
   panel.classList.remove('hidden');
   try{
-    var empRes=await apiGet('getEmployees');
-    var tsRes =await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)});
+    var empRes  = await apiGet('getEmployees');
+    // Fix: period key is YYYY-MM-01, and normalise originalTimestamp→clockIn
+    var tsRes   = await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)+'-01'});
+    var ytdRes  = await apiGet('getPayroll');
+
     var employees=(empRes.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
-    var entries=tsRes.entries||tsRes.timeEntries||[];
+    var entries=(tsRes.entries||tsRes.timeEntries||[]).map(function(e){
+      if(!e.clockIn&&e.originalTimestamp) e.clockIn=e.originalTimestamp;
+      return e;
+    });
+    var closedRows=ytdRes.payroll||[];
+
+    // Build minutes-per-employee from completed entries only
     var minsByEmp={};
-    entries.forEach(function(e){var k=e.employeeId;if(!k)return;if(!minsByEmp[k])minsByEmp[k]=0;minsByEmp[k]+=(+(e.durationMinutes||0));});
-    if(!employees.length){listEl.innerHTML='<div class="empty-note">No payroll employees found.</div>';return;}
+    entries.filter(function(e){return +e.durationMinutes>0;}).forEach(function(e){
+      if(!e.employeeId)return;
+      if(!minsByEmp[e.employeeId])minsByEmp[e.employeeId]=0;
+      minsByEmp[e.employeeId]+=(+(e.durationMinutes||0));
+    });
+
+    // Build YTD totals per employee from closed payroll rows
+    var ytdByEmp={};
+    closedRows.forEach(function(r){
+      var eid=r.employeeId;if(!eid)return;
+      if(!ytdByEmp[eid])ytdByEmp[eid]={grossTotal:0,taxWithheld:0,employeePension:0,netPay:0,orlofIBanki:0,employerPension:0};
+      var y=ytdByEmp[eid];
+      y.grossTotal+=(+(r.grossTotal||0));
+      y.taxWithheld+=(+(r.taxWithheld||r.taxAfterCredit||0));
+      y.employeePension+=(+(r.employeePension||0));
+      y.netPay+=(+(r.netPay||0));
+      y.orlofIBanki+=(+(r.orlofIBanki||0));
+      y.employerPension+=(+(r.employerPension||0));
+    });
+
+    if(!employees.length){listEl.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(listEl);return;}
     _previewData={from:from,to:to,payDate:payDate,employees:{}};
+
     listEl.innerHTML=employees.map(function(emp){
-      var mins=minsByEmp[emp.id]||0,hrs=(mins/60).toFixed(2);
-      _previewData.employees[emp.id]={emp:emp,regularMins:mins,ot1Mins:0,ot2Mins:0,manualLines:[]};
-      return '<div class="confirm-row" id="prevrow_'+_e(emp.id)+'">'
-        +'<div class="confirm-emp">'+_e(emp.name)+'<div style="font-size:10px;color:var(--muted)">'+_e(emp.title||'')+'</div></div>'
-        +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-        +'<label style="font-size:11px">Regular hrs</label>'
-        +'<input class="hrs-inp" id="pHrs_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="'+hrs+'" onchange="prRecalc(\''+_e(emp.id)+'\')">'
-        +'<label style="font-size:11px">OT 1.33\u00d7</label>'
-        +'<input class="hrs-inp" id="pOt1_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+_e(emp.id)+'\')">'
-        +'<label style="font-size:11px">OT 1.55\u00d7</label>'
-        +'<input class="hrs-inp" id="pOt2_'+_e(emp.id)+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+_e(emp.id)+'\')">'
-        +'</div>'
-        +'<div style="width:100%;margin-top:6px">'
-        +'<div id="pManual_'+_e(emp.id)+'" style="margin-bottom:4px"></div>'
-        +'<button style="font-size:10px;color:var(--brass);background:none;border:none;cursor:pointer;padding:0" onclick="prAddLine(\''+_e(emp.id)+'\')">+ Add line</button>'
-        +'</div>'
-        +'<div id="pCalc_'+_e(emp.id)+'" style="width:100%;font-size:11px;color:var(--muted);margin-top:4px"></div>'
-        +'</div>';
+      var mins=minsByEmp[emp.id]||0;
+      var ytd=ytdByEmp[emp.id]||{grossTotal:0,taxWithheld:0,employeePension:0,netPay:0,orlofIBanki:0,employerPension:0};
+      _previewData.employees[emp.id]={emp:emp,regularMins:mins,ot1Mins:0,ot2Mins:0,manualLines:[],ytd:ytd};
+      var calc=calculatePayslip(emp,mins,0,0,[]);
+      _previewData.employees[emp.id].calc=calc;
+      return prPayslipCard(emp,calc,ytd,mins);
     }).join('');
-    employees.forEach(function(emp){prRecalc(emp.id);});
+    applyStrings(listEl);
   }catch(e){listEl.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
 }
+
+  function prCalcHTML(calc,ytd){
+  function row(lbl,val,cls){return '<div class="psc-row'+(cls?' '+cls:'')+'">'
+    +'<span>'+lbl+'</span><span>'+val+'</span></div>';}
+  function rowS(key,val,cls){return row(s(key),val,cls);}
+  function sep(){return '<div class="psc-sep"></div>';}
+
+  var h='<div class="psc-breakdown">';
+
+  // ── Laun / Earnings
+  h+='<div class="psc-section-lbl" data-s="payroll.earningsSection"></div>';
+  h+=rowS('payroll.regularHours', calc.regularHrs.toFixed(2)+' hrs × '+kr(calc.dagvinna&&calc.regularHrs?(calc.dagvinna/calc.regularHrs):0)+'/hr = '+kr(calc.dagvinna));
+  if(calc.ot1Hrs>0) h+=rowS('payroll.ot1Hours', calc.ot1Hrs.toFixed(2)+' hrs (1.33×) = '+kr(calc.eftirvinna1));
+  if(calc.ot2Hrs>0) h+=rowS('payroll.ot2Hours', calc.ot2Hrs.toFixed(2)+' hrs (1.55×) = '+kr(calc.eftirvinna2));
+  if(calc.manualLines&&calc.manualLines.length){
+    calc.manualLines.forEach(function(l){h+=row(_e(l.label),kr(l.amount));});
+  }
+  h+=rowS('payroll.orlofsRate', '('+Math.round((calc.orlofsRate||0.1017)*100)+'%) '+kr(calc.orlofslaun));
+  h+=rowS('payroll.grossLabel', kr(calc.grossTotal), 'psc-subtotal');
+  h+=sep();
+
+  // ── Frádráttur / Deductions
+  h+='<div class="psc-section-lbl" data-s="payroll.deductionsSection"></div>';
+  h+=rowS('payroll.empPensionRate', '('+Math.round((calc.pensionRate||0.04)*100)+'%) '+kr(calc.employeePension));
+  if(calc.sereignarsjodur>0) h+=rowS('payroll.sereignRate', '('+Math.round((calc.sereignRate||0)*100)+'%) '+kr(calc.sereignarsjodur));
+  if(calc.unionDues>0)       h+=rowS('payroll.union', '('+Math.round((calc.unionRate||0)*100)+'%) '+kr(calc.unionDues));
+  h+=row(s('payroll.taxWithheld')+' (base: '+kr(calc.taxBase)+')', kr(calc.taxGross));
+  h+=row(s('payroll.personuafslattr'), '− '+kr(calc.personalCredit));
+  h+=rowS('payroll.taxWithheld', kr(calc.taxAfterCredit), 'psc-tax');
+  h+=rowS('payroll.totalDeductions', kr(calc.totalDeductions), 'psc-subtotal');
+  h+=sep();
+
+  // ── Net
+  h+=rowS('payroll.netLabel', kr(calc.netPay), 'psc-net');
+  h+=sep();
+
+  // ── Til uppsöfnunar / Accumulated
+  h+='<div class="psc-section-lbl" data-s="payroll.accumulatedSection"></div>';
+  h+=rowS('payroll.orlofslaun', kr(calc.orlofIBanki));
+  h+=sep();
+
+  // ── Framlag launagreiðanda / Employer
+  h+='<div class="psc-section-lbl" data-s="payroll.employerSection"></div>';
+  h+=row(s('payroll.empPensionRate')+' ('+Math.round((window.PAYROLL_CONFIG&&window.PAYROLL_CONFIG.employerPension||0.115)*100)+'%)', kr(calc.employerPensionAmt));
+  h+=row('Endurhæfingarsjóður (0.1%)', kr(calc.endurhaefingarsjodur));
+  h+=sep();
+
+  // ── YTD
+  h+='<div class="psc-section-lbl" data-s="payroll.ytdSection"></div>';
+  h+=rowS('payroll.grossLabel',    kr((ytd.grossTotal||0)+calc.grossTotal),    'psc-ytd');
+  h+=rowS('payroll.taxWithheld',   kr((ytd.taxWithheld||0)+calc.taxAfterCredit),'psc-ytd');
+  h+=rowS('payroll.empPensionRate',kr((ytd.employeePension||0)+calc.employeePension),'psc-ytd');
+  h+=rowS('payroll.netLabel',      kr((ytd.netPay||0)+calc.netPay),             'psc-ytd');
+
+  h+='</div>';
+
+  // ── Preview button
+  h+='<div style="margin-top:8px">';
+  h+='<button class="btn btn-secondary" style="font-size:10px;padding:2px 8px" onclick="prPreviewLocal(\''+_e(ytd._empId||'')+'\')" data-s="payroll.exportPdf"></button>';
+  h+='</div>';
+
+  return h;
+}
+  
 function prGetLines(empId){
   var c=document.getElementById('pManual_'+empId);if(!c)return[];
   var lines=[];
@@ -620,6 +744,7 @@ function prGetLines(empId){
   });
   return lines;
 }
+  
 function prRecalc(empId){
   var d=(_previewData.employees||{})[empId];if(!d)return;
   var hrs=+(document.getElementById('pHrs_'+empId)||{value:0}).value||0;
@@ -629,18 +754,287 @@ function prRecalc(empId){
   var calc=window.calculatePayslip(d.emp,hrs*60,ot1*60,ot2*60,manual);
   d.regularMins=hrs*60;d.ot1Mins=ot1*60;d.ot2Mins=ot2*60;d.manualLines=manual;d.calc=calc;
   var el=document.getElementById('pCalc_'+empId);
-  if(el)el.innerHTML='Gross: <strong>'+kr(calc.grossTotal)+'</strong>'
-    +' \u00b7 Tax: '+kr(calc.taxAfterCredit)
-    +' \u00b7 Pension: '+kr(calc.employeePension)
-    +' \u00b7 Orlof \u00ed banki: '+kr(calc.orlofIBanki)
-    +' \u00b7 <strong>Net: '+kr(calc.netPay)+'</strong>'
-    +' &nbsp;<button class="btn btn-secondary" style="font-size:10px;padding:2px 8px;margin-left:8px"'
-    +' onclick="prPreviewLocal(\''+_e(empId)+'\')">&#128196; Preview PDF</button>';
+  if(el){el.innerHTML=prCalcHTML(calc,d.ytd||{},empId);applyStrings(el);}
 }
+  
 function prAddLine(empId){
   var c=document.getElementById('pManual_'+empId);if(!c)return;
   var row=document.createElement('div');row.className='ml-row';
-  row.innerHTML='<input class="ml-en" type="text" placeholder="Description (EN)" style="font-size:11px">'
-    +'<input class="ml-is" type="text" placeholder="L\u00fdsing (\u00cdS)" style="font-size:11px">'
-    +'<input class="ml-amt" type="number" placeholder="kr" style="font-size:11px;text-align:right" onchange="prRecalc(\''+_e(empId)+'\')">'
-    +'<button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0" onclick="this.parentNode
+  row.innerHTML='<input class="ml-en" type="text" data-s-attr="placeholder" data-s="payroll.lineDescription" style="font-size:11px">'
+    +'<input class="ml-is" type="text" data-s-attr="placeholder" data-s="payroll.lineDescriptionIS" style="font-size:11px">'
+    +'<input class="ml-amt" type="number" data-s-attr="placeholder" data-s="payroll.lineAmount" style="font-size:11px;text-align:right" onchange="prRecalc(\''+_e(empId)+'\')">'
+    +'<button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0" onclick="this.parentNode.remove();prRecalc(\''+_e(empId)+'\')">\u00d7</button>';
+  applyStrings(row);
+  c.appendChild(row);
+}
+async function prApprovePeriod(){
+  var from=document.getElementById('prPeriodFrom').value,to=document.getElementById('prPeriodTo').value,payDate=document.getElementById('prPaymentDate').value;
+  if(!from||!to){showToast(s('payroll.noPeriodDefined'),'err');return;}
+  if(!confirm(s('payroll.approveConfirm')))return;
+  var msg=document.getElementById('prApproveMsg');
+  if(msg){msg.textContent=s('lbl.loading');msg.style.color='var(--muted)';}
+  var rows=Object.keys(_previewData.employees||{}).map(function(empId){
+    var d=_previewData.employees[empId];
+    var c=d.calc||window.calculatePayslip(d.emp,d.regularMins,d.ot1Mins,d.ot2Mins,d.manualLines);
+    return {employeeId:empId,employeeName:d.emp.name,kt:d.emp.kt,
+      bankAccount:d.emp.bankAccount,orlofsreikningur:d.emp.orlofsreikningur,
+      title:d.emp.title,baseRateKr:d.emp.baseRateKr,
+      periodFrom:from,periodTo:to,paymentDate:payDate,
+      regularMinutes:d.regularMins,ot1Minutes:d.ot1Mins,ot2Minutes:d.ot2Mins,manualLines:d.manualLines,
+      grossTotal:c.grossTotal,dagvinna:c.dagvinna,eftirvinna1:c.eftirvinna1,eftirvinna2:c.eftirvinna2,
+      orlofslaun:c.orlofslaun,orlofsRate:c.orlofsRate,manualTotal:c.manualTotal,
+      employeePension:c.employeePension,sereignarsjodur:c.sereignarsjodur,sereignRate:c.sereignRate,
+      unionDues:c.unionDues,unionRate:c.unionRate,taxBase:c.taxBase,taxGross:c.taxGross,
+      personalCredit:c.personalCredit,taxWithheld:c.taxAfterCredit,taxAfterCredit:c.taxAfterCredit,
+      orlofIBanki:c.orlofIBanki,totalDeductions:c.totalDeductions,netPay:c.netPay,
+      employerPension:c.employerPensionAmt,endurhaefingarsjodur:c.endurhaefingarsjodur,
+      regularHrs:c.regularHrs,ot1Hrs:c.ot1Hrs,ot2Hrs:c.ot2Hrs,pensionRate:c.pensionRate,approved:true};
+  });
+  try{
+    var res=await apiPost('closePayPeriod',{periodFrom:from,periodTo:to,paymentDate:payDate,by:user?user.name:'admin',rows:rows});
+    _closedPeriods.add(from.slice(0,7));
+    if(msg){msg.textContent='\u2713 '+s('payroll.periodClosed')+' \u2014 '+(res.rows||rows.length)+' payslips';msg.style.color='var(--green)';}
+    setTimeout(function(){prLoadPeriods();prHide('prPreviewPanel');},1200);
+  }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
+}
+  
+function prViewPayslip(btn){
+  var r=JSON.parse(btn.dataset.row||'{}');
+  var emp={name:r.employeeName||'',kt:r.kt||'',title:r.title||'',
+    bankAccount:r.bankAccount||'',orlofsreikningur:r.orlofsreikningur||'',
+    baseRateKr:r.baseRateKr||0,lifeyrir:r.pensionRate||0.04,personuafslattr:r.personalCredit||68681};
+  var calc={grossTotal:r.grossTotal||0,dagvinna:r.dagvinna||r.grossTotal||0,
+    eftirvinna1:r.eftirvinna1||0,eftirvinna2:r.eftirvinna2||0,
+    orlofslaun:r.orlofslaun||0,orlofsRate:r.orlofsRate||0.1017,
+    manualLines:r.manualLines||[],manualTotal:r.manualTotal||0,
+    employeePension:r.employeePension||0,sereignarsjodur:r.sereignarsjodur||0,sereignRate:r.sereignRate||0,
+    unionDues:r.unionDues||0,unionRate:r.unionRate||0,taxBase:r.taxBase||0,taxGross:r.taxGross||0,
+    personalCredit:r.personalCredit||68681,taxAfterCredit:r.taxAfterCredit||r.taxWithheld||0,
+    orlofIBanki:r.orlofIBanki||0,totalDeductions:r.totalDeductions||0,netPay:r.netPay||0,
+    pensionRate:r.pensionRate||0.04,regularHrs:r.regularHrs||(r.regularMinutes||0)/60,
+    ot1Hrs:r.ot1Hrs||(r.ot1Minutes||0)/60,ot2Hrs:r.ot2Hrs||(r.ot2Minutes||0)/60,
+    employerPensionAmt:r.employerPension||0,endurhaefingarsjodur:r.endurhaefingarsjodur||0};
+  var html=renderPayslip({employee:emp,calc:calc,ytd:{},period:r.periodFrom||'',
+    employer:{employerName:'',employerKt:'',employerAddress:''},
+    paymentDate:r.paymentDate||'',slipNumber:r.slipNumber||''});
+  window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
+}
+  
+  function prPayslipCard(emp, calc, ytd, regularMins){
+  var eid = _e(emp.id);
+  var h = '<div class="payslip-card" id="prevrow_'+eid+'">';
+
+  // ── Header row: name + hour inputs
+  h += '<div class="psc-header">';
+  h += '<div class="psc-identity">';
+  h += '<div class="psc-name">'+_e(emp.name)+'</div>';
+  h += '<div class="psc-sub">'+_e(emp.title||'')+'</div>';
+  h += '<div class="psc-sub">'+s('payroll.bankAccount')+': '+_e(emp.bankAccount||'—')+'</div>';
+  h += '</div>';
+  h += '<div class="psc-hrs">';
+  h += '<label class="hrs-label" data-s="payroll.regularHours"></label>';
+  h += '<input class="hrs-inp" id="pHrs_'+eid+'" type="number" min="0" step="0.25" value="'+(regularMins/60).toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
+  h += '<label class="hrs-label" data-s="payroll.ot1Hours"></label>';
+  h += '<input class="hrs-inp" id="pOt1_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
+  h += '<label class="hrs-label" data-s="payroll.ot2Hours"></label>';
+  h += '<input class="hrs-inp" id="pOt2_'+eid+'" type="number" min="0" step="0.25" value="0" onchange="prRecalc(\''+eid+'\')">';
+  h += '</div></div>';
+
+  // ── Manual lines
+  h += '<div id="pManual_'+eid+'" style="margin:4px 0"></div>';
+  h += '<button class="btn-link" onclick="prAddLine(\''+eid+'\')" data-s="payroll.addLine"></button>';
+
+  // ── Live calc breakdown (re-rendered by prRecalc)
+  h += '<div id="pCalc_'+eid+'">'+prCalcHTML(calc, ytd, emp.id)+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function prCalcHTML(calc, ytd, empId){
+  var cfg = window.PAYROLL_CONFIG || {};
+  var loc = locale();
+
+  function n(v){ return Math.round(v||0).toLocaleString('is-IS'); }
+  function pct(v){ return ((v||0)*100).toFixed(2).replace(/\.?0+$/,'')+'%'; }
+
+  // ── Samtölur box (top summary like the payslip header box)
+  var ytdGross  = (ytd.grossTotal||0) + calc.grossTotal;
+  var ytdDeduct = (ytd.totalDeductions||0) + calc.totalDeductions;
+  var ytdNet    = (ytd.netPay||0) + calc.netPay;
+
+  var h = '<div class="psc-samtolur">';
+  h += '<div class="psc-samtolur-grid">';
+  h += '<div></div><div class="psc-col-hdr" data-s="payroll.periodLabel"></div><div class="psc-col-hdr" data-s="payroll.ytdSection"></div>';
+  h += '<div data-s="payroll.grossLabel"></div><div class="psc-num">'+n(calc.grossTotal)+'</div><div class="psc-num psc-ytd-val">'+n(ytdGross)+'</div>';
+  h += '<div data-s="payroll.totalDeductions"></div><div class="psc-num">'+n(calc.totalDeductions)+'</div><div class="psc-num psc-ytd-val">'+n(ytdDeduct)+'</div>';
+  h += '<div data-s="payroll.netLabel"></div><div class="psc-num psc-net-val">'+n(calc.netPay)+'</div><div class="psc-num psc-ytd-val">'+n(ytdNet)+'</div>';
+  h += '</div></div>';
+
+  // ── Laun section
+  h += '<table class="psc-table">';
+  h += '<thead><tr>';
+  h += '<th data-s="payroll.periodLabel"></th>';
+  h += '<th data-s="lbl.type"></th>';
+  h += '<th class="num" data-s="payroll.units"></th>';
+  h += '<th class="num" data-s="payroll.rate"></th>';
+  h += '<th class="num" data-s="payroll.amount"></th>';
+  h += '<th class="num" data-s="payroll.ytdUnits"></th>';
+  h += '<th class="num">ISK</th>';
+  h += '</tr></thead><tbody>';
+
+  var period = _previewData.from ? _previewData.from.slice(0,7).replace('-','.')+'–'+(_previewData.to||'').slice(0,7).replace('-','.') : '';
+  var rateKr = calc.regularHrs > 0 ? Math.round(calc.dagvinna / calc.regularHrs) : 0;
+
+  function tr(period, type, units, rate, amt, ytdUnits, ytdAmt, bold){
+    var cls = bold ? ' class="psc-total-row"' : '';
+    return '<tr'+cls+'>'
+      +'<td>'+_e(period)+'</td>'
+      +'<td>'+_e(type)+'</td>'
+      +'<td class="num">'+_e(String(units))+'</td>'
+      +'<td class="num">'+_e(String(rate))+'</td>'
+      +'<td class="num">'+n(amt)+'</td>'
+      +'<td class="num psc-ytd-val">'+_e(String(ytdUnits))+'</td>'
+      +'<td class="num psc-ytd-val">'+n(ytdAmt)+'</td>'
+      +'</tr>';
+  }
+
+  var ytdReg  = (ytd.regularHrs||0) + calc.regularHrs;
+  var ytdOt1  = (ytd.ot1Hrs||0)     + calc.ot1Hrs;
+  var ytdOt2  = (ytd.ot2Hrs||0)     + calc.ot2Hrs;
+  var ytdDag  = (ytd.dagvinna||0)   + calc.dagvinna;
+  var ytdEt1  = (ytd.eftirvinna1||0)+ calc.eftirvinna1;
+  var ytdEt2  = (ytd.eftirvinna2||0)+ calc.eftirvinna2;
+  var ytdOrlof= (ytd.orlofslaun||0) + calc.orlofslaun;
+
+  h += tr(period, s('payroll.dagvinna'), calc.regularHrs.toFixed(2), n(rateKr), calc.dagvinna, ytdReg.toFixed(2), ytdDag);
+  h += tr(period, s('payroll.ot1Label'), calc.ot1Hrs.toFixed(2), n(Math.round(rateKr*1.33)), calc.eftirvinna1, ytdOt1.toFixed(2), ytdEt1);
+  h += tr(period, s('payroll.ot2Label'), calc.ot2Hrs.toFixed(2), n(Math.round(rateKr*1.55)), calc.eftirvinna2, ytdOt2.toFixed(2), ytdEt2);
+
+  // Manual lines
+  if(calc.manualLines && calc.manualLines.length){
+    calc.manualLines.forEach(function(l){
+      h += tr(period, _e(l.label), '—', '—', l.amount, '—', 0);
+    });
+  }
+
+  h += tr(period, s('payroll.orlofsRate')+' '+pct(calc.orlofsRate), '—', '—', calc.orlofslaun, '—', ytdOrlof);
+  h += '<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
+    +'<td class="num">'+n(calc.grossTotal)+'</td>'
+    +'<td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
+
+  // ── Frádráttur section header
+  h += '<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
+    +'<th class="num" data-s="payroll.units"></th>'
+    +'<th class="num" data-s="payroll.rate"></th>'
+    +'<th class="num" data-s="payroll.amount"></th>'
+    +'<td colspan="2" class="num">ISK</td></tr>';
+
+  var ytdPension = (ytd.employeePension||0) + calc.employeePension;
+  var ytdTax     = (ytd.taxWithheld||0)     + calc.taxAfterCredit;
+  var ytdOrlofB  = (ytd.orlofIBanki||0)     + calc.orlofIBanki;
+
+  h += tr('', s('payroll.empPensionRate')+' '+pct(calc.pensionRate), n(calc.grossTotal), pct(calc.pensionRate), calc.employeePension, '', ytdPension);
+  if(calc.sereignarsjodur>0) h += tr('', s('payroll.sereignRate')+' '+pct(calc.sereignRate), n(calc.grossTotal), pct(calc.sereignRate), calc.sereignarsjodur, '', (ytd.sereignarsjodur||0)+calc.sereignarsjodur);
+  if(calc.unionDues>0)       h += tr('', s('payroll.union'), '—', pct(calc.unionRate), calc.unionDues, '', (ytd.unionDues||0)+calc.unionDues);
+
+  // Tax brackets
+  cfg.taxBrackets && cfg.taxBrackets.forEach(function(b, i){
+    h += tr('', s('payroll.taxBracket'+(i+1)), n(calc.taxBase), pct(b.rate), calc.taxGross && i===0 ? calc.taxGross : 0, '', 0);
+  });
+
+  h += tr('', s('payroll.taxComputed'), '—', '—', calc.taxGross, '', (ytd.taxGross||0)+calc.taxGross);
+  h += tr('', s('payroll.personuafslattr'), n(calc.personalCredit), '1,00', -calc.personalCredit, '', -(ytd.personalCredit||calc.personalCredit));
+  h += tr('', s('payroll.taxWithheld'), '—', '—', calc.taxAfterCredit, '', ytdTax);
+  h += tr('', s('payroll.orlofslaun'), '—', '—', calc.orlofIBanki, '', ytdOrlofB);
+
+  h += '<tr class="psc-total-row"><td colspan="4" data-s="payroll.totalDeductions"></td>'
+    +'<td class="num">'+n(calc.totalDeductions)+'</td>'
+    +'<td class="num psc-ytd-val" colspan="2">'+n(ytdDeduct)+'</td></tr>';
+
+  // ── Framlag launagreiðanda
+  h += '<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.employerSection"></td>'
+    +'<td></td><th class="num" data-s="payroll.rate"></th><th class="num" data-s="payroll.amount"></th>'
+    +'<td colspan="2" class="num">ISK</td></tr>';
+
+  var ytdEmpPen = (ytd.employerPension||0) + calc.employerPensionAmt;
+  var ytdEndur  = (ytd.endurhaefingarsjodur||0) + calc.endurhaefingarsjodur;
+
+  h += tr('', s('payroll.employerPension')+' '+pct(cfg.employerPension||0.115), '—', pct(cfg.employerPension||0.115), calc.employerPensionAmt, '', ytdEmpPen);
+  h += tr('', s('payroll.endurhaefingarsjodur')+' '+pct(cfg.endurhaefingarsjodur||0.001), '—', pct(cfg.endurhaefingarsjodur||0.001), calc.endurhaefingarsjodur, '', ytdEndur);
+
+  // ── Til uppsöfnunar
+  h += '<tr class="psc-section-hdr"><td colspan="5" data-s="payroll.accumulatedSection"></td>'
+    +'<td class="num" data-s="payroll.now"></td><td class="num" data-s="payroll.ytdSection"></td></tr>';
+  h += '<tr><td colspan="4" data-s="payroll.orlofslaun"></td>'
+    +'<td></td>'
+    +'<td class="num psc-ytd-val">'+n(calc.orlofIBanki)+'</td>'
+    +'<td class="num psc-ytd-val">'+n(ytdOrlofB)+'</td></tr>';
+
+  h += '</tbody></table>';
+
+  // ── Preview button
+  h += '<div style="margin-top:10px;display:flex;gap:8px">';
+  h += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" onclick="prPreviewLocal(\''+_e(empId||'')+'\')">&#128196; <span data-s="payroll.exportPdf"></span></button>';
+  h += '</div>';
+
+  return h;
+}
+  
+function prPreviewLocal(empId){
+  var d=(_previewData.employees||{})[empId];
+  if(!d||!d.calc){showToast(s('payroll.hoursConfirm'),'err');return;}
+  var html=renderPayslip({employee:d.emp,calc:d.calc,ytd:{},period:_previewData.from||'',
+    employer:{employerName:'',employerKt:'',employerAddress:''},
+    paymentDate:_previewData.payDate||'',slipNumber:'PREVIEW'});
+  window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
+}
+async function prExportXml(periodKey){
+  try{
+    var res=await apiPost('generatePayrollXml',{period:periodKey});
+    if(res.xml){
+      var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));
+      a.download='payroll-'+periodKey.replace(/[^\w-]/g,'-')+'.xml';a.click();
+    }else showToast(s('toast.error'),'err');
+  }catch(e){showToast(e.message,'err');}
+}
+
+/* ══ LAUNAMIDLAR ════════════════════════════════════════════════════════════ */
+async function prLoadLaunamidlar(){
+  var year=document.getElementById('prLmYear').value||new Date().getFullYear();
+  var div=document.getElementById('prLmTable'),dl=document.getElementById('prLmDownload');
+  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);dl.style.display='none';
+  try{
+    var res=await apiPost('generateLaunamidlar',{year:year});
+    var emps=res.employees||[];
+    if(emps.length){
+      var tG=emps.reduce(function(s,r){return s+(+(r.grossTotal||0));},0);
+      var tT=emps.reduce(function(s,r){return s+(+(r.taxWithheld||0));},0);
+      var tP=emps.reduce(function(s,r){return s+(+(r.pension||0));},0);
+      var tN=emps.reduce(function(s,r){return s+(+(r.netPay||0));},0);
+      div.innerHTML='<table class="lm-table"><thead><tr>'
+        +'<th data-s="lbl.name"></th><th>kt.</th>'
+        +'<th data-s="payroll.grossLabel"></th><th data-s="payroll.pension"></th>'
+        +'<th data-s="payroll.taxWithheld"></th><th data-s="payroll.netLabel"></th>'
+        +'</tr></thead><tbody>'
+        +emps.map(function(r){return '<tr><td>'+_e(r.name||r.employeeId||'')+'</td>'
+          +'<td style="color:var(--muted);font-size:11px">'+_e(r.kt||'')+'</td>'
+          +'<td>'+kr(r.grossTotal)+'</td><td>'+kr(r.pension)+'</td>'
+          +'<td>'+kr(r.taxWithheld)+'</td><td>'+kr(r.netPay)+'</td></tr>';}).join('')
+        +'</tbody><tfoot><tr class="lm-total">'
+        +'<td colspan="2">'+s('lbl.season')+' '+_e(String(year))+'</td>'
+        +'<td>'+kr(tG)+'</td><td>'+kr(tP)+'</td><td>'+kr(tT)+'</td><td>'+kr(tN)+'</td>'
+        +'</tr></tfoot></table>';
+      applyStrings(div);
+    }else div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';
+    if(res.xml){
+      dl.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));
+      dl.download='launamidlar-'+year+'.xml';dl.style.display='inline-block';
+    }
+  }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
+}
+
+/* ── Init ── */
+(function(){var p=new URLSearchParams(window.location.search);prTab(p.get('tab')||'employees');})();
+</script>
+</body>
+</html>
