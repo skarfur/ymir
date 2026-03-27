@@ -388,20 +388,27 @@ textarea { min-height: 70px; }
 .hidden { display: none !important; }
 
 /* ── Payslip preview cards ── */
-.payslip-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px}
-.psc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)44}
-.psc-name{font-weight:700;font-size:14px}
-.psc-title{font-size:11px;color:var(--muted)}
+.payslip-card{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden}
+.psc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:2px solid var(--border);background:var(--surface)}
+.psc-identity .psc-name{font-weight:700;font-size:14px}
+.psc-identity .psc-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .psc-hrs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.psc-breakdown{font-size:12px}
-.psc-section-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px}
-.psc-row{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0;gap:8px}
-.psc-row span:first-child{color:var(--muted);font-size:11px}
-.psc-row span:last-child{font-weight:500;white-space:nowrap}
-.psc-subtotal span{font-weight:700!important;color:var(--text)!important}
-.psc-net span{font-weight:700!important;font-size:13px!important;color:var(--green)!important}
-.psc-tax span{color:var(--red)!important}
-.psc-ytd span:first-child{color:var(--muted)!important}
-.psc-ytd span:last-child{color:var(--brass)!important}
-.psc-sep{border-top:1px solid var(--border)44;margin:6px 0}
-.btn-link{background:none;border:none;cursor:pointer;color:var(--brass);font-size:10px;padding:0;font-family:inherit}
+
+/* Samtölur summary box */
+.psc-samtolur{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)88}
+.psc-samtolur-grid{display:grid;grid-template-columns:1fr auto auto;gap:3px 16px;font-size:12px;align-items:center;max-width:400px}
+.psc-col-hdr{font-size:10px;font-weight:700;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:.4px}
+.psc-num{text-align:right;font-weight:500;white-space:nowrap}
+.psc-net-val{font-weight:700;color:var(--green)}
+.psc-ytd-val{color:var(--brass)}
+
+/* Main payslip table */
+.psc-table{width:100%;border-collapse:collapse;font-size:11px;padding:0 14px 12px}
+.psc-table th,.psc-table td{padding:3px 8px;border-bottom:1px solid var(--border)22;vertical-align:middle}
+.psc-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)66;background:var(--surface)88}
+.psc-table .num{text-align:right}
+.psc-table td:first-child,.psc-table td:nth-child(2){color:var(--muted)}
+.psc-total-row td,.psc-total-row th{font-weight:700;border-top:2px solid var(--border)66;border-bottom:2px solid var(--border)66;background:var(--surface);color:var(--text)!important}
+.psc-total-row .psc-ytd-val{color:var(--brass)!important}
+.psc-section-hdr td,.psc-section-hdr th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface)55;padding-top:8px;border-top:2px solid var(--border)}
+.btn-link{background:none;border:none;cursor:pointer;color:var(--brass);font-size:10px;padding:0 14px 10px;font-family:inherit;display:block}
