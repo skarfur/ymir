@@ -70,14 +70,14 @@
 
     <!-- TIMESHEETS / LAUNASEDLAR -->
     <div id="pr-periods" class="hidden">
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-        <label style="font-size:11px;color:var(--muted)" data-s="payroll.periodFrom"></label>
-        <input id="prPeriodFrom" type="date" style="font-size:11px;padding:3px 6px">
-        <label style="font-size:11px;color:var(--muted)" data-s="payroll.periodTo"></label>
-        <input id="prPeriodTo" type="date" style="font-size:11px;padding:3px 6px">
-        <label style="font-size:11px;color:var(--muted)" data-s="payroll.paymentDate"></label>
-        <input id="prPaymentDate" type="date" style="font-size:11px;padding:3px 6px">
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="prBuildPreview()" data-s="payroll.previewPayslips"></button>
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodFrom"></label>
+        <input id="prPeriodFrom" type="date" style="font-size:10px;padding:2px 4px;width:120px">
+        <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodTo"></label>
+        <input id="prPeriodTo" type="date" style="font-size:10px;padding:2px 4px;width:120px">
+        <label style="font-size:10px;color:var(--muted)" data-s="payroll.paymentDate"></label>
+        <input id="prPaymentDate" type="date" style="font-size:10px;padding:2px 4px;width:120px">
+        <button class="btn btn-primary" style="font-size:10px;padding:3px 10px" onclick="prBuildPreview()" data-s="payroll.previewPayslips"></button>
       </div>
       <div id="prPreviewPanel" class="hidden">
         <div class="sec-lbl" data-s="payroll.hoursConfirm"></div>
@@ -574,6 +574,7 @@ async function prLoadPeriods(){
       var totG=pr.reduce(function(s,r){return s+(+(r.grossTotal||0));},0);
       var totN=pr.reduce(function(s,r){return s+(+(r.netPay||0));},0);
       var isApproved=pr[0]&&pr[0].approved;
+      var payDate=pr[0]&&pr[0].paymentDate||'';
       var pid=p.replace(/[^a-zA-Z0-9]/g,'_');
       var empRows=pr.map(function(r){
         return '<tr><td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
@@ -592,6 +593,7 @@ async function prLoadPeriods(){
         +'<span class="'+(isApproved?'pill-ok':'pill-open')+'" data-s="'+(isApproved?'payroll.periodApproved':'payroll.periodOpen')+'"></span>'
         +'</div></div>'
         +'<div class="period-body hidden" id="pb_'+pid+'">'
+        +(payDate?'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+s('payroll.paymentDate')+': '+_e(payDate)+'</div>':'')
         +'<table class="ts-table"><thead><tr>'
         +'<th data-s="lbl.name"></th><th style="text-align:right" data-s="payroll.hoursTotal"></th>'
         +'<th style="text-align:right" data-s="payroll.grossLabel"></th>'
@@ -801,13 +803,14 @@ async function prApprovePeriod(){
   var rows=Object.keys(_previewData.employees||{}).map(function(empId){
     var d=_previewData.employees[empId];
     var c=d.calc||window.calculatePayslip(d.emp,d.regularMins,d.otMins||{},d.manualLines,window.PAYROLL_CONFIG);
+    var totalHrs=c.regularHrs+(c.ot1Hrs||0)+(c.ot2Hrs||0);
     return {employeeId:empId,employeeName:d.emp.name,kt:d.emp.kt,
       bankAccount:d.emp.bankAccount,orlofsreikningur:d.emp.orlofsreikningur,
       title:d.emp.title,baseRateKr:d.emp.baseRateKr,
       periodFrom:from,periodTo:to,paymentDate:payDate,
-      regularMinutes:d.regularMins,otMinutes:d.otMins||{},manualLines:d.manualLines,
+      regularMinutes:d.regularMins,otMinutes:JSON.stringify(d.otMins||{}),manualLines:JSON.stringify(d.manualLines),
       grossTotal:c.grossTotal,dagvinna:c.dagvinna,
-      eftirvinna1:c.eftirvinna1,eftirvinna2:c.eftirvinna2,otLines:c.otLines||[],
+      eftirvinna1:c.eftirvinna1,eftirvinna2:c.eftirvinna2,otLines:JSON.stringify(c.otLines||[]),
       orlofslaun:c.orlofslaun,orlofsRate:c.orlofsRate,manualTotal:c.manualTotal,
       employeePension:c.employeePension,sereignarsjodur:c.sereignarsjodur,sereignRate:c.sereignRate,
       unionDues:c.totalUnionEmp||c.unionDues||0,
@@ -816,6 +819,7 @@ async function prApprovePeriod(){
       orlofIBanki:c.orlofIBanki,totalDeductions:c.totalDeductions,netPay:c.netPay,
       employerPension:c.employerPensionAmt,endurhaefingarsjodur:c.endurhaefingarsjodur,
       regularHrs:c.regularHrs,ot1Hrs:c.ot1Hrs,ot2Hrs:c.ot2Hrs,pensionRate:c.pensionRate,
+      totalHours:totalHrs.toFixed(2),
       configSnapshot:JSON.stringify(window.PAYROLL_CONFIG||{}),approved:true};
   });
   try{
@@ -833,7 +837,7 @@ function prViewPayslip(btn){
   var calc={grossTotal:r.grossTotal||0,dagvinna:r.dagvinna||r.grossTotal||0,
     eftirvinna1:r.eftirvinna1||0,eftirvinna2:r.eftirvinna2||0,
     orlofslaun:r.orlofslaun||0,orlofsRate:r.orlofsRate||0.1017,
-    manualLines:r.manualLines||[],manualTotal:r.manualTotal||0,
+    manualLines:parseJson(r.manualLines,[]),manualTotal:r.manualTotal||0,
     employeePension:r.employeePension||0,sereignarsjodur:r.sereignarsjodur||0,sereignRate:r.sereignRate||0,
     unionDues:r.unionDues||0,unionRate:r.unionRate||0,
     taxBase:r.taxBase||0,taxGross:r.taxGross||0,personalCredit:r.personalCredit||68681,
