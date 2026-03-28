@@ -599,7 +599,7 @@ function renderWxLog() {
     card.className = "wx-snap-card";
     var time = snap.time || (snap.ts ? snap.ts.slice(11,16) : "");
     var cells = [
-      { lbl:"WIND",     val: (snap.dir||"") + " " + (snap.ws!=null ? snap.ws+"m/s · Bft "+snap.bft : "—") },
+      { lbl:"WIND",     val: (snap.dir||"") + " " + (snap.ws!=null ? snap.ws+"m/s · Force "+snap.bft : "—") },
       { lbl:"GUSTS",    val: (snap.wg!=null && snap.wg!==snap.ws) ? snap.wg+"m/s" : null },
       { lbl:"WAVES",    val: snap.wv!=null ? snap.wv+"m"+(snap.waveDir?" "+snap.waveDir:"") : null },
       { lbl:"SEA TEMP", val: snap.sst!=null ? snap.sst+"°C" : null },

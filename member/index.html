@@ -534,7 +534,7 @@ function _wxSnapHtml(snap) {
   var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
   var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
   if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
-  if(snap.bft!=null)      rows.push(["💨",dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Bft"+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
+  if(snap.bft!=null)      rows.push(["💨",dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Force "+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
   if(wv!=null)            rows.push(["🌊",wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
   if(tc!=null)            rows.push(["🌡",tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
   if(snap.sst!=null)      rows.push(["🌊","Sea "+snap.sst+"°C"]);
@@ -564,13 +564,13 @@ function renderReturnForm() {
   var nowSnap=currentWx?wxSnapshot(currentWx):null;
   if(coSnap&&nowSnap){["waveDir","sst","feels","pres","presTrend","cond"].forEach(k=>{if(coSnap[k]==null&&nowSnap[k]!=null)coSnap[k]=nowSnap[k];});}
   window._retCoSnap=coSnap; window._retTimeIn=null; window._retWxSnap=null;
-  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',w=sn.ws!=null?sn.ws+'m/s ':'';return(d+' '+w+'Bft'+(sn.bft||'?')).trim();}
+  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',w=sn.ws!=null?sn.ws+'m/s ':'';return(d+' '+w+'Force '+(sn.bft||'?')).trim();}
   var def=coSnap?'checkout':nowSnap?'now':'manual';
   var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
   var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
   var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Manual</b></span></label>';
   var manF='<div id="wxManualFields" style="display:'+(def==='manual'?'grid':'none')+';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-    +'<div class="field"><label>Bft (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Force (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Wind m/s</label><input type="number" id="manWs" min="0" max="50" step="0.5" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Gusts m/s</label><input type="number" id="manWg" min="0" max="80" step="0.5" oninput="_updateWxDisplay()"></div>'
