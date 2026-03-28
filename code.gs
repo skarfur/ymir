@@ -1995,3 +1995,175 @@ function diagOverdueState() {
   (result.alerts||[]).forEach(a => Logger.log('  ' + a.memberName + ' ' + a.boatName + ' overdue=' + a.minutesOverdue + 'min silenced=' + a.silenced));
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPREADSHEET SETUP  — run setupSpreadsheet() from the Apps Script editor
+//
+// Creates any missing tabs and adds any missing columns to existing tabs.
+// Safe to run multiple times (fully idempotent).
+//
+// Run the focused helper addRecentTripColumns() if you only want to add
+// the columns introduced in the keelboat Phase-1 update (v6):
+//   distanceNm, departurePort, arrivalPort, trackFileUrl,
+//   trackSimplified, trackSource, photoUrls
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Schema definition ────────────────────────────────────────────────────────
+
+var SCHEMA_ = {
+  members: [
+    'id','kennitala','name','role','email','phone','birthYear',
+    'isMinor','guardianName','guardianKennitala','guardianPhone',
+    'active','certifications','lang','createdAt','updatedAt',
+  ],
+  daily_log: [
+    'id','date','openingChecks','closingChecks','activities',
+    'weatherLog','narrative','tideData',
+    'signedOffBy','signedOffAt','updatedBy','createdAt','updatedAt',
+  ],
+  maintenance: [
+    'id','category','boatId','boatName','itemName','part','severity',
+    'description','photoUrl','markOos','reportedBy','source','createdAt',
+    'resolved','resolvedBy','resolvedAt','comments',
+  ],
+  checkouts: [
+    // core
+    'id','boatId','boatName','boatCategory',
+    'memberKennitala','memberName','crew',
+    'locationId','locationName',
+    'checkedOutAt','expectedReturn','checkedInAt',
+    'wxSnapshot','preLaunchChecklist','afterSailChecklist','notes',
+    'status','createdAt',
+    // group checkouts
+    'isGroup','participants','staffNames','boatNames','boatIds',
+    'activityTypeId','activityTypeName','linkedActivityId',
+    // overdue alerts
+    'alertSilenced','alertSilencedBy','alertSilencedAt',
+    'alertSnoozedUntil','alertFirstSent',
+  ],
+  daily_checklist: [
+    'id','phase','textEN','textIS','active','sortOrder','createdAt',
+  ],
+  incidents: [
+    'id','types','severity','date','time',
+    'locationId','locationName','boatId','boatName',
+    'description','involved','witnesses',
+    'immediateAction','followUp',
+    'handOffTo','handOffName','handOffNotes',
+    'photoUrls','filedBy','filedAt',
+    'resolved','resolvedAt','staffNotes',
+  ],
+  trips: [
+    'id','kennitala','memberName',
+    'date','timeOut','timeIn','hoursDecimal',
+    'boatId','boatName','boatCategory',
+    'locationId','locationName',
+    'crew','role','beaufort','windDir','wxSnapshot','notes',
+    'isLinked','linkedCheckoutId','linkedTripId',
+    'verified','verifiedBy','verifiedAt','staffComment',
+    'validationRequested',
+    // keelboat Phase-1 (v6)
+    'distanceNm','departurePort','arrivalPort',
+    'trackFileUrl','trackSimplified','trackSource',
+    'photoUrls',
+    'createdAt','updatedAt',
+  ],
+  config: ['key','value'],
+  employees: [
+    'id','kt','name','title','bankAccount','orlofsreikningur',
+    'baseRateKr','union','lifeyrir','sereignarsjodur',
+    'otherWithholdings','active','startDate','memberId','payrollEnabled',
+  ],
+  time_clock: [
+    'id','employeeId','type','timestamp','source',
+    'originalTimestamp','note','periodKey','durationMinutes',
+  ],
+  payroll: [
+    'id','employeeId','period',
+    'hoursRegular','hoursOT133','hoursOT155',
+    'grossWage','orlofsfe','grossTotal',
+    'lifeyrir','sereignarsjodur','otherWithholdings',
+    'stadgreidslaSkattur','netPay',
+    'tryggingagjald','motframlag','totalEmployerCost',
+    'generatedBy',
+  ],
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function ensureTab_(ss, tabName, cols) {
+  var sheet = ss.getSheetByName(tabName);
+  if (!sheet) {
+    sheet = ss.insertSheet(tabName);
+    sheet.getRange(1, 1, 1, cols.length).setValues([cols]);
+    sheet.setFrozenRows(1);
+    Logger.log('Created tab: ' + tabName + ' (' + cols.length + ' columns)');
+    return sheet;
+  }
+  // Tab exists — add any missing columns
+  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  cols.forEach(function(col) {
+    if (!existing.includes(col)) {
+      var nextCol = existing.length + 1;
+      sheet.getRange(1, nextCol).setValue(col);
+      existing.push(col);
+      Logger.log('Added column "' + col + '" to tab "' + tabName + '"');
+    }
+  });
+  return sheet;
+}
+
+// ── Main entry point ─────────────────────────────────────────────────────────
+
+function setupSpreadsheet() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var results = [];
+
+  Object.keys(SCHEMA_).forEach(function(tabName) {
+    ensureTab_(ss, tabName, SCHEMA_[tabName]);
+    results.push(tabName);
+  });
+
+  // Seed the config tab with default key rows if completely empty
+  var cfgSheet = ss.getSheetByName('config');
+  var cfgKeys = cfgSheet.getLastRow() >= 2
+    ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
+    : [];
+  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs'];
+  defaultCfgKeys.forEach(function(k) {
+    if (!cfgKeys.includes(k)) {
+      cfgSheet.appendRow([k, '']);
+      Logger.log('Seeded config key: ' + k);
+    }
+  });
+
+  Logger.log('setupSpreadsheet complete. Tabs processed: ' + results.join(', '));
+  return 'Done — tabs processed: ' + results.join(', ');
+}
+
+// ── Focused helper: only the new keelboat Phase-1 trip columns ───────────────
+
+function addRecentTripColumns() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('trips');
+  if (!sheet) {
+    Logger.log('trips tab not found — run setupSpreadsheet() first');
+    return;
+  }
+  var newCols = ['distanceNm','departurePort','arrivalPort','trackFileUrl','trackSimplified','trackSource','photoUrls'];
+  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  var added = [];
+  newCols.forEach(function(col) {
+    if (!existing.includes(col)) {
+      sheet.getRange(1, existing.length + 1).setValue(col);
+      existing.push(col);
+      added.push(col);
+    }
+  });
+  if (added.length) {
+    Logger.log('Added to trips: ' + added.join(', '));
+  } else {
+    Logger.log('trips already has all keelboat Phase-1 columns — nothing to add');
+  }
+}
+
