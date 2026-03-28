@@ -13,7 +13,6 @@
   <script src="../shared/maintenance.js"></script>
   <style>
     .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
-
     .page-title { font-size: 16px; font-weight: 600; color: var(--brass); margin-bottom: 4px; }
     .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
 
@@ -25,16 +24,14 @@
     .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
     .filter-btn:hover:not(.active) { border-color:var(--brass); color:var(--brass); }
 
-    /* ── Request card ── */
+    /* ── Project card ── */
     .req-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
       padding:14px 16px; margin-bottom:10px; transition:border-color .15s; cursor:pointer; }
     .req-card:hover { border-color:var(--brass)88; }
     .req-card.resolved { opacity:.45; }
-    .req-card.sev-critical { border-left:3px solid var(--red); }
     .req-card.sev-high     { border-left:3px solid var(--orange); }
     .req-card.sev-medium   { border-left:3px solid var(--yellow); }
     .req-card.sev-low      { border-left:3px solid var(--green); }
-
     .req-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
     .req-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:4px; }
     .req-meta  { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; color:var(--muted); }
@@ -42,14 +39,12 @@
     .req-photo { width:80px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border);
       margin-top:8px; cursor:pointer; transition:opacity .15s; }
     .req-photo:hover { opacity:.8; }
-
-    /* ── Comments ── */
     .comment-thread { margin-top:8px; border-top:1px solid var(--border)44; padding-top:8px; }
     .comment-item { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .verk-tag { font-size:11px; color:var(--brass); font-weight:500; }
 
     /* ── Badges ── */
-    .badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px;
-      font-weight:500; letter-spacing:.3px; }
+    .badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px; font-weight:500; letter-spacing:.3px; }
     .badge-green  { background:var(--green)22;  color:var(--green);  border:1px solid var(--green)44; }
     .badge-yellow { background:var(--yellow)22; color:var(--yellow); border:1px solid var(--yellow)44; }
     .badge-orange { background:var(--orange)22; color:var(--orange); border:1px solid var(--orange)44; }
@@ -59,7 +54,6 @@
     .oos-badge { font-size:10px; background:var(--red)22; color:var(--red);
       border:1px solid var(--red)44; border-radius:3px; padding:2px 6px; font-weight:500; }
 
-    /* ── Empty / loading ── */
     .empty-wrap { text-align:center; padding:40px 20px; color:var(--muted); }
     .empty-icon { font-size:32px; margin-bottom:12px; }
 
@@ -69,20 +63,44 @@
     .modal-overlay.hidden { display:none; }
     .modal { background:var(--card); border:1px solid var(--border); border-radius:10px;
       padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
+    .modal h3 { color:var(--brass); margin-bottom:16px; font-size:15px; }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:6px; }
+    .field input, .field select, .field textarea {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); padding:9px 10px; font-size:13px; font-family:inherit; box-sizing:border-box; }
+    .field textarea { resize:vertical; min-height:72px; }
+    .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
 
-    /* Full-size photo overlay */
+    /* Priority selector */
+    .prio-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .prio-btn { flex:1; min-width:70px; padding:8px 4px; border-radius:6px; border:1px solid;
+      font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:bold;
+      letter-spacing:.5px; transition:all .15s; }
+    .prio-btn[data-sev="low"]    { color:var(--green);  border-color:var(--green)55;  background:var(--green)11; }
+    .prio-btn[data-sev="medium"] { color:var(--yellow); border-color:var(--yellow)55; background:var(--yellow)11; }
+    .prio-btn[data-sev="high"]   { color:var(--orange); border-color:var(--orange)55; background:var(--orange)11; }
+    .prio-btn.selected { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
+
+    /* Category selector */
+    .cat-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:6px; border:1px solid var(--border);
+      background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit;
+      cursor:pointer; text-align:center; transition:all .15s; }
+    .cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
+
+    .photo-preview { width:80px; height:60px; object-fit:cover; border-radius:6px;
+      border:1px solid var(--border); margin-top:6px; display:none; }
+    .photo-preview.show { display:block; }
+
     .photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300;
       display:flex; align-items:center; justify-content:center; cursor:pointer; }
     .photo-overlay.hidden { display:none; }
     .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; }
-
-    /* ── Verkstjóri tag ── */
-    .verk-tag { font-size:11px; color:var(--brass); font-weight:500; }
   </style>
 </head>
 <body>
 
-<!-- ══ HEADER ══ -->
 <header id="ym-header">
   <div class="header-left"></div>
   <div class="header-right"></div>
@@ -91,7 +109,9 @@
 <div class="page-wrap">
 
   <div class="page-title" data-s="sauma.pageTitle">🧵 Saumaklúbbur</div>
-  <div class="page-subtitle" data-s="sauma.pageSubtitle">Sewing circle projects — community maintenance</div>
+  <div class="page-subtitle" data-s="sauma.pageSubtitle">Community maintenance projects</div>
+
+  <button class="btn btn-primary" style="width:100%;margin:0 0 16px" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ Suggest a Project</button>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -99,14 +119,81 @@
     <button class="filter-btn active" data-filter="open"       onclick="setFilter('open')"       data-s="sauma.filterOpen">Open</button>
     <button class="filter-btn"        data-filter="my"         onclick="setFilter('my')"         data-s="sauma.filterMy">My Projects</button>
     <button class="filter-btn"        data-filter="unassigned" onclick="setFilter('unassigned')" data-s="sauma.filterUnassigned">Unassigned</button>
-    <button class="filter-btn"        data-filter="resolved"   onclick="setFilter('resolved')"   data-s="sauma.filterResolved">Resolved</button>
+    <button class="filter-btn"        data-filter="completed"  onclick="setFilter('completed')"  data-s="sauma.filterCompleted">Completed</button>
     <button class="filter-btn"        data-filter="all"        onclick="setFilter('all')"        data-s="sauma.filterAll">All</button>
   </div>
 
-  <!-- Project list -->
   <div id="projectList"><div class="empty-wrap"><div class="spinner"></div></div></div>
 
-</div><!-- /page-wrap -->
+</div>
+
+<!-- ══ SUGGEST PROJECT MODAL ══ -->
+<div class="modal-overlay hidden" id="suggestModal">
+  <div class="modal">
+    <h3 data-s="sauma.suggestTitle">🧵 Suggest a Project</h3>
+
+    <div class="field">
+      <label data-s="maint.category">Category</label>
+      <div class="cat-btns">
+        <button class="cat-btn" data-cat="boat"      onclick="selectCat('boat')">⛵ Boat</button>
+        <button class="cat-btn" data-cat="equipment" onclick="selectCat('equipment')">🦺 Equipment</button>
+        <button class="cat-btn" data-cat="facility"  onclick="selectCat('facility')">🏠 Facility</button>
+      </div>
+    </div>
+
+    <div class="field hidden" id="boatField">
+      <label data-s="lbl.boat">Boat</label>
+      <select id="suggestBoat"><option value="">Select boat…</option></select>
+    </div>
+
+    <div class="field hidden" id="itemField">
+      <label id="itemLabel">Item / Location</label>
+      <input type="text" id="suggestItem" placeholder="e.g. Wetsuit #3 / Clubhouse roof">
+    </div>
+
+    <div class="field">
+      <label data-s="maint.part">Part / Area</label>
+      <input type="text" id="suggestPart" placeholder="e.g. Hull, mast, zipper, window…">
+    </div>
+
+    <div class="field">
+      <label data-s="sauma.priority">Priority</label>
+      <div class="prio-btns">
+        <button class="prio-btn" data-sev="low"    onclick="selectPrio('low')">LOW</button>
+        <button class="prio-btn" data-sev="medium" onclick="selectPrio('medium')">MEDIUM</button>
+        <button class="prio-btn" data-sev="high"   onclick="selectPrio('high')">HIGH</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label data-s="sauma.description">Description</label>
+      <textarea id="suggestDesc" rows="3" placeholder="Describe the project…"></textarea>
+    </div>
+
+    <div class="field">
+      <label data-s="sauma.materials">Materials Needed</label>
+      <div id="suggestMaterialsList"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="suggestMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addSuggestMaterial()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label data-s="sauma.photoLabel">Photo (optional, max 5 MB)</label>
+      <input type="file" id="suggestPhoto" accept="image/*" onchange="handleSuggestPhoto(this)"
+        style="font-size:12px;color:var(--muted)">
+      <img id="suggestPhotoPreview" class="photo-preview" alt="preview">
+      <div id="suggestPhotoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
+    </div>
+
+    <div id="suggestErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeSuggestModal()" data-s="btn.cancel">Cancel</button>
+      <button class="btn btn-primary" id="suggestSubmitBtn" onclick="submitSuggestion()" data-s="btn.submit">Submit</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Full-size photo overlay ── -->
 <div class="photo-overlay hidden" id="photoOverlay" onclick="this.classList.add('hidden')">
@@ -115,26 +202,35 @@
 
 <script>
 
-// ── State ──────────────────────────────────────────────────────────────────────
 let allProjects = [];
 let currentFilter = "open";
 let currentUserName = "";
+let boats = [];
 
-// ── Init ──────────────────────────────────────────────────────────────────
+// Suggest modal state
+let suggestCat = "";
+let suggestPrio = "";
+let suggestPhotoData = null;
+let suggestMaterials = [];
+
 document.addEventListener("DOMContentLoaded", async () => {
   const user = requireAuth();
   if (!user) return;
   currentUserName = user.name || "";
   window._maintUser = user;
 
-  buildHeader('saumaklubbur');
+  buildHeader('member');
   applyStrings();
 
   try {
-    const rRes = await apiGet("getMaintenance");
+    const [rRes, cfgRes] = await Promise.all([
+      apiGet("getMaintenance"),
+      apiGet("getConfig"),
+    ]);
     const all = rRes.requests || [];
-    // Only saumaklúbbur projects
     allProjects = all.filter(r => boolVal(r.saumaklubbur));
+    boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
+    populateBoatSelect();
     renderList();
   } catch(e) {
     document.getElementById("projectList").innerHTML =
@@ -144,7 +240,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   warmContainer();
 });
 
-// ── Filter & render ────────────────────────────────────────────────────────────
+function populateBoatSelect() {
+  const sel = document.getElementById("suggestBoat");
+  boats.forEach(b => {
+    const o = document.createElement("option");
+    o.value = b.id;
+    o.textContent = b.name + (b.category ? " (" + b.category + ")" : "");
+    sel.appendChild(o);
+  });
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+
 function setFilter(f) {
   currentFilter = f;
   document.querySelectorAll(".filter-btn").forEach(b =>
@@ -156,18 +263,16 @@ function getFiltered() {
   return allProjects.filter(r => {
     const resolved = boolVal(r.resolved);
     if (currentFilter === "open")       return !resolved;
-    if (currentFilter === "resolved")   return resolved;
+    if (currentFilter === "completed")  return resolved;
     if (currentFilter === "unassigned") return !resolved && !r.verkstjori;
     if (currentFilter === "my")         return isMyProject(r);
-    return true; // "all"
+    return true;
   });
 }
 
 function isMyProject(r) {
   if (!currentUserName) return false;
-  // I'm verkstjóri
   if (r.verkstjori && r.verkstjori === currentUserName) return true;
-  // I posted a comment
   const comments = parseJson(r.comments, []);
   return comments.some(c => c.by === currentUserName);
 }
@@ -182,12 +287,11 @@ function renderList() {
     return;
   }
 
-  // Sort: projects with newest comments first, then by creation date
+  // Sort: newest comment first, then by creation date
   items.sort((a,b) => {
     const ra = boolVal(a.resolved), rb = boolVal(b.resolved);
     if (!ra && rb) return -1;
     if (ra && !rb) return 1;
-    // newest comment timestamp
     const aComments = parseJson(a.comments, []);
     const bComments = parseJson(b.comments, []);
     const aLast = aComments.length ? (aComments[aComments.length-1].at || '') : '';
@@ -200,8 +304,6 @@ function renderList() {
   });
 
   el.innerHTML = items.map(r => renderProjectCard(r)).join("");
-
-  // Wire click to open detail
   el.onclick = e => {
     const card = e.target.closest('.sauma-card');
     if (!card) return;
@@ -218,6 +320,8 @@ function renderProjectCard(r) {
     ? esc(r.boatName||r.boatId||'')
     : esc(r.itemName||'');
   const comments = parseJson(r.comments, []);
+  const materials = parseJson(r.materials, []);
+  const matDone = materials.filter(m=>m.purchased).length;
   const commentCount = comments.length;
   const lastComment = commentCount ? comments[commentCount-1] : null;
 
@@ -230,10 +334,10 @@ function renderProjectCard(r) {
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
-          <span class="badge badge-brass">🧵 Saumaklúbbur</span>
           ${r.verkstjori
             ? `<span class="verk-tag">Verkstjóri: ${esc(r.verkstjori)}</span>`
             : `<span style="font-size:11px;color:var(--muted);font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
+          ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
         </div>
@@ -245,13 +349,156 @@ function renderProjectCard(r) {
       <span>💬 ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${(lastComment.at||'').slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Completed ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 
 function viewPhoto(url) {
   document.getElementById("overlayImg").src = url;
   document.getElementById("photoOverlay").classList.remove("hidden");
+}
+
+// ── Suggest modal ──────────────────────────────────────────────────────────────
+
+function openSuggestModal() {
+  suggestCat = ""; suggestPrio = ""; suggestPhotoData = null; suggestMaterials = [];
+  ["suggestPart","suggestDesc","suggestItem"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("suggestBoat").value = "";
+  document.getElementById("suggestPhoto").value = "";
+  document.getElementById("suggestPhotoPreview").className = "photo-preview";
+  document.getElementById("suggestPhotoErr").textContent = "";
+  document.getElementById("suggestErr").style.display = "none";
+  document.getElementById("suggestMaterialsList").innerHTML = "";
+  document.getElementById("suggestMaterialInput").value = "";
+  document.querySelectorAll(".prio-btn").forEach(b => b.classList.remove("selected"));
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("boatField").classList.add("hidden");
+  document.getElementById("itemField").classList.add("hidden");
+  openModal("suggestModal");
+}
+
+function closeSuggestModal() { closeModal("suggestModal"); }
+
+function selectCat(cat) {
+  suggestCat = cat;
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
+  document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
+  document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
+  if (cat === "equipment") document.getElementById("itemLabel").textContent = "Equipment item";
+  if (cat === "facility")  document.getElementById("itemLabel").textContent = "Location / area";
+}
+
+function selectPrio(sev) {
+  suggestPrio = sev;
+  document.querySelectorAll(".prio-btn").forEach(b => b.classList.toggle("selected", b.dataset.sev === sev));
+}
+
+function addSuggestMaterial() {
+  const input = document.getElementById("suggestMaterialInput");
+  const name = (input.value || "").trim();
+  if (!name) return;
+  suggestMaterials.push({ name, purchased: false });
+  input.value = "";
+  renderSuggestMaterials();
+}
+function removeSuggestMaterial(idx) {
+  suggestMaterials.splice(idx, 1);
+  renderSuggestMaterials();
+}
+function renderSuggestMaterials() {
+  document.getElementById("suggestMaterialsList").innerHTML = suggestMaterials.map((m,i) =>
+    `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px">
+      <span style="flex:1">${esc(m.name)}</span>
+      <button type="button" onclick="removeSuggestMaterial(${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">&times;</button>
+    </div>`
+  ).join("");
+}
+
+function handleSuggestPhoto(input) {
+  const file = input.files[0];
+  const errEl = document.getElementById("suggestPhotoErr");
+  const preview = document.getElementById("suggestPhotoPreview");
+  if (!file) { suggestPhotoData = null; preview.className = "photo-preview"; return; }
+  if (file.size > 5*1024*1024) {
+    errEl.textContent = "Image too large. Max is 5 MB.";
+    input.value = ""; suggestPhotoData = null; preview.className = "photo-preview"; return;
+  }
+  errEl.textContent = "";
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1400; let data;
+      if (img.width <= maxW) { data = e.target.result; }
+      else {
+        const c = document.createElement("canvas"); const ratio = maxW/img.width;
+        c.width = maxW; c.height = Math.round(img.height*ratio);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        data = c.toDataURL("image/jpeg",0.82);
+      }
+      suggestPhotoData = { fileName: file.name, fileData: data, mimeType: file.type||'image/jpeg' };
+      preview.src = data; preview.className = "photo-preview show";
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitSuggestion() {
+  const btn = document.getElementById("suggestSubmitBtn");
+  document.getElementById("suggestErr").style.display = "none";
+
+  if (!suggestCat) { showSuggestErr("Please select a category."); return; }
+  if (!suggestPrio) { showSuggestErr("Please select a priority."); return; }
+  const desc = document.getElementById("suggestDesc").value.trim();
+  if (!desc) { showSuggestErr("Please describe the project."); return; }
+
+  let boatId = "", boatName = "", itemName = "";
+  if (suggestCat === "boat") {
+    const sel = document.getElementById("suggestBoat");
+    boatId = sel.value; boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
+    if (!boatId) { showSuggestErr("Please select a boat."); return; }
+  } else {
+    itemName = document.getElementById("suggestItem").value.trim();
+    if (!itemName) { showSuggestErr("Please enter the item or location."); return; }
+  }
+
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    let photoUrl = "";
+    if (suggestPhotoData) {
+      btn.textContent = "Uploading photo…";
+      const upRes = await apiPost("uploadMaintenancePhoto", suggestPhotoData);
+      if (upRes.ok) photoUrl = upRes.photoUrl;
+    }
+    await apiPost("saveMaintenance", {
+      category: suggestCat, boatId, boatName, itemName,
+      part:        document.getElementById("suggestPart").value.trim(),
+      severity:    suggestPrio,
+      description: desc,
+      markOos:     false,
+      photoUrl,
+      reportedBy:  currentUserName || 'Member',
+      source:      "member",
+      saumaklubbur: true,
+      verkstjori:  '',
+      materials:   suggestMaterials.length ? JSON.stringify(suggestMaterials) : '[]',
+    });
+    closeSuggestModal();
+    const rRes = await apiGet("getMaintenance");
+    allProjects = (rRes.requests || []).filter(r => boolVal(r.saumaklubbur));
+    renderList();
+    toast("✓ Project suggested!");
+  } catch(e) {
+    showSuggestErr("Error: " + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Submit";
+  }
+}
+
+function showSuggestErr(msg) {
+  const el = document.getElementById("suggestErr");
+  el.textContent = msg; el.style.display = "block";
 }
 
 </script>

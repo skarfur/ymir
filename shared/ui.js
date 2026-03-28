@@ -118,7 +118,7 @@ window.buildHeader = function (page) {
   }
 
   // classify current page
-  const STAFF_SUBPAGES  = ['dailylog', 'maintenance', 'logbook-review', 'incidents', 'saumaklubbur'];
+  const STAFF_SUBPAGES  = ['dailylog', 'maintenance', 'logbook-review', 'incidents'];
   const ADMIN_SUBPAGES  = ['payroll'];
   const isSubpage  = STAFF_SUBPAGES.includes(page);
   const isAdminSub = ADMIN_SUBPAGES.includes(page);
