@@ -245,6 +245,7 @@ function route_(action, b) {
     case 'deleteMaintenance':       return deleteMaintenance_(b);
     case 'uploadMaintenancePhoto':  return uploadMaintenancePhoto_(b);
     case 'adoptSaumaklubbur':       return adoptSaumaklubbur_(b);
+    case 'approveSaumaklubbur':     return approveSaumaklubbur_(b);
     case 'toggleMaterial':          return toggleMaterial_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
@@ -463,8 +464,11 @@ function saveMaintenance_(b) {
   addColIfMissing_('maintenance', 'saumaklubbur');
   addColIfMissing_('maintenance', 'verkstjori');
   addColIfMissing_('maintenance', 'materials');
+  addColIfMissing_('maintenance', 'approved');
   const ts = now_(), id = uid_();
   const photoUrl = b.photoUrl || '';
+  const isSauma = bool_(b.saumaklubbur) || false;
+  const isStaffSource = (b.source || 'staff') === 'staff';
   insertRow_('maintenance', {
     id, category: b.category || 'boat', boatId: b.boatId || '', boatName: b.boatName || '',
     itemName: b.itemName || '', part: b.part || '', severity: b.severity || 'medium',
@@ -472,8 +476,9 @@ function saveMaintenance_(b) {
     markOos: bool_(b.markOos) || false, reportedBy: b.reportedBy || '',
     source: b.source || 'staff', createdAt: ts,
     resolved: false, resolvedBy: '', resolvedAt: '', comments: '[]',
-    saumaklubbur: bool_(b.saumaklubbur) || false, verkstjori: b.verkstjori || '',
+    saumaklubbur: isSauma, verkstjori: b.verkstjori || '',
     materials: b.materials || '[]',
+    approved: isSauma && !isStaffSource ? false : true,
   });
   cDel_('maintenance');
   return okJ({ id, created: true });
@@ -880,6 +885,17 @@ function toggleMaterial_(b) {
   updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
   cDel_('maintenance');
   return okJ({ toggled: true, materials });
+}
+
+function approveSaumaklubbur_(b) {
+  if (!b.id) return failJ('id required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
+  addColIfMissing_('maintenance', 'approved');
+  updateRow_('maintenance', 'id', b.id, { approved: true });
+  cDel_('maintenance');
+  return okJ({ approved: true });
 }
 
 function adoptSaumaklubbur_(b) {

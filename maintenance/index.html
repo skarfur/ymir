@@ -17,15 +17,18 @@
 }
 
     /* ── Filter bar ── */
-    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+    .filter-bar-grouped { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
+    .filter-group { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .filter-group-label { font-size:9px; color:var(--muted); letter-spacing:1px; min-width:68px; flex-shrink:0; }
     .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted);
       border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
       letter-spacing:.5px; transition:all .15s; }
     .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-    .filter-btn:hover:not(.active) { border-color:var(--brass); color:var(--brass); }
+    .filter-btn:hover:not(.active):not(.muted) { border-color:var(--brass); color:var(--brass); }
+    .filter-btn.muted { opacity:0.3; pointer-events:none; border-style:dashed; }
 
     /* ── Stat strip ── */
-    .stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
+    .stat-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:20px; }
     .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
       padding:12px; text-align:center; }
     .stat-num { font-size:24px; color:var(--brass); font-weight:500; }
@@ -132,24 +135,45 @@
     <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
     <div class="stat-card"><div class="stat-num" id="statCritical" style="color:var(--red)">—</div><div class="stat-label">CRITICAL</div></div>
     <div class="stat-card"><div class="stat-num" id="statOos" style="color:var(--red)">—</div><div class="stat-label">BOATS OOS</div></div>
+    <div class="stat-card"><div class="stat-num" id="statPending" style="color:var(--brass)">—</div><div class="stat-label">PENDING REVIEW</div></div>
     <div class="stat-card"><div class="stat-num" id="statResolved" style="color:var(--green)">—</div><div class="stat-label">RESOLVED</div></div>
   </div>
   <div style="display:flex;gap:8px;margin:12px 0">
-    <button class="btn btn-primary" style="flex:1" onclick="openNewRequest()">+ New Request</button>
-    <button class="btn btn-secondary" style="flex:1" onclick="openNewRequest({saumaklubbur:true})">🧵 Suggest a Project</button>
+    <button class="btn btn-primary" style="flex:1" onclick="openNewRequest()">+ New maintenance request</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="openNewRequest({saumaklubbur:true})">🧵 New sewing circle project</button>
   </div>
 
   <!-- Filter bar -->
-  <div class="filter-bar">
-    <span style="font-size:11px;color:var(--muted);letter-spacing:.5px">FILTER:</span>
-    <button class="filter-btn active" data-filter="open"      onclick="setFilter('open')">Open</button>
-    <button class="filter-btn"        data-filter="critical"  onclick="setFilter('critical')">Critical</button>
-    <button class="filter-btn"        data-filter="boats"     onclick="setFilter('boats')">Boats</button>
-    <button class="filter-btn"        data-filter="equipment" onclick="setFilter('equipment')">Equipment</button>
-    <button class="filter-btn"        data-filter="facility"  onclick="setFilter('facility')">Facility</button>
-    <button class="filter-btn"        data-filter="sauma"     onclick="setFilter('sauma')">🧵 Saumaklúbbur</button>
-    <button class="filter-btn"        data-filter="resolved"  onclick="setFilter('resolved')">Resolved</button>
-    <button class="filter-btn"        data-filter="all"       onclick="setFilter('all')">All</button>
+  <div class="filter-bar-grouped" id="filterBar">
+    <div class="filter-group">
+      <span class="filter-group-label">STATUS</span>
+      <button class="filter-btn active" data-group="status" data-value="open">Open</button>
+      <button class="filter-btn" data-group="status" data-value="resolved">Resolved</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">TYPE</span>
+      <button class="filter-btn" data-group="type" data-value="maintenance">Maintenance</button>
+      <button class="filter-btn" data-group="type" data-value="sauma">🧵 Saumaklúbbur</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">CATEGORY</span>
+      <button class="filter-btn" data-group="category" data-value="boat">Boats</button>
+      <button class="filter-btn" data-group="category" data-value="equipment">Equipment</button>
+      <button class="filter-btn" data-group="category" data-value="facility">Facility</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">SEVERITY</span>
+      <button class="filter-btn" data-group="severity" data-value="critical">Critical</button>
+      <button class="filter-btn" data-group="severity" data-value="high">High</button>
+      <button class="filter-btn" data-group="severity" data-value="medium">Medium</button>
+      <button class="filter-btn" data-group="severity" data-value="low">Low</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">SAUMAKLÚBBUR</span>
+      <button class="filter-btn" data-group="sauma" data-value="unassigned">Unassigned</button>
+      <button class="filter-btn" data-group="sauma" data-value="myprojects">My Projects</button>
+      <button class="filter-btn" data-group="sauma" data-value="pending">Pending Review</button>
+    </div>
   </div>
 
   <!-- Request list -->
@@ -160,7 +184,7 @@
 <!-- ══ NEW REQUEST MODAL ══ -->
 <div class="modal-overlay hidden" id="newModal">
   <div class="modal">
-    <h3>🔧 New Maintenance Request</h3>
+    <h3 id="modalTitle">🔧 New Maintenance Request</h3>
 
     <div class="field">
       <label>Category</label>
@@ -174,10 +198,12 @@
     <div class="field hidden" id="boatField">
       <label>Boat</label>
       <select id="newBoat"><option value="">Select boat…</option></select>
-      <label style="margin-top:10px">Mark boat Out of Service?</label>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <input type="checkbox" id="newOos" style="width:16px;height:16px;accent-color:var(--red)">
-        <span style="font-size:12px;color:var(--muted)">Take this boat OOS until repaired</span>
+      <div id="oosField">
+        <label style="margin-top:10px">Mark boat Out of Service?</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="checkbox" id="newOos" style="width:16px;height:16px;accent-color:var(--red)">
+          <span style="font-size:12px;color:var(--muted)">Take this boat OOS until repaired</span>
+        </div>
       </div>
     </div>
 
@@ -191,8 +217,8 @@
       <input type="text" id="newPart" placeholder="e.g. Hull, mast, zipper, window…">
     </div>
 
-    <div class="field">
-      <label>Severity</label>
+    <div class="field" id="sevField">
+      <label id="sevLabel">Severity</label>
       <div class="sev-btns">
         <button class="sev-btn" data-sev="low"      onclick="selectSev('low')">LOW</button>
         <button class="sev-btn" data-sev="medium"   onclick="selectSev('medium')">MEDIUM</button>
@@ -207,19 +233,12 @@
       <textarea id="newDesc" rows="3" placeholder="Describe the issue…"></textarea>
     </div>
 
-    <div class="field">
-      <label>Photo (optional, max 5 MB)</label>
-      <input type="file" id="newPhoto" accept="image/*" onchange="handlePhotoChange(this)"
-        style="font-size:12px;color:var(--muted)">
-      <img id="photoPreview" class="photo-preview" alt="preview">
-      <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
-    </div>
-
-    <div class="field" id="saumaklubbField" style="display:none">
-      <label data-s="sauma.toggle">Saumaklúbbur Project</label>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <input type="checkbox" id="newSaumaklubbur" style="width:16px;height:16px;accent-color:var(--brass)">
-        <span style="font-size:12px;color:var(--muted)" data-s="sauma.toggleHint">Mark as a sewing circle project</span>
+    <div class="field hidden" id="materialsField">
+      <label data-s="sauma.materials">Materials Needed</label>
+      <div id="materialsList"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addMaterialToList()">+ Add</button>
       </div>
     </div>
 
@@ -229,14 +248,15 @@
       <span style="font-size:11px;color:var(--muted)" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
     </div>
 
-    <div class="field hidden" id="materialsField">
-      <label data-s="sauma.materials">Materials Needed</label>
-      <div id="materialsList"></div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
-        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addMaterialToList()">+ Add</button>
-      </div>
+    <div class="field" id="photoField">
+      <label>Photo (optional, max 5 MB)</label>
+      <input type="file" id="newPhoto" accept="image/*" onchange="handlePhotoChange(this)"
+        style="font-size:12px;color:var(--muted)">
+      <img id="photoPreview" class="photo-preview" alt="preview">
+      <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
     </div>
+
+    <input type="hidden" id="newSaumaklubbur" value="false">
 
     <div id="newErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
     <div class="btn-row">
@@ -256,20 +276,25 @@
 // ── State ──────────────────────────────────────────────────────────────────────
 let allRequests = [];
 let boats = [];
-let currentFilter = "open";
 let selectedCat = "";
 let selectedSev = "";
 let photoDataUrl = "";
 let pendingPhotoFile = null;
 let pendingMaterials = [];
+let isSaumaMode = false;
 
-
+let activeFilters = {
+  status:   new Set(['open']),
+  type:     new Set(),
+  category: new Set(),
+  severity: new Set(),
+  sauma:    new Set(),
+};
 
 // ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
   buildHeader('maintenance');
   applyStrings();
-
 
   try {
     const [rRes, cfgRes] = await Promise.all([
@@ -281,21 +306,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
     renderStats();
+    updateFilterUI();
     renderList();
   } catch(e) {
     document.getElementById("reqList").innerHTML =
       `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
   }
-  // Show saumaklúbbur toggle for staff
-  if (window._maintUser && (window._maintUser.role === 'staff' || window._maintUser.role === 'admin')) {
-    document.getElementById('saumaklubbField').style.display = '';
-  }
-  document.getElementById('newSaumaklubbur').addEventListener('change', function() {
-    document.getElementById('verkstjoriField').classList.toggle('hidden', !this.checked);
-    document.getElementById('materialsField').classList.toggle('hidden', !this.checked);
-    // Hide critical severity for saumaklúbbur (only low/medium/high)
-    document.querySelector('.sev-btn[data-sev="critical"]').style.display = this.checked ? 'none' : '';
-    if (this.checked && selectedSev === 'critical') { selectSev('high'); }
+
+  // Wire filter pill clicks via delegation
+  document.getElementById('filterBar').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn || btn.classList.contains('muted')) return;
+    toggleFilter(btn.dataset.group, btn.dataset.value);
   });
 
   // Auto-open new request modal if navigated here with ?new=1
@@ -320,31 +342,86 @@ function renderStats() {
   const open     = allRequests.filter(r => !boolVal(r.resolved));
   const critical = open.filter(r => r.severity === "critical");
   const oos      = open.filter(r => boolVal(r.markOos) && r.category === "boat");
+  const pending  = allRequests.filter(r => boolVal(r.saumaklubbur) && !boolVal(r.approved) && !boolVal(r.resolved));
   const resolved = allRequests.filter(r => boolVal(r.resolved));
   document.getElementById("statOpen").textContent     = open.length;
   document.getElementById("statCritical").textContent = critical.length;
   document.getElementById("statOos").textContent      = oos.length;
+  document.getElementById("statPending").textContent  = pending.length;
   document.getElementById("statResolved").textContent = resolved.length;
 }
 
 // ── Filter & render ────────────────────────────────────────────────────────────
-function setFilter(f) {
-  currentFilter = f;
-  document.querySelectorAll(".filter-btn").forEach(b =>
-    b.classList.toggle("active", b.dataset.filter === f));
+function toggleFilter(group, value) {
+  const set = activeFilters[group];
+  if (set.has(value)) set.delete(value);
+  else set.add(value);
+  updateFilterUI();
   renderList();
 }
 
+function updateFilterUI() {
+  const tf = activeFilters.type;
+  const onlySauma = tf.has('sauma') && !tf.has('maintenance');
+  const onlyMaint = tf.has('maintenance') && !tf.has('sauma');
+
+  document.querySelectorAll('#filterBar .filter-btn').forEach(btn => {
+    const g = btn.dataset.group, v = btn.dataset.value;
+    btn.classList.toggle('active', activeFilters[g].has(v));
+    let muted = false;
+    if (onlySauma && g === 'severity' && v === 'critical') muted = true;
+    if (onlyMaint && g === 'sauma') muted = true;
+    btn.classList.toggle('muted', muted);
+    if (muted && activeFilters[g].has(v)) {
+      activeFilters[g].delete(v);
+      btn.classList.remove('active');
+    }
+  });
+}
+
 function getFiltered() {
+  const f = activeFilters;
+  const anyActive = Object.values(f).some(s => s.size > 0);
+  const userName = window._maintUser?.name || '';
+
   return allRequests.filter(r => {
     const resolved = boolVal(r.resolved);
-    if (currentFilter === "open")      return !resolved;
-    if (currentFilter === "resolved")  return resolved;
-    if (currentFilter === "critical")  return !resolved && r.severity === "critical";
-    if (currentFilter === "boats")     return !resolved && r.category === "boat";
-    if (currentFilter === "equipment") return !resolved && r.category === "equipment";
-    if (currentFilter === "facility")  return !resolved && r.category === "facility";
-    if (currentFilter === "sauma")     return !resolved && boolVal(r.saumaklubbur);
+    const isSauma = boolVal(r.saumaklubbur);
+
+    // Default: no selections = show open items
+    if (!anyActive) return !resolved;
+
+    // STATUS (OR)
+    if (f.status.size > 0) {
+      const ok = (f.status.has('open') && !resolved) || (f.status.has('resolved') && resolved);
+      if (!ok) return false;
+    }
+
+    // TYPE (OR)
+    if (f.type.size > 0) {
+      const ok = (f.type.has('sauma') && isSauma) || (f.type.has('maintenance') && !isSauma);
+      if (!ok) return false;
+    }
+
+    // CATEGORY (OR)
+    if (f.category.size > 0) {
+      if (!f.category.has(r.category)) return false;
+    }
+
+    // SEVERITY (OR)
+    if (f.severity.size > 0) {
+      if (!f.severity.has(r.severity)) return false;
+    }
+
+    // SAUMA-specific (OR within, AND with sauma type)
+    if (f.sauma.size > 0) {
+      if (!isSauma) return false;
+      const matchUn = f.sauma.has('unassigned') && !r.verkstjori;
+      const matchMy = f.sauma.has('myprojects') && (r.verkstjori === userName || parseJson(r.comments,[]).some(c => c.by === userName));
+      const matchPending = f.sauma.has('pending') && !boolVal(r.approved);
+      if (!matchUn && !matchMy && !matchPending) return false;
+    }
+
     return true;
   });
 }
@@ -427,6 +504,7 @@ function viewPhoto(url) {
 // ── New request modal ──────────────────────────────────────────────────────────
 function openNewRequest(prefill) {
   selectedCat = ""; selectedSev = ""; photoDataUrl = ""; pendingPhotoFile = null;
+  isSaumaMode = !!(prefill && prefill.saumaklubbur);
   ["newPart","newDesc","newItem"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("newBoat").value = "";
   document.getElementById("newOos").checked = false;
@@ -439,26 +517,26 @@ function openNewRequest(prefill) {
   document.getElementById("sevHint").textContent = "";
   document.getElementById("boatField").classList.add("hidden");
   document.getElementById("itemField").classList.add("hidden");
-  document.getElementById("newSaumaklubbur").checked = false;
-  document.getElementById("verkstjoriField").classList.add("hidden");
   document.getElementById("newVerkstjori").value = "";
-  document.getElementById("materialsField").classList.add("hidden");
   document.getElementById("materialsList").innerHTML = "";
   document.getElementById("newMaterialInput").value = "";
-  document.querySelector('.sev-btn[data-sev="critical"]').style.display = '';
   pendingMaterials = [];
+
+  // Two-mode modal
+  document.getElementById("newSaumaklubbur").value = isSaumaMode ? "true" : "false";
+  document.getElementById("modalTitle").textContent = isSaumaMode
+    ? '🧵 New sewing circle project' : '🔧 New Maintenance Request';
+  document.getElementById("sevLabel").textContent = isSaumaMode ? 'Priority' : 'Severity';
+  document.querySelector('.sev-btn[data-sev="critical"]').style.display = isSaumaMode ? 'none' : '';
+  document.getElementById("oosField").style.display = isSaumaMode ? 'none' : '';
+  document.getElementById("verkstjoriField").classList.toggle("hidden", !isSaumaMode);
+  document.getElementById("materialsField").classList.toggle("hidden", !isSaumaMode);
 
   if (prefill) {
     if (prefill.category)    selectCat(prefill.category);
     if (prefill.boatId)      document.getElementById("newBoat").value = prefill.boatId;
     if (prefill.severity)    selectSev(prefill.severity);
     if (prefill.description) document.getElementById("newDesc").value = prefill.description;
-    if (prefill.saumaklubbur) {
-      document.getElementById("newSaumaklubbur").checked = true;
-      document.getElementById("verkstjoriField").classList.remove("hidden");
-      document.getElementById("materialsField").classList.remove("hidden");
-      document.querySelector('.sev-btn[data-sev="critical"]').style.display = 'none';
-    }
   }
   document.getElementById("newModal").classList.remove("hidden");
 }
@@ -569,7 +647,6 @@ async function submitRequest() {
       if (upRes.ok) photoUrl = upRes.photoUrl;
       else console.warn("Photo upload skipped:", upRes.error);
     }
-    const isSauma = document.getElementById("newSaumaklubbur").checked;
     await apiPost("saveMaintenance", {
       category: selectedCat, boatId, boatName, itemName,
       part:        document.getElementById("newPart").value.trim(),
@@ -579,9 +656,9 @@ async function submitRequest() {
       photoUrl,
       reportedBy:  (window._maintUser?.name||'Staff'),
       source:      "staff",
-      saumaklubbur: isSauma,
-      verkstjori:  isSauma ? document.getElementById("newVerkstjori").value.trim() : '',
-      materials:   isSauma && pendingMaterials.length ? JSON.stringify(pendingMaterials) : '',
+      saumaklubbur: isSaumaMode,
+      verkstjori:  isSaumaMode ? document.getElementById("newVerkstjori").value.trim() : '',
+      materials:   isSaumaMode && pendingMaterials.length ? JSON.stringify(pendingMaterials) : '',
     });
     if (markOos && boatId) {
       try {

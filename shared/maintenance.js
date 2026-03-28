@@ -189,6 +189,7 @@ function maintOpenDetail(r, currentUser) {
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
+      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ Pending staff review<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">Approve</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;justify-content:space-between">
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? 'Mark Completed' : 'Mark Resolved'}</button>
         <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">Delete</button>
@@ -331,6 +332,19 @@ function maintOpenDetail(r, currentUser) {
     };
     document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});
+
+    // Approve sauma project
+    document.getElementById('mdApproveBtn')?.addEventListener('click', async ()=>{
+      const btn = document.getElementById('mdApproveBtn');
+      if(btn) { btn.disabled=true; btn.textContent='Approving…'; }
+      try {
+        await apiPost('approveSaumaklubbur',{id:r.id});
+        r.approved = true; renderAndWire();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderStats==='function') renderStats();
+        if(typeof renderMaintenance==='function') renderMaintenance();
+      } catch(e) { if(btn){btn.disabled=false;btn.textContent='Approve';} }
+    });
 
     // Resolve / Complete
     document.getElementById('mdResolveBtn')?.addEventListener('click',()=>{
