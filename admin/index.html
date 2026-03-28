@@ -554,19 +554,20 @@
     </div>
     <!-- Keelboat-only fields -->
     <div id="keelboatFields" style="display:none">
-      <div class="grid2">
-        <div class="field">
-          <label data-s="boat.registrationNo">Registration no.</label>
-          <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
-        </div>
-        <div class="field">
-          <label data-s="boat.loa">LOA (ft)</label>
-          <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
-        </div>
+      <div class="field">
+        <label data-s="boat.registrationNo">Registration no.</label>
+        <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
       </div>
+    </div>
+    <!-- All boats: type/model & LOA -->
+    <div class="grid2">
       <div class="field">
         <label data-s="boat.typeModel">Type / model</label>
         <input type="text" id="bTypeModel" placeholder="e.g. Hallberg-Rassy 34">
+      </div>
+      <div class="field">
+        <label data-s="boat.loa">LOA (ft)</label>
+        <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
       </div>
     </div>
     <div class="check-row">
@@ -1280,10 +1281,11 @@ async function saveBoat() {
     oos:           document.getElementById("bOOS").checked,
     oosReason:     document.getElementById("bOOSReason").value.trim(),
     active:        document.getElementById("bActive").checked,
-    // keelboat-only (ignored for other categories; kept to preserve existing data if category changes)
+    // keelboat-only
     registrationNo: cat === 'keelboat' ? document.getElementById("bRegNo").value.trim()  : (id ? (_allBoats.find(x=>x.id===id)||{}).registrationNo||'' : ''),
-    loa:            cat === 'keelboat' ? (parseFloat(document.getElementById("bLoa").value)||'') : (id ? (_allBoats.find(x=>x.id===id)||{}).loa||'' : ''),
-    typeModel:      cat === 'keelboat' ? document.getElementById("bTypeModel").value.trim() : (id ? (_allBoats.find(x=>x.id===id)||{}).typeModel||'' : ''),
+    // all boats
+    typeModel:      document.getElementById("bTypeModel").value.trim(),
+    loa:            parseFloat(document.getElementById("bLoa").value) || '',
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
