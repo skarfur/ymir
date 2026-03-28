@@ -108,10 +108,10 @@ function renderBoatCard(boat, opts) {
 
   // Badge
   const badgeMap = {
-    avail:   { text:"AVAIL",   style:"color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111" },
-    out:     { text:"OUT",     style:"color:var(--brass);border-color:var(--brass)55;background:var(--brass)11" },
-    overdue: { text:"OVERDUE", style:"color:var(--red);border-color:var(--red)55;background:var(--red)11" },
-    oos:     { text:"OOS",     style:"color:var(--muted);border-color:var(--border);background:var(--surface)" },
+    avail:   { text:s("fleet.badgeAvail"),   style:"color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111" },
+    out:     { text:s("fleet.badgeOut"),      style:"color:var(--brass);border-color:var(--brass)55;background:var(--brass)11" },
+    overdue: { text:s("fleet.badgeOverdue"),  style:"color:var(--red);border-color:var(--red)55;background:var(--red)11" },
+    oos:     { text:s("fleet.badgeOos"),      style:"color:var(--muted);border-color:var(--border);background:var(--surface)" },
   };
   const badge  = badgeMap[status] || badgeMap.avail;
   const bdgHtml = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;${badge.style}">${badge.text}</span>`;
@@ -122,7 +122,7 @@ function renderBoatCard(boat, opts) {
     const tout  = (co.checkedOutAt||co.timeOut||"").slice(0,5);
     const retBy = co.expectedReturn||co.returnBy||"";
     infoLine = `<div style="font-size:11px;color:var(--muted);margin-top:4px">`
-             + `${_besc(co.memberName||"")} · ${_besc(co.locationName||"")} · Out ${_besc(tout)}`
+             + `${_besc(co.memberName||"")} · ${_besc(co.locationName||"")} · ${_besc(s("fleet.outTime",{t:tout}))}`
              + `${retBy?" · ↩ "+_besc(retBy):""}`
              + `</div>`;
   }
@@ -195,15 +195,15 @@ function renderCheckoutCard(co, opts) {
   // Top badge (member view only — staff don't need it, they see all)
   let topBadge = "";
   if (!staffView) {
-    if      (overdue) topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">OVERDUE</span>`;
-    else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">YOURS</span>`;
-    else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11">OUT</span>`;
+    if      (overdue) topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">${_besc(s("fleet.badgeOverdue"))}</span>`;
+    else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">${_besc(s("fleet.badgeYours"))}</span>`;
+    else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11">${_besc(s("fleet.badgeOut"))}</span>`;
   } else if (overdue) {
-    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠ OVERDUE</span>`;
+    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠ ${_besc(s("fleet.badgeOverdue"))}</span>`;
   }
 
   // Sub-line
-  const subLine = `${_besc(co.locationName||"")} · Out ${_besc(tout)}`;
+  const subLine = `${_besc(co.locationName||"")} · ${_besc(s("fleet.outTime",{t:tout}))}`;
 
   // Wx snapshot (staff)
   let wxHtml = "";
@@ -237,13 +237,13 @@ function renderCheckoutCard(co, opts) {
   let actionsHtml = "";
   if (staffView && (opts.onCheckIn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:10px">`
-                + (opts.onCheckIn ? `<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="${opts.onCheckIn}">✓ Check In</button>` : "")
-                + (opts.onDelete  ? `<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="${opts.onDelete}">× Delete</button>` : "")
+                + (opts.onCheckIn ? `<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="${opts.onCheckIn}">✓ ${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onDelete  ? `<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="${opts.onDelete}">× ${_besc(s("fleet.delete"))}</button>` : "")
                 + `</div>`;
   } else if (!staffView && isMe && (opts.onReturn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:8px">`
-                + (opts.onReturn ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" onclick="${opts.onReturn}">Check In</button>` : "")
-                + (opts.onDelete ? `<button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="Delete checkout" onclick="${opts.onDelete}">×</button>` : "")
+                + (opts.onReturn ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" onclick="${opts.onReturn}">${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onDelete ? `<button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="${_besc(s("fleet.delete"))}" onclick="${opts.onDelete}">×</button>` : "")
                 + `</div>`;
   }
 
@@ -259,11 +259,11 @@ function renderCheckoutCard(co, opts) {
        + `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">`
        + `<div style="font-size:13px;font-weight:500;color:var(--text)">${emoji} ${_besc(co.boatName||co.boatId||"")} ${boatCatBadge(cat)}</div>`
        + `<div style="font-size:13px;font-weight:500;color:var(--text)">${_besc(co.memberName||"")}</div>`
-       + `<div style="font-size:11px;color:var(--muted)">${_besc(co.crew||1)} aboard</div>`
+       + `<div style="font-size:11px;color:var(--muted)">${_besc(s("fleet.aboard",{n:co.crew||1}))}</div>`
        + `</div>`
        + `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">`
        + (retBy ? `<div style="font-size:13px;font-weight:500;color:${overdue?"var(--red)":"var(--text)"}">↩ ${_besc(retBy)}</div>` : "")
-       + (overdue && staffView ? `<div style="font-size:9px;letter-spacing:.6px;color:var(--red)">OVERDUE</div>` : "")
+       + (overdue && staffView ? `<div style="font-size:9px;letter-spacing:.6px;color:var(--red)">${_besc(s("fleet.badgeOverdue"))}</div>` : "")
        + `</div>`
        + (!staffView ? topBadge : "")
        + `</div>`
