@@ -1060,9 +1060,8 @@ async function submitCheckIn() {
     // 1. Check in the checkout record
     await apiPost('checkIn', { id, timeIn });
 
-    // 2. Save trip record if we have GPS/photos/port data worth recording
-    const hasData = trackFileUrl || photoUrls.length || arrivalPort || co.departurePort || distanceNm;
-    if (hasData && co.memberKennitala) {
+    // 2. Always save a trip record for the skipper
+    if (co.memberKennitala) {
       const timeOut = (co.checkedOutAt || co.timeOut || '').slice(0, 5);
       let hoursDecimal = 0;
       if (timeOut && timeIn) {
