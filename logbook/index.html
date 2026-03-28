@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
@@ -96,6 +98,36 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 
 .exp-notes{background:rgba(255,255,255,.02)}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
+
+/* Track map thumbnail */
+.track-map-thumb{width:100%;height:140px;border-radius:6px;border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}
+.track-map-thumb .leaflet-control-zoom,.track-map-thumb .leaflet-control-attribution{display:none}
+.track-map-expand-hint{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 8px;border-radius:4px;z-index:500;pointer-events:none;letter-spacing:.4px}
+
+/* Full-screen map modal */
+.map-modal-overlay{position:fixed;inset:0;background:#000e;z-index:600;display:flex;flex-direction:column}
+.map-modal-overlay.hidden{display:none}
+.map-modal-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}
+.map-modal-bar span{font-size:12px;color:var(--text)}
+.map-modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0}
+.map-modal-body{flex:1;position:relative}
+
+/* Lightbox */
+.lightbox-overlay{position:fixed;inset:0;background:#000e;z-index:600;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:zoom-out}
+.lightbox-overlay.hidden{display:none}
+.lightbox-img{max-width:92vw;max-height:85vh;object-fit:contain;border-radius:6px}
+.lightbox-close{position:absolute;top:14px;right:18px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:601}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:none;color:#fff;font-size:24px;cursor:pointer;padding:8px 12px;border-radius:6px;z-index:601}
+.lightbox-nav.prev{left:12px}
+.lightbox-nav.next{right:12px}
+
+/* Upload thumbnails with delete */
+.upload-thumb-wrap{position:relative;display:inline-block;width:72px;height:72px;flex-shrink:0}
+.upload-thumb-wrap .photo-thumb{width:72px;height:72px}
+.upload-delete-btn{position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:var(--red);border:2px solid var(--bg);color:#fff;font-size:12px;line-height:16px;text-align:center;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;padding:0}
+.upload-delete-btn:hover{background:#c0392b}
+.track-delete-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-left:8px;opacity:.7}
+.track-delete-btn:hover{opacity:1;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -144,6 +176,23 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     </div>
   </div>
   <div id="tripList"><div class="empty-note">Loading…</div></div>
+</div>
+
+<!-- Lightbox overlay -->
+<div class="lightbox-overlay hidden" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <button class="lightbox-nav prev" onclick="event.stopPropagation();lightboxNav(-1)">&lsaquo;</button>
+  <button class="lightbox-nav next" onclick="event.stopPropagation();lightboxNav(1)">&rsaquo;</button>
+  <img class="lightbox-img" id="lightboxImg" onclick="event.stopPropagation()">
+</div>
+
+<!-- Full-screen map modal -->
+<div class="map-modal-overlay hidden" id="mapModal">
+  <div class="map-modal-bar">
+    <span id="mapModalTitle">GPS Track</span>
+    <button class="map-modal-close" onclick="closeMapModal()">&times;</button>
+  </div>
+  <div class="map-modal-body" id="mapModalBody"></div>
 </div>
 
 <!-- Log manually modal -->
@@ -420,17 +469,43 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
+  const isOwner = String(t.kennitala) === String(user.kennitala);
   const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
-  const trackRow = t.trackFileUrl ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>` : '';
+
+  // Track row: show map thumbnail if simplified track available, otherwise link
+  let trackPoints = []; try { if(t.trackSimplified) trackPoints = JSON.parse(t.trackSimplified); } catch(e){}
+  const trackDeleteBtn = isOwner && t.trackFileUrl ? `<button class="track-delete-btn" onclick="event.stopPropagation();deleteTripTrack('${esc(t.id)}')">${IS?'Eyða leið':'Delete track'}</button>` : '';
+  let trackRow = '';
+  if (trackPoints.length >= 2) {
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span><span class="trip-exp-val">
+      <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+        <div class="track-map-expand-hint">${IS?'Smelltu til að stækka':'Click to expand'}</div>
+      </div>
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
+    </span></div>`;
+  } else if (t.trackFileUrl) {
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+  }
+
   const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skýringar':'Notes'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
-    return urls.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>` : '';
+    if (!urls.length) return '';
+    const thumbs = urls.map((u,i) => {
+      const delBtn = isOwner ? `<button class="upload-delete-btn" onclick="event.stopPropagation();deleteTripPhoto('${esc(t.id)}','${esc(u)}')" title="${IS?'Eyða':'Delete'}">&times;</button>` : '';
+      return `<div class="upload-thumb-wrap">
+        ${delBtn}
+        <img src="${esc(u)}" class="photo-thumb" loading="lazy"
+          onclick="event.stopPropagation();openLightbox('${esc(t.id)}',${i})"
+          onerror="this.parentElement.style.display='none'">
+      </div>`;
+    }).join('');
+    return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
-  const hasNotes   = !!(notesRow||photosRow);
+  const hasNotes   = !!(notesRow||photosRow||trackRow);
 
-  return `<div class="trip-card" onclick="this.classList.toggle('open')">
+  return `<div class="trip-card" onclick="toggleTripCard(this)">
     <div class="trip-card-main">
       <div class="trip-date-col">
         <div class="trip-date-day">${esc(p.day)}</div>
@@ -462,11 +537,11 @@ function tripCard(t){
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Siglingasvæði':'Sailing area'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-          ${portRow}${crewRow}${distRow}${trackRow}
+          ${portRow}${crewRow}${distRow}
         </div>
       </div>
       ${hasWeather?`<div class="exp-section exp-weather"><div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}</div></div>`:''}
-      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes & Photos'}</div><div class="trip-expand-grid">${notesRow}${photosRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${notesRow}${photosRow}${trackRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -482,6 +557,8 @@ function bftGroup(b){
 }
 
 function applyFilter(){
+  // Destroy stale thumb maps before re-rendering
+  Object.keys(_thumbMaps).forEach(k => { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
   const yr  = document.getElementById('fYear').value;
   const cat = document.getElementById('fCat').value;
   const role= document.getElementById('fRole').value;
@@ -963,6 +1040,141 @@ async function submitManual(){
     errEl.textContent=e.message;
     errEl.style.display='';
   }
+}
+
+// ── Trip card toggle (init maps on first expand) ─────────────────────────────
+function toggleTripCard(card) {
+  card.classList.toggle('open');
+  if (card.classList.contains('open')) {
+    // Defer so the expand section is visible before Leaflet measures it
+    requestAnimationFrame(() => {
+      card.querySelectorAll('.track-map-thumb').forEach(el => {
+        if (!_thumbMaps[el.id]) initSingleThumbMap(el);
+      });
+    });
+  }
+}
+
+// ── Track map rendering ──────────────────────────────────────────────────────
+const _thumbMaps = {};  // id → Leaflet map instance (thumbnails)
+let   _fullMap   = null;
+
+function initSingleThumbMap(el) {
+  const id = el.id;
+  if (_thumbMaps[id]) return;
+  let pts;
+  try { pts = JSON.parse(el.dataset.track); } catch(e) { return; }
+  if (!pts || pts.length < 2) return;
+  const map = L.map(el, { zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false, boxZoom:false, keyboard:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:18 }).addTo(map);
+  const latlngs = pts.map(p => [p.lat, p.lng]);
+  L.polyline(latlngs, { color:'#d4af37', weight:2.5, opacity:.9 }).addTo(map);
+  L.circleMarker(latlngs[0], { radius:4, color:'#27ae60', fillColor:'#27ae60', fillOpacity:1, weight:0 }).addTo(map);
+  L.circleMarker(latlngs[latlngs.length-1], { radius:4, color:'#e74c3c', fillColor:'#e74c3c', fillOpacity:1, weight:0 }).addTo(map);
+  map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+  _thumbMaps[id] = map;
+}
+
+function openMapModal(tripId) {
+  const trip = myTrips.find(t => t.id === tripId);
+  if (!trip) return;
+  let pts;
+  try { pts = JSON.parse(trip.trackSimplified); } catch(e) { return; }
+  if (!pts || pts.length < 2) return;
+
+  const overlay = document.getElementById('mapModal');
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('mapModalTitle').textContent =
+    (trip.boatName || '') + ' — ' + (trip.date || '') + (trip.distanceNm ? ' · ' + trip.distanceNm + ' nm' : '');
+
+  // Destroy previous full map
+  if (_fullMap) { _fullMap.remove(); _fullMap = null; }
+  const container = document.getElementById('mapModalBody');
+  container.innerHTML = '';
+  const div = document.createElement('div');
+  div.style.cssText = 'position:absolute;inset:0';
+  container.appendChild(div);
+
+  _fullMap = L.map(div, { zoomControl: true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(_fullMap);
+  const latlngs = pts.map(p => [p.lat, p.lng]);
+  L.polyline(latlngs, { color:'#d4af37', weight: 3, opacity: .9 }).addTo(_fullMap);
+  L.circleMarker(latlngs[0], { radius: 6, color:'#27ae60', fillColor:'#27ae60', fillOpacity:1, weight:0 }).bindPopup(IS ? 'Brottför' : 'Departure').addTo(_fullMap);
+  L.circleMarker(latlngs[latlngs.length-1], { radius: 6, color:'#e74c3c', fillColor:'#e74c3c', fillOpacity:1, weight:0 }).bindPopup(IS ? 'Koma' : 'Arrival').addTo(_fullMap);
+  _fullMap.fitBounds(L.latLngBounds(latlngs).pad(0.1));
+}
+
+function closeMapModal() {
+  document.getElementById('mapModal').classList.add('hidden');
+  document.body.style.overflow = '';
+  if (_fullMap) { _fullMap.remove(); _fullMap = null; }
+}
+
+// ── Photo lightbox ───────────────────────────────────────────────────────────
+let _lbTripId = null, _lbIndex = 0, _lbUrls = [];
+
+function openLightbox(tripId, index) {
+  const trip = myTrips.find(t => t.id === tripId);
+  if (!trip) return;
+  try { _lbUrls = JSON.parse(trip.photoUrls || '[]'); } catch(e) { _lbUrls = []; }
+  if (!_lbUrls.length) return;
+  _lbTripId = tripId;
+  _lbIndex = Math.max(0, Math.min(index, _lbUrls.length - 1));
+  showLightboxImage();
+  document.getElementById('lightbox').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function showLightboxImage() {
+  document.getElementById('lightboxImg').src = _lbUrls[_lbIndex];
+  // Show/hide nav buttons
+  document.querySelector('.lightbox-nav.prev').style.display = _lbUrls.length > 1 ? '' : 'none';
+  document.querySelector('.lightbox-nav.next').style.display = _lbUrls.length > 1 ? '' : 'none';
+}
+
+function lightboxNav(dir) {
+  _lbIndex = (_lbIndex + dir + _lbUrls.length) % _lbUrls.length;
+  showLightboxImage();
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Close lightbox / map on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeLightbox(); closeMapModal(); }
+  if (e.key === 'ArrowLeft' && !document.getElementById('lightbox').classList.contains('hidden')) lightboxNav(-1);
+  if (e.key === 'ArrowRight' && !document.getElementById('lightbox').classList.contains('hidden')) lightboxNav(1);
+});
+
+// ── Delete trip files ────────────────────────────────────────────────────────
+async function deleteTripTrack(tripId) {
+  if (!confirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
+  try {
+    await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'track' });
+    const t = myTrips.find(x => x.id === tripId);
+    if (t) { t.trackFileUrl = ''; t.trackSimplified = ''; t.trackSource = ''; }
+    applyFilter();
+    showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+async function deleteTripPhoto(tripId, photoUrl) {
+  if (!confirm(IS ? 'Eyða þessari mynd?' : 'Delete this photo?')) return;
+  try {
+    await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'photo', photoUrl });
+    const t = myTrips.find(x => x.id === tripId);
+    if (t) {
+      let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
+      urls = urls.filter(u => u !== photoUrl);
+      t.photoUrls = urls.length ? JSON.stringify(urls) : '';
+    }
+    applyFilter();
+    showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

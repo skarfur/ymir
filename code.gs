@@ -286,6 +286,7 @@ function route_(action, b) {
     case 'deleteTrip': return deleteTrip_(b.id);
     case 'requestValidation': return requestValidation_(b);
     case 'uploadTripFile': return uploadTripFile_(b);
+    case 'deleteTripFile': return deleteTripFile_(b);
     case 'getWeather': return getWeather_();
     case 'getOverdueAlerts': return getOverdueAlerts_(b);
     case 'silenceAlert': return silenceAlert_(b);
@@ -1515,6 +1516,52 @@ function saveTripPhoto_(b) {
   } catch (e) {
     return failJ('Photo upload error: ' + e.message);
   }
+}
+
+// ── Delete trip file (track or individual photo) ─────────────────────────
+
+function deleteTripFile_(b) {
+  if (!b.tripId) return failJ('tripId required');
+  if (!b.fileType) return failJ('fileType required (track or photo)');
+
+  const trip = findOne_('trips', 'id', b.tripId);
+  if (!trip) return failJ('Trip not found');
+
+  // Only the trip owner may delete uploads
+  if (String(trip.kennitala) !== String(b.kennitala)) return failJ('Not authorised');
+
+  if (b.fileType === 'track') {
+    // Try to trash the Drive file
+    tryTrashDriveUrl_(trip.trackFileUrl);
+    updateRow_('trips', 'id', b.tripId, {
+      trackFileUrl: '', trackSimplified: '', trackSource: '',
+      updatedAt: now_(),
+    });
+    return okJ({ ok: true, deleted: 'track' });
+  }
+
+  if (b.fileType === 'photo') {
+    if (!b.photoUrl) return failJ('photoUrl required');
+    tryTrashDriveUrl_(b.photoUrl);
+    let urls = [];
+    try { urls = JSON.parse(trip.photoUrls || '[]'); } catch(e) {}
+    urls = urls.filter(function(u) { return u !== b.photoUrl; });
+    updateRow_('trips', 'id', b.tripId, {
+      photoUrls: urls.length ? JSON.stringify(urls) : '',
+      updatedAt: now_(),
+    });
+    return okJ({ ok: true, deleted: 'photo', remaining: urls.length });
+  }
+
+  return failJ('Unknown fileType: ' + b.fileType);
+}
+
+function tryTrashDriveUrl_(url) {
+  if (!url) return;
+  try {
+    const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (m) DriveApp.getFileById(m[1]).setTrashed(true);
+  } catch(e) { /* file may already be gone */ }
 }
 
 // ── GPS track parser ──────────────────────────────────────────────────────────
