@@ -244,6 +244,7 @@ function route_(action, b) {
     case 'addMaintenanceComment': return addMaintenanceComment_(b);
     case 'deleteMaintenance':       return deleteMaintenance_(b);
     case 'uploadMaintenancePhoto':  return uploadMaintenancePhoto_(b);
+    case 'adoptSaumaklubbur':       return adoptSaumaklubbur_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
@@ -457,6 +458,8 @@ function getMaintenance_() {
 }
 
 function saveMaintenance_(b) {
+  addColIfMissing_('maintenance', 'saumaklubbur');
+  addColIfMissing_('maintenance', 'verkstjori');
   const ts = now_(), id = uid_();
   const photoUrl = b.photoUrl || '';
   insertRow_('maintenance', {
@@ -466,6 +469,7 @@ function saveMaintenance_(b) {
     markOos: bool_(b.markOos) || false, reportedBy: b.reportedBy || '',
     source: b.source || 'staff', createdAt: ts,
     resolved: false, resolvedBy: '', resolvedAt: '', comments: '[]',
+    saumaklubbur: bool_(b.saumaklubbur) || false, verkstjori: b.verkstjori || '',
   });
   cDel_('maintenance');
   return okJ({ id, created: true });
@@ -818,6 +822,19 @@ function addMaintenanceComment_(b) {
   updateRow_('maintenance', 'id', b.id, { comments: JSON.stringify(comments) });
   cDel_('maintenance');
   return okJ({ commented: true });
+}
+
+function adoptSaumaklubbur_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.name) return failJ('name required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
+  if (ex.verkstjori) return failJ('Already has a verkstjóri');
+  addColIfMissing_('maintenance', 'verkstjori');
+  updateRow_('maintenance', 'id', b.id, { verkstjori: b.name });
+  cDel_('maintenance');
+  return okJ({ adopted: true, verkstjori: b.name });
 }
 
 function deleteMaintenance_(b) {
