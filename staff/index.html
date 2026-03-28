@@ -514,15 +514,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
-  window._maintUser = window.user;
+  window._maintUser = user;
     // Init punch clock — find this employee's payroll record
     (async () => {
       try {
         const empRes = await apiGet('getEmployees');
         const me = (empRes.employees||[]).find(e =>
-          (e.memberId && String(e.memberId) === String(window.user?.id)) ||
-          (e.kt && String(e.kt).replace(/[^0-9]/g,'') === String(window.user?.kennitala||'').replace(/[^0-9]/g,'')) ||
-          (e.name && window.user?.name && e.name.trim() === window.user.name.trim())
+          (e.memberId && String(e.memberId) === String(user?.id)) ||
+          (e.kt && String(e.kt).replace(/[^0-9]/g,'') === String(user?.kennitala||'').replace(/[^0-9]/g,'')) ||
+          (e.name && user?.name && e.name.trim() === user.name.trim())
         );
         if (me && (me.payrollEnabled === true || me.payrollEnabled === 'true')) {
           punchClockWidget(document.getElementById('punchClockWidget'), me.id);
