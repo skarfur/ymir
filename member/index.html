@@ -534,7 +534,7 @@ function _wxSnapHtml(snap) {
   var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
   var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
   if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
-  if(snap.bft!=null)      rows.push(["💨",dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Bft"+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
+  if(snap.bft!=null)      rows.push(["💨",dir+" "+(snap.ws!=null?snap.ws+"m/s ":"")+"Force "+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);
   if(wv!=null)            rows.push(["🌊",wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
   if(tc!=null)            rows.push(["🌡",tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
   if(snap.sst!=null)      rows.push(["🌊","Sea "+snap.sst+"°C"]);
@@ -564,13 +564,13 @@ function renderReturnForm() {
   var nowSnap=currentWx?wxSnapshot(currentWx):null;
   if(coSnap&&nowSnap){["waveDir","sst","feels","pres","presTrend","cond"].forEach(k=>{if(coSnap[k]==null&&nowSnap[k]!=null)coSnap[k]=nowSnap[k];});}
   window._retCoSnap=coSnap; window._retTimeIn=null; window._retWxSnap=null;
-  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',w=sn.ws!=null?sn.ws+'m/s ':'';return(d+' '+w+'Bft'+(sn.bft||'?')).trim();}
+  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',w=sn.ws!=null?sn.ws+'m/s ':'';return(d+' '+w+'Force '+(sn.bft||'?')).trim();}
   var def=coSnap?'checkout':nowSnap?'now':'manual';
   var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
   var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
   var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" onchange="_updateWxDisplay()"><span><b>Manual</b></span></label>';
   var manF='<div id="wxManualFields" style="display:'+(def==='manual'?'grid':'none')+';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-    +'<div class="field"><label>Bft (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>'
+    +'<div class="field"><label>Force (0-12)</label><input type="number" id="manBft" min="0" max="12" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Wind m/s</label><input type="number" id="manWs" min="0" max="50" step="0.5" oninput="_updateWxDisplay()"></div>'
     +'<div class="field"><label>Gusts m/s</label><input type="number" id="manWg" min="0" max="80" step="0.5" oninput="_updateWxDisplay()"></div>'
@@ -640,38 +640,58 @@ function renderLandingChecklist() {
     '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
 
-  // Arrival port — keelboat only
-  var portHtml='';
+  // Resolve home/departure port name for keelboats
+  var homePt='';
   if(isKeel){
-    var portOpts=(locations||[]).filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join('');
-    var homePt=returnCo.departurePort||'';
+    homePt=returnCo.departurePort||'';
     if(!homePt){var _b=boats.find(function(x){return x.id===returnCo.boatId;});if(_b&&_b.defaultPortId){var _lp=locations.find(function(l){return l.id===_b.defaultPortId;});if(_lp)homePt=_lp.name;}}
-    portHtml='<div class="field" style="margin-bottom:12px">'+
-      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'⚓ KOMUSTAÐUR':'⚓ ARRIVAL PORT')+'</label>'+
-      '<input list="retPortsList" id="retArrivalPort" placeholder="'+(IS?'Sama og brottfararstaður':'Same as departure')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%;box-sizing:border-box">'+
-      '<datalist id="retPortsList">'+portOpts+'</datalist>'+
-    '</div>';
   }
+  var portOpts=isKeel?(locations||[]).filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join(''):'';
 
-  // GPS track upload
-  var trackHtml='<div class="field" style="margin-bottom:10px">'+
-    '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'GPS-LEIÐ — GPX / KML / KMZ':'GPS TRACK — GPX / KML / KMZ')+'</label>'+
-    '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" onchange="_handleRetTrack(this)" style="font-size:11px;color:var(--text);width:100%;box-sizing:border-box">'+
-    '<div id="retTrackStatus" style="font-size:11px;color:var(--muted);margin-top:4px"></div>'+
-  '</div>';
+  // GPS track upload block
+  var trackBlock=
+    '<div style="flex:1;min-width:0">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'GPS-LEIÐ — GPX/KML':'GPS TRACK — GPX/KML')+'</label>'+
+      '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" onchange="_handleRetTrack(this)" style="font-size:11px;color:var(--text);width:100%">'+
+      '<div id="retTrackStatus" style="font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>'+
+    '</div>';
 
-  // Distance (auto-filled from GPS, editable)
-  var distHtml='<div class="field" style="margin-bottom:10px">'+
-    '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'VEGALENGD (NM)':'DISTANCE (NM)')+'</label>'+
-    '<input type="number" id="retDistNm" min="0" step="0.1" placeholder="0.0" style="width:90px">'+
-  '</div>';
+  // Photo upload block
+  var photoBlock=
+    '<div style="flex:1;min-width:0">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'MYNDIR':'PHOTOS')+'</label>'+
+      '<input type="file" id="retPhotoFiles" accept="image/*" multiple onchange="_handleRetPhotos(this)" style="font-size:11px;color:var(--text);width:100%">'+
+      '<div id="retPhotoPreview" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>'+
+    '</div>';
 
-  // Photo upload
-  var photoHtml='<div class="field" style="margin-bottom:14px">'+
-    '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'MYNDIR':'PHOTOS')+'</label>'+
-    '<input type="file" id="retPhotoFiles" accept="image/*" multiple onchange="_handleRetPhotos(this)" style="font-size:11px;color:var(--text);width:100%;box-sizing:border-box">'+
-    '<div id="retPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>'+
-  '</div>';
+  // Distance block (inline-compact)
+  var distLabel=IS?'VEGALENGD (NM)':'DISTANCE (NM)';
+  var distBlock=
+    '<div>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+distLabel+'</label>'+
+      '<input type="number" id="retDistNm" min="0" step="0.1" placeholder="0.0" style="width:80px">'+
+    '</div>';
+
+  // Assemble rows depending on boat type
+  var uploadRow='<div class="field" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">'+trackBlock+photoBlock+'</div>';
+
+  var portDistRow='';
+  var distStandaloneRow='';
+  if(isKeel){
+    // Port + distance on same row
+    portDistRow=
+      '<div class="field" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'⚓ KOMUSTAÐUR':'⚓ ARRIVAL PORT')+'</label>'+
+          '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+(IS?'Sama og brottfararstaður':'Same as departure')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
+          '<datalist id="retPortsList">'+portOpts+'</datalist>'+
+        '</div>'+
+        distBlock+
+      '</div>';
+  } else {
+    // Distance below uploads
+    distStandaloneRow='<div class="field" style="margin-bottom:10px">'+distBlock+'</div>';
+  }
 
   document.getElementById('returnModalBody').innerHTML=
     (items.length?'<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
@@ -681,7 +701,7 @@ function renderLandingChecklist() {
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+(IS?'Tilkynna atvik':'Report incident')+'</button>'+
     '</div>'+
     '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
-    portHtml+trackHtml+distHtml+photoHtml+
+    portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEGAR SKÝRINGAR':'PERSONAL NOTE')+'</label>'+
       '<textarea id="retNotes" rows="2" placeholder="'+(IS?'Valfrjáls athugasemd fyrir siglingabókina':'Optional note for your logbook')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+

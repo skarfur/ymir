@@ -356,7 +356,7 @@ function renderTrips() {
             <span>${esc(t.timeOut || '')}–${esc(t.timeIn || '')}</span>
             <span>${(parseFloat(t.hoursDecimal) || 0).toFixed(1)}h</span>
             <span>👥 ${esc(t.crew || 1)}</span>
-            ${t.beaufort ? `<span>💨 Bft ${esc(t.beaufort)}</span>` : ''}
+            ${t.beaufort ? `<span>💨 Force ${esc(t.beaufort)}</span>` : ''}
             ${t.windDir  ? `<span>${esc(t.windDir)}</span>` : ''}
           </div>
         </div>

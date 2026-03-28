@@ -49,7 +49,7 @@
 .badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
 .trip-expand{display:none;padding:0 12px 12px}
 .trip-card.open .trip-expand{display:block}
-.trip-expand-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.trip-expand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
 .trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
 .trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
 .trip-exp-val{color:var(--text)}
@@ -119,12 +119,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
     <select id="fWind">
       <option value="">Any wind</option>
-      <option value="calm">Calm (Bft 0–2)</option>
-      <option value="light">Light (Bft 3–4)</option>
-      <option value="moderate">Moderate (Bft 5–6)</option>
-      <option value="strong">Strong (Bft 7+)</option>
-      <option value="gt4">Above Bft 4</option>
-      <option value="lte4">Bft 4 or under</option>
+      <option value="calm">Calm (Force 0–2)</option>
+      <option value="light">Light (Force 3–4)</option>
+      <option value="moderate">Moderate (Force 5–6)</option>
+      <option value="strong">Strong (Force 7+)</option>
+      <option value="gt4">Above Force 4</option>
+      <option value="lte4">Force 4 or under</option>
     </select>
     <input id="fText" type="text" placeholder="Search…">
     <span class="filter-count" id="filterCount"></span>
@@ -264,7 +264,7 @@ function parseDateParts(d){
 }
 function bftLabel(b){
   const n=parseInt(b);
-  return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n]||'Bft '+b;
+  return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n]||'Force '+b;
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -332,7 +332,7 @@ function tripCard(t){
   try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
 
   // Card-face wind: prefer snapshot ws, fall back to beaufort
-  const cardWs  = wx?.ws != null ? Math.round(wx.ws)+'m/s' : (t.beaufort ? 'Bft '+t.beaufort : '');
+  const cardWs  = wx?.ws != null ? Math.round(wx.ws)+'m/s' : (t.beaufort ? 'Force '+t.beaufort : '');
   const cardDir = wx?.dir || t.windDir || '';
   const cardArrow = dirArrow(cardDir);
   const windLine = [cardArrow && `<span style="font-size:16px;line-height:1">${cardArrow}</span>`,
@@ -348,26 +348,40 @@ function tripCard(t){
                       : `<span>⚓ ${esc(dep)} → ${esc(arr)}</span>`
   ) : '';
 
-  // Expanded wx detail
-  const wxRows = wx ? [
-    wx.ws     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Bft '+wx.bft:''}</span></div>` : '',
-    wx.wg     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${Math.round(wx.wg)} m/s</span></div>` : '',
-    wx.dir              ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx.dir)} ${esc(wx.dir)}</span></div>` : '',
-    wx.wv     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '',
-    wx.tc     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '',
-    wx.sst    != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '',
-    wx.feels  != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '',
-    wx.pres   != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '',
-    wx.cond?.desc       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '',
-  ].filter(Boolean).join('') : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind</span><span class="trip-exp-val">Bft ${esc(t.beaufort)}${t.windDir?' · '+esc(t.windDir):''}<br><small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
+  // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
+  const eWs   = wx?.ws!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Force '+wx.bft:''}</span></div>`
+                              : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">Force ${esc(t.beaufort)} <small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
+  const eDir  = (wx?.dir||t.windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx?.dir||t.windDir)} ${esc(wx?.dir||t.windDir)}</span></div>` : '';
+  const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${Math.round(wx.wg)} m/s</span></div>` : '';
+  const eCond = wx?.cond?.desc ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '';
+  const eAir  = wx?.tc!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '';
+  const eFeel = wx?.feels!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '';
+  const eSst  = wx?.sst!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '';
+  const eWv   = wx?.wv!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '';
+  const ePres = wx?.pres!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '';
 
-  // Crew members: look for linked crew trips in myTrips
+  // Port row (keelboat, full-width)
+  const portRow = isKeelboat && (dep||arr) ? (
+    dep && arr && dep!==arr
+      ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Brottfararstaður → Komustaður':'Departure → Arrival'}</span><span class="trip-exp-val">${esc(dep)} → ${esc(arr)}</span></div>`
+      : `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">⚓ ${esc(dep||arr)}</span></div>`
+  ) : '';
+
+  // Crew row (full-width): show linked names if present, otherwise count
   const linkedCrew = myTrips.filter(x =>
     x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId && x.id !== t.id && x.role==='crew'
   );
-  const crewNamesHtml = linkedCrew.length
-    ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Crew members</span><span class="trip-exp-val">${linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ')}</span></div>`
-    : '';
+  const crewRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${
+    linkedCrew.length ? linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ') : esc(t.crew||1)
+  }</span></div>`;
+
+  const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
+  const trackRow = t.trackFileUrl ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>` : '';
+  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skýringar':'Notes'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
+  const photosRow = (()=>{
+    let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
+    return urls.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>` : '';
+  })();
 
   return `<div class="trip-card" onclick="this.classList.toggle('open')">
     <div class="trip-card-main">
@@ -392,18 +406,11 @@ function tripCard(t){
     </div>
     <div class="trip-expand">
       <div class="trip-expand-grid">
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Location</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">Crew aboard</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
-        ${t.distanceNm?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>`:''}
-        ${(!isKeelboat&&portLine)?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">${portLine}</span></div>`:''}
-        ${isKeelboat&&dep&&arr&&dep!==arr?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure'}</span><span class="trip-exp-val">${esc(dep)}</span></div><div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival'}</span><span class="trip-exp-val">${esc(arr)}</span></div>`:''}
-        ${wxRows}
-        ${crewNamesHtml}
-        ${t.trackFileUrl?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>`:''}
-        ${(()=>{let urls=[];try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}return urls.length?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>`:'';})()}
-        ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
+        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
+        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
+        ${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}
+        ${portRow}${crewRow}${distRow}${trackRow}${notesRow}${photosRow}
       </div>
     </div>
   </div>`;
@@ -632,7 +639,7 @@ function renderClubTripsList(){
     <div class="trip-pick-card" onclick="joinTripAsCrew('${esc(t.id)}',this)">
       <div class="tpc-boat">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
       <div class="tpc-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')}
-        ${t.beaufort?' · 💨 Bft '+esc(t.beaufort):''}
+        ${t.beaufort?' · 💨 Force '+esc(t.beaufort):''}
         · ${esc(t.memberName||'?')} (skipper)
       </div>
     </div>`).join('');
