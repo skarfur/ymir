@@ -125,16 +125,36 @@ window.chunk = function(arr, n) {
 // Apps Script container is warm before the next user action.
 function warmContainer() {
   var lastWarm = 0;
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState !== 'visible') return;
+  var idleTimer = null;
+  var IDLE_MS = 5 * 60 * 1000; // re-warm after 5 min of in-tab inactivity
+
+  function doWarm() {
     var now = Date.now();
-    if (now - lastWarm < 60000) return; // Don't ping more than once per minute
+    if (now - lastWarm < 60000) return;
     lastWarm = now;
-    // Background ping — result updates the cache
     _call('getConfig', {}).then(function(r) {
       try {
         sessionStorage.setItem('ymir_getConfig_', JSON.stringify({ ts: Date.now(), data: r }));
       } catch(e) {}
     }).catch(function() {});
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(doWarm, IDLE_MS);
+  }
+
+  // Warm on tab return
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState !== 'visible') return;
+    doWarm();
+    resetIdleTimer();
   });
+
+  // Warm after idle period within the tab
+  ['mousemove', 'keydown', 'pointerdown', 'scroll'].forEach(function(ev) {
+    document.addEventListener(ev, resetIdleTimer, { passive: true });
+  });
+
+  resetIdleTimer();
 }

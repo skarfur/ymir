@@ -267,7 +267,7 @@ function route_(action, b) {
     case 'saveCertDef': return saveCertDef_(b);
     case 'deleteCertDef': return deleteCertDef_(b.id);
     case 'saveMemberCert': return saveMemberCert_(b);
-    case 'getIncidents': return getIncidents_();
+    case 'getIncidents': return getIncidents_(b);
     case 'createIncident': return createIncident_(b);
     case 'resolveIncident': return resolveIncident_(b);
     case 'addIncidentNote': return addIncidentNote_(b);
@@ -1073,9 +1073,16 @@ function saveMemberCert_(b) {
 // INCIDENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getIncidents_() {
-  const c = cGet_('incidents'); if (c) return okJ({ incidents: c });
-  const incidents = readAll_('incidents'); cPut_('incidents', incidents); return okJ({ incidents });
+function getIncidents_(b) {
+  b = b || {};
+  const c = cGet_('incidents');
+  const all = c || readAll_('incidents');
+  if (!c) cPut_('incidents', all);
+  if (b.date) {
+    const incidents = all.filter(function(i) { return (i.filedAt || i.createdAt || '').slice(0, 10) === b.date; });
+    return okJ({ incidents });
+  }
+  return okJ({ incidents: all });
 }
 
 function createIncident_(b) {
