@@ -840,7 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Auto-generate key from EN label in category modal
   document.getElementById("bcLabelEN").addEventListener("input", e => {
     if (!_bcEditingId) {
-      document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, ' ');
+      document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, '-');
     }
   });
 
@@ -876,6 +876,7 @@ async function loadAll() {
   boats          = _allBoats    .filter(b => b.active !== false && b.active !== 'false');
   locations      = _allLocations.filter(l => l.active !== false && l.active !== 'false');
   boatCats       = _allBoatCats .filter(c => c.active !== false && c.active !== 'false');
+  registerBoatCats(boatCats);
 
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
@@ -1123,7 +1124,7 @@ function openBoatCatModal(key) {
 
 async function saveBoatCat() {
   const labelEN = document.getElementById("bcLabelEN").value.trim();
-  const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,' ');
+  const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
   if (!labelEN || !key) { toast("Name and key required.", "err"); return; }
 
   const payload = {
@@ -1141,6 +1142,7 @@ async function saveBoatCat() {
   try {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+    registerBoatCats(boatCats);
     closeModal("boatCatModal");
     renderBoatCats();
     renderBoats();
@@ -1156,6 +1158,7 @@ async function deleteBoatCat() {
   try {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
+    registerBoatCats(boatCats);
     closeModal("boatCatModal");
     renderBoatCats();
     renderBoats();
@@ -1209,7 +1212,7 @@ function renderBoats() {
 
       return `<div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)} <strong>${label}</strong></div>
+          <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)}</div>
           <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
             <button class="row-edit" onclick="openBoatModalForCat(${cat.key})">+ Add boat</button>
             <button class="row-edit" onclick="openBoatCatModal('${cat.key}')">Edit</button>
