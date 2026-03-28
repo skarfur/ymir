@@ -109,16 +109,19 @@ function maintOpenDetail(r, currentUser) {
     const catIcon  = CAT_ICON[r.category] || '⚙';
     const isOos    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
     const resolved = boolVal(r.resolved);
+    const isSauma  = boolVal(r.saumaklubbur);
     const comments = parseJson(r.comments, []);
+    const materials = parseJson(r.materials, []);
     const subjectLabel = r.category==='boat'
       ? esc(r.boatName||r.boatId||'')
       : esc(r.itemName||'');
 
     document.getElementById('maintDetailTitle').textContent =
-      catIcon+' '+subjectLabel+(r.part ? ' · '+r.part : '');
+      (isSauma ? '🧵 ' : catIcon+' ')+subjectLabel+(r.part ? ' · '+r.part : '');
 
-    // Severity dropdown
-    const sevOptions = ['low','medium','high','critical'].filter(s=>s!==r.severity);
+    // Severity dropdown — saumaklúbbur only gets low/medium/high
+    const allSevs = isSauma ? ['low','medium','high'] : ['low','medium','high','critical'];
+    const sevOptions = allSevs.filter(s=>s!==r.severity);
     const dropItems  = sevOptions.map(sv=>
       `<div data-sev="${sv}" class="badge ${SEV_BADGE[sv]}" style="padding:5px 12px;cursor:pointer;font-size:11px;border-top:1px solid var(--border);white-space:nowrap">${sv}</div>`
     ).join('');
@@ -137,9 +140,21 @@ function maintOpenDetail(r, currentUser) {
         ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Delete comment">&times;</button>` : ''}
       </div>`).join('');
 
+    // Materials list for saumaklúbbur projects
+    const materialsHtml = isSauma && materials.length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--brass);letter-spacing:1px;margin-bottom:6px">MATERIALS</div>
+        ${materials.map((m,i)=>`
+          <div class="mat-row" data-midx="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)33;cursor:pointer">
+            <input type="checkbox" ${m.purchased?'checked':''} style="width:15px;height:15px;accent-color:var(--green);cursor:pointer" data-matidx="${i}">
+            <span style="${m.purchased?'text-decoration:line-through;color:var(--muted)':''}">${esc(m.name)}</span>
+          </div>`).join('')}
+      </div>` : '';
+
     document.getElementById('maintDetailBody').innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
         <div style="position:relative;display:inline-block">
+          <span style="font-size:10px;color:var(--muted);margin-right:4px">${isSauma ? 'Priority' : 'Severity'}:</span>
           <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
             style="cursor:pointer;user-select:none">${r.severity||'low'} ▾</span>
           <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
@@ -148,10 +163,10 @@ function maintOpenDetail(r, currentUser) {
         </div>
         ${oosBtn}
       </div>
-      ${boolVal(r.saumaklubbur) ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 Saumaklúbbur</span>
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">No verkstjóri assigned</span>`}
-        ${boolVal(r.saumaklubbur) && !r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
+        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
       </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px">
         ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
@@ -161,6 +176,7 @@ function maintOpenDetail(r, currentUser) {
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
       ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
+      ${materialsHtml}
       ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
       ${!resolved ? `
       <div class="comment-add" style="margin-top:12px">
@@ -174,10 +190,10 @@ function maintOpenDetail(r, currentUser) {
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
       <div class="req-actions" style="margin-top:10px;justify-content:space-between">
-        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>
+        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? 'Mark Completed' : 'Mark Resolved'}</button>
         <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">Delete</button>
       </div>`
-      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
+      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? 'Completed' : 'Resolved'} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
     `;
 
     // Severity dropdown toggle
@@ -215,6 +231,19 @@ function maintOpenDetail(r, currentUser) {
         r.verkstjori=by; renderAndWire();
         if(typeof renderList==='function') renderList();
         if(typeof renderMaintenance==='function') renderMaintenance();
+      });
+    });
+
+    // Material purchase toggle
+    document.querySelectorAll('#maintDetailBody [data-matidx]').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        const idx = parseInt(cb.dataset.matidx);
+        cb.disabled = true;
+        try {
+          const res = await apiPost('toggleMaterial',{id:r.id,index:idx});
+          if (res.materials) r.materials = JSON.stringify(res.materials);
+          renderAndWire();
+        } catch(e) { cb.disabled = false; }
       });
     });
 
@@ -303,9 +332,9 @@ function maintOpenDetail(r, currentUser) {
     document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});
 
-    // Resolve
+    // Resolve / Complete
     document.getElementById('mdResolveBtn')?.addEventListener('click',()=>{
-      doConfirm('Mark this issue as resolved?', async ()=>{
+      doConfirm(isSauma ? 'Mark this project as completed?' : 'Mark this issue as resolved?', async ()=>{
         const now=new Date().toISOString().slice(0,16);
         const by=getBy();
         await apiPost('resolveMaintenance',{id:r.id,by});
@@ -333,6 +362,7 @@ function maintOpenDetail(r, currentUser) {
 
 function maintRenderCard(r) {
   const resolved  = boolVal(r.resolved);
+  const isSauma   = boolVal(r.saumaklubbur);
   const sevClass  = 'sev-' + (r.severity||'low');
   const catIcon   = CAT_ICON[r.category] || '⚙';
   const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
@@ -340,8 +370,11 @@ function maintRenderCard(r) {
     ? esc(r.boatName||r.boatId||'')
     : esc(r.itemName||'');
   const oosTag = isOos ? '<span class="oos-badge">OOS</span>' : '';
+  const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
 
   const comments = parseJson(r.comments, []);
+  const materials = isSauma ? parseJson(r.materials, []) : [];
+  const matDone = materials.filter(m=>m.purchased).length;
   const commentHtml = comments.map(c=>`
     <div class="comment-item">
       ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
@@ -353,22 +386,25 @@ function maintRenderCard(r) {
     <div class="req-header">
       <div style="flex:1;min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel}
+          ${isSauma ? '🧵' : catIcon} ${subjectLabel}
           ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
-          ${oosTag}
+          ${oosTag} ${saumaBadge}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
+          ${isSauma && r.verkstjori ? `<span style="color:var(--brass)">Verkstjóri: ${esc(r.verkstjori)}</span>` : ''}
           ${r.category==='boat'&&r.itemName ? `<span>${esc(r.itemName)}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
+          ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
+          ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
         </div>
       </div>
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ ${isSauma ? 'Completed' : 'Resolved'} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 

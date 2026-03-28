@@ -245,6 +245,7 @@ function route_(action, b) {
     case 'deleteMaintenance':       return deleteMaintenance_(b);
     case 'uploadMaintenancePhoto':  return uploadMaintenancePhoto_(b);
     case 'adoptSaumaklubbur':       return adoptSaumaklubbur_(b);
+    case 'toggleMaterial':          return toggleMaterial_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
@@ -460,6 +461,7 @@ function getMaintenance_() {
 function saveMaintenance_(b) {
   addColIfMissing_('maintenance', 'saumaklubbur');
   addColIfMissing_('maintenance', 'verkstjori');
+  addColIfMissing_('maintenance', 'materials');
   const ts = now_(), id = uid_();
   const photoUrl = b.photoUrl || '';
   insertRow_('maintenance', {
@@ -470,6 +472,7 @@ function saveMaintenance_(b) {
     source: b.source || 'staff', createdAt: ts,
     resolved: false, resolvedBy: '', resolvedAt: '', comments: '[]',
     saumaklubbur: bool_(b.saumaklubbur) || false, verkstjori: b.verkstjori || '',
+    materials: b.materials || '[]',
   });
   cDel_('maintenance');
   return okJ({ id, created: true });
@@ -860,6 +863,22 @@ function addMaintenanceComment_(b) {
   updateRow_('maintenance', 'id', b.id, { comments: JSON.stringify(comments) });
   cDel_('maintenance');
   return okJ({ commented: true });
+}
+
+function toggleMaterial_(b) {
+  if (!b.id) return failJ('id required');
+  if (b.index === undefined) return failJ('index required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  let materials = [];
+  try { materials = JSON.parse(ex.materials || '[]'); } catch(e) { materials = []; }
+  const idx = parseInt(b.index);
+  if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
+  materials[idx].purchased = !materials[idx].purchased;
+  addColIfMissing_('maintenance', 'materials');
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  cDel_('maintenance');
+  return okJ({ toggled: true, materials });
 }
 
 function adoptSaumaklubbur_(b) {

@@ -134,7 +134,10 @@
     <div class="stat-card"><div class="stat-num" id="statOos" style="color:var(--red)">—</div><div class="stat-label">BOATS OOS</div></div>
     <div class="stat-card"><div class="stat-num" id="statResolved" style="color:var(--green)">—</div><div class="stat-label">RESOLVED</div></div>
   </div>
-  <button class="btn btn-primary" style="width:100%;margin:12px 0" onclick="openNewRequest()">+ New Request</button>
+  <div style="display:flex;gap:8px;margin:12px 0">
+    <button class="btn btn-primary" style="flex:1" onclick="openNewRequest()">+ New Request</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="openNewRequest({saumaklubbur:true})">🧵 Suggest a Project</button>
+  </div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -144,6 +147,7 @@
     <button class="filter-btn"        data-filter="boats"     onclick="setFilter('boats')">Boats</button>
     <button class="filter-btn"        data-filter="equipment" onclick="setFilter('equipment')">Equipment</button>
     <button class="filter-btn"        data-filter="facility"  onclick="setFilter('facility')">Facility</button>
+    <button class="filter-btn"        data-filter="sauma"     onclick="setFilter('sauma')">🧵 Saumaklúbbur</button>
     <button class="filter-btn"        data-filter="resolved"  onclick="setFilter('resolved')">Resolved</button>
     <button class="filter-btn"        data-filter="all"       onclick="setFilter('all')">All</button>
   </div>
@@ -225,6 +229,15 @@
       <span style="font-size:11px;color:var(--muted)" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
     </div>
 
+    <div class="field hidden" id="materialsField">
+      <label data-s="sauma.materials">Materials Needed</label>
+      <div id="materialsList"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addMaterialToList()">+ Add</button>
+      </div>
+    </div>
+
     <div id="newErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
@@ -248,6 +261,7 @@ let selectedCat = "";
 let selectedSev = "";
 let photoDataUrl = "";
 let pendingPhotoFile = null;
+let pendingMaterials = [];
 
 
 
@@ -278,6 +292,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   document.getElementById('newSaumaklubbur').addEventListener('change', function() {
     document.getElementById('verkstjoriField').classList.toggle('hidden', !this.checked);
+    document.getElementById('materialsField').classList.toggle('hidden', !this.checked);
+    // Hide critical severity for saumaklúbbur (only low/medium/high)
+    document.querySelector('.sev-btn[data-sev="critical"]').style.display = this.checked ? 'none' : '';
+    if (this.checked && selectedSev === 'critical') { selectSev('high'); }
   });
 
   // Auto-open new request modal if navigated here with ?new=1
@@ -326,6 +344,7 @@ function getFiltered() {
     if (currentFilter === "boats")     return !resolved && r.category === "boat";
     if (currentFilter === "equipment") return !resolved && r.category === "equipment";
     if (currentFilter === "facility")  return !resolved && r.category === "facility";
+    if (currentFilter === "sauma")     return !resolved && boolVal(r.saumaklubbur);
     return true;
   });
 }
@@ -423,12 +442,23 @@ function openNewRequest(prefill) {
   document.getElementById("newSaumaklubbur").checked = false;
   document.getElementById("verkstjoriField").classList.add("hidden");
   document.getElementById("newVerkstjori").value = "";
+  document.getElementById("materialsField").classList.add("hidden");
+  document.getElementById("materialsList").innerHTML = "";
+  document.getElementById("newMaterialInput").value = "";
+  document.querySelector('.sev-btn[data-sev="critical"]').style.display = '';
+  pendingMaterials = [];
 
   if (prefill) {
     if (prefill.category)    selectCat(prefill.category);
     if (prefill.boatId)      document.getElementById("newBoat").value = prefill.boatId;
     if (prefill.severity)    selectSev(prefill.severity);
     if (prefill.description) document.getElementById("newDesc").value = prefill.description;
+    if (prefill.saumaklubbur) {
+      document.getElementById("newSaumaklubbur").checked = true;
+      document.getElementById("verkstjoriField").classList.remove("hidden");
+      document.getElementById("materialsField").classList.remove("hidden");
+      document.querySelector('.sev-btn[data-sev="critical"]').style.display = 'none';
+    }
   }
   document.getElementById("newModal").classList.remove("hidden");
 }
@@ -487,6 +517,28 @@ function handlePhotoChange(input) {
   reader.readAsDataURL(file);
 }
 
+function addMaterialToList() {
+  const input = document.getElementById("newMaterialInput");
+  const name = (input.value || "").trim();
+  if (!name) return;
+  pendingMaterials.push({ name, purchased: false });
+  input.value = "";
+  renderMaterialsList();
+}
+function removeMaterial(idx) {
+  pendingMaterials.splice(idx, 1);
+  renderMaterialsList();
+}
+function renderMaterialsList() {
+  const el = document.getElementById("materialsList");
+  el.innerHTML = pendingMaterials.map((m,i) =>
+    `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px">
+      <span style="flex:1">${esc(m.name)}</span>
+      <button type="button" onclick="removeMaterial(${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">&times;</button>
+    </div>`
+  ).join("");
+}
+
 async function submitRequest() {
   const btn = document.getElementById("submitBtn");
   document.getElementById("newErr").style.display = "none";
@@ -529,6 +581,7 @@ async function submitRequest() {
       source:      "staff",
       saumaklubbur: isSauma,
       verkstjori:  isSauma ? document.getElementById("newVerkstjori").value.trim() : '',
+      materials:   isSauma && pendingMaterials.length ? JSON.stringify(pendingMaterials) : '',
     });
     if (markOos && boatId) {
       try {
