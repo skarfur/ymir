@@ -551,12 +551,11 @@ function tcmCertTypeChanged() {
     sField.style.display = 'none';
   }
 
-  if (def?.renewalDays > 0) {
-    const exp = new Date();
-    exp.setDate(exp.getDate() + def.renewalDays);
-    document.getElementById('tcmExpiresAt').value = exp.toISOString().slice(0, 10);
+  if (def?.expires) {
+    document.getElementById('tcmExpiresAt').value = def.expiryDate || '';
     eField.style.display = '';
   } else {
+    document.getElementById('tcmExpiresAt').value = '';
     eField.style.display = 'none';
   }
 }

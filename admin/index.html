@@ -707,6 +707,16 @@
       </label>
     </div>
 
+    <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> This certification expires
+      </label>
+      <div id="cdExpiryDateWrap" style="display:none">
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px">EXPIRY DATE</label>
+        <input type="date" id="cdExpiryDate" style="font-size:12px">
+      </div>
+    </div>
+
     <div style="margin-top:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBCATEGORIES</label>
@@ -714,7 +724,7 @@
       </div>
       <div id="subcatRows"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px">
-        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority or a fixed expiry date will override the parent values.
+        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority or expiry date will override the parent values.
       </div>
     </div>
 
@@ -1658,8 +1668,7 @@ function addAtSubtypeRow() {
 }
 
 // ══ CERTIFICATIONS ════════════════════════════════════════════════════════════
-// Renewal / renewalDays concept is removed.
-// Each cert type and subcat can have an optional absolute expiryDate set at assign-time.
+// Top-level cert def has `expires` (bool) and `expiryDate` (absolute date).
 // Subcats supercede the parent: the most specific expiry shown/used is the subcat's.
 
 let certDefs     = [];
@@ -1682,6 +1691,8 @@ function renderCertDefs() {
   el.innerHTML = sortedCertDefs.map(d => {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+    const expiryStr = d.expires
+      ? `<span style="color:var(--muted)"> · exp. ${d.expiryDate || "date required at assign"}</span>` : "";
     const subcatStr = d.subcats?.length
       ? d.subcats.map(sc => {
           const parts = [sc.label];
@@ -1693,7 +1704,7 @@ function renderCertDefs() {
       : "No subcategories";
     return `<div class="list-row">
       <div style="flex:1">
-        <div class="list-name">${esc(d.name)}${authority}</div>
+        <div class="list-name">${esc(d.name)}${authority}${expiryStr}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)}</div>
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
@@ -1712,6 +1723,9 @@ function openCertDefModal(id) {
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
+  document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
+  document.getElementById("cdExpiryDate").value       = d?.expiryDate || "";
+  document.getElementById("cdExpiryDateWrap").style.display = d?.expires ? "" : "none";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
   document.getElementById("subcatRows").innerHTML = "";
   (d?.subcats || []).forEach(sc => addSubcatRow(sc));
@@ -1724,6 +1738,7 @@ async function saveCertDef() {
   if (!name) { toast("Name required.", "err"); return; }
 
   const newId   = certEditId || ("cert_" + Date.now().toString(36));
+  const expires = document.getElementById("cdExpires").checked;
   const payload = {
     id:               newId,
     name,
@@ -1732,6 +1747,8 @@ async function saveCertDef() {
     subcats:          gatherSubcats(),
     staffOnly:        document.getElementById("cdStaffOnly").checked,
     color:            document.getElementById("cdColor").value,
+    expires,
+    expiryDate:       expires ? (document.getElementById("cdExpiryDate").value || null) : null,
   };
 
   btn.disabled = true;
@@ -1777,6 +1794,11 @@ async function deleteCertDefById(id) {
     populateCertFilterType();
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+function toggleCdExpiry() {
+  document.getElementById("cdExpiryDateWrap").style.display =
+    document.getElementById("cdExpires").checked ? "" : "none";
 }
 
 // Subcat row — no renewalDays field; expiry is an absolute date only on the subcat
@@ -1945,8 +1967,8 @@ function updateMCMSubcats() {
   } else {
     sf.style.display = "none";
   }
-  // Expiry field is always visible — no auto-calc
-  document.getElementById("mcmExpiresAt").value = "";
+  // Pre-fill expiry from top-level expiryDate if defined
+  document.getElementById("mcmExpiresAt").value = (def?.expires && def.expiryDate) ? def.expiryDate : "";
 }
 
 async function assignMemberCert() {
@@ -1959,10 +1981,10 @@ async function assignMemberCert() {
   const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
   if (def?.subcats?.length && !sub) { toast("Select a subcategory.", "err"); return; }
 
-  // Use subcat expiryDate as default if defined; otherwise use whatever admin entered
+  // Use subcat expiryDate if defined, then top-level expiryDate, then whatever admin entered
   const subcatDef  = sub ? def.subcats.find(sc => sc.key === sub) : null;
   const enteredExp = document.getElementById("mcmExpiresAt").value || null;
-  const finalExp   = enteredExp || subcatDef?.expiryDate || null;
+  const finalExp   = enteredExp || subcatDef?.expiryDate || (def?.expires ? def.expiryDate : null) || null;
 
   const newCert = {
     certId,

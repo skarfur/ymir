@@ -1,5 +1,5 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, staffOnly, renewalDays, subcats:[{key,label,description,rank}] }
+// Cert def: { id, name, description, color, staffOnly, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
 // Assignment: { certId, sub, assignedBy, assignedAt, expiresAt }
 
 const DEFAULT_CERT_DEFS = [
