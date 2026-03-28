@@ -371,6 +371,33 @@ function prRenderCalLabel(){
   var d=new Date(_calYear,_calMonth,1);
   document.getElementById('prCalLabel').textContent=d.toLocaleDateString(locale(),{month:'long',year:'numeric'});
 }
+// Pair separate type='in'/type='out' rows into single session entries,
+// and preserve legacy single-row entries (originalTimestamp format).
+function _pairTimeEntries(rows) {
+  var ins   = rows.filter(function(r){ return r.type==='in'; });
+  var outs  = rows.filter(function(r){ return r.type==='out'; });
+  var other = rows.filter(function(r){ return r.type!=='in'&&r.type!=='out'&&r.type!=='break_start'&&r.type!=='break_end'; });
+  var paired = [];
+  // Legacy single-row entries
+  other.forEach(function(r){
+    var e=Object.assign({},r);
+    if(!e.clockIn&&e.originalTimestamp)e.clockIn=e.originalTimestamp;
+    paired.push(e);
+  });
+  // Pair out rows with their matching in rows
+  var usedInIds=new Set();
+  outs.slice().sort(function(a,b){return a.timestamp>b.timestamp?1:-1;}).forEach(function(out){
+    var matchIn=null;
+    ins.slice().reverse().forEach(function(inn){
+      if(!matchIn&&!usedInIds.has(inn.id)&&inn.employeeId===out.employeeId&&inn.timestamp<out.timestamp)
+        matchIn=inn;
+    });
+    var e=Object.assign({},out);
+    if(matchIn){e.clockIn=matchIn.timestamp;usedInIds.add(matchIn.id);}
+    paired.push(e);
+  });
+  return paired;
+}
 async function prLoadTsEntries(){
   var empId=document.getElementById('prTsEmp').value;
   var firstDay=new Date(_calYear,_calMonth,1);
@@ -383,7 +410,7 @@ async function prLoadTsEntries(){
     var params={from:rangeStart.toISOString().slice(0,10),to:rangeEnd.toISOString().slice(0,10),period:_calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-01'};
     if(empId)params.employeeId=empId;
     var res=await apiGet('getTimeEntries',params);
-    _tsEntries=(res.entries||res.timeEntries||[]).map(function(e){if(!e.clockIn&&e.originalTimestamp)e.clockIn=e.originalTimestamp;return e;});
+    _tsEntries=_pairTimeEntries(res.entries||res.timeEntries||[]);
     var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
     var totalMins=filtered.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours');

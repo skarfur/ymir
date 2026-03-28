@@ -299,7 +299,6 @@ function punchClockWidget(el, employeeId, opts) {
       '.pc-btn-brk{background:var(--surface);border:1px solid var(--brass);color:var(--brass)}' +
       '.pc-btn-brk-end{background:var(--brass);color:#0b1f38}' +
       '.pc-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}' +
-      '.pc-timer{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brass);letter-spacing:.5px}' +
       '.pc-recent{border-top:1px solid var(--border);padding:10px 16px 12px;display:flex;flex-direction:column;gap:0}' +
       '.pc-recent-lbl{font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}' +
       '.pc-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}' +
@@ -323,37 +322,24 @@ function punchClockWidget(el, employeeId, opts) {
   function t(k) { return typeof s === 'function' ? s(k) : k.split('.').pop(); }
   function _esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  function fmtMs(ms) {
-    var sec = Math.floor(Math.max(0, ms) / 1000);
-    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), sc = sec % 60;
-    return h > 0
-      ? h + 'h ' + String(m).padStart(2,'0') + 'm'
-      : m + 'm ' + String(sc).padStart(2,'0') + 's';
-  }
-
   function fmtTime(iso) { return iso ? String(iso).slice(11,16) : '--:--'; }
   function fmtDate(iso) { return iso ? String(iso).slice(0,10) : ''; }
 
   // ── State: { clockedIn, onBreak, clockedInAt, breakStartedAt, recent, todayEntries }
   function render(state) {
-    clearInterval(el._pcTick);
     var ci    = state.clockedIn;
     var onBrk = state.onBreak;
-    var since = ci ? new Date(state.clockedInAt || 0) : null;
-    var brkSince = onBrk ? new Date(state.breakStartedAt || 0) : null;
     var allowBreaks = opts.allowBreaks;
 
     // ── Status line
     var statusHTML = '';
     if (ci && !onBrk) {
       statusHTML = '<div class="pc-status">'
-        + '<span>' + t('payroll.clockedInAt') + ' <strong>' + fmtTime(state.clockedInAt) + '</strong></span>'
-        + '&nbsp;·&nbsp;<span class="pc-timer" id="pcTimerDisplay">' + fmtMs(Date.now() - since) + '</span>'
+        + t('payroll.clockedInAt') + ' <strong>' + fmtTime(state.clockedInAt) + '</strong>'
         + '</div>';
     } else if (onBrk) {
       statusHTML = '<div class="pc-status">'
-        + '<span>' + t('payroll.onBreak') + ' <strong>' + fmtTime(state.breakStartedAt) + '</strong></span>'
-        + '&nbsp;·&nbsp;<span class="pc-timer" id="pcTimerDisplay">' + fmtMs(Date.now() - brkSince) + '</span>'
+        + t('payroll.onBreak') + ' <strong>' + fmtTime(state.breakStartedAt) + '</strong>'
         + '</div>';
     }
 
@@ -417,15 +403,6 @@ function punchClockWidget(el, employeeId, opts) {
       };
     }
 
-    // ── Live timer tick
-    if (ci || onBrk) {
-      var _timerBase = onBrk ? brkSince : since;
-      el._pcTick = setInterval(function() {
-        var d = document.getElementById('pcTimerDisplay');
-        if (d) d.textContent = fmtMs(Date.now() - _timerBase);
-        else   clearInterval(el._pcTick);
-      }, 1000);
-    }
   }
 
   // ── End-of-shift summary modal
