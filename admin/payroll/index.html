@@ -1089,7 +1089,7 @@ function cfgRenderOT(){
   tiers.forEach(function(tier,ti){
     html+='<div class="cfg-fund" style="margin-bottom:12px">';
     html+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">';
-    html+='<strong style="font-size:11px;min-width:28px;color:var(--muted)">#'+_e(tier.id||String(ti+1))+'</strong>';
+    html+='<strong style="font-size:11px;min-width:28px;color:var(--muted)">'+_e(tier.id||String(ti+1))+'</strong>';
     html+='<input id="cfgOT_'+ti+'_label" type="text" placeholder="IS label" value="'+_e(tier.label||'')+'" style="flex:1;min-width:80px;font-size:11px">';
     html+='<input id="cfgOT_'+ti+'_labelEN" type="text" placeholder="EN label" value="'+_e(tier.labelEN||'')+'" style="flex:1;min-width:80px;font-size:11px">';
     html+='<label style="font-size:11px;white-space:nowrap" data-s="payroll.otMultiplier"></label>';
@@ -1154,7 +1154,7 @@ function cfgRenderTax(){
   var html='';
   brackets.forEach(function(b,i){
     html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">';
-    html+='<span style="font-size:11px;color:var(--muted);min-width:20px">#'+(i+1)+'</span>';
+    html+='<span style="font-size:11px;color:var(--muted);min-width:20px">'+(i+1)+'</span>';
     html+='<label style="font-size:11px" data-s="payroll.taxBracketUpTo"></label>';
     html+='<input id="cfgTax_'+i+'_u" type="number" min="0" step="1" value="'+_e(b.upTo==null?'':String(b.upTo))+'" placeholder="\u221e" style="width:90px;font-size:11px">';
     html+='<label style="font-size:11px" data-s="payroll.taxBracketRate"></label>';
