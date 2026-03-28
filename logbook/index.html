@@ -89,10 +89,11 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .exp-section{margin:0 -12px;padding:6px 12px 10px;border-top:1px solid var(--border)}
 .exp-section:first-child{padding-top:10px}
 .exp-section .trip-expand-grid{border-top:none;padding-top:2px;margin-top:0}
+.exp-boat{background:var(--card)}
 .exp-logistics{background:var(--card)}
 .exp-weather{background:rgba(41,128,185,.08)}
 .exp-weather .trip-expand-grid{padding-top:4px}
-.exp-media{background:rgba(212,175,55,.07)}
+
 .exp-notes{background:rgba(255,255,255,.02)}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
 </style>
@@ -412,12 +413,12 @@ function tripCard(t){
     linkedCrew.length ? linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ') : esc(t.crew||1)
   }</span></div>`;
 
-  // Keelboat vessel info row (registration, make/model, LOA) from boats config
+  // Vessel/boat detail rows from boats config
   const kboat = allBoats.find(b=>b.id===t.boatId);
-  const keelboatInfoRow = (isKeelboat && kboat && (kboat.registrationNo||kboat.typeModel||kboat.loa)) ?
-    `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skip':'Vessel'}</span><span class="trip-exp-val">${
-      [kboat.registrationNo, kboat.typeModel, kboat.loa?(kboat.loa+' ft'):''].filter(Boolean).map(esc).join(' · ')
-    }</span></div>` : '';
+  const boatRegRow   = isKeelboat && kboat?.registrationNo ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skráningarnúmer':'Registration no.'}</span><span class="trip-exp-val">${esc(kboat.registrationNo)}</span></div>` : '';
+  const boatModelRow = kboat?.typeModel ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Tegund / gerð':'Type / model'}</span><span class="trip-exp-val">${esc(kboat.typeModel)}</span></div>` : '';
+  const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
+  const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
   const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
   const trackRow = t.trackFileUrl ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>` : '';
@@ -427,7 +428,7 @@ function tripCard(t){
     return urls.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>` : '';
   })();
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
-  const hasMedia   = !!(distRow||trackRow||photosRow);
+  const hasNotes   = !!(notesRow||photosRow);
 
   return `<div class="trip-card" onclick="this.classList.toggle('open')">
     <div class="trip-card-main">
@@ -451,18 +452,21 @@ function tripCard(t){
       <div class="trip-arrow">▾</div>
     </div>
     <div class="trip-expand">
+      ${hasBoatDetails?`<div class="exp-section exp-boat">
+        <div class="exp-section-hdr">${IS?'Upplýsingar um bát':'Boat Details'}</div>
+        <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
+      </div>`:''}
       <div class="exp-section exp-logistics">
         <div class="exp-section-hdr">${IS?'Upplýsingar um ferð':'Trip Details'}</div>
         <div class="trip-expand-grid">
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-          ${portRow}${crewRow}${keelboatInfoRow}
+          ${portRow}${crewRow}${distRow}${trackRow}
         </div>
       </div>
       ${hasWeather?`<div class="exp-section exp-weather"><div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}</div></div>`:''}
-      ${hasMedia?`<div class="exp-section exp-media"><div class="exp-section-hdr">${IS?'Vegalengd og gögn':'Distance & Media'}</div><div class="trip-expand-grid">${distRow}${trackRow}${photosRow}</div></div>`:''}
-      ${notesRow?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir':'Notes'}</div><div class="trip-expand-grid">${notesRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes & Photos'}</div><div class="trip-expand-grid">${notesRow}${photosRow}</div></div>`:''}
     </div>
   </div>`;
 }
