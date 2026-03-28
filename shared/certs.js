@@ -7,6 +7,12 @@ const DEFAULT_CERT_DEFS = [
     subcats:[{key:'ws1',label:'Level 1',description:'',rank:1},{key:'ws2',label:'Level 2',description:'',rank:2},{key:'ws3',label:'Level 3',description:'',rank:3}] },
   { id:'released_rower', name:'Released Rower', description:'', color:'', staffOnly:false, renewalDays:0, subcats:[] },
   { id:'support_boat_skipper', name:'Support Boat Skipper', description:'', color:'', staffOnly:true, renewalDays:0, subcats:[] },
+  { id:'keelboat_crew', name:'Keelboat Crew', description:'Certified to sail on club keelboats.', color:'#d4af37', staffOnly:false, renewalDays:0,
+    subcats:[
+      {key:'crew',     label:'Crew',     description:'Certified basic keelboat crew.',                                               rank:1},
+      {key:'helmsman', label:'Helmsman', description:'Certified to helm a keelboat.',                                                rank:2},
+      {key:'captain',  label:'Captain',  description:'Authorized keelboat captain — may skipper club keelboats independently.',      rank:3},
+    ]},
 ];
 
 const _CERT_PALETTE = [

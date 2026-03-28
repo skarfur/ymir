@@ -545,7 +545,29 @@
     <h3 id="boatModalTitle">Add Boat</h3>
     <div class="field"><label>Name</label><input type="text" id="bName"></div>
     <div class="field"><label>Category</label>
-      <select id="bCategory"></select>
+      <select id="bCategory" onchange="updateBoatModalFields()"></select>
+    </div>
+    <!-- Default port (all boats) -->
+    <div class="field">
+      <label data-s="boat.defaultPort">Default port</label>
+      <select id="bDefaultPortId"><option value="">— none —</option></select>
+    </div>
+    <!-- Keelboat-only fields -->
+    <div id="keelboatFields" style="display:none">
+      <div class="grid2">
+        <div class="field">
+          <label data-s="boat.registrationNo">Registration no.</label>
+          <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
+        </div>
+        <div class="field">
+          <label data-s="boat.loa">LOA (ft)</label>
+          <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
+        </div>
+      </div>
+      <div class="field">
+        <label data-s="boat.typeModel">Type / model</label>
+        <input type="text" id="bTypeModel" placeholder="e.g. Hallberg-Rassy 34">
+      </div>
     </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
@@ -569,6 +591,13 @@
   <div class="modal">
     <h3 id="locationModalTitle">Add Location</h3>
     <div class="field"><label>Name</label><input type="text" id="lName"></div>
+    <div class="field">
+      <label data-s="location.type">Type</label>
+      <select id="lType">
+        <option value="location" data-s="location.typeLocation">Location</option>
+        <option value="port" data-s="location.typePort">Port</option>
+      </select>
+    </div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="lActive" checked> <label for="lActive">Active</label>
     </div>
@@ -1160,6 +1189,7 @@ function renderBoats() {
             </div>
           </div>
           ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
+          ${(cat.key === 'keelboat' && (b.registrationNo || b.typeModel)) ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
           <div class="boat-card-actions">
             <button class="row-edit" style="flex:1" onclick="openBoatModal('${b.id}')">Edit</button>
             <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">🔳</button>
@@ -1189,9 +1219,22 @@ function openBoatModalForCat(catKey) {
   if (sel) sel.value = catKey;
 }
   
+function populateDefaultPortSelect(selectedId) {
+  const sel = document.getElementById("bDefaultPortId");
+  if (!sel) return;
+  const ports = _allLocations.filter(l => l.type === 'port' && (l.active !== false && l.active !== 'false'));
+  sel.innerHTML = `<option value="">— none —</option>` +
+    ports.map(p => `<option value="${esc(p.id)}"${p.id === selectedId ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+
+function updateBoatModalFields() {
+  const cat = document.getElementById("bCategory").value;
+  document.getElementById("keelboatFields").style.display = cat === 'keelboat' ? '' : 'none';
+}
+
 function openBoatModal(id) {
   editingId = id || null;
-  const b   = id ? boats.find(x => x.id === id) : null;
+  const b   = id ? _allBoats.find(x => x.id === id) : null;
   document.getElementById("boatModalTitle").textContent = b ? s('admin.boatModal.edit') : s('admin.boatModal.add');
   populateCategorySelects();  // ensure select is fresh
   document.getElementById("bName").value      = b ? b.name                     : "";
@@ -1201,6 +1244,13 @@ function openBoatModal(id) {
   document.getElementById("oosReasonField").classList.toggle("hidden", !b || !bool(b.oos));
   document.getElementById("bActive").checked  = b ? bool(b.active)            : true;
   document.getElementById("bDeleteBtn").classList.toggle("hidden", !b);
+  // Keelboat-only fields
+  document.getElementById("bRegNo").value      = b ? (b.registrationNo || "") : "";
+  document.getElementById("bLoa").value        = b ? (b.loa || "")            : "";
+  document.getElementById("bTypeModel").value  = b ? (b.typeModel || "")      : "";
+  populateDefaultPortSelect(b ? (b.defaultPortId || "") : "");
+  updateBoatModalFields();
+  applyStrings(document.getElementById("boatModal"));
   openModal("boatModal");
 }
 
@@ -1208,13 +1258,19 @@ async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
 
-  const id      = editingId || ("boat_" + Date.now().toString(36));
+  const id  = editingId || ("boat_" + Date.now().toString(36));
+  const cat = document.getElementById("bCategory").value;
   const payload = {
     id, name,
-    category:  document.getElementById("bCategory").value,
-    oos:       document.getElementById("bOOS").checked,
-    oosReason: document.getElementById("bOOSReason").value.trim(),
-    active:    document.getElementById("bActive").checked,
+    category:      cat,
+    defaultPortId: document.getElementById("bDefaultPortId").value || "",
+    oos:           document.getElementById("bOOS").checked,
+    oosReason:     document.getElementById("bOOSReason").value.trim(),
+    active:        document.getElementById("bActive").checked,
+    // keelboat-only (ignored for other categories; kept to preserve existing data if category changes)
+    registrationNo: cat === 'keelboat' ? document.getElementById("bRegNo").value.trim()  : (id ? (_allBoats.find(x=>x.id===id)||{}).registrationNo||'' : ''),
+    loa:            cat === 'keelboat' ? (parseFloat(document.getElementById("bLoa").value)||'') : (id ? (_allBoats.find(x=>x.id===id)||{}).loa||'' : ''),
+    typeModel:      cat === 'keelboat' ? document.getElementById("bTypeModel").value.trim() : (id ? (_allBoats.find(x=>x.id===id)||{}).typeModel||'' : ''),
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
@@ -1276,7 +1332,7 @@ function renderLocations() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
-      <span class="list-name">${esc(l.name)}</span>
+      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓ PORT</span>' : ''}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
       <button class="row-del"  onclick="deleteLocation('${l.id}')">×</button>
     </div>`).join("");
@@ -1286,9 +1342,11 @@ function openLocationModal(id) {
   editingId = id || null;
   const l   = id ? _allLocations.find(x => x.id === id) : null;
   document.getElementById("locationModalTitle").textContent = l ? s('admin.locModal.edit') : s('admin.locModal.add');
-  document.getElementById("lName").value     = l ? l.name         : "";
-  document.getElementById("lActive").checked = l ? bool(l.active) : true;
+  document.getElementById("lName").value     = l ? l.name              : "";
+  document.getElementById("lType").value     = l ? (l.type || 'location') : 'location';
+  document.getElementById("lActive").checked = l ? bool(l.active)      : true;
   document.getElementById("lDeleteBtn").classList.toggle("hidden", !l);
+  applyStrings(document.getElementById("locationModal"));
   openModal("locationModal");
 }
 
@@ -1297,7 +1355,7 @@ async function saveLocation() {
   if (!name) { toast("Name required.", "err"); return; }
 
   const id      = editingId || ("loc_" + Date.now().toString(36));
-  const payload = { id, name, active: document.getElementById("lActive").checked };
+  const payload = { id, name, type: document.getElementById("lType").value || 'location', active: document.getElementById("lActive").checked };
 
   const idx = _allLocations.findIndex(x => x.id === id);
   if (idx >= 0) _allLocations[idx] = { ..._allLocations[idx], ...payload };

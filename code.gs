@@ -280,6 +280,7 @@ function route_(action, b) {
     case 'saveTrip': return saveTrip_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
     case 'requestValidation': return requestValidation_(b);
+    case 'uploadTripFile': return uploadTripFile_(b);
     case 'getWeather': return getWeather_();
     case 'getOverdueAlerts': return getOverdueAlerts_(b);
     case 'silenceAlert': return silenceAlert_(b);
@@ -1230,6 +1231,9 @@ function saveTrip_(b) {
       'isLinked','linkedCheckoutId','linkedTripId',
       'verified','verifiedBy','verifiedAt','staffComment',
       'validationRequested',
+      'distanceNm','departurePort','arrivalPort',
+      'trackFileUrl','trackSimplified','trackSource',
+      'photoUrls',
     ];
     UPDATABLE.forEach(k => { if (b[k] !== undefined) updates[k] = b[k]; });
     updateRow_('trips', 'id', b.id, updates);
@@ -1250,6 +1254,9 @@ function saveTrip_(b) {
     linkedCheckoutId: b.linkedCheckoutId || '', linkedTripId: b.linkedTripId || '',
     verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
     validationRequested: b.validationRequested || false,
+    distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
+    trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
+    photoUrls: b.photoUrls || '',
     createdAt: ts,
   });
   return okJ({ id, created: true });
@@ -1264,6 +1271,238 @@ function requestValidation_(b) {
   if (!b.tripId) return failJ('tripId required');
   updateRow_('trips', 'id', b.tripId, { validationRequested: true });
   return okJ({ requested: true });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRIP FILE UPLOADS  (GPS tracks + photos → Google Drive)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Script Properties required:
+//   DRIVE_FOLDER_ID_TRACKS — folder ID for raw GPX/KML/KMZ files
+//   DRIVE_FOLDER_ID_PHOTOS — folder ID for trip photos
+//
+// If a property is not set the function returns ok:false so the frontend
+// can warn the user and save the trip without the attachment.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function uploadTripFile_(b) {
+  if (!b.fileType) return failJ('fileType required');
+  if (b.fileType === 'track') return saveTripTrack_(b);
+  if (b.fileType === 'photo') return saveTripPhoto_(b);
+  return failJ('Unknown fileType: ' + b.fileType);
+}
+
+function saveTripTrack_(b) {
+  if (!b.fileData) return failJ('fileData required');
+  const props = PropertiesService.getScriptProperties();
+  const folderId = props.getProperty('DRIVE_FOLDER_ID_TRACKS');
+  if (!folderId) return okJ({ ok: false, error: 'Drive folder not configured' });
+
+  try {
+    const ext = (b.fileName || 'track.gpx').split('.').pop().toLowerCase();
+    const ts  = now_().replace(/[: ]/g, '-');
+    const safeName = ts + '_' + (b.fileName || 'track.' + ext);
+
+    let contentBytes = Utilities.base64Decode(b.fileData.replace(/^data:[^;]+;base64,/, ''));
+    let parseFormat  = ext;
+
+    // KMZ = zipped KML — decompress and extract .kml entry
+    if (ext === 'kmz') {
+      const blobs = Utilities.unzip(Utilities.newBlob(contentBytes, 'application/zip', safeName));
+      const kmlBlob = blobs.find(bl => bl.getName().toLowerCase().endsWith('.kml'));
+      if (!kmlBlob) return failJ('No .kml found inside KMZ');
+      contentBytes = kmlBlob.getBytes();
+      parseFormat  = 'kml';
+    }
+
+    // Save raw file to Drive
+    const folder  = DriveApp.getFolderById(folderId);
+    const mimeMap = { gpx:'application/gpx+xml', kml:'application/vnd.google-earth.kml+xml', kmz:'application/vnd.google-earth.kmz' };
+    const blob    = Utilities.newBlob(contentBytes, mimeMap[ext] || 'application/octet-stream', safeName);
+    const file    = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const trackFileUrl = file.getUrl();
+
+    // Parse GPS content
+    const contentStr = Utilities.newBlob(contentBytes).getDataAsString('UTF-8');
+    const parsed = parseGpsTrack_(contentStr, parseFormat);
+
+    return okJ({
+      ok: true,
+      trackFileUrl,
+      trackSource: ext.toUpperCase(),
+      distanceNm:      parsed.distanceNm,
+      departureTime:   parsed.departureTime,
+      arrivalTime:     parsed.arrivalTime,
+      trackSimplified: JSON.stringify(parsed.simplifiedTrack),
+      pointCount:      parsed.pointCount,
+    });
+  } catch (e) {
+    return failJ('Track upload error: ' + e.message);
+  }
+}
+
+function saveTripPhoto_(b) {
+  if (!b.fileData) return failJ('fileData required');
+  const props = PropertiesService.getScriptProperties();
+  const folderId = props.getProperty('DRIVE_FOLDER_ID_PHOTOS');
+  if (!folderId) return okJ({ ok: false, error: 'Drive folder not configured' });
+
+  try {
+    const ext      = (b.fileName || 'photo.jpg').split('.').pop().toLowerCase();
+    const ts       = now_().replace(/[: ]/g, '-');
+    const safeName = ts + '_' + (b.fileName || 'photo.' + ext);
+    const base64   = b.fileData.replace(/^data:[^;]+;base64,/, '');
+    const bytes    = Utilities.base64Decode(base64);
+    const mimeMap  = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', heic:'image/heic' };
+    const mime     = b.mimeType || mimeMap[ext] || 'image/jpeg';
+    const blob     = Utilities.newBlob(bytes, mime, safeName);
+    const folder   = DriveApp.getFolderById(folderId);
+    const file     = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return okJ({ ok: true, photoUrl: file.getUrl() });
+  } catch (e) {
+    return failJ('Photo upload error: ' + e.message);
+  }
+}
+
+// ── GPS track parser ──────────────────────────────────────────────────────────
+
+function parseGpsTrack_(content, format) {
+  const doc = XmlService.parse(content);
+  const root = doc.getRootElement();
+  let points = [];   // [{lat, lng, time}]
+
+  if (format === 'gpx') {
+    // Support GPX 1.0 and 1.1 namespaces
+    const ns0 = XmlService.getNamespace('http://www.topografix.com/GPX/1/0');
+    const ns1 = XmlService.getNamespace('http://www.topografix.com/GPX/1/1');
+    [ns0, ns1].forEach(function(ns) {
+      try {
+        root.getChildren('trk', ns).forEach(function(trk) {
+          trk.getChildren('trkseg', ns).forEach(function(seg) {
+            seg.getChildren('trkpt', ns).forEach(function(pt) {
+              const lat  = parseFloat(pt.getAttribute('lat').getValue());
+              const lng  = parseFloat(pt.getAttribute('lon').getValue());
+              const timeEl = pt.getChild('time', ns);
+              const time = timeEl ? timeEl.getText() : null;
+              if (!isNaN(lat) && !isNaN(lng)) points.push({ lat, lng, time });
+            });
+          });
+        });
+      } catch(e) {}
+    });
+    // Fallback: try without namespace
+    if (!points.length) {
+      root.getDescendants().forEach(function(cNode) {
+        try {
+          const el = cNode.asElement();
+          if (el && el.getName() === 'trkpt') {
+            const lat = parseFloat(el.getAttribute('lat').getValue());
+            const lng = parseFloat(el.getAttribute('lon').getValue());
+            const timeEl = el.getChildren().find(function(c){ return c.getName()==='time'; });
+            const time = timeEl ? timeEl.getText() : null;
+            if (!isNaN(lat) && !isNaN(lng)) points.push({ lat, lng, time });
+          }
+        } catch(e) {}
+      });
+    }
+  } else {
+    // KML: look for LineString coordinates or gx:Track when/coord pairs
+    const kmlNs  = XmlService.getNamespace('http://www.opengis.net/kml/2.2');
+    const gxNs   = XmlService.getNamespace('http://www.google.com/kml/ext/2.2');
+
+    // Try gx:Track first (has timestamps)
+    const allEls = root.getDescendants();
+    let gxTrackFound = false;
+    for (let i = 0; i < allEls.length; i++) {
+      let el; try { el = allEls[i].asElement(); } catch(e) { continue; }
+      if (!el || el.getName() !== 'Track') continue;
+      gxTrackFound = true;
+      const whens  = el.getChildren('when', gxNs);
+      const coords = el.getChildren('coord', gxNs);
+      const len    = Math.min(whens.length, coords.length);
+      for (let j = 0; j < len; j++) {
+        const parts = coords[j].getText().trim().split(/\s+/);
+        const lng = parseFloat(parts[0]), lat = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) points.push({ lat, lng, time: whens[j].getText() });
+      }
+      break;
+    }
+
+    // Fall back to LineString coordinates (no timestamps)
+    if (!gxTrackFound || !points.length) {
+      for (let i = 0; i < allEls.length; i++) {
+        let el; try { el = allEls[i].asElement(); } catch(e) { continue; }
+        if (!el || el.getName() !== 'coordinates') continue;
+        const raw = el.getText().trim();
+        raw.split(/\s+/).forEach(function(token) {
+          const parts = token.split(',');
+          const lng = parseFloat(parts[0]), lat = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lng)) points.push({ lat, lng, time: null });
+        });
+      }
+    }
+  }
+
+  if (!points.length) return { distanceNm: 0, departureTime: null, arrivalTime: null, simplifiedTrack: [], pointCount: 0 };
+
+  // Sort by timestamp where available
+  points.sort(function(a, b) { return a.time && b.time ? a.time < b.time ? -1 : 1 : 0; });
+
+  // Compute total distance (Haversine)
+  let totalM = 0;
+  for (let i = 1; i < points.length; i++) {
+    totalM += haversineM_(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng);
+  }
+  const distanceNm = Math.round((totalM / 1852) * 10) / 10;
+
+  // RDP simplification → target ~50-100 representative points
+  const simplified = rdpSimplify_(points.map(function(p){ return {lat:p.lat,lng:p.lng}; }), 0.0005);
+
+  return {
+    distanceNm,
+    departureTime: points[0].time || null,
+    arrivalTime:   points[points.length - 1].time || null,
+    simplifiedTrack: simplified,
+    pointCount: points.length,
+  };
+}
+
+function haversineM_(lat1, lng1, lat2, lng2) {
+  const R  = 6371000;
+  const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
+  const df = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lng2 - lng1) * Math.PI / 180;
+  const a  = Math.sin(df/2)*Math.sin(df/2) + Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function rdpSimplify_(points, epsilon) {
+  if (points.length < 3) return points;
+  // Find point farthest from the line between first and last
+  const first = points[0], last = points[points.length - 1];
+  let maxDist = 0, maxIdx = 0;
+  for (let i = 1; i < points.length - 1; i++) {
+    const d = perpendicularDist_(points[i], first, last);
+    if (d > maxDist) { maxDist = d; maxIdx = i; }
+  }
+  if (maxDist > epsilon) {
+    const left  = rdpSimplify_(points.slice(0, maxIdx + 1), epsilon);
+    const right = rdpSimplify_(points.slice(maxIdx), epsilon);
+    return left.slice(0, -1).concat(right);
+  }
+  return [first, last];
+}
+
+function perpendicularDist_(p, a, b) {
+  const dx = b.lng - a.lng, dy = b.lat - a.lat;
+  if (dx === 0 && dy === 0) {
+    return Math.sqrt(Math.pow(p.lng - a.lng, 2) + Math.pow(p.lat - a.lat, 2));
+  }
+  const t = ((p.lng - a.lng) * dx + (p.lat - a.lat) * dy) / (dx*dx + dy*dy);
+  return Math.sqrt(Math.pow(p.lng - (a.lng + t*dx), 2) + Math.pow(p.lat - (a.lat + t*dy), 2));
 }
 
 

@@ -78,6 +78,12 @@
 .trip-pick-card .tpc-boat{font-weight:500;margin-bottom:3px}
 .trip-pick-card .tpc-sub{color:var(--muted);font-size:11px}
 .wx-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer}
+.photo-thumb-link{display:block;width:60px;height:60px}
+.trip-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+details#portDetails summary::-webkit-details-marker{display:none}
+details#portDetails[open] #portSummaryLabel::after{content:' ▴';font-size:8px}
+details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-size:8px}
 </style>
 </head>
 <body>
@@ -153,7 +159,7 @@
         </div>
       </div>
       <div class="form-field"><label>Boat</label>
-        <select id="mBoat"><option value="">Select boat…</option></select>
+        <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
       </div>
       <div class="form-field"><label>Location</label>
         <select id="mLocation"><option value="">Select location…</option></select>
@@ -164,7 +170,34 @@
         <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM"
           oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v"></div>
       </div>
-      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1"></div>
+      <div class="form-row">
+        <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1"></div>
+        <div class="form-field"><label>Distance (nm) <span style="font-size:9px;color:var(--muted)">optional</span></label>
+          <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
+      </div>
+
+      <!-- Port section: open/prominent for keelboats, collapsed for others -->
+      <details id="portDetails" style="margin-bottom:12px">
+        <summary id="portSummary" style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span>⚓</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
+        </summary>
+        <div class="form-row" style="margin-top:6px">
+          <div class="form-field">
+            <label>Departure port</label>
+            <input list="portsList" id="mDeparturePort" placeholder="e.g. Reykjavík" autocomplete="off"
+              oninput="watchPortInput('departure')">
+          </div>
+          <div class="form-field">
+            <label>Arrival port</label>
+            <input list="portsList" id="mArrivalPort" placeholder="Same as departure" autocomplete="off"
+              oninput="watchPortInput('arrival')">
+          </div>
+        </div>
+        <datalist id="portsList"></datalist>
+        <div id="addPortHint" style="display:none;font-size:10px;color:var(--brass);cursor:pointer;margin-top:4px"
+          onclick="addNewPort()">+ Add "<span id="addPortName"></span>" to ports list</div>
+      </details>
+
       <!-- Weather -->
       <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER (OPTIONAL)</div>
       <div class="wx-row">
@@ -187,9 +220,23 @@
         </div>
         <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
       </div>
+      <!-- GPS Track upload -->
+      <div class="form-field">
+        <label>GPS Track — GPX / KML / KMZ <span style="font-size:9px;color:var(--muted)">optional</span></label>
+        <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" onchange="handleTrackFile(this)"
+          style="font-size:11px;color:var(--text)">
+        <div id="mTrackStatus" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+      </div>
+      <!-- Photo upload -->
+      <div class="form-field">
+        <label>Photos <span style="font-size:9px;color:var(--muted)">optional</span></label>
+        <input type="file" id="mPhotoFiles" accept="image/*" multiple onchange="handlePhotoFiles(this)"
+          style="font-size:11px;color:var(--text)">
+        <div id="mPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+      </div>
       <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
       <div id="mErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
-      <button class="btn-primary" onclick="submitManual()">Save to logbook</button>
+      <button class="btn-primary" id="mSubmitBtn" onclick="submitManual()">Save to logbook</button>
     </div>
   </div>
 </div>
@@ -204,6 +251,11 @@ let allBoats = [], allLocs = [];
 let allRecentTrips = [];
 let recentOffset   = 0;
 const RECENT_PAGE  = 10;
+
+// ── File upload state ─────────────────────────────────────────────────────────
+let _pendingTrack  = null;   // {fileName, fileData (base64), mimeType}
+let _pendingPhotos = [];     // [{fileName, fileData (base64), mimeType}]
+let _lastPortInput = null;   // which port input was last typed into
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function parseDateParts(d){
@@ -288,6 +340,14 @@ function tripCard(t){
                     cardDir  && `<span style="opacity:.7">${esc(cardDir)}</span>`
                    ].filter(Boolean).join('');
 
+  // Port display (shown on card face for keelboats)
+  const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
+  const dep=t.departurePort||'', arr=t.arrivalPort||'';
+  const portLine = (dep||arr) ? (
+    (!arr||dep===arr) ? `<span>⚓ ${esc(dep||arr)}</span>`
+                      : `<span>⚓ ${esc(dep)} → ${esc(arr)}</span>`
+  ) : '';
+
   // Expanded wx detail
   const wxRows = wx ? [
     wx.ws     != null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Bft '+wx.bft:''}</span></div>` : '',
@@ -323,6 +383,8 @@ function tripCard(t){
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
+          ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
+          ${isKeelboat&&portLine?portLine:''}
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
         </div>
       </div>
@@ -334,8 +396,13 @@ function tripCard(t){
         <div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
         <div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
         <div class="trip-exp-row"><span class="trip-exp-lbl">Crew aboard</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>
+        ${t.distanceNm?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>`:''}
+        ${(!isKeelboat&&portLine)?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">${portLine}</span></div>`:''}
+        ${isKeelboat&&dep&&arr&&dep!==arr?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure'}</span><span class="trip-exp-val">${esc(dep)}</span></div><div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival'}</span><span class="trip-exp-val">${esc(arr)}</span></div>`:''}
         ${wxRows}
         ${crewNamesHtml}
+        ${t.trackFileUrl?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>`:''}
+        ${(()=>{let urls=[];try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}return urls.length?`<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>`:'';})()}
         ${t.notes?'<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Notes</span><span class="trip-exp-val">'+esc(t.notes)+'</span></div>':''}
       </div>
     </div>
@@ -440,6 +507,117 @@ function showManualForm(){
   const lSel=document.getElementById('mLocation');
   lSel.innerHTML='<option value="">Select location…</option>';
   allLocs.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
+  // Populate ports datalist
+  populatePortsDatalist();
+  // Reset file upload state
+  _pendingTrack=null; _pendingPhotos=[];
+  document.getElementById('mTrackFile').value='';
+  document.getElementById('mTrackStatus').textContent='';
+  document.getElementById('mPhotoFiles').value='';
+  document.getElementById('mPhotoPreview').innerHTML='';
+  document.getElementById('mDistanceNm').value='';
+  document.getElementById('mDeparturePort').value='';
+  document.getElementById('mArrivalPort').value='';
+  document.getElementById('addPortHint').style.display='none';
+  // Port section: collapsed by default until boat selected
+  const pd=document.getElementById('portDetails');
+  pd.removeAttribute('open');
+  onBoatChange();
+}
+
+function populatePortsDatalist(){
+  const dl=document.getElementById('portsList');
+  if(!dl) return;
+  const ports=allLocs.filter(l=>l.type==='port');
+  dl.innerHTML=ports.map(p=>`<option value="${esc(p.name)}">`).join('');
+}
+
+function onBoatChange(){
+  const boatId=document.getElementById('mBoat').value;
+  const boat=allBoats.find(b=>b.id===boatId);
+  const isKeelboat=(boat?.category||'').toLowerCase()==='keelboat';
+  const pd=document.getElementById('portDetails');
+  if(isKeelboat){
+    pd.setAttribute('open','');
+    document.getElementById('portSummaryLabel').textContent=IS?'HÖFNAR':'PORTS';
+  } else {
+    pd.removeAttribute('open');
+    document.getElementById('portSummaryLabel').textContent=IS?'HÖFNAR — VALFRJÁLST':'PORTS — OPTIONAL';
+  }
+  // Auto-fill default port if fields are empty
+  if(boat?.defaultPortId){
+    const port=allLocs.find(l=>l.id===boat.defaultPortId);
+    if(port){
+      const dep=document.getElementById('mDeparturePort');
+      const arr=document.getElementById('mArrivalPort');
+      if(!dep.value) dep.value=port.name;
+      if(!arr.value) arr.value=port.name;
+    }
+  }
+}
+
+function watchPortInput(which){
+  const inputId = which==='departure' ? 'mDeparturePort' : 'mArrivalPort';
+  const val=document.getElementById(inputId).value.trim();
+  _lastPortInput=which;
+  if(!val){ document.getElementById('addPortHint').style.display='none'; return; }
+  const ports=allLocs.filter(l=>l.type==='port');
+  const exists=ports.some(p=>p.name.toLowerCase()===val.toLowerCase());
+  if(!exists){
+    document.getElementById('addPortName').textContent=val;
+    document.getElementById('addPortHint').style.display='';
+  } else {
+    document.getElementById('addPortHint').style.display='none';
+  }
+}
+
+async function addNewPort(){
+  const inputId=_lastPortInput==='arrival'?'mArrivalPort':'mDeparturePort';
+  const val=document.getElementById(inputId).value.trim();
+  if(!val) return;
+  const newPort={id:'loc_'+Date.now().toString(36), name:val, type:'port', active:true};
+  allLocs.push(newPort);
+  try{
+    await apiPost('saveConfig',{locations:allLocs});
+    populatePortsDatalist();
+    document.getElementById('addPortHint').style.display='none';
+    // Also fill the other port field if empty
+    const otherEl=document.getElementById(_lastPortInput==='arrival'?'mDeparturePort':'mArrivalPort');
+    if(!otherEl.value) otherEl.value=val;
+    showToast(IS?'Höfn bætt við':'Port added ✓','success');
+  }catch(e){ showToast('Save failed: '+e.message,'err'); allLocs.pop(); }
+}
+
+function handleTrackFile(input){
+  const file=input.files[0];
+  if(!file){ _pendingTrack=null; document.getElementById('mTrackStatus').textContent=''; return; }
+  const statusEl=document.getElementById('mTrackStatus');
+  statusEl.textContent=IS?'Lesur skrá…':'Reading file…';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    _pendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
+    statusEl.textContent=(IS?'Tilbúið: ':'Ready: ')+file.name;
+    statusEl.style.color='var(--brass)';
+  };
+  reader.onerror=function(){ statusEl.textContent=IS?'Lestur mistókst':'Read error'; statusEl.style.color='var(--red)'; _pendingTrack=null; };
+  reader.readAsDataURL(file);
+}
+
+function handlePhotoFiles(input){
+  const files=Array.from(input.files);
+  _pendingPhotos=[];
+  const preview=document.getElementById('mPhotoPreview');
+  preview.innerHTML='';
+  files.forEach(function(file){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      _pendingPhotos.push({fileName:file.name, fileData:e.target.result, mimeType:file.type||'image/jpeg'});
+      const img=document.createElement('img');
+      img.src=e.target.result; img.className='photo-thumb';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderClubTripsList(){
@@ -495,19 +673,26 @@ async function joinTripAsCrew(tripId, el){
 async function submitManual(){
   const errEl=document.getElementById('mErr');
   errEl.style.display='none';
-  const date  = document.getElementById('mDate').value;
-  const boatId= document.getElementById('mBoat').value;
-  const boatName=document.getElementById('mBoat').selectedOptions[0]?.text||'';
-  const locId = document.getElementById('mLocation').value;
-  const locName=document.getElementById('mLocation').selectedOptions[0]?.text||'';
-  const timeOut=document.getElementById('mTimeOut').value;
-  const timeIn =document.getElementById('mTimeIn').value;
-  const crew   =parseInt(document.getElementById('mCrew').value)||1;
-  const role   =document.getElementById('mRole').value;
-  const bft    =document.getElementById('mBft').value;
-  const wdir   =document.getElementById('mWindDir').value;
-  const wave   =document.getElementById('mWave').value;
-  const notes  =document.getElementById('mNotes').value.trim();
+  const date      = document.getElementById('mDate').value;
+  const boatId    = document.getElementById('mBoat').value;
+  const boatName  = document.getElementById('mBoat').selectedOptions[0]?.text||'';
+  const locId     = document.getElementById('mLocation').value;
+  const locName   = document.getElementById('mLocation').selectedOptions[0]?.text||'';
+  const timeOut   = document.getElementById('mTimeOut').value;
+  const timeIn    = document.getElementById('mTimeIn').value;
+  const crew      = parseInt(document.getElementById('mCrew').value)||1;
+  const role      = document.getElementById('mRole').value;
+  const bft       = document.getElementById('mBft').value;
+  const wdir      = document.getElementById('mWindDir').value;
+  const wave      = document.getElementById('mWave').value;
+  const notes     = document.getElementById('mNotes').value.trim();
+  const distInput = parseFloat(document.getElementById('mDistanceNm').value)||'';
+  let   depPort   = document.getElementById('mDeparturePort').value.trim();
+  let   arrPort   = document.getElementById('mArrivalPort').value.trim();
+  if(arrPort===''&&depPort!=='') arrPort=depPort;   // default arrival = departure
+
+  const boat = allBoats.find(b=>b.id===boatId);
+  const boatCategory = boat?.category||'';
 
   if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
   if(!boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
@@ -524,16 +709,49 @@ async function submitManual(){
 
   // Build wxSnapshot if wave present
   let wxSnapshot='';
-  if(wave){
-    wxSnapshot=JSON.stringify({wh:parseFloat(wave)||0});
+  if(wave){ wxSnapshot=JSON.stringify({wh:parseFloat(wave)||0}); }
+
+  // Disable submit while uploading
+  const btn=document.getElementById('mSubmitBtn');
+  btn.disabled=true; btn.textContent=IS?'Hleður upp…':'Uploading…';
+
+  // Upload GPS track
+  let trackFileUrl='', trackSimplified='', trackSource='', distanceNm=distInput;
+  if(_pendingTrack){
+    try{
+      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_pendingTrack.fileName,fileData:_pendingTrack.fileData,mimeType:_pendingTrack.mimeType});
+      if(tr.ok){
+        trackFileUrl=tr.trackFileUrl||'';
+        trackSimplified=tr.trackSimplified||'';
+        trackSource=tr.trackSource||'';
+        if(!distanceNm && tr.distanceNm) distanceNm=tr.distanceNm;
+      } else {
+        showToast(IS?'Skráarupphal ekki stillt — ferð vistuð án viðhengis.':'File upload not configured — trip saved without attachment.','warn');
+      }
+    }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
   }
+
+  // Upload photos
+  const photoUrls=[];
+  for(const ph of _pendingPhotos){
+    try{
+      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
+      if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
+      else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
+    }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
+  }
+
+  btn.disabled=false; btn.textContent=IS?'Vista í siglingabók':'Save to logbook';
 
   try{
     await apiPost('saveTrip',{
-      date, boatId, boatName,
+      date, boatId, boatName, boatCategory,
       locationId:locId, locationName:locName,
       timeOut, timeIn, hoursDecimal, crew, role,
       beaufort:bft, windDir:wdir, notes, wxSnapshot,
+      distanceNm, departurePort:depPort, arrivalPort:arrPort,
+      trackFileUrl, trackSimplified, trackSource,
+      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
     });
     showToast('Trip saved ✓','success');
     closeLogModal();
