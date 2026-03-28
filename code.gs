@@ -718,9 +718,43 @@ function closePayPeriod_(b) {
   // payslip always reflects the config values that were in effect at approval time.
   const rows = b.rows;
   if (!rows || !rows.length) return failJ('rows array required');
-  const results = [];
-  rows.forEach(function(r) {
-    const row = Object.assign({}, r, { id: uid_(), generatedBy: b.by || 'admin' });
+
+  // Ensure newer columns exist in the payroll sheet
+  ['periodFrom','periodTo','paymentDate','slipNumber','employeeName','kt',
+   'bankAccount','orlofsreikningur','title','baseRateKr','regularMinutes',
+   'otMinutes','manualLines','dagvinna','eftirvinna1','eftirvinna2','otLines',
+   'orlofslaun','orlofsRate','manualTotal','employeePension','sereignarsjodur',
+   'sereignRate','unionDues','taxBase','taxGross','personalCredit',
+   'taxWithheld','taxAfterCredit','orlofIBanki','totalDeductions',
+   'employerPension','endurhaefingarsjodur','regularHrs','ot1Hrs','ot2Hrs',
+   'pensionRate','configSnapshot','approved','totalHours'
+  ].forEach(function(c) { addColIfMissing_(TABS_.payroll, c); });
+
+  // Generate slip numbers: YY0M0x based on payment date month
+  var payDate = b.paymentDate || '';
+  var yy = payDate.slice(2, 4) || '00';
+  var mm = payDate.slice(5, 7) || '01';
+  var prefix = yy + mm;
+  // Find the highest existing counter for this prefix
+  var existing = readAll_(TABS_.payroll);
+  var maxCounter = 0;
+  existing.forEach(function(r) {
+    var sn = String(r.slipNumber || '');
+    if (sn.indexOf(prefix) === 0) {
+      var num = parseInt(sn.slice(prefix.length), 10);
+      if (num > maxCounter) maxCounter = num;
+    }
+  });
+
+  var results = [];
+  rows.forEach(function(r, i) {
+    var counter = String(maxCounter + i + 1).padStart(2, '0');
+    var slipNumber = prefix + counter;
+    var row = Object.assign({}, r, {
+      id: uid_(),
+      generatedBy: b.by || 'admin',
+      slipNumber: slipNumber
+    });
     insertRow_(TABS_.payroll, row);
     results.push(row);
   });
@@ -730,15 +764,19 @@ function closePayPeriod_(b) {
 
 function getPayroll_(b) {
   var rows = readAll_(TABS_.payroll);
-  if (b.period)     rows = rows.filter(function(r){ return r.period===b.period; });
+  if (b.period)     rows = rows.filter(function(r){ return r.period===b.period || r.periodFrom===b.period; });
   if (b.employeeId) rows = rows.filter(function(r){ return r.employeeId===b.employeeId; });
   const allRows = readAll_(TABS_.payroll);
   const fields  = ['grossWage','orlofsfe','grossTotal','lifeyrir','sereignarsjodur',
     'stadgreidslaSkattur','netPay','tryggingagjald','motframlag','totalEmployerCost',
     'hoursRegular','hoursOT133','hoursOT155'];
   rows.forEach(function(row) {
-    const yr  = (row.period||'').slice(0,4);
-    const ytd = allRows.filter(function(r){ return r.employeeId===row.employeeId && (r.period||'').startsWith(yr) && r.period<=row.period; });
+    const pKey = row.period || row.periodFrom || '';
+    const yr  = pKey.slice(0,4);
+    const ytd = allRows.filter(function(r){
+      var rk = r.period || r.periodFrom || '';
+      return r.employeeId===row.employeeId && rk.startsWith(yr) && rk<=pKey;
+    });
     const tot = {};
     fields.forEach(function(f){ tot[f]=ytd.reduce(function(s,r){ return s+Number(r[f]||0); },0); });
     row._ytd = tot;
