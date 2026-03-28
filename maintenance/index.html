@@ -233,6 +233,7 @@ let currentFilter = "open";
 let selectedCat = "";
 let selectedSev = "";
 let photoDataUrl = "";
+let pendingPhotoFile = null;
 
 
 
@@ -384,7 +385,7 @@ function viewPhoto(url) {
 
 // ── New request modal ──────────────────────────────────────────────────────────
 function openNewRequest(prefill) {
-  selectedCat = ""; selectedSev = ""; photoDataUrl = "";
+  selectedCat = ""; selectedSev = ""; photoDataUrl = ""; pendingPhotoFile = null;
   ["newPart","newDesc","newItem"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("newBoat").value = "";
   document.getElementById("newOos").checked = false;
@@ -433,10 +434,10 @@ function handlePhotoChange(input) {
   const file = input.files[0];
   const errEl = document.getElementById("photoErr");
   const preview = document.getElementById("photoPreview");
-  if (!file) { photoDataUrl = ""; preview.className = "photo-preview"; return; }
+  if (!file) { photoDataUrl = ""; pendingPhotoFile = null; preview.className = "photo-preview"; return; }
   if (file.size > 5 * 1024 * 1024) {
     errEl.textContent = `Image too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 5 MB.`;
-    input.value = ""; photoDataUrl = ""; preview.className = "photo-preview"; return;
+    input.value = ""; photoDataUrl = ""; pendingPhotoFile = null; preview.className = "photo-preview"; return;
   }
   errEl.textContent = "";
   const reader = new FileReader();
@@ -452,6 +453,7 @@ function handlePhotoChange(input) {
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
         photoDataUrl = canvas.toDataURL("image/jpeg", 0.82);
       }
+      pendingPhotoFile = { fileName: file.name, fileData: photoDataUrl, mimeType: file.type || 'image/jpeg' };
       preview.src = photoDataUrl;
       preview.className = "photo-preview show";
     };
@@ -483,13 +485,20 @@ async function submitRequest() {
 
   btn.disabled = true; btn.textContent = "Submitting…";
   try {
+    let photoUrl = "";
+    if (pendingPhotoFile) {
+      btn.textContent = "Uploading photo…";
+      const upRes = await apiPost("uploadMaintenancePhoto", pendingPhotoFile);
+      if (upRes.ok) photoUrl = upRes.photoUrl;
+      else console.warn("Photo upload skipped:", upRes.error);
+    }
     await apiPost("saveMaintenance", {
       category: selectedCat, boatId, boatName, itemName,
       part:        document.getElementById("newPart").value.trim(),
       severity:    selectedSev,
       description: desc,
       markOos,
-      photoData:   photoDataUrl,
+      photoUrl,
       reportedBy:  (window._maintUser?.name||'Staff'),
       source:      "staff",
     });
