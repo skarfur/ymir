@@ -489,6 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   }).start();
 
+  let _cfgRes = null;
   try {
     const [coRes, cfgRes, mRes, maintRes] = await Promise.all([
       apiGet('getActiveCheckouts'),
@@ -496,6 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       apiGet('getMembers'),
       apiGet('getMaintenance').catch(() => ({ requests: [] })),
     ]);
+    _cfgRes = cfgRes;
     checkouts   = coRes.checkouts  || [];
     boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -525,7 +527,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           (e.name && user?.name && e.name.trim() === user.name.trim())
         );
         if (me && (me.payrollEnabled === true || me.payrollEnabled === 'true')) {
-          const allowBreaks = !!(cfgRes && cfgRes.allowBreaks);
+          const allowBreaks = !!(_cfgRes && _cfgRes.allowBreaks);
           punchClockWidget(document.getElementById('punchClockWidget'), me.id, { allowBreaks });
         } else {
           const el = document.getElementById('punchClockWidget');
