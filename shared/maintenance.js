@@ -128,7 +128,8 @@ function maintOpenDetail(r, currentUser) {
     // Comments: text first, then name · timestamp, · to delete
     const commentHtml = comments.map((c,idx)=>`
       <div class="comment-item" style="position:relative;padding-right:24px">
-        <div style="font-size:13px;margin-bottom:3px">${esc(c.text||'')}</div>
+        ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
+        ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
         <div style="font-size:11px;color:var(--muted)">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
         ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Delete comment">&times;</button>` : ''}
       </div>`).join('');
@@ -155,8 +156,14 @@ function maintOpenDetail(r, currentUser) {
       ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
       ${!resolved ? `
       <div class="comment-add" style="margin-top:12px">
-        <input id="mdCommentInput" type="text" placeholder="Add comment&">
-        <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="mdCommentInput" type="text" placeholder="Add comment…" style="flex:1">
+          <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="Attach photo">📷
+            <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
+          </label>
+          <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
+        </div>
+        <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
       <div class="req-actions" style="margin-top:10px;justify-content:space-between">
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">Mark Resolved</button>
@@ -218,17 +225,61 @@ function maintOpenDetail(r, currentUser) {
       });
     });
 
+    // Comment photo handling
+    let _mdCommentPhotoData = null;
+    const photoInput = document.getElementById('mdCommentPhoto');
+    const previewEl  = document.getElementById('mdCommentPhotoPreview');
+    if (photoInput) {
+      photoInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) { _mdCommentPhotoData = null; if(previewEl) previewEl.innerHTML=''; return; }
+        if (file.size > 5*1024*1024) { _mdCommentPhotoData = null; if(previewEl) previewEl.innerHTML='<span style="font-size:11px;color:var(--red)">Max 5 MB</span>'; this.value=''; return; }
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const img = new Image();
+          img.onload = function() {
+            const maxW = 1400; let data;
+            if (img.width <= maxW) { data = ev.target.result; }
+            else {
+              const c = document.createElement('canvas'); const ratio = maxW/img.width;
+              c.width = maxW; c.height = Math.round(img.height*ratio);
+              c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+              data = c.toDataURL('image/jpeg',0.82);
+            }
+            _mdCommentPhotoData = { fileName: file.name, fileData: data, mimeType: file.type||'image/jpeg' };
+            if(previewEl) previewEl.innerHTML = '<img src="'+data+'" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border)">'
+              + '<button onclick="this.parentElement.innerHTML=\'\'" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);vertical-align:top">&times;</button>';
+            previewEl.querySelector('button').addEventListener('click', function(){ _mdCommentPhotoData=null; photoInput.value=''; });
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     // Post comment
     const postComment = async () => {
       const input = document.getElementById('mdCommentInput');
       const text  = (input?.value||'').trim();
-      if(!text) return;
+      if(!text && !_mdCommentPhotoData) return;
       const by = getBy();
-      await apiPost('addMaintenanceComment',{id:r.id,by,text});
-      const existing = parseJson(r.comments,[]);
-      r.comments = JSON.stringify([...existing,{text,by,at:new Date().toISOString().slice(0,16)}]);
-      if(input) input.value='';
-      renderAndWire();
+      const btn = document.getElementById('mdCommentBtn');
+      if(btn) { btn.disabled=true; btn.textContent='Posting…'; }
+      try {
+        let photoUrl = '';
+        if (_mdCommentPhotoData) {
+          const upRes = await apiPost('uploadMaintenancePhoto', _mdCommentPhotoData);
+          if (upRes.ok) photoUrl = upRes.photoUrl;
+        }
+        await apiPost('addMaintenanceComment',{id:r.id,by,text:text||'',photoUrl});
+        const existing = parseJson(r.comments,[]);
+        const entry = {text:text||'',by,at:new Date().toISOString().slice(0,16)};
+        if(photoUrl) entry.photoUrl = photoUrl;
+        r.comments = JSON.stringify([...existing,entry]);
+        _mdCommentPhotoData = null;
+        if(input) input.value='';
+        renderAndWire();
+      } finally { if(btn){btn.disabled=false;btn.textContent='Post';} }
     };
     document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});
@@ -274,7 +325,8 @@ function maintRenderCard(r) {
   const comments = parseJson(r.comments, []);
   const commentHtml = comments.map(c=>`
     <div class="comment-item">
-      <div style="font-size:13px;margin-bottom:3px">${esc(c.text||'')}</div>
+      ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
+      ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
       <div style="font-size:11px;color:var(--muted)">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
     </div>`).join('');
 

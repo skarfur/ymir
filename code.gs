@@ -243,6 +243,7 @@ function route_(action, b) {
     case 'resolveMaintenance': return resolveMaintenance_(b);
     case 'addMaintenanceComment': return addMaintenanceComment_(b);
     case 'deleteMaintenance':       return deleteMaintenance_(b);
+    case 'uploadMaintenancePhoto':  return uploadMaintenancePhoto_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
@@ -457,8 +458,7 @@ function getMaintenance_() {
 
 function saveMaintenance_(b) {
   const ts = now_(), id = uid_();
-  let photoUrl = '';
-  if (b.photoData && String(b.photoData).length < 200000) photoUrl = b.photoData;
+  const photoUrl = b.photoUrl || '';
   insertRow_('maintenance', {
     id, category: b.category || 'boat', boatId: b.boatId || '', boatName: b.boatName || '',
     itemName: b.itemName || '', part: b.part || '', severity: b.severity || 'medium',
@@ -812,7 +812,9 @@ function addMaintenanceComment_(b) {
   if (!ex) return failJ('Request not found', 404);
   let comments = [];
   try { comments = JSON.parse(ex.comments || '[]'); } catch (e) { comments = []; }
-  comments.push({ by: b.by || '', at: now_(), text: b.text });
+  const entry = { by: b.by || '', at: now_(), text: b.text };
+  if (b.photoUrl) entry.photoUrl = b.photoUrl;
+  comments.push(entry);
   updateRow_('maintenance', 'id', b.id, { comments: JSON.stringify(comments) });
   cDel_('maintenance');
   return okJ({ commented: true });
@@ -825,6 +827,30 @@ function deleteMaintenance_(b) {
   return okJ({ deleted: deleted });
 }
 
+// Script Property required: DRIVE_FOLDER_ID_MAINT_PHOTOS
+function uploadMaintenancePhoto_(b) {
+  if (!b.fileData) return failJ('fileData required');
+  const props = PropertiesService.getScriptProperties();
+  const folderId = props.getProperty('DRIVE_FOLDER_ID_MAINT_PHOTOS');
+  if (!folderId) return okJ({ ok: false, error: 'Drive folder not configured' });
+
+  try {
+    const ext      = (b.fileName || 'photo.jpg').split('.').pop().toLowerCase();
+    const ts       = now_().replace(/[: ]/g, '-');
+    const safeName = 'maint_' + ts + '_' + (b.fileName || 'photo.' + ext);
+    const base64   = b.fileData.replace(/^data:[^;]+;base64,/, '');
+    const bytes    = Utilities.base64Decode(base64);
+    const mimeMap  = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', heic:'image/heic' };
+    const mime     = b.mimeType || mimeMap[ext] || 'image/jpeg';
+    const blob     = Utilities.newBlob(bytes, mime, safeName);
+    const folder   = DriveApp.getFolderById(folderId);
+    const file     = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return okJ({ ok: true, photoUrl: file.getUrl() });
+  } catch (e) {
+    return failJ('Photo upload error: ' + e.message);
+  }
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
