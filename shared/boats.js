@@ -86,7 +86,7 @@ function boatCatBadge(cat) {
   const key = (cat||"other").toLowerCase();
   const col = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
   const label = _boatCatLabel(key);
-  return `<span style="font-size:10px;letter-spacing:.5px;padding:2px 7px;border-radius:10px;`
+  return `<span style="font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:10px;`
        + `border:1px solid ${col.border};background:${col.bg};color:${col.color};display:inline-block">`
        + `${_besc(label)}</span>`;
 }
