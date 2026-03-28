@@ -1114,7 +1114,7 @@ function saveCheckout_(b) {
     expectedReturn: b.expectedReturn || b.returnBy || '',
     checkedInAt: '', wxSnapshot: wxSnap,
     preLaunchChecklist: b.preLaunchChecklist || '', notes: b.notes || '',
-    status: 'out', createdAt: ts,
+    status: 'out', createdAt: ts, departurePort: b.departurePort || '',
   });
   cDel_('checkouts'); return okJ({ id, created: true });
 }
@@ -2033,7 +2033,7 @@ var SCHEMA_ = {
     'locationId','locationName',
     'checkedOutAt','expectedReturn','checkedInAt',
     'wxSnapshot','preLaunchChecklist','afterSailChecklist','notes',
-    'status','createdAt',
+    'status','createdAt','departurePort',
     // group checkouts
     'isGroup','participants','staffNames','boatNames','boatIds',
     'activityTypeId','activityTypeName','linkedActivityId',
