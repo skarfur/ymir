@@ -525,7 +525,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           (e.name && user?.name && e.name.trim() === user.name.trim())
         );
         if (me && (me.payrollEnabled === true || me.payrollEnabled === 'true')) {
-          punchClockWidget(document.getElementById('punchClockWidget'), me.id);
+          const allowBreaks = !!(cfgRes && cfgRes.allowBreaks);
+          punchClockWidget(document.getElementById('punchClockWidget'), me.id, { allowBreaks });
         } else {
           const el = document.getElementById('punchClockWidget');
           if (el) el.innerHTML = '<div class="empty-note" data-s="payroll.notEnabled"></div>';
