@@ -541,8 +541,6 @@ function renderActivitiesReadonly() {
 function renderIncidentSection(incidents) {
   const container = dom.incidentContainer;
   const heading   = dom.incidentHeading;
-  heading.hidden = false;
-  container.hidden = false;
   if (!incidents) {
     heading.textContent = s('daily.incidentReport');
     container.innerHTML = `<a href="../incidents/" class="incident-btn">
@@ -938,9 +936,7 @@ async function loadDay() {
 }
 
 async function loadTodayLog() {
-  renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns();
-  dom.incidentHeading.hidden = true;
-  dom.incidentContainer.hidden = true;
+  renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns(); renderIncidentSection([]);
   try {
     const [logRes, cfgRes] = await Promise.all([
       apiGet('getDailyLog', { date: TODAY }),
