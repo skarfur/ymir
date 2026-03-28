@@ -245,6 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
       _boatCategories = cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false');
+      registerBoatCats(_boatCategories);
     }
 
     populateFormSelects();

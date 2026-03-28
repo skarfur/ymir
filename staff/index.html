@@ -505,6 +505,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     maintenance = (maintRes.requests || maintRes.maintenance || [])
       .filter(r => r.status !== 'resolved' && !r.resolved);
 
+    if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
+      registerBoatCats(cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false'));
+    }
     if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
     if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); document.getElementById('wxWidget')?._wxRefreshBadges?.(); }
 

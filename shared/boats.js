@@ -36,6 +36,24 @@ const boatRegistry = {
   getCo(id)   { return this._cos[id] || null; },
 };
 
+// ── Category registry ──────────────────────────────────────────────────────────
+// Pages call boatRegistry.setCats(catsArray) after loading config so that
+// boatCatBadge / renderFleetStatus can show the translated label (EN/IS)
+// instead of the raw key.
+const _boatCatRegistry = [];
+
+function registerBoatCats(cats) {
+  _boatCatRegistry.length = 0;
+  if (cats && cats.length) cats.forEach(c => _boatCatRegistry.push(c));
+}
+
+function _boatCatLabel(key) {
+  const c = _boatCatRegistry.find(x => x.key === key);
+  if (!c) return key;
+  const lang = typeof getLang === 'function' ? getLang() : 'EN';
+  return (lang === 'IS' && c.labelIS) ? c.labelIS : (c.labelEN || key);
+}
+
 // ── Category meta ──────────────────────────────────────────────────────────────
 
 const BOAT_EMOJI = {
@@ -67,9 +85,10 @@ function boatEmoji(cat) {
 function boatCatBadge(cat) {
   const key = (cat||"other").toLowerCase();
   const col = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+  const label = _boatCatLabel(key);
   return `<span style="font-size:10px;letter-spacing:.5px;padding:2px 7px;border-radius:10px;`
        + `border:1px solid ${col.border};background:${col.bg};color:${col.color};display:inline-block">`
-       + `${_besc(key)}</span>`;
+       + `${_besc(label)}</span>`;
 }
 
 // ── Fleet card (available / out / oos) ─────────────────────────────────────────
@@ -327,7 +346,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
     return `<div class="fleet-status-block">
       <div class="fsb-header" onclick="${toggleFn}(this)" data-target="${catId}" style="border-left:3px solid ${col.color}">
         <span class="fsb-emoji">${emoji}</span>
-        <span class="fsb-label">${_besc(cat)}</span>
+        <span class="fsb-label">${_besc(_boatCatLabel(cat.toLowerCase()))}</span>
         <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%;background:${col.color}"></div></div>
         <span class="fsb-count ${avail.length?'has-avail':'none-avail'}" style="color:${avail.length?col.color:'var(--muted)'}">${avail.length}/${catBoats.length}</span>
         <span class="fsb-arrow">›</span>
