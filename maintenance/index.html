@@ -211,6 +211,20 @@
       <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
     </div>
 
+    <div class="field" id="saumaklubbField" style="display:none">
+      <label data-s="sauma.toggle">Saumaklúbbur Project</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <input type="checkbox" id="newSaumaklubbur" style="width:16px;height:16px;accent-color:var(--brass)">
+        <span style="font-size:12px;color:var(--muted)" data-s="sauma.toggleHint">Mark as a sewing circle project</span>
+      </div>
+    </div>
+
+    <div class="field hidden" id="verkstjoriField">
+      <label data-s="sauma.verkstjori">Verkstjóri (Project Lead)</label>
+      <input type="text" id="newVerkstjori" placeholder="Name or leave blank…">
+      <span style="font-size:11px;color:var(--muted)" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
+    </div>
+
     <div id="newErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
@@ -258,6 +272,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("reqList").innerHTML =
       `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
   }
+  // Show saumaklúbbur toggle for staff
+  if (window._maintUser && (window._maintUser.role === 'staff' || window._maintUser.role === 'admin')) {
+    document.getElementById('saumaklubbField').style.display = '';
+  }
+  document.getElementById('newSaumaklubbur').addEventListener('change', function() {
+    document.getElementById('verkstjoriField').classList.toggle('hidden', !this.checked);
+  });
+
   // Auto-open new request modal if navigated here with ?new=1
   if (new URLSearchParams(window.location.search).get("new") === "1") {
     openNewRequest();
@@ -398,6 +420,9 @@ function openNewRequest(prefill) {
   document.getElementById("sevHint").textContent = "";
   document.getElementById("boatField").classList.add("hidden");
   document.getElementById("itemField").classList.add("hidden");
+  document.getElementById("newSaumaklubbur").checked = false;
+  document.getElementById("verkstjoriField").classList.add("hidden");
+  document.getElementById("newVerkstjori").value = "";
 
   if (prefill) {
     if (prefill.category)    selectCat(prefill.category);
@@ -492,6 +517,7 @@ async function submitRequest() {
       if (upRes.ok) photoUrl = upRes.photoUrl;
       else console.warn("Photo upload skipped:", upRes.error);
     }
+    const isSauma = document.getElementById("newSaumaklubbur").checked;
     await apiPost("saveMaintenance", {
       category: selectedCat, boatId, boatName, itemName,
       part:        document.getElementById("newPart").value.trim(),
@@ -501,6 +527,8 @@ async function submitRequest() {
       photoUrl,
       reportedBy:  (window._maintUser?.name||'Staff'),
       source:      "staff",
+      saumaklubbur: isSauma,
+      verkstjori:  isSauma ? document.getElementById("newVerkstjori").value.trim() : '',
     });
     if (markOos && boatId) {
       try {

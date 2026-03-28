@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ýmir — Saumaklúbbur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <script src="../shared/ui.js"></script>
+  <script src="../shared/strings.js"></script>
+  <script src="../shared/maintenance.js"></script>
+  <style>
+    .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    .page-title { font-size: 16px; font-weight: 600; color: var(--brass); margin-bottom: 4px; }
+    .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted);
+      border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
+      letter-spacing:.5px; transition:all .15s; }
+    .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
+    .filter-btn:hover:not(.active) { border-color:var(--brass); color:var(--brass); }
+
+    /* ── Request card ── */
+    .req-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+      padding:14px 16px; margin-bottom:10px; transition:border-color .15s; cursor:pointer; }
+    .req-card:hover { border-color:var(--brass)88; }
+    .req-card.resolved { opacity:.45; }
+    .req-card.sev-critical { border-left:3px solid var(--red); }
+    .req-card.sev-high     { border-left:3px solid var(--orange); }
+    .req-card.sev-medium   { border-left:3px solid var(--yellow); }
+    .req-card.sev-low      { border-left:3px solid var(--green); }
+
+    .req-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .req-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:4px; }
+    .req-meta  { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; color:var(--muted); }
+    .req-desc  { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; }
+    .req-photo { width:80px; height:60px; object-fit:cover; border-radius:6px; border:1px solid var(--border);
+      margin-top:8px; cursor:pointer; transition:opacity .15s; }
+    .req-photo:hover { opacity:.8; }
+
+    /* ── Comments ── */
+    .comment-thread { margin-top:8px; border-top:1px solid var(--border)44; padding-top:8px; }
+    .comment-item { font-size:11px; color:var(--muted); margin-bottom:4px; }
+
+    /* ── Badges ── */
+    .badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px;
+      font-weight:500; letter-spacing:.3px; }
+    .badge-green  { background:var(--green)22;  color:var(--green);  border:1px solid var(--green)44; }
+    .badge-yellow { background:var(--yellow)22; color:var(--yellow); border:1px solid var(--yellow)44; }
+    .badge-orange { background:var(--orange)22; color:var(--orange); border:1px solid var(--orange)44; }
+    .badge-red    { background:var(--red)22;    color:var(--red);    border:1px solid var(--red)44; }
+    .badge-muted  { background:var(--surface);  color:var(--muted);  border:1px solid var(--border); }
+    .badge-brass  { background:var(--brass)22;  color:var(--brass);  border:1px solid var(--brass)44; }
+    .oos-badge { font-size:10px; background:var(--red)22; color:var(--red);
+      border:1px solid var(--red)44; border-radius:3px; padding:2px 6px; font-weight:500; }
+
+    /* ── Empty / loading ── */
+    .empty-wrap { text-align:center; padding:40px 20px; color:var(--muted); }
+    .empty-icon { font-size:32px; margin-bottom:12px; }
+
+    /* ── Modal ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200;
+      display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-overlay.hidden { display:none; }
+    .modal { background:var(--card); border:1px solid var(--border); border-radius:10px;
+      padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
+
+    /* Full-size photo overlay */
+    .photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300;
+      display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .photo-overlay.hidden { display:none; }
+    .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; }
+
+    /* ── Verkstjóri tag ── */
+    .verk-tag { font-size:11px; color:var(--brass); font-weight:500; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
+
+<div class="page-wrap">
+
+  <div class="page-title" data-s="sauma.pageTitle">🧵 Saumaklúbbur</div>
+  <div class="page-subtitle" data-s="sauma.pageSubtitle">Sewing circle projects — community maintenance</div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:11px;color:var(--muted);letter-spacing:.5px" data-s="lbl.filter">FILTER:</span>
+    <button class="filter-btn active" data-filter="open"       onclick="setFilter('open')"       data-s="sauma.filterOpen">Open</button>
+    <button class="filter-btn"        data-filter="my"         onclick="setFilter('my')"         data-s="sauma.filterMy">My Projects</button>
+    <button class="filter-btn"        data-filter="unassigned" onclick="setFilter('unassigned')" data-s="sauma.filterUnassigned">Unassigned</button>
+    <button class="filter-btn"        data-filter="resolved"   onclick="setFilter('resolved')"   data-s="sauma.filterResolved">Resolved</button>
+    <button class="filter-btn"        data-filter="all"        onclick="setFilter('all')"        data-s="sauma.filterAll">All</button>
+  </div>
+
+  <!-- Project list -->
+  <div id="projectList"><div class="empty-wrap"><div class="spinner"></div></div></div>
+
+</div><!-- /page-wrap -->
+
+<!-- ── Full-size photo overlay ── -->
+<div class="photo-overlay hidden" id="photoOverlay" onclick="this.classList.add('hidden')">
+  <img id="overlayImg" src="" alt="">
+</div>
+
+<script>
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let allProjects = [];
+let currentFilter = "open";
+let currentUserName = "";
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  const user = requireAuth();
+  if (!user) return;
+  currentUserName = user.name || "";
+  window._maintUser = user;
+
+  buildHeader('saumaklubbur');
+  applyStrings();
+
+  try {
+    const rRes = await apiGet("getMaintenance");
+    const all = rRes.requests || [];
+    // Only saumaklúbbur projects
+    allProjects = all.filter(r => boolVal(r.saumaklubbur));
+    renderList();
+  } catch(e) {
+    document.getElementById("projectList").innerHTML =
+      `<div class="empty-wrap"><div class="empty-icon">⚠</div><p>Failed to load: ${esc(e.message)}</p></div>`;
+  }
+
+  warmContainer();
+});
+
+// ── Filter & render ────────────────────────────────────────────────────────────
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll(".filter-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.filter === f));
+  renderList();
+}
+
+function getFiltered() {
+  return allProjects.filter(r => {
+    const resolved = boolVal(r.resolved);
+    if (currentFilter === "open")       return !resolved;
+    if (currentFilter === "resolved")   return resolved;
+    if (currentFilter === "unassigned") return !resolved && !r.verkstjori;
+    if (currentFilter === "my")         return isMyProject(r);
+    return true; // "all"
+  });
+}
+
+function isMyProject(r) {
+  if (!currentUserName) return false;
+  // I'm verkstjóri
+  if (r.verkstjori && r.verkstjori === currentUserName) return true;
+  // I posted a comment
+  const comments = parseJson(r.comments, []);
+  return comments.some(c => c.by === currentUserName);
+}
+
+function renderList() {
+  const items = getFiltered();
+  const el = document.getElementById("projectList");
+  if (!items.length) {
+    const key = currentFilter === "my" ? "sauma.emptyMy" : "sauma.emptyDefault";
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🧵</div><p data-s="${key}">No projects match this filter.</p></div>`;
+    applyStrings();
+    return;
+  }
+
+  // Sort: projects with newest comments first, then by creation date
+  items.sort((a,b) => {
+    const ra = boolVal(a.resolved), rb = boolVal(b.resolved);
+    if (!ra && rb) return -1;
+    if (ra && !rb) return 1;
+    // newest comment timestamp
+    const aComments = parseJson(a.comments, []);
+    const bComments = parseJson(b.comments, []);
+    const aLast = aComments.length ? (aComments[aComments.length-1].at || '') : '';
+    const bLast = bComments.length ? (bComments[bComments.length-1].at || '') : '';
+    if (aLast || bLast) {
+      if (aLast > bLast) return -1;
+      if (bLast > aLast) return 1;
+    }
+    return (b.createdAt||"") > (a.createdAt||"") ? 1 : -1;
+  });
+
+  el.innerHTML = items.map(r => renderProjectCard(r)).join("");
+
+  // Wire click to open detail
+  el.onclick = e => {
+    const card = e.target.closest('.sauma-card');
+    if (!card) return;
+    const r = allProjects.find(x => x.id === card.dataset.id);
+    if (r) maintOpenDetail(r, currentUserName);
+  };
+}
+
+function renderProjectCard(r) {
+  const resolved  = boolVal(r.resolved);
+  const sevClass  = 'sev-' + (r.severity||'low');
+  const catIcon   = CAT_ICON[r.category] || '⚙';
+  const subjectLabel = r.category==='boat'
+    ? esc(r.boatName||r.boatId||'')
+    : esc(r.itemName||'');
+  const comments = parseJson(r.comments, []);
+  const commentCount = comments.length;
+  const lastComment = commentCount ? comments[commentCount-1] : null;
+
+  return `<div class="sauma-card req-card ${sevClass}${resolved?' resolved':''}" data-id="${esc(r.id||'')}">
+    <div class="req-header">
+      <div style="flex:1;min-width:0">
+        <div class="req-title">
+          ${catIcon} ${subjectLabel}
+          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
+        </div>
+        <div class="req-meta">
+          <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
+          <span class="badge badge-brass">🧵 Saumaklúbbur</span>
+          ${r.verkstjori
+            ? `<span class="verk-tag">Verkstjóri: ${esc(r.verkstjori)}</span>`
+            : `<span style="font-size:11px;color:var(--muted);font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
+          ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
+          ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
+    ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" onclick="event.stopPropagation();viewPhoto('${esc(r.photoUrl)}')">` : ''}
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)">
+      <span>💬 ${commentCount}</span>
+      ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${(lastComment.at||'').slice(0,16).replace('T',' ')}</span>` : ''}
+    </div>
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Resolved ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+  </div>`;
+}
+
+function viewPhoto(url) {
+  document.getElementById("overlayImg").src = url;
+  document.getElementById("photoOverlay").classList.remove("hidden");
+}
+
+</script>
+</body>
+</html>

@@ -78,6 +78,7 @@ const STRINGS = {
   'lbl.verified':      { EN:'✓ Verified',          IS:'✓ Staðfest' },
   'lbl.pending':       { EN:'Pending review',      IS:'Bíður yfirferðar' },
   'lbl.optional':      { EN:'optional',            IS:'valfrjálst' },
+  'lbl.filter':        { EN:'FILTER:',             IS:'SÍA:' },
   'lbl.active':        { EN:'Active',              IS:'Virkt' },
   'lbl.inactive':      { EN:'Inactive',            IS:'Óvirkt' },
   'lbl.season':        { EN:'Season',              IS:'Tímabil' },
@@ -363,6 +364,23 @@ const STRINGS = {
   'maint.statOpen':        { EN:'OPEN',                    IS:'OPIÐ' },
   'maint.statHigh':        { EN:'HIGH / CRITICAL',         IS:'HÁTT / BRÁÐAVARSAMT' },
   'maint.statOos':         { EN:'BOATS OOS',               IS:'BÁTAR UTAN ÞJÓNUSTU' },
+
+  // ── Saumaklúbbur (Sewing Circle) ──────────────────────────────────────────
+  'sauma.pageTitle':       { EN:'🧵 Sewing Circle',         IS:'🧵 Saumaklúbbur' },
+  'sauma.pageSubtitle':    { EN:'Community maintenance projects', IS:'Samfélagsverkefni í viðhaldi' },
+  'sauma.toggle':          { EN:'Sewing Circle Project',    IS:'Saumaklúbbsverkefni' },
+  'sauma.toggleHint':      { EN:'Mark as a sewing circle project', IS:'Merkja sem saumaklúbbsverkefni' },
+  'sauma.verkstjori':      { EN:'Verkstjóri (Project Lead)', IS:'Verkstjóri' },
+  'sauma.verkstjoriHint':  { EN:'If left blank, any member can adopt this project.', IS:'Ef autt, getur hvaða félagi sem er tekið verkefnið að sér.' },
+  'sauma.filterOpen':      { EN:'Open',                     IS:'Opið' },
+  'sauma.filterMy':        { EN:'My Projects',              IS:'Mín verkefni' },
+  'sauma.filterUnassigned':{ EN:'Unassigned',               IS:'Ótilnefnd' },
+  'sauma.filterResolved':  { EN:'Resolved',                 IS:'Lokið' },
+  'sauma.filterAll':       { EN:'All',                      IS:'Allt' },
+  'sauma.needsVerkstjori': { EN:'Needs verkstjóri',         IS:'Þarf verkstjóra' },
+  'sauma.emptyDefault':    { EN:'No projects match this filter.', IS:'Engin verkefni passa við þessa síu.' },
+  'sauma.emptyMy':         { EN:'No projects you are involved in.', IS:'Engin verkefni sem þú tekur þátt í.' },
+  'nav.saumaklubbur':      { EN:'🧵 Sewing Circle',         IS:'🧵 Saumaklúbbur' },
 
   // ── Logbook review ─────────────────────────────────────────────────────────
   'logrev.title':          { EN:'Logbook Review',          IS:'Dagbókarskoðun' },

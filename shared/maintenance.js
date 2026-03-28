@@ -44,6 +44,8 @@ function maintRenderCardCompact(r) {
   const catIcon   = CAT_ICON[r.category] || '⚙';
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
     ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">OOS</span>' : '';
+  const saumaTag = boolVal(r.saumaklubbur)
+    ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
   const boat = esc(r.boatName||r.boatId||r.itemName||r.name||'');
   const part = esc(r.part||'');
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
@@ -54,6 +56,7 @@ function maintRenderCardCompact(r) {
       <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${boat}</span>
       ${part ? `<span style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
     </div>
+    ${saumaTag}
     ${oosTag}
   </div>`;
 }
@@ -145,6 +148,11 @@ function maintOpenDetail(r, currentUser) {
         </div>
         ${oosBtn}
       </div>
+      ${boolVal(r.saumaklubbur) ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 Saumaklúbbur</span>
+        ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">No verkstjóri assigned</span>`}
+        ${boolVal(r.saumaklubbur) && !r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
+      </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px">
         ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
         ${r.part       ? `<span>${esc(r.part)}</span>`                    : ''}
@@ -198,6 +206,17 @@ function maintOpenDetail(r, currentUser) {
         });
       });
     }
+
+    // Adopt saumaklúbbur project
+    document.getElementById('mdAdoptBtn')?.addEventListener('click', ()=>{
+      const by = getBy();
+      doConfirm('Become verkstjóri for this project?', async ()=>{
+        await apiPost('adoptSaumaklubbur',{id:r.id,name:by});
+        r.verkstjori=by; renderAndWire();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderMaintenance==='function') renderMaintenance();
+      });
+    });
 
     // OOS toggle
     document.getElementById('mdOosBtn')?.addEventListener('click', ()=>{
