@@ -518,8 +518,9 @@ function buildFilters(){
 }
 
 // ── Log manually modal ────────────────────────────────────────────────────────
-let allClubTrips = [], clubTripsOffset = 0;
+let allClubTrips = [], clubTripsOffset = 0, _clubTripsLoadedAt = 0;
 const CLUB_PAGE = 10;
+const CLUB_TRIPS_TTL = 30000; // 30s cache
 
 async function openLogModal(){
   document.getElementById('logModal').classList.remove('hidden');
@@ -527,15 +528,21 @@ async function openLogModal(){
   _selectedClubTrip=null;
   document.getElementById('joinExtras').style.display='none';
   showStep1();
-  document.getElementById('recentTripsList').innerHTML='<div class="empty-note">Loading recent trips…</div>';
   document.getElementById('loadMoreTripsBtn').style.display='none';
-  // Always refresh club trips so already-logged entries are excluded
+  // Use cached club trips if fresh (< 30s), otherwise refetch
+  const myIds=new Set(myTrips.flatMap(t=>[t.linkedTripId,t.linkedCheckoutId,t.id]).filter(Boolean));
+  if(Date.now() - _clubTripsLoadedAt < CLUB_TRIPS_TTL && allClubTrips.length){
+    clubTripsOffset=0;
+    renderClubTripsList();
+    return;
+  }
+  document.getElementById('recentTripsList').innerHTML='<div class="empty-note">Loading recent trips…</div>';
   try{
     const res=await apiGet('getTrips',{limit:100});
-    const myIds=new Set(myTrips.flatMap(t=>[t.linkedTripId,t.linkedCheckoutId,t.id]).filter(Boolean));
     allClubTrips=(res.trips||[])
       .filter(t=>t.kennitala!==user.kennitala && !myIds.has(t.id))
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    _clubTripsLoadedAt=Date.now();
   }catch(e){allClubTrips=[];}
   clubTripsOffset=0;
   renderClubTripsList();
@@ -730,18 +737,18 @@ async function submitJoinTrip(){
     }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
   }
 
-  // Upload photos
+  // Upload photos in parallel
   const photoUrls=[];
-  for(const ph of _joinPendingPhotos){
+  await Promise.all(_joinPendingPhotos.map(async ph=>{
     try{
       const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
       if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
       else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
     }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
-  }
+  }));
 
   try{
-    await apiPost('saveTrip',{
+    const res=await apiPost('saveTrip',{
       linkedTripId: t.id,
       linkedCheckoutId: t.linkedCheckoutId||'',
       date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
@@ -753,9 +760,20 @@ async function submitJoinTrip(){
       trackFileUrl, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
     });
+    myTrips.unshift({
+      id: res.id, kennitala: user.kennitala,
+      linkedTripId: t.id, linkedCheckoutId: t.linkedCheckoutId||'',
+      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
+      locationId: t.locationId, locationName: t.locationName,
+      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
+      crew: t.crew, role: 'crew',
+      beaufort: t.beaufort||'', windDir: t.windDir||'',
+      notes, trackFileUrl, trackSource,
+      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
+    });
+    renderStats(); buildFilters(); applyFilter();
     showToast(IS?'Bætt við siglingabókinni ✓':'Added to your logbook ✓','success');
     closeLogModal();
-    reload();
   }catch(e){
     errEl.textContent=e.message;
     errEl.style.display='';
@@ -897,20 +915,20 @@ async function submitManual(){
     }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
   }
 
-  // Upload photos
+  // Upload photos in parallel
   const photoUrls=[];
-  for(const ph of _pendingPhotos){
+  await Promise.all(_pendingPhotos.map(async ph=>{
     try{
       const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
       if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
       else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
     }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
-  }
+  }));
 
   btn.disabled=false; btn.textContent=IS?'Vista í siglingabók':'Save to logbook';
 
   try{
-    await apiPost('saveTrip',{
+    const res=await apiPost('saveTrip',{
       date, boatId, boatName, boatCategory,
       locationId:locId, locationName:locName,
       timeOut, timeIn, hoursDecimal, crew, role,
@@ -919,9 +937,19 @@ async function submitManual(){
       trackFileUrl, trackSimplified, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
     });
+    myTrips.unshift({
+      id: res.id, kennitala: user.kennitala,
+      date, boatId, boatName, boatCategory,
+      locationId:locId, locationName:locName,
+      timeOut, timeIn, hoursDecimal, crew, role,
+      beaufort:bft, windDir:wdir, notes, wxSnapshot,
+      distanceNm, departurePort:depPort, arrivalPort:arrPort,
+      trackFileUrl, trackSimplified, trackSource,
+      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
+    });
+    renderStats(); buildFilters(); applyFilter();
     showToast('Trip saved ✓','success');
     closeLogModal();
-    reload();
   }catch(e){
     errEl.textContent=e.message;
     errEl.style.display='';

@@ -509,15 +509,21 @@ async function submitLaunch() {
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
     });
-    checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
+    // Optimistic update — push new checkout locally instead of refetching
+    checkouts.push({
+      id:res.id, boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
+      memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
+      locationId:lid, locationName:location.name||lid,
+      checkedOutAt:tout, expectedReturn:ret, status:'out',
+    });
     if(crewNames.length){
       var _trip={boatId:launchBoat.id,boatName:launchBoat.name,boatCategory:launchBoat.category||'',
         locationId:lid,locationName:location.name||lid,timeOut:tout,expectedReturn:ret,role:'crew',isLinked:true,wxSnapshot:snap};
-      for(var i=0;i<crewNames.length;i++){
-        var cn=crewNames[i];
-        try{await apiPost('saveTrip',Object.assign({},_trip,{linkedCheckoutId:res?.checkoutId||res?.id||'',crewMemberName:cn.name,crewMemberKennitala:cn.kennitala}));}
-        catch(e2){console.warn('crew trip:',cn,e2.message);}
-      }
+      var _coId=res?.checkoutId||res?.id||'';
+      await Promise.all(crewNames.map(function(cn){
+        return apiPost('saveTrip',Object.assign({},_trip,{linkedCheckoutId:_coId,crewMemberName:cn.name,crewMemberKennitala:cn.kennitala}))
+          .catch(function(e2){console.warn('crew trip:',cn,e2.message);});
+      }));
     }
     window._launchFormValues=null;
     closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
@@ -846,20 +852,20 @@ async function confirmCheckIn(coId) {
     }catch(e){showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn');}
   }
 
-  // Upload photos
+  // Upload photos in parallel
   var photoUrls=[];
-  for(var _pi=0;_pi<(window._retPendingPhotos||[]).length;_pi++){
-    var ph=window._retPendingPhotos[_pi];
+  await Promise.all((window._retPendingPhotos||[]).map(async function(ph){
     try{
       var pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
       if(pr.ok&&pr.photoUrl)photoUrls.push(pr.photoUrl);
       else if(!pr.ok)showToast(IS?'Skráarupphal ekki stillt':'Photo upload not configured','warn');
     }catch(e){showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn');}
-  }
+  }));
 
   try {
-    await apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName});
-    await apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
+    await Promise.all([
+      apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName}),
+      apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
       date:today,boatId:co.boatId,boatName:co.boatName,boatCategory:co.boatCategory||'',
       locationId:co.locationId||'',locationName:co.locationName||'',
       timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
@@ -868,8 +874,9 @@ async function confirmCheckIn(coId) {
       departurePort:co.departurePort||'',arrivalPort,
       distanceNm,trackFileUrl,trackSimplified,trackSource,
       photoUrls:photoUrls.length?JSON.stringify(photoUrls):'',
-    });
-    checkouts=(await apiGet('getActiveCheckouts')).checkouts||[];
+      }),
+    ]);
+    checkouts=checkouts.filter(function(c){return c.id!==coId;});
     closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
     logbookLoaded=false; showToast(s('toast.checkedIn'));
   } catch(e){

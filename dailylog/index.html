@@ -674,8 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
     openTripDetail(row.dataset.tripId);
   });
 
-  dom.prevBtn.addEventListener('click',  () => navigateDay(-1));
-  dom.nextBtn.addEventListener('click',  () => navigateDay(1));
+  function debounce(fn, ms) {
+    let t; return function(...a) { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
+  const debouncedNav = debounce(navigateDay, 300);
+  dom.prevBtn.addEventListener('click',  () => debouncedNav(-1));
+  dom.nextBtn.addEventListener('click',  () => debouncedNav(1));
   dom.todayBtn.addEventListener('click', () => navigateToToday());
 
   dom.addActivityBtn.addEventListener('click', openActivityModal);
@@ -954,12 +958,12 @@ async function loadTodayLog() {
 
 async function loadPastLog() {
   try {
-    const [logRes, cfgRes] = await Promise.all([
+    const [logRes, cfgRes, incidents] = await Promise.all([
       apiGet('getDailyLog', { date: viewDate }),
       apiGet('getConfig'),
+      loadIncidentsForDate(viewDate),
     ]);
     applyLogData(logRes.log, cfgRes);
-    const incidents = await loadIncidentsForDate(viewDate);
     renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadPastLog failed:', e.message);
@@ -989,8 +993,8 @@ async function loadPastTrips() {
 }
 async function loadIncidentsForDate(date) {
   try {
-    const res = await apiGet('getIncidents');
-    return (res.incidents || []).filter(i => (i.filedAt||i.createdAt||'').slice(0,10) === date);
+    const res = await apiGet('getIncidents', { date });
+    return res.incidents || [];
   } catch(e) { return []; }
 }
 
