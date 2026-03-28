@@ -233,7 +233,7 @@ const STRINGS = {
   'staff.coForm.notesPlaceholder':  { EN:'Any notes…',              IS:'Einhverjar athugasemdir…' },
   'staff.coForm.errMember':         { EN:'Select a member.',        IS:'Veldu félaga.' },
   'staff.coForm.errBoat':           { EN:'Select a boat.',          IS:'Veldu bát.' },
-  'staff.coForm.errLocation':       { EN:'Select a location.',      IS:'Veldu staðsetningu.' },
+  'staff.coForm.errLocation':       { EN:'Select a sailing area.',   IS:'Veldu siglingasvæði.' },
   'staff.coForm.checkedOut':        { EN:'Checked out ✓',           IS:'Útskráð ✓' },
   // Detail modal sub-keys
   'staff.coDetail.title':     { EN:'Checkout Details',   IS:'Upplýsingar um útskráningu' },
@@ -723,7 +723,7 @@ const STRINGS = {
   'boat.defaultPort':        { EN:'Default port',                          IS:'Heimahöfn' },
   'location.type':           { EN:'Type',                                  IS:'Tegund' },
   'location.typePort':       { EN:'Port',                                  IS:'Höfn' },
-  'location.typeLocation':   { EN:'Location',                              IS:'Staðsetning' },
+  'location.typeLocation':   { EN:'Sailing area',                          IS:'Siglingasvæði' },
 
   // ── Fleet card badges & labels ─────────────────────────────────────────────
   'fleet.badgeAvail':        { EN:'AVAIL',                                 IS:'LAUST' },

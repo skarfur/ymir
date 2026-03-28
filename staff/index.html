@@ -650,7 +650,7 @@ function renderRecentCheckins() {
     <span>${IS?'Inn':'In'}</span>
     <span>${IS?'Félagi':'Member'}</span>
     <span>${IS?'Bát':'Boat'}</span>
-    <span>${IS?'Svæði':'Location'}</span>
+    <span>${IS?'Siglingasvæði':'Sailing area'}</span>
     <span>${IS?'Tími':'Duration'}</span>
   </div>`;
   const rows = recent.map(c => {
@@ -1053,7 +1053,7 @@ function openGroupModal() {
   document.getElementById('groupModalTitle').textContent = IS ? 'Hópaúthlutun' : 'Group Checkout';
   document.getElementById('gmBoatsLabel').textContent    = IS ? 'Veldu báta' : 'Select boats';
   document.getElementById('gmParticLabel').textContent   = IS ? 'Iðkendur' : 'Participants (Iðkendur)';
-  document.getElementById('gmLocLabel').textContent      = IS ? 'Staðsetning' : 'Location';
+  document.getElementById('gmLocLabel').textContent      = IS ? 'Siglingasvæði' : 'Sailing area';
   document.getElementById('gmActivityLabel').textContent = IS ? 'Tegund' : 'Activity type';
   _groupBoats = new Set();
   _groupParticipants = 0;
@@ -1171,7 +1171,7 @@ async function submitGroupCheckout() {
   err.style.display = 'none';
   if (_groupBoats.size === 0) { err.textContent = 'Select at least one boat.'; err.style.display = ''; return; }
   const lid = document.getElementById('gmLocation').value;
-  if (!lid) { err.textContent = 'Select a location.'; err.style.display = ''; return; }
+  if (!lid) { err.textContent = (getLang()==='IS'?'Veldu siglingasvæði.':'Select a sailing area.'); err.style.display = ''; return; }
   const tout  = document.getElementById('gmTimeOut').value || fmtTimeNow();
   const retBy = document.getElementById('gmReturnBy').value;
   const actId = document.getElementById('gmActivity').value;

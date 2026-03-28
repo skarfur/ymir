@@ -454,7 +454,7 @@ function tripCard(t){
       <div class="exp-section exp-logistics">
         <div class="exp-section-hdr">${IS?'Upplýsingar um ferð':'Trip Details'}</div>
         <div class="trip-expand-grid">
-          <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+          <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Siglingasvæði':'Sailing area'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
           ${portRow}${crewRow}${keelboatInfoRow}
