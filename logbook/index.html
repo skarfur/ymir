@@ -47,8 +47,6 @@
 .badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
-.trip-expand{display:none;padding:0 12px 12px}
-.trip-card.open .trip-expand{display:block}
 .trip-expand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
 .trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
 .trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
@@ -84,6 +82,17 @@
 details#portDetails summary::-webkit-details-marker{display:none}
 details#portDetails[open] #portSummaryLabel::after{content:' ▴';font-size:8px}
 details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-size:8px}
+/* Expanded card sections */
+.trip-expand{display:none;padding:0 12px 0}
+.trip-card.open .trip-expand{display:block}
+.exp-section{margin:0 -12px;padding:6px 12px 10px;border-top:1px solid var(--border)}
+.exp-section:first-child{padding-top:10px}
+.exp-section .trip-expand-grid{border-top:none;padding-top:2px;margin-top:0}
+.exp-logistics{background:var(--card)}
+.exp-weather{background:rgba(41,128,185,.08)}
+.exp-weather .trip-expand-grid{padding-top:4px}
+.exp-media{background:rgba(212,175,55,.07)}
+.exp-notes{background:rgba(255,255,255,.02)}
 </style>
 </head>
 <body>
@@ -109,7 +118,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   <!-- Logbook header -->
   <div class="section-hdr" style="margin-top:24px">
     <span>Logbook</span>
-    <button class="btn-secondary" style="width:auto;padding:5px 12px;font-size:11px" onclick="openLogModal()">+ Log manually</button>
+    <button class="btn-secondary" style="width:auto;padding:5px 12px;font-size:11px" onclick="openLogModal()">Add a manual log entry</button>
   </div>
 
   <!-- Filter bar -->
@@ -136,15 +145,36 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 <div class="modal-overlay hidden" id="logModal">
   <div class="modal-sheet">
     <div class="modal-title">
-      <span id="logModalTitle">Log a trip</span>
+      <span id="logModalTitle">Add a log entry</span>
       <button class="modal-close" onclick="closeLogModal()">✕</button>
     </div>
 
     <!-- Step 1: pick a trip or enter manually -->
     <div id="logStep1">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Join a recent club trip as crew, or enter a trip manually.</p>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Join a recent club trip as crew, or enter a trip manually. You can add notes, photos, and a GPS track to any log entry.</p>
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
       <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
+
+      <!-- Notes/photos/GPS extras when a club trip is selected -->
+      <div id="joinExtras" style="display:none;margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border-l);border-radius:8px">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">Add to your log entry</div>
+        <div class="form-field"><label>Notes <span style="font-size:9px;color:var(--muted)">optional</span></label>
+          <textarea id="jNotes" rows="2" placeholder="Comments, observations…"></textarea>
+        </div>
+        <div class="form-field">
+          <label>GPS Track — GPX / KML / KMZ <span style="font-size:9px;color:var(--muted)">optional</span></label>
+          <input type="file" id="jTrackFile" accept=".gpx,.kml,.kmz" onchange="handleJoinTrackFile(this)" style="font-size:11px;color:var(--text)">
+          <div id="jTrackStatus" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <div class="form-field">
+          <label>Photos <span style="font-size:9px;color:var(--muted)">optional</span></label>
+          <input type="file" id="jPhotoFiles" accept="image/*" multiple onchange="handleJoinPhotoFiles(this)" style="font-size:11px;color:var(--text)">
+          <div id="jPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+        </div>
+        <div id="jErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+        <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Add to my logbook</button>
+      </div>
+
       <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR ENTER MANUALLY —</div>
       <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
     </div>
@@ -256,6 +286,9 @@ const RECENT_PAGE  = 10;
 let _pendingTrack  = null;   // {fileName, fileData (base64), mimeType}
 let _pendingPhotos = [];     // [{fileName, fileData (base64), mimeType}]
 let _lastPortInput = null;   // which port input was last typed into
+let _selectedClubTrip = null;
+let _joinPendingTrack  = null;
+let _joinPendingPhotos = [];
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function parseDateParts(d){
@@ -280,7 +313,7 @@ function renderStats(){
 
   const catH={};
   myTrips.forEach(t=>{
-    const c=t.boatCategory||'Other';
+    const c=(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'Other';
     catH[c]=(catH[c]||0)+(parseFloat(t.hoursDecimal)||0);
   });
   const entries=Object.entries(catH).sort(([,a],[,b])=>b-a);
@@ -375,6 +408,13 @@ function tripCard(t){
     linkedCrew.length ? linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ') : esc(t.crew||1)
   }</span></div>`;
 
+  // Keelboat vessel info row (registration, make/model, LOA) from boats config
+  const kboat = allBoats.find(b=>b.id===t.boatId);
+  const keelboatInfoRow = (isKeelboat && kboat && (kboat.registrationNo||kboat.typeModel||kboat.loa)) ?
+    `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skip':'Vessel'}</span><span class="trip-exp-val">${
+      [kboat.registrationNo, kboat.typeModel, kboat.loa?(kboat.loa+' ft'):''].filter(Boolean).map(esc).join(' · ')
+    }</span></div>` : '';
+
   const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
   const trackRow = t.trackFileUrl ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}</span></div>` : '';
   const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skýringar':'Notes'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
@@ -382,6 +422,8 @@ function tripCard(t){
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     return urls.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${urls.map(u=>`<a href="${esc(u)}" target="_blank" class="photo-thumb-link"><img src="${esc(u)}" class="photo-thumb" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join('')}</div></span></div>` : '';
   })();
+  const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
+  const hasMedia   = !!(distRow||trackRow||photosRow);
 
   return `<div class="trip-card" onclick="this.classList.toggle('open')">
     <div class="trip-card-main">
@@ -398,20 +440,24 @@ function tripCard(t){
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
           ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
-          ${isKeelboat&&portLine?portLine:''}
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
+          ${isKeelboat&&portLine?portLine:''}
         </div>
       </div>
       <div class="trip-arrow">▾</div>
     </div>
     <div class="trip-expand">
-      <div class="trip-expand-grid">
-        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
-        <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
-        ${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}
-        ${portRow}${crewRow}${distRow}${trackRow}${notesRow}${photosRow}
+      <div class="exp-section exp-logistics">
+        <div class="trip-expand-grid">
+          <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
+          <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
+          <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn||'—')}</span></div>
+          ${portRow}${crewRow}${keelboatInfoRow}
+        </div>
       </div>
+      ${hasWeather?`<div class="exp-section exp-weather"><div class="trip-expand-grid">${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}</div></div>`:''}
+      ${hasMedia?`<div class="exp-section exp-media"><div class="trip-expand-grid">${distRow}${trackRow}${photosRow}</div></div>`:''}
+      ${notesRow?`<div class="exp-section exp-notes"><div class="trip-expand-grid">${notesRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -435,7 +481,7 @@ function applyFilter(){
 
   const filtered=myTrips.filter(t=>{
     if(yr  && !(t.date||'').startsWith(yr)) return false;
-    if(cat && (t.boatCategory||'').toLowerCase()!==cat.toLowerCase()) return false;
+    if(cat){const tCat=((allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').toLowerCase();if(tCat!==cat.toLowerCase())return false;}
     if(role==='skipper' && t.role==='crew') return false;
     if(role==='crew'    && t.role!=='crew') return false;
     if(wind){
@@ -463,7 +509,7 @@ function buildFilters(){
   const thisYear=String(new Date().getFullYear());
   if(years.includes(thisYear)) yrSel.value=thisYear;
 
-  const cats=[...new Set(myTrips.map(t=>t.boatCategory||'').filter(Boolean))].sort();
+  const cats=[...new Set(myTrips.map(t=>(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').filter(Boolean))].sort();
   const cSel=document.getElementById('fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
@@ -478,18 +524,19 @@ const CLUB_PAGE = 10;
 async function openLogModal(){
   document.getElementById('logModal').classList.remove('hidden');
   document.body.style.overflow='hidden';
+  _selectedClubTrip=null;
+  document.getElementById('joinExtras').style.display='none';
   showStep1();
-  // Load recent club trips if not already
-  if(!allClubTrips.length){
-    try{
-      const res=await apiGet('getTrips',{limit:100});
-      // All trips by anyone, excluding already-linked ones for this user
-      const myIds=new Set(myTrips.map(t=>t.linkedTripId||t.linkedCheckoutId||t.id).filter(Boolean));
-      allClubTrips=(res.trips||[])
-        .filter(t=>t.kennitala!==user.kennitala && !myIds.has(t.id))
-        .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    }catch(e){allClubTrips=[];}
-  }
+  document.getElementById('recentTripsList').innerHTML='<div class="empty-note">Loading recent trips…</div>';
+  document.getElementById('loadMoreTripsBtn').style.display='none';
+  // Always refresh club trips so already-logged entries are excluded
+  try{
+    const res=await apiGet('getTrips',{limit:100});
+    const myIds=new Set(myTrips.flatMap(t=>[t.linkedTripId,t.linkedCheckoutId,t.id]).filter(Boolean));
+    allClubTrips=(res.trips||[])
+      .filter(t=>t.kennitala!==user.kennitala && !myIds.has(t.id))
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  }catch(e){allClubTrips=[];}
   clubTripsOffset=0;
   renderClubTripsList();
 }
@@ -497,11 +544,16 @@ async function openLogModal(){
 function closeLogModal(){
   document.getElementById('logModal').classList.add('hidden');
   document.body.style.overflow='';
+  document.getElementById('joinExtras').style.display='none';
+  _selectedClubTrip=null;
+  _joinPendingTrack=null; _joinPendingPhotos=[];
 }
 
 function showStep1(){
   document.getElementById('logStep1').style.display='';
   document.getElementById('logStep2').style.display='none';
+  document.getElementById('joinExtras').style.display='none';
+  _selectedClubTrip=null;
 }
 function showManualForm(){
   document.getElementById('logStep1').style.display='none';
@@ -627,6 +679,91 @@ function handlePhotoFiles(input){
   });
 }
 
+function handleJoinTrackFile(input){
+  const file=input.files[0];
+  if(!file){ _joinPendingTrack=null; document.getElementById('jTrackStatus').textContent=''; return; }
+  const statusEl=document.getElementById('jTrackStatus');
+  statusEl.textContent=IS?'Lesur skrá…':'Reading file…';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    _joinPendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
+    statusEl.textContent=(IS?'Tilbúið: ':'Ready: ')+file.name;
+    statusEl.style.color='var(--brass)';
+  };
+  reader.onerror=function(){ statusEl.textContent=IS?'Lestur mistókst':'Read error'; statusEl.style.color='var(--red)'; _joinPendingTrack=null; };
+  reader.readAsDataURL(file);
+}
+
+function handleJoinPhotoFiles(input){
+  const files=Array.from(input.files);
+  _joinPendingPhotos=[];
+  const preview=document.getElementById('jPhotoPreview');
+  preview.innerHTML='';
+  files.forEach(function(file){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      _joinPendingPhotos.push({fileName:file.name, fileData:e.target.result, mimeType:file.type||'image/jpeg'});
+      const img=document.createElement('img');
+      img.src=e.target.result; img.className='photo-thumb';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitJoinTrip(){
+  if(!_selectedClubTrip){ showToast(IS?'Engin ferð valin':'No trip selected','err'); return; }
+  const t=_selectedClubTrip;
+  const notes=document.getElementById('jNotes').value.trim();
+  const errEl=document.getElementById('jErr');
+  errEl.style.display='none';
+  const btn=document.getElementById('jSubmitBtn');
+  btn.disabled=true; btn.textContent=IS?'Hleður upp…':'Uploading…';
+
+  // Upload GPS track
+  let trackFileUrl='', trackSource='';
+  if(_joinPendingTrack){
+    try{
+      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_joinPendingTrack.fileName,fileData:_joinPendingTrack.fileData,mimeType:_joinPendingTrack.mimeType});
+      if(tr.ok){ trackFileUrl=tr.trackFileUrl||''; trackSource=tr.trackSource||''; }
+      else showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
+    }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
+  }
+
+  // Upload photos
+  const photoUrls=[];
+  for(const ph of _joinPendingPhotos){
+    try{
+      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
+      if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
+      else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
+    }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
+  }
+
+  try{
+    await apiPost('saveTrip',{
+      linkedTripId: t.id,
+      linkedCheckoutId: t.linkedCheckoutId||'',
+      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
+      locationId: t.locationId, locationName: t.locationName,
+      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
+      crew: t.crew, role: 'crew',
+      beaufort: t.beaufort||'', windDir: t.windDir||'',
+      notes,
+      trackFileUrl, trackSource,
+      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
+    });
+    showToast(IS?'Bætt við siglingabókinni ✓':'Added to your logbook ✓','success');
+    closeLogModal();
+    reload();
+  }catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display='';
+    btn.disabled=false;
+    btn.textContent=IS?'Bæta við siglingabók':'Add to my logbook';
+  }
+}
+
 function renderClubTripsList(){
   const el=document.getElementById('recentTripsList');
   const page=allClubTrips.slice(0, clubTripsOffset+CLUB_PAGE);
@@ -651,30 +788,44 @@ function loadMoreTrips(){
   renderClubTripsList();
 }
 
-async function joinTripAsCrew(tripId, el){
-  if(el.classList.contains('selected')){el.classList.remove('selected');return;}
+function joinTripAsCrew(tripId, el){
+  // Toggle deselect
+  if(el.classList.contains('selected')){
+    el.classList.remove('selected');
+    document.getElementById('joinExtras').style.display='none';
+    _selectedClubTrip=null;
+    return;
+  }
   document.querySelectorAll('.trip-pick-card.selected').forEach(e=>e.classList.remove('selected'));
   el.classList.add('selected');
   const t=allClubTrips.find(x=>x.id===tripId);
   if(!t) return;
-  try{
-    await apiPost('saveTrip',{
-      linkedTripId: t.id,
-      linkedCheckoutId: t.linkedCheckoutId||'',
-      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
-      locationId: t.locationId, locationName: t.locationName,
-      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
-      crew: t.crew, role: 'crew',
-      beaufort: t.beaufort||'', windDir: t.windDir||'',
-      notes: '',
-    });
-    showToast('Added to your logbook as crew ✓','success');
-    closeLogModal();
-    reload();
-  }catch(e){
-    showToast('Error: '+e.message,'error');
+
+  // Guard: already in logbook
+  const alreadyInLog=myTrips.some(x=>
+    x.linkedTripId===t.id||
+    (t.linkedCheckoutId&&x.linkedCheckoutId===t.linkedCheckoutId)
+  );
+  if(alreadyInLog){
     el.classList.remove('selected');
+    showToast(IS?'Þessi ferð er nú þegar í siglingabókinni þinni.':'This trip is already in your logbook.','err');
+    return;
   }
+
+  _selectedClubTrip=t;
+  // Reset extras form
+  _joinPendingTrack=null; _joinPendingPhotos=[];
+  document.getElementById('jTrackFile').value='';
+  document.getElementById('jTrackStatus').textContent='';
+  document.getElementById('jPhotoFiles').value='';
+  document.getElementById('jPhotoPreview').innerHTML='';
+  document.getElementById('jNotes').value='';
+  document.getElementById('jErr').style.display='none';
+  const btn=document.getElementById('jSubmitBtn');
+  btn.disabled=false; btn.textContent=IS?'Bæta við siglingabók':'Add to my logbook';
+  document.getElementById('joinExtras').style.display='';
+  // Scroll extras into view
+  document.getElementById('joinExtras').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 async function submitManual(){
@@ -703,6 +854,14 @@ async function submitManual(){
 
   if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
   if(!boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
+
+  // Check for duplicate trip on same date + boat
+  const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
+  if(dupeTrip){
+    errEl.textContent=IS?'Þú hefur þegar skráð ferð með þessum bát á þessum degi. Vinsamlegast athugaðu siglingabókina.':'You already have a trip logged with this boat on this date. Please check your logbook.';
+    errEl.style.display='';
+    return;
+  }
 
   // Compute hours
   let hoursDecimal=0;
