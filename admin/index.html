@@ -830,7 +830,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Auto-generate key from EN label in category modal
   document.getElementById("bcLabelEN").addEventListener("input", e => {
     if (!_bcEditingId) {
-      document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, '-');
+      document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, ' ');
     }
   });
 
@@ -1113,7 +1113,7 @@ function openBoatCatModal(key) {
 
 async function saveBoatCat() {
   const labelEN = document.getElementById("bcLabelEN").value.trim();
-  const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
+  const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,' ');
   if (!labelEN || !key) { toast("Name and key required.", "err"); return; }
 
   const payload = {

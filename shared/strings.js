@@ -725,6 +725,17 @@ const STRINGS = {
   'location.typePort':       { EN:'Port',                                  IS:'Höfn' },
   'location.typeLocation':   { EN:'Location',                              IS:'Staðsetning' },
 
+  // ── Fleet card badges & labels ─────────────────────────────────────────────
+  'fleet.badgeAvail':        { EN:'AVAIL',                                 IS:'LAUST' },
+  'fleet.badgeOut':          { EN:'OUT',                                   IS:'ÚTI' },
+  'fleet.badgeOverdue':      { EN:'OVERDUE',                               IS:'TÍMABÆRT' },
+  'fleet.badgeOos':          { EN:'OOS',                                   IS:'ÓTÆ.' },
+  'fleet.badgeYours':        { EN:'YOURS',                                 IS:'ÞITT' },
+  'fleet.aboard':            { EN:'{n} aboard',                            IS:'{n} um borð' },
+  'fleet.outTime':           { EN:'Out {t}',                               IS:'Út {t}' },
+  'fleet.checkIn':           { EN:'Check In',                              IS:'Skrá inn' },
+  'fleet.delete':            { EN:'Delete',                                IS:'Eyða' },
+
 };
 
 window.s = function s(key, vars, lang) {
