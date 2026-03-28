@@ -572,7 +572,7 @@ function showManualForm(){
   allBoats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=(b.name||b.id);bSel.appendChild(o);});
   const lSel=document.getElementById('mLocation');
   lSel.innerHTML='<option value="">Select location…</option>';
-  allLocs.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
+  allLocs.filter(l=>l.type!=='port').forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
   // Populate ports datalist
   populatePortsDatalist();
   // Reset file upload state

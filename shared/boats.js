@@ -203,7 +203,9 @@ function renderCheckoutCard(co, opts) {
   }
 
   // Sub-line
-  const subLine = `${_besc(co.locationName||"")} · ${_besc(s("fleet.outTime",{t:tout}))}`;
+  const isKeel  = cat === 'keelboat';
+  const portInfo = isKeel && co.departurePort ? ` · ⚓ ${_besc(co.departurePort)}` : '';
+  const subLine = `${_besc(co.locationName||"")}${portInfo} · ${_besc(s("fleet.outTime",{t:tout}))}`;
 
   // Wx snapshot (staff)
   let wxHtml = "";

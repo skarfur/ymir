@@ -557,7 +557,7 @@ function populateSelects() {
       const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; bSel.appendChild(o);
     });
   const lSel = document.getElementById('coLocation');
-  locations.forEach(l => {
+  locations.filter(l => l.type !== 'port').forEach(l => {
     const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o);
   });
   document.getElementById('coTimeOut').value = fmtTimeNow();
@@ -1078,8 +1078,8 @@ function openGroupModal() {
   });
   const lSel = document.getElementById('gmLocation');
   lSel.innerHTML = '<option value="">—</option>';
-  locations.forEach(l => { const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
-  const foss = locations.find(l => l.name && l.name.toLowerCase().includes('fossvogur'));
+  locations.filter(l => l.type !== 'port').forEach(l => { const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
+  const foss = locations.filter(l => l.type !== 'port').find(l => l.name && l.name.toLowerCase().includes('fossvogur'));
   if (foss) lSel.value = foss.id;
   const aSel = document.getElementById('gmActivity');
   aSel.innerHTML = '<option value="">— None —</option>';

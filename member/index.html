@@ -354,10 +354,17 @@ function renderLaunchForm(boat) {
   if(!boat) return;
   launchBoat=boat;
   document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+boat.name;
-  var locOpts=locations.map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  var isKeel=(boat.category||'').toLowerCase()==='keelboat';
+  var locOpts=locations.filter(function(l){return l.type!=='port';}).map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  var portOpts=isKeel?locations.filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join(''):'';
+  var defaultPort='';
+  if(isKeel&&boat.defaultPortId){var _hp=locations.find(function(l){return l.id===boat.defaultPortId;});if(_hp)defaultPort=_hp.name;}
   document.getElementById('launchModalBody').innerHTML=
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
+    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓ '+(L==='IS'?'Brottfararhöfn':'Departure Port')+'</label>'+
+      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+(L==='IS'?'Heimahöfn':'Home port')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
+      '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
       '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
@@ -407,6 +414,7 @@ function advanceToLaunchChecklist() {
     crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input'))
       .map(i=>({name:i.value.trim(),kennitala:i.dataset.kennitala||''}))
       .filter(c=>c.name),
+    departurePort: (document.getElementById('launchDeparturePort')?.value||'').trim(),
   };
   renderLaunchChecklist(launchBoat);
 }
@@ -495,7 +503,7 @@ async function submitLaunch() {
     document.getElementById('launchCheckErr').style.display='block'; return;
   }
   var fv=window._launchFormValues||{};
-  var lid=fv.lid, tout=fv.tout, ret=fv.ret, crewCount=fv.crew||1, crewNames=fv.crewNames||[];
+  var lid=fv.lid, tout=fv.tout, ret=fv.ret, crewCount=fv.crew||1, crewNames=fv.crewNames||[], depPort=fv.departurePort||'';
   if(!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
   var location=locations.find(l=>l.id===lid)||{};
   var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
@@ -505,6 +513,7 @@ async function submitLaunch() {
       boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
       locationId:lid, locationName:location.name||lid,
       checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
+      departurePort:depPort,
       memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
@@ -907,7 +916,7 @@ async function submitManualTrip() {
 function populateFormSelects() {
   const rBoat=document.getElementById('rBoat'),rLoc=document.getElementById('rLocation');
   boats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;rBoat.appendChild(o);});
-  locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
+  locations.filter(l=>l.type!=='port').forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
 }
 function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
 
