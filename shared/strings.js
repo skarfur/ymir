@@ -58,6 +58,8 @@ const STRINGS = {
 
   // ── Generic labels ─────────────────────────────────────────────────────────
   'lbl.loading':       { EN:'Loading…',            IS:'Hleður…' },
+  'lbl.on':            { EN:'On',                  IS:'Kveikt' },
+  'lbl.off':           { EN:'Off',                 IS:'Slökkt' },
   'lbl.noData':        { EN:'No data',            IS:'Engin gögn' },
   'lbl.name':          { EN:'Name',                IS:'Nafn' },
   'lbl.date':          { EN:'Date',                IS:'Dagsetning' },
@@ -684,6 +686,22 @@ const STRINGS = {
   'payroll.starfshlutfall':    { EN:'Employment % (Starfshlutfall)',      IS:'Starfshlutfall (%)' },
   'payroll.istarf95':          { EN:'Job code (ISTARF)',                  IS:'Starfaflokkun (ISTARF)' },
   'payroll.taxWithheld':       { EN:'Tax withheld',                   IS:'Staðgreiðsla' },
+  // ── Punch clock widget ──────────────────────────────────────────────────────
+  'payroll.clockIn':           { EN:'Clock In',              IS:'Stimpla inn' },
+  'payroll.clockOut':          { EN:'Clock Out',             IS:'Stimpla út' },
+  'payroll.startBreak':        { EN:'Start Break',           IS:'Fara í hlé' },
+  'payroll.endBreak':          { EN:'End Break',             IS:'Ljúka hlé' },
+  'payroll.currentShift':      { EN:'On shift',              IS:'Á vakt' },
+  'payroll.onBreak':           { EN:'On break since',        IS:'Í hléi síðan' },
+  'payroll.clockedInAt':       { EN:'Clocked in at',         IS:'Stimplaðist inn' },
+  'payroll.recentShifts':      { EN:'Recent shifts',         IS:'Nýlegar vaktir' },
+  'payroll.noShifts':          { EN:'No shifts logged yet',  IS:'Engar vaktir skráðar' },
+  'payroll.shiftSummary':      { EN:'Shift summary',         IS:'Samantekt vaktar' },
+  'payroll.totalWorked':       { EN:'Total worked',          IS:'Vann samtals' },
+  'payroll.totalBreak':        { EN:'Total break',           IS:'Hlé samtals' },
+  'payroll.confirmShift':      { EN:'Done',                  IS:'Loka' },
+  'payroll.editEntry':         { EN:'Edit',                  IS:'Breyta' },
+  'payroll.allowBreaks':       { EN:'Allow break logging',   IS:'Leyfa hléaskráningu' },
 
   // ── Keelboat / logbook expanded (Phase 1) ──────────────────────────────────
   'logbook.distanceNm':      { EN:'Distance (nm)',                         IS:'Vegalengd (sjómílur)' },

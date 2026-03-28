@@ -277,102 +277,266 @@ window.calculatePayslip = function(emp, regularMinutes, otMinutesOrOt1, manualLi
   };
 };
 
-/* PP PUNCH CLOCK WIDGET ══════════════════════════════════════════════════════ */
-function punchClockWidget(el, employeeId) {
+/* PP PUNCH CLOCK WIDGET ══════════════════════════════════════════════════════
+   punchClockWidget(el, employeeId, opts)
+   opts.allowBreaks — show start/end break button when true
+══════════════════════════════════════════════════════════════════════════════ */
+function punchClockWidget(el, employeeId, opts) {
   if (!el || !employeeId) return;
+  opts = opts || {};
 
   if (!document.getElementById('pcStyle')) {
-    var style = document.createElement('style');
-    style.id  = 'pcStyle';
-    style.textContent = [
-      '.pc-btn{border:none;border-radius:24px;font-size:15px;font-weight:700;padding:13px 36px;cursor:pointer;transition:background .2s,transform .1s;letter-spacing:.3px;}',
-      '.pc-btn:active{transform:scale(.97);}',
-      '.pc-btn-in{background:var(--green);color:#fff;}',
-      '.pc-btn-out{background:var(--red);color:#fff;}',
-      '.pc-entry{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);}',
-      '.pc-entry:last-child{border-bottom:none;}',
-      '.pc-timer{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brass);letter-spacing:.5px;}',
-    ].join('');
-    document.head.appendChild(style);
-  }
-
-  function fmtMs(ms) {
-    var sec = Math.floor(ms / 1000);
-    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), sc = sec % 60;
-    return h > 0
-      ? h + 'h ' + String(m).padStart(2, '0') + 'm'
-      : m + 'm ' + String(sc).padStart(2, '0') + 's';
+    var st = document.createElement('style');
+    st.id  = 'pcStyle';
+    st.textContent =
+      '.pc-wrap{padding:14px 16px 10px;display:flex;flex-direction:column;gap:10px}' +
+      '.pc-btns{display:flex;gap:8px;flex-wrap:wrap}' +
+      '.pc-btn{flex:1;min-width:110px;border:none;border-radius:6px;font-size:13px;font-weight:600;padding:10px 18px;cursor:pointer;transition:background .15s,opacity .15s;font-family:inherit;letter-spacing:.2px}' +
+      '.pc-btn:active{opacity:.85}' +
+      '.pc-btn:disabled{opacity:.45;cursor:default}' +
+      '.pc-btn-in{background:var(--green);color:#fff}' +
+      '.pc-btn-out{background:var(--red);color:#fff}' +
+      '.pc-btn-brk{background:var(--surface);border:1px solid var(--brass);color:var(--brass)}' +
+      '.pc-btn-brk-end{background:var(--brass);color:#0b1f38}' +
+      '.pc-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}' +
+      '.pc-timer{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brass);letter-spacing:.5px}' +
+      '.pc-recent{border-top:1px solid var(--border);padding:10px 16px 12px;display:flex;flex-direction:column;gap:0}' +
+      '.pc-recent-lbl{font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}' +
+      '.pc-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}' +
+      '.pc-row:last-child{border-bottom:none}' +
+      // End-of-shift modal
+      '.pc-modal-bg{position:fixed;inset:0;background:#00000088;z-index:600;display:flex;align-items:flex-end;justify-content:center}' +
+      '.pc-modal{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto}' +
+      '.pc-modal-title{font-size:14px;font-weight:600;color:var(--brass);margin-bottom:4px;letter-spacing:.3px}' +
+      '.pc-modal-sub{font-size:11px;color:var(--muted);margin-bottom:16px}' +
+      '.pc-summary-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}' +
+      '.pc-summary-row:last-child{border-bottom:none}' +
+      '.pc-summary-lbl{color:var(--muted);font-size:11px}' +
+      '.pc-summary-val{font-weight:600;color:var(--text)}' +
+      '.pc-entry-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}' +
+      '.pc-entry-row:last-child{border-bottom:none}' +
+      '.pc-edit-row{background:var(--surface);border-radius:6px;padding:8px;margin:4px 0;font-size:12px;display:flex;flex-direction:column;gap:6px}' +
+      '.pc-edit-row input{background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box}';
+    document.head.appendChild(st);
   }
 
   function t(k) { return typeof s === 'function' ? s(k) : k.split('.').pop(); }
+  function _esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  function fmtMs(ms) {
+    var sec = Math.floor(Math.max(0, ms) / 1000);
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), sc = sec % 60;
+    return h > 0
+      ? h + 'h ' + String(m).padStart(2,'0') + 'm'
+      : m + 'm ' + String(sc).padStart(2,'0') + 's';
+  }
+
+  function fmtTime(iso) { return iso ? String(iso).slice(11,16) : '--:--'; }
+  function fmtDate(iso) { return iso ? String(iso).slice(0,10) : ''; }
+
+  // ── State: { clockedIn, onBreak, clockedInAt, breakStartedAt, recent, todayEntries }
   function render(state) {
-    var ci      = state.clockedIn;
-    var elapsed = Date.now() - new Date(state.since || 0).getTime();
-    var recentHTML = (state.recent || []).slice(0, 5).map(function(e) {
-      return '<div class="pc-entry">'
-        + '<span style="min-width:90px">' + e.inTime.slice(11, 16) + '\u2013' + e.outTime.slice(11, 16) + '</span>'
-        + '<span style="flex:1;color:var(--muted);font-size:11px">' + e.inTime.slice(0, 10) + '</span>'
-        + '<span style="font-weight:600">' + (e.durationMinutes ? fmtDurationMins(+e.durationMinutes) : '\u2013') + '</span>'
-        + '</div>';
-    }).join('');
-
-    el.innerHTML =
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 16px 10px">'
-      + (ci
-        ? '<div style="text-align:center">'
-          + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">' + t('payroll.currentShift') + '</div>'
-          + '<div class="pc-timer" id="pcTimerDisplay">' + fmtMs(elapsed) + '</div>'
-          + '</div>'
-        : '')
-      + '<button id="pcMainBtn" class="pc-btn ' + (ci ? 'pc-btn-out' : 'pc-btn-in') + '">'
-        + (ci ? t('payroll.clockOut') : t('payroll.clockIn'))
-        + '</button>'
-      + (state.error ? '<div style="font-size:12px;color:var(--red);text-align:center">' + state.error + '</div>' : '')
-      + '</div>'
-      + (recentHTML
-        ? '<div style="padding:0 16px 14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">'
-          + t('payroll.recentShifts') + '</div>' + recentHTML + '</div>'
-        : '<div style="padding:0 16px 14px;font-size:12px;color:var(--muted);text-align:center">' + t('payroll.noShifts') + '</div>');
-
-    document.getElementById('pcMainBtn').onclick = async function() {
-      var btn = document.getElementById('pcMainBtn');
-      if (btn) btn.disabled = true;
-      try {
-        if (ci) await apiPost('clockOut', { employeeId });
-        else    await apiPost('clockIn',  { employeeId });
-        await pcRefresh(el, employeeId);
-      } catch(err) {
-        render(Object.assign({}, state, { error: err.message || 'Error' }));
-      }
-    };
-
     clearInterval(el._pcTick);
-    if (ci) {
+    var ci    = state.clockedIn;
+    var onBrk = state.onBreak;
+    var since = ci ? new Date(state.clockedInAt || 0) : null;
+    var brkSince = onBrk ? new Date(state.breakStartedAt || 0) : null;
+    var allowBreaks = opts.allowBreaks;
+
+    // ── Status line
+    var statusHTML = '';
+    if (ci && !onBrk) {
+      statusHTML = '<div class="pc-status">'
+        + '<span>' + t('payroll.clockedInAt') + ' <strong>' + fmtTime(state.clockedInAt) + '</strong></span>'
+        + '&nbsp;·&nbsp;<span class="pc-timer" id="pcTimerDisplay">' + fmtMs(Date.now() - since) + '</span>'
+        + '</div>';
+    } else if (onBrk) {
+      statusHTML = '<div class="pc-status">'
+        + '<span>' + t('payroll.onBreak') + ' <strong>' + fmtTime(state.breakStartedAt) + '</strong></span>'
+        + '&nbsp;·&nbsp;<span class="pc-timer" id="pcTimerDisplay">' + fmtMs(Date.now() - brkSince) + '</span>'
+        + '</div>';
+    }
+
+    // ── Buttons
+    var mainLabel = ci ? t('payroll.clockOut') : t('payroll.clockIn');
+    var mainCls   = ci ? 'pc-btn-out' : 'pc-btn-in';
+    var brkLabel  = onBrk ? t('payroll.endBreak') : t('payroll.startBreak');
+    var brkCls    = onBrk ? 'pc-btn-brk-end' : 'pc-btn-brk';
+
+    var btnsHTML = '<div class="pc-btns">'
+      + '<button id="pcMainBtn" class="pc-btn ' + mainCls + '">' + mainLabel + '</button>'
+      + (allowBreaks && ci
+          ? '<button id="pcBrkBtn" class="pc-btn ' + brkCls + '">' + brkLabel + '</button>'
+          : '')
+      + '</div>';
+
+    // ── Recent shifts (last 5 completed)
+    var recentHTML = '';
+    var recent = state.recent || [];
+    if (recent.length) {
+      recentHTML = '<div class="pc-recent"><div class="pc-recent-lbl">' + t('payroll.recentShifts') + '</div>'
+        + recent.slice(0,5).map(function(r) {
+            return '<div class="pc-row">'
+              + '<span style="min-width:80px;font-variant-numeric:tabular-nums">' + fmtTime(r.inTime) + '\u2013' + fmtTime(r.outTime) + '</span>'
+              + '<span style="flex:1;color:var(--muted)">' + fmtDate(r.inTime) + '</span>'
+              + '<span style="font-weight:600">' + (r.durationMinutes ? fmtDurationMins(+r.durationMinutes) : '\u2013') + '</span>'
+              + '</div>';
+          }).join('')
+        + '</div>';
+    } else if (!ci) {
+      recentHTML = '<div class="pc-recent"><span style="font-size:12px;color:var(--muted)">' + t('payroll.noShifts') + '</span></div>';
+    }
+
+    el.innerHTML = '<div class="pc-wrap">' + btnsHTML + statusHTML
+      + (state.error ? '<div style="font-size:12px;color:var(--red)">' + _esc(state.error) + '</div>' : '')
+      + '</div>' + recentHTML;
+
+    // ── Button handlers
+    document.getElementById('pcMainBtn').onclick = async function() {
+      this.disabled = true;
+      try {
+        if (ci) {
+          await apiPost('clockOut', { employeeId: employeeId });
+          var res = await apiGet('getTimeEntries', { employeeId: employeeId });
+          pcShowSummaryModal(res.entries || [], employeeId);
+        } else {
+          await apiPost('clockIn', { employeeId: employeeId });
+        }
+        await pcRefresh(el, employeeId);
+      } catch(err) { render(Object.assign({}, state, { error: err.message || 'Error' })); }
+    };
+    var brkBtn = document.getElementById('pcBrkBtn');
+    if (brkBtn) {
+      brkBtn.onclick = async function() {
+        this.disabled = true;
+        try {
+          if (onBrk) await apiPost('breakEnd',   { employeeId: employeeId });
+          else       await apiPost('breakStart', { employeeId: employeeId });
+          await pcRefresh(el, employeeId);
+        } catch(err) { render(Object.assign({}, state, { error: err.message || 'Error' })); }
+      };
+    }
+
+    // ── Live timer tick
+    if (ci || onBrk) {
+      var _timerBase = onBrk ? brkSince : since;
       el._pcTick = setInterval(function() {
         var d = document.getElementById('pcTimerDisplay');
-        if (d) d.textContent = fmtMs(Date.now() - new Date(state.since).getTime());
+        if (d) d.textContent = fmtMs(Date.now() - _timerBase);
         else   clearInterval(el._pcTick);
       }, 1000);
     }
   }
 
+  // ── End-of-shift summary modal
+  function pcShowSummaryModal(allEntries, empId) {
+    var today = new Date().toISOString().slice(0,10);
+    var todayEntries = allEntries.filter(function(e) {
+      return (e.timestamp || '').slice(0,10) === today || (e.originalTimestamp || '').slice(0,10) === today;
+    }).sort(function(a,b) { return a.timestamp > b.timestamp ? 1 : -1; });
+
+    var ins   = todayEntries.filter(function(e) { return e.type === 'in'; });
+    var outs  = todayEntries.filter(function(e) { return e.type === 'out'; });
+    var brks  = todayEntries.filter(function(e) { return e.type === 'break_start'; });
+    var brkEs = todayEntries.filter(function(e) { return e.type === 'break_end'; });
+
+    // Calculate totals
+    var totalWorkedMins = outs.reduce(function(s,o) { return s + (+o.durationMinutes || 0); }, 0);
+    var totalBreakMins  = brkEs.reduce(function(s,e) { return s + (+e.durationMinutes || 0); }, 0);
+
+    // Build entry rows
+    function entryRow(e, label) {
+      return '<div class="pc-entry-row" id="pcERow_' + e.id + '">'
+        + '<span style="min-width:60px;color:var(--muted);font-size:10px;text-transform:uppercase">' + label + '</span>'
+        + '<span style="flex:1;font-variant-numeric:tabular-nums">' + fmtTime(e.timestamp) + '</span>'
+        + '<span style="color:var(--muted)">' + (e.durationMinutes ? fmtDurationMins(+e.durationMinutes) : '') + '</span>'
+        + '<button onclick="pcEditEntry(\'' + e.id + '\',\'' + e.timestamp + '\',' + empId + ')" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px 6px;letter-spacing:.3px">' + t('payroll.editEntry') + '</button>'
+        + '</div>';
+    }
+
+    var rows = '';
+    todayEntries.forEach(function(e) {
+      var label = e.type === 'in' ? 'IN' : e.type === 'out' ? 'OUT' : e.type === 'break_start' ? 'BRK\u25b6' : e.type === 'break_end' ? 'BRK\u25a0' : e.type;
+      rows += entryRow(e, label);
+    });
+
+    var html = '<div class="pc-modal-bg" id="pcSummaryBg">'
+      + '<div class="pc-modal">'
+      + '<div class="pc-modal-title">' + t('payroll.shiftSummary') + '</div>'
+      + '<div class="pc-modal-sub">' + today + '</div>'
+      + '<div style="margin-bottom:14px">'
+      + '<div class="pc-summary-row"><span class="pc-summary-lbl">' + t('payroll.totalWorked') + '</span><span class="pc-summary-val">' + fmtDurationMins(totalWorkedMins) + '</span></div>'
+      + (totalBreakMins ? '<div class="pc-summary-row"><span class="pc-summary-lbl">' + t('payroll.totalBreak') + '</span><span class="pc-summary-val">' + fmtDurationMins(totalBreakMins) + '</span></div>' : '')
+      + '</div>'
+      + (rows ? '<div style="margin-bottom:16px">' + rows + '</div>' : '')
+      + '<div id="pcEditArea"></div>'
+      + '<button class="btn btn-primary" style="width:100%" onclick="document.getElementById(\'pcSummaryBg\').remove()">' + t('payroll.confirmShift') + '</button>'
+      + '</div></div>';
+
+    var div = document.createElement('div');
+    div.innerHTML = html;
+    document.body.appendChild(div.firstElementChild);
+  }
+
+  // ── Inline entry edit (injected into modal)
+  window.pcEditEntry = function(id, currentTs, empId) {
+    var area = document.getElementById('pcEditArea');
+    if (!area) return;
+    var localDt = currentTs ? new Date(currentTs).toISOString().slice(0,16) : '';
+    area.innerHTML = '<div class="pc-edit-row">'
+      + '<label style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px">Edit time for entry</label>'
+      + '<input type="datetime-local" id="pcEditTs" value="' + localDt + '">'
+      + '<input type="text" id="pcEditNote" placeholder="Note (optional)">'
+      + '<div style="display:flex;gap:6px">'
+      + '<button class="btn btn-primary" style="flex:1;font-size:11px" onclick="pcSaveEdit(\'' + id + '\',' + empId + ')">Save</button>'
+      + '<button class="btn btn-secondary" style="font-size:11px" onclick="document.getElementById(\'pcEditArea\').innerHTML=\'\'">Cancel</button>'
+      + '</div></div>';
+  };
+
+  window.pcSaveEdit = async function(id, empId) {
+    var tsEl   = document.getElementById('pcEditTs');
+    var noteEl = document.getElementById('pcEditNote');
+    if (!tsEl || !tsEl.value) return;
+    var iso = new Date(tsEl.value).toISOString();
+    try {
+      await apiPost('adminEditTime', { id: id, timestamp: iso, note: noteEl ? noteEl.value : '' });
+      document.getElementById('pcEditArea').innerHTML = '<span style="color:var(--green);font-size:12px">\u2713 Saved</span>';
+      var row = document.getElementById('pcERow_' + id);
+      if (row) {
+        var timeSpan = row.querySelectorAll('span')[1];
+        if (timeSpan) timeSpan.textContent = iso.slice(11,16);
+      }
+    } catch(e) {
+      document.getElementById('pcEditArea').innerHTML = '<span style="color:var(--red);font-size:12px">' + _esc(e.message) + '</span>';
+    }
+  };
+
   async function pcRefresh(container, empId) {
     try {
-      var res     = await apiGet('getTimeEntries?employeeId=' + empId);
-      var entries = (res.entries || []).slice().sort(function(a, b) { return a.timestamp > b.timestamp ? 1 : -1; });
+      var res     = await apiGet('getTimeEntries', { employeeId: empId });
+      var entries = (res.entries || []).slice().sort(function(a,b) { return a.timestamp > b.timestamp ? 1 : -1; });
       var ins     = entries.filter(function(e) { return e.type === 'in'; });
       var outs    = entries.filter(function(e) { return e.type === 'out'; });
-      var lastIn  = ins[ins.length - 1], lastOut = outs[outs.length - 1];
-      var ci      = !!(lastIn && (!lastOut || lastIn.timestamp > lastOut.timestamp));
-      var recent  = [];
+      var brkStarts = entries.filter(function(e) { return e.type === 'break_start'; });
+      var brkEnds   = entries.filter(function(e) { return e.type === 'break_end'; });
+      var lastIn    = ins[ins.length-1];
+      var lastOut   = outs[outs.length-1];
+      var lastBrkS  = brkStarts[brkStarts.length-1];
+      var lastBrkE  = brkEnds[brkEnds.length-1];
+      var ci    = !!(lastIn  && (!lastOut  || lastIn.timestamp  > lastOut.timestamp));
+      var onBrk = !!(lastBrkS && (!lastBrkE || lastBrkS.timestamp > lastBrkE.timestamp));
+      // Build recent completed shifts
+      var recent = [];
       outs.slice().reverse().forEach(function(out) {
         var mi = ins.slice().reverse().find(function(i) { return i.timestamp < out.timestamp; });
         if (mi) recent.push({ inTime: mi.timestamp, outTime: out.timestamp, durationMinutes: out.durationMinutes });
       });
-      render({ clockedIn: ci, since: ci ? lastIn.timestamp : null, recent });
+      render({ clockedIn: ci, onBreak: onBrk,
+               clockedInAt: ci ? lastIn.timestamp : null,
+               breakStartedAt: onBrk ? lastBrkS.timestamp : null,
+               recent: recent });
     } catch(err) {
-      render({ clockedIn: false, recent: [], error: 'Could not load shift data' });
+      render({ clockedIn: false, onBreak: false, recent: [], error: err.message || 'Could not load shift data' });
     }
   }
 

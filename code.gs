@@ -246,6 +246,8 @@ function route_(action, b) {
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
+    case 'breakStart':          return breakStart_(b);
+    case 'breakEnd':            return breakEnd_(b);
     case 'getTimeEntries':      return getTimeEntries_(b);
     case 'adminEditTime':       return adminEditTime_(b);
     case 'adminAddTime':    return adminAddTime_(b);
@@ -588,6 +590,45 @@ function clockOut_(b) {
   return okJ({ clocked:'out', timestamp:now, durationMinutes:dur });
 }
 
+function breakStart_(b) {
+  if (!b.employeeId) return failJ('employeeId required');
+  const entries = readAll_(TABS_.timeClock).filter(function(r){ return r.employeeId === b.employeeId; });
+  const ins   = entries.filter(function(r){ return r.type === 'in'; });
+  const outs  = entries.filter(function(r){ return r.type === 'out'; });
+  const lastIn  = ins[ins.length-1];
+  const lastOut = outs[outs.length-1];
+  if (!lastIn || (lastOut && lastOut.timestamp > lastIn.timestamp))
+    return failJ('Not clocked in');
+  const brks  = entries.filter(function(r){ return r.type === 'break_start'; });
+  const brkEs = entries.filter(function(r){ return r.type === 'break_end'; });
+  const lastBrk  = brks[brks.length-1];
+  const lastBrkE = brkEs[brkEs.length-1];
+  if (lastBrk && (!lastBrkE || lastBrk.timestamp > lastBrkE.timestamp))
+    return failJ('Already on break');
+  const now = new Date().toISOString();
+  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'break_start',
+    timestamp:now, source:'staff', originalTimestamp:'', note:b.note||'', periodKey:periodKey_(), durationMinutes:0 });
+  cDel_('time_clock');
+  return okJ({ type:'break_start', timestamp:now });
+}
+
+function breakEnd_(b) {
+  if (!b.employeeId) return failJ('employeeId required');
+  const entries = readAll_(TABS_.timeClock).filter(function(r){ return r.employeeId === b.employeeId; });
+  const brks  = entries.filter(function(r){ return r.type === 'break_start'; });
+  const brkEs = entries.filter(function(r){ return r.type === 'break_end'; });
+  const lastBrk  = brks[brks.length-1];
+  const lastBrkE = brkEs[brkEs.length-1];
+  if (!lastBrk || (lastBrkE && lastBrkE.timestamp > lastBrk.timestamp))
+    return failJ('Not on break');
+  const now = new Date().toISOString();
+  const dur = Math.round((new Date(now) - new Date(lastBrk.timestamp)) / 60000);
+  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'break_end',
+    timestamp:now, source:'staff', originalTimestamp:'', note:b.note||'', periodKey:periodKey_(), durationMinutes:dur });
+  cDel_('time_clock');
+  return okJ({ type:'break_end', timestamp:now, durationMinutes:dur });
+}
+
 function getTimeEntries_(b) {
   var rows = readAll_(TABS_.timeClock);
   if (b.employeeId) rows = rows.filter(function(r){ return r.employeeId === b.employeeId; });
@@ -819,7 +860,8 @@ function getConfig_() {
   try { var lRaw = getConfigSheetValue_('launchChecklists'); if (lRaw) launchChecklists = JSON.parse(lRaw); } catch (e) { }
   let boatCategories = [];
   try { var bcRaw = getConfigSheetValue_('boatCategories'); if (bcRaw) boatCategories = JSON.parse(bcRaw); } catch (e) { }
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, boats, locations, launchChecklists, boatCategories, staffStatus };
+  const allowBreaks = getConfigSheetValue_('allowBreaks') === 'true';
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks };
   cPut_('config', config);
   return okJ(config);
 }
@@ -871,6 +913,7 @@ function saveConfig_(b) {
   if (b.boatCategories)    { setConfigSheetValue_('boatCategories',    JSON.stringify(b.boatCategories));    }
 
   if (b.activityTypes) { setConfigSheetValue_('activity_types', JSON.stringify(b.activityTypes)); saved.activityTypes = true; }
+  if (b.allowBreaks !== undefined) { setConfigSheetValue_('allowBreaks', b.allowBreaks ? 'true' : 'false'); saved.allowBreaks = true; }
   cDel_('config');
   return okJ({ saved });
 }

@@ -133,6 +133,14 @@
 
     <!-- CONFIG -->
     <div id="pr-config" class="hidden">
+      <div class="sec-lbl" data-s="payroll.allowBreaks"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="cfgAllowBreaks" onchange="cfgSaveAllowBreaks()" style="width:16px;height:16px;accent-color:var(--brass)">
+          <span style="font-size:12px;color:var(--muted)" id="cfgAllowBreaksLbl"></span>
+        </label>
+      </div>
+
       <div class="sec-lbl" data-s="payroll.personuafslattrUnit"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
         <input id="cfgCrUnit" type="number" min="1" style="width:120px">
@@ -1025,7 +1033,25 @@ async function prLoadConfig(){
   var cfg=window.PAYROLL_CONFIG||{};
   var u=document.getElementById('cfgCrUnit');
   if(u)u.value=cfg.personuafslattrUnit||68681;
+  // Load allowBreaks from config
+  try {
+    var cfgRes = await apiGet('getConfig', { _fresh: true });
+    var cb = document.getElementById('cfgAllowBreaks');
+    if (cb) cb.checked = !!(cfgRes && cfgRes.allowBreaks);
+    var lbl = document.getElementById('cfgAllowBreaksLbl');
+    if (lbl) lbl.textContent = (cfgRes && cfgRes.allowBreaks) ? s('lbl.on') : s('lbl.off');
+  } catch(e) {}
   cfgRenderTax();cfgRenderOT();cfgRenderFunds();cfgRenderUnions();
+}
+async function cfgSaveAllowBreaks(){
+  var cb = document.getElementById('cfgAllowBreaks');
+  var lbl = document.getElementById('cfgAllowBreaksLbl');
+  var val = cb ? cb.checked : false;
+  if (lbl) lbl.textContent = val ? s('lbl.on') : s('lbl.off');
+  try {
+    await apiPost('saveConfig', { allowBreaks: val });
+    showToast(s('toast.saved'));
+  } catch(e) { showToast(e.message, 'err'); }
 }
 function cfgRenderOT(){
   var cfg=window.PAYROLL_CONFIG||{};
