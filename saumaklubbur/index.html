@@ -111,7 +111,7 @@
   <div class="page-title" data-s="sauma.pageTitle">🧵 Saumaklúbbur</div>
   <div class="page-subtitle" data-s="sauma.pageSubtitle">Community maintenance projects</div>
 
-  <button class="btn btn-primary" style="width:100%;margin:0 0 16px" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ Suggest a Project</button>
+  <button class="btn btn-primary" style="width:100%;margin:0 0 16px" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ New sewing circle project</button>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -130,7 +130,7 @@
 <!-- ══ SUGGEST PROJECT MODAL ══ -->
 <div class="modal-overlay hidden" id="suggestModal">
   <div class="modal">
-    <h3 data-s="sauma.suggestTitle">🧵 Suggest a Project</h3>
+    <h3 data-s="sauma.suggestTitle">🧵 New sewing circle project</h3>
 
     <div class="field">
       <label data-s="maint.category">Category</label>
@@ -228,7 +228,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       apiGet("getConfig"),
     ]);
     const all = rRes.requests || [];
-    allProjects = all.filter(r => boolVal(r.saumaklubbur));
+    // Members only see approved projects (or their own pending ones)
+    allProjects = all.filter(r => boolVal(r.saumaklubbur) && (boolVal(r.approved) || r.reportedBy === currentUserName));
     boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
     renderList();
@@ -349,6 +350,7 @@ function renderProjectCard(r) {
       <span>💬 ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${(lastComment.at||'').slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
+    ${!boolVal(r.approved) && !resolved ? `<div style="margin-top:6px;font-size:11px;color:var(--brass);font-style:italic">⏳ Pending staff review</div>` : ''}
     ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Completed ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
@@ -488,7 +490,7 @@ async function submitSuggestion() {
     const rRes = await apiGet("getMaintenance");
     allProjects = (rRes.requests || []).filter(r => boolVal(r.saumaklubbur));
     renderList();
-    toast("✓ Project suggested!");
+    toast("✓ Project submitted for review.");
   } catch(e) {
     showSuggestErr("Error: " + e.message);
   } finally {
