@@ -94,6 +94,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .exp-weather .trip-expand-grid{padding-top:4px}
 .exp-media{background:rgba(212,175,55,.07)}
 .exp-notes{background:rgba(255,255,255,.02)}
+.exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
 </style>
 </head>
 <body>
@@ -451,6 +452,7 @@ function tripCard(t){
     </div>
     <div class="trip-expand">
       <div class="exp-section exp-logistics">
+        <div class="exp-section-hdr">${IS?'Upplýsingar um ferð':'Trip Details'}</div>
         <div class="trip-expand-grid">
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Staður':'Location'}</span><span class="trip-exp-val">${esc(t.locationName||'—')}</span></div>
           <div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut||'—')}</span></div>
@@ -458,9 +460,9 @@ function tripCard(t){
           ${portRow}${crewRow}${keelboatInfoRow}
         </div>
       </div>
-      ${hasWeather?`<div class="exp-section exp-weather"><div class="trip-expand-grid">${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}</div></div>`:''}
-      ${hasMedia?`<div class="exp-section exp-media"><div class="trip-expand-grid">${distRow}${trackRow}${photosRow}</div></div>`:''}
-      ${notesRow?`<div class="exp-section exp-notes"><div class="trip-expand-grid">${notesRow}</div></div>`:''}
+      ${hasWeather?`<div class="exp-section exp-weather"><div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eWs}${eDir}${eGust}${eCond}${eAir}${eFeel}${eSst}${eWv}${ePres}</div></div>`:''}
+      ${hasMedia?`<div class="exp-section exp-media"><div class="exp-section-hdr">${IS?'Vegalengd og gögn':'Distance & Media'}</div><div class="trip-expand-grid">${distRow}${trackRow}${photosRow}</div></div>`:''}
+      ${notesRow?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir':'Notes'}</div><div class="trip-expand-grid">${notesRow}</div></div>`:''}
     </div>
   </div>`;
 }
