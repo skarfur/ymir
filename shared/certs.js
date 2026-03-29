@@ -56,7 +56,7 @@ function groupCerts(enrichedList) {
 
 function applyRankRule(certs, newCert, certDefs) {
   const def = certDefs.find(d => d.id === newCert.certId);
-  if (!def || !def.subcats.length) return certs;
+  if (!def || !def.subcats?.length) return certs;
   const newSub = def.subcats.find(s => s.key === newCert.sub);
   if (!newSub || newSub.rank == null) return certs;
   return certs.filter(c => {
