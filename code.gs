@@ -1675,6 +1675,12 @@ function respondConfirmation_(b) {
            String(t.linkedTripId) === String(row.tripId));
       });
       if (!existing.length) {
+        // Get crew count from the original trip if available
+        var origCrew = 1;
+        if (row.tripId) {
+          var origTrip = findOne_('trips', 'id', row.tripId);
+          if (origTrip) origCrew = origTrip.crew || 1;
+        }
         var tripId = uid_();
         insertRow_('trips', {
           id: tripId, kennitala: crewKt, memberName: crewName,
@@ -1682,7 +1688,7 @@ function respondConfirmation_(b) {
           hoursDecimal: row.hoursDecimal || 0,
           boatId: row.boatId || '', boatName: row.boatName || '', boatCategory: row.boatCategory || '',
           locationId: row.locationId || '', locationName: row.locationName || '',
-          crew: 1, role: role,
+          crew: origCrew, role: role,
           beaufort: row.beaufort || '', windDir: row.windDir || '', wxSnapshot: row.wxSnapshot || '',
           notes: '', isLinked: true,
           linkedCheckoutId: row.linkedCheckoutId || '', linkedTripId: row.tripId || '',

@@ -152,8 +152,6 @@
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
-    <button class="act-btn" onclick="openManualTripModal()" data-s="member.manualTrip"></button>
-    <button class="act-btn" id="confirmationsBtn" onclick="openConfirmationsModal()" style="position:relative"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
     <a class="act-btn" href="../maintenance/?new=1"        data-s="member.reportIssue"></a>
     <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
@@ -197,20 +195,6 @@
       <button class="btn btn-primary"   onclick="submitManualTrip()"            id="manualTripSaveBtn"></button>
     </div>
     <div id="manualTripErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
-  </div>
-</div>
-
-<!-- ══ CONFIRMATIONS MODAL ══ -->
-<div class="modal-overlay hidden" id="confirmationsModal" onclick="if(event.target===this)closeModal('confirmationsModal')">
-  <div class="modal" style="max-width:520px;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="confirmationsTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('confirmationsModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">&times;</button>
-    </div>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.incoming"></div>
-    <div id="incomingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:14px 0 8px" data-s="member.outgoing"></div>
-    <div id="outgoingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 </div>
 
@@ -714,11 +698,28 @@ function renderLandingChecklist() {
     '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
 
-  // Fetch linked crew trips for helm assignment (if crew > 1)
+  // Fetch linked crew: first check confirmed trips, then pending confirmations
   if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
     window._retCrewTripsFetched=true;
-    apiGet('getTrips',{linkedCheckoutId:returnCo.id}).then(function(r){
-      window._retCrewTrips=(r.trips||[]).filter(function(t){return t.role==='crew';});
+    Promise.all([
+      apiGet('getTrips',{linkedCheckoutId:returnCo.id}),
+      apiGet('getConfirmations',{kennitala:user.kennitala}),
+    ]).then(function(results){
+      var trips=(results[0].trips||[]).filter(function(t){return t.role==='crew';});
+      // Also include pending crew_assigned confirmations for this checkout
+      var confs=(results[1].outgoing||[]).filter(function(c){
+        return c.type==='crew_assigned' && c.linkedCheckoutId===returnCo.id && c.status==='pending';
+      });
+      // Merge: use trips if they exist, otherwise use confirmations as placeholder crew entries
+      var crewEntries=trips.slice();
+      confs.forEach(function(c){
+        // Avoid duplicates — skip if a trip already exists for this crew member
+        var already=crewEntries.some(function(t){return t.kennitala===c.toKennitala;});
+        if(!already){
+          crewEntries.push({id:'conf_'+c.id,memberName:c.toName,kennitala:c.toKennitala,_confId:c.id});
+        }
+      });
+      window._retCrewTrips=crewEntries;
       _renderHelmSection();
     }).catch(function(){});
   }
@@ -809,12 +810,14 @@ function _renderHelmSection(){
   var el=document.getElementById('helmCrewToggles');
   if(!el) return;
   var IS=getLang()==='IS';
-  var trips=window._retCrewTrips||[];
-  if(!trips.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
-  el.innerHTML=trips.map(function(t){
+  var entries=window._retCrewTrips||[];
+  if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
+  el.innerHTML=entries.map(function(t){
+    var isPending=!!t._confId;
+    var label=esc(t.memberName||'?')+(isPending?' <span style="font-size:9px;color:var(--muted)">'+(IS?'(óstaðfest)':'(unconfirmed)')+'</span>':'');
     return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-      '<input type="checkbox" class="helm-toggle" data-helm-trip-id="'+esc(t.id)+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
-      '<span>'+esc(t.memberName||'?')+'</span></label>';
+      '<input type="checkbox" class="helm-toggle" data-helm-trip-id="'+esc(t.id)+'"'+(isPending?' data-helm-conf-id="'+esc(t._confId)+'" data-helm-to-kt="'+esc(t.kennitala||'')+'" data-helm-to-name="'+esc(t.memberName||'')+'"':'')+' style="width:16px;height:16px;accent-color:var(--brass)">'+
+      '<span>'+label+'</span></label>';
   }).join('');
 }
 
@@ -962,12 +965,8 @@ async function confirmCheckIn(coId) {
     }catch(e){showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn');}
   }));
 
-  // Collect helm toggle states
+  // Collect helm self toggle
   var helmSelf=!!window._retHelmSelf;
-  var helmCrewMap={};
-  document.querySelectorAll('.helm-toggle[data-helm-trip-id]').forEach(function(cb){
-    helmCrewMap[cb.dataset.helmTripId]=cb.checked;
-  });
 
   try {
     await Promise.all([
@@ -985,17 +984,21 @@ async function confirmCheckIn(coId) {
       }),
     ]);
     // Create helm confirmation requests for crew members
-    var helmRequests=Object.keys(helmCrewMap).filter(function(tid){return helmCrewMap[tid];}).map(function(tid){
+    var helmRequests=[];
+    document.querySelectorAll('.helm-toggle[data-helm-trip-id]').forEach(function(cb){
+      if(!cb.checked) return;
+      var tid=cb.dataset.helmTripId;
       var ct=(window._retCrewTrips||[]).find(function(t){return t.id===tid;});
-      if(!ct) return Promise.resolve();
-      return apiPost('createConfirmation',{
+      if(!ct) return;
+      helmRequests.push(apiPost('createConfirmation',{
         type:'helm',
         fromKennitala:user.kennitala, fromName:user.name,
-        toKennitala:ct.kennitala||'', toName:ct.memberName||'',
-        tripId:tid, linkedCheckoutId:coId,
+        toKennitala:ct.kennitala||cb.dataset.helmToKt||'',
+        toName:ct.memberName||cb.dataset.helmToName||'',
+        tripId:ct._confId?'':tid, linkedCheckoutId:coId,
         boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
         date:today, helm:true,
-      }).catch(function(){});
+      }).catch(function(){}));
     });
     if(helmRequests.length) await Promise.all(helmRequests);
     window._retCrewTrips=[]; window._retCrewTripsFetched=false;
@@ -1033,110 +1036,6 @@ function populateFormSelects() {
   locations.filter(l=>l.type!=='port').forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
 }
 function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
-
-// ══ CONFIRMATIONS ════════════════════════════════════════════════════════════
-let _confirmations = { incoming: [], outgoing: [] };
-let _confirmationsLoaded = false;
-
-async function loadConfirmations() {
-  try {
-    const res = await apiGet('getConfirmations', { kennitala: user.kennitala });
-    _confirmations = { incoming: res.incoming || [], outgoing: res.outgoing || [] };
-    _confirmationsLoaded = true;
-    updateConfBadge();
-  } catch(e) { console.warn('loadConfirmations:', e.message); }
-}
-
-function updateConfBadge() {
-  const pending = _confirmations.incoming.filter(c => c.status === 'pending').length;
-  const badge = document.getElementById('confBadge');
-  if (badge) {
-    badge.textContent = pending;
-    badge.style.display = pending > 0 ? '' : 'none';
-  }
-}
-
-async function openConfirmationsModal() {
-  document.getElementById('confirmationsTitle').textContent = s('member.confirmationsTitle');
-  openModal('confirmationsModal');
-  if (!_confirmationsLoaded) await loadConfirmations();
-  renderConfirmations();
-}
-
-function _confDesc(c) {
-  var IS = getLang() === 'IS';
-  if (c.type === 'crew_assigned') return s('member.crewAssigned');
-  if (c.type === 'crew_join') return s('member.crewJoin');
-  if (c.type === 'helm') return s('member.helmReq');
-  return c.type;
-}
-
-function renderConfirmations() {
-  var IS = getLang() === 'IS';
-  var inEl = document.getElementById('incomingConfirmations');
-  var outEl = document.getElementById('outgoingConfirmations');
-
-  // Incoming (requests TO this user)
-  var incoming = _confirmations.incoming.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
-  if (!incoming.length) {
-    inEl.innerHTML = '<div class="empty-note">' + s('member.noIncoming') + '</div>';
-  } else {
-    inEl.innerHTML = incoming.map(function(c) {
-      var isPending = c.status === 'pending';
-      return '<div class="conf-card">' +
-        '<div class="conf-from">' + esc(c.fromName || '?') + ' ' + _confDesc(c) + '</div>' +
-        '<div class="conf-boat">' + esc(c.boatName || '') + ' &middot; ' + esc(c.locationName || '') + '</div>' +
-        '<div class="conf-detail">' + esc(c.date || '') + (c.timeOut ? ' &middot; ' + esc(c.timeOut) : '') + (c.timeIn ? '–' + esc(c.timeIn) : '') + '</div>' +
-        (isPending ?
-          '<div class="conf-actions">' +
-            '<button class="btn-confirm" onclick="respondConf(\'' + esc(c.id) + '\',\'confirmed\')">' + s('member.confirmBtn') + '</button>' +
-            '<button class="btn-reject" onclick="promptRejectConf(\'' + esc(c.id) + '\')">' + s('member.rejectBtn') + '</button>' +
-          '</div>' :
-          '<div style="margin-top:6px"><span class="conf-status ' + c.status + '">' + s('member.status' + c.status.charAt(0).toUpperCase() + c.status.slice(1)) + '</span>' +
-          (c.rejectComment ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + esc(c.rejectComment) + '</div>' : '') +
-          '</div>'
-        ) + '</div>';
-    }).join('');
-  }
-
-  // Outgoing (requests FROM this user)
-  var outgoing = _confirmations.outgoing.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
-  if (!outgoing.length) {
-    outEl.innerHTML = '<div class="empty-note">' + s('member.noOutgoing') + '</div>';
-  } else {
-    outEl.innerHTML = outgoing.map(function(c) {
-      return '<div class="conf-card">' +
-        '<div class="conf-from">' + esc(c.toName || '?') + '</div>' +
-        '<div class="conf-boat">' + esc(c.boatName || '') + ' &middot; ' + esc(c.locationName || '') + '</div>' +
-        '<div class="conf-detail">' + esc(c.date || '') + (c.timeOut ? ' &middot; ' + esc(c.timeOut) : '') + '</div>' +
-        '<div style="margin-top:6px"><span class="conf-status ' + c.status + '">' + s('member.status' + c.status.charAt(0).toUpperCase() + c.status.slice(1)) + '</span>' +
-        (c.rejectComment ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + esc(c.rejectComment) + '</div>' : '') +
-        '</div></div>';
-    }).join('');
-  }
-}
-
-async function respondConf(confId, response, rejectComment) {
-  try {
-    await apiPost('respondConfirmation', { id: confId, response: response, rejectComment: rejectComment || '' });
-    // Update local state
-    _confirmations.incoming.forEach(function(c) {
-      if (c.id === confId) { c.status = response; if (rejectComment) c.rejectComment = rejectComment; }
-    });
-    updateConfBadge();
-    renderConfirmations();
-    showToast(response === 'confirmed' ? (getLang()==='IS' ? 'Staðfest ✓' : 'Confirmed ✓') : (getLang()==='IS' ? 'Hafnað' : 'Rejected'));
-  } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
-}
-
-function promptRejectConf(confId) {
-  var comment = prompt(s('member.rejectReason'));
-  if (comment === null) return; // cancelled
-  respondConf(confId, 'rejected', comment);
-}
-
-// Load confirmations on page init (after main data loads)
-setTimeout(loadConfirmations, 1500);
 
 // ══ STAFF STATUS + FLAG DETAIL (member page) ══════════════════════════════════════════════════
 
