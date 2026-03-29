@@ -235,6 +235,7 @@ function route_(action, b) {
     case 'saveMember': return saveMember_(b);
     case 'deleteMember': return deleteMember_(b.id);
     case 'importMembers': return importMembers_(b.rows);
+    case 'deactivateMembers': return deactivateMembers_(b.ids);
     case 'setLang': return setLang_(b.kennitala, b.lang);
     case 'getDailyLog': return getDailyLog_(b.date);
     case 'saveDailyLog': return saveDailyLog_(b);
@@ -393,6 +394,16 @@ function importMembers_(rows) {
     }
   });
   cDel_('members'); return okJ({ created, updated });
+}
+
+function deactivateMembers_(ids) {
+  if (!Array.isArray(ids) || !ids.length) return failJ('ids array required');
+  const ts = now_(); let count = 0;
+  ids.forEach(id => {
+    const ok = updateRow_('members', 'id', String(id), { active: false, updatedAt: ts });
+    if (ok) count++;
+  });
+  cDel_('members'); return okJ({ deactivated: count });
 }
 
 function setLang_(kennitala, lang) {

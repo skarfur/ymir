@@ -213,6 +213,18 @@ border-bottom:1px solid var(--border)44; }
 .gc-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
 .gc-staff{font-size:11px;color:var(--muted)}
 
+/* ── Guest prompt modal ── */
+.guest-modal-overlay{position:fixed;inset:0;background:#00000099;z-index:600;display:flex;align-items:center;justify-content:center}
+.guest-modal-overlay.hidden{display:none}
+.guest-modal{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px}
+.guest-modal h4{font-size:12px;color:var(--brass);letter-spacing:.5px;margin:0 0 14px}
+.guest-modal .gm-field{margin-bottom:10px}
+.guest-modal .gm-field label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px}
+.guest-modal .gm-field input{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px}
+.guest-modal .btn-row{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.guest-add-hint{font-size:10px;color:var(--brass);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
+.guest-add-hint:hover{background:var(--card)}
+
 #groupCheckOutBtn{background:#2e86c1;border-color:#2e86c1;color:#fff}
 #groupCheckOutBtn:hover{background:#1a6fa8;border-color:#1a6fa8}
 .dl-link-overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:flex-end;justify-content:center}
@@ -709,12 +721,25 @@ function searchMember(q) {
   const matches = members.filter(m =>
     m.name.toLowerCase().includes(q.toLowerCase()) || String(m.kennitala).includes(q)
   ).slice(0,6);
-  if (!matches.length) { box.innerHTML=''; return; }
-  box.innerHTML = matches.map(m =>
+  let html = matches.map(m =>
     `<div style="padding:6px 10px;cursor:pointer;border:1px solid var(--border);border-top:none;
       background:var(--card);font-size:12px" onmousedown="selectMember('${m.kennitala}','${esc(m.name)}')"
     >${esc(m.name)} <span style="color:var(--muted)">${m.kennitala}</span>${m.isMinor?`<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>`:''}</div>`
   ).join('');
+  if (q.length >= 3) {
+    html += `<div class="guest-add-hint" onmousedown="promptGuestSkipper('${esc(q.trim())}')"
+      >+ Add "${esc(q.trim())}" as guest</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function promptGuestSkipper(name) {
+  document.getElementById('coMemberSuggestions').innerHTML = '';
+  openGuestModal(name, function(guest) {
+    selectedMemberKt = guest.kennitala || guest.id || '';
+    document.getElementById('coMember').value = guest.name;
+    document.getElementById('coMemberName').textContent = guest.phone || '';
+  });
 }
 
 function selectMember(kt, name) {
@@ -771,7 +796,6 @@ function searchCoCrewMembers(inp, drop) {
   const matches = (members||[]).filter(m =>
     m.name && m.name.toLowerCase().includes(q) && m.kennitala !== skip
   ).slice(0, 8);
-  if (!matches.length) { drop.style.display = 'none'; return; }
   drop.innerHTML = '';
   matches.forEach(function(m) {
     const item = document.createElement('div');
@@ -787,6 +811,22 @@ function searchCoCrewMembers(inp, drop) {
     });
     drop.appendChild(item);
   });
+  // "Add as guest" option when typed name is not found
+  if (q.length >= 3) {
+    const guestItem = document.createElement('div');
+    guestItem.className = 'guest-add-hint';
+    guestItem.textContent = '+ Add "' + inp.value.trim() + '" as guest';
+    guestItem.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      drop.style.display = 'none';
+      const typedName = inp.value.trim();
+      openGuestModal(typedName, function(guest) {
+        inp.value = guest.name;
+        inp.dataset.kennitala = guest.kennitala || '';
+      });
+    });
+    drop.appendChild(guestItem);
+  }
   drop.style.display = 'block';
 }
 
@@ -1148,7 +1188,6 @@ function searchGmStaff(inp, drop) {
   const q = inp.value.trim().toLowerCase();
   if (!q || q.length < 2) { drop.style.display = 'none'; return; }
   const matches = (members || []).filter(m => m.name && m.name.toLowerCase().includes(q)).slice(0, 8);
-  if (!matches.length) { drop.style.display = 'none'; return; }
   drop.innerHTML = '';
   matches.forEach(function(m) {
     const item = document.createElement('div');
@@ -1166,6 +1205,24 @@ function searchGmStaff(inp, drop) {
     });
     drop.appendChild(item);
   });
+  // "Add as guest" option
+  if (q.length >= 3) {
+    const guestItem = document.createElement('div');
+    guestItem.className = 'guest-add-hint';
+    guestItem.textContent = '+ Add "' + inp.value.trim() + '" as guest';
+    guestItem.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      drop.style.display = 'none';
+      const typedName = inp.value.trim();
+      openGuestModal(typedName, function(guest) {
+        inp.value = guest.name;
+        inp.dataset.kennitala = guest.kennitala || guest.id || '';
+        inp.style.borderColor = 'var(--green)';
+        updateGmTotalNote();
+      });
+    });
+    drop.appendChild(guestItem);
+  }
   drop.style.display = 'block';
 }
 
@@ -1184,9 +1241,9 @@ async function submitGroupCheckout() {
   const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
     .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala || '' })).filter(s => s.name);
   if (!staffEntries.length) { err.textContent = (getLang()==='IS'?'Þarf að skrá a.m.k. einn starfsmann.':'At least one staff member on water is required.'); err.style.display = ''; return; }
-  // Warn if any staff entry was typed but not selected from DB
-  const unmatched = staffEntries.filter(s => !s.kennitala);
-  if (unmatched.length && members.length > 0) { err.textContent = 'Please select staff from the list: ' + unmatched.map(s=>s.name).join(', '); err.style.display = ''; return; }
+  // Warn if any staff entry was typed but not selected from DB (allow guests who may only have id)
+  const unmatched = staffEntries.filter(s => !s.kennitala && !members.find(m => m.name === s.name && m.role === 'guest'));
+  if (unmatched.length && members.length > 0) { err.textContent = 'Please select staff from the list or add as guest: ' + unmatched.map(s=>s.name).join(', '); err.style.display = ''; return; }
   const boatIds   = Array.from(_groupBoats);
   const boatNames = boatIds.map(id => (boats.find(b => b.id === id) || {}).name || id);
   const totalAboard = _groupParticipants + staffEntries.length;
@@ -1368,6 +1425,52 @@ async function toggleStaffStatus(field) {
   catch(e) { showToast('Status saved — sync when online', 'warn'); }
 }
 
+// ══ GUEST SUPPORT ═══════════════════════════════════════════════════════════
+let _guestCallback = null; // called with { name, kennitala, phone, birthYear, id }
+
+function openGuestModal(name, callback) {
+  _guestCallback = callback;
+  document.getElementById('guestName').value = name;
+  document.getElementById('guestKtOrYear').value = '';
+  document.getElementById('guestPhone').value = '';
+  document.getElementById('guestErr').style.display = 'none';
+  document.getElementById('guestModal').classList.remove('hidden');
+}
+
+function closeGuestModal() {
+  document.getElementById('guestModal').classList.add('hidden');
+  _guestCallback = null;
+}
+
+async function confirmGuest() {
+  const name = document.getElementById('guestName').value.trim();
+  const ktOrYear = document.getElementById('guestKtOrYear').value.trim();
+  const phone = document.getElementById('guestPhone').value.trim();
+  const err = document.getElementById('guestErr');
+  if (!ktOrYear && !phone) {
+    err.textContent = 'Please enter a kennitala/birth year or phone number.';
+    err.style.display = '';
+    return;
+  }
+  err.style.display = 'none';
+  // Determine if it's a kennitala (6+ digits) or birth year (4 digits)
+  const isYear = /^\d{4}$/.test(ktOrYear);
+  const kennitala = isYear ? '' : ktOrYear;
+  const birthYear = isYear ? ktOrYear : '';
+  try {
+    const res = await apiPost('saveMember', {
+      name, kennitala, birthYear, phone, role: 'guest', active: true,
+    });
+    const guest = { id: res.id, name, kennitala, birthYear, phone, role: 'guest', active: true };
+    members.push(guest);
+    closeGuestModal();
+    if (_guestCallback) _guestCallback(guest);
+  } catch(e) {
+    err.textContent = 'Failed to save guest: ' + e.message;
+    err.style.display = '';
+  }
+}
+
 </script>
 
 <!-- ══ GROUP CHECKOUT MODAL ══════════════════════════════════════════════ -->
@@ -1442,6 +1545,22 @@ async function toggleStaffStatus(field) {
       <button class="btn btn-primary" onclick="confirmDlLink()" id="dlLinkConfirmBtn" style="width:100%">Link selected activity</button>
       <button class="btn btn-secondary" onclick="openDailyLogForNew()" style="width:100%;font-size:11px">Create new log activity →</button>
       <button onclick="closeDlLinkModal()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px">Skip for now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GUEST PROMPT MODAL ══════════════════════════════════════════════ -->
+<div class="guest-modal-overlay hidden" id="guestModal">
+  <div class="guest-modal">
+    <h4>Add guest</h4>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
+    <div class="gm-field"><label>Name</label><input type="text" id="guestName" readonly></div>
+    <div class="gm-field"><label>Kennitala or birth year</label><input type="text" id="guestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
+    <div class="gm-field"><label>Phone number</label><input type="text" id="guestPhone" placeholder="e.g. 555-1234"></div>
+    <div id="guestErr" style="color:var(--red);font-size:11px;display:none;margin-bottom:6px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeGuestModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmGuest()">Add guest</button>
     </div>
   </div>
 </div>
