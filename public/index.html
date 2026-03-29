@@ -62,6 +62,10 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 #map-container .leaflet-control-attribution a{color:var(--muted)!important}
 
 /* ── On the water ───────────────────────────────────────────────── */
+.stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.strip-cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center}
+.strip-n{font-size:22px;color:var(--brass);font-weight:500}
+.strip-l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
 .live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .water-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
@@ -167,48 +171,14 @@ function renderDashboard(data) {
   var main = document.getElementById('main-content');
   var html = '';
 
-  // ── Season Stats ──
-  var year = new Date().getFullYear();
-  html += '<section>';
-  html += '<h2>' + esc(s('pub.dash.season', { year: year })) + '</h2>';
-  html += '<div class="stats-row">';
-  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalTrips) + '</div><div class="stat-lbl">' + esc(s('pub.dash.ytdTrips')) + '</div></div>';
-  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalHours) + '</div><div class="stat-lbl">' + esc(s('pub.dash.totalHours')) + '</div></div>';
-  html += '</div>';
-
-  // Category breakdown
-  if (data.ytd.byCategory && data.ytd.byCategory.length) {
-    html += '<h2>' + esc(s('pub.dash.byCategory')) + '</h2>';
-    html += '<div class="cat-grid">';
-    data.ytd.byCategory.forEach(function(c) {
-      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
-      html += '<div class="cat-card">'
-        + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
-        + '<div class="cat-info">'
-        + '<div class="cat-name">' + esc(label) + '</div>'
-        + '<div class="cat-detail">' + esc(s('pub.dash.tripCount', { n: c.count })) + ' &middot; ' + esc(s('pub.dash.hourCount', { n: c.hours })) + '</div>'
-        + '</div></div>';
-    });
-    html += '</div>';
-  }
-  html += '</section>';
-
-  // ── Heatmap ──
-  if (data.locations && data.locations.length) {
-    html += '<section>';
-    html += '<h2>' + esc(s('pub.dash.locations')) + '</h2>';
-    html += '<div id="map-container"></div>';
-    html += '</section>';
-  }
-
   // ── On the Water Now ──
   html += '<section>';
   html += '<h2><span class="live-badge"></span>' + esc(s('pub.dash.onWater')) + '</h2>';
+  html += '<div class="stat-strip">';
+  html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.boatCount) + '</div><div class="strip-l">' + esc(s('staff.statBoats')) + '</div></div>';
+  html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.peopleCount) + '</div><div class="strip-l">' + esc(s('staff.statPeople')) + '</div></div>';
+  html += '</div>';
   if (data.onWater.boatCount > 0) {
-    html += '<div class="stats-row">';
-    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.boatCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.boats')) + '</div></div>';
-    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.peopleCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.people')) + '</div></div>';
-    html += '</div>';
     html += '<div class="water-grid">';
     data.onWater.boats.forEach(function(b) {
       html += '<div class="water-card">'
@@ -222,6 +192,12 @@ function renderDashboard(data) {
   } else {
     html += '<div class="empty-msg">' + esc(s('pub.dash.noActivity')) + '</div>';
   }
+  html += '</section>';
+
+  // ── Heatmap ──
+  html += '<section>';
+  html += '<h2>' + esc(s('pub.dash.locations')) + '</h2>';
+  html += '<div id="map-container"></div>';
   html += '</section>';
 
   // ── Captains ──
@@ -253,6 +229,32 @@ function renderDashboard(data) {
   }
   html += '</section>';
 
+  // ── Season Stats ──
+  var year = new Date().getFullYear();
+  html += '<section>';
+  html += '<h2>' + esc(s('pub.dash.season', { year: year })) + '</h2>';
+  html += '<div class="stats-row">';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalTrips) + '</div><div class="stat-lbl">' + esc(s('pub.dash.ytdTrips')) + '</div></div>';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalHours) + '</div><div class="stat-lbl">' + esc(s('pub.dash.totalHours')) + '</div></div>';
+  html += '</div>';
+
+  // Category breakdown
+  if (data.ytd.byCategory && data.ytd.byCategory.length) {
+    html += '<h2>' + esc(s('pub.dash.byCategory')) + '</h2>';
+    html += '<div class="cat-grid">';
+    data.ytd.byCategory.forEach(function(c) {
+      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
+      html += '<div class="cat-card">'
+        + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
+        + '<div class="cat-info">'
+        + '<div class="cat-name">' + esc(label) + '</div>'
+        + '<div class="cat-detail">' + esc(s('pub.dash.tripCount', { n: c.count })) + ' &middot; ' + esc(s('pub.dash.hourCount', { n: c.hours })) + '</div>'
+        + '</div></div>';
+    });
+    html += '</div>';
+  }
+  html += '</section>';
+
   main.innerHTML = html;
 
   // Footer
@@ -263,9 +265,7 @@ function renderDashboard(data) {
   document.getElementById('footer-text').textContent = s('pub.dash.lastUpdated') + ' ' + timeStr;
 
   // Init map after DOM update
-  if (data.locations && data.locations.length) {
-    initMap(data.locations);
-  }
+  initMap(data.locations || []);
 }
 
 function initMap(locations) {
@@ -279,6 +279,12 @@ function initMap(locations) {
   // CartoDB Voyager (no labels) + OpenSeaMap — same as logbook
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; CartoDB' }).addTo(_map);
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(_map);
+
+  if (!locations.length) {
+    // Default view: Kollafjörður / Skerjafjörður area
+    _map.setView([64.12, -21.88], 13);
+    return;
+  }
 
   // Heat layer data: [lat, lng, intensity]
   var maxTrips = 1;
