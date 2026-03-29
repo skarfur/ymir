@@ -104,7 +104,7 @@
       </button>
       <button id="certModeByType" onclick="setCertMode('type')"
         style="padding:7px 16px;font-size:12px;font-family:inherit;border:none;cursor:pointer;background:var(--surface);color:var(--muted);transition:all .15s">
-        By certification
+        By credential
       </button>
     </div>
 
@@ -140,7 +140,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
         <select id="certFilterType" onchange="applyCertFilter()"
           style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px">
-          <option value="">— Select certification —</option>
+          <option value="">— Select credential —</option>
         </select>
       </div>
       <div id="certFilterResults"></div>
@@ -474,7 +474,7 @@ function renderCertPanelList() {
       ? (new Date(c.expiresAt) < new Date()
           ? `<span style="color:var(--red)">Expired ${esc(c.expiresAt)}</span>`
           : `Expires ${esc(c.expiresAt)}`)
-      : 'Permanent';
+      : 'Does not expire';
     const label = c.subcat
       ? `${esc(c.def?.name || c.certId)} — ${esc(c.subcat.label)}`
       : esc(c.def?.name || c.certId);
@@ -615,7 +615,7 @@ async function tcmAssign() {
 
 async function deleteCert(certId, subcatKey) {
   if (!_certMember) return;
-  if (!confirm('Remove this certification?')) return;
+  if (!confirm('Remove this credential?')) return;
 
   const m = _allMembers.find(x => x.id === _certMember.id);
   if (!m) return;
@@ -628,7 +628,7 @@ async function deleteCert(certId, subcatKey) {
     const idx = _allMembers.findIndex(x => x.id === _certMember.id);
     if (idx >= 0) _allMembers[idx] = { ..._allMembers[idx], certifications: JSON.stringify(certs) };
     renderCertPanelList();
-    showToast('Certification removed');
+    showToast('Credential removed');
   } catch (e) {
     showToast(s('toast.error') + ': ' + e.message, 'err');
   }
@@ -643,7 +643,7 @@ function _parseJson(v, fallback) {
   function populateCertFilterType() {
   const sel = document.getElementById('certFilterType');
   if (!sel) return;
-  sel.innerHTML = `<option value="">— Select certification —</option>`;
+  sel.innerHTML = `<option value="">— Select credential —</option>`;
   _certDefs.forEach(d => {
     if (d.subcats?.length) {
       d.subcats.forEach(sc => {
@@ -682,7 +682,7 @@ function applyCertFilter() {
     return certs.some(c => c.certId === certId && (sub ? c.sub === sub : true));
   });
   if (!matches.length) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">No members found with this certification.</div>`;
+    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">No members found with this credential.</div>`;
     return;
   }
   const color = certColor(def || {});

@@ -95,7 +95,7 @@ const GS_STRINGS_ = {
   'pub.err.missing':   { EN: 'Please enter both licence number and initials.', IS: 'Vinsamlegast sláðu inn bæði skírteinisnúmer og upphafsstafi.' },
   'pub.lbl.sailor':    { EN: 'Sailor', IS: 'Siglingamaður' },
   'pub.lbl.licence':   { EN: 'Licence', IS: 'Skírteini' },
-  'pub.lbl.certs':     { EN: 'Certifications', IS: 'Skírteini og réttindi' },
+  'pub.lbl.certs':     { EN: 'Credentials', IS: 'Skírteini og réttindi' },
   'pub.lbl.sessions':  { EN: 'Sailing Sessions', IS: 'Siglingalotur' },
   'pub.lbl.date':      { EN: 'Date', IS: 'Dagsetning' },
   'pub.lbl.duration':  { EN: 'Duration', IS: 'Tímalengd' },
@@ -105,7 +105,7 @@ const GS_STRINGS_ = {
   'pub.lbl.captain':   { EN: 'Captain', IS: 'Skipstjóri' },
   'pub.lbl.role':      { EN: 'Role', IS: 'Hlutverk' },
   'pub.lbl.noSessions':{ EN: 'No sailing sessions on record.', IS: 'Engar siglingalotur skráðar.' },
-  'pub.lbl.noCerts':   { EN: 'No certifications on record.', IS: 'Engin skírteini skráð.' },
+  'pub.lbl.noCerts':   { EN: 'No credentials on record.', IS: 'Engin skírteini skráð.' },
   'pub.lbl.captainSince': { EN: 'Ýmir-approved captain since {date}', IS: 'Viðurkenndur skipstjóri hjá Ými síðan {date}' },
   'pub.lbl.totalSessions':{ EN: 'Total sessions', IS: 'Heildarlotur' },
   'pub.lbl.totalDistance': { EN: 'Total distance', IS: 'Heildarvegalengd' },
@@ -2598,7 +2598,7 @@ function pubCertBadgesHtml_(certs, certDefs) {
     var statusIS = expired ? gs_('pub.cert.expired',null,'IS') : (c.assignedBy ? gs_('pub.cert.verified',null,'IS') : gs_('pub.cert.unverified',null,'IS'));
 
     // Expiry line
-    var expiryEN = c.expiresAt ? (expired ? 'Expired ' : 'Expires ') + esc_(c.expiresAt) : 'Permanent';
+    var expiryEN = c.expiresAt ? (expired ? 'Expired ' : 'Expires ') + esc_(c.expiresAt) : 'Does not expire';
     var expiryIS = c.expiresAt ? (expired ? 'Útrunnið ' : 'Rennur út ') + esc_(c.expiresAt) : 'Varanlegt';
 
     // Description
@@ -2915,7 +2915,7 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
       + '</div>';
   }
 
-  // Certifications
+  // Credentials
   html += '<h2>' + dl_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs) + '</div>';
 
   // Load boats for make/model/LOA

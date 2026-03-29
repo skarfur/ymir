@@ -43,6 +43,17 @@ function enrichMemberCerts(memberCerts, certDefs) {
   });
 }
 
+function isClubEndorsement(enriched) {
+  const authority = enriched.subcat?.issuingAuthority || enriched.def?.issuingAuthority || '';
+  return authority === 'Siglingafélagið Ýmir';
+}
+
+function groupCerts(enrichedList) {
+  const credentials = [], endorsements = [];
+  for (const c of enrichedList) (isClubEndorsement(c) ? endorsements : credentials).push(c);
+  return { credentials, endorsements };
+}
+
 function applyRankRule(certs, newCert, certDefs) {
   const def = certDefs.find(d => d.id === newCert.certId);
   if (!def || !def.subcats.length) return certs;
@@ -76,11 +87,11 @@ function certCardHTML(enriched) {
     : (def.name || enriched.certId);
   const expiryLine = enriched.expiresAt
     ? (enriched.expired
-        ? `<div class="ccard-meta ccard-expired-lbl">Expired ${esc(enriched.expiresAt)}</div>`
-        : `<div class="ccard-meta">Expires ${esc(enriched.expiresAt)}</div>`)
-    : `<div class="ccard-meta ccard-perm">Permanent</div>`;
+        ? `<span class="ccard-meta ccard-expired-lbl">Expired ${esc(enriched.expiresAt)}</span>`
+        : `<span class="ccard-meta">Expires ${esc(enriched.expiresAt)}</span>`)
+    : `<span class="ccard-meta ccard-perm">Does not expire</span>`;
   const issuedLine = enriched.assignedAt
-    ? `<div class="ccard-issued">Issued ${esc(enriched.assignedAt)}</div>` : '';
+    ? `<span class="ccard-issued">Issued ${esc(enriched.assignedAt)}</span>` : '';
   const id = `cc-${esc(enriched.certId)}${enriched.sub ? '-' + esc(enriched.sub) : ''}`;
   return `<div class="ccard${enriched.expired ? ' ccard-expired' : ''}" id="${id}"
     style="--cc:${color}"
@@ -89,8 +100,8 @@ function certCardHTML(enriched) {
       <div class="ccard-dot"></div>
       <div class="ccard-body">
         <div class="ccard-name">${esc(label)}</div>
-        ${expiryLine}${issuedLine}
       </div>
+      <div class="ccard-right">${expiryLine}${issuedLine}</div>
       ${desc ? `<div class="ccard-chev">›</div>` : ''}
     </div>
     ${desc ? `<div class="ccard-desc">${esc(desc)}</div>` : ''}
@@ -118,10 +129,12 @@ function certInjectStyles() {
     '.ccard-dot{width:10px;height:10px;border-radius:50%;background:var(--cc);flex-shrink:0}',
     '.ccard-body{flex:1;min-width:0}',
     '.ccard-name{font-size:13px;font-weight:500;color:var(--text)}',
-    '.ccard-meta{font-size:11px;color:var(--muted);margin-top:2px}',
+    '.ccard-right{margin-left:auto;text-align:right;flex-shrink:0;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:1px}',
+    '.ccard-meta{font-size:11px;color:var(--muted)}',
     '.ccard-expired-lbl{color:var(--red)!important}',
     '.ccard-perm{color:var(--green)!important;font-size:10px}',
-    '.ccard-issued{font-size:10px;color:var(--muted);margin-top:1px}',
+    '.ccard-issued{font-size:10px;color:var(--muted)}',
+    '.ccard-endorsement-hdr{font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:16px 0 8px}',
     '.ccard-chev{font-size:18px;color:var(--muted);transition:transform .2s;flex-shrink:0;line-height:1}',
     '.ccard.ccard-open .ccard-chev{transform:rotate(90deg)}',
     '.ccard-desc{display:none;padding:0 14px 12px 36px;font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:10px}',

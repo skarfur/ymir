@@ -689,13 +689,13 @@
   </div>
 </div>
 
-<!-- Certification type modal -->
+<!-- Credential type modal -->
 <div class="modal-overlay hidden" id="certDefModal">
   <div class="modal" style="max-width:560px">
-    <h3 id="certDefModalTitle">Add Certification Type</h3>
+    <h3 id="certDefModalTitle">Add Credential Type</h3>
     <div class="field">
       <label>Name</label>
-      <input type="text" id="cdName" placeholder="e.g. World Sailing Certification">
+      <input type="text" id="cdName" placeholder="e.g. World Sailing Credential">
     </div>
     <div class="field">
       <label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
@@ -718,14 +718,14 @@
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> This certification expires
+        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> This credential expires
       </label>
       <div id="cdExpiryDateWrap" style="display:none">
         <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px">EXPIRY DATE</label>
         <input type="date" id="cdExpiryDate" style="font-size:12px">
       </div>
       <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px">
-        <input type="checkbox" id="cdHasIdNumber"> This certification has an ID / licence number
+        <input type="checkbox" id="cdHasIdNumber"> This credential has an ID / licence number
       </label>
     </div>
 
@@ -753,11 +753,11 @@
 <!-- Member cert assignment modal -->
 <div class="modal-overlay hidden" id="memberCertModal">
   <div class="modal" style="max-width:480px">
-    <h3>Certifications — <span id="mcmMemberName"></span></h3>
+    <h3>Credentials — <span id="mcmMemberName"></span></h3>
 
     <div style="margin-bottom:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
-      <div id="mcmCurrentList"><div class="empty-state">No certifications assigned.</div></div>
+      <div id="mcmCurrentList"><div class="empty-state">No credentials assigned.</div></div>
     </div>
 
     <div style="border-top:1px solid var(--border);padding-top:14px">
@@ -1707,7 +1707,7 @@ function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
   if (!el) return;
   if (!certDefs.length) {
-    el.innerHTML = `<div class="empty-state">No certification types defined.</div>`;
+    el.innerHTML = `<div class="empty-state">No credential types defined.</div>`;
     return;
   }
   const locale = getLang() === 'IS' ? 'is' : 'en';
@@ -1743,7 +1743,7 @@ function renderCertDefs() {
 function openCertDefModal(id) {
   certEditId = id || null;
   const d    = id ? certDefs.find(x => x.id === id) : null;
-  document.getElementById("certDefModalTitle").textContent = d ? "Edit Certification Type" : "Add Certification Type";
+  document.getElementById("certDefModalTitle").textContent = d ? s('admin.certEditModal') : s('admin.certAddModal');
   document.getElementById("cdName").value             = d ? d.name : "";
   document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
@@ -1793,7 +1793,7 @@ async function saveCertDef() {
     renderCertDefs();
     populateCertFilterType();
     closeModal("certDefModal");
-    toast("Certification type saved.");
+    toast("Credential type saved.");
   } catch(e) {
     toast("Save failed: " + e.message, "err");
   } finally {
@@ -1802,7 +1802,7 @@ async function saveCertDef() {
 }
 
 async function deleteCertDef() {
-  if (!certEditId || !confirm("Delete this certification type? This won't remove existing assignments.")) return;
+  if (!certEditId || !confirm("Delete this credential type? This won't remove existing assignments.")) return;
   try {
     await apiPost("deleteCertDef", { id: certEditId });
     certDefs = certDefs.filter(d => d.id !== certEditId);
@@ -1814,7 +1814,7 @@ async function deleteCertDef() {
 }
 
 async function deleteCertDefById(id) {
-  if (!confirm("Delete this certification type? This won't remove existing assignments.")) return;
+  if (!confirm("Delete this credential type? This won't remove existing assignments.")) return;
   try {
     await apiPost("deleteCertDef", { id });
     certDefs = certDefs.filter(d => d.id !== id);
@@ -1959,13 +1959,13 @@ function openMemberCertModal(memberId) {
 function renderCurrentCerts(m) {
   const el    = document.getElementById("mcmCurrentList");
   const certs = enrichMemberCerts(parseJson(m.certifications, []), certDefs);
-  if (!certs.length) { el.innerHTML = `<div class="empty-state">No certifications assigned.</div>`; return; }
+  if (!certs.length) { el.innerHTML = `<div class="empty-state">${s('cert.noCerts')}</div>`; return; }
   el.innerHTML = certs.map(c => {
     const label  = c.subcat
       ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
     const expiry = c.expiresAt
       ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`)
-      : " · Permanent";
+      : " · Does not expire";
     const meta   = `by ${esc(c.assignedBy || "—")} on ${c.assignedAt || "—"}${expiry}`;
     return `<div class="list-row" style="font-size:12px">
       <div style="flex:1">
@@ -2006,7 +2006,7 @@ async function assignMemberCert() {
   const m      = members.find(x => x.id === mcmMemberId);
   if (!m) return;
   const certId = document.getElementById("mcmCertType").value;
-  if (!certId) { toast("Select a certification type.", "err"); return; }
+  if (!certId) { toast("Select a credential type.", "err"); return; }
 
   const def = certDefs.find(d => d.id === certId);
   const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
@@ -2038,12 +2038,12 @@ async function assignMemberCert() {
     members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
-    toast("Certification assigned.");
+    toast("Credential assigned.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 async function removeMemberCert(certId, sub) {
-  if (!confirm("Remove this certification?")) return;
+  if (!confirm("Remove this credential?")) return;
   const m = members.find(x => x.id === mcmMemberId);
   if (!m) return;
   let certs = parseJson(m.certifications, []);
