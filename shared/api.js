@@ -24,6 +24,7 @@ async function apiPost(action, payload) {
   payload = payload || {};
   // Invalidate config cache when config is saved
   if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember' ||
+      action === 'importMembers' || action === 'deactivateMembers' ||
       action === 'saveActivityType' || action === 'deleteActivityType' ||
       action === 'saveChecklistItem' || action === 'deleteChecklistItem') {
     try { 
