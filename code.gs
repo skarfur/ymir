@@ -319,6 +319,8 @@ function doGet(e) {
 function doPost(e) {
   try {
     const b = JSON.parse(e.postData.contents);
+    // Public POST endpoints — no token required
+    if (b.action === 'dashboard') return publicDashboard_();
     if (!b.token || b.token !== API_TOKEN_) return failJ('Unauthorized', 401);
     return route_(b.action, b);
   } catch (err) { return failJ('Server error: ' + err.message, 500); }
