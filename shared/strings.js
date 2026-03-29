@@ -190,7 +190,7 @@ const STRINGS = {
   'member.tokenCreated': { EN:'Share link created.', IS:'Deilingarhlekkur búinn til.' },
 
   // ── Logbook share ─────────────────────────────────────────────────────────
-  'logbook.shareBtn':     { EN:'Share logbook',          IS:'Deila dagbók' },
+  'logbook.shareBtn':     { EN:'Share your logbook',      IS:'Deila dagbókinni þinni' },
   'logbook.sharePhotos':  { EN:'Include photos',         IS:'Taka myndir með' },
   'logbook.shareTracks':  { EN:'Include GPS tracks',     IS:'Taka GPS-leiðir með' },
   'logbook.shareCopy':    { EN:'Generate & copy link',   IS:'Búa til og afrita hlekk' },

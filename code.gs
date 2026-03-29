@@ -2825,6 +2825,15 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
   var boats = [];
   try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
 
+  // Load boat categories for label resolution
+  var boatCats = [];
+  try { var bcRaw2 = getConfigSheetValue_('boatCategories'); if (bcRaw2) boatCats = JSON.parse(bcRaw2); } catch(e) {}
+  function pubCatLabel_(key) {
+    var c = boatCats.find(function(x) { return x.key === key; });
+    if (!c) return key;
+    return c.labelEN || key;
+  }
+
   // Trips
   var allTrips = readAll_('trips');
   var memberTrips = allTrips.filter(function(t) {
@@ -2860,7 +2869,7 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     html += '<div class="cat-legend">';
     catKeys.forEach(function(c) {
       var col = pubCatColor_(c);
-      html += '<span class="cat-pill" style="color:' + col.color + ';border-color:' + col.border + ';background:' + col.bg + '">' + esc_(c) + '</span>';
+      html += '<span class="cat-pill" style="color:' + col.color + ';border-color:' + col.border + ';background:' + col.bg + '">' + esc_(pubCatLabel_(c)) + '</span>';
     });
     html += '</div>';
   }
