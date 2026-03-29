@@ -308,6 +308,7 @@ function doGet(e) {
     if (b.action === 'lookup')  return publicLookup_(b);
     if (b.action === 'captain') return publicCaptainRecord_(b);
     if (b.action === 'boat')    return publicBoatRecord_(b);
+    if (b.action === 'dashboard') return publicDashboard_();
     if (b.share)                return publicShareRecord_(b);
     if (!b.token || b.token !== API_TOKEN_) return failJ('Unauthorized', 401);
     if (!b.action) return okJ({ status: 'ok', ts: now_() });
@@ -2875,6 +2876,148 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
 
   html += '</table></div>';
   return html;
+}
+
+
+// ── 5.0 Public dashboard ────────────────────────────────────────────────────
+
+function publicDashboard_() {
+  var cfgMap = getConfigMap_();
+  var boatCategories = [];
+  try { boatCategories = JSON.parse(getConfigValue_('boatCategories', cfgMap) || '[]'); } catch(e) {}
+  var boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch(e) {}
+  var locations = [];
+  try { locations = JSON.parse(getConfigValue_('locations', cfgMap) || '[]'); } catch(e) {}
+  var certDefs = getCertDefsFromMap_(cfgMap);
+
+  // Build lookup maps
+  var catMap = {};
+  boatCategories.forEach(function(c) { catMap[c.key] = c; });
+  var locMap = {};
+  locations.forEach(function(l) { locMap[l.id] = l; });
+
+  // ── YTD trips ──
+  var yearStart = new Date().getFullYear() + '-01-01';
+  var allTrips = readAll_('trips');
+  var ytdTrips = allTrips.filter(function(t) { return (t.date || '') >= yearStart; });
+
+  var totalTrips = ytdTrips.length;
+  var totalHours = 0;
+  var catStats = {};   // key → { count, hours }
+  var locStats = {};   // locationId → { count, hours }
+
+  ytdTrips.forEach(function(t) {
+    var hrs = Number(t.hoursDecimal) || 0;
+    totalHours += hrs;
+
+    var cat = t.boatCategory || '';
+    if (!cat) { var b = boats.find(function(bt) { return bt.id === t.boatId; }); if (b) cat = b.category || ''; }
+    if (cat) {
+      if (!catStats[cat]) catStats[cat] = { count: 0, hours: 0 };
+      catStats[cat].count++;
+      catStats[cat].hours += hrs;
+    }
+
+    var lid = t.locationId || '';
+    if (lid) {
+      if (!locStats[lid]) locStats[lid] = { count: 0, hours: 0 };
+      locStats[lid].count++;
+      locStats[lid].hours += hrs;
+    }
+  });
+
+  var byCategory = boatCategories.map(function(c) {
+    var st = catStats[c.key] || { count: 0, hours: 0 };
+    return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || c.labelEN || c.key, emoji: c.emoji || '', count: st.count, hours: Math.round(st.hours * 10) / 10 };
+  }).filter(function(c) { return c.count > 0; });
+
+  var locData = [];
+  Object.keys(locStats).forEach(function(lid) {
+    var loc = locMap[lid];
+    if (!loc) return;
+    var coords = loc.coordinates || '';
+    if (!coords) return;
+    var parts = String(coords).split(',');
+    if (parts.length < 2) return;
+    var lat = parseFloat(parts[0]);
+    var lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)) return;
+    locData.push({ id: lid, name: loc.name || lid, lat: lat, lng: lng, tripCount: locStats[lid].count, totalHours: Math.round(locStats[lid].hours * 10) / 10 });
+  });
+
+  // ── On the water ──
+  var checkouts = readAll_('checkouts').filter(function(c) { return c.status === 'out'; });
+  var boatCount = 0;
+  var peopleCount = 0;
+  var onWaterBoats = [];
+
+  checkouts.forEach(function(c) {
+    var isGroup = c.isGroup === true || c.isGroup === 'TRUE' || c.isGroup === 'true';
+    if (isGroup) {
+      var bNames = []; try { bNames = JSON.parse(c.boatNames || '[]'); } catch(e) { bNames = String(c.boatName || '').split(','); }
+      boatCount += bNames.length || 1;
+      peopleCount += (parseInt(c.participants) || 0) + (function() { try { return JSON.parse(c.staffNames || '[]').length; } catch(e) { return 0; } })();
+      bNames.forEach(function(bn) {
+        onWaterBoats.push({ boatName: bn.trim(), boatCategory: c.boatCategory || '', locationName: c.locationName || '' });
+      });
+    } else {
+      boatCount += 1;
+      peopleCount += (parseInt(c.crew) || 1);
+      onWaterBoats.push({ boatName: c.boatName || '', boatCategory: c.boatCategory || '', locationName: c.locationName || '' });
+    }
+  });
+
+  // Enrich with emoji
+  onWaterBoats.forEach(function(b) {
+    var cat = catMap[b.boatCategory];
+    b.emoji = cat ? (cat.emoji || '') : '';
+  });
+
+  // ── Captains ──
+  var members = readAll_('members').filter(function(m) { return m.active === true || m.active === 'TRUE' || m.active === 'true'; });
+  var captains = [];
+  var scriptUrl = ScriptApp.getService().getUrl();
+
+  members.forEach(function(m) {
+    var certs = [];
+    try { certs = typeof m.certifications === 'string' ? JSON.parse(m.certifications) : (m.certifications || []); } catch(e) { return; }
+    if (!Array.isArray(certs)) return;
+    var isCaptain = certs.some(function(c) { return c.certId === 'keelboat_crew' && c.sub === 'captain'; });
+    if (!isCaptain) return;
+
+    // Build cert labels
+    var certLabels = certs.map(function(c) {
+      var def = certDefs.find(function(d) { return d.id === c.certId; });
+      var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
+      var label = subcat ? ((def.name || c.certId) + ' — ' + subcat.label) : (def ? def.name : c.certId);
+      return { certId: c.certId, sub: c.sub || '', label: label };
+    });
+
+    // Captain trip stats
+    var captTrips = allTrips.filter(function(t) {
+      return String(t.kennitala) === String(m.kennitala) && (t.role === 'skipper' || t.role === 'captain');
+    });
+    var captHours = 0;
+    captTrips.forEach(function(t) { captHours += Number(t.hoursDecimal) || 0; });
+
+    captains.push({
+      id: m.id,
+      name: m.name || '',
+      certs: certLabels,
+      tripCount: captTrips.length,
+      totalHours: Math.round(captHours * 10) / 10,
+      captainRecordUrl: scriptUrl + '?action=captain&id=' + m.id,
+    });
+  });
+
+  return okJ({
+    ytd: { totalTrips: totalTrips, totalHours: Math.round(totalHours * 10) / 10, byCategory: byCategory },
+    locations: locData,
+    onWater: { boatCount: boatCount, peopleCount: peopleCount, boats: onWaterBoats },
+    captains: captains,
+    boatCategories: boatCategories.map(function(c) { return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || '', emoji: c.emoji || '' }; }),
+  });
 }
 
 

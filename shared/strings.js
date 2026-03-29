@@ -787,6 +787,31 @@ const STRINGS = {
   'fleet.checkIn':           { EN:'Check In',                              IS:'Skrá inn' },
   'fleet.delete':            { EN:'Delete',                                IS:'Eyða' },
 
+  // ── Public dashboard ──────────────────────────────────────────────────────
+  'pub.dash.title':          { EN:'Club Dashboard',                        IS:'Yfirlit klúbbs' },
+  'pub.dash.subtitle':       { EN:'Siglingafélagið Ýmir',                  IS:'Siglingafélagið Ýmir' },
+  'pub.dash.season':         { EN:'{year} Season',                         IS:'Tímabil {year}' },
+  'pub.dash.ytdTrips':       { EN:'Trips This Season',                     IS:'Siglingar á tímabilinu' },
+  'pub.dash.totalHours':     { EN:'Hours Sailed',                          IS:'Klukkustundir á sjó' },
+  'pub.dash.byCategory':     { EN:'By Boat Type',                          IS:'Eftir bátategund' },
+  'pub.dash.locations':      { EN:'Where We Sail',                         IS:'Hvar við siglum' },
+  'pub.dash.onWater':        { EN:'On the Water Now',                      IS:'Á sjónum núna' },
+  'pub.dash.boats':          { EN:'Boats Out',                             IS:'Bátar úti' },
+  'pub.dash.people':         { EN:'People',                                IS:'Fólk' },
+  'pub.dash.captains':       { EN:'Our Captains',                          IS:'Skipstjórar okkar' },
+  'pub.dash.viewRecord':     { EN:'View Sailing Record →',                 IS:'Skoða siglingaskrá →' },
+  'pub.dash.noCaptains':     { EN:'No captains registered yet.',           IS:'Engir skipstjórar skráðir ennþá.' },
+  'pub.dash.noActivity':     { EN:'No boats on the water right now.',      IS:'Engir bátar á sjónum núna.' },
+  'pub.dash.trips':          { EN:'trips',                                 IS:'siglingar' },
+  'pub.dash.hrs':            { EN:'hrs',                                   IS:'klst' },
+  'pub.dash.bio':            { EN:'Captain at Siglingafélagið Ýmir. Bio coming soon.',
+                               IS:'Skipstjóri hjá Siglingafélaginu Ými. Ævisaga í vinnslu.' },
+  'pub.dash.loading':        { EN:'Loading dashboard…',                    IS:'Hleður yfirliti…' },
+  'pub.dash.error':          { EN:'Could not load dashboard data.',        IS:'Gat ekki hlaðið yfirlitsgögnum.' },
+  'pub.dash.lastUpdated':    { EN:'Last updated',                          IS:'Síðast uppfært' },
+  'pub.dash.tripCount':      { EN:'{n} trips',                             IS:'{n} siglingar' },
+  'pub.dash.hourCount':      { EN:'{n} hrs',                               IS:'{n} klst' },
+
 };
 
 window.s = function s(key, vars, lang) {
