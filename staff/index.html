@@ -855,17 +855,19 @@ async function submitCheckout() {
       .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
       .filter(c => c.name);
     if (_crewNames.length) {
-      const _tripBase = {
-        linkedCheckoutId: res?.checkoutId || res?.id || '',
-        boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
-        locationId: lid, locationName: location.name||lid,
-        timeOut: document.getElementById('coTimeOut').value,
-        expectedReturn: document.getElementById('coReturnBy').value,
-        role: 'crew', isLinked: true, wxSnapshot: snap,
-      };
+      const _coId = res?.checkoutId || res?.id || '';
       for (const _cn of _crewNames) {
-        try { await apiPost('saveTrip', Object.assign({}, _tripBase, { crewMemberName: _cn.name, crewMemberKennitala: _cn.kennitala }));
-        } catch(e2) { console.warn('crew trip save failed for', _cn, e2.message); }
+        try { await apiPost('createConfirmation', {
+          type: 'crew_assigned',
+          fromKennitala: kt, fromName: member.name||kt,
+          toKennitala: _cn.kennitala, toName: _cn.name,
+          linkedCheckoutId: _coId,
+          boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
+          locationId: lid, locationName: location.name||lid,
+          date: new Date().toISOString().slice(0,10),
+          timeOut: document.getElementById('coTimeOut').value,
+          role: 'crew', wxSnapshot: snap,
+        }); } catch(e2) { console.warn('crew confirmation failed for', _cn, e2.message); }
       }
     }
     toggleCheckoutForm();

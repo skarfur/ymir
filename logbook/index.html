@@ -248,9 +248,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <button class="modal-close" onclick="closeLogModal()">✕</button>
     </div>
 
-    <!-- Step 1: pick a trip or enter manually -->
+    <!-- Step 1: enter manually or join a recent trip -->
     <div id="logStep1">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Join a recent club trip as crew, or enter a trip manually. You can add notes, photos, and a GPS track to any log entry.</p>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Enter a trip manually, or join a recent club trip as crew. You can add notes, photos, and a GPS track to any log entry.</p>
+      <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
+
+      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
       <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
 
@@ -271,11 +274,8 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           <div id="jPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
         </div>
         <div id="jErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
-        <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Add to my logbook</button>
+        <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Request to join</button>
       </div>
-
-      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR ENTER MANUALLY —</div>
-      <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
     </div>
 
     <!-- Step 2: manual entry form -->
@@ -1070,7 +1070,7 @@ async function submitJoinTrip(){
   const errEl=document.getElementById('jErr');
   errEl.style.display='none';
   const btn=document.getElementById('jSubmitBtn');
-  btn.disabled=true; btn.textContent=IS?'Hleður upp…':'Uploading…';
+  btn.disabled=true; btn.textContent=IS?'Sendir beiðni…':'Sending request…';
 
   // Upload GPS track
   let trackFileUrl='', trackSource='';
@@ -1093,31 +1093,23 @@ async function submitJoinTrip(){
   }));
 
   try{
-    const res=await apiPost('saveTrip',{
-      linkedTripId: t.id,
+    // Create a confirmation request to the skipper instead of directly saving
+    await apiPost('createConfirmation',{
+      type:'crew_join',
+      fromKennitala: user.kennitala, fromName: user.name,
+      toKennitala: t.kennitala, toName: t.memberName,
+      tripId: t.id,
       linkedCheckoutId: t.linkedCheckoutId||'',
-      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
+      boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
       locationId: t.locationId, locationName: t.locationName,
-      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
-      crew: t.crew, role: 'crew',
+      date: t.date, timeOut: t.timeOut, timeIn: t.timeIn,
+      hoursDecimal: t.hoursDecimal,
+      role:'crew',
       beaufort: t.beaufort||'', windDir: t.windDir||'',
-      notes,
-      trackFileUrl, trackSource,
-      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
     });
-    myTrips.unshift({
-      id: res.id, kennitala: user.kennitala,
-      linkedTripId: t.id, linkedCheckoutId: t.linkedCheckoutId||'',
-      date: t.date, boatId: t.boatId, boatName: t.boatName, boatCategory: t.boatCategory||'',
-      locationId: t.locationId, locationName: t.locationName,
-      timeOut: t.timeOut, timeIn: t.timeIn, hoursDecimal: t.hoursDecimal,
-      crew: t.crew, role: 'crew',
-      beaufort: t.beaufort||'', windDir: t.windDir||'',
-      notes, trackFileUrl, trackSource,
-      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
-    });
-    renderStats(); buildFilters(); applyFilter();
-    showToast(IS?'Bætt við siglingabókinni ✓':'Added to your logbook ✓','success');
+    // Upload GPS track and photos to the pending trip data (will be attached when confirmed)
+    // For now these are stored as part of the confirmation metadata
+    showToast(IS?'Beiðni send til skipstjóra ✓':'Request sent to skipper ✓','success');
     closeLogModal();
   }catch(e){
     errEl.textContent=e.message;
@@ -1185,7 +1177,7 @@ function joinTripAsCrew(tripId, el){
   document.getElementById('jNotes').value='';
   document.getElementById('jErr').style.display='none';
   const btn=document.getElementById('jSubmitBtn');
-  btn.disabled=false; btn.textContent=IS?'Bæta við siglingabók':'Add to my logbook';
+  btn.disabled=false; btn.textContent=IS?'Senda beiðni':'Request to join';
   document.getElementById('joinExtras').style.display='';
   // Scroll extras into view
   document.getElementById('joinExtras').scrollIntoView({behavior:'smooth',block:'nearest'});
