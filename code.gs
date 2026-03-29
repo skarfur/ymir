@@ -3396,11 +3396,40 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     return c.labelEN || key;
   }
 
-  // Trips
+  // Trips: own skipper trips + confirmed crew participations
   var allTrips = readAll_('trips');
-  var memberTrips = allTrips.filter(function(t) {
-    return String(t.kennitala) === String(member.kennitala) && (t.date || '') <= cutOff;
-  }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
+  var allConfs = [];
+  try { allConfs = readAll_('tripConfirmations'); } catch(e) {}
+  var kt = String(member.kennitala);
+  var ownTrips = allTrips.filter(function(t) {
+    return String(t.kennitala) === kt && (t.date || '') <= cutOff;
+  });
+  // Crew participations via confirmed confirmations
+  var crewConfs = allConfs.filter(function(c) {
+    return c.status === 'confirmed' &&
+      (c.type === 'crew_assigned' || c.type === 'crew_join') &&
+      ((c.type === 'crew_assigned' && String(c.toKennitala) === kt) ||
+       (c.type === 'crew_join' && String(c.fromKennitala) === kt));
+  });
+  var crewTrips = [];
+  crewConfs.forEach(function(c) {
+    var trip = c.tripId ? allTrips.find(function(t) { return t.id === c.tripId; }) : null;
+    if (!trip && c.linkedCheckoutId) {
+      trip = allTrips.find(function(t) {
+        return t.linkedCheckoutId === c.linkedCheckoutId && (!t.role || t.role === 'skipper');
+      });
+    }
+    if (!trip || (trip.date || '') > cutOff) return;
+    // Don't duplicate if already in ownTrips
+    if (ownTrips.some(function(ot) { return ot.id === trip.id; })) return;
+    var helmConf = allConfs.find(function(hc) {
+      return hc.type === 'helm' && hc.status === 'confirmed' && String(hc.toKennitala) === kt &&
+        (hc.tripId === trip.id || (trip.linkedCheckoutId && hc.linkedCheckoutId === trip.linkedCheckoutId));
+    });
+    crewTrips.push(Object.assign({}, trip, { role: 'crew', helm: !!(helmConf && helmConf.helm) }));
+  });
+  var memberTrips = ownTrips.concat(crewTrips)
+    .sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
 
   // Filter by categories if specified
   var categories = opts.categories && opts.categories.length ? opts.categories : null;
