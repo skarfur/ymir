@@ -38,12 +38,12 @@ const CLUB_LANG_ = 'IS';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GS_STRINGS_ = {
-  'alert.subject': { EN: '⚠ OVERDUE{minor}: {boat} — {overdue}', IS: '⚠ YFIRTÍMA{minor}: {boat} — {overdue}' },
+  'alert.subject': { EN: '⚠️ OVERDUE{minor}: {boat} — {overdue}', IS: '⚠️ YFIRTÍMA{minor}: {boat} — {overdue}' },
   'alert.minor': { EN: ' MINOR', IS: ' BARN' },
   'alert.overdueMins': { EN: '{n} min overdue', IS: '{n} mín yfirtíma' },
   'alert.overdueHrs': { EN: '{h}h {m}min overdue', IS: '{h}klst {m}mín yfirtíma' },
-  'alert.header': { EN: '⚠ OVERDUE BOAT ALERT', IS: '⚠ YFIRTÍMA BÁTARVIÐVÖRUN' },
-  'alert.headerMinor': { EN: '⚠ OVERDUE BOAT ALERT — MINOR SAILOR', IS: '⚠ YFIRTÍMA BÁTARVIÐVÖRUN — BARN' },
+  'alert.header': { EN: '⚠️ OVERDUE BOAT ALERT', IS: '⚠️ YFIRTÍMA BÁTARVIÐVÖRUN' },
+  'alert.headerMinor': { EN: '⚠️ OVERDUE BOAT ALERT — MINOR SAILOR', IS: '⚠️ YFIRTÍMA BÁTARVIÐVÖRUN — BARN' },
   'alert.boat': { EN: 'Boat', IS: 'Bátur' },
   'alert.sailor': { EN: 'Sailor', IS: 'Siglingamaður' },
   'alert.phone': { EN: 'Phone', IS: 'Sími' },
@@ -2170,7 +2170,7 @@ function handleAlertAction_(b) {
 function emailResponseHtml_(message, ok, lang) {
   const L = lang || CLUB_LANG_;
   const color = ok ? '#27ae60' : '#e74c3c';
-  const icon = ok ? '✓' : '⚠';
+  const icon = ok ? '✓' : '⚠️';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ÝMIR</title>
 <style>body{font-family:monospace;background:#071526;color:#d6e4f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
 .card{background:#0b1f38;border:1px solid #1e3a5a;border-radius:12px;padding:36px 40px;max-width:420px;text-align:center}
@@ -2777,7 +2777,7 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
       html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.tripDetails') + '</div><div class="detail-grid">';
       if (dep || arr) {
         var portVal = dep && arr && dep !== arr ? esc_(dep) + ' → ' + esc_(arr) : esc_(dep || arr);
-        html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">' + dl_('pub.lbl.ports') + '</span><span class="detail-val">⚓ ' + portVal + '</span></div>';
+        html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">' + dl_('pub.lbl.ports') + '</span><span class="detail-val">⚓️ ' + portVal + '</span></div>';
       }
       if (t.timeOut) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.departed') + '</span><span class="detail-val">' + esc_(t.timeOut) + '</span></div>';
       if (t.timeIn) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.returned') + '</span><span class="detail-val">' + esc_(t.timeIn) + '</span></div>';

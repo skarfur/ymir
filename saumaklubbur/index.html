@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderList();
   } catch(e) {
     document.getElementById("projectList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠</div><p>Failed to load: ${esc(e.message)}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
   }
 
   warmContainer();
@@ -316,7 +316,7 @@ function renderList() {
 function renderProjectCard(r) {
   const resolved  = boolVal(r.resolved);
   const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '⚙';
+  const catIcon   = CAT_ICON[r.category] || '⚙️';
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
     : esc(r.itemName||'');

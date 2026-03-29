@@ -287,7 +287,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- Port section: open/prominent for keelboats, collapsed for others -->
       <details id="portDetails" style="margin-bottom:12px">
         <summary id="portSummary" style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span>⚓</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
+          <span>⚓️</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
         </summary>
         <div class="form-row" style="margin-top:6px">
           <div class="form-field">
@@ -464,8 +464,8 @@ function tripCard(t){
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
   const dep=t.departurePort||'', arr=t.arrivalPort||'';
   const portLine = (dep||arr) ? (
-    (!arr||!dep||dep===arr) ? `<span>⚓ ${esc(dep||arr)}</span>`
-                            : `<span>⚓ ${esc(dep)} → ${esc(arr)}</span>`
+    (!arr||!dep||dep===arr) ? `<span>⚓️ ${esc(dep||arr)}</span>`
+                            : `<span>⚓️ ${esc(dep)} → ${esc(arr)}</span>`
   ) : '';
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
@@ -484,7 +484,7 @@ function tripCard(t){
   const portRow = isKeelboat && (dep||arr) ? (
     dep && arr && dep!==arr
       ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Brottfararstaður → Komustaður':'Departure → Arrival'}</span><span class="trip-exp-val">${esc(dep)} → ${esc(arr)}</span></div>`
-      : `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">⚓ ${esc(dep||arr)}</span></div>`
+      : `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">⚓️ ${esc(dep||arr)}</span></div>`
   ) : '';
 
   // Crew row (full-width): show linked names if present, otherwise count

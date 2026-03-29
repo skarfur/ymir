@@ -344,7 +344,7 @@
     <div id="tab-alerts" class="hidden">
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">⚠ OVERDUE ALERTS</div>
+          <div class="col-title">⚠️ OVERDUE ALERTS</div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="alertsCard">
@@ -1368,7 +1368,7 @@ function renderLocations() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
-      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
+      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
       <button class="row-del"  onclick="deleteLocation('${l.id}')">×</button>
     </div>`).join("");

@@ -313,7 +313,7 @@ function tideWidget(targetEl, { onData } = {}) {
         </div>
         ${svg}
         <div style="text-align:right;margin-top:2px">
-          <span style="font-size:7px;color:var(--muted);opacity:.55">⚠ ${disclaimer}</span>
+          <span style="font-size:7px;color:var(--muted);opacity:.55">⚠️ ${disclaimer}</span>
         </div>
       </div>`;
 

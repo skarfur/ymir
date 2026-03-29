@@ -378,7 +378,7 @@ function renderLaunchForm(boat) {
   document.getElementById('launchModalBody').innerHTML=
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
-    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓ '+(L==='IS'?'Brottfararhöfn':'Departure Port')+'</label>'+
+    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+(L==='IS'?'Brottfararhöfn':'Departure Port')+'</label>'+
       '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+(L==='IS'?'Heimahöfn':'Home port')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
@@ -713,7 +713,7 @@ function renderLandingChecklist() {
     portDistRow=
       '<div class="field" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">'+
         '<div style="flex:1;min-width:0">'+
-          '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'⚓ KOMUSTAÐUR':'⚓ ARRIVAL PORT')+'</label>'+
+          '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'⚓️ KOMUSTAÐUR':'⚓️ ARRIVAL PORT')+'</label>'+
           '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+(IS?'Sama og brottfararstaður':'Same as departure')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
           '<datalist id="retPortsList">'+portOpts+'</datalist>'+
         '</div>'+
@@ -807,7 +807,7 @@ function _irSelectCat(cat) {
 }
 function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
 function _incidentFormHtml() {
-  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗 Property damage"],["other","📌 Other"]];
+  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["other","📌 Other"]];
   var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
   var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
   var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
