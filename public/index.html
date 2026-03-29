@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YMIR — Club Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/strings.js"></script>
+<style>
+:root {
+  --bg:      #0b1f38;
+  --surface: #0f2847;
+  --card:    #132d50;
+  --border:  #1e3f6e;
+  --text:    #d6e4f0;
+  --muted:   #6b92b8;
+  --brass:   #d4af37;
+  --green:   #27ae60;
+  --red:     #e74c3c;
+  --yellow:  #f1c40f;
+  --orange:  #e67e22;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.6;min-height:100vh}
+a{color:var(--brass);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:500;color:var(--brass);letter-spacing:1px}
+.subtitle{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-left:12px}
+.lang-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;letter-spacing:.5px}
+.lang-btn:hover{color:var(--brass);border-color:var(--brass)}
+
+/* ── Main layout ────────────────────────────────────────────────── */
+main{max-width:1100px;margin:0 auto;padding:24px 20px 48px}
+section{margin-bottom:32px}
+h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:14px}
+
+/* ── Stat boxes ─────────────────────────────────────────────────── */
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;flex:1;min-width:140px;text-align:center}
+.stat-val{font-size:32px;font-weight:500;color:var(--brass);line-height:1.2}
+.stat-lbl{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-top:4px}
+
+/* ── Category breakdown ─────────────────────────────────────────── */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.cat-emoji{font-size:22px;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-detail{font-size:11px;color:var(--muted)}
+
+/* ── Heatmap ────────────────────────────────────────────────────── */
+#map-container{height:360px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+#map-container .leaflet-control-attribution{font-size:9px;background:rgba(11,31,56,.8)!important;color:var(--muted)!important}
+#map-container .leaflet-control-attribution a{color:var(--muted)!important}
+
+/* ── On the water ───────────────────────────────────────────────── */
+.live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.water-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.water-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.water-emoji{font-size:20px;flex-shrink:0}
+.water-name{font-size:13px;color:var(--text);font-weight:500}
+.water-loc{font-size:11px;color:var(--muted)}
+.empty-msg{color:var(--muted);font-size:12px;font-style:italic;padding:12px 0}
+
+/* ── Captains ───────────────────────────────────────────────────── */
+.captain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.captain-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.captain-name{font-size:15px;font-weight:500;color:var(--text)}
+.captain-stats{display:flex;gap:16px;font-size:11px;color:var(--muted)}
+.captain-stats span{display:flex;align-items:center;gap:4px}
+.captain-certs{display:flex;flex-wrap:wrap;gap:4px}
+.cert-badge{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:10px;color:var(--text)}
+.cert-badge::before{content:'\2713';color:var(--green);font-weight:bold;font-size:9px}
+.captain-bio{font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
+.captain-link{font-size:11px;color:var(--brass)}
+
+/* ── Loading / error ────────────────────────────────────────────── */
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px}
+.loading .spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--brass);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{text-align:center;padding:40px 20px;color:var(--red);font-size:13px}
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);border-top:1px solid var(--border)}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media(max-width:600px){
+  header{padding:10px 14px}
+  main{padding:16px 12px 32px}
+  .stats-row{flex-direction:column}
+  .stat-box{padding:14px 16px}
+  .stat-val{font-size:26px}
+  #map-container{height:260px}
+  .captain-grid{grid-template-columns:1fr}
+  .subtitle{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center">
+    <span class="logo">&#9875; YMIR</span>
+    <span class="subtitle" id="hdr-subtitle"></span>
+  </div>
+  <button class="lang-btn" id="lang-toggle" onclick="toggleLang()"></button>
+</header>
+
+<main id="main-content">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div id="loading-text"></div>
+  </div>
+</main>
+
+<footer id="footer" style="display:none">
+  <span id="footer-text"></span>
+</footer>
+
+<script>
+// ── Minimal esc() since we don't load ui.js ──
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+var SCRIPT_URL_PUB = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
+var REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+var _map = null;
+var _heatLayer = null;
+
+function lang() { return (typeof getLang === 'function') ? getLang() : 'EN'; }
+
+function toggleLang() {
+  var next = lang() === 'EN' ? 'IS' : 'EN';
+  if (typeof setLang === 'function') setLang(next);
+  location.reload();
+}
+
+function applyStaticText() {
+  document.getElementById('hdr-subtitle').textContent = s('pub.dash.subtitle');
+  document.getElementById('lang-toggle').textContent = lang() === 'EN' ? 'IS' : 'EN';
+  document.getElementById('loading-text').textContent = s('pub.dash.loading');
+}
+
+async function fetchDashboard() {
+  var res = await fetch(SCRIPT_URL_PUB, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'dashboard' })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed');
+  return data;
+}
+
+function renderDashboard(data) {
+  var L_ = lang();
+  var main = document.getElementById('main-content');
+  var html = '';
+
+  // ── Season Stats ──
+  var year = new Date().getFullYear();
+  html += '<section>';
+  html += '<h2>' + esc(s('pub.dash.season', { year: year })) + '</h2>';
+  html += '<div class="stats-row">';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalTrips) + '</div><div class="stat-lbl">' + esc(s('pub.dash.ytdTrips')) + '</div></div>';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalHours) + '</div><div class="stat-lbl">' + esc(s('pub.dash.totalHours')) + '</div></div>';
+  html += '</div>';
+
+  // Category breakdown
+  if (data.ytd.byCategory && data.ytd.byCategory.length) {
+    html += '<h2>' + esc(s('pub.dash.byCategory')) + '</h2>';
+    html += '<div class="cat-grid">';
+    data.ytd.byCategory.forEach(function(c) {
+      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
+      html += '<div class="cat-card">'
+        + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
+        + '<div class="cat-info">'
+        + '<div class="cat-name">' + esc(label) + '</div>'
+        + '<div class="cat-detail">' + esc(s('pub.dash.tripCount', { n: c.count })) + ' &middot; ' + esc(s('pub.dash.hourCount', { n: c.hours })) + '</div>'
+        + '</div></div>';
+    });
+    html += '</div>';
+  }
+  html += '</section>';
+
+  // ── Heatmap ──
+  if (data.locations && data.locations.length) {
+    html += '<section>';
+    html += '<h2>' + esc(s('pub.dash.locations')) + '</h2>';
+    html += '<div id="map-container"></div>';
+    html += '</section>';
+  }
+
+  // ── On the Water Now ──
+  html += '<section>';
+  html += '<h2><span class="live-badge"></span>' + esc(s('pub.dash.onWater')) + '</h2>';
+  if (data.onWater.boatCount > 0) {
+    html += '<div class="stats-row">';
+    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.boatCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.boats')) + '</div></div>';
+    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.peopleCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.people')) + '</div></div>';
+    html += '</div>';
+    html += '<div class="water-grid">';
+    data.onWater.boats.forEach(function(b) {
+      html += '<div class="water-card">'
+        + '<div class="water-emoji">' + esc(b.emoji || '⛵') + '</div>'
+        + '<div>'
+        + '<div class="water-name">' + esc(b.boatName) + '</div>'
+        + (b.locationName ? '<div class="water-loc">' + esc(b.locationName) + '</div>' : '')
+        + '</div></div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty-msg">' + esc(s('pub.dash.noActivity')) + '</div>';
+  }
+  html += '</section>';
+
+  // ── Captains ──
+  html += '<section>';
+  html += '<h2>' + esc(s('pub.dash.captains')) + '</h2>';
+  if (data.captains && data.captains.length) {
+    html += '<div class="captain-grid">';
+    data.captains.forEach(function(cap) {
+      html += '<div class="captain-card">';
+      html += '<div class="captain-name">' + esc(cap.name) + '</div>';
+      html += '<div class="captain-stats">';
+      html += '<span>' + esc(s('pub.dash.tripCount', { n: cap.tripCount })) + '</span>';
+      html += '<span>' + esc(s('pub.dash.hourCount', { n: cap.totalHours })) + '</span>';
+      html += '</div>';
+      if (cap.certs && cap.certs.length) {
+        html += '<div class="captain-certs">';
+        cap.certs.forEach(function(c) {
+          html += '<div class="cert-badge">' + esc(c.label) + '</div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="captain-bio">' + esc(s('pub.dash.bio')) + '</div>';
+      html += '<a class="captain-link" href="' + esc(cap.captainRecordUrl) + '" target="_blank">' + esc(s('pub.dash.viewRecord')) + '</a>';
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty-msg">' + esc(s('pub.dash.noCaptains')) + '</div>';
+  }
+  html += '</section>';
+
+  main.innerHTML = html;
+
+  // Footer
+  var footer = document.getElementById('footer');
+  footer.style.display = '';
+  var now = new Date();
+  var timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('footer-text').textContent = s('pub.dash.lastUpdated') + ' ' + timeStr;
+
+  // Init map after DOM update
+  if (data.locations && data.locations.length) {
+    initMap(data.locations);
+  }
+}
+
+function initMap(locations) {
+  var el = document.getElementById('map-container');
+  if (!el) return;
+
+  if (_map) { _map.remove(); _map = null; }
+
+  _map = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+
+  // CartoDB Voyager (no labels) + OpenSeaMap — same as logbook
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; CartoDB' }).addTo(_map);
+  L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(_map);
+
+  // Heat layer data: [lat, lng, intensity]
+  var maxTrips = 1;
+  locations.forEach(function(loc) { if (loc.tripCount > maxTrips) maxTrips = loc.tripCount; });
+
+  var heatData = locations.map(function(loc) {
+    return [loc.lat, loc.lng, loc.tripCount / maxTrips];
+  });
+
+  _heatLayer = L.heatLayer(heatData, {
+    radius: 30,
+    blur: 20,
+    maxZoom: 14,
+    max: 1.0,
+    gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
+  }).addTo(_map);
+
+  // Add circle markers with tooltips for each location
+  locations.forEach(function(loc) {
+    var radius = Math.max(6, Math.min(20, 6 + (loc.tripCount / maxTrips) * 14));
+    L.circleMarker([loc.lat, loc.lng], {
+      radius: radius,
+      color: '#d4af37',
+      fillColor: '#d4af37',
+      fillOpacity: 0.3,
+      weight: 1,
+    }).bindTooltip(
+      '<strong>' + esc(loc.name) + '</strong><br>'
+      + s('pub.dash.tripCount', { n: loc.tripCount }) + ' &middot; '
+      + s('pub.dash.hourCount', { n: loc.totalHours }),
+      { className: 'map-tooltip' }
+    ).addTo(_map);
+  });
+
+  // Fit bounds
+  var bounds = L.latLngBounds(locations.map(function(loc) { return [loc.lat, loc.lng]; }));
+  _map.fitBounds(bounds.pad(0.3));
+}
+
+async function load() {
+  applyStaticText();
+  try {
+    var data = await fetchDashboard();
+    renderDashboard(data);
+  } catch (e) {
+    console.error('Dashboard load error:', e);
+    document.getElementById('main-content').innerHTML = '<div class="error-msg">' + esc(s('pub.dash.error')) + '</div>';
+  }
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', function() {
+  load();
+  // Auto-refresh every 5 minutes
+  setInterval(function() { load(); }, REFRESH_MS);
+});
+</script>
+</body>
+</html>
