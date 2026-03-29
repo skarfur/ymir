@@ -40,7 +40,7 @@
       margin-top:8px; cursor:pointer; transition:opacity .15s; }
     .req-photo:hover { opacity:.8; }
     .comment-thread { margin-top:8px; border-top:1px solid var(--border)44; padding-top:8px; }
-    .comment-item { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .comment-item { margin-bottom:8px; }
     .verk-tag { font-size:11px; color:var(--brass); font-weight:500; }
 
     /* ── Badges ── */
@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderList();
   } catch(e) {
     document.getElementById("projectList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠</div><p>Failed to load: ${esc(e.message)}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
   }
 
   warmContainer();
@@ -316,7 +316,7 @@ function renderList() {
 function renderProjectCard(r) {
   const resolved  = boolVal(r.resolved);
   const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '⚙';
+  const catIcon   = CAT_ICON[r.category] || '⚙️';
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
     : esc(r.itemName||'');

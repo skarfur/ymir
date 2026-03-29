@@ -300,6 +300,11 @@ function punchClockWidget(el, employeeId, opts) {
       '.pc-btn-brk-end{background:var(--brass);color:#0b1f38}' +
       '.pc-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}' +
       '.pc-recent{border-top:1px solid var(--border);padding:10px 16px 12px;display:flex;flex-direction:column;gap:0}' +
+      '.pc-recent-toggle{font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:4px;background:none;border:none;padding:0;font-family:inherit}' +
+      '.pc-recent-toggle .pc-chevron{display:inline-block;transition:transform .2s;font-size:8px}' +
+      '.pc-recent-toggle.open .pc-chevron{transform:rotate(90deg)}' +
+      '.pc-recent-body{display:none}' +
+      '.pc-recent-body.open{display:block}' +
       '.pc-recent-lbl{font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}' +
       '.pc-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}' +
       '.pc-row:last-child{border-bottom:none}' +
@@ -356,19 +361,31 @@ function punchClockWidget(el, employeeId, opts) {
           : '')
       + '</div>';
 
-    // ── Recent shifts (last 5 completed)
+    // ── Recent shifts (current week, collapsible, default hidden)
     var recentHTML = '';
     var recent = state.recent || [];
+    // Filter to current week (Monday–Sunday)
+    var now = new Date();
+    var day = now.getDay();
+    var mondayOffset = day === 0 ? -6 : 1 - day;
+    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+    var weekStartISO = weekStart.toISOString().slice(0,10);
+    recent = recent.filter(function(r) { return (r.inTime || '').slice(0,10) >= weekStartISO; });
     if (recent.length) {
-      recentHTML = '<div class="pc-recent"><div class="pc-recent-lbl">' + t('payroll.recentShifts') + '</div>'
-        + recent.slice(0,5).map(function(r) {
+      var isOpen = el._pcRecentOpen || false;
+      recentHTML = '<div class="pc-recent">'
+        + '<button class="pc-recent-toggle' + (isOpen ? ' open' : '') + '" id="pcRecentToggle">'
+        + '<span class="pc-chevron">\u25b6</span> ' + t('payroll.recentShifts') + ' (' + recent.length + ')'
+        + '</button>'
+        + '<div class="pc-recent-body' + (isOpen ? ' open' : '') + '" id="pcRecentBody">'
+        + recent.map(function(r) {
             return '<div class="pc-row">'
               + '<span style="min-width:80px;font-variant-numeric:tabular-nums">' + fmtTime(r.inTime) + '\u2013' + fmtTime(r.outTime) + '</span>'
               + '<span style="flex:1;color:var(--muted)">' + fmtDate(r.inTime) + '</span>'
               + '<span style="font-weight:600">' + (r.durationMinutes ? fmtDurationMins(+r.durationMinutes) : '\u2013') + '</span>'
               + '</div>';
           }).join('')
-        + '</div>';
+        + '</div></div>';
     } else if (!ci) {
       recentHTML = '<div class="pc-recent"><span style="font-size:12px;color:var(--muted)">' + t('payroll.noShifts') + '</span></div>';
     }
@@ -400,6 +417,16 @@ function punchClockWidget(el, employeeId, opts) {
           else       await apiPost('breakStart', { employeeId: employeeId });
           await pcRefresh(el, employeeId);
         } catch(err) { render(Object.assign({}, state, { error: err.message || 'Error' })); }
+      };
+    }
+
+    // ── Recent shifts toggle
+    var toggleBtn = document.getElementById('pcRecentToggle');
+    if (toggleBtn) {
+      toggleBtn.onclick = function() {
+        el._pcRecentOpen = !el._pcRecentOpen;
+        toggleBtn.classList.toggle('open');
+        document.getElementById('pcRecentBody').classList.toggle('open');
       };
     }
 
