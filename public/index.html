@@ -56,10 +56,19 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .cat-name{font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat-detail{font-size:11px;color:var(--muted)}
 
-/* ── Heatmap ────────────────────────────────────────────────────── */
-#map-container{height:360px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+/* ── Map + Stats combo ──────────────────────────────────────────── */
+.map-stats{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start}
+#map-container{height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
 #map-container .leaflet-control-attribution{font-size:9px;background:rgba(11,31,56,.8)!important;color:var(--muted)!important}
 #map-container .leaflet-control-attribution a{color:var(--muted)!important}
+.ytd-sidebar{display:flex;flex-direction:column;gap:10px}
+.ytd-sidebar .stat-box{padding:16px 14px}
+.ytd-sidebar .stat-val{font-size:26px}
+.ytd-sidebar h3{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:6px 0 4px}
+@media(max-width:700px){
+  .map-stats{grid-template-columns:1fr}
+  #map-container{height:400px}
+}
 
 /* ── On the water ───────────────────────────────────────────────── */
 .stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
@@ -194,10 +203,28 @@ function renderDashboard(data) {
   }
   html += '</section>';
 
-  // ── Heatmap ──
+  // ── Heatmap + Season Stats ──
+  var year = new Date().getFullYear();
   html += '<section>';
   html += '<h2>' + esc(s('pub.dash.locations')) + '</h2>';
+  html += '<div class="map-stats">';
   html += '<div id="map-container"></div>';
+  html += '<div class="ytd-sidebar">';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalTrips) + '</div><div class="stat-lbl">' + esc(s('pub.dash.ytdTrips')) + '</div></div>';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalHours) + '</div><div class="stat-lbl">' + esc(s('pub.dash.totalHours')) + '</div></div>';
+  if (data.ytd.byCategory && data.ytd.byCategory.length) {
+    html += '<h3>' + esc(s('pub.dash.byCategory')) + '</h3>';
+    data.ytd.byCategory.forEach(function(c) {
+      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
+      html += '<div class="cat-card">'
+        + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
+        + '<div class="cat-info">'
+        + '<div class="cat-name">' + esc(label) + '</div>'
+        + '<div class="cat-detail">' + esc(s('pub.dash.tripCount', { n: c.count })) + ' &middot; ' + esc(s('pub.dash.hourCount', { n: c.hours })) + '</div>'
+        + '</div></div>';
+    });
+  }
+  html += '</div></div>';
   html += '</section>';
 
   // ── Captains ──
@@ -229,32 +256,6 @@ function renderDashboard(data) {
   }
   html += '</section>';
 
-  // ── Season Stats ──
-  var year = new Date().getFullYear();
-  html += '<section>';
-  html += '<h2>' + esc(s('pub.dash.season', { year: year })) + '</h2>';
-  html += '<div class="stats-row">';
-  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalTrips) + '</div><div class="stat-lbl">' + esc(s('pub.dash.ytdTrips')) + '</div></div>';
-  html += '<div class="stat-box"><div class="stat-val">' + esc(data.ytd.totalHours) + '</div><div class="stat-lbl">' + esc(s('pub.dash.totalHours')) + '</div></div>';
-  html += '</div>';
-
-  // Category breakdown
-  if (data.ytd.byCategory && data.ytd.byCategory.length) {
-    html += '<h2>' + esc(s('pub.dash.byCategory')) + '</h2>';
-    html += '<div class="cat-grid">';
-    data.ytd.byCategory.forEach(function(c) {
-      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
-      html += '<div class="cat-card">'
-        + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
-        + '<div class="cat-info">'
-        + '<div class="cat-name">' + esc(label) + '</div>'
-        + '<div class="cat-detail">' + esc(s('pub.dash.tripCount', { n: c.count })) + ' &middot; ' + esc(s('pub.dash.hourCount', { n: c.hours })) + '</div>'
-        + '</div></div>';
-    });
-    html += '</div>';
-  }
-  html += '</section>';
-
   main.innerHTML = html;
 
   // Footer
@@ -282,7 +283,7 @@ function initMap(locations) {
 
   if (!locations.length) {
     // Default view: Kollafjörður / Skerjafjörður area
-    _map.setView([64.12, -21.88], 13);
+    _map.setView([64.18, -21.85], 11);
     return;
   }
 
