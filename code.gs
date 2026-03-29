@@ -381,6 +381,7 @@ function route_(action, b) {
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
+    case 'setHelm': return setHelm_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
     case 'requestValidation': return requestValidation_(b);
     case 'uploadTripFile': return uploadTripFile_(b);
@@ -1506,7 +1507,7 @@ function deleteCheckout_(id) {
 function getTrips_(kennitala, limit, p) {
   p = p || {};
   const all = readAll_('trips');
-  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.timeIn || t.date || '').slice(0, 10) === p.date));
+  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.timeIn || t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)));
   const sorted = filtered.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
   return okJ({ trips: sorted.slice(0, limit || 100) });
 }
@@ -1523,7 +1524,7 @@ function saveTrip_(b) {
       'crew','role','beaufort','windDir','wxSnapshot','notes',
       'isLinked','linkedCheckoutId','linkedTripId',
       'verified','verifiedBy','verifiedAt','staffComment',
-      'validationRequested',
+      'validationRequested','helm',
       'distanceNm','departurePort','arrivalPort',
       'trackFileUrl','trackSimplified','trackSource',
       'photoUrls',
@@ -1546,13 +1547,19 @@ function saveTrip_(b) {
     notes: b.notes || '', isLinked: b.isLinked || false,
     linkedCheckoutId: b.linkedCheckoutId || '', linkedTripId: b.linkedTripId || '',
     verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
-    validationRequested: b.validationRequested || false,
+    validationRequested: b.validationRequested || false, helm: b.helm || false,
     distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
     trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
     photoUrls: b.photoUrls || '',
     createdAt: ts,
   });
   return okJ({ id, created: true });
+}
+
+function setHelm_(b) {
+  if (!b.tripId) return failJ('tripId required');
+  updateRow_('trips', 'id', b.tripId, { helm: !!b.helm, updatedAt: now_() });
+  return okJ({ updated: true });
 }
 
 function deleteTrip_(id) {
@@ -2733,6 +2740,8 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
     var isSki = !t.role || t.role === 'skipper';
     var roleEN = isSki ? 'Skipper' : 'Crew';
     var roleIS = isSki ? 'Skipari' : 'Áhöfn';
+    var isHelm = t.helm && t.helm !== 'false' && t.helm !== false && parseInt(t.crew || 1) > 1;
+    if (isHelm) { roleEN += ' · Helm'; roleIS += ' · Stýri'; }
     var catCol = pubCatColor_(t.boatCategory || (boat ? boat.category : ''));
 
     // Captain name for crew trips
@@ -3436,7 +3445,7 @@ var SCHEMA_ = {
     'crew','role','beaufort','windDir','wxSnapshot','notes',
     'isLinked','linkedCheckoutId','linkedTripId',
     'verified','verifiedBy','verifiedAt','staffComment',
-    'validationRequested',
+    'validationRequested','helm',
     // keelboat Phase-1 (v6)
     'distanceNm','departurePort','arrivalPort',
     'trackFileUrl','trackSimplified','trackSource',

@@ -315,6 +315,7 @@ function openCheckInPicker() {
 }
 function openReturnModal(coId) {
   returnCo=checkouts.find(c=>c.id===coId)||null;
+  window._retCrewTrips=[]; window._retCrewTripsFetched=false;
   openModal('returnModal'); renderReturnForm();
 }
 
@@ -660,6 +661,7 @@ function renderLandingChecklist() {
   if(!returnCo) return;
   // Reset pending upload state each time this step is rendered
   window._retPendingTrack=null; window._retPendingPhotos=[];
+  window._retHelmSelf=false; window._retCrewTrips=window._retCrewTrips||[];
   document.getElementById('returnModalTitle').textContent=s('member.checkInTitle')+' — '+(returnCo.boatName||'');
   var IS=getLang()==='IS';
   var cat=(returnCo.boatCategory||'other').toLowerCase();
@@ -670,6 +672,15 @@ function renderLandingChecklist() {
     '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
     '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
+
+  // Fetch linked crew trips for helm assignment (if crew > 1)
+  if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
+    window._retCrewTripsFetched=true;
+    apiGet('getTrips',{linkedCheckoutId:returnCo.id}).then(function(r){
+      window._retCrewTrips=(r.trips||[]).filter(function(t){return t.role==='crew';});
+      _renderHelmSection();
+    }).catch(function(){});
+  }
 
   // Resolve home/departure port name for keelboats
   var homePt='';
@@ -732,6 +743,16 @@ function renderLandingChecklist() {
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+(IS?'Tilkynna atvik':'Report incident')+'</button>'+
     '</div>'+
     '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
+    ((returnCo.crew||1)>1?'<div id="helmSection" style="margin-bottom:14px">'+
+      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STÝRI':'HELM')+'</div>'+
+      '<div id="helmToggles">'+
+        '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+          '<input type="checkbox" class="helm-toggle" data-helm-self="1" style="width:16px;height:16px;accent-color:var(--brass)" onchange="window._retHelmSelf=this.checked">'+
+          '<span>'+esc(user.name||'')+' <span style="font-size:10px;color:var(--muted)">'+(IS?'(þú)':'(you)')+'</span></span>'+
+        '</label>'+
+        '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
+      '</div>'+
+    '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEGAR SKÝRINGAR':'PERSONAL NOTE')+'</label>'+
@@ -741,6 +762,19 @@ function renderLandingChecklist() {
       '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+(IS?'Til baka':'Back')+'</button>'+
       '<button class="btn btn-primary" id="retSubmitBtn" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; '+(IS?'Skrá inn':'Check In')+'</button>'+
     '</div>';
+}
+
+function _renderHelmSection(){
+  var el=document.getElementById('helmCrewToggles');
+  if(!el) return;
+  var IS=getLang()==='IS';
+  var trips=window._retCrewTrips||[];
+  if(!trips.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
+  el.innerHTML=trips.map(function(t){
+    return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+      '<input type="checkbox" class="helm-toggle" data-helm-trip-id="'+esc(t.id)+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+      '<span>'+esc(t.memberName||'?')+'</span></label>';
+  }).join('');
 }
 
 function _handleRetTrack(input){
@@ -887,6 +921,13 @@ async function confirmCheckIn(coId) {
     }catch(e){showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn');}
   }));
 
+  // Collect helm toggle states
+  var helmSelf=!!window._retHelmSelf;
+  var helmCrewMap={};
+  document.querySelectorAll('.helm-toggle[data-helm-trip-id]').forEach(function(cb){
+    helmCrewMap[cb.dataset.helmTripId]=cb.checked;
+  });
+
   try {
     await Promise.all([
       apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName}),
@@ -896,11 +937,18 @@ async function confirmCheckIn(coId) {
       timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
       beaufort:tripSnap?tripSnap.bft:null,windDir:tripSnap?(tripSnap.dir||tripSnap.wDir||''):'',
       wxSnapshot:tripSnap?JSON.stringify(tripSnap):null,notes,role:'skipper',linkedCheckoutId:coId,isLinked:true,
+      helm:helmSelf,
       departurePort:co.departurePort||'',arrivalPort,
       distanceNm,trackFileUrl,trackSimplified,trackSource,
       photoUrls:photoUrls.length?JSON.stringify(photoUrls):'',
       }),
     ]);
+    // Update helm on crew trips
+    var helmUpdates=Object.keys(helmCrewMap).map(function(tid){
+      return apiPost('setHelm',{tripId:tid,helm:helmCrewMap[tid]}).catch(function(){});
+    });
+    if(helmUpdates.length) await Promise.all(helmUpdates);
+    window._retCrewTrips=[]; window._retCrewTripsFetched=false;
     checkouts=checkouts.filter(function(c){return c.id!==coId;});
     closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
     logbookLoaded=false; showToast(s('toast.checkedIn'));
