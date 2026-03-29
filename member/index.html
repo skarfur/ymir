@@ -700,14 +700,13 @@ function renderLandingChecklist() {
     '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
 
-  // Read crew names directly from the checkout record — no extra API calls
+  // Parse crew names from checkout (rendered after DOM is built below)
   if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
     window._retCrewTripsFetched=true;
     var parsed=parseJson(returnCo.crewNames,[]);
     window._retCrewTrips=parsed.map(function(c){
       return {id:'crew_'+c.kennitala,memberName:c.name,kennitala:c.kennitala};
     });
-    _renderHelmSection();
   }
 
   // Resolve home/departure port name for keelboats
@@ -795,6 +794,8 @@ function renderLandingChecklist() {
       '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+(IS?'Til baka':'Back')+'</button>'+
       '<button class="btn btn-primary" id="retSubmitBtn" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; '+(IS?'Skrá inn':'Check In')+'</button>'+
     '</div>';
+  // Render crew toggles now that the DOM is built
+  if(window._retCrewTrips && window._retCrewTrips.length) _renderHelmSection();
 }
 
 function _renderHelmSection(){
