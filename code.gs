@@ -2412,6 +2412,8 @@ function pubPageShell_(title, bodyHtml) {
     + '<title>' + esc_(title) + ' — Ýmir Sailing Club</title>'
     + '<link rel="preconnect" href="https://fonts.googleapis.com">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">'
+    + '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>'
     + '<style>'
     + ':root{--bg:#0b1f38;--card:#132d50;--surface:#0f2847;--border:#1e3f6e;--border-l:#2a5490;'
     + '--text:#d6e4f0;--muted:#6b92b8;--faint:#2a4a6e;--brass:#d4af37;--brass-l:#e8c84a;'
@@ -2479,6 +2481,23 @@ function pubPageShell_(title, bodyHtml) {
     // Photos
     + '.pub-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}'
     + '.pub-photo{width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}'
+    // Track maps
+    + '.pub-track-map{width:100%;height:140px;border-radius:6px;border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}'
+    + '.pub-track-map .leaflet-control-zoom,.pub-track-map .leaflet-control-attribution{display:none}'
+    + '.pub-map-hint{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 8px;border-radius:4px;z-index:500;pointer-events:none;letter-spacing:.4px}'
+    // Map modal
+    + '.pub-map-modal{position:fixed;inset:0;background:#000e;z-index:600;display:flex;flex-direction:column}'
+    + '.pub-map-modal.hidden{display:none}'
+    + '.pub-map-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}'
+    + '.pub-map-bar span{font-size:12px;color:var(--text)}'
+    + '.pub-map-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0}'
+    + '.pub-map-body{flex:1;position:relative}'
+    // Topline / detailed toggle
+    + '.detail-extra{display:none}'
+    + '.detail-extra.open{display:block}'
+    + '.detail-more-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:3px 10px;'
+    + 'font-size:10px;font-family:inherit;cursor:pointer;margin-top:6px;transition:color .15s,border-color .15s}'
+    + '.detail-more-btn:hover{color:var(--brass);border-color:var(--brass)}'
     // Form
     + '.form-group{margin-bottom:14px}'
     + '.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px}'
@@ -2505,7 +2524,12 @@ function pubPageShell_(title, bodyHtml) {
     + '<span class="lang-en">' + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) }, 'EN') + '</span>'
     + '<span class="lang-is" style="display:none">' + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) }, 'IS') + '</span>'
     + '</div>'
+    + '<div class="pub-map-modal hidden" id="pubMapModal">'
+    + '<div class="pub-map-bar"><span id="pubMapTitle"></span>'
+    + '<button class="pub-map-close" onclick="closePubMapModal()">&times;</button></div>'
+    + '<div class="pub-map-body" id="pubMapBody"></div></div>'
     + '<script>'
+    // Language toggle
     + 'function togglePubLang(){'
     + 'var en=document.querySelectorAll(".lang-en"),is=document.querySelectorAll(".lang-is");'
     + 'var btn=document.getElementById("pubLangBtn");'
@@ -2514,11 +2538,46 @@ function pubPageShell_(title, bodyHtml) {
     + 'is.forEach(function(e){e.style.display=showIS?"":"none";});'
     + 'btn.textContent=showIS?"EN":"IS";'
     + '}'
+    // Click handlers: cert cards, trip rows, more buttons
     + 'document.addEventListener("click",function(e){'
     + 'var c=e.target.closest(".cert-card");if(c){c.classList.toggle("open");return;}'
+    + 'var mb=e.target.closest(".detail-more-btn");if(mb){var ex=mb.parentElement.querySelector(".detail-extra");if(ex)ex.classList.toggle("open");mb.innerHTML=ex&&ex.classList.contains("open")?(mb.dataset.less||"Less"):(mb.dataset.more||"More");return;}'
     + 'var r=e.target.closest("tr.trip-row");'
-    + 'if(r){var id=r.dataset.id;var d=document.getElementById("td-"+id);if(d)d.classList.toggle("open");}'
-    + '});'
+    + 'if(r){var id=r.dataset.id;var d=document.getElementById("td-"+id);if(d){d.classList.toggle("open");'
+    + 'if(d.classList.contains("open")){requestAnimationFrame(function(){var maps=d.querySelectorAll(".pub-track-map");maps.forEach(initPubThumbMap);});}'
+    + '}}});'
+    // Leaflet map helpers
+    + 'var _pubThumbMaps={};var _pubFullMap=null;'
+    + 'function pubAddLayers(map){'
+    + 'L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);'
+    + 'L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",{maxNativeZoom:17,maxZoom:19,opacity:0.9}).addTo(map);'
+    + '}'
+    + 'function initPubThumbMap(el){'
+    + 'if(_pubThumbMaps[el.id])return;var pts;try{pts=JSON.parse(el.dataset.track);}catch(e){return;}'
+    + 'if(!pts||pts.length<2)return;'
+    + 'var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false});'
+    + 'pubAddLayers(map);var ll=pts.map(function(p){return[p.lat,p.lng];});'
+    + 'L.polyline(ll,{color:"#d4af37",weight:2.5,opacity:.9}).addTo(map);'
+    + 'L.circleMarker(ll[0],{radius:4,color:"#27ae60",fillColor:"#27ae60",fillOpacity:1,weight:0}).addTo(map);'
+    + 'L.circleMarker(ll[ll.length-1],{radius:4,color:"#e74c3c",fillColor:"#e74c3c",fillOpacity:1,weight:0}).addTo(map);'
+    + 'map.fitBounds(L.latLngBounds(ll).pad(0.15));_pubThumbMaps[el.id]=map;'
+    + '}'
+    + 'function openPubMapModal(idx){'
+    + 'var el=document.getElementById("pubMapModal");el.classList.remove("hidden");document.body.style.overflow="hidden";'
+    + 'var src=document.getElementById("tmap-"+idx);if(!src)return;var pts;try{pts=JSON.parse(src.dataset.track);}catch(e){return;}'
+    + 'if(!pts||pts.length<2)return;'
+    + 'document.getElementById("pubMapTitle").textContent=src.dataset.title||"GPS Track";'
+    + 'if(_pubFullMap){_pubFullMap.remove();_pubFullMap=null;}'
+    + 'var body=document.getElementById("pubMapBody");body.innerHTML="";var d=document.createElement("div");d.style.cssText="position:absolute;inset:0";body.appendChild(d);'
+    + '_pubFullMap=L.map(d,{zoomControl:true});pubAddLayers(_pubFullMap);'
+    + 'var ll=pts.map(function(p){return[p.lat,p.lng];});'
+    + 'L.polyline(ll,{color:"#d4af37",weight:3,opacity:.9}).addTo(_pubFullMap);'
+    + 'L.circleMarker(ll[0],{radius:6,color:"#27ae60",fillColor:"#27ae60",fillOpacity:1,weight:0}).bindPopup("Departure").addTo(_pubFullMap);'
+    + 'L.circleMarker(ll[ll.length-1],{radius:6,color:"#e74c3c",fillColor:"#e74c3c",fillOpacity:1,weight:0}).bindPopup("Arrival").addTo(_pubFullMap);'
+    + '_pubFullMap.fitBounds(L.latLngBounds(ll).pad(0.1));'
+    + '}'
+    + 'function closePubMapModal(){document.getElementById("pubMapModal").classList.add("hidden");document.body.style.overflow="";if(_pubFullMap){_pubFullMap.remove();_pubFullMap=null;}}'
+    + 'document.addEventListener("keydown",function(e){if(e.key==="Escape")closePubMapModal();});'
     + '</script>'
     + '</body></html>';
 }
@@ -2641,7 +2700,9 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
     // Expandable detail row
     html += '<tr class="trip-detail" id="td-' + idx + '"><td colspan="' + (hasCrew ? 6 : 5) + '">';
 
-    // Boat details section
+    // ── TOPLINE (always visible on expand) ──
+
+    // Boat details (keelboat topline: reg, make/model, LOA)
     var hasBoatDetail = (boat && (boat.registrationNo || boat.typeModel || boat.loa));
     if (hasBoatDetail) {
       html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.boatDetails') + '</div>'
@@ -2657,48 +2718,63 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
       html += '</div></div>';
     }
 
-    // Trip details section
-    html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.tripDetails') + '</div>'
-      + '<div class="detail-grid">';
-    if (t.locationName) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.location') + '</span><span class="detail-val">' + esc_(t.locationName) + '</span></div>';
-    if (t.timeOut) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.departed') + '</span><span class="detail-val">' + esc_(t.timeOut) + '</span></div>';
-    if (t.timeIn) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.returned') + '</span><span class="detail-val">' + esc_(t.timeIn) + '</span></div>';
-    if (t.hoursDecimal) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.duration') + '</span><span class="detail-val">' + Number(t.hoursDecimal).toFixed(1) + 'h</span></div>';
-    if (t.distanceNm) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.distance') + '</span><span class="detail-val">' + Number(t.distanceNm).toFixed(1) + ' nm</span></div>';
-    if (t.crew) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.crewAboard') + '</span><span class="detail-val">' + esc_(t.crew) + '</span></div>';
-    // Ports
+    // Trip topline: ports, departed, returned
     var dep = t.departurePort || '', arr = t.arrivalPort || '';
-    if (dep || arr) {
-      var portVal = dep && arr && dep !== arr ? esc_(dep) + ' → ' + esc_(arr) : esc_(dep || arr);
-      html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">' + dl_('pub.lbl.ports') + '</span><span class="detail-val">⚓ ' + portVal + '</span></div>';
-    }
-    html += '</div></div>';
-
-    // Weather section
-    var wx = null;
-    try { wx = t.wxSnapshot ? (typeof t.wxSnapshot === 'string' ? JSON.parse(t.wxSnapshot) : t.wxSnapshot) : null; } catch(e) {}
-    var hasWx = wx && (wx.ws != null || wx.dir || wx.wg != null || wx.tc != null || wx.sst != null || wx.wv != null || wx.pres != null || wx.cond);
-    if (hasWx || t.beaufort) {
-      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.weather') + '</div><div class="detail-grid">';
-      if (wx && wx.ws != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">' + Math.round(wx.ws) + ' m/s' + (wx.bft != null ? ' · Force ' + wx.bft : '') + '</span></div>';
-      else if (t.beaufort) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">Force ' + esc_(t.beaufort) + '</span></div>';
-      if (wx && wx.dir || t.windDir) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.direction') + '</span><span class="detail-val">' + esc_(wx && wx.dir || t.windDir) + '</span></div>';
-      if (wx && wx.wg != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.gusts') + '</span><span class="detail-val">' + Math.round(wx.wg) + ' m/s</span></div>';
-      if (wx && wx.cond && wx.cond.desc) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.conditions') + '</span><span class="detail-val">' + (wx.cond.icon || '') + ' ' + esc_(wx.cond.desc) + '</span></div>';
-      if (wx && wx.tc != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.airTemp') + '</span><span class="detail-val">' + Math.round(wx.tc) + '°C</span></div>';
-      if (wx && wx.sst != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.seaTemp') + '</span><span class="detail-val">' + Number(wx.sst).toFixed(1) + '°C</span></div>';
-      if (wx && wx.wv != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.waveHeight') + '</span><span class="detail-val">' + Number(wx.wv).toFixed(1) + ' m</span></div>';
-      if (wx && wx.pres != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.pressure') + '</span><span class="detail-val">' + Math.round(wx.pres) + ' hPa</span></div>';
+    var hasTopTrip = dep || arr || t.timeOut || t.timeIn;
+    if (hasTopTrip) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.tripDetails') + '</div><div class="detail-grid">';
+      if (dep || arr) {
+        var portVal = dep && arr && dep !== arr ? esc_(dep) + ' → ' + esc_(arr) : esc_(dep || arr);
+        html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">' + dl_('pub.lbl.ports') + '</span><span class="detail-val">⚓ ' + portVal + '</span></div>';
+      }
+      if (t.timeOut) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.departed') + '</span><span class="detail-val">' + esc_(t.timeOut) + '</span></div>';
+      if (t.timeIn) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.returned') + '</span><span class="detail-val">' + esc_(t.timeIn) + '</span></div>';
       html += '</div></div>';
     }
 
-    // Notes
+    // Weather topline: wind speed, wave height, conditions
+    var wx = null;
+    try { wx = t.wxSnapshot ? (typeof t.wxSnapshot === 'string' ? JSON.parse(t.wxSnapshot) : t.wxSnapshot) : null; } catch(e) {}
+    var hasTopWx = (wx && wx.ws != null) || t.beaufort || (wx && wx.wv != null) || (wx && wx.cond && wx.cond.desc);
+    if (hasTopWx) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.weather') + '</div><div class="detail-grid">';
+      if (wx && wx.ws != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">' + Math.round(wx.ws) + ' m/s' + (wx.bft != null ? ' · Force ' + wx.bft : '') + '</span></div>';
+      else if (t.beaufort) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">Force ' + esc_(t.beaufort) + '</span></div>';
+      if (wx && wx.wv != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.waveHeight') + '</span><span class="detail-val">' + Number(wx.wv).toFixed(1) + ' m</span></div>';
+      if (wx && wx.cond && wx.cond.desc) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.conditions') + '</span><span class="detail-val">' + (wx.cond.icon || '') + ' ' + esc_(wx.cond.desc) + '</span></div>';
+      html += '</div></div>';
+    }
+
+    // Notes (always topline when present)
     if (t.notes) {
       html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.notes') + '</div>'
         + '<div style="font-size:12px">' + esc_(t.notes) + '</div></div>';
     }
 
-    // Photos (if opted in)
+    // GPS Track (topline, above photos — if opted in)
+    if (opts.includeTracks) {
+      var trackPts = [];
+      try { if (t.trackSimplified) trackPts = typeof t.trackSimplified === 'string' ? JSON.parse(t.trackSimplified) : t.trackSimplified; } catch(e) {}
+      if (trackPts.length >= 2) {
+        var trackJson = JSON.stringify(trackPts).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        var mapTitle = esc_((t.boatName||'') + ' — ' + (t.date||'') + (t.distanceNm ? ' · ' + t.distanceNm + ' nm' : ''));
+        html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.gpsTrack') + '</div>'
+          + '<div class="pub-track-map" id="tmap-' + idx + '" data-track="' + trackJson + '" data-title="' + mapTitle + '" onclick="openPubMapModal(' + idx + ')">'
+          + '<div class="pub-map-hint"><span class="lang-en">Click to expand</span><span class="lang-is" style="display:none">Smelltu til að stækka</span></div></div>';
+        if (t.trackFileUrl) {
+          html += '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block">⬇ '
+            + '<span class="lang-en">Download file</span><span class="lang-is" style="display:none">Sækja skrá</span></a>';
+        }
+        html += '</div>';
+      } else if (t.trackFileUrl) {
+        html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.gpsTrack') + '</div>'
+          + '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="font-size:11px">📍 '
+          + '<span class="lang-en">Download track</span><span class="lang-is" style="display:none">Sækja leið</span>'
+          + '</a>' + (t.trackSource ? ' · ' + esc_(t.trackSource) : '') + '</div>';
+      }
+    }
+
+    // Photos (topline, below GPS — if opted in)
     if (opts.includePhotos) {
       var photos = [];
       try { if (t.photoUrls) photos = typeof t.photoUrls === 'string' ? JSON.parse(t.photoUrls) : t.photoUrls; } catch(e) {}
@@ -2712,12 +2788,34 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
       }
     }
 
-    // GPS Track (if opted in)
-    if (opts.includeTracks && t.trackFileUrl) {
-      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.gpsTrack') + '</div>'
-        + '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="font-size:11px">📍 '
-        + '<span class="lang-en">Download track</span><span class="lang-is" style="display:none">Sækja leið</span>'
-        + '</a>' + (t.trackSource ? ' · ' + esc_(t.trackSource) : '') + '</div>';
+    // ── DETAILED (hidden behind "Show more") ──
+    var hasDetailTrip = t.locationName || t.hoursDecimal || t.distanceNm || t.crew;
+    var hasDetailWx = (wx && (wx.dir || wx.wg != null || wx.tc != null || wx.sst != null || wx.pres != null)) || t.windDir;
+    if (hasDetailTrip || hasDetailWx) {
+      html += '<button class="detail-more-btn" data-more="'
+        + '<span class=&quot;lang-en&quot;>Show more</span><span class=&quot;lang-is&quot; style=&quot;display:none&quot;>Sýna meira</span>'
+        + '" data-less="'
+        + '<span class=&quot;lang-en&quot;>Show less</span><span class=&quot;lang-is&quot; style=&quot;display:none&quot;>Sýna minna</span>'
+        + '"><span class="lang-en">Show more</span><span class="lang-is" style="display:none">Sýna meira</span></button>'
+        + '<div class="detail-extra">';
+      if (hasDetailTrip) {
+        html += '<div class="detail-section" style="margin-top:8px"><div class="detail-grid">';
+        if (t.locationName) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.location') + '</span><span class="detail-val">' + esc_(t.locationName) + '</span></div>';
+        if (t.hoursDecimal) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.duration') + '</span><span class="detail-val">' + Number(t.hoursDecimal).toFixed(1) + 'h</span></div>';
+        if (t.distanceNm) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.distance') + '</span><span class="detail-val">' + Number(t.distanceNm).toFixed(1) + ' nm</span></div>';
+        if (t.crew) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.crewAboard') + '</span><span class="detail-val">' + esc_(t.crew) + '</span></div>';
+        html += '</div></div>';
+      }
+      if (hasDetailWx) {
+        html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.weather') + '</div><div class="detail-grid">';
+        if (wx && wx.dir || t.windDir) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.direction') + '</span><span class="detail-val">' + esc_(wx && wx.dir || t.windDir) + '</span></div>';
+        if (wx && wx.wg != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.gusts') + '</span><span class="detail-val">' + Math.round(wx.wg) + ' m/s</span></div>';
+        if (wx && wx.tc != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.airTemp') + '</span><span class="detail-val">' + Math.round(wx.tc) + '°C</span></div>';
+        if (wx && wx.sst != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.seaTemp') + '</span><span class="detail-val">' + Number(wx.sst).toFixed(1) + '°C</span></div>';
+        if (wx && wx.pres != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.pressure') + '</span><span class="detail-val">' + Math.round(wx.pres) + ' hPa</span></div>';
+        html += '</div></div>';
+      }
+      html += '</div>';  // close detail-extra
     }
 
     html += '</td></tr>';
