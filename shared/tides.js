@@ -166,7 +166,7 @@ async function fetchSunTimes(lat, lon, dateStr) {
 //  · Dots at extrema
 // ═══════════════════════════════════════════════════════════════════════════════
 function tideSvgChart(series, extrema, nowMs, W, H) {
-  const P = { t: 14, b: 18, l: 4, r: 4 };
+  const P = { t: 14, b: 26, l: 4, r: 4 };
   const iW = W - P.l - P.r, iH = H - P.t - P.b;
   // Fixed Y scale based on station tidal range (0m to ~4.3m full spring range)
   const hMin = 0, hMax = 4.3;
@@ -200,7 +200,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
   if (nowMs > t0 && nowMs <= t1) {
     const nx = f1(xOf(nowMs));
     svg += `<line class="chart-now" x1="${nx}" y1="${P.t}" x2="${nx}" y2="${f1(P.t+iH)}"/>`;
-    svg += `<text class="chart-now-t" x="${nx}" y="${f1(P.t+iH+10)}" text-anchor="middle">NOW</text>`;
+    svg += `<text class="chart-now-t" x="${nx}" y="${f1(H-P.b+11)}" text-anchor="middle">NOW</text>`;
   }
 
   // Time axis (every 3h)
@@ -267,7 +267,7 @@ function tideWidget(targetEl, { onData } = {}) {
       const up = soonH > curH;
       const col = up ? 'var(--green,#2ecc71)' : 'var(--orange,#e67e22)';
       const lbl = up ? (IS?'Hækkandi':'Rising') : (IS?'Lækkandi':'Falling');
-      statusHtml = `<span style="color:${col};font-weight:500;font-size:12px">${up?'↑':'↓'}</span>`
+      statusHtml = `<span style="color:${col};font-weight:700;font-size:12px">${up?'↑':'↓'}</span>`
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
         + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
     }
@@ -286,8 +286,9 @@ function tideWidget(targetEl, { onData } = {}) {
 
     // Sun / moon
     const sunHtml = sun
-      ? `<span style="font-size:10px;color:var(--muted)">☀↑ <span style="color:var(--text);font-weight:500">${sun.sunrise||'–'}</span></span>`
-      + `<span style="font-size:10px;color:var(--muted)">☀↓ <span style="color:var(--text);font-weight:500">${sun.sunset||'–'}</span></span>`
+      ? `<span style="font-size:10px">☀️</span>`
+      + `<span style="font-size:10px;color:var(--muted)"><b style="font-weight:700">↑</b> <span style="color:var(--text);font-weight:500">${sun.sunrise||'–'}</span></span>`
+      + `<span style="font-size:10px;color:var(--muted)"><b style="font-weight:700">↓</b> <span style="color:var(--text);font-weight:500">${sun.sunset||'–'}</span></span>`
       : '';
     const moonHtml = `<span style="font-size:12px">${moon.icon}</span><span style="font-size:9px;color:var(--muted)">${moon.label}</span>`;
 
@@ -296,7 +297,7 @@ function tideWidget(targetEl, { onData } = {}) {
       : 'Prediction model ±15–30 min';
 
     // Chart
-    const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 320, 90);
+    const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 640, 120);
 
     targetEl.innerHTML = `
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
