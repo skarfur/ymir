@@ -224,17 +224,17 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     const timeTxt = fmtT(e.time);
     const htTxt = e.height.toFixed(1) + 'm';
 
-    // High: label above the peak; Low: label inside the trough (above the dot)
-    const ly = isHigh
-      ? Math.max(14, ey - 6)
-      : Math.max(ey - 6, P.t + 6);
-
-    // Background rect for legibility (two lines)
+    // Time above the dot, height below the dot
+    const timeY = Math.max(8, ey - 5);
+    const htY = Math.min(H - 4, ey + 10);
     const lineW = Math.max(timeTxt.length, htTxt.length) * 4.6;
-    svg += `<rect class="chart-lbl-bg" x="${f1(ex - lineW/2 - 1)}" y="${f1(ly - 13)}" width="${f1(lineW + 2)}" height="16" rx="1"/>`;
-    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly - 6)}" text-anchor="middle">${timeTxt}</text>`;
-    svg += `<text class="chart-lbl c-muted" x="${f1(ex)}" y="${f1(ly + 2)}" text-anchor="middle">${htTxt}</text>`;
+
+    // Background rects for legibility
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - lineW/2 - 1)}" y="${f1(timeY - 7)}" width="${f1(lineW + 2)}" height="9" rx="1"/>`;
+    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(timeY)}" text-anchor="middle">${timeTxt}</text>`;
     svg += `<circle class="chart-dot ${cc}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - lineW/2 - 1)}" y="${f1(htY - 7)}" width="${f1(lineW + 2)}" height="9" rx="1"/>`;
+    svg += `<text class="chart-lbl c-muted" x="${f1(ex)}" y="${f1(htY)}" text-anchor="middle">${htTxt}</text>`;
   });
 
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">${svg}</svg>`;
@@ -273,7 +273,7 @@ function tideWidget(targetEl, { onData } = {}) {
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
         + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
     } else {
-      statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Í dag':'Today'}</button>`;
+      statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Fara á í dag':'Go to today'}</button>`;
     }
 
     // Day label
