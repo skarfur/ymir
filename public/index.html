@@ -257,8 +257,8 @@ function renderDashboard(data) {
   var timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('footer-text').textContent = s('pub.dash.lastUpdated') + ' ' + timeStr;
 
-  // Init map after DOM update
-  initMap(data.locations || []);
+  // Init map after DOM has laid out (ensures container has dimensions)
+  setTimeout(function() { initMap(data.locations || []); }, 50);
 }
 
 function initMap(locations) {
@@ -273,17 +273,26 @@ function initMap(locations) {
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; CartoDB' }).addTo(_map);
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(_map);
 
-  if (!locations.length) {
+  // Filter to locations with valid coordinates
+  var valid = locations.filter(function(loc) {
+    return typeof loc.lat === 'number' && typeof loc.lng === 'number' && !isNaN(loc.lat) && !isNaN(loc.lng);
+  });
+
+  if (!valid.length) {
     // Default view: Kollafjörður / Skerjafjörður area
     _map.setView([64.18, -21.85], 11);
     return;
   }
 
+  // Set view first so canvas has dimensions before heat layer renders
+  var bounds = L.latLngBounds(valid.map(function(loc) { return [loc.lat, loc.lng]; }));
+  _map.fitBounds(bounds.pad(0.3));
+
   // Heat layer data: [lat, lng, intensity]
   var maxTrips = 1;
-  locations.forEach(function(loc) { if (loc.tripCount > maxTrips) maxTrips = loc.tripCount; });
+  valid.forEach(function(loc) { if (loc.tripCount > maxTrips) maxTrips = loc.tripCount; });
 
-  var heatData = locations.map(function(loc) {
+  var heatData = valid.map(function(loc) {
     return [loc.lat, loc.lng, loc.tripCount / maxTrips];
   });
 
@@ -296,7 +305,7 @@ function initMap(locations) {
   }).addTo(_map);
 
   // Add circle markers with tooltips for each location
-  locations.forEach(function(loc) {
+  valid.forEach(function(loc) {
     var radius = Math.max(6, Math.min(20, 6 + (loc.tripCount / maxTrips) * 14));
     L.circleMarker([loc.lat, loc.lng], {
       radius: radius,
@@ -311,10 +320,6 @@ function initMap(locations) {
       { className: 'map-tooltip' }
     ).addTo(_map);
   });
-
-  // Fit bounds
-  var bounds = L.latLngBounds(locations.map(function(loc) { return [loc.lat, loc.lng]; }));
-  _map.fitBounds(bounds.pad(0.3));
 }
 
 async function load() {
