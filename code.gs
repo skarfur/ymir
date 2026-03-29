@@ -28,6 +28,7 @@ const TABS_ = {
   timeClock: 'time_clock',
   payroll: 'payroll',
   shareTokens: 'share_tokens',
+  tripConfirmations: 'trip_confirmations',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -386,6 +387,9 @@ function route_(action, b) {
     case 'setHelm': return setHelm_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
     case 'requestValidation': return requestValidation_(b);
+    case 'getConfirmations': return getConfirmations_(b);
+    case 'createConfirmation': return createConfirmation_(b);
+    case 'respondConfirmation': return respondConfirmation_(b);
     case 'uploadTripFile': return uploadTripFile_(b);
     case 'deleteTripFile': return deleteTripFile_(b);
     case 'getWeather': return getWeather_();
@@ -1575,6 +1579,129 @@ function requestValidation_(b) {
   if (!b.tripId) return failJ('tripId required');
   updateRow_('trips', 'id', b.tripId, { validationRequested: true });
   return okJ({ requested: true });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRIP CONFIRMATIONS (handshake protocol)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Types:
+//   'crew_assigned'  — skipper assigned a crew member → crew must confirm
+//   'crew_join'      — member wants to join a trip    → skipper must confirm
+//   'helm'           — helm toggle requested          → other party confirms
+//
+// Status: 'pending' | 'confirmed' | 'rejected'
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ensureConfirmationCols_() {
+  var cols = [
+    'id','type','status',
+    'fromKennitala','fromName',
+    'toKennitala','toName',
+    'tripId','linkedCheckoutId',
+    'boatId','boatName','boatCategory',
+    'locationId','locationName',
+    'date','timeOut','timeIn','hoursDecimal',
+    'role','helm',
+    'beaufort','windDir','wxSnapshot',
+    'rejectComment',
+    'createdAt','respondedAt',
+  ];
+  cols.forEach(function(c) { addColIfMissing_('tripConfirmations', c); });
+}
+
+function getConfirmations_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  var kt = String(b.kennitala);
+  var all = readAll_('tripConfirmations');
+  var incoming = all.filter(function(r) { return String(r.toKennitala) === kt; });
+  var outgoing = all.filter(function(r) { return String(r.fromKennitala) === kt; });
+  return okJ({ incoming: incoming, outgoing: outgoing });
+}
+
+function createConfirmation_(b) {
+  ensureConfirmationCols_();
+  if (!b.type) return failJ('type required');
+  if (!b.toKennitala) return failJ('toKennitala required');
+  var ts = now_(), id = uid_();
+  insertRow_('tripConfirmations', {
+    id: id, type: b.type || '', status: 'pending',
+    fromKennitala: b.fromKennitala || '', fromName: b.fromName || '',
+    toKennitala: b.toKennitala || '', toName: b.toName || '',
+    tripId: b.tripId || '', linkedCheckoutId: b.linkedCheckoutId || '',
+    boatId: b.boatId || '', boatName: b.boatName || '', boatCategory: b.boatCategory || '',
+    locationId: b.locationId || '', locationName: b.locationName || '',
+    date: b.date || '', timeOut: b.timeOut || '', timeIn: b.timeIn || '',
+    hoursDecimal: b.hoursDecimal || '',
+    role: b.role || '', helm: b.helm || false,
+    beaufort: b.beaufort || '', windDir: b.windDir || '', wxSnapshot: b.wxSnapshot || '',
+    rejectComment: '',
+    createdAt: ts, respondedAt: '',
+  });
+  return okJ({ id: id, created: true });
+}
+
+function respondConfirmation_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.response || (b.response !== 'confirmed' && b.response !== 'rejected'))
+    return failJ('response must be confirmed or rejected');
+  var row = findOne_('tripConfirmations', 'id', b.id);
+  if (!row) return failJ('Confirmation not found', 404);
+  if (row.status !== 'pending') return failJ('Already responded');
+
+  var ts = now_();
+  var updates = { status: b.response, respondedAt: ts };
+  if (b.response === 'rejected' && b.rejectComment) updates.rejectComment = b.rejectComment;
+  updateRow_('tripConfirmations', 'id', b.id, updates);
+
+  // On confirm — create the trip record
+  if (b.response === 'confirmed') {
+    var type = row.type;
+    if (type === 'crew_assigned' || type === 'crew_join') {
+      // Determine who the crew member is
+      var crewKt, crewName, role;
+      if (type === 'crew_assigned') {
+        // Skipper assigned crew → the "to" person is the crew member
+        crewKt = row.toKennitala; crewName = row.toName; role = 'crew';
+      } else {
+        // Member asked to join → the "from" person is the crew member
+        crewKt = row.fromKennitala; crewName = row.fromName; role = 'crew';
+      }
+      // Check if trip already exists for this member + checkout
+      var existing = readAll_('trips').filter(function(t) {
+        return String(t.kennitala) === String(crewKt) &&
+          (row.linkedCheckoutId ? String(t.linkedCheckoutId) === String(row.linkedCheckoutId) :
+           String(t.linkedTripId) === String(row.tripId));
+      });
+      if (!existing.length) {
+        var tripId = uid_();
+        insertRow_('trips', {
+          id: tripId, kennitala: crewKt, memberName: crewName,
+          date: row.date || '', timeOut: row.timeOut || '', timeIn: row.timeIn || '',
+          hoursDecimal: row.hoursDecimal || 0,
+          boatId: row.boatId || '', boatName: row.boatName || '', boatCategory: row.boatCategory || '',
+          locationId: row.locationId || '', locationName: row.locationName || '',
+          crew: 1, role: role,
+          beaufort: row.beaufort || '', windDir: row.windDir || '', wxSnapshot: row.wxSnapshot || '',
+          notes: '', isLinked: true,
+          linkedCheckoutId: row.linkedCheckoutId || '', linkedTripId: row.tripId || '',
+          verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
+          validationRequested: false, helm: false,
+          distanceNm: '', departurePort: '', arrivalPort: '',
+          trackFileUrl: '', trackSimplified: '', trackSource: '', photoUrls: '',
+          createdAt: ts,
+        });
+      }
+    }
+    if (type === 'helm') {
+      // Set helm on the specified trip
+      if (row.tripId) {
+        updateRow_('trips', 'id', row.tripId, { helm: true, updatedAt: ts });
+      }
+    }
+  }
+  return okJ({ updated: true, status: b.response });
 }
 
 
@@ -3455,6 +3582,19 @@ var SCHEMA_ = {
     'trackFileUrl','trackSimplified','trackSource',
     'photoUrls',
     'createdAt','updatedAt',
+  ],
+  trip_confirmations: [
+    'id','type','status',
+    'fromKennitala','fromName',
+    'toKennitala','toName',
+    'tripId','linkedCheckoutId',
+    'boatId','boatName','boatCategory',
+    'locationId','locationName',
+    'date','timeOut','timeIn','hoursDecimal',
+    'role','helm',
+    'beaufort','windDir','wxSnapshot',
+    'rejectComment',
+    'createdAt','respondedAt',
   ],
   config: ['key','value'],
   employees: [
