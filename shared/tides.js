@@ -168,9 +168,9 @@ async function fetchSunTimes(lat, lon, dateStr) {
 function tideSvgChart(series, extrema, nowMs, W, H) {
   const P = { t: 14, b: 18, l: 4, r: 4 };
   const iW = W - P.l - P.r, iH = H - P.t - P.b;
-  const heights = series.map(p => p.height);
-  const hMin = Math.min(...heights), hMax = Math.max(...heights);
-  const hRange = hMax - hMin || 1;
+  // Fixed Y scale based on station tidal range (0m to ~4.3m full spring range)
+  const hMin = 0, hMax = 4.3;
+  const hRange = hMax - hMin;
   const t0 = series[0].time.getTime(), t1 = series[series.length-1].time.getTime();
   const tR = t1 - t0 || 1;
 
@@ -235,7 +235,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     svg += `<circle cx="${f1(ex)}" cy="${f1(ey)}" r="2.5" fill="${color}"/>`;
   });
 
-  return `<svg width="100%" height="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${svg}</svg>`;
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">${svg}</svg>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -310,7 +310,7 @@ function tideWidget(targetEl, { onData } = {}) {
           <span style="font-size:10px;color:var(--text);font-weight:500;min-width:70px;text-align:center">${dayLabel}</span>
           <button class="tide-nav-btn" data-dir="1" style="${navStyle}">▶</button>
         </div>
-        <div style="height:70px">${svg}</div>
+        ${svg}
         <div style="text-align:right;margin-top:2px">
           <span style="font-size:7px;color:var(--muted);opacity:.55">⚠ ${disclaimer}</span>
         </div>
