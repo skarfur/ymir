@@ -225,8 +225,8 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     const htTxt = e.height.toFixed(1) + 'm';
 
     // Time above the dot, height below the dot
-    const timeY = Math.max(8, ey - 5);
-    const htY = Math.min(H - 4, ey + 10);
+    const timeY = Math.max(8, ey - 8);
+    const htY = Math.min(H - 4, ey + 13);
     const lineW = Math.max(timeTxt.length, htTxt.length) * 4.6;
 
     // Background rects for legibility
