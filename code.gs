@@ -390,6 +390,8 @@ function route_(action, b) {
     case 'getConfirmations': return getConfirmations_(b);
     case 'createConfirmation': return createConfirmation_(b);
     case 'respondConfirmation': return respondConfirmation_(b);
+    case 'dismissConfirmation': return dismissConfirmation_(b);
+    case 'dismissAllConfirmations': return dismissAllConfirmations_(b);
     case 'uploadTripFile': return uploadTripFile_(b);
     case 'deleteTripFile': return deleteTripFile_(b);
     case 'getWeather': return getWeather_();
@@ -1618,8 +1620,8 @@ function getConfirmations_(b) {
   var kt = String(b.kennitala);
   var all;
   try { all = readAll_('tripConfirmations'); } catch(e) { all = []; }
-  var incoming = all.filter(function(r) { return String(r.toKennitala) === kt; });
-  var outgoing = all.filter(function(r) { return String(r.fromKennitala) === kt; });
+  var incoming = all.filter(function(r) { return String(r.toKennitala) === kt && !r.dismissed; });
+  var outgoing = all.filter(function(r) { return String(r.fromKennitala) === kt && !r.dismissed; });
   return okJ({ incoming: incoming, outgoing: outgoing });
 }
 
@@ -1711,6 +1713,30 @@ function respondConfirmation_(b) {
     }
   }
   return okJ({ updated: true, status: b.response });
+}
+
+function dismissConfirmation_(b) {
+  if (!b.id) return failJ('id required');
+  var row = findOne_('tripConfirmations', 'id', b.id);
+  if (!row) return failJ('Confirmation not found', 404);
+  if (row.status === 'pending') return failJ('Cannot dismiss pending confirmations');
+  updateRow_('tripConfirmations', 'id', b.id, { dismissed: true, dismissedAt: now_() });
+  return okJ({ dismissed: true });
+}
+
+function dismissAllConfirmations_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  var kt = String(b.kennitala);
+  var all;
+  try { all = readAll_('tripConfirmations'); } catch(e) { all = []; }
+  var toDismiss = all.filter(function(r) {
+    return (String(r.toKennitala) === kt || String(r.fromKennitala) === kt)
+      && r.status !== 'pending' && !r.dismissed;
+  });
+  toDismiss.forEach(function(r) {
+    updateRow_('tripConfirmations', 'id', r.id, { dismissed: true, dismissedAt: now_() });
+  });
+  return okJ({ dismissed: toDismiss.length });
 }
 
 

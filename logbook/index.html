@@ -423,6 +423,7 @@ const user = getUser();
 const IS   = getLang() === 'IS';
 
 let myTrips  = [];
+let allTrips = [];  // all trips (for crew name lookups across users)
 let allBoats = [], allLocs = [], allMembers = [];
 let allRecentTrips = [];
 let recentOffset   = 0;
@@ -547,6 +548,9 @@ function tripCard(t){
   const eSst  = wx?.sst!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '';
   const eWv   = wx?.wv!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '';
   const ePres = wx?.pres!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '';
+  const flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
+  const flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Black'};
+  const eFlag = wx?.flag ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Veðurfáni':'Weather flag'}</span><span class="trip-exp-val">${flagIcons[wx.flag]||''} ${flagLabels[wx.flag]||esc(wx.flag)}</span></div>` : '';
 
   // Port rows (keelboat, separate cells for departure/arrival)
   const depPortRow = isKeelboat && dep ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure port'}</span><span class="trip-exp-val">${esc(dep)}</span></div>` : '';
@@ -554,36 +558,49 @@ function tripCard(t){
   const portRow = depPortRow + arrPortRow;
 
   // Crew row (full-width): show linked names if present, otherwise count
-  const linkedCrew = myTrips.filter(x =>
-    x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId && x.id !== t.id && x.role==='crew'
+  // Search allTrips so every user sees crew names (not just skipper)
+  const linkedCrew = allTrips.filter(x =>
+    x.id !== t.id && x.role==='crew' && (
+      (x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
+      (x.linkedTripId && x.linkedTripId === t.id)
+    )
   );
+  // For crew members: also find the skipper of this trip
+  const linkedSkipper = !isSki ? allTrips.find(x =>
+    x.id !== t.id && (!x.role || x.role==='skipper') && (
+      (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
+      (t.linkedTripId && x.id === t.linkedTripId)
+    )
+  ) : null;
   const helmLabel = IS?'Stýri':'Helm';
   const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
     return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
   }).join(', ') : esc(t.crew||1);
+  const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}</span></div>` : '';
   const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
   const crewNamesRow = linkedCrew.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${crewNames}</span></div>` : '';
 
-  // Helm assignment row — shown to the skipper when crew > 1, allows toggling after the fact
+  // Helm assignment row — read-only display showing who was at the helm
   const isOwner = String(t.kennitala) === String(user.kennitala);
-  const canEditHelm = isSki && isOwner && parseInt(t.crew||1) > 1;
-  const helmRow = canEditHelm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Stýri':'Helm'}</span><span class="trip-exp-val">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px" onclick="event.stopPropagation()">
-        <input type="checkbox" ${isHelm?'checked':''} onchange="toggleHelm('${esc(t.id)}',this.checked)" style="accent-color:var(--brass)">
-        ${esc(t.memberName||'')} <span style="opacity:.5">(${IS?'þú':'you'})</span>
-      </label>
-      ${linkedCrew.map(x=>{
-        const xHelm=x.helm&&x.helm!=='false';
-        return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px" onclick="event.stopPropagation()">
-          <input type="checkbox" ${xHelm?'checked':''} onchange="toggleHelm('${esc(x.id)}',this.checked)" style="accent-color:var(--brass)">
-          ${esc(x.memberName||x.crewMemberName||'?')}
-        </label>`;
-      }).join('')}
-    </div>
-  </span></div>` : '';
+  const isLinked = !!(t.linkedCheckoutId || t.linkedTripId || t.isLinked);
+  const showHelmSection = parseInt(t.crew||1) > 1;
+  let helmRow = '';
+  if (showHelmSection) {
+    // Collect all helm holders
+    const helmNames = [];
+    if (isHelm) helmNames.push(esc(t.memberName||''));
+    linkedCrew.forEach(x => {
+      if (x.helm && x.helm!=='false') helmNames.push(esc(x.memberName||x.crewMemberName||'?'));
+    });
+    if (helmNames.length) {
+      const helmPills = helmNames.map(n =>
+        `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--brass);border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span style="font-size:10px">⎈</span> ${n}</span>`
+      ).join(' ');
+      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${helmPills}</div></span></div>`;
+    }
+  }
 
   // Vessel/boat detail rows from boats config
   const kboat = allBoats.find(b=>b.id===t.boatId);
@@ -609,8 +626,12 @@ function tripCard(t){
     trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
-  const skipperNoteRow = t.skipperNote ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'}</span><span class="trip-exp-val">${esc(t.skipperNote)}</span></div>` : '';
-  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
+  // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
+  const canEditSkipperNote = isSki && isOwner;
+  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  // Private note (only visible to owner) — always show for owner with edit
+  const canEditNote = isOwner;
+  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     if (!urls.length) return '';
@@ -625,9 +646,9 @@ function tripCard(t){
     }).join('');
     return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
-  const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
-  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow);
-  const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
+  const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);
+  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner);
+  const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres||eFlag);
 
 
   return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
@@ -659,7 +680,7 @@ function tripCard(t){
       </div>`:''}
       ${(portRow||t.timeOut||t.timeIn||t.locationName||t.crew||distRow||t.hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
         ${(()=>{
-          const hasDetailTrip = !!(t.locationName||distRow||t.hoursDecimal||crewCountRow||crewNamesRow||helmRow);
+          const hasDetailTrip = !!(t.locationName||distRow||t.hoursDecimal||skipperNameRow||crewCountRow||crewNamesRow||helmRow);
           const toplineTrip =
               (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Brottfarartími':'Departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
             + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Komutími':'Returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'')
@@ -667,7 +688,7 @@ function tripCard(t){
           const detailTrip =
               (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Siglingasvæði':'Sailing area')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
             + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Tímalengd':'Duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
-            + distRow + crewCountRow + crewNamesRow + helmRow;
+            + distRow + skipperNameRow + crewCountRow + crewNamesRow + helmRow;
           return (hasDetailTrip
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Upplýsingar um ferð':'Trip Details')+' <span class="exp-chevron">▾</span></div>'
               + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
@@ -679,7 +700,7 @@ function tripCard(t){
       ${hasWeather?`<div class="exp-section exp-weather">
         ${(()=>{
           const toplineWx = eWs + eWv + eCond;
-          const detailWx = eDir + eGust + eAir + eFeel + eSst + ePres;
+          const detailWx = eFlag + eDir + eGust + eAir + eFeel + eSst + ePres;
           return (hasDetailWx
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Veður':'Weather')+' <span class="exp-chevron">▾</span></div>'
               + (toplineWx ? '<div class="trip-expand-grid">'+toplineWx+'</div>' : '')
@@ -1534,7 +1555,8 @@ async function revokeShareToken(tokenId){
 async function reload(){
   try{
     const res=await apiGet('getTrips',{limit:500});
-    myTrips=(res.trips||[])
+    allTrips=res.trips||[];
+    myTrips=allTrips
       .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     renderStats();
@@ -1555,7 +1577,8 @@ async function reload(){
       apiGet('getConfig'),
       apiGet('getMembers'),
     ]);
-    myTrips=(tripsRes.trips||[])
+    allTrips=tripsRes.trips||[];
+    myTrips=allTrips
       .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     // Load boats + locations + members for manual form
@@ -1632,6 +1655,21 @@ function renderConfirmations(){
   var inEl=document.getElementById('incomingConfirmations');
   var outEl=document.getElementById('outgoingConfirmations');
 
+  // Check if there are any resolved (non-pending) confirmations for dismiss-all button
+  var hasResolved = _confirmations.incoming.concat(_confirmations.outgoing).some(function(c){return c.status!=='pending';});
+  var dismissAllBtn = hasResolved
+    ? '<div style="text-align:right;margin-bottom:8px"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
+    : '';
+  // Insert dismiss-all before the incoming section
+  var dismissAllEl = document.getElementById('confDismissAll');
+  if (!dismissAllEl) {
+    var d = document.createElement('div');
+    d.id = 'confDismissAll';
+    inEl.parentElement.insertBefore(d, inEl.parentElement.querySelector('[data-s="member.incoming"]'));
+  }
+  dismissAllEl = document.getElementById('confDismissAll');
+  if (dismissAllEl) dismissAllEl.innerHTML = dismissAllBtn;
+
   var incoming=_confirmations.incoming.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!incoming.length){
     inEl.innerHTML='<div class="empty-note">'+s('member.noIncoming')+'</div>';
@@ -1647,9 +1685,9 @@ function renderConfirmations(){
             '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')">'+s('member.confirmBtn')+'</button>'+
             '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')">'+s('member.rejectBtn')+'</button>'+
           '</div>':
-          '<div style="margin-top:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')+
-          '</div>'
+          '<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button></div>'+
+          (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')
         )+'</div>';
     }).join('');
   }
@@ -1659,13 +1697,16 @@ function renderConfirmations(){
     outEl.innerHTML='<div class="empty-note">'+s('member.noOutgoing')+'</div>';
   }else{
     outEl.innerHTML=outgoing.map(function(c){
+      var isPending=c.status==='pending';
       return '<div class="conf-card">'+
         '<div class="conf-from">'+esc(c.toName||'?')+'</div>'+
         '<div class="conf-boat">'+esc(c.boatName||'')+' &middot; '+esc(c.locationName||'')+'</div>'+
         '<div class="conf-detail">'+esc(c.date||'')+(c.timeOut?' &middot; '+esc(c.timeOut):'')+'</div>'+
-        '<div style="margin-top:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+        '<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+        (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
+        '</div>'+
         (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')+
-        '</div></div>';
+        '</div>';
     }).join('');
   }
 }
@@ -1690,6 +1731,47 @@ function promptRejectConf(confId){
   var comment=prompt(s('member.rejectReason'));
   if(comment===null) return;
   respondConf(confId,'rejected',comment);
+}
+
+// ── Edit notes (only notes remain editable after handshake) ──────────────────
+async function editNote(tripId, field) {
+  const t = myTrips.find(x => x.id === tripId);
+  if (!t) return;
+  const current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
+  const label = field === 'skipperNote'
+    ? (IS ? 'Skipstjóraskýring (sýnilegt áhöfn):' : 'Skipper note (visible to crew):')
+    : (IS ? 'Athugasemd (aðeins þú sérð):' : 'Private note (only you):');
+  const val = prompt(label, current);
+  if (val === null) return;
+  try {
+    const update = {};
+    update[field] = val;
+    await apiPost('saveTrip', { id: tripId, [field]: val });
+    t[field] = val;
+    applyFilter();
+    showToast(IS ? 'Athugasemd vistuð' : 'Note saved', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+// ── Dismiss confirmations ───────────────────────────────────────────────────
+async function dismissConf(confId) {
+  try {
+    await apiPost('dismissConfirmation', { id: confId });
+    _confirmations.incoming = _confirmations.incoming.filter(c => c.id !== confId);
+    _confirmations.outgoing = _confirmations.outgoing.filter(c => c.id !== confId);
+    renderConfirmations();
+    showToast(IS ? 'Fjarlægt' : 'Dismissed', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+async function dismissAllConf() {
+  try {
+    await apiPost('dismissAllConfirmations', { kennitala: user.kennitala });
+    _confirmations.incoming = _confirmations.incoming.filter(c => c.status === 'pending');
+    _confirmations.outgoing = _confirmations.outgoing.filter(c => c.status === 'pending');
+    renderConfirmations();
+    showToast(IS ? 'Allar fjarlægðar' : 'All dismissed', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
 // Load confirmations after page init
