@@ -278,13 +278,12 @@ function initMap(locations) {
     return typeof loc.lat === 'number' && typeof loc.lng === 'number' && !isNaN(loc.lat) && !isNaN(loc.lng);
   });
 
-  if (!valid.length) {
-    // Default view: Kollafjörður / Skerjafjörður area
-    _map.setView([64.18, -21.85], 11);
-    return;
-  }
+  // Default view: Kollafjörður / Skerjafjörður area
+  _map.setView([64.148, -21.965], 11.25);
 
-  // Set view first so canvas has dimensions before heat layer renders
+  if (!valid.length) return;
+
+  // Fit to data bounds if locations exist
   var bounds = L.latLngBounds(valid.map(function(loc) { return [loc.lat, loc.lng]; }));
   _map.fitBounds(bounds.pad(0.3));
 
