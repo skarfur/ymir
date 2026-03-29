@@ -145,7 +145,6 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-var SCRIPT_URL_PUB = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
 var REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 var _map = null;
 var _heatLayer = null;
@@ -165,16 +164,7 @@ function applyStaticText() {
 }
 
 async function fetchDashboard() {
-  var res = await fetch(SCRIPT_URL_PUB, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'dashboard', token: API_TOKEN }),
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  var data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Failed');
-  return data;
+  return _call('dashboard', {});
 }
 
 function renderDashboard(data) {
