@@ -283,7 +283,7 @@ function initMap(locations) {
     _map.setView([64.148, -21.965], 11.25);
   }
 
-  // Set view first so canvas has dimensions before heat layer renders
+  // Fit to data bounds if locations exist
   var bounds = L.latLngBounds(valid.map(function(loc) { return [loc.lat, loc.lng]; }));
   _map.fitBounds(bounds.pad(0.3));
 
