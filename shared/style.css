@@ -23,6 +23,7 @@
   --orange:   #e67e22;
   --red:      #e74c3c;
   --blue:     #2980b9;
+  --purple:   #a78bfa;
 }
 
 html, body {
@@ -390,18 +391,25 @@ textarea { min-height: 70px; }
   padding: 10px 12px;
 }
 
-/* ── TIDE CHART SVG ──────────────────────────────────────────────────────────── */
+/* ── SVG CHARTS (shared across tide / wind / pressure) ───────────────────────── */
 
-.tide-area   { fill: var(--blue); opacity: 0.06; }
-.tide-line   { fill: none; stroke: var(--blue); stroke-width: 1; opacity: 0.7; }
-.tide-past   { fill: var(--bg); opacity: 0.25; }
-.tide-now    { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3,3; }
-.tide-now-t  { font-family: 'DM Mono', monospace; font-size: 7px; fill: var(--brass); opacity: 0.7; }
-.tide-axis-t { font-family: 'DM Mono', monospace; font-size: 6px; fill: var(--muted); opacity: 0.6; }
-.tide-hi     { fill: var(--brass); }
-.tide-lo     { fill: var(--blue); }
-.tide-lbl    { font-family: 'DM Mono', monospace; font-size: 7px; }
-.tide-lbl-bg { fill: var(--card); opacity: 0.85; }
+/* Color modifiers — apply to area, line, dash, dot, lbl */
+.c-brass  { fill: var(--brass);  stroke: var(--brass);  }
+.c-blue   { fill: var(--blue);   stroke: var(--blue);   }
+.c-purple { fill: var(--purple); stroke: var(--purple); }
+.c-muted  { fill: var(--muted);  stroke: var(--muted);  }
+
+/* Structural classes (order after color so overrides win) */
+.chart-past   { fill: var(--bg); opacity: 0.25; }
+.chart-area   { opacity: 0.07; }
+.chart-line   { fill: none; stroke-width: 1; opacity: 0.7; }
+.chart-dash   { fill: none; stroke-width: 1; stroke-dasharray: 4,3; opacity: 0.45; }
+.chart-dot    { opacity: 0.8; }
+.chart-now    { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3,3; }
+.chart-now-t  { font: 7px 'DM Mono', monospace; fill: var(--brass); opacity: 0.7; }
+.chart-axis-t { font: 6px 'DM Mono', monospace; fill: var(--muted); opacity: 0.6; }
+.chart-lbl    { font: 7px 'DM Mono', monospace; }
+.chart-lbl-bg { fill: var(--card); opacity: 0.85; }
 
 .hidden { display: none !important; }
 

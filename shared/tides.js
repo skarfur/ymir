@@ -189,18 +189,18 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
   // Past overlay
   if (nowMs > t0 && nowMs <= t1) {
     const nw = Math.max(0, xOf(nowMs) - P.l);
-    svg += `<rect class="tide-past" x="${P.l}" y="${P.t}" width="${f1(nw)}" height="${iH}"/>`;
+    svg += `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${f1(nw)}" height="${iH}"/>`;
   }
 
   // Area fill + line
-  svg += `<path class="tide-area" d="${areaPath}"/>`;
-  svg += `<path class="tide-line" d="${linePath}"/>`;
+  svg += `<path class="chart-area c-blue" d="${areaPath}"/>`;
+  svg += `<path class="chart-line c-blue" d="${linePath}"/>`;
 
   // NOW marker
   if (nowMs > t0 && nowMs <= t1) {
     const nx = f1(xOf(nowMs));
-    svg += `<line class="tide-now" x1="${nx}" y1="${P.t}" x2="${nx}" y2="${f1(P.t+iH)}"/>`;
-    svg += `<text class="tide-now-t" x="${nx}" y="${f1(P.t+iH+10)}" text-anchor="middle">NOW</text>`;
+    svg += `<line class="chart-now" x1="${nx}" y1="${P.t}" x2="${nx}" y2="${f1(P.t+iH)}"/>`;
+    svg += `<text class="chart-now-t" x="${nx}" y="${f1(P.t+iH+10)}" text-anchor="middle">NOW</text>`;
   }
 
   // Time axis (every 3h)
@@ -209,7 +209,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     if (ms > t1) break;
     const tx = f1(xOf(ms));
     const lbl = String(h).padStart(2, '0') + ':00';
-    svg += `<text class="tide-axis-t" x="${tx}" y="${f1(H-2)}" text-anchor="middle">${lbl}</text>`;
+    svg += `<text class="chart-axis-t" x="${tx}" y="${f1(H-2)}" text-anchor="middle">${lbl}</text>`;
   }
 
   // Extrema labels + dots
@@ -220,7 +220,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
   events.forEach(e => {
     const ex = xOf(e.time.getTime()), ey = yOf(e.height);
     const isHigh = e.type === 'high';
-    const cls = isHigh ? 'tide-hi' : 'tide-lo';
+    const cc = isHigh ? 'c-brass' : 'c-blue';
     const txt = fmtT(e.time) + '  ' + e.height.toFixed(1) + 'm';
 
     // High: label above the peak; Low: label inside the trough (above the dot)
@@ -230,9 +230,9 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
 
     // Background rect for legibility
     const textW = txt.length * 3.6;
-    svg += `<rect class="tide-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 6)}" width="${f1(textW + 2)}" height="7" rx="1"/>`;
-    svg += `<text class="tide-lbl ${cls}" x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle">${txt}</text>`;
-    svg += `<circle class="${cls}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 6)}" width="${f1(textW + 2)}" height="7" rx="1"/>`;
+    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle">${txt}</text>`;
+    svg += `<circle class="chart-dot ${cc}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
   });
 
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">${svg}</svg>`;
