@@ -701,16 +701,13 @@ function renderLandingChecklist() {
   // Fetch linked crew: first check confirmed trips, then pending confirmations
   if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
     window._retCrewTripsFetched=true;
-    Promise.all([
-      apiGet('getTrips',{linkedCheckoutId:returnCo.id}),
-      apiGet('getConfirmations',{kennitala:user.kennitala}),
-    ]).then(function(results){
+    var tripsP=apiGet('getTrips',{linkedCheckoutId:returnCo.id}).catch(function(){return{trips:[]};});
+    var confsP=apiGet('getConfirmations',{kennitala:user.kennitala}).catch(function(){return{outgoing:[]};});
+    Promise.all([tripsP,confsP]).then(function(results){
       var trips=(results[0].trips||[]).filter(function(t){return t.role==='crew';});
-      // Also include pending crew_assigned confirmations for this checkout
       var confs=(results[1].outgoing||[]).filter(function(c){
         return c.type==='crew_assigned' && c.linkedCheckoutId===returnCo.id && c.status==='pending';
       });
-      // Merge: use trips if they exist, otherwise use confirmations as placeholder crew entries
       var crewEntries=trips.slice();
       confs.forEach(function(c){
         // Avoid duplicates — skip if a trip already exists for this crew member
@@ -721,7 +718,10 @@ function renderLandingChecklist() {
       });
       window._retCrewTrips=crewEntries;
       _renderHelmSection();
-    }).catch(function(){});
+    }).catch(function(){
+      window._retCrewTrips=[];
+      _renderHelmSection();
+    });
   }
 
   // Resolve home/departure port name for keelboats

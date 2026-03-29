@@ -1615,7 +1615,8 @@ function ensureConfirmationCols_() {
 function getConfirmations_(b) {
   if (!b.kennitala) return failJ('kennitala required');
   var kt = String(b.kennitala);
-  var all = readAll_('tripConfirmations');
+  var all;
+  try { all = readAll_('tripConfirmations'); } catch(e) { all = []; }
   var incoming = all.filter(function(r) { return String(r.toKennitala) === kt; });
   var outgoing = all.filter(function(r) { return String(r.fromKennitala) === kt; });
   return okJ({ incoming: incoming, outgoing: outgoing });
