@@ -3709,3 +3709,34 @@ function addRecentTripColumns() {
   }
 }
 
+// ── Focused helper: add crewNames to checkouts + skipperNote to trips +
+//    create trip_confirmations tab ────────────────────────────────────────
+function addHandshakeColumns() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+
+  // 1) checkouts → crewNames
+  var coSheet = ss.getSheetByName('checkouts');
+  if (coSheet) {
+    var coHdr = coSheet.getRange(1, 1, 1, coSheet.getLastColumn()).getValues()[0].map(String);
+    if (!coHdr.includes('crewNames')) {
+      coSheet.getRange(1, coHdr.length + 1).setValue('crewNames');
+      Logger.log('Added "crewNames" to checkouts');
+    } else { Logger.log('checkouts already has crewNames'); }
+  } else { Logger.log('checkouts tab not found — run setupSpreadsheet() first'); }
+
+  // 2) trips → skipperNote
+  var trSheet = ss.getSheetByName('trips');
+  if (trSheet) {
+    var trHdr = trSheet.getRange(1, 1, 1, trSheet.getLastColumn()).getValues()[0].map(String);
+    if (!trHdr.includes('skipperNote')) {
+      trSheet.getRange(1, trHdr.length + 1).setValue('skipperNote');
+      Logger.log('Added "skipperNote" to trips');
+    } else { Logger.log('trips already has skipperNote'); }
+  } else { Logger.log('trips tab not found — run setupSpreadsheet() first'); }
+
+  // 3) trip_confirmations tab (create if missing)
+  var confCols = SCHEMA_.trip_confirmations;
+  ensureTab_(ss, 'trip_confirmations', confCols);
+  Logger.log('trip_confirmations tab ready');
+}
+
