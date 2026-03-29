@@ -153,6 +153,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   <!-- Share logbook -->
   <div id="shareBar" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
+    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="openLogModal()">+ Manually log a trip</button>
     <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
       <div id="shareCatChecks" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
@@ -177,7 +178,6 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   <!-- Logbook header -->
   <div class="section-hdr" style="margin-top:24px">
     <span>Logbook</span>
-    <button class="btn-secondary" style="width:auto;padding:5px 12px;font-size:11px" onclick="openLogModal()">Add a manual log entry</button>
   </div>
 
   <!-- Filter bar -->
