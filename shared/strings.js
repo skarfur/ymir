@@ -183,6 +183,11 @@ const STRINGS = {
   'member.launchTitle':  { EN:'Launch a Boat',       IS:'Fara á sjó' },
   'member.checkInTitle': { EN:'Check In',            IS:'Skrá inn' },
   'member.manualTrip':   { EN:'Log a Trip',          IS:'Skrá siglingu' },
+  'member.shareRecord':  { EN:'SHARE YOUR RECORD',   IS:'DEILA SKRÁNINGU' },
+  'member.shareDesc':    { EN:'Generate a link to share your sailing record with charter agents or other parties. The link shows sessions up to today\'s date.', IS:'Búðu til hlekk til að deila siglingaskráningunni þinni með leiguaðilum eða öðrum. Hlekkurinn sýnir siglingalotur til og með deginum í dag.' },
+  'member.btnGenerate':  { EN:'+ Generate share link', IS:'+ Búa til deilingarhlekk' },
+  'member.noTokens':     { EN:'No share links generated yet.', IS:'Engir deilingarhlekkir búnir til enn.' },
+  'member.tokenCreated': { EN:'Share link created.', IS:'Deilingarhlekkur búinn til.' },
 
   // ── Staff hub ──────────────────────────────────────────────────────────────
   'staff.dashTitle':         { EN:'Staff Dashboard',          IS:'Stjórnborð starfsmanna' },

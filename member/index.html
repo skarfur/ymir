@@ -147,6 +147,14 @@
     <div id="fleetByCat"></div>
   </div>
 
+  <!-- ═══ SHARE RECORD ═══ -->
+  <div id="shareSection" style="margin-top:16px">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px" data-s="member.shareRecord"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="member.shareDesc"></div>
+    <button class="btn btn-secondary" style="font-size:12px;margin-bottom:12px" onclick="generateShareToken()" data-s="member.btnGenerate"></button>
+    <div id="shareTokenList"></div>
+  </div>
+
 </div>
 
 <!-- ══ MANUAL TRIP MODAL ══ -->
@@ -257,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
+  loadShareTokens();
   warmContainer();
 });
 
@@ -923,6 +932,93 @@ function populateFormSelects() {
 function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
 
 // ══ STAFF STATUS + FLAG DETAIL (member page) ══════════════════════════════════════════════════
+
+// ══ SHARE TOKENS ═════════════���═══════════════════════════════════════════════
+
+async function loadShareTokens() {
+  var user = getUser(); if (!user) return;
+  try {
+    var res = await apiPost('getShareTokens', { kennitala: user.kennitala });
+    renderShareTokens(res.tokens || []);
+  } catch(e) { /* silent — section just stays empty */ }
+}
+
+function renderShareTokens(tokens) {
+  var el = document.getElementById('shareTokenList');
+  if (!el) return;
+  if (!tokens.length) {
+    el.innerHTML = '<div class="empty-note">' + s('member.noTokens') + '</div>';
+    return;
+  }
+  var IS = getLang() === 'IS';
+  var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  tokens.forEach(function(tk) {
+    var revoked = tk.revokedAt && String(tk.revokedAt).trim() !== '';
+    var shareUrl = SCRIPT_URL + '?share=' + tk.id;
+    var statusBadge = revoked
+      ? '<span style="color:var(--red);font-size:10px">' + (IS ? 'Afturkallað' : 'Revoked') + '</span>'
+      : '<span style="color:var(--green);font-size:10px">' + (IS ? 'Virkt' : 'Active') + '</span>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center">'
+      + '<div>'
+      + '<div style="font-size:11px">' + (IS ? 'Skráningar til' : 'Records up to') + ' <strong>' + esc(tk.cutOffDate || '') + '</strong> ' + statusBadge + '</div>'
+      + '<div style="font-size:10px;color:var(--muted)">'
+      + (IS ? 'Búið til' : 'Created') + ' ' + (tk.createdAt || '').slice(0, 10)
+      + ' · ' + (tk.accessCount || 0) + (IS ? ' skoðanir' : ' views')
+      + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center">';
+    if (!revoked) {
+      html += '<button class="btn btn-secondary" style="font-size:10px;padding:4px 8px" onclick="copyShareLink(\'' + tk.id + '\')">'
+        + (IS ? 'Afrita' : 'Copy') + '</button>'
+        + '<button class="btn btn-secondary" style="font-size:10px;padding:4px 8px;color:var(--red)" onclick="revokeShareToken(\'' + tk.id + '\')">'
+        + (IS ? 'Afturkalla' : 'Revoke') + '</button>';
+    }
+    html += '<button class="btn btn-secondary" style="font-size:10px;padding:4px 8px" onclick="deleteShareToken(\'' + tk.id + '\')">'
+      + (IS ? 'Eyða' : 'Delete') + '</button>';
+    html += '</div></div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function generateShareToken() {
+  var user = getUser(); if (!user) return;
+  try {
+    await apiPost('createShareToken', { kennitala: user.kennitala });
+    showToast(s('member.tokenCreated'));
+    loadShareTokens();
+  } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+async function revokeShareToken(tokenId) {
+  var user = getUser(); if (!user) return;
+  var IS = getLang() === 'IS';
+  if (!confirm(IS ? 'Afturkalla þennan hlekk?' : 'Revoke this link?')) return;
+  try {
+    await apiPost('revokeShareToken', { tokenId: tokenId, kennitala: user.kennitala });
+    showToast(IS ? 'Hlekkur afturkallaður.' : 'Link revoked.');
+    loadShareTokens();
+  } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+async function deleteShareToken(tokenId) {
+  var user = getUser(); if (!user) return;
+  var IS = getLang() === 'IS';
+  if (!confirm(IS ? 'Eyða þessum hlekk varanlega?' : 'Permanently delete this link?')) return;
+  try {
+    await apiPost('deleteShareToken', { tokenId: tokenId, kennitala: user.kennitala });
+    showToast(IS ? 'Hlekk eytt.' : 'Link deleted.');
+    loadShareTokens();
+  } catch(e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+function copyShareLink(tokenId) {
+  var url = SCRIPT_URL + '?share=' + tokenId;
+  navigator.clipboard.writeText(url).then(function() {
+    showToast(getLang() === 'IS' ? 'Hlekkur afritaður.' : 'Link copied.');
+  });
+}
 
 function _renderMemberStaffStatus() {
   const el = document.getElementById('memberStaffStatus');

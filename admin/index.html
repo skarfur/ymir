@@ -486,6 +486,7 @@
       <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10"></div>
       <div class="field"><label>Email</label><input type="email" id="mEmail"></div>
       <div class="field"><label>Phone</label><input type="tel" id="mPhone"></div>
+      <div class="field"><label>Initials</label><input type="text" id="mInitials" maxlength="10" placeholder="Auto-generated" style="text-transform:uppercase"></div>
       <div class="field"><label>Date of birth</label><input type="date" id="mDob"></div>
       <div class="field"><label>Membership type</label>
         <select id="mMembershipType">
@@ -723,6 +724,9 @@
         <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px">EXPIRY DATE</label>
         <input type="date" id="cdExpiryDate" style="font-size:12px">
       </div>
+      <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px">
+        <input type="checkbox" id="cdHasIdNumber"> This certification has an ID / licence number
+      </label>
     </div>
 
     <div style="margin-top:14px">
@@ -767,6 +771,10 @@
       <div class="field" id="mcmSubcatField" style="display:none">
         <label>Level / Subcategory</label>
         <select id="mcmSubcat"><option value="">Select…</option></select>
+      </div>
+      <div class="field" id="mcmLicenceNoField" style="display:none">
+        <label>Licence / ID Number</label>
+        <input type="text" id="mcmLicenceNo" placeholder="e.g. IS-12345">
       </div>
       <div class="grid2">
         <div class="field">
@@ -1040,6 +1048,7 @@ function openMemberModal(id) {
   document.getElementById("mKennitala").value      = m ? (m.kennitala    || "") : "";
   document.getElementById("mEmail").value          = m ? (m.email        || "") : "";
   document.getElementById("mPhone").value          = m ? (m.phone        || "") : "";
+  document.getElementById("mInitials").value       = m ? (m.initials     || "") : "";
   document.getElementById("mDob").value            = m ? (m.dob          || "") : "";
   document.getElementById("mMembershipType").value = m ? (m.membershipType || m.membership_type || "full") : "full";
   document.getElementById("mRole").value           = m ? (m.role         || "member") : "member";
@@ -1061,6 +1070,7 @@ async function saveMember() {
     id, name, kennitala,
     email:          document.getElementById("mEmail").value.trim(),
     phone:          document.getElementById("mPhone").value.trim(),
+    initials:       document.getElementById("mInitials").value.trim().toUpperCase(),
     dob:            document.getElementById("mDob").value,
     membershipType: document.getElementById("mMembershipType").value,
     role:           document.getElementById("mRole").value,
@@ -1739,6 +1749,7 @@ function openCertDefModal(id) {
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
+  document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
   document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
   document.getElementById("cdExpiryDate").value       = d?.expiryDate || "";
   document.getElementById("cdExpiryDateWrap").style.display = d?.expires ? "" : "none";
@@ -1763,6 +1774,7 @@ async function saveCertDef() {
     subcats:          gatherSubcats(),
     staffOnly:        document.getElementById("cdStaffOnly").checked,
     color:            document.getElementById("cdColor").value,
+    hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
     expires,
     expiryDate:       expires ? (document.getElementById("cdExpiryDate").value || null) : null,
   };
@@ -1983,6 +1995,9 @@ function updateMCMSubcats() {
   } else {
     sf.style.display = "none";
   }
+  // Show/hide licence number field based on hasIdNumber
+  document.getElementById("mcmLicenceNoField").style.display = def?.hasIdNumber ? "" : "none";
+  document.getElementById("mcmLicenceNo").value = "";
   // Pre-fill expiry from top-level expiryDate if defined
   document.getElementById("mcmExpiresAt").value = (def?.expires && def.expiryDate) ? def.expiryDate : "";
 }
@@ -2002,12 +2017,14 @@ async function assignMemberCert() {
   const enteredExp = document.getElementById("mcmExpiresAt").value || null;
   const finalExp   = enteredExp || subcatDef?.expiryDate || (def?.expires ? def.expiryDate : null) || null;
 
+  const licenceNo = def?.hasIdNumber ? document.getElementById("mcmLicenceNo").value.trim() : '';
   const newCert = {
     certId,
-    sub:        sub || null,
-    assignedBy: getUser()?.name || "Staff",
-    assignedAt: document.getElementById("mcmAssignedAt").value || todayISO(),
-    expiresAt:  finalExp,
+    sub:           sub || null,
+    assignedBy:    getUser()?.name || "Staff",
+    assignedAt:    document.getElementById("mcmAssignedAt").value || todayISO(),
+    expiresAt:     finalExp,
+    licenceNumber: licenceNo || null,
   };
 
   let existing = parseJson(m.certifications, []);
