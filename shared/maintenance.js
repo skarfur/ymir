@@ -29,7 +29,7 @@ const SEV_HINTS = {
   critical: "Safety risk — take out of service immediately.",
 };
 
-const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗" };
+const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗️" };
 
 // ── Full card (staff/maintenance.html) ────────────────────────────────────────
 /**
@@ -41,7 +41,7 @@ const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗" };
 function maintRenderCardCompact(r) {
   const SEV_CSS   = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
   const borderCol = SEV_CSS[r.severity] || 'var(--green)';
-  const catIcon   = CAT_ICON[r.category] || '⚙';
+  const catIcon   = CAT_ICON[r.category] || '⚙️';
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
     ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">OOS</span>' : '';
   const saumaTag = boolVal(r.saumaklubbur)
@@ -106,7 +106,7 @@ function maintOpenDetail(r, currentUser) {
   }
 
   function renderAndWire() {
-    const catIcon  = CAT_ICON[r.category] || '⚙';
+    const catIcon  = CAT_ICON[r.category] || '⚙️';
     const isOos    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
     const resolved = boolVal(r.resolved);
     const isSauma  = boolVal(r.saumaklubbur);
@@ -378,7 +378,7 @@ function maintRenderCard(r) {
   const resolved  = boolVal(r.resolved);
   const isSauma   = boolVal(r.saumaklubbur);
   const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '⚙';
+  const catIcon   = CAT_ICON[r.category] || '⚙️';
   const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')

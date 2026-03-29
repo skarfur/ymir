@@ -139,9 +139,9 @@ function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','�
 function wxBftDesc(b)   { return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b] || ''; }
 function wxBftDescIS(b)  { return ['Logn','Andvari','Kul','Gola','Stinningsgola','Kaldi','Stinningskaldi','Allhvass vindur','Hvassviðri','Stormur','Rok','Ofsaveður','Fárviðri'][b] || ''; }
 function wxCondIcon(c)  {
-  if (c === 0) return '☀'; if (c === 1) return '🌤'; if (c === 2) return '⛅'; if (c === 3) return '☁';
-  if ([45,48].includes(c)) return '🌫'; if ([51,53,55,61,63,65,80,81,82].includes(c)) return '🌧';
-  if ([71,73,75,77,85,86].includes(c)) return '❄'; if ([95,96,99].includes(c)) return '⛈'; return '☁';
+  if (c === 0) return '☀️'; if (c === 1) return '🌤'; if (c === 2) return '⛅️'; if (c === 3) return '☁️';
+  if ([45,48].includes(c)) return '🌫️'; if ([51,53,55,61,63,65,80,81,82].includes(c)) return '🌧️';
+  if ([71,73,75,77,85,86].includes(c)) return '❄️'; if ([95,96,99].includes(c)) return '⛈️'; return '☁️';
 }
 function wxCondDesc(c)  {
   if (c === 0) return 'Clear sky'; if (c === 1) return 'Mainly clear'; if (c === 2) return 'Partly cloudy'; if (c === 3) return 'Overcast';
@@ -510,7 +510,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
           <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'AÐSTÆÐUR':'CONDITIONS'}</div>
-            <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '⛅'}</div>
+            <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '⛅️'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : IS?'BIRK mælingar':'BIRK obs'}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
@@ -619,7 +619,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         } else { _b.innerHTML = ''; }
       };
     } catch(e) {
-      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠ Weather unavailable  —  <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
+      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
     }
   }

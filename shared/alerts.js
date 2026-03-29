@@ -130,7 +130,7 @@
 </style>
 <div id="ym-alert-inner">
   <div class="yma-header">
-    <span class="yma-title">⚠ OVERDUE BOATS</span>
+    <span class="yma-title">⚠️ OVERDUE BOATS</span>
   </div>
   <div id="ym-alert-cards"></div>
 </div>`;

@@ -218,12 +218,12 @@ function renderCheckoutCard(co, opts) {
     else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">${_besc(s("fleet.badgeYours"))}</span>`;
     else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11">${_besc(s("fleet.badgeOut"))}</span>`;
   } else if (overdue) {
-    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠ ${_besc(s("fleet.badgeOverdue"))}</span>`;
+    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠️ ${_besc(s("fleet.badgeOverdue"))}</span>`;
   }
 
   // Sub-line
   const isKeel  = cat === 'keelboat';
-  const portInfo = isKeel && co.departurePort ? ` · ⚓ ${_besc(co.departurePort)}` : '';
+  const portInfo = isKeel && co.departurePort ? ` · ⚓️ ${_besc(co.departurePort)}` : '';
   const subLine = `${_besc(co.locationName||"")}${portInfo} · ${_besc(s("fleet.outTime",{t:tout}))}`;
 
   // Wx snapshot (staff)
