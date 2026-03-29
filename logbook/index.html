@@ -513,6 +513,7 @@ function tripCard(t){
   const crewRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${crewNames}</span></div>`;
 
   // Helm assignment row — shown to the skipper when crew > 1, allows toggling after the fact
+  const isOwner = String(t.kennitala) === String(user.kennitala);
   const canEditHelm = isSki && isOwner && parseInt(t.crew||1) > 1;
   const helmRow = canEditHelm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Stýri':'Helm'}</span><span class="trip-exp-val">
     <div style="display:flex;flex-direction:column;gap:4px">
@@ -537,7 +538,6 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
-  const isOwner = String(t.kennitala) === String(user.kennitala);
   const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
 
   // Track row: show map thumbnail if simplified track available, otherwise link
