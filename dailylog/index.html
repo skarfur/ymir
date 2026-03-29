@@ -11,6 +11,7 @@
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
+<script src="../shared/tides.js"></script>
 <script src="../shared/boats.js"></script>
 <script src="../shared/maintenance.js"></script>
 <style>
@@ -144,7 +145,10 @@
   </div>
 
   <!-- ══ 2. TIDES ══ -->
-  <div class="section-heading" data-s="daily.tides"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div class="section-heading" data-s="daily.tides" style="margin-bottom:0"></div>
+    <button id="tideAutoFillBtn" class="btn-ghost" style="font-size:10px;padding:2px 8px" data-s="tide.autoFill">↻ Auto-fill tides</button>
+  </div>
   <div class="content-card" style="margin-bottom:4px">
     <div class="tide-grid">
       <div class="tide-cell">
@@ -695,6 +699,15 @@ document.addEventListener('DOMContentLoaded', () => {
     dom[id].addEventListener('change', markDirty);
   });
 
+  document.getElementById('tideAutoFillBtn').addEventListener('click', () => {
+    if (typeof tideExtrema === 'function') {
+      const extrema = tideExtrema(viewDate);
+      tideData = tideToDailyLog(extrema);
+      populateTideFields();
+      markDirty();
+    }
+  });
+
   // Silent weather poll for snapshots
   let _wxTimer = null;
   async function pollWx() {
@@ -1011,6 +1024,11 @@ function applyLogData(log, cfgRes) {
     wxLog    = sjson(log.weatherLog, []);
     tideData = sjson(log.tideData, {});
     dom.narrativeInput.value = log.narrative || '';
+    // Auto-fill tide fields from harmonic prediction if no saved data
+    if (!tideData.h1t && !tideData.l1t && typeof tideExtrema === 'function') {
+      const extrema = tideExtrema(viewDate);
+      tideData = tideToDailyLog(extrema);
+    }
     populateTideFields();
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
