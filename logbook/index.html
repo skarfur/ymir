@@ -431,8 +431,8 @@ function tripCard(t){
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
   const dep=t.departurePort||'', arr=t.arrivalPort||'';
   const portLine = (dep||arr) ? (
-    (!arr||dep===arr) ? `<span>⚓ ${esc(dep||arr)}</span>`
-                      : `<span>⚓ ${esc(dep)} → ${esc(arr)}</span>`
+    (!arr||!dep||dep===arr) ? `<span>⚓ ${esc(dep||arr)}</span>`
+                            : `<span>⚓ ${esc(dep)} → ${esc(arr)}</span>`
   ) : '';
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
