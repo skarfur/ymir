@@ -150,12 +150,14 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .track-delete-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-left:8px;opacity:.7}
 .track-delete-btn:hover{opacity:1;text-decoration:underline}
 /* ── Confirmations ── */
-.conf-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
-.conf-card .conf-from{font-size:12px;font-weight:500;color:var(--text)}
-.conf-card .conf-detail{font-size:11px;color:var(--muted);margin-top:3px}
-.conf-card .conf-boat{font-size:11px;color:var(--brass);margin-top:2px}
-.conf-card .conf-actions{display:flex;gap:6px;margin-top:8px}
-.conf-card .conf-actions button{font-size:11px;font-family:inherit;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid}
+.conf-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px}
+.conf-card .conf-line{font-size:11px;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.conf-card .conf-line .conf-name{font-weight:500}
+.conf-card .conf-line .conf-type{color:var(--muted)}
+.conf-card .conf-line .conf-boat-info{color:var(--brass)}
+.conf-card .conf-line .conf-date-info{color:var(--muted);font-size:10px}
+.conf-card .conf-actions{display:flex;gap:6px;margin-top:6px}
+.conf-card .conf-actions button{font-size:10px;font-family:inherit;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid}
 .conf-card .btn-confirm{background:var(--green)18;color:var(--green);border-color:var(--green)55}
 .conf-card .btn-confirm:hover{background:var(--green)33}
 .conf-card .btn-reject{background:var(--red)18;color:var(--red);border-color:var(--red)55}
@@ -164,7 +166,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .conf-status.pending{background:var(--yellow)22;color:var(--yellow)}
 .conf-status.confirmed{background:var(--green)22;color:var(--green)}
 .conf-status.rejected{background:var(--red)22;color:var(--red)}
-.conf-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:600;margin-left:4px;padding:0 4px}
+.conf-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:600;margin-left:6px;padding:0 5px;vertical-align:middle;line-height:1}
 </style>
 </head>
 <body>
@@ -572,15 +574,42 @@ function tripCard(t){
       (t.linkedTripId && x.id === t.linkedTripId)
     )
   ) : null;
+  // Check for pending handshakes (outgoing confirmations for this trip)
+  const pendingCrewConfs = _confirmations.outgoing.filter(c =>
+    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+  const pendingHelmConfs = _confirmations.outgoing.filter(c =>
+    c.status==='pending' && c.type==='helm' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+  // Also check incoming pending (requests sent TO this user)
+  const pendingCrewIn = _confirmations.incoming.filter(c =>
+    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+  const pendingHelmIn = _confirmations.incoming.filter(c =>
+    c.status==='pending' && c.type==='helm' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+
   const helmLabel = IS?'Stýri':'Helm';
+  const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
   const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
     return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
   }).join(', ') : esc(t.crew||1);
+  // Show pending crew names alongside confirmed ones
+  const pendingCrewNames = pendingCrewConfs.map(c => esc(c.toName||'?')+' '+pendingTag)
+    .concat(pendingCrewIn.map(c => esc(c.fromName||'?')+' '+pendingTag));
+  const allCrewDisplay = [crewNames, ...pendingCrewNames].filter(Boolean);
+
   const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}</span></div>` : '';
   const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
-  const crewNamesRow = linkedCrew.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${crewNames}</span></div>` : '';
+  const crewNamesRow = (linkedCrew.length || pendingCrewNames.length)
+    ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${allCrewDisplay.join(', ')}</span></div>`
+    : '';
 
   // Helm assignment row — read-only display showing who was at the helm
   const isOwner = String(t.kennitala) === String(user.kennitala);
@@ -588,17 +617,23 @@ function tripCard(t){
   const showHelmSection = parseInt(t.crew||1) > 1;
   let helmRow = '';
   if (showHelmSection) {
-    // Collect all helm holders
     const helmNames = [];
     if (isHelm) helmNames.push(esc(t.memberName||''));
     linkedCrew.forEach(x => {
       if (x.helm && x.helm!=='false') helmNames.push(esc(x.memberName||x.crewMemberName||'?'));
     });
-    if (helmNames.length) {
-      const helmPills = helmNames.map(n =>
+    // Pending helm confirmations
+    const pendingHelmNames = pendingHelmConfs.map(c => esc(c.toName||'?'))
+      .concat(pendingHelmIn.map(c => esc(c.fromName||'?')));
+    if (helmNames.length || pendingHelmNames.length) {
+      const confirmedPills = helmNames.map(n =>
         `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--brass);border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span style="font-size:10px">⎈</span> ${n}</span>`
-      ).join(' ');
-      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${helmPills}</div></span></div>`;
+      );
+      const pendingPills = pendingHelmNames.map(n =>
+        `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span style="font-size:10px">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${IS?'í bið':'pending'}</span></span>`
+      );
+      const allPills = confirmedPills.concat(pendingPills).join(' ');
+      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${allPills}</div></span></div>`;
     }
   }
 
@@ -700,7 +735,7 @@ function tripCard(t){
       ${hasWeather?`<div class="exp-section exp-weather">
         ${(()=>{
           const toplineWx = eWs + eWv + eCond;
-          const detailWx = eFlag + eDir + eGust + eAir + eFeel + eSst + ePres;
+          const detailWx = eDir + eGust + eAir + eFeel + eSst + ePres + eFlag;
           return (hasDetailWx
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Veður':'Weather')+' <span class="exp-chevron">▾</span></div>'
               + (toplineWx ? '<div class="trip-expand-grid">'+toplineWx+'</div>' : '')
@@ -1677,17 +1712,21 @@ function renderConfirmations(){
     inEl.innerHTML=incoming.map(function(c){
       var isPending=c.status==='pending';
       return '<div class="conf-card">'+
-        '<div class="conf-from">'+esc(c.fromName||'?')+' '+_confDesc(c)+'</div>'+
-        '<div class="conf-boat">'+esc(c.boatName||'')+' &middot; '+esc(c.locationName||'')+'</div>'+
-        '<div class="conf-detail">'+esc(c.date||'')+(c.timeOut?' &middot; '+esc(c.timeOut):'')+(c.timeIn?'–'+esc(c.timeIn):'')+'</div>'+
+        '<div class="conf-line">'+
+          '<span class="conf-name">'+esc(c.fromName||'?')+'</span>'+
+          '<span class="conf-type">'+_confDesc(c)+'</span>'+
+          '<span class="conf-boat-info">'+esc(c.boatName||'')+'</span>'+
+          '<span class="conf-date-info">'+esc(c.date||'')+(c.timeOut?' '+esc(c.timeOut):'')+'</span>'+
+        '</div>'+
         (isPending?
           '<div class="conf-actions">'+
             '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')">'+s('member.confirmBtn')+'</button>'+
             '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')">'+s('member.rejectBtn')+'</button>'+
           '</div>':
-          '<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button></div>'+
-          (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')
+          '<div style="margin-top:4px;display:flex;align-items:center;gap:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
+          (c.rejectComment?' <span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+          '</div>'
         )+'</div>';
     }).join('');
   }
@@ -1699,13 +1738,15 @@ function renderConfirmations(){
     outEl.innerHTML=outgoing.map(function(c){
       var isPending=c.status==='pending';
       return '<div class="conf-card">'+
-        '<div class="conf-from">'+esc(c.toName||'?')+'</div>'+
-        '<div class="conf-boat">'+esc(c.boatName||'')+' &middot; '+esc(c.locationName||'')+'</div>'+
-        '<div class="conf-detail">'+esc(c.date||'')+(c.timeOut?' &middot; '+esc(c.timeOut):'')+'</div>'+
-        '<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-        (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
+        '<div class="conf-line">'+
+          '<span class="conf-name">'+esc(c.toName||'?')+'</span>'+
+          '<span class="conf-type">'+_confDesc(c)+'</span>'+
+          '<span class="conf-boat-info">'+esc(c.boatName||'')+'</span>'+
+          '<span class="conf-date-info">'+esc(c.date||'')+(c.timeOut?' '+esc(c.timeOut):'')+'</span>'+
+          '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
         '</div>'+
-        (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')+
+        (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:2px;padding-left:2px">'+esc(c.rejectComment)+'</div>':'')+
         '</div>';
     }).join('');
   }
