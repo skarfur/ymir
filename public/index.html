@@ -165,9 +165,11 @@ function applyStaticText() {
 }
 
 async function fetchDashboard() {
-  var res = await fetch(SCRIPT_URL_PUB + '?action=dashboard', {
-    method: 'GET',
+  var res = await fetch(SCRIPT_URL_PUB, {
+    method: 'POST',
     redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'dashboard' }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   var data = await res.json();
