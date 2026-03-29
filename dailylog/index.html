@@ -83,12 +83,7 @@
 .wx-snap-label { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-bottom:2px; }
 .wx-snap-val { font-size:12px; color:var(--text); font-weight:500; }
 
-/* ── Tides ── */
-.tide-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-.tide-cell { display:flex; flex-direction:column; gap:4px; }
-.tide-label { font-size:9px; color:var(--muted); letter-spacing:.8px; }
-.tide-inputs { display:flex; gap:6px; }
-.tide-inputs input { flex:1; }
+/* ── Tides (auto-filled widget) ── */
 
 /* ── Save bar ── */
 .save-bar { position:fixed; bottom:0; left:0; right:0; background:var(--card);
@@ -144,43 +139,14 @@
     </div>
   </div>
 
-  <!-- ══ 2. TIDES ══ -->
-  <div style="display:flex;align-items:center;justify-content:space-between">
-    <div class="section-heading" data-s="daily.tides" style="margin-bottom:0"></div>
-    <button id="tideAutoFillBtn" class="btn-ghost" style="font-size:10px;padding:2px 8px" data-s="tide.autoFill">↻ Auto-fill tides</button>
-  </div>
-  <div class="content-card" style="margin-bottom:4px">
-    <div class="tide-grid">
-      <div class="tide-cell">
-        <div class="tide-label">HIGH 1</div>
-        <div class="tide-inputs">
-          <input type="time" id="tideH1Time" style="max-width:100px">
-          <input type="number" id="tideH1Height" placeholder="m" step="0.1" style="max-width:60px">
-        </div>
-      </div>
-      <div class="tide-cell">
-        <div class="tide-label">LOW 1</div>
-        <div class="tide-inputs">
-          <input type="time" id="tideL1Time" style="max-width:100px">
-          <input type="number" id="tideL1Height" placeholder="m" step="0.1" style="max-width:60px">
-        </div>
-      </div>
-      <div class="tide-cell">
-        <div class="tide-label">HIGH 2</div>
-        <div class="tide-inputs">
-          <input type="time" id="tideH2Time" style="max-width:100px">
-          <input type="number" id="tideH2Height" placeholder="m" step="0.1" style="max-width:60px">
-        </div>
-      </div>
-      <div class="tide-cell">
-        <div class="tide-label">LOW 2</div>
-        <div class="tide-inputs">
-          <input type="time" id="tideL2Time" style="max-width:100px">
-          <input type="number" id="tideL2Height" placeholder="m" step="0.1" style="max-width:60px">
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ══ 2. TIDES (auto-filled from harmonic prediction) ══ -->
+  <div class="section-heading" data-s="daily.tides"></div>
+  <div id="dailyTideWidget" style="margin-bottom:4px"></div>
+  <!-- hidden inputs to preserve save/load contract -->
+  <input type="hidden" id="tideH1Time"><input type="hidden" id="tideH1Height">
+  <input type="hidden" id="tideL1Time"><input type="hidden" id="tideL1Height">
+  <input type="hidden" id="tideH2Time"><input type="hidden" id="tideH2Height">
+  <input type="hidden" id="tideL2Time"><input type="hidden" id="tideL2Height">
 
   <!-- ══ 3. TRIPS TODAY ══ -->
   <div class="section-heading">
@@ -694,19 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dom.signOffBtn.addEventListener('click',   signOffDay);
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
 
-  ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
-   'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => {
-    dom[id].addEventListener('change', markDirty);
-  });
-
-  document.getElementById('tideAutoFillBtn').addEventListener('click', () => {
-    if (typeof tideExtrema === 'function') {
-      const extrema = tideExtrema(viewDate);
-      tideData = tideToDailyLog(extrema);
-      populateTideFields();
-      markDirty();
-    }
-  });
+  // Tide fields are now auto-filled from harmonic prediction (no manual inputs)
 
   // Silent weather poll for snapshots
   let _wxTimer = null;
@@ -911,6 +865,81 @@ function populateTideFields() {
   dom.tideL1Time.value = tideData.l1t||''; dom.tideL1Height.value = tideData.l1h||'';
   dom.tideH2Time.value = tideData.h2t||''; dom.tideH2Height.value = tideData.h2h||'';
   dom.tideL2Time.value = tideData.l2t||''; dom.tideL2Height.value = tideData.l2h||'';
+  _renderDailyTide();
+}
+
+function _autoFillTide() {
+  if (typeof tideExtrema !== 'function') return;
+  const extrema = tideExtrema(viewDate);
+  tideData = tideToDailyLog(extrema);
+  markDirty();
+}
+
+function _renderDailyTide() {
+  const el = document.getElementById('dailyTideWidget');
+  if (!el || typeof tideChartSeries !== 'function') return;
+  const IS = typeof getLang === 'function' && getLang() === 'IS';
+  const extrema = tideExtrema(viewDate);
+  const series  = tideChartSeries(viewDate);
+
+  // Merge + sort events
+  const events = [
+    ...extrema.highs.map(e => ({ ...e, type: 'high' })),
+    ...extrema.lows.map(e  => ({ ...e, type: 'low' })),
+  ].sort((a, b) => a.time - b.time);
+
+  const fmt = d => String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+
+  // Compact event pills
+  const pills = events.map(e => {
+    const icon = e.type === 'high' ? '▲' : '▼';
+    const color = e.type === 'high' ? 'var(--brass)' : '#4a9eca';
+    return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)"><span style="color:${color}">${icon}</span><b style="color:var(--text);font-family:'DM Mono',monospace">${fmt(e.time)}</b>${e.height.toFixed(1)}m</span>`;
+  }).join('<span style="color:var(--border);margin:0 2px">·</span>');
+
+  // Mini SVG wave — reuse the widget's curve logic inlined
+  const W = 260, H = 50, PT = 14, PB = 2;
+  const plotH = H - PT - PB;
+  const hMin = Math.min(...series.map(p => p.height));
+  const hMax = Math.max(...series.map(p => p.height));
+  const range = hMax - hMin || 1;
+  const t0 = series[0].time.getTime(), t1 = series[series.length - 1].time.getTime();
+  const tR = t1 - t0 || 1;
+  const xf = t => ((t - t0) / tR) * W;
+  const yf = h => PT + plotH - ((h - hMin) / range) * plotH;
+
+  const pathPts = series.map(p => `${xf(p.time.getTime()).toFixed(1)},${yf(p.height).toFixed(1)}`);
+  const fill = `M${pathPts.join('L')}L${W},${PT + plotH}L0,${PT + plotH}Z`;
+  const line = `M${pathPts.join('L')}`;
+
+  // Labels at extrema
+  const labels = events.map(e => {
+    const ex = xf(e.time.getTime()), ey = yf(e.height);
+    const isHigh = e.type === 'high';
+    const color = isHigh ? 'var(--brass)' : '#4a9eca';
+    const ly = isHigh ? Math.max(2, ey - 4) : Math.min(H - 1, ey + 9);
+    return `<text x="${ex.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" fill="${color}" font-size="7" font-family="'DM Mono',monospace" font-weight="500">${fmt(e.time)} ${e.height.toFixed(1)}m</text>`
+      + `<circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="2" fill="${color}"/>`;
+  }).join('');
+
+  // Now line (if viewing today)
+  let nowLine = '';
+  const now = Date.now();
+  if (now >= t0 && now <= t1 && viewDate === new Date().toISOString().slice(0,10)) {
+    const nx = xf(now);
+    nowLine = `<line x1="${nx.toFixed(1)}" y1="${PT}" x2="${nx.toFixed(1)}" y2="${PT + plotH}" stroke="var(--brass)" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>`;
+  }
+
+  el.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible;margin-bottom:4px">
+        <path d="${fill}" fill="var(--brass)" opacity="0.07"/>
+        <path d="${line}" fill="none" stroke="var(--brass)" stroke-width="1.2" opacity="0.5"/>
+        ${nowLine}
+        ${labels}
+      </svg>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 0;justify-content:center">${pills}</div>
+    </div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -944,6 +973,7 @@ async function loadDay() {
   dom.tripsCount.textContent = '';
   ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
    'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => { dom[id].value = ''; });
+  _renderDailyTide();
 
   if (isToday()) {
     await Promise.all([loadTodayLog(), loadTodayTrips()]);
@@ -1016,20 +1046,16 @@ function applyLogData(log, cfgRes) {
   amItems       = cfg.dailyChecklist?.opening || cfg.dailyChecklist?.am  || DEFAULT_AM;
   pmItems       = cfg.dailyChecklist?.closing  || cfg.dailyChecklist?.pm  || DEFAULT_PM;
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
+  // Always auto-fill tides from harmonic prediction for the viewed date
+  _autoFillTide();
+  populateTideFields();
   if (log) {
     logId    = log.id;
     amChecks = sjson(log.openingChecks, {});
     pmChecks = sjson(log.closingChecks, {});
     activities = sjson(log.activities, []);
     wxLog    = sjson(log.weatherLog, []);
-    tideData = sjson(log.tideData, {});
     dom.narrativeInput.value = log.narrative || '';
-    // Auto-fill tide fields from harmonic prediction if no saved data
-    if (!tideData.h1t && !tideData.l1t && typeof tideExtrema === 'function') {
-      const extrema = tideExtrema(viewDate);
-      tideData = tideToDailyLog(extrema);
-    }
-    populateTideFields();
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
       const at = log.signedOffAt
