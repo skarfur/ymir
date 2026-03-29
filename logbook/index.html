@@ -80,6 +80,16 @@
 .trip-pick-card .tpc-boat{font-weight:500;margin-bottom:3px}
 .trip-pick-card .tpc-sub{color:var(--muted);font-size:11px}
 .wx-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.manual-member-drop{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:200;max-height:180px;overflow-y:auto;display:none}
+.manual-member-drop .mm-item{padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)}
+.manual-member-drop .mm-item:hover{background:var(--card)}
+.manual-member-drop .mm-guest{font-size:10px;color:var(--brass);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
+.manual-member-drop .mm-guest:hover{background:var(--card)}
+.manual-crew-row{position:relative;margin-bottom:8px}
+.manual-crew-row .crew-row-fields{display:flex;gap:8px;align-items:center}
+.manual-crew-row input[type="text"]{flex:1;min-width:0}
+.manual-crew-row .helm-toggle{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);white-space:nowrap}
+.manual-crew-row .helm-toggle input{width:auto;accent-color:var(--brass)}
 .photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer}
 .photo-thumb-link{display:block;width:60px;height:60px}
 .trip-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
@@ -274,8 +284,15 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <div class="form-row">
         <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="form-field"><label>Role</label>
-          <select id="mRole"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+          <select id="mRole" onchange="onRoleChange()"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
         </div>
+      </div>
+      <!-- Skipper assignment: shown when role=crew -->
+      <div class="form-field" id="mSkipperSection" style="display:none;position:relative">
+        <label>Skipper</label>
+        <input type="text" id="mSkipperName" autocomplete="off" placeholder="Search by name…"
+          oninput="searchManualMember(this,'mSkipperDrop')" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
+        <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
       <div class="form-field"><label>Boat</label>
         <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
@@ -284,15 +301,21 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         <select id="mLocation"><option value="">Select location…</option></select>
       </div>
       <div class="form-row">
-        <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM"
-          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v"></div>
-        <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM"
-          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v"></div>
+        <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+        <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
+          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
       </div>
       <div class="form-row">
-        <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1"></div>
+        <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" oninput="onCrewChange()"></div>
         <div class="form-field"><label>Distance (nm) <span style="font-size:9px;color:var(--muted)">optional</span></label>
           <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
+      </div>
+      <!-- Crew member inputs: shown when crew > 1 -->
+      <div id="mCrewSection" style="display:none;margin-bottom:12px">
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(search by name)</span></label>
+        <div id="mCrewInputs"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
       </div>
 
       <!-- Port section: open/prominent for keelboats, collapsed for others -->
@@ -320,16 +343,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- Weather -->
       <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER (OPTIONAL)</div>
       <div class="wx-row">
-        <div class="form-field"><label>Beaufort</label>
-          <select id="mBft">
-            <option value="">—</option>
-            <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
-            <option value="2">2 – Light breeze</option><option value="3">3 – Gentle</option>
-            <option value="4">4 – Moderate</option><option value="5">5 – Fresh</option>
-            <option value="6">6 – Strong</option><option value="7">7 – Near gale</option>
-            <option value="8">8 – Gale</option><option value="9">9+</option>
-          </select>
-        </div>
+        <div class="form-field"><label>Wind (m/s)</label><input type="number" id="mWindMs" min="0" step="0.1" placeholder="e.g. 8"></div>
         <div class="form-field"><label>Direction</label>
           <select id="mWindDir">
             <option value="">—</option>
@@ -339,6 +353,30 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         </div>
         <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
       </div>
+      <details style="margin-bottom:8px">
+        <summary style="font-size:10px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px">
+          <span class="exp-chevron" style="font-size:8px">▾</span> More weather details
+        </summary>
+        <div class="wx-row" style="margin-top:8px">
+          <div class="form-field"><label>Gusts (m/s)</label><input type="number" id="mWindGust" min="0" step="0.1" placeholder=""></div>
+          <div class="form-field"><label>Air temp (°C)</label><input type="number" id="mAirTemp" step="0.5" placeholder=""></div>
+          <div class="form-field"><label>Feels like (°C)</label><input type="number" id="mFeelsLike" step="0.5" placeholder=""></div>
+        </div>
+        <div class="wx-row">
+          <div class="form-field"><label>Sea temp (°C)</label><input type="number" id="mSeaTemp" step="0.5" placeholder=""></div>
+          <div class="form-field"><label>Pressure (hPa)</label><input type="number" id="mPressure" min="900" max="1100" placeholder=""></div>
+          <div class="form-field"><label>Beaufort</label>
+            <select id="mBft">
+              <option value="">—</option>
+              <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
+              <option value="2">2 – Light breeze</option><option value="3">3 – Gentle</option>
+              <option value="4">4 – Moderate</option><option value="5">5 – Fresh</option>
+              <option value="6">6 – Strong</option><option value="7">7 – Near gale</option>
+              <option value="8">8 – Gale</option><option value="9">9+</option>
+            </select>
+          </div>
+        </div>
+      </details>
       <!-- GPS Track upload -->
       <div class="form-field">
         <label>GPS Track — GPX / KML / KMZ <span style="font-size:9px;color:var(--muted)">optional</span></label>
@@ -366,7 +404,7 @@ const user = getUser();
 const IS   = getLang() === 'IS';
 
 let myTrips  = [];
-let allBoats = [], allLocs = [];
+let allBoats = [], allLocs = [], allMembers = [];
 let allRecentTrips = [];
 let recentOffset   = 0;
 const RECENT_PAGE  = 10;
@@ -762,6 +800,20 @@ function showManualForm(){
   document.getElementById('mDeparturePort').value='';
   document.getElementById('mArrivalPort').value='';
   document.getElementById('addPortHint').style.display='none';
+  // Reset new fields
+  document.getElementById('mRole').value='skipper';
+  document.getElementById('mSkipperSection').style.display='none';
+  document.getElementById('mSkipperName').value='';
+  document.getElementById('mSkipperName').dataset.kennitala='';
+  document.getElementById('mCrew').value='1';
+  document.getElementById('mCrewSection').style.display='none';
+  document.getElementById('mCrewInputs').innerHTML='';
+  document.getElementById('mWindMs').value='';
+  document.getElementById('mWindGust').value='';
+  document.getElementById('mAirTemp').value='';
+  document.getElementById('mFeelsLike').value='';
+  document.getElementById('mSeaTemp').value='';
+  document.getElementById('mPressure').value='';
   // Port section: collapsed by default until boat selected
   const pd=document.getElementById('portDetails');
   pd.removeAttribute('open');
@@ -797,6 +849,122 @@ function onBoatChange(){
       if(!arr.value) arr.value=port.name;
     }
   }
+}
+
+// ── Role / crew / member search helpers ──────────────────────────────────────
+function onRoleChange(){
+  const isCrew = document.getElementById('mRole').value === 'crew';
+  document.getElementById('mSkipperSection').style.display = isCrew ? '' : 'none';
+  if(!isCrew){
+    document.getElementById('mSkipperName').value='';
+    document.getElementById('mSkipperName').dataset.kennitala='';
+  }
+}
+
+function onCrewChange(){
+  const n = parseInt(document.getElementById('mCrew').value)||1;
+  const sec = document.getElementById('mCrewSection');
+  const wrap = document.getElementById('mCrewInputs');
+  if(n < 2){ sec.style.display='none'; return; }
+  sec.style.display='';
+  const existing = Array.from(wrap.querySelectorAll('.manual-crew-row')).map(row => {
+    const inp = row.querySelector('input[type="text"]');
+    const helm = row.querySelector('input[type="checkbox"]');
+    return { val: inp?.value||'', kt: inp?.dataset.kennitala||'', helm: helm?.checked||false };
+  });
+  wrap.innerHTML='';
+  for(let i = 0; i < n-1; i++){
+    const row = document.createElement('div');
+    row.className = 'manual-crew-row';
+    const fields = document.createElement('div');
+    fields.className = 'crew-row-fields';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.placeholder='Crew member '+(i+1)+' — search by name…';
+    inp.value = existing[i]?.val||'';
+    inp.dataset.kennitala = existing[i]?.kt||'';
+    inp.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px;box-sizing:border-box';
+    const drop = document.createElement('div');
+    drop.className='manual-member-drop';
+    inp.addEventListener('input',function(){ searchManualMember(this, drop); });
+    inp.addEventListener('blur',function(){ setTimeout(()=>drop.style.display='none',200); });
+    const helmLbl = document.createElement('label');
+    helmLbl.className='helm-toggle';
+    const helmCb = document.createElement('input');
+    helmCb.type='checkbox'; helmCb.checked=existing[i]?.helm||false;
+    helmLbl.appendChild(helmCb);
+    helmLbl.appendChild(document.createTextNode(IS?'Stýri':'Helm'));
+    fields.appendChild(inp);
+    fields.appendChild(helmLbl);
+    row.appendChild(fields);
+    row.appendChild(drop);
+    wrap.appendChild(row);
+  }
+}
+
+function searchManualMember(inp, dropOrId){
+  const drop = typeof dropOrId==='string' ? document.getElementById(dropOrId) : dropOrId;
+  const q = inp.value.trim().toLowerCase();
+  if(!q || q.length<2){ drop.style.display='none'; return; }
+  const skip = user.kennitala;
+  const matches = allMembers.filter(m =>
+    m.name && m.name.toLowerCase().includes(q) && String(m.kennitala)!==String(skip) && m.role!=='guest'
+  ).slice(0,8);
+  drop.innerHTML='';
+  matches.forEach(m => {
+    const item = document.createElement('div');
+    item.className='mm-item';
+    item.textContent=m.name;
+    item.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      inp.value=m.name;
+      inp.dataset.kennitala=m.kennitala||'';
+      drop.style.display='none';
+    });
+    drop.appendChild(item);
+  });
+  if(q.length>=3){
+    const guest = document.createElement('div');
+    guest.className='mm-guest';
+    guest.textContent='+ Add "'+inp.value.trim()+'" as guest';
+    guest.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      drop.style.display='none';
+      _lgGuestCallback=function(g){ inp.value=g.name; inp.dataset.kennitala=g.kennitala||g.id||''; };
+      openLgGuestModal(inp.value.trim());
+    });
+    drop.appendChild(guest);
+  }
+  drop.style.display='block';
+}
+
+// ── Guest modal (logbook) ────────────────────────────────────────────────────
+let _lgGuestCallback = null;
+function openLgGuestModal(name){
+  document.getElementById('lgGuestName').value=name;
+  document.getElementById('lgGuestKtOrYear').value='';
+  document.getElementById('lgGuestPhone').value='';
+  document.getElementById('lgGuestErr').style.display='none';
+  document.getElementById('logGuestModal').classList.remove('hidden');
+}
+function closeLgGuestModal(){
+  document.getElementById('logGuestModal').classList.add('hidden');
+  _lgGuestCallback=null;
+}
+async function confirmLgGuest(){
+  const name=document.getElementById('lgGuestName').value.trim();
+  const ktOrYear=document.getElementById('lgGuestKtOrYear').value.trim();
+  const phone=document.getElementById('lgGuestPhone').value.trim();
+  const err=document.getElementById('lgGuestErr');
+  if(!ktOrYear&&!phone){err.textContent='Please enter a kennitala/birth year or phone number.';err.style.display='';return;}
+  err.style.display='none';
+  const isYear=/^\d{4}$/.test(ktOrYear);
+  try{
+    const res=await apiPost('saveMember',{name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true});
+    const guest={id:res.id,name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true};
+    allMembers.push(guest);
+    closeLgGuestModal();
+    if(_lgGuestCallback) _lgGuestCallback(guest);
+  }catch(e){err.textContent='Failed: '+e.message;err.style.display='';}
 }
 
 function watchPortInput(which){
@@ -1038,6 +1206,12 @@ async function submitManual(){
   const bft       = document.getElementById('mBft').value;
   const wdir      = document.getElementById('mWindDir').value;
   const wave      = document.getElementById('mWave').value;
+  const windMs    = document.getElementById('mWindMs').value;
+  const windGust  = document.getElementById('mWindGust').value;
+  const airTemp   = document.getElementById('mAirTemp').value;
+  const feelsLike = document.getElementById('mFeelsLike').value;
+  const seaTemp   = document.getElementById('mSeaTemp').value;
+  const pressure  = document.getElementById('mPressure').value;
   const notes     = document.getElementById('mNotes').value.trim();
   const distInput = parseFloat(document.getElementById('mDistanceNm').value)||'';
   let   depPort   = document.getElementById('mDeparturePort').value.trim();
@@ -1047,8 +1221,19 @@ async function submitManual(){
   const boat = allBoats.find(b=>b.id===boatId);
   const boatCategory = boat?.category||'';
 
+  // Validate time format (HH:MM with minutes ≤59)
+  const timeRe=/^([01]\d|2[0-3]):[0-5]\d$/;
+  if(timeOut && !timeRe.test(timeOut)){errEl.textContent=IS?'Ógilt brottfarartími (HH:MM).':'Invalid departure time (HH:MM).';errEl.style.display='';return;}
+  if(timeIn  && !timeRe.test(timeIn)){errEl.textContent=IS?'Ógilt komutími (HH:MM).':'Invalid return time (HH:MM).';errEl.style.display='';return;}
+
   if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
   if(!boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
+
+  // Validate skipper assignment when role is crew
+  if(role==='crew'){
+    const skipKt=document.getElementById('mSkipperName').dataset.kennitala||'';
+    if(!skipKt){errEl.textContent=IS?'Vinsamlegast veldu skipara.':'Please select a skipper.';errEl.style.display='';return;}
+  }
 
   // Check for duplicate trip on same date + boat
   const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
@@ -1068,9 +1253,19 @@ async function submitManual(){
     hoursDecimal=+(mins/60).toFixed(2);
   }
 
-  // Build wxSnapshot if wave present
+  // Build wxSnapshot from all weather fields
   let wxSnapshot='';
-  if(wave){ wxSnapshot=JSON.stringify({wh:parseFloat(wave)||0}); }
+  const wxObj={};
+  if(windMs)    wxObj.ws=parseFloat(windMs)||0;
+  if(wdir)      wxObj.dir=wdir;
+  if(windGust)  wxObj.wg=parseFloat(windGust)||0;
+  if(wave)      wxObj.wv=parseFloat(wave)||0;
+  if(airTemp)   wxObj.tc=parseFloat(airTemp);
+  if(feelsLike) wxObj.feels=parseFloat(feelsLike);
+  if(seaTemp)   wxObj.sst=parseFloat(seaTemp);
+  if(pressure)  wxObj.pres=parseFloat(pressure);
+  if(bft)       wxObj.bft=parseInt(bft);
+  if(Object.keys(wxObj).length) wxSnapshot=JSON.stringify(wxObj);
 
   // Disable submit while uploading
   const btn=document.getElementById('mSubmitBtn');
@@ -1105,7 +1300,7 @@ async function submitManual(){
   btn.disabled=false; btn.textContent=IS?'Vista í siglingabók':'Save to logbook';
 
   try{
-    const res=await apiPost('saveTrip',{
+    const tripBase = {
       date, boatId, boatName, boatCategory,
       locationId:locId, locationName:locName,
       timeOut, timeIn, hoursDecimal, crew, role,
@@ -1113,17 +1308,35 @@ async function submitManual(){
       distanceNm, departurePort:depPort, arrivalPort:arrPort,
       trackFileUrl, trackSimplified, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
-    });
-    myTrips.unshift({
-      id: res.id, kennitala: user.kennitala,
-      date, boatId, boatName, boatCategory,
-      locationId:locId, locationName:locName,
-      timeOut, timeIn, hoursDecimal, crew, role,
-      beaufort:bft, windDir:wdir, notes, wxSnapshot,
-      distanceNm, departurePort:depPort, arrivalPort:arrPort,
-      trackFileUrl, trackSimplified, trackSource,
-      photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
-    });
+    };
+    const res=await apiPost('saveTrip', tripBase);
+    const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
+    myTrips.unshift(savedTrip);
+
+    // Save linked crew trips for named crew members
+    const crewInputs = Array.from(document.querySelectorAll('#mCrewInputs .manual-crew-row'));
+    const linkedId = res.id; // use the skipper trip id as the link
+    for(const row of crewInputs){
+      const inp = row.querySelector('input[type="text"]');
+      const helmCb = row.querySelector('input[type="checkbox"]');
+      const cName = inp?.value.trim();
+      const cKt = inp?.dataset.kennitala||'';
+      if(!cName) continue;
+      try{
+        await apiPost('saveTrip',{
+          kennitala: cKt, memberName: cName,
+          date, boatId, boatName, boatCategory,
+          locationId:locId, locationName:locName,
+          timeOut, timeIn, hoursDecimal,
+          crew, role:'crew', isLinked:true,
+          linkedTripId: linkedId,
+          helm: helmCb?.checked||false,
+          beaufort:bft, windDir:wdir, wxSnapshot,
+          distanceNm, departurePort:depPort, arrivalPort:arrPort,
+        });
+      }catch(e2){ console.warn('Crew trip save failed for',cName,e2.message); }
+    }
+
     renderStats(); buildFilters(); applyFilter();
     showToast('Trip saved ✓','success');
     closeLogModal();
@@ -1389,18 +1602,20 @@ async function reload(){
   applyStrings();
   buildHeader('member');
   try{
-    const [tripsRes,cfgRes]=await Promise.all([
+    const [tripsRes,cfgRes,membersRes]=await Promise.all([
       apiGet('getTrips',{limit:500}),
       apiGet('getConfig'),
+      apiGet('getMembers'),
     ]);
     myTrips=(tripsRes.trips||[])
       .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    // Load boats + locations for manual form
+    // Load boats + locations + members for manual form
     const boats=cfgRes.boats||[];
     const locs =cfgRes.locations||[];
     allBoats=boats.filter(b=>!b.oos&&b.oos!=='true');
     allLocs =locs;
+    allMembers=(membersRes.members||[]).filter(m=>m.active!==false&&m.active!=='false');
     registerBoatCats(cfgRes.boatCategories||[]);
     renderStats();
     buildFilters();
@@ -1424,5 +1639,22 @@ async function requestTripValidation(id) {
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 </script>
+
+<!-- Guest prompt modal (for adding non-members as crew) -->
+<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
+    <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;margin:0 0 14px;font-weight:600">Add guest</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
+    <div class="form-field"><label>Name</label><input type="text" id="lgGuestName" readonly></div>
+    <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="lgGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
+    <div class="form-field"><label>Phone number</label><input type="text" id="lgGuestPhone" placeholder="e.g. 555-1234"></div>
+    <div id="lgGuestErr" style="color:var(--red);font-size:11px;display:none;margin-bottom:6px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-secondary" style="width:auto;padding:6px 14px" onclick="closeLgGuestModal()">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:6px 14px" onclick="confirmLgGuest()">Add guest</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
