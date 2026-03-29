@@ -406,9 +406,9 @@ textarea { min-height: 70px; }
 .chart-dash   { fill: none; stroke-width: 1; stroke-dasharray: 4,3; opacity: 0.45; }
 .chart-dot    { opacity: 0.8; }
 .chart-now    { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3,3; }
-.chart-now-t  { font: 7px 'DM Mono', monospace; fill: var(--brass); opacity: 0.7; }
-.chart-axis-t { font: 6px 'DM Mono', monospace; fill: var(--muted); opacity: 0.6; }
-.chart-lbl    { font: 7px 'DM Mono', monospace; }
+.chart-now-t  { font: 8px 'DM Mono', monospace; fill: var(--brass); }
+.chart-axis-t { font: 8px 'DM Mono', monospace; fill: var(--muted); }
+.chart-lbl    { font: 9px 'DM Mono', monospace; }
 .chart-lbl-bg { fill: var(--card); opacity: 0.85; }
 
 .hidden { display: none !important; }

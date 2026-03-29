@@ -229,8 +229,8 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
       : Math.max(ey - 4, P.t + 6);
 
     // Background rect for legibility
-    const textW = txt.length * 3.6;
-    svg += `<rect class="chart-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 6)}" width="${f1(textW + 2)}" height="7" rx="1"/>`;
+    const textW = txt.length * 4.6;
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 7)}" width="${f1(textW + 2)}" height="9" rx="1"/>`;
     svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle">${txt}</text>`;
     svg += `<circle class="chart-dot ${cc}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
   });
