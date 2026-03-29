@@ -103,6 +103,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .trip-detailed{display:none;margin-top:6px}
 .trip-detailed.open{display:block}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
+.exp-section-hdr.expandable{cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.exp-section-hdr.expandable:hover{color:var(--brass)}
+.exp-section-hdr .exp-chevron{font-size:10px;transition:transform .2s;transform:rotate(0deg)}
+.exp-section-hdr.expanded .exp-chevron{transform:rotate(180deg)}
+.exp-section-detail{display:none;margin-top:4px}
+.exp-section-detail.open{display:block}
 
 /* Track map thumbnail */
 .track-map-thumb{width:100%;height:140px;border-radius:6px;border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}
@@ -567,7 +573,7 @@ function tripCard(t){
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
   const hasNotes   = !!(notesRow||photosRow||trackRow);
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
-  const hasDetailed = !!(t.locationName||crewRow||distRow||t.hoursDecimal||hasDetailWx||helmRow);
+
 
   return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
     <div class="trip-card-main">
@@ -596,27 +602,36 @@ function tripCard(t){
         <div class="exp-section-hdr">${IS?'Upplýsingar um bát':'Boat Details'}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
       </div>`:''}
-      ${(portRow||t.timeOut||t.timeIn)?`<div class="exp-section exp-logistics">
-        <div class="exp-section-hdr">${IS?'Upplýsingar um ferð':'Trip Details'}</div>
-        <div class="trip-expand-grid">
-          ${portRow}
-          ${t.timeOut?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfarartími':'Departed'}</span><span class="trip-exp-val">${esc(t.timeOut)}</span></div>`:''}
-          ${t.timeIn?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komutími':'Returned'}</span><span class="trip-exp-val">${esc(t.timeIn)}</span></div>`:''}
-        </div>
+      ${(portRow||t.timeOut||t.timeIn||t.locationName||crewRow||distRow||t.hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
+        ${(()=>{
+          const hasDetailTrip = !!(t.locationName||crewRow||distRow||t.hoursDecimal||helmRow);
+          const toplineTrip = portRow
+            + (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Brottfarartími':'Departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
+            + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Komutími':'Returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'');
+          const detailTrip = (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Siglingasvæði':'Sailing area')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
+            + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Tímalengd':'Duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
+            + distRow + crewRow + helmRow;
+          return (hasDetailTrip
+            ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Upplýsingar um ferð':'Trip Details')+' <span class="exp-chevron">▾</span></div>'
+              + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
+              + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailTrip+'</div></div>'
+            : '<div class="exp-section-hdr">'+(IS?'Upplýsingar um ferð':'Trip Details')+'</div>'
+              + '<div class="trip-expand-grid">'+toplineTrip+'</div>');
+        })()}
       </div>`:''}
-      ${(eWs||eWv||eCond)?`<div class="exp-section exp-weather"><div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eWs}${eWv}${eCond}</div></div>`:''}
+      ${hasWeather?`<div class="exp-section exp-weather">
+        ${(()=>{
+          const toplineWx = eWs + eWv + eCond;
+          const detailWx = eDir + eGust + eAir + eFeel + eSst + ePres;
+          return (hasDetailWx
+            ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Veður':'Weather')+' <span class="exp-chevron">▾</span></div>'
+              + (toplineWx ? '<div class="trip-expand-grid">'+toplineWx+'</div>' : '')
+              + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailWx+'</div></div>'
+            : '<div class="exp-section-hdr">'+(IS?'Veður':'Weather')+'</div>'
+              + '<div class="trip-expand-grid">'+toplineWx+'</div>');
+        })()}
+      </div>`:''}
       ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${notesRow}${trackRow}${photosRow}</div></div>`:''}
-      ${hasDetailed?`<div class="exp-section" style="border-top:1px solid var(--border)">
-        <button class="trip-more-btn" onclick="event.stopPropagation();toggleTripDetail(this)">${IS?'Sýna meira':'Show more'}</button>
-        <div class="trip-detailed">
-          ${(t.locationName||crewRow||distRow||t.hoursDecimal)?`<div class="exp-section-hdr" style="margin-top:8px">${IS?'Upplýsingar um ferð':'Trip Details'}</div><div class="trip-expand-grid">
-            ${t.locationName?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Siglingasvæði':'Sailing area'}</span><span class="trip-exp-val">${esc(t.locationName)}</span></div>`:''}
-            ${t.hoursDecimal?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Tímalengd':'Duration'}</span><span class="trip-exp-val">${dur}</span></div>`:''}
-            ${distRow}${crewRow}${helmRow}
-          </div>`:''}
-          ${hasDetailWx?`<div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eDir}${eGust}${eAir}${eFeel}${eSst}${ePres}</div>`:''}
-        </div>
-      </div>`:''}
     </div>
   </div>`;
 }
@@ -1134,6 +1149,20 @@ function toggleTripDetail(btn) {
   if (!detail) return;
   detail.classList.toggle('open');
   btn.textContent = detail.classList.contains('open') ? (IS ? 'Sýna minna' : 'Show less') : (IS ? 'Sýna meira' : 'Show more');
+}
+function toggleSectionDetail(hdr) {
+  const detail = hdr.parentElement.querySelector('.exp-section-detail');
+  if (!detail) return;
+  detail.classList.toggle('open');
+  hdr.classList.toggle('expanded');
+  // Init any track maps that become visible
+  if (detail.classList.contains('open')) {
+    requestAnimationFrame(() => {
+      detail.querySelectorAll('.track-map-thumb').forEach(el => {
+        if (!_thumbMaps[el.id]) initSingleThumbMap(el);
+      });
+    });
+  }
 }
 
 // ── Track map rendering ──────────────────────────────────────────────────────
