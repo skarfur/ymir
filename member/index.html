@@ -285,10 +285,18 @@ function toggleFleetCat(toggle) {
 // ══ ACTIVE CHECKOUTS ═════════════════════════════════════════════════════════
 function renderActiveCheckouts() {
   const el   = document.getElementById('activeList');
-  const mine = checkouts.filter(c => c.status==='out' && c.memberKennitala===user.kennitala);
-  if (!mine.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
-  boatRegistry.setCos(mine);
-  el.innerHTML = mine.map(c => renderCheckoutCard(c, { isMe:true, staffView:false, onReturn:`openReturnModal('${c.id}')` })).join('');
+  const active = checkouts.filter(c => c.status==='out');
+  if (!active.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
+  active.sort((a, b) => (a.memberKennitala === user.kennitala ? 0 : 1) - (b.memberKennitala === user.kennitala ? 0 : 1));
+  boatRegistry.setCos(active);
+  el.innerHTML = active.map(c => {
+    const isMe = c.memberKennitala === user.kennitala;
+    return renderCheckoutCard(c, {
+      isMe,
+      staffView: false,
+      onReturn: isMe ? `openReturnModal('${c.id}')` : undefined
+    });
+  }).join('');
 }
 
 // ══ LAUNCH FLOW ══════════════════════════════════════════════════════════════
