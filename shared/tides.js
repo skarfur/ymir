@@ -286,8 +286,8 @@ function tideWidget(targetEl, { onData } = {}) {
 
     // Sun / moon
     const sunHtml = sun
-      ? `<span style="font-size:10px;color:var(--muted)">☀↑ <span style="color:var(--text);font-weight:500">${sun.sunrise||'–'}</span></span>`
-      + `<span style="font-size:10px;color:var(--muted)">☀↓ <span style="color:var(--text);font-weight:500">${sun.sunset||'–'}</span></span>`
+      ? `<span style="font-size:10px;color:var(--muted)">'\u{2600}'↑ <span style="color:var(--text);font-weight:500">${sun.sunrise||'–'}</span></span>`
+      + `<span style="font-size:10px;color:var(--muted)">'\u{2600}'↓ <span style="color:var(--text);font-weight:500">${sun.sunset||'–'}</span></span>`
       : '';
     const moonHtml = `<span style="font-size:12px">${moon.icon}</span><span style="font-size:9px;color:var(--muted)">${moon.label}</span>`;
 
