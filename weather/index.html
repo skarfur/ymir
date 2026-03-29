@@ -382,22 +382,22 @@ function drawWindChart(pts, nowI) {
   const line = vals => vals.map((v,i)=>`${i?'L':'M'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
   const area = vals => line(vals)+` L${xOf(vals.length-1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
   const nowX = xOf(nowI).toFixed(1);
-  let h = `<rect x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}" fill="#0b1f38" opacity="0.3"/>`;
-  if (waves.some(v=>v>0)) { h+=`<path d="${area(waves)}" fill="#4a9eca" opacity="0.1"/>`;h+=`<path d="${line(waves)}" fill="none" stroke="#4a9eca" stroke-width="1.5" opacity="0.75"/>`; }
-  h+=`<path d="${area(winds)}" fill="#d4af37" opacity="0.07"/>`;
-  h+=`<path d="${line(winds)}" fill="none" stroke="#d4af37" stroke-width="2"/>`;
-  h+=`<path d="${line(gusts)}" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.45"/>`;
-  h+=`<line x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
-  h+=`<text x="${nowX}" y="${H-P.b+11}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#d4af37">NOW</text>`;
+  let h = `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}"/>`;
+  if (waves.some(v=>v>0)) { h+=`<path class="chart-area c-blue" d="${area(waves)}"/>`;h+=`<path class="chart-line c-blue" d="${line(waves)}"/>`; }
+  h+=`<path class="chart-area c-brass" d="${area(winds)}"/>`;
+  h+=`<path class="chart-line c-brass" d="${line(winds)}"/>`;
+  h+=`<path class="chart-dash c-brass" d="${line(gusts)}"/>`;
+  h+=`<line class="chart-now" x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}"/>`;
+  h+=`<text class="chart-now-t" x="${nowX}" y="${H-P.b+11}" text-anchor="middle">NOW</text>`;
   pts.forEach((p,i) => {
-    h+=`<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2.5" fill="${p.isPast?'#6b92b8':'#d4af37'}" opacity="0.8"/>`;
+    h+=`<circle class="chart-dot ${p.isPast?'c-muted':'c-brass'}" cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2"/>`;
     if (p.isNow||i===0||i===pts.length-1) {
-      h+=`<text x="${xOf(i).toFixed(1)}" y="${(yOf(p.ws)-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="#d4af37" font-family="DM Mono,monospace">${Math.round(p.ws)}</text>`;
+      h+=`<text class="chart-lbl c-brass" x="${xOf(i).toFixed(1)}" y="${(yOf(p.ws)-4).toFixed(1)}" text-anchor="middle">${Math.round(p.ws)}</text>`;
       if (p.mWH != null)
-        h+=`<text x="${xOf(i).toFixed(1)}" y="${(yOf(p.mWH)-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="#4a9eca" font-family="DM Mono,monospace">${p.mWH.toFixed(1)}</text>`;
+        h+=`<text class="chart-lbl c-blue" x="${xOf(i).toFixed(1)}" y="${(yOf(p.mWH)-4).toFixed(1)}" text-anchor="middle">${p.mWH.toFixed(1)}</text>`;
     }
     if (p.isNow||i===0||i===pts.length-1||i%2===0)
-      h+=`<text x="${xOf(i).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
+      h+=`<text class="chart-axis-t" x="${xOf(i).toFixed(1)}" y="${H-2}" text-anchor="middle">${p.t}</text>`;
   });
   svg.innerHTML = h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
 }
@@ -407,7 +407,7 @@ function drawPresChart(pts, nowI) {
   const svg = document.getElementById('presChart');
   if (!svg) return;
   const hasPres = pts.some(p=>p.pr!=null);
-  if (!hasPres) { svg.innerHTML=`<text x="50%" y="40" text-anchor="middle" fill="#6b92b8" font-size="11" font-family="DM Mono,monospace">Pressure data unavailable</text>`; return; }
+  if (!hasPres) { svg.innerHTML=`<text class="chart-axis-t" x="50%" y="40" text-anchor="middle">Pressure data unavailable</text>`; return; }
   const W = svg.clientWidth||640, H=80, P={t:8,b:22,l:4,r:4};
   const iW=W-P.l-P.r, iH=H-P.t-P.b;
   const valid = pts.map((p,i)=>({...p,pi:i})).filter(p=>p.pr!=null);
@@ -418,14 +418,14 @@ function drawPresChart(pts, nowI) {
   const nowX  = xOf(nowI).toFixed(1);
   const lpath = valid.map((p,j)=>`${j?'L':'M'}${xOf(p.pi).toFixed(1)},${yOf(p.pr).toFixed(1)}`).join(' ');
   const apath = lpath+` L${xOf(valid[valid.length-1].pi).toFixed(1)},${yOf(minP).toFixed(1)} L${xOf(valid[0].pi).toFixed(1)},${yOf(minP).toFixed(1)} Z`;
-  let h = `<rect x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}" fill="#0b1f38" opacity="0.3"/>`;
-  h+=`<path d="${apath}" fill="#a78bfa" opacity="0.08"/>`;
-  h+=`<path d="${lpath}" fill="none" stroke="#a78bfa" stroke-width="2"/>`;
-  h+=`<line x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  let h = `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}"/>`;
+  h+=`<path class="chart-area c-purple" d="${apath}"/>`;
+  h+=`<path class="chart-line c-purple" d="${lpath}"/>`;
+  h+=`<line class="chart-now" x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}"/>`;
   valid.forEach((p,j) => {
     if (j===0||p.isNow||j===valid.length-1) {
-      h+=`<text x="${xOf(p.pi).toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="8" fill="#6b92b8" font-family="DM Mono,monospace">${p.t}</text>`;
-      h+=`<text x="${xOf(p.pi).toFixed(1)}" y="${yOf(p.pr)-4}" text-anchor="middle" font-size="9" fill="#a78bfa" font-family="DM Mono,monospace">${Math.round(p.pr)}</text>`;
+      h+=`<text class="chart-axis-t" x="${xOf(p.pi).toFixed(1)}" y="${H-2}" text-anchor="middle">${p.t}</text>`;
+      h+=`<text class="chart-lbl c-purple" x="${xOf(p.pi).toFixed(1)}" y="${yOf(p.pr)-4}" text-anchor="middle">${Math.round(p.pr)}</text>`;
     }
   });
   svg.innerHTML=h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);

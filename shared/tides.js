@@ -186,21 +186,21 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
 
   let svg = '';
 
-  // Past overlay (dark, like wind chart)
+  // Past overlay
   if (nowMs > t0 && nowMs <= t1) {
     const nw = Math.max(0, xOf(nowMs) - P.l);
-    svg += `<rect x="${P.l}" y="${P.t}" width="${f1(nw)}" height="${iH}" fill="#0b1f38" opacity="0.25"/>`;
+    svg += `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${f1(nw)}" height="${iH}"/>`;
   }
 
   // Area fill + line
-  svg += `<path d="${areaPath}" fill="#4a9eca" opacity="0.08"/>`;
-  svg += `<path d="${linePath}" fill="none" stroke="#4a9eca" stroke-width="1.5"/>`;
+  svg += `<path class="chart-area c-blue" d="${areaPath}"/>`;
+  svg += `<path class="chart-line c-blue" d="${linePath}"/>`;
 
   // NOW marker
   if (nowMs > t0 && nowMs <= t1) {
     const nx = f1(xOf(nowMs));
-    svg += `<line x1="${nx}" y1="${P.t}" x2="${nx}" y2="${f1(P.t+iH)}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3"/>`;
-    svg += `<text x="${nx}" y="${f1(P.t+iH+10)}" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#d4af37">NOW</text>`;
+    svg += `<line class="chart-now" x1="${nx}" y1="${P.t}" x2="${nx}" y2="${f1(P.t+iH)}"/>`;
+    svg += `<text class="chart-now-t" x="${nx}" y="${f1(P.t+iH+10)}" text-anchor="middle">NOW</text>`;
   }
 
   // Time axis (every 3h)
@@ -209,7 +209,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     if (ms > t1) break;
     const tx = f1(xOf(ms));
     const lbl = String(h).padStart(2, '0') + ':00';
-    svg += `<text x="${tx}" y="${f1(H-2)}" text-anchor="middle" font-size="7" fill="#6b92b8" font-family="'DM Mono',monospace">${lbl}</text>`;
+    svg += `<text class="chart-axis-t" x="${tx}" y="${f1(H-2)}" text-anchor="middle">${lbl}</text>`;
   }
 
   // Extrema labels + dots
@@ -220,7 +220,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
   events.forEach(e => {
     const ex = xOf(e.time.getTime()), ey = yOf(e.height);
     const isHigh = e.type === 'high';
-    const color = isHigh ? '#d4af37' : '#4a9eca';
+    const cc = isHigh ? 'c-brass' : 'c-blue';
     const txt = fmtT(e.time) + '  ' + e.height.toFixed(1) + 'm';
 
     // High: label above the peak; Low: label inside the trough (above the dot)
@@ -228,11 +228,11 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
       ? Math.max(8, ey - 4)
       : Math.max(ey - 4, P.t + 6);
 
-    // Background rect for legibility (keeps label from clashing with curve line)
-    const textW = txt.length * 4.2;
-    svg += `<rect x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 7)}" width="${f1(textW + 2)}" height="8" rx="1" fill="var(--card)" opacity="0.85"/>`;
-    svg += `<text x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle" fill="${color}" font-size="8" font-weight="500" font-family="'DM Mono',monospace">${txt}</text>`;
-    svg += `<circle cx="${f1(ex)}" cy="${f1(ey)}" r="2.5" fill="${color}"/>`;
+    // Background rect for legibility
+    const textW = txt.length * 4.6;
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 7)}" width="${f1(textW + 2)}" height="9" rx="1"/>`;
+    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle">${txt}</text>`;
+    svg += `<circle class="chart-dot ${cc}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
   });
 
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">${svg}</svg>`;
