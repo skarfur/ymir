@@ -50,6 +50,7 @@
 .badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
+.badge-helm{color:var(--text);border-color:var(--border);background:var(--surface)}
 .trip-expand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
 .trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
 .trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
@@ -448,6 +449,8 @@ function tripCard(t){
   const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
   const isSki = !t.role || t.role==='skipper';
   const isVer = t.verified && t.verified!=='false';
+  const isHelm = t.helm && t.helm!=='false';
+  const showHelm = isHelm && parseInt(t.crew||1)>1;
 
   // Parse wx snapshot
   let wx = null;
@@ -495,9 +498,31 @@ function tripCard(t){
   const linkedCrew = myTrips.filter(x =>
     x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId && x.id !== t.id && x.role==='crew'
   );
-  const crewRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${
-    linkedCrew.length ? linkedCrew.map(x=>esc(x.memberName||x.crewMemberName||'?')).join(', ') : esc(t.crew||1)
-  }</span></div>`;
+  const helmLabel = IS?'Stýri':'Helm';
+  const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
+    const name = esc(x.memberName||x.crewMemberName||'?');
+    const xHelm = x.helm && x.helm!=='false';
+    return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
+  }).join(', ') : esc(t.crew||1);
+  const crewRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${crewNames}</span></div>`;
+
+  // Helm assignment row — shown to the skipper when crew > 1, allows toggling after the fact
+  const canEditHelm = isSki && isOwner && parseInt(t.crew||1) > 1;
+  const helmRow = canEditHelm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Stýri':'Helm'}</span><span class="trip-exp-val">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px" onclick="event.stopPropagation()">
+        <input type="checkbox" ${isHelm?'checked':''} onchange="toggleHelm('${esc(t.id)}',this.checked)" style="accent-color:var(--brass)">
+        ${esc(t.memberName||'')} <span style="opacity:.5">(${IS?'þú':'you'})</span>
+      </label>
+      ${linkedCrew.map(x=>{
+        const xHelm=x.helm&&x.helm!=='false';
+        return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px" onclick="event.stopPropagation()">
+          <input type="checkbox" ${xHelm?'checked':''} onchange="toggleHelm('${esc(x.id)}',this.checked)" style="accent-color:var(--brass)">
+          ${esc(x.memberName||x.crewMemberName||'?')}
+        </label>`;
+      }).join('')}
+    </div>
+  </span></div>` : '';
 
   // Vessel/boat detail rows from boats config
   const kboat = allBoats.find(b=>b.id===t.boatId);
@@ -542,7 +567,7 @@ function tripCard(t){
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
   const hasNotes   = !!(notesRow||photosRow||trackRow);
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
-  const hasDetailed = !!(t.locationName||crewRow||distRow||t.hoursDecimal||hasDetailWx);
+  const hasDetailed = !!(t.locationName||crewRow||distRow||t.hoursDecimal||hasDetailWx||helmRow);
 
   return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
     <div class="trip-card-main">
@@ -555,6 +580,7 @@ function tripCard(t){
         <div class="trip-boat">${esc(t.boatName||'—')}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
+          ${showHelm?`<span class="trip-badge badge-helm">${IS?'Stýri':'Helm'}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
@@ -586,7 +612,7 @@ function tripCard(t){
           ${(t.locationName||crewRow||distRow||t.hoursDecimal)?`<div class="exp-section-hdr" style="margin-top:8px">${IS?'Upplýsingar um ferð':'Trip Details'}</div><div class="trip-expand-grid">
             ${t.locationName?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Siglingasvæði':'Sailing area'}</span><span class="trip-exp-val">${esc(t.locationName)}</span></div>`:''}
             ${t.hoursDecimal?`<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Tímalengd':'Duration'}</span><span class="trip-exp-val">${dur}</span></div>`:''}
-            ${distRow}${crewRow}
+            ${distRow}${crewRow}${helmRow}
           </div>`:''}
           ${hasDetailWx?`<div class="exp-section-hdr">${IS?'Veður':'Weather'}</div><div class="trip-expand-grid">${eDir}${eGust}${eAir}${eFeel}${eSst}${ePres}</div>`:''}
         </div>
@@ -1211,6 +1237,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── Delete trip files ────────────────────────────────────────────────────────
+async function toggleHelm(tripId, checked) {
+  try {
+    await apiPost('setHelm', { tripId, helm: checked });
+    // Update local data
+    const t = myTrips.find(x => x.id === tripId);
+    if (t) t.helm = checked;
+    applyFilter();
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
 async function deleteTripTrack(tripId) {
   if (!confirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
   try {
