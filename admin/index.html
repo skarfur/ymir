@@ -1944,7 +1944,7 @@ function renderCertMembers() {
 
 function openMemberCertModal(memberId) {
   mcmMemberId = memberId;
-  const m     = members.find(x => x.id === memberId);
+  const m     = members.find(x => String(x.id) === String(memberId));
   if (!m) return;
   document.getElementById("mcmMemberName").textContent = m.name || "";
   document.getElementById("mcmAssignedAt").value = todayISO();
@@ -2003,7 +2003,7 @@ function updateMCMSubcats() {
 }
 
 async function assignMemberCert() {
-  const m      = members.find(x => x.id === mcmMemberId);
+  const m      = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
   const certId = document.getElementById("mcmCertType").value;
   if (!certId) { toast("Select a credential type.", "err"); return; }
@@ -2034,7 +2034,7 @@ async function assignMemberCert() {
 
   try {
     await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: updated });
-    const mIdx = members.findIndex(x => x.id === mcmMemberId);
+    const mIdx = members.findIndex(x => String(x.id) === String(mcmMemberId));
     members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
@@ -2044,13 +2044,13 @@ async function assignMemberCert() {
 
 async function removeMemberCert(certId, sub) {
   if (!confirm("Remove this credential?")) return;
-  const m = members.find(x => x.id === mcmMemberId);
+  const m = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
   let certs = parseJson(m.certifications, []);
   certs = certs.filter(c => !(c.certId === certId && (c.sub || "") === (sub || "")));
   try {
     await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: certs });
-    const mIdx = members.findIndex(x => x.id === mcmMemberId);
+    const mIdx = members.findIndex(x => String(x.id) === String(mcmMemberId));
     members[mIdx] = { ...m, certifications: JSON.stringify(certs) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
