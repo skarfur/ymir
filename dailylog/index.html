@@ -877,69 +877,13 @@ function _autoFillTide() {
 
 function _renderDailyTide() {
   const el = document.getElementById('dailyTideWidget');
-  if (!el || typeof tideChartSeries !== 'function') return;
-  const IS = typeof getLang === 'function' && getLang() === 'IS';
+  if (!el || typeof tideSvgChart !== 'function') return;
   const extrema = tideExtrema(viewDate);
   const series  = tideChartSeries(viewDate);
-
-  // Merge + sort events
-  const events = [
-    ...extrema.highs.map(e => ({ ...e, type: 'high' })),
-    ...extrema.lows.map(e  => ({ ...e, type: 'low' })),
-  ].sort((a, b) => a.time - b.time);
-
-  const fmt = d => String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
-
-  // Compact event pills
-  const pills = events.map(e => {
-    const icon = e.type === 'high' ? '▲' : '▼';
-    const color = e.type === 'high' ? 'var(--brass)' : '#4a9eca';
-    return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)"><span style="color:${color}">${icon}</span><b style="color:var(--text);font-family:'DM Mono',monospace">${fmt(e.time)}</b>${e.height.toFixed(1)}m</span>`;
-  }).join('<span style="color:var(--border);margin:0 2px">·</span>');
-
-  // Mini SVG wave — reuse the widget's curve logic inlined
-  const W = 260, H = 50, PT = 14, PB = 2;
-  const plotH = H - PT - PB;
-  const hMin = Math.min(...series.map(p => p.height));
-  const hMax = Math.max(...series.map(p => p.height));
-  const range = hMax - hMin || 1;
-  const t0 = series[0].time.getTime(), t1 = series[series.length - 1].time.getTime();
-  const tR = t1 - t0 || 1;
-  const xf = t => ((t - t0) / tR) * W;
-  const yf = h => PT + plotH - ((h - hMin) / range) * plotH;
-
-  const pathPts = series.map(p => `${xf(p.time.getTime()).toFixed(1)},${yf(p.height).toFixed(1)}`);
-  const fill = `M${pathPts.join('L')}L${W},${PT + plotH}L0,${PT + plotH}Z`;
-  const line = `M${pathPts.join('L')}`;
-
-  // Labels at extrema
-  const labels = events.map(e => {
-    const ex = xf(e.time.getTime()), ey = yf(e.height);
-    const isHigh = e.type === 'high';
-    const color = isHigh ? 'var(--brass)' : '#4a9eca';
-    const ly = isHigh ? Math.max(2, ey - 4) : Math.min(H - 1, ey + 9);
-    return `<text x="${ex.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" fill="${color}" font-size="7" font-family="'DM Mono',monospace" font-weight="500">${fmt(e.time)} ${e.height.toFixed(1)}m</text>`
-      + `<circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="2" fill="${color}"/>`;
-  }).join('');
-
-  // Now line (if viewing today)
-  let nowLine = '';
-  const now = Date.now();
-  if (now >= t0 && now <= t1 && viewDate === new Date().toISOString().slice(0,10)) {
-    const nx = xf(now);
-    nowLine = `<line x1="${nx.toFixed(1)}" y1="${PT}" x2="${nx.toFixed(1)}" y2="${PT + plotH}" stroke="var(--brass)" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>`;
-  }
-
-  el.innerHTML = `
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
-      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible;margin-bottom:4px">
-        <path d="${fill}" fill="var(--brass)" opacity="0.07"/>
-        <path d="${line}" fill="none" stroke="var(--brass)" stroke-width="1.2" opacity="0.5"/>
-        ${nowLine}
-        ${labels}
-      </svg>
-      <div style="display:flex;flex-wrap:wrap;gap:4px 0;justify-content:center">${pills}</div>
-    </div>`;
+  const isToday = viewDate === new Date().toISOString().slice(0,10);
+  const nowMs   = isToday ? Date.now() : -1;
+  const svg = tideSvgChart(series, extrema, nowMs, 320, 80);
+  el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px">${svg}</div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
