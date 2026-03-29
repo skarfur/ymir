@@ -62,6 +62,10 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 #map-container .leaflet-control-attribution a{color:var(--muted)!important}
 
 /* ── On the water ───────────────────────────────────────────────── */
+.stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.strip-cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center}
+.strip-n{font-size:22px;color:var(--brass);font-weight:500}
+.strip-l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
 .live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .water-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
@@ -170,11 +174,11 @@ function renderDashboard(data) {
   // ── On the Water Now ──
   html += '<section>';
   html += '<h2><span class="live-badge"></span>' + esc(s('pub.dash.onWater')) + '</h2>';
+  html += '<div class="stat-strip">';
+  html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.boatCount) + '</div><div class="strip-l">' + esc(s('staff.statBoats')) + '</div></div>';
+  html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.peopleCount) + '</div><div class="strip-l">' + esc(s('staff.statPeople')) + '</div></div>';
+  html += '</div>';
   if (data.onWater.boatCount > 0) {
-    html += '<div class="stats-row">';
-    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.boatCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.boats')) + '</div></div>';
-    html += '<div class="stat-box"><div class="stat-val">' + esc(data.onWater.peopleCount) + '</div><div class="stat-lbl">' + esc(s('pub.dash.people')) + '</div></div>';
-    html += '</div>';
     html += '<div class="water-grid">';
     data.onWater.boats.forEach(function(b) {
       html += '<div class="water-card">'
@@ -277,8 +281,8 @@ function initMap(locations) {
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(_map);
 
   if (!locations.length) {
-    // Default view: Iceland
-    _map.setView([64.13, -21.90], 11);
+    // Default view: Kollafjörður / Skerjafjörður area
+    _map.setView([64.12, -21.88], 13);
     return;
   }
 
