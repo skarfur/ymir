@@ -128,6 +128,27 @@ const GS_STRINGS_ = {
   'pub.cert.unverified':  { EN: 'Unverified', IS: 'Óstaðfest' },
   'pub.cert.expired':     { EN: 'Expired', IS: 'Útrunnið' },
   'pub.lbl.hours':        { EN: '{h}h', IS: '{h}klst' },
+  'pub.lbl.makeModel':    { EN: 'Make / Model', IS: 'Tegund / gerð' },
+  'pub.lbl.loa':          { EN: 'LOA', IS: 'Heildarlengd' },
+  'pub.lbl.location':     { EN: 'Sailing area', IS: 'Siglingasvæði' },
+  'pub.lbl.departed':     { EN: 'Departed', IS: 'Brottfarartími' },
+  'pub.lbl.returned':     { EN: 'Returned', IS: 'Komutími' },
+  'pub.lbl.crewAboard':   { EN: 'Crew aboard', IS: 'Áhöfn um borð' },
+  'pub.lbl.wind':         { EN: 'Wind', IS: 'Vindur' },
+  'pub.lbl.notes':        { EN: 'Notes', IS: 'Athugasemdir' },
+  'pub.lbl.photos':       { EN: 'Photos', IS: 'Myndir' },
+  'pub.lbl.gpsTrack':     { EN: 'GPS Track', IS: 'GPS-leið' },
+  'pub.lbl.boatDetails':  { EN: 'Boat Details', IS: 'Upplýsingar um bát' },
+  'pub.lbl.tripDetails':  { EN: 'Trip Details', IS: 'Upplýsingar um ferð' },
+  'pub.lbl.weather':      { EN: 'Weather', IS: 'Veður' },
+  'pub.lbl.ports':        { EN: 'Ports', IS: 'Höfnar' },
+  'pub.lbl.direction':    { EN: 'Direction', IS: 'Átt' },
+  'pub.lbl.gusts':        { EN: 'Gusts', IS: 'Hvassviðri' },
+  'pub.lbl.airTemp':      { EN: 'Air temp', IS: 'Hitastig' },
+  'pub.lbl.seaTemp':      { EN: 'Sea temp', IS: 'Sjávarhiti' },
+  'pub.lbl.waveHeight':   { EN: 'Wave height', IS: 'Bylgjuhæð' },
+  'pub.lbl.pressure':     { EN: 'Pressure', IS: 'Loftþrýstingur' },
+  'pub.lbl.conditions':   { EN: 'Conditions', IS: 'Aðstæður' },
 };
 
 function gs_(key, vars, lang) {
@@ -152,7 +173,13 @@ function okJ(data) { return jsonR_({ success: true, ...data }); }
 function failJ(msg, code) { return jsonR_({ success: false, error: msg, code: code || 400 }); }
 function jsonR_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 function htmlR_(html) { return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); }
-function shareUid_() { return Utilities.getUuid().replace(/-/g, ''); } // 32 hex chars, 128-bit entropy
+function shareUid_() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var hex = Utilities.getUuid().replace(/-/g, '');
+  var id = '';
+  for (var i = 0; i < 8; i++) id += chars[parseInt(hex.substr(i * 2, 2), 16) % 62];
+  return id;
+} // 8 base62 chars, ~47-bit entropy
 
 // Spec §7.1 — extract initials from a name
 // Split on spaces, drop all-lowercase tokens (connectors like 'van','de','af'),
@@ -2323,6 +2350,9 @@ function createShareToken_(b) {
     revokedAt: '',
     accessCount: 0,
     lastAccessedAt: '',
+    includePhotos: b.includePhotos !== false && b.includePhotos !== 'false',
+    includeTracks: b.includeTracks !== false && b.includeTracks !== 'false',
+    categories: b.categories || '',
   });
   return okJ({ id, created: true });
 }
@@ -2357,44 +2387,106 @@ function deleteShareToken_(b) {
 
 // ── Shared HTML helpers ──────────────────────────────────────────────────────
 
+// Dual-language helper: emits both EN and IS text in spans, JS toggles visibility
+function dl_(key, vars) {
+  var en = gs_(key, vars, 'EN'), is = gs_(key, vars, 'IS');
+  return '<span class="lang-en">' + esc_(en) + '</span><span class="lang-is" style="display:none">' + esc_(is) + '</span>';
+}
+
+// Boat category colour map (mirrors shared/boats.js BOAT_CAT_COLORS)
+var PUB_CAT_COLORS_ = {
+  dinghy:        { color:'#5b9bd5', border:'#5b9bd544', bg:'#1a4a8a22' },
+  keelboat:      { color:'#d4af37', border:'#d4af3744', bg:'#d4af3718' },
+  kayak:         { color:'#9b59b6', border:'#9b59b644', bg:'#8e44ad18' },
+  'rowing shell':{ color:'#3498db', border:'#3498db44', bg:'#0e6b9a18' },
+  rowboat:       { color:'#1abc9c', border:'#1abc9c44', bg:'#16a08518' },
+  sup:           { color:'#e67e22', border:'#e67e2244', bg:'#e67e2218' },
+  wingfoil:      { color:'#e74c3c', border:'#e74c3c44', bg:'#c0392b18' },
+  other:         { color:'#6b92b8', border:'#2a5490',   bg:'#1e3f6e'   },
+};
+function pubCatColor_(cat) { return PUB_CAT_COLORS_[(cat||'').toLowerCase()] || PUB_CAT_COLORS_.other; }
+
 function pubPageShell_(title, bodyHtml) {
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>' + esc_(title) + ' — Ýmir Sailing Club</title>'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
     + '<style>'
-    + ':root{--bg:#0d1117;--card:#161b22;--surface:#1c2128;--border:#30363d;'
-    + '--text:#e6edf3;--muted:#8b949e;--green:#3fb950;--red:#f85149;--blue:#58a6ff;'
-    + '--brass:#d4af37;--yellow:#d29922}'
+    + ':root{--bg:#0b1f38;--card:#132d50;--surface:#0f2847;--border:#1e3f6e;--border-l:#2a5490;'
+    + '--text:#d6e4f0;--muted:#6b92b8;--faint:#2a4a6e;--brass:#d4af37;--brass-l:#e8c84a;'
+    + '--green:#27ae60;--yellow:#f1c40f;--orange:#e67e22;--red:#e74c3c;--blue:#2980b9}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
-    + 'body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;'
-    + 'font-size:14px;line-height:1.5;padding:20px;max-width:900px;margin:0 auto}'
-    + 'h1{font-size:22px;margin-bottom:4px;color:var(--text)}'
-    + 'h2{font-size:16px;margin:24px 0 10px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:6px}'
+    + 'body{background:var(--bg);color:var(--text);font-family:"DM Mono","Courier New",monospace;'
+    + 'font-size:14px;line-height:1.6;padding:24px 20px;max-width:820px;margin:0 auto;-webkit-font-smoothing:antialiased}'
+    + 'h1{font-size:20px;margin-bottom:4px;color:var(--text);font-weight:500}'
+    + 'h2{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);'
+    + 'margin:24px 0 10px;display:flex;align-items:center;gap:10px}'
+    + 'h2::after{content:"";flex:1;height:1px;background:var(--border)}'
     + '.subtitle{font-size:12px;color:var(--muted);margin-bottom:20px}'
     + '.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}'
+    // Header bar
+    + '.pub-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}'
+    + '.pub-logo{color:var(--brass);font-size:18px;font-weight:700;letter-spacing:1px}'
+    + '.pub-lang-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;'
+    + 'padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer;transition:color .15s,border-color .15s}'
+    + '.pub-lang-btn:hover{color:var(--brass);border-color:var(--brass)}'
+    // Table
     + 'table{width:100%;border-collapse:collapse;font-size:12px}'
-    + 'th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:.8px;padding:6px 8px;border-bottom:1px solid var(--border)}'
-    + 'td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top}'
+    + 'th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;'
+    + 'color:var(--muted);padding:8px 8px;border-bottom:1px solid var(--border);background:var(--surface)}'
+    + 'td{padding:8px 8px;border-bottom:1px solid var(--faint);vertical-align:middle}'
     + 'tr:last-child td{border-bottom:none}'
+    + 'tr.trip-row{cursor:pointer;transition:background .1s}'
+    + 'tr.trip-row:hover td{background:rgba(255,255,255,.03)}'
+    + '.trip-detail{display:none;background:var(--surface);animation:fadeIn .15s}'
+    + '.trip-detail td{padding:12px 16px;border-bottom:1px solid var(--border)}'
+    + '.trip-detail.open{display:table-row}'
+    + '@keyframes fadeIn{from{opacity:0}to{opacity:1}}'
+    + '.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 14px;font-size:11px}'
+    + '.detail-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}'
+    + '.detail-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}'
+    + '.detail-val{color:var(--text)}'
+    + '.detail-section{margin-bottom:10px}'
+    + '.detail-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}'
     + 'a{color:var(--blue);text-decoration:none}'
     + 'a:hover{text-decoration:underline}'
-    + '.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;margin:2px 4px 2px 0}'
-    + '.badge-green{background:#1a3a2a;color:var(--green);border:1px solid #2a5a3a}'
-    + '.badge-yellow{background:#3a2f1a;color:var(--yellow);border:1px solid #5a4a2a}'
-    + '.badge-red{background:#3a1a1a;color:var(--red);border:1px solid #5a2a2a}'
-    + '.badge-muted{background:var(--surface);color:var(--muted);border:1px solid var(--border)}'
+    // Badges
+    + '.badge{display:inline-block;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;'
+    + 'padding:2px 8px;border-radius:20px;border:1px solid}'
+    + '.badge-green{color:var(--green);border-color:#27ae6050;background:#27ae6012}'
+    + '.badge-yellow{color:var(--yellow);border-color:#f1c40f50;background:#f1c40f12}'
+    + '.badge-red{color:var(--red);border-color:#e74c3c50;background:#e74c3c12}'
+    + '.badge-muted{color:var(--muted);border-color:var(--border);background:var(--faint)}'
+    + '.badge-brass{color:var(--brass);border-color:#d4af3750;background:#d4af3712}'
+    // Cert cards
+    + '.cert-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;'
+    + 'margin-bottom:6px;cursor:pointer;transition:border-color .15s}'
+    + '.cert-card:hover{border-color:var(--brass)}'
+    + '.cert-summary{display:flex;align-items:center;justify-content:space-between;gap:8px}'
+    + '.cert-name{font-size:13px;font-weight:500}'
+    + '.cert-detail{display:none;padding-top:10px;margin-top:8px;border-top:1px solid var(--border);font-size:11px}'
+    + '.cert-card.open .cert-detail{display:block}'
+    + '.cert-arrow{color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}'
+    + '.cert-card.open .cert-arrow{transform:rotate(180deg)}'
+    // Stats
     + '.stat{text-align:center;padding:12px}'
-    + '.stat-val{font-size:24px;font-weight:600;color:var(--brass)}'
-    + '.stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.8px;margin-top:2px}'
-    + '.footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}'
-    + '.logo{font-size:18px;font-weight:700;color:var(--brass);letter-spacing:1px;margin-bottom:16px}'
+    + '.stat-val{font-size:22px;font-weight:500;color:var(--text);line-height:1}'
+    + '.stat-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:4px}'
+    // Cat legend
+    + '.cat-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}'
+    + '.cat-pill{font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:10px;border:1px solid;display:inline-block}'
+    // Photos
+    + '.pub-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}'
+    + '.pub-photo{width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}'
+    // Form
     + '.form-group{margin-bottom:14px}'
     + '.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px}'
     + '.form-group input{width:100%;padding:8px 12px;font-size:14px;background:var(--surface);border:1px solid var(--border);'
-    + 'border-radius:6px;color:var(--text);outline:none}'
-    + '.form-group input:focus{border-color:var(--blue)}'
-    + '.btn-primary{background:var(--brass);color:#000;border:none;padding:10px 20px;border-radius:6px;font-size:14px;'
-    + 'font-weight:600;cursor:pointer;width:100%}'
+    + 'border-radius:6px;color:var(--text);font-family:inherit;outline:none}'
+    + '.form-group input:focus{border-color:var(--brass)}'
+    + '.btn-primary{background:var(--brass);color:#0b1f38;border:none;padding:10px 20px;border-radius:6px;font-size:14px;'
+    + 'font-weight:600;cursor:pointer;width:100%;font-family:inherit}'
     + '.btn-primary:hover{opacity:.9}'
     + '.err-msg{background:var(--surface);border:1px solid var(--red);color:var(--red);padding:10px;border-radius:6px;'
     + 'font-size:12px;margin-bottom:14px}'
@@ -2402,66 +2494,235 @@ function pubPageShell_(title, bodyHtml) {
     + 'font-size:12px;margin-bottom:14px}'
     + '.revoked-msg{background:var(--surface);border:1px solid var(--red);color:var(--red);padding:24px;border-radius:8px;'
     + 'font-size:16px;text-align:center;margin:40px 0}'
-    + '@media(max-width:600px){body{padding:12px}table{font-size:11px}th,td{padding:4px 6px}}'
+    + '.footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}'
+    + '@media(max-width:600px){body{padding:12px}table{font-size:11px}th,td{padding:4px 6px}'
+    + '.detail-grid{grid-template-columns:1fr 1fr}}'
     + '</style></head><body>'
-    + '<div class="logo">ÝMIR SAILING CLUB</div>'
+    + '<div class="pub-header"><span class="pub-logo">ÝMIR SAILING CLUB</span>'
+    + '<button class="pub-lang-btn" onclick="togglePubLang()" id="pubLangBtn">IS</button></div>'
     + bodyHtml
     + '<div class="footer">'
-    + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) })
-    + '</div></body></html>';
+    + '<span class="lang-en">' + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) }, 'EN') + '</span>'
+    + '<span class="lang-is" style="display:none">' + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) }, 'IS') + '</span>'
+    + '</div>'
+    + '<script>'
+    + 'function togglePubLang(){'
+    + 'var en=document.querySelectorAll(".lang-en"),is=document.querySelectorAll(".lang-is");'
+    + 'var btn=document.getElementById("pubLangBtn");'
+    + 'var showIS=en[0]&&en[0].style.display!=="none";'
+    + 'en.forEach(function(e){e.style.display=showIS?"none":"";});'
+    + 'is.forEach(function(e){e.style.display=showIS?"":"none";});'
+    + 'btn.textContent=showIS?"EN":"IS";'
+    + '}'
+    + 'document.addEventListener("click",function(e){'
+    + 'var c=e.target.closest(".cert-card");if(c){c.classList.toggle("open");return;}'
+    + 'var r=e.target.closest("tr.trip-row");'
+    + 'if(r){var id=r.dataset.id;var d=document.getElementById("td-"+id);if(d)d.classList.toggle("open");}'
+    + '});'
+    + '</script>'
+    + '</body></html>';
 }
 
 function pubCertBadgesHtml_(certs, certDefs) {
-  if (!certs || !certs.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic">' + gs_('pub.lbl.noCerts') + '</div>';
+  if (!certs || !certs.length) {
+    return '<div style="color:var(--muted);font-size:12px;font-style:italic">'
+      + dl_('pub.lbl.noCerts') + '</div>';
+  }
+  var today = new Date().toISOString().slice(0, 10);
   return certs.map(function(c) {
     var def = certDefs.find(function(d) { return d.id === c.certId; });
     var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
     var label = subcat ? (def.name + ' — ' + subcat.label) : (def ? def.name : c.certId);
-    var expired = c.expiresAt && c.expiresAt < new Date().toISOString().slice(0, 10);
+    var expired = c.expiresAt && c.expiresAt < today;
     var badgeClass = expired ? 'badge badge-red' : (c.assignedBy ? 'badge badge-green' : 'badge badge-yellow');
-    var statusLabel = expired ? gs_('pub.cert.expired') : (c.assignedBy ? gs_('pub.cert.verified') : gs_('pub.cert.unverified'));
-    var expStr = c.expiresAt ? ' · exp. ' + esc_(c.expiresAt) : '';
-    return '<span class="' + badgeClass + '">' + esc_(label) + ' (' + statusLabel + ')' + expStr + '</span>';
-  }).join(' ');
+    var statusEN = expired ? gs_('pub.cert.expired',null,'EN') : (c.assignedBy ? gs_('pub.cert.verified',null,'EN') : gs_('pub.cert.unverified',null,'EN'));
+    var statusIS = expired ? gs_('pub.cert.expired',null,'IS') : (c.assignedBy ? gs_('pub.cert.verified',null,'IS') : gs_('pub.cert.unverified',null,'IS'));
+
+    // Expiry line
+    var expiryEN = c.expiresAt ? (expired ? 'Expired ' : 'Expires ') + esc_(c.expiresAt) : 'Permanent';
+    var expiryIS = c.expiresAt ? (expired ? 'Útrunnið ' : 'Rennur út ') + esc_(c.expiresAt) : 'Varanlegt';
+
+    // Description
+    var desc = subcat && subcat.description ? subcat.description : (def && def.description ? def.description : '');
+
+    var html = '<div class="cert-card">'
+      + '<div class="cert-summary">'
+      + '<div><span class="cert-name">' + esc_(label) + '</span> '
+      + '<span class="' + badgeClass + '">'
+      + '<span class="lang-en">' + esc_(statusEN) + '</span>'
+      + '<span class="lang-is" style="display:none">' + esc_(statusIS) + '</span>'
+      + '</span></div>'
+      + '<span class="cert-arrow">▾</span>'
+      + '</div>'
+      + '<div class="cert-detail">'
+      + '<div class="detail-grid">';
+    if (subcat) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">Level</span><span class="lang-is" style="display:none">Stig</span>'
+        + '</span><span class="detail-val">' + esc_(subcat.label) + '</span></div>';
+    }
+    html += '<div class="detail-row"><span class="detail-lbl">'
+      + '<span class="lang-en">Validity</span><span class="lang-is" style="display:none">Gildistími</span>'
+      + '</span><span class="detail-val">'
+      + '<span class="lang-en">' + expiryEN + '</span>'
+      + '<span class="lang-is" style="display:none">' + expiryIS + '</span>'
+      + '</span></div>';
+    if (c.assignedBy) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">Assigned by</span><span class="lang-is" style="display:none">Úthlutað af</span>'
+        + '</span><span class="detail-val">' + esc_(c.assignedBy) + '</span></div>';
+    }
+    if (c.assignedAt) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">Assigned</span><span class="lang-is" style="display:none">Úthlutað</span>'
+        + '</span><span class="detail-val">' + esc_(String(c.assignedAt).slice(0,10)) + '</span></div>';
+    }
+    if (desc) {
+      html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">'
+        + '<span class="lang-en">Description</span><span class="lang-is" style="display:none">Lýsing</span>'
+        + '</span><span class="detail-val">' + esc_(desc) + '</span></div>';
+    }
+    html += '</div></div></div>';
+    return html;
+  }).join('');
 }
 
-function pubTripTableHtml_(trips, opts) {
+function pubTripTableHtml_(trips, allTrips, boats, opts) {
   opts = opts || {};
-  if (!trips.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic;padding:8px 0">' + gs_('pub.lbl.noSessions') + '</div>';
-  var scriptUrl = ScriptApp.getService().getUrl();
-  var html = '<div style="overflow-x:auto"><table><tr>'
-    + '<th>' + gs_('pub.lbl.date') + '</th>'
-    + '<th>' + gs_('pub.lbl.duration') + '</th>'
-    + '<th>' + gs_('pub.lbl.distance') + '</th>'
-    + '<th>' + gs_('pub.lbl.boat') + '</th>'
-    + '<th>' + gs_('pub.lbl.crew') + '</th>';
-  if (!opts.hideCaptain) html += '<th>' + gs_('pub.lbl.captain') + '</th>';
-  if (!opts.hideRole) html += '<th>' + gs_('pub.lbl.role') + '</th>';
-  html += '</tr>';
-  trips.forEach(function(t) {
-    var dur = t.hoursDecimal ? (Number(t.hoursDecimal).toFixed(1) + 'h') : '';
-    var dist = t.distanceNm ? (Number(t.distanceNm).toFixed(1) + ' nm') : '';
-    var boatLink = t.boatId
-      ? '<a href="' + scriptUrl + '?action=boat&id=' + esc_(t.boatId) + '">' + esc_(t.boatName || '') + '</a>'
-      : esc_(t.boatName || '');
-    var crewCount = t.crew || 1;
-    html += '<tr>'
-      + '<td>' + esc_(t.date || '') + '</td>'
-      + '<td>' + dur + '</td>'
-      + '<td>' + dist + '</td>'
-      + '<td>' + boatLink + '</td>'
-      + '<td>' + crewCount + '</td>';
-    if (!opts.hideCaptain) {
-      // Captain: link to captain record if we know the kennitala
-      var captainName = esc_(t.memberName || '');
-      if (opts.captainMemberId) {
-        captainName = '<a href="' + scriptUrl + '?action=captain&id=' + esc_(opts.captainMemberId) + '">' + captainName + '</a>';
+  if (!trips.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic;padding:8px 0">'
+    + dl_('pub.lbl.noSessions') + '</div>';
+
+  // Build captain lookup: linkedCheckoutId → skipper memberName
+  var captainMap = {};
+  if (allTrips) {
+    allTrips.forEach(function(t) {
+      if (t.linkedCheckoutId && (t.role === 'skipper' || !t.role)) {
+        captainMap[t.linkedCheckoutId] = t.memberName || '';
       }
-      html += '<td>' + captainName + '</td>';
+    });
+  }
+
+  // Determine if captain column needed (any trip where role is crew)
+  var hasCrew = trips.some(function(t) { return t.role === 'crew'; });
+
+  var html = '<div style="overflow-x:auto"><table><tr>'
+    + '<th>' + dl_('pub.lbl.date') + '</th>'
+    + '<th>' + dl_('pub.lbl.boat') + '</th>'
+    + '<th>' + dl_('pub.lbl.makeModel') + '</th>'
+    + '<th>' + dl_('pub.lbl.loa') + '</th>'
+    + '<th>' + dl_('pub.lbl.role') + '</th>';
+  if (hasCrew) html += '<th>' + dl_('pub.lbl.captain') + '</th>';
+  html += '</tr>';
+
+  trips.forEach(function(t, idx) {
+    var boat = boats ? boats.find(function(b) { return b.id === t.boatId; }) : null;
+    var makeModel = boat && boat.typeModel ? esc_(boat.typeModel) : '';
+    var loa = boat && boat.loa ? esc_(boat.loa) + ' ft' : '';
+    var isSki = !t.role || t.role === 'skipper';
+    var roleEN = isSki ? 'Skipper' : 'Crew';
+    var roleIS = isSki ? 'Skipari' : 'Áhöfn';
+    var catCol = pubCatColor_(t.boatCategory || (boat ? boat.category : ''));
+
+    // Captain name for crew trips
+    var captainName = '';
+    if (!isSki && t.linkedCheckoutId && captainMap[t.linkedCheckoutId]) {
+      captainName = esc_(captainMap[t.linkedCheckoutId]);
     }
-    if (!opts.hideRole) html += '<td>' + esc_(t.role || '') + '</td>';
+
+    html += '<tr class="trip-row" data-id="' + idx + '" style="border-left:3px solid ' + catCol.color + '">'
+      + '<td>' + esc_(t.date || '') + '</td>'
+      + '<td>' + esc_(t.boatName || '') + '</td>'
+      + '<td>' + makeModel + '</td>'
+      + '<td>' + loa + '</td>'
+      + '<td><span class="lang-en">' + roleEN + '</span><span class="lang-is" style="display:none">' + roleIS + '</span></td>';
+    if (hasCrew) html += '<td>' + captainName + '</td>';
     html += '</tr>';
+
+    // Expandable detail row
+    html += '<tr class="trip-detail" id="td-' + idx + '"><td colspan="' + (hasCrew ? 6 : 5) + '">';
+
+    // Boat details section
+    var hasBoatDetail = (boat && (boat.registrationNo || boat.typeModel || boat.loa));
+    if (hasBoatDetail) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.boatDetails') + '</div>'
+        + '<div class="detail-grid">';
+      if (boat.registrationNo) {
+        var regLblEN = (t.boatCategory || '').toLowerCase() === 'keelboat' ? 'Registration no.' : 'Sail no.';
+        var regLblIS = (t.boatCategory || '').toLowerCase() === 'keelboat' ? 'Skráningarnúmer' : 'Seglnúmer';
+        html += '<div class="detail-row"><span class="detail-lbl"><span class="lang-en">' + regLblEN + '</span><span class="lang-is" style="display:none">' + regLblIS + '</span></span>'
+          + '<span class="detail-val">' + esc_(boat.registrationNo) + '</span></div>';
+      }
+      if (boat.typeModel) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.makeModel') + '</span><span class="detail-val">' + esc_(boat.typeModel) + '</span></div>';
+      if (boat.loa) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.loa') + '</span><span class="detail-val">' + esc_(boat.loa) + ' ft</span></div>';
+      html += '</div></div>';
+    }
+
+    // Trip details section
+    html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.tripDetails') + '</div>'
+      + '<div class="detail-grid">';
+    if (t.locationName) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.location') + '</span><span class="detail-val">' + esc_(t.locationName) + '</span></div>';
+    if (t.timeOut) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.departed') + '</span><span class="detail-val">' + esc_(t.timeOut) + '</span></div>';
+    if (t.timeIn) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.returned') + '</span><span class="detail-val">' + esc_(t.timeIn) + '</span></div>';
+    if (t.hoursDecimal) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.duration') + '</span><span class="detail-val">' + Number(t.hoursDecimal).toFixed(1) + 'h</span></div>';
+    if (t.distanceNm) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.distance') + '</span><span class="detail-val">' + Number(t.distanceNm).toFixed(1) + ' nm</span></div>';
+    if (t.crew) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.crewAboard') + '</span><span class="detail-val">' + esc_(t.crew) + '</span></div>';
+    // Ports
+    var dep = t.departurePort || '', arr = t.arrivalPort || '';
+    if (dep || arr) {
+      var portVal = dep && arr && dep !== arr ? esc_(dep) + ' → ' + esc_(arr) : esc_(dep || arr);
+      html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">' + dl_('pub.lbl.ports') + '</span><span class="detail-val">⚓ ' + portVal + '</span></div>';
+    }
+    html += '</div></div>';
+
+    // Weather section
+    var wx = null;
+    try { wx = t.wxSnapshot ? (typeof t.wxSnapshot === 'string' ? JSON.parse(t.wxSnapshot) : t.wxSnapshot) : null; } catch(e) {}
+    var hasWx = wx && (wx.ws != null || wx.dir || wx.wg != null || wx.tc != null || wx.sst != null || wx.wv != null || wx.pres != null || wx.cond);
+    if (hasWx || t.beaufort) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.weather') + '</div><div class="detail-grid">';
+      if (wx && wx.ws != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">' + Math.round(wx.ws) + ' m/s' + (wx.bft != null ? ' · Force ' + wx.bft : '') + '</span></div>';
+      else if (t.beaufort) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">Force ' + esc_(t.beaufort) + '</span></div>';
+      if (wx && wx.dir || t.windDir) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.direction') + '</span><span class="detail-val">' + esc_(wx && wx.dir || t.windDir) + '</span></div>';
+      if (wx && wx.wg != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.gusts') + '</span><span class="detail-val">' + Math.round(wx.wg) + ' m/s</span></div>';
+      if (wx && wx.cond && wx.cond.desc) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.conditions') + '</span><span class="detail-val">' + (wx.cond.icon || '') + ' ' + esc_(wx.cond.desc) + '</span></div>';
+      if (wx && wx.tc != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.airTemp') + '</span><span class="detail-val">' + Math.round(wx.tc) + '°C</span></div>';
+      if (wx && wx.sst != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.seaTemp') + '</span><span class="detail-val">' + Number(wx.sst).toFixed(1) + '°C</span></div>';
+      if (wx && wx.wv != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.waveHeight') + '</span><span class="detail-val">' + Number(wx.wv).toFixed(1) + ' m</span></div>';
+      if (wx && wx.pres != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.pressure') + '</span><span class="detail-val">' + Math.round(wx.pres) + ' hPa</span></div>';
+      html += '</div></div>';
+    }
+
+    // Notes
+    if (t.notes) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.notes') + '</div>'
+        + '<div style="font-size:12px">' + esc_(t.notes) + '</div></div>';
+    }
+
+    // Photos (if opted in)
+    if (opts.includePhotos) {
+      var photos = [];
+      try { if (t.photoUrls) photos = typeof t.photoUrls === 'string' ? JSON.parse(t.photoUrls) : t.photoUrls; } catch(e) {}
+      if (photos.length) {
+        html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.photos') + '</div>'
+          + '<div class="pub-photos">';
+        photos.forEach(function(u) {
+          html += '<img src="' + esc_(u) + '" class="pub-photo" loading="lazy" onerror="this.style.display=\'none\'">';
+        });
+        html += '</div></div>';
+      }
+    }
+
+    // GPS Track (if opted in)
+    if (opts.includeTracks && t.trackFileUrl) {
+      html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.gpsTrack') + '</div>'
+        + '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="font-size:11px">📍 '
+        + '<span class="lang-en">Download track</span><span class="lang-is" style="display:none">Sækja leið</span>'
+        + '</a>' + (t.trackSource ? ' · ' + esc_(t.trackSource) : '') + '</div>';
+    }
+
+    html += '</td></tr>';
   });
+
   html += '</table></div>';
   return html;
 }
@@ -2547,14 +2808,22 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
 
   var html = '<h1>' + esc_(member.name) + '</h1>';
   if (opts.queriedLicence) {
-    html += '<div class="subtitle">' + gs_('pub.lbl.licence') + ': ' + esc_(opts.queriedLicence) + '</div>';
+    html += '<div class="subtitle">' + dl_('pub.lbl.licence') + ': ' + esc_(opts.queriedLicence) + '</div>';
   }
   if (opts.cutOffDate) {
-    html += '<div class="info-msg">' + gs_('pub.share.asOf', { date: opts.cutOffDate }) + '</div>';
+    html += '<div class="info-msg">'
+      + '<span class="lang-en">' + gs_('pub.share.asOf', { date: opts.cutOffDate }, 'EN') + '</span>'
+      + '<span class="lang-is" style="display:none">' + gs_('pub.share.asOf', { date: opts.cutOffDate }, 'IS') + '</span>'
+      + '</div>';
   }
 
   // Certifications
-  html += '<h2>' + gs_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs) + '</div>';
+  html += '<h2>' + dl_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs) + '</div>';
+
+  // Load boats for make/model/LOA
+  var boatsJson = getConfigSheetValue_('boats');
+  var boats = [];
+  try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
 
   // Trips
   var allTrips = readAll_('trips');
@@ -2562,14 +2831,44 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     return String(t.kennitala) === String(member.kennitala) && (t.date || '') <= cutOff;
   }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
 
-  // For each trip, try to find the captain (trip owner = the person who logged it)
-  // Since in the current system each person logs their own trips, the memberName on the trip IS the captain
-  // if the role is 'skipper' or 'captain', otherwise we don't have a separate captain reference.
-  var members = readAll_('members');
+  // Filter by categories if specified
+  var categories = opts.categories && opts.categories.length ? opts.categories : null;
+  if (categories) {
+    var catSet = {};
+    categories.forEach(function(c) { catSet[c.toLowerCase()] = true; });
+    memberTrips = memberTrips.filter(function(t) {
+      var cat = t.boatCategory || '';
+      if (!cat) {
+        var b = boats.find(function(bt) { return bt.id === t.boatId; });
+        if (b) cat = b.category || '';
+      }
+      return catSet[cat.toLowerCase()];
+    });
+  }
 
-  html += '<h2>' + gs_('pub.lbl.sessions') + ' (' + memberTrips.length + ')</h2>'
-    + '<div class="card">'
-    + pubTripTableHtml_(memberTrips, { hideCaptain: false, hideRole: false })
+  // Category legend
+  var tripCats = {};
+  memberTrips.forEach(function(t) {
+    var cat = t.boatCategory || '';
+    if (!cat) { var b = boats.find(function(bt) { return bt.id === t.boatId; }); if (b) cat = b.category || ''; }
+    if (cat) tripCats[cat] = true;
+  });
+  var catKeys = Object.keys(tripCats).sort();
+
+  html += '<h2>' + dl_('pub.lbl.sessions') + ' (' + memberTrips.length + ')</h2>';
+  if (catKeys.length > 1) {
+    html += '<div class="cat-legend">';
+    catKeys.forEach(function(c) {
+      var col = pubCatColor_(c);
+      html += '<span class="cat-pill" style="color:' + col.color + ';border-color:' + col.border + ';background:' + col.bg + '">' + esc_(c) + '</span>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="card">'
+    + pubTripTableHtml_(memberTrips, allTrips, boats, {
+        includePhotos: opts.includePhotos,
+        includeTracks: opts.includeTracks,
+      })
     + '</div>';
 
   // Share tokens section (only shown on direct lookup, not on share links)
@@ -2577,19 +2876,19 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     var tokens = readAll_('shareTokens').filter(function(t) {
       return String(t.memberKennitala) === String(member.kennitala);
     });
-    html += '<h2>' + gs_('pub.lbl.shareTokens') + '</h2><div class="card">';
+    html += '<h2>' + dl_('pub.lbl.shareTokens') + '</h2><div class="card">';
     if (tokens.length) {
       html += '<table><tr>'
-        + '<th>' + gs_('pub.lbl.created') + '</th>'
-        + '<th>' + gs_('pub.lbl.cutOff') + '</th>'
-        + '<th>' + gs_('pub.lbl.accesses') + '</th>'
+        + '<th>' + dl_('pub.lbl.created') + '</th>'
+        + '<th>' + dl_('pub.lbl.cutOff') + '</th>'
+        + '<th>' + dl_('pub.lbl.accesses') + '</th>'
         + '<th>Status</th>'
         + '<th>Link</th></tr>';
       tokens.forEach(function(tk) {
         var revoked = tk.revokedAt && String(tk.revokedAt).trim() !== '';
         var statusBadge = revoked
-          ? '<span class="badge badge-red">' + gs_('pub.lbl.revoked') + '</span>'
-          : '<span class="badge badge-green">' + gs_('pub.lbl.active') + '</span>';
+          ? '<span class="badge badge-red">' + dl_('pub.lbl.revoked') + '</span>'
+          : '<span class="badge badge-green">' + dl_('pub.lbl.active') + '</span>';
         var shareUrl = scriptUrl + '?share=' + esc_(tk.id);
         html += '<tr>'
           + '<td>' + esc_((tk.createdAt || '').slice(0, 10)) + '</td>'
@@ -2601,7 +2900,7 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
       });
       html += '</table>';
     } else {
-      html += '<div style="color:var(--muted);font-size:12px;font-style:italic">' + gs_('pub.lbl.noTokens') + '</div>';
+      html += '<div style="color:var(--muted);font-size:12px;font-style:italic">' + dl_('pub.lbl.noTokens') + '</div>';
     }
     html += '</div>';
   }
@@ -2639,8 +2938,12 @@ function publicCaptainRecord_(b) {
     + '<div class="stat"><div class="stat-val">' + totalHrs.toFixed(1) + 'h</div><div class="stat-lbl">' + gs_('pub.lbl.totalHours') + '</div></div>'
     + '</div>';
 
+  var boatsJson = getConfigSheetValue_('boats');
+  var boats = [];
+  try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
+
   html += '<h2>' + gs_('pub.lbl.sessions') + '</h2><div class="card">'
-    + pubTripTableHtml_(captainTrips, { hideCaptain: true, hideRole: true })
+    + pubTripTableHtml_(captainTrips, allTrips, boats, {})
     + '</div>';
 
   return htmlR_(pubPageShell_(gs_('pub.title.captain'), html));
@@ -2752,8 +3055,17 @@ function publicShareRecord_(b) {
   try { certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []); } catch(e) {}
   var certDefs = getCertDefs_();
 
+  var cats = [];
+  try { if (token.categories) cats = JSON.parse(token.categories); } catch(e) {}
+
   return htmlR_(pubPageShell_(gs_('pub.title.share'),
-    pubRecordPageHtml_(member, certs, certDefs, { showTokens: false, cutOffDate: token.cutOffDate })));
+    pubRecordPageHtml_(member, certs, certDefs, {
+      showTokens: false,
+      cutOffDate: token.cutOffDate,
+      includePhotos: token.includePhotos !== 'false' && token.includePhotos !== false,
+      includeTracks: token.includeTracks !== 'false' && token.includeTracks !== false,
+      categories: cats.length ? cats : null,
+    })));
 }
 
 
@@ -2842,6 +3154,7 @@ var SCHEMA_ = {
   share_tokens: [
     'id','memberId','memberKennitala','cutOffDate',
     'createdAt','revokedAt','accessCount','lastAccessedAt',
+    'includePhotos','includeTracks','categories',
   ],
   payroll: [
     'id','employeeId','period',
