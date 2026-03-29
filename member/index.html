@@ -550,6 +550,7 @@ async function submitLaunch() {
       locationId:lid, locationName:location.name||lid,
       checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
       departurePort:depPort,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
       memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
@@ -558,6 +559,7 @@ async function submitLaunch() {
     checkouts.push({
       id:res.id, boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
       memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
       locationId:lid, locationName:location.name||lid,
       checkedOutAt:tout, expectedReturn:ret, status:'out',
     });
