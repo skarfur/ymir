@@ -221,17 +221,19 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     const ex = xOf(e.time.getTime()), ey = yOf(e.height);
     const isHigh = e.type === 'high';
     const cc = isHigh ? 'c-brass' : 'c-blue';
-    const txt = fmtT(e.time) + '  ' + e.height.toFixed(1) + 'm';
+    const timeTxt = fmtT(e.time);
+    const htTxt = e.height.toFixed(1) + 'm';
 
     // High: label above the peak; Low: label inside the trough (above the dot)
     const ly = isHigh
-      ? Math.max(8, ey - 4)
-      : Math.max(ey - 4, P.t + 6);
+      ? Math.max(14, ey - 6)
+      : Math.max(ey - 6, P.t + 6);
 
-    // Background rect for legibility
-    const textW = txt.length * 4.6;
-    svg += `<rect class="chart-lbl-bg" x="${f1(ex - textW/2 - 1)}" y="${f1(ly - 7)}" width="${f1(textW + 2)}" height="9" rx="1"/>`;
-    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly)}" text-anchor="middle">${txt}</text>`;
+    // Background rect for legibility (two lines)
+    const lineW = Math.max(timeTxt.length, htTxt.length) * 4.6;
+    svg += `<rect class="chart-lbl-bg" x="${f1(ex - lineW/2 - 1)}" y="${f1(ly - 13)}" width="${f1(lineW + 2)}" height="16" rx="1"/>`;
+    svg += `<text class="chart-lbl ${cc}" x="${f1(ex)}" y="${f1(ly - 6)}" text-anchor="middle">${timeTxt}</text>`;
+    svg += `<text class="chart-lbl c-muted" x="${f1(ex)}" y="${f1(ly + 2)}" text-anchor="middle">${htTxt}</text>`;
     svg += `<circle class="chart-dot ${cc}" cx="${f1(ex)}" cy="${f1(ey)}" r="2"/>`;
   });
 
@@ -260,7 +262,7 @@ function tideWidget(targetEl, { onData } = {}) {
     const sun = await fetchSunTimes(TIDE_STATION.lat, TIDE_STATION.lon, dateStr);
     if (onData) onData({ extrema, moon, sun, dateStr });
 
-    // Status (today only)
+    // Status (today: trend, other days: today button)
     let statusHtml = '';
     if (isToday) {
       const curH = tideHeight(now), soonH = tideHeight(new Date(now.getTime() + 600000));
@@ -270,6 +272,8 @@ function tideWidget(targetEl, { onData } = {}) {
       statusHtml = `<span style="color:${col};font-weight:700;font-size:12px">${up?'↑':'↓'}</span>`
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
         + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
+    } else {
+      statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Í dag':'Today'}</button>`;
     }
 
     // Day label
@@ -277,9 +281,7 @@ function tideWidget(targetEl, { onData } = {}) {
     const dayLabel = isToday ? (IS?'Í dag':'Today')
       : dd.toLocaleDateString(IS?'is-IS':'en-GB', { weekday:'short', day:'numeric', month:'short' });
 
-    // Today button (only when not on today)
-    const todayBtn = isToday ? ''
-      : `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Í dag':'Today'}</button>`;
+    // Today button now lives in status area (see above)
 
     // Nav button style (shared)
     const navStyle = 'background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0 6px;font-size:11px;cursor:pointer;font-family:inherit;line-height:1.6';
@@ -305,7 +307,6 @@ function tideWidget(targetEl, { onData } = {}) {
           <div style="display:flex;align-items:center;gap:4px">${statusHtml}</div>
           <div style="display:flex;align-items:center;gap:6px">${sunHtml}${moonHtml}</div>
         </div>
-        ${todayBtn ? `<div style="text-align:center;margin-bottom:2px">${todayBtn}</div>` : ''}
         <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2px">
           <button class="tide-nav-btn" data-dir="-1" style="${navStyle}">◀</button>
           <span style="font-size:10px;color:var(--text);font-weight:500;min-width:70px;text-align:center">${dayLabel}</span>
