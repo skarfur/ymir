@@ -402,7 +402,7 @@ function renderStats(){
       const pct=max?Math.round(h/max*100):0;
       return `<div class="cat-hour-row">
         <span style="font-size:14px;width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
-        <span style="min-width:80px;color:var(--text)">${esc(cat)}</span>
+        <span style="min-width:80px;color:var(--text)">${esc(_boatCatLabel(cat))}</span>
         <div class="cat-hour-bar-wrap"><div class="cat-hour-bar" style="width:${pct}%;background:${col.color}"></div></div>
         <span class="cat-hour-val">${h.toFixed(0)}h</span>
       </div>`;
@@ -459,6 +459,8 @@ function tripCard(t){
                    ].filter(Boolean).join('');
 
   // Port display (shown on card face for keelboats)
+  const tripCat = (allBoats.find(b=>b.id===t.boatId)?.category) || t.boatCategory || '';
+  const catCol = BOAT_CAT_COLORS[(tripCat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
   const dep=t.departurePort||'', arr=t.arrivalPort||'';
   const portLine = (dep||arr) ? (
@@ -538,7 +540,7 @@ function tripCard(t){
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
   const hasDetailed = !!(t.locationName||crewRow||distRow||t.hoursDecimal||hasDetailWx);
 
-  return `<div class="trip-card" onclick="toggleTripCard(this)">
+  return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
     <div class="trip-card-main">
       <div class="trip-date-col">
         <div class="trip-date-day">${esc(p.day)}</div>
@@ -1246,7 +1248,7 @@ function renderShareCatChecks(){
     var col=BOAT_CAT_COLORS[key]||BOAT_CAT_COLORS.other;
     return '<label style="font-size:11px;color:'+col.color+';display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0;padding:3px 8px;border-radius:10px;border:1px solid '+col.border+';background:'+col.bg+'">'
       +'<input type="checkbox" class="share-cat-chk" value="'+esc(c)+'" checked style="width:14px;height:14px;accent-color:'+col.color+'">'
-      +esc(c)+'</label>';
+      +esc(_boatCatLabel(c))+'</label>';
   }).join('');
 }
 async function loadShareTokens(){
@@ -1329,6 +1331,7 @@ async function reload(){
     const locs =cfgRes.locations||[];
     allBoats=boats.filter(b=>!b.oos&&b.oos!=='true');
     allLocs =locs;
+    registerBoatCats(cfgRes.boatCategories||[]);
     renderStats();
     buildFilters();
     applyFilter();
