@@ -533,11 +533,6 @@ function tripCard(t){
   const tripCat = (allBoats.find(b=>b.id===t.boatId)?.category) || t.boatCategory || '';
   const catCol = BOAT_CAT_COLORS[(tripCat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
-  const dep=t.departurePort||'', arr=t.arrivalPort||'';
-  const portLine = (dep||arr) ? (
-    (!arr||!dep||dep===arr) ? `<span>⚓️ ${esc(dep||arr)}</span>`
-                            : `<span>⚓️ ${esc(dep)} → ${esc(arr)}</span>`
-  ) : '';
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
   const eWs   = wx?.ws!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Force '+wx.bft:''}</span></div>`
@@ -554,75 +549,100 @@ function tripCard(t){
   const flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Black'};
   const eFlag = wx?.flag ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Veðurfáni':'Weather flag'}</span><span class="trip-exp-val">${flagIcons[wx.flag]||''} ${flagLabels[wx.flag]||esc(wx.flag)}</span></div>` : '';
 
-  // Port rows (keelboat, separate cells for departure/arrival)
-  const depPortRow = isKeelboat && dep ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure port'}</span><span class="trip-exp-val">${esc(dep)}</span></div>` : '';
-  const arrPortRow = isKeelboat && arr ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival port'}</span><span class="trip-exp-val">${esc(arr)}</span></div>` : '';
-  const portRow = depPortRow + arrPortRow;
-
-  // Crew row (full-width): show linked names if present, otherwise count
-  // Search allTrips so every user sees crew names (not just skipper)
-  const linkedCrew = allTrips.filter(x =>
-    x.id !== t.id && x.role==='crew' && (
-      (x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
-      (x.linkedTripId && x.linkedTripId === t.id)
-    )
-  );
-  // For crew members: also find the skipper of this trip
+  // ── Resolve the skipper trip for crew members ──────────────────────────────
+  // This lets crew cards mirror the skipper's data (crew count, ports, distance, etc.)
+  const isOwner = String(t.kennitala) === String(user.kennitala);
   const linkedSkipper = !isSki ? allTrips.find(x =>
     x.id !== t.id && (!x.role || x.role==='skipper') && (
       (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
       (t.linkedTripId && x.id === t.linkedTripId)
     )
   ) : null;
-  // Check for pending handshakes (outgoing confirmations for this trip)
-  const pendingCrewConfs = _confirmations.outgoing.filter(c =>
-    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
-    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
-  );
-  const pendingHelmConfs = _confirmations.outgoing.filter(c =>
-    c.status==='pending' && c.type==='helm' &&
-    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
-  );
-  // Also check incoming pending (requests sent TO this user)
-  const pendingCrewIn = _confirmations.incoming.filter(c =>
-    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
-    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
-  );
-  const pendingHelmIn = _confirmations.incoming.filter(c =>
-    c.status==='pending' && c.type==='helm' &&
-    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
-  );
+  // The "source" trip has the canonical crew count, distance, ports, etc.
+  const src = isSki ? t : (linkedSkipper || t);
+  const totalCrew = parseInt(src.crew||1);
 
-  const helmLabel = IS?'Stýri':'Helm';
+  // Port display — use src for canonical data
+  const dep=src.departurePort||t.departurePort||'', arr=src.arrivalPort||t.arrivalPort||'';
+  const portLine = (dep||arr) ? (
+    (!arr||!dep||dep===arr) ? `<span>⚓️ ${esc(dep||arr)}</span>`
+                            : `<span>⚓️ ${esc(dep)} → ${esc(arr)}</span>`
+  ) : '';
+  const depPortRow = isKeelboat && dep ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure port'}</span><span class="trip-exp-val">${esc(dep)}</span></div>` : '';
+  const arrPortRow = isKeelboat && arr ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival port'}</span><span class="trip-exp-val">${esc(arr)}</span></div>` : '';
+  const portRow = depPortRow + arrPortRow;
+
+  // ── Build full crew roster: skipper + all linked crew ─────────────────────
+  // Find all trips linked to this checkout/trip group
+  const allLinked = allTrips.filter(x =>
+    x.id !== src.id && (
+      (src.linkedCheckoutId && x.linkedCheckoutId === src.linkedCheckoutId) ||
+      (x.linkedTripId && x.linkedTripId === src.id)
+    )
+  );
+  const linkedCrew = allLinked.filter(x => x.role==='crew');
+
+  // Check for pending handshakes (outgoing + incoming)
+  const matchTrip = c => c.tripId===src.id || (src.linkedCheckoutId && c.linkedCheckoutId===src.linkedCheckoutId);
+  const pendingCrewConfs = _confirmations.outgoing.filter(c =>
+    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') && matchTrip(c));
+  const pendingHelmConfs = _confirmations.outgoing.filter(c =>
+    c.status==='pending' && c.type==='helm' && matchTrip(c));
+  const pendingCrewIn = _confirmations.incoming.filter(c =>
+    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') && matchTrip(c));
+  const pendingHelmIn = _confirmations.incoming.filter(c =>
+    c.status==='pending' && c.type==='helm' && matchTrip(c));
+
+  // Guest lookup helper
+  const isGuest = kt => {
+    const m = allMembers.find(mm => String(mm.kennitala)===String(kt));
+    return m && m.role === 'guest';
+  };
+  const guestTag = `<span style="font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 3px;margin-left:2px">${IS?'gestur':'guest'}</span>`;
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
-  const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
+  const helmTag = `<span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">${IS?'Stýri':'Helm'}</span>`;
+
+  // Build roster: [{name, roleBadge, isHelm, isPending}]
+  const roster = [];
+  // Skipper
+  const skipperTrip = isSki ? t : linkedSkipper;
+  if (skipperTrip) {
+    const skName = esc(skipperTrip.memberName||'?');
+    const skHelm = skipperTrip.helm && skipperTrip.helm!=='false';
+    const skGuest = isGuest(skipperTrip.kennitala);
+    roster.push({name:skName, role:'skipper', helm:skHelm, guest:skGuest, pending:false});
+  }
+  // Confirmed crew
+  linkedCrew.forEach(x => {
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
-    return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
-  }).join(', ') : esc(t.crew||1);
-  // Show pending crew names alongside confirmed ones
-  const pendingCrewNames = pendingCrewConfs.map(c => esc(c.toName||'?')+' '+pendingTag)
-    .concat(pendingCrewIn.map(c => esc(c.fromName||'?')+' '+pendingTag));
-  const allCrewDisplay = [crewNames, ...pendingCrewNames].filter(Boolean);
+    roster.push({name, role:'crew', helm:xHelm, guest:isGuest(x.kennitala), pending:false});
+  });
+  // Pending crew
+  pendingCrewConfs.forEach(c => roster.push({name:esc(c.toName||'?'), role:'crew', helm:false, guest:false, pending:true}));
+  pendingCrewIn.forEach(c => roster.push({name:esc(c.fromName||'?'), role:'crew', helm:false, guest:false, pending:true}));
 
-  const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}</span></div>` : '';
-  const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
-  const crewNamesRow = (linkedCrew.length || pendingCrewNames.length)
-    ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${allCrewDisplay.join(', ')}</span></div>`
+  // Build crew names display (for the crew row)
+  const crewRosterHtml = roster.filter(r=>r.role==='crew').map(r => {
+    let html = r.name;
+    if(r.helm) html += ' ' + helmTag;
+    if(r.guest) html += ' ' + guestTag;
+    if(r.pending) html += ' ' + pendingTag;
+    return html;
+  }).join(', ');
+
+  // Build crew rows for expanded detail
+  const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${totalCrew}</span></div>`;
+  const skipperNameRow = skipperTrip ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(skipperTrip.memberName||'?')}${skipperTrip.helm&&skipperTrip.helm!=='false'?' '+helmTag:''}${isGuest(skipperTrip.kennitala)?' '+guestTag:''}</span></div>` : '';
+  const crewNamesRow = crewRosterHtml
+    ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${crewRosterHtml}</span></div>`
     : '';
 
-  // Helm assignment row — read-only display showing who was at the helm
-  const isOwner = String(t.kennitala) === String(user.kennitala);
-  const isLinked = !!(t.linkedCheckoutId || t.linkedTripId || t.isLinked);
-  const showHelmSection = parseInt(t.crew||1) > 1;
+  // Helm row — read-only pills for who was at the helm
+  const showHelmSection = totalCrew > 1;
   let helmRow = '';
   if (showHelmSection) {
-    const helmNames = [];
-    if (isHelm) helmNames.push(esc(t.memberName||''));
-    linkedCrew.forEach(x => {
-      if (x.helm && x.helm!=='false') helmNames.push(esc(x.memberName||x.crewMemberName||'?'));
-    });
-    // Pending helm confirmations
+    const helmNames = roster.filter(r => r.helm && !r.pending).map(r => r.name);
     const pendingHelmNames = pendingHelmConfs.map(c => esc(c.toName||'?'))
       .concat(pendingHelmIn.map(c => esc(c.fromName||'?')));
     if (helmNames.length || pendingHelmNames.length) {
@@ -644,26 +664,28 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
-  const distRow  = t.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
+  const distRow  = src.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(src.distanceNm)} nm</span></div>` : '';
 
-  // Track row: show map thumbnail if simplified track available, otherwise link
-  let trackPoints = []; try { if(t.trackSimplified) trackPoints = JSON.parse(t.trackSimplified); } catch(e){}
+  // Track row: show own track, or fall back to skipper's track for crew
+  const trackTrip = (t.trackSimplified || t.trackFileUrl) ? t : (linkedSkipper && (linkedSkipper.trackSimplified || linkedSkipper.trackFileUrl) ? linkedSkipper : t);
+  let trackPoints = []; try { if(trackTrip.trackSimplified) trackPoints = JSON.parse(trackTrip.trackSimplified); } catch(e){}
   const trackDeleteBtn = isOwner && t.trackFileUrl ? `<button class="track-delete-btn" onclick="event.stopPropagation();deleteTripTrack('${esc(t.id)}')">${IS?'Eyða leið':'Delete track'}</button>` : '';
   let trackRow = '';
   if (trackPoints.length >= 2) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span><span class="trip-exp-val">
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}${trackTrip.trackSource?' · '+esc(trackTrip.trackSource):''}${trackDeleteBtn}</span><span class="trip-exp-val">
       <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${IS?'Smelltu til að stækka':'Click to expand'}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
+      ${trackTrip.trackFileUrl?`<a href="${esc(trackTrip.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
     </span></div>`;
-  } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+  } else if (trackTrip.trackFileUrl) {
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(trackTrip.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${trackTrip.trackSource?' · '+esc(trackTrip.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
-  // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
+  // Skipper note — for crew members, pull from src (skipper's trip) if own record is blank
   const canEditSkipperNote = isSki && isOwner;
-  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const effectiveSkipperNote = t.skipperNote || (linkedSkipper?.skipperNote) || '';
+  const skipperNoteRow = (effectiveSkipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${effectiveSkipperNote?esc(effectiveSkipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   // Private note (only visible to owner) — always show for owner with edit
   const canEditNote = isOwner;
   const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
@@ -694,14 +716,14 @@ function tripCard(t){
         <div class="trip-date-yr">${esc(p.yr)}</div>
       </div>
       <div class="trip-body">
-        <div class="trip-boat">${esc(t.boatName||'—')}</div>
+        <div class="trip-boat">${esc(t.boatName||'—')}${!isSki&&linkedSkipper?` <span style="font-size:11px;color:var(--muted);font-weight:400">· ${esc(linkedSkipper.memberName||'')}</span>`:''}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
           ${showHelm?`<span class="trip-badge badge-helm">${IS?'Stýri':'Helm'}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
-          ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
+          ${(src.distanceNm)?`<span>${esc(src.distanceNm)} nm</span>`:''}
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
           ${isKeelboat&&portLine?portLine:''}
         </div>
@@ -1409,10 +1431,20 @@ function initSingleThumbMap(el) {
 }
 
 function openMapModal(tripId) {
-  const trip = myTrips.find(t => t.id === tripId);
+  let trip = myTrips.find(t => t.id === tripId);
   if (!trip) return;
+  // If this trip has no track, try the linked skipper's trip
   let pts;
-  try { pts = JSON.parse(trip.trackSimplified); } catch(e) { return; }
+  try { pts = JSON.parse(trip.trackSimplified); } catch(e) {}
+  if ((!pts || pts.length < 2) && (trip.linkedTripId || trip.linkedCheckoutId)) {
+    const skipper = allTrips.find(x =>
+      x.id !== trip.id && (!x.role || x.role==='skipper') && (
+        (trip.linkedCheckoutId && x.linkedCheckoutId === trip.linkedCheckoutId) ||
+        (trip.linkedTripId && x.id === trip.linkedTripId)
+      )
+    );
+    if (skipper) { try { pts = JSON.parse(skipper.trackSimplified); trip = skipper; } catch(e) {} }
+  }
   if (!pts || pts.length < 2) return;
 
   const overlay = document.getElementById('mapModal');
@@ -1679,10 +1711,16 @@ function closeConfModal(){
   document.body.style.overflow='';
 }
 
-function _confDesc(c){
-  if(c.type==='crew_assigned') return s('member.crewAssigned');
-  if(c.type==='crew_join') return s('member.crewJoin');
-  if(c.type==='helm') return s('member.helmReq');
+function _confDesc(c, direction){
+  if(direction==='outgoing'){
+    if(c.type==='crew_assigned') return IS?'skráð(ur) sem áhöfn á':'assigned as crew on';
+    if(c.type==='crew_join') return IS?'beðið um að taka þátt í':'requested to join';
+    if(c.type==='helm') return IS?'merkt(ur) sem stýrimaður á':'marked as helm on';
+  }
+  // incoming (default)
+  if(c.type==='crew_assigned') return IS?'skráði þig sem áhöfn á':'assigned you as crew on';
+  if(c.type==='crew_join') return IS?'vill taka þátt í siglingu þinni á':'wants to join your trip on';
+  if(c.type==='helm') return IS?'merkti þig sem stýrimann á':'marked you as helm on';
   return c.type;
 }
 
@@ -1740,7 +1778,7 @@ function renderConfirmations(){
       return '<div class="conf-card">'+
         '<div class="conf-line">'+
           '<span class="conf-name">'+esc(c.toName||'?')+'</span>'+
-          '<span class="conf-type">'+_confDesc(c)+'</span>'+
+          '<span class="conf-type">'+_confDesc(c,'outgoing')+'</span>'+
           '<span class="conf-boat-info">'+esc(c.boatName||'')+'</span>'+
           '<span class="conf-date-info">'+esc(c.date||'')+(c.timeOut?' '+esc(c.timeOut):'')+'</span>'+
           '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
