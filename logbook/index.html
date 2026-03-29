@@ -1060,7 +1060,7 @@ const _thumbMaps = {};  // id → Leaflet map instance (thumbnails)
 let   _fullMap   = null;
 
 function addSeaLayers(map) {
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; CartoDB' }).addTo(map);
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom:17, maxZoom:19, opacity:0.9 }).addTo(map);
 }
 
