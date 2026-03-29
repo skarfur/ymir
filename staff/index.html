@@ -11,6 +11,7 @@
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
+<script src="../shared/tides.js"></script>
 <script src="../shared/boats.js"></script>
 <script src="../shared/maintenance.js"></script>
   <script src="../shared/payroll.js"></script>
@@ -261,17 +262,7 @@ border-bottom:1px solid var(--border)44; }
   <!-- ══ STAFF STATUS ══ -->
 
     <!-- ══ TIDES ══ -->
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;
-    padding:14px 18px;margin-bottom:20px">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="staff.tideHeader">TIDES · FAXAFLÓI</div>
-    <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px">
-      <span style="font-size:20px">🌊</span>
-      <div>
-        <div style="color:var(--text)" data-s="staff.tideComingSoon">Tide data coming soon</div>
-        <div style="font-size:10px;margin-top:2px" data-s="staff.tideDesc">Real-time tidal predictions for Reykjavík harbour</div>
-      </div>
-    </div>
-  </div>
+  <div id="tideWidget" style="margin-bottom:20px"></div>
 
   <div id="staffStatusStrip" style="margin-bottom:12px">
     <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
@@ -500,6 +491,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateFlagCard(snap);
     },
   }).start();
+
+  tideWidget(document.getElementById('tideWidget')).start();
 
   let _cfgRes = null;
   try {
