@@ -45,7 +45,7 @@
 .trip-date-yr{font-size:9px;color:var(--muted)}
 .trip-body{padding:10px 12px;min-width:0}
 .trip-boat{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
-.trip-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
+.trip-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
 .trip-badge{font-size:9px;letter-spacing:.6px;padding:2px 6px;border-radius:8px;border:1px solid;text-transform:uppercase;flex-shrink:0}
 .badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
@@ -493,12 +493,10 @@ function tripCard(t){
   const eWv   = wx?.wv!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '';
   const ePres = wx?.pres!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '';
 
-  // Port row (keelboat, full-width)
-  const portRow = isKeelboat && (dep||arr) ? (
-    dep && arr && dep!==arr
-      ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Brottfararstaður → Komustaður':'Departure → Arrival'}</span><span class="trip-exp-val">${esc(dep)} → ${esc(arr)}</span></div>`
-      : `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Höfn':'Port'}</span><span class="trip-exp-val">⚓️ ${esc(dep||arr)}</span></div>`
-  ) : '';
+  // Port rows (keelboat, separate cells for departure/arrival)
+  const depPortRow = isKeelboat && dep ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Brottfararstaður':'Departure port'}</span><span class="trip-exp-val">${esc(dep)}</span></div>` : '';
+  const arrPortRow = isKeelboat && arr ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival port'}</span><span class="trip-exp-val">${esc(arr)}</span></div>` : '';
+  const portRow = depPortRow + arrPortRow;
 
   // Crew row (full-width): show linked names if present, otherwise count
   const linkedCrew = myTrips.filter(x =>
@@ -510,7 +508,8 @@ function tripCard(t){
     const xHelm = x.helm && x.helm!=='false';
     return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
   }).join(', ') : esc(t.crew||1);
-  const crewRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${crewNames}</span></div>`;
+  const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
+  const crewNamesRow = linkedCrew.length ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${crewNames}</span></div>` : '';
 
   // Helm assignment row — shown to the skipper when crew > 1, allows toggling after the fact
   const isOwner = String(t.kennitala) === String(user.kennitala);
@@ -538,7 +537,7 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
-  const distRow  = t.distanceNm ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
+  const distRow  = t.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
 
   // Track row: show map thumbnail if simplified track available, otherwise link
   let trackPoints = []; try { if(t.trackSimplified) trackPoints = JSON.parse(t.trackSimplified); } catch(e){}
@@ -602,15 +601,17 @@ function tripCard(t){
         <div class="exp-section-hdr">${IS?'Upplýsingar um bát':'Boat Details'}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
       </div>`:''}
-      ${(portRow||t.timeOut||t.timeIn||t.locationName||crewRow||distRow||t.hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
+      ${(portRow||t.timeOut||t.timeIn||t.locationName||t.crew||distRow||t.hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
         ${(()=>{
-          const hasDetailTrip = !!(t.locationName||crewRow||distRow||t.hoursDecimal||helmRow);
-          const toplineTrip = portRow
-            + (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Brottfarartími':'Departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
-            + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Komutími':'Returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'');
-          const detailTrip = (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Siglingasvæði':'Sailing area')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
+          const hasDetailTrip = !!(t.locationName||distRow||t.hoursDecimal||crewCountRow||crewNamesRow||helmRow);
+          const toplineTrip =
+              (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Brottfarartími':'Departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
+            + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Komutími':'Returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'')
+            + portRow;
+          const detailTrip =
+              (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Siglingasvæði':'Sailing area')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
             + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Tímalengd':'Duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
-            + distRow + crewRow + helmRow;
+            + distRow + crewCountRow + crewNamesRow + helmRow;
           return (hasDetailTrip
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Upplýsingar um ferð':'Trip Details')+' <span class="exp-chevron">▾</span></div>'
               + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
