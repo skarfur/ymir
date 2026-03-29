@@ -627,7 +627,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
   const WX_REFRESH_MS = 10 * 60 * 1000;
   return {
     refresh,
-    start()  { refresh(); timer = setInterval(refresh, WX_REFRESH_MS); },
+    start()  { setTimeout(refresh, 1500); timer = setInterval(refresh, WX_REFRESH_MS); },
     stop()   { if (timer) clearInterval(timer); },
   };
 }
