@@ -550,6 +550,7 @@ async function submitLaunch() {
       locationId:lid, locationName:location.name||lid,
       checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
       departurePort:depPort,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
       memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
@@ -558,6 +559,7 @@ async function submitLaunch() {
     checkouts.push({
       id:res.id, boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
       memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
       locationId:lid, locationName:location.name||lid,
       checkedOutAt:tout, expectedReturn:ret, status:'out',
     });
@@ -698,30 +700,14 @@ function renderLandingChecklist() {
     '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
 
-  // Fetch linked crew: first check confirmed trips, then pending confirmations
+  // Read crew names directly from the checkout record — no extra API calls
   if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
     window._retCrewTripsFetched=true;
-    Promise.all([
-      apiGet('getTrips',{linkedCheckoutId:returnCo.id}),
-      apiGet('getConfirmations',{kennitala:user.kennitala}),
-    ]).then(function(results){
-      var trips=(results[0].trips||[]).filter(function(t){return t.role==='crew';});
-      // Also include pending crew_assigned confirmations for this checkout
-      var confs=(results[1].outgoing||[]).filter(function(c){
-        return c.type==='crew_assigned' && c.linkedCheckoutId===returnCo.id && c.status==='pending';
-      });
-      // Merge: use trips if they exist, otherwise use confirmations as placeholder crew entries
-      var crewEntries=trips.slice();
-      confs.forEach(function(c){
-        // Avoid duplicates — skip if a trip already exists for this crew member
-        var already=crewEntries.some(function(t){return t.kennitala===c.toKennitala;});
-        if(!already){
-          crewEntries.push({id:'conf_'+c.id,memberName:c.toName,kennitala:c.toKennitala,_confId:c.id});
-        }
-      });
-      window._retCrewTrips=crewEntries;
-      _renderHelmSection();
-    }).catch(function(){});
+    var parsed=parseJson(returnCo.crewNames,[]);
+    window._retCrewTrips=parsed.map(function(c){
+      return {id:'crew_'+c.kennitala,memberName:c.name,kennitala:c.kennitala};
+    });
+    _renderHelmSection();
   }
 
   // Resolve home/departure port name for keelboats
@@ -818,11 +804,9 @@ function _renderHelmSection(){
   var entries=window._retCrewTrips||[];
   if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
   el.innerHTML=entries.map(function(t){
-    var isPending=!!t._confId;
-    var label=esc(t.memberName||'?')+(isPending?' <span style="font-size:9px;color:var(--muted)">'+(IS?'(óstaðfest)':'(unconfirmed)')+'</span>':'');
     return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-      '<input type="checkbox" class="helm-toggle" data-helm-trip-id="'+esc(t.id)+'"'+(isPending?' data-helm-conf-id="'+esc(t._confId)+'" data-helm-to-kt="'+esc(t.kennitala||'')+'" data-helm-to-name="'+esc(t.memberName||'')+'"':'')+' style="width:16px;height:16px;accent-color:var(--brass)">'+
-      '<span>'+label+'</span></label>';
+      '<input type="checkbox" class="helm-toggle" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+      '<span>'+esc(t.memberName||'?')+'</span></label>';
   }).join('');
 }
 
@@ -991,17 +975,14 @@ async function confirmCheckIn(coId) {
     ]);
     // Create helm confirmation requests for crew members
     var helmRequests=[];
-    document.querySelectorAll('.helm-toggle[data-helm-trip-id]').forEach(function(cb){
-      if(!cb.checked) return;
-      var tid=cb.dataset.helmTripId;
-      var ct=(window._retCrewTrips||[]).find(function(t){return t.id===tid;});
-      if(!ct) return;
+    document.querySelectorAll('.helm-toggle').forEach(function(cb){
+      if(!cb.checked || cb.dataset.helmSelf) return;
       helmRequests.push(apiPost('createConfirmation',{
         type:'helm',
         fromKennitala:user.kennitala, fromName:user.name,
-        toKennitala:ct.kennitala||cb.dataset.helmToKt||'',
-        toName:ct.memberName||cb.dataset.helmToName||'',
-        tripId:ct._confId?'':tid, linkedCheckoutId:coId,
+        toKennitala:cb.dataset.helmKt||'',
+        toName:cb.dataset.helmName||'',
+        linkedCheckoutId:coId,
         boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
         date:today, helm:true,
       }).catch(function(){}));

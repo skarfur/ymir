@@ -1417,6 +1417,7 @@ function saveCheckout_(b) {
     checkedInAt: '', wxSnapshot: wxSnap,
     preLaunchChecklist: b.preLaunchChecklist || '', notes: b.notes || '',
     status: 'out', createdAt: ts, departurePort: b.departurePort || '',
+    crewNames: b.crewNames || '',
   });
   cDel_('checkouts'); return okJ({ id, created: true });
 }
@@ -1615,7 +1616,8 @@ function ensureConfirmationCols_() {
 function getConfirmations_(b) {
   if (!b.kennitala) return failJ('kennitala required');
   var kt = String(b.kennitala);
-  var all = readAll_('tripConfirmations');
+  var all;
+  try { all = readAll_('tripConfirmations'); } catch(e) { all = []; }
   var incoming = all.filter(function(r) { return String(r.toKennitala) === kt; });
   var outgoing = all.filter(function(r) { return String(r.fromKennitala) === kt; });
   return okJ({ incoming: incoming, outgoing: outgoing });
@@ -3555,7 +3557,7 @@ var SCHEMA_ = {
     'locationId','locationName',
     'checkedOutAt','expectedReturn','checkedInAt',
     'wxSnapshot','preLaunchChecklist','afterSailChecklist','notes',
-    'status','createdAt','departurePort',
+    'status','createdAt','departurePort','crewNames',
     // group checkouts
     'isGroup','participants','staffNames','boatNames','boatIds',
     'activityTypeId','activityTypeName','linkedActivityId',
@@ -3705,5 +3707,36 @@ function addRecentTripColumns() {
   } else {
     Logger.log('trips already has all keelboat Phase-1 columns — nothing to add');
   }
+}
+
+// ── Focused helper: add crewNames to checkouts + skipperNote to trips +
+//    create trip_confirmations tab ────────────────────────────────────────
+function addHandshakeColumns() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+
+  // 1) checkouts → crewNames
+  var coSheet = ss.getSheetByName('checkouts');
+  if (coSheet) {
+    var coHdr = coSheet.getRange(1, 1, 1, coSheet.getLastColumn()).getValues()[0].map(String);
+    if (!coHdr.includes('crewNames')) {
+      coSheet.getRange(1, coHdr.length + 1).setValue('crewNames');
+      Logger.log('Added "crewNames" to checkouts');
+    } else { Logger.log('checkouts already has crewNames'); }
+  } else { Logger.log('checkouts tab not found — run setupSpreadsheet() first'); }
+
+  // 2) trips → skipperNote
+  var trSheet = ss.getSheetByName('trips');
+  if (trSheet) {
+    var trHdr = trSheet.getRange(1, 1, 1, trSheet.getLastColumn()).getValues()[0].map(String);
+    if (!trHdr.includes('skipperNote')) {
+      trSheet.getRange(1, trHdr.length + 1).setValue('skipperNote');
+      Logger.log('Added "skipperNote" to trips');
+    } else { Logger.log('trips already has skipperNote'); }
+  } else { Logger.log('trips tab not found — run setupSpreadsheet() first'); }
+
+  // 3) trip_confirmations tab (create if missing)
+  var confCols = SCHEMA_.trip_confirmations;
+  ensureTab_(ss, 'trip_confirmations', confCols);
+  Logger.log('trip_confirmations tab ready');
 }
 

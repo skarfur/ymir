@@ -848,9 +848,10 @@ async function submitCheckout() {
       memberPhone: member.phone||'', memberIsMinor: member.isMinor||false,
       guardianName: member.guardianName||'', guardianPhone: member.guardianPhone||'',
       wxSnapshot: snap,
+      crewNames: (function(){ var _cn=Array.from(document.querySelectorAll('#coCrewInputs input')).map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||''};}).filter(function(c){return c.name;}); return _cn.length?JSON.stringify(_cn):''; })(),
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
-    // Save crew trips for named crew members
+    // Create confirmation requests for named crew members
     const _crewNames = Array.from(document.querySelectorAll('#coCrewInputs input'))
       .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
       .filter(c => c.name);

@@ -1596,7 +1596,10 @@ async function loadConfirmations(){
     _confirmations={incoming:res.incoming||[],outgoing:res.outgoing||[]};
     _confirmationsLoaded=true;
     updateConfBadge();
-  }catch(e){console.warn('loadConfirmations:',e.message);}
+  }catch(e){
+    console.warn('loadConfirmations:',e.message);
+    _confirmationsLoaded=true;
+  }
 }
 
 function updateConfBadge(){
