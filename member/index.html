@@ -797,8 +797,13 @@ function renderLandingChecklist() {
     '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEGAR SKÝRINGAR':'PERSONAL NOTE')+'</label>'+
-      '<textarea id="retNotes" rows="2" placeholder="'+(IS?'Valfrjáls athugasemd fyrir siglingabókina':'Optional note for your logbook')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'SKIPSTJÓRASKÝRING':'SKIPPER NOTE')+'</label>'+
+      '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+(IS?'Sýnileg öllum á ferðinni.':'Visible to everyone on this trip.')+'</div>'+
+      '<textarea id="retSkipperNote" rows="2" placeholder="'+(IS?'Athugasemd um ferðina (sýnileg áhöfn)':'Trip note (visible to crew)')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+    '</div>'+
+    '<div class="field" style="margin-bottom:14px">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEG ATHUGASEMD':'PRIVATE NOTE')+'</label>'+
+      '<textarea id="retNotes" rows="2" placeholder="'+(IS?'Aðeins sýnilegt þér':'Only visible to you')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
     '<div class="btn-row">'+
       '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+(IS?'Til baka':'Back')+'</button>'+
@@ -928,6 +933,7 @@ async function confirmCheckIn(coId) {
   if(boxes.length&&!Array.from(boxes).every(function(b){return b.checked;})){document.getElementById('landCheckErr').style.display='block';return;}
   var timeIn=window._retTimeIn||fmtTimeNow(), tripSnap=window._retWxSnap||null;
   var notes=(document.getElementById('retNotes')||{}).value||'';
+  var skipperNote=(document.getElementById('retSkipperNote')||{}).value||'';
   var co=checkouts.find(function(c){return c.id===coId;}); if(!co) return;
   var tout=(co.checkedOutAt||co.timeOut||'').slice(0,5);
   var h=(tout&&timeIn)?((new Date('2000-01-01T'+timeIn)-new Date('2000-01-01T'+tout))/3600000):0;
@@ -976,7 +982,7 @@ async function confirmCheckIn(coId) {
       locationId:co.locationId||'',locationName:co.locationName||'',
       timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
       beaufort:tripSnap?tripSnap.bft:null,windDir:tripSnap?(tripSnap.dir||tripSnap.wDir||''):'',
-      wxSnapshot:tripSnap?JSON.stringify(tripSnap):null,notes,role:'skipper',linkedCheckoutId:coId,isLinked:true,
+      wxSnapshot:tripSnap?JSON.stringify(tripSnap):null,notes,skipperNote,role:'skipper',linkedCheckoutId:coId,isLinked:true,
       helm:helmSelf,
       departurePort:co.departurePort||'',arrivalPort,
       distanceNm,trackFileUrl,trackSimplified,trackSource,

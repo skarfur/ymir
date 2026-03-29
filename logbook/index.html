@@ -609,7 +609,8 @@ function tripCard(t){
     trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
-  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skýringar':'Notes'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
+  const skipperNoteRow = t.skipperNote ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'}</span><span class="trip-exp-val">${esc(t.skipperNote)}</span></div>` : '';
+  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     if (!urls.length) return '';
@@ -625,7 +626,7 @@ function tripCard(t){
     return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
-  const hasNotes   = !!(notesRow||photosRow||trackRow);
+  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow);
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
 
 
@@ -687,7 +688,7 @@ function tripCard(t){
               + '<div class="trip-expand-grid">'+toplineWx+'</div>');
         })()}
       </div>`:''}
-      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${notesRow}${trackRow}${photosRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow}${notesRow}${trackRow}${photosRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -723,7 +724,7 @@ function applyFilter(){
       if(['calm','light','moderate','strong'].includes(wind) && bftGroup(b)!==wind) return false;
     }
     if(txt){
-      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.boatCategory].join(' ').toLowerCase();
+      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.skipperNote,t.boatCategory].join(' ').toLowerCase();
       if(!hay.includes(txt)) return false;
     }
     return true;
