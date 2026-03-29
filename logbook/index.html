@@ -1060,8 +1060,7 @@ const _thumbMaps = {};  // id → Leaflet map instance (thumbnails)
 let   _fullMap   = null;
 
 function addSeaLayers(map) {
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'OSM' }).addTo(map);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom:13, maxZoom:19, attribution:'Esri Ocean' }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png', { maxZoom:19, attribution:'CartoDB' }).addTo(map);
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom:17, maxZoom:19, opacity:0.9 }).addTo(map);
 }
 
