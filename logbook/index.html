@@ -149,6 +149,22 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .upload-delete-btn:hover{background:#c0392b}
 .track-delete-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-left:8px;opacity:.7}
 .track-delete-btn:hover{opacity:1;text-decoration:underline}
+/* ── Confirmations ── */
+.conf-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.conf-card .conf-from{font-size:12px;font-weight:500;color:var(--text)}
+.conf-card .conf-detail{font-size:11px;color:var(--muted);margin-top:3px}
+.conf-card .conf-boat{font-size:11px;color:var(--brass);margin-top:2px}
+.conf-card .conf-actions{display:flex;gap:6px;margin-top:8px}
+.conf-card .conf-actions button{font-size:11px;font-family:inherit;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid}
+.conf-card .btn-confirm{background:var(--green)18;color:var(--green);border-color:var(--green)55}
+.conf-card .btn-confirm:hover{background:var(--green)33}
+.conf-card .btn-reject{background:var(--red)18;color:var(--red);border-color:var(--red)55}
+.conf-card .btn-reject:hover{background:var(--red)33}
+.conf-status{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;letter-spacing:.3px}
+.conf-status.pending{background:var(--yellow)22;color:var(--yellow)}
+.conf-status.confirmed{background:var(--green)22;color:var(--green)}
+.conf-status.rejected{background:var(--red)22;color:var(--red)}
+.conf-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:600;margin-left:4px;padding:0 4px}
 </style>
 </head>
 <body>
@@ -175,6 +191,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   <div id="shareBar" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
     <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="openLogModal()">+ Manually log a trip</button>
+    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0;position:relative" onclick="openConfirmationsModal()"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
     <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
       <div id="shareCatChecks" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
@@ -240,6 +257,20 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   <div class="map-modal-body" id="mapModalBody"></div>
 </div>
 
+<!-- Confirmations modal -->
+<div class="modal-overlay hidden" id="confirmationsModal" onclick="if(event.target===this)closeConfModal()">
+  <div class="modal-sheet" style="max-width:520px">
+    <div class="modal-title">
+      <span id="confirmationsTitle"></span>
+      <button class="modal-close" onclick="closeConfModal()">&#10005;</button>
+    </div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.incoming"></div>
+    <div id="incomingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:14px 0 8px" data-s="member.outgoing"></div>
+    <div id="outgoingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+</div>
+
 <!-- Log manually modal -->
 <div class="modal-overlay hidden" id="logModal">
   <div class="modal-sheet">
@@ -257,22 +288,10 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
       <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
 
-      <!-- Notes/photos/GPS extras when a club trip is selected -->
+      <!-- Confirmation request form when a club trip is selected -->
       <div id="joinExtras" style="display:none;margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border-l);border-radius:8px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">Add to your log entry</div>
-        <div class="form-field"><label>Notes <span style="font-size:9px;color:var(--muted)">optional</span></label>
-          <textarea id="jNotes" rows="2" placeholder="Comments, observations…"></textarea>
-        </div>
-        <div class="form-field">
-          <label>GPS Track — GPX / KML / KMZ <span style="font-size:9px;color:var(--muted)">optional</span></label>
-          <input type="file" id="jTrackFile" accept=".gpx,.kml,.kmz" onchange="handleJoinTrackFile(this)" style="font-size:11px;color:var(--text)">
-          <div id="jTrackStatus" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
-        </div>
-        <div class="form-field">
-          <label>Photos <span style="font-size:9px;color:var(--muted)">optional</span></label>
-          <input type="file" id="jPhotoFiles" accept="image/*" multiple onchange="handleJoinPhotoFiles(this)" style="font-size:11px;color:var(--text)">
-          <div id="jPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
-        </div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Request to join this trip</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:12px">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
         <div id="jErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
         <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Request to join</button>
       </div>
@@ -414,8 +433,6 @@ let _pendingTrack  = null;   // {fileName, fileData (base64), mimeType}
 let _pendingPhotos = [];     // [{fileName, fileData (base64), mimeType}]
 let _lastPortInput = null;   // which port input was last typed into
 let _selectedClubTrip = null;
-let _joinPendingTrack  = null;
-let _joinPendingPhotos = [];
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function parseDateParts(d){
@@ -592,7 +609,8 @@ function tripCard(t){
     trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
-  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Skýringar':'Notes'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
+  const skipperNoteRow = t.skipperNote ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'}</span><span class="trip-exp-val">${esc(t.skipperNote)}</span></div>` : '';
+  const notesRow = t.notes ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'}</span><span class="trip-exp-val">${esc(t.notes)}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     if (!urls.length) return '';
@@ -608,7 +626,7 @@ function tripCard(t){
     return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres);
-  const hasNotes   = !!(notesRow||photosRow||trackRow);
+  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow);
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres);
 
 
@@ -670,7 +688,7 @@ function tripCard(t){
               + '<div class="trip-expand-grid">'+toplineWx+'</div>');
         })()}
       </div>`:''}
-      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${notesRow}${trackRow}${photosRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow}${notesRow}${trackRow}${photosRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -706,7 +724,7 @@ function applyFilter(){
       if(['calm','light','moderate','strong'].includes(wind) && bftGroup(b)!==wind) return false;
     }
     if(txt){
-      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.boatCategory].join(' ').toLowerCase();
+      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.skipperNote,t.boatCategory].join(' ').toLowerCase();
       if(!hay.includes(txt)) return false;
     }
     return true;
@@ -768,7 +786,6 @@ function closeLogModal(){
   document.body.style.overflow='';
   document.getElementById('joinExtras').style.display='none';
   _selectedClubTrip=null;
-  _joinPendingTrack=null; _joinPendingPhotos=[];
 }
 
 function showStep1(){
@@ -1031,69 +1048,15 @@ function handlePhotoFiles(input){
   });
 }
 
-function handleJoinTrackFile(input){
-  const file=input.files[0];
-  if(!file){ _joinPendingTrack=null; document.getElementById('jTrackStatus').textContent=''; return; }
-  const statusEl=document.getElementById('jTrackStatus');
-  statusEl.textContent=IS?'Lesur skrá…':'Reading file…';
-  const reader=new FileReader();
-  reader.onload=function(e){
-    _joinPendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
-    statusEl.textContent=(IS?'Tilbúið: ':'Ready: ')+file.name;
-    statusEl.style.color='var(--brass)';
-  };
-  reader.onerror=function(){ statusEl.textContent=IS?'Lestur mistókst':'Read error'; statusEl.style.color='var(--red)'; _joinPendingTrack=null; };
-  reader.readAsDataURL(file);
-}
-
-function handleJoinPhotoFiles(input){
-  const files=Array.from(input.files);
-  _joinPendingPhotos=[];
-  const preview=document.getElementById('jPhotoPreview');
-  preview.innerHTML='';
-  files.forEach(function(file){
-    const reader=new FileReader();
-    reader.onload=function(e){
-      _joinPendingPhotos.push({fileName:file.name, fileData:e.target.result, mimeType:file.type||'image/jpeg'});
-      const img=document.createElement('img');
-      img.src=e.target.result; img.className='photo-thumb';
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 async function submitJoinTrip(){
   if(!_selectedClubTrip){ showToast(IS?'Engin ferð valin':'No trip selected','err'); return; }
   const t=_selectedClubTrip;
-  const notes=document.getElementById('jNotes').value.trim();
   const errEl=document.getElementById('jErr');
   errEl.style.display='none';
   const btn=document.getElementById('jSubmitBtn');
   btn.disabled=true; btn.textContent=IS?'Sendir beiðni…':'Sending request…';
 
-  // Upload GPS track
-  let trackFileUrl='', trackSource='';
-  if(_joinPendingTrack){
-    try{
-      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_joinPendingTrack.fileName,fileData:_joinPendingTrack.fileData,mimeType:_joinPendingTrack.mimeType});
-      if(tr.ok){ trackFileUrl=tr.trackFileUrl||''; trackSource=tr.trackSource||''; }
-      else showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
-    }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
-  }
-
-  // Upload photos in parallel
-  const photoUrls=[];
-  await Promise.all(_joinPendingPhotos.map(async ph=>{
-    try{
-      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
-      if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
-      else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
-    }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
-  }));
-
   try{
-    // Create a confirmation request to the skipper instead of directly saving
     await apiPost('createConfirmation',{
       type:'crew_join',
       fromKennitala: user.kennitala, fromName: user.name,
@@ -1106,9 +1069,8 @@ async function submitJoinTrip(){
       hoursDecimal: t.hoursDecimal,
       role:'crew',
       beaufort: t.beaufort||'', windDir: t.windDir||'',
+      wxSnapshot: t.wxSnapshot||'',
     });
-    // Upload GPS track and photos to the pending trip data (will be attached when confirmed)
-    // For now these are stored as part of the confirmation metadata
     showToast(IS?'Beiðni send til skipstjóra ✓':'Request sent to skipper ✓','success');
     closeLogModal();
   }catch(e){
@@ -1169,12 +1131,6 @@ function joinTripAsCrew(tripId, el){
 
   _selectedClubTrip=t;
   // Reset extras form
-  _joinPendingTrack=null; _joinPendingPhotos=[];
-  document.getElementById('jTrackFile').value='';
-  document.getElementById('jTrackStatus').textContent='';
-  document.getElementById('jPhotoFiles').value='';
-  document.getElementById('jPhotoPreview').innerHTML='';
-  document.getElementById('jNotes').value='';
   document.getElementById('jErr').style.display='none';
   const btn=document.getElementById('jSubmitBtn');
   btn.disabled=false; btn.textContent=IS?'Senda beiðni':'Request to join';
@@ -1630,6 +1586,112 @@ async function requestTripValidation(id) {
     showToast(IS ? 'Óskað eftir staðfestingu' : 'Validation requested');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
+
+// ══ CONFIRMATIONS ════════════════════════════════════════════════════════════
+let _confirmations={incoming:[],outgoing:[]}, _confirmationsLoaded=false;
+
+async function loadConfirmations(){
+  try{
+    const res=await apiGet('getConfirmations',{kennitala:user.kennitala});
+    _confirmations={incoming:res.incoming||[],outgoing:res.outgoing||[]};
+    _confirmationsLoaded=true;
+    updateConfBadge();
+  }catch(e){console.warn('loadConfirmations:',e.message);}
+}
+
+function updateConfBadge(){
+  var pending=_confirmations.incoming.filter(function(c){return c.status==='pending';}).length;
+  var badge=document.getElementById('confBadge');
+  if(badge){badge.textContent=pending;badge.style.display=pending>0?'':'none';}
+}
+
+async function openConfirmationsModal(){
+  document.getElementById('confirmationsTitle').textContent=s('member.confirmationsTitle');
+  document.getElementById('confirmationsModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+  if(!_confirmationsLoaded) await loadConfirmations();
+  renderConfirmations();
+}
+
+function closeConfModal(){
+  document.getElementById('confirmationsModal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+function _confDesc(c){
+  if(c.type==='crew_assigned') return s('member.crewAssigned');
+  if(c.type==='crew_join') return s('member.crewJoin');
+  if(c.type==='helm') return s('member.helmReq');
+  return c.type;
+}
+
+function renderConfirmations(){
+  var inEl=document.getElementById('incomingConfirmations');
+  var outEl=document.getElementById('outgoingConfirmations');
+
+  var incoming=_confirmations.incoming.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
+  if(!incoming.length){
+    inEl.innerHTML='<div class="empty-note">'+s('member.noIncoming')+'</div>';
+  }else{
+    inEl.innerHTML=incoming.map(function(c){
+      var isPending=c.status==='pending';
+      return '<div class="conf-card">'+
+        '<div class="conf-from">'+esc(c.fromName||'?')+' '+_confDesc(c)+'</div>'+
+        '<div class="conf-boat">'+esc(c.boatName||'')+' &middot; '+esc(c.locationName||'')+'</div>'+
+        '<div class="conf-detail">'+esc(c.date||'')+(c.timeOut?' &middot; '+esc(c.timeOut):'')+(c.timeIn?'–'+esc(c.timeIn):'')+'</div>'+
+        (isPending?
+          '<div class="conf-actions">'+
+            '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')">'+s('member.confirmBtn')+'</button>'+
+            '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')">'+s('member.rejectBtn')+'</button>'+
+          '</div>':
+          '<div style="margin-top:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')+
+          '</div>'
+        )+'</div>';
+    }).join('');
+  }
+
+  var outgoing=_confirmations.outgoing.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
+  if(!outgoing.length){
+    outEl.innerHTML='<div class="empty-note">'+s('member.noOutgoing')+'</div>';
+  }else{
+    outEl.innerHTML=outgoing.map(function(c){
+      return '<div class="conf-card">'+
+        '<div class="conf-from">'+esc(c.toName||'?')+'</div>'+
+        '<div class="conf-boat">'+esc(c.boatName||'')+' &middot; '+esc(c.locationName||'')+'</div>'+
+        '<div class="conf-detail">'+esc(c.date||'')+(c.timeOut?' &middot; '+esc(c.timeOut):'')+'</div>'+
+        '<div style="margin-top:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+        (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+esc(c.rejectComment)+'</div>':'')+
+        '</div></div>';
+    }).join('');
+  }
+}
+
+async function respondConf(confId,response,rejectComment){
+  try{
+    await apiPost('respondConfirmation',{id:confId,response:response,rejectComment:rejectComment||''});
+    _confirmations.incoming.forEach(function(c){
+      if(c.id===confId){c.status=response;if(rejectComment)c.rejectComment=rejectComment;}
+    });
+    updateConfBadge();
+    renderConfirmations();
+    if(response==='confirmed'){
+      // Refresh logbook to show new trip
+      reload();
+    }
+    showToast(response==='confirmed'?(IS?'Staðfest ✓':'Confirmed ✓'):(IS?'Hafnað':'Rejected'));
+  }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
+}
+
+function promptRejectConf(confId){
+  var comment=prompt(s('member.rejectReason'));
+  if(comment===null) return;
+  respondConf(confId,'rejected',comment);
+}
+
+// Load confirmations after page init
+setTimeout(loadConfirmations,1500);
+
 </script>
 
 <!-- Guest prompt modal (for adding non-members as crew) -->

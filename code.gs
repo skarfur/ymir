@@ -1532,7 +1532,7 @@ function saveTrip_(b) {
       'crew','role','beaufort','windDir','wxSnapshot','notes',
       'isLinked','linkedCheckoutId','linkedTripId',
       'verified','verifiedBy','verifiedAt','staffComment',
-      'validationRequested','helm',
+      'validationRequested','helm','skipperNote',
       'distanceNm','departurePort','arrivalPort',
       'trackFileUrl','trackSimplified','trackSource',
       'photoUrls',
@@ -1556,6 +1556,7 @@ function saveTrip_(b) {
     linkedCheckoutId: b.linkedCheckoutId || '', linkedTripId: b.linkedTripId || '',
     verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
     validationRequested: b.validationRequested || false, helm: b.helm || false,
+    skipperNote: b.skipperNote || '',
     distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
     trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
     photoUrls: b.photoUrls || '',
@@ -1675,6 +1676,12 @@ function respondConfirmation_(b) {
            String(t.linkedTripId) === String(row.tripId));
       });
       if (!existing.length) {
+        // Get crew count and skipper note from the original trip if available
+        var origCrew = 1, origSkipperNote = '';
+        if (row.tripId) {
+          var origTrip = findOne_('trips', 'id', row.tripId);
+          if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; }
+        }
         var tripId = uid_();
         insertRow_('trips', {
           id: tripId, kennitala: crewKt, memberName: crewName,
@@ -1682,9 +1689,9 @@ function respondConfirmation_(b) {
           hoursDecimal: row.hoursDecimal || 0,
           boatId: row.boatId || '', boatName: row.boatName || '', boatCategory: row.boatCategory || '',
           locationId: row.locationId || '', locationName: row.locationName || '',
-          crew: 1, role: role,
+          crew: origCrew, role: role,
           beaufort: row.beaufort || '', windDir: row.windDir || '', wxSnapshot: row.wxSnapshot || '',
-          notes: '', isLinked: true,
+          notes: '', skipperNote: origSkipperNote, isLinked: true,
           linkedCheckoutId: row.linkedCheckoutId || '', linkedTripId: row.tripId || '',
           verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
           validationRequested: false, helm: false,
@@ -3576,7 +3583,7 @@ var SCHEMA_ = {
     'crew','role','beaufort','windDir','wxSnapshot','notes',
     'isLinked','linkedCheckoutId','linkedTripId',
     'verified','verifiedBy','verifiedAt','staffComment',
-    'validationRequested','helm',
+    'validationRequested','helm','skipperNote',
     // keelboat Phase-1 (v6)
     'distanceNm','departurePort','arrivalPort',
     'trackFileUrl','trackSimplified','trackSource',

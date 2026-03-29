@@ -367,6 +367,7 @@ function renderTrips() {
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
         </div>
       </div>
+      ${t.skipperNote ? `<div class="trip-notes" style="color:var(--brass)">📋 ${esc(t.skipperNote)}</div>` : ''}
       ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
