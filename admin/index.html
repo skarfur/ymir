@@ -2229,6 +2229,14 @@ function parseAblerCSV(text, existing) {
     if (norm) { if (!existNames.has(norm)) existNames.set(norm, []); existNames.get(norm).push(m); }
   });
 
+  // Helper: count differing characters between two strings of same length
+  function ktDistance(a, b) {
+    if (!a || !b || a.length !== b.length) return Infinity;
+    let d = 0;
+    for (let i = 0; i < a.length; i++) { if (a[i] !== b[i]) d++; }
+    return d;
+  }
+
   rows.forEach(r => {
     const ex = existKt.get(r.kennitala);
     if (ex) {
@@ -2236,12 +2244,21 @@ function parseAblerCSV(text, existing) {
         updated.push({ ...r, id: ex.id, _prev: ex });
       } else { unchanged.push(r); }
     } else {
-      // Check for fuzzy match: same name but different kennitala
+      // Check for possible duplicate: same name OR very similar kennitala
       const norm = r.name.trim().toLowerCase();
-      const nameMatches = existNames.get(norm) || [];
-      const fuzzy = nameMatches.find(m => m.kennitala !== r.kennitala);
-      if (fuzzy) {
-        ambiguous.push({ csvRow: r, existing: fuzzy });
+      const nameMatch = (existNames.get(norm) || []).find(m => m.kennitala !== r.kennitala);
+      // Also check for kennitala off by 1-2 digits (typo detection)
+      let ktMatch = null;
+      if (!nameMatch && r.kennitala.length >= 6) {
+        for (const m of existing) {
+          if (m.kennitala === r.kennitala) continue;
+          if (ktDistance(r.kennitala, m.kennitala) <= 2) { ktMatch = m; break; }
+        }
+      }
+      const match = nameMatch || ktMatch;
+      if (match) {
+        const reason = nameMatch ? 'Same name, different kennitala' : 'Similar kennitala (possible typo)';
+        ambiguous.push({ csvRow: r, existing: match, reason });
       } else {
         added.push(r);
       }
@@ -2267,19 +2284,21 @@ function renderImportPreview(res) {
     `<span class="import-chip ${c.cls}">${c.label}</span>`).join("");
 
   let html = "";
-  // Ambiguous matches: same name, different kennitala — admin must decide
+  // Ambiguous matches — admin must review before anything happens
   if (res.ambiguous.length) {
-    html += `<div style="font-size:11px;color:#9b59b6;margin:10px 0 4px;font-weight:500">NEEDS REVIEW — possible duplicates (${res.ambiguous.length})</div>`;
+    html += `<div style="font-size:11px;color:#9b59b6;margin:10px 0 4px;font-weight:500">NEEDS REVIEW — possible duplicates (${res.ambiguous.length})</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">These rows are skipped by default. Only change if you are sure.</div>`;
     res.ambiguous.forEach((a, idx) => {
       html += `<div class="import-ambig" data-ambig-idx="${idx}">
         <div style="flex:1">
-          <div><strong>${esc(a.csvRow.name)}</strong></div>
-          <div style="color:var(--muted)">CSV kennitala: ${esc(a.csvRow.kennitala)} &nbsp;|&nbsp; Existing kennitala: ${esc(a.existing.kennitala)}</div>
+          <div><strong>CSV:</strong> ${esc(a.csvRow.name)} <span style="color:var(--muted)">(${esc(a.csvRow.kennitala)})</span></div>
+          <div><strong>Existing:</strong> ${esc(a.existing.name)} <span style="color:var(--muted)">(${esc(a.existing.kennitala)})</span></div>
+          <div style="color:#9b59b6;font-size:10px;margin-top:2px">${esc(a.reason || 'Possible match')}</div>
         </div>
         <div class="import-ambig-btns">
-          <button onclick="resolveAmbig(${idx},'same')" title="Same person — update existing record">Same person</button>
-          <button onclick="resolveAmbig(${idx},'new')" title="Different person — add as new member">New member</button>
-          <button onclick="resolveAmbig(${idx},'skip')" class="selected" title="Skip this row">Skip</button>
+          <button onclick="resolveAmbig(${idx},'same')" title="Same person — update existing record with CSV kennitala &amp; data">Update existing</button>
+          <button onclick="resolveAmbig(${idx},'new')" title="Different person — add CSV row as a separate new member">Add as new</button>
+          <button onclick="resolveAmbig(${idx},'skip')" class="selected" title="Do nothing with this row">Skip</button>
         </div>
       </div>`;
     });
@@ -2338,7 +2357,7 @@ function resolveAmbig(idx, decision) {
   const row = document.querySelector(`[data-ambig-idx="${idx}"]`);
   if (!row) return;
   row.querySelectorAll('.import-ambig-btns button').forEach(btn => btn.classList.remove('selected'));
-  const labels = { same: 'Same person', new: 'New member', skip: 'Skip' };
+  const labels = { same: 'Update existing', new: 'Add as new', skip: 'Skip' };
   row.querySelectorAll('.import-ambig-btns button').forEach(btn => {
     if (btn.textContent === labels[decision]) btn.classList.add('selected');
   });

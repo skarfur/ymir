@@ -1187,7 +1187,8 @@ function addGmStaffRow() {
 function searchGmStaff(inp, drop) {
   const q = inp.value.trim().toLowerCase();
   if (!q || q.length < 2) { drop.style.display = 'none'; return; }
-  const matches = (members || []).filter(m => m.name && m.name.toLowerCase().includes(q)).slice(0, 8);
+  const matches = (members || []).filter(m => m.name && m.name.toLowerCase().includes(q) && m.role !== 'guest').slice(0, 8);
+  if (!matches.length) { drop.style.display = 'none'; return; }
   drop.innerHTML = '';
   matches.forEach(function(m) {
     const item = document.createElement('div');
@@ -1205,24 +1206,6 @@ function searchGmStaff(inp, drop) {
     });
     drop.appendChild(item);
   });
-  // "Add as guest" option
-  if (q.length >= 3) {
-    const guestItem = document.createElement('div');
-    guestItem.className = 'guest-add-hint';
-    guestItem.textContent = '+ Add "' + inp.value.trim() + '" as guest';
-    guestItem.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      drop.style.display = 'none';
-      const typedName = inp.value.trim();
-      openGuestModal(typedName, function(guest) {
-        inp.value = guest.name;
-        inp.dataset.kennitala = guest.kennitala || guest.id || '';
-        inp.style.borderColor = 'var(--green)';
-        updateGmTotalNote();
-      });
-    });
-    drop.appendChild(guestItem);
-  }
   drop.style.display = 'block';
 }
 
@@ -1241,9 +1224,9 @@ async function submitGroupCheckout() {
   const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
     .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala || '' })).filter(s => s.name);
   if (!staffEntries.length) { err.textContent = (getLang()==='IS'?'Þarf að skrá a.m.k. einn starfsmann.':'At least one staff member on water is required.'); err.style.display = ''; return; }
-  // Warn if any staff entry was typed but not selected from DB (allow guests who may only have id)
-  const unmatched = staffEntries.filter(s => !s.kennitala && !members.find(m => m.name === s.name && m.role === 'guest'));
-  if (unmatched.length && members.length > 0) { err.textContent = 'Please select staff from the list or add as guest: ' + unmatched.map(s=>s.name).join(', '); err.style.display = ''; return; }
+  // Warn if any staff entry was typed but not selected from DB
+  const unmatched = staffEntries.filter(s => !s.kennitala);
+  if (unmatched.length && members.length > 0) { err.textContent = 'Please select staff from the list: ' + unmatched.map(s=>s.name).join(', '); err.style.display = ''; return; }
   const boatIds   = Array.from(_groupBoats);
   const boatNames = boatIds.map(id => (boats.find(b => b.id === id) || {}).name || id);
   const totalAboard = _groupParticipants + staffEntries.length;
