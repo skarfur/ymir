@@ -131,12 +131,12 @@ function maintOpenDetail(r, currentUser) {
       ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?'OOS':'In service'}</button>`
       : '';
 
-    // Comments: text first, then name · timestamp, · to delete
+    // Comments: poster · timestamp on top, then text body
     const commentHtml = comments.map((c,idx)=>`
       <div class="comment-item" style="position:relative;padding-right:24px">
+        <div style="font-size:11px;margin-bottom:3px"><span style="color:var(--text);font-weight:500">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${(c.at||'').slice(0,16).replace('T',' ')}</span></div>
         ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
         ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
-        <div style="font-size:11px;color:var(--muted)">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
         ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Delete comment">&times;</button>` : ''}
       </div>`).join('');
 
@@ -168,10 +168,8 @@ function maintOpenDetail(r, currentUser) {
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">No verkstjóri assigned</span>`}
         ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
       </div>` : ''}
-      <div class="req-meta" style="margin-bottom:12px">
-        ${r.boatName   ? `<span>⛵ ${esc(r.boatName)}</span>`                   : ''}
-        ${r.part       ? `<span>${esc(r.part)}</span>`                    : ''}
-        ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>`              : ''}
+      <div class="req-meta" style="margin-bottom:12px;font-size:12px;color:var(--muted)">
+        ${r.reportedBy ? `<span>Reported by <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
         ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>`  : ''}
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
@@ -391,9 +389,9 @@ function maintRenderCard(r) {
   const matDone = materials.filter(m=>m.purchased).length;
   const commentHtml = comments.map(c=>`
     <div class="comment-item">
+      <div style="font-size:11px;margin-bottom:2px"><span class="comment-by">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${(c.at||'').slice(0,16).replace('T',' ')}</span></div>
       ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
       ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
-      <div style="font-size:11px;color:var(--muted)">${esc(c.by||'')} · ${(c.at||'').slice(0,16).replace('T',' ')} UTC</div>
     </div>`).join('');
 
   return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
