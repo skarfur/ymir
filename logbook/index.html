@@ -166,8 +166,8 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     </div>
   </div>
 
-  <!-- Certifications -->
-  <div class="section-hdr"><span>Certifications</span></div>
+  <!-- Credentials -->
+  <div class="section-hdr"><span data-s="member.tabCerts"></span></div>
   <div id="certsList"><div class="empty-note">Loading…</div></div>
 
   <!-- Logbook header -->
@@ -415,10 +415,17 @@ async function renderCerts(){
     const certDefs=certDefsFromConfig(cfgRes.certDefs||[]);
     const member=(mRes.members||[]).find(m=>String(m.kennitala)===String(user.kennitala))||{};
     const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
-    if(!certs.length){el.innerHTML='<div class="empty-note">No certifications on record.</div>';return;}
-    certInjectStyles();     el.innerHTML=certs.map(certCardHTML).join('');
+    if(!certs.length){el.innerHTML=`<div class="empty-note">${s('cert.noCerts')}</div>`;return;}
+    certInjectStyles();
+    const {credentials,endorsements}=groupCerts(certs);
+    let html=credentials.map(certCardHTML).join('');
+    if(endorsements.length){
+      html+=`<div class="ccard-endorsement-hdr">${s('cert.clubEndorsements')}</div>`;
+      html+=endorsements.map(certCardHTML).join('');
+    }
+    el.innerHTML=html;
   }catch(e){
-    el.innerHTML='<div class="empty-note" style="color:var(--red)">Could not load certifications.</div>';
+    el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('cert.loadError')}</div>`;
   }
 }
 

@@ -74,7 +74,7 @@ const SCORE_CONFIG = {
               label:'Green',  labelIS:'Grœnn',
               advice:'Good conditions  —  open to all qualified members.',
               adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.',
-              description:'Conditions are suitable for sailing. All qualified members may use boats according to their certification level.',
+              description:'Conditions are suitable for sailing. All qualified members may use boats according to their credential level.',
               descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
     yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
               label:'Yellow', labelIS:'Gulur',
