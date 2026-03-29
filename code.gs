@@ -429,6 +429,14 @@ function getMembers_() {
   const members = readAll_('members'); cPut_('members', members); return okJ({ members });
 }
 
+function getMemberMap_() {
+  let members = cGet_('members');
+  if (!members) { members = readAll_('members'); cPut_('members', members); }
+  const map = {};
+  members.forEach(m => { map[String(m.kennitala)] = m; });
+  return map;
+}
+
 function saveMember_(b) {
   const ts = now_(), ex = b.id ? findOne_('members', 'id', b.id) : null;
   if (ex) {
@@ -1064,9 +1072,11 @@ function uploadMaintenancePhoto_(b) {
 
 function getConfig_() {
   const c = cGet_('config'); if (c) return okJ(c);
+  // Read the config sheet ONCE and look up all keys from the in-memory map
+  const cfgMap = getConfigMap_();
   let activityTypes = [], dailyChecklist = { am: [], pm: [] };
   try {
-    activityTypes = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+    activityTypes = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
     // Ensure each type has a subtypes array (for backwards compat)
     activityTypes = activityTypes.map(function(t) {
       if (!t.subtypes) t.subtypes = [];
@@ -1080,18 +1090,18 @@ function getConfig_() {
       if (dailyChecklist[phase]) dailyChecklist[phase].push(r);
     });
   } catch (e) { }
-  const overdueAlerts = getAlertConfig_();
-  const flagConfig = getFlagConfig_();
-  const staffStatus   = jsonR_(getConfigSheetValue_('staffStatus'));
-  const certDefs = getCertDefs_();
+  const overdueAlerts = getAlertConfigFromMap_(cfgMap);
+  const flagConfig = getFlagConfigFromMap_(cfgMap);
+  const staffStatus   = jsonR_(getConfigValue_('staffStatus', cfgMap));
+  const certDefs = getCertDefsFromMap_(cfgMap);
   let boats = [], locations = [];
-  try { var bRaw = getConfigSheetValue_('boats'); if (bRaw) boats = JSON.parse(bRaw); } catch (e) { }
-  try { var lRaw = getConfigSheetValue_('locations'); if (lRaw) locations = JSON.parse(lRaw); } catch (e) { }
+  try { var bRaw = getConfigValue_('boats', cfgMap); if (bRaw) boats = JSON.parse(bRaw); } catch (e) { }
+  try { var lRaw = getConfigValue_('locations', cfgMap); if (lRaw) locations = JSON.parse(lRaw); } catch (e) { }
   let launchChecklists = {};
-  try { var lRaw = getConfigSheetValue_('launchChecklists'); if (lRaw) launchChecklists = JSON.parse(lRaw); } catch (e) { }
+  try { var lRaw = getConfigValue_('launchChecklists', cfgMap); if (lRaw) launchChecklists = JSON.parse(lRaw); } catch (e) { }
   let boatCategories = [];
-  try { var bcRaw = getConfigSheetValue_('boatCategories'); if (bcRaw) boatCategories = JSON.parse(bcRaw); } catch (e) { }
-  const allowBreaks = getConfigSheetValue_('allowBreaks') === 'true';
+  try { var bcRaw = getConfigValue_('boatCategories', cfgMap); if (bcRaw) boatCategories = JSON.parse(bcRaw); } catch (e) { }
+  const allowBreaks = getConfigValue_('allowBreaks', cfgMap) === 'true';
   const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks };
   cPut_('config', config);
   return okJ(config);
@@ -1359,7 +1369,7 @@ function getActiveCheckouts_() {
   const all = readAll_('checkouts');
   const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '') > cutoff));
   let memberMap = {};
-  try { readAll_('members').forEach(m => { memberMap[String(m.kennitala)] = m; }); } catch (e) { }
+  try { memberMap = getMemberMap_(); } catch (e) { }
   const enriched = result.map(c => {
     const m = memberMap[String(c.memberKennitala || '')] || {};
     return {
@@ -1868,6 +1878,48 @@ function getAlertConfig_() {
   } catch (e) { return defaults; }
 }
 
+// Read the entire config sheet once and return a key→value map
+function getConfigMap_() {
+  let sheet;
+  try { sheet = getSheet_('config'); } catch (e) { return {}; }
+  if (sheet.getLastRow() < 2) return {};
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  const map = {};
+  data.forEach(r => { map[String(r[0]).trim()] = String(r[1]).trim(); });
+  return map;
+}
+
+function getConfigValue_(key, map) {
+  const v = map[key];
+  return v !== undefined ? v : null;
+}
+
+function getAlertConfigFromMap_(cfgMap) {
+  const raw = getConfigValue_('overdueAlerts', cfgMap);
+  const defaults = {
+    enabled: true, firstAlertMins: 15, repeatMins: 30, snoozeMins: 30,
+    channels: { web: true, email: false, sms: false },
+    staffEmailList: [], staffSmsList: [],
+  };
+  if (!raw) return defaults;
+  try {
+    const p = JSON.parse(raw);
+    return { ...defaults, ...p, channels: { ...defaults.channels, ...(p.channels || {}) } };
+  } catch (e) { return defaults; }
+}
+
+function getFlagConfigFromMap_(cfgMap) {
+  const raw = getConfigValue_('flagConfig', cfgMap);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function getCertDefsFromMap_(cfgMap) {
+  const raw = getConfigValue_('certDefs', cfgMap);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (e) { return []; }
+}
+
 function getConfigSheetValue_(key) {
   let sheet;
   try { sheet = getSheet_('config'); } catch (e) { return null; }
@@ -1907,7 +1959,7 @@ function getOverdueAlerts_(b) {
   const nowMins = now_dt.getHours() * 60 + now_dt.getMinutes();
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
   let memberMap = {};
-  try { readAll_('members').forEach(m => { memberMap[String(m.kennitala)] = m; }); } catch (e) { }
+  try { memberMap = getMemberMap_(); } catch (e) { }
   const alerts = [];
   data.forEach(row => {
     const status = String(row[col('status')] || '').trim();

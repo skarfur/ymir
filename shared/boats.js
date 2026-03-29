@@ -326,17 +326,20 @@ function renderFleetStatus(containerId, boats, active, opts) {
   // Group by category preserving insertion order (or sort alpha)
   const cats = [...new Set(boats.map(b => b.category).filter(Boolean))].sort();
 
+  const activeByBoat = new Map();
+  active.forEach(c => { activeByBoat.set(c.boatId, c); });
+
   el.innerHTML = cats.map(cat => {
     const key      = cat.toLowerCase();
     const col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
     const emoji    = boatEmoji(key);
     const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !active.find(c => c.boatId === b.id));
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id));
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const catId    = containerId + '-fcat-' + encodeURIComponent(key);
 
     const cards = catBoats.map(b => {
-      const co  = active.find(c => c.boatId === b.id);
+      const co  = activeByBoat.get(b.id);
       const oos = boolVal(b.oos);
       const status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
       const clickOpts = (status === 'avail' && onAvail)
