@@ -169,7 +169,7 @@ async function fetchDashboard() {
     method: 'POST',
     redirect: 'follow',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'dashboard' }),
+    body: JSON.stringify({ action: 'dashboard', token: API_TOKEN }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   var data = await res.json();
