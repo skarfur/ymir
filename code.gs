@@ -27,6 +27,7 @@ const TABS_ = {
   employees: 'employees',
   timeClock: 'time_clock',
   payroll: 'payroll',
+  shareTokens: 'share_tokens',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -81,6 +82,52 @@ const GS_STRINGS_ = {
   'resolve.unknown': { EN: 'Unknown operation.', IS: 'Óþekkt aðgerð.' },
   'resolve.error': { EN: 'Error: {msg}', IS: 'Villa: {msg}' },
   'resolve.portal': { EN: '→ Open staff portal', IS: '→ Opna starfsmannasvæðið' },
+  // ── Public record pages ──────────────────────────────────────────────────
+  'pub.title.lookup':  { EN: 'Sailing Record Lookup', IS: 'Uppfletting siglingaskrár' },
+  'pub.title.record':  { EN: 'Sailing Record', IS: 'Siglingaskrá' },
+  'pub.title.captain': { EN: 'Captain Record', IS: 'Skipstjórnaskrá' },
+  'pub.title.boat':    { EN: 'Boat Record', IS: 'Bátaskrá' },
+  'pub.title.share':   { EN: 'Shared Sailing Record', IS: 'Deild siglingaskrá' },
+  'pub.lbl.licenceNo': { EN: 'Licence / Certificate Number', IS: 'Skírteinisnúmer' },
+  'pub.lbl.initials':  { EN: 'Initials', IS: 'Upphafsstafir' },
+  'pub.btn.lookup':    { EN: 'Look up', IS: 'Fletta upp' },
+  'pub.err.notFound':  { EN: 'We could not verify those details.', IS: 'Ekki tókst að staðfesta þessar upplýsingar.' },
+  'pub.err.missing':   { EN: 'Please enter both licence number and initials.', IS: 'Vinsamlegast sláðu inn bæði skírteinisnúmer og upphafsstafi.' },
+  'pub.lbl.sailor':    { EN: 'Sailor', IS: 'Siglingamaður' },
+  'pub.lbl.licence':   { EN: 'Licence', IS: 'Skírteini' },
+  'pub.lbl.certs':     { EN: 'Certifications', IS: 'Skírteini og réttindi' },
+  'pub.lbl.sessions':  { EN: 'Sailing Sessions', IS: 'Siglingalotur' },
+  'pub.lbl.date':      { EN: 'Date', IS: 'Dagsetning' },
+  'pub.lbl.duration':  { EN: 'Duration', IS: 'Tímalengd' },
+  'pub.lbl.distance':  { EN: 'Distance (nm)', IS: 'Vegalengd (nm)' },
+  'pub.lbl.boat':      { EN: 'Boat', IS: 'Bátur' },
+  'pub.lbl.crew':      { EN: 'Crew', IS: 'Áhöfn' },
+  'pub.lbl.captain':   { EN: 'Captain', IS: 'Skipstjóri' },
+  'pub.lbl.role':      { EN: 'Role', IS: 'Hlutverk' },
+  'pub.lbl.noSessions':{ EN: 'No sailing sessions on record.', IS: 'Engar siglingalotur skráðar.' },
+  'pub.lbl.noCerts':   { EN: 'No certifications on record.', IS: 'Engin skírteini skráð.' },
+  'pub.lbl.captainSince': { EN: 'Ýmir-approved captain since {date}', IS: 'Viðurkenndur skipstjóri hjá Ými síðan {date}' },
+  'pub.lbl.totalSessions':{ EN: 'Total sessions', IS: 'Heildarlotur' },
+  'pub.lbl.totalDistance': { EN: 'Total distance', IS: 'Heildarvegalengd' },
+  'pub.lbl.totalHours':   { EN: 'Total hours', IS: 'Heildartímar' },
+  'pub.lbl.shareTokens':  { EN: 'Access Tokens', IS: 'Aðgangstóknar' },
+  'pub.lbl.noTokens':     { EN: 'No access tokens generated.', IS: 'Engir aðgangstóknar búnir til.' },
+  'pub.btn.generate':     { EN: 'Generate share link', IS: 'Búa til deilingarhlekk' },
+  'pub.btn.revoke':       { EN: 'Revoke', IS: 'Afturkalla' },
+  'pub.btn.delete':       { EN: 'Delete', IS: 'Eyða' },
+  'pub.lbl.created':      { EN: 'Created', IS: 'Búið til' },
+  'pub.lbl.cutOff':       { EN: 'Records up to', IS: 'Skráningar til' },
+  'pub.lbl.accesses':     { EN: 'Views', IS: 'Skoðanir' },
+  'pub.lbl.revoked':      { EN: 'Revoked', IS: 'Afturkallað' },
+  'pub.lbl.active':       { EN: 'Active', IS: 'Virkt' },
+  'pub.share.revoked':    { EN: 'This link has been revoked by the holder.', IS: 'Þessi hlekkur hefur verið afturkallaður af eiganda.' },
+  'pub.share.asOf':       { EN: 'Sailing record as of {date}. Sessions after this date are not included.', IS: 'Siglingaskrá frá {date}. Lotur eftir þessa dagsetningu eru ekki innifaldar.' },
+  'pub.footer':           { EN: 'Record generated {date} by Ýmir Sailing Club · ymir.is', IS: 'Skrá mynduð {date} af Ými Siglingafélagi · ymir.is' },
+  'pub.cert.verified':    { EN: 'Verified', IS: 'Staðfest' },
+  'pub.cert.pending':     { EN: 'Pending', IS: 'Í bið' },
+  'pub.cert.unverified':  { EN: 'Unverified', IS: 'Óstaðfest' },
+  'pub.cert.expired':     { EN: 'Expired', IS: 'Útrunnið' },
+  'pub.lbl.hours':        { EN: '{h}h', IS: '{h}klst' },
 };
 
 function gs_(key, vars, lang) {
@@ -104,6 +151,22 @@ function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1
 function okJ(data) { return jsonR_({ success: true, ...data }); }
 function failJ(msg, code) { return jsonR_({ success: false, error: msg, code: code || 400 }); }
 function jsonR_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function htmlR_(html) { return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); }
+function shareUid_() { return Utilities.getUuid().replace(/-/g, ''); } // 32 hex chars, 128-bit entropy
+
+// Spec §7.1 — extract initials from a name
+// Split on spaces, drop all-lowercase tokens (connectors like 'van','de','af'),
+// strip hyphens, take first char of each remaining token, uppercase.
+function extractInitials_(name) {
+  if (!name) return '';
+  return String(name).trim().split(/\s+/)
+    .filter(function(t) { return t && t !== t.toLowerCase(); })
+    .map(function(t) { return t.replace(/-/g, '').charAt(0); })
+    .join('').toUpperCase();
+}
+
+// HTML-escape for server-rendered pages
+function esc_(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,6 +277,11 @@ function doGet(e) {
   try {
     const b = e.parameter?.p ? JSON.parse(e.parameter.p) : (e.parameter || {});
     if (b.action === 'resolveFromEmail') return resolveFromEmail_(b);
+    // Public query endpoints — no token required (spec §5)
+    if (b.action === 'lookup')  return publicLookup_(b);
+    if (b.action === 'captain') return publicCaptainRecord_(b);
+    if (b.action === 'boat')    return publicBoatRecord_(b);
+    if (b.share)                return publicShareRecord_(b);
     if (!b.token || b.token !== API_TOKEN_) return failJ('Unauthorized', 401);
     if (!b.action) return okJ({ status: 'ok', ts: now_() });
     return route_(b.action, b);
@@ -296,6 +364,11 @@ function route_(action, b) {
     case 'snoozeAlert': return snoozeAlert_(b);
     case 'resolveAlert':  return resolveAlert_(b);
     case 'saveAlertConfig': return saveAlertConfig_(b);
+    // ── SHARE TOKENS ──────────────────────────────────────────────────────────
+    case 'getShareTokens':    return getShareTokens_(b);
+    case 'createShareToken':  return createShareToken_(b);
+    case 'revokeShareToken':  return revokeShareToken_(b);
+    case 'deleteShareToken':  return deleteShareToken_(b);
     default: return failJ('Unknown action: ' + action, 404);
   }
 }
@@ -318,6 +391,7 @@ function validateMember_(kennitala) {
       guardianName: m.guardianName || '', guardianKennitala: m.guardianKennitala || '',
       guardianPhone: m.guardianPhone || '',
       certifications: m.certifications || '',
+      initials: m.initials || extractInitials_(m.name),
       lang: m.lang || 'EN',
     }
   });
@@ -337,6 +411,7 @@ function saveMember_(b) {
       isMinor: b.isMinor !== undefined ? bool_(b.isMinor) : ex.isMinor,
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
       guardianPhone: b.guardianPhone || '',
+      initials: b.initials || ex.initials || extractInitials_(b.name || ex.name),
       active: b.active !== undefined ? bool_(b.active) : ex.active,
       updatedAt: ts,
     });
@@ -349,7 +424,8 @@ function saveMember_(b) {
       isMinor: bool_(b.isMinor) || false,
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
       guardianPhone: b.guardianPhone || '', active: true,
-      certifications: '', lang: b.lang || 'EN',
+      certifications: '', initials: extractInitials_(b.name),
+      lang: b.lang || 'EN',
       createdAt: ts, updatedAt: ts,
     });
     cDel_('members'); return okJ({ id, created: true });
@@ -1144,6 +1220,7 @@ function saveCertDef_(b) {
     name: String(b.name).trim(),
     description: String(b.description || '').trim(),
     renewalDays: Number(b.renewalDays) || 0,
+    hasIdNumber: !!b.hasIdNumber,
     subcats: Array.isArray(b.subcats) ? b.subcats.map(s => ({
       key: String(s.key || s.label || '').toLowerCase().replace(/\s+/g, '_'),
       label: String(s.label || '').trim(),
@@ -2221,6 +2298,466 @@ function diagOverdueState() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SHARE TOKEN CRUD  (authenticated — requires API_TOKEN_)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getShareTokens_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  const all = readAll_('shareTokens');
+  const tokens = all.filter(t => String(t.memberKennitala) === String(b.kennitala));
+  return okJ({ tokens });
+}
+
+function createShareToken_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  const member = findOne_('members', 'kennitala', String(b.kennitala).trim());
+  if (!member) return failJ('Member not found', 404);
+  const id = shareUid_();
+  const ts = now_();
+  insertRow_('shareTokens', {
+    id,
+    memberId: member.id,
+    memberKennitala: member.kennitala,
+    cutOffDate: ts.slice(0, 10),
+    createdAt: ts,
+    revokedAt: '',
+    accessCount: 0,
+    lastAccessedAt: '',
+  });
+  return okJ({ id, created: true });
+}
+
+function revokeShareToken_(b) {
+  if (!b.tokenId) return failJ('tokenId required');
+  if (!b.kennitala) return failJ('kennitala required');
+  const token = findOne_('shareTokens', 'id', b.tokenId);
+  if (!token) return failJ('Token not found', 404);
+  if (String(token.memberKennitala) !== String(b.kennitala)) return failJ('Not authorised', 403);
+  updateRow_('shareTokens', 'id', b.tokenId, { revokedAt: now_() });
+  return okJ({ revoked: true });
+}
+
+function deleteShareToken_(b) {
+  if (!b.tokenId) return failJ('tokenId required');
+  if (!b.kennitala) return failJ('kennitala required');
+  const token = findOne_('shareTokens', 'id', b.tokenId);
+  if (!token) return failJ('Token not found', 404);
+  if (String(token.memberKennitala) !== String(b.kennitala)) return failJ('Not authorised', 403);
+  deleteRow_('shareTokens', 'id', b.tokenId);
+  return okJ({ deleted: true });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PUBLIC QUERY ENDPOINTS  (spec §5 — no token required)
+//
+// All functions return HtmlService output (server-rendered HTML).
+// These are dispatched from doGet() before the API_TOKEN_ check.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Shared HTML helpers ──────────────────────────────────────────────────────
+
+function pubPageShell_(title, bodyHtml) {
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + esc_(title) + ' — Ýmir Sailing Club</title>'
+    + '<style>'
+    + ':root{--bg:#0d1117;--card:#161b22;--surface:#1c2128;--border:#30363d;'
+    + '--text:#e6edf3;--muted:#8b949e;--green:#3fb950;--red:#f85149;--blue:#58a6ff;'
+    + '--brass:#d4af37;--yellow:#d29922}'
+    + '*{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;'
+    + 'font-size:14px;line-height:1.5;padding:20px;max-width:900px;margin:0 auto}'
+    + 'h1{font-size:22px;margin-bottom:4px;color:var(--text)}'
+    + 'h2{font-size:16px;margin:24px 0 10px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:6px}'
+    + '.subtitle{font-size:12px;color:var(--muted);margin-bottom:20px}'
+    + '.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}'
+    + 'table{width:100%;border-collapse:collapse;font-size:12px}'
+    + 'th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:.8px;padding:6px 8px;border-bottom:1px solid var(--border)}'
+    + 'td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top}'
+    + 'tr:last-child td{border-bottom:none}'
+    + 'a{color:var(--blue);text-decoration:none}'
+    + 'a:hover{text-decoration:underline}'
+    + '.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;margin:2px 4px 2px 0}'
+    + '.badge-green{background:#1a3a2a;color:var(--green);border:1px solid #2a5a3a}'
+    + '.badge-yellow{background:#3a2f1a;color:var(--yellow);border:1px solid #5a4a2a}'
+    + '.badge-red{background:#3a1a1a;color:var(--red);border:1px solid #5a2a2a}'
+    + '.badge-muted{background:var(--surface);color:var(--muted);border:1px solid var(--border)}'
+    + '.stat{text-align:center;padding:12px}'
+    + '.stat-val{font-size:24px;font-weight:600;color:var(--brass)}'
+    + '.stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.8px;margin-top:2px}'
+    + '.footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}'
+    + '.logo{font-size:18px;font-weight:700;color:var(--brass);letter-spacing:1px;margin-bottom:16px}'
+    + '.form-group{margin-bottom:14px}'
+    + '.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px}'
+    + '.form-group input{width:100%;padding:8px 12px;font-size:14px;background:var(--surface);border:1px solid var(--border);'
+    + 'border-radius:6px;color:var(--text);outline:none}'
+    + '.form-group input:focus{border-color:var(--blue)}'
+    + '.btn-primary{background:var(--brass);color:#000;border:none;padding:10px 20px;border-radius:6px;font-size:14px;'
+    + 'font-weight:600;cursor:pointer;width:100%}'
+    + '.btn-primary:hover{opacity:.9}'
+    + '.err-msg{background:var(--surface);border:1px solid var(--red);color:var(--red);padding:10px;border-radius:6px;'
+    + 'font-size:12px;margin-bottom:14px}'
+    + '.info-msg{background:var(--surface);border:1px solid var(--blue);color:var(--blue);padding:10px;border-radius:6px;'
+    + 'font-size:12px;margin-bottom:14px}'
+    + '.revoked-msg{background:var(--surface);border:1px solid var(--red);color:var(--red);padding:24px;border-radius:8px;'
+    + 'font-size:16px;text-align:center;margin:40px 0}'
+    + '@media(max-width:600px){body{padding:12px}table{font-size:11px}th,td{padding:4px 6px}}'
+    + '</style></head><body>'
+    + '<div class="logo">ÝMIR SAILING CLUB</div>'
+    + bodyHtml
+    + '<div class="footer">'
+    + gs_('pub.footer', { date: new Date().toISOString().slice(0, 10) })
+    + '</div></body></html>';
+}
+
+function pubCertBadgesHtml_(certs, certDefs) {
+  if (!certs || !certs.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic">' + gs_('pub.lbl.noCerts') + '</div>';
+  return certs.map(function(c) {
+    var def = certDefs.find(function(d) { return d.id === c.certId; });
+    var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
+    var label = subcat ? (def.name + ' — ' + subcat.label) : (def ? def.name : c.certId);
+    var expired = c.expiresAt && c.expiresAt < new Date().toISOString().slice(0, 10);
+    var badgeClass = expired ? 'badge badge-red' : (c.assignedBy ? 'badge badge-green' : 'badge badge-yellow');
+    var statusLabel = expired ? gs_('pub.cert.expired') : (c.assignedBy ? gs_('pub.cert.verified') : gs_('pub.cert.unverified'));
+    var expStr = c.expiresAt ? ' · exp. ' + esc_(c.expiresAt) : '';
+    return '<span class="' + badgeClass + '">' + esc_(label) + ' (' + statusLabel + ')' + expStr + '</span>';
+  }).join(' ');
+}
+
+function pubTripTableHtml_(trips, opts) {
+  opts = opts || {};
+  if (!trips.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic;padding:8px 0">' + gs_('pub.lbl.noSessions') + '</div>';
+  var scriptUrl = ScriptApp.getService().getUrl();
+  var html = '<div style="overflow-x:auto"><table><tr>'
+    + '<th>' + gs_('pub.lbl.date') + '</th>'
+    + '<th>' + gs_('pub.lbl.duration') + '</th>'
+    + '<th>' + gs_('pub.lbl.distance') + '</th>'
+    + '<th>' + gs_('pub.lbl.boat') + '</th>'
+    + '<th>' + gs_('pub.lbl.crew') + '</th>';
+  if (!opts.hideCaptain) html += '<th>' + gs_('pub.lbl.captain') + '</th>';
+  if (!opts.hideRole) html += '<th>' + gs_('pub.lbl.role') + '</th>';
+  html += '</tr>';
+  trips.forEach(function(t) {
+    var dur = t.hoursDecimal ? (Number(t.hoursDecimal).toFixed(1) + 'h') : '';
+    var dist = t.distanceNm ? (Number(t.distanceNm).toFixed(1) + ' nm') : '';
+    var boatLink = t.boatId
+      ? '<a href="' + scriptUrl + '?action=boat&id=' + esc_(t.boatId) + '">' + esc_(t.boatName || '') + '</a>'
+      : esc_(t.boatName || '');
+    var crewCount = t.crew || 1;
+    html += '<tr>'
+      + '<td>' + esc_(t.date || '') + '</td>'
+      + '<td>' + dur + '</td>'
+      + '<td>' + dist + '</td>'
+      + '<td>' + boatLink + '</td>'
+      + '<td>' + crewCount + '</td>';
+    if (!opts.hideCaptain) {
+      // Captain: link to captain record if we know the kennitala
+      var captainName = esc_(t.memberName || '');
+      if (opts.captainMemberId) {
+        captainName = '<a href="' + scriptUrl + '?action=captain&id=' + esc_(opts.captainMemberId) + '">' + captainName + '</a>';
+      }
+      html += '<td>' + captainName + '</td>';
+    }
+    if (!opts.hideRole) html += '<td>' + esc_(t.role || '') + '</td>';
+    html += '</tr>';
+  });
+  html += '</table></div>';
+  return html;
+}
+
+
+// ── 5.1 Licence lookup ───────────────────────────────────────────────────────
+
+function publicLookup_(b) {
+  var licenceNo = b.licence_number || b.licenceNumber || '';
+  var initials  = b.initials || '';
+
+  // Form phase — show lookup form
+  if (!licenceNo) {
+    var errHtml = '';
+    if (b.err === '1') errHtml = '<div class="err-msg">' + gs_('pub.err.notFound') + '</div>';
+    var formBody = '<h1>' + gs_('pub.title.lookup') + '</h1>'
+      + '<div class="subtitle">Enter your licence number and initials to view your sailing record.</div>'
+      + '<div class="card">'
+      + errHtml
+      + '<form method="get" action="' + ScriptApp.getService().getUrl() + '">'
+      + '<input type="hidden" name="action" value="lookup">'
+      + '<div class="form-group"><label>' + gs_('pub.lbl.licenceNo') + '</label>'
+      + '<input type="text" name="licence_number" required autocomplete="off"></div>'
+      + '<div class="form-group"><label>' + gs_('pub.lbl.initials') + '</label>'
+      + '<input type="text" name="initials" required autocomplete="off" style="text-transform:uppercase"></div>'
+      + '<button type="submit" class="btn-primary">' + gs_('pub.btn.lookup') + '</button>'
+      + '</form></div>';
+    return htmlR_(pubPageShell_(gs_('pub.title.lookup'), formBody));
+  }
+
+  // Result phase — find member by licence number in certifications
+  licenceNo = String(licenceNo).trim();
+  initials  = String(initials).trim().toUpperCase().replace(/\s/g, '');
+
+  if (!licenceNo || !initials) {
+    return htmlR_(pubPageShell_(gs_('pub.title.lookup'),
+      '<div class="err-msg">' + gs_('pub.err.missing') + '</div>'));
+  }
+
+  var members = readAll_('members');
+  var certDefs = getCertDefs_();
+  var found = null;
+
+  for (var i = 0; i < members.length; i++) {
+    var m = members[i];
+    if (!m.certifications) continue;
+    var certs;
+    try { certs = typeof m.certifications === 'string' ? JSON.parse(m.certifications) : m.certifications; } catch(e) { continue; }
+    if (!Array.isArray(certs)) continue;
+    for (var j = 0; j < certs.length; j++) {
+      if (certs[j].licenceNumber && String(certs[j].licenceNumber).trim() === licenceNo) {
+        found = { member: m, certs: certs };
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  // Check initials match
+  if (found) {
+    var memberInitials = (found.member.initials || extractInitials_(found.member.name) || '').toUpperCase().replace(/\s/g, '');
+    if (memberInitials !== initials) found = null;
+  }
+
+  // Generic error — identical whether licence not found or initials wrong (spec §6.4)
+  if (!found) {
+    var scriptUrl = ScriptApp.getService().getUrl();
+    return htmlR_(pubPageShell_(gs_('pub.title.lookup'),
+      '<script>window.location.href="' + scriptUrl + '?action=lookup&err=1";</script>'));
+  }
+
+  // Success — render record page
+  return htmlR_(pubPageShell_(gs_('pub.title.record'),
+    pubRecordPageHtml_(found.member, found.certs, certDefs, { showTokens: true, queriedLicence: licenceNo })));
+}
+
+// Shared record page renderer — used by lookup and share link endpoints
+function pubRecordPageHtml_(member, certs, certDefs, opts) {
+  opts = opts || {};
+  var today = new Date().toISOString().slice(0, 10);
+  var cutOff = opts.cutOffDate || today;
+  var scriptUrl = ScriptApp.getService().getUrl();
+
+  var html = '<h1>' + esc_(member.name) + '</h1>';
+  if (opts.queriedLicence) {
+    html += '<div class="subtitle">' + gs_('pub.lbl.licence') + ': ' + esc_(opts.queriedLicence) + '</div>';
+  }
+  if (opts.cutOffDate) {
+    html += '<div class="info-msg">' + gs_('pub.share.asOf', { date: opts.cutOffDate }) + '</div>';
+  }
+
+  // Certifications
+  html += '<h2>' + gs_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs) + '</div>';
+
+  // Trips
+  var allTrips = readAll_('trips');
+  var memberTrips = allTrips.filter(function(t) {
+    return String(t.kennitala) === String(member.kennitala) && (t.date || '') <= cutOff;
+  }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
+
+  // For each trip, try to find the captain (trip owner = the person who logged it)
+  // Since in the current system each person logs their own trips, the memberName on the trip IS the captain
+  // if the role is 'skipper' or 'captain', otherwise we don't have a separate captain reference.
+  var members = readAll_('members');
+
+  html += '<h2>' + gs_('pub.lbl.sessions') + ' (' + memberTrips.length + ')</h2>'
+    + '<div class="card">'
+    + pubTripTableHtml_(memberTrips, { hideCaptain: false, hideRole: false })
+    + '</div>';
+
+  // Share tokens section (only shown on direct lookup, not on share links)
+  if (opts.showTokens) {
+    var tokens = readAll_('shareTokens').filter(function(t) {
+      return String(t.memberKennitala) === String(member.kennitala);
+    });
+    html += '<h2>' + gs_('pub.lbl.shareTokens') + '</h2><div class="card">';
+    if (tokens.length) {
+      html += '<table><tr>'
+        + '<th>' + gs_('pub.lbl.created') + '</th>'
+        + '<th>' + gs_('pub.lbl.cutOff') + '</th>'
+        + '<th>' + gs_('pub.lbl.accesses') + '</th>'
+        + '<th>Status</th>'
+        + '<th>Link</th></tr>';
+      tokens.forEach(function(tk) {
+        var revoked = tk.revokedAt && String(tk.revokedAt).trim() !== '';
+        var statusBadge = revoked
+          ? '<span class="badge badge-red">' + gs_('pub.lbl.revoked') + '</span>'
+          : '<span class="badge badge-green">' + gs_('pub.lbl.active') + '</span>';
+        var shareUrl = scriptUrl + '?share=' + esc_(tk.id);
+        html += '<tr>'
+          + '<td>' + esc_((tk.createdAt || '').slice(0, 10)) + '</td>'
+          + '<td>' + esc_(tk.cutOffDate || '') + '</td>'
+          + '<td>' + (tk.accessCount || 0) + '</td>'
+          + '<td>' + statusBadge + '</td>'
+          + '<td><a href="' + shareUrl + '" target="_blank">Link</a></td>'
+          + '</tr>';
+      });
+      html += '</table>';
+    } else {
+      html += '<div style="color:var(--muted);font-size:12px;font-style:italic">' + gs_('pub.lbl.noTokens') + '</div>';
+    }
+    html += '</div>';
+  }
+
+  return html;
+}
+
+
+// ── 5.2 Captain record ──────────────────────────────────────────────────────
+
+function publicCaptainRecord_(b) {
+  if (!b.id) return htmlR_(pubPageShell_(gs_('pub.title.captain'), '<div class="err-msg">Missing captain ID.</div>'));
+  var member = findOne_('members', 'id', b.id);
+  if (!member) return htmlR_(pubPageShell_(gs_('pub.title.captain'), '<div class="err-msg">Captain not found.</div>'));
+
+  var allTrips = readAll_('trips');
+  var captainTrips = allTrips.filter(function(t) {
+    return String(t.kennitala) === String(member.kennitala)
+      && (t.role === 'skipper' || t.role === 'captain');
+  }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
+
+  var totalDist = 0, totalHrs = 0;
+  captainTrips.forEach(function(t) {
+    totalDist += Number(t.distanceNm) || 0;
+    totalHrs  += Number(t.hoursDecimal) || 0;
+  });
+
+  var html = '<h1>' + esc_(member.name) + '</h1>'
+    + '<div class="subtitle">' + gs_('pub.lbl.captainSince', { date: esc_(member.createdAt ? member.createdAt.slice(0, 10) : '—') }) + '</div>';
+
+  // Stats
+  html += '<div class="card" style="display:flex;justify-content:space-around;flex-wrap:wrap">'
+    + '<div class="stat"><div class="stat-val">' + captainTrips.length + '</div><div class="stat-lbl">' + gs_('pub.lbl.totalSessions') + '</div></div>'
+    + '<div class="stat"><div class="stat-val">' + totalDist.toFixed(1) + ' nm</div><div class="stat-lbl">' + gs_('pub.lbl.totalDistance') + '</div></div>'
+    + '<div class="stat"><div class="stat-val">' + totalHrs.toFixed(1) + 'h</div><div class="stat-lbl">' + gs_('pub.lbl.totalHours') + '</div></div>'
+    + '</div>';
+
+  html += '<h2>' + gs_('pub.lbl.sessions') + '</h2><div class="card">'
+    + pubTripTableHtml_(captainTrips, { hideCaptain: true, hideRole: true })
+    + '</div>';
+
+  return htmlR_(pubPageShell_(gs_('pub.title.captain'), html));
+}
+
+
+// ── 5.3 Boat record ─────────────────────────────────────────────────────────
+
+function publicBoatRecord_(b) {
+  if (!b.id) return htmlR_(pubPageShell_(gs_('pub.title.boat'), '<div class="err-msg">Missing boat ID.</div>'));
+
+  // Look up boat from config
+  var boatsJson = getConfigSheetValue_('boats');
+  var boats = [];
+  try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
+  var boat = boats.find(function(bt) { return bt.id === b.id; });
+  if (!boat) return htmlR_(pubPageShell_(gs_('pub.title.boat'), '<div class="err-msg">Boat not found.</div>'));
+
+  var allTrips = readAll_('trips');
+  var boatTrips = allTrips.filter(function(t) {
+    return String(t.boatId) === String(b.id);
+  }).sort(function(a, bx) { return (bx.date || '') > (a.date || '') ? 1 : -1; });
+
+  var totalDist = 0, totalHrs = 0;
+  boatTrips.forEach(function(t) {
+    totalDist += Number(t.distanceNm) || 0;
+    totalHrs  += Number(t.hoursDecimal) || 0;
+  });
+
+  // Find member IDs for captain links
+  var members = readAll_('members');
+  var memberByKt = {};
+  members.forEach(function(m) { memberByKt[m.kennitala] = m; });
+
+  var html = '<h1>' + esc_(boat.name || '') + '</h1>'
+    + '<div class="subtitle">'
+    + (boat.registrationNo ? 'Reg: ' + esc_(boat.registrationNo) + ' · ' : '')
+    + (boat.length ? esc_(boat.length) + 'm · ' : '')
+    + (boat.type || boat.category || '')
+    + '</div>';
+
+  // Stats
+  html += '<div class="card" style="display:flex;justify-content:space-around;flex-wrap:wrap">'
+    + '<div class="stat"><div class="stat-val">' + boatTrips.length + '</div><div class="stat-lbl">' + gs_('pub.lbl.totalSessions') + '</div></div>'
+    + '<div class="stat"><div class="stat-val">' + totalDist.toFixed(1) + ' nm</div><div class="stat-lbl">' + gs_('pub.lbl.totalDistance') + '</div></div>'
+    + '<div class="stat"><div class="stat-val">' + totalHrs.toFixed(1) + 'h</div><div class="stat-lbl">' + gs_('pub.lbl.totalHours') + '</div></div>'
+    + '</div>';
+
+  // Trip table with captain links
+  var scriptUrl = ScriptApp.getService().getUrl();
+  html += '<h2>' + gs_('pub.lbl.sessions') + '</h2><div class="card">';
+  if (!boatTrips.length) {
+    html += '<div style="color:var(--muted);font-size:12px;font-style:italic">' + gs_('pub.lbl.noSessions') + '</div>';
+  } else {
+    html += '<div style="overflow-x:auto"><table><tr>'
+      + '<th>' + gs_('pub.lbl.date') + '</th>'
+      + '<th>' + gs_('pub.lbl.duration') + '</th>'
+      + '<th>' + gs_('pub.lbl.distance') + '</th>'
+      + '<th>' + gs_('pub.lbl.captain') + '</th>'
+      + '<th>' + gs_('pub.lbl.crew') + '</th></tr>';
+    boatTrips.forEach(function(t) {
+      var dur = t.hoursDecimal ? (Number(t.hoursDecimal).toFixed(1) + 'h') : '';
+      var dist = t.distanceNm ? (Number(t.distanceNm).toFixed(1) + ' nm') : '';
+      var captMember = memberByKt[t.kennitala];
+      var captainHtml = captMember
+        ? '<a href="' + scriptUrl + '?action=captain&id=' + esc_(captMember.id) + '">' + esc_(t.memberName || '') + '</a>'
+        : esc_(t.memberName || '');
+      html += '<tr>'
+        + '<td>' + esc_(t.date || '') + '</td>'
+        + '<td>' + dur + '</td>'
+        + '<td>' + dist + '</td>'
+        + '<td>' + captainHtml + '</td>'
+        + '<td>' + (t.crew || 1) + '</td></tr>';
+    });
+    html += '</table></div>';
+  }
+  html += '</div>';
+
+  return htmlR_(pubPageShell_(gs_('pub.title.boat'), html));
+}
+
+
+// ── 5.4 Share link record ────────────────────────────────────────────────────
+
+function publicShareRecord_(b) {
+  var tokenId = b.share;
+  if (!tokenId) return htmlR_(pubPageShell_(gs_('pub.title.share'), '<div class="err-msg">Missing token.</div>'));
+
+  var token = findOne_('shareTokens', 'id', String(tokenId).trim());
+  if (!token) return htmlR_(pubPageShell_(gs_('pub.title.share'), '<div class="err-msg">Token not found.</div>'));
+
+  // Check if revoked
+  if (token.revokedAt && String(token.revokedAt).trim() !== '') {
+    return htmlR_(pubPageShell_(gs_('pub.title.share'),
+      '<div class="revoked-msg">' + gs_('pub.share.revoked') + '</div>'));
+  }
+
+  // Update access stats
+  updateRow_('shareTokens', 'id', tokenId, {
+    accessCount: (Number(token.accessCount) || 0) + 1,
+    lastAccessedAt: now_(),
+  });
+
+  // Find member
+  var member = findOne_('members', 'id', token.memberId);
+  if (!member) return htmlR_(pubPageShell_(gs_('pub.title.share'), '<div class="err-msg">Record not found.</div>'));
+
+  var certs = [];
+  try { certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []); } catch(e) {}
+  var certDefs = getCertDefs_();
+
+  return htmlR_(pubPageShell_(gs_('pub.title.share'),
+    pubRecordPageHtml_(member, certs, certDefs, { showTokens: false, cutOffDate: token.cutOffDate })));
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SPREADSHEET SETUP  — run setupSpreadsheet() from the Apps Script editor
 //
 // Creates any missing tabs and adds any missing columns to existing tabs.
@@ -2238,7 +2775,7 @@ var SCHEMA_ = {
   members: [
     'id','kennitala','name','role','email','phone','birthYear',
     'isMinor','guardianName','guardianKennitala','guardianPhone',
-    'active','certifications','lang','createdAt','updatedAt',
+    'active','certifications','initials','lang','createdAt','updatedAt',
   ],
   daily_log: [
     'id','date','openingChecks','closingChecks','activities',
@@ -2301,6 +2838,10 @@ var SCHEMA_ = {
   time_clock: [
     'id','employeeId','type','timestamp','source',
     'originalTimestamp','note','periodKey','durationMinutes',
+  ],
+  share_tokens: [
+    'id','memberId','memberKennitala','cutOffDate',
+    'createdAt','revokedAt','accessCount','lastAccessedAt',
   ],
   payroll: [
     'id','employeeId','period',
