@@ -275,7 +275,7 @@ function initMap(locations) {
 
   if (_map) { _map.remove(); _map = null; }
 
-  _map = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+  _map = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
 
   // CartoDB Voyager (no labels) + OpenSeaMap — same as logbook
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; CartoDB' }).addTo(_map);
