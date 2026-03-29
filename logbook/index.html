@@ -146,6 +146,26 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div id="catHoursList"></div>
   </div>
 
+  <!-- Share logbook -->
+  <div id="shareBar" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
+    <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+      <div id="shareCatChecks" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0">
+          <input type="checkbox" id="sharePhotos" checked style="width:14px;height:14px;accent-color:var(--brass)">
+          <span data-s="logbook.sharePhotos"></span>
+        </label>
+        <label style="font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0">
+          <input type="checkbox" id="shareTracks" checked style="width:14px;height:14px;accent-color:var(--brass)">
+          <span data-s="logbook.shareTracks"></span>
+        </label>
+      </div>
+      <button class="btn-primary" style="width:auto;padding:7px 16px;font-size:11px" onclick="generateAndCopyShareLink()" data-s="logbook.shareCopy"></button>
+      <div id="shareActiveTokens" style="margin-top:8px"></div>
+    </div>
+  </div>
+
   <!-- Certifications -->
   <div class="section-hdr"><span>Certifications</span></div>
   <div id="certsList"><div class="empty-note">Loading…</div></div>
@@ -1180,6 +1200,72 @@ async function deleteTripPhoto(tripId, photoUrl) {
     applyFilter();
     showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+// ── Share tokens ─────────────────────────────────────────────────────────────
+function toggleSharePanel(){
+  var p=document.getElementById('sharePanel');
+  if(p.style.display==='none'){p.style.display='';renderShareCatChecks();loadShareTokens();}
+  else p.style.display='none';
+}
+function renderShareCatChecks(){
+  var cats=[...new Set(myTrips.map(function(t){return(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';}).filter(Boolean))].sort();
+  var el=document.getElementById('shareCatChecks');
+  if(!cats.length){el.innerHTML='';return;}
+  el.innerHTML=cats.map(function(c){
+    var key=c.toLowerCase();
+    var col=BOAT_CAT_COLORS[key]||BOAT_CAT_COLORS.other;
+    return '<label style="font-size:11px;color:'+col.color+';display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0;padding:3px 8px;border-radius:10px;border:1px solid '+col.border+';background:'+col.bg+'">'
+      +'<input type="checkbox" class="share-cat-chk" value="'+esc(c)+'" checked style="width:14px;height:14px;accent-color:'+col.color+'">'
+      +esc(c)+'</label>';
+  }).join('');
+}
+async function loadShareTokens(){
+  try{
+    var res=await apiPost('getShareTokens',{kennitala:user.kennitala});
+    renderShareTokens(res.tokens||[]);
+  }catch(e){}
+}
+function renderShareTokens(tokens){
+  var el=document.getElementById('shareActiveTokens');if(!el)return;
+  var active=tokens.filter(function(t){return!t.revokedAt||!String(t.revokedAt).trim();});
+  if(!active.length){el.innerHTML='';return;}
+  el.innerHTML=active.map(function(tk){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px">'
+      +'<span style="color:var(--green)">●</span>'
+      +'<span style="flex:1;color:var(--muted)">'+(IS?'Til':'Up to')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+(IS?' skoðanir':' views')+'</span>'
+      +'<button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+(IS?'Afrita':'Copy')+'</button>'
+      +'<button class="btn-ghost danger" style="font-size:10px;padding:2px 8px" onclick="revokeShareToken(\''+tk.id+'\')">'+(IS?'Afturkalla':'Revoke')+'</button>'
+      +'</div>';
+  }).join('');
+}
+async function generateAndCopyShareLink(){
+  try{
+    var catChecks=document.querySelectorAll('.share-cat-chk:checked');
+    var categories=Array.from(catChecks).map(function(c){return c.value;});
+    var photos=document.getElementById('sharePhotos').checked;
+    var tracks=document.getElementById('shareTracks').checked;
+    var res=await apiPost('createShareToken',{kennitala:user.kennitala,includePhotos:photos,includeTracks:tracks,categories:JSON.stringify(categories)});
+    if(res.id){
+      var url=SCRIPT_URL+'?share='+res.id;
+      await navigator.clipboard.writeText(url);
+      showToast(s('logbook.shareCopied'));
+      loadShareTokens();
+    }
+  }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
+}
+function copyShareLink(tokenId){
+  navigator.clipboard.writeText(SCRIPT_URL+'?share='+tokenId).then(function(){
+    showToast(s('logbook.shareCopied'));
+  });
+}
+async function revokeShareToken(tokenId){
+  if(!confirm(IS?'Afturkalla þennan hlekk?':'Revoke this link?'))return;
+  try{
+    await apiPost('revokeShareToken',{tokenId:tokenId,kennitala:user.kennitala});
+    showToast(IS?'Hlekkur afturkallaður.':'Link revoked.');
+    loadShareTokens();
+  }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

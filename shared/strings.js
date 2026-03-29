@@ -189,6 +189,13 @@ const STRINGS = {
   'member.noTokens':     { EN:'No share links generated yet.', IS:'Engir deilingarhlekkir búnir til enn.' },
   'member.tokenCreated': { EN:'Share link created.', IS:'Deilingarhlekkur búinn til.' },
 
+  // ── Logbook share ─────────────────────────────────────────────────────────
+  'logbook.shareBtn':     { EN:'Share logbook',          IS:'Deila dagbók' },
+  'logbook.sharePhotos':  { EN:'Include photos',         IS:'Taka myndir með' },
+  'logbook.shareTracks':  { EN:'Include GPS tracks',     IS:'Taka GPS-leiðir með' },
+  'logbook.shareCopy':    { EN:'Generate & copy link',   IS:'Búa til og afrita hlekk' },
+  'logbook.shareCopied':  { EN:'Link copied!',           IS:'Hlekkur afritaður!' },
+
   // ── Staff hub ──────────────────────────────────────────────────────────────
   'staff.dashTitle':         { EN:'Staff Dashboard',          IS:'Stjórnborð starfsmanna' },
   'staff.fleet':             { EN:'FLEET STATUS',             IS:'STAÐA FLOTANS' },
