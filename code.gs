@@ -394,6 +394,8 @@ function route_(action, b) {
     case 'snoozeAlert': return snoozeAlert_(b);
     case 'resolveAlert':  return resolveAlert_(b);
     case 'saveAlertConfig': return saveAlertConfig_(b);
+    // ── PUBLIC DASHBOARD ───────────────────────────────────────────────────────
+    case 'dashboard':         return publicDashboard_();
     // ── SHARE TOKENS ──────────────────────────────────────────────────────────
     case 'getShareTokens':    return getShareTokens_(b);
     case 'createShareToken':  return createShareToken_(b);
