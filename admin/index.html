@@ -552,12 +552,10 @@
       <label data-s="boat.defaultPort">Default port</label>
       <select id="bDefaultPortId"><option value="">— none —</option></select>
     </div>
-    <!-- Keelboat-only fields -->
-    <div id="keelboatFields" style="display:none">
-      <div class="field">
-        <label data-s="boat.registrationNo">Registration no.</label>
-        <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
-      </div>
+    <!-- Registration no. (keelboats) / Sail no. (others) -->
+    <div class="field">
+      <label id="bRegNoLabel" data-s="boat.registrationNo">Registration no.</label>
+      <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
     </div>
     <!-- All boats: type/model & LOA -->
     <div class="grid2">
@@ -1203,7 +1201,7 @@ function renderBoats() {
             </div>
           </div>
           ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
-          ${(cat.key === 'keelboat' && (b.registrationNo || b.typeModel)) ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
+          ${(b.registrationNo || b.typeModel) ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
           <div class="boat-card-actions">
             <button class="row-edit" style="flex:1" onclick="openBoatModal('${b.id}')">Edit</button>
             <button class="row-edit" onclick="showBoatQR('${b.id}')" title="Show QR code">🔳</button>
@@ -1243,7 +1241,12 @@ function populateDefaultPortSelect(selectedId) {
 
 function updateBoatModalFields() {
   const cat = document.getElementById("bCategory").value;
-  document.getElementById("keelboatFields").style.display = cat === 'keelboat' ? '' : 'none';
+  const isKeelboat = cat === 'keelboat';
+  const lbl = document.getElementById("bRegNoLabel");
+  const inp = document.getElementById("bRegNo");
+  lbl.setAttribute("data-s", isKeelboat ? "boat.registrationNo" : "boat.sailNo");
+  lbl.textContent = s(isKeelboat ? 'boat.registrationNo' : 'boat.sailNo');
+  inp.placeholder = isKeelboat ? "e.g. ÍS-342" : "e.g. 1234";
 }
 
 function openBoatModal(id) {
@@ -1281,8 +1284,7 @@ async function saveBoat() {
     oos:           document.getElementById("bOOS").checked,
     oosReason:     document.getElementById("bOOSReason").value.trim(),
     active:        document.getElementById("bActive").checked,
-    // keelboat-only
-    registrationNo: cat === 'keelboat' ? document.getElementById("bRegNo").value.trim()  : (id ? (_allBoats.find(x=>x.id===id)||{}).registrationNo||'' : ''),
+    registrationNo: document.getElementById("bRegNo").value.trim(),
     // all boats
     typeModel:      document.getElementById("bTypeModel").value.trim(),
     loa:            parseFloat(document.getElementById("bLoa").value) || '',

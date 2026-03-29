@@ -464,7 +464,7 @@ function tripCard(t){
 
   // Vessel/boat detail rows from boats config
   const kboat = allBoats.find(b=>b.id===t.boatId);
-  const boatRegRow   = isKeelboat && kboat?.registrationNo ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skráningarnúmer':'Registration no.'}</span><span class="trip-exp-val">${esc(kboat.registrationNo)}</span></div>` : '';
+  const boatRegRow   = kboat?.registrationNo ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?(isKeelboat?'Skráningarnúmer':'Seglnúmer'):(isKeelboat?'Registration no.':'Sail no.')}</span><span class="trip-exp-val">${esc(kboat.registrationNo)}</span></div>` : '';
   const boatModelRow = kboat?.typeModel ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Tegund / gerð':'Type / model'}</span><span class="trip-exp-val">${esc(kboat.typeModel)}</span></div>` : '';
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);

@@ -749,6 +749,7 @@ const STRINGS = {
   'logbook.noDriveConfig':   { EN:'File upload not configured — trip saved without attachment.',
                                IS:'Skráarupphal ekki stillt — ferð vistuð án viðhengis.' },
   'boat.registrationNo':     { EN:'Registration no.',                      IS:'Skráningarnúmer' },
+  'boat.sailNo':             { EN:'Sail no.',                              IS:'Seglnúmer' },
   'boat.loa':                { EN:'LOA (ft)',                              IS:'Heildarlengd (fet)' },
   'boat.typeModel':          { EN:'Type / model',                          IS:'Tegund / gerð' },
   'boat.defaultPort':        { EN:'Default port',                          IS:'Heimahöfn' },
