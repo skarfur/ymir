@@ -11,6 +11,7 @@
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
+<script src="../shared/tides.js"></script>
 <script src="../shared/boats.js"></script>
 <script src="../shared/certs.js"></script>
 <style>
@@ -125,6 +126,9 @@
     <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="wx.loading"></div>
   </div>
 
+  <!-- ══ TIDE WIDGET ══ -->
+  <div id="tideWidget" style="margin-bottom:10px"></div>
+
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
@@ -225,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('rNotes').placeholder            = s('lbl.optional');
 
   wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
+  tideWidget(document.getElementById('tideWidget')).start();
 
   try {
     const [coRes, cfgRes] = await Promise.all([

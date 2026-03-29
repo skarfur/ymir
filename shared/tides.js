@@ -235,7 +235,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
     svg += `<circle cx="${f1(ex)}" cy="${f1(ey)}" r="2.5" fill="${color}"/>`;
   });
 
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">${svg}</svg>`;
+  return `<svg width="100%" height="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${svg}</svg>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -267,9 +267,9 @@ function tideWidget(targetEl, { onData } = {}) {
       const up = soonH > curH;
       const col = up ? 'var(--green,#2ecc71)' : 'var(--orange,#e67e22)';
       const lbl = up ? (IS?'Hækkandi':'Rising') : (IS?'Lækkandi':'Falling');
-      statusHtml = `<span style="color:${col};font-weight:600;font-size:12px">${up?'↑':'↓'}</span>`
+      statusHtml = `<span style="color:${col};font-weight:500;font-size:12px">${up?'↑':'↓'}</span>`
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
-        + `<span style="font-size:11px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
+        + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
     }
 
     // Day label
@@ -286,14 +286,14 @@ function tideWidget(targetEl, { onData } = {}) {
 
     // Sun / moon
     const sunHtml = sun
-      ? `<span style="font-size:10px;color:var(--muted)">☀↑ <b style="color:var(--text)">${sun.sunrise||'–'}</b></span>`
-      + `<span style="font-size:10px;color:var(--muted)">☀↓ <b style="color:var(--text)">${sun.sunset||'–'}</b></span>`
+      ? `<span style="font-size:10px;color:var(--muted)">☀↑ <span style="color:var(--text);font-weight:500">${sun.sunrise||'–'}</span></span>`
+      + `<span style="font-size:10px;color:var(--muted)">☀↓ <span style="color:var(--text);font-weight:500">${sun.sunset||'–'}</span></span>`
       : '';
     const moonHtml = `<span style="font-size:12px">${moon.icon}</span><span style="font-size:9px;color:var(--muted)">${moon.label}</span>`;
 
     const disclaimer = IS
-      ? 'Harmónískt líkan — ekki birt gögn.'
-      : 'Harmonic model — not published data.';
+      ? 'Spálíkan ±15–30 mín'
+      : 'Prediction model ±15–30 min';
 
     // Chart
     const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 320, 90);
@@ -301,19 +301,18 @@ function tideWidget(targetEl, { onData } = {}) {
     targetEl.innerHTML = `
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${IS?'FLÓÐ · FAXAFLÓI':'TIDES · FAXAFLÓI'}</div>
           <div style="display:flex;align-items:center;gap:4px">${statusHtml}</div>
+          <div style="display:flex;align-items:center;gap:6px">${sunHtml}${moonHtml}</div>
         </div>
+        ${todayBtn ? `<div style="text-align:center;margin-bottom:2px">${todayBtn}</div>` : ''}
         <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2px">
           <button class="tide-nav-btn" data-dir="-1" style="${navStyle}">◀</button>
           <span style="font-size:10px;color:var(--text);font-weight:500;min-width:70px;text-align:center">${dayLabel}</span>
           <button class="tide-nav-btn" data-dir="1" style="${navStyle}">▶</button>
-          ${todayBtn}
         </div>
-        ${svg}
-        <div style="display:flex;align-items:center;gap:4px 10px;flex-wrap:wrap;margin-top:2px">
-          ${sunHtml}${moonHtml}
-          <span style="margin-left:auto;font-size:7px;color:var(--muted);opacity:.55">⚠ ${disclaimer}</span>
+        <div style="height:70px">${svg}</div>
+        <div style="text-align:right;margin-top:2px">
+          <span style="font-size:7px;color:var(--muted);opacity:.55">⚠ ${disclaimer}</span>
         </div>
       </div>`;
 
