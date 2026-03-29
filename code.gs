@@ -383,6 +383,7 @@ function route_(action, b) {
     case 'groupCheckIn': return groupCheckIn_(b);
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
+    case 'getMyLogbook': return getMyLogbook_(b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
@@ -392,8 +393,10 @@ function route_(action, b) {
     case 'respondConfirmation': return respondConfirmation_(b);
     case 'dismissConfirmation': return dismissConfirmation_(b);
     case 'dismissAllConfirmations': return dismissAllConfirmations_(b);
+    case 'saveCrewNote': return saveCrewNote_(b);
     case 'uploadTripFile': return uploadTripFile_(b);
     case 'deleteTripFile': return deleteTripFile_(b);
+    case 'deleteCrewFile': return deleteCrewFile_(b);
     case 'getWeather': return getWeather_();
     case 'getOverdueAlerts': return getOverdueAlerts_(b);
     case 'silenceAlert': return silenceAlert_(b);
@@ -1515,6 +1518,98 @@ function deleteCheckout_(id) {
 // TRIPS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// getMyLogbook_ — returns a unified logbook for a member:
+//   - trips where kennitala = user (skipper trips or solo manual entries)
+//   - confirmed crew/helm participations joined with their canonical trip record
+// Each entry has: the canonical trip data + { participation } for crew entries
+function getMyLogbook_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  var kt = String(b.kennitala);
+  var allTrips = readAll_('trips');
+  var allConfs;
+  try { allConfs = readAll_('tripConfirmations'); } catch(e) { allConfs = []; }
+
+  // 1. Own trips (skipper or standalone)
+  var ownTrips = allTrips
+    .filter(function(t) { return String(t.kennitala) === kt; })
+    .map(function(t) {
+      // Attach crew roster from confirmations
+      var roster = allConfs.filter(function(c) {
+        return (c.type === 'crew_assigned' || c.type === 'crew_join') &&
+          (c.tripId === t.id || (t.linkedCheckoutId && c.linkedCheckoutId === t.linkedCheckoutId));
+      }).map(function(c) {
+        var crewKt = c.type === 'crew_assigned' ? c.toKennitala : c.fromKennitala;
+        var crewName = c.type === 'crew_assigned' ? c.toName : c.fromName;
+        return { id:c.id, kennitala:crewKt, name:crewName, status:c.status, helm:c.helm, type:c.type };
+      });
+      return Object.assign({}, t, { _roster: roster, _src: 'trip' });
+    });
+
+  // 2. Crew participations (confirmed crew_assigned/crew_join where this user is the crew member)
+  var crewConfs = allConfs.filter(function(c) {
+    return c.status === 'confirmed' &&
+      (c.type === 'crew_assigned' || c.type === 'crew_join') &&
+      ((c.type === 'crew_assigned' && String(c.toKennitala) === kt) ||
+       (c.type === 'crew_join' && String(c.fromKennitala) === kt));
+  });
+
+  var crewEntries = [];
+  crewConfs.forEach(function(c) {
+    // Find the canonical trip
+    var trip = null;
+    if (c.tripId) trip = allTrips.find(function(t) { return t.id === c.tripId; });
+    if (!trip && c.linkedCheckoutId) {
+      trip = allTrips.find(function(t) {
+        return t.linkedCheckoutId === c.linkedCheckoutId && (!t.role || t.role === 'skipper');
+      });
+    }
+    if (!trip) return; // orphaned confirmation, skip
+
+    // Check for duplicate (if user already has own trip record for this)
+    var isDupe = ownTrips.some(function(ot) {
+      return ot.id === trip.id ||
+        (trip.linkedCheckoutId && ot.linkedCheckoutId === trip.linkedCheckoutId) ||
+        (ot.linkedTripId === trip.id);
+    });
+    if (isDupe) return;
+
+    // Build roster for this trip
+    var roster = allConfs.filter(function(cc) {
+      return (cc.type === 'crew_assigned' || cc.type === 'crew_join') &&
+        (cc.tripId === trip.id || (trip.linkedCheckoutId && cc.linkedCheckoutId === trip.linkedCheckoutId));
+    }).map(function(cc) {
+      var crewKt2 = cc.type === 'crew_assigned' ? cc.toKennitala : cc.fromKennitala;
+      var crewName2 = cc.type === 'crew_assigned' ? cc.toName : cc.fromName;
+      return { id:cc.id, kennitala:crewKt2, name:crewName2, status:cc.status, helm:cc.helm, type:cc.type };
+    });
+
+    // Helm confirmations for this user on this trip
+    var helmConf = allConfs.find(function(hc) {
+      return hc.type === 'helm' && hc.status === 'confirmed' &&
+        String(hc.toKennitala) === kt &&
+        (hc.tripId === trip.id || (trip.linkedCheckoutId && hc.linkedCheckoutId === trip.linkedCheckoutId));
+    });
+
+    crewEntries.push(Object.assign({}, trip, {
+      _src: 'confirmation',
+      _confirmationId: c.id,
+      _role: 'crew',
+      _helm: !!(helmConf && helmConf.helm),
+      _notes: c.notes || '',
+      _photoUrls: c.photoUrls || '',
+      _trackFileUrl: c.trackFileUrl || '',
+      _trackSimplified: c.trackSimplified || '',
+      _trackSource: c.trackSource || '',
+      _roster: roster,
+    }));
+  });
+
+  var logbook = ownTrips.concat(crewEntries)
+    .sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
+
+  return okJ({ logbook: logbook });
+}
+
 function getTrips_(kennitala, limit, p) {
   p = p || {};
   const all = readAll_('trips');
@@ -1569,7 +1664,12 @@ function saveTrip_(b) {
 }
 
 function setHelm_(b) {
-  if (!b.tripId) return failJ('tripId required');
+  // Support both trip records (skipper self-helm) and confirmation records (crew helm)
+  if (b.confirmationId) {
+    updateRow_('tripConfirmations', 'id', b.confirmationId, { helm: !!b.helm });
+    return okJ({ updated: true });
+  }
+  if (!b.tripId) return failJ('tripId or confirmationId required');
   updateRow_('trips', 'id', b.tripId, { helm: !!b.helm, updatedAt: now_() });
   return okJ({ updated: true });
 }
@@ -1610,6 +1710,8 @@ function ensureConfirmationCols_() {
     'role','helm',
     'beaufort','windDir','wxSnapshot',
     'rejectComment',
+    'notes','photoUrls','trackFileUrl','trackSimplified','trackSource',
+    'dismissed','dismissedAt',
     'createdAt','respondedAt',
   ];
   cols.forEach(function(c) { addColIfMissing_('tripConfirmations', c); });
@@ -1658,61 +1760,53 @@ function respondConfirmation_(b) {
   var ts = now_();
   var updates = { status: b.response, respondedAt: ts };
   if (b.response === 'rejected' && b.rejectComment) updates.rejectComment = b.rejectComment;
+  // For helm confirmations, set helm=true on the confirmation record itself
+  if (b.response === 'confirmed' && row.type === 'helm') updates.helm = true;
   updateRow_('tripConfirmations', 'id', b.id, updates);
-
-  // On confirm — create the trip record
-  if (b.response === 'confirmed') {
-    var type = row.type;
-    if (type === 'crew_assigned' || type === 'crew_join') {
-      // Determine who the crew member is
-      var crewKt, crewName, role;
-      if (type === 'crew_assigned') {
-        // Skipper assigned crew → the "to" person is the crew member
-        crewKt = row.toKennitala; crewName = row.toName; role = 'crew';
-      } else {
-        // Member asked to join → the "from" person is the crew member
-        crewKt = row.fromKennitala; crewName = row.fromName; role = 'crew';
-      }
-      // Check if trip already exists for this member + checkout
-      var existing = readAll_('trips').filter(function(t) {
-        return String(t.kennitala) === String(crewKt) &&
-          (row.linkedCheckoutId ? String(t.linkedCheckoutId) === String(row.linkedCheckoutId) :
-           String(t.linkedTripId) === String(row.tripId));
-      });
-      if (!existing.length) {
-        // Get crew count and skipper note from the original trip if available
-        var origCrew = 1, origSkipperNote = '';
-        if (row.tripId) {
-          var origTrip = findOne_('trips', 'id', row.tripId);
-          if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; }
-        }
-        var tripId = uid_();
-        insertRow_('trips', {
-          id: tripId, kennitala: crewKt, memberName: crewName,
-          date: row.date || '', timeOut: row.timeOut || '', timeIn: row.timeIn || '',
-          hoursDecimal: row.hoursDecimal || 0,
-          boatId: row.boatId || '', boatName: row.boatName || '', boatCategory: row.boatCategory || '',
-          locationId: row.locationId || '', locationName: row.locationName || '',
-          crew: origCrew, role: role,
-          beaufort: row.beaufort || '', windDir: row.windDir || '', wxSnapshot: row.wxSnapshot || '',
-          notes: '', skipperNote: origSkipperNote, isLinked: true,
-          linkedCheckoutId: row.linkedCheckoutId || '', linkedTripId: row.tripId || '',
-          verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
-          validationRequested: false, helm: false,
-          distanceNm: '', departurePort: '', arrivalPort: '',
-          trackFileUrl: '', trackSimplified: '', trackSource: '', photoUrls: '',
-          createdAt: ts,
-        });
-      }
-    }
-    if (type === 'helm') {
-      // Set helm on the specified trip
-      if (row.tripId) {
-        updateRow_('trips', 'id', row.tripId, { helm: true, updatedAt: ts });
-      }
-    }
-  }
   return okJ({ updated: true, status: b.response });
+}
+
+// Save personal note on a crew participation (confirmation record)
+function saveCrewNote_(b) {
+  if (!b.confirmationId) return failJ('confirmationId required');
+  var row = findOne_('tripConfirmations', 'id', b.confirmationId);
+  if (!row) return failJ('Confirmation not found', 404);
+  var updates = {};
+  if (b.notes !== undefined) updates.notes = b.notes;
+  if (b.photoUrls !== undefined) updates.photoUrls = b.photoUrls;
+  if (b.trackFileUrl !== undefined) updates.trackFileUrl = b.trackFileUrl;
+  if (b.trackSimplified !== undefined) updates.trackSimplified = b.trackSimplified;
+  if (b.trackSource !== undefined) updates.trackSource = b.trackSource;
+  updateRow_('tripConfirmations', 'id', b.confirmationId, updates);
+  return okJ({ updated: true });
+}
+
+// Delete a crew member's personal file (track/photo) from their confirmation record
+function deleteCrewFile_(b) {
+  if (!b.confirmationId) return failJ('confirmationId required');
+  if (!b.fileType) return failJ('fileType required');
+  var row = findOne_('tripConfirmations', 'id', b.confirmationId);
+  if (!row) return failJ('Confirmation not found', 404);
+
+  if (b.fileType === 'track') {
+    tryTrashDriveUrl_(row.trackFileUrl);
+    updateRow_('tripConfirmations', 'id', b.confirmationId, {
+      trackFileUrl: '', trackSimplified: '', trackSource: '',
+    });
+    return okJ({ ok: true, deleted: 'track' });
+  }
+  if (b.fileType === 'photo') {
+    if (!b.photoUrl) return failJ('photoUrl required');
+    tryTrashDriveUrl_(b.photoUrl);
+    var urls = [];
+    try { urls = JSON.parse(row.photoUrls || '[]'); } catch(e) {}
+    urls = urls.filter(function(u) { return u !== b.photoUrl; });
+    updateRow_('tripConfirmations', 'id', b.confirmationId, {
+      photoUrls: urls.length ? JSON.stringify(urls) : '',
+    });
+    return okJ({ ok: true, deleted: 'photo', remaining: urls.length });
+  }
+  return failJ('Unknown fileType');
 }
 
 function dismissConfirmation_(b) {

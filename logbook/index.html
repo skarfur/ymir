@@ -424,8 +424,7 @@ requireAuth();
 const user = getUser();
 const IS   = getLang() === 'IS';
 
-let myTrips  = [];
-let allTrips = [];  // all trips (for crew name lookups across users)
+let myLogbook = [];  // unified logbook: own trips + crew participations (from getMyLogbook)
 let allBoats = [], allLocs = [], allMembers = [];
 let allRecentTrips = [];
 let recentOffset   = 0;
@@ -450,16 +449,16 @@ function bftLabel(b){
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function renderStats(){
   const year=String(new Date().getFullYear());
-  const season=myTrips.filter(t=>(t.date||'').startsWith(year));
-  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const skipperTrips=myTrips.filter(t=>!t.role||t.role==='skipper');
-  document.getElementById('stTrips').textContent   = myTrips.length;
+  const season=myLogbook.filter(t=>(t.date||'').startsWith(year));
+  const hours=myLogbook.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const skipperTrips=myLogbook.filter(t=>t._src!=='confirmation' && (!t.role||t.role==='skipper'));
+  document.getElementById('stTrips').textContent   = myLogbook.length;
   document.getElementById('stHours').textContent   = hours.toFixed(0)+'h';
   document.getElementById('stSeason').textContent  = season.length;
   document.getElementById('stSkipper').textContent = skipperTrips.length;
 
   const catH={};
-  myTrips.forEach(t=>{
+  myLogbook.forEach(t=>{
     const c=(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'Other';
     catH[c]=(catH[c]||0)+(parseFloat(t.hoursDecimal)||0);
   });
@@ -511,10 +510,10 @@ function dirArrow(dir) {
 function tripCard(t){
   const p   = parseDateParts(t.date);
   const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
-  const isSki = !t.role || t.role==='skipper';
+  const isSki = t._src==='confirmation' ? false : (!t.role || t.role==='skipper');
   const isVer = t.verified && t.verified!=='false';
-  const isHelm = t.helm && t.helm!=='false';
-  const showHelm = isHelm && parseInt(t.crew||1)>1;
+  const myHelm = t._src==='confirmation' ? !!(t._helm) : (t.helm && t.helm!=='false');
+  const showHelm = myHelm && parseInt(t.crew||1)>1;
 
   // Parse wx snapshot
   let wx = null;
@@ -549,21 +548,14 @@ function tripCard(t){
   const flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Black'};
   const eFlag = wx?.flag ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Veðurfáni':'Weather flag'}</span><span class="trip-exp-val">${flagIcons[wx.flag]||''} ${flagLabels[wx.flag]||esc(wx.flag)}</span></div>` : '';
 
-  // ── Resolve the skipper trip for crew members ──────────────────────────────
-  // This lets crew cards mirror the skipper's data (crew count, ports, distance, etc.)
-  const isOwner = String(t.kennitala) === String(user.kennitala);
-  const linkedSkipper = !isSki ? allTrips.find(x =>
-    x.id !== t.id && (!x.role || x.role==='skipper') && (
-      (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
-      (t.linkedTripId && x.id === t.linkedTripId)
-    )
-  ) : null;
-  // The "source" trip has the canonical crew count, distance, ports, etc.
-  const src = isSki ? t : (linkedSkipper || t);
-  const totalCrew = parseInt(src.crew||1);
+  // ── Crew roster comes pre-built from getMyLogbook (t._roster) ──────────────
+  const isOwner = t._src !== 'confirmation'; // trip owner vs crew participant
+  const isCrew  = t._src === 'confirmation';
+  const totalCrew = parseInt(t.crew||1);
+  const roster = t._roster || [];
 
-  // Port display — use src for canonical data
-  const dep=src.departurePort||t.departurePort||'', arr=src.arrivalPort||t.arrivalPort||'';
+  // Port display
+  const dep=t.departurePort||'', arr=t.arrivalPort||'';
   const portLine = (dep||arr) ? (
     (!arr||!dep||dep===arr) ? `<span>⚓️ ${esc(dep||arr)}</span>`
                             : `<span>⚓️ ${esc(dep)} → ${esc(arr)}</span>`
@@ -572,68 +564,27 @@ function tripCard(t){
   const arrPortRow = isKeelboat && arr ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Komustaður':'Arrival port'}</span><span class="trip-exp-val">${esc(arr)}</span></div>` : '';
   const portRow = depPortRow + arrPortRow;
 
-  // ── Build full crew roster: skipper + all linked crew ─────────────────────
-  // Find all trips linked to this checkout/trip group
-  const allLinked = allTrips.filter(x =>
-    x.id !== src.id && (
-      (src.linkedCheckoutId && x.linkedCheckoutId === src.linkedCheckoutId) ||
-      (x.linkedTripId && x.linkedTripId === src.id)
-    )
-  );
-  const linkedCrew = allLinked.filter(x => x.role==='crew');
-
-  // Check for pending handshakes (outgoing + incoming)
-  const matchTrip = c => c.tripId===src.id || (src.linkedCheckoutId && c.linkedCheckoutId===src.linkedCheckoutId);
-  const pendingCrewConfs = _confirmations.outgoing.filter(c =>
-    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') && matchTrip(c));
-  const pendingHelmConfs = _confirmations.outgoing.filter(c =>
-    c.status==='pending' && c.type==='helm' && matchTrip(c));
-  const pendingCrewIn = _confirmations.incoming.filter(c =>
-    c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') && matchTrip(c));
-  const pendingHelmIn = _confirmations.incoming.filter(c =>
-    c.status==='pending' && c.type==='helm' && matchTrip(c));
-
   // Guest lookup helper
-  const isGuest = kt => {
-    const m = allMembers.find(mm => String(mm.kennitala)===String(kt));
-    return m && m.role === 'guest';
-  };
+  const isGuestFn = kt => { const m = allMembers.find(mm => String(mm.kennitala)===String(kt)); return m && m.role === 'guest'; };
   const guestTag = `<span style="font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 3px;margin-left:2px">${IS?'gestur':'guest'}</span>`;
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
   const helmTag = `<span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">${IS?'Stýri':'Helm'}</span>`;
 
-  // Build roster: [{name, roleBadge, isHelm, isPending}]
-  const roster = [];
-  // Skipper
-  const skipperTrip = isSki ? t : linkedSkipper;
-  if (skipperTrip) {
-    const skName = esc(skipperTrip.memberName||'?');
-    const skHelm = skipperTrip.helm && skipperTrip.helm!=='false';
-    const skGuest = isGuest(skipperTrip.kennitala);
-    roster.push({name:skName, role:'skipper', helm:skHelm, guest:skGuest, pending:false});
-  }
-  // Confirmed crew
-  linkedCrew.forEach(x => {
-    const name = esc(x.memberName||x.crewMemberName||'?');
-    const xHelm = x.helm && x.helm!=='false';
-    roster.push({name, role:'crew', helm:xHelm, guest:isGuest(x.kennitala), pending:false});
-  });
-  // Pending crew
-  pendingCrewConfs.forEach(c => roster.push({name:esc(c.toName||'?'), role:'crew', helm:false, guest:false, pending:true}));
-  pendingCrewIn.forEach(c => roster.push({name:esc(c.fromName||'?'), role:'crew', helm:false, guest:false, pending:true}));
+  // Skipper info (for crew cards, the trip record IS the skipper's)
+  const skipperName = t.memberName || '?';
+  const skipperHelm = t.helm && t.helm!=='false';
+  const skipperNameRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(skipperName)}${skipperHelm?' '+helmTag:''}${isGuestFn(t.kennitala)?' '+guestTag:''}</span></div>`;
 
-  // Build crew names display (for the crew row)
-  const crewRosterHtml = roster.filter(r=>r.role==='crew').map(r => {
-    let html = r.name;
-    if(r.helm) html += ' ' + helmTag;
-    if(r.guest) html += ' ' + guestTag;
-    if(r.pending) html += ' ' + pendingTag;
+  // Crew names display
+  const crewRosterHtml = roster.filter(r => r.status==='confirmed' || r.status==='pending').map(r => {
+    let html = esc(r.name||'?');
+    if(r.helm && r.helm!=='false') html += ' ' + helmTag;
+    if(isGuestFn(r.kennitala)) html += ' ' + guestTag;
+    if(r.status==='pending') html += ' ' + pendingTag;
     return html;
   }).join(', ');
 
-  // Build crew rows for expanded detail
   const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${totalCrew}</span></div>`;
-  const skipperNameRow = skipperTrip ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(skipperTrip.memberName||'?')}${skipperTrip.helm&&skipperTrip.helm!=='false'?' '+helmTag:''}${isGuest(skipperTrip.kennitala)?' '+guestTag:''}</span></div>` : '';
   const crewNamesRow = crewRosterHtml
     ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${crewRosterHtml}</span></div>`
     : '';
@@ -642,9 +593,10 @@ function tripCard(t){
   const showHelmSection = totalCrew > 1;
   let helmRow = '';
   if (showHelmSection) {
-    const helmNames = roster.filter(r => r.helm && !r.pending).map(r => r.name);
-    const pendingHelmNames = pendingHelmConfs.map(c => esc(c.toName||'?'))
-      .concat(pendingHelmIn.map(c => esc(c.fromName||'?')));
+    const helmNames = [];
+    if (skipperHelm) helmNames.push(esc(skipperName));
+    roster.filter(r => r.status==='confirmed' && r.helm && r.helm!=='false').forEach(r => helmNames.push(esc(r.name||'?')));
+    const pendingHelmNames = roster.filter(r => r.status==='pending' && r.helm).map(r => esc(r.name||'?'));
     if (helmNames.length || pendingHelmNames.length) {
       const confirmedPills = helmNames.map(n =>
         `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--brass);border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span style="font-size:10px">⎈</span> ${n}</span>`
@@ -652,8 +604,7 @@ function tripCard(t){
       const pendingPills = pendingHelmNames.map(n =>
         `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span style="font-size:10px">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${IS?'í bið':'pending'}</span></span>`
       );
-      const allPills = confirmedPills.concat(pendingPills).join(' ');
-      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${allPills}</div></span></div>`;
+      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${confirmedPills.concat(pendingPills).join(' ')}</div></span></div>`;
     }
   }
 
@@ -664,47 +615,56 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Heildarlengd':'LOA'}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
-  const distRow  = src.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(src.distanceNm)} nm</span></div>` : '';
+  const distRow  = t.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Vegalengd':'Distance'}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
 
-  // Track row: show own track, or fall back to skipper's track for crew
-  const trackTrip = (t.trackSimplified || t.trackFileUrl) ? t : (linkedSkipper && (linkedSkipper.trackSimplified || linkedSkipper.trackFileUrl) ? linkedSkipper : t);
-  let trackPoints = []; try { if(trackTrip.trackSimplified) trackPoints = JSON.parse(trackTrip.trackSimplified); } catch(e){}
-  const trackDeleteBtn = isOwner && t.trackFileUrl ? `<button class="track-delete-btn" onclick="event.stopPropagation();deleteTripTrack('${esc(t.id)}')">${IS?'Eyða leið':'Delete track'}</button>` : '';
+  // Track row: crew personal track from _trackSimplified, else canonical trip track
+  const myTrackSimp = (isCrew && t._trackSimplified) ? t._trackSimplified : t.trackSimplified;
+  const myTrackUrl  = (isCrew && t._trackFileUrl)    ? t._trackFileUrl    : t.trackFileUrl;
+  const myTrackSrc  = (isCrew && t._trackSource)     ? t._trackSource     : t.trackSource;
+  let trackPoints = []; try { if(myTrackSimp) trackPoints = JSON.parse(myTrackSimp); } catch(e){}
+  const trackDeleteId = isCrew ? t._confirmationId : t.id;
+  const trackDeleteFn = isCrew ? 'deleteCrewTrack' : 'deleteTripTrack';
+  const trackDeleteBtn = myTrackUrl ? `<button class="track-delete-btn" onclick="event.stopPropagation();${trackDeleteFn}('${esc(trackDeleteId)}')">${IS?'Eyða leið':'Delete track'}</button>` : '';
   let trackRow = '';
   if (trackPoints.length >= 2) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}${trackTrip.trackSource?' · '+esc(trackTrip.trackSource):''}${trackDeleteBtn}</span><span class="trip-exp-val">
-      <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}${myTrackSrc?' · '+esc(myTrackSrc):''}${trackDeleteBtn}</span><span class="trip-exp-val">
+      <div class="track-map-thumb" id="tmap-${esc(t.id||t._confirmationId)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${IS?'Smelltu til að stækka':'Click to expand'}</div>
       </div>
-      ${trackTrip.trackFileUrl?`<a href="${esc(trackTrip.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
+      ${myTrackUrl?`<a href="${esc(myTrackUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
     </span></div>`;
-  } else if (trackTrip.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(trackTrip.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${trackTrip.trackSource?' · '+esc(trackTrip.trackSource):''}${trackDeleteBtn}</span></div>`;
+  } else if (myTrackUrl) {
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(myTrackUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${myTrackSrc?' · '+esc(myTrackSrc):''}${trackDeleteBtn}</span></div>`;
   }
 
-  // Skipper note — for crew members, pull from src (skipper's trip) if own record is blank
+  // Skipper note — always from the canonical trip record
   const canEditSkipperNote = isSki && isOwner;
-  const effectiveSkipperNote = t.skipperNote || (linkedSkipper?.skipperNote) || '';
-  const skipperNoteRow = (effectiveSkipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${effectiveSkipperNote?esc(effectiveSkipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
-  // Private note (only visible to owner) — always show for owner with edit
-  const canEditNote = isOwner;
-  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const effectiveSkipperNote = t.skipperNote || '';
+  const skipperNoteRow22 = (effectiveSkipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${effectiveSkipperNote?esc(effectiveSkipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  // Private note — for crew participants, stored on the confirmation record
+  const myNotes = isCrew ? (t._notes||'') : (t.notes||'');
+  const noteEditId = isCrew ? t._confirmationId : t.id;
+  const noteEditType = isCrew ? 'crewNote' : 'notes';
+  const notesRow = (myNotes || true) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(noteEditId)}">${myNotes?esc(myNotes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`} <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(noteEditId)}','${noteEditType}')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button></span></div>` : '';
   const photosRow = (()=>{
-    let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
+    const rawPhotos = isCrew ? (t._photoUrls||'') : (t.photoUrls||'');
+    let urls=[]; try{if(rawPhotos)urls=JSON.parse(rawPhotos);}catch(e){}
     if (!urls.length) return '';
+    const photoDeleteId = isCrew ? t._confirmationId : t.id;
+    const photoDeleteFn = isCrew ? 'deleteCrewPhoto' : 'deleteTripPhoto';
     const thumbs = urls.map((u,i) => {
-      const delBtn = isOwner ? `<button class="upload-delete-btn" onclick="event.stopPropagation();deleteTripPhoto('${esc(t.id)}','${esc(u)}')" title="${IS?'Eyða':'Delete'}">&times;</button>` : '';
+      const delBtn = `<button class="upload-delete-btn" onclick="event.stopPropagation();${photoDeleteFn}('${esc(photoDeleteId)}','${esc(u)}')" title="${IS?'Eyða':'Delete'}">&times;</button>`;
       return `<div class="upload-thumb-wrap">
         ${delBtn}
         <img src="${esc(u)}" class="photo-thumb" loading="lazy"
-          onclick="event.stopPropagation();openLightbox('${esc(t.id)}',${i})"
+          onclick="event.stopPropagation();openLightbox('${esc(t.id||t._confirmationId)}',${i})"
           onerror="this.parentElement.style.display='none'">
       </div>`;
     }).join('');
     return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);
-  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner);
+  const hasNotes   = !!(skipperNoteRow2||notesRow||photosRow||trackRow);
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres||eFlag);
 
 
@@ -716,14 +676,14 @@ function tripCard(t){
         <div class="trip-date-yr">${esc(p.yr)}</div>
       </div>
       <div class="trip-body">
-        <div class="trip-boat">${esc(t.boatName||'—')}${!isSki&&linkedSkipper?` <span style="font-size:11px;color:var(--muted);font-weight:400">· ${esc(linkedSkipper.memberName||'')}</span>`:''}</div>
+        <div class="trip-boat">${esc(t.boatName||'—')}${isCrew?` <span style="font-size:11px;color:var(--muted);font-weight:400">· ${esc(t.memberName||'')}</span>`:''}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
           ${showHelm?`<span class="trip-badge badge-helm">${IS?'Stýri':'Helm'}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
-          ${(src.distanceNm)?`<span>${esc(src.distanceNm)} nm</span>`:''}
+          ${(t.distanceNm)?`<span>${esc(t.distanceNm)} nm</span>`:''}
           ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
           ${isKeelboat&&portLine?portLine:''}
         </div>
@@ -766,7 +726,7 @@ function tripCard(t){
               + '<div class="trip-expand-grid">'+toplineWx+'</div>');
         })()}
       </div>`:''}
-      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow}${notesRow}${trackRow}${photosRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow2}${notesRow}${trackRow}${photosRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -790,11 +750,12 @@ function applyFilter(){
   const wind= document.getElementById('fWind').value;
   const txt = document.getElementById('fText').value.toLowerCase().trim();
 
-  const filtered=myTrips.filter(t=>{
+  const filtered=myLogbook.filter(t=>{
     if(yr  && !(t.date||'').startsWith(yr)) return false;
     if(cat){const tCat=((allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').toLowerCase();if(tCat!==cat.toLowerCase())return false;}
-    if(role==='skipper' && t.role==='crew') return false;
-    if(role==='crew'    && t.role!=='crew') return false;
+    const effectiveRole = t._src==='confirmation' ? 'crew' : (t.role||'skipper');
+    if(role==='skipper' && effectiveRole!=='skipper') return false;
+    if(role==='crew'    && effectiveRole!=='crew') return false;
     if(wind){
       const b=parseInt(t.beaufort)||0;
       if(wind==='gt4'  && b<=4)  return false;
@@ -810,17 +771,17 @@ function applyFilter(){
   document.getElementById('tripList').innerHTML=filtered.length
     ? filtered.map(tripCard).join('')
     : '<div class="empty-note">No trips match this filter.</div>';
-  document.getElementById('filterCount').textContent=filtered.length+' / '+myTrips.length;
+  document.getElementById('filterCount').textContent=filtered.length+' / '+myLogbook.length;
 }
 
 function buildFilters(){
-  const years=[...new Set(myTrips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const years=[...new Set(myLogbook.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
   const yrSel=document.getElementById('fYear');
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;yrSel.appendChild(o);});
   const thisYear=String(new Date().getFullYear());
   if(years.includes(thisYear)) yrSel.value=thisYear;
 
-  const cats=[...new Set(myTrips.map(t=>(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').filter(Boolean))].sort();
+  const cats=[...new Set(myLogbook.map(t=>(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').filter(Boolean))].sort();
   const cSel=document.getElementById('fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
@@ -841,7 +802,7 @@ async function openLogModal(){
   showStep1();
   document.getElementById('loadMoreTripsBtn').style.display='none';
   // Use cached club trips if fresh (< 30s), otherwise refetch
-  const myIds=new Set(myTrips.flatMap(t=>[t.linkedTripId,t.linkedCheckoutId,t.id]).filter(Boolean));
+  const myIds=new Set(myLogbook.flatMap(t=>[t.linkedTripId,t.linkedCheckoutId,t.id,t._confirmationId].concat((t._roster||[]).map(r=>r.id))).filter(Boolean));
   if(Date.now() - _clubTripsLoadedAt < CLUB_TRIPS_TTL && allClubTrips.length){
     clubTripsOffset=0;
     renderClubTripsList();
@@ -1196,8 +1157,9 @@ function joinTripAsCrew(tripId, el){
   const t=allClubTrips.find(x=>x.id===tripId);
   if(!t) return;
 
-  // Guard: already in logbook
-  const alreadyInLog=myTrips.some(x=>
+  // Guard: already in logbook (own trip or crew participation)
+  const alreadyInLog=myLogbook.some(x=>
+    x.id===t.id||
     x.linkedTripId===t.id||
     (t.linkedCheckoutId&&x.linkedCheckoutId===t.linkedCheckoutId)
   );
@@ -1262,7 +1224,7 @@ async function submitManual(){
   }
 
   // Check for duplicate trip on same date + boat
-  const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
+  const dupeTrip=myLogbook.find(x=>x.date===date&&x.boatId===boatId);
   if(dupeTrip){
     errEl.textContent=IS?'Þú hefur þegar skráð ferð með þessum bát á þessum degi. Vinsamlegast athugaðu siglingabókina.':'You already have a trip logged with this boat on this date. Please check your logbook.';
     errEl.style.display='';
@@ -1336,12 +1298,11 @@ async function submitManual(){
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
     };
     const res=await apiPost('saveTrip', tripBase);
-    const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
-    myTrips.unshift(savedTrip);
+    const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala, _src:'trip', _roster:[]}, tripBase);
+    myLogbook.unshift(savedTrip);
 
-    // Save linked crew trips for named crew members
+    // Create crew_assigned confirmations for named crew members (no trip duplication)
     const crewInputs = Array.from(document.querySelectorAll('#mCrewInputs .manual-crew-row'));
-    const linkedId = res.id; // use the skipper trip id as the link
     for(const row of crewInputs){
       const inp = row.querySelector('input[type="text"]');
       const helmCb = row.querySelector('input[type="checkbox"]');
@@ -1349,18 +1310,18 @@ async function submitManual(){
       const cKt = inp?.dataset.kennitala||'';
       if(!cName) continue;
       try{
-        await apiPost('saveTrip',{
-          kennitala: cKt, memberName: cName,
-          date, boatId, boatName, boatCategory,
+        await apiPost('createConfirmation',{
+          type:'crew_assigned',
+          fromKennitala: user.kennitala, fromName: user.name,
+          toKennitala: cKt, toName: cName,
+          tripId: res.id,
+          boatId, boatName, boatCategory,
           locationId:locId, locationName:locName,
-          timeOut, timeIn, hoursDecimal,
-          crew, role:'crew', isLinked:true,
-          linkedTripId: linkedId,
-          helm: helmCb?.checked||false,
+          date, timeOut, timeIn, hoursDecimal,
+          role:'crew', helm: helmCb?.checked||false,
           beaufort:bft, windDir:wdir, wxSnapshot,
-          distanceNm, departurePort:depPort, arrivalPort:arrPort,
         });
-      }catch(e2){ console.warn('Crew trip save failed for',cName,e2.message); }
+      }catch(e2){ console.warn('Crew confirmation failed for',cName,e2.message); }
     }
 
     renderStats(); buildFilters(); applyFilter();
@@ -1431,20 +1392,12 @@ function initSingleThumbMap(el) {
 }
 
 function openMapModal(tripId) {
-  let trip = myTrips.find(t => t.id === tripId);
+  let trip = myLogbook.find(t => t.id === tripId);
   if (!trip) return;
-  // If this trip has no track, try the linked skipper's trip
+  // For crew participations, use personal track or canonical trip track
+  let trackData = trip._src==='confirmation' && trip._trackSimplified ? trip._trackSimplified : trip.trackSimplified;
   let pts;
-  try { pts = JSON.parse(trip.trackSimplified); } catch(e) {}
-  if ((!pts || pts.length < 2) && (trip.linkedTripId || trip.linkedCheckoutId)) {
-    const skipper = allTrips.find(x =>
-      x.id !== trip.id && (!x.role || x.role==='skipper') && (
-        (trip.linkedCheckoutId && x.linkedCheckoutId === trip.linkedCheckoutId) ||
-        (trip.linkedTripId && x.id === trip.linkedTripId)
-      )
-    );
-    if (skipper) { try { pts = JSON.parse(skipper.trackSimplified); trip = skipper; } catch(e) {} }
-  }
+  try { pts = JSON.parse(trackData); } catch(e) {}
   if (!pts || pts.length < 2) return;
 
   const overlay = document.getElementById('mapModal');
@@ -1480,7 +1433,7 @@ function closeMapModal() {
 let _lbTripId = null, _lbIndex = 0, _lbUrls = [];
 
 function openLightbox(tripId, index) {
-  const trip = myTrips.find(t => t.id === tripId);
+  const trip = myLogbook.find(t => t.id === tripId);
   if (!trip) return;
   try { _lbUrls = JSON.parse(trip.photoUrls || '[]'); } catch(e) { _lbUrls = []; }
   if (!_lbUrls.length) return;
@@ -1520,7 +1473,7 @@ async function toggleHelm(tripId, checked) {
   try {
     await apiPost('setHelm', { tripId, helm: checked });
     // Update local data
-    const t = myTrips.find(x => x.id === tripId);
+    const t = myLogbook.find(x => x.id === tripId);
     if (t) t.helm = checked;
     applyFilter();
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
@@ -1530,7 +1483,7 @@ async function deleteTripTrack(tripId) {
   if (!confirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'track' });
-    const t = myTrips.find(x => x.id === tripId);
+    const t = myLogbook.find(x => x.id === tripId);
     if (t) { t.trackFileUrl = ''; t.trackSimplified = ''; t.trackSource = ''; }
     applyFilter();
     showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'success');
@@ -1541,7 +1494,7 @@ async function deleteTripPhoto(tripId, photoUrl) {
   if (!confirm(IS ? 'Eyða þessari mynd?' : 'Delete this photo?')) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'photo', photoUrl });
-    const t = myTrips.find(x => x.id === tripId);
+    const t = myLogbook.find(x => x.id === tripId);
     if (t) {
       let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
       urls = urls.filter(u => u !== photoUrl);
@@ -1559,7 +1512,7 @@ function toggleSharePanel(){
   else p.style.display='none';
 }
 function renderShareCatChecks(){
-  var cats=[...new Set(myTrips.map(function(t){return(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';}).filter(Boolean))].sort();
+  var cats=[...new Set(myLogbook.map(function(t){return(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';}).filter(Boolean))].sort();
   var el=document.getElementById('shareCatChecks');
   if(!cats.length){el.innerHTML='';return;}
   el.innerHTML=cats.map(function(c){
@@ -1621,11 +1574,8 @@ async function revokeShareToken(tokenId){
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function reload(){
   try{
-    const res=await apiGet('getTrips',{limit:500});
-    allTrips=res.trips||[];
-    myTrips=allTrips
-      .filter(t=>t.kennitala===user.kennitala)
-      .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const res=await apiGet('getMyLogbook',{kennitala:user.kennitala});
+    myLogbook=(res.logbook||[]);
     renderStats();
     buildFilters();
     applyFilter();
@@ -1639,15 +1589,12 @@ async function reload(){
   applyStrings();
   buildHeader('member');
   try{
-    const [tripsRes,cfgRes,membersRes]=await Promise.all([
-      apiGet('getTrips',{limit:500}),
+    const [logbookRes,cfgRes,membersRes]=await Promise.all([
+      apiGet('getMyLogbook',{kennitala:user.kennitala}),
       apiGet('getConfig'),
       apiGet('getMembers'),
     ]);
-    allTrips=tripsRes.trips||[];
-    myTrips=allTrips
-      .filter(t=>t.kennitala===user.kennitala)
-      .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    myLogbook=(logbookRes.logbook||[]);
     // Load boats + locations + members for manual form
     const boats=cfgRes.boats||[];
     const locs =cfgRes.locations||[];
@@ -1670,7 +1617,7 @@ async function requestTripValidation(id) {
   try {
     await apiPost('saveTrip', { id, validationRequested: true });
     // Update local trip data
-    const t = myTrips.find(x => x.id === id);
+    const t = myLogbook.find(x => x.id === id);
     if (t) t.validationRequested = true;
     applyFilter();
     showToast(IS ? 'Óskað eftir staðfestingu' : 'Validation requested');
@@ -1813,22 +1760,55 @@ function promptRejectConf(confId){
 }
 
 // ── Edit notes (only notes remain editable after handshake) ──────────────────
-async function editNote(tripId, field) {
-  const t = myTrips.find(x => x.id === tripId);
+async function editNote(id, field) {
+  // field: 'skipperNote' | 'notes' (own trip) | 'crewNote' (confirmation)
+  const isCrew = field === 'crewNote';
+  const t = isCrew
+    ? myLogbook.find(x => x._confirmationId === id)
+    : myLogbook.find(x => x.id === id);
   if (!t) return;
-  const current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
+  const current = isCrew ? (t._notes||'') : (field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||''));
   const label = field === 'skipperNote'
     ? (IS ? 'Skipstjóraskýring (sýnilegt áhöfn):' : 'Skipper note (visible to crew):')
     : (IS ? 'Athugasemd (aðeins þú sérð):' : 'Private note (only you):');
   const val = prompt(label, current);
   if (val === null) return;
   try {
-    const update = {};
-    update[field] = val;
-    await apiPost('saveTrip', { id: tripId, [field]: val });
-    t[field] = val;
+    if (isCrew) {
+      await apiPost('saveCrewNote', { confirmationId: id, notes: val });
+      t._notes = val;
+    } else {
+      await apiPost('saveTrip', { id, [field]: val });
+      t[field] = val;
+    }
     applyFilter();
     showToast(IS ? 'Athugasemd vistuð' : 'Note saved', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+// ── Crew file delete helpers ─────────────────────────────────────────────────
+async function deleteCrewTrack(confId) {
+  if (!confirm(IS ? 'Eyða GPS-leið?' : 'Delete this GPS track?')) return;
+  try {
+    await apiPost('deleteCrewFile', { confirmationId: confId, fileType: 'track' });
+    const t = myLogbook.find(x => x._confirmationId === confId);
+    if (t) { t._trackFileUrl=''; t._trackSimplified=''; t._trackSource=''; }
+    applyFilter();
+    showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+async function deleteCrewPhoto(confId, photoUrl) {
+  if (!confirm(IS ? 'Eyða mynd?' : 'Delete this photo?')) return;
+  try {
+    await apiPost('deleteCrewFile', { confirmationId: confId, fileType: 'photo', photoUrl });
+    const t = myLogbook.find(x => x._confirmationId === confId);
+    if (t) {
+      let urls=[]; try{urls=JSON.parse(t._photoUrls||'[]');}catch(e){}
+      urls=urls.filter(u=>u!==photoUrl);
+      t._photoUrls=urls.length?JSON.stringify(urls):'';
+    }
+    applyFilter();
+    showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
