@@ -112,7 +112,7 @@
   <div class="header-right"></div>
 </header>
 
-<div id="mainWrap" style="max-width:720px;margin:0 auto;padding:16px 16px 80px">
+<div id="mainWrap" class="page-content">
 
   <!-- ══ DATE NAV ══ -->
   <div class="date-nav">
@@ -123,25 +123,25 @@
   </div>
     <div class="date-hero" id="dateHero"></div>
 
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+  <div class="flex-center flex-wrap gap-8 mb-16">
     <div class="signoff-badge hidden" id="signoffBadge"></div>
     <div class="readonly-badge hidden" id="readonlyBadge" data-s="daily.readOnly"></div>
   </div>
 
   <!-- ══ 1. WEATHER WIDGET ══ -->
-  <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px" data-s="daily.wxLog"></div>
-  <div class="content-card" style="margin-bottom:4px">
+  <div class="section-label" data-s="daily.wxLog"></div>
+  <div class="content-card mb-4">
     <div id="wxLogList"></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-      <button class="btn-ghost" id="logWxBtn" style="font-size:11px;padding:3px 10px" data-s="daily.wxLogBtn"></button>
-      <span id="logWxDesc" style="font-size:10px;color:var(--muted)"></span>
-      <span id="wxLogCount" style="font-size:10px;color:var(--muted);margin-left:auto"></span>
+    <div class="flex-center gap-8 mt-8">
+      <button class="btn-ghost-sm" id="logWxBtn" data-s="daily.wxLogBtn"></button>
+      <span id="logWxDesc" class="text-xs text-muted"></span>
+      <span id="wxLogCount" class="text-xs text-muted ml-auto"></span>
     </div>
   </div>
 
   <!-- ══ 2. TIDES (auto-filled from harmonic prediction) ══ -->
   <div class="section-heading" data-s="daily.tides"></div>
-  <div id="dailyTideWidget" style="margin-bottom:4px"></div>
+  <div id="dailyTideWidget" class="mb-4"></div>
   <!-- hidden inputs to preserve save/load contract -->
   <input type="hidden" id="tideH1Time"><input type="hidden" id="tideH1Height">
   <input type="hidden" id="tideL1Time"><input type="hidden" id="tideL1Height">
@@ -151,7 +151,7 @@
   <!-- ══ 3. TRIPS TODAY ══ -->
   <div class="section-heading">
     <span data-s="daily.tripsToday"></span>
-    <span id="tripsCount" style="font-weight:normal"></span>
+    <span id="tripsCount"></span>
   </div>
   <div class="content-card" id="tripsCard">
     <div class="empty-state"><span class="spinner"></span></div>
@@ -164,7 +164,7 @@
   <!-- ══ 5. ACTIVITIES ══ -->
   <div class="section-heading">
     <span data-s="daily.activities"></span>
-    <button class="btn-ghost" id="addActivityBtn" style="font-size:11px;padding:3px 10px" data-s="daily.addActivity"></button>
+    <button class="btn-ghost-sm" id="addActivityBtn" data-s="daily.addActivity"></button>
   </div>
   <div class="content-card" id="activitiesCard">
     <div class="empty-state" id="activitiesEmpty" data-s="daily.noActivities"></div>
@@ -213,7 +213,7 @@
       <label data-s="daily.actNameLabel"></label>
       <input type="text" id="actName">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="grid2">
       <div class="field">
         <label data-s="daily.startTime"></label>
         <input type="time" id="actStart">
@@ -232,15 +232,15 @@
       <input type="text" id="actNotes">
     </div>
     <!-- Abler checkbox -->
-    <div class="check-row" style="margin:10px 0">
+    <div class="check-row mb-10 mt-8">
       <input type="checkbox" id="actAbler">
-      <label for="actAbler" style="font-size:12px">Activity details registered in Abler</label>
+      <label for="actAbler" class="text-md">Activity details registered in Abler</label>
     </div>
     <!-- Group checkout link -->
-    <div id="actGroupLinkSection" style="margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Linked group checkouts</div>
-      <div id="actGroupLinkCards" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
-      <button type="button" onclick="openGroupLinkPicker()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">+ Link group checkout</button>
+    <div id="actGroupLinkSection" class="mb-12">
+      <div class="section-label">Linked group checkouts</div>
+      <div id="actGroupLinkCards" class="flex-col gap-6 mb-6"></div>
+      <button type="button" onclick="openGroupLinkPicker()" class="btn-dashed">+ Link group checkout</button>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
@@ -253,11 +253,11 @@
 <div class="modal-overlay hidden" id="groupLinkModal" onclick="if(event.target===this)closeModal('groupLinkModal')">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <h3 style="margin:0">Link Group Checkout</h3>
+      <h3>Link Group Checkout</h3>
       <button class="modal-close-x" onclick="closeModal('groupLinkModal')">&times;</button>
     </div>
-    <div id="groupLinkPickerCards" style="margin-bottom:14px"></div>
-    <div id="groupLinkEmpty" style="display:none;color:var(--muted);font-size:12px;margin-bottom:14px">No active group checkouts today.</div>
+    <div id="groupLinkPickerCards" class="mb-14"></div>
+    <div id="groupLinkEmpty" class="text-muted text-md mb-14" style="display:none">No active group checkouts today.</div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('groupLinkModal')">Cancel</button>
       <button class="btn btn-primary" onclick="confirmGroupLink()">Link selected</button>
@@ -269,13 +269,12 @@
 <div class="modal-overlay hidden" id="tripDetailModal"
   onclick="if(event.target===this)closeModal('tripDetailModal')">
   <div class="modal" style="max-width:480px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="tdTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('tripDetailModal')"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+    <div class="modal-header">
+      <h3 id="tdTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('tripDetailModal')">×</button>
     </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px">TRIP</div>
+    <div class="info-panel mb-10">
+      <div class="section-label text-brass mb-10">TRIP</div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.boat"></span><span class="dl-dval" id="tdBoat"></span></div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.location"></span><span class="dl-dval" id="tdLocation"></span></div>
       <div class="dl-drow"><span class="dl-dlbl" id="tdOutLabel"></span><span class="dl-dval" id="tdOut"></span></div>
@@ -284,8 +283,8 @@
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.crew"></span><span class="dl-dval" id="tdCrew"></span></div>
       <div class="dl-drow" id="tdNotesRow"><span class="dl-dlbl" data-s="lbl.notes"></span><span class="dl-dval" id="tdNotes"></span></div>
     </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px" id="tdMemberSection">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="lbl.member"></div>
+    <div class="info-panel" id="tdMemberSection">
+      <div class="section-label text-brass mb-10" data-s="lbl.member"></div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.name"></span><span class="dl-dval" id="tdMember"></span></div>
       <div class="dl-drow" id="tdPhoneRow"><span class="dl-dlbl" data-s="lbl.phone"></span><span class="dl-dval" id="tdPhone"></span></div>
       <div class="dl-drow" id="tdGuardianRow"><span class="dl-dlbl" data-s="lbl.guardian"></span><span class="dl-dval" id="tdGuardian"></span></div>
@@ -413,7 +412,7 @@ function renderTrips() {
     const tin   = (co.checkedInAt ||co.timeIn ||'').slice(0,5);
     const retBy = (co.expectedReturn||'').slice(0,5);
     const overdue = retBy && !tin && retBy < fmtTimeNow();
-    row.innerHTML = `<div style="flex:1">
+    row.innerHTML = `<div class="flex-1">
       <div class="trip-boat">${esc(co.boatName||co.boatId)}
         ${co.memberIsMinor ? `<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>` : ''}
       </div>
@@ -421,7 +420,7 @@ function renderTrips() {
     </div>
     <div class="trip-times">
       <div>${tout || '—'}</div>
-      ${tin ? `<div style="color:var(--green)">${tin}</div>` : (retBy ? `<div style="color:${overdue?'var(--red)':'var(--muted)'}">↩${retBy}</div>` : '')}
+      ${tin ? `<div class="text-green">${tin}</div>` : (retBy ? `<div class="${overdue?'text-red':'text-muted'}">↩${retBy}</div>` : '')}
     </div>`;
     return row;
   });
@@ -525,13 +524,13 @@ function renderIncidentSection(incidents) {
         <div class="incident-label">${s('daily.fileIncident')}</div>
         <div class="incident-sub">${s('daily.incidentSub')}</div>
       </div>
-      <span style="margin-left:auto;color:var(--muted);font-size:16px">→</span>
+      <span class="ml-auto text-muted" style="font-size:16px">→</span>
     </a>`;
     return;
   }
   if (!incidents.length) {
     heading.textContent = s('daily.incidentReport');
-    container.innerHTML = `<div class="content-card" style="color:var(--muted);font-size:12px">${s('daily.noIncidents')}</div>`;
+    container.innerHTML = `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
     return;
   }
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
@@ -542,7 +541,7 @@ function renderIncidentSection(incidents) {
         <div class="incident-label">${esc(inc.title || s('incident.title'))}</div>
         <div class="incident-sub">${esc((inc.filedAt||'').slice(0,16).replace('T',' '))}${inc.severity ? ` · <span class="badge badge-${inc.severity === 'critical'?'red':inc.severity === 'high'?'orange':'muted'}">${esc(inc.severity)}</span>` : ''}</div>
       </div>
-      <span style="margin-left:auto;color:var(--brass);font-size:16px">→</span>
+      <span class="ml-auto text-brass" style="font-size:16px">→</span>
     </a>`).join('');
 }
 
@@ -590,7 +589,7 @@ function renderWxLog() {
       '<div class="wx-snap-header">'
       + '<span class="wx-snap-time">' + esc(time) + '</span>'
       + '<span class="wx-snap-flag">' + (snap.flag ? fi[snap.flag]||"" : "") + '</span>'
-      + '<button class="del-btn" data-delete-wx="' + i + '" style="font-size:14px">&times;</button>'
+      + '<button class="del-btn text-lg" data-delete-wx="' + i + '">&times;</button>'
       + '</div>'
       + '<div class="wx-snap-grid">' + gridHtml + '</div>';
     dom.wxLogList.appendChild(card);
@@ -889,7 +888,7 @@ function _renderDailyTide() {
   const isToday = viewDate === new Date().toISOString().slice(0,10);
   const nowMs   = isToday ? Date.now() : -1;
   const svg = tideSvgChart(series, extrema, nowMs, 320, 80);
-  el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px">${svg}</div>`;
+  el.innerHTML = `<div class="info-panel" style="padding:8px 10px">${svg}</div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1123,9 +1122,9 @@ function renderGroupLinkCards() {
   if (!wrap) return;
   if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
-    return '<div style="background:var(--card);border:1px solid #2e86c155;border-left:3px solid #2e86c1;border-radius:6px;padding:6px 10px;font-size:11px;display:flex;align-items:center;justify-content:space-between">' +
+    return '<div class="flex-between callout-panel text-sm" style="border-left:3px solid #2e86c1;border-color:#2e86c155;border-left-color:#2e86c1;padding:6px 10px">' +
       '<span>⛵ Group checkout ' + esc(id.slice(-6)) + '</span>' +
-      '<button onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>' +
+      '<button class="btn-dismiss" onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()">✕</button>' +
       '</div>';
   }).join('');
 }
@@ -1147,9 +1146,9 @@ function openGroupLinkPicker() {
       let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
       let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
       const sel = _groupLinkPickerSelected.has(c.id);
-      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border:1px solid ' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;border-radius:6px;padding:8px 12px;cursor:pointer;margin-bottom:6px">' +
-        '<div style="font-size:12px;font-weight:500">' + esc(boatArr.join(', ')) + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
+      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" class="callout-panel mb-6" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border-color:' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;cursor:pointer">' +
+        '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
+        '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
         '</div>';
     }).join('');
   }

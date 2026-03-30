@@ -131,8 +131,8 @@
     <div id="top-members">
       <div id="tab-members">
 
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-          <div class="search-bar" style="flex:1;min-width:200px">
+        <div class="flex-center flex-wrap gap-8 mb-14">
+          <div class="search-bar flex-1" style="min-width:200px">
             <input type="text" id="memberSearch" oninput="filterMembers()">
           </div>
           <button class="btn btn-secondary" onclick="showMemberSub('import')" data-s="admin.importCsv"></button>
@@ -152,14 +152,14 @@
         </div>
 
         <div id="memberSubImport" class="hidden">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="flex-center gap-10 mb-12">
             <button class="btn-ghost" onclick="showMemberSub('list')" data-s="admin.backToList"></button>
-            <span style="font-size:12px;color:var(--muted)" data-s="admin.importFromCsv"></span>
+            <span class="text-md text-muted" data-s="admin.importFromCsv"></span>
           </div>
           <div id="importStep1" data-step="1">
             <div class="import-card">
-              <div class="col-hint" style="margin-bottom:16px">
-                <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">EXPECTED COLUMNS</div>
+              <div class="col-hint mb-16">
+                <div class="section-label mb-8">EXPECTED COLUMNS</div>
                 <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">Full name (required)</span></div>
                 <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">10-digit ID (required)</span></div>
                 <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
@@ -169,21 +169,20 @@
               </div>
               <label class="upload-zone" for="csvFile">
                 <div style="font-size:24px">📄</div>
-                <div style="font-size:13px;font-weight:500">Drop CSV here or click to browse</div>
-                <div style="font-size:11px;color:var(--muted)">UTF-8 encoded, comma or semicolon delimited</div>
-                <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+                <div class="text-base fw-500">Drop CSV here or click to browse</div>
+                <div class="text-sm text-muted">UTF-8 encoded, comma or semicolon delimited</div>
+                <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="handleCSVUpload(this)">
               </label>
             </div>
           </div>
           <div id="importStep2" data-step="2" class="hidden">
             <div class="import-card">
-              <div style="font-size:13px;font-weight:500;margin-bottom:10px">Review import</div>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Admin/staff roles never overwritten.</div>
+              <div class="text-base fw-500 mb-10">Review import</div>
+              <div class="text-sm text-muted mb-4">Admin/staff roles never overwritten.</div>
               <div class="import-summary" id="importSummary"></div>
               <div id="importLists"></div>
-              <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
-                padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
-              <div class="btn-row" style="margin-top:14px">
+              <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44">
+              <div class="btn-row mt-14">
                 <button class="btn btn-secondary" onclick="resetImport()" data-s="admin.backToList"></button>
                 <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
               </div>
@@ -191,11 +190,11 @@
           </div>
           <div id="importStep3" data-step="3" class="hidden">
             <div class="import-card" style="text-align:center;padding:36px">
-              <div style="font-size:30px;margin-bottom:10px">✓</div>
-              <div style="font-size:14px;font-weight:500;color:#27ae60" id="importDoneMsg"></div>
+              <div class="mb-10" style="font-size:30px">✓</div>
+              <div class="text-lg fw-500 text-green" id="importDoneMsg"></div>
               <div style="margin-top:18px">
                 <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
-                <button class="btn btn-primary" onclick="showMemberSub('list')" style="margin-left:8px">View members</button>
+                <button class="btn btn-primary ml-auto" onclick="showMemberSub('list')" style="margin-left:8px">View members</button>
               </div>
             </div>
           </div>
@@ -209,8 +208,8 @@
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body">
-          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-            <div class="search-bar" style="flex:1;min-width:180px">
+          <div class="flex-center flex-wrap gap-8 mb-12">
+            <div class="search-bar flex-1" style="min-width:180px">
               <input type="text" id="certMemberSearch" oninput="filterCertMembers()">
             </div>
             <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
@@ -266,7 +265,7 @@
     <div id="tab-checklists" class="hidden">
 
       <!-- Opening / Closing checklists -->
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">DAILY CHECKLISTS</div>
+      <div class="section-label mb-8">DAILY CHECKLISTS</div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">OPENING CHECKLIST</div>
@@ -286,18 +285,18 @@
       </div>
 
       <!-- Launch / Landing checklists per category -->
-      <div style="margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="font-size:10px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
-        <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
-          <label style="font-size:11px;color:var(--muted)">Category:</label>
+      <div class="section-divider" style="margin-top:8px">
+        <div class="section-label mb-12">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
+        <div class="flex-center gap-8 mb-8">
+          <label class="text-sm text-muted">Category:</label>
           <select id="launchCLCatFilter" onchange="renderLaunchCLSections()"
             style="font-size:11px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)">
           </select>
         </div>
         <div id="launchCLCard">
-          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">LAUNCH</div>
+          <div class="section-label mb-6" style="font-size:9px">LAUNCH</div>
           <div id="launchCLLaunchList"></div>
-          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin:12px 0 6px">LANDING</div>
+          <div class="section-label mb-6" style="font-size:9px;margin-top:12px">LANDING</div>
           <div id="launchCLLandingList"></div>
         </div>
         <div style="padding:8px 0 4px">
@@ -348,7 +347,7 @@
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="alertsCard">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="grid2 mb-14">
             <div class="field">
               <label data-s="admin.alertFirstMins"></label>
               <input type="number" id="alertFirstMins" min="1" max="999" value="30">
@@ -361,30 +360,30 @@
               <label data-s="admin.alertSnoozeMins"></label>
               <input type="number" id="alertSnoozeMins" min="1" max="999" value="10">
             </div>
-            <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:20px">
+            <div class="field flex-center gap-8" style="padding-top:20px">
               <input type="checkbox" id="alertEnabled" checked>
               <label for="alertEnabled" data-s="admin.alertEnabled"></label>
             </div>
           </div>
           
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-            <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-bottom:10px">NOTIFICATION CHANNELS</div>
-            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanWeb" checked><span>🌐 Web (in-app banner)</span></label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanEmail"><span>✉️ Email <span style="font-size:10px;color:var(--muted)">(requires backend setup)</span></span></label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanSms"><span>📱 SMS <span style="font-size:10px;color:var(--muted)">(requires backend setup)</span></span></label>
+          <div class="section-divider">
+            <div class="text-sm fw-500 text-muted mb-10" style="letter-spacing:.5px">NOTIFICATION CHANNELS</div>
+            <div class="flex-col gap-8 mb-14">
+              <label class="check-label text-md"><input type="checkbox" id="chanWeb" checked><span>🌐 Web (in-app banner)</span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanEmail"><span>✉️ Email <span class="text-xs text-muted">(requires backend setup)</span></span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanSms"><span>📱 SMS <span class="text-xs text-muted">(requires backend setup)</span></span></label>
             </div>
-            <div class="field" style="margin-bottom:10px">
-              <label style="font-size:11px">Email recipients (comma-separated)</label>
-              <textarea id="alertEmailList" rows="2" style="width:100%;font-size:11px;resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
+            <div class="field mb-10">
+              <label class="text-sm">Email recipients (comma-separated)</label>
+              <textarea id="alertEmailList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
             </div>
-            <div class="field" style="margin-bottom:14px">
-              <label style="font-size:11px">SMS recipients (comma-separated)</label>
-              <textarea id="alertSmsList" rows="2" style="width:100%;font-size:11px;resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
+            <div class="field mb-14">
+              <label class="text-sm">SMS recipients (comma-separated)</label>
+              <textarea id="alertSmsList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
             </div>
           </div>
           <button class="btn btn-primary" onclick="saveAlertConfig()">Save alert settings</button>
-          <span id="alertSaveMsg" style="font-size:11px;color:var(--green);margin-left:10px"></span>
+          <span id="alertSaveMsg" class="text-sm text-green" style="margin-left:10px"></span>
         </div>
       </div>
     </div>

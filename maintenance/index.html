@@ -133,14 +133,14 @@
   <!-- Stats -->
   <div class="stat-strip">
     <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
-    <div class="stat-card"><div class="stat-num" id="statCritical" style="color:var(--red)">—</div><div class="stat-label">CRITICAL</div></div>
-    <div class="stat-card"><div class="stat-num" id="statOos" style="color:var(--red)">—</div><div class="stat-label">BOATS OOS</div></div>
-    <div class="stat-card"><div class="stat-num" id="statPending" style="color:var(--brass)">—</div><div class="stat-label">PENDING REVIEW</div></div>
-    <div class="stat-card"><div class="stat-num" id="statResolved" style="color:var(--green)">—</div><div class="stat-label">RESOLVED</div></div>
+    <div class="stat-card"><div class="stat-num text-red" id="statCritical">—</div><div class="stat-label">CRITICAL</div></div>
+    <div class="stat-card"><div class="stat-num text-red" id="statOos">—</div><div class="stat-label">BOATS OOS</div></div>
+    <div class="stat-card"><div class="stat-num text-brass" id="statPending">—</div><div class="stat-label">PENDING REVIEW</div></div>
+    <div class="stat-card"><div class="stat-num text-green" id="statResolved">—</div><div class="stat-label">RESOLVED</div></div>
   </div>
-  <div style="display:flex;gap:8px;margin:12px 0">
-    <button class="btn btn-primary" style="flex:1" onclick="openNewRequest()">+ New maintenance request</button>
-    <button class="btn btn-secondary" style="flex:1" onclick="openNewRequest({saumaklubbur:true})">🧵 New sewing circle project</button>
+  <div class="flex-center gap-8" style="margin:12px 0">
+    <button class="btn btn-primary flex-1" onclick="openNewRequest()">+ New maintenance request</button>
+    <button class="btn btn-secondary flex-1" onclick="openNewRequest({saumaklubbur:true})">🧵 New sewing circle project</button>
   </div>
 
   <!-- Filter bar -->
@@ -185,7 +185,7 @@
 <div class="modal-overlay hidden" id="newModal" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modalTitle" style="margin:0">🔧 New Maintenance Request</h3>
+      <h3 id="modalTitle">🔧 New Maintenance Request</h3>
       <button class="modal-close-x" onclick="closeNewModal()">&times;</button>
     </div>
 
@@ -202,10 +202,10 @@
       <label>Boat</label>
       <select id="newBoat"><option value="">Select boat…</option></select>
       <div id="oosField">
-        <label style="margin-top:10px">Mark boat Out of Service?</label>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-          <input type="checkbox" id="newOos" style="width:16px;height:16px;accent-color:var(--red)">
-          <span style="font-size:12px;color:var(--muted)">Take this boat OOS until repaired</span>
+        <label class="mt-8">Mark boat Out of Service?</label>
+        <div class="flex-center gap-8" style="margin-top:4px">
+          <input type="checkbox" id="newOos" class="accent-checkbox" style="accent-color:var(--red)">
+          <span class="text-md text-muted">Take this boat OOS until repaired</span>
         </div>
       </div>
     </div>
@@ -228,7 +228,7 @@
         <button class="sev-btn" data-sev="high"     onclick="selectSev('high')">HIGH</button>
         <button class="sev-btn" data-sev="critical" onclick="selectSev('critical')">CRITICAL</button>
       </div>
-      <div id="sevHint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+      <div id="sevHint" class="text-sm text-muted mb-6"></div>
     </div>
 
     <div class="field">
@@ -239,29 +239,29 @@
     <div class="field hidden" id="materialsField">
       <label data-s="sauma.materials">Materials Needed</label>
       <div id="materialsList"></div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
-        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addMaterialToList()">+ Add</button>
+      <div class="flex-center gap-6 mt-8">
+        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" class="flex-1">
+        <button type="button" class="btn-ghost-sm" onclick="addMaterialToList()">+ Add</button>
       </div>
     </div>
 
     <div class="field hidden" id="verkstjoriField">
       <label data-s="sauma.verkstjori">Verkstjóri (Project Lead)</label>
       <input type="text" id="newVerkstjori" placeholder="Name or leave blank…">
-      <span style="font-size:11px;color:var(--muted)" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
+      <span class="text-sm text-muted" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
     </div>
 
     <div class="field" id="photoField">
       <label>Photo (optional, max 5 MB)</label>
       <input type="file" id="newPhoto" accept="image/*" onchange="handlePhotoChange(this)"
-        style="font-size:12px;color:var(--muted)">
+        class="text-md text-muted">
       <img id="photoPreview" class="photo-preview" alt="preview">
-      <div id="photoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
+      <div id="photoErr" class="text-sm text-red mt-8"></div>
     </div>
 
     <input type="hidden" id="newSaumaklubbur" value="false">
 
-    <div id="newErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div id="newErr" class="msg msg-err hidden mb-10"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
       <button class="btn btn-primary"   id="submitBtn" onclick="submitRequest()">Submit</button>
@@ -514,7 +514,7 @@ function openNewRequest(prefill) {
   document.getElementById("newPhoto").value = "";
   document.getElementById("photoPreview").className = "photo-preview";
   document.getElementById("photoErr").textContent = "";
-  document.getElementById("newErr").style.display = "none";
+  document.getElementById("newErr").classList.add("hidden");
   document.querySelectorAll(".sev-btn").forEach(b => b.classList.remove("selected"));
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("sevHint").textContent = "";
@@ -530,8 +530,8 @@ function openNewRequest(prefill) {
   document.getElementById("modalTitle").textContent = isSaumaMode
     ? '🧵 New sewing circle project' : '🔧 New Maintenance Request';
   document.getElementById("sevLabel").textContent = isSaumaMode ? 'Priority' : 'Severity';
-  document.querySelector('.sev-btn[data-sev="critical"]').style.display = isSaumaMode ? 'none' : '';
-  document.getElementById("oosField").style.display = isSaumaMode ? 'none' : '';
+  document.querySelector('.sev-btn[data-sev="critical"]').classList.toggle("hidden", isSaumaMode);
+  document.getElementById("oosField").classList.toggle("hidden", isSaumaMode);
   document.getElementById("verkstjoriField").classList.toggle("hidden", !isSaumaMode);
   document.getElementById("materialsField").classList.toggle("hidden", !isSaumaMode);
 
@@ -613,16 +613,16 @@ function removeMaterial(idx) {
 function renderMaterialsList() {
   const el = document.getElementById("materialsList");
   el.innerHTML = pendingMaterials.map((m,i) =>
-    `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px">
-      <span style="flex:1">${esc(m.name)}</span>
-      <button type="button" onclick="removeMaterial(${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">&times;</button>
+    `<div class="flex-center gap-6 text-md" style="padding:4px 0">
+      <span class="flex-1">${esc(m.name)}</span>
+      <button type="button" class="btn-dismiss" onclick="removeMaterial(${i})">&times;</button>
     </div>`
   ).join("");
 }
 
 async function submitRequest() {
   const btn = document.getElementById("submitBtn");
-  document.getElementById("newErr").style.display = "none";
+  document.getElementById("newErr").classList.add("hidden");
 
   if (!selectedCat) { showErr("Please select a category."); return; }
   if (!selectedSev) { showErr("Please select a severity level."); return; }
@@ -687,7 +687,7 @@ async function submitRequest() {
 
 function showErr(msg) {
   const el = document.getElementById("newErr");
-  el.textContent = msg; el.style.display = "block";
+  el.textContent = msg; el.classList.remove("hidden");
 }
 
 function toast(msg) {
