@@ -196,6 +196,11 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
     <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
     <div class="stat-card"><div class="stat-val" id="stSkipper">—</div><div class="stat-lbl">As skipper</div></div>
+    <div class="stat-card"><div class="stat-val" id="stDistance">—</div><div class="stat-lbl">Distance</div></div>
+    <div class="stat-card"><div class="stat-val" id="stLongest">—</div><div class="stat-lbl">Longest trip</div></div>
+    <div class="stat-card"><div class="stat-val" id="stPorts">—</div><div class="stat-lbl">Ports</div></div>
+    <div class="stat-card"><div class="stat-val" id="stAvgWind">—</div><div class="stat-lbl">Avg wind</div></div>
+    <div class="stat-card"><div class="stat-val" id="stStreak">—</div><div class="stat-lbl">Streak</div></div>
   </div>
   <div class="cat-hours" id="catHours" style="display:none">
     <div class="cat-hours-title">Hours by category</div>
@@ -473,21 +478,47 @@ function renderStats(){
   const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
   const skipperTrips=myTrips.filter(t=>!t.role||t.role==='skipper');
 
+  // New stats calculations
+  const totalNm=myTrips.reduce((s,t)=>s+(parseFloat(t.distanceNm)||0),0);
+  const longestH=myTrips.reduce((m,t)=>Math.max(m,parseFloat(t.hoursDecimal)||0),0);
+  const ports=new Set();
+  myTrips.forEach(t=>{if(t.departurePort)ports.add(t.departurePort);if(t.arrivalPort)ports.add(t.arrivalPort)});
+  const bftTrips=myTrips.filter(t=>t.beaufort!==''&&t.beaufort!=null&&!isNaN(parseFloat(t.beaufort)));
+  const avgBft=bftTrips.length?bftTrips.reduce((s,t)=>s+parseFloat(t.beaufort),0)/bftTrips.length:0;
+  // Streak: consecutive months with at least one trip (counting back from most recent)
+  let streak=0;
+  if(myTrips.length){
+    const months=new Set(myTrips.map(t=>(t.date||'').slice(0,7)).filter(Boolean));
+    const now=new Date();let y=now.getFullYear(),m=now.getMonth()+1;
+    // Allow current month even if just started
+    while(months.has(y+'-'+(m<10?'0':'')+m)){streak++;m--;if(m<1){m=12;y--}}
+  }
+
   // Apply stats visibility preferences
   const stTripsEl=document.getElementById('stTrips');
   const stHoursEl=document.getElementById('stHours');
   const stSeasonEl=document.getElementById('stSeason');
   const stSkipperEl=document.getElementById('stSkipper');
+  const stDistanceEl=document.getElementById('stDistance');
+  const stLongestEl=document.getElementById('stLongest');
+  const stPortsEl=document.getElementById('stPorts');
+  const stAvgWindEl=document.getElementById('stAvgWind');
+  const stStreakEl=document.getElementById('stStreak');
 
   if(_statsVis.career===false){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
   if(_statsVis.hours===false){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
   if(_statsVis.ytd===false){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
   if(_statsVis.skipper===false){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
+  if(_statsVis.distance===false){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
+  if(_statsVis.longest===false){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
+  if(_statsVis.ports===false){stPortsEl.parentElement.style.display='none'}else{stPortsEl.textContent=ports.size}
+  if(_statsVis.avgWind===false){stAvgWindEl.parentElement.style.display='none'}else{stAvgWindEl.textContent=avgBft?avgBft.toFixed(1):'—'}
+  if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'mo':'—'}
 
   // Adjust grid columns based on visible cards
-  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false].filter(Boolean).length;
+  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false,_statsVis.distance!==false,_statsVis.longest!==false,_statsVis.ports!==false,_statsVis.avgWind!==false,_statsVis.streak!==false].filter(Boolean).length;
   const strip=document.querySelector('.stat-strip');
-  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+visibleCards+',1fr)'}
+  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
   else if(strip && visibleCards===0){strip.style.display='none'}
 
   if(_statsVis.byCategory===false){document.getElementById('catHours').style.display='none';return}
