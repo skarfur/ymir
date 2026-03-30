@@ -1633,7 +1633,7 @@ function saveTrip_(b) {
       'validationRequested','helm','skipperNote',
       'distanceNm','departurePort','arrivalPort',
       'trackFileUrl','trackSimplified','trackSource',
-      'photoUrls','photoMeta',
+      'photoUrls','photoMeta','crewNames',
     ];
     UPDATABLE.forEach(k => { if (b[k] !== undefined) updates[k] = b[k]; });
     updateRow_('trips', 'id', b.id, updates);
@@ -1665,6 +1665,7 @@ function saveTrip_(b) {
     distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
     trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
     photoUrls: b.photoUrls || '', photoMeta: b.photoMeta || '',
+    crewNames: b.crewNames || '',
     createdAt: ts,
   });
   return okJ({ id, created: true });
@@ -1788,7 +1789,7 @@ function respondConfirmation_(b) {
         var origCrew = row.crew || 1, origSkipperNote = row.skipperNote || '';
         if (origCrew <= 1 && !origSkipperNote && row.tripId) {
           var origTrip = findOne_('trips', 'id', row.tripId);
-          if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; }
+          if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; origCrewNames = origTrip.crewNames || ''; }
         }
         var tripId = uid_();
         insertRow_('trips', {
@@ -1805,6 +1806,7 @@ function respondConfirmation_(b) {
           validationRequested: false, helm: false,
           distanceNm: '', departurePort: '', arrivalPort: '',
           trackFileUrl: '', trackSimplified: '', trackSource: '', photoUrls: '',
+          crewNames: origCrewNames,
           createdAt: ts,
         });
       }
