@@ -3314,12 +3314,22 @@ function publicDashboard_() {
     });
   });
 
+  // ── Staff status (duty / support boat) ──
+  var staffStatus = null;
+  try { staffStatus = JSON.parse(getConfigValue_('staffStatus', cfgMap) || 'null'); } catch(e) {}
+
+  // ── Flag config (so public page can score flags client-side) ──
+  var flagConfig = null;
+  try { flagConfig = JSON.parse(getConfigValue_('flagConfig', cfgMap) || 'null'); } catch(e) {}
+
   return okJ({
     ytd: { totalTrips: totalTrips, totalHours: Math.round(totalHours * 10) / 10, byCategory: byCategory },
     locations: locData,
     onWater: { boatCount: boatCount, peopleCount: peopleCount, boats: onWaterBoats },
     captains: captains,
     boatCategories: boatCategories.map(function(c) { return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || '', emoji: c.emoji || '' }; }),
+    staffStatus: staffStatus,
+    flagConfig: flagConfig,
   });
 }
 
