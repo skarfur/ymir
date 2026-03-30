@@ -612,18 +612,27 @@ function tripCard(t){
   );
 
   const helmLabel = IS?'Stýri':'Helm';
+  const guestLabel = IS?'Gestur':'Guest';
+  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+guestLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
   const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
-    return xHelm ? name+' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>' : name;
+    const xMember = allMembers.find(m=>String(m.kennitala)===String(x.kennitala));
+    const isGuest = xMember && xMember.role==='guest';
+    let badges = '';
+    if (xHelm) badges += ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
+    if (isGuest) badges += guestBadge;
+    return name + badges;
   }).join(', ') : esc(t.crew||1);
   // Show pending crew names alongside confirmed ones
   const pendingCrewNames = pendingCrewConfs.map(c => esc(c.toName||'?')+' '+pendingTag)
     .concat(pendingCrewIn.map(c => esc(c.fromName||'?')+' '+pendingTag));
   const allCrewDisplay = [crewNames, ...pendingCrewNames].filter(Boolean);
 
-  const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}</span></div>` : '';
+  const skipperMember = linkedSkipper ? allMembers.find(m=>String(m.kennitala)===String(linkedSkipper.kennitala)) : null;
+  const skipperGuestTag = (skipperMember && skipperMember.role==='guest') ? guestBadge : '';
+  const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Skipstjóri':'Skipper'}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}${skipperGuestTag}</span></div>` : '';
   const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${IS?'Áhöfn um borð':'Crew aboard'}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
   const crewNamesRow = (linkedCrew.length || pendingCrewNames.length)
     ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Áhöfn':'Crew'}</span><span class="trip-exp-val">${allCrewDisplay.join(', ')}</span></div>`
@@ -998,13 +1007,20 @@ function searchManualMember(inp, dropOrId){
   if(!q || q.length<2){ drop.style.display='none'; return; }
   const skip = user.kennitala;
   const matches = allMembers.filter(m =>
-    m.name && m.name.toLowerCase().includes(q) && String(m.kennitala)!==String(skip) && m.role!=='guest'
+    m.name && m.name.toLowerCase().includes(q) && String(m.kennitala)!==String(skip)
   ).slice(0,8);
   drop.innerHTML='';
   matches.forEach(m => {
     const item = document.createElement('div');
     item.className='mm-item';
-    item.textContent=m.name;
+    if (m.role==='guest') item.style.cssText='display:flex;align-items:center;gap:6px';
+    item.appendChild(document.createTextNode(m.name));
+    if (m.role==='guest') {
+      const badge=document.createElement('span');
+      badge.textContent=s('lbl.guest');
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);flex-shrink:0';
+      item.appendChild(badge);
+    }
     item.addEventListener('mousedown',function(e){
       e.preventDefault();
       inp.value=m.name;

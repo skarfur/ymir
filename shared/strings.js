@@ -73,6 +73,7 @@ const STRINGS = {
   'lbl.crew':          { EN:'Crew',                IS:'Áhöfn' },
   'lbl.role':          { EN:'Role',                IS:'Hlutverk' },
   'lbl.member':        { EN:'Member',              IS:'Félagi' },
+  'lbl.guest':         { EN:'Guest',               IS:'Gestur' },
   'lbl.guardian':      { EN:'Guardian',            IS:'Forráðamaður' },
   'lbl.minor':         { EN:'MINOR',               IS:'Ólögráða' },
   'lbl.verified':      { EN:'✓ Verified',          IS:'✓ Staðfest' },
