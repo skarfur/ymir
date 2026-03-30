@@ -673,6 +673,10 @@
         <option value="port" data-s="location.typePort">Port</option>
       </select>
     </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label data-s="location.lat"></label><input type="number" id="lLat" step="any" placeholder="e.g. 64.1466"></div>
+      <div class="field" style="flex:1"><label data-s="location.lng"></label><input type="number" id="lLng" step="any" placeholder="e.g. -21.9270"></div>
+    </div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="lActive" checked> <label for="lActive" data-s="lbl.active"></label>
     </div>
@@ -1598,6 +1602,9 @@ function openLocationModal(id) {
   document.getElementById("locationModalTitle").textContent = l ? s('admin.locModal.edit') : s('admin.locModal.add');
   document.getElementById("lName").value     = l ? l.name              : "";
   document.getElementById("lType").value     = l ? (l.type || 'location') : 'location';
+  var coords = (l && l.coordinates) ? l.coordinates.split(",") : [null, null];
+  document.getElementById("lLat").value      = coords[0] || "";
+  document.getElementById("lLng").value      = coords[1] || "";
   document.getElementById("lActive").checked = l ? bool(l.active)      : true;
   document.getElementById("lDeleteBtn").classList.toggle("hidden", !l);
   applyStrings(document.getElementById("locationModal"));
@@ -1609,7 +1616,10 @@ async function saveLocation() {
   if (!name) { toast("Name required.", "err"); return; }
 
   const id      = editingId || ("loc_" + Date.now().toString(36));
-  const payload = { id, name, type: document.getElementById("lType").value || 'location', active: document.getElementById("lActive").checked };
+  var latVal = document.getElementById("lLat").value.trim();
+  var lngVal = document.getElementById("lLng").value.trim();
+  var coordinates = (latVal && lngVal) ? latVal + "," + lngVal : "";
+  const payload = { id, name, type: document.getElementById("lType").value || 'location', active: document.getElementById("lActive").checked, coordinates: coordinates };
 
   const idx = _allLocations.findIndex(x => x.id === id);
   if (idx >= 0) _allLocations[idx] = { ..._allLocations[idx], ...payload };

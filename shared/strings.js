@@ -843,6 +843,8 @@ const STRINGS = {
   'location.type':           { EN:'Type',                                  IS:'Tegund' },
   'location.typePort':       { EN:'Port',                                  IS:'Höfn' },
   'location.typeLocation':   { EN:'Sailing area',                          IS:'Siglingasvæði' },
+  'location.lat':            { EN:'Latitude',                              IS:'Breiddargráða' },
+  'location.lng':            { EN:'Longitude',                             IS:'Lengdargráða' },
 
   // ── Fleet card badges & labels ─────────────────────────────────────────────
   'fleet.badgeAvail':        { EN:'AVAIL',                                 IS:'LAUST' },
