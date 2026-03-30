@@ -1301,6 +1301,7 @@ function saveCertDef_(b) {
     description: String(b.description || '').trim(),
     renewalDays: Number(b.renewalDays) || 0,
     hasIdNumber: !!b.hasIdNumber,
+    clubEndorsement: !!b.clubEndorsement,
     subcats: Array.isArray(b.subcats) ? b.subcats.map(s => ({
       key: String(s.key || s.label || '').toLowerCase().replace(/\s+/g, '_'),
       label: String(s.label || '').trim(),
