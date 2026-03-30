@@ -31,6 +31,14 @@
   font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .15s; }
 .cq-pill.active { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
 
+/* ── Compact filter bar ── */
+.cq-filter-bar { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.cq-filter-bar select { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
+  transition:border-color .15s; min-width:0; max-width:140px; }
+.cq-filter-bar select:focus { border-color:var(--brass); }
+.cq-filter-count { font-size:9px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+
 /* ── Cards ── */
 .cq-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
   padding:12px 14px; margin-bottom:8px; }
@@ -51,12 +59,34 @@
 .sev-high     { background:var(--orange); }
 .sev-critical { background:var(--red); }
 
-/* ── Trip rows ── */
-.cq-trip { padding:10px 0; border-bottom:1px solid var(--border)44; font-size:12px; }
-.cq-trip:last-child { border-bottom:none; }
-.cq-trip-date { font-size:10px; color:var(--brass); }
-.cq-trip-title { font-weight:500; margin-top:2px; }
-.cq-trip-meta { font-size:11px; color:var(--muted); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+/* ── Trip cards (logbook-style) ── */
+.cq-trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  margin-bottom:8px; overflow:hidden; cursor:pointer; transition:border-color .15s; }
+.cq-trip-card:hover { border-color:var(--brass); }
+.cq-trip-main { display:grid; grid-template-columns:48px 1fr auto; align-items:stretch; }
+.cq-trip-date-col { background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; text-align:center; }
+.cq-trip-date-day { font-size:15px; font-weight:500; color:var(--text); line-height:1; }
+.cq-trip-date-mon { font-size:12px; font-weight:500; color:var(--text); text-transform:uppercase; margin-top:2px; }
+.cq-trip-date-yr { font-size:8px; color:var(--muted); }
+.cq-trip-body { padding:8px 10px; min-width:0; }
+.cq-trip-boat { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.cq-trip-meta { display:flex; gap:6px; flex-wrap:wrap; font-size:10px; color:var(--muted); align-items:center; }
+.cq-trip-badge { font-size:8px; letter-spacing:.5px; padding:1px 5px; border-radius:6px; border:1px solid; text-transform:uppercase; flex-shrink:0; }
+.cq-trip-arrow { padding:8px 8px 8px 0; display:flex; align-items:center; color:var(--muted); font-size:10px; transition:transform .2s; flex-shrink:0; }
+.cq-trip-card.open .cq-trip-arrow { transform:rotate(180deg); }
+.cq-trip-expand { display:none; padding:0 10px 10px; }
+.cq-trip-card.open .cq-trip-expand { display:block; }
+.cq-trip-detail-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px 10px; font-size:10px;
+  border-top:1px solid var(--border); padding-top:8px; margin-top:2px; }
+.cq-trip-detail-grid .lbl { font-size:8px; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; }
+.cq-trip-detail-grid .val { color:var(--text); margin-top:1px; }
+.cq-trip-captain { font-size:10px; color:var(--muted); font-weight:400; margin-left:4px; }
+
+/* ── Show-more button ── */
+.cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; }
+.cq-show-more:hover { border-color:var(--brass); color:var(--text); }
 
 /* ── Bio section ── */
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
@@ -81,6 +111,14 @@
 @media(max-width:600px){
   .cq-stats { grid-template-columns:1fr 1fr; }
   .cq-stat .sn { font-size:20px; }
+  .cq-trip-main { grid-template-columns:42px 1fr auto; }
+  .cq-trip-detail-grid { grid-template-columns:1fr 1fr; }
+  .cq-filter-bar select { max-width:120px; }
+}
+@media(max-width:400px){
+  .cq-trip-detail-grid { grid-template-columns:1fr; }
+  .cq-filter-bar { gap:4px; }
+  .cq-filter-bar select { font-size:9px; padding:3px 6px; }
 }
 </style>
 </head>
@@ -107,7 +145,10 @@
   <!-- ══ MAINTENANCE ══ -->
   <div class="cq-section" id="sectMaint">
     <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
-    <div class="cq-pills" id="maintPills"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <div class="cq-pills" id="maintPills" style="margin-bottom:0"></div>
+      <select id="mfBoat" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:10px;padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="">All boats</option></select>
+    </div>
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
@@ -127,6 +168,13 @@
   <div class="cq-section" id="sectTrips">
     <div class="cq-section-hdr" data-s="cq.tripsTitle"></div>
     <div class="cq-pills" id="tripPills"></div>
+    <div class="cq-filter-bar" id="tripFilterBar">
+      <select id="tfBoat"><option value="">All boats</option></select>
+      <select id="tfCaptain"><option value="">All captains</option></select>
+      <select id="tfFlag"><option value="">All flags</option></select>
+      <select id="tfWind"><option value="">All wind</option><option value="calm">Calm (0–2)</option><option value="light">Light (3–4)</option><option value="moderate">Moderate (5–6)</option><option value="strong">Strong (7+)</option></select>
+      <span class="cq-filter-count" id="tripFilterCount"></span>
+    </div>
     <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
@@ -185,7 +233,8 @@ const L = getLang();
 
 let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
 let _confirmations = [], _verificationRequests = [];
-let _maintFilter = 'open', _tripFilter = 'my';
+let _maintFilter = 'open', _tripFilter = 'my', _maintBoatFilter = '';
+let _tripShowAll = false;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
@@ -234,11 +283,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     _confirmations = confRes.confirmations || confRes.items || [];
 
     renderStats();
+    buildMaintBoatFilter();
     renderMaint();
     renderValidation();
     renderCrew();
+    buildTripFilters();
     renderTrips();
     renderBoats();
+
+    // Wire up trip filter dropdowns (once)
+    ['tfBoat','tfCaptain','tfFlag','tfWind'].forEach(id => {
+      document.getElementById(id).addEventListener('change', function() { _tripShowAll = false; renderTrips(); });
+    });
   } catch (e) {
     console.error(e);
     showToast(s('toast.loadFailed') + ': ' + e.message, 'err');
@@ -261,6 +317,7 @@ function renderStats() {
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
 function buildMaintPills() {
   var el = document.getElementById('maintPills');
+  el.innerHTML = '';
   [{k:'open',s:'cq.maintOpen'},{k:'closed',s:'cq.maintClosed'},{k:'all',s:'cq.maintAll'}].forEach(p => {
     var btn = document.createElement('button');
     btn.className = 'cq-pill' + (p.k === _maintFilter ? ' active' : '');
@@ -268,6 +325,18 @@ function buildMaintPills() {
     btn.onclick = () => { _maintFilter = p.k; buildMaintPills(); renderMaint(); };
     el.appendChild(btn);
   });
+}
+
+function buildMaintBoatFilter() {
+  var sel = document.getElementById('mfBoat');
+  // Collect unique keelboat names from maintenance items
+  var boatNames = [...new Set(_allMaint
+    .filter(m => { var cat = (m.boatCategory||'').toLowerCase(); if (!cat && m.boatId) { var b = _boats.find(x=>x.id===m.boatId); if(b) cat=(b.category||'').toLowerCase(); } return cat==='keelboat'; })
+    .map(m => m.boatName || '')
+    .filter(Boolean)
+  )].sort();
+  sel.innerHTML = '<option value="">All boats</option>' + boatNames.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+  sel.onchange = function() { _maintBoatFilter = this.value; renderMaint(); };
 }
 
 function renderMaint() {
@@ -280,6 +349,7 @@ function renderMaint() {
   });
   if (_maintFilter === 'open') items = items.filter(m => !m.resolved && !boolVal(m.resolved));
   else if (_maintFilter === 'closed') items = items.filter(m => m.resolved || boolVal(m.resolved));
+  if (_maintBoatFilter) items = items.filter(m => (m.boatName || '') === _maintBoatFilter);
   items.sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
 
   if (!items.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noMaint') + '</div>'; return; }
@@ -358,33 +428,167 @@ async function respondCrew(id, status) {
 // ══ TRIPS ════════════════════════════════════════════════════════════════════
 function buildTripPills() {
   var el = document.getElementById('tripPills');
+  el.innerHTML = '';
   [{k:'my',s:'cq.myTrips'},{k:'all',s:'cq.allTrips'}].forEach(p => {
     var btn = document.createElement('button');
     btn.className = 'cq-pill' + (p.k === _tripFilter ? ' active' : '');
     btn.textContent = s(p.s);
-    btn.onclick = () => { _tripFilter = p.k; buildTripPills(); renderTrips(); };
+    btn.onclick = () => { _tripFilter = p.k; _tripShowAll = false; buildTripFilters(); renderTrips(); buildTripPills(); };
     el.appendChild(btn);
   });
 }
 
+function _bftGroup(b) { var n=parseInt(b)||0; if(n<=2)return'calm'; if(n<=4)return'light'; if(n<=6)return'moderate'; return'strong'; }
+
+function _parseDateParts(d) {
+  if (!d) return {day:'—',mon:'',yr:''};
+  var p = String(d).split('-');
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return { day: parseInt(p[2])||'?', mon: months[(parseInt(p[1])||1)-1]||'', yr: p[0]||'' };
+}
+
+var _dirArrows = {N:'↓',NNE:'↓',NE:'↙',ENE:'↙',E:'←',ESE:'←',SE:'↖',SSE:'↖',S:'↑',SSW:'↑',SW:'↗',WSW:'↗',W:'→',WNW:'→',NW:'↘',NNW:'↘'};
+function _dirArrow(dir) { return _dirArrows[(dir||'').toUpperCase()] || ''; }
+
+function buildTripFilters() {
+  var pool = _tripFilter === 'my' ? _myTrips : _allTrips;
+  // Boat names
+  var boats = [...new Set(pool.map(t => t.boatName||'').filter(Boolean))].sort();
+  var bSel = document.getElementById('tfBoat');
+  bSel.innerHTML = '<option value="">All boats</option>' + boats.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+  // Captains (only in "all" view)
+  var cSel = document.getElementById('tfCaptain');
+  if (_tripFilter === 'all') {
+    var captains = [...new Set(pool.map(t => t.memberName||'').filter(Boolean))].sort();
+    cSel.innerHTML = '<option value="">All captains</option>' + captains.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+    cSel.style.display = '';
+  } else {
+    cSel.style.display = 'none';
+    cSel.value = '';
+  }
+  // Weather flags
+  var flags = [...new Set(pool.map(t => { try { var wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; return wx?.flag||''; } catch(e){return '';} }).filter(Boolean))].sort();
+  var fSel = document.getElementById('tfFlag');
+  var flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
+  var flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Closed'};
+  fSel.innerHTML = '<option value="">All flags</option>' + flags.map(f => '<option value="'+esc(f)+'">'+(flagIcons[f]||'')+' '+(flagLabels[f]||f)+'</option>').join('');
+}
+
+function _getFilteredTrips() {
+  var pool = _tripFilter === 'my' ? _myTrips : _allTrips;
+  var fBoat = document.getElementById('tfBoat').value;
+  var fCaptain = document.getElementById('tfCaptain').value;
+  var fFlag = document.getElementById('tfFlag').value;
+  var fWind = document.getElementById('tfWind').value;
+  return pool.filter(t => {
+    if (fBoat && (t.boatName||'') !== fBoat) return false;
+    if (fCaptain && (t.memberName||'') !== fCaptain) return false;
+    if (fWind) { var b = parseInt(t.beaufort)||0; if (_bftGroup(b) !== fWind) return false; }
+    if (fFlag) {
+      try { var wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; if ((wx?.flag||'') !== fFlag) return false; }
+      catch(e) { return false; }
+    }
+    return true;
+  });
+}
+
+function _cqTripCard(t, showCaptain) {
+  var p = _parseDateParts(t.date);
+  var dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
+  var isSki = !t.role || t.role==='skipper';
+  var isVer = t.verified && t.verified!=='false';
+  var catCol = BOAT_CAT_COLORS['keelboat'] || BOAT_CAT_COLORS.other;
+
+  // Parse weather
+  var wx = null;
+  try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
+  var flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
+
+  // Wind on card face
+  var cardWs = formatWindValue(wx?.ws, t.beaufort, 'bft');
+  var cardDir = wx?.dir || t.windDir || '';
+  var arrow = _dirArrow(cardDir);
+  var windBit = '';
+  if (arrow || cardWs || cardDir) {
+    windBit = '<span style="display:inline-flex;align-items:center;gap:2px">'
+      + (arrow ? '<span style="font-size:13px;line-height:1">'+arrow+'</span>' : '')
+      + (cardWs ? '<span>'+esc(cardWs)+'</span>' : '')
+      + '</span>';
+  }
+
+  // Port display
+  var dep = t.departurePort||'', arr = t.arrivalPort||'';
+  var portBit = (dep||arr) ? '<span>⚓️ '+esc(dep&&arr&&dep!==arr ? dep+' → '+arr : dep||arr)+'</span>' : '';
+
+  // Flag icon on card face
+  var flagBit = wx?.flag ? '<span>'+flagIcons[wx.flag]+'</span>' : '';
+
+  // Expanded detail rows
+  var details = '';
+  if (t.locationName) details += '<div><div class="lbl">Area</div><div class="val">'+esc(t.locationName)+'</div></div>';
+  if (t.hoursDecimal) details += '<div><div class="lbl">Duration</div><div class="val">'+dur+'</div></div>';
+  if (t.distanceNm) details += '<div><div class="lbl">Distance</div><div class="val">'+esc(t.distanceNm)+' nm</div></div>';
+  if (dep) details += '<div><div class="lbl">Departure</div><div class="val">'+esc(dep)+'</div></div>';
+  if (arr && arr !== dep) details += '<div><div class="lbl">Arrival</div><div class="val">'+esc(arr)+'</div></div>';
+  if (t.crew) details += '<div><div class="lbl">Crew</div><div class="val">'+esc(t.crew)+'</div></div>';
+  // Weather details
+  if (cardWs) details += '<div><div class="lbl">Wind</div><div class="val">'+(arrow?arrow+' ':'')+esc(cardWs)+(cardDir?' '+esc(cardDir):'')+'</div></div>';
+  if (wx?.wv!=null) details += '<div><div class="lbl">Waves</div><div class="val">'+wx.wv.toFixed(1)+' m</div></div>';
+  if (wx?.flag) details += '<div><div class="lbl">Flag</div><div class="val">'+flagIcons[wx.flag]+' '+esc(wx.flag.charAt(0).toUpperCase()+wx.flag.slice(1))+'</div></div>';
+  if (wx?.tc!=null) details += '<div><div class="lbl">Air temp</div><div class="val">'+Math.round(wx.tc)+'°C</div></div>';
+  if (wx?.sst!=null) details += '<div><div class="lbl">Sea temp</div><div class="val">'+wx.sst.toFixed(1)+'°C</div></div>';
+  if (wx?.pres!=null) details += '<div><div class="lbl">Pressure</div><div class="val">'+Math.round(wx.pres)+' hPa</div></div>';
+
+  var captainTag = showCaptain && t.memberName ? '<span class="cq-trip-captain">'+esc(t.memberName)+'</span>' : '';
+
+  return '<div class="cq-trip-card" style="border-left:3px solid '+catCol.color+'" onclick="this.classList.toggle(\'open\')">'
+    + '<div class="cq-trip-main">'
+      + '<div class="cq-trip-date-col">'
+        + '<div class="cq-trip-date-day">'+esc(p.day)+'</div>'
+        + '<div class="cq-trip-date-mon">'+esc(p.mon)+'</div>'
+        + '<div class="cq-trip-date-yr">'+esc(p.yr)+'</div>'
+      + '</div>'
+      + '<div class="cq-trip-body">'
+        + '<div class="cq-trip-boat">'+esc(t.boatName||'—')+captainTag+'</div>'
+        + '<div class="cq-trip-meta">'
+          + '<span class="cq-trip-badge" style="color:'+(isSki?'var(--brass)':'var(--muted)')+';border-color:'+(isSki?'var(--brass)55':'var(--border)')+';background:'+(isSki?'var(--brass)11':'var(--surface)')+'">'+esc(isSki?'Skipper':'Crew')+'</span>'
+          + (isVer ? '<span class="cq-trip-badge" style="color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">✓</span>' : '')
+          + '<span>'+esc(dur)+'</span>'
+          + (t.distanceNm ? '<span>'+esc(t.distanceNm)+' nm</span>' : '')
+          + windBit + portBit + flagBit
+        + '</div>'
+      + '</div>'
+      + '<div class="cq-trip-arrow">▾</div>'
+    + '</div>'
+    + (details ? '<div class="cq-trip-expand"><div class="cq-trip-detail-grid">'+details+'</div></div>' : '')
+  + '</div>';
+}
+
 function renderTrips() {
   var el = document.getElementById('tripList');
-  var trips = _tripFilter === 'my' ? _myTrips : _allTrips;
-  trips = trips.slice().sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
+  var filtered = _getFilteredTrips();
+  filtered.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
 
-  if (!trips.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noTrips') + '</div>'; return; }
-  el.innerHTML = trips.slice(0, 100).map(t => {
-    return '<div class="cq-trip">'
-      + '<div class="cq-trip-date">' + esc(t.date || '') + '</div>'
-      + '<div class="cq-trip-title">' + esc(t.boatName || '') + (_tripFilter === 'all' ? ' — <span style="color:var(--muted);font-weight:400;font-size:11px">' + esc(t.memberName || '') + '</span>' : '') + '</div>'
-      + '<div class="cq-trip-meta">'
-        + '<span>' + esc(t.locationName || '') + '</span>'
-        + '<span>' + (Number(t.hoursDecimal) || 0).toFixed(1) + ' ' + s('cq.hrs') + '</span>'
-        + (t.distanceNm ? '<span>' + t.distanceNm + ' ' + s('cq.nm') + '</span>' : '')
-        + '<span>' + esc(t.role || '') + '</span>'
-      + '</div>'
-    + '</div>';
-  }).join('');
+  var total = (_tripFilter === 'my' ? _myTrips : _allTrips).length;
+  document.getElementById('tripFilterCount').textContent = filtered.length + ' / ' + total;
+
+  if (!filtered.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noTrips') + '</div>'; return; }
+
+  var showCaptain = _tripFilter === 'all';
+  var INITIAL = 5;
+  var visible = _tripShowAll ? filtered : filtered.slice(0, INITIAL);
+  var html = visible.map(t => _cqTripCard(t, showCaptain)).join('');
+
+  if (!_tripShowAll && filtered.length > INITIAL) {
+    html += '<button class="cq-show-more" onclick="_tripShowAll=true;renderTrips()">'
+      + 'Show all ' + filtered.length + ' trips ▾'
+    + '</button>';
+  } else if (_tripShowAll && filtered.length > INITIAL) {
+    html += '<button class="cq-show-more" onclick="_tripShowAll=false;renderTrips();document.getElementById(\'sectTrips\').scrollIntoView({behavior:\'smooth\'})">'
+      + 'Show fewer ▴'
+    + '</button>';
+  }
+  el.innerHTML = html;
 }
 
 // ══ BIO & HEADSHOT ═══════════════════════════════════════════════════════════
