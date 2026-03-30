@@ -900,6 +900,12 @@ const STRINGS = {
   'pub.dash.lastUpdated':    { EN:'Last updated',                          IS:'Síðast uppfært' },
   'pub.dash.tripCount':      { EN:'{n} trips',                             IS:'{n} siglingar' },
   'pub.dash.hourCount':      { EN:'{n} hrs',                               IS:'{n} klst' },
+  'pub.dash.conditions':     { EN:'Conditions & Status',                    IS:'Aðstæður og staða' },
+  'pub.dash.weather':        { EN:'Weather & Tides',                        IS:'Veður og sjávarföll' },
+  'pub.dash.boatsOut':       { EN:'Boats Out',                              IS:'Bátar úti' },
+  'pub.dash.captainData':    { EN:'Captain Data',                           IS:'Skipstjóragögn' },
+  'pub.dash.captainSoon':    { EN:'Captain profiles and statistics will appear here soon.', IS:'Upplýsingar um skipstjóra og tölfræði birtast hér fljótlega.' },
+  'pub.dash.comingSoon':     { EN:'More information coming soon.',          IS:'Frekari upplýsingar birtast fljótlega.' },
 
   // ── Admin — CSV import & modals ─────────────────────────────────────────────
   'admin.expectedColumns':   { EN:'EXPECTED COLUMNS',                    IS:'VÆNTIR DÁLKAR' },

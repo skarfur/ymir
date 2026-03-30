@@ -11,12 +11,15 @@
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="../shared/api.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/weather.js"></script>
+<script src="../shared/tides.js"></script>
 <style>
 :root {
   --bg:      #0b1f38;
   --surface: #0f2847;
   --card:    #132d50;
   --border:  #1e3f6e;
+  --border-l:#1e3f6e;
   --text:    #d6e4f0;
   --muted:   #6b92b8;
   --brass:   #d4af37;
@@ -24,6 +27,7 @@
   --red:     #e74c3c;
   --yellow:  #f1c40f;
   --orange:  #e67e22;
+  --faint:   #6b92b844;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.6;min-height:100vh}
@@ -56,8 +60,35 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .cat-name{font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat-detail{font-size:11px;color:var(--muted)}
 
+/* ── On the water strip ─────────────────────────────────────────── */
+.stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.strip-cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center}
+.strip-n{font-size:22px;color:var(--brass);font-weight:500}
+.strip-l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
+.live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Two-column section ─────────────────────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+
+/* ── Left column: flag + status + boats ─────────────────────────── */
+.flag-banner-wrap{margin-bottom:14px}
+.duty-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.water-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px}
+.water-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.water-emoji{font-size:20px;flex-shrink:0}
+.water-name{font-size:13px;color:var(--text);font-weight:500}
+.water-loc{font-size:11px;color:var(--muted)}
+.empty-msg{color:var(--muted);font-size:12px;font-style:italic;padding:12px 0}
+
+/* ── Right column: weather widget + tide ────────────────────────── */
+.wx-widget{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.wx-widget .flag-pill{display:none!important}
+.wx-widget .wx-status-badges{display:none!important}
+.wx-cell{padding:4px 0}
+
 /* ── Map + Stats combo ──────────────────────────────────────────── */
-.map-stats{display:grid;grid-template-columns:3fr 1fr 280px;gap:16px;align-items:start}
+.map-stats{display:grid;grid-template-columns:3fr 1fr;gap:16px;align-items:start}
 #map-container{height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
 #map-container .leaflet-control-attribution{font-size:9px;background:rgba(11,31,56,.8)!important;color:var(--muted)!important}
 #map-container .leaflet-control-attribution a{color:var(--muted)!important}
@@ -65,24 +96,10 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .ytd-sidebar .stat-box{padding:16px 14px}
 .ytd-sidebar .stat-val{font-size:26px}
 .ytd-sidebar h3{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:6px 0 4px}
-@media(max-width:700px){
-  .map-stats{grid-template-columns:1fr}
-  #map-container{height:400px}
-}
 
-/* ── On the water ───────────────────────────────────────────────── */
-.stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
-.strip-cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center}
-.strip-n{font-size:22px;color:var(--brass);font-weight:500}
-.strip-l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
-.live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.water-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
-.water-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
-.water-emoji{font-size:20px;flex-shrink:0}
-.water-name{font-size:13px;color:var(--text);font-weight:500}
-.water-loc{font-size:11px;color:var(--muted)}
-.empty-msg{color:var(--muted);font-size:12px;font-style:italic;padding:12px 0}
+/* ── Future text placeholder ────────────────────────────────────── */
+.future-text{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-top:16px;text-align:center}
+.future-text p{color:var(--muted);font-size:12px;font-style:italic}
 
 /* ── Captains ───────────────────────────────────────────────────── */
 .captain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
@@ -95,6 +112,8 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .cert-badge::before{content:'\2713';color:var(--green);font-weight:bold;font-size:9px}
 .captain-bio{font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
 .captain-link{font-size:11px;color:var(--brass)}
+.captain-placeholder{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center}
+.captain-placeholder p{color:var(--muted);font-size:12px;font-style:italic}
 
 /* ── Loading / error ────────────────────────────────────────────── */
 .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px}
@@ -102,10 +121,20 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-msg{text-align:center;padding:40px 20px;color:var(--red);font-size:13px}
 
+/* ── Modal (for flag detail) ────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto}
+
 /* ── Footer ─────────────────────────────────────────────────────── */
 footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);border-top:1px solid var(--border)}
 
 /* ── Responsive ─────────────────────────────────────────────────── */
+@media(max-width:700px){
+  .two-col{grid-template-columns:1fr}
+  .map-stats{grid-template-columns:1fr}
+  #map-container{height:400px}
+}
 @media(max-width:600px){
   header{padding:10px 14px}
   main{padding:16px 12px 32px}
@@ -116,6 +145,8 @@ footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);bor
   .captain-grid{grid-template-columns:1fr}
   .subtitle{display:none}
   .water-grid{grid-template-columns:1fr}
+  .modal-overlay{padding:10px;align-items:flex-end}
+  .modal{max-width:100%;border-radius:14px 14px 0 0;padding:20px 16px;max-height:90vh}
 }
 </style>
 </head>
@@ -149,6 +180,9 @@ function esc(s) {
 var REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 var _map = null;
 var _heatLayer = null;
+var _staffStatus = null;
+var _wxWidgetInstance = null;
+var _tideWidgetInstance = null;
 
 function lang() { return (typeof getLang === 'function') ? getLang() : 'EN'; }
 
@@ -170,16 +204,46 @@ async function fetchDashboard() {
 
 function renderDashboard(data) {
   var L_ = lang();
+  var IS = L_ === 'IS';
   var main = document.getElementById('main-content');
   var html = '';
 
-  // ── On the Water Now ──
+  // Store staff status globally for wxWidget callback
+  _staffStatus = data.staffStatus || null;
+
+  // Load flag config if provided
+  if (data.flagConfig && typeof wxLoadFlagConfig === 'function') {
+    wxLoadFlagConfig(data.flagConfig);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 1) ON THE WATER — stat strip at the very top
+  // ═══════════════════════════════════════════════════════════════════
   html += '<section>';
   html += '<h2><span class="live-badge"></span>' + esc(s('pub.dash.onWater')) + '</h2>';
   html += '<div class="stat-strip">';
   html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.boatCount) + '</div><div class="strip-l">' + esc(s('staff.statBoats')) + '</div></div>';
   html += '<div class="strip-cell"><div class="strip-n">' + esc(data.onWater.peopleCount) + '</div><div class="strip-l">' + esc(s('staff.statPeople')) + '</div></div>';
   html += '</div>';
+  html += '</section>';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 2) TWO COLUMNS — left: flag + duty + boats | right: weather + tide
+  // ═══════════════════════════════════════════════════════════════════
+  html += '<section>';
+  html += '<div class="two-col">';
+
+  // ── Left column ──
+  html += '<div>';
+
+  // Flag banner (populated by wxWidget onData callback)
+  html += '<div class="flag-banner-wrap" id="pub-flag-banner"><div style="color:var(--muted);font-size:11px;font-style:italic">Loading conditions…</div></div>';
+
+  // Duty status pills
+  html += '<div class="duty-pills" id="pub-duty-pills"></div>';
+
+  // Boats out cards
+  html += '<h2 style="margin-top:4px">' + esc(s('pub.dash.boatsOut')) + '</h2>';
   if (data.onWater.boatCount > 0) {
     html += '<div class="water-grid">';
     data.onWater.boats.forEach(function(b) {
@@ -194,10 +258,23 @@ function renderDashboard(data) {
   } else {
     html += '<div class="empty-msg">' + esc(s('pub.dash.noActivity')) + '</div>';
   }
+  html += '</div>';
+
+  // ── Right column ──
+  html += '<div>';
+  html += '<h2>' + esc(s('pub.dash.weather')) + '</h2>';
+  // Weather widget container (populated after render by wxWidget)
+  html += '<div id="pub-wx-widget" class="wx-widget" style="min-height:120px"><div style="color:var(--muted);font-size:11px;font-style:italic">Loading weather…</div></div>';
+  // Tide widget container (populated after render by tideWidget)
+  html += '<div id="pub-tide-widget" style="margin-top:14px"></div>';
+  html += '</div>';
+
+  html += '</div>'; // end .two-col
   html += '</section>';
 
-  // ── Heatmap + Season Stats ──
-  var year = new Date().getFullYear();
+  // ═══════════════════════════════════════════════════════════════════
+  // 3) HEATMAP + YTD STATS + future text
+  // ═══════════════════════════════════════════════════════════════════
   html += '<section>';
   html += '<h2>' + esc(s('pub.dash.locations')) + '</h2>';
   html += '<div class="map-stats">';
@@ -208,7 +285,7 @@ function renderDashboard(data) {
   if (data.ytd.byCategory && data.ytd.byCategory.length) {
     html += '<h3>' + esc(s('pub.dash.byCategory')) + '</h3>';
     data.ytd.byCategory.forEach(function(c) {
-      var label = L_ === 'IS' ? (c.labelIS || c.labelEN) : c.labelEN;
+      var label = IS ? (c.labelIS || c.labelEN) : c.labelEN;
       html += '<div class="cat-card">'
         + '<div class="cat-emoji">' + esc(c.emoji) + '</div>'
         + '<div class="cat-info">'
@@ -218,35 +295,18 @@ function renderDashboard(data) {
     });
   }
   html += '</div></div>';
+
+  // Future text placeholder
+  html += '<div class="future-text"><p>' + esc(s('pub.dash.comingSoon')) + '</p></div>';
+
   html += '</section>';
 
-  // ── Captains ──
+  // ═══════════════════════════════════════════════════════════════════
+  // 4) CAPTAIN DATA — placeholder for future content
+  // ═══════════════════════════════════════════════════════════════════
   html += '<section>';
-  html += '<h2>' + esc(s('pub.dash.captains')) + '</h2>';
-  if (data.captains && data.captains.length) {
-    html += '<div class="captain-grid">';
-    data.captains.forEach(function(cap) {
-      html += '<div class="captain-card">';
-      html += '<div class="captain-name">' + esc(cap.name) + '</div>';
-      html += '<div class="captain-stats">';
-      html += '<span>' + esc(s('pub.dash.tripCount', { n: cap.tripCount })) + '</span>';
-      html += '<span>' + esc(s('pub.dash.hourCount', { n: cap.totalHours })) + '</span>';
-      html += '</div>';
-      if (cap.certs && cap.certs.length) {
-        html += '<div class="captain-certs">';
-        cap.certs.forEach(function(c) {
-          html += '<div class="cert-badge">' + esc(c.label) + '</div>';
-        });
-        html += '</div>';
-      }
-      html += '<div class="captain-bio">' + esc(s('pub.dash.bio')) + '</div>';
-      html += '<a class="captain-link" href="' + esc(cap.captainRecordUrl) + '" target="_blank">' + esc(s('pub.dash.viewRecord')) + '</a>';
-      html += '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div class="empty-msg">' + esc(s('pub.dash.noCaptains')) + '</div>';
-  }
+  html += '<h2>' + esc(s('pub.dash.captainData')) + '</h2>';
+  html += '<div class="captain-placeholder"><p>' + esc(s('pub.dash.captainSoon')) + '</p></div>';
   html += '</section>';
 
   main.innerHTML = html;
@@ -258,8 +318,119 @@ function renderDashboard(data) {
   var timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('footer-text').textContent = s('pub.dash.lastUpdated') + ' ' + timeStr;
 
-  // Init map after DOM has laid out (ensures container has dimensions)
+  // ── Render duty status pills ──
+  renderDutyPills();
+
+  // ── Init map after DOM has laid out ──
   setTimeout(function() { initMap(data.locations || []); }, 50);
+
+  // ── Init weather widget (right column) ──
+  initWeatherWidget();
+
+  // ── Init tide widget (right column) ──
+  initTideWidget();
+}
+
+function renderDutyPills() {
+  var el = document.getElementById('pub-duty-pills');
+  if (!el || !_staffStatus) { if (el) el.innerHTML = ''; return; }
+  var IS = lang() === 'IS';
+  var bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
+  var dc  = _staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
+  var bc  = _staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
+  var dbg = _staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+  var bbg = _staffStatus.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+  var dtx = IS ? (_staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
+               : (_staffStatus.onDuty      ? 'Staff on duty'      : 'No staff on duty');
+  var btx = IS ? (_staffStatus.supportBoat ? 'Björgunarbátur á sjó' : 'Enginn björgunarbátur')
+               : (_staffStatus.supportBoat ? 'Support boat out'     : 'No support boat');
+  el.innerHTML =
+    '<span style="' + bst + 'background:' + dbg + ';color:' + dc + '">🧑 ' + dtx + '</span>'
+    + '<span style="' + bst + 'background:' + bbg + ';color:' + bc + '">⛵ ' + btx + '</span>';
+}
+
+function renderFlagBanner(result) {
+  var el = document.getElementById('pub-flag-banner');
+  if (!el || !result) return;
+  var IS = lang() === 'IS';
+  var flag = result.flag;
+  var label  = (IS && flag.labelIS)  ? flag.labelIS  : flag.label;
+  var advice = (IS && flag.adviceIS) ? flag.adviceIS : flag.advice;
+
+  // Clickable chips for contributing factors
+  var chipsHtml = '';
+  var considerations = (result.breakdown || []).filter(function(b) { return b.pts > 0; });
+  if (considerations.length) {
+    chipsHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">';
+    considerations.forEach(function(b) {
+      chipsHtml += '<span style="font-size:10px;padding:2px 8px;border-radius:16px;border:1px solid '
+        + flag.border + ';color:' + flag.color + ';background:' + flag.bg + '">'
+        + esc(IS && b.labelIS ? b.labelIS : b.label)
+        + ' <b>+' + b.pts + '</b></span>';
+    });
+    chipsHtml += '</div>';
+  }
+
+  el.innerHTML =
+    '<div id="pub-flag-click" style="background:' + flag.bg + ';border:1px solid ' + flag.border + ';border-radius:10px;padding:14px 16px;cursor:pointer">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+    + '<span style="font-size:28px">' + flag.icon + '</span>'
+    + '<div>'
+    + '<div style="font-size:15px;font-weight:600;color:' + flag.color + '">' + esc(label) + '</div>'
+    + '<div style="font-size:11px;color:' + flag.color + ';opacity:.85">' + esc(advice) + '</div>'
+    + '</div></div>'
+    + chipsHtml
+    + '</div>';
+
+  // Wire click → flag detail modal
+  var clickEl = document.getElementById('pub-flag-click');
+  if (clickEl) {
+    clickEl.onclick = function() {
+      // Inject modal once
+      if (!document.getElementById('wxFlagModal')) {
+        var md = document.createElement('div');
+        md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)this.classList.add(\'hidden\')">'
+          + '<div class="modal" style="max-width:480px">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+          + '<div id="wxFlagModalTitle" style="font-weight:600;font-size:15px"></div>'
+          + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">&times;</button>'
+          + '</div><div id="wxFlagModalBody"></div>'
+          + '<div style="margin-top:16px"><button style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px" onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')">'
+          + (lang() === 'IS' ? 'Loka' : 'Close')
+          + '</button></div></div></div>';
+        document.body.appendChild(md.firstElementChild);
+      }
+      var IS2 = lang() === 'IS';
+      var title = document.getElementById('wxFlagModalTitle');
+      var body  = document.getElementById('wxFlagModalBody');
+      if (title) title.textContent = (IS2 && flag.labelIS ? flag.labelIS : flag.label) + ' · ' + result.score + (IS2 ? ' stig' : ' pts');
+      if (body)  body.innerHTML = wxFlagDetailHtml(result, _staffStatus, IS2 ? 'IS' : 'EN');
+      document.getElementById('wxFlagModal').classList.remove('hidden');
+    };
+  }
+}
+
+function initWeatherWidget() {
+  var el = document.getElementById('pub-wx-widget');
+  if (!el) return;
+  _wxWidgetInstance = wxWidget(el, {
+    showRefreshBtn: false,
+    getStaffStatus: function() { return _staffStatus; },
+    onData: function(snap) {
+      // Use the flag result from the weather widget to populate the left-column banner
+      if (snap.flagResult) {
+        renderFlagBanner(snap.flagResult);
+      }
+    }
+  });
+  _wxWidgetInstance.start();
+}
+
+function initTideWidget() {
+  var el = document.getElementById('pub-tide-widget');
+  if (!el) return;
+  _tideWidgetInstance = tideWidget(el);
+  _tideWidgetInstance.start();
 }
 
 function initMap(locations) {
@@ -270,25 +441,21 @@ function initMap(locations) {
 
   _map = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
 
-  // CartoDB Voyager (no labels) + OpenSeaMap — same as logbook
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; CartoDB' }).addTo(_map);
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 19, opacity: 0.9 }).addTo(_map);
 
-  // Filter to locations with valid coordinates
   var valid = locations.filter(function(loc) {
     return typeof loc.lat === 'number' && typeof loc.lng === 'number' && !isNaN(loc.lat) && !isNaN(loc.lng);
   });
 
   if (!valid.length) {
-    // Default view: Kollafjörður / Skerjafjörður area
     _map.setView([64.148, -21.965], 11.25);
+    return;
   }
 
-  // Fit to data bounds if locations exist
   var bounds = L.latLngBounds(valid.map(function(loc) { return [loc.lat, loc.lng]; }));
   _map.fitBounds(bounds.pad(0.3));
 
-  // Heat layer data: [lat, lng, intensity]
   var maxTrips = 1;
   valid.forEach(function(loc) { if (loc.tripCount > maxTrips) maxTrips = loc.tripCount; });
 
@@ -297,22 +464,14 @@ function initMap(locations) {
   });
 
   _heatLayer = L.heatLayer(heatData, {
-    radius: 30,
-    blur: 20,
-    maxZoom: 14,
-    max: 1.0,
+    radius: 30, blur: 20, maxZoom: 14, max: 1.0,
     gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
   }).addTo(_map);
 
-  // Add circle markers with tooltips for each location
   valid.forEach(function(loc) {
     var radius = Math.max(6, Math.min(20, 6 + (loc.tripCount / maxTrips) * 14));
     L.circleMarker([loc.lat, loc.lng], {
-      radius: radius,
-      color: '#d4af37',
-      fillColor: '#d4af37',
-      fillOpacity: 0.3,
-      weight: 1,
+      radius: radius, color: '#d4af37', fillColor: '#d4af37', fillOpacity: 0.3, weight: 1,
     }).bindTooltip(
       '<strong>' + esc(loc.name) + '</strong><br>'
       + s('pub.dash.tripCount', { n: loc.tripCount }) + ' &middot; '
@@ -336,7 +495,6 @@ async function load() {
 // ── Init ──
 document.addEventListener('DOMContentLoaded', function() {
   load();
-  // Auto-refresh every 5 minutes
   setInterval(function() { load(); }, REFRESH_MS);
 });
 </script>
