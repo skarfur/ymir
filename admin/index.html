@@ -327,7 +327,7 @@
 
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">CERTIFICATION TYPES</div>
+          <div class="col-title">CREDENTIALS</div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="certDefsCard">
@@ -709,6 +709,9 @@
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="cdStaffOnly"> Staff-only cert
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="cdClubEndorsement"> Club endorsement
       </label>
       <label style="display:flex;align-items:center;gap:8px">Card colour
         <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
@@ -1714,7 +1717,10 @@ function renderCertDefs() {
   const sortedCertDefs = certDefs.slice().sort((a, b) =>
     (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' })
   );
-  el.innerHTML = sortedCertDefs.map(d => {
+  const certifications = sortedCertDefs.filter(d => !d.clubEndorsement);
+  const endorsements   = sortedCertDefs.filter(d => !!d.clubEndorsement);
+
+  function certDefRow(d) {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
     const expiryStr = d.expires
@@ -1737,7 +1743,18 @@ function renderCertDefs() {
       <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">×</button>
     </div>`;
-  }).join("");
+  }
+
+  let html = '';
+  if (certifications.length) {
+    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:8px 0 6px">${s('admin.certTypes')}</div>`;
+    html += certifications.map(certDefRow).join('');
+  }
+  if (endorsements.length) {
+    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:${certifications.length ? '16' : '8'}px 0 6px">${s('cert.clubEndorsements')}</div>`;
+    html += endorsements.map(certDefRow).join('');
+  }
+  el.innerHTML = html;
 }
 
 function openCertDefModal(id) {
@@ -1748,6 +1765,7 @@ function openCertDefModal(id) {
   document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
+  document.getElementById("cdClubEndorsement").checked = d ? !!d.clubEndorsement : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
   document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
   document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
@@ -1773,6 +1791,7 @@ async function saveCertDef() {
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     subcats:          gatherSubcats(),
     staffOnly:        document.getElementById("cdStaffOnly").checked,
+    clubEndorsement:  document.getElementById("cdClubEndorsement").checked,
     color:            document.getElementById("cdColor").value,
     hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
     expires,
