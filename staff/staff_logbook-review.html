@@ -50,7 +50,7 @@
 <div class="page-content">
   <div class="mb-16">
     <div class="fw-500" style="font-size:16px" data-s="logrev.title"></div>
-    <div class="text-sm text-muted" style="margin-top:2px" data-s="logrev.subtitle"></div>
+    <div class="text-sm text-muted" data-s="logrev.subtitle" style="margin-top:2px"></div>
   </div>
 
   <!-- Stats row 1 -->
@@ -360,14 +360,14 @@ function renderTrips() {
             ${t.windDir  ? `<span>${esc(t.windDir)}</span>` : ''}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <div class="flex-col gap-4" style="align-items:flex-end">
           <span class="badge ${isVer ? 'badge-verified' : 'badge-pending'}">
             ${isVer ? ('✓ ' + s('logrev.verified')) : s('logrev.pending')}
           </span>
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
         </div>
       </div>
-      ${t.skipperNote ? `<div class="trip-notes" style="color:var(--brass)">📋 ${esc(t.skipperNote)}</div>` : ''}
+      ${t.skipperNote ? `<div class="trip-notes text-brass">📋 ${esc(t.skipperNote)}</div>` : ''}
       ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
