@@ -103,7 +103,6 @@
     <div class="stat-toggle"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></div>
     <div class="stat-toggle"><input type="checkbox" id="svDistance" checked><span data-s="settings.stats.distance"></span></div>
     <div class="stat-toggle"><input type="checkbox" id="svLongest" checked><span data-s="settings.stats.longest"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svPorts" checked><span data-s="settings.stats.ports"></span></div>
     <div class="stat-toggle"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></div>
     <div class="stat-toggle"><input type="checkbox" id="svStreak" checked><span data-s="settings.stats.streak"></span></div>
   </div>
@@ -151,7 +150,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('svByCategory').checked = sv.byCategory !== false;
   document.getElementById('svDistance').checked   = sv.distance !== false;
   document.getElementById('svLongest').checked    = sv.longest !== false;
-  document.getElementById('svPorts').checked      = sv.ports !== false;
   document.getElementById('svAvgWind').checked    = sv.avgWind !== false;
   document.getElementById('svStreak').checked     = sv.streak !== false;
 
@@ -190,7 +188,6 @@ document.addEventListener('DOMContentLoaded', async function() {
           document.getElementById('svByCategory').checked = ssv.byCategory !== false;
           document.getElementById('svDistance').checked   = ssv.distance !== false;
           document.getElementById('svLongest').checked    = ssv.longest !== false;
-          document.getElementById('svPorts').checked      = ssv.ports !== false;
           document.getElementById('svAvgWind').checked    = ssv.avgWind !== false;
           document.getElementById('svStreak').checked     = ssv.streak !== false;
         }
@@ -239,7 +236,6 @@ async function saveSettings() {
     byCategory: document.getElementById('svByCategory').checked,
     distance:   document.getElementById('svDistance').checked,
     longest:    document.getElementById('svLongest').checked,
-    ports:      document.getElementById('svPorts').checked,
     avgWind:    document.getElementById('svAvgWind').checked,
     streak:     document.getElementById('svStreak').checked,
   };

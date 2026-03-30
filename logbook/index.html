@@ -185,7 +185,6 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="stat-card"><div class="stat-val" id="stSkipper">—</div><div class="stat-lbl">As skipper</div></div>
     <div class="stat-card"><div class="stat-val" id="stDistance">—</div><div class="stat-lbl">Distance</div></div>
     <div class="stat-card"><div class="stat-val" id="stLongest">—</div><div class="stat-lbl">Longest trip</div></div>
-    <div class="stat-card"><div class="stat-val" id="stPorts">—</div><div class="stat-lbl">Ports</div></div>
     <div class="stat-card"><div class="stat-val" id="stAvgWind">—</div><div class="stat-lbl">Avg wind</div></div>
     <div class="stat-card"><div class="stat-val" id="stStreak">—</div><div class="stat-lbl">Streak</div></div>
   </div>
@@ -464,10 +463,11 @@ function renderStats(){
   // New stats calculations
   const totalNm=myTrips.reduce((s,t)=>s+(parseFloat(t.distanceNm)||0),0);
   const longestH=myTrips.reduce((m,t)=>Math.max(m,parseFloat(t.hoursDecimal)||0),0);
-  const ports=new Set();
-  myTrips.forEach(t=>{if(t.departurePort)ports.add(t.departurePort);if(t.arrivalPort)ports.add(t.arrivalPort)});
   const bftTrips=myTrips.filter(t=>t.beaufort!==''&&t.beaufort!=null&&!isNaN(parseFloat(t.beaufort)));
   const avgBft=bftTrips.length?bftTrips.reduce((s,t)=>s+parseFloat(t.beaufort),0)/bftTrips.length:0;
+  // Beaufort midpoint m/s lookup for unit conversion
+  const _bftMs=[0,0.8,2.4,4.4,6.7,9.4,12.3,15.5,18.9,22.6,26.5,30.6,34];
+  const avgBftMs=avgBft?_bftMs[Math.round(avgBft)]||avgBft*2.5:0;
   // Streak: consecutive months with at least one trip (counting back from most recent)
   let streak=0;
   if(myTrips.length){
@@ -484,7 +484,6 @@ function renderStats(){
   const stSkipperEl=document.getElementById('stSkipper');
   const stDistanceEl=document.getElementById('stDistance');
   const stLongestEl=document.getElementById('stLongest');
-  const stPortsEl=document.getElementById('stPorts');
   const stAvgWindEl=document.getElementById('stAvgWind');
   const stStreakEl=document.getElementById('stStreak');
 
@@ -494,12 +493,15 @@ function renderStats(){
   if(_statsVis.skipper===false){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
   if(_statsVis.distance===false){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
   if(_statsVis.longest===false){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
-  if(_statsVis.ports===false){stPortsEl.parentElement.style.display='none'}else{stPortsEl.textContent=ports.size}
-  if(_statsVis.avgWind===false){stAvgWindEl.parentElement.style.display='none'}else{stAvgWindEl.textContent=avgBft?avgBft.toFixed(1):'—'}
+  if(_statsVis.avgWind===false){stAvgWindEl.parentElement.style.display='none'}else{
+    if(!avgBft){stAvgWindEl.textContent='—'}
+    else if(_windUnit==='bft'){stAvgWindEl.textContent='F '+avgBft.toFixed(1)}
+    else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
+  }
   if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'mo':'—'}
 
   // Adjust grid columns based on visible cards
-  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false,_statsVis.distance!==false,_statsVis.longest!==false,_statsVis.ports!==false,_statsVis.avgWind!==false,_statsVis.streak!==false].filter(Boolean).length;
+  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false,_statsVis.distance!==false,_statsVis.longest!==false,_statsVis.avgWind!==false,_statsVis.streak!==false].filter(Boolean).length;
   const strip=document.querySelector('.stat-strip');
   if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
   else if(strip && visibleCards===0){strip.style.display='none'}
