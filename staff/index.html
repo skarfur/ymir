@@ -1453,7 +1453,7 @@ async function confirmGuest() {
 </script>
 
 <!-- ══ GROUP CHECKOUT MODAL ══════════════════════════════════════════════ -->
-<div class="group-modal-overlay hidden" id="groupModal">
+<div class="group-modal-overlay hidden" id="groupModal" onclick="if(event.target===this)closeGroupModal()">
   <div class="group-modal-sheet">
     <div class="group-modal-title">
       <span id="groupModalTitle">Group Checkout</span>
@@ -1529,9 +1529,12 @@ async function confirmGuest() {
 </div>
 
 <!-- ══ GUEST PROMPT MODAL ══════════════════════════════════════════════ -->
-<div class="guest-modal-overlay hidden" id="guestModal">
+<div class="guest-modal-overlay hidden" id="guestModal" onclick="if(event.target===this)closeGuestModal()">
   <div class="guest-modal">
-    <h4>Add guest</h4>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px">
+      <h4 style="margin:0">Add guest</h4>
+      <button class="modal-close-x" onclick="closeGuestModal()">&times;</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
     <div class="gm-field"><label>Name</label><input type="text" id="guestName" readonly></div>
     <div class="gm-field"><label>Kennitala or birth year</label><input type="text" id="guestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>

@@ -92,6 +92,19 @@ window.replaceWithFragment = function (container, items, buildNodeFn) {
 window.openModal  = id => document.getElementById(id)?.classList.remove('hidden');
 window.closeModal = id => document.getElementById(id)?.classList.add('hidden');
 
+// ── GLOBAL ESCAPE-TO-CLOSE ────────────────────────────────────────────────────
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  // find the top-most visible modal overlay and close it
+  const overlays = document.querySelectorAll(
+    '.modal-overlay:not(.hidden), .modal-bg:not(.hidden), .group-modal-overlay:not(.hidden), .guest-modal-overlay:not(.hidden), .map-modal-overlay:not(.hidden)'
+  );
+  if (!overlays.length) return;
+  // pick the one with highest z-index (last in DOM if equal)
+  let top = overlays[overlays.length - 1];
+  top.classList.add('hidden');
+});
+
 // ── STANDARD HEADER ────────────────────────────────────────────────────────────
 window.buildHeader = function (page) {
   const user = (typeof getUser === 'function') ? getUser() : null;

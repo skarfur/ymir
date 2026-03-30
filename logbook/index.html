@@ -274,7 +274,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 </div>
 
 <!-- Log manually modal -->
-<div class="modal-overlay hidden" id="logModal">
+<div class="modal-overlay hidden" id="logModal" onclick="if(event.target===this)closeLogModal()">
   <div class="modal-sheet">
     <div class="modal-title">
       <span id="logModalTitle">Add a log entry</span>
@@ -1821,9 +1821,12 @@ setTimeout(loadConfirmations,1500);
 </script>
 
 <!-- Guest prompt modal (for adding non-members as crew) -->
-<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700">
+<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700" onclick="if(event.target===this)closeLgGuestModal()">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
-    <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;margin:0 0 14px;font-weight:600">Add guest</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px">
+      <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;font-weight:600">Add guest</div>
+      <button class="modal-close-x" onclick="closeLgGuestModal()">&times;</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
     <div class="form-field"><label>Name</label><input type="text" id="lgGuestName" readonly></div>
     <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="lgGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>

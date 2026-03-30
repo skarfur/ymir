@@ -128,9 +128,12 @@
 </div>
 
 <!-- ══ SUGGEST PROJECT MODAL ══ -->
-<div class="modal-overlay hidden" id="suggestModal">
+<div class="modal-overlay hidden" id="suggestModal" onclick="if(event.target===this)closeSuggestModal()">
   <div class="modal">
-    <h3 data-s="sauma.suggestTitle">🧵 New sewing circle project</h3>
+    <div class="modal-header">
+      <h3 data-s="sauma.suggestTitle" style="margin:0">🧵 New sewing circle project</h3>
+      <button class="modal-close-x" onclick="closeSuggestModal()">&times;</button>
+    </div>
 
     <div class="field">
       <label data-s="maint.category">Category</label>

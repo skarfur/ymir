@@ -478,9 +478,12 @@
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
 <!-- Member modal -->
-<div class="modal-overlay hidden" id="memberModal">
+<div class="modal-overlay hidden" id="memberModal" onclick="if(event.target===this)closeModal('memberModal')">
   <div class="modal" style="max-width:520px">
-    <h3 id="memberModalTitle">Add Member</h3>
+    <div class="modal-header">
+      <h3 id="memberModalTitle">Add Member</h3>
+      <button class="modal-close-x" onclick="closeModal('memberModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name</label><input type="text" id="mName"></div>
       <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10"></div>
@@ -526,9 +529,12 @@
 </div>
 
 <!-- Boat category modal -->
-<div class="modal-overlay hidden" id="boatCatModal">
+<div class="modal-overlay hidden" id="boatCatModal" onclick="if(event.target===this)closeModal('boatCatModal')">
   <div class="modal">
-    <h3 id="boatCatModalTitle">Add Boat Category</h3>
+    <div class="modal-header">
+      <h3 id="boatCatModalTitle">Add Boat Category</h3>
+      <button class="modal-close-x" onclick="closeModal('boatCatModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name (English)</label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
       <div class="field"><label>Name (Íslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
@@ -550,9 +556,12 @@
 </div>
 
 <!-- Boat modal -->
-<div class="modal-overlay hidden" id="boatModal">
+<div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
   <div class="modal">
-    <h3 id="boatModalTitle">Add Boat</h3>
+    <div class="modal-header">
+      <h3 id="boatModalTitle">Add Boat</h3>
+      <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
+    </div>
     <div class="field"><label>Name</label><input type="text" id="bName"></div>
     <div class="field"><label>Category</label>
       <select id="bCategory" onchange="updateBoatModalFields()"></select>
@@ -596,9 +605,12 @@
 </div>
 
 <!-- Location modal -->
-<div class="modal-overlay hidden" id="locationModal">
+<div class="modal-overlay hidden" id="locationModal" onclick="if(event.target===this)closeModal('locationModal')">
   <div class="modal">
-    <h3 id="locationModalTitle">Add Location</h3>
+    <div class="modal-header">
+      <h3 id="locationModalTitle">Add Location</h3>
+      <button class="modal-close-x" onclick="closeModal('locationModal')">&times;</button>
+    </div>
     <div class="field"><label>Name</label><input type="text" id="lName"></div>
     <div class="field">
       <label data-s="location.type">Type</label>
@@ -619,9 +631,12 @@
 </div>
 
 <!-- Opening/closing checklist item modal -->
-<div class="modal-overlay hidden" id="clModal">
+<div class="modal-overlay hidden" id="clModal" onclick="if(event.target===this)closeModal('clModal')">
   <div class="modal">
-    <h3 id="clModalTitle">Add Checklist Item</h3>
+    <div class="modal-header">
+      <h3 id="clModalTitle">Add Checklist Item</h3>
+      <button class="modal-close-x" onclick="closeModal('clModal')">&times;</button>
+    </div>
     <div class="field"><label>Phase</label>
       <select id="clPhase">
         <option value="opening">Opening</option>
@@ -643,9 +658,12 @@
 </div>
 
 <!-- Launch/landing checklist item modal -->
-<div class="modal-overlay hidden" id="launchCLModal">
+<div class="modal-overlay hidden" id="launchCLModal" onclick="if(event.target===this)closeModal('launchCLModal')">
   <div class="modal">
-    <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+    <div class="modal-header">
+      <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+      <button class="modal-close-x" onclick="closeModal('launchCLModal')">&times;</button>
+    </div>
     <div class="field"><label>Category</label>
       <select id="lcCat"></select>
     </div>
@@ -664,9 +682,12 @@
 </div>
 
 <!-- Activity type modal -->
-<div class="modal-overlay hidden" id="actTypeModal">
+<div class="modal-overlay hidden" id="actTypeModal" onclick="if(event.target===this)closeModal('actTypeModal')">
   <div class="modal" style="max-width:520px">
-    <h3 id="actTypeModalTitle">Add Activity Type</h3>
+    <div class="modal-header">
+      <h3 id="actTypeModalTitle">Add Activity Type</h3>
+      <button class="modal-close-x" onclick="closeModal('actTypeModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name (EN)</label><input type="text" id="atName"></div>
       <div class="field"><label>Name (IS)</label><input type="text" id="atNameIS"></div>
@@ -690,9 +711,12 @@
 </div>
 
 <!-- Credential type modal -->
-<div class="modal-overlay hidden" id="certDefModal">
+<div class="modal-overlay hidden" id="certDefModal" onclick="if(event.target===this)closeModal('certDefModal')">
   <div class="modal" style="max-width:560px">
-    <h3 id="certDefModalTitle">Add Credential Type</h3>
+    <div class="modal-header">
+      <h3 id="certDefModalTitle">Add Credential Type</h3>
+      <button class="modal-close-x" onclick="closeModal('certDefModal')">&times;</button>
+    </div>
     <div class="field">
       <label>Name</label>
       <input type="text" id="cdName" placeholder="e.g. World Sailing Credential">
@@ -751,9 +775,12 @@
 </div>
 
 <!-- Member cert assignment modal -->
-<div class="modal-overlay hidden" id="memberCertModal">
+<div class="modal-overlay hidden" id="memberCertModal" onclick="if(event.target===this)closeModal('memberCertModal')">
   <div class="modal" style="max-width:480px">
-    <h3>Credentials — <span id="mcmMemberName"></span></h3>
+    <div class="modal-header">
+      <h3>Credentials — <span id="mcmMemberName"></span></h3>
+      <button class="modal-close-x" onclick="closeModal('memberCertModal')">&times;</button>
+    </div>
 
     <div style="margin-bottom:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
@@ -796,9 +823,12 @@
 </div>
 
 <!-- Boat QR modal -->
-<div class="modal-overlay hidden" id="qrModal">
+<div class="modal-overlay hidden" id="qrModal" onclick="if(event.target===this)closeModal('qrModal')">
   <div class="modal" style="max-width:360px;text-align:center">
-    <h3 id="qrBoatName" style="font-size:18px"></h3>
+    <div class="modal-header">
+      <h3 id="qrBoatName" style="font-size:18px"></h3>
+      <button class="modal-close-x" onclick="closeModal('qrModal')">&times;</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:16px" id="qrCategory"></div>
     <img id="qrImg" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--border)">
     <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
