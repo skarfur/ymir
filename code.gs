@@ -1925,7 +1925,7 @@ function tryAutoVerify_(conf, ts) {
   var certs = [];
   try { certs = JSON.parse(member.certifications || '[]'); } catch (e) { return; }
   var isCaptain = certs.some(function(c) {
-    return c.certId === 'keelboat_crew' && c.sub === 'captain';
+    return c.sub === 'captain';
   });
   if (!isCaptain) return;
 
@@ -3455,7 +3455,7 @@ function publicDashboard_() {
     var certs = [];
     try { certs = typeof m.certifications === 'string' ? JSON.parse(m.certifications) : (m.certifications || []); } catch(e) { return; }
     if (!Array.isArray(certs)) return;
-    var isCaptain = certs.some(function(c) { return c.certId === 'keelboat_crew' && c.sub === 'captain'; });
+    var isCaptain = certs.some(function(c) { return c.sub === 'captain'; });
     if (!isCaptain) return;
 
     // Build cert labels

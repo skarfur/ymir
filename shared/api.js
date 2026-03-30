@@ -70,7 +70,7 @@ function isAdmin(u) { return u && u.role === "admin"; }
 function isCaptain(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return c.certId === 'keelboat_crew' && c.sub === 'captain'; });
+  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain'; });
 }
 
 function signOut() {
