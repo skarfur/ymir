@@ -522,8 +522,15 @@ function searchCrewMembers(inp,drop) {
   drop.innerHTML='';
   matches.forEach(m=>{
     const item=document.createElement('div');
-    item.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)';
-    item.textContent=m.name; item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||'';
+    item.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px';
+    item.appendChild(document.createTextNode(m.name));
+    if (m.role==='guest') {
+      const badge=document.createElement('span');
+      badge.textContent=s('lbl.guest');
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);flex-shrink:0';
+      item.appendChild(badge);
+    }
+    item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||'';
     item.addEventListener('mouseover',function(){this.style.background='var(--card)';});
     item.addEventListener('mouseout', function(){this.style.background='';});
     item.addEventListener('mousedown',function(e){e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;drop.style.display='none';});
@@ -804,10 +811,13 @@ function _renderHelmSection(){
   var IS=getLang()==='IS';
   var entries=window._retCrewTrips||[];
   if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
+  var mems=window._launchMembers||[];
   el.innerHTML=entries.map(function(t){
+    var mem=mems.find(function(m){return String(m.kennitala)===String(t.kennitala);});
+    var gTag=(mem&&mem.role==='guest')?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+(IS?'Gestur':'Guest')+'</span>':'';
     return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
       '<input type="checkbox" class="helm-toggle" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
-      '<span>'+esc(t.memberName||'?')+'</span></label>';
+      '<span>'+esc(t.memberName||'?')+gTag+'</span></label>';
   }).join('');
 }
 
