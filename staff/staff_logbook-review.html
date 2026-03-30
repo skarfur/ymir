@@ -99,11 +99,11 @@
     <!-- Mode toggle -->
     <div class="mb-16" style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content">
       <button id="certModeByMember" onclick="setCertMode('member')"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;background:var(--brass);color:#fff;transition:all .15s">
+        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .15s;background:var(--brass);color:#fff">
         By member
       </button>
       <button id="certModeByType" onclick="setCertMode('type')"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;background:var(--surface);color:var(--muted);transition:all .15s">
+        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .15s;background:var(--surface);color:var(--muted)">
         By credential
       </button>
     </div>
@@ -112,7 +112,7 @@
     <div id="certPanelModeA">
       <div class="mb-14" style="position:relative">
         <input type="text" id="certMemberSearch"
-          style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:9px 12px"
+          class="text-md" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;padding:9px 12px"
           oninput="searchCertMember(this.value)">
         <div id="certMemberDrop"
           style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;z-index:100;display:none;max-height:200px;overflow-y:auto">
@@ -125,7 +125,7 @@
             <div class="text-lg fw-500" id="certPanelName"></div>
             <div class="text-sm text-muted" id="certPanelMeta"></div>
           </div>
-          <button onclick="openCertAssignModal()" class="btn btn-primary" style="font-size:11px;padding:5px 12px">+ Add / Change cert</button>
+          <button onclick="openCertAssignModal()" class="btn btn-primary text-sm" style="padding:5px 12px">+ Add / Change cert</button>
         </div>
         <div id="certPanelList"></div>
       </div>
@@ -139,7 +139,7 @@
     <div id="certPanelModeB" style="display:none">
       <div class="flex-center flex-wrap gap-8 mb-12">
         <select id="certFilterType" onchange="applyCertFilter()"
-          style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px">
+          class="flex-1 text-md" style="min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;padding:7px 10px">
           <option value="">— Select credential —</option>
         </select>
       </div>
@@ -175,7 +175,7 @@
         <label data-s="cert.level"></label>
         <select id="tcmSubcat"><option value=""></option></select>
       </div>
-      <div class="grid2" style="gap:10px">
+      <div class="grid2 gap-10">
         <div class="field">
           <label data-s="logrev.assignedDate"></label>
           <input type="date" id="tcmAssignedAt">
@@ -188,7 +188,7 @@
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="tcmAssign()" id="tcmAssignBtn" data-s="logrev.assignBtn"></button>
     </div>
 
-    <div style="margin-top:12px;text-align:right" class="mt-8">
+    <div class="mt-8" style="text-align:right">
       <button class="btn btn-secondary" onclick="closeModal('tripCertModal')" data-s="btn.close"></button>
     </div>
   </div>
@@ -252,7 +252,7 @@ async function init() {
     applyFilters();
   } catch (e) {
     document.getElementById('tripList').innerHTML =
-      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 }
 
@@ -372,16 +372,16 @@ function renderTrips() {
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
           <div class="staff-comment-label">${s('incident.staffNotes').toUpperCase()}</div>
-          <div style="color:var(--text)">${esc(t.staffComment)}</div>
-          ${t.verifiedBy ? `<div style="color:var(--muted);margin-top:3px;font-size:10px">— ${esc(t.verifiedBy)}</div>` : ''}
+          <div>${esc(t.staffComment)}</div>
+          ${t.verifiedBy ? `<div class="text-muted text-xs" style="margin-top:3px">— ${esc(t.verifiedBy)}</div>` : ''}
         </div>` : ''}
       <div class="verify-row" id="vrow-${esc(t.id)}">
         <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
-               value="${esc(t.staffComment || '')}" style="font-size:12px">
+               value="${esc(t.staffComment || '')}" class="text-md">
         ${isVer
-          ? `<button class="btn btn-secondary" style="font-size:11px;padding:5px 12px;flex-shrink:0"
+          ? `<button class="btn btn-secondary text-sm" style="padding:5px 12px;flex-shrink:0"
                onclick="unverifyTrip('${esc(t.id)}')">✗ ${s('logrev.unverify')}</button>`
-          : `<button class="btn btn-primary"   style="font-size:11px;padding:5px 14px;flex-shrink:0"
+          : `<button class="btn btn-primary text-sm" style="padding:5px 14px;flex-shrink:0"
                onclick="verifyTrip('${esc(t.id)}')">✓ ${s('logrev.verify')}</button>`}
       </div>
     </div>`;
@@ -434,7 +434,8 @@ function searchCertMember(q) {
   drop.innerHTML = '';
   matches.forEach(m => {
     const item = document.createElement('div');
-    item.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px';
+    item.className = 'text-md';
+    item.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)';
     item.textContent   = m.name;
     item.addEventListener('mouseover', function () { this.style.background = 'var(--card)'; });
     item.addEventListener('mouseout',  function () { this.style.background = ''; });
@@ -466,14 +467,14 @@ function renderCertPanelList() {
   const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs) : [];
 
   if (!certs.length) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px 0">${s('cert.noCerts')}</div>`;
+    el.innerHTML = `<div class="text-muted text-md" style="padding:8px 0">${s('cert.noCerts')}</div>`;
     return;
   }
 
   el.innerHTML = certs.map(c => {
     const expiry = c.expiresAt
       ? (new Date(c.expiresAt) < new Date()
-          ? `<span style="color:var(--red)">Expired ${esc(c.expiresAt)}</span>`
+          ? `<span class="text-red">Expired ${esc(c.expiresAt)}</span>`
           : `Expires ${esc(c.expiresAt)}`)
       : 'Does not expire';
     const label = c.subcat
@@ -485,9 +486,9 @@ function renderCertPanelList() {
         <div class="cert-meta">${expiry}${c.assignedAt ? ' · Issued ' + esc(c.assignedAt) : ''}</div>
       </div>
       <div class="cert-actions">
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+        <button class="btn btn-secondary text-sm" style="padding:4px 10px"
           onclick="editCert('${esc(c.certId)}','${esc(c.sub||'')}')">Edit</button>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;color:var(--red)"
+        <button class="btn btn-secondary text-sm text-red" style="padding:4px 10px"
           onclick="deleteCert('${esc(c.certId)}','${esc(c.sub||'')}')">✕</button>
       </div>
     </div>`;
@@ -506,7 +507,7 @@ function openCertAssignModal(certId, subcatKey) {
   const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs) : [];
   document.getElementById('tcmCurrentList').innerHTML = certs.length
     ? certs.map(certBadgeHTML).join('')
-    : `<div style="color:var(--muted);font-size:11px;font-style:italic">${s('cert.noCerts')}</div>`;
+    : `<div class="text-muted text-sm" style="font-style:italic">${s('cert.noCerts')}</div>`;
 
   // Reset / pre-fill form
   document.getElementById('tcmAssignedAt').value     = todayISO();
@@ -683,18 +684,18 @@ function applyCertFilter() {
     return certs.some(c => c.certId === certId && (sub ? c.sub === sub : true));
   });
   if (!matches.length) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">No members found with this credential.</div>`;
+    el.innerHTML = `<div class="text-muted text-md" style="padding:6px 0">No members found with this credential.</div>`;
     return;
   }
   const color = certColor(def || {});
-  el.innerHTML = `<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${matches.length} member${matches.length!==1?'s':''}</div>` +
+  el.innerHTML = `<div class="text-xs text-muted mb-6">${matches.length} member${matches.length!==1?'s':''}</div>` +
     matches.map(m => {
       const certs = _parseJson(m.certifications, []);
       const c = certs.find(c => c.certId === certId && (sub ? c.sub === sub : true));
-      const expiry = c?.expiresAt ? (c.expiresAt < todayISO() ? `<span style="color:var(--red);font-size:10px"> · expired</span>` : `<span style="color:var(--muted);font-size:10px"> · exp. ${c.expiresAt}</span>`) : '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)44">
+      const expiry = c?.expiresAt ? (c.expiresAt < todayISO() ? `<span class="text-red text-xs"> · expired</span>` : `<span class="text-muted text-xs"> · exp. ${c.expiresAt}</span>`) : '';
+      return `<div class="flex-center gap-10" style="padding:7px 0;border-bottom:1px solid var(--border)44">
         <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
-        <div style="flex:1;font-size:13px">${esc(m.name)}<span style="font-size:10px;color:var(--muted);margin-left:6px">${esc(m.role||'')}</span>${expiry}</div>
+        <div class="flex-1 text-base">${esc(m.name)}<span class="text-xs text-muted" style="margin-left:6px">${esc(m.role||'')}</span>${expiry}</div>
       </div>`;
     }).join('');
 }

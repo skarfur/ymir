@@ -132,7 +132,7 @@
 
   <!-- Stats -->
   <div class="stat-strip">
-    <div class="stat-card"><div class="stat-num text-red" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
+    <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
     <div class="stat-card"><div class="stat-num text-red" id="statCritical">—</div><div class="stat-label">CRITICAL</div></div>
     <div class="stat-card"><div class="stat-num text-red" id="statOos">—</div><div class="stat-label">BOATS OOS</div></div>
     <div class="stat-card"><div class="stat-num text-brass" id="statPending">—</div><div class="stat-label">PENDING REVIEW</div></div>
@@ -514,7 +514,7 @@ function openNewRequest(prefill) {
   document.getElementById("newPhoto").value = "";
   document.getElementById("photoPreview").className = "photo-preview";
   document.getElementById("photoErr").textContent = "";
-  document.getElementById("newErr").style.display = "none";
+  document.getElementById("newErr").classList.add("hidden");
   document.querySelectorAll(".sev-btn").forEach(b => b.classList.remove("selected"));
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("sevHint").textContent = "";
@@ -530,8 +530,8 @@ function openNewRequest(prefill) {
   document.getElementById("modalTitle").textContent = isSaumaMode
     ? '🧵 New sewing circle project' : '🔧 New Maintenance Request';
   document.getElementById("sevLabel").textContent = isSaumaMode ? 'Priority' : 'Severity';
-  document.querySelector('.sev-btn[data-sev="critical"]').style.display = isSaumaMode ? 'none' : '';
-  document.getElementById("oosField").style.display = isSaumaMode ? 'none' : '';
+  document.querySelector('.sev-btn[data-sev="critical"]').classList.toggle("hidden", isSaumaMode);
+  document.getElementById("oosField").classList.toggle("hidden", isSaumaMode);
   document.getElementById("verkstjoriField").classList.toggle("hidden", !isSaumaMode);
   document.getElementById("materialsField").classList.toggle("hidden", !isSaumaMode);
 
@@ -622,7 +622,7 @@ function renderMaterialsList() {
 
 async function submitRequest() {
   const btn = document.getElementById("submitBtn");
-  document.getElementById("newErr").style.display = "none";
+  document.getElementById("newErr").classList.add("hidden");
 
   if (!selectedCat) { showErr("Please select a category."); return; }
   if (!selectedSev) { showErr("Please select a severity level."); return; }
@@ -687,7 +687,7 @@ async function submitRequest() {
 
 function showErr(msg) {
   const el = document.getElementById("newErr");
-  el.textContent = msg; el.style.display = "block";
+  el.textContent = msg; el.classList.remove("hidden");
 }
 
 function toast(msg) {
