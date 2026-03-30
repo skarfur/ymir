@@ -243,7 +243,19 @@ const L = getLang();
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
   applyStrings();
-  console.log('[CQ] certifications:', user.certifications, 'typeof:', typeof user.certifications, 'isCaptain fn:', typeof isCaptain, 'result:', typeof isCaptain === 'function' ? isCaptain(user) : 'N/A');
+  // DEBUG — remove after confirming captain detection works
+  var _cqDebug = document.createElement('div');
+  _cqDebug.style.cssText = 'background:#1a1a2e;border:1px solid #d4af37;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#ccc;word-break:break-all';
+  var _cqCerts = user.certifications;
+  var _cqParsed = typeof _cqCerts === 'string' ? parseJson(_cqCerts, []) : (_cqCerts || []);
+  var _cqHasCaptain = Array.isArray(_cqParsed) && _cqParsed.some(function(c){ return c.certId === 'keelboat_crew' && c.sub === 'captain'; });
+  _cqDebug.innerHTML = '<b style="color:#d4af37">Captain Debug</b><br>'
+    + 'certifications type: <b>' + typeof _cqCerts + '</b><br>'
+    + 'certifications value: <b>' + esc(String(_cqCerts || '(empty)').slice(0, 300)) + '</b><br>'
+    + 'parsed array length: <b>' + (Array.isArray(_cqParsed) ? _cqParsed.length : 'NOT ARRAY') + '</b><br>'
+    + 'isCaptain result: <b style="color:' + (_cqHasCaptain ? '#2ecc71' : '#e74c3c') + '">' + _cqHasCaptain + '</b>';
+  document.querySelector('.page-content').insertBefore(_cqDebug, document.querySelector('.page-content').firstChild);
+
   if (typeof isCaptain === 'function' && isCaptain(user)) {
     document.getElementById('captainQBtn').style.display = '';
   }
