@@ -171,18 +171,17 @@
                 <div style="font-size:24px">📄</div>
                 <div class="text-base fw-500">Drop CSV here or click to browse</div>
                 <div class="text-sm text-muted">UTF-8 encoded, comma or semicolon delimited</div>
-                <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+                <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="handleCSVUpload(this)">
               </label>
             </div>
           </div>
           <div id="importStep2" data-step="2" class="hidden">
             <div class="import-card">
               <div class="text-base fw-500 mb-10">Review import</div>
-              <div class="text-sm text-muted" style="margin-bottom:4px">Admin/staff roles never overwritten.</div>
+              <div class="text-sm text-muted mb-4">Admin/staff roles never overwritten.</div>
               <div class="import-summary" id="importSummary"></div>
               <div id="importLists"></div>
-              <div id="importError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px;
-                padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
+              <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44">
               <div class="btn-row mt-14">
                 <button class="btn btn-secondary" onclick="resetImport()" data-s="admin.backToList"></button>
                 <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
@@ -191,6 +190,7 @@
           </div>
           <div id="importStep3" data-step="3" class="hidden">
             <div class="import-card" style="text-align:center;padding:36px">
+
               <div class="mb-10" style="font-size:30px">✓</div>
               <div class="text-lg fw-500" style="color:#27ae60" id="importDoneMsg"></div>
               <div style="margin-top:18px">
