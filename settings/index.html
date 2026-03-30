@@ -27,10 +27,13 @@
 .toggle-group button:last-child{border-right:none}
 .toggle-group button.active{background:var(--brass);color:#0b1f38;font-weight:600}
 .toggle-group button:hover:not(.active){color:var(--text);background:var(--faint)}
-.stat-toggle{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--faint)}
-.stat-toggle:last-child{border-bottom:none}
-.stat-toggle input[type="checkbox"]{width:16px;height:16px;accent-color:var(--brass);flex-shrink:0}
-.stat-toggle span{font-size:12px;color:var(--text)}
+.stat-group-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin:14px 0 6px;font-weight:600}
+.stat-group-label:first-child{margin-top:0}
+.pill-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.pill-toggle{display:inline-flex;align-items:center;padding:5px 12px;border-radius:99px;border:1px solid var(--border);font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;background:none}
+.pill-toggle:hover{border-color:var(--text);color:var(--text)}
+.pill-toggle.active{background:var(--brass);color:#0b1f38;border-color:var(--brass);font-weight:500}
+.pill-toggle input{display:none}
 .save-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
 .save-bar .btn{min-width:120px}
 </style>
@@ -96,22 +99,42 @@
   <div class="settings-section">
     <div class="settings-section-title" data-s="settings.stats"></div>
     <div class="settings-hint" style="margin-top:0;margin-bottom:10px" data-s="settings.statsHint"></div>
-    <div class="stat-toggle"><input type="checkbox" id="svCareer" checked><span data-s="settings.stats.career"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svHours" checked><span data-s="settings.stats.hours"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svYtd" checked><span data-s="settings.stats.ytd"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svDistance" checked><span data-s="settings.stats.distance"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svLongest" checked><span data-s="settings.stats.longest"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svStreak" checked><span data-s="settings.stats.streak"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svBoats" checked><span data-s="settings.stats.boats"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svCrew" checked><span data-s="settings.stats.crew"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svHeavy" checked><span data-s="settings.stats.heavy"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svNight" checked><span data-s="settings.stats.night"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svAvgDuration" checked><span data-s="settings.stats.avgDuration"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svLocations" checked><span data-s="settings.stats.locations"></span></div>
-    <div class="stat-toggle"><input type="checkbox" id="svVerified" checked><span data-s="settings.stats.verified"></span></div>
+
+    <div class="stat-group-label" data-s="settings.statsGroup.activity"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle active"><input type="checkbox" id="svCareer" checked><span data-s="settings.stats.career"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svHours" checked><span data-s="settings.stats.hours"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svYtd" checked><span data-s="settings.stats.ytd"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svStreak" checked><span data-s="settings.stats.streak"></span></label>
+    </div>
+
+    <div class="stat-group-label" data-s="settings.statsGroup.sailing"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle active"><input type="checkbox" id="svDistance" checked><span data-s="settings.stats.distance"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svLongest" checked><span data-s="settings.stats.longest"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svAvgDuration" checked><span data-s="settings.stats.avgDuration"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
+    </div>
+
+    <div class="stat-group-label" data-s="settings.statsGroup.roles"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle active"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svCrew" checked><span data-s="settings.stats.crew"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svBoats" checked><span data-s="settings.stats.boats"></span></label>
+    </div>
+
+    <div class="stat-group-label" data-s="settings.statsGroup.conditions"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle active"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svHeavy" checked><span data-s="settings.stats.heavy"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svNight" checked><span data-s="settings.stats.night"></span></label>
+    </div>
+
+    <div class="stat-group-label" data-s="settings.statsGroup.other"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle active"><input type="checkbox" id="svLocations" checked><span data-s="settings.stats.locations"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svVerified" checked><span data-s="settings.stats.verified"></span></label>
+    </div>
   </div>
 
   <!-- Save -->
@@ -150,22 +173,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Stats visibility
   var sv = prefs.statsVisibility || {};
-  document.getElementById('svCareer').checked     = sv.career !== false;
-  document.getElementById('svHours').checked      = sv.hours !== false;
-  document.getElementById('svYtd').checked        = sv.ytd !== false;
-  document.getElementById('svSkipper').checked    = sv.skipper !== false;
-  document.getElementById('svByCategory').checked = sv.byCategory !== false;
-  document.getElementById('svDistance').checked   = sv.distance !== false;
-  document.getElementById('svLongest').checked    = sv.longest !== false;
-  document.getElementById('svAvgWind').checked    = sv.avgWind !== false;
-  document.getElementById('svStreak').checked     = sv.streak !== false;
-  document.getElementById('svBoats').checked      = sv.boats !== false;
-  document.getElementById('svCrew').checked       = sv.crew !== false;
-  document.getElementById('svHeavy').checked      = sv.heavy !== false;
-  document.getElementById('svNight').checked      = sv.night !== false;
-  document.getElementById('svAvgDuration').checked= sv.avgDuration !== false;
-  document.getElementById('svLocations').checked  = sv.locations !== false;
-  document.getElementById('svVerified').checked   = sv.verified !== false;
+  applyStatVis(sv);
+
+  // Pill toggle behavior
+  document.querySelectorAll('.pill-toggle').forEach(function(pill) {
+    pill.addEventListener('click', function(e) {
+      e.preventDefault();
+      var cb = pill.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      pill.classList.toggle('active', cb.checked);
+    });
+  });
 
   // Live theme preview
   document.getElementById('themeToggle').addEventListener('click', function(e) {
@@ -194,23 +212,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (serverPrefs.windUnit) document.getElementById('sWindUnit').value = serverPrefs.windUnit;
         if (serverPrefs.theme) { setToggle('themeToggle', serverPrefs.theme); setTheme(serverPrefs.theme); }
         if (serverPrefs.statsVisibility) {
-          var ssv = serverPrefs.statsVisibility;
-          document.getElementById('svCareer').checked     = ssv.career !== false;
-          document.getElementById('svHours').checked      = ssv.hours !== false;
-          document.getElementById('svYtd').checked        = ssv.ytd !== false;
-          document.getElementById('svSkipper').checked    = ssv.skipper !== false;
-          document.getElementById('svByCategory').checked = ssv.byCategory !== false;
-          document.getElementById('svDistance').checked   = ssv.distance !== false;
-          document.getElementById('svLongest').checked    = ssv.longest !== false;
-          document.getElementById('svAvgWind').checked    = ssv.avgWind !== false;
-          document.getElementById('svStreak').checked     = ssv.streak !== false;
-          document.getElementById('svBoats').checked      = ssv.boats !== false;
-          document.getElementById('svCrew').checked       = ssv.crew !== false;
-          document.getElementById('svHeavy').checked      = ssv.heavy !== false;
-          document.getElementById('svNight').checked      = ssv.night !== false;
-          document.getElementById('svAvgDuration').checked= ssv.avgDuration !== false;
-          document.getElementById('svLocations').checked  = ssv.locations !== false;
-          document.getElementById('svVerified').checked   = ssv.verified !== false;
+          applyStatVis(serverPrefs.statsVisibility);
         }
       }
       // Show server initials if different
@@ -218,6 +220,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   } catch(e) { /* proceed with local prefs */ }
 });
+
+function applyStatVis(sv) {
+  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svNight','svAvgDuration','svLocations','svVerified'];
+  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','night','avgDuration','locations','verified'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    var on = sv[keys[i]] !== false;
+    el.checked = on;
+    el.closest('.pill-toggle').classList.toggle('active', on);
+  }
+}
 
 function extractInitials(name) {
   if (!name) return '';
