@@ -632,10 +632,10 @@ function renderStats() {
 function renderFleet() {
   const active = checkouts.filter(c => c.status === 'out');
   renderFleetStatus('fleetStatus', boats, active, {
-    onAvailClick: 'selectBoatForCheckout',
-    toggleFn:     'toggleFleetCat',
-    collapsed:    true,
-    staffView:    true,
+    onClickAction: 'openBoatActionCard',
+    toggleFn:      'toggleFleetCat',
+    collapsed:     true,
+    staffView:     true,
   });
 }
 
@@ -1121,6 +1121,78 @@ function selectBoatForCheckout(boatId) {
   }, 80);
 }
 
+
+// ── Boat action card (fleet status click) ─────────────────────────────────────
+function openBoatActionCard(boat) {
+  // Close any existing action card
+  closeBoatActionCard();
+  if (!boat) return;
+
+  const oos = boolVal(boat.oos);
+  const co  = checkouts.find(c => c.status === 'out' && c.boatId === boat.id);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'boatActionOverlay';
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:9999';
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeBoatActionCard(); });
+
+  const emoji = boatEmoji((boat.category||'').toLowerCase());
+  const name  = esc(boat.name || boat.id || '');
+
+  // Build action buttons — checkout only if available (not OOS and not currently out)
+  const canCheckout = !oos && !co;
+  const checkoutBtn = canCheckout
+    ? `<button class="btn btn-primary" style="width:100%;font-size:13px;padding:10px" onclick="closeBoatActionCard();selectBoatForCheckout('${esc(boat.id)}')">${s('fleet.actionCheckout')}</button>`
+    : '';
+  const maintBtn = `<button class="btn btn-secondary" style="width:100%;font-size:13px;padding:10px" onclick="closeBoatActionCard();openBoatMaintRequest('${esc(boat.id)}','${esc(boat.name||'')}')">${s('fleet.actionMaint')}</button>`;
+  const toggleLabel = oos ? s('fleet.actionMarkAvail') : s('fleet.actionMarkOos');
+  const toggleBtn = `<button class="btn btn-secondary" style="width:100%;font-size:13px;padding:10px" onclick="closeBoatActionCard();toggleBoatAvailability('${esc(boat.id)}')">${toggleLabel}</button>`;
+
+  overlay.innerHTML = `<div class="modal" style="max-width:320px;padding:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:600">${emoji} ${name}</div>
+      <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);padding:0 2px;line-height:1" onclick="closeBoatActionCard()">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${checkoutBtn}
+      ${maintBtn}
+      ${toggleBtn}
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function closeBoatActionCard() {
+  const el = document.getElementById('boatActionOverlay');
+  if (el) el.remove();
+}
+
+function openBoatMaintRequest(boatId, boatName) {
+  // Navigate to maintenance page with boat pre-selected
+  window.location.href = '../maintenance/?prefillBoat=' + encodeURIComponent(boatId);
+}
+
+async function toggleBoatAvailability(boatId) {
+  try {
+    const cfgRes = await apiGet('getConfig');
+    const allBoats = cfgRes.boats || [];
+    const idx = allBoats.findIndex(b => b.id === boatId);
+    if (idx < 0) { showToast('Boat not found.', 'err'); return; }
+    const wasOos = boolVal(allBoats[idx].oos);
+    allBoats[idx] = Object.assign({}, allBoats[idx], {
+      oos: !wasOos,
+      oosReason: wasOos ? '' : (allBoats[idx].oosReason || ''),
+    });
+    await apiPost('saveConfig', { boats: allBoats });
+    boats = allBoats.filter(b => b.active !== false && b.active !== 'false');
+    renderAll();
+    showToast(wasOos ? s('fleet.actionMarkAvail') + ' ✓' : s('fleet.actionMarkOos') + ' ✓');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'err');
+  }
+}
 
 // ══ GROUP CHECKOUT ═══════════════════════════════════════════════════════════
 let _groupBoats = new Set();

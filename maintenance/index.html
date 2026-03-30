@@ -330,9 +330,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     toggleFilter(btn.dataset.group, btn.dataset.value);
   });
 
-  // Auto-open new request modal if navigated here with ?new=1
-  if (new URLSearchParams(window.location.search).get("new") === "1") {
+  // Auto-open new request modal if navigated here with ?new=1 or ?prefillBoat=<id>
+  const _qs = new URLSearchParams(window.location.search);
+  if (_qs.get("new") === "1") {
     openNewRequest();
+  } else if (_qs.get("prefillBoat")) {
+    openNewRequest({ category: 'boat', boatId: _qs.get("prefillBoat") });
   }
 });
 

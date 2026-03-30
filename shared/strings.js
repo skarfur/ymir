@@ -865,6 +865,12 @@ const STRINGS = {
   'fleet.charterOverride':   { EN:'This boat is chartered to {name} until {date}. Override and check out anyway?',
                                IS:'Þessi bátur er leigður til {name} til {date}. Viltu taka hann út samt?' },
 
+  // ── Fleet action popover (staff) ────────────────────────────────────────────
+  'fleet.actionCheckout':    { EN:'Check Out',                              IS:'Útskrá' },
+  'fleet.actionMaint':       { EN:'Request Maintenance',                    IS:'Beiðni um viðhald' },
+  'fleet.actionMarkOos':     { EN:'Mark Unavailable',                       IS:'Merkja ótiltækan' },
+  'fleet.actionMarkAvail':   { EN:'Mark Available',                         IS:'Merkja tiltækan' },
+
   // ── Boat ownership & charter ──────────────────────────────────────────────
   'boat.ownership':          { EN:'Ownership',                             IS:'Eignarhald' },
   'boat.ownershipClub':      { EN:'Club boat',                             IS:'Klúbbsbátur' },
