@@ -704,9 +704,11 @@ function tripCard(t){
   const unlinkedCrewDisplay = _unlinkedCrew.map(cn => {
     const name = esc(cn.name);
     const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
-    const isGuest = cnMember ? cnMember.role==='guest' : !cn.kennitala;
+    const isGuest = cn.guest || (cnMember ? cnMember.role==='guest' : !cn.kennitala);
+    const isHelm = !!cn.helm;
     const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
     let badges = '';
+    if (isHelm) badges += ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
     if (isStudent) badges += studentBadge;
     if (isGuest) badges += guestBadge;
     return name + badges;
