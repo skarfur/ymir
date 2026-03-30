@@ -164,6 +164,7 @@
     <a class="act-btn" href="../maintenance/?new=1"        data-s="member.reportIssue"></a>
     <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
+    <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -242,6 +243,7 @@ const L = getLang();
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
   applyStrings();
+  if (isCaptain(user)) document.getElementById('captainQBtn').style.display = '';
 
   document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';

@@ -388,6 +388,8 @@ function route_(action, b) {
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
     case 'saveCharter': return saveCharter_(b);
     case 'removeCharter': return removeCharter_(b);
+    case 'saveCaptainBio': return saveCaptainBio_(b);
+    case 'uploadHeadshot': return uploadHeadshot_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
@@ -441,6 +443,8 @@ function validateMember_(kennitala) {
       initials: m.initials || extractInitials_(m.name),
       lang: m.lang || 'EN',
       preferences: m.preferences || '{}',
+      bio: m.bio || '',
+      headshotUrl: m.headshotUrl || '',
     }
   });
 }
@@ -1608,6 +1612,51 @@ function removeCharter_(b) {
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });
+}
+
+
+// ── Captain bio & headshot ──────────────────────────────────────────────────
+
+function saveCaptainBio_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  var m = findOne_('members', 'kennitala', String(b.kennitala).trim());
+  if (!m) return failJ('Member not found', 404);
+  var updates = { updatedAt: now_() };
+  if (b.bio !== undefined) updates.bio = String(b.bio || '');
+  if (b.headshotUrl !== undefined) updates.headshotUrl = String(b.headshotUrl || '');
+  updateRow_('members', 'kennitala', String(b.kennitala).trim(), updates);
+  cDel_('members');
+  return okJ({ saved: true });
+}
+
+function uploadHeadshot_(b) {
+  if (!b.fileData) return failJ('fileData required');
+  var props = PropertiesService.getScriptProperties();
+  var folderId = props.getProperty('DRIVE_FOLDER_ID_PHOTOS');
+  if (!folderId) folderId = props.getProperty('DRIVE_FOLDER_ID_MAINT_PHOTOS');
+  if (!folderId) return okJ({ ok: false, error: 'Drive folder not configured' });
+  try {
+    var ext      = (b.fileName || 'headshot.jpg').split('.').pop().toLowerCase();
+    var ts       = now_().replace(/[: ]/g, '-');
+    var safeName = 'headshot_' + (b.kennitala || 'unknown') + '_' + ts + '.' + ext;
+    var base64   = b.fileData.replace(/^data:[^;]+;base64,/, '');
+    var bytes    = Utilities.base64Decode(base64);
+    var mimeMap  = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', heic:'image/heic' };
+    var mime     = b.mimeType || mimeMap[ext] || 'image/jpeg';
+    var blob     = Utilities.newBlob(bytes, mime, safeName);
+    var folder   = DriveApp.getFolderById(folderId);
+    var file     = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = file.getUrl();
+    // Auto-save to member record if kennitala provided
+    if (b.kennitala) {
+      updateRow_('members', 'kennitala', String(b.kennitala).trim(), { headshotUrl: url, updatedAt: now_() });
+      cDel_('members');
+    }
+    return okJ({ ok: true, headshotUrl: url });
+  } catch (e) {
+    return failJ('Headshot upload error: ' + e.message);
+  }
 }
 
 
@@ -3427,6 +3476,8 @@ function publicDashboard_() {
     captains.push({
       id: m.id,
       name: m.name || '',
+      bio: m.bio || '',
+      headshotUrl: m.headshotUrl || '',
       certs: certLabels,
       tripCount: captTrips.length,
       totalHours: Math.round(captHours * 10) / 10,
@@ -3662,7 +3713,18 @@ function publicCaptainRecord_(b) {
     totalHrs  += Number(t.hoursDecimal) || 0;
   });
 
-  var html = '<h1>' + esc_(member.name) + '</h1>'
+  // Bio & headshot
+  var headshotHtml = '';
+  if (member.headshotUrl) {
+    var hsUrl = String(member.headshotUrl);
+    // Convert Drive file URL to thumbnail URL
+    var driveMatch = hsUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) hsUrl = 'https://drive.google.com/thumbnail?id=' + driveMatch[1] + '&sz=w300';
+    headshotHtml = '<img src="' + esc_(hsUrl) + '" alt="' + esc_(member.name) + '" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #d4af37;margin:0 auto 12px;display:block">';
+  }
+  var bioHtml = member.bio ? '<div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5">' + esc_(member.bio) + '</div>' : '';
+
+  var html = headshotHtml + '<h1>' + esc_(member.name) + '</h1>' + bioHtml
     + '<div class="subtitle">' + gs_('pub.lbl.captainSince', { date: esc_(member.createdAt ? member.createdAt.slice(0, 10) : '—') }) + '</div>';
 
   // Stats
