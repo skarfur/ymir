@@ -253,6 +253,9 @@ function addColIfMissing_(tabKey, colName) {
 function ensureGroupCols_() {
   ['isGroup','participants','staffNames','boatNames','boatIds','activityTypeId','activityTypeName'].forEach(c => addColIfMissing_('checkouts', c));
 }
+function ensureCheckoutContactCols_() {
+  ['memberPhone','memberIsMinor','guardianName','guardianPhone'].forEach(c => addColIfMissing_('checkouts', c));
+}
 
 function updateRow_(tabKey, keyField, keyValue, updates) {
   const sheet = getSheet_(tabKey);
@@ -450,6 +453,15 @@ function getMemberMap_() {
   if (!members) { members = readAll_('members'); cPut_('members', members); }
   const map = {};
   members.forEach(m => { map[String(m.kennitala)] = m; });
+  return map;
+}
+
+function getBoatMap_(cfgMap) {
+  const raw = getConfigValue_('boats', cfgMap || getConfigMap_());
+  let boats = [];
+  try { boats = JSON.parse(raw || '[]'); } catch (e) {}
+  const map = {};
+  boats.forEach(function(b) { map[b.id] = b; });
   return map;
 }
 
@@ -1417,8 +1429,11 @@ function getActiveCheckouts_() {
   const enriched = result.map(c => {
     const m = memberMap[String(c.memberKennitala || '')] || {};
     return {
-      ...c, memberPhone: m.phone || '', memberIsMinor: bool_(m.isMinor),
-      guardianName: m.guardianName || '', guardianPhone: m.guardianPhone || ''
+      ...c,
+      memberPhone: c.memberPhone || m.phone || '',
+      memberIsMinor: c.memberIsMinor !== undefined && c.memberIsMinor !== '' ? bool_(c.memberIsMinor) : bool_(m.isMinor),
+      guardianName: c.guardianName || m.guardianName || '',
+      guardianPhone: c.guardianPhone || m.guardianPhone || '',
     };
   });
   cDel_('checkouts');
@@ -1426,7 +1441,19 @@ function getActiveCheckouts_() {
 }
 
 function saveCheckout_(b) {
+  ensureCheckoutContactCols_();
   const ts = now_(), id = uid_();
+  const kt = String(b.memberKennitala || b.memberKt || b.kennitala || '');
+  let memberPhone = '', memberIsMinor = false, guardianName = '', guardianPhone = '';
+  if (kt) {
+    try {
+      const m = getMemberMap_()[kt] || {};
+      memberPhone = m.phone || '';
+      memberIsMinor = bool_(m.isMinor);
+      guardianName = m.guardianName || '';
+      guardianPhone = m.guardianPhone || '';
+    } catch (e) {}
+  }
   let wxSnap = '';
   if (b.wxSnapshot) {
     try {
@@ -1443,7 +1470,7 @@ function saveCheckout_(b) {
   }
   insertRow_('checkouts', {
     id, boatId: b.boatId || '', boatName: b.boatName || '', boatCategory: b.boatCategory || '',
-    memberKennitala: b.memberKennitala || b.memberKt || b.kennitala || '',
+    memberKennitala: kt,
     memberName: b.memberName || '', crew: b.crew || 1,
     locationId: b.locationId || '', locationName: b.locationName || '',
     checkedOutAt: b.checkedOutAt || b.timeOut || ts.slice(11, 16),
@@ -1452,6 +1479,7 @@ function saveCheckout_(b) {
     preLaunchChecklist: b.preLaunchChecklist || '', notes: b.notes || '',
     status: 'out', createdAt: ts, departurePort: b.departurePort || '',
     crewNames: b.crewNames || '',
+    memberPhone, memberIsMinor, guardianName, guardianPhone,
   });
   cDel_('checkouts'); return okJ({ id, created: true });
 }
@@ -1614,11 +1642,18 @@ function saveTrip_(b) {
 
   // INSERT path
   const id = uid_();
+  let boatCategory = b.boatCategory || '';
+  if (!boatCategory && b.boatId) {
+    try {
+      const boat = getBoatMap_()[b.boatId];
+      if (boat) boatCategory = boat.category || '';
+    } catch (e) {}
+  }
   insertRow_('trips', {
     id, kennitala: b.kennitala || '', memberName: b.memberName || '',
     date: b.date || ts.slice(0, 10), timeOut: b.timeOut || '', timeIn: b.timeIn || '',
     hoursDecimal: b.hoursDecimal || 0,
-    boatId: b.boatId || '', boatName: b.boatName || '', boatCategory: b.boatCategory || '',
+    boatId: b.boatId || '', boatName: b.boatName || '', boatCategory: boatCategory,
     locationId: b.locationId || '', locationName: b.locationName || '',
     crew: b.crew || 1, role: b.role || 'skipper',
     beaufort: b.beaufort || '', windDir: b.windDir || '', wxSnapshot: b.wxSnapshot || '',
@@ -1675,7 +1710,7 @@ function ensureConfirmationCols_() {
     'boatId','boatName','boatCategory',
     'locationId','locationName',
     'date','timeOut','timeIn','hoursDecimal',
-    'role','helm',
+    'role','helm','crew','skipperNote',
     'beaufort','windDir','wxSnapshot',
     'rejectComment',
     'createdAt','respondedAt',
@@ -1708,6 +1743,7 @@ function createConfirmation_(b) {
     date: b.date || '', timeOut: b.timeOut || '', timeIn: b.timeIn || '',
     hoursDecimal: b.hoursDecimal || '',
     role: b.role || '', helm: b.helm || false,
+    crew: b.crew || 1, skipperNote: b.skipperNote || '',
     beaufort: b.beaufort || '', windDir: b.windDir || '', wxSnapshot: b.wxSnapshot || '',
     rejectComment: '',
     createdAt: ts, respondedAt: '',
@@ -1748,9 +1784,9 @@ function respondConfirmation_(b) {
            String(t.linkedTripId) === String(row.tripId));
       });
       if (!existing.length) {
-        // Get crew count and skipper note from the original trip if available
-        var origCrew = 1, origSkipperNote = '';
-        if (row.tripId) {
+        // Get crew count and skipper note — prefer denormalized values, fall back to trip lookup for old rows
+        var origCrew = row.crew || 1, origSkipperNote = row.skipperNote || '';
+        if (origCrew <= 1 && !origSkipperNote && row.tripId) {
           var origTrip = findOne_('trips', 'id', row.tripId);
           if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; }
         }
@@ -2257,9 +2293,11 @@ function getOverdueAlerts_(b) {
     const kt = String(row[col('memberKennitala')] || row[col('kennitala')] || '');
     const m = memberMap[kt] || {};
     const phone = String(row[col('memberPhone')] || m.phone || '');
-    const isMinor = !!(m.isMinor === true || m.isMinor === 'true' || m.isMinor === 'TRUE');
-    const guardianName = String(m.guardianName || '');
-    const guardianPhone = String(m.guardianPhone || '');
+    const isMinor = row[col('memberIsMinor')] !== undefined && row[col('memberIsMinor')] !== ''
+      ? bool_(row[col('memberIsMinor')])
+      : !!(m.isMinor === true || m.isMinor === 'true' || m.isMinor === 'TRUE');
+    const guardianName = String(row[col('guardianName')] || m.guardianName || '');
+    const guardianPhone = String(row[col('guardianPhone')] || m.guardianPhone || '');
     alerts.push({
       checkoutId: String(row[col('id')] || ''),
       boatName: String(row[col('boatName')] || '—'),
@@ -2959,6 +2997,10 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
   if (!trips.length) return '<div style="color:var(--muted);font-size:12px;font-style:italic;padding:8px 0">'
     + dl_('pub.lbl.noSessions') + '</div>';
 
+  // Build boat map for O(1) lookups
+  var boatMap = {};
+  if (boats) { boats.forEach(function(b) { boatMap[b.id] = b; }); }
+
   // Build captain lookup: linkedCheckoutId → skipper memberName
   var captainMap = {};
   if (allTrips) {
@@ -2982,7 +3024,7 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
   html += '</tr>';
 
   trips.forEach(function(t, idx) {
-    var boat = boats ? boats.find(function(b) { return b.id === t.boatId; }) : null;
+    var boat = boatMap[t.boatId] || null;
     var makeModel = boat && boat.typeModel ? esc_(boat.typeModel) : '';
     var loa = boat && boat.loa ? esc_(boat.loa) + ' ft' : '';
     var isSki = !t.role || t.role === 'skipper';
@@ -3153,6 +3195,8 @@ function publicDashboard_() {
   boatCategories.forEach(function(c) { catMap[c.key] = c; });
   var locMap = {};
   locations.forEach(function(l) { locMap[l.id] = l; });
+  var boatMap = {};
+  boats.forEach(function(b) { boatMap[b.id] = b; });
 
   // ── YTD trips ──
   var yearStart = new Date().getFullYear() + '-01-01';
@@ -3169,7 +3213,7 @@ function publicDashboard_() {
     totalHours += hrs;
 
     var cat = t.boatCategory || '';
-    if (!cat) { var b = boats.find(function(bt) { return bt.id === t.boatId; }); if (b) cat = b.category || ''; }
+    if (!cat) { var b = boatMap[t.boatId]; if (b) cat = b.category || ''; }
     if (cat) {
       if (!catStats[cat]) catStats[cat] = { count: 0, hours: 0 };
       catStats[cat].count++;
@@ -3374,6 +3418,8 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
   var boatsJson = getConfigSheetValue_('boats');
   var boats = [];
   try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
+  var boatMap = {};
+  boats.forEach(function(b) { boatMap[b.id] = b; });
 
   // Load boat categories for label resolution
   var boatCats = [];
@@ -3397,10 +3443,7 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     categories.forEach(function(c) { catSet[c.toLowerCase()] = true; });
     memberTrips = memberTrips.filter(function(t) {
       var cat = t.boatCategory || '';
-      if (!cat) {
-        var b = boats.find(function(bt) { return bt.id === t.boatId; });
-        if (b) cat = b.category || '';
-      }
+      if (!cat) { var b = boatMap[t.boatId]; if (b) cat = b.category || ''; }
       return catSet[cat.toLowerCase()];
     });
   }
@@ -3409,7 +3452,7 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
   var tripCats = {};
   memberTrips.forEach(function(t) {
     var cat = t.boatCategory || '';
-    if (!cat) { var b = boats.find(function(bt) { return bt.id === t.boatId; }); if (b) cat = b.category || ''; }
+    if (!cat) { var b = boatMap[t.boatId]; if (b) cat = b.category || ''; }
     if (cat) tripCats[cat] = true;
   });
   var catKeys = Object.keys(tripCats).sort();
@@ -3518,7 +3561,9 @@ function publicBoatRecord_(b) {
   var boatsJson = getConfigSheetValue_('boats');
   var boats = [];
   try { boats = JSON.parse(boatsJson || '[]'); } catch(e) {}
-  var boat = boats.find(function(bt) { return bt.id === b.id; });
+  var boatMap = {};
+  boats.forEach(function(bt) { boatMap[bt.id] = bt; });
+  var boat = boatMap[b.id];
   if (!boat) return htmlR_(pubPageShell_(gs_('pub.title.boat'), '<div class="err-msg">Boat not found.</div>'));
 
   var allTrips = readAll_('trips');
