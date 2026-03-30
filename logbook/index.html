@@ -492,12 +492,13 @@ function renderStats(){
   // Beaufort midpoint m/s lookup for unit conversion
   const _bftMs=[0,0.8,2.4,4.4,6.7,9.4,12.3,15.5,18.9,22.6,26.5,30.6,34];
   const avgBftMs=avgBft?_bftMs[Math.round(avgBft)]||avgBft*2.5:0;
-  // Streak: consecutive months with at least one trip (counting back from most recent)
+  // Streak: consecutive weeks with at least one trip (counting back from current week)
   let streak=0;
   if(myTrips.length){
-    const months=new Set(myTrips.map(t=>(t.date||'').slice(0,7)).filter(Boolean));
-    const now=new Date();let y=now.getFullYear(),m=now.getMonth()+1;
-    while(months.has(y+'-'+(m<10?'0':'')+m)){streak++;m--;if(m<1){m=12;y--}}
+    const toISOWeek=d=>{const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);const w1=new Date(dt.getFullYear(),0,4);return dt.getFullYear()+'-W'+(1+Math.round(((dt-w1)/864e5-3+(w1.getDay()+6)%7)/7)).toString().padStart(2,'0')};
+    const weeks=new Set(myTrips.map(t=>t.date?toISOWeek(t.date):null).filter(Boolean));
+    const now=new Date();let d=new Date(now);
+    while(true){const wk=toISOWeek(d);if(!weeks.has(wk))break;streak++;d.setDate(d.getDate()-7)}
   }
   const uniqueBoats=new Set(myTrips.map(t=>t.boatId||t.boatName).filter(Boolean)).size;
   const crewTrips=myTrips.filter(t=>t.role==='crew').length;
@@ -539,7 +540,7 @@ function renderStats(){
     else if(_windUnit==='bft'){stAvgWindEl.textContent='F '+avgBft.toFixed(1)}
     else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
   }
-  if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'mo':'—'}
+  if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'w':'—'}
   if(_statsVis.boats===false){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
   if(_statsVis.crew===false){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
   if(_statsVis.heavy===false){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
