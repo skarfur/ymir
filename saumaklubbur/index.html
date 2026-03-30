@@ -111,11 +111,11 @@
   <div class="page-title" data-s="sauma.pageTitle">🧵 Saumaklúbbur</div>
   <div class="page-subtitle" data-s="sauma.pageSubtitle">Community maintenance projects</div>
 
-  <button class="btn btn-primary" style="width:100%;margin:0 0 16px" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ New sewing circle project</button>
+  <button class="btn btn-primary mb-16" style="width:100%" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ New sewing circle project</button>
 
   <!-- Filter bar -->
   <div class="filter-bar">
-    <span style="font-size:11px;color:var(--muted);letter-spacing:.5px" data-s="lbl.filter">FILTER:</span>
+    <span class="section-label" data-s="lbl.filter">FILTER:</span>
     <button class="filter-btn active" data-filter="open"       onclick="setFilter('open')"       data-s="sauma.filterOpen">Open</button>
     <button class="filter-btn"        data-filter="my"         onclick="setFilter('my')"         data-s="sauma.filterMy">My Projects</button>
     <button class="filter-btn"        data-filter="unassigned" onclick="setFilter('unassigned')" data-s="sauma.filterUnassigned">Unassigned</button>
@@ -131,7 +131,7 @@
 <div class="modal-overlay hidden" id="suggestModal" onclick="if(event.target===this)closeSuggestModal()">
   <div class="modal">
     <div class="modal-header">
-      <h3 data-s="sauma.suggestTitle" style="margin:0">🧵 New sewing circle project</h3>
+      <h3 data-s="sauma.suggestTitle">🧵 New sewing circle project</h3>
       <button class="modal-close-x" onclick="closeSuggestModal()">&times;</button>
     </div>
 
@@ -176,21 +176,21 @@
     <div class="field">
       <label data-s="sauma.materials">Materials Needed</label>
       <div id="suggestMaterialsList"></div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <input type="text" id="suggestMaterialInput" placeholder="e.g. Sandpaper 120-grit…" style="flex:1">
-        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="addSuggestMaterial()">+ Add</button>
+      <div class="flex-center gap-6 mt-8">
+        <input type="text" id="suggestMaterialInput" placeholder="e.g. Sandpaper 120-grit…" class="flex-1">
+        <button type="button" class="btn-ghost-sm" onclick="addSuggestMaterial()">+ Add</button>
       </div>
     </div>
 
     <div class="field">
       <label data-s="sauma.photoLabel">Photo (optional, max 5 MB)</label>
       <input type="file" id="suggestPhoto" accept="image/*" onchange="handleSuggestPhoto(this)"
-        style="font-size:12px;color:var(--muted)">
+        class="text-md text-muted">
       <img id="suggestPhotoPreview" class="photo-preview" alt="preview">
-      <div id="suggestPhotoErr" style="font-size:11px;color:var(--red);margin-top:4px"></div>
+      <div id="suggestPhotoErr" class="text-sm text-red mt-8"></div>
     </div>
 
-    <div id="suggestErr" class="msg msg-err" style="display:none;margin-bottom:10px"></div>
+    <div id="suggestErr" class="msg msg-err hidden mb-10"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeSuggestModal()" data-s="btn.cancel">Cancel</button>
       <button class="btn btn-primary" id="suggestSubmitBtn" onclick="submitSuggestion()" data-s="btn.submit">Submit</button>
@@ -331,16 +331,16 @@ function renderProjectCard(r) {
 
   return `<div class="sauma-card req-card ${sevClass}${resolved?' resolved':''}" data-id="${esc(r.id||'')}">
     <div class="req-header">
-      <div style="flex:1;min-width:0">
+      <div class="flex-1" style="min-width:0">
         <div class="req-title">
           ${catIcon} ${subjectLabel}
-          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
+          ${r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
           ${r.verkstjori
             ? `<span class="verk-tag">Verkstjóri: ${esc(r.verkstjori)}</span>`
-            : `<span style="font-size:11px;color:var(--muted);font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
+            : `<span class="text-sm text-muted" style="font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
           ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
@@ -349,12 +349,12 @@ function renderProjectCard(r) {
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" onclick="event.stopPropagation();viewPhoto('${esc(r.photoUrl)}')">` : ''}
-    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)">
+    <div class="flex-center gap-8 mt-8 text-sm text-muted">
       <span>💬 ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${(lastComment.at||'').slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
-    ${!boolVal(r.approved) && !resolved ? `<div style="margin-top:6px;font-size:11px;color:var(--brass);font-style:italic">⏳ Pending staff review</div>` : ''}
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ Completed ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${!boolVal(r.approved) && !resolved ? `<div class="mt-8 text-sm text-brass" style="font-style:italic">⏳ Pending staff review</div>` : ''}
+    ${resolved ? `<div class="mt-8 text-sm text-muted">✓ Completed ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 
@@ -372,7 +372,7 @@ function openSuggestModal() {
   document.getElementById("suggestPhoto").value = "";
   document.getElementById("suggestPhotoPreview").className = "photo-preview";
   document.getElementById("suggestPhotoErr").textContent = "";
-  document.getElementById("suggestErr").style.display = "none";
+  document.getElementById("suggestErr").classList.add("hidden");
   document.getElementById("suggestMaterialsList").innerHTML = "";
   document.getElementById("suggestMaterialInput").value = "";
   document.querySelectorAll(".prio-btn").forEach(b => b.classList.remove("selected"));
@@ -412,9 +412,9 @@ function removeSuggestMaterial(idx) {
 }
 function renderSuggestMaterials() {
   document.getElementById("suggestMaterialsList").innerHTML = suggestMaterials.map((m,i) =>
-    `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px">
-      <span style="flex:1">${esc(m.name)}</span>
-      <button type="button" onclick="removeSuggestMaterial(${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">&times;</button>
+    `<div class="flex-center gap-6 text-md" style="padding:4px 0">
+      <span class="flex-1">${esc(m.name)}</span>
+      <button type="button" class="btn-dismiss" onclick="removeSuggestMaterial(${i})">&times;</button>
     </div>`
   ).join("");
 }
@@ -451,7 +451,7 @@ function handleSuggestPhoto(input) {
 
 async function submitSuggestion() {
   const btn = document.getElementById("suggestSubmitBtn");
-  document.getElementById("suggestErr").style.display = "none";
+  document.getElementById("suggestErr").classList.add("hidden");
 
   if (!suggestCat) { showSuggestErr("Please select a category."); return; }
   if (!suggestPrio) { showSuggestErr("Please select a priority."); return; }
@@ -503,7 +503,7 @@ async function submitSuggestion() {
 
 function showSuggestErr(msg) {
   const el = document.getElementById("suggestErr");
-  el.textContent = msg; el.style.display = "block";
+  el.textContent = msg; el.classList.remove("hidden");
 }
 
 </script>
