@@ -471,6 +471,152 @@ textarea { min-height: 70px; }
 .chart-lbl    { font: 9px 'DM Mono', monospace; }
 .chart-lbl-bg { fill: var(--card); opacity: 0.85; }
 
+/* ── UTILITY CLASSES ──────────────────────────────────────────────────────────── */
+
+/* Flex utilities */
+.flex-center     { display: flex; align-items: center; }
+.flex-between    { display: flex; align-items: center; justify-content: space-between; }
+.flex-wrap       { flex-wrap: wrap; }
+.flex-col        { display: flex; flex-direction: column; }
+.flex-1          { flex: 1; }
+.gap-4           { gap: 4px; }
+.gap-6           { gap: 6px; }
+.gap-8           { gap: 8px; }
+.gap-10          { gap: 10px; }
+.gap-12          { gap: 12px; }
+
+/* Margin utilities */
+.ml-auto         { margin-left: auto; }
+.mb-4            { margin-bottom: 4px; }
+.mb-6            { margin-bottom: 6px; }
+.mb-8            { margin-bottom: 8px; }
+.mb-10           { margin-bottom: 10px; }
+.mb-12           { margin-bottom: 12px; }
+.mb-14           { margin-bottom: 14px; }
+.mb-16           { margin-bottom: 16px; }
+.mt-8            { margin-top: 8px; }
+.mt-14           { margin-top: 14px; }
+.mt-16           { margin-top: 16px; }
+
+/* Text utilities */
+.text-muted      { color: var(--muted); }
+.text-red        { color: var(--red); }
+.text-green      { color: var(--green); }
+.text-brass      { color: var(--brass); }
+.text-xs         { font-size: 10px; }
+.text-sm         { font-size: 11px; }
+.text-md         { font-size: 12px; }
+.text-base       { font-size: 13px; }
+.text-lg         { font-size: 14px; }
+.fw-500          { font-weight: 500; }
+.pre-wrap        { white-space: pre-wrap; }
+.uppercase       { text-transform: uppercase; }
+
+/* Section label — the small uppercase heading used throughout */
+.section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* Detail field — label + value pair used in detail views */
+.detail-field       { margin-bottom: 12px; }
+.detail-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 3px; }
+.detail-field-value { font-size: 13px; white-space: pre-wrap; }
+
+/* Info panel — card-like panel used in modals and detail views */
+.info-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+/* Handoff / callout panel */
+.callout-panel {
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+/* Note input row — flex row with input + button */
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; }
+
+/* Accent checkbox — brass-colored checkbox used in checklists */
+.accent-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brass);
+}
+
+/* Check label — flex row for checkbox + label in lists */
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border)44;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Required asterisk */
+.required { color: var(--red); }
+
+/* Page content wrapper */
+.page-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px 80px;
+}
+
+/* Section divider */
+.section-divider {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+/* Small ghost button variant */
+.btn-ghost-sm {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 5px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.btn-ghost-sm:hover { color: var(--brass); border-color: var(--brass); }
+
+/* Dashed add button */
+.btn-dashed {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  width: 100%;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Dismiss / remove button (×) */
+.btn-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .hidden { display: none !important; }
 
 /* ── Payslip preview cards ── */

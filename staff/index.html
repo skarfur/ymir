@@ -247,16 +247,16 @@ border-bottom:1px solid var(--border)44; }
   <div class="header-right"></div>
 </header>
 
-<div style="max-width:720px;margin:0 auto;padding:20px 16px 60px">
+<div class="page-content">
 
-  <div style="margin-bottom:16px">
+  <div class="mb-16">
     <div style="font-size:16px;font-weight:500;color:var(--text)" data-s="staff.dashTitle">Staff Dashboard</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px" id="userBadge"></div>
+    <div class="text-sm text-muted" style="margin-top:2px" id="userBadge"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
-  <div class="wx-widget" id="wxWidget" style="margin-bottom:16px">
-    <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="lbl.loading"></div>
+  <div class="wx-widget mb-16" id="wxWidget">
+    <div class="text-muted text-sm" style="padding:6px 0" data-s="lbl.loading"></div>
   </div>
 
   <!-- ══ STAFF STATUS ══ -->
@@ -264,12 +264,12 @@ border-bottom:1px solid var(--border)44; }
     <!-- ══ TIDES ══ -->
   <div id="tideWidget" style="margin-bottom:20px"></div>
 
-  <div id="staffStatusStrip" style="margin-bottom:12px">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px">DUTY STATUS</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <div id="staffStatusStrip" class="mb-12">
+    <div class="section-label mb-8">DUTY STATUS</div>
+    <div class="flex-center flex-wrap gap-8">
       <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">🧑 No staff on duty</button>
       <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">⛵ No support boat</button>
-      <span id="staffStatusUpdated" style="font-size:10px;color:var(--muted)"></span>
+      <span id="staffStatusUpdated" class="text-xs text-muted"></span>
     </div>
   </div>
 
@@ -286,9 +286,9 @@ border-bottom:1px solid var(--border)44; }
   <div class="section">
     <div class="section-head">
       <h3 id="boatsOutNowLabel"></h3>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn" data-s="staff.checkOutBtn"></button>
-        <button class="btn btn-secondary" style="font-size:11px;padding:5px 12px" onclick="openGroupModal()" id="groupCheckOutBtn" data-s="staff.groupCheckout"></button>
+      <div class="flex-center gap-6">
+        <button class="btn btn-primary text-sm" style="padding:5px 12px" onclick="toggleCheckoutForm()" id="checkOutBtn" data-s="staff.checkOutBtn"></button>
+        <button class="btn btn-secondary text-sm" style="padding:5px 12px" onclick="openGroupModal()" id="groupCheckOutBtn" data-s="staff.groupCheckout"></button>
       </div>
     </div>
 
@@ -334,9 +334,9 @@ border-bottom:1px solid var(--border)44; }
         </div>
       </div>
       <div id="coCrewSection" style="margin-top:10px;display:none">
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>
+        <label class="detail-field-label" style="display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>
         <div id="coCrewInputs"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
       </div>
       <!-- Departure port — shown for keelboats only -->
       <div id="coPortRow" class="field" style="display:none">
@@ -352,7 +352,7 @@ border-bottom:1px solid var(--border)44; }
         <button class="btn btn-secondary" onclick="toggleCheckoutForm()" id="cancelCoBtn"></button>
         <button class="btn btn-primary" onclick="submitCheckout()" id="submitCoBtn"></button>
       </div>
-      <div id="coErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+      <div id="coErr" class="msg msg-err mt-8" style="display:none"></div>
     </div>
 
     <div id="activeCheckouts"><div class="empty-note" data-s="lbl.loading"></div></div>
@@ -385,7 +385,7 @@ border-bottom:1px solid var(--border)44; }
   
   <!-- ══ PUNCH CLOCK ══ -->
   <div class="divider-label" data-s="payroll.section"></div>
-  <div id="punchClockCard" style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+  <div id="punchClockCard" class="info-panel mb-16">
     <div id="punchClockWidget">
       <div class="empty-note" data-s="lbl.loading"></div>
     </div>
@@ -393,24 +393,23 @@ border-bottom:1px solid var(--border)44; }
 
   <!-- ══ OPEN MAINTENANCE ══ -->
   <div class="divider-label" data-s="staff.maintenance">OPEN MAINTENANCE</div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-    padding:14px 16px;margin-bottom:16px">
+  <div class="info-panel mb-16">
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)44">
-      <a href="../maintenance/" style="font-size:12px;color:var(--brass);text-decoration:none" id="viewAllMaintLink"></a>
+      <a href="../maintenance/" class="text-md text-brass" style="text-decoration:none" id="viewAllMaintLink"></a>
       
     </div>
   </div>
 
   <!-- ══ FLEET STATUS ══ -->
-  <div class="divider-label" style="display:flex;align-items:center;justify-content:space-between">
+  <div class="divider-label flex-between">
     <span data-s="staff.fleet"></span>
     
   </div>
 
   <!-- Fleet status (bars + expandable boat cards) -->
   <div id="fleetStatus"><div class="empty-note" data-s="lbl.loading"></div></div>
-  <div class="divider-label" style="margin-top:16px"><span data-s="staff.recentCheckins"></span></div>
+  <div class="divider-label mt-16"><span data-s="staff.recentCheckins"></span></div>
     <div id="recentCheckins"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 

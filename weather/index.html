@@ -108,15 +108,15 @@ svg.chart { width:100%; overflow:visible; display:block; }
   <!-- ══ TOP BAR ══ -->
   <div class="top-bar">
     <div class="top-bar-left">
-      <a href="../member/" style="font-size:12px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px">← Member Hub</a>
+      <a href="../member/" class="text-md text-muted flex-center gap-4" style="text-decoration:none;display:inline-flex">← Member Hub</a>
       <div class="loc-row">
         <span class="loc-name" id="locName">Fossvogur</span>
         <span class="loc-coords" id="locCoords">64.1188°N 21.9376°W</span>
       </div>
-      <div style="font-size:10px;color:var(--muted)" id="updatedAt">Loading…</div>
+      <div class="text-xs text-muted" id="updatedAt">Loading…</div>
     </div>
     <div class="top-bar-right">
-      <button class="btn btn-secondary" onclick="fetchAll()" id="refreshBtn" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+      <button class="btn btn-secondary text-sm" onclick="fetchAll()" id="refreshBtn" style="padding:6px 12px">↻ Refresh</button>
     </div>
   </div>
 
@@ -158,7 +158,7 @@ async function fetchAll() {
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
-      `<div class="error-msg">⚠️ ${esc(e.message)}<br><span style="font-size:11px;color:var(--muted)">Check connection and try again.</span></div>`;
+      `<div class="error-msg">⚠️ ${esc(e.message)}<br><span class="text-sm text-muted">Check connection and try again.</span></div>`;
     document.getElementById('updatedAt').textContent = 'Failed';
   } finally {
     document.getElementById('refreshBtn').disabled = false;
@@ -215,7 +215,7 @@ function render(wx, marine, staffStatus) {
 
 <div class="flag-banner" onclick="openWfFlagModal()" style="background:${flag.bg};border-color:${flag.border};color:${flag.color};cursor:pointer" title="Tap for score breakdown">
   <div style="font-size:28px;line-height:1">${flag.icon}</div>
-  <div style="flex:1">
+  <div class="flex-1">
     <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
     ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAG_CONFIG.flags[r.f].color};border-color:${FLAG_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
@@ -225,7 +225,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
 
 <!-- WIND HERO -->
 <div class="wind-hero">
-  <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:12px">WIND · BIRK${c._obs_time ? ' · ' + String(c._obs_time).slice(11,16) + ' UTC' : ''}</div>
+  <div class="text-muted mb-12" style="font-size:9px;letter-spacing:1.2px">WIND · BIRK${c._obs_time ? ' · ' + String(c._obs_time).slice(11,16) + ' UTC' : ''}</div>
   <div class="wind-cols">
     <div class="wind-data">
       <div class="wind-speed-row">
@@ -238,19 +238,19 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
         <span class="sep">·</span>
         <b>${wxMsToKt(ws)}</b> kt
         <span class="sep">·</span>
-        <span style="font-size:13px">${wd != null ? Math.round(wd)+'°' : ''}</span>
+        <span class="text-base">${wd != null ? Math.round(wd)+'°' : ''}</span>
       </div>
     </div>
     <div class="wind-icon-col">
       <div style="font-size:52px;line-height:1">${condIcon}</div>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${condDesc}</div>
+      <div class="text-xs text-muted" style="text-align:center;margin-top:4px">${condDesc}</div>
     </div>
   </div>
   <div class="gust-row">
     <div>
       <div class="gust-lbl">GUSTS</div>
-      <div class="gust-val">${Math.round(wg)}<span style="font-size:13px;color:var(--muted)"> m/s</span>
-        <span style="font-size:15px;color:var(--muted);margin-left:8px">${wxMsToKt(wg)} kt</span>
+      <div class="gust-val">${Math.round(wg)}<span class="text-base text-muted"> m/s</span>
+        <span class="text-muted" style="font-size:15px;margin-left:8px">${wxMsToKt(wg)} kt</span>
       </div>
     </div>
     <div style="width:1px;height:36px;background:var(--border)"></div>

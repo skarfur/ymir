@@ -106,7 +106,7 @@
 
         <!-- Description -->
         <div class="field">
-          <label><span data-s="incident.description"></span> <span style="color:var(--red)">*</span></label>
+          <label><span data-s="incident.description"></span> <span class="required">*</span></label>
           <textarea id="iDesc" rows="4"></textarea>
         </div>
 
@@ -135,8 +135,8 @@
         </div>
 
         <!-- Hand-off -->
-        <div style="background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" data-s="incident.handoffSection"></div>
+        <div class="callout-panel mb-12">
+          <div class="section-label mb-10" data-s="incident.handoffSection"></div>
           <div class="grid2">
             <div class="field">
               <label data-s="incident.handoffTo"></label>
@@ -160,9 +160,9 @@
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:10px">
+        <div class="flex-center gap-10">
           <button class="btn btn-primary" id="fileBtn"></button>
-          <span id="saveMsg" style="font-size:12px;color:var(--muted)"></span>
+          <span id="saveMsg" class="text-md text-muted"></span>
         </div>
       </div>
     </div>
@@ -170,24 +170,24 @@
     <!-- DETAIL MODE -->
     <div id="detailMode" class="hidden">
       <div class="card">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="flex-center gap-10 mb-14">
           <button class="btn-ghost" onclick="setMode('list')" id="backToListBtn"></button>
-          <div id="detailStatus" style="margin-left:auto"></div>
+          <div id="detailStatus" class="ml-auto"></div>
         </div>
         <div id="detailBody"></div>
 
         <!-- Staff notes -->
-        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px" data-s="incident.staffNotes"></div>
+        <div class="section-divider">
+          <div class="section-label mb-8" data-s="incident.staffNotes"></div>
           <div class="notes-list" id="notesList"></div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <input type="text" id="noteInput" style="flex:1">
+          <div class="input-row mt-8">
+            <input type="text" id="noteInput">
             <button class="btn btn-secondary" id="addNoteBtn"></button>
           </div>
         </div>
 
         <!-- Resolve / reopen -->
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <div class="flex-center mt-14 gap-8 flex-wrap">
           <button class="btn btn-primary" id="resolveBtn" onclick="toggleResolve()"></button>
           <button class="btn-ghost" onclick="setMode('list')" id="backBtn2"></button>
         </div>
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderList();
   } catch(e) {
     document.getElementById('incidentsList').innerHTML =
-      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
   // Handle hash → jump to detail
@@ -334,7 +334,7 @@ function renderList() {
     return `<div class="incident-row" onclick="openDetail(incidentById('${i.id}'))">
       <div class="incident-header">
         <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
-        <span style="font-weight:500;flex:1">${esc(i.title||s('incident.title'))}</span>
+        <span class="fw-500 flex-1">${esc(i.title||s('incident.title'))}</span>
         <span class="badge ${i.resolved&&i.resolved!=='false' ? 'badge-green':'badge-yellow'}">${i.resolved&&i.resolved!=='false' ? s('incident.resolved') : s('incident.open')}</span>
       </div>
       <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'…':''}</div>
@@ -368,9 +368,9 @@ function openDetail(i) {
   }).join(', ');
 
   document.getElementById('detailBody').innerHTML = `
-    <div style="margin-bottom:12px">
-      <div style="font-weight:500;font-size:14px;margin-bottom:6px">${esc(i.title||s('incident.title'))}</div>
-      <div style="font-size:11px;color:var(--muted)">${typeLabels}</div>
+    <div class="mb-12">
+      <div class="fw-500 text-lg mb-6">${esc(i.title||s('incident.title'))}</div>
+      <div class="text-sm text-muted">${typeLabels}</div>
     </div>
     ${field(s('lbl.date')+' / '+s('lbl.time'), (i.date||'') + (i.time?' '+i.time:''))}
     ${field(s('lbl.location'), i.locationName)}
@@ -394,9 +394,9 @@ function openDetail(i) {
 
 function field(label, val) {
   if (!val || String(val).trim() === '' || val === '—') return '';
-  return `<div style="margin-bottom:12px">
-    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px">${esc(label)}</div>
-    <div style="font-size:13px;white-space:pre-wrap">${esc(val)}</div>
+  return `<div class="detail-field">
+    <div class="detail-field-label">${esc(label)}</div>
+    <div class="detail-field-value">${esc(val)}</div>
   </div>`;
 }
 
