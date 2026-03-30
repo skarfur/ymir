@@ -202,6 +202,7 @@ let allTrips    = [];
 let filtered    = [];
 let _allMembers = [];   // single source of truth for member list
 let _certDefs   = [];   // single source of truth for cert definitions
+let _verifyReqs = [];   // pending 'verify' handshakes
 let _dataLoaded = false;
 
 // Currently selected member in the cert panel
@@ -230,14 +231,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Init: load trips + members + certDefs in one pass ────────────────────────
 async function init() {
   try {
-    const [tripsRes, membersRes, cfgRes] = await Promise.all([
+    const [tripsRes, membersRes, cfgRes, verifyRes] = await Promise.all([
       apiGet('getTrips', { limit: 200 }),
       apiGet('getMembers'),
       apiGet('getConfig'),
+      apiGet('getVerificationRequests'),
     ]);
 
     _allMembers = membersRes.members || [];
     _certDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+    _verifyReqs = verifyRes.requests || [];
     _dataLoaded = true;
 
     // Populate cert-type dropdown once
@@ -282,8 +285,9 @@ function updateStats() {
   const yr  = new Date().getFullYear() + '';
   const ytd = allTrips.filter(t => (t.date || '').startsWith(yr));
 
+  const verifyTripIds = new Set(_verifyReqs.map(r => r.tripId).filter(Boolean));
   const requested = allTrips.filter(t =>
-    (t.validationRequested === true || t.validationRequested === 'true') &&
+    ((t.validationRequested === true || t.validationRequested === 'true') || verifyTripIds.has(t.id)) &&
     (!t.verified || t.verified === 'false')
   ).length;
   const verified = allTrips.filter(t => t.verified && t.verified !== 'false').length;
@@ -323,10 +327,14 @@ function applyFilters() {
   const to      = document.getElementById('filterTo').value;
   const showAll = document.getElementById('showAllTrips')?.checked ?? false;
 
+  // Build set of trip IDs with pending verify handshakes
+  const verifyTripIds = new Set(_verifyReqs.map(r => r.tripId).filter(Boolean));
+
   filtered = allTrips.filter(t => {
     if (!showAll &&
         t.validationRequested !== true &&
-        t.validationRequested !== 'true') return false;
+        t.validationRequested !== 'true' &&
+        !verifyTripIds.has(t.id)) return false;
     if (name && !(t.memberName || '').toLowerCase().includes(name)) return false;
     if (status === 'pending'  && (t.verified && t.verified !== 'false')) return false;
     if (status === 'verified' && (!t.verified || t.verified === 'false')) return false;
@@ -344,9 +352,11 @@ function renderTrips() {
     el.innerHTML = `<div class="empty-note">${s('logrev.noTrips')}</div>`;
     return;
   }
+  const verifyTripIds = new Set(_verifyReqs.map(r => r.tripId).filter(Boolean));
   el.innerHTML = filtered.map(t => {
     const isVer    = t.verified && t.verified !== 'false';
     const isLinked = t.isLinked === true || t.isLinked === 'true';
+    const hasVerifyReq = verifyTripIds.has(t.id);
     return `<div class="trip-card${isVer ? ' verified' : ''}" id="tc-${esc(t.id)}">
       <div class="trip-head">
         <div>
@@ -365,6 +375,7 @@ function renderTrips() {
             ${isVer ? ('✓ ' + s('logrev.verified')) : s('logrev.pending')}
           </span>
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
+          ${hasVerifyReq && !isVer ? `<span class="badge" style="color:#2e86c1;border-color:#2e86c155;background:#2e86c111">${s('logrev.verifyRequest')}</span>` : ''}
         </div>
       </div>
       ${t.skipperNote ? `<div class="trip-notes text-brass">📋 ${esc(t.skipperNote)}</div>` : ''}
@@ -394,6 +405,13 @@ async function verifyTrip(id) {
   const btn = document.querySelector(`#tc-${id} .btn-primary`);
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
+    // If there's a pending 'verify' handshake for this trip, respond via the protocol
+    const vr = _verifyReqs.find(r => r.tripId === id && r.status === 'pending');
+    if (vr) {
+      await apiPost('respondConfirmation', { id: vr.id, response: 'confirmed', responderName: user.name });
+      _verifyReqs = _verifyReqs.filter(r => r.id !== vr.id);
+    }
+    // Also update staffComment directly (handshake sets verified + verifiedBy)
     await apiPost('saveTrip', { id, verified: true, staffComment: comment, verifiedBy: user.name });
     const t = allTrips.find(x => x.id === id);
     if (t) Object.assign(t, { verified: 'true', staffComment: comment, verifiedBy: user.name });

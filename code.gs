@@ -392,7 +392,9 @@ function route_(action, b) {
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
-    case 'requestValidation': return requestValidation_(b);
+    case 'requestValidation': return requestVerification_(b);
+    case 'requestVerification': return requestVerification_(b);
+    case 'getVerificationRequests': return getVerificationRequests_();
     case 'getConfirmations': return getConfirmations_(b);
     case 'createConfirmation': return createConfirmation_(b);
     case 'respondConfirmation': return respondConfirmation_(b);
@@ -1701,6 +1703,7 @@ function requestValidation_(b) {
 //   'crew_join'      — member wants to join a trip    → skipper must confirm
 //   'helm'           — helm toggle requested          → other party confirms
 //   'student'        — skipper marks crew as student  → crew must confirm
+//   'verify'         — member requests trip verification → any staff confirms
 //
 // Status: 'pending' | 'confirmed' | 'rejected'
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1834,8 +1837,119 @@ function respondConfirmation_(b) {
         });
       }
     }
+    if (type === 'verify') {
+      // Staff confirmed a verification request — mark trip as verified
+      var verifyTripId = row.tripId;
+      if (verifyTripId) {
+        updateRow_('trips', 'id', verifyTripId, {
+          verified: true, verifiedBy: b.responderName || row.toName || '', verifiedAt: ts, updatedAt: ts
+        });
+      }
+    }
+
+    // Auto-verify: when a crew/helm/student handshake is confirmed, check if the
+    // trip's skipper is a keelboat captain and ALL handshakes for that checkout/trip
+    // are now resolved — if so, mark all linked trips as verified automatically.
+    if (type === 'crew_assigned' || type === 'crew_join' || type === 'helm' || type === 'student') {
+      tryAutoVerify_(row, ts);
+    }
   }
   return okJ({ updated: true, status: b.response });
+}
+
+// ── Auto-verify: keelboat-captain trips where all handshakes are resolved ────
+function tryAutoVerify_(conf, ts) {
+  // Find the skipper's trip via tripId or linkedCheckoutId
+  var tripId = conf.tripId, coId = conf.linkedCheckoutId;
+  var skipperTrip = tripId ? findOne_('trips', 'id', tripId) : null;
+  if (!skipperTrip && coId) {
+    var coTrips = readAll_('trips').filter(function(t) {
+      return String(t.linkedCheckoutId) === String(coId) && (t.role === 'skipper' || t.role === 'captain');
+    });
+    skipperTrip = coTrips[0] || null;
+  }
+  if (!skipperTrip) return;
+
+  // Check if the skipper is a keelboat division captain
+  var member = findOne_('members', 'kennitala', String(skipperTrip.kennitala));
+  if (!member) return;
+  var certs = [];
+  try { certs = JSON.parse(member.certifications || '[]'); } catch (e) { return; }
+  var isCaptain = certs.some(function(c) {
+    return c.certId === 'keelboat_crew' && c.sub === 'captain';
+  });
+  if (!isCaptain) return;
+
+  // Check if boat is a keelboat
+  var boatCat = (skipperTrip.boatCategory || '').toLowerCase();
+  if (boatCat !== 'keelboat') return;
+
+  // Check ALL confirmations for this trip/checkout are resolved (none pending)
+  var lookupId = coId || tripId;
+  var allConfs;
+  try { allConfs = readAll_('tripConfirmations'); } catch (e) { return; }
+  var related = allConfs.filter(function(c) {
+    return (coId && String(c.linkedCheckoutId) === String(coId)) ||
+           (tripId && String(c.tripId) === String(tripId));
+  });
+  var hasPending = related.some(function(c) { return c.status === 'pending'; });
+  if (hasPending) return;
+
+  // All resolved — auto-verify skipper trip + all linked crew trips
+  var allTrips = readAll_('trips');
+  var linkedTrips = allTrips.filter(function(t) {
+    return String(t.id) === String(skipperTrip.id) ||
+      (coId && String(t.linkedCheckoutId) === String(coId)) ||
+      (String(t.linkedTripId) === String(skipperTrip.id));
+  });
+  linkedTrips.forEach(function(t) {
+    if (!t.verified || t.verified === 'false') {
+      updateRow_('trips', 'id', t.id, {
+        verified: true, verifiedBy: '(auto)', verifiedAt: ts, updatedAt: ts
+      });
+    }
+  });
+}
+
+// ── Request verification (creates a 'verify' handshake to staff) ────────────
+function requestVerification_(b) {
+  if (!b.tripId) return failJ('tripId required');
+  var trip = findOne_('trips', 'id', b.tripId);
+  if (!trip) return failJ('Trip not found', 404);
+  if (trip.verified && trip.verified !== 'false') return failJ('Already verified');
+
+  // Mark the trip as validation-requested (backward compat)
+  updateRow_('trips', 'id', b.tripId, { validationRequested: true });
+
+  ensureConfirmationCols_();
+  var ts = now_(), id = uid_();
+  insertRow_('tripConfirmations', {
+    id: id, type: 'verify', status: 'pending',
+    fromKennitala: b.fromKennitala || trip.kennitala || '',
+    fromName: b.fromName || trip.memberName || '',
+    toKennitala: 'staff', toName: 'Staff',
+    tripId: b.tripId, linkedCheckoutId: trip.linkedCheckoutId || '',
+    boatId: trip.boatId || '', boatName: trip.boatName || '', boatCategory: trip.boatCategory || '',
+    locationId: trip.locationId || '', locationName: trip.locationName || '',
+    date: trip.date || '', timeOut: trip.timeOut || '', timeIn: trip.timeIn || '',
+    hoursDecimal: trip.hoursDecimal || '',
+    role: trip.role || '', helm: trip.helm || false,
+    crew: trip.crew || 1, skipperNote: trip.skipperNote || '',
+    beaufort: trip.beaufort || '', windDir: trip.windDir || '', wxSnapshot: trip.wxSnapshot || '',
+    rejectComment: '',
+    createdAt: ts, respondedAt: '',
+  });
+  return okJ({ id: id, created: true, requested: true });
+}
+
+// ── Get pending verification requests (for staff) ───────────────────────────
+function getVerificationRequests_() {
+  var all;
+  try { all = readAll_('tripConfirmations'); } catch(e) { all = []; }
+  var pending = all.filter(function(r) {
+    return r.type === 'verify' && r.status === 'pending' && !r.dismissed;
+  });
+  return okJ({ requests: pending });
 }
 
 function dismissConfirmation_(b) {
