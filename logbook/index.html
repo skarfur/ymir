@@ -662,14 +662,31 @@ function tripCard(t){
   const helmLabel = IS?'Stýri':'Helm';
   const guestLabel = IS?'Gestur':'Guest';
   const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+guestLabel+'</span>';
+  const studentLabel = IS?'Nemi':'Student';
+  const studentBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #2e86c155;background:#2e86c111;color:#2e86c1;margin-left:2px">'+studentLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
+  // Check for pending/confirmed student confirmations
+  const studentConfs = _confirmations.outgoing.filter(c =>
+    c.type==='student' && c.status==='confirmed' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+  const pendingStudentConfs = _confirmations.outgoing.filter(c =>
+    c.type==='student' && c.status==='pending' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
+  const pendingStudentIn = _confirmations.incoming.filter(c =>
+    c.type==='student' && c.status==='pending' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  );
   const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
+    const xStudent = (x.student && x.student!=='false') || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
     const xMember = allMembers.find(m=>String(m.kennitala)===String(x.kennitala));
     const isGuest = xMember && xMember.role==='guest';
     let badges = '';
     if (xHelm) badges += ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
+    if (xStudent) badges += studentBadge;
     if (isGuest) badges += guestBadge;
     return name + badges;
   }).join(', ') : esc(t.crew||1);
@@ -796,6 +813,7 @@ function tripCard(t){
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?(IS?'Skipari':'Skipper'):(IS?'Áhöfn':'Crew')}</span>
           ${showHelm?`<span class="trip-badge badge-helm">${IS?'Stýri':'Helm'}</span>`:''}
+          ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${IS?'Nemi':'Student'}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
@@ -817,11 +835,11 @@ function tripCard(t){
           const toplineTrip =
               (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Brottfarartími':'Departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
             + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Komutími':'Returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'')
-            + portRow;
+            + portRow + crewNamesRow + helmRow;
           const detailTrip =
               (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Siglingasvæði':'Sailing area')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
             + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+(IS?'Tímalengd':'Duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
-            + distRow + skipperNameRow + crewCountRow + crewNamesRow + helmRow;
+            + distRow + skipperNameRow + crewCountRow;
           return (hasDetailTrip
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+(IS?'Upplýsingar um ferð':'Trip Details')+' <span class="exp-chevron">▾</span></div>'
               + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
@@ -1809,6 +1827,7 @@ function _confDesc(c){
   if(c.type==='crew_assigned') return s('member.crewAssigned');
   if(c.type==='crew_join') return s('member.crewJoin');
   if(c.type==='helm') return s('member.helmReq');
+  if(c.type==='student') return IS?'Nemamerking':'Student badge';
   return c.type;
 }
 
@@ -1831,49 +1850,75 @@ function renderConfirmations(){
   dismissAllEl = document.getElementById('confDismissAll');
   if (dismissAllEl) dismissAllEl.innerHTML = dismissAllBtn;
 
+  // Group incoming confirmations by trip (linkedCheckoutId or tripId)
   var incoming=_confirmations.incoming.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!incoming.length){
     inEl.innerHTML='<div class="empty-note">'+s('member.noIncoming')+'</div>';
   }else{
-    inEl.innerHTML=incoming.map(function(c){
-      var isPending=c.status==='pending';
-      return '<div class="conf-card">'+
-        '<div class="conf-line">'+
-          '<span class="conf-name">'+esc(c.fromName||'?')+'</span>'+
-          '<span class="conf-type">'+_confDesc(c)+'</span>'+
-          '<span class="conf-boat-info">'+esc(c.boatName||'')+'</span>'+
-          '<span class="conf-date-info">'+esc(c.date||'')+(c.timeOut?' '+esc(c.timeOut):'')+'</span>'+
-        '</div>'+
-        (isPending?
-          '<div class="conf-actions">'+
-            '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')">'+s('member.confirmBtn')+'</button>'+
-            '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')">'+s('member.rejectBtn')+'</button>'+
-          '</div>':
-          '<div style="margin-top:4px;display:flex;align-items:center;gap:6px"><span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
-          (c.rejectComment?' <span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
-          '</div>'
-        )+'</div>';
+    var inGroups={}, inOrder=[];
+    incoming.forEach(function(c){
+      var key=c.linkedCheckoutId||c.tripId||c.id;
+      if(!inGroups[key]){inGroups[key]=[];inOrder.push(key);}
+      inGroups[key].push(c);
+    });
+    inEl.innerHTML=inOrder.map(function(key){
+      var group=inGroups[key];
+      var first=group[0];
+      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
+        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+        '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
+        '<span class="conf-name" style="font-size:10px;color:var(--muted)">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
+      '</div>';
+      var items=group.map(function(c){
+        var isPending=c.status==='pending';
+        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
+          '<span class="conf-type" style="flex-shrink:0">'+_confDesc(c)+'</span>'+
+          (isPending?
+            '<div style="display:flex;gap:4px;margin-left:auto">'+
+              '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
+              '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
+            '</div>':
+            '<div style="display:flex;align-items:center;gap:4px;margin-left:auto">'+
+              '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+              '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
+              (c.rejectComment?' <span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+            '</div>'
+          )+
+        '</div>';
+      }).join('');
+      return '<div class="conf-card">'+header+items+'</div>';
     }).join('');
   }
 
+  // Group outgoing confirmations by trip
   var outgoing=_confirmations.outgoing.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!outgoing.length){
     outEl.innerHTML='<div class="empty-note">'+s('member.noOutgoing')+'</div>';
   }else{
-    outEl.innerHTML=outgoing.map(function(c){
-      var isPending=c.status==='pending';
-      return '<div class="conf-card">'+
-        '<div class="conf-line">'+
-          '<span class="conf-name">'+esc(c.toName||'?')+'</span>'+
+    var outGroups={}, outOrder=[];
+    outgoing.forEach(function(c){
+      var key=c.linkedCheckoutId||c.tripId||c.id;
+      if(!outGroups[key]){outGroups[key]=[];outOrder.push(key);}
+      outGroups[key].push(c);
+    });
+    outEl.innerHTML=outOrder.map(function(key){
+      var group=outGroups[key];
+      var first=group[0];
+      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
+        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+        '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
+      '</div>';
+      var items=group.map(function(c){
+        var isPending=c.status==='pending';
+        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
+          '<span class="conf-name" style="font-weight:500;font-size:11px">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
-          '<span class="conf-boat-info">'+esc(c.boatName||'')+'</span>'+
-          '<span class="conf-date-info">'+esc(c.date||'')+(c.timeOut?' '+esc(c.timeOut):'')+'</span>'+
-          '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 8px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
-        '</div>'+
-        (c.rejectComment?'<div style="font-size:10px;color:var(--muted);margin-top:2px;padding-left:2px">'+esc(c.rejectComment)+'</div>':'')+
+          '<span class="conf-status '+c.status+'" style="margin-left:auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
+          (c.rejectComment?'<span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
         '</div>';
+      }).join('');
+      return '<div class="conf-card">'+header+items+'</div>';
     }).join('');
   }
 }
