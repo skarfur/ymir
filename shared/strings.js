@@ -511,6 +511,7 @@ const STRINGS = {
   'logrev.certModeByType':        { EN:'By credential',                                             IS:'Eftir skírteini'                                           },
   'logrev.certSelectType':        { EN:'— Select credential —',                                     IS:'— Veldu skírteini —'                                       },
   'logrev.certNoMatches':         { EN:'No members found with this credential.',                     IS:'Engir félagar fundust með þetta skírteini.'                },
+  'logrev.verifyRequest':         { EN:'VERIFICATION REQUEST',                                      IS:'STAÐFESTINGARBEIÐNI'                                       },
   
     // ── Admin panel ────────────────────────────────────────────────────────────
   'admin.tabMembers':      { EN:'Members',                 IS:'Félagar' },

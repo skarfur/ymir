@@ -909,7 +909,7 @@ function tripCard(t){
           ${showHelm?`<span class="trip-badge badge-helm">${IS?'Stýri':'Helm'}</span>`:''}
           ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${IS?'Nemi':'Student'}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
-          ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
+          ${(t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ '+(IS?'Staðfesting í bið':'Verification pending')+'</span>' : ''}
           <span>${esc(dur)}</span>
           ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
           ${windLine?'<span class="flex-center" style="gap:3px">'+windLine+'</span>':''}
@@ -1935,12 +1935,16 @@ async function reload(){
 
 async function requestTripValidation(id) {
   try {
-    await apiPost('saveTrip', { id, validationRequested: true });
+    await apiPost('requestVerification', {
+      tripId: id,
+      fromKennitala: user.kennitala,
+      fromName: user.name
+    });
     // Update local trip data
     const t = myTrips.find(x => x.id === id);
     if (t) t.validationRequested = true;
     applyFilter();
-    showToast(IS ? 'Óskað eftir staðfestingu' : 'Validation requested');
+    showToast(IS ? 'Óskað eftir staðfestingu' : 'Verification requested');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1983,6 +1987,7 @@ function _confDesc(c){
   if(c.type==='crew_join') return s('member.crewJoin');
   if(c.type==='helm') return s('member.helmReq');
   if(c.type==='student') return IS?'Nemamerking':'Student badge';
+  if(c.type==='verify') return IS?'Staðfesting ferðar':'Trip verification';
   return c.type;
 }
 
