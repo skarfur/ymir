@@ -1661,6 +1661,7 @@ function requestValidation_(b) {
 //   'crew_assigned'  — skipper assigned a crew member → crew must confirm
 //   'crew_join'      — member wants to join a trip    → skipper must confirm
 //   'helm'           — helm toggle requested          → other party confirms
+//   'student'        — skipper marks crew as student  → crew must confirm
 //
 // Status: 'pending' | 'confirmed' | 'rejected'
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1776,6 +1777,20 @@ function respondConfirmation_(b) {
       // Set helm on the specified trip
       if (row.tripId) {
         updateRow_('trips', 'id', row.tripId, { helm: true, updatedAt: ts });
+      }
+    }
+    if (type === 'student') {
+      // Set student flag on the crew member's trip for this checkout
+      var stuKt = row.toKennitala;
+      var coId = row.linkedCheckoutId;
+      if (stuKt && coId) {
+        addColIfMissing_('trips', 'student');
+        var stuTrips = readAll_('trips').filter(function(t) {
+          return String(t.kennitala) === String(stuKt) && String(t.linkedCheckoutId) === String(coId);
+        });
+        stuTrips.forEach(function(t) {
+          updateRow_('trips', 'id', t.id, { student: true, updatedAt: ts });
+        });
       }
     }
   }

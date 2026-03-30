@@ -447,8 +447,8 @@ function advanceToLaunchChecklist() {
     tout: document.getElementById('launchTimeOut')?.value||'',
     ret:  document.getElementById('launchReturnBy')?.value||'',
     crew: window._launchCrewCount||1,
-    crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input'))
-      .map(i=>({name:i.value.trim(),kennitala:i.dataset.kennitala||''}))
+    crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
+      .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',student:cb?cb.checked:false};})
       .filter(c=>c.name),
     departurePort: (document.getElementById('launchDeparturePort')?.value||'').trim(),
   };
@@ -503,15 +503,24 @@ function renderCrewInputs() {
   wrap.innerHTML='';
   for(let i=0;i<n;i++){
     const row=document.createElement('div'); row.style.cssText='position:relative;margin-bottom:6px';
+    const inputRow=document.createElement('div'); inputRow.style.cssText='display:flex;align-items:center;gap:6px';
     const inp=document.createElement('input');
     inp.type='text'; inp.placeholder='Crew member '+(i+1)+' name…'; inp.value=existing[i]||'';
     inp.dataset.crewIdx=i;
-    inp.style.cssText='width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    inp.style.cssText='flex:1;min-width:0;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    const stuLabel=document.createElement('label');
+    stuLabel.style.cssText='display:flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);white-space:nowrap;cursor:pointer;flex-shrink:0';
+    const stuCb=document.createElement('input');
+    stuCb.type='checkbox'; stuCb.className='crew-student-toggle'; stuCb.dataset.crewIdx=i;
+    stuCb.style.cssText='width:13px;height:13px;accent-color:var(--brass)';
+    stuLabel.appendChild(stuCb);
+    stuLabel.appendChild(document.createTextNode(getLang()==='IS'?'Nemi':'Student'));
     const drop=document.createElement('div'); drop.id='crewDrop'+i;
     drop.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
     inp.addEventListener('input',function(){searchCrewMembers(this,drop);});
     inp.addEventListener('blur', function(){setTimeout(()=>{drop.style.display='none';},200);});
-    row.appendChild(inp); row.appendChild(drop); wrap.appendChild(row);
+    inputRow.appendChild(inp); inputRow.appendChild(stuLabel);
+    row.appendChild(inputRow); row.appendChild(drop); wrap.appendChild(row);
   }
 }
 function searchCrewMembers(inp,drop) {
@@ -584,6 +593,20 @@ async function submitLaunch() {
           role:'crew', wxSnapshot:snap,
         }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
       }));
+      // Create student confirmations for crew marked as student
+      var studentCrew=crewNames.filter(function(cn){return cn.student&&cn.kennitala;});
+      if(studentCrew.length){
+        await Promise.all(studentCrew.map(function(cn){
+          return apiPost('createConfirmation',{
+            type:'student',
+            fromKennitala:user.kennitala, fromName:user.name,
+            toKennitala:cn.kennitala, toName:cn.name,
+            linkedCheckoutId:_coId,
+            boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
+            date:new Date().toISOString().slice(0,10), timeOut:tout,
+          }).catch(function(e2){console.warn('student confirmation:',cn,e2.message);});
+        }));
+      }
     }
     window._launchFormValues=null;
     closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
@@ -777,7 +800,7 @@ function renderLandingChecklist() {
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+(IS?'Tilkynna atvik':'Report incident')+'</button>'+
     '</div>'+
     '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
-    ((returnCo.crew||1)>1?'<div id="helmSection" style="margin-bottom:14px">'+
+    (((returnCo.crew||1)>1&&/^(keelboat|dinghy)$/.test((returnCo.boatCategory||'').toLowerCase()))?'<div id="helmSection" style="margin-bottom:14px">'+
       '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STÝRI':'HELM')+'</div>'+
       '<div id="helmToggles">'+
         '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
@@ -786,6 +809,10 @@ function renderLandingChecklist() {
         '</label>'+
         '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
       '</div>'+
+    '</div>':'')+
+    ((returnCo.crew||1)>1?'<div id="studentSection" style="margin-bottom:14px">'+
+      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'NEMAR':'STUDENTS')+'</div>'+
+      '<div id="studentToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
     '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
@@ -807,18 +834,31 @@ function renderLandingChecklist() {
 
 function _renderHelmSection(){
   var el=document.getElementById('helmCrewToggles');
-  if(!el) return;
   var IS=getLang()==='IS';
   var entries=window._retCrewTrips||[];
-  if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';return;}
   var mems=window._launchMembers||[];
-  el.innerHTML=entries.map(function(t){
-    var mem=mems.find(function(m){return String(m.kennitala)===String(t.kennitala);});
-    var gTag=(mem&&mem.role==='guest')?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+(IS?'Gestur':'Guest')+'</span>':'';
-    return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-      '<input type="checkbox" class="helm-toggle" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
-      '<span>'+esc(t.memberName||'?')+gTag+'</span></label>';
-  }).join('');
+  if(el){
+    if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
+    else{el.innerHTML=entries.map(function(t){
+      var mem=mems.find(function(m){return String(m.kennitala)===String(t.kennitala);});
+      var gTag=(mem&&mem.role==='guest')?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+(IS?'Gestur':'Guest')+'</span>':'';
+      return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+        '<input type="checkbox" class="helm-toggle" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+        '<span>'+esc(t.memberName||'?')+gTag+'</span></label>';
+    }).join('');}
+  }
+  // Also render student toggles
+  var stuEl=document.getElementById('studentToggles');
+  if(stuEl){
+    if(!entries.length){stuEl.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
+    else{stuEl.innerHTML=entries.map(function(t){
+      var mem=mems.find(function(m){return String(m.kennitala)===String(t.kennitala);});
+      var gTag=(mem&&mem.role==='guest')?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+(IS?'Gestur':'Guest')+'</span>':'';
+      return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
+        '<input type="checkbox" class="student-toggle" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+        '<span>'+esc(t.memberName||'?')+gTag+'</span></label>';
+    }).join('');}
+  }
 }
 
 function _handleRetTrack(input){
@@ -999,6 +1039,21 @@ async function confirmCheckIn(coId) {
       }).catch(function(){}));
     });
     if(helmRequests.length) await Promise.all(helmRequests);
+    // Create student confirmation requests for crew members
+    var studentRequests=[];
+    document.querySelectorAll('.student-toggle').forEach(function(cb){
+      if(!cb.checked) return;
+      studentRequests.push(apiPost('createConfirmation',{
+        type:'student',
+        fromKennitala:user.kennitala, fromName:user.name,
+        toKennitala:cb.dataset.stuKt||'',
+        toName:cb.dataset.stuName||'',
+        linkedCheckoutId:coId,
+        boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
+        date:today,
+      }).catch(function(){}));
+    });
+    if(studentRequests.length) await Promise.all(studentRequests);
     window._retCrewTrips=[]; window._retCrewTripsFetched=false;
     checkouts=checkouts.filter(function(c){return c.id!==coId;});
     closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
