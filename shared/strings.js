@@ -801,6 +801,27 @@ const STRINGS = {
   'fleet.outTime':           { EN:'Out {t}',                               IS:'Út {t}' },
   'fleet.checkIn':           { EN:'Check In',                              IS:'Skrá inn' },
   'fleet.delete':            { EN:'Delete',                                IS:'Eyða' },
+  'fleet.badgeChartered':    { EN:'CHARTERED',                             IS:'LEIGÐUR' },
+  'fleet.badgePrivate':      { EN:'PRIVATE',                               IS:'EINKABÁTUR' },
+  'fleet.charteredTo':       { EN:'Chartered to {name}',                   IS:'Leigður til {name}' },
+  'fleet.charteredUntil':    { EN:'until {date}',                          IS:'til {date}' },
+  'fleet.ownedBy':           { EN:'Owner: {name}',                         IS:'Eigandi: {name}' },
+  'fleet.charterOverride':   { EN:'This boat is chartered to {name} until {date}. Override and check out anyway?',
+                               IS:'Þessi bátur er leigður til {name} til {date}. Viltu taka hann út samt?' },
+
+  // ── Boat ownership & charter ──────────────────────────────────────────────
+  'boat.ownership':          { EN:'Ownership',                             IS:'Eignarhald' },
+  'boat.ownershipClub':      { EN:'Club boat',                             IS:'Klúbbsbátur' },
+  'boat.ownershipPrivate':   { EN:'Private boat',                          IS:'Einkabátur' },
+  'boat.owner':              { EN:'Owner',                                 IS:'Eigandi' },
+  'boat.charter':            { EN:'Charter',                               IS:'Leiga' },
+  'boat.charterMember':      { EN:'Chartered to',                          IS:'Leigður til' },
+  'boat.charterStart':       { EN:'Start date',                            IS:'Upphafsdagur' },
+  'boat.charterEnd':         { EN:'End date',                              IS:'Lokadagur' },
+  'boat.setCharter':         { EN:'Set Charter',                           IS:'Skrá leigu' },
+  'boat.removeCharter':      { EN:'Remove Charter',                        IS:'Fjarlægja leigu' },
+  'boat.charterSaved':       { EN:'Charter saved',                         IS:'Leiga vistuð' },
+  'boat.charterRemoved':     { EN:'Charter removed',                       IS:'Leiga fjarlægð' },
 
   // ── Public dashboard ──────────────────────────────────────────────────────
   'pub.dash.title':          { EN:'Club Dashboard',                        IS:'Yfirlit klúbbs' },

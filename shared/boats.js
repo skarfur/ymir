@@ -82,6 +82,22 @@ function boatEmoji(cat) {
   return BOAT_EMOJI[(cat||"").toLowerCase()] || "⛵";
 }
 
+// ── Ownership / charter helpers ───────────────────────────────────────────────
+
+/** Returns true if the boat has an active charter (today falls within start–end). */
+function isChartered(boat) {
+  if (!boat || !boat.charter) return false;
+  const c = boat.charter;
+  if (!c.startDate || !c.endDate) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return today >= c.startDate && today <= c.endDate;
+}
+
+/** Returns true if the boat is privately owned. */
+function isPrivate(boat) {
+  return boat && boat.ownership === 'private';
+}
+
 function boatCatBadge(cat) {
   const key = (cat||"other").toLowerCase();
   const col = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
@@ -154,6 +170,21 @@ function renderBoatCard(boat, opts) {
   const locLine = (status==="avail" && boat.location)
     ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${_besc(boat.location)}</div>` : "";
 
+  // Ownership / charter info
+  const chartered = isChartered(boat);
+  const priv      = isPrivate(boat);
+  let ownerLine = "";
+  if (priv && boat.ownerName) {
+    ownerLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">${_besc(s("fleet.ownedBy",{name:boat.ownerName}))}</div>`;
+  }
+  let charterLine = "";
+  if (chartered) {
+    const ch = boat.charter;
+    charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
+                + `${_besc(s("fleet.charteredTo",{name:ch.memberName}))} ${_besc(s("fleet.charteredUntil",{date:ch.endDate}))}`
+                + `</div>`;
+  }
+
   // Use registry-based onclick to avoid JSON-in-attribute encoding problems
   const boatId = _besc(boat.id || "");
   const clickAttr = opts.onClickAction
@@ -162,13 +193,24 @@ function renderBoatCard(boat, opts) {
     ? ` style="cursor:pointer" onclick="${opts.onClick}"`
     : "";
 
-  return `<div class="bc-card bc-${status}"${clickAttr}>`
+  // Extra badge for chartered / private boats
+  let ownerBadge = "";
+  if (chartered) {
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
+  } else if (priv) {
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--muted);border-color:var(--border);background:var(--surface);margin-left:4px">${_besc(s("fleet.badgePrivate"))}</span>`;
+  }
+
+  // Muted card style for chartered boats visible to non-staff
+  const charteredMuted = (chartered && !opts.staffView) ? "opacity:.55;pointer-events:none;" : "";
+
+  return `<div class="bc-card bc-${status}"${clickAttr} style="${charteredMuted}">`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
        + `<div style="font-size:14px;font-weight:500;color:var(--text)">${emoji} ${name}</div>`
-       + bdgHtml
+       + `<div style="display:flex;gap:4px;flex-shrink:0">${ownerBadge}${bdgHtml}</div>`
        + `</div>`
        + boatCatBadge(cat)
-       + locLine + infoLine + oosLine
+       + locLine + infoLine + oosLine + ownerLine + charterLine
        + (opts.extraHtml||"")
        + `</div>`;
 }
@@ -334,7 +376,8 @@ function renderFleetStatus(containerId, boats, active, opts) {
     const col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
     const emoji    = boatEmoji(key);
     const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id));
+    const isStaff  = !!opts.staffView;
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaff || !isChartered(b)));
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const catId    = containerId + '-fcat-' + encodeURIComponent(key);
 
@@ -342,10 +385,10 @@ function renderFleetStatus(containerId, boats, active, opts) {
       const co  = activeByBoat.get(b.id);
       const oos = boolVal(b.oos);
       const status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
-      const clickOpts = (status === 'avail' && onAvail)
+      const clickOpts = (status === 'avail' && onAvail && (isStaff || !isChartered(b)))
         ? { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) }
         : {};
-      return renderBoatCard(b, Object.assign({ status, checkoutData: co }, clickOpts));
+      return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaff }, clickOpts));
     }).join('');
 
     return `<div class="fleet-status-block">

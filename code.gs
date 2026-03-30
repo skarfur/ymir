@@ -382,6 +382,8 @@ function route_(action, b) {
     case 'saveGroupCheckout': return saveGroupCheckout_(b);
     case 'groupCheckIn': return groupCheckIn_(b);
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
+    case 'saveCharter': return saveCharter_(b);
+    case 'removeCharter': return removeCharter_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
@@ -1508,6 +1510,41 @@ function deleteCheckout_(id) {
   if (!id) return failJ('id required');
   const deleted = deleteRow_('checkouts', 'id', id);
   cDel_('checkouts'); return okJ({ deleted });
+}
+
+// ── Charter management ───────────────────────────────────────────────────────
+
+function saveCharter_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.memberKennitala || !b.memberName) return failJ('member required');
+  if (!b.startDate || !b.endDate) return failJ('startDate and endDate required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  boats[idx].charter = {
+    memberKennitala: b.memberKennitala,
+    memberName: b.memberName,
+    startDate: b.startDate,
+    endDate: b.endDate,
+  };
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+function removeCharter_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  delete boats[idx].charter;
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
 }
 
 
