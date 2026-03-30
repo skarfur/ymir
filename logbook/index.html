@@ -214,24 +214,24 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
   </div>
 
   <!-- Share logbook -->
-  <div id="shareBar" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
-    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0" onclick="openLogModal()">+ Manually log a trip</button>
-    <button class="btn-secondary" style="width:auto;padding:6px 14px;font-size:11px;flex-shrink:0;position:relative" onclick="openConfirmationsModal()"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
+  <div id="shareBar" class="info-panel flex-center flex-wrap gap-10 mb-12" style="padding:10px 14px">
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" onclick="openLogModal()">+ Manually log a trip</button>
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0;position:relative" onclick="openConfirmationsModal()"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
     <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
-      <div id="shareCatChecks" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-        <label style="font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0">
-          <input type="checkbox" id="sharePhotos" checked style="width:14px;height:14px;accent-color:var(--brass)">
+      <div id="shareCatChecks" class="flex-center flex-wrap gap-8 mb-8"></div>
+      <div class="flex-center flex-wrap mb-8" style="gap:14px">
+        <label class="flex-center text-sm gap-4" style="text-transform:none;letter-spacing:0;margin:0">
+          <input type="checkbox" id="sharePhotos" checked class="accent-checkbox" style="width:14px;height:14px">
           <span data-s="logbook.sharePhotos"></span>
         </label>
-        <label style="font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0">
-          <input type="checkbox" id="shareTracks" checked style="width:14px;height:14px;accent-color:var(--brass)">
+        <label class="flex-center text-sm gap-4" style="text-transform:none;letter-spacing:0;margin:0">
+          <input type="checkbox" id="shareTracks" checked class="accent-checkbox" style="width:14px;height:14px">
           <span data-s="logbook.shareTracks"></span>
         </label>
       </div>
-      <button class="btn-primary" style="width:auto;padding:7px 16px;font-size:11px" onclick="generateAndCopyShareLink()" data-s="logbook.shareCopy"></button>
-      <div id="shareActiveTokens" style="margin-top:8px"></div>
+      <button class="btn-primary text-sm" style="width:auto;padding:7px 16px" onclick="generateAndCopyShareLink()" data-s="logbook.shareCopy"></button>
+      <div id="shareActiveTokens" class="mt-8"></div>
     </div>
   </div>
 
@@ -290,9 +290,9 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <span id="confirmationsTitle"></span>
       <button class="modal-close" onclick="closeConfModal()">&#10005;</button>
     </div>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px" data-s="member.incoming"></div>
+    <div class="section-label mb-8" style="letter-spacing:1.5px" data-s="member.incoming"></div>
     <div id="incomingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:14px 0 8px" data-s="member.outgoing"></div>
+    <div class="section-label mt-14 mb-8" style="letter-spacing:1.5px" data-s="member.outgoing"></div>
     <div id="outgoingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 </div>
@@ -307,25 +307,25 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 
     <!-- Step 1: enter manually or join a recent trip -->
     <div id="logStep1">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Enter a trip manually, or join a recent club trip as crew. You can add notes, photos, and a GPS track to any log entry.</p>
+      <p class="text-sm text-muted mb-12">Enter a trip manually, or join a recent club trip as crew. You can add notes, photos, and a GPS track to any log entry.</p>
       <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
 
-      <div style="margin:12px 0;font-size:10px;color:var(--muted);text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
+      <div class="text-xs text-muted uppercase" style="margin:12px 0;text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
       <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
 
       <!-- Confirmation request form when a club trip is selected -->
       <div id="joinExtras" style="display:none;margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border-l);border-radius:8px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Request to join this trip</div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:12px">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
-        <div id="jErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+        <div class="section-label mb-6" style="letter-spacing:.8px">Request to join this trip</div>
+        <p class="text-sm text-muted mb-12">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
+        <div id="jErr" class="text-sm text-red mb-8" style="display:none"></div>
         <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Request to join</button>
       </div>
     </div>
 
     <!-- Step 2: manual entry form -->
     <div id="logStep2" style="display:none">
-      <button onclick="showStep1()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-bottom:12px;padding:0">← Back</button>
+      <button class="text-sm text-muted mb-12" onclick="showStep1()" style="background:none;border:none;cursor:pointer;padding:0">← Back</button>
       <div class="form-row">
         <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="form-field"><label>Role</label>
@@ -353,19 +353,19 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       </div>
       <div class="form-row">
         <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" oninput="onCrewChange()"></div>
-        <div class="form-field"><label>Distance (nm) <span style="font-size:9px;color:var(--muted)">optional</span></label>
+        <div class="form-field"><label>Distance (nm) <span class="text-muted" style="font-size:9px">optional</span></label>
           <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       </div>
       <!-- Crew member inputs: shown when crew > 1 -->
-      <div id="mCrewSection" style="display:none;margin-bottom:12px">
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(search by name)</span></label>
+      <div id="mCrewSection" class="mb-12" style="display:none">
+        <label style="font-size:9px;letter-spacing:.8px">Crew members <span style="font-weight:400;opacity:.6">(search by name)</span></label>
         <div id="mCrewInputs"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
       </div>
 
       <!-- Port section: open/prominent for keelboats, collapsed for others -->
-      <details id="portDetails" style="margin-bottom:12px">
-        <summary id="portSummary" style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <details id="portDetails" class="mb-12">
+        <summary id="portSummary" class="section-label flex-center gap-6 mb-8" style="cursor:pointer;list-style:none">
           <span>⚓️</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
         </summary>
         <div class="form-row" style="margin-top:6px">
@@ -381,12 +381,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           </div>
         </div>
         <datalist id="portsList"></datalist>
-        <div id="addPortHint" style="display:none;font-size:10px;color:var(--brass);cursor:pointer;margin-top:4px"
+        <div id="addPortHint" class="text-xs text-brass" style="display:none;cursor:pointer;margin-top:4px"
           onclick="addNewPort()">+ Add "<span id="addPortName"></span>" to ports list</div>
       </details>
 
       <!-- Weather -->
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER (OPTIONAL)</div>
+      <div class="section-label" style="margin:12px 0 8px">WEATHER (OPTIONAL)</div>
       <div class="wx-row">
         <div class="form-field"><label>Wind (m/s)</label><input type="number" id="mWindMs" min="0" step="0.1" placeholder="e.g. 8"></div>
         <div class="form-field"><label>Direction</label>
@@ -398,11 +398,11 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         </div>
         <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
       </div>
-      <details style="margin-bottom:8px">
-        <summary style="font-size:10px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px">
+      <details class="mb-8">
+        <summary class="text-xs text-muted flex-center gap-4" style="cursor:pointer;list-style:none">
           <span class="exp-chevron" style="font-size:8px">▾</span> More weather details
         </summary>
-        <div class="wx-row" style="margin-top:8px">
+        <div class="wx-row mt-8">
           <div class="form-field"><label>Gusts (m/s)</label><input type="number" id="mWindGust" min="0" step="0.1" placeholder=""></div>
           <div class="form-field"><label>Air temp (°C)</label><input type="number" id="mAirTemp" step="0.5" placeholder=""></div>
           <div class="form-field"><label>Feels like (°C)</label><input type="number" id="mFeelsLike" step="0.5" placeholder=""></div>
@@ -424,24 +424,24 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       </details>
       <!-- GPS Track upload -->
       <div class="form-field">
-        <label>GPS Track — GPX / KML / KMZ <span style="font-size:9px;color:var(--muted)">optional</span></label>
+        <label>GPS Track — GPX / KML / KMZ <span class="text-muted" style="font-size:9px">optional</span></label>
         <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" onchange="handleTrackFile(this)"
-          style="font-size:11px;color:var(--text)">
-        <div id="mTrackStatus" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+          class="text-sm" style="color:var(--text)">
+        <div id="mTrackStatus" class="text-sm text-muted" style="margin-top:4px"></div>
       </div>
       <!-- Photo upload -->
       <div class="form-field">
-        <label>Photos <span style="font-size:9px;color:var(--muted)">optional</span></label>
+        <label>Photos <span class="text-muted" style="font-size:9px">optional</span></label>
         <input type="file" id="mPhotoFiles" accept="image/*" multiple onchange="handlePhotoFiles(this)"
-          style="font-size:11px;color:var(--text)">
-        <div id="mPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+          class="text-sm" style="color:var(--text)">
+        <div id="mPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
         <div class="photo-meta-row" style="margin-top:6px">
           <label><input type="checkbox" id="mPhotoShared" checked> Share with crew</label>
           <label><input type="checkbox" id="mPhotoClubUse"> Club may use</label>
         </div>
       </div>
       <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
-      <div id="mErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+      <div id="mErr" class="text-sm text-red mb-8" style="display:none"></div>
       <button class="btn-primary" id="mSubmitBtn" onclick="submitManual()">Save to logbook</button>
     </div>
   </div>
@@ -570,7 +570,7 @@ function renderStats(){
       const col=BOAT_CAT_COLORS[(cat||'').toLowerCase()]||BOAT_CAT_COLORS.other;
       const pct=max?Math.round(h/max*100):0;
       return `<div class="cat-hour-row">
-        <span style="font-size:14px;width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
+        <span class="text-lg" style="width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
         <span style="min-width:80px;color:var(--text)">${esc(_boatCatLabel(cat))}</span>
         <div class="cat-hour-bar-wrap"><div class="cat-hour-bar" style="width:${pct}%;background:${col.color}"></div></div>
         <span class="cat-hour-val">${h.toFixed(0)}h</span>
@@ -598,7 +598,7 @@ async function renderCerts(){
     }
     el.innerHTML=html;
   }catch(e){
-    el.innerHTML=`<div class="empty-note" style="color:var(--red)">${s('cert.loadError')}</div>`;
+    el.innerHTML=`<div class="empty-note text-red">${s('cert.loadError')}</div>`;
   }
 }
 
@@ -641,7 +641,7 @@ function tripCard(t){
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
   const _expWind = formatWindValue(wx?.ws, t.beaufort, _windUnit);
-  const _expExtra = wx?.ws!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(wx.ws)) : (_windUnit==='bft' && t.beaufort ? ' <small style="color:var(--muted)">'+bftLabel(t.beaufort)+'</small>' : '');
+  const _expExtra = wx?.ws!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(wx.ws)) : (_windUnit==='bft' && t.beaufort ? ' <small class="text-muted">'+bftLabel(t.beaufort)+'</small>' : '');
   const eWs = _expWind ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${esc(_expWind)}${_expExtra}</span></div>` : '';
   const eDir  = (wx?.dir||t.windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx?.dir||t.windDir)} ${esc(wx?.dir||t.windDir)}</span></div>` : '';
   const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${_windUnit==='bft'?'Force '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
@@ -700,6 +700,7 @@ function tripCard(t){
   const studentLabel = IS?'Nemi':'Student';
   const studentBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #2e86c155;background:#2e86c111;color:#2e86c1;margin-left:2px">'+studentLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${IS?'í bið':'pending'}</span>`;
+
   // Check for pending/confirmed student confirmations
   const studentConfs = _confirmations.outgoing.filter(c =>
     c.type==='student' && c.status==='confirmed' &&
@@ -730,7 +731,7 @@ function tripCard(t){
     const xMember = allMembers.find(m=>String(m.kennitala)===String(x.kennitala));
     const isGuest = xMember && xMember.role==='guest';
     let badges = '';
-    if (xHelm) badges += ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
+    if (xHelm) badges += ' <span class="text-brass" style="font-size:9px;border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
     if (xStudent) badges += studentBadge;
     if (isGuest) badges += guestBadge;
     return name + badges;
@@ -743,7 +744,7 @@ function tripCard(t){
     const isHelm = !!cn.helm;
     const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
     let badges = '';
-    if (isHelm) badges += ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
+    if (isHelm) badges += ' <span class="text-brass" style="font-size:9px;border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
     if (isStudent) badges += studentBadge;
     if (isGuest) badges += guestBadge;
     return name + badges;
@@ -780,13 +781,13 @@ function tripCard(t){
       .concat(pendingHelmIn.map(c => esc(c.fromName||'?')));
     if (helmNames.length || pendingHelmNames.length) {
       const confirmedPills = helmNames.map(n =>
-        `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--brass);border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span style="font-size:10px">⎈</span> ${n}</span>`
+        `<span class="text-sm text-brass flex-center gap-4" style="display:inline-flex;border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span class="text-xs">⎈</span> ${n}</span>`
       );
       const pendingPills = pendingHelmNames.map(n =>
-        `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span style="font-size:10px">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${IS?'í bið':'pending'}</span></span>`
+        `<span class="text-sm flex-center gap-4" style="display:inline-flex;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span class="text-xs">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${IS?'í bið':'pending'}</span></span>`
       );
       const allPills = confirmedPills.concat(pendingPills).join(' ');
-      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div style="display:flex;flex-wrap:wrap;gap:4px">${allPills}</div></span></div>`;
+      helmRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Við stýri':'At the helm'}</span><span class="trip-exp-val"><div class="flex-center flex-wrap gap-4">${allPills}</div></span></div>`;
     }
   }
 
@@ -808,18 +809,18 @@ function tripCard(t){
       <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${IS?'Smelltu til að stækka':'Click to expand'}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-brass" style="margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
     </span></div>`;
   } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-brass" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
   // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
   const canEditSkipperNote = isSki && isOwner;
-  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl text-brass">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   // Private note (only visible to owner) — always show for owner with edit
   const canEditNote = isOwner;
-  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span class="text-muted" style="font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     let meta={}; try{if(t.photoMeta)meta=JSON.parse(t.photoMeta);}catch(e){}
@@ -879,7 +880,7 @@ function tripCard(t){
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
           ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
-          ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
+          ${windLine?'<span class="flex-center" style="gap:3px">'+windLine+'</span>':''}
           ${isKeelboat&&portLine?portLine:''}
         </div>
       </div>
@@ -1163,7 +1164,7 @@ function searchManualMember(inp, dropOrId){
   matches.forEach(m => {
     const item = document.createElement('div');
     item.className='mm-item';
-    if (m.role==='guest') item.style.cssText='display:flex;align-items:center;gap:6px';
+    if (m.role==='guest') { item.classList.add('flex-center','gap-6'); item.style.cssText=''; }
     item.appendChild(document.createTextNode(m.name));
     if (m.role==='guest') {
       const badge=document.createElement('span');
@@ -1738,7 +1739,7 @@ function renderShareCatChecks(){
   el.innerHTML=cats.map(function(c){
     var key=c.toLowerCase();
     var col=BOAT_CAT_COLORS[key]||BOAT_CAT_COLORS.other;
-    return '<label style="font-size:11px;color:'+col.color+';display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;margin:0;padding:3px 8px;border-radius:10px;border:1px solid '+col.border+';background:'+col.bg+'">'
+    return '<label class="flex-center" style="font-size:11px;color:'+col.color+';gap:5px;text-transform:none;letter-spacing:0;margin:0;padding:3px 8px;border-radius:10px;border:1px solid '+col.border+';background:'+col.bg+'">'
       +'<input type="checkbox" class="share-cat-chk" value="'+esc(c)+'" checked style="width:14px;height:14px;accent-color:'+col.color+'">'
       +esc(_boatCatLabel(c))+'</label>';
   }).join('');
@@ -1754,11 +1755,11 @@ function renderShareTokens(tokens){
   var active=tokens.filter(function(t){return!t.revokedAt||!String(t.revokedAt).trim();});
   if(!active.length){el.innerHTML='';return;}
   el.innerHTML=active.map(function(tk){
-    return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px">'
-      +'<span style="color:var(--green)">●</span>'
-      +'<span style="flex:1;color:var(--muted)">'+(IS?'Til':'Up to')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+(IS?' skoðanir':' views')+'</span>'
-      +'<button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+(IS?'Afrita':'Copy')+'</button>'
-      +'<button class="btn-ghost danger" style="font-size:10px;padding:2px 8px" onclick="revokeShareToken(\''+tk.id+'\')">'+(IS?'Afturkalla':'Revoke')+'</button>'
+    return '<div class="flex-center gap-8 text-sm" style="margin-top:6px">'
+      +'<span class="text-green">●</span>'
+      +'<span class="flex-1 text-muted">'+(IS?'Til':'Up to')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+(IS?' skoðanir':' views')+'</span>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+(IS?'Afrita':'Copy')+'</button>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" onclick="revokeShareToken(\''+tk.id+'\')">'+(IS?'Afturkalla':'Revoke')+'</button>'
       +'</div>';
   }).join('');
 }
@@ -1804,7 +1805,7 @@ async function reload(){
     applyFilter();
   }catch(e){
     document.getElementById('tripList').innerHTML=
-      '<div class="empty-note" style="color:var(--red)">Could not load logbook: '+esc(e.message)+'</div>';
+      '<div class="empty-note text-red">Could not load logbook: '+esc(e.message)+'</div>';
   }
 }
 
@@ -1835,7 +1836,7 @@ async function reload(){
     warmContainer();
   }catch(e){
     document.getElementById('tripList').innerHTML=
-      '<div class="empty-note" style="color:var(--red)">Could not load: '+esc(e.message)+'</div>';
+      '<div class="empty-note text-red">Could not load: '+esc(e.message)+'</div>';
   }
 })();
 
@@ -1899,7 +1900,7 @@ function renderConfirmations(){
   // Check if there are any resolved (non-pending) confirmations for dismiss-all button
   var hasResolved = _confirmations.incoming.concat(_confirmations.outgoing).some(function(c){return c.status!=='pending';});
   var dismissAllBtn = hasResolved
-    ? '<div style="text-align:right;margin-bottom:8px"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
+    ? '<div class="mb-8" style="text-align:right"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
     : '';
   // Insert dismiss-all before the incoming section
   var dismissAllEl = document.getElementById('confDismissAll');
@@ -1925,24 +1926,24 @@ function renderConfirmations(){
     inEl.innerHTML=inOrder.map(function(key){
       var group=inGroups[key];
       var first=group[0];
-      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+      var header='<div class="flex-center flex-wrap gap-6 mb-6">'+
+        '<span class="conf-boat-info fw-500">'+esc(first.boatName||'')+'</span>'+
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
-        '<span class="conf-name" style="font-size:10px;color:var(--muted)">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
+        '<span class="conf-name text-xs text-muted">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
       '</div>';
       var items=group.map(function(c){
         var isPending=c.status==='pending';
-        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
+        return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-type" style="flex-shrink:0">'+_confDesc(c)+'</span>'+
           (isPending?
-            '<div style="display:flex;gap:4px;margin-left:auto">'+
+            '<div class="flex-center gap-4 ml-auto">'+
               '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
               '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
             '</div>':
-            '<div style="display:flex;align-items:center;gap:4px;margin-left:auto">'+
+            '<div class="flex-center gap-4 ml-auto">'+
               '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
               '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
-              (c.rejectComment?' <span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+              (c.rejectComment?' <span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
             '</div>'
           )+
         '</div>';
@@ -1965,18 +1966,18 @@ function renderConfirmations(){
     outEl.innerHTML=outOrder.map(function(key){
       var group=outGroups[key];
       var first=group[0];
-      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+      var header='<div class="flex-center flex-wrap gap-6 mb-6">'+
+        '<span class="conf-boat-info fw-500">'+esc(first.boatName||'')+'</span>'+
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
       '</div>';
       var items=group.map(function(c){
         var isPending=c.status==='pending';
-        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
-          '<span class="conf-name" style="font-weight:500;font-size:11px">'+esc(c.toName||'?')+'</span>'+
+        return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
+          '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
-          '<span class="conf-status '+c.status+'" style="margin-left:auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          '<span class="conf-status '+c.status+' ml-auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
           (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
-          (c.rejectComment?'<span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+          (c.rejectComment?'<span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
         '</div>';
       }).join('');
       return '<div class="conf-card">'+header+items+'</div>';
@@ -2319,7 +2320,7 @@ setTimeout(loadConfirmations,1500);
       <div class="form-field"><label>Departure port</label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
       <div class="form-field"><label>Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
     </div>
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER</div>
+    <div class="section-label" style="margin:12px 0 8px">WEATHER</div>
     <div class="wx-row">
       <div class="form-field"><label>Wind (m/s)</label><input type="number" id="etWindMs" min="0" step="0.1"></div>
       <div class="form-field"><label>Direction</label>
@@ -2336,10 +2337,10 @@ setTimeout(loadConfirmations,1500);
         </select>
       </div>
     </div>
-    <div class="form-field" style="margin-top:8px"><label>Skipper note <span style="font-size:9px;color:var(--muted)">(visible to crew)</span></label>
+    <div class="form-field mt-8"><label>Skipper note <span class="text-muted" style="font-size:9px">(visible to crew)</span></label>
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
-    <div id="etErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+    <div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>
     <button class="btn-primary" id="etSubmitBtn" onclick="submitEditTrip()">Save changes</button>
   </div>
 </div>
@@ -2354,15 +2355,15 @@ setTimeout(loadConfirmations,1500);
     <input type="hidden" id="puTripId">
     <div class="form-field">
       <label>Photos</label>
-      <input type="file" id="puPhotoFiles" accept="image/*" multiple onchange="handleInlinePhotos(this)" style="font-size:11px;color:var(--text)">
-      <div id="puPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+      <input type="file" id="puPhotoFiles" accept="image/*" multiple onchange="handleInlinePhotos(this)" class="text-sm" style="color:var(--text)">
+      <div id="puPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
     </div>
-    <div class="photo-meta-row" style="margin-bottom:8px">
+    <div class="photo-meta-row mb-8">
       <label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl">Share with crew</span></label>
       <label><input type="checkbox" id="puClubUse"> <span id="puClubLbl">Club may use</span></label>
     </div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:12px" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
-    <div id="puErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+    <div class="text-xs text-muted mb-12" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
+    <div id="puErr" class="text-sm text-red mb-8" style="display:none"></div>
     <button class="btn-primary" id="puSubmitBtn" onclick="submitInlinePhotos()">Upload photos</button>
   </div>
 </div>
@@ -2370,16 +2371,16 @@ setTimeout(loadConfirmations,1500);
 <!-- Guest prompt modal (for adding non-members as crew) -->
 <div class="modal-overlay hidden" id="logGuestModal" style="z-index:700" onclick="if(event.target===this)closeLgGuestModal()">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px">
-      <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;font-weight:600">Add guest</div>
+    <div class="flex-between mb-14">
+      <div class="text-md text-brass fw-500" style="letter-spacing:.5px">Add guest</div>
       <button class="modal-close-x" onclick="closeLgGuestModal()">&times;</button>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
+    <div class="text-sm text-muted mb-12">This person is not in the member list. Enter their details to add them as a guest.</div>
     <div class="form-field"><label>Name</label><input type="text" id="lgGuestName" readonly></div>
     <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="lgGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
     <div class="form-field"><label>Phone number</label><input type="text" id="lgGuestPhone" placeholder="e.g. 555-1234"></div>
-    <div id="lgGuestErr" style="color:var(--red);font-size:11px;display:none;margin-bottom:6px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
+    <div id="lgGuestErr" class="text-sm text-red mb-6" style="display:none"></div>
+    <div class="flex-center gap-8" style="justify-content:flex-end">
       <button class="btn-secondary" style="width:auto;padding:6px 14px" onclick="closeLgGuestModal()">Cancel</button>
       <button class="btn-primary" style="width:auto;padding:6px 14px" onclick="confirmLgGuest()">Add guest</button>
     </div>

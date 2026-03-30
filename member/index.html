@@ -134,20 +134,20 @@
   <div class="header-right"></div>
 </header>
 
-<div style="max-width:720px;margin:0 auto;padding:16px 16px 60px">
+<div class="page-content">
 
-  <div style="margin-bottom:14px">
+  <div class="mb-14">
     <div style="font-size:16px;font-weight:500;color:var(--text)" id="welcomeName">Member Hub</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px" id="welcomeSub"></div>
+    <div class="text-sm text-muted" style="margin-top:2px" id="welcomeSub"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
-  <div class="wx-widget" id="wxWidget" style="margin-bottom:10px">
-    <div style="color:var(--muted);font-size:11px;padding:6px 0" data-s="wx.loading"></div>
+  <div class="wx-widget mb-10" id="wxWidget">
+    <div class="text-muted text-sm" style="padding:6px 0" data-s="wx.loading"></div>
   </div>
 
   <!-- ══ TIDE WIDGET ══ -->
-  <div id="tideWidget" style="margin-bottom:10px"></div>
+  <div id="tideWidget" class="mb-10"></div>
 
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
@@ -158,15 +158,15 @@
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
-  <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin:4px 0 8px">
+  <div class="section-label" style="letter-spacing:1.5px;margin:4px 0 8px">
     <span data-s="member.myCheckout"></span>
     <span style="font-weight:normal;font-size:8px;letter-spacing:0"> — <span data-s="member.myCheckoutSub"></span></span>
   </div>
   <div id="activeList"><div class="empty-note" data-s="lbl.loading"></div></div>
 
   <!-- ═══ FLEET ═══ -->
-  <div id="tab-fleet" style="margin-top:16px">
-    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
+  <div id="tab-fleet" class="mt-16">
+    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
     <div id="fleetByCat"></div>
   </div>
 
@@ -176,16 +176,16 @@
 <!-- ══ MANUAL TRIP MODAL ══ -->
 <div class="modal-overlay hidden" id="manualTripModal" onclick="if(event.target===this)closeModal('manualTripModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="manualTripTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('manualTripModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+    <div class="modal-header">
+      <h3 id="manualTripTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('manualTripModal')">×</button>
     </div>
     <div class="field"><label data-s="lbl.date"></label><input type="date" id="rDate"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="grid2 gap-10">
       <div class="field"><label data-s="lbl.boat"></label><select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
       <div class="field"><label data-s="lbl.location"></label><select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="grid2 gap-10">
       <div class="field"><label id="rDepartedLabel"></label><input type="text" id="rTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
       <div class="field"><label id="rReturnedLabel"></label><input type="text" id="rTimeIn"  pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
     </div>
@@ -194,16 +194,16 @@
       <button class="btn btn-secondary" onclick="closeModal('manualTripModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   onclick="submitManualTrip()"            id="manualTripSaveBtn"></button>
     </div>
-    <div id="manualTripErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+    <div id="manualTripErr" class="msg msg-err mt-8" style="display:none"></div>
   </div>
 </div>
 
 <!-- ══ LAUNCH MODAL ══ -->
 <div class="modal-overlay hidden" id="launchModal" onclick="if(event.target===this)closeModal('launchModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="launchModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('launchModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+    <div class="modal-header">
+      <h3 id="launchModalTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('launchModal')">×</button>
     </div>
     <div id="launchModalBody"></div>
   </div>
@@ -212,9 +212,9 @@
 <!-- ══ RETURN MODAL ══ -->
 <div class="modal-overlay hidden" id="returnModal" onclick="if(event.target===this)closeModal('returnModal')">
   <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="returnModalTitle"></h3>
-      <button class="btn-ghost" onclick="closeModal('returnModal')" style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+    <div class="modal-header">
+      <h3 id="returnModalTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('returnModal')">×</button>
     </div>
     <div id="returnModalBody"></div>
   </div>
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFleetByCat();
   } catch(e) {
     document.getElementById('activeList').innerHTML =
-      `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
   warmContainer();
@@ -329,7 +329,7 @@ function openCheckInPicker() {
   if(mine.length===1){openReturnModal(mine[0].id);return;}
   openModal('returnModal');
   document.getElementById('returnModalBody').innerHTML=mine.map(c=>
-    `<button class="btn btn-secondary" style="width:100%;margin-bottom:8px;text-align:left"
+    `<button class="btn btn-secondary mb-8" style="width:100%;text-align:left"
       onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc((c.checkedOutAt||c.timeOut||'').slice(0,5))}</button>`).join('');
 }
 function openReturnModal(coId) {
@@ -352,9 +352,9 @@ function renderLaunchPicker(preselectedBoatId) {
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
-      `<div style="margin-bottom:12px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:6px;text-transform:uppercase">${_fmtCatLabel(cat)}</div>
-        ${catBoats.map(b=>`<button class="btn btn-secondary" style="width:100%;margin-bottom:6px;text-align:left"
+      `<div class="mb-12">
+        <div class="section-label">${_fmtCatLabel(cat)}</div>
+        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left"
           onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
       </div>`).join('');
 }
@@ -401,27 +401,27 @@ function renderLaunchForm(boat) {
     (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+s('member.departurePort')+'</label>'+
       '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+    '<div class="grid2 mb-12 gap-10">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
       '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
       '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
       '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">'+
-      '<div style="display:flex;gap:4px;margin-top:5px">'+
+      '<div class="flex-center gap-4" style="margin-top:5px">'+
         '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(60)">+1h</button>'+
         '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(90)">+1.5h</button>'+
         '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(120)">+2h</button>'+
       '</div></div>'+
     '</div>'+
     '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
-    '<div style="display:flex;align-items:center;gap:12px">'+
+    '<div class="flex-center gap-12">'+
       '<button type="button" onclick="adjLaunchCrew(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>'+
       '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>'+
       '<button type="button" onclick="adjLaunchCrew(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
     '</div></div>'+
-    '<div id="launchCrewSection" style="display:none;margin-top:12px">'+
-      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">'+s('member.crewMembers')+' <span style="font-weight:400;opacity:.6">('+s('member.crewOptional')+')</span></label>'+
+    '<div id="launchCrewSection" style="display:none" class="mt-12">'+
+      '<label class="section-label" style="display:block">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
       '<div id="launchCrewInputs"></div>'+
-      '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+s('member.crewAutoLog')+'</div>'+
+      '<div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
     '</div>'+
     '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
     '<div class="btn-row">'+
@@ -466,15 +466,15 @@ function renderLaunchChecklist(boat) {
   var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
 
   document.getElementById('launchModalBody').innerHTML=
-    '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">'+s('member.preLaunch')+' — '+_fmtCatLabel(cat)+'</div>'+
+    '<div class="section-label mb-12">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
     (!items.length
       ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+s('member.noChecklist')+'</div>'
       :items.map((it,i)=>
-          '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-          '<input type="checkbox" class="launch-check" data-idx="'+i+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+          '<label class="check-label">'+
+          '<input type="checkbox" class="launch-check accent-checkbox" data-idx="'+i+'">'+
           '<span>'+esc(_clItemLabel(it))+'</span></label>').join('')
     )+
-    '<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">'+s('member.confirmAllItems')+'</div>'+
+    '<div id="launchCheckErr" class="text-sm text-red mt-8" style="display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
     '<div class="btn-row" style="margin-top:14px">'+
       '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" onclick="submitLaunch()">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
@@ -627,7 +627,7 @@ async function submitLaunch() {
 
 // ══ RETURN / CHECK-IN FLOW ════════════════════════════════════════════════════
 function _wxSnapHtml(snap) {
-  if(!snap) return '<div style="color:var(--muted);font-size:11px">No data</div>';
+  if(!snap) return '<div class="text-muted text-sm">No data</div>';
   var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
   var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
   if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
@@ -638,7 +638,7 @@ function _wxSnapHtml(snap) {
   if(snap.pres!=null)     rows.push(["📊",Math.round(snap.pres)+"hPa"+(snap.presTrend?" "+snap.presTrend:"")]);
   if(snap.cond&&snap.cond.desc) rows.push([snap.cond.icon||"",snap.cond.desc]);
   if(!rows.length)        rows.push(["","No detail available"]);
-  return rows.map(r=>'<div style="display:flex;gap:6px;font-size:11px;padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
+  return rows.map(r=>'<div class="flex-center gap-6 text-sm" style="padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
 }
 function _updateWxDisplay() {
   var sel=document.querySelector('[name="wxChoice"]:checked'), choice=sel?sel.value:"checkout";
@@ -680,14 +680,14 @@ function renderReturnForm() {
     +'</div>';
   document.getElementById('returnModalBody').innerHTML=
     '<div class="field" style="margin-bottom:14px">'
-      +'<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">TIME IN</label>'
+      +'<label class="detail-field-label" style="display:block">TIME IN</label>'
       +'<input type="text" id="retTimeIn" value="'+fmtTimeNow()+'" maxlength="5" placeholder="HH:MM" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">'
     +'</div>'
-    +'<div style="margin-bottom:14px">'
-      +'<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">WEATHER RECORD</div>'
-      +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">'+coR+nowR+manR+'</div>'
+    +'<div class="mb-14">'
+      +'<div class="section-label mb-10">WEATHER RECORD</div>'
+      +'<div class="flex-col gap-8 mb-10">'+coR+nowR+manR+'</div>'
       +manF
-      +'<div id="wxDetailPanel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px">'+_wxSnapHtml(coSnap||nowSnap)+'</div>'
+      +'<div id="wxDetailPanel" class="callout-panel">'+_wxSnapHtml(coSnap||nowSnap)+'</div>'
     +'</div>'
     +'<div class="btn-row">'
       +'<button class="btn btn-secondary" onclick="closeModal(\'returnModal\')">Cancel</button>'
@@ -734,8 +734,8 @@ function renderLandingChecklist() {
   var cl=_launchChecklists[cat]||_launchChecklists.other||{};
   var items=Array.isArray(cl.landing)?cl.landing.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
   var checks=items.map(it=>
-    '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-    '<input type="checkbox" class="land-check" style="width:16px;height:16px;accent-color:var(--brass)">'+
+    '<label class="check-label">'+
+    '<input type="checkbox" class="land-check accent-checkbox">'+
     '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
 
   // Parse crew names from checkout (rendered after DOM is built below)
@@ -801,8 +801,8 @@ function renderLandingChecklist() {
   }
 
   document.getElementById('returnModalBody').innerHTML=
-    (items.length?'<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:10px">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
-    '<div id="landCheckErr" style="display:none;font-size:11px;color:var(--red);margin:6px 0">'+(IS?'Staðfestu alla liði.':'Please confirm all items.')+'</div>'+
+    (items.length?'<div class="section-label mb-10">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
+    '<div id="landCheckErr" class="text-sm text-red" style="display:none;margin:6px 0">'+(IS?'Staðfestu alla liði.':'Please confirm all items.')+'</div>'+
     '<div style="display:flex;gap:8px;margin:12px 0">'+
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" onclick="openInlineReport(\'damage\')">&#9888; '+(IS?'Tilkynna skemmdir':'Report damage')+'</button>'+
       '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+(IS?'Tilkynna atvik':'Report incident')+'</button>'+
@@ -811,9 +811,9 @@ function renderLandingChecklist() {
     (((returnCo.crew||1)>1&&/^(keelboat|dinghy)$/.test((returnCo.boatCategory||'').toLowerCase()))?'<div id="helmSection" style="margin-bottom:14px">'+
       '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STÝRI':'HELM')+'</div>'+
       '<div id="helmToggles">'+
-        '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-          '<input type="checkbox" class="helm-toggle" data-helm-self="1" style="width:16px;height:16px;accent-color:var(--brass)" onchange="window._retHelmSelf=this.checked">'+
-          '<span>'+esc(user.name||'')+' <span style="font-size:10px;color:var(--muted)">'+(IS?'(þú)':'(you)')+'</span></span>'+
+        '<label class="check-label">'+
+          '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-self="1" onchange="window._retHelmSelf=this.checked">'+
+          '<span>'+esc(user.name||'')+' <span class="text-xs text-muted">'+(IS?'(þú)':'(you)')+'</span></span>'+
         '</label>'+
         '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
       '</div>'+
@@ -858,8 +858,8 @@ function _renderHelmSection(){
   if(el){
     if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
     else{el.innerHTML=entries.map(function(t){
-      return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-        '<input type="checkbox" class="helm-toggle" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+      return '<label class="check-label">'+
+        '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'">'+
         '<span>'+esc(t.memberName||'?')+_guestTag(t)+'</span></label>';
     }).join('');}
   }
@@ -869,8 +869,8 @@ function _renderHelmSection(){
     var nonGuests=entries.filter(function(t){return !_isGuest(t);});
     if(!nonGuests.length){stuEl.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
     else{stuEl.innerHTML=nonGuests.map(function(t){
-      return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-        '<input type="checkbox" class="student-toggle" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+      return '<label class="check-label">'+
+        '<input type="checkbox" class="student-toggle accent-checkbox" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'">'+
         '<span>'+esc(t.memberName||'?')+'</span></label>';
     }).join('');}
   }
