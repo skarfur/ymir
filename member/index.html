@@ -398,8 +398,8 @@ function renderLaunchForm(boat) {
   document.getElementById('launchModalBody').innerHTML=
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
-    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+(L==='IS'?'Brottfararhöfn':'Departure Port')+'</label>'+
-      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+(L==='IS'?'Heimahöfn':'Home port')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
+    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+s('member.departurePort')+'</label>'+
+      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
@@ -419,14 +419,14 @@ function renderLaunchForm(boat) {
       '<button type="button" onclick="adjLaunchCrew(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
     '</div></div>'+
     '<div id="launchCrewSection" style="display:none;margin-top:12px">'+
-      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
+      '<label style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:6px">'+s('member.crewMembers')+' <span style="font-weight:400;opacity:.6">('+s('member.crewOptional')+')</span></label>'+
       '<div id="launchCrewInputs"></div>'+
-      '<div style="font-size:10px;color:var(--muted);margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
+      '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+s('member.crewAutoLog')+'</div>'+
     '</div>'+
     '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
     '<div class="btn-row">'+
-      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
-      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">Continue →</button>'+
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">'+s('member.continue')+'</button>'+
     '</div>';
   window._launchCrewCount=1;
   renderCrewInputs();
@@ -466,17 +466,17 @@ function renderLaunchChecklist(boat) {
   var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
 
   document.getElementById('launchModalBody').innerHTML=
-    '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.5px">'+s('member.preLaunch')+' — '+_fmtCatLabel(cat)+'</div>'+
     (!items.length
-      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+(L==='IS'?'Enginn gátlisti stilltur fyrir þennan flokk.':'No pre-launch checklist configured for this category.')+'</div>'
+      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+s('member.noChecklist')+'</div>'
       :items.map((it,i)=>
           '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
           '<input type="checkbox" class="launch-check" data-idx="'+i+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
           '<span>'+esc(_clItemLabel(it))+'</span></label>').join('')
     )+
-    '<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
+    '<div id="launchCheckErr" style="font-size:11px;color:var(--red);margin-top:8px;display:none">'+s('member.confirmAllItems')+'</div>'+
     '<div class="btn-row" style="margin-top:14px">'+
-      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
+      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" onclick="submitLaunch()">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
     '</div>';
 }

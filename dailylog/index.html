@@ -234,13 +234,13 @@
     <!-- Abler checkbox -->
     <div class="check-row" style="margin:10px 0">
       <input type="checkbox" id="actAbler">
-      <label for="actAbler" style="font-size:12px">Activity details registered in Abler</label>
+      <label for="actAbler" style="font-size:12px" data-s="daily.ablerRegistered"></label>
     </div>
     <!-- Group checkout link -->
     <div id="actGroupLinkSection" style="margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Linked group checkouts</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px" data-s="daily.linkedGroupCo"></div>
       <div id="actGroupLinkCards" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
-      <button type="button" onclick="openGroupLinkPicker()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit">+ Link group checkout</button>
+      <button type="button" onclick="openGroupLinkPicker()" style="background:none;border:1px dashed var(--border);border-radius:6px;width:100%;padding:6px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit" data-s="daily.linkGroupCo"></button>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
@@ -253,14 +253,14 @@
 <div class="modal-overlay hidden" id="groupLinkModal" onclick="if(event.target===this)closeModal('groupLinkModal')">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <h3 style="margin:0">Link Group Checkout</h3>
+      <h3 style="margin:0" data-s="daily.linkGroupCoTitle"></h3>
       <button class="modal-close-x" onclick="closeModal('groupLinkModal')">&times;</button>
     </div>
     <div id="groupLinkPickerCards" style="margin-bottom:14px"></div>
-    <div id="groupLinkEmpty" style="display:none;color:var(--muted);font-size:12px;margin-bottom:14px">No active group checkouts today.</div>
+    <div id="groupLinkEmpty" style="display:none;color:var(--muted);font-size:12px;margin-bottom:14px" data-s="daily.noActiveGroups"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('groupLinkModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmGroupLink()">Link selected</button>
+      <button class="btn btn-secondary" onclick="closeModal('groupLinkModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="confirmGroupLink()" data-s="daily.linkSelected"></button>
     </div>
   </div>
 </div>
@@ -487,7 +487,7 @@ function renderActivities() {
     const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
     const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:#1a3a1a;border:1px solid #2e7d32;color:#4caf50;border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
-      ? '<span style="font-size:9px;background:var(--card);border:1px solid #2e86c155;border-left:2px solid #2e86c1;border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' group' + (act.linkedGroupCheckoutIds.length>1?'s':'') + '</span>' : '';
+      ? '<span style="font-size:9px;background:var(--card);border:1px solid #2e86c155;border-left:2px solid #2e86c1;border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
     info.innerHTML = `<div class="activity-name">${esc(act.name)}${ablerBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-nity-note">${esc(act.notes)}</div>` : ''}`;
@@ -1124,7 +1124,7 @@ function renderGroupLinkCards() {
   if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
     return '<div style="background:var(--card);border:1px solid #2e86c155;border-left:3px solid #2e86c1;border-radius:6px;padding:6px 10px;font-size:11px;display:flex;align-items:center;justify-content:space-between">' +
-      '<span>⛵ Group checkout ' + esc(id.slice(-6)) + '</span>' +
+      '<span>⛵ ' + s('daily.groupCheckout') + ' ' + esc(id.slice(-6)) + '</span>' +
       '<button onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>' +
       '</div>';
   }).join('');
