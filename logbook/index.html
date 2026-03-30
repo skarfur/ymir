@@ -678,7 +678,17 @@ function tripCard(t){
     c.type==='student' && c.status==='pending' &&
     (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
   );
-  const crewNames = linkedCrew.length ? linkedCrew.map(x=>{
+  // Parse crewNames stored on the trip/checkout for fallback display (covers guests)
+  let _storedCrewNames = [];
+  try { if (t.crewNames) _storedCrewNames = typeof t.crewNames === 'string' ? JSON.parse(t.crewNames) : t.crewNames; } catch(e){}
+  // Build set of kennitala already shown via linked trips or pending confirmations
+  const _shownKts = new Set(linkedCrew.map(x=>String(x.kennitala)).filter(Boolean));
+  pendingCrewConfs.forEach(c=>{ if(c.toKennitala) _shownKts.add(String(c.toKennitala)); });
+  pendingCrewIn.forEach(c=>{ if(c.fromKennitala) _shownKts.add(String(c.fromKennitala)); });
+  // Guests/unlinked crew: names from crewNames that have no linked trip and no pending confirmation
+  const _unlinkedCrew = _storedCrewNames.filter(cn => cn.name && (!cn.kennitala || !_shownKts.has(String(cn.kennitala))));
+
+  const linkedCrewDisplay = linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
     const xHelm = x.helm && x.helm!=='false';
     const xStudent = (x.student && x.student!=='false') || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
@@ -689,7 +699,21 @@ function tripCard(t){
     if (xStudent) badges += studentBadge;
     if (isGuest) badges += guestBadge;
     return name + badges;
-  }).join(', ') : esc(t.crew||1);
+  });
+  // Render unlinked crew (guests without kennitala or unconfirmed members)
+  const unlinkedCrewDisplay = _unlinkedCrew.map(cn => {
+    const name = esc(cn.name);
+    const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
+    const isGuest = cnMember ? cnMember.role==='guest' : !cn.kennitala;
+    const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
+    let badges = '';
+    if (isStudent) badges += studentBadge;
+    if (isGuest) badges += guestBadge;
+    return name + badges;
+  });
+  const crewNames = linkedCrewDisplay.length || unlinkedCrewDisplay.length
+    ? linkedCrewDisplay.concat(unlinkedCrewDisplay).join(', ')
+    : esc(t.crew||1);
   // Show pending crew names alongside confirmed ones
   const pendingCrewNames = pendingCrewConfs.map(c => esc(c.toName||'?')+' '+pendingTag)
     .concat(pendingCrewIn.map(c => esc(c.fromName||'?')+' '+pendingTag));
