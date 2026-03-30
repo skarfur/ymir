@@ -176,7 +176,7 @@
   <!-- ═══ FLEET ═══ -->
   <div id="tab-fleet" class="mt-16">
     <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
-    <div id="fleetByCat"></div>
+    <div id="fleetStatus"></div>
   </div>
 
 
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
   const active = checkouts.filter(c => c.status === 'out');
-  renderFleetStatus('fleetByCat', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true });
+  renderFleetStatus('fleetStatus', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true });
 }
 function toggleCat(el) { toggleFleetCat(el); }
 function toggleFleetCat(toggle) {

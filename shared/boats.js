@@ -366,7 +366,8 @@ function renderFleetStatus(containerId, boats, active, opts) {
   }
 
   // Group by category preserving insertion order (or sort alpha)
-  const cats = [...new Set(boats.map(b => b.category).filter(Boolean))].sort();
+  const cats = [...new Set(boats.map(b => b.category).filter(Boolean))]
+    .sort((a, b) => _boatCatLabel(a.toLowerCase()).localeCompare(_boatCatLabel(b.toLowerCase())));
 
   const activeByBoat = new Map();
   active.forEach(c => { activeByBoat.set(c.boatId, c); });
@@ -381,13 +382,19 @@ function renderFleetStatus(containerId, boats, active, opts) {
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const catId    = containerId + '-fcat-' + encodeURIComponent(key);
 
+    const onClickAct = opts.onClickAction || null;
+
     const cards = catBoats.map(b => {
       const co  = activeByBoat.get(b.id);
       const oos = boolVal(b.oos);
       const status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
-      const clickOpts = (status === 'avail' && onAvail && (isStaff || !isChartered(b)))
-        ? { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) }
-        : {};
+      let clickOpts = {};
+      if (onClickAct) {
+        // onClickAction receives the full boat object via registry — always clickable
+        clickOpts = { onClickAction: onClickAct };
+      } else if (status === 'avail' && onAvail && (isStaff || !isChartered(b))) {
+        clickOpts = { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) };
+      }
       return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaff }, clickOpts));
     }).join('');
 
