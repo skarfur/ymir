@@ -187,6 +187,13 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="stat-card"><div class="stat-val" id="stLongest">—</div><div class="stat-lbl">Longest trip</div></div>
     <div class="stat-card"><div class="stat-val" id="stAvgWind">—</div><div class="stat-lbl">Avg wind</div></div>
     <div class="stat-card"><div class="stat-val" id="stStreak">—</div><div class="stat-lbl">Streak</div></div>
+    <div class="stat-card"><div class="stat-val" id="stBoats">—</div><div class="stat-lbl">Boats</div></div>
+    <div class="stat-card"><div class="stat-val" id="stCrew">—</div><div class="stat-lbl">As crew</div></div>
+    <div class="stat-card"><div class="stat-val" id="stHeavy">—</div><div class="stat-lbl">Heavy wx</div></div>
+    <div class="stat-card"><div class="stat-val" id="stNight">—</div><div class="stat-lbl">Night sails</div></div>
+    <div class="stat-card"><div class="stat-val" id="stAvgDuration">—</div><div class="stat-lbl">Avg duration</div></div>
+    <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl">Locations</div></div>
+    <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl">Verified</div></div>
   </div>
   <div class="cat-hours" id="catHours" style="display:none">
     <div class="cat-hours-title">Hours by category</div>
@@ -473,9 +480,19 @@ function renderStats(){
   if(myTrips.length){
     const months=new Set(myTrips.map(t=>(t.date||'').slice(0,7)).filter(Boolean));
     const now=new Date();let y=now.getFullYear(),m=now.getMonth()+1;
-    // Allow current month even if just started
     while(months.has(y+'-'+(m<10?'0':'')+m)){streak++;m--;if(m<1){m=12;y--}}
   }
+  const uniqueBoats=new Set(myTrips.map(t=>t.boatId||t.boatName).filter(Boolean)).size;
+  const crewTrips=myTrips.filter(t=>t.role==='crew').length;
+  const heavyWx=myTrips.filter(t=>(parseInt(t.beaufort)||0)>=5).length;
+  const nightSails=myTrips.filter(t=>{
+    const ti=parseInt((t.timeIn||'').replace(':',''),10)||0;
+    const to=parseInt((t.timeOut||'').replace(':',''),10)||0;
+    return ti>=2100||ti<=500||to>=2100||to<=500||(to>ti&&ti>0);
+  }).length;
+  const avgDur=myTrips.length?hours/myTrips.length:0;
+  const uniqueLocs=new Set(myTrips.map(t=>t.locationName||t.locationId).filter(Boolean)).size;
+  const verifiedTrips=myTrips.filter(t=>t.verified&&t.verified!=='false').length;
 
   // Apply stats visibility preferences
   const stTripsEl=document.getElementById('stTrips');
@@ -486,6 +503,13 @@ function renderStats(){
   const stLongestEl=document.getElementById('stLongest');
   const stAvgWindEl=document.getElementById('stAvgWind');
   const stStreakEl=document.getElementById('stStreak');
+  const stBoatsEl=document.getElementById('stBoats');
+  const stCrewEl=document.getElementById('stCrew');
+  const stHeavyEl=document.getElementById('stHeavy');
+  const stNightEl=document.getElementById('stNight');
+  const stAvgDurEl=document.getElementById('stAvgDuration');
+  const stLocsEl=document.getElementById('stLocations');
+  const stVerifiedEl=document.getElementById('stVerified');
 
   if(_statsVis.career===false){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
   if(_statsVis.hours===false){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
@@ -499,9 +523,17 @@ function renderStats(){
     else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
   }
   if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'mo':'—'}
+  if(_statsVis.boats===false){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
+  if(_statsVis.crew===false){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
+  if(_statsVis.heavy===false){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
+  if(_statsVis.night===false){stNightEl.parentElement.style.display='none'}else{stNightEl.textContent=nightSails}
+  if(_statsVis.avgDuration===false){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
+  if(_statsVis.locations===false){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
+  if(_statsVis.verified===false){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
 
   // Adjust grid columns based on visible cards
-  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false,_statsVis.distance!==false,_statsVis.longest!==false,_statsVis.avgWind!==false,_statsVis.streak!==false].filter(Boolean).length;
+  const allVis=[_statsVis.career,_statsVis.hours,_statsVis.ytd,_statsVis.skipper,_statsVis.distance,_statsVis.longest,_statsVis.avgWind,_statsVis.streak,_statsVis.boats,_statsVis.crew,_statsVis.heavy,_statsVis.night,_statsVis.avgDuration,_statsVis.locations,_statsVis.verified];
+  const visibleCards=allVis.filter(v=>v!==false).length;
   const strip=document.querySelector('.stat-strip');
   if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
   else if(strip && visibleCards===0){strip.style.display='none'}
