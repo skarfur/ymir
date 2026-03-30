@@ -237,6 +237,16 @@ const STRINGS = {
   'logbook.shareTracks':  { EN:'Include GPS tracks',     IS:'Taka GPS-leiðir með' },
   'logbook.shareCopy':    { EN:'Generate & copy link',   IS:'Búa til og afrita hlekk' },
   'logbook.shareCopied':  { EN:'Link copied!',           IS:'Hlekkur afritaður!' },
+  'logbook.editTrip':     { EN:'Edit trip',              IS:'Breyta ferð' },
+  'logbook.addGps':       { EN:'Add GPS',                IS:'Bæta við GPS' },
+  'logbook.addPhotos':    { EN:'Add photos',             IS:'Bæta við myndum' },
+  'logbook.shareWithCrew':{ EN:'Share with crew',        IS:'Deila með áhöfn' },
+  'logbook.clubMayUse':   { EN:'Club may use',           IS:'Félagið má nota' },
+  'logbook.photoSharedHint':  { EN:'Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.', IS:'Deildar myndir sjást öðrum í ferðinni. Myndir merktar fyrir félagið má nota í kynningarefni.' },
+  'logbook.tripUpdated':  { EN:'Trip updated',           IS:'Ferð uppfærð' },
+  'logbook.trackAdded':   { EN:'GPS track added',        IS:'GPS-leið bætt við' },
+  'logbook.photosAdded':  { EN:'Photos added',           IS:'Myndir bættar við' },
+  'logbook.skipperOnly':  { EN:'Only the skipper can edit this trip', IS:'Aðeins skipstj��ri getur breytt ferðinni' },
 
   // ── Staff hub ──────────────────────────────────────────────────────────────
   'staff.dashTitle':         { EN:'Staff Dashboard',          IS:'Stjórnborð starfsmanna' },
