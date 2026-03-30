@@ -641,7 +641,7 @@ function tripCard(t){
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
   const _expWind = formatWindValue(wx?.ws, t.beaufort, _windUnit);
-  const _expExtra = wx?.ws!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(wx.ws)) : (_windUnit==='bft' && t.beaufort ? ' <small style="color:var(--muted)">'+bftLabel(t.beaufort)+'</small>' : '');
+  const _expExtra = wx?.ws!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(wx.ws)) : (_windUnit==='bft' && t.beaufort ? ' <small class="text-muted">'+bftLabel(t.beaufort)+'</small>' : '');
   const eWs = _expWind ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${esc(_expWind)}${_expExtra}</span></div>` : '';
   const eDir  = (wx?.dir||t.windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx?.dir||t.windDir)} ${esc(wx?.dir||t.windDir)}</span></div>` : '';
   const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${_windUnit==='bft'?'Force '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
@@ -1164,7 +1164,7 @@ function searchManualMember(inp, dropOrId){
   matches.forEach(m => {
     const item = document.createElement('div');
     item.className='mm-item';
-    if (m.role==='guest') item.style.cssText='display:flex;align-items:center;gap:6px';
+    if (m.role==='guest') { item.classList.add('flex-center','gap-6'); item.style.cssText=''; }
     item.appendChild(document.createTextNode(m.name));
     if (m.role==='guest') {
       const badge=document.createElement('span');
@@ -1900,7 +1900,7 @@ function renderConfirmations(){
   // Check if there are any resolved (non-pending) confirmations for dismiss-all button
   var hasResolved = _confirmations.incoming.concat(_confirmations.outgoing).some(function(c){return c.status!=='pending';});
   var dismissAllBtn = hasResolved
-    ? '<div style="text-align:right;margin-bottom:8px"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
+    ? '<div class="mb-8" style="text-align:right"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
     : '';
   // Insert dismiss-all before the incoming section
   var dismissAllEl = document.getElementById('confDismissAll');
@@ -1926,24 +1926,24 @@ function renderConfirmations(){
     inEl.innerHTML=inOrder.map(function(key){
       var group=inGroups[key];
       var first=group[0];
-      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+      var header='<div class="flex-center flex-wrap gap-6 mb-6">'+
+        '<span class="conf-boat-info fw-500">'+esc(first.boatName||'')+'</span>'+
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
-        '<span class="conf-name" style="font-size:10px;color:var(--muted)">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
+        '<span class="conf-name text-xs text-muted">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
       '</div>';
       var items=group.map(function(c){
         var isPending=c.status==='pending';
-        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
+        return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-type" style="flex-shrink:0">'+_confDesc(c)+'</span>'+
           (isPending?
-            '<div style="display:flex;gap:4px;margin-left:auto">'+
+            '<div class="flex-center gap-4 ml-auto">'+
               '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
               '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
             '</div>':
-            '<div style="display:flex;align-items:center;gap:4px;margin-left:auto">'+
+            '<div class="flex-center gap-4 ml-auto">'+
               '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
               '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
-              (c.rejectComment?' <span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+              (c.rejectComment?' <span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
             '</div>'
           )+
         '</div>';
@@ -1966,18 +1966,18 @@ function renderConfirmations(){
     outEl.innerHTML=outOrder.map(function(key){
       var group=outGroups[key];
       var first=group[0];
-      var header='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<span class="conf-boat-info" style="font-weight:500">'+esc(first.boatName||'')+'</span>'+
+      var header='<div class="flex-center flex-wrap gap-6 mb-6">'+
+        '<span class="conf-boat-info fw-500">'+esc(first.boatName||'')+'</span>'+
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
       '</div>';
       var items=group.map(function(c){
         var isPending=c.status==='pending';
-        return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;border-top:1px solid var(--border)22">'+
-          '<span class="conf-name" style="font-weight:500;font-size:11px">'+esc(c.toName||'?')+'</span>'+
+        return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
+          '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
-          '<span class="conf-status '+c.status+'" style="margin-left:auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
+          '<span class="conf-status '+c.status+' ml-auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
           (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
-          (c.rejectComment?'<span style="font-size:10px;color:var(--muted)">'+esc(c.rejectComment)+'</span>':'')+
+          (c.rejectComment?'<span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
         '</div>';
       }).join('');
       return '<div class="conf-card">'+header+items+'</div>';
