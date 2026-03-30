@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ymir — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/strings.js"></script>
+<style>
+.settings-page{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+.back-nav{font-size:11px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:20px}
+.back-nav:hover{color:var(--text)}
+.settings-section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px}
+.settings-section-title{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px;font-weight:600}
+.settings-hint{font-size:11px;color:var(--muted);margin-top:4px}
+.settings-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.settings-row:last-child{margin-bottom:0}
+.settings-row label{font-size:12px;color:var(--text);flex:1;display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;margin:0}
+.settings-row input[type="text"]{width:80px;font-size:14px;font-weight:500;text-align:center;letter-spacing:2px;padding:8px;text-transform:uppercase}
+.settings-row select{width:auto;min-width:140px;font-size:12px;padding:7px 10px}
+.toggle-group{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.toggle-group button{background:none;border:none;border-right:1px solid var(--border);padding:7px 14px;font-size:11px;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
+.toggle-group button:last-child{border-right:none}
+.toggle-group button.active{background:var(--brass);color:#0b1f38;font-weight:600}
+.toggle-group button:hover:not(.active){color:var(--text);background:var(--faint)}
+.stat-toggle{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--faint)}
+.stat-toggle:last-child{border-bottom:none}
+.stat-toggle input[type="checkbox"]{width:16px;height:16px;accent-color:var(--brass);flex-shrink:0}
+.stat-toggle span{font-size:12px;color:var(--text)}
+.save-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
+.save-bar .btn{min-width:120px}
+</style>
+</head>
+<body>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
+
+<div class="settings-page">
+  <a class="back-nav" href="../member/">← Member Hub</a>
+  <div style="font-size:16px;font-weight:500;margin-bottom:16px" data-s="settings.title"></div>
+
+  <!-- Initials -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.initials"></div>
+    <div class="settings-row">
+      <input type="text" id="sInitials" maxlength="4" placeholder="—">
+    </div>
+    <div class="settings-hint" data-s="settings.initialsHint"></div>
+  </div>
+
+  <!-- Language -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.language"></div>
+    <div class="settings-row">
+      <div class="toggle-group" id="langToggle">
+        <button data-val="EN">English</button>
+        <button data-val="IS">Islenska</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wind units -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.windUnit"></div>
+    <div class="settings-row">
+      <select id="sWindUnit">
+        <option value="bft" data-s="settings.windUnit.bft"></option>
+        <option value="ms" data-s="settings.windUnit.ms"></option>
+        <option value="kts" data-s="settings.windUnit.kts"></option>
+        <option value="kmh" data-s="settings.windUnit.kmh"></option>
+        <option value="mph" data-s="settings.windUnit.mph"></option>
+      </select>
+    </div>
+    <div class="settings-hint" data-s="settings.windUnitHint"></div>
+  </div>
+
+  <!-- Theme -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.theme"></div>
+    <div class="settings-row">
+      <div class="toggle-group" id="themeToggle">
+        <button data-val="dark" data-s="settings.theme.dark"></button>
+        <button data-val="light" data-s="settings.theme.light"></button>
+        <button data-val="auto" data-s="settings.theme.auto"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats visibility -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.stats"></div>
+    <div class="settings-hint" style="margin-top:0;margin-bottom:10px" data-s="settings.statsHint"></div>
+    <div class="stat-toggle"><input type="checkbox" id="svCareer" checked><span data-s="settings.stats.career"></span></div>
+    <div class="stat-toggle"><input type="checkbox" id="svHours" checked><span data-s="settings.stats.hours"></span></div>
+    <div class="stat-toggle"><input type="checkbox" id="svYtd" checked><span data-s="settings.stats.ytd"></span></div>
+    <div class="stat-toggle"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></div>
+    <div class="stat-toggle"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></div>
+  </div>
+
+  <!-- Save -->
+  <div class="save-bar">
+    <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn" data-s="btn.save"></button>
+  </div>
+</div>
+
+<script>
+var user = requireAuth();
+if (!user) throw new Error('not authenticated');
+
+var _autoInitials = '';
+
+document.addEventListener('DOMContentLoaded', async function() {
+  buildHeader('settings');
+  applyStrings();
+
+  // Load current prefs from localStorage
+  var prefs = getPrefs();
+  var theme = getTheme();
+  var lang  = getLang();
+
+  // Set initials from user object
+  _autoInitials = extractInitials(user.name);
+  document.getElementById('sInitials').value = user.initials || _autoInitials;
+
+  // Language toggle
+  setToggle('langToggle', lang);
+
+  // Wind unit
+  document.getElementById('sWindUnit').value = prefs.windUnit || 'bft';
+
+  // Theme toggle
+  setToggle('themeToggle', theme);
+
+  // Stats visibility
+  var sv = prefs.statsVisibility || {};
+  document.getElementById('svCareer').checked     = sv.career !== false;
+  document.getElementById('svHours').checked      = sv.hours !== false;
+  document.getElementById('svYtd').checked        = sv.ytd !== false;
+  document.getElementById('svSkipper').checked    = sv.skipper !== false;
+  document.getElementById('svByCategory').checked = sv.byCategory !== false;
+
+  // Live theme preview
+  document.getElementById('themeToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    setToggle('themeToggle', btn.dataset.val);
+    setTheme(btn.dataset.val);
+  });
+
+  // Live lang toggle (doesn't reload — only sets UI state)
+  document.getElementById('langToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    setToggle('langToggle', btn.dataset.val);
+  });
+
+  // Also fetch from server to sync any saved prefs
+  try {
+    var mRes = await apiGet('getMembers');
+    var me = (mRes.members || []).find(function(m) { return String(m.kennitala) === String(user.kennitala); });
+    if (me) {
+      var serverPrefs = parseJson(me.preferences, {});
+      // If local has no prefs yet, populate from server
+      if (!localStorage.getItem('ymirPrefs') && Object.keys(serverPrefs).length) {
+        setPrefs(serverPrefs);
+        if (serverPrefs.windUnit) document.getElementById('sWindUnit').value = serverPrefs.windUnit;
+        if (serverPrefs.theme) { setToggle('themeToggle', serverPrefs.theme); setTheme(serverPrefs.theme); }
+        if (serverPrefs.statsVisibility) {
+          var ssv = serverPrefs.statsVisibility;
+          document.getElementById('svCareer').checked     = ssv.career !== false;
+          document.getElementById('svHours').checked      = ssv.hours !== false;
+          document.getElementById('svYtd').checked        = ssv.ytd !== false;
+          document.getElementById('svSkipper').checked    = ssv.skipper !== false;
+          document.getElementById('svByCategory').checked = ssv.byCategory !== false;
+        }
+      }
+      // Show server initials if different
+      if (me.initials) document.getElementById('sInitials').value = me.initials;
+    }
+  } catch(e) { /* proceed with local prefs */ }
+});
+
+function extractInitials(name) {
+  if (!name) return '';
+  return String(name).trim().split(/\s+/)
+    .filter(function(t) { return t && t !== t.toLowerCase(); })
+    .map(function(t) { return t.replace(/-/g, '').charAt(0); })
+    .join('').toUpperCase();
+}
+
+function setToggle(groupId, val) {
+  var btns = document.getElementById(groupId).querySelectorAll('button');
+  btns.forEach(function(b) {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+}
+
+function getToggle(groupId) {
+  var active = document.getElementById(groupId).querySelector('button.active');
+  return active ? active.dataset.val : null;
+}
+
+async function saveSettings() {
+  var btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = s('lbl.loading');
+
+  var initials = document.getElementById('sInitials').value.trim().toUpperCase() || _autoInitials;
+  var lang     = getToggle('langToggle') || 'EN';
+  var windUnit = document.getElementById('sWindUnit').value;
+  var theme    = getToggle('themeToggle') || 'dark';
+
+  var statsVisibility = {
+    career:     document.getElementById('svCareer').checked,
+    hours:      document.getElementById('svHours').checked,
+    ytd:        document.getElementById('svYtd').checked,
+    skipper:    document.getElementById('svSkipper').checked,
+    byCategory: document.getElementById('svByCategory').checked,
+  };
+
+  var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility };
+  var langChanged = lang !== getLang();
+
+  // Save locally
+  setPrefs(prefs);
+  setTheme(theme);
+  setLang(lang);
+
+  // Update user object in session
+  user.initials = initials;
+  setUser(user);
+
+  // Save to server
+  try {
+    await apiPost('savePreferences', {
+      kennitala: user.kennitala,
+      initials: initials,
+      lang: lang,
+      preferences: prefs,
+    });
+    showToast(s('settings.saved'), 'ok');
+
+    // If language changed, reload to apply
+    if (langChanged) {
+      location.reload();
+    }
+  } catch(e) {
+    showToast(s('settings.saveFailed') + ': ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = s('btn.save');
+  }
+}
+</script>
+</body>
+</html>

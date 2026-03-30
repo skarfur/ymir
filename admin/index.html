@@ -327,7 +327,7 @@
 
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">CERTIFICATION TYPES</div>
+          <div class="col-title">CREDENTIALS</div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="certDefsCard">
@@ -478,9 +478,12 @@
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
 <!-- Member modal -->
-<div class="modal-overlay hidden" id="memberModal">
+<div class="modal-overlay hidden" id="memberModal" onclick="if(event.target===this)closeModal('memberModal')">
   <div class="modal" style="max-width:520px">
-    <h3 id="memberModalTitle">Add Member</h3>
+    <div class="modal-header">
+      <h3 id="memberModalTitle">Add Member</h3>
+      <button class="modal-close-x" onclick="closeModal('memberModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name</label><input type="text" id="mName"></div>
       <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10"></div>
@@ -526,9 +529,12 @@
 </div>
 
 <!-- Boat category modal -->
-<div class="modal-overlay hidden" id="boatCatModal">
+<div class="modal-overlay hidden" id="boatCatModal" onclick="if(event.target===this)closeModal('boatCatModal')">
   <div class="modal">
-    <h3 id="boatCatModalTitle">Add Boat Category</h3>
+    <div class="modal-header">
+      <h3 id="boatCatModalTitle">Add Boat Category</h3>
+      <button class="modal-close-x" onclick="closeModal('boatCatModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name (English)</label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
       <div class="field"><label>Name (Íslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
@@ -550,9 +556,12 @@
 </div>
 
 <!-- Boat modal -->
-<div class="modal-overlay hidden" id="boatModal">
+<div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
   <div class="modal">
-    <h3 id="boatModalTitle">Add Boat</h3>
+    <div class="modal-header">
+      <h3 id="boatModalTitle">Add Boat</h3>
+      <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
+    </div>
     <div class="field"><label>Name</label><input type="text" id="bName"></div>
     <div class="field"><label>Category</label>
       <select id="bCategory" onchange="updateBoatModalFields()"></select>
@@ -578,6 +587,47 @@
         <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
       </div>
     </div>
+    <!-- Ownership -->
+    <div class="field">
+      <label data-s="boat.ownership">Ownership</label>
+      <select id="bOwnership" onchange="updateOwnershipFields()">
+        <option value="club">Club boat</option>
+        <option value="private">Private boat</option>
+      </select>
+    </div>
+    <div class="field hidden" id="bOwnerField">
+      <label data-s="boat.owner">Owner</label>
+      <div style="position:relative">
+        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="Search member..." oninput="searchBoatOwner(this.value)">
+        <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
+        <input type="hidden" id="bOwnerId">
+        <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <!-- Charter (club boats only) -->
+    <div id="bCharterSection">
+      <div id="bCharterInfo" style="font-size:11px;color:var(--brass);margin-bottom:6px"></div>
+      <div id="bCharterForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+        <div class="field">
+          <label data-s="boat.charterMember">Chartered to</label>
+          <div style="position:relative">
+            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="Search member..." oninput="searchCharterMember(this.value)">
+            <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+            <input type="hidden" id="bCharterMemberKt">
+            <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label data-s="boat.charterStart">Start date</label><input type="date" id="bCharterStart"></div>
+          <div class="field"><label data-s="boat.charterEnd">End date</label><input type="date" id="bCharterEnd"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()">Cancel</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()">Save Charter</button>
+        </div>
+      </div>
+      <div id="bCharterActions"></div>
+    </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
     </div>
@@ -596,9 +646,12 @@
 </div>
 
 <!-- Location modal -->
-<div class="modal-overlay hidden" id="locationModal">
+<div class="modal-overlay hidden" id="locationModal" onclick="if(event.target===this)closeModal('locationModal')">
   <div class="modal">
-    <h3 id="locationModalTitle">Add Location</h3>
+    <div class="modal-header">
+      <h3 id="locationModalTitle">Add Location</h3>
+      <button class="modal-close-x" onclick="closeModal('locationModal')">&times;</button>
+    </div>
     <div class="field"><label>Name</label><input type="text" id="lName"></div>
     <div class="field">
       <label data-s="location.type">Type</label>
@@ -619,9 +672,12 @@
 </div>
 
 <!-- Opening/closing checklist item modal -->
-<div class="modal-overlay hidden" id="clModal">
+<div class="modal-overlay hidden" id="clModal" onclick="if(event.target===this)closeModal('clModal')">
   <div class="modal">
-    <h3 id="clModalTitle">Add Checklist Item</h3>
+    <div class="modal-header">
+      <h3 id="clModalTitle">Add Checklist Item</h3>
+      <button class="modal-close-x" onclick="closeModal('clModal')">&times;</button>
+    </div>
     <div class="field"><label>Phase</label>
       <select id="clPhase">
         <option value="opening">Opening</option>
@@ -643,9 +699,12 @@
 </div>
 
 <!-- Launch/landing checklist item modal -->
-<div class="modal-overlay hidden" id="launchCLModal">
+<div class="modal-overlay hidden" id="launchCLModal" onclick="if(event.target===this)closeModal('launchCLModal')">
   <div class="modal">
-    <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+    <div class="modal-header">
+      <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+      <button class="modal-close-x" onclick="closeModal('launchCLModal')">&times;</button>
+    </div>
     <div class="field"><label>Category</label>
       <select id="lcCat"></select>
     </div>
@@ -664,9 +723,12 @@
 </div>
 
 <!-- Activity type modal -->
-<div class="modal-overlay hidden" id="actTypeModal">
+<div class="modal-overlay hidden" id="actTypeModal" onclick="if(event.target===this)closeModal('actTypeModal')">
   <div class="modal" style="max-width:520px">
-    <h3 id="actTypeModalTitle">Add Activity Type</h3>
+    <div class="modal-header">
+      <h3 id="actTypeModalTitle">Add Activity Type</h3>
+      <button class="modal-close-x" onclick="closeModal('actTypeModal')">&times;</button>
+    </div>
     <div class="grid2">
       <div class="field"><label>Name (EN)</label><input type="text" id="atName"></div>
       <div class="field"><label>Name (IS)</label><input type="text" id="atNameIS"></div>
@@ -690,9 +752,12 @@
 </div>
 
 <!-- Credential type modal -->
-<div class="modal-overlay hidden" id="certDefModal">
+<div class="modal-overlay hidden" id="certDefModal" onclick="if(event.target===this)closeModal('certDefModal')">
   <div class="modal" style="max-width:560px">
-    <h3 id="certDefModalTitle">Add Credential Type</h3>
+    <div class="modal-header">
+      <h3 id="certDefModalTitle">Add Credential Type</h3>
+      <button class="modal-close-x" onclick="closeModal('certDefModal')">&times;</button>
+    </div>
     <div class="field">
       <label>Name</label>
       <input type="text" id="cdName" placeholder="e.g. World Sailing Credential">
@@ -709,6 +774,9 @@
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="cdStaffOnly"> Staff-only cert
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="cdClubEndorsement"> Club endorsement
       </label>
       <label style="display:flex;align-items:center;gap:8px">Card colour
         <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
@@ -751,9 +819,12 @@
 </div>
 
 <!-- Member cert assignment modal -->
-<div class="modal-overlay hidden" id="memberCertModal">
+<div class="modal-overlay hidden" id="memberCertModal" onclick="if(event.target===this)closeModal('memberCertModal')">
   <div class="modal" style="max-width:480px">
-    <h3>Credentials — <span id="mcmMemberName"></span></h3>
+    <div class="modal-header">
+      <h3>Credentials — <span id="mcmMemberName"></span></h3>
+      <button class="modal-close-x" onclick="closeModal('memberCertModal')">&times;</button>
+    </div>
 
     <div style="margin-bottom:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
@@ -796,9 +867,12 @@
 </div>
 
 <!-- Boat QR modal -->
-<div class="modal-overlay hidden" id="qrModal">
+<div class="modal-overlay hidden" id="qrModal" onclick="if(event.target===this)closeModal('qrModal')">
   <div class="modal" style="max-width:360px;text-align:center">
-    <h3 id="qrBoatName" style="font-size:18px"></h3>
+    <div class="modal-header">
+      <h3 id="qrBoatName" style="font-size:18px"></h3>
+      <button class="modal-close-x" onclick="closeModal('qrModal')">&times;</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:16px" id="qrCategory"></div>
     <img id="qrImg" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--border)">
     <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
@@ -1285,9 +1359,130 @@ function openBoatModal(id) {
   document.getElementById("bLoa").value        = b ? (b.loa || "")            : "";
   document.getElementById("bTypeModel").value  = b ? (b.typeModel || "")      : "";
   populateDefaultPortSelect(b ? (b.defaultPortId || "") : "");
+  // Ownership
+  document.getElementById("bOwnership").value = b && b.ownership === 'private' ? 'private' : 'club';
+  document.getElementById("bOwnerId").value   = b ? (b.ownerId || '') : '';
+  document.getElementById("bOwnerSearch").value = '';
+  document.getElementById("bOwnerName").textContent = b && b.ownerName ? b.ownerName : '';
+  document.getElementById("bOwnerSuggestions").innerHTML = '';
+  // Charter
+  document.getElementById("bCharterForm").classList.add("hidden");
+  document.getElementById("bCharterMemberKt").value = '';
+  document.getElementById("bCharterMemberSearch").value = '';
+  document.getElementById("bCharterMemberName").textContent = '';
+  document.getElementById("bCharterStart").value = '';
+  document.getElementById("bCharterEnd").value = '';
+  updateOwnershipFields();
+  renderCharterInfo(b);
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
   openModal("boatModal");
+}
+
+// ── Ownership helpers ──────────────────────────────────────────────────────────
+function updateOwnershipFields() {
+  const isPrivate = document.getElementById("bOwnership").value === 'private';
+  document.getElementById("bOwnerField").classList.toggle("hidden", !isPrivate);
+  document.getElementById("bCharterSection").style.display = isPrivate ? 'none' : '';
+}
+
+function searchBoatOwner(q) {
+  const drop = document.getElementById("bOwnerSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  const ql = q.toLowerCase();
+  const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+    onclick="selectBoatOwner('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectBoatOwner(kt, name) {
+  document.getElementById("bOwnerId").value = kt;
+  document.getElementById("bOwnerSearch").value = '';
+  document.getElementById("bOwnerName").textContent = name;
+  document.getElementById("bOwnerSuggestions").innerHTML = '';
+  document.getElementById("bOwnerSuggestions").style.display = 'none';
+}
+
+// ── Charter helpers ───────────────────────────────────────────────────────────
+function renderCharterInfo(boat) {
+  const infoEl = document.getElementById("bCharterInfo");
+  const actEl  = document.getElementById("bCharterActions");
+  if (!boat || boat.ownership === 'private') {
+    infoEl.textContent = '';
+    actEl.innerHTML = '';
+    return;
+  }
+  if (boat.charter && boat.charter.memberName) {
+    const ch = boat.charter;
+    infoEl.innerHTML = `${esc(s('fleet.charteredTo',{name:ch.memberName}))} ${esc(s('fleet.charteredUntil',{date:ch.endDate}))}`;
+    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button> `
+                    + `<button class="btn btn-danger" style="font-size:11px" onclick="removeCharterFromModal()">${esc(s('boat.removeCharter'))}</button>`;
+  } else {
+    infoEl.textContent = '';
+    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button>`;
+  }
+}
+
+function showCharterForm() {
+  document.getElementById("bCharterForm").classList.remove("hidden");
+}
+
+function cancelCharterForm() {
+  document.getElementById("bCharterForm").classList.add("hidden");
+}
+
+function searchCharterMember(q) {
+  const drop = document.getElementById("bCharterMemberSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  const ql = q.toLowerCase();
+  const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+    onclick="selectCharterMember('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectCharterMember(kt, name) {
+  document.getElementById("bCharterMemberKt").value = kt;
+  document.getElementById("bCharterMemberSearch").value = '';
+  document.getElementById("bCharterMemberName").textContent = name;
+  document.getElementById("bCharterMemberSuggestions").innerHTML = '';
+  document.getElementById("bCharterMemberSuggestions").style.display = 'none';
+}
+
+async function saveCharterFromModal() {
+  const boatId = editingId;
+  if (!boatId) { toast("Save the boat first.", "err"); return; }
+  const kt   = document.getElementById("bCharterMemberKt").value;
+  const name = document.getElementById("bCharterMemberName").textContent;
+  const start = document.getElementById("bCharterStart").value;
+  const end   = document.getElementById("bCharterEnd").value;
+  if (!kt || !name) { toast("Select a member.", "err"); return; }
+  if (!start || !end) { toast("Set start and end dates.", "err"); return; }
+  try {
+    await apiPost('saveCharter', { boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end });
+    // Update local boat data
+    const b = _allBoats.find(x => x.id === boatId);
+    if (b) b.charter = { memberKennitala: kt, memberName: name, startDate: start, endDate: end };
+    cancelCharterForm();
+    renderCharterInfo(b);
+    toast(s('boat.charterSaved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+async function removeCharterFromModal() {
+  const boatId = editingId;
+  if (!boatId) return;
+  if (!confirm(s('boat.removeCharter') + '?')) return;
+  try {
+    await apiPost('removeCharter', { boatId });
+    const b = _allBoats.find(x => x.id === boatId);
+    if (b) delete b.charter;
+    renderCharterInfo(b);
+    toast(s('boat.charterRemoved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 async function saveBoat() {
@@ -1296,6 +1491,7 @@ async function saveBoat() {
 
   const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
+  const ownershipVal = document.getElementById("bOwnership").value;
   const payload = {
     id, name,
     category:      cat,
@@ -1307,6 +1503,10 @@ async function saveBoat() {
     // all boats
     typeModel:      document.getElementById("bTypeModel").value.trim(),
     loa:            parseFloat(document.getElementById("bLoa").value) || '',
+    // ownership
+    ownership:      ownershipVal,
+    ownerId:        ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
+    ownerName:      ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
@@ -1714,7 +1914,10 @@ function renderCertDefs() {
   const sortedCertDefs = certDefs.slice().sort((a, b) =>
     (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' })
   );
-  el.innerHTML = sortedCertDefs.map(d => {
+  const certifications = sortedCertDefs.filter(d => !d.clubEndorsement);
+  const endorsements   = sortedCertDefs.filter(d => !!d.clubEndorsement);
+
+  function certDefRow(d) {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
     const expiryStr = d.expires
@@ -1737,7 +1940,18 @@ function renderCertDefs() {
       <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">×</button>
     </div>`;
-  }).join("");
+  }
+
+  let html = '';
+  if (certifications.length) {
+    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:8px 0 6px">${s('admin.certTypes')}</div>`;
+    html += certifications.map(certDefRow).join('');
+  }
+  if (endorsements.length) {
+    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:${certifications.length ? '16' : '8'}px 0 6px">${s('cert.clubEndorsements')}</div>`;
+    html += endorsements.map(certDefRow).join('');
+  }
+  el.innerHTML = html;
 }
 
 function openCertDefModal(id) {
@@ -1748,6 +1962,7 @@ function openCertDefModal(id) {
   document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
+  document.getElementById("cdClubEndorsement").checked = d ? !!d.clubEndorsement : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
   document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
   document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
@@ -1773,6 +1988,7 @@ async function saveCertDef() {
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     subcats:          gatherSubcats(),
     staffOnly:        document.getElementById("cdStaffOnly").checked,
+    clubEndorsement:  document.getElementById("cdClubEndorsement").checked,
     color:            document.getElementById("cdColor").value,
     hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
     expires,

@@ -182,9 +182,12 @@
 </div><!-- /page-wrap -->
 
 <!-- ══ NEW REQUEST MODAL ══ -->
-<div class="modal-overlay hidden" id="newModal">
+<div class="modal-overlay hidden" id="newModal" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
-    <h3 id="modalTitle">🔧 New Maintenance Request</h3>
+    <div class="modal-header">
+      <h3 id="modalTitle" style="margin:0">🔧 New Maintenance Request</h3>
+      <button class="modal-close-x" onclick="closeNewModal()">&times;</button>
+    </div>
 
     <div class="field">
       <label>Category</label>

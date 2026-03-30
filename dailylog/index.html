@@ -195,9 +195,12 @@
 </div><!-- /mainWrap -->
 
 <!-- ══ ACTIVITY MODAL ══ -->
-<div class="modal-overlay hidden" id="activityModal">
+<div class="modal-overlay hidden" id="activityModal" onclick="if(event.target===this)closeModal('activityModal')">
   <div class="modal">
-    <h3 data-s="daily.activityModal"></h3>
+    <div class="modal-header">
+      <h3 data-s="daily.activityModal"></h3>
+      <button class="modal-close-x" onclick="closeModal('activityModal')">&times;</button>
+    </div>
     <div class="field">
       <label data-s="daily.actType"></label>
       <div class="type-btns" id="actTypeBtns"></div>
@@ -249,7 +252,10 @@
 <!-- ══ GROUP LINK PICKER ══ -->
 <div class="modal-overlay hidden" id="groupLinkModal" onclick="if(event.target===this)closeModal('groupLinkModal')">
   <div class="modal" style="max-width:480px">
-    <h3 style="margin-bottom:14px">Link Group Checkout</h3>
+    <div class="modal-header">
+      <h3 style="margin:0">Link Group Checkout</h3>
+      <button class="modal-close-x" onclick="closeModal('groupLinkModal')">&times;</button>
+    </div>
     <div id="groupLinkPickerCards" style="margin-bottom:14px"></div>
     <div id="groupLinkEmpty" style="display:none;color:var(--muted);font-size:12px;margin-bottom:14px">No active group checkouts today.</div>
     <div class="btn-row">

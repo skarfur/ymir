@@ -336,6 +336,7 @@ function route_(action, b) {
     case 'importMembers': return importMembers_(b.rows);
     case 'deactivateMembers': return deactivateMembers_(b.ids);
     case 'setLang': return setLang_(b.kennitala, b.lang);
+    case 'savePreferences': return savePreferences_(b);
     case 'getDailyLog': return getDailyLog_(b.date);
     case 'saveDailyLog': return saveDailyLog_(b);
     case 'getMaintenance': return getMaintenance_();
@@ -382,6 +383,8 @@ function route_(action, b) {
     case 'saveGroupCheckout': return saveGroupCheckout_(b);
     case 'groupCheckIn': return groupCheckIn_(b);
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
+    case 'saveCharter': return saveCharter_(b);
+    case 'removeCharter': return removeCharter_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'getMyLogbook': return getMyLogbook_(b);
     case 'saveTrip': return saveTrip_(b);
@@ -435,6 +438,7 @@ function validateMember_(kennitala) {
       certifications: m.certifications || '',
       initials: m.initials || extractInitials_(m.name),
       lang: m.lang || 'EN',
+      preferences: m.preferences || '{}',
     }
   });
 }
@@ -540,6 +544,33 @@ function setLang_(kennitala, lang) {
   if (!updated) return failJ('Member not found', 404);
   cDel_('members');
   return okJ({ lang: l });
+}
+
+function savePreferences_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  const kt = String(b.kennitala).trim();
+  const ex = findOne_('members', 'kennitala', kt);
+  if (!ex) return failJ('Member not found', 404);
+
+  const updates = { updatedAt: now_() };
+
+  // Initials override
+  if (b.initials !== undefined) {
+    updates.initials = String(b.initials || '').trim().toUpperCase() || extractInitials_(ex.name);
+  }
+  // Language
+  if (b.lang !== undefined) {
+    const l = String(b.lang || '').toUpperCase();
+    if (['EN', 'IS'].includes(l)) updates.lang = l;
+  }
+  // Preferences JSON (windUnit, theme, statsVisibility)
+  if (b.preferences !== undefined) {
+    updates.preferences = typeof b.preferences === 'string' ? b.preferences : JSON.stringify(b.preferences);
+  }
+
+  updateRow_('members', 'kennitala', kt, updates);
+  cDel_('members');
+  return okJ({ saved: true });
 }
 
 
@@ -1273,6 +1304,7 @@ function saveCertDef_(b) {
     description: String(b.description || '').trim(),
     renewalDays: Number(b.renewalDays) || 0,
     hasIdNumber: !!b.hasIdNumber,
+    clubEndorsement: !!b.clubEndorsement,
     subcats: Array.isArray(b.subcats) ? b.subcats.map(s => ({
       key: String(s.key || s.label || '').toLowerCase().replace(/\s+/g, '_'),
       label: String(s.label || '').trim(),
@@ -1511,6 +1543,41 @@ function deleteCheckout_(id) {
   if (!id) return failJ('id required');
   const deleted = deleteRow_('checkouts', 'id', id);
   cDel_('checkouts'); return okJ({ deleted });
+}
+
+// ── Charter management ───────────────────────────────────────────────────────
+
+function saveCharter_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.memberKennitala || !b.memberName) return failJ('member required');
+  if (!b.startDate || !b.endDate) return failJ('startDate and endDate required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  boats[idx].charter = {
+    memberKennitala: b.memberKennitala,
+    memberName: b.memberName,
+    startDate: b.startDate,
+    endDate: b.endDate,
+  };
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+function removeCharter_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  delete boats[idx].charter;
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
 }
 
 
@@ -3887,5 +3954,19 @@ function addHandshakeColumns() {
   var confCols = SCHEMA_.trip_confirmations;
   ensureTab_(ss, 'trip_confirmations', confCols);
   Logger.log('trip_confirmations tab ready');
+}
+
+function addPreferencesColumn() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('members');
+  if (!sheet) { Logger.log('members tab not found'); return; }
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  if (headers.indexOf('preferences') === -1) {
+    var col = sheet.getLastColumn() + 1;
+    sheet.getRange(1, col).setValue('preferences');
+    Logger.log('Added preferences column at col ' + col);
+  } else {
+    Logger.log('preferences column already exists');
+  }
 }
 

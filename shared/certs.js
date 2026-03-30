@@ -1,5 +1,5 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, staffOnly, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
+// Cert def: { id, name, description, color, staffOnly, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
 // Assignment: { certId, sub, assignedBy, assignedAt, expiresAt }
 
 const DEFAULT_CERT_DEFS = [
@@ -44,8 +44,7 @@ function enrichMemberCerts(memberCerts, certDefs) {
 }
 
 function isClubEndorsement(enriched) {
-  const authority = enriched.subcat?.issuingAuthority || enriched.def?.issuingAuthority || '';
-  return authority === 'Siglingafélagið Ýmir';
+  return !!enriched.def?.clubEndorsement;
 }
 
 function groupCerts(enrichedList) {

@@ -178,7 +178,10 @@
 <!-- Entry modal -->
 <div id="prModal" class="modal-bg hidden" onclick="if(event.target===this)prCloseModal()">
   <div class="modal-box">
-    <h3 class="modal-title" id="prModalTitle"></h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 class="modal-title" id="prModalTitle" style="margin:0"></h3>
+      <button class="modal-close-x" onclick="prCloseModal()">&times;</button>
+    </div>
     <div class="field"><label data-s="payroll.employee"></label>
       <select id="meEmp" style="width:100%"></select></div>
     <div class="field"><label data-s="payroll.clockInLabel"></label>

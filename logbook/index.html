@@ -274,7 +274,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 </div>
 
 <!-- Log manually modal -->
-<div class="modal-overlay hidden" id="logModal">
+<div class="modal-overlay hidden" id="logModal" onclick="if(event.target===this)closeLogModal()">
   <div class="modal-sheet">
     <div class="modal-title">
       <span id="logModalTitle">Add a log entry</span>
@@ -423,6 +423,8 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 requireAuth();
 const user = getUser();
 const IS   = getLang() === 'IS';
+const _windUnit = getPref('windUnit', 'bft');
+const _statsVis = (getPrefs().statsVisibility) || {};
 
 let myLogbook = [];  // unified logbook: own trips + crew participations (from getMyLogbook)
 let allBoats = [], allLocs = [], allMembers = [];
@@ -449,13 +451,28 @@ function bftLabel(b){
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function renderStats(){
   const year=String(new Date().getFullYear());
-  const season=myLogbook.filter(t=>(t.date||'').startsWith(year));
-  const hours=myLogbook.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const skipperTrips=myLogbook.filter(t=>t._src!=='confirmation' && (!t.role||t.role==='skipper'));
-  document.getElementById('stTrips').textContent   = myLogbook.length;
-  document.getElementById('stHours').textContent   = hours.toFixed(0)+'h';
-  document.getElementById('stSeason').textContent  = season.length;
-  document.getElementById('stSkipper').textContent = skipperTrips.length;
+  const season=myTrips.filter(t=>(t.date||'').startsWith(year));
+  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  const skipperTrips=myTrips.filter(t=>!t.role||t.role==='skipper');
+
+  // Apply stats visibility preferences
+  const stTripsEl=document.getElementById('stTrips');
+  const stHoursEl=document.getElementById('stHours');
+  const stSeasonEl=document.getElementById('stSeason');
+  const stSkipperEl=document.getElementById('stSkipper');
+
+  if(_statsVis.career===false){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
+  if(_statsVis.hours===false){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
+  if(_statsVis.ytd===false){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
+  if(_statsVis.skipper===false){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
+
+  // Adjust grid columns based on visible cards
+  const visibleCards=[_statsVis.career!==false,_statsVis.hours!==false,_statsVis.ytd!==false,_statsVis.skipper!==false].filter(Boolean).length;
+  const strip=document.querySelector('.stat-strip');
+  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+visibleCards+',1fr)'}
+  else if(strip && visibleCards===0){strip.style.display='none'}
+
+  if(_statsVis.byCategory===false){document.getElementById('catHours').style.display='none';return}
 
   const catH={};
   myLogbook.forEach(t=>{
@@ -519,8 +536,8 @@ function tripCard(t){
   let wx = null;
   try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
 
-  // Card-face wind: prefer snapshot ws, fall back to beaufort
-  const cardWs  = wx?.ws != null ? Math.round(wx.ws)+'m/s' : (t.beaufort ? 'Force '+t.beaufort : '');
+  // Card-face wind: use user's preferred unit
+  const cardWs  = formatWindValue(wx?.ws, t.beaufort, _windUnit);
   const cardDir = wx?.dir || t.windDir || '';
   const cardArrow = dirArrow(cardDir);
   const windLine = [cardArrow && `<span style="font-size:16px;line-height:1">${cardArrow}</span>`,
@@ -534,10 +551,11 @@ function tripCard(t){
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
-  const eWs   = wx?.ws!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${Math.round(wx.ws)} m/s${wx.bft!=null?' · Force '+wx.bft:''}</span></div>`
-                              : (t.beaufort ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">Force ${esc(t.beaufort)} <small style="color:var(--muted)">${bftLabel(t.beaufort)}</small></span></div>` : '');
+  const _expWind = formatWindValue(wx?.ws, t.beaufort, _windUnit);
+  const _expExtra = wx?.ws!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(wx.ws)) : (_windUnit==='bft' && t.beaufort ? ' <small style="color:var(--muted)">'+bftLabel(t.beaufort)+'</small>' : '');
+  const eWs = _expWind ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">${esc(_expWind)}${_expExtra}</span></div>` : '';
   const eDir  = (wx?.dir||t.windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">${dirArrow(wx?.dir||t.windDir)} ${esc(wx?.dir||t.windDir)}</span></div>` : '';
-  const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${Math.round(wx.wg)} m/s</span></div>` : '';
+  const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">${_windUnit==='bft'?'Force '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
   const eCond = wx?.cond?.desc ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '';
   const eAir  = wx?.tc!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '';
   const eFeel = wx?.feels!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">Feels like</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '';
@@ -1839,9 +1857,12 @@ setTimeout(loadConfirmations,1500);
 </script>
 
 <!-- Guest prompt modal (for adding non-members as crew) -->
-<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700">
+<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700" onclick="if(event.target===this)closeLgGuestModal()">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
-    <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;margin:0 0 14px;font-weight:600">Add guest</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px">
+      <div style="font-size:12px;color:var(--brass);letter-spacing:.5px;font-weight:600">Add guest</div>
+      <button class="modal-close-x" onclick="closeLgGuestModal()">&times;</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
     <div class="form-field"><label>Name</label><input type="text" id="lgGuestName" readonly></div>
     <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="lgGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>

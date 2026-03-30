@@ -464,9 +464,12 @@ function punchClockWidget(el, employeeId, opts) {
       rows += entryRow(e, label);
     });
 
-    var html = '<div class="pc-modal-bg" id="pcSummaryBg">'
+    var html = '<div class="pc-modal-bg" id="pcSummaryBg" onclick="if(event.target===this)this.remove()">'
       + '<div class="pc-modal">'
-      + '<div class="pc-modal-title">' + t('payroll.shiftSummary') + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+      + '<div class="pc-modal-title" style="margin:0">' + t('payroll.shiftSummary') + '</div>'
+      + '<button class="modal-close-x" onclick="document.getElementById(\'pcSummaryBg\').remove()">&times;</button>'
+      + '</div>'
       + '<div class="pc-modal-sub">' + today + '</div>'
       + '<div style="margin-bottom:14px">'
       + '<div class="pc-summary-row"><span class="pc-summary-lbl">' + t('payroll.totalWorked') + '</span><span class="pc-summary-val">' + fmtDurationMins(totalWorkedMins) + '</span></div>'
