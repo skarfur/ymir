@@ -562,7 +562,10 @@ function populateSelects() {
   const active = checkouts.filter(c => c.status === 'out');
   boats.filter(b => !active.find(c => c.boatId === b.id) && !boolVal(b.oos))
     .forEach(b => {
-      const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; bSel.appendChild(o);
+      const o = document.createElement('option'); o.value=b.id;
+      const chartered = isChartered(b);
+      o.textContent = b.name + (chartered ? ' [' + s('fleet.badgeChartered') + ']' : '');
+      bSel.appendChild(o);
     });
   const lSel = document.getElementById('coLocation');
   locations.filter(l => l.type !== 'port').forEach(l => {
@@ -608,6 +611,7 @@ function renderFleet() {
     onAvailClick: 'selectBoatForCheckout',
     toggleFn:     'toggleFleetCat',
     collapsed:    true,
+    staffView:    true,
   });
 }
 
@@ -835,6 +839,11 @@ async function submitCheckout() {
   const boat     = boats.find(b => b.id === bid) || {};
   const location = locations.find(l => l.id === lid) || {};
   const member   = members.find(m => m.kennitala === kt) || {};
+  // Charter override warning for staff
+  if (isChartered(boat)) {
+    const ch = boat.charter;
+    if (!confirm(s('fleet.charterOverride', { name: ch.memberName, date: ch.endDate }))) return;
+  }
   const snap     = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   try {
     const res = await apiPost('saveCheckout', {
@@ -1112,6 +1121,7 @@ function openGroupModal() {
     btn.dataset.id = b.id;
     if (boolVal(b.oos)) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Out of service'; }
     else if (out) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Already out'; }
+    else if (isChartered(b)) { btn.style.opacity='.55'; btn.title = s('fleet.charteredTo',{name:b.charter.memberName}); btn.addEventListener('click', function() { if(confirm(s('fleet.charterOverride',{name:b.charter.memberName,date:b.charter.endDate}))) toggleGmBoat(this); }); }
     else btn.addEventListener('click', function() { toggleGmBoat(this); });
     grid.appendChild(btn);
   });

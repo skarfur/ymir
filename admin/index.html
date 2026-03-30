@@ -587,6 +587,47 @@
         <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
       </div>
     </div>
+    <!-- Ownership -->
+    <div class="field">
+      <label data-s="boat.ownership">Ownership</label>
+      <select id="bOwnership" onchange="updateOwnershipFields()">
+        <option value="club">Club boat</option>
+        <option value="private">Private boat</option>
+      </select>
+    </div>
+    <div class="field hidden" id="bOwnerField">
+      <label data-s="boat.owner">Owner</label>
+      <div style="position:relative">
+        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="Search member..." oninput="searchBoatOwner(this.value)">
+        <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
+        <input type="hidden" id="bOwnerId">
+        <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <!-- Charter (club boats only) -->
+    <div id="bCharterSection">
+      <div id="bCharterInfo" style="font-size:11px;color:var(--brass);margin-bottom:6px"></div>
+      <div id="bCharterForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+        <div class="field">
+          <label data-s="boat.charterMember">Chartered to</label>
+          <div style="position:relative">
+            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="Search member..." oninput="searchCharterMember(this.value)">
+            <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+            <input type="hidden" id="bCharterMemberKt">
+            <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label data-s="boat.charterStart">Start date</label><input type="date" id="bCharterStart"></div>
+          <div class="field"><label data-s="boat.charterEnd">End date</label><input type="date" id="bCharterEnd"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()">Cancel</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()">Save Charter</button>
+        </div>
+      </div>
+      <div id="bCharterActions"></div>
+    </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
     </div>
@@ -1315,9 +1356,130 @@ function openBoatModal(id) {
   document.getElementById("bLoa").value        = b ? (b.loa || "")            : "";
   document.getElementById("bTypeModel").value  = b ? (b.typeModel || "")      : "";
   populateDefaultPortSelect(b ? (b.defaultPortId || "") : "");
+  // Ownership
+  document.getElementById("bOwnership").value = b && b.ownership === 'private' ? 'private' : 'club';
+  document.getElementById("bOwnerId").value   = b ? (b.ownerId || '') : '';
+  document.getElementById("bOwnerSearch").value = '';
+  document.getElementById("bOwnerName").textContent = b && b.ownerName ? b.ownerName : '';
+  document.getElementById("bOwnerSuggestions").innerHTML = '';
+  // Charter
+  document.getElementById("bCharterForm").classList.add("hidden");
+  document.getElementById("bCharterMemberKt").value = '';
+  document.getElementById("bCharterMemberSearch").value = '';
+  document.getElementById("bCharterMemberName").textContent = '';
+  document.getElementById("bCharterStart").value = '';
+  document.getElementById("bCharterEnd").value = '';
+  updateOwnershipFields();
+  renderCharterInfo(b);
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
   openModal("boatModal");
+}
+
+// ── Ownership helpers ──────────────────────────────────────────────────────────
+function updateOwnershipFields() {
+  const isPrivate = document.getElementById("bOwnership").value === 'private';
+  document.getElementById("bOwnerField").classList.toggle("hidden", !isPrivate);
+  document.getElementById("bCharterSection").style.display = isPrivate ? 'none' : '';
+}
+
+function searchBoatOwner(q) {
+  const drop = document.getElementById("bOwnerSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  const ql = q.toLowerCase();
+  const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+    onclick="selectBoatOwner('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectBoatOwner(kt, name) {
+  document.getElementById("bOwnerId").value = kt;
+  document.getElementById("bOwnerSearch").value = '';
+  document.getElementById("bOwnerName").textContent = name;
+  document.getElementById("bOwnerSuggestions").innerHTML = '';
+  document.getElementById("bOwnerSuggestions").style.display = 'none';
+}
+
+// ── Charter helpers ───────────────────────────────────────────────────────────
+function renderCharterInfo(boat) {
+  const infoEl = document.getElementById("bCharterInfo");
+  const actEl  = document.getElementById("bCharterActions");
+  if (!boat || boat.ownership === 'private') {
+    infoEl.textContent = '';
+    actEl.innerHTML = '';
+    return;
+  }
+  if (boat.charter && boat.charter.memberName) {
+    const ch = boat.charter;
+    infoEl.innerHTML = `${esc(s('fleet.charteredTo',{name:ch.memberName}))} ${esc(s('fleet.charteredUntil',{date:ch.endDate}))}`;
+    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button> `
+                    + `<button class="btn btn-danger" style="font-size:11px" onclick="removeCharterFromModal()">${esc(s('boat.removeCharter'))}</button>`;
+  } else {
+    infoEl.textContent = '';
+    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button>`;
+  }
+}
+
+function showCharterForm() {
+  document.getElementById("bCharterForm").classList.remove("hidden");
+}
+
+function cancelCharterForm() {
+  document.getElementById("bCharterForm").classList.add("hidden");
+}
+
+function searchCharterMember(q) {
+  const drop = document.getElementById("bCharterMemberSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  const ql = q.toLowerCase();
+  const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+    onclick="selectCharterMember('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectCharterMember(kt, name) {
+  document.getElementById("bCharterMemberKt").value = kt;
+  document.getElementById("bCharterMemberSearch").value = '';
+  document.getElementById("bCharterMemberName").textContent = name;
+  document.getElementById("bCharterMemberSuggestions").innerHTML = '';
+  document.getElementById("bCharterMemberSuggestions").style.display = 'none';
+}
+
+async function saveCharterFromModal() {
+  const boatId = editingId;
+  if (!boatId) { toast("Save the boat first.", "err"); return; }
+  const kt   = document.getElementById("bCharterMemberKt").value;
+  const name = document.getElementById("bCharterMemberName").textContent;
+  const start = document.getElementById("bCharterStart").value;
+  const end   = document.getElementById("bCharterEnd").value;
+  if (!kt || !name) { toast("Select a member.", "err"); return; }
+  if (!start || !end) { toast("Set start and end dates.", "err"); return; }
+  try {
+    await apiPost('saveCharter', { boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end });
+    // Update local boat data
+    const b = _allBoats.find(x => x.id === boatId);
+    if (b) b.charter = { memberKennitala: kt, memberName: name, startDate: start, endDate: end };
+    cancelCharterForm();
+    renderCharterInfo(b);
+    toast(s('boat.charterSaved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+async function removeCharterFromModal() {
+  const boatId = editingId;
+  if (!boatId) return;
+  if (!confirm(s('boat.removeCharter') + '?')) return;
+  try {
+    await apiPost('removeCharter', { boatId });
+    const b = _allBoats.find(x => x.id === boatId);
+    if (b) delete b.charter;
+    renderCharterInfo(b);
+    toast(s('boat.charterRemoved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 async function saveBoat() {
@@ -1326,6 +1488,7 @@ async function saveBoat() {
 
   const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
+  const ownershipVal = document.getElementById("bOwnership").value;
   const payload = {
     id, name,
     category:      cat,
@@ -1337,6 +1500,10 @@ async function saveBoat() {
     // all boats
     typeModel:      document.getElementById("bTypeModel").value.trim(),
     loa:            parseFloat(document.getElementById("bLoa").value) || '',
+    // ownership
+    ownership:      ownershipVal,
+    ownerId:        ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
+    ownerName:      ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
