@@ -307,6 +307,23 @@ textarea { min-height: 70px; }
 }
 .modal h3 { color: var(--brass); margin-bottom: 18px; font-size: 16px; }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.modal-header h3 { margin: 0; }
+.modal-close-x {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0 4px;
+  line-height: 1;
+}
+
 /* ── MISC ─────────────────────────────────────────────────────────────────────── */
 
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
