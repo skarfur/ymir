@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Captain's Quarters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/strings.js"></script>
+<script src="../shared/boats.js"></script>
+<script src="../shared/certs.js"></script>
+<script src="../shared/maintenance.js"></script>
+<style>
+/* ── Stats ── */
+.cq-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.cq-stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
+.cq-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
+.cq-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
+
+/* ── Section headers ── */
+.cq-section { margin-bottom:20px; }
+.cq-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.cq-section-hdr .badge { font-size:9px; padding:2px 8px; border-radius:10px; font-weight:500; }
+
+/* ── Filter pills ── */
+.cq-pills { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.cq-pill { padding:5px 12px; border-radius:16px; border:1px solid var(--border); background:var(--surface);
+  font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .15s; }
+.cq-pill.active { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
+
+/* ── Cards ── */
+.cq-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+  padding:12px 14px; margin-bottom:8px; }
+.cq-card-title { font-size:12px; font-weight:500; color:var(--text); }
+.cq-card-sub { font-size:11px; color:var(--muted); margin-top:3px; }
+.cq-card-meta { font-size:10px; color:var(--brass); margin-top:2px; }
+.cq-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
+.cq-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:6px; cursor:pointer; border:1px solid; }
+.cq-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }
+.cq-card .btn-confirm:hover { background:var(--green)33; }
+.cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
+.cq-card .btn-reject:hover { background:var(--red)33; }
+
+/* ── Maintenance severity ── */
+.sev-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.sev-low      { background:var(--green); }
+.sev-medium   { background:var(--yellow); }
+.sev-high     { background:var(--orange); }
+.sev-critical { background:var(--red); }
+
+/* ── Trip rows ── */
+.cq-trip { padding:10px 0; border-bottom:1px solid var(--border)44; font-size:12px; }
+.cq-trip:last-child { border-bottom:none; }
+.cq-trip-date { font-size:10px; color:var(--brass); }
+.cq-trip-title { font-weight:500; margin-top:2px; }
+.cq-trip-meta { font-size:11px; color:var(--muted); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ── Bio section ── */
+.cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
+  resize:vertical; box-sizing:border-box; }
+.cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--brass); }
+.cq-headshot-placeholder { width:80px; height:80px; border-radius:50%; background:var(--surface);
+  border:2px dashed var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:var(--muted); }
+
+/* ── Boat cards ── */
+.cq-boat { background:var(--card); border:1px solid var(--border); border-radius:8px;
+  padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+.cq-boat-name { font-size:13px; font-weight:500; }
+.cq-boat-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.cq-boat-actions { margin-left:auto; display:flex; gap:6px; }
+.cq-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:6px;
+  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
+.cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass); }
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .cq-stats { grid-template-columns:1fr 1fr; }
+  .cq-stat .sn { font-size:20px; }
+}
+</style>
+</head>
+<body>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
+
+<div class="page-content">
+
+  <div class="mb-14">
+    <div style="font-size:16px;font-weight:500;color:var(--text)" id="cqTitle"></div>
+    <div class="text-sm text-muted" style="margin-top:2px" id="cqSubtitle"></div>
+  </div>
+
+  <!-- ══ YTD STATS ══ -->
+  <div class="cq-stats" id="cqStats">
+    <div class="cq-stat"><div class="sn" id="statTrips">—</div><div class="sl" data-s="cq.ytdTrips"></div></div>
+    <div class="cq-stat"><div class="sn" id="statHours">—</div><div class="sl" data-s="cq.ytdHours"></div></div>
+    <div class="cq-stat"><div class="sn" id="statDist">—</div><div class="sl" data-s="cq.ytdDistance"></div></div>
+  </div>
+
+  <!-- ══ MAINTENANCE ══ -->
+  <div class="cq-section" id="sectMaint">
+    <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
+    <div class="cq-pills" id="maintPills"></div>
+    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ VALIDATION REQUESTS ══ -->
+  <div class="cq-section" id="sectValidation">
+    <div class="cq-section-hdr" data-s="cq.validationTitle"></div>
+    <div id="validationList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ CREW APPROVALS ══ -->
+  <div class="cq-section" id="sectCrew">
+    <div class="cq-section-hdr" data-s="cq.crewTitle"></div>
+    <div id="crewList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ TRIPS ══ -->
+  <div class="cq-section" id="sectTrips">
+    <div class="cq-section-hdr" data-s="cq.tripsTitle"></div>
+    <div class="cq-pills" id="tripPills"></div>
+    <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ BIO & PROFILE ══ -->
+  <div class="cq-section" id="sectBio">
+    <div class="cq-section-hdr" data-s="cq.bioTitle"></div>
+    <div class="cq-card">
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">
+        <div id="headshotWrap">
+          <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="cq.headshotLabel"></label>
+          <input type="file" id="headshotFile" accept="image/*" style="font-size:11px;color:var(--text);width:100%">
+        </div>
+      </div>
+      <textarea class="cq-bio-area" id="bioText" maxlength="500"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <a id="publicProfileLink" href="#" target="_blank" style="font-size:11px;color:var(--brass);text-decoration:none" data-s="cq.viewPublicProfile"></a>
+        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="saveBio()" data-s="btn.save"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MY BOATS ══ -->
+  <div class="cq-section" id="sectBoats">
+    <div class="cq-section-hdr" data-s="cq.boatsTitle"></div>
+    <div id="boatList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+</div>
+
+<!-- ══ PORT CHANGE MODAL ══ -->
+<div class="modal-overlay hidden" id="portModal" onclick="if(event.target===this)closeModal('portModal')">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3 id="portModalTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('portModal')">×</button>
+    </div>
+    <div class="field">
+      <label data-s="admin.homePort"></label>
+      <select id="portSelect"></select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('portModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="savePort()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ STATE ════════════════════════════════════════════════════════════════════
+const user = requireAuth(isCaptain);
+if (!user) throw new Error('Not a captain');
+const L = getLang();
+
+let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
+let _confirmations = [], _verificationRequests = [];
+let _maintFilter = 'open', _tripFilter = 'my';
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  buildHeader('captain');
+  applyStrings();
+
+  document.getElementById('cqTitle').textContent = s('cq.title');
+  document.getElementById('cqSubtitle').textContent = user.name + ' — ' + s('cq.subtitle');
+  document.getElementById('bioText').placeholder = s('cq.bioPlaceholder');
+
+  // Load existing bio & headshot
+  if (user.bio) document.getElementById('bioText').value = user.bio;
+  if (user.headshotUrl) renderHeadshot(user.headshotUrl);
+
+  // Public profile link
+  document.getElementById('publicProfileLink').href = SCRIPT_URL + '?action=captain&id=' + user.id;
+
+  // Headshot upload handler
+  document.getElementById('headshotFile').addEventListener('change', uploadHeadshot);
+
+  // Build filter pills
+  buildMaintPills();
+  buildTripPills();
+
+  // Fetch all data in parallel
+  try {
+    const [cfgRes, maintRes, tripsRes, confRes, verRes] = await Promise.all([
+      apiGet('getConfig'),
+      apiGet('getMaintenance'),
+      apiGet('getTrips', { limit: 500 }),
+      apiGet('getConfirmations', { kennitala: user.kennitala }),
+      apiGet('getVerificationRequests'),
+    ]);
+
+    _boats     = (cfgRes.boats     || []);
+    _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+    _allMaint  = maintRes.items || maintRes.maintenance || [];
+    _verificationRequests = verRes.requests || [];
+
+    // All keelboat trips
+    var allTripsRaw = tripsRes.trips || [];
+    _allTrips = allTripsRaw.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat');
+    _myTrips  = _allTrips.filter(t => String(t.kennitala) === String(user.kennitala));
+
+    // Confirmations: pending ones where I'm the recipient
+    _confirmations = confRes.confirmations || confRes.items || [];
+
+    renderStats();
+    renderMaint();
+    renderValidation();
+    renderCrew();
+    renderTrips();
+    renderBoats();
+  } catch (e) {
+    console.error(e);
+    showToast(s('toast.loadFailed') + ': ' + e.message, 'err');
+  }
+
+  warmContainer();
+});
+
+// ══ STATS ════════════════════════════════════════════════════════════════════
+function renderStats() {
+  var yearStart = new Date().getFullYear() + '-01-01';
+  var ytd = _myTrips.filter(t => (t.date || '') >= yearStart && (t.role === 'skipper' || t.role === 'captain'));
+  var hours = 0, dist = 0;
+  ytd.forEach(t => { hours += Number(t.hoursDecimal) || 0; dist += Number(t.distanceNm) || 0; });
+  document.getElementById('statTrips').textContent = ytd.length;
+  document.getElementById('statHours').textContent = hours.toFixed(1);
+  document.getElementById('statDist').textContent  = dist.toFixed(1) + ' ' + s('cq.nm');
+}
+
+// ══ MAINTENANCE ══════════════════════════════════════════════════════════════
+function buildMaintPills() {
+  var el = document.getElementById('maintPills');
+  [{k:'open',s:'cq.maintOpen'},{k:'closed',s:'cq.maintClosed'},{k:'all',s:'cq.maintAll'}].forEach(p => {
+    var btn = document.createElement('button');
+    btn.className = 'cq-pill' + (p.k === _maintFilter ? ' active' : '');
+    btn.textContent = s(p.s);
+    btn.onclick = () => { _maintFilter = p.k; buildMaintPills(); renderMaint(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderMaint() {
+  var el = document.getElementById('maintList');
+  // Filter for keelboat-related maintenance
+  var items = _allMaint.filter(m => {
+    var cat = (m.boatCategory || '').toLowerCase();
+    if (!cat && m.boatId) { var b = _boats.find(x => x.id === m.boatId); if (b) cat = (b.category || '').toLowerCase(); }
+    return cat === 'keelboat';
+  });
+  if (_maintFilter === 'open') items = items.filter(m => !m.resolved && !boolVal(m.resolved));
+  else if (_maintFilter === 'closed') items = items.filter(m => m.resolved || boolVal(m.resolved));
+  items.sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
+
+  if (!items.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noMaint') + '</div>'; return; }
+  el.innerHTML = items.slice(0, 50).map(m => {
+    var sev = m.severity || 'low';
+    var resolved = m.resolved || boolVal(m.resolved);
+    return '<div class="cq-card">'
+      + '<div class="cq-card-title"><span class="sev-dot sev-' + esc(sev) + '"></span>' + esc(m.boatName || m.itemName || 'Unknown') + '</div>'
+      + '<div class="cq-card-sub">' + esc(m.description || '').slice(0, 120) + '</div>'
+      + '<div class="cq-card-meta">' + esc(sev.toUpperCase()) + ' · '
+        + (resolved ? '<span style="color:var(--green)">RESOLVED</span>' : '<span style="color:var(--yellow)">OPEN</span>')
+        + ' · ' + esc((m.createdAt || '').slice(0, 10))
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+// ══ VALIDATION REQUESTS ══════════════════════════════════════════════════════
+function renderValidation() {
+  var el = document.getElementById('validationList');
+  if (!_verificationRequests.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noValidation') + '</div>'; return; }
+  el.innerHTML = _verificationRequests.map(r => {
+    return '<div class="cq-card">'
+      + '<div class="cq-card-title">' + esc(r.fromName || '') + '</div>'
+      + '<div class="cq-card-sub">' + esc(r.boatName || '') + ' · ' + esc(r.date || '') + '</div>'
+      + '<div class="cq-card-meta">' + esc((r.hoursDecimal || 0) + ' ' + s('cq.hrs')) + (r.distanceNm ? ' · ' + r.distanceNm + ' ' + s('cq.nm') : '') + '</div>'
+      + '<div class="conf-actions">'
+        + '<button class="btn-confirm" onclick="respondValidation(\'' + esc(r.id) + '\',\'confirmed\')">' + s('btn.confirm') + '</button>'
+        + '<button class="btn-reject" onclick="respondValidation(\'' + esc(r.id) + '\',\'rejected\')">' + s('btn.cancel') + '</button>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+async function respondValidation(id, status) {
+  try {
+    await apiPost('respondConfirmation', { id, status, responderName: user.name });
+    _verificationRequests = _verificationRequests.filter(r => r.id !== id);
+    renderValidation();
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+// ══ CREW APPROVALS ═══════════════════════════════════════════════════════════
+function renderCrew() {
+  var el = document.getElementById('crewList');
+  // Pending crew confirmations where I'm asked to confirm (crew_assigned sent TO me, or crew_join sent BY someone to me as skipper)
+  var pending = _confirmations.filter(c =>
+    c.status === 'pending' && !c.dismissed
+    && (c.type === 'crew_assigned' || c.type === 'crew_join')
+  );
+  if (!pending.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noCrew') + '</div>'; return; }
+  el.innerHTML = pending.map(c => {
+    var who = c.type === 'crew_join' ? c.fromName : c.toName;
+    return '<div class="cq-card">'
+      + '<div class="cq-card-title">' + esc(who || '') + '</div>'
+      + '<div class="cq-card-sub">' + esc(c.boatName || '') + ' · ' + esc(c.date || '') + '</div>'
+      + '<div class="cq-card-meta">' + (c.type === 'crew_join' ? 'Requesting to join as crew' : 'Crew assignment pending') + '</div>'
+      + '<div class="conf-actions">'
+        + '<button class="btn-confirm" onclick="respondCrew(\'' + esc(c.id) + '\',\'confirmed\')">' + s('btn.confirm') + '</button>'
+        + '<button class="btn-reject" onclick="respondCrew(\'' + esc(c.id) + '\',\'rejected\')">' + s('btn.cancel') + '</button>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+async function respondCrew(id, status) {
+  try {
+    await apiPost('respondConfirmation', { id, status, responderName: user.name });
+    _confirmations = _confirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
+    renderCrew();
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+// ══ TRIPS ════════════════════════════════════════════════════════════════════
+function buildTripPills() {
+  var el = document.getElementById('tripPills');
+  [{k:'my',s:'cq.myTrips'},{k:'all',s:'cq.allTrips'}].forEach(p => {
+    var btn = document.createElement('button');
+    btn.className = 'cq-pill' + (p.k === _tripFilter ? ' active' : '');
+    btn.textContent = s(p.s);
+    btn.onclick = () => { _tripFilter = p.k; buildTripPills(); renderTrips(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderTrips() {
+  var el = document.getElementById('tripList');
+  var trips = _tripFilter === 'my' ? _myTrips : _allTrips;
+  trips = trips.slice().sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
+
+  if (!trips.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noTrips') + '</div>'; return; }
+  el.innerHTML = trips.slice(0, 100).map(t => {
+    return '<div class="cq-trip">'
+      + '<div class="cq-trip-date">' + esc(t.date || '') + '</div>'
+      + '<div class="cq-trip-title">' + esc(t.boatName || '') + (_tripFilter === 'all' ? ' — <span style="color:var(--muted);font-weight:400;font-size:11px">' + esc(t.memberName || '') + '</span>' : '') + '</div>'
+      + '<div class="cq-trip-meta">'
+        + '<span>' + esc(t.locationName || '') + '</span>'
+        + '<span>' + (Number(t.hoursDecimal) || 0).toFixed(1) + ' ' + s('cq.hrs') + '</span>'
+        + (t.distanceNm ? '<span>' + t.distanceNm + ' ' + s('cq.nm') + '</span>' : '')
+        + '<span>' + esc(t.role || '') + '</span>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+// ══ BIO & HEADSHOT ═══════════════════════════════════════════════════════════
+function renderHeadshot(url) {
+  if (!url) return;
+  var wrap = document.getElementById('headshotWrap');
+  // Convert Drive URL to thumbnail
+  var displayUrl = url;
+  var driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) displayUrl = 'https://drive.google.com/thumbnail?id=' + driveMatch[1] + '&sz=w200';
+  wrap.innerHTML = '<img src="' + esc(displayUrl) + '" class="cq-headshot-preview" alt="Headshot">';
+}
+
+async function uploadHeadshot() {
+  var input = document.getElementById('headshotFile');
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 5 * 1024 * 1024) { showToast('File too large (max 5 MB)', 'err'); return; }
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      var res = await apiPost('uploadHeadshot', {
+        kennitala: user.kennitala,
+        fileData: e.target.result,
+        fileName: file.name,
+        mimeType: file.type,
+      });
+      if (res.headshotUrl) {
+        renderHeadshot(res.headshotUrl);
+        user.headshotUrl = res.headshotUrl;
+        setUser(user);
+        showToast(s('cq.headshotUploaded'), 'ok');
+      }
+    } catch (err) { showToast(err.message, 'err'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveBio() {
+  var bio = document.getElementById('bioText').value.trim();
+  try {
+    await apiPost('saveCaptainBio', { kennitala: user.kennitala, bio: bio });
+    user.bio = bio;
+    setUser(user);
+    showToast(s('cq.bioSaved'), 'ok');
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+// ══ MY BOATS ═════════════════════════════════════════════════════════════════
+function renderBoats() {
+  var el = document.getElementById('boatList');
+  // Find boats chartered to this member or owned by them
+  var myBoats = _boats.filter(b => {
+    if (b.charter && String(b.charter.memberKennitala) === String(user.kennitala)) return true;
+    if (b.ownerKennitala && String(b.ownerKennitala) === String(user.kennitala)) return true;
+    return false;
+  });
+
+  if (!myBoats.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noBoats') + '</div>'; return; }
+  el.innerHTML = myBoats.map(b => {
+    var isOos = boolVal(b.oos);
+    var portName = '';
+    if (b.defaultPortId) { var loc = _locations.find(l => l.id === b.defaultPortId); if (loc) portName = loc.name; }
+    return '<div class="cq-boat">'
+      + '<div>'
+        + '<div class="cq-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name) + '</div>'
+        + '<div class="cq-boat-sub">'
+          + (isOos ? '<span style="color:var(--red)">OUT OF SERVICE</span>' : '<span style="color:var(--green)">AVAILABLE</span>')
+          + (portName ? ' · ' + esc(portName) : '')
+        + '</div>'
+      + '</div>'
+      + '<div class="cq-boat-actions">'
+        + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cq.makeAvailable' : 'cq.makeUnavailable') + '</button>'
+        + '<button onclick="openPortModal(\'' + esc(b.id) + '\')">' + s('cq.changePort') + '</button>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+var _portBoatId = null;
+function openPortModal(boatId) {
+  _portBoatId = boatId;
+  var sel = document.getElementById('portSelect');
+  var ports = _locations.filter(l => l.type === 'port');
+  var boat = _boats.find(b => b.id === boatId);
+  sel.innerHTML = '<option value="">' + s('lbl.selectDots') + '</option>'
+    + ports.map(p => '<option value="' + esc(p.id) + '"' + (boat && boat.defaultPortId === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('');
+  document.getElementById('portModalTitle').textContent = s('cq.changePort');
+  openModal('portModal');
+}
+
+async function savePort() {
+  if (!_portBoatId) return;
+  var portId = document.getElementById('portSelect').value;
+  try {
+    // Update boat config
+    var cfgRes = await apiGet('getConfig', { _fresh: true });
+    var boats = cfgRes.boats || [];
+    var idx = boats.findIndex(b => b.id === _portBoatId);
+    if (idx >= 0) {
+      boats[idx].defaultPortId = portId || '';
+      await apiPost('saveConfig', { boats: boats });
+      _boats = boats;
+      renderBoats();
+      closeModal('portModal');
+      showToast(s('toast.saved'), 'ok');
+    }
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+async function toggleBoatOos(boatId, oos) {
+  try {
+    var cfgRes = await apiGet('getConfig', { _fresh: true });
+    var boats = cfgRes.boats || [];
+    var idx = boats.findIndex(b => b.id === boatId);
+    if (idx >= 0) {
+      boats[idx].oos = oos;
+      await apiPost('saveConfig', { boats: boats });
+      _boats = boats;
+      renderBoats();
+      showToast(s('toast.saved'), 'ok');
+    }
+  } catch (e) { showToast(e.message, 'err'); }
+}
+</script>
+</body>
+</html>

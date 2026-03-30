@@ -137,6 +137,7 @@ window.buildHeader = function (page) {
   const isAdminSub = ADMIN_SUBPAGES.includes(page);
   const currentHub = isSubpage ? 'staff' : isAdminSub ? 'admin' : page;
   const depth = isAdminSub ? '../../' : '../';
+  const isCaptainUser = typeof isCaptain === 'function' && user && isCaptain(user);
 
   // LEFT: logo
   const logo = document.createElement('span');
@@ -155,6 +156,7 @@ window.buildHeader = function (page) {
     if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn'));
     if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn'));
     if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn'));
+    if (isCaptainUser && currentHub !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
   }
 
   // RIGHT: Settings · Weather · lang · sign out
