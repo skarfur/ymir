@@ -243,7 +243,9 @@ const L = getLang();
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
   applyStrings();
-  if (isCaptain(user)) document.getElementById('captainQBtn').style.display = '';
+  if (typeof isCaptain === 'function' && isCaptain(user)) {
+    document.getElementById('captainQBtn').style.display = '';
+  }
 
   document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';

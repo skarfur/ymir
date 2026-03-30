@@ -179,8 +179,8 @@
 
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
-const user = requireAuth(isCaptain);
-if (!user) throw new Error('Not a captain');
+const user = requireAuth();
+if (!user || !isCaptain(user)) { window.location.href = '../member/'; throw new Error('Not a captain'); }
 const L = getLang();
 
 let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
