@@ -809,18 +809,18 @@ function tripCard(t){
       <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${IS?'Smelltu til að stækka':'Click to expand'}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass);font-size:10px;margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-brass" style="margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${IS?'Sækja skrá':'Download file'}</a>`:''}
     </span></div>`;
   } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" style="color:var(--brass)" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+    trackRow = `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'GPS-leið':'GPS Track'}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-brass" onclick="event.stopPropagation()">📍 ${IS?'Skoða leið':'View track'}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
   // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
   const canEditSkipperNote = isSki && isOwner;
-  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span style="color:var(--muted);font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl text-brass">${IS?'Skipstjóraskýring':'Skipper note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?(IS?'sýnilegt áhöfn':'visible to crew'):(IS?'frá skipstjóra':'from skipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${IS?'Engin skýring':'No note yet'}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   // Private note (only visible to owner) — always show for owner with edit
   const canEditNote = isOwner;
-  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
+  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span class="text-muted" style="font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     let meta={}; try{if(t.photoMeta)meta=JSON.parse(t.photoMeta);}catch(e){}
@@ -880,7 +880,7 @@ function tripCard(t){
           ${t.validationRequested && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ Validation pending</span>' : ''}
           <span>${esc(dur)}</span>
           ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
-          ${windLine?'<span style="display:flex;align-items:center;gap:3px">'+windLine+'</span>':''}
+          ${windLine?'<span class="flex-center" style="gap:3px">'+windLine+'</span>':''}
           ${isKeelboat&&portLine?portLine:''}
         </div>
       </div>
@@ -1805,7 +1805,7 @@ async function reload(){
     applyFilter();
   }catch(e){
     document.getElementById('tripList').innerHTML=
-      '<div class="empty-note" style="color:var(--red)">Could not load logbook: '+esc(e.message)+'</div>';
+      '<div class="empty-note text-red">Could not load logbook: '+esc(e.message)+'</div>';
   }
 }
 
