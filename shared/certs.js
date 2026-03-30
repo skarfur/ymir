@@ -1,13 +1,13 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, staffOnly, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
+// Cert def: { id, name, description, color, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
 // Assignment: { certId, sub, assignedBy, assignedAt, expiresAt }
 
 const DEFAULT_CERT_DEFS = [
-  { id:'world_sailing', name:'World Sailing Certification', description:'', color:'', staffOnly:false, renewalDays:0,
+  { id:'world_sailing', name:'World Sailing Certification', description:'', color:'', renewalDays:0,
     subcats:[{key:'ws1',label:'Level 1',description:'',rank:1},{key:'ws2',label:'Level 2',description:'',rank:2},{key:'ws3',label:'Level 3',description:'',rank:3}] },
-  { id:'released_rower', name:'Released Rower', description:'', color:'', staffOnly:false, renewalDays:0, subcats:[] },
-  { id:'support_boat_skipper', name:'Support Boat Skipper', description:'', color:'', staffOnly:true, renewalDays:0, subcats:[] },
-  { id:'keelboat_crew', name:'Keelboat Crew', description:'Certified to sail on club keelboats.', color:'#d4af37', staffOnly:false, renewalDays:0, hasIdNumber:false,
+  { id:'released_rower', name:'Released Rower', description:'', color:'', renewalDays:0, subcats:[] },
+  { id:'support_boat_skipper', name:'Support Boat Skipper', description:'', color:'', renewalDays:0, subcats:[] },
+  { id:'keelboat_crew', name:'Keelboat Crew', description:'Certified to sail on club keelboats.', color:'#d4af37', renewalDays:0, hasIdNumber:false,
     subcats:[
       {key:'crew',     label:'Crew',     description:'Certified basic keelboat crew.',                                               rank:1},
       {key:'helmsman', label:'Helmsman', description:'Certified to helm a keelboat.',                                                rank:2},

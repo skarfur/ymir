@@ -786,9 +786,6 @@
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdStaffOnly"> <span data-s="admin.certStaffOnly"></span>
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="cdClubEndorsement"> <span data-s="admin.certClubEndorsement"></span>
       </label>
       <label style="display:flex;align-items:center;gap:8px"><span data-s="admin.certCardColour"></span>
@@ -1978,7 +1975,6 @@ function openCertDefModal(id) {
   document.getElementById("cdName").value             = d ? d.name : "";
   document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
-  document.getElementById("cdStaffOnly").checked      = d ? !!d.staffOnly : false;
   document.getElementById("cdClubEndorsement").checked = d ? !!d.clubEndorsement : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
   document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
@@ -2004,7 +2000,6 @@ async function saveCertDef() {
     description:      document.getElementById("cdDesc").value.trim(),
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     subcats:          gatherSubcats(),
-    staffOnly:        document.getElementById("cdStaffOnly").checked,
     clubEndorsement:  document.getElementById("cdClubEndorsement").checked,
     color:            document.getElementById("cdColor").value,
     hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
