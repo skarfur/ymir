@@ -398,8 +398,8 @@ function renderLaunchForm(boat) {
   document.getElementById('launchModalBody').innerHTML=
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
-    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+(L==='IS'?'Brottfararhöfn':'Departure Port')+'</label>'+
-      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+(L==='IS'?'Heimahöfn':'Home port')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
+    (isKeel?'<div class="field"><label style="color:var(--brass)">⚓️ '+s('member.departurePort')+'</label>'+
+      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div class="grid2 mb-12 gap-10">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
@@ -425,8 +425,8 @@ function renderLaunchForm(boat) {
     '</div>'+
     '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
     '<div class="btn-row">'+
-      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
-      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">Continue →</button>'+
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">'+s('member.continue')+'</button>'+
     '</div>';
   window._launchCrewCount=1;
   renderCrewInputs();
@@ -468,7 +468,7 @@ function renderLaunchChecklist(boat) {
   document.getElementById('launchModalBody').innerHTML=
     '<div class="section-label mb-12">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
     (!items.length
-      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+(L==='IS'?'Enginn gátlisti stilltur fyrir þennan flokk.':'No pre-launch checklist configured for this category.')+'</div>'
+      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+s('member.noChecklist')+'</div>'
       :items.map((it,i)=>
           '<label class="check-label">'+
           '<input type="checkbox" class="launch-check accent-checkbox" data-idx="'+i+'">'+
@@ -476,7 +476,7 @@ function renderLaunchChecklist(boat) {
     )+
     '<div id="launchCheckErr" class="text-sm text-red mt-8" style="display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
     '<div class="btn-row" style="margin-top:14px">'+
-      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+(L==='IS'?'Til baka':'Back')+'</button>'+
+      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" onclick="submitLaunch()">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
     '</div>';
 }

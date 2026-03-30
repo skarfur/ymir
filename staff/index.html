@@ -340,8 +340,8 @@ border-bottom:1px solid var(--border)44; }
       </div>
       <!-- Departure port — shown for keelboats only -->
       <div id="coPortRow" class="field" style="display:none">
-        <label style="color:var(--brass)">⚓️ Departure Port</label>
-        <input type="text" list="coPortsList" id="coDeparturePort" placeholder="Home port" autocomplete="off">
+        <label style="color:var(--brass)">⚓️ <span data-s="staff.departurePort"></span></label>
+        <input type="text" list="coPortsList" id="coDeparturePort" autocomplete="off">
         <datalist id="coPortsList"></datalist>
       </div>
       <div class="field">
@@ -476,6 +476,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('notesLabel').textContent          = s('staff.coForm.notes');
   document.getElementById('cancelCoBtn').textContent         = s('btn.cancel');
   document.getElementById('submitCoBtn').textContent         = s('staff.coForm.submit');
+  const coDepPort = document.getElementById('coDeparturePort');
+  if (coDepPort) coDepPort.placeholder = s('admin.homePort');
   document.getElementById('selectBoatOpt').textContent       = s('lbl.selectDots');
   document.getElementById('selectLocOpt').textContent        = s('lbl.selectDots');
   document.getElementById('coMember').placeholder            = s('staff.coForm.memberPlaceholder');
@@ -657,11 +659,11 @@ function renderRecentCheckins() {
   const IS     = document.documentElement.lang === 'IS' || getLang() === 'IS';
   if (!recent.length) { el.innerHTML = `<div class="empty-note">${s('lbl.noData')}</div>`; return; }
   const header = `<div class="recent-row recent-header">
-    <span>${IS?'Inn':'In'}</span>
-    <span>${IS?'Félagi':'Member'}</span>
-    <span>${IS?'Bát':'Boat'}</span>
-    <span>${IS?'Siglingasvæði':'Sailing area'}</span>
-    <span>${IS?'Tími':'Duration'}</span>
+    <span>${s('staff.recentIn')}</span>
+    <span>${s('staff.recentMember')}</span>
+    <span>${s('staff.recentBoat')}</span>
+    <span>${s('staff.recentArea')}</span>
+    <span>${s('staff.recentDuration')}</span>
   </div>`;
   const rows = recent.map(c => {
     const tin  = (c.checkedInAt ||c.timeIn ||'').slice(0,5);

@@ -184,7 +184,7 @@
               <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44">
               <div class="btn-row mt-14">
                 <button class="btn btn-secondary" onclick="resetImport()" data-s="admin.backToList"></button>
-                <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn">Confirm import</button>
+                <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn" data-s="admin.confirmImport"></button>
               </div>
             </div>
           </div>
@@ -241,7 +241,7 @@
         <div class="loading-state"><span class="spinner"></span></div>
       </div>
       <div style="padding:8px 0 4px">
-        <button class="btn btn-secondary" onclick="openBoatCatModal()">+ Add category</button>
+        <button class="btn btn-secondary" onclick="openBoatCatModal()" data-s="admin.addCategory"></button>
       </div>
     </div>
 
@@ -268,14 +268,14 @@
       <div class="section-label mb-8">DAILY CHECKLISTS</div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">OPENING CHECKLIST</div>
+          <div class="col-title" data-s="admin.openingChecklist"></div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="openingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">CLOSING CHECKLIST</div>
+          <div class="col-title" data-s="admin.closingChecklist"></div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
@@ -300,7 +300,7 @@
           <div id="launchCLLandingList"></div>
         </div>
         <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" onclick="openLaunchCLModal()">+ Add item</button>
+          <button class="btn btn-primary" onclick="openLaunchCLModal()" data-s="admin.addItem"></button>
         </div>
       </div>
     </div>
@@ -309,7 +309,7 @@
     <div id="tab-actTypes" class="hidden">
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">ACTIVITY TYPES</div>
+          <div class="col-title" data-s="admin.actTypesTitle"></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="actTypesCard">
@@ -326,7 +326,7 @@
 
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">CREDENTIALS</div>
+          <div class="col-title" data-s="admin.credentialsTitle"></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="certDefsCard">
@@ -343,7 +343,7 @@
     <div id="tab-alerts" class="hidden">
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
-          <div class="col-title">⚠️ OVERDUE ALERTS</div>
+          <div class="col-title">⚠️ <span data-s="admin.overdueAlerts"></span></div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="alertsCard">
@@ -392,83 +392,83 @@
     <div id="tab-flags" class="hidden">
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title">SCORE THRESHOLDS <span style="font-size:10px;color:var(--muted);font-weight:normal">(total points → flag level)</span></div>
+          <div class="col-title"><span data-s="admin.scoreThresholds"></span> <span style="font-size:10px;color:var(--muted);font-weight:normal">(<span data-s="admin.scoreThresholdsSub"></span>)</span></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="flagThresholdsCard">
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-            <div class="field"><label style="color:#f1c40f">🟡 Yellow ≥</label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e67e22">🟠 Orange ≥</label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e74c3c">🔴 Red ≥</label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#999">⛔ Closed ≥</label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#f1c40f">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e67e22">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#e74c3c">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#999">⛔ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WIND SCORING (Force → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.windScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWindCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Each band applies when Force ≤ maxForce. List in ascending order.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.windScoringHint"></div>
           <div id="fcWindBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWindBand()">+ Add band</button>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWindBand()" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">DIRECTION &amp; GUST MODIFIERS</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.dirGustMods"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagDirCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field"><label>Easterly modifier (pts)</label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when wind is from an easterly sector</div></div>
-            <div class="field"><label>Gust modifier +1 Force (pts)</label><input type="number" id="fcGust1Pts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts are exactly 1 Force level above sustained</div></div><div class="field"><label>Gust modifier +2 Force (pts)</label><input type="number" id="fcGust2Pts" min="0" max="20" value="8" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px">Added when gusts are 2+ Force levels above sustained</div></div></div>
+            <div class="field"><label data-s="admin.easterlyMod"></label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.easterlyModHint"></div></div>
+            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="8" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod2Hint"></div></div></div>
           </div>
-          <div class="field"><label>Easterly directions (comma-separated)</label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
+          <div class="field"><label data-s="admin.easterlyDirs"></label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">WAVE HEIGHT SCORING (metres → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.waveScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWaveCard">
           <div id="fcWaveBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWaveBand()">+ Add band</button>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddWaveBand()" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">SEA TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.sstScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagSstCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">First band where SST ≥ minC applies. List highest minC first.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.sstHint"></div>
           <div id="fcSstBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddSstBand()">+ Add band</button>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddSstBand()" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">AIR TEMPERATURE SCORING (°C → points)</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.airTempScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagFeelsCard" data-note="uses apparent_temperature, falls back to temperature_2m">
           <div id="fcFeelsBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddFeelsBand()">+ Add band</button>
+          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" onclick="fcAddFeelsBand()" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">VISIBILITY SCORING</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.visScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagVisCard">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
-            <div class="field"><label>Good (pts)</label><input type="number" id="fcVisGood" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
-            <div class="field"><label>Reduced (pts)</label><input type="number" id="fcVisReduced" min="0" max="20" value="3" oninput="updateFlagPreview()"></div>
-            <div class="field"><label>Poor &lt;500m (pts)</label><input type="number" id="fcVisPoor" min="0" max="20" value="5" oninput="updateFlagPreview()"></div>
+            <div class="field"><label data-s="admin.visGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
+            <div class="field"><label data-s="admin.visReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="3" oninput="updateFlagPreview()"></div>
+            <div class="field"><label data-s="admin.visPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="5" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)"><div class="col-title">FLAG LABELS &amp; ADVICE TEXT</div><span class="col-toggle">▼</span></div>
+        <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.flagLabelsAdvice"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagAdviceCard">
           <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px"></div>
         </div>
       </div>
       <div class="col-section">
-        <div class="col-head open" onclick="toggleSection(this)"><div class="col-title">LIVE PREVIEW</div><span class="col-toggle open">▼</span></div>
+        <div class="col-head open" onclick="toggleSection(this)"><div class="col-title" data-s="admin.livePreview"></div><span class="col-toggle open">▼</span></div>
         <div class="col-body" id="flagPreviewCard">
           <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
         </div>
       </div>
       <div id="fcValidationError" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px">
-        <button class="btn btn-primary" onclick="saveFlagConfig()">Save flag settings</button>
-        <button class="btn btn-secondary" onclick="resetFlagConfig()">Reset to defaults</button>
+        <button class="btn btn-primary" onclick="saveFlagConfig()" data-s="admin.saveFlagSettings"></button>
+        <button class="btn btn-secondary" onclick="resetFlagConfig()" data-s="admin.resetDefaults"></button>
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
     </div><!-- /tab-flags -->
@@ -480,49 +480,49 @@
 <div class="modal-overlay hidden" id="memberModal" onclick="if(event.target===this)closeModal('memberModal')">
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
-      <h3 id="memberModalTitle">Add Member</h3>
+      <h3 id="memberModalTitle" data-s="admin.memberModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('memberModal')">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label>Name</label><input type="text" id="mName"></div>
-      <div class="field"><label>Kennitala</label><input type="text" id="mKennitala" maxlength="10"></div>
-      <div class="field"><label>Email</label><input type="email" id="mEmail"></div>
-      <div class="field"><label>Phone</label><input type="tel" id="mPhone"></div>
-      <div class="field"><label>Initials</label><input type="text" id="mInitials" maxlength="10" placeholder="Auto-generated" style="text-transform:uppercase"></div>
-      <div class="field"><label>Date of birth</label><input type="date" id="mDob"></div>
-      <div class="field"><label>Membership type</label>
+      <div class="field"><label data-s="lbl.name"></label><input type="text" id="mName"></div>
+      <div class="field"><label data-s="admin.kennitala"></label><input type="text" id="mKennitala" maxlength="10"></div>
+      <div class="field"><label data-s="lbl.email"></label><input type="email" id="mEmail"></div>
+      <div class="field"><label data-s="lbl.phone"></label><input type="tel" id="mPhone"></div>
+      <div class="field"><label data-s="admin.initials"></label><input type="text" id="mInitials" maxlength="10" style="text-transform:uppercase"></div>
+      <div class="field"><label data-s="admin.dob"></label><input type="date" id="mDob"></div>
+      <div class="field"><label data-s="admin.membershipType"></label>
         <select id="mMembershipType">
-          <option value="full">Full</option>
-          <option value="junior">Junior</option>
-          <option value="family">Family</option>
-          <option value="student">Student</option>
-          <option value="honorary">Honorary</option>
-          <option value="other">Other</option>
+          <option value="full" data-s="admin.memFull"></option>
+          <option value="junior" data-s="admin.memJunior"></option>
+          <option value="family" data-s="admin.memFamily"></option>
+          <option value="student" data-s="admin.memStudent"></option>
+          <option value="honorary" data-s="admin.memHonorary"></option>
+          <option value="other" data-s="admin.memOther"></option>
         </select>
       </div>
-      <div class="field"><label>Role</label>
+      <div class="field"><label data-s="lbl.role"></label>
         <select id="mRole">
-          <option value="member">Member</option>
-          <option value="staff">Staff</option>
-          <option value="admin">Admin</option>
+          <option value="member" data-s="lbl.member"></option>
+          <option value="staff" data-s="lbl.staff"></option>
+          <option value="admin" data-s="lbl.admin"></option>
         </select>
       </div>
     </div>
     <div id="minorFields" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">Guardian</div>
-      <div class="field"><label>Guardian name</label><input type="text" id="mGuardianName"></div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px" data-s="lbl.guardian"></div>
+      <div class="field"><label data-s="admin.guardianName"></label><input type="text" id="mGuardianName"></div>
       <div class="grid2">
-        <div class="field"><label>Guardian kennitala</label><input type="text" id="mGuardianKt" maxlength="10"></div>
-        <div class="field"><label>Guardian phone</label><input type="tel" id="mGuardianPhone"></div>
+        <div class="field"><label data-s="admin.guardianKt"></label><input type="text" id="mGuardianKt" maxlength="10"></div>
+        <div class="field"><label data-s="admin.guardianPhone"></label><input type="tel" id="mGuardianPhone"></div>
       </div>
     </div>
     <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="mActive" checked> <label for="mActive">Active</label>
+      <input type="checkbox" id="mActive" checked> <label for="mActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('memberModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="mDeleteBtn" onclick="deleteMember()">Deactivate</button>
-      <button id="saveMemberBtn" class="btn btn-primary" onclick="saveMember()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('memberModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="mDeleteBtn" onclick="deleteMember()" data-s="admin.deactivate"></button>
+      <button id="saveMemberBtn" class="btn btn-primary" onclick="saveMember()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -531,25 +531,25 @@
 <div class="modal-overlay hidden" id="boatCatModal" onclick="if(event.target===this)closeModal('boatCatModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="boatCatModalTitle">Add Boat Category</h3>
+      <h3 id="boatCatModalTitle" data-s="admin.boatCatModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('boatCatModal')">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label>Name (English)</label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
-      <div class="field"><label>Name (Íslenska)</label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
+      <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
+      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Emoji</label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
-      <div class="field"><label>Key (auto-set)</label><input type="text" id="bcKey" placeholder="dinghy" style="color:var(--muted)"></div>
+      <div class="field"><label data-s="admin.emoji"></label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
+      <div class="field"><label data-s="admin.keyAutoSet"></label><input type="text" id="bcKey" placeholder="dinghy" style="color:var(--muted)"></div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">The key is used internally to link boats and checklists. It cannot be changed after boats are assigned.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.keyHint"></div>
     <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="bcActive" checked> <label for="bcActive">Active</label>
+      <input type="checkbox" id="bcActive" checked> <label for="bcActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('boatCatModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="bcDeleteBtn" onclick="deleteBoatCat()">Delete</button>
-      <button class="btn btn-primary" onclick="saveBoatCat()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('boatCatModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="bcDeleteBtn" onclick="deleteBoatCat()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveBoatCat()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -558,17 +558,17 @@
 <div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="boatModalTitle">Add Boat</h3>
+      <h3 id="boatModalTitle" data-s="admin.boatModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
     </div>
-    <div class="field"><label>Name</label><input type="text" id="bName"></div>
-    <div class="field"><label>Category</label>
+    <div class="field"><label data-s="lbl.name"></label><input type="text" id="bName"></div>
+    <div class="field"><label data-s="admin.boatCategory"></label>
       <select id="bCategory" onchange="updateBoatModalFields()"></select>
     </div>
     <!-- Default port (all boats) -->
     <div class="field">
       <label data-s="boat.defaultPort">Default port</label>
-      <select id="bDefaultPortId"><option value="">— none —</option></select>
+      <select id="bDefaultPortId"><option value="" data-s="lbl.noneDash"></option></select>
     </div>
     <!-- Registration no. (keelboats) / Sail no. (others) -->
     <div class="field">
@@ -590,14 +590,14 @@
     <div class="field">
       <label data-s="boat.ownership">Ownership</label>
       <select id="bOwnership" onchange="updateOwnershipFields()">
-        <option value="club">Club boat</option>
-        <option value="private">Private boat</option>
+        <option value="club" data-s="admin.ownerClub"></option>
+        <option value="private" data-s="admin.ownerPrivate"></option>
       </select>
     </div>
     <div class="field hidden" id="bOwnerField">
       <label data-s="boat.owner">Owner</label>
       <div style="position:relative">
-        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="Search member..." oninput="searchBoatOwner(this.value)">
+        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="" oninput="searchBoatOwner(this.value)">
         <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
         <input type="hidden" id="bOwnerId">
         <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
@@ -610,7 +610,7 @@
         <div class="field">
           <label data-s="boat.charterMember">Chartered to</label>
           <div style="position:relative">
-            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="Search member..." oninput="searchCharterMember(this.value)">
+            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="" oninput="searchCharterMember(this.value)">
             <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
             <input type="hidden" id="bCharterMemberKt">
             <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
@@ -621,25 +621,25 @@
           <div class="field"><label data-s="boat.charterEnd">End date</label><input type="date" id="bCharterEnd"></div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()">Cancel</button>
-          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()">Save Charter</button>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()" data-s="admin.saveCharter"></button>
         </div>
       </div>
       <div id="bCharterActions"></div>
     </div>
     <div class="check-row">
-      <input type="checkbox" id="bOOS"> <label for="bOOS">Out of service</label>
+      <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
     </div>
     <div class="field hidden" id="oosReasonField">
-      <label>OOS reason</label><input type="text" id="bOOSReason" placeholder="e.g. Mast repair">
+      <label data-s="admin.oosReason"></label><input type="text" id="bOOSReason">
     </div>
     <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="bActive" checked> <label for="bActive">Active</label>
+      <input type="checkbox" id="bActive" checked> <label for="bActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('boatModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteBoat()">Delete</button>
-      <button class="btn btn-primary" onclick="saveBoat()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('boatModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteBoat()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveBoat()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -648,10 +648,10 @@
 <div class="modal-overlay hidden" id="locationModal" onclick="if(event.target===this)closeModal('locationModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="locationModalTitle">Add Location</h3>
+      <h3 id="locationModalTitle" data-s="admin.locModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('locationModal')">&times;</button>
     </div>
-    <div class="field"><label>Name</label><input type="text" id="lName"></div>
+    <div class="field"><label data-s="lbl.name"></label><input type="text" id="lName"></div>
     <div class="field">
       <label data-s="location.type">Type</label>
       <select id="lType">
@@ -660,12 +660,12 @@
       </select>
     </div>
     <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="lActive" checked> <label for="lActive">Active</label>
+      <input type="checkbox" id="lActive" checked> <label for="lActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('locationModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="lDeleteBtn" onclick="deleteLocation()">Delete</button>
-      <button class="btn btn-primary" onclick="saveLocation()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('locationModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="lDeleteBtn" onclick="deleteLocation()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveLocation()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -674,25 +674,25 @@
 <div class="modal-overlay hidden" id="clModal" onclick="if(event.target===this)closeModal('clModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="clModalTitle">Add Checklist Item</h3>
+      <h3 id="clModalTitle" data-s="admin.clModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('clModal')">&times;</button>
     </div>
-    <div class="field"><label>Phase</label>
+    <div class="field"><label data-s="admin.clPhase"></label>
       <select id="clPhase">
-        <option value="opening">Opening</option>
-        <option value="closing">Closing</option>
+        <option value="opening" data-s="admin.clPhaseOpening"></option>
+        <option value="closing" data-s="admin.clPhaseClosing"></option>
       </select>
     </div>
-    <div class="field"><label>Text (English)</label><input type="text" id="clTextEN"></div>
-    <div class="field"><label>Text (Íslenska)</label><input type="text" id="clTextIS"></div>
-    <div class="field"><label>Sort order</label><input type="number" id="clSort" value="99" min="1"></div>
+    <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="clTextEN"></div>
+    <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="clTextIS"></div>
+    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="clSort" value="99" min="1"></div>
     <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="clActive" checked> <label for="clActive">Active</label>
+      <input type="checkbox" id="clActive" checked> <label for="clActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('clModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="clDeleteBtn" onclick="deleteCLItem()">Delete</button>
-      <button class="btn btn-primary" onclick="saveCLItem()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('clModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="clDeleteBtn" onclick="deleteCLItem()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveCLItem()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -701,22 +701,22 @@
 <div class="modal-overlay hidden" id="launchCLModal" onclick="if(event.target===this)closeModal('launchCLModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="launchCLModalTitle">Add Checklist Item</h3>
+      <h3 id="launchCLModalTitle" data-s="admin.clModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('launchCLModal')">&times;</button>
     </div>
-    <div class="field"><label>Category</label>
+    <div class="field"><label data-s="lbl.category"></label>
       <select id="lcCat"></select>
     </div>
-    <div class="field"><label>Phase</label>
-      <select id="lcPhase"><option value="launch">Launch</option><option value="landing">Landing</option></select>
+    <div class="field"><label data-s="admin.clPhase"></label>
+      <select id="lcPhase"><option value="launch" data-s="admin.clLaunchPhase"></option><option value="landing" data-s="admin.clLandingPhase"></option></select>
     </div>
-    <div class="field"><label>Text (English)</label><input type="text" id="lcText"></div>
-    <div class="field"><label>Text (Íslenska)</label><input type="text" id="lcTextIS"></div>
-    <div class="field"><label>Sort order</label><input type="number" id="lcSort" value="99" min="1"></div>
+    <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="lcText"></div>
+    <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="lcTextIS"></div>
+    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="lcSort" value="99" min="1"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('launchCLModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="lcDeleteBtn" onclick="deleteLaunchCLItem()">Delete</button>
-      <button class="btn btn-primary" onclick="saveLaunchCLItem()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('launchCLModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="lcDeleteBtn" onclick="deleteLaunchCLItem()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveLaunchCLItem()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -725,27 +725,27 @@
 <div class="modal-overlay hidden" id="actTypeModal" onclick="if(event.target===this)closeModal('actTypeModal')">
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
-      <h3 id="actTypeModalTitle">Add Activity Type</h3>
+      <h3 id="actTypeModalTitle" data-s="admin.actTypeModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('actTypeModal')">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label>Name (EN)</label><input type="text" id="atName"></div>
-      <div class="field"><label>Name (IS)</label><input type="text" id="atNameIS"></div>
+      <div class="field"><label data-s="admin.actTypeEN"></label><input type="text" id="atName"></div>
+      <div class="field"><label data-s="admin.actTypeIS"></label><input type="text" id="atNameIS"></div>
     </div>
     <div class="check-row" style="margin-bottom:10px">
-      <input type="checkbox" id="atActive" checked> <label for="atActive">Active</label>
+      <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
     </div>
     <div style="margin-top:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBTYPES</label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtSubtypeRow()">+ Add</button>
+        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.subtypes"></label>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtSubtypeRow()" data-s="btn.add"></button>
       </div>
       <div id="atSubtypesList"></div>
     </div>
     <div class="btn-row" style="margin-top:14px">
-      <button class="btn btn-secondary" onclick="closeModal('actTypeModal')">Cancel</button>
-      <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()">Delete</button>
-      <button class="btn btn-primary" onclick="saveActType()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('actTypeModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveActType()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -754,64 +754,63 @@
 <div class="modal-overlay hidden" id="certDefModal" onclick="if(event.target===this)closeModal('certDefModal')">
   <div class="modal" style="max-width:560px">
     <div class="modal-header">
-      <h3 id="certDefModalTitle">Add Credential Type</h3>
+      <h3 id="certDefModalTitle" data-s="admin.certDefModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('certDefModal')">&times;</button>
     </div>
     <div class="field">
-      <label>Name</label>
-      <input type="text" id="cdName" placeholder="e.g. World Sailing Credential">
+      <label data-s="lbl.name"></label>
+      <input type="text" id="cdName">
     </div>
     <div class="field">
-      <label>Description <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
-      <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px" placeholder="Leave blank for now"></textarea>
+      <label><span data-s="admin.certDescLabel"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+      <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
     </div>
     <div class="field">
-      <label>Issuing Authority <span style="color:var(--muted);font-weight:normal">(optional)</span></label>
-      <input type="text" id="cdIssuingAuthority" placeholder="e.g. World Sailing, Íslandssælan">
+      <label><span data-s="admin.certIssuing"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+      <input type="text" id="cdIssuingAuthority">
     </div>
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdStaffOnly"> Staff-only cert
+        <input type="checkbox" id="cdStaffOnly"> <span data-s="admin.certStaffOnly"></span>
       </label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdClubEndorsement"> Club endorsement
+        <input type="checkbox" id="cdClubEndorsement"> <span data-s="admin.certClubEndorsement"></span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px">Card colour
+      <label style="display:flex;align-items:center;gap:8px"><span data-s="admin.certCardColour"></span>
         <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-        <span style="font-size:10px;color:var(--muted)">auto if blank</span>
+        <span style="font-size:10px;color:var(--muted)" data-s="admin.certAutoBlank"></span>
       </label>
     </div>
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> This credential expires
+        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> <span data-s="admin.certExpires"></span>
       </label>
       <div id="cdExpiryDateWrap" style="display:none">
-        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px">EXPIRY DATE</label>
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px" data-s="admin.certExpiryDate"></label>
         <input type="date" id="cdExpiryDate" style="font-size:12px">
       </div>
       <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px">
-        <input type="checkbox" id="cdHasIdNumber"> This credential has an ID / licence number
+        <input type="checkbox" id="cdHasIdNumber"> <span data-s="admin.certHasId"></span>
       </label>
     </div>
 
     <div style="margin-top:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px">SUBCATEGORIES</label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addSubcatRow()">+ Add</button>
+        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.certSubcategories"></label>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addSubcatRow()" data-s="btn.add"></button>
       </div>
       <div id="subcatRows"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px">
-        Add subcategories if this cert has levels (e.g. Level 1, 2, 3). Set rank to enforce "higher replaces lower" logic. Per-subtype issuing authority or expiry date will override the parent values.
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px" data-s="admin.certSubcatHint">
       </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between;align-items:center">
-      <button class="btn btn-danger hidden" id="certDefDeleteBtn" onclick="deleteCertDef()">Delete</button>
+      <button class="btn btn-danger hidden" id="certDefDeleteBtn" onclick="deleteCertDef()" data-s="btn.delete"></button>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('certDefModal')">Cancel</button>
-        <button class="btn btn-primary" id="saveCertDefBtn" onclick="saveCertDef()">Save</button>
+        <button class="btn btn-secondary" onclick="closeModal('certDefModal')" data-s="btn.cancel"></button>
+        <button class="btn btn-primary" id="saveCertDefBtn" onclick="saveCertDef()" data-s="btn.save"></button>
       </div>
     </div>
   </div>
@@ -821,46 +820,46 @@
 <div class="modal-overlay hidden" id="memberCertModal" onclick="if(event.target===this)closeModal('memberCertModal')">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <h3>Credentials — <span id="mcmMemberName"></span></h3>
+      <h3><span data-s="admin.credentialsTitle"></span> — <span id="mcmMemberName"></span></h3>
       <button class="modal-close-x" onclick="closeModal('memberCertModal')">&times;</button>
     </div>
 
     <div style="margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">CURRENT</div>
-      <div id="mcmCurrentList"><div class="empty-state">No credentials assigned.</div></div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px" data-s="admin.certCurrent"></div>
+      <div id="mcmCurrentList"><div class="empty-state" data-s="admin.certNoneAssigned"></div></div>
     </div>
 
     <div style="border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px">ASSIGN CERTIFICATION</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="admin.certAssignTitle"></div>
       <div class="field">
-        <label>Type</label>
+        <label data-s="lbl.type"></label>
         <select id="mcmCertType" onchange="updateMCMSubcats()">
           <option value="">Select…</option>
         </select>
       </div>
       <div class="field" id="mcmSubcatField" style="display:none">
-        <label>Level / Subcategory</label>
-        <select id="mcmSubcat"><option value="">Select…</option></select>
+        <label data-s="cert.level"></label>
+        <select id="mcmSubcat"><option value="" data-s="lbl.selectDots"></option></select>
       </div>
       <div class="field" id="mcmLicenceNoField" style="display:none">
-        <label>Licence / ID Number</label>
+        <label data-s="admin.certLicenceNo"></label>
         <input type="text" id="mcmLicenceNo" placeholder="e.g. IS-12345">
       </div>
       <div class="grid2">
         <div class="field">
-          <label>Assigned date</label>
+          <label data-s="admin.certAssignedDate"></label>
           <input type="date" id="mcmAssignedAt">
         </div>
         <div class="field">
-          <label>Expiry date <span style="color:var(--muted);font-size:10px">(leave blank if permanent)</span></label>
+          <label><span data-s="admin.certExpiryLabel"></span> <span style="color:var(--muted);font-size:10px">(<span data-s="admin.certExpiryHint"></span>)</span></label>
           <input type="date" id="mcmExpiresAt">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%" onclick="assignMemberCert()">Assign</button>
+      <button class="btn btn-primary" style="width:100%" onclick="assignMemberCert()" data-s="cert.assign"></button>
     </div>
 
     <div style="margin-top:12px;text-align:right">
-      <button class="btn btn-secondary" onclick="closeModal('memberCertModal')">Close</button>
+      <button class="btn btn-secondary" onclick="closeModal('memberCertModal')" data-s="btn.close"></button>
     </div>
   </div>
 </div>
@@ -876,12 +875,11 @@
     <img id="qrImg" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--border)">
     <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
     <div style="font-size:10px;color:var(--border);margin-top:4px" id="qrBoatId"></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
-      Scan → available: launch flow · your boat out: return flow · someone else's: shows status.
+    <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5" data-s="admin.qrScanHint">
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
-      <button class="btn btn-primary" onclick="printQR()">🖨 Print / PDF</button>
+      <button class="btn btn-secondary" onclick="closeModal('qrModal')" data-s="btn.close"></button>
+      <button class="btn btn-primary" onclick="printQR()">🖨 <span data-s="admin.printPdf"></span></button>
     </div>
   </div>
 </div>
@@ -984,6 +982,12 @@ function _adminWireStrings() {
   if (certSearch) certSearch.placeholder = s('admin.certSearchMember');
   const certFilter = document.getElementById('certFilterType');
   if (certFilter && certFilter.options[0]) certFilter.options[0].textContent = s('admin.certAllTypes');
+  const bOwnerSearch = document.getElementById('bOwnerSearch');
+  if (bOwnerSearch) bOwnerSearch.placeholder = s('admin.searchMember');
+  const bCharterSearch = document.getElementById('bCharterMemberSearch');
+  if (bCharterSearch) bCharterSearch.placeholder = s('admin.searchMember');
+  const mInitials = document.getElementById('mInitials');
+  if (mInitials) mInitials.placeholder = s('admin.initialsPlaceholder');
 }
 
 // ── Collapsible sections ───────────────────────────────────────────────────────
