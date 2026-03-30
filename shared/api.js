@@ -122,8 +122,67 @@ function bftFromMs(ms) {
   if (m < 24.5) return 9; if (m < 28.5) return 10; if (m < 32.7) return 11;
   return 12;
 }
+// Convert from any supported unit back to m/s
+function convertToMs(val, unit) {
+  if (val == null || isNaN(val)) return NaN;
+  var v = parseFloat(val);
+  switch (unit) {
+    case 'kts': return v / 1.94384;
+    case 'kmh': return v / 3.6;
+    case 'mph': return v / 2.23694;
+    case 'ms':  return v;
+    default:    return v;
+  }
+}
+
+// Beaufort scale boundaries in m/s (index = Beaufort number)
+var BFT_BOUNDARIES = [0, 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7];
+
+// Return [min, max] m/s range for a Beaufort number.
+// For Force 12 the upper bound is null (open-ended), stored as 99.
+function bftToMsRange(bft) {
+  var b = parseInt(bft);
+  if (isNaN(b) || b < 0 || b > 12) return null;
+  var lo = BFT_BOUNDARIES[b];
+  var hi = b < 12 ? BFT_BOUNDARIES[b + 1] : 99;
+  return [lo, hi];
+}
+
+// Midpoint of Beaufort range in m/s (useful for auto-filling from Beaufort)
+function bftToMsMid(bft) {
+  var r = bftToMsRange(bft);
+  if (!r) return null;
+  if (r[1] === 99) return r[0]; // Force 12: just use lower bound
+  return +((r[0] + r[1]) / 2).toFixed(1);
+}
+
+// Parse a ws value that may be a number or a range string like "5.5-8.0".
+// Returns the midpoint as a number, or null if invalid.
+function parseWsValue(ws) {
+  if (ws == null) return null;
+  if (typeof ws === 'number') return ws;
+  var s = String(ws);
+  if (s.indexOf('-') !== -1) {
+    var parts = s.split('-').map(Number);
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return (parts[0] + parts[1]) / 2;
+    }
+  }
+  var n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
 function formatWindValue(ms, beaufort, unit) {
   unit = unit || getPref('windUnit', 'bft');
+  // Handle range values like "5.5-8.0" (from Beaufort-only entry)
+  if (typeof ms === 'string' && ms.indexOf('-') !== -1) {
+    var parts = ms.split('-').map(Number);
+    if (unit === 'bft') {
+      var b = beaufort != null ? beaufort : bftFromMs(parts[0]);
+      return b != null ? 'Force ' + b : '';
+    }
+    return convertWind(parts[0], unit) + '–' + convertWind(parts[1], unit) + ' ' + windUnitLabel(unit);
+  }
   if (unit === 'bft') {
     var b = beaufort != null ? beaufort : (ms != null ? bftFromMs(ms) : null);
     return b != null ? 'Force ' + b : '';
