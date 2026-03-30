@@ -167,6 +167,19 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .conf-status.confirmed{background:var(--green)22;color:var(--green)}
 .conf-status.rejected{background:var(--red)22;color:var(--red)}
 .conf-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:600;margin-left:6px;padding:0 5px;vertical-align:middle;line-height:1}
+/* ── Inline trip actions ── */
+.trip-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.trip-action-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:10px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:color .15s,border-color .15s}
+.trip-action-btn:hover{color:var(--brass);border-color:var(--brass)}
+.trip-action-btn.primary{color:var(--brass);border-color:var(--brass)55}
+/* ── Photo meta toggles ── */
+.photo-meta-row{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--muted);margin-top:4px}
+.photo-meta-row label{display:flex;align-items:center;gap:4px;cursor:pointer}
+.photo-meta-row input[type="checkbox"]{width:14px;height:14px;accent-color:var(--brass)}
+.photo-sharing-badge{font-size:8px;letter-spacing:.4px;padding:1px 5px;border-radius:4px;text-transform:uppercase;margin-left:4px}
+.photo-sharing-badge.shared{color:var(--green);border:1px solid var(--green)55;background:var(--green)11}
+.photo-sharing-badge.private{color:var(--muted);border:1px solid var(--border);background:var(--surface)}
+.photo-sharing-badge.club{color:var(--brass);border:1px solid var(--brass)55;background:var(--brass)11}
 </style>
 </head>
 <body>
@@ -411,6 +424,10 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         <input type="file" id="mPhotoFiles" accept="image/*" multiple onchange="handlePhotoFiles(this)"
           style="font-size:11px;color:var(--text)">
         <div id="mPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+        <div class="photo-meta-row" style="margin-top:6px">
+          <label><input type="checkbox" id="mPhotoShared" checked> Share with crew</label>
+          <label><input type="checkbox" id="mPhotoClubUse"> Club may use</label>
+        </div>
       </div>
       <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
       <div id="mErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
@@ -687,21 +704,44 @@ function tripCard(t){
   const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Athugasemd':'Private note'} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${IS?'aðeins þú sérð':'only you'}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span style="color:var(--muted);font-style:italic">${IS?'Engin athugasemd':'No note yet'}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${IS?'Breyta':'Edit'}</button>`:''}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
-    if (!urls.length) return '';
-    const thumbs = urls.map((u,i) => {
+    let meta={}; try{if(t.photoMeta)meta=JSON.parse(t.photoMeta);}catch(e){}
+    // Filter: show own photos + photos shared with crew
+    const visibleUrls = urls.filter((u) => {
+      const pm = meta[u];
+      if (!pm) return true; // legacy photos: visible to all
+      if (isOwner) return true; // owner always sees own photos
+      return pm.shared; // crew only sees shared photos
+    });
+    if (!visibleUrls.length) return '';
+    const thumbs = visibleUrls.map((u,idx) => {
+      const pm = meta[u] || {};
       const delBtn = isOwner ? `<button class="upload-delete-btn" onclick="event.stopPropagation();deleteTripPhoto('${esc(t.id)}','${esc(u)}')" title="${IS?'Eyða':'Delete'}">&times;</button>` : '';
-      return `<div class="upload-thumb-wrap">
-        ${delBtn}
-        <img src="${esc(u)}" class="photo-thumb" loading="lazy"
-          onclick="event.stopPropagation();openLightbox('${esc(t.id)}',${i})"
-          onerror="this.parentElement.style.display='none'">
+      const badges = isOwner ? (
+        (pm.shared ? `<span class="photo-sharing-badge shared">${IS?'Deilt':'Shared'}</span>` : `<span class="photo-sharing-badge private">${IS?'Einka':'Private'}</span>`)
+        + (pm.clubUse ? `<span class="photo-sharing-badge club">${IS?'Félag':'Club'}</span>` : '')
+      ) : '';
+      return `<div style="display:inline-block;vertical-align:top;text-align:center">
+        <div class="upload-thumb-wrap">
+          ${delBtn}
+          <img src="${esc(u)}" class="photo-thumb" loading="lazy"
+            onclick="event.stopPropagation();openLightboxUrl('${esc(t.id)}','${esc(u)}')"
+            onerror="this.parentElement.style.display='none'">
+        </div>
+        ${badges?`<div style="margin-top:2px">${badges}</div>`:''}
       </div>`;
     }).join('');
     return `<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">${IS?'Myndir':'Photos'}</span><span class="trip-exp-val"><div class="trip-photos">${thumbs}</div></span></div>`;
   })();
+  // Action buttons: edit (skipper+owner only), add GPS/photos (owner)
+  const canEditTrip = isSki && isOwner;
+  const actionsRow = isOwner ? `<div class="trip-actions" style="grid-column:1/-1">
+    ${canEditTrip ? `<button class="trip-action-btn primary" onclick="event.stopPropagation();openEditTrip('${esc(t.id)}')">${IS?'✏️ Breyta ferð':'✏️ Edit trip'}</button>` : ''}
+    ${!t.trackFileUrl ? `<button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadTrack('${esc(t.id)}')">${IS?'📍 Bæta við GPS':'📍 Add GPS'}</button>` : ''}
+    <button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadPhotos('${esc(t.id)}')">${IS?'📷 Bæta við myndum':'📷 Add photos'}</button>
+  </div>` : '';
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);
-  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner);
-  const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||ePres||eFlag);
+  const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner||actionsRow);
+  const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||eWv||ePres||eFlag);
 
 
   return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
@@ -762,7 +802,7 @@ function tripCard(t){
               + '<div class="trip-expand-grid">'+toplineWx+'</div>');
         })()}
       </div>`:''}
-      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow}${notesRow}${trackRow}${photosRow}</div></div>`:''}
+      ${hasNotes?`<div class="exp-section exp-notes"><div class="exp-section-hdr">${IS?'Athugasemdir og myndir':'Notes, Photos & Track'}</div><div class="trip-expand-grid">${skipperNoteRow}${notesRow}${trackRow}${photosRow}${actionsRow}</div></div>`:''}
     </div>
   </div>`;
 }
@@ -1311,6 +1351,8 @@ async function submitManual(){
 
   // Upload photos in parallel
   const photoUrls=[];
+  const mPhotoShared = document.getElementById('mPhotoShared').checked;
+  const mPhotoClubUse = document.getElementById('mPhotoClubUse').checked;
   await Promise.all(_pendingPhotos.map(async ph=>{
     try{
       const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
@@ -1318,6 +1360,10 @@ async function submitManual(){
       else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
     }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
   }));
+
+  // Build photo metadata
+  const photoMeta = {};
+  photoUrls.forEach(u => { photoMeta[u] = { shared: mPhotoShared, clubUse: mPhotoClubUse, uploadedBy: user.kennitala }; });
 
   btn.disabled=false; btn.textContent=IS?'Vista í siglingabók':'Save to logbook';
 
@@ -1330,6 +1376,7 @@ async function submitManual(){
       distanceNm, departurePort:depPort, arrivalPort:arrPort,
       trackFileUrl, trackSimplified, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
+      photoMeta: Object.keys(photoMeta).length ? JSON.stringify(photoMeta) : '',
     };
     const res=await apiPost('saveTrip', tripBase);
     const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
@@ -1465,6 +1512,15 @@ function closeMapModal() {
 // ── Photo lightbox ───────────────────────────────────────────────────────────
 let _lbTripId = null, _lbIndex = 0, _lbUrls = [];
 
+function openLightboxUrl(tripId, photoUrl) {
+  const trip = myTrips.find(t => t.id === tripId);
+  if (!trip) return;
+  try { _lbUrls = JSON.parse(trip.photoUrls || '[]'); } catch(e) { _lbUrls = []; }
+  const idx = _lbUrls.indexOf(photoUrl);
+  openLightbox(tripId, idx >= 0 ? idx : 0);
+  return;
+}
+
 function openLightbox(tripId, index) {
   const trip = myTrips.find(t => t.id === tripId);
   if (!trip) return;
@@ -1532,6 +1588,11 @@ async function deleteTripPhoto(tripId, photoUrl) {
       let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
       urls = urls.filter(u => u !== photoUrl);
       t.photoUrls = urls.length ? JSON.stringify(urls) : '';
+      // Clean up photo meta
+      let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
+      delete meta[photoUrl];
+      t.photoMeta = Object.keys(meta).length ? JSON.stringify(meta) : '';
+      await apiPost('saveTrip', { id: tripId, photoMeta: t.photoMeta });
     }
     applyFilter();
     showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'success');
@@ -1833,10 +1894,325 @@ async function dismissAllConf() {
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
+// ── Edit trip (skipper only) ────────────────────────────────────────────────
+function openEditTrip(tripId) {
+  const t = myTrips.find(x => x.id === tripId);
+  if (!t) return;
+  // Only skipper+owner can edit
+  if (t.role === 'crew' || String(t.kennitala) !== String(user.kennitala)) {
+    showToast(IS ? 'Aðeins skipstjóri getur breytt ferðinni' : 'Only the skipper can edit this trip', 'err');
+    return;
+  }
+  document.getElementById('etId').value = t.id;
+  document.getElementById('etDate').value = t.date || '';
+  document.getElementById('etTimeOut').value = t.timeOut || '';
+  document.getElementById('etTimeIn').value = t.timeIn || '';
+  document.getElementById('etCrew').value = t.crew || 1;
+  document.getElementById('etDistanceNm').value = t.distanceNm || '';
+  document.getElementById('etDeparturePort').value = t.departurePort || '';
+  document.getElementById('etArrivalPort').value = t.arrivalPort || '';
+  document.getElementById('etSkipperNote').value = t.skipperNote || '';
+  // Populate boat select
+  const boatSel = document.getElementById('etBoat');
+  boatSel.innerHTML = '<option value="">Select boat…</option>';
+  allBoats.forEach(b => {
+    const o = document.createElement('option');
+    o.value = b.id; o.textContent = b.name;
+    if (b.id === t.boatId) o.selected = true;
+    boatSel.appendChild(o);
+  });
+  // Populate location select
+  const locSel = document.getElementById('etLocation');
+  locSel.innerHTML = '<option value="">Select location…</option>';
+  allLocs.forEach(l => {
+    const o = document.createElement('option');
+    o.value = l.id; o.textContent = l.name;
+    if (l.id === t.locationId) o.selected = true;
+    locSel.appendChild(o);
+  });
+  // Weather
+  let wx = null; try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e) {}
+  document.getElementById('etWindMs').value = wx?.ws ?? '';
+  document.getElementById('etWindDir').value = wx?.dir || t.windDir || '';
+  document.getElementById('etBft').value = wx?.bft ?? t.beaufort ?? '';
+  document.getElementById('etErr').style.display = 'none';
+  document.getElementById('editTripTitle').textContent = IS ? 'Breyta ferð' : 'Edit trip';
+  document.getElementById('etSubmitBtn').textContent = IS ? 'Vista breytingar' : 'Save changes';
+  document.getElementById('editTripModal').classList.remove('hidden');
+}
+
+function closeEditTrip() {
+  document.getElementById('editTripModal').classList.add('hidden');
+}
+
+async function submitEditTrip() {
+  const tripId = document.getElementById('etId').value;
+  const t = myTrips.find(x => x.id === tripId);
+  if (!t) return;
+  const errEl = document.getElementById('etErr');
+  errEl.style.display = 'none';
+  const date = document.getElementById('etDate').value;
+  const boatId = document.getElementById('etBoat').value;
+  const boat = allBoats.find(b => b.id === boatId);
+  const boatName = boat?.name || '';
+  const boatCategory = boat?.category || '';
+  const locId = document.getElementById('etLocation').value;
+  const loc = allLocs.find(l => l.id === locId);
+  const locName = loc?.name || '';
+  const timeOut = document.getElementById('etTimeOut').value.trim();
+  const timeIn = document.getElementById('etTimeIn').value.trim();
+  const crew = parseInt(document.getElementById('etCrew').value) || 1;
+  const distanceNm = document.getElementById('etDistanceNm').value.trim();
+  const depPort = document.getElementById('etDeparturePort').value.trim();
+  let arrPort = document.getElementById('etArrivalPort').value.trim();
+  if (!arrPort && depPort) arrPort = depPort;
+  const skipperNote = document.getElementById('etSkipperNote').value.trim();
+  // Weather
+  const windMs = document.getElementById('etWindMs').value.trim();
+  const windDir = document.getElementById('etWindDir').value;
+  const bft = document.getElementById('etBft').value;
+  // Validate
+  const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (timeOut && !timeRe.test(timeOut)) { errEl.textContent = 'Invalid departure time (HH:MM).'; errEl.style.display = ''; return; }
+  if (timeIn && !timeRe.test(timeIn)) { errEl.textContent = 'Invalid return time (HH:MM).'; errEl.style.display = ''; return; }
+  if (!date) { errEl.textContent = 'Please enter a date.'; errEl.style.display = ''; return; }
+  // Compute hours
+  let hoursDecimal = 0;
+  if (timeOut && timeIn) {
+    const [oh, om] = timeOut.split(':').map(Number);
+    const [ih, im] = timeIn.split(':').map(Number);
+    let mins = (ih * 60 + im) - (oh * 60 + om);
+    if (mins < 0) mins += 1440;
+    hoursDecimal = +(mins / 60).toFixed(2);
+  }
+  // Build wx
+  let wxSnapshot = '';
+  const wxObj = {};
+  if (windMs) wxObj.ws = parseFloat(windMs) || 0;
+  if (windDir) wxObj.dir = windDir;
+  if (bft) wxObj.bft = parseInt(bft);
+  if (Object.keys(wxObj).length) wxSnapshot = JSON.stringify(wxObj);
+
+  const btn = document.getElementById('etSubmitBtn');
+  btn.disabled = true; btn.textContent = IS ? 'Vista…' : 'Saving…';
+  try {
+    await apiPost('saveTrip', {
+      id: tripId, date, boatId, boatName, boatCategory,
+      locationId: locId, locationName: locName,
+      timeOut, timeIn, hoursDecimal, crew,
+      beaufort: bft, windDir, wxSnapshot, skipperNote,
+      distanceNm, departurePort: depPort, arrivalPort: arrPort,
+    });
+    // Update local data
+    Object.assign(t, { date, boatId, boatName, boatCategory, locationId: locId, locationName: locName, timeOut, timeIn, hoursDecimal, crew, beaufort: bft, windDir, wxSnapshot, skipperNote, distanceNm, departurePort: depPort, arrivalPort: arrPort });
+    closeEditTrip();
+    applyFilter();
+    showToast(IS ? 'Ferð uppfærð' : 'Trip updated', 'success');
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message; errEl.style.display = '';
+  }
+  btn.disabled = false; btn.textContent = IS ? 'Vista breytingar' : 'Save changes';
+}
+
+// ── Inline GPS track upload ────────────────────────────────────────────────
+function inlineUploadTrack(tripId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.gpx,.kml,.kmz';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    showToast(IS ? 'Hleð upp GPS-leið…' : 'Uploading GPS track…');
+    try {
+      const fileData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Read error'));
+        reader.readAsDataURL(file);
+      });
+      const res = await apiPost('uploadTripFile', { fileType: 'track', fileName: file.name, fileData, mimeType: file.type });
+      if (!res.ok) { showToast(IS ? 'Upphal mistókst' : 'Upload failed', 'err'); return; }
+      // Save track to trip
+      const updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
+      if (res.distanceNm) updates.distanceNm = res.distanceNm;
+      await apiPost('saveTrip', { id: tripId, ...updates });
+      const t = myTrips.find(x => x.id === tripId);
+      if (t) Object.assign(t, updates);
+      applyFilter();
+      showToast(IS ? 'GPS-leið bætt við' : 'GPS track added', 'success');
+    } catch(e) { showToast('Error: ' + e.message, 'err'); }
+  };
+  input.click();
+}
+
+// ── Inline photo upload ────────────────────────────────────────────────────
+let _inlinePhotos = []; // [{fileName, fileData, mimeType}]
+
+function inlineUploadPhotos(tripId) {
+  _inlinePhotos = [];
+  document.getElementById('puTripId').value = tripId;
+  document.getElementById('puPhotoFiles').value = '';
+  document.getElementById('puPhotoPreview').innerHTML = '';
+  document.getElementById('puShared').checked = true;
+  document.getElementById('puClubUse').checked = false;
+  document.getElementById('puErr').style.display = 'none';
+  document.getElementById('photoUploadTitle').textContent = IS ? 'Bæta við myndum' : 'Add photos';
+  document.getElementById('puSharedLbl').textContent = IS ? 'Deila með áhöfn' : 'Share with crew';
+  document.getElementById('puClubLbl').textContent = IS ? 'Félagið má nota' : 'Club may use';
+  document.getElementById('puHint').textContent = IS
+    ? 'Deildar myndir sjást öðrum í ferðinni. Myndir merktar fyrir félagið má nota í kynningarefni.'
+    : 'Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.';
+  document.getElementById('puSubmitBtn').textContent = IS ? 'Hlaða upp myndum' : 'Upload photos';
+  document.getElementById('photoUploadModal').classList.remove('hidden');
+}
+
+function closePhotoUpload() {
+  document.getElementById('photoUploadModal').classList.add('hidden');
+  _inlinePhotos = [];
+}
+
+function handleInlinePhotos(input) {
+  const preview = document.getElementById('puPhotoPreview');
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      _inlinePhotos.push({ fileName: file.name, fileData: reader.result, mimeType: file.type });
+      const img = document.createElement('img');
+      img.src = reader.result;
+      img.className = 'photo-thumb';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitInlinePhotos() {
+  const tripId = document.getElementById('puTripId').value;
+  const t = myTrips.find(x => x.id === tripId);
+  if (!t) return;
+  if (!_inlinePhotos.length) {
+    document.getElementById('puErr').textContent = IS ? 'Engar myndir valdar' : 'No photos selected';
+    document.getElementById('puErr').style.display = '';
+    return;
+  }
+  const shared = document.getElementById('puShared').checked;
+  const clubUse = document.getElementById('puClubUse').checked;
+  const btn = document.getElementById('puSubmitBtn');
+  btn.disabled = true; btn.textContent = IS ? 'Hleð upp…' : 'Uploading…';
+  try {
+    let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
+    let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
+    const newUrls = [];
+    await Promise.all(_inlinePhotos.map(async ph => {
+      try {
+        const res = await apiPost('uploadTripFile', { fileType: 'photo', fileName: ph.fileName, fileData: ph.fileData, mimeType: ph.mimeType });
+        if (res.ok && res.photoUrl) {
+          newUrls.push(res.photoUrl);
+          meta[res.photoUrl] = { shared, clubUse, uploadedBy: user.kennitala };
+        }
+      } catch(e) { showToast((IS ? 'Upphal mistókst: ' : 'Upload failed: ') + e.message, 'warn'); }
+    }));
+    if (newUrls.length) {
+      const allUrls = urls.concat(newUrls);
+      const photoUrls = JSON.stringify(allUrls);
+      const photoMeta = JSON.stringify(meta);
+      await apiPost('saveTrip', { id: tripId, photoUrls, photoMeta });
+      t.photoUrls = photoUrls;
+      t.photoMeta = photoMeta;
+    }
+    closePhotoUpload();
+    applyFilter();
+    showToast(IS ? 'Myndir bættar við' : 'Photos added', 'success');
+  } catch(e) {
+    document.getElementById('puErr').textContent = 'Error: ' + e.message;
+    document.getElementById('puErr').style.display = '';
+  }
+  btn.disabled = false; btn.textContent = IS ? 'Hlaða upp myndum' : 'Upload photos';
+}
+
 // Load confirmations after page init
 setTimeout(loadConfirmations,1500);
 
 </script>
+
+<!-- Edit trip modal (skipper only) -->
+<div class="modal-overlay hidden" id="editTripModal" onclick="if(event.target===this)closeEditTrip()">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span id="editTripTitle">Edit trip</span>
+      <button class="modal-close" onclick="closeEditTrip()">✕</button>
+    </div>
+    <input type="hidden" id="etId">
+    <div class="form-row">
+      <div class="form-field"><label>Date</label><input type="date" id="etDate"></div>
+      <div class="form-field"><label>Boat</label>
+        <select id="etBoat"><option value="">Select boat…</option></select>
+      </div>
+    </div>
+    <div class="form-field"><label>Location</label>
+      <select id="etLocation"><option value="">Select location…</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Departed</label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
+        oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+      <div class="form-field"><label>Returned</label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
+        oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Crew aboard</label><input type="number" id="etCrew" min="1" value="1"></div>
+      <div class="form-field"><label>Distance (nm)</label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Departure port</label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
+      <div class="form-field"><label>Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
+    </div>
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin:12px 0 8px">WEATHER</div>
+    <div class="wx-row">
+      <div class="form-field"><label>Wind (m/s)</label><input type="number" id="etWindMs" min="0" step="0.1"></div>
+      <div class="form-field"><label>Direction</label>
+        <select id="etWindDir"><option value="">—</option>
+          <option>N</option><option>NE</option><option>E</option><option>SE</option>
+          <option>S</option><option>SW</option><option>W</option><option>NW</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Beaufort</label>
+        <select id="etBft"><option value="">—</option>
+          <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+          <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9+</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-field" style="margin-top:8px"><label>Skipper note <span style="font-size:9px;color:var(--muted)">(visible to crew)</span></label>
+      <textarea id="etSkipperNote" rows="2"></textarea>
+    </div>
+    <div id="etErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+    <button class="btn-primary" id="etSubmitBtn" onclick="submitEditTrip()">Save changes</button>
+  </div>
+</div>
+
+<!-- Inline photo upload modal -->
+<div class="modal-overlay hidden" id="photoUploadModal" onclick="if(event.target===this)closePhotoUpload()">
+  <div class="modal-sheet" style="max-width:480px">
+    <div class="modal-title">
+      <span id="photoUploadTitle">Add photos</span>
+      <button class="modal-close" onclick="closePhotoUpload()">✕</button>
+    </div>
+    <input type="hidden" id="puTripId">
+    <div class="form-field">
+      <label>Photos</label>
+      <input type="file" id="puPhotoFiles" accept="image/*" multiple onchange="handleInlinePhotos(this)" style="font-size:11px;color:var(--text)">
+      <div id="puPhotoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+    </div>
+    <div class="photo-meta-row" style="margin-bottom:8px">
+      <label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl">Share with crew</span></label>
+      <label><input type="checkbox" id="puClubUse"> <span id="puClubLbl">Club may use</span></label>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
+    <div id="puErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
+    <button class="btn-primary" id="puSubmitBtn" onclick="submitInlinePhotos()">Upload photos</button>
+  </div>
+</div>
 
 <!-- Guest prompt modal (for adding non-members as crew) -->
 <div class="modal-overlay hidden" id="logGuestModal" style="z-index:700" onclick="if(event.target===this)closeLgGuestModal()">

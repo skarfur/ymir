@@ -1605,7 +1605,7 @@ function saveTrip_(b) {
       'validationRequested','helm','skipperNote',
       'distanceNm','departurePort','arrivalPort',
       'trackFileUrl','trackSimplified','trackSource',
-      'photoUrls',
+      'photoUrls','photoMeta',
     ];
     UPDATABLE.forEach(k => { if (b[k] !== undefined) updates[k] = b[k]; });
     updateRow_('trips', 'id', b.id, updates);
@@ -1629,7 +1629,7 @@ function saveTrip_(b) {
     skipperNote: b.skipperNote || '',
     distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
     trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
-    photoUrls: b.photoUrls || '',
+    photoUrls: b.photoUrls || '', photoMeta: b.photoMeta || '',
     createdAt: ts,
   });
   return okJ({ id, created: true });
@@ -3682,7 +3682,7 @@ var SCHEMA_ = {
     // keelboat Phase-1 (v6)
     'distanceNm','departurePort','arrivalPort',
     'trackFileUrl','trackSimplified','trackSource',
-    'photoUrls',
+    'photoUrls','photoMeta',
     'createdAt','updatedAt',
   ],
   trip_confirmations: [
@@ -3799,6 +3799,20 @@ function addRecentTripColumns() {
     Logger.log('Added to trips: ' + added.join(', '));
   } else {
     Logger.log('trips already has all keelboat Phase-1 columns — nothing to add');
+  }
+}
+
+// ── Focused helper: add photoMeta column to trips ───────────────────────
+function addPhotoMetaColumn() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('trips');
+  if (!sheet) { Logger.log('trips tab not found'); return; }
+  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  if (!existing.includes('photoMeta')) {
+    sheet.getRange(1, existing.length + 1).setValue('photoMeta');
+    Logger.log('Added photoMeta column to trips');
+  } else {
+    Logger.log('photoMeta column already exists');
   }
 }
 
