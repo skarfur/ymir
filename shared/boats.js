@@ -274,7 +274,7 @@ function renderCheckoutCard(co, opts) {
     try {
       const w = typeof co.wxSnapshot==="string" ? JSON.parse(co.wxSnapshot) : co.wxSnapshot;
       wxHtml = `<div style="font-size:10px;color:var(--muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">`
-             + `· Bft ${w.bft} · ${w.ws} m/s ${w.dir||""}`
+             + `· Bft ${w.bft} · ${typeof w.ws==='string'&&w.ws.indexOf('-')!==-1?w.ws.split('-').map(v=>Math.round(v)).join('–'):w.ws} m/s ${w.dir||""}`
              + `${w.wv!=null?" · < "+w.wv+"m":""}`
              + `</div>`;
     } catch(e) {}

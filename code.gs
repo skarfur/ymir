@@ -1458,8 +1458,10 @@ function saveCheckout_(b) {
   if (b.wxSnapshot) {
     try {
       const w = typeof b.wxSnapshot === 'string' ? JSON.parse(b.wxSnapshot) : b.wxSnapshot;
+      // ws may be a range string like "5.5-8.0" from Beaufort-only entries — preserve as-is
+      var wsVal = (typeof w.ws === 'string' && w.ws.indexOf('-') !== -1) ? w.ws : (w.ws != null ? Math.round(w.ws) : 0);
       wxSnap = JSON.stringify({
-        bft: Math.round(w.bft || 0), ws: Math.round(w.ws || 0), wg: Math.round(w.wg || 0),
+        bft: Math.round(w.bft || 0), ws: wsVal, wg: Math.round(w.wg || 0),
         dir: w.dir || w.wDir || '',
         wv: w.wv != null ? parseFloat(w.wv.toFixed ? w.wv.toFixed(1) : w.wv) : (w.waveH != null ? parseFloat(parseFloat(w.waveH).toFixed(1)) : null),
         flag: w.flag || w.flagKey || '',
@@ -1491,8 +1493,9 @@ function saveGroupCheckout_(b) {
   if (b.wxSnapshot) {
     try {
       const w = typeof b.wxSnapshot === 'string' ? JSON.parse(b.wxSnapshot) : b.wxSnapshot;
+      var wsVal2 = (typeof w.ws === 'string' && w.ws.indexOf('-') !== -1) ? w.ws : (w.ws != null ? Math.round(w.ws) : 0);
       wxSnap = JSON.stringify({
-        bft: Math.round(w.bft||0), ws: Math.round(w.ws||0), wg: Math.round(w.wg||0),
+        bft: Math.round(w.bft||0), ws: wsVal2, wg: Math.round(w.wg||0),
         dir: w.dir||w.wDir||'',
         wv: w.wv != null ? parseFloat(parseFloat(w.wv).toFixed(1)) : null,
         flag: w.flag||'', tc: w.tc != null ? Math.round(w.tc) : null, ts: w.ts||ts.slice(0,16),
@@ -3092,7 +3095,10 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
     var hasTopWx = (wx && wx.ws != null) || t.beaufort || (wx && wx.wv != null) || (wx && wx.cond && wx.cond.desc);
     if (hasTopWx) {
       html += '<div class="detail-section"><div class="detail-section-hdr">' + dl_('pub.lbl.weather') + '</div><div class="detail-grid">';
-      if (wx && wx.ws != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">' + Math.round(wx.ws) + ' m/s' + (wx.bft != null ? ' · Force ' + wx.bft : '') + '</span></div>';
+      if (wx && wx.ws != null) {
+        var wsDisp = (typeof wx.ws === 'string' && wx.ws.indexOf('-') !== -1) ? wx.ws.split('-').map(function(v){return Math.round(v);}).join('–') + ' m/s' : Math.round(wx.ws) + ' m/s';
+        html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">' + wsDisp + (wx.bft != null ? ' · Force ' + wx.bft : '') + '</span></div>';
+      }
       else if (t.beaufort) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.wind') + '</span><span class="detail-val">Force ' + esc_(t.beaufort) + '</span></div>';
       if (wx && wx.wv != null) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.waveHeight') + '</span><span class="detail-val">' + Number(wx.wv).toFixed(1) + ' m</span></div>';
       if (wx && wx.cond && wx.cond.desc) html += '<div class="detail-row"><span class="detail-lbl">' + dl_('pub.lbl.conditions') + '</span><span class="detail-val">' + (wx.cond.icon || '') + ' ' + esc_(wx.cond.desc) + '</span></div>';
