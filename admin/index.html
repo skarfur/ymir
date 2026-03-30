@@ -1019,9 +1019,13 @@ function showTopTab(top) {
   });
   document.getElementById('top-members').classList.toggle('hidden', top !== 'members');
   document.getElementById('top-settings').classList.toggle('hidden', top !== 'settings');
+  if (top === 'settings') {
+    const active = document.querySelector('#settingsTabBar .tab-btn.active');
+    showTab(active ? active.dataset.tab : 'boats');
+  }
   const url = new URL(window.location.href);
   url.searchParams.set('top', top);
-  url.searchParams.delete('tab');
+  if (top !== 'settings') url.searchParams.delete('tab');
   history.replaceState(null, '', url);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
