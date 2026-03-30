@@ -448,7 +448,7 @@ function advanceToLaunchChecklist() {
     ret:  document.getElementById('launchReturnBy')?.value||'',
     crew: window._launchCrewCount||1,
     crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
-      .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',student:cb?cb.checked:false,guest:!!(i.dataset.guest||!i.dataset.kennitala)};})
+      .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest,student:!isGuest&&cb&&cb.checked};})
       .filter(c=>c.name),
     departurePort: (document.getElementById('launchDeparturePort')?.value||'').trim(),
   };
@@ -542,7 +542,11 @@ function searchCrewMembers(inp,drop) {
     item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||''; item.dataset.guest=m.role==='guest'?'1':'';
     item.addEventListener('mouseover',function(){this.style.background='var(--card)';});
     item.addEventListener('mouseout', function(){this.style.background='';});
-    item.addEventListener('mousedown',function(e){e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;inp.dataset.guest=this.dataset.guest;drop.style.display='none';});
+    item.addEventListener('mousedown',function(e){
+      e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;inp.dataset.guest=this.dataset.guest;drop.style.display='none';
+      var stuCb=document.querySelector('.crew-student-toggle[data-crew-idx="'+inp.dataset.crewIdx+'"]');
+      if(stuCb){stuCb.parentElement.style.display=this.dataset.guest?'none':'';if(this.dataset.guest){stuCb.checked=false;}}
+    });
     drop.appendChild(item);
   });
   drop.style.display='block';
@@ -581,7 +585,7 @@ async function submitLaunch() {
     });
     if(crewNames.length){
       var _coId=res?.checkoutId||res?.id||'';
-      // Only create confirmations for non-guest crew with kennitala
+      // Only create confirmations for non-guest crew (guests are stored in crewNames only)
       var _confCrew=crewNames.filter(function(cn){return cn.kennitala&&!cn.guest;});
       if(_confCrew.length){
         await Promise.all(_confCrew.map(function(cn){
@@ -859,14 +863,15 @@ function _renderHelmSection(){
         '<span>'+esc(t.memberName||'?')+_guestTag(t)+'</span></label>';
     }).join('');}
   }
-  // Also render student toggles
+  // Student toggles — guests cannot be students, so only show non-guest crew
   var stuEl=document.getElementById('studentToggles');
   if(stuEl){
-    if(!entries.length){stuEl.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
-    else{stuEl.innerHTML=entries.map(function(t){
+    var nonGuests=entries.filter(function(t){return !_isGuest(t);});
+    if(!nonGuests.length){stuEl.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
+    else{stuEl.innerHTML=nonGuests.map(function(t){
       return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)44;cursor:pointer;font-size:13px">'+
-        '<input type="checkbox" class="student-toggle" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
-        '<span>'+esc(t.memberName||'?')+_guestTag(t)+'</span></label>';
+        '<input type="checkbox" class="student-toggle" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'" style="width:16px;height:16px;accent-color:var(--brass)">'+
+        '<span>'+esc(t.memberName||'?')+'</span></label>';
     }).join('');}
   }
 }
@@ -1052,11 +1057,10 @@ async function confirmCheckIn(coId) {
       }).catch(function(){}));
     });
     if(helmRequests.length) await Promise.all(helmRequests);
-    // Create student confirmation requests for non-guest crew members
+    // Create student confirmation requests (student toggles only show non-guest crew)
     var studentRequests=[];
     document.querySelectorAll('.student-toggle').forEach(function(cb){
       if(!cb.checked) return;
-      if(cb.dataset.guest) return; // guests don't need handshake
       studentRequests.push(apiPost('createConfirmation',{
         type:'student',
         fromKennitala:user.kennitala, fromName:user.name,
@@ -1068,18 +1072,13 @@ async function confirmCheckIn(coId) {
       }).catch(function(){}));
     });
     if(studentRequests.length) await Promise.all(studentRequests);
-    // Update crewNames with helm/student flags set directly for guests (no handshake)
+    // Update crewNames with helm flag set directly for guests (no handshake needed)
     var _updatedCrewNames=parseJson(co.crewNames,[]);
     var _guestUpdated=false;
     document.querySelectorAll('.helm-toggle').forEach(function(cb){
       if(!cb.checked||cb.dataset.helmSelf||!cb.dataset.guest) return;
-      var cn=_updatedCrewNames.find(function(c){return c.name&&(c.kennitala===cb.dataset.helmKt||(c.name===cb.dataset.helmName&&!c.kennitala));});
+      var cn=_updatedCrewNames.find(function(c){return c.name&&String(c.kennitala)===String(cb.dataset.helmKt);});
       if(cn){cn.helm=true;_guestUpdated=true;}
-    });
-    document.querySelectorAll('.student-toggle').forEach(function(cb){
-      if(!cb.checked||!cb.dataset.guest) return;
-      var cn=_updatedCrewNames.find(function(c){return c.name&&(c.kennitala===cb.dataset.stuKt||(c.name===cb.dataset.stuName&&!c.kennitala));});
-      if(cn){cn.student=true;_guestUpdated=true;}
     });
     if(_guestUpdated&&_skipperTripId){
       apiPost('saveTrip',{id:_skipperTripId,crewNames:JSON.stringify(_updatedCrewNames)}).catch(function(){});
