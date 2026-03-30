@@ -412,7 +412,7 @@ function renderTrips() {
     const tin   = (co.checkedInAt ||co.timeIn ||'').slice(0,5);
     const retBy = (co.expectedReturn||'').slice(0,5);
     const overdue = retBy && !tin && retBy < fmtTimeNow();
-    row.innerHTML = `<div style="flex:1">
+    row.innerHTML = `<div class="flex-1">
       <div class="trip-boat">${esc(co.boatName||co.boatId)}
         ${co.memberIsMinor ? `<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>` : ''}
       </div>
@@ -420,7 +420,7 @@ function renderTrips() {
     </div>
     <div class="trip-times">
       <div>${tout || '—'}</div>
-      ${tin ? `<div style="color:var(--green)">${tin}</div>` : (retBy ? `<div style="color:${overdue?'var(--red)':'var(--muted)'}">↩${retBy}</div>` : '')}
+      ${tin ? `<div class="text-green">${tin}</div>` : (retBy ? `<div class="${overdue?'text-red':'text-muted'}">↩${retBy}</div>` : '')}
     </div>`;
     return row;
   });
@@ -589,7 +589,7 @@ function renderWxLog() {
       '<div class="wx-snap-header">'
       + '<span class="wx-snap-time">' + esc(time) + '</span>'
       + '<span class="wx-snap-flag">' + (snap.flag ? fi[snap.flag]||"" : "") + '</span>'
-      + '<button class="del-btn" data-delete-wx="' + i + '" style="font-size:14px">&times;</button>'
+      + '<button class="del-btn text-lg" data-delete-wx="' + i + '">&times;</button>'
       + '</div>'
       + '<div class="wx-snap-grid">' + gridHtml + '</div>';
     dom.wxLogList.appendChild(card);
@@ -888,7 +888,7 @@ function _renderDailyTide() {
   const isToday = viewDate === new Date().toISOString().slice(0,10);
   const nowMs   = isToday ? Date.now() : -1;
   const svg = tideSvgChart(series, extrema, nowMs, 320, 80);
-  el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px">${svg}</div>`;
+  el.innerHTML = `<div class="info-panel" style="padding:8px 10px">${svg}</div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1122,9 +1122,9 @@ function renderGroupLinkCards() {
   if (!wrap) return;
   if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
-    return '<div style="background:var(--card);border:1px solid #2e86c155;border-left:3px solid #2e86c1;border-radius:6px;padding:6px 10px;font-size:11px;display:flex;align-items:center;justify-content:space-between">' +
+    return '<div class="flex-between callout-panel text-sm" style="border-left:3px solid #2e86c1;border-color:#2e86c155;border-left-color:#2e86c1;padding:6px 10px">' +
       '<span>⛵ Group checkout ' + esc(id.slice(-6)) + '</span>' +
-      '<button onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>' +
+      '<button class="btn-dismiss" onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()">✕</button>' +
       '</div>';
   }).join('');
 }
@@ -1146,9 +1146,9 @@ function openGroupLinkPicker() {
       let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
       let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
       const sel = _groupLinkPickerSelected.has(c.id);
-      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border:1px solid ' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;border-radius:6px;padding:8px 12px;cursor:pointer;margin-bottom:6px">' +
-        '<div style="font-size:12px;font-weight:500">' + esc(boatArr.join(', ')) + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
+      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" class="callout-panel mb-6" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border-color:' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;cursor:pointer">' +
+        '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
+        '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
         '</div>';
     }).join('');
   }

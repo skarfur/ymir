@@ -280,7 +280,7 @@ border-bottom:1px solid var(--border)44; }
   <div class="stat-row">
     <div class="stat-cell"><div class="stat-n" id="statBoats">0</div><div class="stat-l" data-s="staff.statBoats">BOATS OUT</div></div>
     <div class="stat-cell"><div class="stat-n" id="statPeople">0</div><div class="stat-l" data-s="staff.statPeople">PEOPLE OUT</div></div>
-    <div class="stat-cell"><div class="stat-n" id="statOverdue" style="color:var(--muted)">0</div><div class="stat-l" data-s="staff.statOverdue">OVERDUE</div></div>
+    <div class="stat-cell"><div class="stat-n text-muted" id="statOverdue">0</div><div class="stat-l" data-s="staff.statOverdue">OVERDUE</div></div>
   </div>
 
   <div class="section">
@@ -417,13 +417,12 @@ border-bottom:1px solid var(--border)44; }
 <!-- ══ CHECKOUT DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="coDetailModal" onclick="if(event.target===this)closeCoDetail()">
   <div class="modal" style="max-width:480px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 style="margin:0" id="cdTitle"></h3>
-      <button class="btn-ghost" onclick="closeCoDetail()"
-        style="font-size:20px;padding:0 6px;line-height:1;border:none;color:var(--muted)">×</button>
+    <div class="modal-header">
+      <h3 id="cdTitle"></h3>
+      <button class="modal-close-x" onclick="closeCoDetail()">×</button>
     </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="staff.coDetail.tripLabel">TRIP</div>
+    <div class="info-panel mb-10">
+      <div class="section-label text-brass mb-10" data-s="staff.coDetail.tripLabel">TRIP</div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.boat"></span><span class="dl-dval" id="cdBoat"></span></div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.location"></span><span class="dl-dval" id="cdLocation"></span></div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="staff.coDetail.out"></span><span class="dl-dval" id="cdOut"></span></div>
@@ -431,8 +430,8 @@ border-bottom:1px solid var(--border)44; }
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.crew"></span><span class="dl-dval" id="cdCrew"></span></div>
       <div class="dl-drow" id="cdNotesRow"><span class="dl-dlbl" data-s="lbl.notes"></span><span class="dl-dval" id="cdNotes"></span></div>
     </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--brass);letter-spacing:1.5px;margin-bottom:10px" data-s="lbl.member"></div>
+    <div class="info-panel mb-10">
+      <div class="section-label text-brass mb-10" data-s="lbl.member"></div>
       <div class="dl-drow"><span class="dl-dlbl" data-s="lbl.name"></span><span class="dl-dval" id="cdMember"></span></div>
       <div class="dl-drow" id="cdPhoneRow"><span class="dl-dlbl" data-s="lbl.phone"></span><span class="dl-dval" id="cdPhone"></span></div>
       <div class="dl-drow" id="cdGuardianRow"><span class="dl-dlbl" data-s="lbl.guardian"></span><span class="dl-dval" id="cdGuardian"></span></div>

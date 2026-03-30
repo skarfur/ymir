@@ -457,12 +457,12 @@ function closeWfFlagModal() {
 <!-- ══ FLAG DETAIL MODAL ══ -->
 <div class="modal-overlay hidden" id="wfFlagModal" onclick="if(event.target===this)closeWfFlagModal()">
   <div class="modal" style="max-width:480px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 id="wfFlagModalTitle" style="margin:0"></h3>
-      <button onclick="closeWfFlagModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">×</button>
+    <div class="modal-header">
+      <h3 id="wfFlagModalTitle"></h3>
+      <button class="modal-close-x" onclick="closeWfFlagModal()">×</button>
     </div>
     <div id="wfFlagModalBody"></div>
-    <div style="margin-top:16px">
+    <div class="mt-16">
       <button class="btn btn-secondary" onclick="closeWfFlagModal()" style="width:100%">Close</button>
     </div>
   </div>

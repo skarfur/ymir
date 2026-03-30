@@ -190,9 +190,8 @@
           </div>
           <div id="importStep3" data-step="3" class="hidden">
             <div class="import-card" style="text-align:center;padding:36px">
-
               <div class="mb-10" style="font-size:30px">✓</div>
-              <div class="text-lg fw-500" style="color:#27ae60" id="importDoneMsg"></div>
+              <div class="text-lg fw-500 text-green" id="importDoneMsg"></div>
               <div style="margin-top:18px">
                 <button class="btn btn-secondary" onclick="resetImport()">Import another</button>
                 <button class="btn btn-primary ml-auto" onclick="showMemberSub('list')" style="margin-left:8px">View members</button>
@@ -203,14 +202,14 @@
       </div><!-- /tab-members -->
 
       <!-- ══ ASSIGN CERTIFICATIONS ══ -->
-      <div class="col-section" style="margin-top:20px;">
+      <div class="col-section" style="margin-top:20px">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title" data-s="admin.certAssign"></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body">
           <div class="flex-center flex-wrap gap-8 mb-12">
-            <div class="search-bar" style="flex:1;min-width:180px">
+            <div class="search-bar flex-1" style="min-width:180px">
               <input type="text" id="certMemberSearch" oninput="filterCertMembers()">
             </div>
             <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
@@ -266,7 +265,7 @@
     <div id="tab-checklists" class="hidden">
 
       <!-- Opening / Closing checklists -->
-      <div class="section-label mb-8" style="letter-spacing:1.2px">DAILY CHECKLISTS</div>
+      <div class="section-label mb-8">DAILY CHECKLISTS</div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">OPENING CHECKLIST</div>
@@ -286,8 +285,8 @@
       </div>
 
       <!-- Launch / Landing checklists per category -->
-      <div style="margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="section-label mb-12" style="letter-spacing:1.2px">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
+      <div class="section-divider" style="margin-top:8px">
+        <div class="section-label mb-12">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
         <div class="flex-center gap-8 mb-8">
           <label class="text-sm text-muted">Category:</label>
           <select id="launchCLCatFilter" onchange="renderLaunchCLSections()"
@@ -295,9 +294,9 @@
           </select>
         </div>
         <div id="launchCLCard">
-          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">LAUNCH</div>
+          <div class="section-label mb-6" style="font-size:9px">LAUNCH</div>
           <div id="launchCLLaunchList"></div>
-          <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin:12px 0 6px">LANDING</div>
+          <div class="section-label mb-6" style="font-size:9px;margin-top:12px">LANDING</div>
           <div id="launchCLLandingList"></div>
         </div>
         <div style="padding:8px 0 4px">
@@ -348,7 +347,7 @@
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="alertsCard">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="grid2 mb-14">
             <div class="field">
               <label data-s="admin.alertFirstMins"></label>
               <input type="number" id="alertFirstMins" min="1" max="999" value="30">
@@ -361,30 +360,30 @@
               <label data-s="admin.alertSnoozeMins"></label>
               <input type="number" id="alertSnoozeMins" min="1" max="999" value="10">
             </div>
-            <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:20px">
+            <div class="field flex-center gap-8" style="padding-top:20px">
               <input type="checkbox" id="alertEnabled" checked>
               <label for="alertEnabled" data-s="admin.alertEnabled"></label>
             </div>
           </div>
           
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-            <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-bottom:10px">NOTIFICATION CHANNELS</div>
-            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanWeb" checked><span>🌐 Web (in-app banner)</span></label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanEmail"><span>✉️ Email <span style="font-size:10px;color:var(--muted)">(requires backend setup)</span></span></label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="chanSms"><span>📱 SMS <span style="font-size:10px;color:var(--muted)">(requires backend setup)</span></span></label>
+          <div class="section-divider">
+            <div class="text-sm fw-500 text-muted mb-10" style="letter-spacing:.5px">NOTIFICATION CHANNELS</div>
+            <div class="flex-col gap-8 mb-14">
+              <label class="check-label text-md"><input type="checkbox" id="chanWeb" checked><span>🌐 Web (in-app banner)</span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanEmail"><span>✉️ Email <span class="text-xs text-muted">(requires backend setup)</span></span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanSms"><span>📱 SMS <span class="text-xs text-muted">(requires backend setup)</span></span></label>
             </div>
-            <div class="field" style="margin-bottom:10px">
-              <label style="font-size:11px">Email recipients (comma-separated)</label>
-              <textarea id="alertEmailList" rows="2" style="width:100%;font-size:11px;resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
+            <div class="field mb-10">
+              <label class="text-sm">Email recipients (comma-separated)</label>
+              <textarea id="alertEmailList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
             </div>
-            <div class="field" style="margin-bottom:14px">
-              <label style="font-size:11px">SMS recipients (comma-separated)</label>
-              <textarea id="alertSmsList" rows="2" style="width:100%;font-size:11px;resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
+            <div class="field mb-14">
+              <label class="text-sm">SMS recipients (comma-separated)</label>
+              <textarea id="alertSmsList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
             </div>
           </div>
           <button class="btn btn-primary" onclick="saveAlertConfig()">Save alert settings</button>
-          <span id="alertSaveMsg" style="font-size:11px;color:var(--green);margin-left:10px"></span>
+          <span id="alertSaveMsg" class="text-sm text-green" style="margin-left:10px"></span>
         </div>
       </div>
     </div>
