@@ -118,6 +118,13 @@
       display:flex; align-items:center; justify-content:center; cursor:pointer; }
     .photo-overlay.hidden { display:none; }
     .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; }
+
+    /* ── Responsive ── */
+    @media(max-width:600px){
+      .filter-group-label{min-width:0;width:100%}
+      .filter-btn{padding:6px 10px;font-size:10px}
+      .req-card{padding:12px}
+    }
   </style>
 </head>
 <body>

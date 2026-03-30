@@ -104,6 +104,15 @@
 .dl-drow:last-child { border-bottom:none; }
 .dl-dlbl { font-size:9px; color:var(--muted); letter-spacing:.8px; width:90px; flex-shrink:0; padding-top:2px; }
 .dl-dval { flex:1; color:var(--text); }
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .wx-snap-grid{grid-template-columns:1fr}
+  .save-bar{padding:8px 12px}
+  .dl-drow{flex-direction:column;gap:2px}
+  .dl-dlbl{width:auto;padding-top:0}
+  .incident-btn{padding:10px 12px}
+}
 </style>
 </head>
 <body>

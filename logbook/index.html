@@ -180,6 +180,33 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .photo-sharing-badge.shared{color:var(--green);border:1px solid var(--green)55;background:var(--green)11}
 .photo-sharing-badge.private{color:var(--muted);border:1px solid var(--border);background:var(--surface)}
 .photo-sharing-badge.club{color:var(--brass);border:1px solid var(--brass)55;background:var(--brass)11}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .page{padding:16px 12px 60px}
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+  .filter-bar{grid-template-columns:1fr 1fr}
+  .trip-expand-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+  .wx-row{grid-template-columns:1fr 1fr}
+  .modal-sheet{border-radius:14px 14px 0 0;padding:16px 14px 32px;max-height:95vh}
+  .upload-thumb-wrap,.upload-thumb-wrap .photo-thumb{width:56px;height:56px}
+  .photo-thumb{width:48px;height:48px}
+  .photo-thumb-link{width:48px;height:48px}
+  .gm-row{grid-template-columns:1fr}
+  .trip-card-main{grid-template-columns:44px 1fr auto}
+  .trip-date-col{padding:8px 4px}
+  .trip-date-day{font-size:14px}
+  .trip-date-mon{font-size:12px}
+  .trip-body{padding:8px 10px}
+  .lightbox-nav{padding:6px 10px;font-size:20px}
+}
+@media(max-width:400px){
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .filter-bar{grid-template-columns:1fr}
+  .trip-expand-grid{grid-template-columns:1fr}
+  .wx-row{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
