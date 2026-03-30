@@ -88,7 +88,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .wx-cell{padding:4px 0}
 
 /* ── Map + Stats combo ──────────────────────────────────────────── */
-.map-stats{display:grid;grid-template-columns:3fr 1fr;gap:16px;align-items:start}
+.map-stats{display:grid;grid-template-columns:3fr 1fr 280px;gap:16px;align-items:start}
 #map-container{height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
 #map-container .leaflet-control-attribution{font-size:9px;background:rgba(11,31,56,.8)!important;color:var(--muted)!important}
 #map-container .leaflet-control-attribution a{color:var(--muted)!important}
@@ -98,7 +98,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .ytd-sidebar h3{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:6px 0 4px}
 
 /* ── Future text placeholder ────────────────────────────────────── */
-.future-text{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-top:16px;text-align:center}
+.future-text{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;text-align:center}
 .future-text p{color:var(--muted);font-size:12px;font-style:italic}
 
 /* ── Captains ───────────────────────────────────────────────────── */
@@ -294,10 +294,11 @@ function renderDashboard(data) {
         + '</div></div>';
     });
   }
-  html += '</div></div>';
+  html += '</div>';
 
   // Future text placeholder
   html += '<div class="future-text"><p>' + esc(s('pub.dash.comingSoon')) + '</p></div>';
+  html += '</div>';
 
   html += '</section>';
 
