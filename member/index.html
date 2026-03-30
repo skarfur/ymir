@@ -243,6 +243,7 @@ const L = getLang();
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('member');
   applyStrings();
+  console.log('[CQ] certifications:', user.certifications, 'typeof:', typeof user.certifications, 'isCaptain fn:', typeof isCaptain, 'result:', typeof isCaptain === 'function' ? isCaptain(user) : 'N/A');
   if (typeof isCaptain === 'function' && isCaptain(user)) {
     document.getElementById('captainQBtn').style.display = '';
   }
