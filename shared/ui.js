@@ -144,8 +144,12 @@ window.buildHeader = function (page) {
     if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn'));
   }
 
-  // RIGHT: Weather · lang · sign out
+  // RIGHT: Settings · Weather · lang · sign out
+  if (user) right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
   right.appendChild(link(depth + 'weather/', s('nav.weather'), 'hbtn'));
   right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }));
   right.appendChild(btn(s('nav.signOut'),    () => { if (typeof signOut    === 'function') signOut();    }));
 };
+
+// ── APPLY THEME ON LOAD ────────────────────────────────────────────────────────
+if (typeof applyTheme === 'function') applyTheme();

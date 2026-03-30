@@ -336,6 +336,7 @@ function route_(action, b) {
     case 'importMembers': return importMembers_(b.rows);
     case 'deactivateMembers': return deactivateMembers_(b.ids);
     case 'setLang': return setLang_(b.kennitala, b.lang);
+    case 'savePreferences': return savePreferences_(b);
     case 'getDailyLog': return getDailyLog_(b.date);
     case 'saveDailyLog': return saveDailyLog_(b);
     case 'getMaintenance': return getMaintenance_();
@@ -432,6 +433,7 @@ function validateMember_(kennitala) {
       certifications: m.certifications || '',
       initials: m.initials || extractInitials_(m.name),
       lang: m.lang || 'EN',
+      preferences: m.preferences || '{}',
     }
   });
 }
@@ -537,6 +539,33 @@ function setLang_(kennitala, lang) {
   if (!updated) return failJ('Member not found', 404);
   cDel_('members');
   return okJ({ lang: l });
+}
+
+function savePreferences_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  const kt = String(b.kennitala).trim();
+  const ex = findOne_('members', 'kennitala', kt);
+  if (!ex) return failJ('Member not found', 404);
+
+  const updates = { updatedAt: now_() };
+
+  // Initials override
+  if (b.initials !== undefined) {
+    updates.initials = String(b.initials || '').trim().toUpperCase() || extractInitials_(ex.name);
+  }
+  // Language
+  if (b.lang !== undefined) {
+    const l = String(b.lang || '').toUpperCase();
+    if (['EN', 'IS'].includes(l)) updates.lang = l;
+  }
+  // Preferences JSON (windUnit, theme, statsVisibility)
+  if (b.preferences !== undefined) {
+    updates.preferences = typeof b.preferences === 'string' ? b.preferences : JSON.stringify(b.preferences);
+  }
+
+  updateRow_('members', 'kennitala', kt, updates);
+  cDel_('members');
+  return okJ({ saved: true });
 }
 
 
@@ -3764,5 +3793,19 @@ function addHandshakeColumns() {
   var confCols = SCHEMA_.trip_confirmations;
   ensureTab_(ss, 'trip_confirmations', confCols);
   Logger.log('trip_confirmations tab ready');
+}
+
+function addPreferencesColumn() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('members');
+  if (!sheet) { Logger.log('members tab not found'); return; }
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  if (headers.indexOf('preferences') === -1) {
+    var col = sheet.getLastColumn() + 1;
+    sheet.getRange(1, col).setValue('preferences');
+    Logger.log('Added preferences column at col ' + col);
+  } else {
+    Logger.log('preferences column already exists');
+  }
 }
 

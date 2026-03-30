@@ -25,6 +25,7 @@ async function apiPost(action, payload) {
   // Invalidate config cache when config is saved
   if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember' ||
       action === 'deleteMember' || action === 'saveMemberCert' ||
+      action === 'savePreferences' ||
       action === 'importMembers' || action === 'deactivateMembers' ||
       action === 'saveActivityType' || action === 'deleteActivityType' ||
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
@@ -74,6 +75,62 @@ function signOut() {
 
 function getLang()  { return localStorage.getItem("ymirLang") || "EN"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+function getTheme()  { return localStorage.getItem("ymirTheme") || "dark"; }
+function setTheme(t) {
+  localStorage.setItem("ymirTheme", t);
+  document.documentElement.setAttribute("data-theme", t);
+}
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", getTheme());
+}
+
+// ── Preferences ───────────────────────────────────────────────────────────────
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem("ymirPrefs") || "{}"); } catch(e) { return {}; }
+}
+function setPrefs(p) { localStorage.setItem("ymirPrefs", JSON.stringify(p)); }
+function getPref(key, fallback) { var p = getPrefs(); return p[key] !== undefined ? p[key] : fallback; }
+
+// Wind unit conversion — base unit is m/s
+function convertWind(ms, unit) {
+  if (ms == null || isNaN(ms)) return '';
+  switch (unit) {
+    case 'kts': return (ms * 1.94384).toFixed(1);
+    case 'kmh': return (ms * 3.6).toFixed(1);
+    case 'mph': return (ms * 2.23694).toFixed(1);
+    case 'ms':  return Math.round(ms);
+    default:    return Math.round(ms);
+  }
+}
+function windUnitLabel(unit) {
+  switch (unit) {
+    case 'kts': return 'kts';
+    case 'kmh': return 'km/h';
+    case 'mph': return 'mph';
+    case 'ms':  return 'm/s';
+    default:    return 'm/s';
+  }
+}
+function bftFromMs(ms) {
+  if (ms == null) return null;
+  var m = parseFloat(ms);
+  if (m < 0.3) return 0; if (m < 1.6) return 1; if (m < 3.4) return 2;
+  if (m < 5.5) return 3; if (m < 8.0) return 4; if (m < 10.8) return 5;
+  if (m < 13.9) return 6; if (m < 17.2) return 7; if (m < 20.8) return 8;
+  if (m < 24.5) return 9; if (m < 28.5) return 10; if (m < 32.7) return 11;
+  return 12;
+}
+function formatWindValue(ms, beaufort, unit) {
+  unit = unit || getPref('windUnit', 'bft');
+  if (unit === 'bft') {
+    var b = beaufort != null ? beaufort : (ms != null ? bftFromMs(ms) : null);
+    return b != null ? 'Force ' + b : '';
+  }
+  if (ms != null) return convertWind(ms, unit) + ' ' + windUnitLabel(unit);
+  return beaufort != null ? 'Force ' + beaufort : '';
+}
 
 function toggleLang() {
   var next = getLang() === "EN" ? "IS" : "EN";
