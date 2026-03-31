@@ -958,7 +958,10 @@
         <textarea id="mcmDescription" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
       </div>
 
-      <button class="btn btn-primary" style="width:100%" onclick="assignMemberCert()" data-s="cert.assign"></button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="assignMemberCert()" id="mcmAssignBtn" data-s="cert.assign"></button>
+        <button class="btn btn-secondary hidden" id="mcmCancelEditBtn" onclick="cancelMcmEdit()" data-s="btn.cancel"></button>
+      </div>
     </div>
 
     <div style="margin-top:12px;text-align:right">
@@ -2189,6 +2192,7 @@ function addAtSubtypeRow() {
 let certDefs     = [];
 let certEditId   = null;
 let mcmMemberId  = null;
+let mcmEditIndex = -1; // -1 = adding new, >=0 = editing existing cert at this index
 let certMemberFilter = "";
 let certTypeFilter   = "";
 
@@ -2492,6 +2496,7 @@ function renderCertMembers() {
 
 function openMemberCertModal(memberId) {
   mcmMemberId = memberId;
+  mcmEditIndex = -1;
   const m     = members.find(x => String(x.id) === String(memberId));
   if (!m) return;
   document.getElementById("mcmMemberName").textContent = m.name || "";
@@ -2506,6 +2511,8 @@ function openMemberCertModal(memberId) {
   document.getElementById("mcmExpiryDateField").style.display = "none";
   document.getElementById("mcmExpiresAt").value = "";
   document.getElementById("mcmDescription").value = "";
+  document.getElementById("mcmAssignBtn").textContent = s('cert.assign');
+  document.getElementById("mcmCancelEditBtn").classList.add('hidden');
   populateMcmCategories();
   renderCurrentCerts(m);
   populateCertFilterType();
@@ -2601,9 +2608,71 @@ function renderCurrentCerts(m) {
         <div>${esc(label)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${meta}</div>
       </div>
+      <button class="row-edit" onclick="editMemberCert(${i})" title="${s('btn.edit')}" style="font-size:10px;margin-right:4px">${s('btn.edit')}</button>
       <button class="row-del" onclick="removeMemberCert('${esc(removeKey)}','${c.sub || ""}')" title="Remove">×</button>
     </div>`;
   }).join("");
+}
+
+function editMemberCert(index) {
+  const m = members.find(x => String(x.id) === String(mcmMemberId));
+  if (!m) return;
+  const certs = parseJson(m.certifications, []);
+  if (index < 0 || index >= certs.length) return;
+  const c = certs[index];
+  mcmEditIndex = index;
+
+  // Populate form fields from existing cert
+  populateMcmCategories();
+  document.getElementById("mcmCategory").value = c.category || '';
+  updateMcmCertTypes();
+
+  if (c.certId) {
+    document.getElementById("mcmCertType").value = c.certId;
+  } else {
+    document.getElementById("mcmCertType").value = '__custom__';
+  }
+  updateMCMSubcats();
+
+  if (!c.certId) {
+    document.getElementById("mcmCustomTitleField").style.display = '';
+    document.getElementById("mcmCustomTitle").value = c.title || '';
+  }
+  if (c.sub) {
+    document.getElementById("mcmSubcat").value = c.sub;
+  }
+  document.getElementById("mcmIdNumber").value = c.idNumber || '';
+  document.getElementById("mcmIssuingAuthority").value = c.issuingAuthority || '';
+  document.getElementById("mcmIssueDate").value = c.issueDate || '';
+  document.getElementById("mcmExpires").checked = !!c.expires;
+  document.getElementById("mcmExpiryDateField").style.display = c.expires ? '' : 'none';
+  document.getElementById("mcmExpiresAt").value = c.expiresAt || '';
+  document.getElementById("mcmDescription").value = c.description || '';
+
+  // Switch button to "Update" mode
+  const btn = document.getElementById("mcmAssignBtn");
+  btn.textContent = s('btn.save');
+  document.getElementById("mcmCancelEditBtn").classList.remove('hidden');
+}
+
+function cancelMcmEdit() {
+  mcmEditIndex = -1;
+  // Reset form
+  document.getElementById("mcmCertType").value = '';
+  document.getElementById("mcmSubcatField").style.display = 'none';
+  document.getElementById("mcmCustomTitleField").style.display = 'none';
+  document.getElementById("mcmCustomTitle").value = '';
+  document.getElementById("mcmIdNumber").value = '';
+  document.getElementById("mcmIssuingAuthority").value = '';
+  document.getElementById("mcmIssueDate").value = '';
+  document.getElementById("mcmExpires").checked = false;
+  document.getElementById("mcmExpiryDateField").style.display = 'none';
+  document.getElementById("mcmExpiresAt").value = '';
+  document.getElementById("mcmDescription").value = '';
+  // Restore button
+  const btn = document.getElementById("mcmAssignBtn");
+  btn.textContent = s('cert.assign');
+  document.getElementById("mcmCancelEditBtn").classList.add('hidden');
 }
 
 // updateMCMSubcats: called when cert type changes
@@ -2659,16 +2728,25 @@ async function assignMemberCert() {
   const isCustom = !certId;
 
   let existing = parseJson(m.certifications, []);
-  if (!isCustom) {
-    existing = applyRankRule(existing, newCert, certDefs);
-    existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
+
+  if (mcmEditIndex >= 0) {
+    // Editing: replace the cert at the edit index
+    existing[mcmEditIndex] = newCert;
+  } else {
+    // Adding: apply rank rule and dedup
+    if (!isCustom) {
+      existing = applyRankRule(existing, newCert, certDefs);
+      existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
+    }
+    existing = [...existing, newCert];
   }
-  const updated = [...existing, newCert];
+  const updated = existing;
 
   try {
     await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: updated });
     const mIdx = members.findIndex(x => String(x.id) === String(mcmMemberId));
     members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
+    cancelMcmEdit();
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
     toast(s('cert.assigned'));

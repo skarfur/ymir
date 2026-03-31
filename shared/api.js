@@ -77,13 +77,14 @@ function isCaptain(u) {
 function isCoxswain(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'coxswain'; });
+  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'coxswain' || c.certId === 'released_rower'; });
 }
 function hasRowingEndorsement(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  var rowingSubs = ['coxswain', 'released_rower'];
-  return Array.isArray(certs) && certs.some(function(c) { return rowingSubs.indexOf(c.sub) !== -1; });
+  return Array.isArray(certs) && certs.some(function(c) {
+    return c.sub === 'coxswain' || c.certId === 'released_rower';
+  });
 }
 
 function signOut() {
