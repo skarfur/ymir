@@ -649,10 +649,10 @@ function _cqTripCard(t, showCaptain) {
   var arrow = _dirArrow(cardDir);
   var windBit = '';
   if (arrow || cardWs || cardDir) {
-    windBit = '<span style="display:inline-flex;align-items:center;gap:3px">'
-      + (arrow ? '<span style="font-size:16px;line-height:1">'+arrow+'</span>' : '')
+    windBit = '<span class="trip-wind">'
+      + (arrow ? '<span class="trip-wind-arrow">'+arrow+'</span>' : '')
       + (cardWs ? '<span>'+esc(cardWs)+'</span>' : '')
-      + (cardDir ? '<span style="opacity:.7">'+esc(cardDir)+'</span>' : '')
+      + (cardDir ? '<span class="trip-wind-dir">'+esc(cardDir)+'</span>' : '')
       + '</span>';
   }
 
@@ -681,7 +681,7 @@ function _cqTripCard(t, showCaptain) {
   var crewNames = [];
   try { if (t.crewNames) crewNames = typeof t.crewNames === 'string' ? JSON.parse(t.crewNames) : t.crewNames; } catch(e){}
   var crewDisplay = crewNames.length ? crewNames.map(function(c) { return esc(typeof c === 'string' ? c : c.name||''); }).filter(Boolean).join(', ') : esc(t.crew||1);
-  var crewNamesRow = '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">'+crewDisplay+'</span></div>';
+  var crewNamesRow = '<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">'+crewDisplay+'</span></div>';
 
   var toplineTrip = (t.timeOut ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>' : '')
     + (t.timeIn ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>' : '')
@@ -713,24 +713,24 @@ function _cqTripCard(t, showCaptain) {
   var canEditSkipperNote = isSki && isOwner;
   var canEditNote = isOwner;
   var skipperNoteRow = (t.skipperNote || canEditSkipperNote) ?
-    '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">Skipper note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">'+(isSki?'visible to crew':'from skipper')+'</span></span><span class="trip-exp-val">'+(t.skipperNote?esc(t.skipperNote):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditSkipperNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'skipperNote\')">Edit</button>':'')+'</span></div>' : '';
+    '<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl" style="color:var(--brass)">Skipper note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">'+(isSki?'visible to crew':'from skipper')+'</span></span><span class="trip-exp-val">'+(t.skipperNote?esc(t.skipperNote):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditSkipperNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'skipperNote\')">Edit</button>':'')+'</span></div>' : '';
   var notesRow = (t.notes || canEditNote) ?
-    '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Private note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">only you</span></span><span class="trip-exp-val">'+(t.notes?esc(t.notes):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'notes\')">Edit</button>':'')+'</span></div>' : '';
+    '<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">Private note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">only you</span></span><span class="trip-exp-val">'+(t.notes?esc(t.notes):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'notes\')">Edit</button>':'')+'</span></div>' : '';
 
   // Photos display
   var photosRow = '';
   try {
     var urls = t.photoUrls ? JSON.parse(t.photoUrls) : [];
     if (urls.length) {
-      var thumbs = urls.slice(0,6).map(function(u) { return '<img src="'+esc(u)+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" loading="lazy" onerror="this.style.display=\'none\'">'; }).join('');
-      if (urls.length > 6) thumbs += '<span style="font-size:10px;color:var(--muted);align-self:center">+' + (urls.length-6) + ' more</span>';
-      photosRow = '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Photos</span><span class="trip-exp-val"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">'+thumbs+'</div></span></div>';
+      var thumbs = urls.slice(0,6).map(function(u) { return '<img src="'+esc(u)+'" class="photo-thumb" loading="lazy" onerror="this.style.display=\'none\'">'; }).join('');
+      if (urls.length > 6) thumbs += '<span class="text-xs text-muted" style="align-self:center">+' + (urls.length-6) + ' more</span>';
+      photosRow = '<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">Photos</span><span class="trip-exp-val"><div class="trip-photos">'+thumbs+'</div></span></div>';
     }
   } catch(e){}
 
   // Action buttons
   var canEditTrip = isSki && isOwner;
-  var actionsRow = isOwner ? '<div class="trip-actions" style="grid-column:1/-1">'
+  var actionsRow = isOwner ? '<div class="trip-actions trip-exp-full">'
     + (canEditTrip ? '<button class="trip-action-btn primary" onclick="event.stopPropagation();window.open(\'../logbook/#trip-'+esc(t.id)+'\',\'_blank\')">✏️ Edit trip</button>' : '')
     + '<button class="trip-action-btn" onclick="event.stopPropagation();_cqUploadTrack(\''+esc(t.id)+'\')">📍 Add GPS</button>'
     + '<button class="trip-action-btn" onclick="event.stopPropagation();_cqUploadPhotos(\''+esc(t.id)+'\')">📷 Add photos</button>'

@@ -70,6 +70,14 @@
 .track-delete-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-left:8px;opacity:.7}
 .track-delete-btn:hover{opacity:1;text-decoration:underline}
 
+/* ── Full-width row ── */
+.trip-exp-full{grid-column:1/-1}
+
+/* ── Wind display on card face ── */
+.trip-wind{display:inline-flex;align-items:center;gap:3px}
+.trip-wind-arrow{font-size:16px;line-height:1}
+.trip-wind-dir{opacity:.7}
+
 /* ── Captain tag (captain view only) ── */
 .cq-trip-captain{font-size:10px;color:var(--muted);font-weight:400;margin-left:4px}
 
