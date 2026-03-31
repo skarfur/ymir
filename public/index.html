@@ -27,8 +27,22 @@
   --red:     #e74c3c;
   --yellow:  #f1c40f;
   --orange:  #e67e22;
+  --blue:    #2980b9;
   --faint:   #6b92b844;
 }
+/* ── Tide chart (shared SVG classes) ───────────────────────────── */
+.c-brass  { fill: var(--brass);  stroke: var(--brass);  }
+.c-blue   { fill: var(--blue);   stroke: var(--blue);   }
+.c-muted  { fill: var(--muted);  stroke: var(--muted);  }
+.chart-past   { fill: var(--bg); opacity: 0.25; }
+.chart-area   { opacity: 0.07; }
+.chart-line   { fill: none; stroke-width: 1; opacity: 0.7; }
+.chart-dot    { opacity: 0.8; }
+.chart-now    { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3,3; }
+.chart-now-t  { font: 8px 'DM Mono', monospace; fill: var(--brass); }
+.chart-axis-t { font: 8px 'DM Mono', monospace; fill: var(--muted); }
+.chart-lbl    { font: 9px 'DM Mono', monospace; }
+.chart-lbl-bg { fill: var(--card); opacity: 0.85; }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.6;min-height:100vh}
 a{color:var(--brass);text-decoration:none}
