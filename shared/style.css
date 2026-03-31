@@ -367,6 +367,9 @@ textarea { min-height: 70px; }
   line-height: 1;
 }
 
+/* ── SYSTEM DIALOG BUTTONS ────────────────────────────────────────────────────── */
+.ym-dialog-btns { display: flex; justify-content: flex-end; gap: 10px; }
+
 /* ── MISC ─────────────────────────────────────────────────────────────────────── */
 
 .divider { height: 1px; background: var(--border); margin: 16px 0; }

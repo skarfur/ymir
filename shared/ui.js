@@ -105,6 +105,122 @@ document.addEventListener('keydown', function (e) {
   top.classList.add('hidden');
 });
 
+// ── SYSTEM DIALOGS (ymAlert / ymConfirm / ymPrompt) ──────────────────────────
+// Promise-based replacements for native alert(), confirm(), prompt().
+// Reuse .modal-overlay + .modal CSS; lazy-create a single shared DOM element.
+;(function () {
+  let _overlay = null;
+  let _resolve = null;
+
+  function ensureOverlay() {
+    if (_overlay) return _overlay;
+    _overlay = document.createElement('div');
+    _overlay.id = 'ym-dialog';
+    _overlay.className = 'modal-overlay hidden';
+    _overlay.style.zIndex = '300';
+    _overlay.addEventListener('click', function (e) {
+      if (e.target === _overlay) dismiss();
+    });
+    document.body.appendChild(_overlay);
+    return _overlay;
+  }
+
+  function dismiss(value) {
+    if (!_resolve) return;
+    _overlay.classList.add('hidden');
+    var fn = _resolve;
+    _resolve = null;
+    fn(value);
+  }
+
+  function show(html) {
+    var el = ensureOverlay();
+    el.innerHTML = '<div class="modal" style="max-width:400px">' + html + '</div>';
+    el.classList.remove('hidden');
+    // watch for Escape (global handler adds .hidden)
+    var obs = new MutationObserver(function () {
+      if (el.classList.contains('hidden') && _resolve) dismiss(undefined);
+    });
+    obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+    return new Promise(function (resolve) {
+      _resolve = resolve;
+    }).finally(function () { obs.disconnect(); });
+  }
+
+  var label = function (key, fallback) {
+    return (typeof s === 'function') ? s(key) : fallback;
+  };
+
+  window.ymAlert = function (msg) {
+    return show(
+      '<p style="margin:0 0 18px;white-space:pre-wrap">' + esc(msg) + '</p>' +
+      '<div class="ym-dialog-btns">' +
+        '<button class="btn-primary" onclick="document.querySelector(\'#ym-dialog .btn-primary\').blur()" id="ym-dlg-ok">' + label('btn.close', 'OK') + '</button>' +
+      '</div>'
+    ).then(function () {
+      // void — alert returns nothing
+    }).finally(function () {
+      // re-wire after render
+    });
+  };
+  // wire click after innerHTML render
+  var wireOk = function (val) {
+    var b = document.getElementById('ym-dlg-ok');
+    if (b) b.onclick = function () { dismiss(val); };
+  };
+
+  window.ymAlert = function (msg) {
+    var p = show(
+      '<p style="margin:0 0 18px;white-space:pre-wrap">' + esc(msg) + '</p>' +
+      '<div class="ym-dialog-btns">' +
+        '<button class="btn-primary" id="ym-dlg-ok">' + label('btn.close', 'OK') + '</button>' +
+      '</div>'
+    );
+    wireOk(undefined);
+    return p;
+  };
+
+  window.ymConfirm = function (msg) {
+    var p = show(
+      '<p style="margin:0 0 18px;white-space:pre-wrap">' + esc(msg) + '</p>' +
+      '<div class="ym-dialog-btns">' +
+        '<button class="btn-ghost" id="ym-dlg-cancel">' + label('btn.cancel', 'Cancel') + '</button>' +
+        '<button class="btn-primary" id="ym-dlg-ok">' + label('btn.confirm', 'Confirm') + '</button>' +
+      '</div>'
+    );
+    wireOk(true);
+    var bc = document.getElementById('ym-dlg-cancel');
+    if (bc) bc.onclick = function () { dismiss(false); };
+    return p.then(function (v) { return v === true; });
+  };
+
+  window.ymPrompt = function (msg, defaultVal) {
+    var p = show(
+      '<label style="display:block;margin-bottom:12px;white-space:pre-wrap">' + esc(msg) + '</label>' +
+      '<input type="text" id="ym-dlg-input" class="input" value="' + esc(defaultVal || '') + '" style="width:100%;margin-bottom:18px">' +
+      '<div class="ym-dialog-btns">' +
+        '<button class="btn-ghost" id="ym-dlg-cancel">' + label('btn.cancel', 'Cancel') + '</button>' +
+        '<button class="btn-primary" id="ym-dlg-ok">' + label('btn.confirm', 'OK') + '</button>' +
+      '</div>'
+    );
+    var inp = document.getElementById('ym-dlg-input');
+    if (inp) { inp.focus(); inp.select(); }
+    wireOk('__submit__');
+    var bc = document.getElementById('ym-dlg-cancel');
+    if (bc) bc.onclick = function () { dismiss(null); };
+    if (inp) inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') dismiss('__submit__');
+    });
+    return p.then(function (v) {
+      if (v === '__submit__') {
+        var el = document.getElementById('ym-dlg-input');
+        return el ? el.value : '';
+      }
+      return null;
+    });
+  };
+})();
+
 // ── STANDARD HEADER ────────────────────────────────────────────────────────────
 window.buildHeader = function (page) {
   const user = (typeof getUser === 'function') ? getUser() : null;

@@ -1252,7 +1252,7 @@ async function saveMember() {
 }
 
 async function deactivateMember(id) {
-  if (!confirm("Deactivate this member?")) return;
+  if (!await ymConfirm("Deactivate this member?")) return;
   try {
     await apiPost("deleteMember", { id });
     members = members.filter(m => m.id !== id);
@@ -1331,7 +1331,7 @@ async function saveBoatCat() {
 
 async function deleteBoatCat() {
   const key = _bcEditingId;
-  if (!key || !confirm("Remove this category? Boats assigned to it will still exist but may show under 'other'.")) return;
+  if (!key || !await ymConfirm("Remove this category? Boats assigned to it will still exist but may show under 'other'.")) return;
   _allBoatCats = _allBoatCats.map(c => c.key === key ? { ...c, active: false } : c);
   try {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
@@ -1561,7 +1561,7 @@ async function saveCharterFromModal() {
 async function removeCharterFromModal() {
   const boatId = editingId;
   if (!boatId) return;
-  if (!confirm(s('boat.removeCharter') + '?')) return;
+  if (!await ymConfirm(s('boat.removeCharter') + '?')) return;
   try {
     await apiPost('removeCharter', { boatId });
     const b = _allBoats.find(x => x.id === boatId);
@@ -1610,7 +1610,7 @@ async function saveBoat() {
 
 async function deleteBoat(id) {
   const _id = id || editingId;
-  if (!confirm("Delete this boat?")) return;
+  if (!await ymConfirm("Delete this boat?")) return;
   _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
   try {
     await apiPost("saveConfig", { boats: _allBoats });
@@ -1700,7 +1700,7 @@ async function saveLocation() {
 
 async function deleteLocation(id) {
   const _id = id || editingId;
-  if (!confirm("Delete this location?")) return;
+  if (!await ymConfirm("Delete this location?")) return;
   _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
   try {
     await apiPost("saveConfig", { locations: _allLocations });
@@ -1775,7 +1775,7 @@ async function saveCLItem() {
 
 async function deleteCLItem(id) {
   const _id = id || editingId;
-  if (!confirm("Delete this item?")) return;
+  if (!await ymConfirm("Delete this item?")) return;
   try {
     await apiPost("deleteChecklistItem", { id: _id });
     clItems = clItems.filter(i => i.id !== _id);
@@ -1865,7 +1865,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
     phase = document.getElementById("lcPhase").value;
     id    = _lcEditingId;
   }
-  if (!confirm("Delete this item?")) return;
+  if (!await ymConfirm("Delete this item?")) return;
   if (_launchCLs[cat]?.[phase]) {
     _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(x => x.id !== id);
   }
@@ -1939,7 +1939,7 @@ async function saveActType() {
 
 async function deleteActType(id) {
   const _id = id || editingId;
-  if (!confirm("Delete this activity type?")) return;
+  if (!await ymConfirm("Delete this activity type?")) return;
   try {
     await apiPost("deleteActivityType", { id: _id });
     actTypes = actTypes.filter(a => a.id !== _id);
@@ -2026,7 +2026,7 @@ async function addCertCategory() {
 }
 
 async function removeCertCategory(idx) {
-  if (!confirm("Remove this category?")) return;
+  if (!await ymConfirm("Remove this category?")) return;
   certCategories.splice(idx, 1);
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
@@ -2171,7 +2171,7 @@ async function saveCertDef() {
 }
 
 async function deleteCertDef() {
-  if (!certEditId || !confirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!certEditId || !await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
   try {
     await apiPost("deleteCertDef", { id: certEditId });
     certDefs = certDefs.filter(d => d.id !== certEditId);
@@ -2183,7 +2183,7 @@ async function deleteCertDef() {
 }
 
 async function deleteCertDefById(id) {
-  if (!confirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
   try {
     await apiPost("deleteCertDef", { id });
     certDefs = certDefs.filter(d => d.id !== id);
@@ -2349,7 +2349,7 @@ function populateMcmCategories() {
 function onMcmCategoryChange() {
   const sel = document.getElementById("mcmCategory");
   if (sel.value === "__add__") {
-    const name = prompt("Enter new category name:");
+    const name = await ymPrompt("Enter new category name:");
     if (name && name.trim()) {
       const cat = name.trim();
       if (!certCategories.includes(cat)) {
@@ -2524,7 +2524,7 @@ async function assignMemberCert() {
 }
 
 async function removeMemberCert(key, sub) {
-  if (!confirm("Remove this credential?")) return;
+  if (!await ymConfirm("Remove this credential?")) return;
   const m = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
   let certs = parseJson(m.certifications, []);
@@ -2681,7 +2681,7 @@ async function saveFlagConfig(){
   var cfg=getFlagFormValues(),errs=validateFlagConfig(cfg);if(errs.length){errEl.textContent=errs.join(' ');errEl.style.display='block';return;}
   try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
 }
-function resetFlagConfig(){if(!confirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
+async function resetFlagConfig(){if(!await ymConfirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
 
 // ══ CSV IMPORT ════════════════════════════════════════════════════════════════
 
