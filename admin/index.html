@@ -506,6 +506,11 @@
     </div><!-- /tab-flags -->
     </div><!-- /top-settings -->
 
+    <!-- ══ TOP: PAYROLL (embedded) ═══════════════════════════════════════════ -->
+    <div id="top-payroll" class="hidden">
+      <iframe id="payrollFrame" src="about:blank" style="width:100%;border:none;min-height:80vh"></iframe>
+    </div>
+
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
 
 <!-- Member modal -->
@@ -1012,6 +1017,13 @@ let boatCats     = [];   // active only
 let _bcEditingId = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'payroll-resize') {
+    const frame = document.getElementById('payrollFrame');
+    if (frame) frame.style.height = e.data.height + 'px';
+  }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
   applyStrings();
@@ -1106,15 +1118,21 @@ function toggleSection(head) {
 
 // ── Top-level tab switching ────────────────────────────────────────────────────
 function showTopTab(top) {
-  if (top === 'payroll') { location.href = 'payroll/'; return; }
   document.querySelectorAll('#topTabBar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.top === top);
   });
   document.getElementById('top-members').classList.toggle('hidden', top !== 'members');
   document.getElementById('top-settings').classList.toggle('hidden', top !== 'settings');
+  document.getElementById('top-payroll').classList.toggle('hidden', top !== 'payroll');
   if (top === 'settings') {
     const active = document.querySelector('#settingsTabBar .tab-btn.active');
     showTab(active ? active.dataset.tab : 'boats');
+  }
+  if (top === 'payroll') {
+    const frame = document.getElementById('payrollFrame');
+    if (frame.src === 'about:blank' || !frame.src.includes('payroll/')) {
+      frame.src = 'payroll/?embed=1';
+    }
   }
   const url = new URL(window.location.href);
   url.searchParams.set('top', top);
