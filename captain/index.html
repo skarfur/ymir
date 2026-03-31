@@ -32,12 +32,14 @@
 .cq-pill.active { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
 
 /* ── Compact filter bar ── */
-.cq-filter-bar { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
-.cq-filter-bar select { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+.cq-filter-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; margin-bottom:10px; align-items:center; }
+.cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:6px;
   color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
-  transition:border-color .15s; min-width:0; max-width:140px; }
-.cq-filter-bar select:focus { border-color:var(--brass); }
-.cq-filter-count { font-size:9px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+  transition:border-color .15s; min-width:0; width:100%; box-sizing:border-box; }
+.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); }
+.cq-filter-search { display:flex; gap:6px; align-items:center; grid-column:1/-1; }
+.cq-filter-search input { flex:1; min-width:0; }
+.cq-filter-count { font-size:9px; color:var(--muted); white-space:nowrap; }
 
 /* ── Cards ── */
 .cq-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
@@ -60,28 +62,61 @@
 .sev-critical { background:var(--red); }
 
 /* ── Trip cards (logbook-style) ── */
-.cq-trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+.trip-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
   margin-bottom:8px; overflow:hidden; cursor:pointer; transition:border-color .15s; }
-.cq-trip-card:hover { border-color:var(--brass); }
-.cq-trip-main { display:grid; grid-template-columns:48px 1fr auto; align-items:stretch; }
-.cq-trip-date-col { background:var(--card); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; text-align:center; }
-.cq-trip-date-day { font-size:15px; font-weight:500; color:var(--text); line-height:1; }
-.cq-trip-date-mon { font-size:12px; font-weight:500; color:var(--text); text-transform:uppercase; margin-top:2px; }
-.cq-trip-date-yr { font-size:8px; color:var(--muted); }
-.cq-trip-body { padding:8px 10px; min-width:0; }
-.cq-trip-boat { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
-.cq-trip-meta { display:flex; gap:6px; flex-wrap:wrap; font-size:10px; color:var(--muted); align-items:center; }
-.cq-trip-badge { font-size:8px; letter-spacing:.5px; padding:1px 5px; border-radius:6px; border:1px solid; text-transform:uppercase; flex-shrink:0; }
-.cq-trip-arrow { padding:8px 8px 8px 0; display:flex; align-items:center; color:var(--muted); font-size:10px; transition:transform .2s; flex-shrink:0; }
-.cq-trip-card.open .cq-trip-arrow { transform:rotate(180deg); }
-.cq-trip-expand { display:none; padding:0 10px 10px; }
-.cq-trip-card.open .cq-trip-expand { display:block; }
-.cq-trip-detail-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px 10px; font-size:10px;
-  border-top:1px solid var(--border); padding-top:8px; margin-top:2px; }
-.cq-trip-detail-grid .lbl { font-size:8px; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; }
-.cq-trip-detail-grid .val { color:var(--text); margin-top:1px; }
+.trip-card:hover { border-color:var(--brass); }
+.trip-card-main { display:grid; grid-template-columns:52px 1fr auto; align-items:stretch; }
+.trip-date-col { background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 6px; text-align:center; }
+.trip-date-day { font-size:16px; font-weight:500; color:var(--text); line-height:1; }
+.trip-date-mon { font-size:14px; font-weight:500; color:var(--text); text-transform:uppercase; margin-top:2px; }
+.trip-date-yr { font-size:9px; color:var(--muted); }
+.trip-body { padding:10px 12px; min-width:0; }
+.trip-boat { font-size:14px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+.trip-meta { display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--muted); align-items:center; }
+.trip-badge { font-size:9px; letter-spacing:.6px; padding:2px 6px; border-radius:8px; border:1px solid; text-transform:uppercase; flex-shrink:0; }
+.badge-skipper { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
+.badge-crew { color:var(--muted); border-color:var(--border); background:var(--surface); }
+.badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+.trip-arrow { padding:10px 10px 10px 0; display:flex; align-items:center; color:var(--muted); font-size:11px; transition:transform .2s; flex-shrink:0; }
+.trip-card.open .trip-arrow { transform:rotate(180deg); }
+.trip-expand { display:none; padding:0 12px 0; }
+.trip-card.open .trip-expand { display:block; }
+.trip-expand-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px 12px; font-size:11px;
+  border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
+.trip-exp-row { display:flex; flex-direction:column; gap:1px; padding:4px 0; }
+.trip-exp-lbl { font-size:9px; color:var(--muted); letter-spacing:.6px; text-transform:uppercase; }
+.trip-exp-val { color:var(--text); }
 .cq-trip-captain { font-size:10px; color:var(--muted); font-weight:400; margin-left:4px; }
+
+/* ── Expandable sections ── */
+.exp-section { margin:0 -12px; padding:6px 12px 10px; border-top:1px solid var(--border); }
+.exp-section:first-child { padding-top:10px; }
+.exp-section .trip-expand-grid { border-top:none; padding-top:2px; margin-top:0; }
+.exp-boat { background:var(--card); }
+.exp-logistics { background:var(--card); }
+.exp-weather { background:rgba(41,128,185,.08); }
+.exp-weather .trip-expand-grid { padding-top:4px; }
+.exp-notes { background:rgba(255,255,255,.02); }
+.exp-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; font-weight:500; }
+.exp-section-hdr.expandable { cursor:pointer; display:flex; align-items:center; gap:4px; }
+.exp-section-hdr.expandable:hover { color:var(--brass); }
+.exp-section-hdr .exp-chevron { font-size:10px; transition:transform .2s; transform:rotate(0deg); }
+.exp-section-hdr.expanded .exp-chevron { transform:rotate(180deg); }
+.exp-section-detail { display:none; margin-top:4px; }
+.exp-section-detail.open { display:block; }
+
+/* ── Trip action buttons ── */
+.trip-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+.trip-action-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:6px;
+  padding:4px 10px; font-size:10px; font-family:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:4px;
+  transition:color .15s,border-color .15s; }
+.trip-action-btn:hover { color:var(--brass); border-color:var(--brass); }
+.trip-action-btn.primary { color:var(--brass); border-color:var(--brass)55; }
+.trip-more-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:5px;
+  padding:3px 10px; font-size:10px; font-family:inherit; cursor:pointer; margin-top:4px;
+  transition:color .15s,border-color .15s; }
+.trip-more-btn:hover { color:var(--brass); border-color:var(--brass); }
 
 /* ── Show-more button ── */
 .cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
@@ -111,14 +146,17 @@
 @media(max-width:600px){
   .cq-stats { grid-template-columns:1fr 1fr; }
   .cq-stat .sn { font-size:20px; }
-  .cq-trip-main { grid-template-columns:42px 1fr auto; }
-  .cq-trip-detail-grid { grid-template-columns:1fr 1fr; }
-  .cq-filter-bar select { max-width:120px; }
+  .trip-card-main { grid-template-columns:44px 1fr auto; }
+  .trip-date-col { padding:8px 4px; }
+  .trip-date-day { font-size:14px; }
+  .trip-date-mon { font-size:12px; }
+  .trip-expand-grid { grid-template-columns:1fr 1fr; }
+  .cq-filter-bar { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
 }
 @media(max-width:400px){
-  .cq-trip-detail-grid { grid-template-columns:1fr; }
-  .cq-filter-bar { gap:4px; }
-  .cq-filter-bar select { font-size:9px; padding:3px 6px; }
+  .trip-expand-grid { grid-template-columns:1fr; }
+  .cq-filter-bar { grid-template-columns:1fr 1fr; gap:4px; }
+  .cq-filter-bar select, .cq-filter-bar input[type="text"] { font-size:9px; padding:3px 6px; }
 }
 </style>
 </head>
@@ -169,11 +207,17 @@
     <div class="cq-section-hdr" data-s="cq.tripsTitle"></div>
     <div class="cq-pills" id="tripPills"></div>
     <div class="cq-filter-bar" id="tripFilterBar">
+      <select id="tfYear"><option value="">All years</option></select>
       <select id="tfBoat"><option value="">All boats</option></select>
       <select id="tfCaptain"><option value="">All captains</option></select>
+      <select id="tfRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
       <select id="tfFlag"><option value="">All flags</option></select>
       <select id="tfWind"><option value="">All wind</option><option value="calm">Calm (0–2)</option><option value="light">Light (3–4)</option><option value="moderate">Moderate (5–6)</option><option value="strong">Strong (7+)</option></select>
-      <span class="cq-filter-count" id="tripFilterCount"></span>
+      <select id="tfArea"><option value="">All areas</option></select>
+      <div class="cq-filter-search">
+        <input id="tfText" type="text" placeholder="Search trips…">
+        <span class="cq-filter-count" id="tripFilterCount"></span>
+      </div>
     </div>
     <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
@@ -292,9 +336,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderBoats();
 
     // Wire up trip filter dropdowns (once)
-    ['tfBoat','tfCaptain','tfFlag','tfWind'].forEach(id => {
+    ['tfYear','tfBoat','tfCaptain','tfRole','tfFlag','tfWind','tfArea'].forEach(id => {
       document.getElementById(id).addEventListener('change', function() { _tripShowAll = false; renderTrips(); });
     });
+    document.getElementById('tfText').addEventListener('input', function() { _tripShowAll = false; renderTrips(); });
   } catch (e) {
     console.error(e);
     showToast(s('toast.loadFailed') + ': ' + e.message, 'err');
@@ -439,6 +484,7 @@ function buildTripPills() {
 }
 
 function _bftGroup(b) { var n=parseInt(b)||0; if(n<=2)return'calm'; if(n<=4)return'light'; if(n<=6)return'moderate'; return'strong'; }
+function _bftFromMs(ms) { var v=parseFloat(ms)||0; if(v<0.3)return 0;if(v<1.6)return 1;if(v<3.4)return 2;if(v<5.5)return 3;if(v<8)return 4;if(v<10.8)return 5;if(v<13.9)return 6;if(v<17.2)return 7;if(v<20.8)return 8;if(v<24.5)return 9;if(v<28.5)return 10;if(v<32.7)return 11;return 12; }
 
 function _parseDateParts(d) {
   if (!d) return {day:'—',mon:'',yr:''};
@@ -452,6 +498,10 @@ function _dirArrow(dir) { return _dirArrows[(dir||'').toUpperCase()] || ''; }
 
 function buildTripFilters() {
   var pool = _tripFilter === 'my' ? _myTrips : _allTrips;
+  // Years
+  var years = [...new Set(pool.map(t => (t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  var ySel = document.getElementById('tfYear');
+  ySel.innerHTML = '<option value="">All years</option>' + years.map(y => '<option value="'+esc(y)+'">'+esc(y)+'</option>').join('');
   // Boat names
   var boats = [...new Set(pool.map(t => t.boatName||'').filter(Boolean))].sort();
   var bSel = document.getElementById('tfBoat');
@@ -472,37 +522,56 @@ function buildTripFilters() {
   var flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
   var flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Closed'};
   fSel.innerHTML = '<option value="">All flags</option>' + flags.map(f => '<option value="'+esc(f)+'">'+(flagIcons[f]||'')+' '+(flagLabels[f]||f)+'</option>').join('');
+  // Areas
+  var areas = [...new Set(pool.map(t => t.locationName||'').filter(Boolean))].sort();
+  var aSel = document.getElementById('tfArea');
+  aSel.innerHTML = '<option value="">All areas</option>' + areas.map(a => '<option value="'+esc(a)+'">'+esc(a)+'</option>').join('');
 }
 
 function _getFilteredTrips() {
   var pool = _tripFilter === 'my' ? _myTrips : _allTrips;
+  var fYear = document.getElementById('tfYear').value;
   var fBoat = document.getElementById('tfBoat').value;
   var fCaptain = document.getElementById('tfCaptain').value;
+  var fRole = document.getElementById('tfRole').value;
   var fFlag = document.getElementById('tfFlag').value;
   var fWind = document.getElementById('tfWind').value;
+  var fArea = document.getElementById('tfArea').value;
+  var fText = (document.getElementById('tfText').value||'').toLowerCase().trim();
   return pool.filter(t => {
+    if (fYear && !(t.date||'').startsWith(fYear)) return false;
     if (fBoat && (t.boatName||'') !== fBoat) return false;
     if (fCaptain && (t.memberName||'') !== fCaptain) return false;
+    if (fRole === 'skipper' && t.role === 'crew') return false;
+    if (fRole === 'crew' && t.role !== 'crew') return false;
     if (fWind) { var b = parseInt(t.beaufort)||0; if (_bftGroup(b) !== fWind) return false; }
     if (fFlag) {
       try { var wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; if ((wx?.flag||'') !== fFlag) return false; }
       catch(e) { return false; }
     }
+    if (fArea && (t.locationName||'') !== fArea) return false;
+    if (fText) {
+      var hay = [t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.skipperNote,t.memberName,t.departurePort,t.arrivalPort].join(' ').toLowerCase();
+      if (!hay.includes(fText)) return false;
+    }
     return true;
   });
 }
 
+// ── Trip card (logbook-style with expandable sections) ────────────────────────
 function _cqTripCard(t, showCaptain) {
   var p = _parseDateParts(t.date);
   var dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
   var isSki = !t.role || t.role==='skipper';
   var isVer = t.verified && t.verified!=='false';
+  var isOwner = String(t.kennitala) === String(user.kennitala);
   var catCol = BOAT_CAT_COLORS['keelboat'] || BOAT_CAT_COLORS.other;
 
   // Parse weather
   var wx = null;
   try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
   var flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
+  var flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Black'};
 
   // Wind on card face
   var cardWs = formatWindValue(wx?.ws, t.beaufort, 'bft');
@@ -510,9 +579,10 @@ function _cqTripCard(t, showCaptain) {
   var arrow = _dirArrow(cardDir);
   var windBit = '';
   if (arrow || cardWs || cardDir) {
-    windBit = '<span style="display:inline-flex;align-items:center;gap:2px">'
-      + (arrow ? '<span style="font-size:13px;line-height:1">'+arrow+'</span>' : '')
+    windBit = '<span style="display:inline-flex;align-items:center;gap:3px">'
+      + (arrow ? '<span style="font-size:16px;line-height:1">'+arrow+'</span>' : '')
       + (cardWs ? '<span>'+esc(cardWs)+'</span>' : '')
+      + (cardDir ? '<span style="opacity:.7">'+esc(cardDir)+'</span>' : '')
       + '</span>';
   }
 
@@ -522,46 +592,216 @@ function _cqTripCard(t, showCaptain) {
 
   // Flag icon on card face
   var flagBit = wx?.flag ? '<span>'+flagIcons[wx.flag]+'</span>' : '';
-
-  // Expanded detail rows
-  var details = '';
-  if (t.locationName) details += '<div><div class="lbl">Area</div><div class="val">'+esc(t.locationName)+'</div></div>';
-  if (t.hoursDecimal) details += '<div><div class="lbl">Duration</div><div class="val">'+dur+'</div></div>';
-  if (t.distanceNm) details += '<div><div class="lbl">Distance</div><div class="val">'+esc(t.distanceNm)+' nm</div></div>';
-  if (dep) details += '<div><div class="lbl">Departure</div><div class="val">'+esc(dep)+'</div></div>';
-  if (arr && arr !== dep) details += '<div><div class="lbl">Arrival</div><div class="val">'+esc(arr)+'</div></div>';
-  if (t.crew) details += '<div><div class="lbl">Crew</div><div class="val">'+esc(t.crew)+'</div></div>';
-  // Weather details
-  if (cardWs) details += '<div><div class="lbl">Wind</div><div class="val">'+(arrow?arrow+' ':'')+esc(cardWs)+(cardDir?' '+esc(cardDir):'')+'</div></div>';
-  if (wx?.wv!=null) details += '<div><div class="lbl">Waves</div><div class="val">'+wx.wv.toFixed(1)+' m</div></div>';
-  if (wx?.flag) details += '<div><div class="lbl">Flag</div><div class="val">'+flagIcons[wx.flag]+' '+esc(wx.flag.charAt(0).toUpperCase()+wx.flag.slice(1))+'</div></div>';
-  if (wx?.tc!=null) details += '<div><div class="lbl">Air temp</div><div class="val">'+Math.round(wx.tc)+'°C</div></div>';
-  if (wx?.sst!=null) details += '<div><div class="lbl">Sea temp</div><div class="val">'+wx.sst.toFixed(1)+'°C</div></div>';
-  if (wx?.pres!=null) details += '<div><div class="lbl">Pressure</div><div class="val">'+Math.round(wx.pres)+' hPa</div></div>';
-
   var captainTag = showCaptain && t.memberName ? '<span class="cq-trip-captain">'+esc(t.memberName)+'</span>' : '';
 
-  return '<div class="cq-trip-card" style="border-left:3px solid '+catCol.color+'" onclick="this.classList.toggle(\'open\')">'
-    + '<div class="cq-trip-main">'
-      + '<div class="cq-trip-date-col">'
-        + '<div class="cq-trip-date-day">'+esc(p.day)+'</div>'
-        + '<div class="cq-trip-date-mon">'+esc(p.mon)+'</div>'
-        + '<div class="cq-trip-date-yr">'+esc(p.yr)+'</div>'
+  // ── Boat details section ──
+  var kboat = _boats.find(b => b.id === t.boatId);
+  var boatRegRow = kboat?.registrationNo ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Registration</span><span class="trip-exp-val">'+esc(kboat.registrationNo)+'</span></div>' : '';
+  var boatModelRow = kboat?.typeModel ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Type / model</span><span class="trip-exp-val">'+esc(kboat.typeModel)+'</span></div>' : '';
+  var boatLoaRow = kboat?.loa ? '<div class="trip-exp-row"><span class="trip-exp-lbl">LOA</span><span class="trip-exp-val">'+kboat.loa+' ft</span></div>' : '';
+  var hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
+
+  // ── Trip logistics section ──
+  var portRow = '';
+  if (dep) portRow += '<div class="trip-exp-row"><span class="trip-exp-lbl">Departure port</span><span class="trip-exp-val">'+esc(dep)+'</span></div>';
+  if (arr && arr !== dep) portRow += '<div class="trip-exp-row"><span class="trip-exp-lbl">Arrival port</span><span class="trip-exp-val">'+esc(arr)+'</span></div>';
+  var distRow = t.distanceNm ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Distance</span><span class="trip-exp-val">'+esc(t.distanceNm)+' nm</span></div>' : '';
+
+  // Crew names from stored data
+  var crewNames = [];
+  try { if (t.crewNames) crewNames = typeof t.crewNames === 'string' ? JSON.parse(t.crewNames) : t.crewNames; } catch(e){}
+  var crewDisplay = crewNames.length ? crewNames.map(function(c) { return esc(typeof c === 'string' ? c : c.name||''); }).filter(Boolean).join(', ') : esc(t.crew||1);
+  var crewNamesRow = '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Crew</span><span class="trip-exp-val">'+crewDisplay+'</span></div>';
+
+  var toplineTrip = (t.timeOut ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Departed</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>' : '')
+    + (t.timeIn ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Returned</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>' : '')
+    + portRow + crewNamesRow;
+  var detailTrip = (t.locationName ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Sailing area</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>' : '')
+    + (t.hoursDecimal ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Duration</span><span class="trip-exp-val">'+dur+'</span></div>' : '')
+    + distRow
+    + (showCaptain && t.memberName ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Skipper</span><span class="trip-exp-val">'+esc(t.memberName)+'</span></div>' : '')
+    + '<div class="trip-exp-row"><span class="trip-exp-lbl">Crew aboard</span><span class="trip-exp-val">'+esc(t.crew||1)+'</span></div>';
+  var hasDetailTrip = !!(t.locationName || distRow || t.hoursDecimal);
+  var hasTrip = !!(toplineTrip || detailTrip);
+
+  // ── Weather section ──
+  var eWs = cardWs ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Wind speed</span><span class="trip-exp-val">'+esc(cardWs)+'</span></div>' : '';
+  var eDir = (wx?.dir||t.windDir) ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Direction</span><span class="trip-exp-val">'+_dirArrow(wx?.dir||t.windDir)+' '+esc(wx?.dir||t.windDir)+'</span></div>' : '';
+  var eGust = wx?.wg!=null ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Gusts</span><span class="trip-exp-val">Force '+_bftFromMs(wx.wg)+'</span></div>' : '';
+  var eCond = wx?.cond?.desc ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Conditions</span><span class="trip-exp-val">'+(wx.cond.icon||'')+' '+esc(wx.cond.desc)+'</span></div>' : '';
+  var eWv = wx?.wv!=null ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Wave height</span><span class="trip-exp-val">'+wx.wv.toFixed(1)+' m</span></div>' : '';
+  var eAir = wx?.tc!=null ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Air temp</span><span class="trip-exp-val">'+Math.round(wx.tc)+'°C</span></div>' : '';
+  var eSst = wx?.sst!=null ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Sea temp</span><span class="trip-exp-val">'+wx.sst.toFixed(1)+'°C</span></div>' : '';
+  var ePres = wx?.pres!=null ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Pressure</span><span class="trip-exp-val">'+Math.round(wx.pres)+' hPa</span></div>' : '';
+  var eFlag = wx?.flag ? '<div class="trip-exp-row"><span class="trip-exp-lbl">Weather flag</span><span class="trip-exp-val">'+flagIcons[wx.flag]+' '+(flagLabels[wx.flag]||esc(wx.flag))+'</span></div>' : '';
+  var toplineWx = eWs + eWv + eCond;
+  var detailWx = eDir + eGust + eAir + eSst + ePres + eFlag;
+  var hasWeather = !!(eWs||eDir||eWv||eAir||eSst||ePres||eFlag||eGust||eCond);
+  var hasDetailWx = !!(eDir||eGust||eAir||eSst||ePres||eFlag);
+
+  // ── Notes & actions section ──
+  var canEditSkipperNote = isSki && isOwner;
+  var canEditNote = isOwner;
+  var skipperNoteRow = (t.skipperNote || canEditSkipperNote) ?
+    '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl" style="color:var(--brass)">Skipper note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">'+(isSki?'visible to crew':'from skipper')+'</span></span><span class="trip-exp-val">'+(t.skipperNote?esc(t.skipperNote):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditSkipperNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'skipperNote\')">Edit</button>':'')+'</span></div>' : '';
+  var notesRow = (t.notes || canEditNote) ?
+    '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Private note <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">only you</span></span><span class="trip-exp-val">'+(t.notes?esc(t.notes):'<span style="color:var(--muted);font-style:italic">No note yet</span>')+(canEditNote?' <button class="trip-more-btn" onclick="event.stopPropagation();_cqEditNote(\''+esc(t.id)+'\',\'notes\')">Edit</button>':'')+'</span></div>' : '';
+
+  // Photos display
+  var photosRow = '';
+  try {
+    var urls = t.photoUrls ? JSON.parse(t.photoUrls) : [];
+    if (urls.length) {
+      var thumbs = urls.slice(0,6).map(function(u) { return '<img src="'+esc(u)+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" loading="lazy" onerror="this.style.display=\'none\'">'; }).join('');
+      if (urls.length > 6) thumbs += '<span style="font-size:10px;color:var(--muted);align-self:center">+' + (urls.length-6) + ' more</span>';
+      photosRow = '<div class="trip-exp-row" style="grid-column:1/-1"><span class="trip-exp-lbl">Photos</span><span class="trip-exp-val"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">'+thumbs+'</div></span></div>';
+    }
+  } catch(e){}
+
+  // Action buttons
+  var canEditTrip = isSki && isOwner;
+  var actionsRow = isOwner ? '<div class="trip-actions" style="grid-column:1/-1">'
+    + (canEditTrip ? '<button class="trip-action-btn primary" onclick="event.stopPropagation();window.open(\'../logbook/#trip-'+esc(t.id)+'\',\'_blank\')">✏️ Edit trip</button>' : '')
+    + '<button class="trip-action-btn" onclick="event.stopPropagation();_cqUploadTrack(\''+esc(t.id)+'\')">📍 Add GPS</button>'
+    + '<button class="trip-action-btn" onclick="event.stopPropagation();_cqUploadPhotos(\''+esc(t.id)+'\')">📷 Add photos</button>'
+    + '</div>' : '';
+  var hasNotes = !!(skipperNoteRow||notesRow||photosRow||isOwner);
+
+  // ── Build card ──
+  return '<div class="trip-card" style="border-left:3px solid '+catCol.color+'" onclick="_cqToggleCard(this)">'
+    + '<div class="trip-card-main">'
+      + '<div class="trip-date-col">'
+        + '<div class="trip-date-day">'+esc(p.day)+'</div>'
+        + '<div class="trip-date-mon">'+esc(p.mon)+'</div>'
+        + '<div class="trip-date-yr">'+esc(p.yr)+'</div>'
       + '</div>'
-      + '<div class="cq-trip-body">'
-        + '<div class="cq-trip-boat">'+esc(t.boatName||'—')+captainTag+'</div>'
-        + '<div class="cq-trip-meta">'
-          + '<span class="cq-trip-badge" style="color:'+(isSki?'var(--brass)':'var(--muted)')+';border-color:'+(isSki?'var(--brass)55':'var(--border)')+';background:'+(isSki?'var(--brass)11':'var(--surface)')+'">'+esc(isSki?'Skipper':'Crew')+'</span>'
-          + (isVer ? '<span class="cq-trip-badge" style="color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">✓</span>' : '')
+      + '<div class="trip-body">'
+        + '<div class="trip-boat">'+esc(t.boatName||'—')+captainTag+'</div>'
+        + '<div class="trip-meta">'
+          + '<span class="trip-badge '+(isSki?'badge-skipper':'badge-crew')+'">'+(isSki?'Skipper':'Crew')+'</span>'
+          + (isVer ? '<span class="trip-badge badge-verified">✓</span>' : '')
           + '<span>'+esc(dur)+'</span>'
           + (t.distanceNm ? '<span>'+esc(t.distanceNm)+' nm</span>' : '')
           + windBit + portBit + flagBit
         + '</div>'
       + '</div>'
-      + '<div class="cq-trip-arrow">▾</div>'
+      + '<div class="trip-arrow">▾</div>'
     + '</div>'
-    + (details ? '<div class="cq-trip-expand"><div class="cq-trip-detail-grid">'+details+'</div></div>' : '')
+    + '<div class="trip-expand">'
+      + (hasBoatDetails ? '<div class="exp-section exp-boat"><div class="exp-section-hdr">Boat Details</div><div class="trip-expand-grid">'+boatRegRow+boatModelRow+boatLoaRow+'</div></div>' : '')
+      + (hasTrip ? '<div class="exp-section exp-logistics">'
+        + (hasDetailTrip
+          ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();_cqToggleSection(this)">Trip Details <span class="exp-chevron">▾</span></div>'
+            + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
+            + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailTrip+'</div></div>'
+          : '<div class="exp-section-hdr">Trip Details</div><div class="trip-expand-grid">'+toplineTrip+'</div>')
+        + '</div>' : '')
+      + (hasWeather ? '<div class="exp-section exp-weather">'
+        + (hasDetailWx
+          ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();_cqToggleSection(this)">Weather <span class="exp-chevron">▾</span></div>'
+            + (toplineWx ? '<div class="trip-expand-grid">'+toplineWx+'</div>' : '')
+            + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailWx+'</div></div>'
+          : '<div class="exp-section-hdr">Weather</div><div class="trip-expand-grid">'+toplineWx+'</div>')
+        + '</div>' : '')
+      + (hasNotes ? '<div class="exp-section exp-notes"><div class="exp-section-hdr">Notes & Actions</div><div class="trip-expand-grid">'+skipperNoteRow+notesRow+photosRow+actionsRow+'</div></div>' : '')
+    + '</div>'
   + '</div>';
+}
+
+// ── Trip card interactions ────────────────────────────────────────────────────
+function _cqToggleCard(card) { card.classList.toggle('open'); }
+
+function _cqToggleSection(hdr) {
+  var detail = hdr.parentElement.querySelector('.exp-section-detail');
+  if (!detail) return;
+  detail.classList.toggle('open');
+  hdr.classList.toggle('expanded');
+}
+
+async function _cqEditNote(tripId, field) {
+  var t = _myTrips.find(x => x.id === tripId) || _allTrips.find(x => x.id === tripId);
+  if (!t) return;
+  var current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
+  var label = field === 'skipperNote' ? 'Skipper note (visible to crew):' : 'Private note (only you):';
+  var val = prompt(label, current);
+  if (val === null) return;
+  try {
+    await apiPost('saveTrip', { id: tripId, [field]: val });
+    t[field] = val;
+    // Also update in the other array
+    var other = field === 'skipperNote' ? _allTrips : _myTrips;
+    var t2 = other.find(x => x.id === tripId);
+    if (t2 && t2 !== t) t2[field] = val;
+    renderTrips();
+    showToast('Note saved', 'ok');
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+function _cqUploadTrack(tripId) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.gpx,.kml,.kmz';
+  input.onchange = async function() {
+    var file = input.files[0];
+    if (!file) return;
+    showToast('Uploading GPS track…');
+    try {
+      var fileData = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = function() { reject(new Error('Read error')); };
+        reader.readAsDataURL(file);
+      });
+      var res = await apiPost('uploadTripFile', { fileType: 'track', fileName: file.name, fileData: fileData, mimeType: file.type });
+      if (!res.ok) { showToast('Upload failed', 'err'); return; }
+      var updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
+      if (res.distanceNm) updates.distanceNm = res.distanceNm;
+      await apiPost('saveTrip', Object.assign({ id: tripId }, updates));
+      var t = _myTrips.find(x => x.id === tripId) || _allTrips.find(x => x.id === tripId);
+      if (t) Object.assign(t, updates);
+      renderTrips();
+      showToast('GPS track added', 'ok');
+    } catch(e) { showToast('Error: ' + e.message, 'err'); }
+  };
+  input.click();
+}
+
+function _cqUploadPhotos(tripId) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = async function() {
+    if (!input.files || !input.files.length) return;
+    showToast('Uploading photos…');
+    try {
+      for (var i = 0; i < input.files.length; i++) {
+        var file = input.files[i];
+        if (file.size > 10 * 1024 * 1024) { showToast('File too large (max 10 MB): ' + file.name, 'err'); continue; }
+        var fileData = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() { resolve(reader.result); };
+          reader.onerror = function() { reject(new Error('Read error')); };
+          reader.readAsDataURL(file);
+        });
+        var res = await apiPost('uploadTripFile', { fileType: 'photo', fileName: file.name, fileData: fileData, mimeType: file.type });
+        if (!res.ok || !res.photoUrl) { showToast('Upload failed for ' + file.name, 'err'); continue; }
+        var t = _myTrips.find(x => x.id === tripId) || _allTrips.find(x => x.id === tripId);
+        if (t) {
+          var urls = []; try { urls = t.photoUrls ? JSON.parse(t.photoUrls) : []; } catch(e){}
+          urls.push(res.photoUrl);
+          var meta = {}; try { meta = t.photoMeta ? JSON.parse(t.photoMeta) : {}; } catch(e){}
+          meta[res.photoUrl] = { shared: true, clubUse: false };
+          await apiPost('saveTrip', { id: tripId, photoUrls: JSON.stringify(urls), photoMeta: JSON.stringify(meta) });
+          t.photoUrls = JSON.stringify(urls);
+          t.photoMeta = JSON.stringify(meta);
+        }
+      }
+      renderTrips();
+      showToast('Photos added', 'ok');
+    } catch(e) { showToast('Error: ' + e.message, 'err'); }
+  };
+  input.click();
 }
 
 function renderTrips() {
