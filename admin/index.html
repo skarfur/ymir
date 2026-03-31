@@ -689,6 +689,31 @@
       </div>
       <div id="bReservationActions"></div>
     </div>
+    <!-- Charter -->
+    <div id="bCharterSection">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.charter">CHARTER</div>
+      <div id="bCharterInfo" style="font-size:12px;margin-bottom:6px"></div>
+      <div id="bCharterForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+        <div class="field">
+          <label data-s="cq.resMember">Member</label>
+          <div style="position:relative">
+            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="" oninput="searchCharterMember(this.value)">
+            <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+            <input type="hidden" id="bCharterMemberKt">
+            <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label data-s="cq.resStartDate">Start date</label><input type="date" id="bCharterStart"></div>
+          <div class="field"><label data-s="cq.resEndDate">End date</label><input type="date" id="bCharterEnd"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()" data-s="btn.save"></button>
+        </div>
+      </div>
+      <div id="bCharterActions"></div>
+    </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
     </div>
@@ -1509,6 +1534,14 @@ function openBoatModal(id) {
   document.getElementById("bResEnd").value = '';
   document.getElementById("bResNote").value = '';
   renderReservationList(b);
+  // Charter
+  document.getElementById("bCharterForm").classList.add("hidden");
+  document.getElementById("bCharterMemberKt").value = '';
+  document.getElementById("bCharterMemberSearch").value = '';
+  document.getElementById("bCharterMemberName").textContent = '';
+  document.getElementById("bCharterStart").value = '';
+  document.getElementById("bCharterEnd").value = '';
+  renderCharterInfo(b);
   updateOwnershipFields();
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
