@@ -2659,9 +2659,9 @@ async function assignMemberCert() {
     : (def?.name || certId);
   if (!title) { toast(s('admin.certTitleRequired'), "err"); return; }
 
-  // Issuing authority (mandatory)
+  // Issuing authority (mandatory for non-endorsements)
   const issuingAuthority = document.getElementById("mcmIssuingAuthority").value.trim();
-  if (!issuingAuthority) { toast(s('admin.certAuthorityReq'), "err"); return; }
+  if (!issuingAuthority && !def?.clubEndorsement) { toast(s('admin.certAuthorityReq'), "err"); return; }
 
   // Expiry
   const expires   = document.getElementById("mcmExpires").checked;
