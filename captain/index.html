@@ -186,7 +186,7 @@
   <div class="cq-section" id="sectCredentials">
     <div class="cq-section-hdr" data-s="cq.assignCredTitle"></div>
     <div style="margin-bottom:10px">
-      <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="openCqCredModal()" data-s="cq.assignCred"></button>
+      <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="openMemberCertModal()" data-s="cq.assignCred"></button>
     </div>
   </div>
 
@@ -199,74 +199,91 @@
 </div>
 
 <!-- ══ CREDENTIAL ASSIGNMENT MODAL ══ -->
-<div class="modal-overlay hidden" id="cqCredModal" onclick="if(event.target===this)closeModal('cqCredModal')">
+<!-- Member cert assignment modal (same structure as admin) -->
+<div class="modal-overlay hidden" id="memberCertModal" onclick="if(event.target===this)closeModal('memberCertModal')">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <h3 data-s="cq.assignCred"></h3>
-      <button class="modal-close-x" onclick="closeModal('cqCredModal')">&times;</button>
+      <button class="modal-close-x" onclick="closeModal('memberCertModal')">&times;</button>
     </div>
 
     <!-- Member search -->
     <div class="field">
       <label data-s="cq.selectMember"></label>
-      <input type="text" id="cqCredMemberSearch" oninput="filterCqCredMembers()" placeholder="">
-      <div id="cqCredMemberResults" style="max-height:120px;overflow-y:auto;margin-top:4px"></div>
-      <div id="cqCredSelectedMember" style="margin-top:6px;font-size:12px;font-weight:500;color:var(--brass);display:none"></div>
+      <input type="text" id="mcmMemberSearch" oninput="filterMcmMembers()" placeholder="">
+      <div id="mcmMemberResults" style="max-height:120px;overflow-y:auto;margin-top:4px"></div>
+      <div id="mcmMemberName" style="margin-top:6px;font-size:12px;font-weight:500;color:var(--brass);display:none"></div>
     </div>
 
-    <!-- Category -->
-    <div class="field">
-      <label data-s="admin.certCategory"></label>
-      <select id="cqCredCategory" onchange="onCqCredCategoryChange()"></select>
-    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="admin.certAssignTitle"></div>
 
-    <!-- Type -->
-    <div class="field">
-      <label data-s="lbl.type"></label>
-      <select id="cqCredType" onchange="updateCqCredSubcats()">
-        <option value="">Select…</option>
-      </select>
-    </div>
-    <div class="field" id="cqCredSubcatField" style="display:none">
-      <label data-s="cert.level"></label>
-      <select id="cqCredSubcat"><option value="">Select…</option></select>
-    </div>
-    <div class="field" id="cqCredCustomTitleField" style="display:none">
-      <label data-s="admin.certTitle"></label>
-      <input type="text" id="cqCredCustomTitle" placeholder="e.g. RYA Day Skipper">
-    </div>
+      <!-- Category -->
+      <div class="field">
+        <label data-s="admin.certCategory"></label>
+        <select id="mcmCategory" onchange="onMcmCategoryChange()">
+          <option value="" data-s="admin.certCategorySelect"></option>
+        </select>
+      </div>
 
-    <!-- Fields -->
-    <div class="field">
-      <label><span data-s="admin.certIdNumber"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-      <input type="text" id="cqCredIdNumber" placeholder="e.g. IS-12345">
-    </div>
-    <div class="field">
-      <label data-s="admin.certIssuingAuth"></label>
-      <input type="text" id="cqCredIssuingAuthority">
-    </div>
-    <div class="field">
-      <label><span data-s="admin.certIssueDate"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-      <input type="date" id="cqCredIssueDate">
-    </div>
-    <div class="field" style="display:flex;align-items:center;gap:16px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cqCredExpires" onchange="document.getElementById('cqCredExpiryWrap').style.display=this.checked?'':'none'">
-        <span data-s="admin.certExpires2"></span>
-      </label>
-    </div>
-    <div class="field" id="cqCredExpiryWrap" style="display:none">
-      <label data-s="admin.certExpiryDate2"></label>
-      <input type="date" id="cqCredExpiresAt">
-    </div>
-    <div class="field">
-      <label><span data-s="admin.certDescription"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-      <textarea id="cqCredDescription" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+      <!-- Credential type (predefined or custom) -->
+      <div class="field">
+        <label data-s="lbl.type"></label>
+        <select id="mcmCertType" onchange="updateMCMSubcats()">
+          <option value="">Select…</option>
+        </select>
+      </div>
+      <div class="field" id="mcmSubcatField" style="display:none">
+        <label data-s="cert.level"></label>
+        <select id="mcmSubcat"><option value="" data-s="lbl.selectDots"></option></select>
+      </div>
+
+      <!-- Custom title (shown when "custom" type selected) -->
+      <div class="field" id="mcmCustomTitleField" style="display:none">
+        <label data-s="admin.certTitle"></label>
+        <input type="text" id="mcmCustomTitle" placeholder="e.g. RYA Day Skipper">
+      </div>
+
+      <!-- ID number -->
+      <div class="field">
+        <label><span data-s="admin.certIdNumber"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <input type="text" id="mcmIdNumber" placeholder="e.g. IS-12345">
+      </div>
+
+      <!-- Issuing authority -->
+      <div class="field">
+        <label data-s="admin.certIssuingAuth"></label>
+        <input type="text" id="mcmIssuingAuthority" placeholder="e.g. World Sailing">
+      </div>
+
+      <!-- Issue date -->
+      <div class="field">
+        <label><span data-s="admin.certIssueDate"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <input type="date" id="mcmIssueDate">
+      </div>
+
+      <!-- Expiry toggle -->
+      <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="mcmExpires" onchange="toggleMcmExpiry()"> <span data-s="admin.certExpires2"></span>
+        </label>
+      </div>
+      <div class="field" id="mcmExpiryDateField" style="display:none">
+        <label data-s="admin.certExpiryDate2"></label>
+        <input type="date" id="mcmExpiresAt">
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label><span data-s="admin.certDescription"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="mcmDescription" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%" onclick="assignMemberCert()" data-s="cert.assign"></button>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-secondary" onclick="closeModal('cqCredModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-primary" style="flex:1" onclick="assignCqCred()" data-s="cert.assign"></button>
+      <button class="btn btn-secondary" onclick="closeModal('memberCertModal')" data-s="btn.close"></button>
     </div>
   </div>
 </div>
@@ -327,7 +344,6 @@ let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
 let _confirmations = [], _verificationRequests = [];
 let _maintFilter = 'open', _tripFilter = 'my', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
-let _cqSelectedMemberId = null;
 let _tripShowAll = false;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
@@ -1098,103 +1114,126 @@ async function removeCqReservation(boatId, resId) {
 }
 
 // ══ CREDENTIAL ASSIGNMENT (Captain) ═════════════════════════════════════════
+// Uses the same element IDs (mcm*) and logic as the admin page's member cert modal.
 
-function openCqCredModal() {
-  _cqSelectedMemberId = null;
-  document.getElementById('cqCredMemberSearch').value = '';
-  document.getElementById('cqCredMemberResults').innerHTML = '';
-  document.getElementById('cqCredSelectedMember').style.display = 'none';
-  document.getElementById('cqCredCustomTitleField').style.display = 'none';
-  document.getElementById('cqCredCustomTitle').value = '';
-  document.getElementById('cqCredIdNumber').value = '';
-  document.getElementById('cqCredIssuingAuthority').value = '';
-  document.getElementById('cqCredIssueDate').value = '';
-  document.getElementById('cqCredExpires').checked = false;
-  document.getElementById('cqCredExpiryWrap').style.display = 'none';
-  document.getElementById('cqCredExpiresAt').value = '';
-  document.getElementById('cqCredDescription').value = '';
-  document.getElementById('cqCredSubcatField').style.display = 'none';
-  // Populate categories
-  var catSel = document.getElementById('cqCredCategory');
-  catSel.innerHTML = '<option value="">' + s('admin.certCategorySelect') + '</option>';
-  _cqCertCategories.forEach(function(c) {
-    var o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    catSel.appendChild(o);
-  });
-  var addOpt = document.createElement('option');
-  addOpt.value = '__add__'; addOpt.textContent = s('admin.certAddCategory');
-  catSel.appendChild(addOpt);
-  // Populate type
-  var typeSel = document.getElementById('cqCredType');
-  typeSel.innerHTML = '<option value="">Select…</option>';
-  _cqCertDefs.forEach(function(d) {
-    var o = document.createElement('option');
-    o.value = d.id; o.textContent = d.name;
-    typeSel.appendChild(o);
-  });
-  var customOpt = document.createElement('option');
-  customOpt.value = '__custom__'; customOpt.textContent = s('admin.certCustomType');
-  typeSel.appendChild(customOpt);
-  // Search placeholder
-  document.getElementById('cqCredMemberSearch').placeholder = s('cq.searchMember');
-  openModal('cqCredModal');
+let mcmMemberId = null;
+// Alias captain-local data so shared-style functions work:
+function _mcmCertDefs()       { return _cqCertDefs; }
+function _mcmCertCategories() { return _cqCertCategories; }
+function _mcmMembers()        { return _cqMembers; }
+
+function openMemberCertModal() {
+  mcmMemberId = null;
+  document.getElementById('mcmMemberSearch').value = '';
+  document.getElementById('mcmMemberSearch').placeholder = s('cq.searchMember');
+  document.getElementById('mcmMemberResults').innerHTML = '';
+  document.getElementById('mcmMemberName').style.display = 'none';
+  document.getElementById('mcmCertType').value = '';
+  document.getElementById('mcmSubcatField').style.display = 'none';
+  document.getElementById('mcmCustomTitleField').style.display = 'none';
+  document.getElementById('mcmCustomTitle').value = '';
+  document.getElementById('mcmIdNumber').value = '';
+  document.getElementById('mcmIssuingAuthority').value = '';
+  document.getElementById('mcmIssueDate').value = '';
+  document.getElementById('mcmExpires').checked = false;
+  document.getElementById('mcmExpiryDateField').style.display = 'none';
+  document.getElementById('mcmExpiresAt').value = '';
+  document.getElementById('mcmDescription').value = '';
+  populateMcmCategories();
+  openModal('memberCertModal');
 }
 
-function filterCqCredMembers() {
-  var q = document.getElementById('cqCredMemberSearch').value.toLowerCase();
-  var el = document.getElementById('cqCredMemberResults');
+function filterMcmMembers() {
+  const q = document.getElementById('mcmMemberSearch').value.toLowerCase();
+  const el = document.getElementById('mcmMemberResults');
   if (!q || q.length < 2) { el.innerHTML = ''; return; }
-  var matches = _cqMembers.filter(function(m) {
-    return (m.name || '').toLowerCase().includes(q) || (m.kennitala || '').includes(q);
-  }).slice(0, 8);
-  el.innerHTML = matches.map(function(m) {
-    return '<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" onclick="selectCqCredMember(\'' + m.id + '\')">' +
-      '<div>' + esc(m.name || '—') + '</div><div style="font-size:10px;color:var(--muted);margin-left:8px">' + esc(m.kennitala || '') + '</div></div>';
-  }).join('');
+  const matches = _mcmMembers().filter(m =>
+    (m.name || '').toLowerCase().includes(q) || (m.kennitala || '').includes(q)
+  ).slice(0, 8);
+  el.innerHTML = matches.map(m =>
+    `<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" onclick="selectMcmMember('${m.id}')">
+      <div>${esc(m.name || '—')}</div><div style="font-size:10px;color:var(--muted);margin-left:8px">${esc(m.kennitala || '')}</div></div>`
+  ).join('');
 }
 
-function selectCqCredMember(id) {
-  _cqSelectedMemberId = id;
-  var m = _cqMembers.find(function(x) { return String(x.id) === String(id); });
-  document.getElementById('cqCredMemberResults').innerHTML = '';
-  document.getElementById('cqCredMemberSearch').value = '';
-  var sel = document.getElementById('cqCredSelectedMember');
-  sel.textContent = m ? m.name : id;
-  sel.style.display = '';
+function selectMcmMember(id) {
+  mcmMemberId = id;
+  const m = _mcmMembers().find(x => String(x.id) === String(id));
+  document.getElementById('mcmMemberResults').innerHTML = '';
+  document.getElementById('mcmMemberSearch').value = '';
+  const el = document.getElementById('mcmMemberName');
+  el.textContent = m ? m.name : id;
+  el.style.display = '';
 }
 
-async function onCqCredCategoryChange() {
-  var sel = document.getElementById('cqCredCategory');
+function populateMcmCategories() {
+  const sel = document.getElementById('mcmCategory');
+  sel.innerHTML = `<option value="">${s('admin.certCategorySelect')}</option>`;
+  const cats = _mcmCertCategories().slice();
+  const hasEndorsements = _mcmCertDefs().some(d => d.clubEndorsement);
+  if (hasEndorsements && !cats.includes('Club Endorsement')) cats.push('Club Endorsement');
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  const addOpt = document.createElement('option');
+  addOpt.value = '__add__'; addOpt.textContent = s('admin.certAddCategory');
+  sel.appendChild(addOpt);
+}
+
+async function onMcmCategoryChange() {
+  const sel = document.getElementById('mcmCategory');
   if (sel.value === '__add__') {
-    var name = await ymPrompt('Enter new category name:');
+    const name = await ymPrompt('Enter new category name:');
     if (name && name.trim()) {
-      var cat = name.trim();
-      if (_cqCertCategories.indexOf(cat) === -1) {
-        _cqCertCategories.push(cat);
-        apiPost('saveCertCategories', { categories: _cqCertCategories }).catch(function(e) { console.warn(e); });
+      const cat = name.trim();
+      if (!_mcmCertCategories().includes(cat)) {
+        _mcmCertCategories().push(cat);
+        apiPost('saveCertCategories', { categories: _mcmCertCategories() }).catch(e => console.warn(e));
       }
-      // Re-populate and select
-      openCqCredModal();
-      sel = document.getElementById('cqCredCategory');
+      populateMcmCategories();
       sel.value = cat;
     } else {
       sel.value = '';
     }
   }
+  updateMcmCertTypes();
 }
 
-function updateCqCredSubcats() {
-  var certId = document.getElementById('cqCredType').value;
-  var isCustom = certId === '__custom__';
-  document.getElementById('cqCredCustomTitleField').style.display = isCustom ? '' : 'none';
-  var def = isCustom ? null : _cqCertDefs.find(function(d) { return d.id === certId; });
-  var sf = document.getElementById('cqCredSubcatField');
-  if (def && def.subcats && def.subcats.length) {
-    var sel = document.getElementById('cqCredSubcat');
+function updateMcmCertTypes() {
+  const category = document.getElementById('mcmCategory').value;
+  const typeSel = document.getElementById('mcmCertType');
+  typeSel.innerHTML = `<option value="">Select…</option>`;
+  const filtered = _mcmCertDefs().filter(d => {
+    if (d.clubEndorsement) return category === 'Club Endorsement';
+    if (!category) return true;
+    return (d.category || '') === category || !d.category;
+  });
+  filtered.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.id; o.textContent = d.name;
+    typeSel.appendChild(o);
+  });
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__'; customOpt.textContent = s('admin.certCustomType');
+  typeSel.appendChild(customOpt);
+  typeSel.value = '';
+  document.getElementById('mcmSubcatField').style.display = 'none';
+  document.getElementById('mcmCustomTitleField').style.display = 'none';
+}
+
+function updateMCMSubcats() {
+  const certId = document.getElementById('mcmCertType').value;
+  const isCustom = certId === '__custom__';
+  document.getElementById('mcmCustomTitleField').style.display = isCustom ? '' : 'none';
+  const def = isCustom ? null : _mcmCertDefs().find(d => d.id === certId);
+  const sf = document.getElementById('mcmSubcatField');
+  if (def?.subcats?.length) {
+    const sel = document.getElementById('mcmSubcat');
     sel.innerHTML = '<option value="">Select…</option>';
-    def.subcats.forEach(function(sc) {
-      var o = document.createElement('option');
+    def.subcats.forEach(sc => {
+      const o = document.createElement('option');
       o.value = sc.key; o.textContent = sc.label;
       sel.appendChild(o);
     });
@@ -1202,77 +1241,82 @@ function updateCqCredSubcats() {
   } else {
     sf.style.display = 'none';
   }
-  if (def && def.issuingAuthority && !document.getElementById('cqCredIssuingAuthority').value) {
-    document.getElementById('cqCredIssuingAuthority').value = def.issuingAuthority;
+  if (def?.issuingAuthority && !document.getElementById('mcmIssuingAuthority').value) {
+    document.getElementById('mcmIssuingAuthority').value = def.issuingAuthority;
   }
-  if (def && def.expires) {
-    document.getElementById('cqCredExpires').checked = true;
-    document.getElementById('cqCredExpiryWrap').style.display = '';
+  if (def?.expires) {
+    document.getElementById('mcmExpires').checked = true;
+    document.getElementById('mcmExpiryDateField').style.display = '';
   }
 }
 
-async function assignCqCred() {
-  if (!_cqSelectedMemberId) { showToast(s('cq.selectMember'), 'err'); return; }
-  var m = _cqMembers.find(function(x) { return String(x.id) === String(_cqSelectedMemberId); });
-  if (!m) { showToast('Member not found.', 'err'); return; }
+function toggleMcmExpiry() {
+  document.getElementById('mcmExpiryDateField').style.display =
+    document.getElementById('mcmExpires').checked ? '' : 'none';
+}
 
-  var category = document.getElementById('cqCredCategory').value;
-  var certId   = document.getElementById('cqCredType').value;
-  var isCustom = certId === '__custom__';
+async function assignMemberCert() {
+  if (!mcmMemberId) { toast(s('cq.selectMember'), 'err'); return; }
+  const m = _mcmMembers().find(x => String(x.id) === String(mcmMemberId));
+  if (!m) return;
 
-  if (!certId) { showToast(s('cert.typeRequired'), 'err'); return; }
-  if (!category || category === '__add__') { showToast(s('admin.certCategoryReq'), 'err'); return; }
+  const category = document.getElementById('mcmCategory').value;
+  const certId   = document.getElementById('mcmCertType').value;
+  const isCustom = certId === '__custom__';
 
-  var def = isCustom ? null : _cqCertDefs.find(function(d) { return d.id === certId; });
-  var sub = (def && def.subcats && def.subcats.length) ? document.getElementById('cqCredSubcat').value : null;
-  if (def && def.subcats && def.subcats.length && !sub) { showToast(s('cert.levelRequired'), 'err'); return; }
+  if (!certId) { toast(s('cert.typeRequired'), 'err'); return; }
+  if (!category || category === '__add__') { toast(s('admin.certCategoryReq'), 'err'); return; }
 
-  var title = isCustom
-    ? document.getElementById('cqCredCustomTitle').value.trim()
-    : (def ? def.name : certId);
-  if (!title) { showToast(s('admin.certTitleRequired'), 'err'); return; }
+  const def = isCustom ? null : _mcmCertDefs().find(d => d.id === certId);
+  const sub = def?.subcats?.length ? document.getElementById('mcmSubcat').value : null;
+  if (def?.subcats?.length && !sub) { toast(s('cert.levelRequired'), 'err'); return; }
 
-  var issuingAuthority = document.getElementById('cqCredIssuingAuthority').value.trim();
-  if (!issuingAuthority) { showToast(s('admin.certAuthorityReq'), 'err'); return; }
+  const title = isCustom
+    ? document.getElementById('mcmCustomTitle').value.trim()
+    : (def?.name || certId);
+  if (!title) { toast(s('admin.certTitleRequired'), 'err'); return; }
 
-  var expires   = document.getElementById('cqCredExpires').checked;
-  var expiresAt = expires ? document.getElementById('cqCredExpiresAt').value : '';
-  if (expires && !expiresAt) { showToast(s('admin.certExpiryReq'), 'err'); return; }
+  const issuingAuthority = document.getElementById('mcmIssuingAuthority').value.trim();
+  if (!issuingAuthority) { toast(s('admin.certAuthorityReq'), 'err'); return; }
 
-  var userName = user.name || 'Captain';
-  var now      = todayISO();
+  const expires   = document.getElementById('mcmExpires').checked;
+  const expiresAt = expires ? document.getElementById('mcmExpiresAt').value : '';
+  if (expires && !expiresAt) { toast(s('admin.certExpiryReq'), 'err'); return; }
 
-  var newCert = {
+  const userName = getUser()?.name || 'Captain';
+  const now      = todayISO();
+
+  const newCert = {
     certId:           isCustom ? null : certId,
     sub:              sub || null,
-    category:         category,
-    title:            title,
-    idNumber:         document.getElementById('cqCredIdNumber').value.trim() || '',
-    issuingAuthority: issuingAuthority,
-    issueDate:        document.getElementById('cqCredIssueDate').value || '',
-    expires:          expires,
+    category,
+    title,
+    idNumber:         document.getElementById('mcmIdNumber').value.trim() || '',
+    issuingAuthority,
+    issueDate:        document.getElementById('mcmIssueDate').value || '',
+    expires,
     expiresAt:        expiresAt || '',
-    description:      document.getElementById('cqCredDescription').value.trim() || '',
+    description:      document.getElementById('mcmDescription').value.trim() || '',
     assignedBy:       userName,
     assignedAt:       now,
     verifiedBy:       userName,
     verifiedAt:       now,
   };
 
-  var existing = parseJson(m.certifications, []);
+  let existing = parseJson(m.certifications, []);
   if (!isCustom) {
-    existing = applyRankRule(existing, newCert, _cqCertDefs);
-    existing = existing.filter(function(c) { return !(c.certId === certId && (c.sub || null) === (sub || null)); });
+    existing = applyRankRule(existing, newCert, _mcmCertDefs());
+    existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
   }
-  var updated = existing.concat([newCert]);
+  const updated = [...existing, newCert];
 
   try {
-    await apiPost('saveMemberCert', { memberId: _cqSelectedMemberId, certifications: updated });
-    var mIdx = _cqMembers.findIndex(function(x) { return String(x.id) === String(_cqSelectedMemberId); });
-    _cqMembers[mIdx] = Object.assign({}, m, { certifications: JSON.stringify(updated) });
-    closeModal('cqCredModal');
-    showToast(s('cert.assigned'), 'ok');
-  } catch (e) { showToast('Error: ' + e.message, 'err'); }
+    await apiPost('saveMemberCert', { memberId: mcmMemberId, certifications: updated });
+    const mIdx = _mcmMembers().findIndex(x => String(x.id) === String(mcmMemberId));
+    _mcmMembers()[mIdx] = { ...m, certifications: JSON.stringify(updated) };
+    closeModal('memberCertModal');
+    toast(s('cert.assigned'), 'ok');
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
 }
 </script>
 </body>
