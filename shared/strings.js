@@ -918,8 +918,16 @@ const STRINGS = {
   'cox.boatAvailability':    { EN:'BOAT AVAILABILITY',                      IS:'AÐGENGI BÁTA' },
   'cox.trips':               { EN:'TRIPS',                                  IS:'FERÐIR' },
   'cox.maintenance':         { EN:'MAINTENANCE',                            IS:'VIÐHALD' },
-  'cox.bio':                 { EN:'BIO & PROFILE',                          IS:'ÆVIÁGRIP' },
   'cox.readOnly':            { EN:'View only — contact a coxswain for changes', IS:'Aðeins skoðun — hafðu samband við stýrimann' },
+  'cox.noMaint':             { EN:'No maintenance requests.',               IS:'Engar viðhaldsbeiðnir.' },
+  'cox.reservations':        { EN:'RESERVATIONS',                           IS:'BÓKANIR' },
+  'cox.addReservation':      { EN:'Add Reservation',                        IS:'Bæta við bókun' },
+  'cox.resMember':           { EN:'Member',                                 IS:'Meðlimur' },
+  'cox.resStartDate':        { EN:'Start date',                             IS:'Upphafsdagur' },
+  'cox.resEndDate':          { EN:'End date',                               IS:'Lokadagur' },
+  'cox.resNote':             { EN:'Note (optional)',                         IS:'Athugasemd (valfrjálst)' },
+  'cox.makeAvailable':       { EN:'Mark available',                         IS:'Merkja tiltækan' },
+  'cox.makeUnavailable':     { EN:'Mark unavailable',                       IS:'Merkja ótiltækan' },
 
   // ── Public dashboard ──────────────────────────────────────────────────────
   'pub.dash.title':          { EN:'Club Dashboard',                        IS:'Yfirlit klúbbs' },
