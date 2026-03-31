@@ -167,18 +167,20 @@
   <!-- ══ RESERVATIONS ══ -->
   <div class="cq-section" id="sectReservations">
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
-    <div style="margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <select id="cqResBoat" onchange="loadCqSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(-1)">&larr;</button>
+        <span id="cqWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(-1)">&larr;</button>
-      <span id="cqWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
-    </div>
-    <div id="cqSlotGrid"></div>
-    <div style="margin-top:8px;font-size:10px;color:var(--muted)">
-      <span data-s="slot.clickToBook">Click an open slot to book it.</span>
+    <div id="cqSlotGrid" style="overflow-x:auto"></div>
+    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
+      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
     </div>
   </div>
 
@@ -847,6 +849,8 @@ async function loadCqSlots() {
 }
 
 function renderCqSlots() {
+  var boatId = document.getElementById('cqResBoat').value;
+  var boat = _cqSlotBoats.find(function(b) { return b.id === boatId; });
   var days = [];
   for (var i = 0; i < 7; i++) {
     var d = new Date(_cqWeekStart);
@@ -857,24 +861,31 @@ function renderCqSlots() {
   document.getElementById('cqWeekLabel').textContent =
     days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
   var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
-  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  // Table calendar — matches admin style
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
+  html += '<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px">' + s('slot.boat') + '</th>';
   days.forEach(function(d) {
     var ds = d.toISOString().slice(0, 10);
     var isToday = ds === todayStr;
-    html += '<div style="text-align:center;font-size:10px;padding:4px;border-bottom:1px solid var(--border)'
-      + (isToday ? ';color:var(--brass);font-weight:600' : ';color:var(--muted)') + '">'
-      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</div>';
+    html += '<th style="padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px;text-align:center'
+      + (isToday ? ';background:var(--brass)11;color:var(--brass)' : '') + '">'
+      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</th>';
   });
+  html += '</tr></thead><tbody><tr>';
+  html += '<td style="padding:6px;border-bottom:1px solid var(--border);font-weight:500">' + esc(boat ? boat.name : '') + '</td>';
   days.forEach(function(d) {
     var ds = d.toISOString().slice(0, 10);
-    var daySlots = _cqSlots.filter(function(s) { return s.date === ds; });
-    html += '<div style="padding:2px;min-height:40px">';
+    var isToday = ds === todayStr;
+    var daySlots = _cqSlots.filter(function(sl) { return sl.date === ds; });
+    var cellStyle = 'padding:4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);vertical-align:top'
+      + (isToday ? ';background:var(--brass)08' : '');
+    html += '<td style="' + cellStyle + '">';
     if (daySlots.length) {
       daySlots.forEach(function(sl) {
-        var isMyBooking = sl.bookedByKennitala && String(sl.bookedByKennitala) === String(user.kennitala);
+        var isMine = sl.bookedByKennitala && String(sl.bookedByKennitala) === String(user.kennitala);
         var isBooked = !!sl.bookedByKennitala;
         var bg, border, cursor, onclick;
-        if (isMyBooking) {
+        if (isMine) {
           bg = 'var(--brass)22'; border = 'var(--brass)'; cursor = 'pointer';
           onclick = 'onclick="unbookCqSlot(\'' + esc(sl.id) + '\')"';
         } else if (isBooked) {
@@ -885,15 +896,17 @@ function renderCqSlots() {
           onclick = 'onclick="bookCqSlot(\'' + esc(sl.id) + '\')"';
         }
         var label = sl.startTime + '–' + sl.endTime;
-        if (isMyBooking) label += '<br><span style="font-size:8px">' + esc(s('slot.yours')) + '</span>';
+        if (isMine) label += '<br><span style="font-size:8px">' + esc(s('slot.yours')) + '</span>';
         else if (isBooked) label += '<br><span style="font-size:8px">' + esc(sl.bookedByName || '') + '</span>';
         html += '<div ' + onclick + ' style="padding:3px 4px;margin-bottom:2px;border-radius:4px;border:1px solid '
           + border + ';background:' + bg + ';font-size:9px;cursor:' + cursor + ';text-align:center">' + label + '</div>';
       });
+    } else {
+      html += '<div style="color:var(--border);font-size:9px;text-align:center;padding:4px">—</div>';
     }
-    html += '</div>';
+    html += '</td>';
   });
-  html += '</div>';
+  html += '</tr></tbody></table>';
   document.getElementById('cqSlotGrid').innerHTML = html;
 }
 

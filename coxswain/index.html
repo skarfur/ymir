@@ -92,17 +92,22 @@
   <!-- ══ SLOT RESERVATIONS ══ -->
   <div class="cx-section" id="sectSlots" style="display:none">
     <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
-    <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
       <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
+        <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
-      <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
-      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+    <div id="cxSlotGrid" style="overflow-x:auto"></div>
+    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
+      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
     </div>
-    <div id="cxSlotGrid"></div>
   </div>
 
   <!-- ══ MAINTENANCE ══ -->
@@ -668,6 +673,8 @@ async function loadCxSlots() {
 
 function renderCxSlots() {
   var crewId = document.getElementById('cxSlotCrew').value;
+  var boatId = document.getElementById('cxSlotBoat').value;
+  var boat = _cxSlotBoats.find(function(b) { return b.id === boatId; });
   var days = [];
   for (var i = 0; i < 7; i++) {
     var d = new Date(_cxWeekStart);
@@ -678,21 +685,30 @@ function renderCxSlots() {
   document.getElementById('cxWeekLabel').textContent =
     days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
   var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
-  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  // Build all active crew IDs for this user (to detect "mine" across any of their crews)
+  var myCrewIds = _myCrews.filter(function(c) { return c.status === 'active'; }).map(function(c) { return c.id; });
+  // Table calendar — matches admin style
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
+  html += '<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px">' + s('slot.boat') + '</th>';
   days.forEach(function(d) {
     var ds = d.toISOString().slice(0, 10);
     var isToday = ds === todayStr;
-    html += '<div style="text-align:center;font-size:10px;padding:4px;border-bottom:1px solid var(--border)'
-      + (isToday ? ';color:var(--brass);font-weight:600' : ';color:var(--muted)') + '">'
-      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</div>';
+    html += '<th style="padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px;text-align:center'
+      + (isToday ? ';background:var(--brass)11;color:var(--brass)' : '') + '">'
+      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</th>';
   });
+  html += '</tr></thead><tbody><tr>';
+  html += '<td style="padding:6px;border-bottom:1px solid var(--border);font-weight:500">' + esc(boat ? boat.name : '') + '</td>';
   days.forEach(function(d) {
     var ds = d.toISOString().slice(0, 10);
-    var daySlots = _cxSlots.filter(function(s) { return s.date === ds; });
-    html += '<div style="padding:2px;min-height:40px">';
+    var isToday = ds === todayStr;
+    var daySlots = _cxSlots.filter(function(sl) { return sl.date === ds; });
+    var cellStyle = 'padding:4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);vertical-align:top'
+      + (isToday ? ';background:var(--brass)08' : '');
+    html += '<td style="' + cellStyle + '">';
     if (daySlots.length) {
       daySlots.forEach(function(sl) {
-        var isMyCrew = sl.bookedByCrewId === crewId;
+        var isMyCrew = sl.bookedByCrewId && myCrewIds.indexOf(sl.bookedByCrewId) !== -1;
         var isBooked = !!sl.bookedByKennitala;
         var bg, border, cursor, onclick;
         if (isMyCrew) {
@@ -711,10 +727,12 @@ function renderCxSlots() {
         html += '<div ' + onclick + ' style="padding:3px 4px;margin-bottom:2px;border-radius:4px;border:1px solid '
           + border + ';background:' + bg + ';font-size:9px;cursor:' + cursor + ';text-align:center">' + label + '</div>';
       });
+    } else {
+      html += '<div style="color:var(--border);font-size:9px;text-align:center;padding:4px">—</div>';
     }
-    html += '</div>';
+    html += '</td>';
   });
-  html += '</div>';
+  html += '</tr></tbody></table>';
   document.getElementById('cxSlotGrid').innerHTML = html;
 }
 

@@ -4634,3 +4634,14 @@ function addPreferencesColumn() {
   }
 }
 
+// ── Focused helper: create reservation_slots, crews, crew_invites tabs ────
+function addReservationAndCrewTabs() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  ensureTab_(ss, 'reservation_slots', SCHEMA_.reservation_slots);
+  Logger.log('reservation_slots tab ready');
+  ensureTab_(ss, 'crews', SCHEMA_.crews);
+  Logger.log('crews tab ready');
+  ensureTab_(ss, 'crew_invites', SCHEMA_.crew_invites);
+  Logger.log('crew_invites tab ready');
+}
+
