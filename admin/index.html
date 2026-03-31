@@ -338,6 +338,24 @@
     <!-- ══ CERTIFICATIONS ════════════════════════════════════════════════════ -->
     <div id="tab-certs" class="hidden">
 
+      <!-- Credential Categories -->
+      <div class="col-section">
+        <div class="col-head" onclick="toggleSection(this)">
+          <div class="col-title" data-s="admin.certCategoriesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="certCatsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px" class="hidden" id="certCatsAddWrap">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="newCatInput" placeholder="New category name…" style="flex:1;font-size:12px">
+            <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="addCertCategory()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credential Types -->
       <div class="col-section">
         <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title" data-s="admin.credentialsTitle"></div>
@@ -783,6 +801,12 @@
       <label><span data-s="admin.certDescLabel"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
       <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
     </div>
+    <div class="field" id="cdCategoryField">
+      <label data-s="admin.certDefCategory"></label>
+      <select id="cdCategory">
+        <option value="">None</option>
+      </select>
+    </div>
     <div class="field">
       <label><span data-s="admin.certIssuing"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
       <input type="text" id="cdIssuingAuthority">
@@ -790,7 +814,7 @@
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdClubEndorsement"> <span data-s="admin.certClubEndorsement"></span>
+        <input type="checkbox" id="cdClubEndorsement" onchange="toggleCdEndorsement()"> <span data-s="admin.certClubEndorsement"></span>
       </label>
       <label style="display:flex;align-items:center;gap:8px"><span data-s="admin.certCardColour"></span>
         <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
@@ -846,6 +870,16 @@
 
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:10px" data-s="admin.certAssignTitle"></div>
+
+      <!-- Category -->
+      <div class="field">
+        <label data-s="admin.certCategory"></label>
+        <select id="mcmCategory" onchange="onMcmCategoryChange()">
+          <option value="" data-s="admin.certCategorySelect"></option>
+        </select>
+      </div>
+
+      <!-- Credential type (predefined or custom) -->
       <div class="field">
         <label data-s="lbl.type"></label>
         <select id="mcmCertType" onchange="updateMCMSubcats()">
@@ -856,20 +890,48 @@
         <label data-s="cert.level"></label>
         <select id="mcmSubcat"><option value="" data-s="lbl.selectDots"></option></select>
       </div>
-      <div class="field" id="mcmLicenceNoField" style="display:none">
-        <label data-s="admin.certLicenceNo"></label>
-        <input type="text" id="mcmLicenceNo" placeholder="e.g. IS-12345">
+
+      <!-- Custom title (shown when "custom" type selected) -->
+      <div class="field" id="mcmCustomTitleField" style="display:none">
+        <label data-s="admin.certTitle"></label>
+        <input type="text" id="mcmCustomTitle" placeholder="e.g. RYA Day Skipper">
       </div>
-      <div class="grid2">
-        <div class="field">
-          <label data-s="admin.certAssignedDate"></label>
-          <input type="date" id="mcmAssignedAt">
-        </div>
-        <div class="field">
-          <label><span data-s="admin.certExpiryLabel"></span> <span style="color:var(--muted);font-size:10px">(<span data-s="admin.certExpiryHint"></span>)</span></label>
-          <input type="date" id="mcmExpiresAt">
-        </div>
+
+      <!-- ID number -->
+      <div class="field">
+        <label><span data-s="admin.certIdNumber"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <input type="text" id="mcmIdNumber" placeholder="e.g. IS-12345">
       </div>
+
+      <!-- Issuing authority -->
+      <div class="field">
+        <label data-s="admin.certIssuingAuth"></label>
+        <input type="text" id="mcmIssuingAuthority" placeholder="e.g. World Sailing">
+      </div>
+
+      <!-- Issue date -->
+      <div class="field">
+        <label><span data-s="admin.certIssueDate"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <input type="date" id="mcmIssueDate">
+      </div>
+
+      <!-- Expiry toggle -->
+      <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="mcmExpires" onchange="toggleMcmExpiry()"> <span data-s="admin.certExpires2"></span>
+        </label>
+      </div>
+      <div class="field" id="mcmExpiryDateField" style="display:none">
+        <label data-s="admin.certExpiryDate2"></label>
+        <input type="date" id="mcmExpiresAt">
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label><span data-s="admin.certDescription"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="mcmDescription" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+      </div>
+
       <button class="btn btn-primary" style="width:100%" onclick="assignMemberCert()" data-s="cert.assign"></button>
     </div>
 
@@ -906,6 +968,7 @@ const user = requireAuth(isAdmin);
 let members = [], boats = [], locations = [], clItems = [], actTypes = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
+let certCategories = [];
 const bool = v => v === true || v === 'true' || v === 1 || v === '1' || v === 'TRUE';
 
 // ── Default boat categories (seeded if none in config) ────────────────────────
@@ -972,6 +1035,7 @@ async function loadAll() {
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || cfgRes.dailyChecklist?.am || []),
                      ...(cfgRes.dailyChecklist?.closing  || cfgRes.dailyChecklist?.pm || []) ];
   certDefs       = certDefsFromConfig(cfgRes.certDefs || []);
+  certCategories = certCategoriesFromConfig(cfgRes.certCategories || []);
   _allBoats      = cfgRes.boats      || [];
   _allLocations  = cfgRes.locations  || [];
   _allBoatCats   = cfgRes.boatCategories?.length ? cfgRes.boatCategories : JSON.parse(JSON.stringify(DEFAULT_BOAT_CATS));
@@ -986,7 +1050,7 @@ async function loadAll() {
 
   renderMembers(); renderBoats(); renderLocations();
   renderChecklists(); renderActTypes();
-  renderCertDefs(); renderCertMembers(); populateCertFilterType();
+  renderCertDefs(); renderCertMembers(); populateCertFilterType(); renderCertCategories();
   populateCategorySelects();
 }
 
@@ -1931,6 +1995,46 @@ let mcmMemberId  = null;
 let certMemberFilter = "";
 let certTypeFilter   = "";
 
+// ── Credential categories ─────────────────────────────────────────────────────
+function renderCertCategories() {
+  const el = document.getElementById("certCatsCard");
+  const addWrap = document.getElementById("certCatsAddWrap");
+  if (!el) return;
+  if (!certCategories.length) {
+    el.innerHTML = `<div class="empty-state">No categories defined. Defaults will be used.</div>`;
+  } else {
+    el.innerHTML = certCategories.map((c, i) => `<div class="list-row">
+      <div style="flex:1;font-size:12px">${esc(c)}</div>
+      <button class="row-del" onclick="removeCertCategory(${i})" title="Remove">×</button>
+    </div>`).join('');
+  }
+  if (addWrap) addWrap.classList.remove("hidden");
+}
+
+async function addCertCategory() {
+  const input = document.getElementById("newCatInput");
+  const name  = input.value.trim();
+  if (!name) return;
+  if (certCategories.includes(name)) { toast("Category already exists.", "err"); return; }
+  certCategories.push(name);
+  input.value = "";
+  try {
+    await apiPost("saveCertCategories", { categories: certCategories });
+    renderCertCategories();
+    toast("Category added.");
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+async function removeCertCategory(idx) {
+  if (!confirm("Remove this category?")) return;
+  certCategories.splice(idx, 1);
+  try {
+    await apiPost("saveCertCategories", { categories: certCategories });
+    renderCertCategories();
+    toast("Category removed.");
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
 function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
   if (!el) return;
@@ -1948,6 +2052,8 @@ function renderCertDefs() {
   function certDefRow(d) {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+    const catStr = d.category
+      ? `<span style="color:var(--brass);font-size:10px">[${esc(d.category)}]</span> ` : "";
     const expiryStr = d.expires
       ? `<span style="color:var(--muted)"> · exp. ${d.expiryDate || "date required at assign"}</span>` : "";
     const subcatStr = d.subcats?.length
@@ -1961,7 +2067,7 @@ function renderCertDefs() {
       : "No subcategories";
     return `<div class="list-row">
       <div style="flex:1">
-        <div class="list-name">${esc(d.name)}${authority}${expiryStr}</div>
+        <div class="list-name">${catStr}${esc(d.name)}${authority}${expiryStr}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)}</div>
         ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
       </div>
@@ -1996,9 +2102,28 @@ function openCertDefModal(id) {
   document.getElementById("cdExpiryDate").value       = d?.expiryDate || "";
   document.getElementById("cdExpiryDateWrap").style.display = d?.expires ? "" : "none";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
+  // Category dropdown
+  populateCdCategorySelect(d?.category || '');
+  toggleCdEndorsement();
   document.getElementById("subcatRows").innerHTML = "";
   (d?.subcats || []).forEach(sc => addSubcatRow(sc));
   openModal("certDefModal");
+}
+
+function populateCdCategorySelect(selected) {
+  const sel = document.getElementById("cdCategory");
+  sel.innerHTML = '<option value="">None</option>';
+  certCategories.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    if (c === selected) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function toggleCdEndorsement() {
+  const isEndorsement = document.getElementById("cdClubEndorsement").checked;
+  document.getElementById("cdCategoryField").style.display = isEndorsement ? "none" : "";
 }
 
 async function saveCertDef() {
@@ -2008,13 +2133,15 @@ async function saveCertDef() {
 
   const newId   = certEditId || ("cert_" + Date.now().toString(36));
   const expires = document.getElementById("cdExpires").checked;
+  const isEndorsement = document.getElementById("cdClubEndorsement").checked;
   const payload = {
     id:               newId,
     name,
     description:      document.getElementById("cdDesc").value.trim(),
+    category:         isEndorsement ? '' : document.getElementById("cdCategory").value.trim(),
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     subcats:          gatherSubcats(),
-    clubEndorsement:  document.getElementById("cdClubEndorsement").checked,
+    clubEndorsement:  isEndorsement,
     color:            document.getElementById("cdColor").value,
     hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
     expires,
@@ -2189,41 +2316,121 @@ function openMemberCertModal(memberId) {
   const m     = members.find(x => String(x.id) === String(memberId));
   if (!m) return;
   document.getElementById("mcmMemberName").textContent = m.name || "";
-  document.getElementById("mcmAssignedAt").value = todayISO();
-  document.getElementById("mcmExpiresAt").value  = "";
   document.getElementById("mcmCertType").value   = "";
   document.getElementById("mcmSubcatField").style.display = "none";
+  document.getElementById("mcmCustomTitleField").style.display = "none";
+  document.getElementById("mcmCustomTitle").value = "";
+  document.getElementById("mcmIdNumber").value = "";
+  document.getElementById("mcmIssuingAuthority").value = "";
+  document.getElementById("mcmIssueDate").value = "";
+  document.getElementById("mcmExpires").checked = false;
+  document.getElementById("mcmExpiryDateField").style.display = "none";
+  document.getElementById("mcmExpiresAt").value = "";
+  document.getElementById("mcmDescription").value = "";
+  populateMcmCategories();
   renderCurrentCerts(m);
   populateCertFilterType();
   openModal("memberCertModal");
+}
+
+function populateMcmCategories() {
+  const sel = document.getElementById("mcmCategory");
+  sel.innerHTML = `<option value="">${s('admin.certCategorySelect')}</option>`;
+  certCategories.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  const addOpt = document.createElement("option");
+  addOpt.value = "__add__"; addOpt.textContent = s('admin.certAddCategory');
+  sel.appendChild(addOpt);
+}
+
+function onMcmCategoryChange() {
+  const sel = document.getElementById("mcmCategory");
+  if (sel.value === "__add__") {
+    const name = prompt("Enter new category name:");
+    if (name && name.trim()) {
+      const cat = name.trim();
+      if (!certCategories.includes(cat)) {
+        certCategories.push(cat);
+        apiPost("saveCertCategories", { categories: certCategories }).catch(e => console.warn(e));
+        renderCertCategories();
+      }
+      populateMcmCategories();
+      sel.value = cat;
+    } else {
+      sel.value = "";
+    }
+  }
+  // Filter cert types by selected category
+  updateMcmCertTypes();
+}
+
+function updateMcmCertTypes() {
+  const category = document.getElementById("mcmCategory").value;
+  const typeSel = document.getElementById("mcmCertType");
+  typeSel.innerHTML = `<option value="">Select…</option>`;
+  // Filter cert defs by category (show all if no category selected, exclude endorsements)
+  const filtered = certDefs.filter(d => {
+    if (d.clubEndorsement) return false;
+    if (!category) return true;
+    return (d.category || '') === category || !d.category;
+  });
+  filtered.forEach(d => {
+    const o = document.createElement("option");
+    o.value = d.id; o.textContent = d.name;
+    typeSel.appendChild(o);
+  });
+  // Add custom option
+  const customOpt = document.createElement("option");
+  customOpt.value = "__custom__"; customOpt.textContent = s('admin.certCustomType');
+  typeSel.appendChild(customOpt);
+  typeSel.value = "";
+  document.getElementById("mcmSubcatField").style.display = "none";
+  document.getElementById("mcmCustomTitleField").style.display = "none";
+}
+
+function toggleMcmExpiry() {
+  document.getElementById("mcmExpiryDateField").style.display =
+    document.getElementById("mcmExpires").checked ? "" : "none";
 }
 
 function renderCurrentCerts(m) {
   const el    = document.getElementById("mcmCurrentList");
   const certs = enrichMemberCerts(parseJson(m.certifications, []), certDefs);
   if (!certs.length) { el.innerHTML = `<div class="empty-state">${s('cert.noCerts')}</div>`; return; }
-  el.innerHTML = certs.map(c => {
-    const label  = c.subcat
-      ? `${c.def?.name || c.certId} — ${c.subcat.label}` : (c.def?.name || c.certId);
+  el.innerHTML = certs.map((c, i) => {
+    const label  = c.displayTitle || c.certId || 'Unknown';
     const expiry = c.expiresAt
       ? (c.expired ? ` · <span style="color:var(--red)">EXPIRED ${c.expiresAt}</span>` : ` · exp. ${c.expiresAt}`)
       : " · Does not expire";
-    const meta   = `by ${esc(c.assignedBy || "—")} on ${c.assignedAt || "—"}${expiry}`;
+    const catLine = c.displayCategory ? `<span style="color:var(--brass)">[${esc(c.displayCategory)}]</span> ` : '';
+    const authLine = c.issuingAuthority ? ` · ${esc(c.issuingAuthority)}` : '';
+    const verifiedLine = c.verifiedBy ? ` · verified by ${esc(c.verifiedBy)}` : (c.assignedBy ? ` · by ${esc(c.assignedBy)}` : '');
+    const dateLine = c.verifiedAt || c.assignedAt ? ` on ${c.verifiedAt || c.assignedAt}` : '';
+    const meta   = `${catLine}${verifiedLine}${dateLine}${authLine}${expiry}`;
+    const removeKey = c.certId || ('__title__' + (c.title || i));
     return `<div class="list-row" style="font-size:12px">
       <div style="flex:1">
         <div>${esc(label)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${meta}</div>
       </div>
-      <button class="row-del" onclick="removeMemberCert('${c.certId}','${c.sub || ""}')" title="Remove">×</button>
+      <button class="row-del" onclick="removeMemberCert('${esc(removeKey)}','${c.sub || ""}')" title="Remove">×</button>
     </div>`;
   }).join("");
 }
 
-// updateMCMSubcats: no auto-calc of expiry — always manual
+// updateMCMSubcats: called when cert type changes
 function updateMCMSubcats() {
   const certId = document.getElementById("mcmCertType").value;
-  const def    = certDefs.find(d => d.id === certId);
+  const isCustom = certId === "__custom__";
+  const def    = isCustom ? null : certDefs.find(d => d.id === certId);
   const sf     = document.getElementById("mcmSubcatField");
+
+  // Show/hide custom title field
+  document.getElementById("mcmCustomTitleField").style.display = isCustom ? "" : "none";
+  document.getElementById("mcmCustomTitle").value = "";
 
   if (def?.subcats?.length) {
     const sel = document.getElementById("mcmSubcat");
@@ -2237,41 +2444,73 @@ function updateMCMSubcats() {
   } else {
     sf.style.display = "none";
   }
-  // Show/hide licence number field based on hasIdNumber
-  document.getElementById("mcmLicenceNoField").style.display = def?.hasIdNumber ? "" : "none";
-  document.getElementById("mcmLicenceNo").value = "";
-  // Pre-fill expiry from top-level expiryDate if defined
-  document.getElementById("mcmExpiresAt").value = (def?.expires && def.expiryDate) ? def.expiryDate : "";
+  // Pre-fill issuing authority from cert def if set
+  if (def?.issuingAuthority && !document.getElementById("mcmIssuingAuthority").value) {
+    document.getElementById("mcmIssuingAuthority").value = def.issuingAuthority;
+  }
+  // Pre-fill expiry from top-level
+  if (def?.expires) {
+    document.getElementById("mcmExpires").checked = true;
+    document.getElementById("mcmExpiryDateField").style.display = "";
+    document.getElementById("mcmExpiresAt").value = def.expiryDate || "";
+  }
 }
 
 async function assignMemberCert() {
   const m      = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
-  const certId = document.getElementById("mcmCertType").value;
-  if (!certId) { toast("Select a credential type.", "err"); return; }
 
-  const def = certDefs.find(d => d.id === certId);
+  const category = document.getElementById("mcmCategory").value;
+  const certId   = document.getElementById("mcmCertType").value;
+  const isCustom = certId === "__custom__";
+
+  if (!certId) { toast(s('cert.typeRequired'), "err"); return; }
+  if (!category || category === "__add__") { toast(s('admin.certCategoryReq'), "err"); return; }
+
+  const def = isCustom ? null : certDefs.find(d => d.id === certId);
   const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
-  if (def?.subcats?.length && !sub) { toast("Select a subcategory.", "err"); return; }
+  if (def?.subcats?.length && !sub) { toast(s('cert.levelRequired'), "err"); return; }
 
-  // Use subcat expiryDate if defined, then top-level expiryDate, then whatever admin entered
-  const subcatDef  = sub ? def.subcats.find(sc => sc.key === sub) : null;
-  const enteredExp = document.getElementById("mcmExpiresAt").value || null;
-  const finalExp   = enteredExp || subcatDef?.expiryDate || (def?.expires ? def.expiryDate : null) || null;
+  // Title
+  const title = isCustom
+    ? document.getElementById("mcmCustomTitle").value.trim()
+    : (def?.name || certId);
+  if (!title) { toast(s('admin.certTitleRequired'), "err"); return; }
 
-  const licenceNo = def?.hasIdNumber ? document.getElementById("mcmLicenceNo").value.trim() : '';
+  // Issuing authority (mandatory)
+  const issuingAuthority = document.getElementById("mcmIssuingAuthority").value.trim();
+  if (!issuingAuthority) { toast(s('admin.certAuthorityReq'), "err"); return; }
+
+  // Expiry
+  const expires   = document.getElementById("mcmExpires").checked;
+  const expiresAt = expires ? document.getElementById("mcmExpiresAt").value : '';
+  if (expires && !expiresAt) { toast(s('admin.certExpiryReq'), "err"); return; }
+
+  const userName = getUser()?.name || "Staff";
+  const now      = todayISO();
+
   const newCert = {
-    certId,
-    sub:           sub || null,
-    assignedBy:    getUser()?.name || "Staff",
-    assignedAt:    document.getElementById("mcmAssignedAt").value || todayISO(),
-    expiresAt:     finalExp,
-    licenceNumber: licenceNo || null,
+    certId:           isCustom ? null : certId,
+    sub:              sub || null,
+    category,
+    title,
+    idNumber:         document.getElementById("mcmIdNumber").value.trim() || '',
+    issuingAuthority,
+    issueDate:        document.getElementById("mcmIssueDate").value || '',
+    expires,
+    expiresAt:        expiresAt || '',
+    description:      document.getElementById("mcmDescription").value.trim() || '',
+    assignedBy:       userName,
+    assignedAt:       now,
+    verifiedBy:       userName,
+    verifiedAt:       now,
   };
 
   let existing = parseJson(m.certifications, []);
-  existing = applyRankRule(existing, newCert, certDefs);
-  existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
+  if (!isCustom) {
+    existing = applyRankRule(existing, newCert, certDefs);
+    existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
+  }
   const updated = [...existing, newCert];
 
   try {
@@ -2280,23 +2519,28 @@ async function assignMemberCert() {
     members[mIdx] = { ...m, certifications: JSON.stringify(updated) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
-    toast("Credential assigned.");
+    toast(s('cert.assigned'));
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-async function removeMemberCert(certId, sub) {
+async function removeMemberCert(key, sub) {
   if (!confirm("Remove this credential?")) return;
   const m = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
   let certs = parseJson(m.certifications, []);
-  certs = certs.filter(c => !(c.certId === certId && (c.sub || "") === (sub || "")));
+  if (key.startsWith('__title__')) {
+    const title = key.slice(9);
+    certs = certs.filter(c => !(c.title === title && !c.certId));
+  } else {
+    certs = certs.filter(c => !(c.certId === key && (c.sub || "") === (sub || "")));
+  }
   try {
     await apiPost("saveMemberCert", { memberId: mcmMemberId, certifications: certs });
     const mIdx = members.findIndex(x => String(x.id) === String(mcmMemberId));
     members[mIdx] = { ...m, certifications: JSON.stringify(certs) };
     renderCurrentCerts(members[mIdx]);
     renderCertMembers();
-    toast("Removed.");
+    toast(s('cert.removed'));
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 

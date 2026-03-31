@@ -375,6 +375,7 @@ function route_(action, b) {
     case 'saveCertDef': return saveCertDef_(b);
     case 'deleteCertDef': return deleteCertDef_(b.id);
     case 'saveMemberCert': return saveMemberCert_(b);
+    case 'saveCertCategories': return saveCertCategories_(b);
     case 'getIncidents': return getIncidents_(b);
     case 'createIncident': return createIncident_(b);
     case 'resolveIncident': return resolveIncident_(b);
@@ -1155,6 +1156,7 @@ function getConfig_() {
   const flagConfig = getFlagConfigFromMap_(cfgMap);
   const staffStatus   = jsonR_(getConfigValue_('staffStatus', cfgMap));
   const certDefs = getCertDefsFromMap_(cfgMap);
+  const certCategories = getCertCategoriesFromMap_(cfgMap);
   let boats = [], locations = [];
   try { var bRaw = getConfigValue_('boats', cfgMap); if (bRaw) boats = JSON.parse(bRaw); } catch (e) { }
   try { var lRaw = getConfigValue_('locations', cfgMap); if (lRaw) locations = JSON.parse(lRaw); } catch (e) { }
@@ -1163,7 +1165,7 @@ function getConfig_() {
   let boatCategories = [];
   try { var bcRaw = getConfigValue_('boatCategories', cfgMap); if (bcRaw) boatCategories = JSON.parse(bcRaw); } catch (e) { }
   const allowBreaks = getConfigValue_('allowBreaks', cfgMap) === 'true';
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks };
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks };
   cPut_('config', config);
   return okJ(config);
 }
@@ -1317,6 +1319,7 @@ function saveCertDef_(b) {
     id: b.id || ('cert_' + uid_()),
     name: String(b.name).trim(),
     description: String(b.description || '').trim(),
+    category: String(b.category || '').trim(),
     renewalDays: Number(b.renewalDays) || 0,
     hasIdNumber: !!b.hasIdNumber,
     clubEndorsement: !!b.clubEndorsement,
@@ -1348,14 +1351,34 @@ function saveMemberCert_(b) {
   if (!b.memberId) return failJ('memberId required');
   if (!Array.isArray(b.certifications)) return failJ('certifications array required');
   const defs = getCertDefs_();
+  // Normalize each credential entry to include new fields
+  const normalized = b.certifications.map(c => ({
+    certId:           c.certId || null,
+    sub:              c.sub || null,
+    category:         c.category || '',
+    title:            c.title || '',
+    idNumber:         c.idNumber || c.licenceNumber || '',
+    issuingAuthority: c.issuingAuthority || '',
+    issueDate:        c.issueDate || '',
+    expires:          !!c.expires,
+    expiresAt:        c.expiresAt || c.expiryDate || '',
+    description:      c.description || '',
+    assignedBy:       c.assignedBy || '',
+    assignedAt:       c.assignedAt || '',
+    verifiedBy:       c.verifiedBy || c.assignedBy || '',
+    verifiedAt:       c.verifiedAt || c.assignedAt || '',
+    licenceNumber:    c.licenceNumber || c.idNumber || '',
+  }));
   const byDef = {};
-  b.certifications.forEach(c => {
-    if (!byDef[c.certId]) byDef[c.certId] = [];
-    byDef[c.certId].push(c);
+  normalized.forEach(c => {
+    const key = c.certId || ('_custom_' + (c.title || ''));
+    if (!byDef[key]) byDef[key] = [];
+    byDef[key].push(c);
   });
   const cleaned = [];
-  Object.entries(byDef).forEach(([certId, entries]) => {
-    const def = defs.find(d => d.id === certId);
+  Object.entries(byDef).forEach(([key, entries]) => {
+    if (key.startsWith('_custom_')) { cleaned.push(...entries); return; }
+    const def = defs.find(d => d.id === key);
     const hasRanks = def?.subcats?.some(s => s.rank != null);
     if (!hasRanks) { cleaned.push(...entries); return; }
     let best = null, bestRank = -1;
@@ -1370,6 +1393,14 @@ function saveMemberCert_(b) {
   if (!written) return failJ('Member not found', 404);
   cDel_('members');
   return okJ({ saved: true, count: cleaned.length });
+}
+
+function saveCertCategories_(b) {
+  if (!Array.isArray(b.categories)) return failJ('categories array required');
+  const categories = b.categories.map(c => String(c).trim()).filter(Boolean);
+  setConfigSheetValue_('certCategories', JSON.stringify(categories));
+  cDel_('config');
+  return okJ({ saved: true, count: categories.length });
 }
 
 
@@ -2380,6 +2411,12 @@ function getCertDefsFromMap_(cfgMap) {
   try { return JSON.parse(raw); } catch (e) { return []; }
 }
 
+function getCertCategoriesFromMap_(cfgMap) {
+  const raw = getConfigValue_('certCategories', cfgMap);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (e) { return []; }
+}
+
 function getConfigSheetValue_(key) {
   let sheet;
   try { sheet = getSheet_('config'); } catch (e) { return null; }
@@ -3103,20 +3140,21 @@ function pubCertBadgesHtml_(certs, certDefs) {
   }
   var today = new Date().toISOString().slice(0, 10);
   return certs.map(function(c) {
-    var def = certDefs.find(function(d) { return d.id === c.certId; });
+    var def = c.certId ? certDefs.find(function(d) { return d.id === c.certId; }) : null;
     var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
-    var label = subcat ? (def.name + ' — ' + subcat.label) : (def ? def.name : c.certId);
+    var label = c.title || (subcat ? (def.name + ' — ' + subcat.label) : (def ? def.name : (c.certId || 'Unknown')));
     var expired = c.expiresAt && c.expiresAt < today;
-    var badgeClass = expired ? 'badge badge-red' : (c.assignedBy ? 'badge badge-green' : 'badge badge-yellow');
-    var statusEN = expired ? gs_('pub.cert.expired',null,'EN') : (c.assignedBy ? gs_('pub.cert.verified',null,'EN') : gs_('pub.cert.unverified',null,'EN'));
-    var statusIS = expired ? gs_('pub.cert.expired',null,'IS') : (c.assignedBy ? gs_('pub.cert.verified',null,'IS') : gs_('pub.cert.unverified',null,'IS'));
+    var verifier = c.verifiedBy || c.assignedBy;
+    var badgeClass = expired ? 'badge badge-red' : (verifier ? 'badge badge-green' : 'badge badge-yellow');
+    var statusEN = expired ? gs_('pub.cert.expired',null,'EN') : (verifier ? gs_('pub.cert.verified',null,'EN') : gs_('pub.cert.unverified',null,'EN'));
+    var statusIS = expired ? gs_('pub.cert.expired',null,'IS') : (verifier ? gs_('pub.cert.verified',null,'IS') : gs_('pub.cert.unverified',null,'IS'));
 
     // Expiry line
     var expiryEN = c.expiresAt ? (expired ? 'Expired ' : 'Expires ') + esc_(c.expiresAt) : 'Does not expire';
     var expiryIS = c.expiresAt ? (expired ? 'Útrunnið ' : 'Rennur út ') + esc_(c.expiresAt) : 'Varanlegt';
 
     // Description
-    var desc = subcat && subcat.description ? subcat.description : (def && def.description ? def.description : '');
+    var desc = c.description || (subcat && subcat.description ? subcat.description : (def && def.description ? def.description : ''));
 
     var html = '<div class="cert-card">'
       + '<div class="cert-summary">'
@@ -3129,10 +3167,25 @@ function pubCertBadgesHtml_(certs, certDefs) {
       + '</div>'
       + '<div class="cert-detail">'
       + '<div class="detail-grid">';
+    if (c.category) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">Category</span><span class="lang-is" style="display:none">Flokkur</span>'
+        + '</span><span class="detail-val">' + esc_(c.category) + '</span></div>';
+    }
     if (subcat) {
       html += '<div class="detail-row"><span class="detail-lbl">'
         + '<span class="lang-en">Level</span><span class="lang-is" style="display:none">Stig</span>'
         + '</span><span class="detail-val">' + esc_(subcat.label) + '</span></div>';
+    }
+    if (c.issuingAuthority) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">Issuing Authority</span><span class="lang-is" style="display:none">Útgefandi</span>'
+        + '</span><span class="detail-val">' + esc_(c.issuingAuthority) + '</span></div>';
+    }
+    if (c.idNumber) {
+      html += '<div class="detail-row"><span class="detail-lbl">'
+        + '<span class="lang-en">ID Number</span><span class="lang-is" style="display:none">Auðkennisnúmer</span>'
+        + '</span><span class="detail-val">' + esc_(c.idNumber) + '</span></div>';
     }
     html += '<div class="detail-row"><span class="detail-lbl">'
       + '<span class="lang-en">Validity</span><span class="lang-is" style="display:none">Gildistími</span>'
@@ -3140,15 +3193,16 @@ function pubCertBadgesHtml_(certs, certDefs) {
       + '<span class="lang-en">' + expiryEN + '</span>'
       + '<span class="lang-is" style="display:none">' + expiryIS + '</span>'
       + '</span></div>';
-    if (c.assignedBy) {
+    if (verifier) {
       html += '<div class="detail-row"><span class="detail-lbl">'
-        + '<span class="lang-en">Assigned by</span><span class="lang-is" style="display:none">Úthlutað af</span>'
-        + '</span><span class="detail-val">' + esc_(c.assignedBy) + '</span></div>';
+        + '<span class="lang-en">Verified by</span><span class="lang-is" style="display:none">Staðfest af</span>'
+        + '</span><span class="detail-val">' + esc_(verifier) + '</span></div>';
     }
-    if (c.assignedAt) {
+    var verifiedDate = c.verifiedAt || c.assignedAt;
+    if (verifiedDate) {
       html += '<div class="detail-row"><span class="detail-lbl">'
-        + '<span class="lang-en">Assigned</span><span class="lang-is" style="display:none">Úthlutað</span>'
-        + '</span><span class="detail-val">' + esc_(String(c.assignedAt).slice(0,10)) + '</span></div>';
+        + '<span class="lang-en">Verified</span><span class="lang-is" style="display:none">Staðfest</span>'
+        + '</span><span class="detail-val">' + esc_(String(verifiedDate).slice(0,10)) + '</span></div>';
     }
     if (desc) {
       html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">'
@@ -3460,9 +3514,9 @@ function publicDashboard_() {
 
     // Build cert labels
     var certLabels = certs.map(function(c) {
-      var def = certDefs.find(function(d) { return d.id === c.certId; });
+      var def = c.certId ? certDefs.find(function(d) { return d.id === c.certId; }) : null;
       var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
-      var label = subcat ? ((def.name || c.certId) + ' — ' + subcat.label) : (def ? def.name : c.certId);
+      var label = c.title || (subcat ? ((def.name || c.certId) + ' — ' + subcat.label) : (def ? def.name : (c.certId || 'Unknown')));
       return { certId: c.certId, sub: c.sub || '', label: label };
     });
 
@@ -4018,7 +4072,7 @@ function setupSpreadsheet() {
   var cfgKeys = cfgSheet.getLastRow() >= 2
     ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
     : [];
-  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs'];
+  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories'];
   defaultCfgKeys.forEach(function(k) {
     if (!cfgKeys.includes(k)) {
       cfgSheet.appendRow([k, '']);

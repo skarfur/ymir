@@ -1,6 +1,6 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
-// Assignment: { certId, sub, assignedBy, assignedAt, expiresAt }
+// Cert def: { id, name, description, color, category, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
+// Assignment: { certId, sub, category, title, idNumber, issuingAuthority, issueDate, expires, expiresAt, description, assignedBy, assignedAt, verifiedBy, verifiedAt }
 
 const DEFAULT_CERT_DEFS = [
   { id:'world_sailing', name:'World Sailing Certification', description:'', color:'', renewalDays:0,
@@ -14,6 +14,18 @@ const DEFAULT_CERT_DEFS = [
       {key:'captain',  label:'Captain',  description:'Authorized keelboat captain — may skipper club keelboats independently.',      rank:3},
     ]},
 ];
+
+const DEFAULT_CERT_CATEGORIES = [
+  'Operator License',
+  'First Aid',
+  'Safeguarding',
+  'Coaching/Race Management Qualifications',
+  'Educational Qualifications',
+];
+
+function certCategoriesFromConfig(saved) {
+  return (saved && saved.length) ? saved : DEFAULT_CERT_CATEGORIES;
+}
 
 const _CERT_PALETTE = [
   '#b5890a','#2e86c1','#1e8449','#7d3c98',
@@ -37,9 +49,22 @@ function enrichMemberCerts(memberCerts, certDefs) {
   if (!memberCerts || !memberCerts.length) return [];
   const today = todayISO();
   return memberCerts.map(c => {
-    const def    = certDefs.find(d => d.id === c.certId) || null;
+    const def    = c.certId ? (certDefs.find(d => d.id === c.certId) || null) : null;
     const subcat = def?.subcats?.find(s => s.key === c.sub) || null;
-    return { ...c, def, subcat, expired: c.expiresAt ? c.expiresAt < today : false, hasIdNumber: !!def?.hasIdNumber };
+    const expiresAt = c.expiresAt || '';
+    return {
+      ...c,
+      def,
+      subcat,
+      expired: expiresAt ? expiresAt < today : false,
+      hasIdNumber: !!def?.hasIdNumber,
+      // Resolve display title: explicit title > def name + subcat > certId
+      displayTitle: c.title || (subcat
+        ? `${def?.name || c.certId} — ${subcat.label}`
+        : (def?.name || c.certId || 'Unknown')),
+      // Resolve category: explicit > def category
+      displayCategory: c.category || def?.category || '',
+    };
   });
 }
 
@@ -51,6 +76,18 @@ function groupCerts(enrichedList) {
   const credentials = [], endorsements = [];
   for (const c of enrichedList) (isClubEndorsement(c) ? endorsements : credentials).push(c);
   return { credentials, endorsements };
+}
+
+function groupCertsByCategory(enrichedList) {
+  const grouped = {};
+  const endorsements = [];
+  for (const c of enrichedList) {
+    if (isClubEndorsement(c)) { endorsements.push(c); continue; }
+    const cat = c.displayCategory || 'Uncategorised';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(c);
+  }
+  return { byCategory: grouped, endorsements };
 }
 
 function applyRankRule(certs, newCert, certDefs) {
@@ -66,8 +103,8 @@ function applyRankRule(certs, newCert, certDefs) {
 }
 
 function certBadgeHTML(enriched) {
-  const label = enriched.subcat
-    ? `${enriched.def?.name || enriched.certId} — ${enriched.subcat.label}`
+  const label = enriched.displayTitle || enriched.subcat
+    ? (enriched.displayTitle || `${enriched.def?.name || enriched.certId} — ${enriched.subcat?.label || ''}`)
     : (enriched.def?.name || enriched.certId);
   const expiry = enriched.expiresAt
     ? (enriched.expired
@@ -79,31 +116,38 @@ function certBadgeHTML(enriched) {
 
 function certCardHTML(enriched) {
   const def   = enriched.def || {};
-  const color = certColor(def);
-  const desc  = enriched.subcat?.description || def.description || '';
-  const label = enriched.subcat
+  const color = certColor(def.id ? def : { id: enriched.title || enriched.certId || 'x' });
+  const desc  = enriched.description || enriched.subcat?.description || def.description || '';
+  const label = enriched.displayTitle || (enriched.subcat
     ? `${def.name || enriched.certId} — ${enriched.subcat.label}`
-    : (def.name || enriched.certId);
+    : (def.name || enriched.certId));
   const expiryLine = enriched.expiresAt
     ? (enriched.expired
         ? `<span class="ccard-meta ccard-expired-lbl">Expired ${esc(enriched.expiresAt)}</span>`
         : `<span class="ccard-meta">Expires ${esc(enriched.expiresAt)}</span>`)
     : `<span class="ccard-meta ccard-perm">Does not expire</span>`;
-  const issuedLine = enriched.assignedAt
-    ? `<span class="ccard-issued">Issued ${esc(enriched.assignedAt)}</span>` : '';
-  const id = `cc-${esc(enriched.certId)}${enriched.sub ? '-' + esc(enriched.sub) : ''}`;
+  const issuedLine = enriched.issueDate || enriched.assignedAt
+    ? `<span class="ccard-issued">Issued ${esc(enriched.issueDate || enriched.assignedAt)}</span>` : '';
+  const authorityLine = enriched.issuingAuthority
+    ? `<span class="ccard-issued">${esc(enriched.issuingAuthority)}</span>` : '';
+  const idNumLine = enriched.idNumber
+    ? `<span class="ccard-issued">ID: ${esc(enriched.idNumber)}</span>` : '';
+  const verifiedLine = enriched.verifiedBy
+    ? `<span class="ccard-issued">Verified by ${esc(enriched.verifiedBy)}${enriched.verifiedAt ? ' on ' + esc(enriched.verifiedAt) : ''}</span>` : '';
+  const hasDetail = desc || enriched.issuingAuthority || enriched.idNumber || enriched.verifiedBy;
+  const id = `cc-${esc(enriched.certId || enriched.title || 'c')}-${Date.now().toString(36)}`;
   return `<div class="ccard${enriched.expired ? ' ccard-expired' : ''}" id="${id}"
     style="--cc:${color}"
-    ${desc ? `onclick="certCardToggle('${id}')" role="button" tabindex="0"` : ''}>
+    ${hasDetail ? `onclick="certCardToggle('${id}')" role="button" tabindex="0"` : ''}>
     <div class="ccard-top">
       <div class="ccard-dot"></div>
       <div class="ccard-body">
         <div class="ccard-name">${esc(label)}</div>
       </div>
       <div class="ccard-right">${expiryLine}${issuedLine}</div>
-      ${desc ? `<div class="ccard-chev">›</div>` : ''}
+      ${hasDetail ? `<div class="ccard-chev">›</div>` : ''}
     </div>
-    ${desc ? `<div class="ccard-desc">${esc(desc)}</div>` : ''}
+    ${hasDetail ? `<div class="ccard-desc">${[authorityLine, idNumLine, desc ? esc(desc) : '', verifiedLine].filter(Boolean).join('<br>')}</div>` : ''}
   </div>`;
 }
 
