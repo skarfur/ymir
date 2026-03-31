@@ -1268,6 +1268,7 @@ async function reload(){
 }
 
 (async function init(){
+  if (window._logbookSkipInit) return;
   applyStrings();
   buildHeader('member');
   try{
