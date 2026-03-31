@@ -561,10 +561,8 @@ function searchCrewInvMember(q) {
   var drop = document.getElementById('ciMemberSuggestions');
   if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   var ql = q.toLowerCase();
-  // Filter to rowers only
   var hits = _members.filter(function(m) {
-    if (!(m.name || '').toLowerCase().includes(ql)) return false;
-    return hasRowingEndorsement(m);
+    return (m.name || '').toLowerCase().includes(ql);
   }).slice(0, 8);
   if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.innerHTML = hits.map(function(m) {
