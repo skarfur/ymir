@@ -59,10 +59,12 @@ function enrichMemberCerts(memberCerts, certDefs) {
       subcat,
       expired: expiresAt ? expiresAt < today : false,
       hasIdNumber: !!def?.hasIdNumber,
-      // Resolve display title: explicit title > def name + subcat > certId
-      displayTitle: c.title || (subcat
-        ? `${def?.name || c.certId} — ${subcat.label}`
-        : (def?.name || c.certId || 'Unknown')),
+      // Resolve display title: for predefined types use def name + subcat; for custom use title
+      displayTitle: c.certId
+        ? (subcat
+          ? `${def?.name || c.certId} — ${subcat.label}`
+          : (def?.name || c.certId || 'Unknown'))
+        : (c.title || 'Unknown'),
       // Resolve category: explicit > def category
       displayCategory: c.category || def?.category || '',
     };
@@ -172,8 +174,8 @@ function buildMemberCertFromForm(certDefs, userName) {
 
   const title = isCustom
     ? document.getElementById('mcmCustomTitle').value.trim()
-    : (def?.name || certId);
-  if (!title) { toast(s('admin.certTitleRequired'), 'err'); return null; }
+    : '';
+  if (isCustom && !title) { toast(s('admin.certTitleRequired'), 'err'); return null; }
 
   const issuingAuthority = document.getElementById('mcmIssuingAuthority').value.trim();
   if (!issuingAuthority && !def?.clubEndorsement) { toast(s('admin.certAuthorityReq'), 'err'); return null; }
