@@ -1289,6 +1289,7 @@ async function reload(){
     allMembers=(membersRes.members||[]).filter(m=>m.active!==false&&m.active!=='false');
     registerBoatCats(cfgRes.boatCategories||[]);
     renderStats();
+    if (typeof initMemberHeatmap === 'function') initMemberHeatmap();
     buildFilters();
     applyFilter();
     renderCerts();
