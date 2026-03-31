@@ -2547,7 +2547,7 @@ function populateMcmCategories() {
   sel.appendChild(addOpt);
 }
 
-function onMcmCategoryChange() {
+async function onMcmCategoryChange() {
   const sel = document.getElementById("mcmCategory");
   if (sel.value === "__add__") {
     const name = await ymPrompt("Enter new category name:");
