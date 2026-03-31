@@ -175,8 +175,9 @@
     <div class="cq-section-hdr">LOGBOOK</div>
     <div class="filter-bar">
       <select id="fYear"><option value="">All years</option></select>
-      <select id="fCat"><option value="">All boats</option></select>
-      <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+      <select id="fCat"><option value="">All categories</option></select>
+      <select id="fBoatName"><option value="">All boats</option></select>
+      <select id="fCaptain"><option value="">All captains</option></select>
       <select id="fWind">
         <option value="">Any wind</option>
         <option value="calm">Calm (Force 0–2)</option>
@@ -269,7 +270,7 @@ const user = requireAuth();
 if (!user || !isCaptain(user)) { window.location.href = '../member/'; throw new Error('Not a captain'); }
 const L = getLang();
 
-let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
+let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myKeelboatTrips = [];
 let _crewConfirmations = [], _verificationRequests = [];
 let _maintFilter = 'open', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
@@ -329,18 +330,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     _allMaint  = maintRes.items || maintRes.maintenance || [];
     _verificationRequests = verRes.requests || [];
 
-    // All keelboat trips
+    // All trips (logbook shows all, defaults to keelboat filter)
     var allTripsRaw = tripsRes.trips || [];
-    _allTrips = allTripsRaw.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat');
-    _myTrips  = _allTrips.filter(t => String(t.kennitala) === String(user.kennitala));
+    _allTrips = allTripsRaw;
+    _myKeelboatTrips  = _allTrips.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat')
+                         .filter(t => String(t.kennitala) === String(user.kennitala));
 
     // Confirmations: pending ones where I'm the recipient
     _crewConfirmations = confRes.confirmations || confRes.items || [];
 
-    // Populate logbook globals
+    // Populate logbook globals (myTrips = all trips, captain sees fleet-wide)
     allBoats   = _boats;
     allTrips   = _allTrips;
-    myTrips    = _myTrips;
+    myTrips    = _allTrips.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     allMembers = _cqMembers;
 
     renderStats();
@@ -362,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══ STATS ════════════════════════════════════════════════════════════════════
 function renderStats() {
   var yearStart = new Date().getFullYear() + '-01-01';
-  var ytd = _myTrips.filter(t => (t.date || '') >= yearStart && (t.role === 'skipper' || t.role === 'captain'));
+  var ytd = _myKeelboatTrips.filter(t => (t.date || '') >= yearStart && (t.role === 'skipper' || t.role === 'captain'));
   var hours = 0, dist = 0;
   ytd.forEach(t => { hours += Number(t.hoursDecimal) || 0; dist += Number(t.distanceNm) || 0; });
   document.getElementById('statTrips').textContent = ytd.length;
@@ -698,6 +700,73 @@ async function removeCqReservation(boatId, resId) {
 window.mcmGetMembers        = function() { return _cqMembers; };
 window.mcmGetCertDefs       = function() { return _cqCertDefs; };
 window.mcmGetCertCategories = function() { return _cqCertCategories; };
+
+// ══ CAPTAIN LOGBOOK FILTERS (override shared/logbook.js) ════════════════════
+var _captains = [];
+
+function buildFilters() {
+  // Year filter
+  var years = [...new Set(myTrips.map(function(t) { return (t.date || '').slice(0, 4); }).filter(Boolean))].sort().reverse();
+  var yrSel = document.getElementById('fYear');
+  yrSel.innerHTML = '<option value="">All years</option>';
+  years.forEach(function(y) { var o = document.createElement('option'); o.value = y; o.textContent = y; yrSel.appendChild(o); });
+  var thisYear = String(new Date().getFullYear());
+  if (years.includes(thisYear)) yrSel.value = thisYear;
+
+  // Category filter (default to keelboat)
+  var cats = [...new Set(myTrips.map(function(t) { return (allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || ''; }).filter(Boolean))].sort();
+  var cSel = document.getElementById('fCat');
+  cSel.innerHTML = '<option value="">All categories</option>';
+  cats.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = boatEmoji(c.toLowerCase()) + ' ' + c; cSel.appendChild(o); });
+  if (cats.map(function(c) { return c.toLowerCase(); }).includes('keelboat')) cSel.value = 'Keelboat';
+
+  // Boat name filter
+  var boatNames = [...new Set(myTrips.map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
+  var bSel = document.getElementById('fBoatName');
+  bSel.innerHTML = '<option value="">All boats</option>';
+  boatNames.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
+
+  // Captain filter (members who isCaptain)
+  _captains = _cqMembers.filter(function(m) { return isCaptain(m); }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+  var capSel = document.getElementById('fCaptain');
+  capSel.innerHTML = '<option value="">All captains</option>';
+  _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = c.name; capSel.appendChild(o); });
+
+  ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
+  document.getElementById('fText').addEventListener('input', applyFilter);
+}
+
+function applyFilter() {
+  Object.keys(_thumbMaps).forEach(function(k) { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
+  var yr       = document.getElementById('fYear').value;
+  var cat      = document.getElementById('fCat').value;
+  var boatName = document.getElementById('fBoatName').value;
+  var captain  = document.getElementById('fCaptain').value;
+  var wind     = document.getElementById('fWind').value;
+  var txt      = document.getElementById('fText').value.toLowerCase().trim();
+
+  var filtered = myTrips.filter(function(t) {
+    if (yr && !(t.date || '').startsWith(yr)) return false;
+    if (cat) { var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase(); if (tCat !== cat.toLowerCase()) return false; }
+    if (boatName && (t.boatName || '') !== boatName) return false;
+    if (captain && String(t.kennitala) !== String(captain)) return false;
+    if (wind) {
+      var b = parseInt(t.beaufort) || 0;
+      if (wind === 'gt4' && b <= 4) return false;
+      if (wind === 'lte4' && b > 4) return false;
+      if (['calm', 'light', 'moderate', 'strong'].includes(wind) && bftGroup(b) !== wind) return false;
+    }
+    if (txt) {
+      var hay = [t.boatName, t.memberName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
+      if (!hay.includes(txt)) return false;
+    }
+    return true;
+  });
+  document.getElementById('tripList').innerHTML = filtered.length
+    ? filtered.map(tripCard).join('')
+    : '<div class="empty-note">No trips match this filter.</div>';
+  document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+}
 </script>
 </body>
 </html>
