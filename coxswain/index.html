@@ -85,27 +85,6 @@
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
-
-  <!-- ══ BIO & PROFILE (coxswains only) ══ -->
-  <div class="cx-section hidden" id="sectBio">
-    <div class="cx-section-hdr" data-s="cox.bio"></div>
-    <div class="cx-card">
-      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">
-        <div id="headshotWrap">
-          <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
-        </div>
-        <div style="flex:1">
-          <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px">Profile photo (max 5 MB)</label>
-          <input type="file" id="headshotFile" accept="image/*" style="font-size:11px;color:var(--text);width:100%">
-        </div>
-      </div>
-      <textarea style="width:100%;min-height:80px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;font-family:inherit;font-size:12px;color:var(--text);resize:vertical" id="bioText" maxlength="500"></textarea>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px">
-        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="saveBio()" data-s="btn.save"></button>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <!-- ══ RESERVATION MODAL ══ -->
@@ -116,7 +95,7 @@
       <button class="modal-close-x" onclick="closeModal('resModal')">×</button>
     </div>
     <div class="field">
-      <label data-s="cq.resMember">Member</label>
+      <label data-s="cox.resMember">Member</label>
       <div style="position:relative">
         <input type="text" id="cxResMemberSearch" autocomplete="off" placeholder="" oninput="searchCxResMember(this.value)">
         <div id="cxResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
@@ -125,10 +104,10 @@
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="field"><label data-s="cq.resStartDate">Start</label><input type="date" id="cxResStart"></div>
-      <div class="field"><label data-s="cq.resEndDate">End</label><input type="date" id="cxResEnd"></div>
+      <div class="field"><label data-s="cox.resStartDate">Start</label><input type="date" id="cxResStart"></div>
+      <div class="field"><label data-s="cox.resEndDate">End</label><input type="date" id="cxResEnd"></div>
     </div>
-    <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="cxResNote"></div>
+    <div class="field"><label data-s="cox.resNote">Note</label><input type="text" id="cxResNote"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('resModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary" onclick="saveCxReservation()" data-s="btn.save"></button>
@@ -154,8 +133,6 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
   // Show read-only banner for non-coxswain rowers
   if (!_isCoxswain) {
     document.getElementById('cxReadOnly').classList.remove('hidden');
-  } else {
-    document.getElementById('sectBio').classList.remove('hidden');
   }
 
   try {
@@ -180,10 +157,6 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     renderStats();
     renderBoats();
     renderMaint();
-
-    if (_isCoxswain) {
-      renderBio();
-    }
 
     applyStrings();
     warmContainer();
@@ -233,7 +206,7 @@ function renderBoats() {
     // Reservation list
     var resHtml = '';
     if (b.reservations && b.reservations.length) {
-      resHtml = '<div style="margin-top:8px;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px">' + s('cq.reservations') + '</div>';
+      resHtml = '<div style="margin-top:8px;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px">' + s('cox.reservations') + '</div>';
       resHtml += b.reservations.map(r => {
         var removeBtn = _isCoxswain
           ? '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeCxReservation(\'' + esc(b.id) + '\',\'' + esc(r.id) + '\')">&times;</button>'
@@ -250,8 +223,8 @@ function renderBoats() {
     var actionsHtml = '';
     if (_isCoxswain) {
       actionsHtml = '<div class="cx-boat-actions">'
-        + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cq.makeAvailable' : 'cq.makeUnavailable') + '</button>'
-        + '<button onclick="openResModal(\'' + esc(b.id) + '\')">' + s('cq.addReservation') + '</button>'
+        + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cox.makeAvailable' : 'cox.makeUnavailable') + '</button>'
+        + '<button onclick="openResModal(\'' + esc(b.id) + '\')">' + s('cox.addReservation') + '</button>'
         + '</div>';
     }
 
@@ -355,7 +328,7 @@ function renderMaint() {
   var rowingBoatIds = _boats.filter(b => (b.category || '').toLowerCase() === 'rowing shell').map(b => b.id);
   var items = _allMaint.filter(m => rowingBoatIds.indexOf(m.boatId) !== -1 && m.status !== 'resolved');
   if (!items.length) {
-    el.innerHTML = '<div class="empty-note">' + s('cq.noMaint') + '</div>';
+    el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
     return;
   }
   el.innerHTML = items.map(m => {
@@ -366,44 +339,6 @@ function renderMaint() {
       + '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(m.reportedBy || '') + ' · ' + fmtDate(m.createdAt) + '</div>'
       + '</div>';
   }).join('');
-}
-
-
-// ══ BIO ══════════════════════════════════════════════════════════════════════
-function renderBio() {
-  document.getElementById('bioText').value = user.bio || '';
-  var headshot = user.headshotUrl;
-  if (headshot) {
-    document.getElementById('headshotPlaceholder').innerHTML = '<img src="' + esc(headshot) + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover">';
-  }
-  document.getElementById('headshotFile').onchange = async function() {
-    var file = this.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('File too large (max 5 MB)', 'err'); return; }
-    var reader = new FileReader();
-    reader.onload = async function(ev) {
-      try {
-        var res = await apiPost('uploadHeadshot', { kennitala: user.kennitala, fileData: ev.target.result, fileName: file.name, mimeType: file.type });
-        if (res.headshotUrl) {
-          user.headshotUrl = res.headshotUrl;
-          setUser(user);
-          document.getElementById('headshotPlaceholder').innerHTML = '<img src="' + esc(res.headshotUrl) + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover">';
-          showToast(s('cq.headshotUploaded'), 'ok');
-        }
-      } catch (e) { showToast(e.message, 'err'); }
-    };
-    reader.readAsDataURL(file);
-  };
-}
-
-async function saveBio() {
-  var bio = document.getElementById('bioText').value.trim();
-  try {
-    await apiPost('saveCaptainBio', { kennitala: user.kennitala, bio: bio });
-    user.bio = bio;
-    setUser(user);
-    showToast(s('cq.bioSaved'), 'ok');
-  } catch (e) { showToast(e.message, 'err'); }
 }
 </script>
 </body>
