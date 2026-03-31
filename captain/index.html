@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/style.css">
+<link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
@@ -14,6 +15,7 @@
 <script src="../shared/certs.js"></script>
 <script src="../shared/mcm.js"></script>
 <script src="../shared/maintenance.js"></script>
+<script src="../shared/logbook.js"></script>
 <style>
 /* ── Stats ── */
 .cq-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
@@ -68,6 +70,16 @@
   padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; }
 .cq-show-more:hover { border-color:var(--brass); color:var(--text); }
 
+/* ── Filter bar (logbook) ── */
+.filter-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; align-items:center; }
+.filter-bar select, .filter-bar input { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  color:var(--text); font-family:inherit; font-size:11px; padding:5px 9px; height:30px; outline:none;
+  transition:border-color .15s; width:100%; box-sizing:border-box; }
+.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); }
+.filter-bar .filter-search-row { grid-column:1/-1; display:flex; gap:6px; align-items:center; }
+.filter-bar .filter-search-row input { flex:1; min-width:0; }
+.filter-count { font-size:10px; color:var(--muted); white-space:nowrap; }
+
 /* ── Bio section ── */
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
   border-radius:8px; color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
@@ -92,10 +104,12 @@
   .cq-stats { grid-template-columns:1fr 1fr; }
   .cq-stat .sn { font-size:20px; }
   .cq-filter-bar { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
+  .filter-bar { grid-template-columns:1fr 1fr; }
 }
 @media(max-width:400px){
   .cq-filter-bar { grid-template-columns:1fr 1fr; gap:4px; }
   .cq-filter-bar select, .cq-filter-bar input[type="text"] { font-size:9px; padding:3px 6px; }
+  .filter-bar { grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -156,7 +170,28 @@
   </div>
 
   <!-- ══ LOGBOOK ══ -->
-  <script src="../shared/logbook.js"></script>
+  <div class="cq-section" id="sectLogbook">
+    <div class="cq-section-hdr">LOGBOOK</div>
+    <div class="filter-bar">
+      <select id="fYear"><option value="">All years</option></select>
+      <select id="fCat"><option value="">All boats</option></select>
+      <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+      <select id="fWind">
+        <option value="">Any wind</option>
+        <option value="calm">Calm (Force 0–2)</option>
+        <option value="light">Light (Force 3–4)</option>
+        <option value="moderate">Moderate (Force 5–6)</option>
+        <option value="strong">Strong (Force 7+)</option>
+        <option value="gt4">Above Force 4</option>
+        <option value="lte4">Force 4 or under</option>
+      </select>
+      <div class="filter-search-row">
+        <input id="fText" type="text" placeholder="Search…">
+        <span class="filter-count" id="filterCount"></span>
+      </div>
+    </div>
+    <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
 
   <!-- ══ BIO & PROFILE ══ -->
   <div class="cq-section" id="sectBio">
@@ -234,9 +269,24 @@ if (!user || !isCaptain(user)) { window.location.href = '../member/'; throw new 
 const L = getLang();
 
 let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
-let _confirmations = [], _verificationRequests = [];
+let _crewConfirmations = [], _verificationRequests = [];
 let _maintFilter = 'open', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
+
+// Globals required by shared/logbook.js
+var allTrips = [], myTrips = [], allBoats = [];
+const _windUnit = getPref('windUnit', 'bft');
+var _confirmations = {incoming:[], outgoing:[]};
+// parseDateParts / bftLabel used by tripCard()
+function parseDateParts(d) {
+  if (!d) return {day:'—',mon:'',yr:''};
+  var IS = getLang() === 'IS';
+  return {day:d.slice(8,10)||'—', mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}), yr:d.slice(0,4)};
+}
+function bftLabel(b) {
+  var n = parseInt(b);
+  return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n] || 'Force '+b;
+}
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
@@ -285,7 +335,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     _myTrips  = _allTrips.filter(t => String(t.kennitala) === String(user.kennitala));
 
     // Confirmations: pending ones where I'm the recipient
-    _confirmations = confRes.confirmations || confRes.items || [];
+    _crewConfirmations = confRes.confirmations || confRes.items || [];
+
+    // Populate logbook globals
+    allBoats = _boats;
+    allTrips = _allTrips;
+    myTrips  = _myTrips;
 
     renderStats();
     buildMaintBoatFilter();
@@ -293,6 +348,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderValidation();
     renderCrew();
     renderBoats();
+    buildFilters();
+    applyFilter();
   } catch (e) {
     console.error(e);
     showToast(s('toast.loadFailed') + ': ' + e.message, 'err');
@@ -395,7 +452,7 @@ async function respondValidation(id, status) {
 function renderCrew() {
   var el = document.getElementById('crewList');
   // Pending crew confirmations where I'm asked to confirm (crew_assigned sent TO me, or crew_join sent BY someone to me as skipper)
-  var pending = _confirmations.filter(c =>
+  var pending = _crewConfirmations.filter(c =>
     c.status === 'pending' && !c.dismissed
     && (c.type === 'crew_assigned' || c.type === 'crew_join')
   );
@@ -417,7 +474,7 @@ function renderCrew() {
 async function respondCrew(id, status) {
   try {
     await apiPost('respondConfirmation', { id, status, responderName: user.name });
-    _confirmations = _confirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
+    _crewConfirmations = _crewConfirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
     renderCrew();
     showToast(s('toast.saved'), 'ok');
   } catch (e) { showToast(e.message, 'err'); }
