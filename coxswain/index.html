@@ -39,10 +39,6 @@
   cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
 .cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass); }
 
-/* ── Trips ── */
-.cx-trip { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:10px 14px; margin-bottom:6px; }
-
 /* ── Read-only banner ── */
 .cx-readonly { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border);
   border-radius:6px; padding:8px 12px; margin-bottom:12px; text-align:center; }
@@ -89,11 +85,6 @@
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
-  <!-- ══ TRIPS ══ -->
-  <div class="cx-section" id="sectTrips">
-    <div class="cx-section-hdr" data-s="cox.trips"></div>
-    <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
 
   <!-- ══ BIO & PROFILE (coxswains only) ══ -->
   <div class="cx-section hidden" id="sectBio">
@@ -195,7 +186,6 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     renderStats();
     renderBoats();
     renderMaint();
-    renderTrips();
 
     if (_isCoxswain) {
       renderBio();
@@ -384,30 +374,6 @@ function renderMaint() {
   }).join('');
 }
 
-// ══ TRIPS ════════════════════════════════════════════════════════════════════
-function renderTrips() {
-  var el = document.getElementById('tripList');
-  var myTrips = _allTrips.filter(t => String(t.kennitala) === String(user.kennitala));
-  myTrips.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  if (!myTrips.length) {
-    el.innerHTML = '<div class="empty-note">' + s('cq.noTrips') + '</div>';
-    return;
-  }
-  el.innerHTML = myTrips.slice(0, 50).map(t => {
-    var d = t.date ? new Date(t.date) : null;
-    var dayStr = d ? d.getDate() : '';
-    var monStr = d ? d.toLocaleDateString('en-GB', { month: 'short' }) : '';
-    return '<div class="cx-trip">'
-      + '<div style="display:flex;gap:10px;align-items:center">'
-        + '<div style="text-align:center;min-width:36px"><div style="font-size:16px;font-weight:500;color:var(--brass)">' + dayStr + '</div><div style="font-size:9px;color:var(--muted);letter-spacing:.5px">' + monStr + '</div></div>'
-        + '<div style="flex:1">'
-          + '<div style="font-size:12px;color:var(--text)">' + esc(boatEmoji(t.boatCategory)) + ' ' + esc(t.boatName || '') + '</div>'
-          + '<div style="font-size:10px;color:var(--muted)">' + esc(t.locationName || '') + (t.hoursDecimal ? ' · ' + parseFloat(t.hoursDecimal).toFixed(1) + ' hrs' : '') + '</div>'
-        + '</div>'
-      + '</div>'
-      + '</div>';
-  }).join('');
-}
 
 // ══ BIO ══════════════════════════════════════════════════════════════════════
 function renderBio() {
