@@ -15,6 +15,7 @@
 <script src="../shared/certs.js"></script>
 <script src="../shared/mcm.js"></script>
 <script src="../shared/maintenance.js"></script>
+<script>window._logbookSkipInit = true;</script>
 <script src="../shared/logbook.js"></script>
 <style>
 /* ── Stats ── */
@@ -276,7 +277,6 @@ let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
 // Globals required by shared/logbook.js
 var allTrips = [], myTrips = [], allBoats = [];
 const _windUnit = getPref('windUnit', 'bft');
-var _confirmations = {incoming:[], outgoing:[]};
 // parseDateParts / bftLabel used by tripCard()
 function parseDateParts(d) {
   if (!d) return {day:'—',mon:'',yr:''};
