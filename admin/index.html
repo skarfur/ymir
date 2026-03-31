@@ -2642,51 +2642,12 @@ async function assignMemberCert() {
   const m      = members.find(x => String(x.id) === String(mcmMemberId));
   if (!m) return;
 
-  const category = document.getElementById("mcmCategory").value;
-  const certId   = document.getElementById("mcmCertType").value;
-  const isCustom = certId === "__custom__";
+  const newCert = buildMemberCertFromForm(certDefs, getUser()?.name || 'Staff');
+  if (!newCert) return;
 
-  if (!certId) { toast(s('cert.typeRequired'), "err"); return; }
-  if (!category || category === "__add__") { toast(s('admin.certCategoryReq'), "err"); return; }
-
-  const def = isCustom ? null : certDefs.find(d => d.id === certId);
-  const sub = def?.subcats?.length ? document.getElementById("mcmSubcat").value : null;
-  if (def?.subcats?.length && !sub) { toast(s('cert.levelRequired'), "err"); return; }
-
-  // Title
-  const title = isCustom
-    ? document.getElementById("mcmCustomTitle").value.trim()
-    : (def?.name || certId);
-  if (!title) { toast(s('admin.certTitleRequired'), "err"); return; }
-
-  // Issuing authority (mandatory for non-endorsements)
-  const issuingAuthority = document.getElementById("mcmIssuingAuthority").value.trim();
-  if (!issuingAuthority && !def?.clubEndorsement) { toast(s('admin.certAuthorityReq'), "err"); return; }
-
-  // Expiry
-  const expires   = document.getElementById("mcmExpires").checked;
-  const expiresAt = expires ? document.getElementById("mcmExpiresAt").value : '';
-  if (expires && !expiresAt) { toast(s('admin.certExpiryReq'), "err"); return; }
-
-  const userName = getUser()?.name || "Staff";
-  const now      = todayISO();
-
-  const newCert = {
-    certId:           isCustom ? null : certId,
-    sub:              sub || null,
-    category,
-    title,
-    idNumber:         document.getElementById("mcmIdNumber").value.trim() || '',
-    issuingAuthority,
-    issueDate:        document.getElementById("mcmIssueDate").value || '',
-    expires,
-    expiresAt:        expiresAt || '',
-    description:      document.getElementById("mcmDescription").value.trim() || '',
-    assignedBy:       userName,
-    assignedAt:       now,
-    verifiedBy:       userName,
-    verifiedAt:       now,
-  };
+  const certId   = newCert.certId;
+  const sub      = newCert.sub;
+  const isCustom = !certId;
 
   let existing = parseJson(m.certifications, []);
   if (!isCustom) {
