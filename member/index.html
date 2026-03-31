@@ -407,7 +407,7 @@ var _boatCategories   = null;
 
 function _fmtCatLabel(cat) {
   var c=_boatCategories&&_boatCategories.find(x=>x.key===cat);
-  var lbl=c?(getLang()==='IS'&&c.labelIS?c.labelIS:c.labelEN):cat;
+  var lbl=c?(getLang()==='IS'&&c.labelIS?c.labelIS:c.labelEN):cat.replace(/[-_]/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
   var ico=(c&&c.emoji)?c.emoji:boatEmoji(cat);
   return ico+' '+esc(lbl.toUpperCase());
 }
