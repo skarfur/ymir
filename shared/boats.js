@@ -49,7 +49,7 @@ function registerBoatCats(cats) {
 
 function _boatCatLabel(key) {
   const c = _boatCatRegistry.find(x => x.key === key);
-  if (!c) return key;
+  if (!c) return key.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   const lang = typeof getLang === 'function' ? getLang() : 'EN';
   return (lang === 'IS' && c.labelIS) ? c.labelIS : (c.labelEN || key);
 }
