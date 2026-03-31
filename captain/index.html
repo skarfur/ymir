@@ -164,6 +164,24 @@
     </div>
   </div>
 
+  <!-- ══ RESERVATIONS ══ -->
+  <div class="cq-section" id="sectReservations">
+    <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
+    <div style="margin-bottom:10px">
+      <select id="cqResBoat" onchange="loadCqSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(-1)">&larr;</button>
+      <span id="cqWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
+    </div>
+    <div id="cqSlotGrid"></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--muted)">
+      <span data-s="slot.clickToBook">Click an open slot to book it.</span>
+    </div>
+  </div>
+
   <!-- ══ MY BOATS ══ -->
   <div class="cq-section" id="sectBoats">
     <div class="cq-section-hdr" data-s="cq.boatsTitle"></div>
@@ -352,6 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderValidation();
     renderCrew();
     renderBoats();
+    initCqReservations();
     buildFilters();
     applyFilter();
   } catch (e) {
@@ -781,6 +800,131 @@ function applyFilter() {
     ? filtered.map(tripCard).join('')
     : '<div class="empty-note">No trips match this filter.</div>';
   document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CAPTAIN RESERVATION SLOTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _cqWeekStart = null;
+var _cqSlots = [];
+var _cqSlotBoats = [];
+
+function initCqReservations() {
+  // Find keelboats with slot scheduling that the captain can access
+  _cqSlotBoats = (_boats || []).filter(function(b) {
+    return b.slotSchedulingEnabled && b.accessMode === 'controlled'
+      && (b.category || '').toLowerCase() === 'keelboat';
+  });
+  var sect = document.getElementById('sectReservations');
+  if (!_cqSlotBoats.length) { sect.style.display = 'none'; return; }
+  sect.style.display = '';
+  // Populate boat filter
+  var sel = document.getElementById('cqResBoat');
+  sel.innerHTML = '';
+  _cqSlotBoats.forEach(function(b) {
+    sel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
+  });
+  // Set week start
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0,0,0,0);
+  _cqWeekStart = d;
+  loadCqSlots();
+}
+
+async function loadCqSlots() {
+  var boatId = document.getElementById('cqResBoat').value;
+  if (!boatId) return;
+  var fromDate = _cqWeekStart.toISOString().slice(0, 10);
+  var toD = new Date(_cqWeekStart); toD.setDate(toD.getDate() + 6);
+  var toDate = toD.toISOString().slice(0, 10);
+  try {
+    var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
+    _cqSlots = res.slots || [];
+  } catch(e) { _cqSlots = []; }
+  renderCqSlots();
+}
+
+function renderCqSlots() {
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(_cqWeekStart);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  var todayStr = new Date().toISOString().slice(0, 10);
+  document.getElementById('cqWeekLabel').textContent =
+    days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
+  var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  days.forEach(function(d) {
+    var ds = d.toISOString().slice(0, 10);
+    var isToday = ds === todayStr;
+    html += '<div style="text-align:center;font-size:10px;padding:4px;border-bottom:1px solid var(--border)'
+      + (isToday ? ';color:var(--brass);font-weight:600' : ';color:var(--muted)') + '">'
+      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</div>';
+  });
+  days.forEach(function(d) {
+    var ds = d.toISOString().slice(0, 10);
+    var daySlots = _cqSlots.filter(function(s) { return s.date === ds; });
+    html += '<div style="padding:2px;min-height:40px">';
+    if (daySlots.length) {
+      daySlots.forEach(function(sl) {
+        var isMyBooking = sl.bookedByKennitala && String(sl.bookedByKennitala) === String(user.kennitala);
+        var isBooked = !!sl.bookedByKennitala;
+        var bg, border, cursor, onclick;
+        if (isMyBooking) {
+          bg = 'var(--brass)22'; border = 'var(--brass)'; cursor = 'pointer';
+          onclick = 'onclick="unbookCqSlot(\'' + esc(sl.id) + '\')"';
+        } else if (isBooked) {
+          bg = 'var(--green)22'; border = 'var(--green)'; cursor = 'default';
+          onclick = '';
+        } else {
+          bg = 'var(--surface)'; border = 'var(--brass)66'; cursor = 'pointer';
+          onclick = 'onclick="bookCqSlot(\'' + esc(sl.id) + '\')"';
+        }
+        var label = sl.startTime + '–' + sl.endTime;
+        if (isMyBooking) label += '<br><span style="font-size:8px">' + esc(s('slot.yours')) + '</span>';
+        else if (isBooked) label += '<br><span style="font-size:8px">' + esc(sl.bookedByName || '') + '</span>';
+        html += '<div ' + onclick + ' style="padding:3px 4px;margin-bottom:2px;border-radius:4px;border:1px solid '
+          + border + ';background:' + bg + ';font-size:9px;cursor:' + cursor + ';text-align:center">' + label + '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('cqSlotGrid').innerHTML = html;
+}
+
+async function bookCqSlot(slotId) {
+  try {
+    await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name });
+    toast(s('slot.booked'));
+    loadCqSlots();
+  } catch(e) { toast(e.message || 'Error', 'err'); }
+}
+
+async function unbookCqSlot(slotId) {
+  if (!confirm(s('slot.confirmUnbook'))) return;
+  try {
+    await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
+    toast(s('slot.unbooked'));
+    loadCqSlots();
+  } catch(e) { toast(e.message || 'Error', 'err'); }
+}
+
+function shiftCqWeek(dir) {
+  _cqWeekStart.setDate(_cqWeekStart.getDate() + dir * 7);
+  loadCqSlots();
+}
+
+function cqWeekToday() {
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0,0,0,0);
+  _cqWeekStart = d;
+  loadCqSlots();
 }
 </script>
 </body>

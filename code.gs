@@ -29,6 +29,9 @@ const TABS_ = {
   payroll: 'payroll',
   shareTokens: 'share_tokens',
   tripConfirmations: 'trip_confirmations',
+  reservationSlots: 'reservation_slots',
+  crews: 'crews',
+  crewInvites: 'crew_invites',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -392,6 +395,22 @@ function route_(action, b) {
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveReservation': return saveReservation_(b);
     case 'removeReservation': return removeReservation_(b);
+    // ── RESERVATION SLOTS ─────────────────────────────────────────────────────
+    case 'getSlots':              return getSlots_(b);
+    case 'saveSlot':              return saveSlot_(b);
+    case 'saveRecurringSlots':    return saveRecurringSlots_(b);
+    case 'deleteSlot':            return deleteSlot_(b);
+    case 'deleteRecurrenceGroup': return deleteRecurrenceGroup_(b);
+    case 'bookSlot':              return bookSlot_(b);
+    case 'unbookSlot':            return unbookSlot_(b);
+    // ── CREWS ─────────────────────────────────────────────────────────────────
+    case 'getCrews':              return getCrews_(b);
+    case 'createCrew':            return createCrew_(b);
+    case 'updateCrew':            return updateCrew_(b);
+    case 'disbandCrew':           return disbandCrew_(b);
+    case 'inviteToCrew':          return inviteToCrew_(b);
+    case 'respondCrewInvite':     return respondCrewInvite_(b);
+    case 'getCrewInvites':        return getCrewInvites_(b);
     case 'saveCaptainBio': return saveCaptainBio_(b);
     case 'uploadHeadshot': return uploadHeadshot_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
@@ -1524,10 +1543,37 @@ function saveCheckout_(b) {
           }
           // Allowlist check
           if (!hasAccess && checkBoat.accessAllowlist && Array.isArray(checkBoat.accessAllowlist) && checkBoat.accessAllowlist.indexOf(checkKt) !== -1) hasAccess = true;
-          // Reservation check
+          // Reservation check (date-range)
           if (!hasAccess && checkBoat.reservations && checkBoat.reservations.length) {
             var today = new Date().toISOString().slice(0, 10);
             hasAccess = checkBoat.reservations.some(function(r) { return String(r.memberKennitala) === checkKt && today >= r.startDate && today <= r.endDate; });
+          }
+          // Slot-based scheduling check
+          if (!hasAccess && checkBoat.slotSchedulingEnabled) {
+            var nowDate = new Date();
+            var todayStr = nowDate.toISOString().slice(0, 10);
+            var nowTime = String(nowDate.getHours()).padStart(2, '0') + ':' + String(nowDate.getMinutes()).padStart(2, '0');
+            try {
+              var slots = readAll_('reservationSlots').filter(function(s) {
+                return s.boatId === checkBoat.id && s.date === todayStr && s.startTime <= nowTime && s.endTime > nowTime && s.bookedByKennitala;
+              });
+              // Check if user booked a slot directly or via crew
+              hasAccess = slots.some(function(s) {
+                if (String(s.bookedByKennitala) === checkKt) return true;
+                if (s.bookedByCrewId) {
+                  var crew = findOne_('crews', 'id', s.bookedByCrewId);
+                  if (crew) {
+                    var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+                    return pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === checkKt; }); });
+                  }
+                }
+                return false;
+              });
+            } catch (e) { /* don't block on slot check errors */ }
+          }
+          // If slot scheduling is enabled and boat is NOT available outside slots, enforce strictly
+          if (!hasAccess && checkBoat.slotSchedulingEnabled && !checkBoat.availableOutsideSlots) {
+            return failJ('Access denied: this boat requires a booked reservation slot');
           }
           if (!hasAccess) return failJ('Access denied: this boat requires authorization');
         }
@@ -1762,6 +1808,291 @@ function removeReservation_(b) {
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESERVATION SLOTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getSlots_(b) {
+  var all = readAll_('reservationSlots');
+  if (b.boatId) all = all.filter(function(s) { return s.boatId === b.boatId; });
+  if (b.category) {
+    var cfgMap = getConfigMap_();
+    var boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
+    var catBoatIds = boats.filter(function(bt) { return bt.category === b.category; }).map(function(bt) { return bt.id; });
+    all = all.filter(function(s) { return catBoatIds.indexOf(s.boatId) !== -1; });
+  }
+  if (b.fromDate) all = all.filter(function(s) { return s.date >= b.fromDate; });
+  if (b.toDate) all = all.filter(function(s) { return s.date <= b.toDate; });
+  return okJ({ slots: all });
+}
+
+function saveSlot_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.date || !b.startTime || !b.endTime) return failJ('date, startTime, endTime required');
+  var id = b.slotId || ('slot_' + uid_());
+  var existing = findOne_('reservationSlots', 'id', id);
+  if (existing) {
+    updateRow_('reservationSlots', 'id', id, {
+      date: String(b.date), startTime: String(b.startTime), endTime: String(b.endTime),
+      note: String(b.note || ''),
+    });
+  } else {
+    insertRow_('reservationSlots', {
+      id: id, boatId: String(b.boatId), date: String(b.date),
+      startTime: String(b.startTime), endTime: String(b.endTime),
+      recurrenceGroupId: String(b.recurrenceGroupId || ''),
+      bookedByKennitala: '', bookedByName: '', bookedByCrewId: '',
+      note: String(b.note || ''), createdAt: now_(),
+    });
+  }
+  return okJ({ saved: true, slotId: id });
+}
+
+function saveRecurringSlots_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.startTime || !b.endTime) return failJ('startTime and endTime required');
+  if (!b.fromDate || !b.toDate) return failJ('fromDate and toDate required');
+  if (!b.daysOfWeek || !Array.isArray(b.daysOfWeek) || !b.daysOfWeek.length) return failJ('daysOfWeek required (array of 0-6)');
+  var recId = 'recur_' + uid_();
+  var days = b.daysOfWeek.map(Number);
+  var created = [];
+  var d = new Date(b.fromDate + 'T00:00:00');
+  var end = new Date(b.toDate + 'T00:00:00');
+  while (d <= end) {
+    if (days.indexOf(d.getDay()) !== -1) {
+      var dateStr = d.toISOString().slice(0, 10);
+      var slotId = 'slot_' + uid_();
+      insertRow_('reservationSlots', {
+        id: slotId, boatId: String(b.boatId), date: dateStr,
+        startTime: String(b.startTime), endTime: String(b.endTime),
+        recurrenceGroupId: recId,
+        bookedByKennitala: '', bookedByName: '', bookedByCrewId: '',
+        note: String(b.note || ''), createdAt: now_(),
+      });
+      created.push(slotId);
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return okJ({ saved: true, recurrenceGroupId: recId, count: created.length, slotIds: created });
+}
+
+function deleteSlot_(b) {
+  if (!b.slotId) return failJ('slotId required');
+  deleteRow_('reservationSlots', 'id', b.slotId);
+  return okJ({ deleted: true });
+}
+
+function deleteRecurrenceGroup_(b) {
+  if (!b.recurrenceGroupId) return failJ('recurrenceGroupId required');
+  var all = readAll_('reservationSlots');
+  var toDelete = all.filter(function(s) { return s.recurrenceGroupId === b.recurrenceGroupId; });
+  toDelete.forEach(function(s) { deleteRow_('reservationSlots', 'id', s.id); });
+  return okJ({ deleted: true, count: toDelete.length });
+}
+
+function bookSlot_(b) {
+  if (!b.slotId) return failJ('slotId required');
+  var slot = findOne_('reservationSlots', 'id', b.slotId);
+  if (!slot) return failJ('Slot not found');
+  if (slot.bookedByKennitala) return failJ('Slot already booked');
+  // Validate booker
+  var cfgMap = getConfigMap_();
+  var boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
+  var boat = boats.find(function(bt) { return bt.id === slot.boatId; });
+  if (!boat) return failJ('Boat not found');
+  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
+  if (b.crewId) {
+    // Crew booking (rowing shells)
+    var crew = findOne_('crews', 'id', b.crewId);
+    if (!crew || crew.status !== 'active') return failJ('Crew not found or not active');
+    var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.kennitala); }); });
+    if (!isMember) return failJ('You are not a member of this crew');
+    updates.bookedByCrewId = String(b.crewId);
+    updates.bookedByName = String(crew.name || b.memberName || '');
+    updates.bookedByKennitala = String(b.kennitala || '');
+  } else {
+    // Individual booking (keelboats — captain required)
+    if (!b.kennitala) return failJ('kennitala required');
+    if (boat.category === 'keelboat' && boat.accessGateCert) {
+      var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
+      if (!member) return failJ('Member not found');
+      var isStaffRole = member.role === 'staff' || member.role === 'admin';
+      if (!isStaffRole) {
+        var certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []);
+        if (!Array.isArray(certs) || !certs.some(function(c) { return c.sub === boat.accessGateCert; })) {
+          return failJ('You do not have the required certification to book this boat');
+        }
+      }
+    }
+    updates.bookedByKennitala = String(b.kennitala);
+    updates.bookedByName = String(b.memberName || '');
+  }
+  updateRow_('reservationSlots', 'id', b.slotId, updates);
+  return okJ({ booked: true, slotId: b.slotId });
+}
+
+function unbookSlot_(b) {
+  if (!b.slotId) return failJ('slotId required');
+  var slot = findOne_('reservationSlots', 'id', b.slotId);
+  if (!slot) return failJ('Slot not found');
+  if (!slot.bookedByKennitala) return failJ('Slot is not booked');
+  // Allow the booker, any crew member, or staff to unbook
+  var kt = String(b.kennitala || '');
+  var isBooker = String(slot.bookedByKennitala) === kt;
+  var isCrewMember = false;
+  if (slot.bookedByCrewId) {
+    var crew = findOne_('crews', 'id', slot.bookedByCrewId);
+    if (crew) {
+      var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+      isCrewMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
+    }
+  }
+  var member = kt ? findOne_('members', 'kennitala', kt) : null;
+  var isStaff = member && (member.role === 'staff' || member.role === 'admin');
+  if (!isBooker && !isCrewMember && !isStaff) return failJ('Only the booker, a crew member, or staff can cancel');
+  updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' });
+  return okJ({ unbooked: true });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREWS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getCrews_(b) {
+  var all = readAll_('crews');
+  if (b.kennitala) {
+    var kt = String(b.kennitala);
+    all = all.filter(function(c) {
+      if (c.status === 'disbanded') return false;
+      var pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs) : (c.pairs || []);
+      return pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
+    });
+  }
+  // Parse pairs JSON for convenience
+  all = all.map(function(c) {
+    c.pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs || '[]') : (c.pairs || []);
+    return c;
+  });
+  return okJ({ crews: all });
+}
+
+function createCrew_(b) {
+  if (!b.name) return failJ('Crew name required');
+  if (!b.kennitala || !b.memberName) return failJ('Creator kennitala and name required');
+  var numPairs = parseInt(b.numPairs) || 2;
+  if (numPairs < 2 || numPairs > 3) return failJ('numPairs must be 2 or 3');
+  var pairs = [];
+  for (var i = 0; i < numPairs; i++) {
+    pairs.push({ pairId: 'pair_' + (i + 1), members: [] });
+  }
+  // Assign creator to first pair (or specified pair)
+  var creatorPair = parseInt(b.creatorPairIndex) || 0;
+  if (creatorPair >= pairs.length) creatorPair = 0;
+  pairs[creatorPair].members.push({ kennitala: String(b.kennitala), name: String(b.memberName) });
+  var id = 'crew_' + uid_();
+  insertRow_('crews', {
+    id: id, name: String(b.name), pairs: JSON.stringify(pairs),
+    status: 'forming', createdAt: now_(), updatedAt: now_(),
+  });
+  return okJ({ created: true, crewId: id, crew: { id: id, name: b.name, pairs: pairs, status: 'forming' } });
+}
+
+function updateCrew_(b) {
+  if (!b.crewId) return failJ('crewId required');
+  var crew = findOne_('crews', 'id', b.crewId);
+  if (!crew) return failJ('Crew not found');
+  if (crew.status === 'disbanded') return failJ('Crew is disbanded');
+  var updates = { updatedAt: now_() };
+  if (b.name !== undefined) updates.name = String(b.name);
+  updateRow_('crews', 'id', b.crewId, updates);
+  return okJ({ updated: true });
+}
+
+function disbandCrew_(b) {
+  if (!b.crewId) return failJ('crewId required');
+  var crew = findOne_('crews', 'id', b.crewId);
+  if (!crew) return failJ('Crew not found');
+  updateRow_('crews', 'id', b.crewId, { status: 'disbanded', updatedAt: now_() });
+  // Reject any pending invites for this crew
+  var invites = readAll_('crewInvites').filter(function(inv) { return inv.crewId === b.crewId && inv.status === 'pending'; });
+  invites.forEach(function(inv) { updateRow_('crewInvites', 'id', inv.id, { status: 'rejected', respondedAt: now_() }); });
+  return okJ({ disbanded: true });
+}
+
+function inviteToCrew_(b) {
+  if (!b.crewId) return failJ('crewId required');
+  if (!b.toKennitala || !b.toName) return failJ('Invitee kennitala and name required');
+  if (!b.fromKennitala || !b.fromName) return failJ('Inviter kennitala and name required');
+  if (!b.pairId) return failJ('pairId required');
+  var crew = findOne_('crews', 'id', b.crewId);
+  if (!crew) return failJ('Crew not found');
+  if (crew.status === 'disbanded') return failJ('Crew is disbanded');
+  // Check pair exists and has room
+  var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+  var pair = pairs.find(function(p) { return p.pairId === b.pairId; });
+  if (!pair) return failJ('Pair not found');
+  if ((pair.members || []).length >= 2) return failJ('This pair is full');
+  // Check not already a member
+  var alreadyMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.toKennitala); }); });
+  if (alreadyMember) return failJ('This person is already in the crew');
+  // Check no duplicate pending invite
+  var existing = readAll_('crewInvites').find(function(inv) {
+    return inv.crewId === b.crewId && String(inv.toKennitala) === String(b.toKennitala) && inv.status === 'pending';
+  });
+  if (existing) return failJ('An invite is already pending for this person');
+  var id = 'cinv_' + uid_();
+  insertRow_('crewInvites', {
+    id: id, crewId: String(b.crewId), crewName: String(crew.name),
+    pairId: String(b.pairId),
+    fromKennitala: String(b.fromKennitala), fromName: String(b.fromName),
+    toKennitala: String(b.toKennitala), toName: String(b.toName),
+    status: 'pending', createdAt: now_(), respondedAt: '',
+  });
+  return okJ({ invited: true, inviteId: id });
+}
+
+function respondCrewInvite_(b) {
+  if (!b.inviteId) return failJ('inviteId required');
+  if (!b.response || (b.response !== 'accepted' && b.response !== 'rejected')) return failJ('response must be accepted or rejected');
+  var inv = findOne_('crewInvites', 'id', b.inviteId);
+  if (!inv) return failJ('Invite not found');
+  if (inv.status !== 'pending') return failJ('Invite already responded to');
+  updateRow_('crewInvites', 'id', b.inviteId, { status: b.response, respondedAt: now_() });
+  if (b.response === 'accepted') {
+    // Add member to the crew's pair
+    var crew = findOne_('crews', 'id', inv.crewId);
+    if (crew) {
+      var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+      var pair = pairs.find(function(p) { return p.pairId === inv.pairId; });
+      if (pair && (pair.members || []).length < 2) {
+        if (!pair.members) pair.members = [];
+        pair.members.push({ kennitala: String(inv.toKennitala), name: String(inv.toName) });
+        // Check if crew is now fully formed
+        var totalMembers = pairs.reduce(function(sum, p) { return sum + (p.members || []).length; }, 0);
+        var totalSlots = pairs.length * 2;
+        var newStatus = totalMembers >= totalSlots ? 'active' : 'forming';
+        updateRow_('crews', 'id', inv.crewId, { pairs: JSON.stringify(pairs), status: newStatus, updatedAt: now_() });
+      }
+    }
+  }
+  return okJ({ responded: true, status: b.response });
+}
+
+function getCrewInvites_(b) {
+  var all = readAll_('crewInvites');
+  if (b.kennitala) {
+    var kt = String(b.kennitala);
+    all = all.filter(function(inv) { return String(inv.toKennitala) === kt && inv.status === 'pending'; });
+  }
+  if (b.crewId) {
+    all = all.filter(function(inv) { return inv.crewId === b.crewId; });
+  }
+  return okJ({ invites: all });
 }
 
 
@@ -4125,6 +4456,20 @@ var SCHEMA_ = {
     'beaufort','windDir','wxSnapshot',
     'rejectComment',
     'createdAt','respondedAt',
+  ],
+  reservation_slots: [
+    'id','boatId','date','startTime','endTime',
+    'recurrenceGroupId','bookedByKennitala','bookedByName','bookedByCrewId',
+    'note','createdAt',
+  ],
+  crews: [
+    'id','name','pairs','status','createdAt','updatedAt',
+  ],
+  crew_invites: [
+    'id','crewId','crewName','pairId',
+    'fromKennitala','fromName',
+    'toKennitala','toName',
+    'status','createdAt','respondedAt',
   ],
   config: ['key','value'],
   employees: [

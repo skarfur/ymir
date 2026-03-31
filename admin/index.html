@@ -229,6 +229,7 @@
         <button class="tab-btn"        data-tab="certs"      onclick="showTab('certs')"      data-s="admin.tabCerts"></button>
         <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
+        <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
       </div>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -487,6 +488,31 @@
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
     </div><!-- /tab-flags -->
+
+    <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
+    <div id="tab-slotCal" class="hidden">
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <select id="slotCatFilter" onchange="loadSlotCalendar()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+          <select id="slotBoatFilter" onchange="renderSlotCalendar()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px">
+            <option value="" data-s="slot.allBoats">All boats</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftSlotWeek(-1)">&larr;</button>
+            <span id="slotWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftSlotWeek(1)">&rarr;</button>
+            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="slotWeekToday()" data-s="slot.today">Today</button>
+          </div>
+          <button class="btn btn-primary" style="font-size:11px" onclick="openRecurringSlotModal()" data-s="slot.addRecurring">+ Recurring</button>
+        </div>
+      </div>
+      <div id="slotCalGrid" style="overflow-x:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+      </div>
+    </div>
+
     </div><!-- /top-settings -->
 
     <!-- ══ TOP: PAYROLL (embedded) ═══════════════════════════════════════════ -->
@@ -644,6 +670,20 @@
           <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" oninput="searchAllowlistMember(this.value)">
           <div id="bAllowlistSuggestions" class="suggest-drop" style="position:relative"></div>
         </div>
+      </div>
+    </div>
+    <!-- Slot Scheduling -->
+    <div id="bSlotSchedulingSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <input type="checkbox" id="bSlotScheduling" onchange="updateSlotFields()">
+        <label for="bSlotScheduling" style="font-size:11px" data-s="boat.slotScheduling">Enable session slot scheduling</label>
+      </div>
+      <div id="bSlotOptions" class="hidden">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="bAvailOutside" checked>
+          <label for="bAvailOutside" style="font-size:11px" data-s="boat.availOutside">Available outside scheduled slots</label>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px" data-s="boat.availOutsideHint">If unchecked, boat can only be used during booked session slots.</div>
       </div>
     </div>
     <!-- Reservations -->
@@ -909,6 +949,69 @@
   </div>
 </div>
 
+<!-- Recurring slot modal -->
+<div class="modal-overlay hidden" id="recurSlotModal" onclick="if(event.target===this)closeModal('recurSlotModal')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 data-s="slot.recurTitle">Create Recurring Slots</h3>
+      <button class="modal-close-x" onclick="closeModal('recurSlotModal')">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="slot.boat">Boat</label>
+      <select id="rsBoat" style="font-size:11px"></select>
+    </div>
+    <div class="field">
+      <label data-s="slot.daysOfWeek">Days of week</label>
+      <div id="rsDays" style="display:flex;gap:6px;flex-wrap:wrap">
+        <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="rsStartTime" value="18:00"></div>
+      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="rsEndTime" value="21:00"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="rsFromDate"></div>
+      <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="rsToDate"></div>
+    </div>
+    <div class="field"><label data-s="slot.note">Note</label><input type="text" id="rsNote" style="font-size:11px"></div>
+    <div id="rsPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="previewRecurringSlots()" data-s="slot.preview">Preview</button>
+      <button class="btn btn-primary" onclick="saveRecurringSlots()" data-s="slot.create">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Single slot modal -->
+<div class="modal-overlay hidden" id="slotModal" onclick="if(event.target===this)closeModal('slotModal')">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <h3 id="slotModalTitle" data-s="slot.editTitle">Session Slot</h3>
+      <button class="modal-close-x" onclick="closeModal('slotModal')">&times;</button>
+    </div>
+    <div id="slotModalBoatName" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+    <div class="field"><label data-s="slot.date">Date</label><input type="date" id="smDate"></div>
+    <div class="grid2">
+      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="smStartTime" value="18:00"></div>
+      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="smEndTime" value="21:00"></div>
+    </div>
+    <div class="field"><label data-s="slot.note">Note</label><input type="text" id="smNote" style="font-size:11px"></div>
+    <div id="slotBookedInfo" class="hidden" style="font-size:11px;color:var(--green);margin-bottom:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-danger hidden" id="smDeleteBtn" style="font-size:11px" onclick="deleteCurrentSlot()" data-s="btn.delete">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal('slotModal')" data-s="btn.cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCurrentSlot()" data-s="btn.save">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const user = requireAuth(isAdmin);
@@ -1065,6 +1168,7 @@ function showTab(tab) {
   if (el) el.classList.remove('hidden');
 
   if (tab === 'certs') renderCertDefs();
+  if (tab === 'slotCal') initSlotCalendar();
 
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
@@ -1416,6 +1520,10 @@ function openBoatModal(id) {
   _editAllowlist = b && Array.isArray(b.accessAllowlist) ? b.accessAllowlist.slice() : [];
   renderAllowlistChips();
   updateAccessFields();
+  // Slot scheduling
+  document.getElementById("bSlotScheduling").checked = b && b.slotSchedulingEnabled === true;
+  document.getElementById("bAvailOutside").checked = b ? b.availableOutsideSlots !== false : true;
+  updateSlotFields();
   // Reservations
   document.getElementById("bReservationForm").classList.add("hidden");
   document.getElementById("bResMemberKt").value = '';
@@ -1550,6 +1658,12 @@ var _editAllowlist = [];
 function updateAccessFields() {
   var isControlled = document.getElementById("bAccessMode").value === 'controlled';
   document.getElementById("bAccessControlledSection").classList.toggle("hidden", !isControlled);
+  document.getElementById("bSlotSchedulingSection").classList.toggle("hidden", !isControlled);
+}
+
+function updateSlotFields() {
+  var enabled = document.getElementById("bSlotScheduling").checked;
+  document.getElementById("bSlotOptions").classList.toggle("hidden", !enabled);
 }
 
 function populateGateCertSelect(current) {
@@ -1710,6 +1824,9 @@ async function saveBoat() {
     accessMode:     accessModeVal,
     accessGateCert: accessModeVal === 'controlled' ? (document.getElementById("bGateCert").value || '') : '',
     accessAllowlist: accessModeVal === 'controlled' ? _editAllowlist.slice() : [],
+    // slot scheduling
+    slotSchedulingEnabled: accessModeVal === 'controlled' && document.getElementById("bSlotScheduling").checked,
+    availableOutsideSlots: accessModeVal === 'controlled' && document.getElementById("bSlotScheduling").checked ? document.getElementById("bAvailOutside").checked : true,
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
@@ -2738,6 +2855,263 @@ function resetImport() {
   _ambigDecisions = {};
   document.getElementById("csvFile").value = "";
   showImportStep(1);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESERVATION SLOT CALENDAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _slotWeekStart = null; // Monday of current week
+var _slotData = [];        // loaded slots for current view
+var _editingSlot = null;   // slot being edited in modal
+
+function initSlotCalendar() {
+  // Set week start to this Monday
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+  d.setHours(0,0,0,0);
+  _slotWeekStart = d;
+  // Populate category filter
+  var sel = document.getElementById("slotCatFilter");
+  sel.innerHTML = '';
+  var cats = (boatCats || []).filter(function(c) {
+    return (_allBoats || []).some(function(b) { return b.category === c.key && b.accessMode === 'controlled' && b.slotSchedulingEnabled; });
+  });
+  if (!cats.length) {
+    sel.innerHTML = '<option value="">(' + s('slot.noSlotBoats') + ')</option>';
+    return;
+  }
+  cats.forEach(function(c) {
+    sel.innerHTML += '<option value="' + esc(c.key) + '">' + esc(c.label || c.key) + '</option>';
+  });
+  loadSlotCalendar();
+}
+
+async function loadSlotCalendar() {
+  var cat = document.getElementById("slotCatFilter").value;
+  if (!cat) { document.getElementById("slotCalGrid").innerHTML = ''; return; }
+  var fromDate = _slotWeekStart.toISOString().slice(0, 10);
+  var toD = new Date(_slotWeekStart); toD.setDate(toD.getDate() + 6);
+  var toDate = toD.toISOString().slice(0, 10);
+  try {
+    var res = await apiGet("getSlots", { category: cat, fromDate: fromDate, toDate: toDate });
+    _slotData = res.slots || [];
+  } catch(e) { _slotData = []; }
+  // Populate boat filter
+  var boatSel = document.getElementById("slotBoatFilter");
+  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && b.slotSchedulingEnabled; });
+  boatSel.innerHTML = '<option value="">' + s('slot.allBoats') + '</option>';
+  catBoats.forEach(function(b) { boatSel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'; });
+  renderSlotCalendar();
+}
+
+function renderSlotCalendar() {
+  var cat = document.getElementById("slotCatFilter").value;
+  var boatFilter = document.getElementById("slotBoatFilter").value;
+  var catBoats = (_allBoats || []).filter(function(b) {
+    return b.category === cat && b.slotSchedulingEnabled && (!boatFilter || b.id === boatFilter);
+  });
+  if (!catBoats.length) {
+    document.getElementById("slotCalGrid").innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('slot.noSlotBoats') + '</div>';
+    return;
+  }
+  // Build 7-day column headers
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(_slotWeekStart);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  var todayStr = new Date().toISOString().slice(0, 10);
+  // Update week label
+  document.getElementById("slotWeekLabel").textContent =
+    days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
+  // Build grid
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
+  html += '<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px">' + s('slot.boat') + '</th>';
+  var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
+  days.forEach(function(d) {
+    var ds = d.toISOString().slice(0, 10);
+    var isToday = ds === todayStr;
+    html += '<th style="padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px;text-align:center'
+      + (isToday ? ';background:var(--brass)11;color:var(--brass)' : '') + '">'
+      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  catBoats.forEach(function(boat) {
+    html += '<tr>';
+    html += '<td style="padding:6px;border-bottom:1px solid var(--border);font-weight:500">' + esc(boat.name) + '</td>';
+    days.forEach(function(d) {
+      var ds = d.toISOString().slice(0, 10);
+      var isToday = ds === todayStr;
+      var daySlots = _slotData.filter(function(s) { return s.boatId === boat.id && s.date === ds; });
+      var cellStyle = 'padding:4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);vertical-align:top;cursor:pointer'
+        + (isToday ? ';background:var(--brass)08' : '');
+      html += '<td style="' + cellStyle + '" onclick="openSlotCell(\'' + esc(boat.id) + '\',\'' + ds + '\')">';
+      if (daySlots.length) {
+        daySlots.forEach(function(sl) {
+          var booked = !!sl.bookedByKennitala;
+          var bg = booked ? 'var(--green)22' : 'var(--brass)18';
+          var border = booked ? 'var(--green)' : 'var(--brass)';
+          var label = sl.startTime + '–' + sl.endTime;
+          if (booked) label += '<br>' + esc(sl.bookedByName || '');
+          html += '<div onclick="event.stopPropagation();openSlotModal(\'' + esc(sl.id) + '\')" '
+            + 'style="padding:2px 4px;margin-bottom:2px;border-radius:4px;border:1px solid ' + border
+            + ';background:' + bg + ';font-size:9px;cursor:pointer">' + label + '</div>';
+        });
+      } else {
+        html += '<div style="color:var(--border);font-size:9px;text-align:center">+</div>';
+      }
+      html += '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById("slotCalGrid").innerHTML = html;
+}
+
+function shiftSlotWeek(dir) {
+  _slotWeekStart.setDate(_slotWeekStart.getDate() + dir * 7);
+  loadSlotCalendar();
+}
+
+function slotWeekToday() {
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0,0,0,0);
+  _slotWeekStart = d;
+  loadSlotCalendar();
+}
+
+// Open slot modal for a cell (create new)
+function openSlotCell(boatId, date) {
+  _editingSlot = null;
+  var boat = (_allBoats || []).find(function(b) { return b.id === boatId; });
+  document.getElementById("slotModalTitle").textContent = s('slot.newTitle');
+  document.getElementById("slotModalBoatName").textContent = boat ? boat.name : boatId;
+  document.getElementById("smDate").value = date;
+  document.getElementById("smStartTime").value = '18:00';
+  document.getElementById("smEndTime").value = '21:00';
+  document.getElementById("smNote").value = '';
+  document.getElementById("smDeleteBtn").classList.add("hidden");
+  document.getElementById("slotBookedInfo").classList.add("hidden");
+  _editingSlot = { boatId: boatId };
+  applyStrings(document.getElementById("slotModal"));
+  openModal("slotModal");
+}
+
+// Open slot modal for existing slot (edit)
+function openSlotModal(slotId) {
+  var sl = _slotData.find(function(s) { return s.id === slotId; });
+  if (!sl) return;
+  var boat = (_allBoats || []).find(function(b) { return b.id === sl.boatId; });
+  document.getElementById("slotModalTitle").textContent = s('slot.editTitle');
+  document.getElementById("slotModalBoatName").textContent = boat ? boat.name : sl.boatId;
+  document.getElementById("smDate").value = sl.date;
+  document.getElementById("smStartTime").value = sl.startTime;
+  document.getElementById("smEndTime").value = sl.endTime;
+  document.getElementById("smNote").value = sl.note || '';
+  document.getElementById("smDeleteBtn").classList.remove("hidden");
+  if (sl.bookedByKennitala) {
+    document.getElementById("slotBookedInfo").classList.remove("hidden");
+    document.getElementById("slotBookedInfo").textContent = s('slot.bookedBy') + ': ' + (sl.bookedByName || sl.bookedByKennitala);
+  } else {
+    document.getElementById("slotBookedInfo").classList.add("hidden");
+  }
+  _editingSlot = { boatId: sl.boatId, slotId: sl.id };
+  applyStrings(document.getElementById("slotModal"));
+  openModal("slotModal");
+}
+
+async function saveCurrentSlot() {
+  if (!_editingSlot) return;
+  var date = document.getElementById("smDate").value;
+  var startTime = document.getElementById("smStartTime").value;
+  var endTime = document.getElementById("smEndTime").value;
+  if (!date || !startTime || !endTime) { toast(s('slot.missingFields'), 'err'); return; }
+  try {
+    await apiPost("saveSlot", {
+      boatId: _editingSlot.boatId,
+      slotId: _editingSlot.slotId || '',
+      date: date, startTime: startTime, endTime: endTime,
+      note: document.getElementById("smNote").value || '',
+    });
+    closeModal("slotModal");
+    toast(s('toast.saved'));
+    loadSlotCalendar();
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+async function deleteCurrentSlot() {
+  if (!_editingSlot || !_editingSlot.slotId) return;
+  if (!confirm(s('slot.confirmDelete'))) return;
+  try {
+    await apiPost("deleteSlot", { slotId: _editingSlot.slotId });
+    closeModal("slotModal");
+    toast(s('toast.deleted'));
+    loadSlotCalendar();
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+// Recurring slot creation
+function openRecurringSlotModal() {
+  var cat = document.getElementById("slotCatFilter").value;
+  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && b.slotSchedulingEnabled; });
+  var sel = document.getElementById("rsBoat");
+  sel.innerHTML = '';
+  catBoats.forEach(function(b) { sel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'; });
+  // Reset checkboxes
+  document.querySelectorAll('#rsDays input').forEach(function(cb) { cb.checked = false; });
+  document.getElementById("rsStartTime").value = '18:00';
+  document.getElementById("rsEndTime").value = '21:00';
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById("rsFromDate").value = today;
+  var endD = new Date(); endD.setMonth(endD.getMonth() + 3);
+  document.getElementById("rsToDate").value = endD.toISOString().slice(0, 10);
+  document.getElementById("rsNote").value = '';
+  document.getElementById("rsPreview").textContent = '';
+  applyStrings(document.getElementById("recurSlotModal"));
+  openModal("recurSlotModal");
+}
+
+function previewRecurringSlots() {
+  var days = [];
+  document.querySelectorAll('#rsDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var from = document.getElementById("rsFromDate").value;
+  var to = document.getElementById("rsToDate").value;
+  if (!days.length || !from || !to) { document.getElementById("rsPreview").textContent = s('slot.selectDays'); return; }
+  var count = 0;
+  var d = new Date(from + 'T00:00:00');
+  var end = new Date(to + 'T00:00:00');
+  while (d <= end) {
+    if (days.indexOf(d.getDay()) !== -1) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  document.getElementById("rsPreview").textContent = s('slot.previewCount', { count: count });
+}
+
+async function saveRecurringSlots() {
+  var boatId = document.getElementById("rsBoat").value;
+  var days = [];
+  document.querySelectorAll('#rsDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var startTime = document.getElementById("rsStartTime").value;
+  var endTime = document.getElementById("rsEndTime").value;
+  var fromDate = document.getElementById("rsFromDate").value;
+  var toDate = document.getElementById("rsToDate").value;
+  if (!boatId || !days.length || !startTime || !endTime || !fromDate || !toDate) {
+    toast(s('slot.missingFields'), 'err'); return;
+  }
+  try {
+    var res = await apiPost("saveRecurringSlots", {
+      boatId: boatId, daysOfWeek: days,
+      startTime: startTime, endTime: endTime,
+      fromDate: fromDate, toDate: toDate,
+      note: document.getElementById("rsNote").value || '',
+    });
+    closeModal("recurSlotModal");
+    toast(s('slot.created', { count: res.count || 0 }));
+    loadSlotCalendar();
+  } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
