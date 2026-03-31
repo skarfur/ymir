@@ -1341,7 +1341,9 @@ function saveCertDef_(b) {
     name: String(b.name).trim(),
     description: String(b.description || '').trim(),
     category: String(b.category || '').trim(),
-    renewalDays: Number(b.renewalDays) || 0,
+    issuingAuthority: String(b.issuingAuthority || '').trim(),
+    color: String(b.color || '').trim(),
+    expires: !!b.expires,
     hasIdNumber: !!b.hasIdNumber,
     clubEndorsement: !!b.clubEndorsement,
     subcats: Array.isArray(b.subcats) ? b.subcats.map(s => ({
@@ -1349,6 +1351,7 @@ function saveCertDef_(b) {
       label: String(s.label || '').trim(),
       description: String(s.description || '').trim(),
       rank: s.rank != null ? Number(s.rank) : null,
+      issuingAuthority: String(s.issuingAuthority || '').trim(),
     })).filter(s => s.label) : [],
   };
   const idx = defs.findIndex(d => d.id === payload.id);
