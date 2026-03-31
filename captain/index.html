@@ -178,6 +178,7 @@
       <select id="fCat"><option value="">All categories</option></select>
       <select id="fBoatName"><option value="">All boats</option></select>
       <select id="fCaptain"><option value="">All captains</option></select>
+      <select id="fMember"><option value="">All members</option></select>
       <select id="fWind">
         <option value="">Any wind</option>
         <option value="calm">Calm (Force 0–2)</option>
@@ -720,11 +721,13 @@ function buildFilters() {
   cats.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = boatEmoji(c.toLowerCase()) + ' ' + c; cSel.appendChild(o); });
   if (cats.map(function(c) { return c.toLowerCase(); }).includes('keelboat')) cSel.value = 'Keelboat';
 
-  // Boat name filter
-  var boatNames = [...new Set(myTrips.map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
+  // Boat name filter (keelboats only)
+  var keelboatNames = [...new Set(myTrips
+    .filter(function(t) { return ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase() === 'keelboat'; })
+    .map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
   var bSel = document.getElementById('fBoatName');
   bSel.innerHTML = '<option value="">All boats</option>';
-  boatNames.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
+  keelboatNames.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
 
   // Captain filter (members who isCaptain)
   _captains = _cqMembers.filter(function(m) { return isCaptain(m); }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
@@ -732,7 +735,17 @@ function buildFilters() {
   capSel.innerHTML = '<option value="">All captains</option>';
   _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = c.name; capSel.appendChild(o); });
 
-  ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
+  // Member filter (anyone with keelboat_crew endorsement)
+  var keelboatMembers = _cqMembers.filter(function(m) {
+    if (!m.certifications) return false;
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    return Array.isArray(certs) && certs.some(function(c) { return c.certId === 'keelboat_crew'; });
+  }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+  var mSel = document.getElementById('fMember');
+  mSel.innerHTML = '<option value="">All members</option>';
+  keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = m.name; mSel.appendChild(o); });
+
+  ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
   document.getElementById('fText').addEventListener('input', applyFilter);
 }
 
@@ -742,6 +755,7 @@ function applyFilter() {
   var cat      = document.getElementById('fCat').value;
   var boatName = document.getElementById('fBoatName').value;
   var captain  = document.getElementById('fCaptain').value;
+  var member   = document.getElementById('fMember').value;
   var wind     = document.getElementById('fWind').value;
   var txt      = document.getElementById('fText').value.toLowerCase().trim();
 
@@ -750,6 +764,7 @@ function applyFilter() {
     if (cat) { var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase(); if (tCat !== cat.toLowerCase()) return false; }
     if (boatName && (t.boatName || '') !== boatName) return false;
     if (captain && String(t.kennitala) !== String(captain)) return false;
+    if (member && String(t.kennitala) !== String(member)) return false;
     if (wind) {
       var b = parseInt(t.beaufort) || 0;
       if (wind === 'gt4' && b <= 4) return false;
