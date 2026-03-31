@@ -270,7 +270,7 @@ const user = requireAuth();
 if (!user || !isCaptain(user)) { window.location.href = '../member/'; throw new Error('Not a captain'); }
 const L = getLang();
 
-let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myTrips = [];
+let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myKeelboatTrips = [];
 let _crewConfirmations = [], _verificationRequests = [];
 let _maintFilter = 'open', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // All trips (logbook shows all, defaults to keelboat filter)
     var allTripsRaw = tripsRes.trips || [];
     _allTrips = allTripsRaw;
-    _myTrips  = _allTrips.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat')
+    _myKeelboatTrips  = _allTrips.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat')
                          .filter(t => String(t.kennitala) === String(user.kennitala));
 
     // Confirmations: pending ones where I'm the recipient
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══ STATS ════════════════════════════════════════════════════════════════════
 function renderStats() {
   var yearStart = new Date().getFullYear() + '-01-01';
-  var ytd = _myTrips.filter(t => (t.date || '') >= yearStart && (t.role === 'skipper' || t.role === 'captain'));
+  var ytd = _myKeelboatTrips.filter(t => (t.date || '') >= yearStart && (t.role === 'skipper' || t.role === 'captain'));
   var hours = 0, dist = 0;
   ytd.forEach(t => { hours += Number(t.hoursDecimal) || 0; dist += Number(t.distanceNm) || 0; });
   document.getElementById('statTrips').textContent = ytd.length;
