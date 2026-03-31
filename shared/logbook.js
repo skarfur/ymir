@@ -272,6 +272,7 @@ function tripCard(t){
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
           ${showHelm?`<span class="trip-badge badge-helm">${s('tc.helm')}</span>`:''}
+          ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border);font-size:9px">${s('tc.nonClub')}</span>`:''}
           ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${s('tc.student')}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
           ${(t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ '+s('tc.verificationPending')+'</span>' : ''}
@@ -468,6 +469,65 @@ function showManualForm(){
   const pd=document.getElementById('portDetails');
   pd.removeAttribute('open');
   onBoatChange();
+  // Reset non-club state
+  document.getElementById('mNonClub').checked=false;
+  onNonClubToggle();
+}
+
+// ── Non-club trip toggle ─────────────────────────────────────────────────────
+function onNonClubToggle(){
+  const on=document.getElementById('mNonClub').checked;
+  document.getElementById('mBoatClub').style.display=on?'none':'';
+  document.getElementById('mBoatFree').style.display=on?'':'none';
+  document.getElementById('mLocClub').style.display=on?'none':'';
+  document.getElementById('mLocFree').style.display=on?'':'none';
+  if(!on){
+    document.getElementById('mBoatFreeInput').value='';
+    document.getElementById('mBoatFreeCat').value='dinghy';
+    document.getElementById('mLocFreeInput').value='';
+    delete document.getElementById('mLocFreeInput').dataset.lat;
+    delete document.getElementById('mLocFreeInput').dataset.lng;
+    document.getElementById('mLocGeoStatus').style.display='none';
+  }
+}
+
+// ── Geolocation helper (shared between logbook + member page) ────────────────
+function useMyLocation(inputId,statusId){
+  const input=document.getElementById(inputId||'mLocFreeInput');
+  const status=document.getElementById(statusId||'mLocGeoStatus');
+  if(!input) return;
+  if(!navigator.geolocation){
+    if(status){status.textContent=s('logbook.locationDenied');status.style.display='';}
+    return;
+  }
+  if(status){status.textContent=s('logbook.locating');status.style.display='';}
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      const lat=pos.coords.latitude.toFixed(4),lng=pos.coords.longitude.toFixed(4);
+      input.dataset.lat=lat; input.dataset.lng=lng;
+      // Reverse geocode via Nominatim (free, no key)
+      fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&zoom=10')
+        .then(function(r){return r.json();})
+        .then(function(data){
+          if(data&&data.address){
+            var place=data.address.village||data.address.town||data.address.city||data.address.municipality||'';
+            if(!place&&data.display_name) place=data.display_name.split(',')[0];
+            input.value=place||lat+', '+lng;
+          } else {
+            input.value=lat+', '+lng;
+          }
+          if(status){status.textContent=lat+', '+lng;status.style.display='';}
+        })
+        .catch(function(){
+          input.value=lat+', '+lng;
+          if(status){status.textContent=lat+', '+lng;status.style.display='';}
+        });
+    },
+    function(){
+      if(status){status.textContent=s('logbook.locationDenied');status.style.display='';}
+    },
+    {enableHighAccuracy:false,timeout:10000}
+  );
 }
 
 // ── Wind unit + Beaufort sync helpers ────────────────────────────────────────
@@ -833,10 +893,22 @@ async function submitManual(){
   const errEl=document.getElementById('mErr');
   errEl.style.display='none';
   const date      = document.getElementById('mDate').value;
-  const boatId    = document.getElementById('mBoat').value;
-  const boatName  = document.getElementById('mBoat').selectedOptions[0]?.text||'';
-  const locId     = document.getElementById('mLocation').value;
-  const locName   = document.getElementById('mLocation').selectedOptions[0]?.text||'';
+  const isNonClub = document.getElementById('mNonClub').checked;
+  let boatId, boatName, boatCategory, locId, locName;
+  if(isNonClub){
+    boatId='';
+    boatName=document.getElementById('mBoatFreeInput').value.trim();
+    boatCategory=document.getElementById('mBoatFreeCat').value;
+    locId='';
+    locName=document.getElementById('mLocFreeInput').value.trim();
+  } else {
+    boatId=document.getElementById('mBoat').value;
+    boatName=document.getElementById('mBoat').selectedOptions[0]?.text||'';
+    const boat=allBoats.find(b=>b.id===boatId);
+    boatCategory=boat?.category||'';
+    locId=document.getElementById('mLocation').value;
+    locName=document.getElementById('mLocation').selectedOptions[0]?.text||'';
+  }
   const timeOut   = document.getElementById('mTimeOut').value;
   const timeIn    = document.getElementById('mTimeIn').value;
   const crew      = parseInt(document.getElementById('mCrew').value)||1;
@@ -859,16 +931,15 @@ async function submitManual(){
   let   arrPort   = document.getElementById('mArrivalPort').value.trim();
   if(arrPort===''&&depPort!=='') arrPort=depPort;   // default arrival = departure
 
-  const boat = allBoats.find(b=>b.id===boatId);
-  const boatCategory = boat?.category||'';
-
   // Validate time format (HH:MM with minutes ≤59)
   const timeRe=/^([01]\d|2[0-3]):[0-5]\d$/;
   if(timeOut && !timeRe.test(timeOut)){errEl.textContent=IS?'Ógilt brottfarartími (HH:MM).':'Invalid departure time (HH:MM).';errEl.style.display='';return;}
   if(timeIn  && !timeRe.test(timeIn)){errEl.textContent=IS?'Ógilt komutími (HH:MM).':'Invalid return time (HH:MM).';errEl.style.display='';return;}
 
   if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
-  if(!boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
+  if(isNonClub && !boatName){errEl.textContent=s('logbook.enterBoatName');errEl.style.display='';return;}
+  if(isNonClub && !locName){errEl.textContent=s('logbook.enterLocation');errEl.style.display='';return;}
+  if(!isNonClub && !boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
 
   // Validate skipper assignment when role is crew
   if(role==='crew'){
@@ -876,12 +947,14 @@ async function submitManual(){
     if(!skipKt){errEl.textContent=IS?'Vinsamlegast veldu skipara.':'Please select a skipper.';errEl.style.display='';return;}
   }
 
-  // Check for duplicate trip on same date + boat
-  const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
-  if(dupeTrip){
-    errEl.textContent=IS?'Þú hefur þegar skráð ferð með þessum bát á þessum degi. Vinsamlegast athugaðu siglingabókina.':'You already have a trip logged with this boat on this date. Please check your logbook.';
-    errEl.style.display='';
-    return;
+  // Check for duplicate trip on same date + boat (skip for non-club trips)
+  if(!isNonClub){
+    const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
+    if(dupeTrip){
+      errEl.textContent=IS?'Þú hefur þegar skráð ferð með þessum bát á þessum degi. Vinsamlegast athugaðu siglingabókina.':'You already have a trip logged with this boat on this date. Please check your logbook.';
+      errEl.style.display='';
+      return;
+    }
   }
 
   // Compute hours
@@ -962,6 +1035,7 @@ async function submitManual(){
       trackFileUrl, trackSimplified, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
       photoMeta: Object.keys(photoMeta).length ? JSON.stringify(photoMeta) : '',
+      nonClub: isNonClub||false,
     };
     const res=await apiPost('saveTrip', tripBase);
     const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
@@ -987,6 +1061,7 @@ async function submitManual(){
           helm: helmCb?.checked||false,
           beaufort:bft, windDir:wdir, wxSnapshot,
           distanceNm, departurePort:depPort, arrivalPort:arrPort,
+          nonClub: isNonClub||false,
         });
       }catch(e2){ console.warn('Crew trip save failed for',cName,e2.message); }
     }

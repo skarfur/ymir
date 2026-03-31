@@ -360,7 +360,15 @@ function renderLaunchPicker(preselectedBoatId) {
   const active=checkouts.filter(c=>c.status==='out');
   const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos)&&!isChartered(b));
   if(!avail.length){
-    document.getElementById('launchModalBody').innerHTML=`<div class="empty-note">${s('member.noBoats')}</div>`; return;
+    document.getElementById('launchModalBody').innerHTML=
+      '<div class="mb-12">'+
+        '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
+          '🚣 '+s('member.nonClubBoat')+
+          ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
+        '</button>'+
+      '</div>'+
+      `<div class="empty-note">${s('member.noBoats')}</div>`;
+    return;
   }
   const selected=preselectedBoatId?avail.find(b=>b.id===preselectedBoatId):null;
   // Pre-selected boat (QR scan / fleet grid) goes straight to the form.
@@ -368,6 +376,12 @@ function renderLaunchPicker(preselectedBoatId) {
   const grouped={};
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
+    '<div class="mb-12">'+
+      '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
+        '🚣 '+s('member.nonClubBoat')+
+        ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
+      '</button>'+
+    '</div>'+
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
       `<div class="mb-12">
         <div class="section-label">${_fmtCatLabel(cat)}</div>
@@ -386,6 +400,7 @@ var DEFAULT_LAUNCH_CHECKLISTS = {
   sup:            { launch:["Leash on","PFD attached to board"], landing:["Board rinsed","Leash coiled","Fin checked"] },
   wingfoil:       { launch:["Helmet on","Impact vest on","Leash on","Wind within limits"], landing:["Equipment rinsed","Lines coiled","Wing folded"] },
   other:          { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
+  nonclub:        { launch:[], landing:[] },
 };
 var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;
 var _boatCategories   = null;
@@ -400,6 +415,58 @@ function _fmtCatLabel(cat) {
 function _clItemLabel(it) {
   if(typeof it==='string') return it;
   return (getLang()==='IS'&&it.textIS)?it.textIS:(it.text||'');
+}
+
+// Step 2a — non-club boat launch form
+function renderNonClubLaunchForm() {
+  launchBoat={id:'',name:'',category:'',nonClub:true};
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+s('member.nonClubBoat');
+  var catOpts=['dinghy','keelboat','kayak','rowboat','sup','wingfoil','other'].map(function(c){
+    return '<option value="'+c+'">'+_fmtCatLabel(c).replace(/^\S+\s*/,'')+'</option>';
+  }).join('');
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="field"><label>'+s('logbook.boatNameLabel')+'</label>'+
+    '<input type="text" id="launchBoatName" placeholder="'+s('logbook.boatNamePh')+'" autocomplete="off"></div>'+
+    '<div class="field"><label>'+s('logbook.boatCategory')+'</label>'+
+    '<select id="launchBoatCat">'+catOpts+'</select></div>'+
+    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      '<input type="text" id="launchLocFree" placeholder="'+s('logbook.locationNamePh')+'" autocomplete="off" style="flex:1">'+
+      '<button type="button" class="btn btn-secondary" onclick="useMyLocation(\'launchLocFree\',\'launchLocGeoStatus\')" style="white-space:nowrap;font-size:10px;padding:6px 10px">📍 '+s('logbook.useMyLocation')+'</button>'+
+    '</div>'+
+    '<div id="launchLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div></div>'+
+    '<div class="grid2 mb-12 gap-10">'+
+      '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
+      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
+      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" oninput="var v=this.value.replace(/[^0-9]/g,\'\');if(v.length>=2)v=v.slice(0,2)+\':\'+v.slice(2,4);this.value=v;">'+
+      '<div class="flex-center gap-4" style="margin-top:5px">'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(60)">+1h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(90)">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" onclick="_addToLaunchOut(120)">+2h</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
+    '<div class="flex-center gap-12">'+
+      '<button type="button" onclick="adjLaunchCrew(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>'+
+      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>'+
+      '<button type="button" onclick="adjLaunchCrew(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
+    '</div></div>'+
+    '<div id="launchCrewSection" style="display:none" class="mt-12">'+
+      '<label class="section-label" style="display:block">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
+      '<div id="launchCrewInputs"></div>'+
+      '<div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
+    '</div>'+
+    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" onclick="renderLaunchPicker()">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" onclick="advanceToLaunchChecklist()">'+s('member.continue')+'</button>'+
+    '</div>';
+  window._launchCrewCount=1;
+  renderCrewInputs();
+  if(!window._launchMembers){
+    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
+  }
 }
 
 // Step 2 — time / crew / location form
@@ -455,6 +522,32 @@ function renderLaunchForm(boat) {
 // Validate form then stash values and advance to step 3.
 function advanceToLaunchChecklist() {
   var err=document.getElementById('launchErr');
+  var isNC=launchBoat&&launchBoat.nonClub;
+  if(isNC){
+    // Non-club: validate free-text fields
+    var bname=(document.getElementById('launchBoatName')?.value||'').trim();
+    var lname=(document.getElementById('launchLocFree')?.value||'').trim();
+    if(!bname){err.textContent=s('logbook.enterBoatName');err.style.display='block';return;}
+    if(!lname){err.textContent=s('logbook.enterLocation');err.style.display='block';return;}
+    err.style.display='none';
+    window._launchFormValues={
+      nonClub:true,
+      lid:'', locationName:lname,
+      boatName:bname, boatCategory:document.getElementById('launchBoatCat')?.value||'other',
+      tout: document.getElementById('launchTimeOut')?.value||'',
+      ret:  document.getElementById('launchReturnBy')?.value||'',
+      crew: window._launchCrewCount||1,
+      crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
+        .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest,student:!isGuest&&cb&&cb.checked};})
+        .filter(c=>c.name),
+      departurePort:'',
+    };
+    // Use the non-club virtual boat with stashed values for checklist
+    var ncBoat={id:'',name:bname,category:document.getElementById('launchBoatCat')?.value||'other',nonClub:true};
+    launchBoat=ncBoat;
+    renderLaunchChecklist(ncBoat);
+    return;
+  }
   var lid=document.getElementById('launchLocation')?.value;
   if(!lid){err.textContent=s('staff.coForm.errLocation');err.style.display='block';return;}
   err.style.display='none';
@@ -476,8 +569,8 @@ function advanceToLaunchChecklist() {
 function renderLaunchChecklist(boat) {
   if(!boat) return;
   launchBoat=boat;
-  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+boat.name;
-  var cat=(boat.category||'other').toLowerCase();
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+(boat.nonClub?s('member.nonClubBoat'):boat.name);
+  var cat=boat.nonClub?'nonclub':(boat.category||'other').toLowerCase();
   var cl=_launchChecklists[cat]||_launchChecklists.other||{};
   // cl.launch is an array of {id,text,textIS,sort} objects (config) or plain strings (defaults).
   var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
@@ -493,7 +586,7 @@ function renderLaunchChecklist(boat) {
     )+
     '<div id="launchCheckErr" class="text-sm text-red mt-8" style="display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
     '<div class="btn-row" style="margin-top:14px">'+
-      '<button class="btn btn-secondary" onclick="renderLaunchForm(launchBoat)">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-secondary" onclick="'+(boat.nonClub?'renderNonClubLaunchForm()':'renderLaunchForm(launchBoat)')+'">← '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" onclick="submitLaunch()">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
     '</div>';
 }
@@ -576,29 +669,38 @@ async function submitLaunch() {
     document.getElementById('launchCheckErr').style.display='block'; return;
   }
   var fv=window._launchFormValues||{};
+  var isNC=!!fv.nonClub;
   var lid=fv.lid, tout=fv.tout, ret=fv.ret, crewCount=fv.crew||1, crewNames=fv.crewNames||[], depPort=fv.departurePort||'';
-  if(!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
-  var location=locations.find(l=>l.id===lid)||{};
+  var _boatId=isNC?'':launchBoat.id;
+  var _boatName=isNC?(fv.boatName||''):launchBoat.name;
+  var _boatCat=isNC?(fv.boatCategory||''):launchBoat.category||'';
+  var _locId=isNC?'':lid;
+  var _locName=isNC?(fv.locationName||''):(locations.find(l=>l.id===lid)||{}).name||lid;
+  if(!isNC&&!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
+  if(isNC&&!_boatName){showToast(s('logbook.enterBoatName'),'err');return;}
+  if(isNC&&!_locName){showToast(s('logbook.enterLocation'),'err');return;}
   var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
   try {
     var res=await apiPost('saveCheckout',{
       memberKennitala:user.kennitala, memberName:user.name,
-      boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
-      locationId:lid, locationName:location.name||lid,
+      boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
+      locationId:_locId, locationName:_locName,
       checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
       departurePort:depPort,
       crewNames:crewNames.length?JSON.stringify(crewNames):'',
       memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
       guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
       wxSnapshot:snap,
+      nonClub:isNC,
     });
     // Optimistic update — push new checkout locally instead of refetching
     checkouts.push({
-      id:res.id, boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
+      id:res.id, boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
       memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
       crewNames:crewNames.length?JSON.stringify(crewNames):'',
-      locationId:lid, locationName:location.name||lid,
+      locationId:_locId, locationName:_locName,
       checkedOutAt:tout, expectedReturn:ret, status:'out',
+      nonClub:isNC,
     });
     if(crewNames.length){
       var _coId=res?.checkoutId||res?.id||'';
@@ -611,8 +713,8 @@ async function submitLaunch() {
             fromKennitala:user.kennitala, fromName:user.name,
             toKennitala:cn.kennitala, toName:cn.name,
             linkedCheckoutId:_coId,
-            boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
-            locationId:lid, locationName:location.name||lid,
+            boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
+            locationId:_locId, locationName:_locName,
             date:new Date().toISOString().slice(0,10), timeOut:tout,
             role:'crew', wxSnapshot:snap,
           }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
@@ -627,7 +729,7 @@ async function submitLaunch() {
             fromKennitala:user.kennitala, fromName:user.name,
             toKennitala:cn.kennitala, toName:cn.name,
             linkedCheckoutId:_coId,
-            boatId:launchBoat.id, boatName:launchBoat.name, boatCategory:launchBoat.category||'',
+            boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
             date:new Date().toISOString().slice(0,10), timeOut:tout,
           }).catch(function(e2){console.warn('student confirmation:',cn,e2.message);});
         }));

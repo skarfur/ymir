@@ -1573,6 +1573,7 @@ function saveCheckout_(b) {
     preLaunchChecklist: b.preLaunchChecklist || '', notes: b.notes || '',
     status: 'out', createdAt: ts, departurePort: b.departurePort || '',
     crewNames: b.crewNames || '',
+    nonClub: b.nonClub || false,
     memberPhone, memberIsMinor, guardianName, guardianPhone,
   });
   cDel_('checkouts'); return okJ({ id, created: true });
@@ -1836,7 +1837,7 @@ function saveTrip_(b) {
       'validationRequested','helm','skipperNote',
       'distanceNm','departurePort','arrivalPort',
       'trackFileUrl','trackSimplified','trackSource',
-      'photoUrls','photoMeta','crewNames',
+      'photoUrls','photoMeta','crewNames','nonClub',
     ];
     UPDATABLE.forEach(k => { if (b[k] !== undefined) updates[k] = b[k]; });
     updateRow_('trips', 'id', b.id, updates);
@@ -1866,6 +1867,7 @@ function saveTrip_(b) {
     validationRequested: b.validationRequested || false, helm: b.helm || false,
     skipperNote: b.skipperNote || '',
     distanceNm: b.distanceNm || '', departurePort: b.departurePort || '', arrivalPort: b.arrivalPort || '',
+    nonClub: b.nonClub || false,
     trackFileUrl: b.trackFileUrl || '', trackSimplified: b.trackSimplified || '', trackSource: b.trackSource || '',
     photoUrls: b.photoUrls || '', photoMeta: b.photoMeta || '',
     crewNames: b.crewNames || '',
