@@ -1277,7 +1277,7 @@ async function assignMemberCert() {
   if (!title) { toast(s('admin.certTitleRequired'), 'err'); return; }
 
   const issuingAuthority = document.getElementById('mcmIssuingAuthority').value.trim();
-  if (!issuingAuthority) { toast(s('admin.certAuthorityReq'), 'err'); return; }
+  if (!issuingAuthority && !def?.clubEndorsement) { toast(s('admin.certAuthorityReq'), 'err'); return; }
 
   const expires   = document.getElementById('mcmExpires').checked;
   const expiresAt = expires ? document.getElementById('mcmExpiresAt').value : '';
