@@ -11,10 +11,11 @@
   <script src="../../shared/payroll.js"></script>
   </head>
 <body>
+<script>var _embedded=new URLSearchParams(window.location.search).get('embed')==='1';</script>
 <div class="page">
-  <header id="ym-header"><div class="header-left"></div><div class="header-right"></div></header>
+  <header id="ym-header" class="pr-standalone-only"><div class="header-left"></div><div class="header-right"></div></header>
   <main>
-    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+    <div class="pr-standalone-only" style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
       <h2 style="margin:0;font-size:18px" data-s="admin.tabPayroll"></h2>
       <a href="../" style="font-size:11px;color:var(--muted);text-decoration:none">&#8592; Admin</a>
     </div>
@@ -210,7 +211,18 @@ function prToggleId(id){var el=document.getElementById(id);if(el)el.classList.to
 
 /* == Bootstrap == */
 var user=requireAuth(isAdmin);
-if(user){buildHeader('payroll');applyStrings(document.body);}
+if(user){
+  if(!_embedded) buildHeader('payroll');
+  applyStrings(document.body);
+  if(_embedded){
+    document.querySelectorAll('.pr-standalone-only').forEach(function(el){el.style.display='none';});
+    document.body.style.margin='0';document.body.style.padding='0';
+    new ResizeObserver(function(){
+      var h=document.documentElement.scrollHeight;
+      if(window.parent!==window) window.parent.postMessage({type:'payroll-resize',height:h},'*');
+    }).observe(document.body);
+  }
+}
 var _members=[],_empData={},_empByMember={},_previewData={},_tsEmployees=[],_closedPeriods=new Set();
 var _tsEntries=[],_calYear=new Date().getFullYear(),_calMonth=new Date().getMonth(),_calView='cal',_editId=null;
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
