@@ -1,5 +1,5 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, category, clubEndorsement, expires, expiryDate, subcats:[{key,label,description,rank,expiryDate}] }
+// Cert def: { id, name, description, color, category, clubEndorsement, expires, subcats:[{key,label,description,rank}] }
 // Assignment: { certId, sub, category, title, idNumber, issuingAuthority, issueDate, expires, expiresAt, description, assignedBy, assignedAt, verifiedBy, verifiedAt }
 
 const DEFAULT_CERT_DEFS = [
@@ -21,6 +21,7 @@ const DEFAULT_CERT_CATEGORIES = [
   'Safeguarding',
   'Coaching/Race Management Qualifications',
   'Educational Qualifications',
+  'Club Endorsement',
 ];
 
 function certCategoriesFromConfig(saved) {

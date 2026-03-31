@@ -854,12 +854,8 @@
 
     <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="cdExpires" onchange="toggleCdExpiry()"> <span data-s="admin.certExpires"></span>
+        <input type="checkbox" id="cdExpires"> <span data-s="admin.certExpires"></span>
       </label>
-      <div id="cdExpiryDateWrap" style="display:none">
-        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px" data-s="admin.certExpiryDate"></label>
-        <input type="date" id="cdExpiryDate" style="font-size:12px">
-      </div>
       <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px">
         <input type="checkbox" id="cdHasIdNumber"> <span data-s="admin.certHasId"></span>
       </label>
@@ -2256,12 +2252,11 @@ function renderCertDefs() {
     const catStr = d.category
       ? `<span style="color:var(--brass);font-size:10px">[${esc(d.category)}]</span> ` : "";
     const expiryStr = d.expires
-      ? `<span style="color:var(--muted)"> · exp. ${d.expiryDate || "date required at assign"}</span>` : "";
+      ? `<span style="color:var(--muted)"> · expires</span>` : "";
     const subcatStr = d.subcats?.length
       ? d.subcats.map(sc => {
           const parts = [sc.label];
           if (sc.rank != null) parts.push(`rank ${sc.rank}`);
-          if (sc.expiryDate)   parts.push(`exp. ${sc.expiryDate}`);
           if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
           return parts.join(" · ");
         }).join(", ")
@@ -2300,8 +2295,6 @@ function openCertDefModal(id) {
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
   document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
   document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
-  document.getElementById("cdExpiryDate").value       = d?.expiryDate || "";
-  document.getElementById("cdExpiryDateWrap").style.display = d?.expires ? "" : "none";
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);
   // Category dropdown
   populateCdCategorySelect(d?.category || '');
@@ -2346,7 +2339,6 @@ async function saveCertDef() {
     color:            document.getElementById("cdColor").value,
     hasIdNumber:      document.getElementById("cdHasIdNumber").checked,
     expires,
-    expiryDate:       expires ? (document.getElementById("cdExpiryDate").value || null) : null,
   };
 
   btn.disabled = true;
@@ -2394,12 +2386,7 @@ async function deleteCertDefById(id) {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
-function toggleCdExpiry() {
-  document.getElementById("cdExpiryDateWrap").style.display =
-    document.getElementById("cdExpires").checked ? "" : "none";
-}
-
-// Subcat row — no renewalDays field; expiry is an absolute date only on the subcat
+// Subcat row
 let _subcatCounter = 0;
 function addSubcatRow(sc) {
   const i   = _subcatCounter++;
@@ -2417,32 +2404,23 @@ function addSubcatRow(sc) {
         style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
       <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove" style="font-size:16px;padding:2px 6px">×</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div>
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
-        <input type="text" placeholder="e.g. World Sailing" value="${esc(sc?.issuingAuthority || "")}"
-          style="width:100%;box-sizing:border-box;font-size:12px" data-field="issuingAuthority">
-      </div>
-      <div>
-        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">FIXED EXPIRY DATE (overrides parent)</label>
-        <input type="date" value="${esc(sc?.expiryDate || "")}"
-          style="width:100%;box-sizing:border-box;font-size:12px" data-field="expiryDate">
-      </div>
+    <div>
+      <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
+      <input type="text" placeholder="e.g. World Sailing" value="${esc(sc?.issuingAuthority || "")}"
+        style="width:100%;box-sizing:border-box;font-size:12px" data-field="issuingAuthority">
     </div>`;
   document.getElementById("subcatRows").appendChild(row);
 }
 
 function gatherSubcats() {
   return [...document.querySelectorAll("#subcatRows .list-row")].map(row => {
-    const label      = row.querySelector('[data-field="label"]').value.trim();
-    const expiryDate = row.querySelector('[data-field="expiryDate"]').value.trim();
+    const label = row.querySelector('[data-field="label"]').value.trim();
     return {
       key:              label.toLowerCase().replace(/\s+/g, "_"),
       label,
       description:      row.querySelector('[data-field="desc"]').value.trim(),
       rank:             parseInt(row.querySelector('[data-field="rank"]').value) || null,
       issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
-      expiryDate:       expiryDate || null,
     };
   }).filter(sc => sc.label);
 }
@@ -2572,9 +2550,9 @@ function updateMcmCertTypes() {
   const category = document.getElementById("mcmCategory").value;
   const typeSel = document.getElementById("mcmCertType");
   typeSel.innerHTML = `<option value="">Select…</option>`;
-  // Filter cert defs by category (show all if no category selected, exclude endorsements)
+  // Filter cert defs by category (endorsements shown under "Club Endorsement" category)
   const filtered = certDefs.filter(d => {
-    if (d.clubEndorsement) return false;
+    if (d.clubEndorsement) return category === 'Club Endorsement';
     if (!category) return true;
     return (d.category || '') === category || !d.category;
   });
@@ -2649,11 +2627,10 @@ function updateMCMSubcats() {
   if (def?.issuingAuthority && !document.getElementById("mcmIssuingAuthority").value) {
     document.getElementById("mcmIssuingAuthority").value = def.issuingAuthority;
   }
-  // Pre-fill expiry from top-level
+  // Pre-check expiry toggle from cert def (date is member-specific)
   if (def?.expires) {
     document.getElementById("mcmExpires").checked = true;
     document.getElementById("mcmExpiryDateField").style.display = "";
-    document.getElementById("mcmExpiresAt").value = def.expiryDate || "";
   }
 }
 
