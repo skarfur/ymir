@@ -2515,7 +2515,11 @@ function openMemberCertModal(memberId) {
 function populateMcmCategories() {
   const sel = document.getElementById("mcmCategory");
   sel.innerHTML = `<option value="">${s('admin.certCategorySelect')}</option>`;
-  certCategories.forEach(c => {
+  // Build category list, ensuring "Club Endorsement" appears if endorsement defs exist
+  const cats = certCategories.slice();
+  const hasEndorsements = certDefs.some(d => d.clubEndorsement);
+  if (hasEndorsements && !cats.includes('Club Endorsement')) cats.push('Club Endorsement');
+  cats.forEach(c => {
     const o = document.createElement("option");
     o.value = c; o.textContent = c;
     sel.appendChild(o);
