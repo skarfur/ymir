@@ -312,11 +312,45 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           oninput="searchManualMember(this,'mSkipperDrop')" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
-      <div class="form-field"><label>Boat</label>
+      <!-- Non-club trip toggle -->
+      <div class="form-field" style="margin-bottom:8px">
+        <label class="flex-center gap-6" style="cursor:pointer;font-size:11px">
+          <input type="checkbox" id="mNonClub" onchange="onNonClubToggle()" style="width:auto;accent-color:var(--brass)">
+          <span data-s="logbook.nonClubToggle">Non-club trip</span>
+          <span class="text-muted" style="font-size:9px;font-weight:400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
+        </label>
+      </div>
+      <!-- Club boat (default) -->
+      <div id="mBoatClub" class="form-field"><label>Boat</label>
         <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
       </div>
-      <div class="form-field"><label>Location</label>
+      <!-- Non-club boat (hidden by default) -->
+      <div id="mBoatFree" class="form-field" style="display:none">
+        <label data-s="logbook.boatNameLabel">Boat name</label>
+        <input type="text" id="mBoatFreeInput" placeholder="e.g. Sunfish, RIB, etc." autocomplete="off">
+        <div class="form-row mt-4">
+          <div class="form-field"><label data-s="logbook.boatCategory">Category</label>
+            <select id="mBoatFreeCat">
+              <option value="dinghy">Dinghy</option><option value="keelboat">Keelboat</option>
+              <option value="kayak">Kayak</option><option value="rowboat">Rowboat</option>
+              <option value="sup">SUP</option><option value="wingfoil">Wingfoil</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Club location (default) -->
+      <div id="mLocClub" class="form-field"><label>Location</label>
         <select id="mLocation"><option value="">Select location…</option></select>
+      </div>
+      <!-- Non-club location (hidden by default) -->
+      <div id="mLocFree" class="form-field" style="display:none">
+        <label data-s="lbl.location">Location</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off" style="flex:1">
+          <button type="button" class="btn-secondary" id="mLocGeoBtn" onclick="useMyLocation('mLocFreeInput','mLocGeoStatus')" style="white-space:nowrap;font-size:10px;padding:6px 10px" data-s="logbook.useMyLocation">📍 Use my location</button>
+        </div>
+        <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div>
       </div>
       <div class="form-row">
         <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
