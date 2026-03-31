@@ -275,7 +275,7 @@ let _maintFilter = 'open', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
 
 // Globals required by shared/logbook.js
-var allTrips = [], myTrips = [], allBoats = [];
+var allTrips = [], myTrips = [], allBoats = [], allMembers = [], allLocs = [];
 const _windUnit = getPref('windUnit', 'bft');
 // parseDateParts / bftLabel used by tripCard()
 function parseDateParts(d) {
@@ -338,9 +338,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     _crewConfirmations = confRes.confirmations || confRes.items || [];
 
     // Populate logbook globals
-    allBoats = _boats;
-    allTrips = _allTrips;
-    myTrips  = _myTrips;
+    allBoats   = _boats;
+    allTrips   = _allTrips;
+    myTrips    = _myTrips;
+    allMembers = _cqMembers;
 
     renderStats();
     buildMaintBoatFilter();
