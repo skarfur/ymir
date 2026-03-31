@@ -165,6 +165,7 @@
     <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
     <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
+    <a class="act-btn" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -246,6 +247,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof isCaptain === 'function' && isCaptain(user)) {
     document.getElementById('captainQBtn').style.display = '';
   }
+  if (typeof hasRowingEndorsement === 'function' && hasRowingEndorsement(user)) {
+    document.getElementById('coxswainBtn').style.display = '';
+  }
 
   document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
   document.getElementById('welcomeSub').textContent  = user.kennitala || '';
@@ -301,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
   const active = checkouts.filter(c => c.status === 'out');
-  renderFleetStatus('fleetStatus', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true });
+  renderFleetStatus('fleetStatus', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true, currentUser: user });
 }
 function toggleCat(el) { toggleFleetCat(el); }
 function toggleFleetCat(toggle) {

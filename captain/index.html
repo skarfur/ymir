@@ -350,6 +350,34 @@
   </div>
 </div>
 
+<!-- ══ RESERVATION MODAL ══ -->
+<div class="modal-overlay hidden" id="resModal" onclick="if(event.target===this)closeModal('resModal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 data-s="boat.addReservation"></h3>
+      <button class="modal-close-x" onclick="closeModal('resModal')">×</button>
+    </div>
+    <div class="field">
+      <label data-s="cq.resMember">Member</label>
+      <div style="position:relative">
+        <input type="text" id="cqResMemberSearch" autocomplete="off" placeholder="" oninput="searchCqResMember(this.value)">
+        <div id="cqResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+        <input type="hidden" id="cqResMemberKt">
+        <div id="cqResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label data-s="cq.resStartDate">Start</label><input type="date" id="cqResStart"></div>
+      <div class="field"><label data-s="cq.resEndDate">End</label><input type="date" id="cqResEnd"></div>
+    </div>
+    <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="cqResNote"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('resModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="saveCqReservation()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
@@ -967,10 +995,16 @@ async function saveBio() {
 // ══ MY BOATS ═════════════════════════════════════════════════════════════════
 function renderBoats() {
   var el = document.getElementById('boatList');
-  // Find boats chartered to this member or owned by them
+  // Find boats: owned, reserved for captain, or controlled-access with captain gate cert
   var myBoats = _boats.filter(b => {
+    // Private boat owned by this captain
+    if (b.ownership === 'private' && (String(b.ownerId || b.ownerKennitala || '') === String(user.kennitala))) return true;
+    // Controlled-access boat with captain gate cert
+    if (b.accessMode === 'controlled' && b.accessGateCert === 'captain') return true;
+    // Boat with active reservation for this captain
+    if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
+    // Legacy: chartered to this captain
     if (b.charter && String(b.charter.memberKennitala) === String(user.kennitala)) return true;
-    if (b.ownerKennitala && String(b.ownerKennitala) === String(user.kennitala)) return true;
     return false;
   });
 
@@ -979,9 +1013,27 @@ function renderBoats() {
     var isOos = boolVal(b.oos);
     var portName = '';
     if (b.defaultPortId) { var loc = _locations.find(l => l.id === b.defaultPortId); if (loc) portName = loc.name; }
+    var isOwner = b.ownership === 'private' && (String(b.ownerId || b.ownerKennitala || '') === String(user.kennitala));
+    var isControlled = b.accessMode === 'controlled';
+
+    // Reservation list
+    var resHtml = '';
+    if (b.reservations && b.reservations.length) {
+      resHtml = '<div style="margin-top:8px;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px">' + s('cq.reservations') + '</div>';
+      resHtml += b.reservations.map(r => {
+        return '<div style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center">'
+          + '<span>' + esc(r.memberName) + ' · ' + esc(r.startDate) + ' → ' + esc(r.endDate)
+          + (r.note ? ' · <span style="color:var(--muted)">' + esc(r.note) + '</span>' : '') + '</span>'
+          + '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeCqReservation(\'' + esc(b.id) + '\',\'' + esc(r.id) + '\')">&times;</button>'
+          + '</div>';
+      }).join('');
+    }
+
     return '<div class="cq-boat">'
       + '<div>'
-        + '<div class="cq-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name) + '</div>'
+        + '<div class="cq-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name)
+          + (isControlled ? ' <span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass)">' + esc(s('fleet.badgeControlled')) + '</span>' : '')
+        + '</div>'
         + '<div class="cq-boat-sub">'
           + (isOos ? '<span style="color:var(--red)">OUT OF SERVICE</span>' : '<span style="color:var(--green)">AVAILABLE</span>')
           + (portName ? ' · ' + esc(portName) : '')
@@ -990,7 +1042,9 @@ function renderBoats() {
       + '<div class="cq-boat-actions">'
         + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cq.makeAvailable' : 'cq.makeUnavailable') + '</button>'
         + '<button onclick="openPortModal(\'' + esc(b.id) + '\')">' + s('cq.changePort') + '</button>'
+        + '<button onclick="openResModal(\'' + esc(b.id) + '\')">' + s('cq.addReservation') + '</button>'
       + '</div>'
+      + resHtml
     + '</div>';
   }).join('');
 }
@@ -1038,6 +1092,69 @@ async function toggleBoatOos(boatId, oos) {
       renderBoats();
       showToast(s('toast.saved'), 'ok');
     }
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+// ══ RESERVATION MANAGEMENT ═══════════════════════════════════════════════════
+var _resBoatId = null;
+
+function openResModal(boatId) {
+  _resBoatId = boatId;
+  document.getElementById('cqResMemberKt').value = '';
+  document.getElementById('cqResMemberSearch').value = '';
+  document.getElementById('cqResMemberName').textContent = '';
+  document.getElementById('cqResMemberSuggestions').innerHTML = '';
+  document.getElementById('cqResStart').value = '';
+  document.getElementById('cqResEnd').value = '';
+  document.getElementById('cqResNote').value = '';
+  openModal('resModal');
+}
+
+function searchCqResMember(q) {
+  var drop = document.getElementById('cqResMemberSuggestions');
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  var ql = q.toLowerCase();
+  var hits = _cqMembers.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+    + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
+  drop.style.display = 'block';
+}
+
+function selectCqResMember(kt, name) {
+  document.getElementById('cqResMemberKt').value = kt;
+  document.getElementById('cqResMemberSearch').value = '';
+  document.getElementById('cqResMemberName').textContent = name;
+  document.getElementById('cqResMemberSuggestions').innerHTML = '';
+  document.getElementById('cqResMemberSuggestions').style.display = 'none';
+}
+
+async function saveCqReservation() {
+  if (!_resBoatId) return;
+  var kt = document.getElementById('cqResMemberKt').value;
+  var name = document.getElementById('cqResMemberName').textContent;
+  var start = document.getElementById('cqResStart').value;
+  var end = document.getElementById('cqResEnd').value;
+  var note = document.getElementById('cqResNote').value.trim();
+  if (!kt || !name || !start || !end) { showToast('Member and dates required.', 'err'); return; }
+  try {
+    var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var b = _boats.find(x => x.id === _resBoatId);
+    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    closeModal('resModal');
+    renderBoats();
+    showToast(s('boat.reservationSaved'), 'ok');
+  } catch (e) { showToast(e.message, 'err'); }
+}
+
+async function removeCqReservation(boatId, resId) {
+  if (!confirm(s('boat.removeReservation') + '?')) return;
+  try {
+    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var b = _boats.find(x => x.id === boatId);
+    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    renderBoats();
+    showToast(s('boat.reservationRemoved'), 'ok');
   } catch (e) { showToast(e.message, 'err'); }
 }
 

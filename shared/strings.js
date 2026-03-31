@@ -885,6 +885,42 @@ const STRINGS = {
   'boat.charterSaved':       { EN:'Charter saved',                         IS:'Leiga vistuð' },
   'boat.charterRemoved':     { EN:'Charter removed',                       IS:'Leiga fjarlægð' },
 
+  // ── Boat access control & reservations ────────────────────────────────────
+  'boat.accessMode':         { EN:'Access Mode',                            IS:'Aðgangshamur' },
+  'boat.accessFree':         { EN:'Free Access',                            IS:'Frjáls aðgangur' },
+  'boat.accessControlled':   { EN:'Controlled Access',                      IS:'Stýrður aðgangur' },
+  'boat.gateCert':           { EN:'Required Certification',                 IS:'Nauðsynleg vottun' },
+  'boat.gateCertNone':       { EN:'None (allowlist only)',                   IS:'Ekkert (aðeins listi)' },
+  'boat.allowlist':          { EN:'Allowed Members',                        IS:'Leyfilegir meðlimir' },
+  'boat.allowlistAdd':       { EN:'Add member…',                            IS:'Bæta við meðlim…' },
+  'boat.reservations':       { EN:'Reservations',                           IS:'Bókanir' },
+  'boat.addReservation':     { EN:'Add Reservation',                        IS:'Bæta við bókun' },
+  'boat.removeReservation':  { EN:'Remove',                                 IS:'Fjarlægja' },
+  'boat.reservationSaved':   { EN:'Reservation saved',                      IS:'Bókun vistuð' },
+  'boat.reservationRemoved': { EN:'Reservation removed',                    IS:'Bókun fjarlægð' },
+  'boat.reservedFor':        { EN:'Reserved for {name}',                    IS:'Frátekið fyrir {name}' },
+  'boat.reservedUntil':      { EN:'until {date}',                           IS:'til {date}' },
+  'boat.reservationNote':    { EN:'Note',                                   IS:'Athugasemd' },
+  'boat.accessDenied':       { EN:'You do not have access to this boat',    IS:'Þú hefur ekki aðgang að þessum bát' },
+  'boat.accessSaved':        { EN:'Access settings saved',                  IS:'Aðgangsstillingar vistaðar' },
+  'fleet.badgeControlled':   { EN:'CONTROLLED',                             IS:'STÝRT' },
+  'fleet.badgeRestricted':   { EN:'RESTRICTED',                             IS:'TAKMARKAÐ' },
+  'fleet.badgeAuthorized':   { EN:'AUTHORIZED',                             IS:'HEIMILAÐ' },
+  'fleet.badgeReserved':     { EN:'RESERVED',                               IS:'FRÁTEKIÐ' },
+
+  // ── Coxswain's Seat ───────────────────────────────────────────────────────
+  'nav.coxswainSeat':        { EN:'🚣 Coxswain\'s Seat',                   IS:'🚣 Stýrimannssæti' },
+  'cox.title':               { EN:'Coxswain\'s Seat',                       IS:'Stýrimannssæti' },
+  'cox.noBoats':             { EN:'No rowing shells assigned',              IS:'Engin róðrarskip úthlutað' },
+  'cox.statsTrips':          { EN:'TRIPS',                                  IS:'FERÐIR' },
+  'cox.statsHours':          { EN:'HOURS',                                  IS:'KLST.' },
+  'cox.statsDist':           { EN:'DISTANCE',                               IS:'VEGALENGD' },
+  'cox.boatAvailability':    { EN:'BOAT AVAILABILITY',                      IS:'AÐGENGI BÁTA' },
+  'cox.trips':               { EN:'TRIPS',                                  IS:'FERÐIR' },
+  'cox.maintenance':         { EN:'MAINTENANCE',                            IS:'VIÐHALD' },
+  'cox.bio':                 { EN:'BIO & PROFILE',                          IS:'ÆVIÁGRIP' },
+  'cox.readOnly':            { EN:'View only — contact a coxswain for changes', IS:'Aðeins skoðun — hafðu samband við stýrimann' },
+
   // ── Public dashboard ──────────────────────────────────────────────────────
   'pub.dash.title':          { EN:'Club Dashboard',                        IS:'Yfirlit klúbbs' },
   'pub.dash.subtitle':       { EN:'Siglingafélagið Ýmir',                  IS:'Siglingafélagið Ýmir' },
@@ -1120,6 +1156,13 @@ const STRINGS = {
   'cq.makeAvailable':        { EN:'Mark available',                       IS:'Merkja tiltækan' },
   'cq.changePort':           { EN:'Change home port',                     IS:'Breyta heimahöfn' },
   'cq.viewPublicProfile':    { EN:'View public profile →',                IS:'Skoða opinbert prófíl →' },
+  'cq.reservations':         { EN:'RESERVATIONS',                          IS:'BÓKANIR' },
+  'cq.noReservations':       { EN:'No reservations.',                      IS:'Engar bókanir.' },
+  'cq.addReservation':       { EN:'Add Reservation',                       IS:'Bæta við bókun' },
+  'cq.resStartDate':         { EN:'Start date',                            IS:'Upphafsdagur' },
+  'cq.resEndDate':           { EN:'End date',                              IS:'Lokadagur' },
+  'cq.resNote':              { EN:'Note (optional)',                        IS:'Athugasemd (valfrjálst)' },
+  'cq.resMember':            { EN:'Member',                                IS:'Meðlimur' },
 
 };
 

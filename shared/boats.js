@@ -98,6 +98,53 @@ function isPrivate(boat) {
   return boat && boat.ownership === 'private';
 }
 
+/** Returns true if the boat is in controlled-access mode. */
+function isControlledAccess(boat) {
+  return boat && boat.accessMode === 'controlled';
+}
+
+/** Returns true if the boat has an active reservation for the given member. */
+function hasActiveReservation(boat, kennitala) {
+  if (!boat || !boat.reservations || !boat.reservations.length) return false;
+  var today = todayISO();
+  return boat.reservations.some(function(r) {
+    return String(r.memberKennitala) === String(kennitala) && today >= r.startDate && today <= r.endDate;
+  });
+}
+
+/** Returns the first active reservation (today within range), or null. */
+function getActiveReservation(boat) {
+  if (!boat || !boat.reservations || !boat.reservations.length) return null;
+  var today = todayISO();
+  for (var i = 0; i < boat.reservations.length; i++) {
+    var r = boat.reservations[i];
+    if (today >= r.startDate && today <= r.endDate) return r;
+  }
+  return null;
+}
+
+/**
+ * Returns true if the given user can access this boat.
+ * Free-access boats: anyone. Controlled-access boats: staff, owner, cert-gated, allowlisted, or has reservation.
+ */
+function canAccessBoat(boat, user) {
+  if (!boat || !boat.accessMode || boat.accessMode === 'free') return true;
+  if (!user) return false;
+  if (isStaff(user)) return true;
+  // Private boat owner always has access
+  if (boat.ownership === 'private' && String(boat.ownerId || boat.ownerKennitala || '') === String(user.kennitala)) return true;
+  // Check cert gate
+  if (boat.accessGateCert) {
+    var certs = parseJson(user.certifications, []);
+    if (Array.isArray(certs) && certs.some(function(c) { return c.sub === boat.accessGateCert; })) return true;
+  }
+  // Check allowlist
+  if (boat.accessAllowlist && Array.isArray(boat.accessAllowlist) && boat.accessAllowlist.indexOf(String(user.kennitala)) !== -1) return true;
+  // Check active reservation for this user
+  if (hasActiveReservation(boat, user.kennitala)) return true;
+  return false;
+}
+
 function boatCatBadge(cat) {
   const key = (cat||"other").toLowerCase();
   const col = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
@@ -170,15 +217,23 @@ function renderBoatCard(boat, opts) {
   const locLine = (status==="avail" && boat.location)
     ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${_besc(boat.location)}</div>` : "";
 
-  // Ownership / charter info
+  // Ownership / charter / reservation info
   const chartered = isChartered(boat);
   const priv      = isPrivate(boat);
+  const activeRes = getActiveReservation(boat);
+  const controlled = isControlledAccess(boat);
+  const curUser   = opts.currentUser || null;
+  const userCanAccess = curUser ? canAccessBoat(boat, curUser) : true;
   let ownerLine = "";
   if (priv && boat.ownerName) {
     ownerLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">${_besc(s("fleet.ownedBy",{name:boat.ownerName}))}</div>`;
   }
   let charterLine = "";
-  if (chartered) {
+  if (activeRes) {
+    charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
+                + `${_besc(s("boat.reservedFor",{name:activeRes.memberName}))} ${_besc(s("boat.reservedUntil",{date:activeRes.endDate}))}`
+                + `</div>`;
+  } else if (chartered) {
     const ch = boat.charter;
     charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
                 + `${_besc(s("fleet.charteredTo",{name:ch.memberName}))} ${_besc(s("fleet.charteredUntil",{date:ch.endDate}))}`
@@ -193,16 +248,23 @@ function renderBoatCard(boat, opts) {
     ? ` style="cursor:pointer" onclick="${opts.onClick}"`
     : "";
 
-  // Extra badge for chartered / private boats
+  // Extra badge for access mode / chartered / private / reserved boats
   let ownerBadge = "";
-  if (chartered) {
+  if (controlled && !userCanAccess && !opts.staffView) {
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11;margin-left:4px">${_besc(s("fleet.badgeRestricted"))}</span>`;
+  } else if (activeRes) {
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeReserved"))}</span>`;
+  } else if (controlled && userCanAccess && !opts.staffView) {
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111;margin-left:4px">${_besc(s("fleet.badgeAuthorized"))}</span>`;
+  } else if (chartered) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
   } else if (priv) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--muted);border-color:var(--border);background:var(--surface);margin-left:4px">${_besc(s("fleet.badgePrivate"))}</span>`;
   }
 
-  // Muted card style for chartered boats visible to non-staff
-  const charteredMuted = (chartered && !opts.staffView) ? "opacity:.55;pointer-events:none;" : "";
+  // Muted card style for restricted boats (controlled access without authorization, or chartered for non-staff)
+  const isMuted = (!opts.staffView && ((controlled && !userCanAccess) || (chartered && !activeRes)));
+  const charteredMuted = isMuted ? "opacity:.55;pointer-events:none;" : "";
 
   return `<div class="bc-card bc-${status}"${clickAttr} style="${charteredMuted}">`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
@@ -377,8 +439,9 @@ function renderFleetStatus(containerId, boats, active, opts) {
     const col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
     const emoji    = boatEmoji(key);
     const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
-    const isStaff  = !!opts.staffView;
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaff || !isChartered(b)));
+    const isStaffV = !!opts.staffView;
+    const fleetUser = opts.currentUser || null;
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaffV || (!isChartered(b) && canAccessBoat(b, fleetUser))));
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const catId    = containerId + '-fcat-' + encodeURIComponent(key);
 
@@ -392,10 +455,10 @@ function renderFleetStatus(containerId, boats, active, opts) {
       if (onClickAct) {
         // onClickAction receives the full boat object via registry — always clickable
         clickOpts = { onClickAction: onClickAct };
-      } else if (status === 'avail' && onAvail && (isStaff || !isChartered(b))) {
+      } else if (status === 'avail' && onAvail && (isStaffV || (!isChartered(b) && canAccessBoat(b, fleetUser)))) {
         clickOpts = { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) };
       }
-      return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaff }, clickOpts));
+      return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaffV, currentUser: fleetUser }, clickOpts));
     }).join('');
 
     return `<div class="fleet-status-block">

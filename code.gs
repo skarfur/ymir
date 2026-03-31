@@ -389,6 +389,9 @@ function route_(action, b) {
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
     case 'saveCharter': return saveCharter_(b);
     case 'removeCharter': return removeCharter_(b);
+    case 'saveBoatAccess': return saveBoatAccess_(b);
+    case 'saveReservation': return saveReservation_(b);
+    case 'removeReservation': return removeReservation_(b);
     case 'saveCaptainBio': return saveCaptainBio_(b);
     case 'uploadHeadshot': return uploadHeadshot_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
@@ -1159,6 +1162,24 @@ function getConfig_() {
   const certCategories = getCertCategoriesFromMap_(cfgMap);
   let boats = [], locations = [];
   try { var bRaw = getConfigValue_('boats', cfgMap); if (bRaw) boats = JSON.parse(bRaw); } catch (e) { }
+  // Lazy migration: charter → reservations
+  var boatsMigrated = false;
+  boats.forEach(function(bt) {
+    if (!bt.accessMode) { bt.accessMode = 'free'; boatsMigrated = true; }
+    if (bt.charter && !bt.reservations) {
+      bt.reservations = [{
+        id: 'res_' + uid_(),
+        memberKennitala: bt.charter.memberKennitala || '',
+        memberName: bt.charter.memberName || '',
+        startDate: bt.charter.startDate || '',
+        endDate: bt.charter.endDate || '',
+        note: 'Migrated from charter',
+      }];
+      delete bt.charter;
+      boatsMigrated = true;
+    }
+  });
+  if (boatsMigrated) { try { setConfigSheetValue_('boats', JSON.stringify(boats)); } catch(e) {} }
   try { var lRaw = getConfigValue_('locations', cfgMap); if (lRaw) locations = JSON.parse(lRaw); } catch (e) { }
   let launchChecklists = {};
   try { var lRaw = getConfigValue_('launchChecklists', cfgMap); if (lRaw) launchChecklists = JSON.parse(lRaw); } catch (e) { }
@@ -1479,6 +1500,37 @@ function getActiveCheckouts_() {
 
 function saveCheckout_(b) {
   ensureCheckoutContactCols_();
+  // Access-control check for controlled-access boats
+  if (b.boatId) {
+    try {
+      var cfgMap = getConfigMap_();
+      var allBoats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
+      var checkBoat = allBoats.find(function(x) { return x.id === b.boatId; });
+      if (checkBoat && checkBoat.accessMode === 'controlled') {
+        var checkKt = String(b.memberKennitala || b.memberKt || b.kennitala || '');
+        var checkMember = checkKt ? (getMemberMap_()[checkKt] || null) : null;
+        var isStaffRole = checkMember && (checkMember.role === 'staff' || checkMember.role === 'admin');
+        if (!isStaffRole) {
+          var hasAccess = false;
+          // Owner check
+          if (checkBoat.ownership === 'private' && String(checkBoat.ownerId || checkBoat.ownerKennitala || '') === checkKt) hasAccess = true;
+          // Cert gate check
+          if (!hasAccess && checkBoat.accessGateCert && checkMember && checkMember.certifications) {
+            var memberCerts = typeof checkMember.certifications === 'string' ? JSON.parse(checkMember.certifications) : (checkMember.certifications || []);
+            if (Array.isArray(memberCerts) && memberCerts.some(function(c) { return c.sub === checkBoat.accessGateCert; })) hasAccess = true;
+          }
+          // Allowlist check
+          if (!hasAccess && checkBoat.accessAllowlist && Array.isArray(checkBoat.accessAllowlist) && checkBoat.accessAllowlist.indexOf(checkKt) !== -1) hasAccess = true;
+          // Reservation check
+          if (!hasAccess && checkBoat.reservations && checkBoat.reservations.length) {
+            var today = new Date().toISOString().slice(0, 10);
+            hasAccess = checkBoat.reservations.some(function(r) { return String(r.memberKennitala) === checkKt && today >= r.startDate && today <= r.endDate; });
+          }
+          if (!hasAccess) return failJ('Access denied: this boat requires authorization');
+        }
+      }
+    } catch (e) { /* proceed — don't block checkout on validation errors */ }
+  }
   const ts = now_(), id = uid_();
   const kt = String(b.memberKennitala || b.memberKt || b.kennitala || '');
   let memberPhone = '', memberIsMinor = false, guardianName = '', guardianPhone = '';
@@ -1640,6 +1692,69 @@ function removeCharter_(b) {
   const idx = boats.findIndex(x => x.id === b.boatId);
   if (idx < 0) return failJ('Boat not found');
   delete boats[idx].charter;
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+// ── Boat access & reservations ────────────────────────────────────────────
+
+function saveBoatAccess_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  if (b.accessMode !== undefined) boats[idx].accessMode = b.accessMode === 'controlled' ? 'controlled' : 'free';
+  if (b.accessGateCert !== undefined) boats[idx].accessGateCert = String(b.accessGateCert || '');
+  if (b.accessAllowlist !== undefined) boats[idx].accessAllowlist = Array.isArray(b.accessAllowlist) ? b.accessAllowlist.map(String) : [];
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+function saveReservation_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.memberKennitala || !b.memberName) return failJ('member required');
+  if (!b.startDate || !b.endDate) return failJ('startDate and endDate required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  if (!boats[idx].reservations) boats[idx].reservations = [];
+  const resId = b.reservationId || ('res_' + uid_());
+  const resIdx = boats[idx].reservations.findIndex(r => r.id === resId);
+  const res = {
+    id: resId,
+    memberKennitala: String(b.memberKennitala),
+    memberName: String(b.memberName),
+    startDate: String(b.startDate),
+    endDate: String(b.endDate),
+    note: String(b.note || ''),
+  };
+  if (resIdx >= 0) boats[idx].reservations[resIdx] = res;
+  else boats[idx].reservations.push(res);
+  // Also maintain legacy charter field for backward compat
+  boats[idx].charter = { memberKennitala: res.memberKennitala, memberName: res.memberName, startDate: res.startDate, endDate: res.endDate };
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx], reservation: res });
+}
+
+function removeReservation_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.reservationId) return failJ('reservationId required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.boatId);
+  if (idx < 0) return failJ('Boat not found');
+  if (!boats[idx].reservations) boats[idx].reservations = [];
+  boats[idx].reservations = boats[idx].reservations.filter(r => r.id !== b.reservationId);
+  // Clear legacy charter if no reservations remain
+  if (!boats[idx].reservations.length) delete boats[idx].charter;
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });

@@ -30,7 +30,8 @@ async function apiPost(action, payload) {
       action === 'saveActivityType' || action === 'deleteActivityType' ||
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
       action === 'saveCertDef' || action === 'deleteCertDef' ||
-      action === 'saveCertCategories') {
+      action === 'saveCertCategories' ||
+      action === 'saveBoatAccess' || action === 'saveReservation' || action === 'removeReservation') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
@@ -72,6 +73,17 @@ function isCaptain(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain'; });
+}
+function isCoxswain(u) {
+  if (!u || !u.certifications) return false;
+  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
+  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'coxswain'; });
+}
+function hasRowingEndorsement(u) {
+  if (!u || !u.certifications) return false;
+  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
+  var rowingSubs = ['coxswain', 'released_rower'];
+  return Array.isArray(certs) && certs.some(function(c) { return rowingSubs.indexOf(c.sub) !== -1; });
 }
 
 function signOut() {
