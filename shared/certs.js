@@ -152,6 +152,55 @@ function certCardHTML(enriched) {
   </div>`;
 }
 
+/**
+ * Validate the member-cert modal form and build a cert object.
+ * @param {Array} certDefs – the active cert definitions list
+ * @param {string} userName – name to stamp as assignedBy / verifiedBy
+ * @returns {Object|null} the cert object, or null if validation failed (toast already shown)
+ */
+function buildMemberCertFromForm(certDefs, userName) {
+  const category = document.getElementById('mcmCategory').value;
+  const certId   = document.getElementById('mcmCertType').value;
+  const isCustom = certId === '__custom__';
+
+  if (!certId) { toast(s('cert.typeRequired'), 'err'); return null; }
+  if (!category || category === '__add__') { toast(s('admin.certCategoryReq'), 'err'); return null; }
+
+  const def = isCustom ? null : certDefs.find(d => d.id === certId);
+  const sub = def?.subcats?.length ? document.getElementById('mcmSubcat').value : null;
+  if (def?.subcats?.length && !sub) { toast(s('cert.levelRequired'), 'err'); return null; }
+
+  const title = isCustom
+    ? document.getElementById('mcmCustomTitle').value.trim()
+    : (def?.name || certId);
+  if (!title) { toast(s('admin.certTitleRequired'), 'err'); return null; }
+
+  const issuingAuthority = document.getElementById('mcmIssuingAuthority').value.trim();
+  if (!issuingAuthority && !def?.clubEndorsement) { toast(s('admin.certAuthorityReq'), 'err'); return null; }
+
+  const expires   = document.getElementById('mcmExpires').checked;
+  const expiresAt = expires ? document.getElementById('mcmExpiresAt').value : '';
+  if (expires && !expiresAt) { toast(s('admin.certExpiryReq'), 'err'); return null; }
+
+  const now = todayISO();
+  return {
+    certId:           isCustom ? null : certId,
+    sub:              sub || null,
+    category,
+    title,
+    idNumber:         document.getElementById('mcmIdNumber').value.trim() || '',
+    issuingAuthority,
+    issueDate:        document.getElementById('mcmIssueDate').value || '',
+    expires,
+    expiresAt:        expiresAt || '',
+    description:      document.getElementById('mcmDescription').value.trim() || '',
+    assignedBy:       userName,
+    assignedAt:       now,
+    verifiedBy:       userName,
+    verifiedAt:       now,
+  };
+}
+
 window.certCardToggle = function(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle('ccard-open');
