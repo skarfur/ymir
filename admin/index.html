@@ -216,24 +216,6 @@
         </div>
       </div><!-- /tab-members -->
 
-      <!-- ══ ASSIGN CERTIFICATIONS ══ -->
-      <div class="col-section" style="margin-top:20px">
-        <div class="col-head open" onclick="toggleSection(this)">
-          <div class="col-title" data-s="admin.certAssign"></div>
-          <span class="col-toggle open">▼</span>
-        </div>
-        <div class="col-body">
-          <div class="flex-center flex-wrap gap-8 mb-12">
-            <div class="search-bar flex-1" style="min-width:180px">
-              <input type="text" id="certMemberSearch" oninput="filterCertMembers()">
-            </div>
-            <select id="certFilterType" onchange="filterCertMembers()" style="max-width:200px">
-              <option value="" data-s="admin.certAllTypes"></option>
-            </select>
-          </div>
-          <div id="certMemberList"><div class="loading-state"><span class="spinner"></span></div></div>
-        </div>
-      </div>
     </div><!-- /top-members -->
 
     <!-- ══ TOP: SETTINGS ═════════════════════════════════════════════════════ -->
@@ -1023,17 +1005,13 @@ async function loadAll() {
 
   renderMembers(); renderBoats(); renderLocations();
   renderChecklists(); renderActTypes();
-  renderCertDefs(); renderCertMembers(); populateCertFilterType(); renderCertCategories();
+  renderCertDefs(); renderCertCategories();
   populateCategorySelects();
 }
 
 function _adminWireStrings() {
   const search = document.getElementById('memberSearch');
   if (search) search.placeholder = s('admin.searchMembers');
-  const certSearch = document.getElementById('certMemberSearch');
-  if (certSearch) certSearch.placeholder = s('admin.certSearchMember');
-  const certFilter = document.getElementById('certFilterType');
-  if (certFilter && certFilter.options[0]) certFilter.options[0].textContent = s('admin.certAllTypes');
   const bOwnerSearch = document.getElementById('bOwnerSearch');
   if (bOwnerSearch) bOwnerSearch.placeholder = s('admin.searchMember');
   const bCharterSearch = document.getElementById('bCharterMemberSearch');
@@ -2141,9 +2119,6 @@ let certEditId   = null;
 window.mcmGetMembers        = function() { return members; };
 window.mcmGetCertDefs       = function() { return certDefs; };
 window.mcmGetCertCategories = function() { return certCategories; };
-window.mcmOnUpdate          = function()  { renderCertMembers(); };
-let certMemberFilter = "";
-let certTypeFilter   = "";
 
 // ── Credential categories ─────────────────────────────────────────────────────
 function renderCertCategories() {
@@ -2306,7 +2281,7 @@ async function saveCertDef() {
     }
     certEditId = savedId;
     renderCertDefs();
-    populateCertFilterType();
+
     closeModal("certDefModal");
     toast("Credential type saved.");
   } catch(e) {
@@ -2322,7 +2297,7 @@ async function deleteCertDef() {
     await apiPost("deleteCertDef", { id: certEditId });
     certDefs = certDefs.filter(d => d.id !== certEditId);
     renderCertDefs();
-    populateCertFilterType();
+
     closeModal("certDefModal");
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
@@ -2334,7 +2309,7 @@ async function deleteCertDefById(id) {
     await apiPost("deleteCertDef", { id });
     certDefs = certDefs.filter(d => d.id !== id);
     renderCertDefs();
-    populateCertFilterType();
+
     toast("Deleted.");
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
@@ -2376,71 +2351,6 @@ function gatherSubcats() {
       issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
     };
   }).filter(sc => sc.label);
-}
-
-// ── Member cert filter & list ──────────────────────────────────────────────────
-function populateCertFilterType() {
-  const sel = document.getElementById("certFilterType");
-  if (!sel) return;
-  sel.innerHTML = `<option value="">All cert types</option>`;
-  certDefs.forEach(d => {
-    const o = document.createElement("option");
-    o.value = d.id; o.textContent = d.name;
-    sel.appendChild(o);
-  });
-  const typeSel = document.getElementById("mcmCertType");
-  if (!typeSel) return;
-  typeSel.innerHTML = `<option value="">Select…</option>`;
-  certDefs.forEach(d => {
-    const o = document.createElement("option");
-    o.value = d.id; o.textContent = d.name;
-    typeSel.appendChild(o);
-  });
-}
-
-function filterCertMembers() {
-  certMemberFilter = document.getElementById("certMemberSearch").value.toLowerCase();
-  certTypeFilter   = document.getElementById("certFilterType").value;
-  renderCertMembers();
-}
-
-function renderCertMembers() {
-  const el = document.getElementById("certMemberList");
-  if (!el) return;
-  if (!members.length && !certMemberFilter && !certTypeFilter) {
-    el.innerHTML = `<div class="loading-state"><span class="spinner"></span></div>`;
-    return;
-  }
-  const active = members.filter(m => {
-    if (!bool(m.active)) return false;
-    const nameMatch = !certMemberFilter
-      || String(m.name      || "").toLowerCase().includes(certMemberFilter)
-      || String(m.kennitala || "").includes(certMemberFilter);
-    if (!nameMatch) return false;
-    if (certTypeFilter) {
-      const certs = parseJson(m.certifications, []);
-      return certs.some(c => c.certId === certTypeFilter);
-    }
-    return true;
-  });
-  if (!active.length) {
-    el.innerHTML = `<div class="empty-state">${certMemberFilter || certTypeFilter ? "No matches." : "No members."}</div>`;
-    return;
-  }
-  el.innerHTML = active.map(m => {
-    const certs    = enrichMemberCerts(parseJson(m.certifications, []), certDefs);
-    const badgeStr = certs.length
-      ? certs.map(c => certBadgeHTML(c)).join(" ")
-      : `<span style="font-size:11px;color:var(--muted)">${s('cert.noCerts')}</span>`;
-    return `<div class="list-row" style="flex-wrap:wrap;gap:6px">
-      <div style="min-width:140px;flex:1">
-        <div style="font-size:12px;font-weight:500">${esc(m.name || "—")}</div>
-        <div style="font-size:10px;color:var(--muted)">${esc(m.kennitala || "")}</div>
-      </div>
-      <div style="flex:2;min-width:180px">${badgeStr}</div>
-      <button class="row-edit" onclick="openMemberCertModal('${m.id}')">Manage</button>
-    </div>`;
-  }).join("");
 }
 
 // ══ ALERT SETTINGS ════════════════════════════════════════════════════════════
