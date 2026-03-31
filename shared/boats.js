@@ -123,11 +123,40 @@ function getActiveReservation(boat) {
   return null;
 }
 
+/** Returns true if the boat uses slot-based scheduling. */
+function isSlotScheduled(boat) {
+  return boat && boat.slotSchedulingEnabled === true;
+}
+
+/** Returns true if the boat is available outside of admin-defined slots. */
+function isAvailableOutsideSlots(boat) {
+  return !boat || boat.availableOutsideSlots !== false;
+}
+
+/**
+ * Check if user has a booked slot right now for this boat.
+ * Requires _allSlots to be loaded (via loadSlots()).
+ */
+function hasActiveSlot(boat, kennitala, slots) {
+  if (!boat || !slots || !slots.length) return false;
+  var today = todayISO();
+  var now = new Date();
+  var nowTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  return slots.some(function(s) {
+    if (s.boatId !== boat.id || s.date !== today) return false;
+    if (s.startTime > nowTime || s.endTime <= nowTime) return false;
+    if (!s.bookedByKennitala) return false;
+    if (String(s.bookedByKennitala) === String(kennitala)) return true;
+    // Crew member check handled by caller with crew data
+    return false;
+  });
+}
+
 /**
  * Returns true if the given user can access this boat.
- * Free-access boats: anyone. Controlled-access boats: staff, owner, cert-gated, allowlisted, or has reservation.
+ * Free-access boats: anyone. Controlled-access boats: staff, owner, cert-gated, allowlisted, or has reservation/slot.
  */
-function canAccessBoat(boat, user) {
+function canAccessBoat(boat, user, opts) {
   if (!boat || !boat.accessMode || boat.accessMode === 'free') return true;
   if (!user) return false;
   if (isStaff(user)) return true;
@@ -140,8 +169,12 @@ function canAccessBoat(boat, user) {
   }
   // Check allowlist
   if (boat.accessAllowlist && Array.isArray(boat.accessAllowlist) && boat.accessAllowlist.indexOf(String(user.kennitala)) !== -1) return true;
-  // Check active reservation for this user
+  // Check active date-range reservation for this user
   if (hasActiveReservation(boat, user.kennitala)) return true;
+  // Check active slot booking
+  if (isSlotScheduled(boat) && opts && opts.slots) {
+    if (hasActiveSlot(boat, user.kennitala, opts.slots)) return true;
+  }
   return false;
 }
 

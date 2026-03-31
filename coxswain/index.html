@@ -79,6 +79,32 @@
     <div id="boatList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
+  <!-- ══ MY CREWS ══ -->
+  <div class="cx-section" id="sectCrews">
+    <div class="cx-section-hdr" data-s="cox.myCrews">MY CREWS</div>
+    <div id="crewList"><div class="empty-note" data-s="lbl.loading"></div></div>
+    <div id="crewInviteList"></div>
+    <div style="margin-top:8px">
+      <button class="btn btn-primary" style="font-size:11px" onclick="openCrewModal()" data-s="cox.createCrew">+ Create Crew</button>
+    </div>
+  </div>
+
+  <!-- ══ SLOT RESERVATIONS ══ -->
+  <div class="cx-section" id="sectSlots" style="display:none">
+    <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
+    <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+      <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
+      <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+    </div>
+    <div id="cxSlotGrid"></div>
+  </div>
+
   <!-- ══ MAINTENANCE ══ -->
   <div class="cx-section" id="sectMaint">
     <div class="cx-section-hdr" data-s="cox.maintenance"></div>
@@ -111,6 +137,65 @@
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('resModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary" onclick="saveCxReservation()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREW CREATION MODAL ══ -->
+<div class="modal-overlay hidden" id="crewModal" onclick="if(event.target===this)closeModal('crewModal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 data-s="cox.createCrewTitle">Create Crew</h3>
+      <button class="modal-close-x" onclick="closeModal('crewModal')">×</button>
+    </div>
+    <div class="field">
+      <label data-s="cox.crewName">Crew name</label>
+      <input type="text" id="cmCrewName" placeholder="e.g., Thunderbolts" style="font-size:12px">
+    </div>
+    <div class="field">
+      <label data-s="cox.numPairs">Number of pairs</label>
+      <select id="cmNumPairs" style="font-size:12px">
+        <option value="2">2 pairs (4 people)</option>
+        <option value="3">3 pairs (6 people)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label data-s="cox.yourPair">Your pair assignment</label>
+      <select id="cmMyPair" style="font-size:12px">
+        <option value="0">Pair 1</option>
+        <option value="1">Pair 2</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="createNewCrew()" data-s="cox.createCrew">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREW INVITE MODAL ══ -->
+<div class="modal-overlay hidden" id="crewInvModal" onclick="if(event.target===this)closeModal('crewInvModal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 data-s="cox.inviteMember">Invite Member</h3>
+      <button class="modal-close-x" onclick="closeModal('crewInvModal')">×</button>
+    </div>
+    <div class="field">
+      <label data-s="cox.searchMember">Member</label>
+      <div style="position:relative">
+        <input type="text" id="ciMemberSearch" autocomplete="off" placeholder="" oninput="searchCrewInvMember(this.value)">
+        <div id="ciMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+        <input type="hidden" id="ciMemberKt">
+        <div id="ciMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label data-s="cox.pairAssignment">Pair</label>
+      <select id="ciPairId" style="font-size:12px"></select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('crewInvModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="sendCrewInvite()" data-s="cox.sendInvite">Send Invite</button>
     </div>
   </div>
 </div>
@@ -157,6 +242,8 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     renderStats();
     renderBoats();
     renderMaint();
+    await loadCrews();
+    initCxSlots();
 
     applyStrings();
     warmContainer();
@@ -339,6 +426,328 @@ function renderMaint() {
       + '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(m.reportedBy || '') + ' · ' + fmtDate(m.createdAt) + '</div>'
       + '</div>';
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREW MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _myCrews = [];
+var _crewInvites = [];
+var _invCrewId = null; // crew being invited to
+
+async function loadCrews() {
+  try {
+    var [crewRes, invRes] = await Promise.all([
+      apiGet('getCrews', { kennitala: user.kennitala }),
+      apiGet('getCrewInvites', { kennitala: user.kennitala }),
+    ]);
+    _myCrews = crewRes.crews || [];
+    _crewInvites = invRes.invites || [];
+  } catch(e) { _myCrews = []; _crewInvites = []; }
+  renderCrews();
+  renderCrewInvites();
+}
+
+function renderCrews() {
+  var el = document.getElementById('crewList');
+  if (!_myCrews.length) {
+    el.innerHTML = '<div class="empty-note">' + s('cox.noCrews') + '</div>';
+    return;
+  }
+  el.innerHTML = _myCrews.map(function(c) {
+    var pairs = c.pairs || [];
+    var pairsHtml = pairs.map(function(p, pi) {
+      var mems = (p.members || []).map(function(m) { return esc(m.name); }).join(', ');
+      var openSlots = 2 - (p.members || []).length;
+      return '<div style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:3px">'
+        + '<strong>' + s('cox.pair') + ' ' + (pi + 1) + ':</strong> '
+        + (mems || '<span style="color:var(--muted)">' + s('cox.empty') + '</span>')
+        + (openSlots > 0 ? ' <span style="color:var(--muted)">(' + openSlots + ' ' + s('cox.openSpots') + ')</span>' : '')
+        + '</div>';
+    }).join('');
+    var statusBadge = c.status === 'active'
+      ? '<span style="font-size:8px;padding:2px 6px;border-radius:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)44">' + s('cox.active') + '</span>'
+      : '<span style="font-size:8px;padding:2px 6px;border-radius:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">' + s('cox.forming') + '</span>';
+    var actions = '<div style="display:flex;gap:6px;margin-top:8px">';
+    if (c.status === 'forming') {
+      actions += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openCrewInvModal(\'' + esc(c.id) + '\')">' + s('cox.inviteMember') + '</button>';
+    }
+    actions += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="disbandCrewConfirm(\'' + esc(c.id) + '\')">' + s('cox.disband') + '</button>';
+    actions += '</div>';
+    return '<div class="cx-card">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+        + '<span style="font-size:13px;font-weight:500">' + esc(c.name) + '</span> ' + statusBadge
+      + '</div>'
+      + pairsHtml + actions
+    + '</div>';
+  }).join('');
+}
+
+function renderCrewInvites() {
+  var el = document.getElementById('crewInviteList');
+  if (!_crewInvites.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">' + s('cox.pendingInvites') + '</div>'
+    + _crewInvites.map(function(inv) {
+      return '<div class="cx-card" style="border-left:3px solid var(--brass)">'
+        + '<div style="font-size:12px;font-weight:500">' + esc(inv.crewName || '') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + s('cox.invitedBy') + ': ' + esc(inv.fromName) + ' · ' + s('cox.pair') + ' ' + esc(inv.pairId || '').replace('pair_', '') + '</div>'
+        + '<div style="display:flex;gap:6px;margin-top:8px">'
+          + '<button class="btn btn-primary" style="font-size:10px;padding:3px 10px" onclick="respondInvite(\'' + esc(inv.id) + '\',\'accepted\')">' + s('cox.accept') + '</button>'
+          + '<button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" onclick="respondInvite(\'' + esc(inv.id) + '\',\'rejected\')">' + s('cox.reject') + '</button>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+}
+
+function openCrewModal() {
+  document.getElementById('cmCrewName').value = '';
+  document.getElementById('cmNumPairs').value = '2';
+  document.getElementById('cmMyPair').innerHTML = '<option value="0">' + s('cox.pair') + ' 1</option><option value="1">' + s('cox.pair') + ' 2</option>';
+  document.getElementById('cmNumPairs').onchange = function() {
+    var n = parseInt(this.value);
+    var sel = document.getElementById('cmMyPair');
+    sel.innerHTML = '';
+    for (var i = 0; i < n; i++) sel.innerHTML += '<option value="' + i + '">' + s('cox.pair') + ' ' + (i + 1) + '</option>';
+  };
+  applyStrings(document.getElementById('crewModal'));
+  openModal('crewModal');
+}
+
+async function createNewCrew() {
+  var name = document.getElementById('cmCrewName').value.trim();
+  if (!name) { showToast(s('cox.crewNameRequired'), 'err'); return; }
+  var numPairs = parseInt(document.getElementById('cmNumPairs').value);
+  var myPair = parseInt(document.getElementById('cmMyPair').value);
+  try {
+    await apiPost('createCrew', {
+      name: name, numPairs: numPairs, creatorPairIndex: myPair,
+      kennitala: user.kennitala, memberName: user.name,
+    });
+    closeModal('crewModal');
+    showToast(s('toast.saved'), 'ok');
+    await loadCrews();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+function openCrewInvModal(crewId) {
+  _invCrewId = crewId;
+  document.getElementById('ciMemberKt').value = '';
+  document.getElementById('ciMemberSearch').value = '';
+  document.getElementById('ciMemberName').textContent = '';
+  document.getElementById('ciMemberSuggestions').innerHTML = '';
+  // Populate pair options
+  var crew = _myCrews.find(function(c) { return c.id === crewId; });
+  var pairSel = document.getElementById('ciPairId');
+  pairSel.innerHTML = '';
+  if (crew) {
+    (crew.pairs || []).forEach(function(p, i) {
+      var openSlots = 2 - (p.members || []).length;
+      if (openSlots > 0) {
+        pairSel.innerHTML += '<option value="' + esc(p.pairId) + '">' + s('cox.pair') + ' ' + (i + 1) + ' (' + openSlots + ' ' + s('cox.openSpots') + ')</option>';
+      }
+    });
+  }
+  applyStrings(document.getElementById('crewInvModal'));
+  openModal('crewInvModal');
+}
+
+function searchCrewInvMember(q) {
+  var drop = document.getElementById('ciMemberSuggestions');
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  // Filter to rowers only
+  var hits = _members.filter(function(m) {
+    if (!(m.name || '').toLowerCase().includes(ql)) return false;
+    return hasRowingEndorsement(m);
+  }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectCrewInvMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectCrewInvMember(kt, name) {
+  document.getElementById('ciMemberKt').value = kt;
+  document.getElementById('ciMemberSearch').value = '';
+  document.getElementById('ciMemberName').textContent = name;
+  document.getElementById('ciMemberSuggestions').innerHTML = '';
+  document.getElementById('ciMemberSuggestions').style.display = 'none';
+}
+
+async function sendCrewInvite() {
+  if (!_invCrewId) return;
+  var kt = document.getElementById('ciMemberKt').value;
+  var name = document.getElementById('ciMemberName').textContent;
+  var pairId = document.getElementById('ciPairId').value;
+  if (!kt || !name) { showToast(s('cox.selectMember'), 'err'); return; }
+  if (!pairId) { showToast(s('cox.selectPair'), 'err'); return; }
+  try {
+    await apiPost('inviteToCrew', {
+      crewId: _invCrewId, toKennitala: kt, toName: name,
+      fromKennitala: user.kennitala, fromName: user.name,
+      pairId: pairId,
+    });
+    closeModal('crewInvModal');
+    showToast(s('cox.inviteSent'), 'ok');
+    await loadCrews();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+async function respondInvite(inviteId, response) {
+  try {
+    await apiPost('respondCrewInvite', { inviteId: inviteId, response: response });
+    showToast(response === 'accepted' ? s('cox.inviteAccepted') : s('cox.inviteRejected'), 'ok');
+    await loadCrews();
+    initCxSlots(); // refresh slot view if crew is now active
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+async function disbandCrewConfirm(crewId) {
+  if (!confirm(s('cox.confirmDisband'))) return;
+  try {
+    await apiPost('disbandCrew', { crewId: crewId });
+    showToast(s('cox.crewDisbanded'), 'ok');
+    await loadCrews();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SLOT BOOKING (ROWING SHELLS)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _cxWeekStart = null;
+var _cxSlots = [];
+var _cxSlotBoats = [];
+
+function initCxSlots() {
+  // Find rowing shell boats with slot scheduling
+  _cxSlotBoats = (_boats || []).filter(function(b) {
+    return b.slotSchedulingEnabled && (b.category || '').toLowerCase() === 'rowing shell';
+  });
+  var sect = document.getElementById('sectSlots');
+  // Only show if there are slot-scheduled rowing shells AND user has active crews
+  var activeCrews = _myCrews.filter(function(c) { return c.status === 'active'; });
+  if (!_cxSlotBoats.length || !activeCrews.length) { sect.style.display = 'none'; return; }
+  sect.style.display = '';
+  // Populate boat filter
+  var boatSel = document.getElementById('cxSlotBoat');
+  boatSel.innerHTML = '';
+  _cxSlotBoats.forEach(function(b) {
+    boatSel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
+  });
+  // Populate crew filter
+  var crewSel = document.getElementById('cxSlotCrew');
+  crewSel.innerHTML = '';
+  activeCrews.forEach(function(c) {
+    crewSel.innerHTML += '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+  });
+  // Init week
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0,0,0,0);
+  _cxWeekStart = d;
+  loadCxSlots();
+}
+
+async function loadCxSlots() {
+  var boatId = document.getElementById('cxSlotBoat').value;
+  if (!boatId) return;
+  var fromDate = _cxWeekStart.toISOString().slice(0, 10);
+  var toD = new Date(_cxWeekStart); toD.setDate(toD.getDate() + 6);
+  var toDate = toD.toISOString().slice(0, 10);
+  try {
+    var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
+    _cxSlots = res.slots || [];
+  } catch(e) { _cxSlots = []; }
+  renderCxSlots();
+}
+
+function renderCxSlots() {
+  var crewId = document.getElementById('cxSlotCrew').value;
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(_cxWeekStart);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  var todayStr = new Date().toISOString().slice(0, 10);
+  document.getElementById('cxWeekLabel').textContent =
+    days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
+  var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  days.forEach(function(d) {
+    var ds = d.toISOString().slice(0, 10);
+    var isToday = ds === todayStr;
+    html += '<div style="text-align:center;font-size:10px;padding:4px;border-bottom:1px solid var(--border)'
+      + (isToday ? ';color:var(--brass);font-weight:600' : ';color:var(--muted)') + '">'
+      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</div>';
+  });
+  days.forEach(function(d) {
+    var ds = d.toISOString().slice(0, 10);
+    var daySlots = _cxSlots.filter(function(s) { return s.date === ds; });
+    html += '<div style="padding:2px;min-height:40px">';
+    if (daySlots.length) {
+      daySlots.forEach(function(sl) {
+        var isMyCrew = sl.bookedByCrewId === crewId;
+        var isBooked = !!sl.bookedByKennitala;
+        var bg, border, cursor, onclick;
+        if (isMyCrew) {
+          bg = 'var(--brass)22'; border = 'var(--brass)'; cursor = 'pointer';
+          onclick = 'onclick="unbookCxSlot(\'' + esc(sl.id) + '\')"';
+        } else if (isBooked) {
+          bg = 'var(--green)22'; border = 'var(--green)'; cursor = 'default';
+          onclick = '';
+        } else {
+          bg = 'var(--surface)'; border = 'var(--brass)66'; cursor = 'pointer';
+          onclick = 'onclick="bookCxSlot(\'' + esc(sl.id) + '\')"';
+        }
+        var label = sl.startTime + '–' + sl.endTime;
+        if (isMyCrew) label += '<br><span style="font-size:8px">' + esc(s('slot.yours')) + '</span>';
+        else if (isBooked) label += '<br><span style="font-size:8px">' + esc(sl.bookedByName || '') + '</span>';
+        html += '<div ' + onclick + ' style="padding:3px 4px;margin-bottom:2px;border-radius:4px;border:1px solid '
+          + border + ';background:' + bg + ';font-size:9px;cursor:' + cursor + ';text-align:center">' + label + '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('cxSlotGrid').innerHTML = html;
+}
+
+async function bookCxSlot(slotId) {
+  var crewId = document.getElementById('cxSlotCrew').value;
+  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  try {
+    await apiPost('bookSlot', { slotId: slotId, crewId: crewId, kennitala: user.kennitala, memberName: user.name });
+    showToast(s('slot.booked'), 'ok');
+    loadCxSlots();
+  } catch(e) { showToast(e.message || 'Error', 'err'); }
+}
+
+async function unbookCxSlot(slotId) {
+  if (!confirm(s('slot.confirmUnbook'))) return;
+  try {
+    await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
+    showToast(s('slot.unbooked'), 'ok');
+    loadCxSlots();
+  } catch(e) { showToast(e.message || 'Error', 'err'); }
+}
+
+function shiftCxWeek(dir) {
+  _cxWeekStart.setDate(_cxWeekStart.getDate() + dir * 7);
+  loadCxSlots();
+}
+
+function cxWeekToday() {
+  var d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0,0,0,0);
+  _cxWeekStart = d;
+  loadCxSlots();
 }
 </script>
 </body>
