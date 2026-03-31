@@ -960,6 +960,7 @@ const STRINGS = {
   'slot.confirmDelete':      { EN:'Delete this slot?',                       IS:'Eyða þessum tíma?' },
   'slot.bookedBy':           { EN:'Booked by',                               IS:'Bókað af' },
   'slot.legendOpen':         { EN:'Open',                                    IS:'Laust' },
+  'slot.legendYours':        { EN:'Yours',                                   IS:'Þitt' },
   'slot.legendBooked':       { EN:'Booked',                                  IS:'Bókað' },
   'slot.booked':             { EN:'Slot booked!',                            IS:'Tími bókaður!' },
   'slot.unbooked':           { EN:'Booking cancelled',                       IS:'Bókun afturkölluð' },
