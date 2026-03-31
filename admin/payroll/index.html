@@ -547,7 +547,7 @@ async function meSave(){
 }
 async function meDelete(){
   if(!_editId)return;
-  if(!confirm(s('payroll.deleteConfirm')))return;
+  if(!await ymConfirm(s('payroll.deleteConfirm')))return;
   try{await apiPost('adminDeleteTime',{id:_editId});prCloseModal();showToast(s('toast.deleted'));prLoadTsEntries();}
   catch(e){document.getElementById('meErr').textContent=e.message;}
 }
@@ -800,7 +800,7 @@ function prAddLine(empId){
 async function prApprovePeriod(){
   var from=document.getElementById('prPeriodFrom').value,to=document.getElementById('prPeriodTo').value,payDate=document.getElementById('prPaymentDate').value;
   if(!from||!to){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  if(!confirm(s('payroll.approveConfirm')))return;
+  if(!await ymConfirm(s('payroll.approveConfirm')))return;
   var msg=document.getElementById('prApproveMsg');
   if(msg){msg.textContent=s('lbl.loading');msg.style.color='var(--muted)';}
   var rows=Object.keys(_previewData.employees||{}).map(function(empId){

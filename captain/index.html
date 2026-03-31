@@ -810,7 +810,7 @@ async function _cqEditNote(tripId, field) {
   if (!t) return;
   var current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
   var label = field === 'skipperNote' ? 'Skipper note (visible to crew):' : 'Private note (only you):';
-  var val = prompt(label, current);
+  var val = await ymPrompt(label, current);
   if (val === null) return;
   try {
     await apiPost('saveTrip', { id: tripId, [field]: val });
@@ -1108,10 +1108,10 @@ function selectCqCredMember(id) {
   sel.style.display = '';
 }
 
-function onCqCredCategoryChange() {
+async function onCqCredCategoryChange() {
   var sel = document.getElementById('cqCredCategory');
   if (sel.value === '__add__') {
-    var name = prompt('Enter new category name:');
+    var name = await ymPrompt('Enter new category name:');
     if (name && name.trim()) {
       var cat = name.trim();
       if (_cqCertCategories.indexOf(cat) === -1) {

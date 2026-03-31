@@ -472,7 +472,7 @@ function renderCard(r) {
 
 // ── Actions ────────────────────────────────────────────────────────────────────
 async function resolveRequest(id) {
-  if (!confirm("Mark this request as resolved?")) return;
+  if (!await ymConfirm("Mark this request as resolved?")) return;
   const r = allRequests.find(x => x.id === id);
   if (!r) return;
   try {
@@ -489,7 +489,7 @@ async function resolveRequest(id) {
       } catch(e2) { console.warn("Could not clear OOS:", e2.message); }
     }
     renderStats(); renderList(); toast("✓ Resolved.");
-  } catch(e) { alert("Error: " + e.message); }
+  } catch(e) { ymAlert("Error: " + e.message); }
 }
 
 async function addComment(id) {
@@ -506,7 +506,7 @@ async function addComment(id) {
       r.comments = JSON.stringify(comments);
     }
     renderList(); toast("Comment added.");
-  } catch(e) { alert("Error: " + e.message); }
+  } catch(e) { ymAlert("Error: " + e.message); }
 }
 
 function viewPhoto(url) {

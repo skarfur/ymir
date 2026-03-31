@@ -1034,7 +1034,7 @@ async function signOffDay() {
   const done = pmItems.filter(i => pmChecks[i.id]).length;
   if (done < pmItems.length) {
     const msg = s('daily.signOffConfirm').replace('{done}',done).replace('{total}',pmItems.length);
-    if (!confirm(msg)) return;
+    if (!await ymConfirm(msg)) return;
   }
   await doSave(true);
 }

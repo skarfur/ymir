@@ -444,7 +444,7 @@ function maintRenderRow(m) {
  * Both those functions must exist on the page.
  */
 async function maintResolve(id) {
-  if (!confirm("Mark this request as resolved?")) return;
+  if (!await ymConfirm("Mark this request as resolved?")) return;
   const r = (window._maintRequests || []).find(x => x.id === id);
   if (!r) return;
   try {
@@ -456,7 +456,7 @@ async function maintResolve(id) {
     if (typeof renderStats === "function") renderStats();
     if (typeof renderList  === "function") renderList();
     toast("✓ Resolved.");
-  } catch(e) { alert("Error: " + e.message); }
+  } catch(e) { ymAlert("Error: " + e.message); }
 }
 
 /**
@@ -478,7 +478,7 @@ async function maintAddComment(id) {
     }
     if (typeof renderList === "function") renderList();
     toast("Comment added.");
-  } catch(e) { alert("Error: " + e.message); }
+  } catch(e) { ymAlert("Error: " + e.message); }
 }
 
 /**
@@ -497,7 +497,7 @@ async function maintResolveRow(id, checked) {
     } catch(e) {
       item._done = false;
       if (typeof renderDlMaintenance === "function") renderDlMaintenance();
-      alert("Could not resolve: " + e.message);
+      ymAlert("Could not resolve: " + e.message);
     }
   }
 }

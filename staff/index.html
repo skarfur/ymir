@@ -872,7 +872,7 @@ async function submitCheckout() {
   // Charter override warning for staff
   if (isChartered(boat)) {
     const ch = boat.charter;
-    if (!confirm(s('fleet.charterOverride', { name: ch.memberName, date: ch.endDate }))) return;
+    if (!await ymConfirm(s('fleet.charterOverride', { name: ch.memberName, date: ch.endDate }))) return;
   }
   const snap     = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   try {
@@ -950,17 +950,17 @@ async function staffCheckIn(id) {
     if (localCo) { localCo.status = 'in'; localCo.checkedInAt = timeIn; }
     renderAll();
     showToast(s('toast.checkedIn'));
-  } catch(e) { alert(s('toast.error') + ': ' + e.message); }
+  } catch(e) { ymAlert(s('toast.error') + ': ' + e.message); }
 }
 
 async function staffDeleteCheckout(id, boatName) {
-  if (!confirm(`${s('staff.deleteCheckout')}: ${boatName||''}?`)) return;
+  if (!await ymConfirm(`${s('staff.deleteCheckout')}: ${boatName||''}?`)) return;
   try {
     await apiPost('deleteCheckout', { id });
     checkouts = checkouts.filter(c => c.id !== id);
     renderAll();
     showToast(s('toast.deleted'));
-  } catch(e) { alert(s('toast.error')+': '+e.message); }
+  } catch(e) { ymAlert(s('toast.error')+': '+e.message); }
 }
 
 // ── Checkout detail modal ─────────────────────────────────────────────────────
@@ -1039,7 +1039,7 @@ async function resolveAlertAction(checkoutId, op, btnEl) {
     setTimeout(() => load(), 1500);
   } catch(e) {
     btnEl.disabled = false;
-    alert(gs_('error') + ': ' + e.message);
+    ymAlert(gs_('error') + ': ' + e.message);
   }
 }
 
@@ -1223,7 +1223,7 @@ function openGroupModal() {
     btn.dataset.id = b.id;
     if (boolVal(b.oos)) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Out of service'; }
     else if (out) { btn.disabled = true; btn.style.opacity='.35'; btn.title = 'Already out'; }
-    else if (isChartered(b)) { btn.style.opacity='.55'; btn.title = s('fleet.charteredTo',{name:b.charter.memberName}); btn.addEventListener('click', function() { if(confirm(s('fleet.charterOverride',{name:b.charter.memberName,date:b.charter.endDate}))) toggleGmBoat(this); }); }
+    else if (isChartered(b)) { btn.style.opacity='.55'; btn.title = s('fleet.charteredTo',{name:b.charter.memberName}); btn.addEventListener('click', async function() { if(await ymConfirm(s('fleet.charterOverride',{name:b.charter.memberName,date:b.charter.endDate}))) toggleGmBoat(this); }); }
     else btn.addEventListener('click', function() { toggleGmBoat(this); });
     grid.appendChild(btn);
   });
@@ -1367,7 +1367,7 @@ async function staffGroupCheckIn(id) {
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     renderAll();
     showToast(s('toast.checkedIn'));
-  } catch(e) { alert(s('toast.error') + ': ' + e.message); }
+  } catch(e) { ymAlert(s('toast.error') + ': ' + e.message); }
 }
 
 function renderGroupCard(c) {

@@ -1789,7 +1789,7 @@ async function toggleHelm(tripId, checked) {
 }
 
 async function deleteTripTrack(tripId) {
-  if (!confirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
+  if (!await ymConfirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'track' });
     const t = myTrips.find(x => x.id === tripId);
@@ -1800,7 +1800,7 @@ async function deleteTripTrack(tripId) {
 }
 
 async function deleteTripPhoto(tripId, photoUrl) {
-  if (!confirm(IS ? 'Eyða þessari mynd?' : 'Delete this photo?')) return;
+  if (!await ymConfirm(IS ? 'Eyða þessari mynd?' : 'Delete this photo?')) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'photo', photoUrl });
     const t = myTrips.find(x => x.id === tripId);
@@ -1877,7 +1877,7 @@ function copyShareLink(tokenId){
   });
 }
 async function revokeShareToken(tokenId){
-  if(!confirm(IS?'Afturkalla þennan hlekk?':'Revoke this link?'))return;
+  if(!await ymConfirm(IS?'Afturkalla þennan hlekk?':'Revoke this link?'))return;
   try{
     await apiPost('revokeShareToken',{tokenId:tokenId,kennitala:user.kennitala});
     showToast(IS?'Hlekkur afturkallaður.':'Link revoked.');
@@ -2099,8 +2099,8 @@ async function respondConf(confId,response,rejectComment){
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
 
-function promptRejectConf(confId){
-  var comment=prompt(s('member.rejectReason'));
+async function promptRejectConf(confId){
+  var comment=await ymPrompt(s('member.rejectReason'));
   if(comment===null) return;
   respondConf(confId,'rejected',comment);
 }
@@ -2113,7 +2113,7 @@ async function editNote(tripId, field) {
   const label = field === 'skipperNote'
     ? (IS ? 'Skipstjóraskýring (sýnilegt áhöfn):' : 'Skipper note (visible to crew):')
     : (IS ? 'Athugasemd (aðeins þú sérð):' : 'Private note (only you):');
-  const val = prompt(label, current);
+  const val = await ymPrompt(label, current);
   if (val === null) return;
   try {
     const update = {};

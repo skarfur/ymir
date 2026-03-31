@@ -635,7 +635,7 @@ async function tcmAssign() {
 
 async function deleteCert(certId, subcatKey) {
   if (!_certMember) return;
-  if (!confirm('Remove this credential?')) return;
+  if (!await ymConfirm('Remove this credential?')) return;
 
   const m = _allMembers.find(x => x.id === _certMember.id);
   if (!m) return;
