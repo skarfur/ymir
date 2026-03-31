@@ -735,15 +735,15 @@ function buildFilters() {
   capSel.innerHTML = '<option value="">All captains</option>';
   _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = c.name; capSel.appendChild(o); });
 
-  // Member filter (anyone with keelboat trips)
-  var memberKts = [...new Set(myTrips
-    .filter(function(t) { return ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase() === 'keelboat'; })
-    .map(function(t) { return t.kennitala; }).filter(Boolean))];
-  var members = memberKts.map(function(kt) { return _cqMembers.find(function(m) { return String(m.kennitala) === String(kt); }); })
-    .filter(Boolean).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+  // Member filter (anyone with keelboat_crew endorsement)
+  var keelboatMembers = _cqMembers.filter(function(m) {
+    if (!m.certifications) return false;
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    return Array.isArray(certs) && certs.some(function(c) { return c.certId === 'keelboat_crew'; });
+  }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
   var mSel = document.getElementById('fMember');
   mSel.innerHTML = '<option value="">All members</option>';
-  members.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = m.name; mSel.appendChild(o); });
+  keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = m.name; mSel.appendChild(o); });
 
   ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
   document.getElementById('fText').addEventListener('input', applyFilter);
