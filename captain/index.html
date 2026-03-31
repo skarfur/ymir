@@ -250,8 +250,8 @@
         <input type="text" id="mcmIdNumber" placeholder="e.g. IS-12345">
       </div>
 
-      <!-- Issuing authority -->
-      <div class="field">
+      <!-- Issuing authority (hidden for club endorsements) -->
+      <div class="field" id="mcmIssuingAuthorityField">
         <label data-s="admin.certIssuingAuth"></label>
         <input type="text" id="mcmIssuingAuthority" placeholder="e.g. World Sailing">
       </div>
@@ -1215,9 +1215,12 @@ function updateMcmCertTypes() {
     o.value = d.id; o.textContent = d.name;
     typeSel.appendChild(o);
   });
-  const customOpt = document.createElement('option');
-  customOpt.value = '__custom__'; customOpt.textContent = s('admin.certCustomType');
-  typeSel.appendChild(customOpt);
+  // Add custom option (not for club endorsements — those are admin-defined only)
+  if (category !== 'Club Endorsement') {
+    const customOpt = document.createElement('option');
+    customOpt.value = '__custom__'; customOpt.textContent = s('admin.certCustomType');
+    typeSel.appendChild(customOpt);
+  }
   typeSel.value = '';
   document.getElementById('mcmSubcatField').style.display = 'none';
   document.getElementById('mcmCustomTitleField').style.display = 'none';
@@ -1241,8 +1244,16 @@ function updateMCMSubcats() {
   } else {
     sf.style.display = 'none';
   }
-  if (def?.issuingAuthority && !document.getElementById('mcmIssuingAuthority').value) {
-    document.getElementById('mcmIssuingAuthority').value = def.issuingAuthority;
+  // Hide issuing authority for club endorsements; pre-fill from def otherwise
+  const iaField = document.getElementById('mcmIssuingAuthorityField');
+  if (def?.clubEndorsement) {
+    iaField.style.display = 'none';
+    document.getElementById('mcmIssuingAuthority').value = '';
+  } else {
+    iaField.style.display = '';
+    if (def?.issuingAuthority && !document.getElementById('mcmIssuingAuthority').value) {
+      document.getElementById('mcmIssuingAuthority').value = def.issuingAuthority;
+    }
   }
   if (def?.expires) {
     document.getElementById('mcmExpires').checked = true;
