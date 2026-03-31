@@ -463,13 +463,11 @@ function initMap(locations) {
     return typeof loc.lat === 'number' && typeof loc.lng === 'number' && !isNaN(loc.lat) && !isNaN(loc.lng);
   });
 
+  _map.setView([64.148, -21.965], 11.25);
+
   if (!valid.length) {
-    _map.setView([64.148, -21.965], 11.25);
     return;
   }
-
-  var bounds = L.latLngBounds(valid.map(function(loc) { return [loc.lat, loc.lng]; }));
-  _map.fitBounds(bounds.pad(0.3));
 
   var maxTrips = 1;
   valid.forEach(function(loc) { if (loc.tripCount > maxTrips) maxTrips = loc.tripCount; });
