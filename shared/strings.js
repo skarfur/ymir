@@ -973,6 +973,7 @@ const STRINGS = {
   'admin.landing':           { EN:'LANDING',                            IS:'LENDING' },
   'admin.actTypesTitle':     { EN:'ACTIVITY TYPES',                     IS:'TEGUNDIR STARFSEMI' },
   'admin.credentialsTitle':  { EN:'CREDENTIALS',                        IS:'SKÍRTEINI' },
+  'admin.manageCreds':       { EN:'Credentials',                        IS:'Skírteini' },
   'admin.overdueAlerts':     { EN:'OVERDUE ALERTS',                     IS:'VIÐVARANIR YFIRTÍMA' },
   'admin.notifChannels':     { EN:'NOTIFICATION CHANNELS',              IS:'TILKYNNINGALEIÐIR' },
   'admin.chanWeb':           { EN:'Web (in-app banner)',                IS:'Vef (borði í appi)' },
