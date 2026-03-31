@@ -29,7 +29,8 @@ async function apiPost(action, payload) {
       action === 'importMembers' || action === 'deactivateMembers' ||
       action === 'saveActivityType' || action === 'deleteActivityType' ||
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
-      action === 'saveCertDef' || action === 'deleteCertDef') {
+      action === 'saveCertDef' || action === 'deleteCertDef' ||
+      action === 'saveCertCategories') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
