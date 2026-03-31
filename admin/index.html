@@ -635,29 +635,54 @@
         <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
       </div>
     </div>
-    <!-- Charter (club boats only) -->
-    <div id="bCharterSection">
-      <div id="bCharterInfo" style="font-size:11px;color:var(--brass);margin-bottom:6px"></div>
-      <div id="bCharterForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+    <!-- Access Mode -->
+    <div class="field">
+      <label data-s="boat.accessMode">Access Mode</label>
+      <select id="bAccessMode" onchange="updateAccessFields()">
+        <option value="free" data-s="boat.accessFree"></option>
+        <option value="controlled" data-s="boat.accessControlled"></option>
+      </select>
+    </div>
+    <!-- Controlled access fields -->
+    <div id="bAccessControlledSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+      <div class="field">
+        <label data-s="boat.gateCert">Required Certification</label>
+        <select id="bGateCert"><option value="" data-s="boat.gateCertNone"></option></select>
+      </div>
+      <div class="field">
+        <label data-s="boat.allowlist">Allowed Members</label>
+        <div id="bAllowlistChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+        <div style="position:relative">
+          <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" oninput="searchAllowlistMember(this.value)">
+          <div id="bAllowlistSuggestions" class="suggest-drop" style="position:relative"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Reservations -->
+    <div id="bReservationSection">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.reservations">RESERVATIONS</div>
+      <div id="bReservationList" style="margin-bottom:6px"></div>
+      <div id="bReservationForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
         <div class="field">
-          <label data-s="boat.charterMember">Chartered to</label>
+          <label data-s="cq.resMember">Member</label>
           <div style="position:relative">
-            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="" oninput="searchCharterMember(this.value)">
-            <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
-            <input type="hidden" id="bCharterMemberKt">
-            <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+            <input type="text" id="bResMemberSearch" autocomplete="off" placeholder="" oninput="searchResMember(this.value)">
+            <div id="bResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+            <input type="hidden" id="bResMemberKt">
+            <div id="bResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
           </div>
         </div>
         <div class="grid2">
-          <div class="field"><label data-s="boat.charterStart">Start date</label><input type="date" id="bCharterStart"></div>
-          <div class="field"><label data-s="boat.charterEnd">End date</label><input type="date" id="bCharterEnd"></div>
+          <div class="field"><label data-s="cq.resStartDate">Start date</label><input type="date" id="bResStart"></div>
+          <div class="field"><label data-s="cq.resEndDate">End date</label><input type="date" id="bResEnd"></div>
         </div>
+        <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="bResNote"></div>
         <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()" data-s="btn.cancel"></button>
-          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()" data-s="admin.saveCharter"></button>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelResForm()" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveResFromModal()" data-s="btn.save"></button>
         </div>
       </div>
-      <div id="bCharterActions"></div>
+      <div id="bReservationActions"></div>
     </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
@@ -1375,6 +1400,7 @@ function renderBoats() {
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
             <div class="boat-card-name">${cat.emoji || boatEmoji(cat.key)} ${esc(b.name)}</div>
             <div style="display:flex;gap:4px;flex-shrink:0">
+              ${b.accessMode === 'controlled' ? `<span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass)">${esc(s('fleet.badgeControlled'))}</span>` : ""}
               ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
               ${boatCatBadge(cat.key)}
             </div>
@@ -1451,15 +1477,22 @@ function openBoatModal(id) {
   document.getElementById("bOwnerSearch").value = '';
   document.getElementById("bOwnerName").textContent = b && b.ownerName ? b.ownerName : '';
   document.getElementById("bOwnerSuggestions").innerHTML = '';
-  // Charter
-  document.getElementById("bCharterForm").classList.add("hidden");
-  document.getElementById("bCharterMemberKt").value = '';
-  document.getElementById("bCharterMemberSearch").value = '';
-  document.getElementById("bCharterMemberName").textContent = '';
-  document.getElementById("bCharterStart").value = '';
-  document.getElementById("bCharterEnd").value = '';
+  // Access mode
+  document.getElementById("bAccessMode").value = b && b.accessMode === 'controlled' ? 'controlled' : 'free';
+  populateGateCertSelect(b ? (b.accessGateCert || '') : '');
+  _editAllowlist = b && Array.isArray(b.accessAllowlist) ? b.accessAllowlist.slice() : [];
+  renderAllowlistChips();
+  updateAccessFields();
+  // Reservations
+  document.getElementById("bReservationForm").classList.add("hidden");
+  document.getElementById("bResMemberKt").value = '';
+  document.getElementById("bResMemberSearch").value = '';
+  document.getElementById("bResMemberName").textContent = '';
+  document.getElementById("bResStart").value = '';
+  document.getElementById("bResEnd").value = '';
+  document.getElementById("bResNote").value = '';
+  renderReservationList(b);
   updateOwnershipFields();
-  renderCharterInfo(b);
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
   openModal("boatModal");
@@ -1469,7 +1502,6 @@ function openBoatModal(id) {
 function updateOwnershipFields() {
   const isPrivate = document.getElementById("bOwnership").value === 'private';
   document.getElementById("bOwnerField").classList.toggle("hidden", !isPrivate);
-  document.getElementById("bCharterSection").style.display = isPrivate ? 'none' : '';
 }
 
 function searchBoatOwner(q) {
@@ -1571,6 +1603,145 @@ async function removeCharterFromModal() {
   } catch(e) { toast("Error: " + e.message, "err"); }
 }
 
+// ── Access control helpers ────────────────────────────────────────────────────
+var _editAllowlist = [];
+
+function updateAccessFields() {
+  var isControlled = document.getElementById("bAccessMode").value === 'controlled';
+  document.getElementById("bAccessControlledSection").classList.toggle("hidden", !isControlled);
+}
+
+function populateGateCertSelect(current) {
+  var sel = document.getElementById("bGateCert");
+  sel.innerHTML = '<option value="">' + esc(s('boat.gateCertNone')) + '</option>';
+  // Collect all subcats from all cert defs
+  (certDefs || []).forEach(function(def) {
+    if (!def.subcats || !def.subcats.length) return;
+    def.subcats.forEach(function(sc) {
+      sel.innerHTML += '<option value="' + esc(sc.key) + '"' + (sc.key === current ? ' selected' : '') + '>'
+        + esc((def.name || '') + ' — ' + (sc.label || sc.key)) + '</option>';
+    });
+  });
+}
+
+function renderAllowlistChips() {
+  var el = document.getElementById("bAllowlistChips");
+  if (!_editAllowlist.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _editAllowlist.map(function(kt) {
+    var m = members.find(function(x) { return x.kennitala === kt; });
+    var name = m ? m.name : kt;
+    return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:4px">'
+      + esc(name)
+      + '<span style="cursor:pointer;color:var(--red);font-size:12px" onclick="removeFromAllowlist(\'' + esc(kt) + '\')">&times;</span>'
+      + '</span>';
+  }).join('');
+}
+
+function searchAllowlistMember(q) {
+  var drop = document.getElementById("bAllowlistSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  var ql = q.toLowerCase();
+  var hits = members.filter(function(m) { return (m.name||'').toLowerCase().includes(ql) && _editAllowlist.indexOf(m.kennitala) === -1; }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="addToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(m.name) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function addToAllowlist(kt) {
+  if (_editAllowlist.indexOf(kt) === -1) _editAllowlist.push(kt);
+  document.getElementById("bAllowlistSearch").value = '';
+  document.getElementById("bAllowlistSuggestions").innerHTML = '';
+  document.getElementById("bAllowlistSuggestions").style.display = 'none';
+  renderAllowlistChips();
+}
+
+function removeFromAllowlist(kt) {
+  _editAllowlist = _editAllowlist.filter(function(k) { return k !== kt; });
+  renderAllowlistChips();
+}
+
+// ── Reservation helpers ───────────────────────────────────────────────────────
+function renderReservationList(boat) {
+  var el = document.getElementById("bReservationList");
+  var actEl = document.getElementById("bReservationActions");
+  if (!boat || !boat.reservations || !boat.reservations.length) {
+    el.innerHTML = '';
+    actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showResForm()">' + esc(s('boat.addReservation')) + '</button>';
+    return;
+  }
+  el.innerHTML = boat.reservations.map(function(r) {
+    return '<div style="font-size:11px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">'
+      + '<div><strong>' + esc(r.memberName) + '</strong> · ' + esc(r.startDate) + ' → ' + esc(r.endDate)
+      + (r.note ? ' · <span style="color:var(--muted)">' + esc(r.note) + '</span>' : '') + '</div>'
+      + '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeResFromModal(\'' + esc(r.id) + '\')">&times;</button>'
+      + '</div>';
+  }).join('');
+  actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showResForm()">' + esc(s('boat.addReservation')) + '</button>';
+}
+
+function showResForm() {
+  document.getElementById("bReservationForm").classList.remove("hidden");
+}
+
+function cancelResForm() {
+  document.getElementById("bReservationForm").classList.add("hidden");
+}
+
+function searchResMember(q) {
+  var drop = document.getElementById("bResMemberSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
+  var ql = q.toLowerCase();
+  var hits = members.filter(function(m) { return (m.name||'').toLowerCase().includes(ql); }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectResMember(kt, name) {
+  document.getElementById("bResMemberKt").value = kt;
+  document.getElementById("bResMemberSearch").value = '';
+  document.getElementById("bResMemberName").textContent = name;
+  document.getElementById("bResMemberSuggestions").innerHTML = '';
+  document.getElementById("bResMemberSuggestions").style.display = 'none';
+}
+
+async function saveResFromModal() {
+  var boatId = editingId;
+  if (!boatId) return;
+  var kt   = document.getElementById("bResMemberKt").value;
+  var name = document.getElementById("bResMemberName").textContent;
+  var start = document.getElementById("bResStart").value;
+  var end   = document.getElementById("bResEnd").value;
+  var note  = document.getElementById("bResNote").value.trim();
+  if (!kt || !name || !start || !end) { toast("Member and dates required.", "err"); return; }
+  try {
+    var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var b = _allBoats.find(function(x) { return x.id === boatId; });
+    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    cancelResForm();
+    renderReservationList(b);
+    toast(s('boat.reservationSaved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
+async function removeResFromModal(resId) {
+  var boatId = editingId;
+  if (!boatId || !confirm(s('boat.removeReservation') + '?')) return;
+  try {
+    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var b = _allBoats.find(function(x) { return x.id === boatId; });
+    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    renderReservationList(b);
+    toast(s('boat.reservationRemoved'));
+  } catch(e) { toast("Error: " + e.message, "err"); }
+}
+
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
   if (!name) { toast("Name required.", "err"); return; }
@@ -1578,6 +1749,7 @@ async function saveBoat() {
   const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
   const ownershipVal = document.getElementById("bOwnership").value;
+  const accessModeVal = document.getElementById("bAccessMode").value;
   const payload = {
     id, name,
     category:      cat,
@@ -1593,11 +1765,22 @@ async function saveBoat() {
     ownership:      ownershipVal,
     ownerId:        ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
     ownerName:      ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
+    // access control
+    accessMode:     accessModeVal,
+    accessGateCert: accessModeVal === 'controlled' ? (document.getElementById("bGateCert").value || '') : '',
+    accessAllowlist: accessModeVal === 'controlled' ? _editAllowlist.slice() : [],
   };
 
   const idx = _allBoats.findIndex(x => x.id === id);
-  if (idx >= 0) _allBoats[idx] = { ..._allBoats[idx], ...payload };
-  else          _allBoats.push(payload);
+  if (idx >= 0) {
+    // Preserve reservations and charter (managed via separate endpoints)
+    payload.reservations = _allBoats[idx].reservations || [];
+    payload.charter = _allBoats[idx].charter || null;
+    _allBoats[idx] = { ..._allBoats[idx], ...payload };
+  } else {
+    payload.reservations = [];
+    _allBoats.push(payload);
+  }
 
   try {
     await apiPost("saveConfig", { boats: _allBoats });
