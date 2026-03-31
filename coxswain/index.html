@@ -147,13 +147,7 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 (async function init() {
   applyTheme();
-  buildHeader(document.getElementById('ym-header'), {
-    title: s('cox.title'),
-    back: '../member/',
-    theme: true,
-    lang: true,
-    signOut: true,
-  });
+  buildHeader('coxswain');
   document.getElementById('cxTitle').textContent = s('cox.title');
   document.getElementById('cxSubtitle').textContent = user.name;
 

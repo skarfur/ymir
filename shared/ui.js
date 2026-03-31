@@ -11,15 +11,18 @@
 //
 // HEADER LAYOUT
 //
-// LEFT   = ÝMIR [⚓ Staff back-link if subpage]
+// LEFT   = ÝMIR [← Parent back-link if subpage]
 //          ⚓ Staff Hub  (shown to staff/admin when NOT on staff pages)
 //          ⛵ Members    (shown to staff/admin when NOT on member pages)
 //          ⚙ Admin       (shown to admin when NOT on admin page)
-// RIGHT  = ⛅ Weather · lang toggle · Sign out
+// RIGHT  = ⚙ Settings · ⛅ Weather · lang toggle · Sign out
 //
 // page values:
-//   hub pages   — 'staff' | 'admin' | 'member'
-//   subpages    — 'dailylog' | 'maintenance' | 'logbook-review' | 'incidents'
+//   hub pages      — 'staff' | 'admin' | 'member'
+//   staff subpages — 'dailylog' | 'maintenance' | 'logbook-review' | 'incidents'
+//   admin subpages — 'payroll'
+//   member subpages— 'settings' | 'logbook' | 'weather' | 'saumaklubbur'
+//                    'captain' | 'coxswain'
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -249,9 +252,11 @@ window.buildHeader = function (page) {
   // classify current page
   const STAFF_SUBPAGES  = ['dailylog', 'maintenance', 'logbook-review', 'incidents'];
   const ADMIN_SUBPAGES  = ['payroll'];
-  const isSubpage  = STAFF_SUBPAGES.includes(page);
-  const isAdminSub = ADMIN_SUBPAGES.includes(page);
-  const currentHub = isSubpage ? 'staff' : isAdminSub ? 'admin' : page;
+  const MEMBER_SUBPAGES = ['settings', 'logbook', 'weather', 'saumaklubbur', 'captain', 'coxswain'];
+  const isStaffSub  = STAFF_SUBPAGES.includes(page);
+  const isAdminSub  = ADMIN_SUBPAGES.includes(page);
+  const isMemberSub = MEMBER_SUBPAGES.includes(page);
+  const currentHub = isStaffSub ? 'staff' : isAdminSub ? 'admin' : isMemberSub ? 'member' : page;
   const depth = isAdminSub ? '../../' : '../';
   const isCaptainUser = typeof isCaptain === 'function' && user && isCaptain(user);
 
@@ -261,8 +266,9 @@ window.buildHeader = function (page) {
   left.appendChild(logo);
 
   // LEFT: back link on subpages
-  if (isSubpage)  left.appendChild(link('../staff/',   s('nav.staffHub'), 'hbtn'));
-  if (isAdminSub) left.appendChild(link('../../admin/', s('nav.admin'),   'hbtn'));
+  if (isStaffSub)  left.appendChild(link(depth + 'staff/',  '← ' + s('nav.staffHub'),  'back-btn'));
+  if (isAdminSub)  left.appendChild(link(depth + 'admin/',  '← ' + s('nav.admin'),     'back-btn'));
+  if (isMemberSub) left.appendChild(link(depth + 'member/', '← ' + s('nav.memberHub'), 'back-btn'));
 
   // LEFT: hub-switch buttons (staff/admin only)
   if (user) {
@@ -272,12 +278,12 @@ window.buildHeader = function (page) {
     if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn'));
     if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn'));
     if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn'));
-    if (isCaptainUser && currentHub !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
+    if (isCaptainUser && page !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
   }
 
   // RIGHT: Settings · Weather · lang · sign out
-  if (user) right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
-  right.appendChild(link(depth + 'weather/', s('nav.weather'), 'hbtn'));
+  if (user && page !== 'settings') right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
+  if (page !== 'weather') right.appendChild(link(depth + 'weather/', s('nav.weather'), 'hbtn'));
   right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }));
   right.appendChild(btn(s('nav.signOut'),    () => { if (typeof signOut    === 'function') signOut();    }));
 };

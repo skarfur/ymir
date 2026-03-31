@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/ui.js"></script>
 <script src="../shared/weather.js"></script>
 <script src="../shared/tides.js"></script>
 <style>
@@ -107,12 +108,15 @@ svg.chart { width:100%; overflow:visible; display:block; }
 </style>
 </head>
 <body>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
 <div class="page">
 
   <!-- ══ TOP BAR ══ -->
   <div class="top-bar">
     <div class="top-bar-left">
-      <a href="../member/" class="text-md text-muted flex-center gap-4" style="text-decoration:none;display:inline-flex">← Member Hub</a>
       <div class="loc-row">
         <span class="loc-name" id="locName">Fossvogur</span>
         <span class="loc-coords" id="locCoords">64.1188°N 21.9376°W</span>
@@ -133,6 +137,8 @@ svg.chart { width:100%; overflow:visible; display:block; }
 </div><!-- /page -->
 
 <script>
+buildHeader('weather');
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCATION SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
