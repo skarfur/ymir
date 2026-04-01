@@ -394,6 +394,7 @@ function route_(action, b) {
     case 'saveCharter': return saveCharter_(b);
     case 'removeCharter': return removeCharter_(b);
     case 'saveBoatAccess': return saveBoatAccess_(b);
+    case 'saveBoatOos': return saveBoatOos_(b);
     case 'saveReservation': return saveReservation_(b);
     case 'removeReservation': return removeReservation_(b);
     // ── RESERVATION SLOTS ─────────────────────────────────────────────────────
@@ -673,6 +674,25 @@ function saveMaintenance_(b) {
   addColIfMissing_('maintenance', 'verkstjori');
   addColIfMissing_('maintenance', 'materials');
   addColIfMissing_('maintenance', 'approved');
+
+  // If an id is provided, update the existing row instead of creating a new one
+  if (b.id) {
+    var updates = {};
+    if (b.severity !== undefined)  updates.severity  = b.severity;
+    if (b.markOos  !== undefined)  updates.markOos   = bool_(b.markOos);
+    if (b.comments !== undefined)  updates.comments  = b.comments;
+    if (b.onHold   !== undefined)  updates.onHold    = bool_(b.onHold);
+    if (b.verkstjori !== undefined) updates.verkstjori = b.verkstjori;
+    if (b.materials !== undefined) updates.materials  = b.materials;
+    if (b.approved !== undefined)  updates.approved   = bool_(b.approved);
+    if (Object.keys(updates).length) {
+      updateRow_('maintenance', 'id', b.id, updates);
+      cDel_('maintenance');
+      return okJ({ id: b.id, updated: true });
+    }
+    return okJ({ id: b.id, noChanges: true });
+  }
+
   const ts = now_(), id = uid_();
   const photoUrl = b.photoUrl || '';
   const isSauma = bool_(b.saumaklubbur) || false;
@@ -1756,6 +1776,22 @@ function removeCharter_(b) {
   const idx = boats.findIndex(x => x.id === b.boatId);
   if (idx < 0) return failJ('Boat not found');
   delete boats[idx].charter;
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+// ── Boat OOS toggle ──────────────────────────────────────────────────────
+
+function saveBoatOos_(b) {
+  if (!b.id) return failJ('id required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.id);
+  if (idx < 0) return failJ('Boat not found');
+  if (b.oos !== undefined) boats[idx].oos = !!b.oos;
+  if (b.oosReason !== undefined) boats[idx].oosReason = String(b.oosReason || '');
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });

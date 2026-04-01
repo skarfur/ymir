@@ -154,18 +154,6 @@ document.addEventListener('keydown', function (e) {
     return (typeof s === 'function') ? s(key) : fallback;
   };
 
-  window.ymAlert = function (msg) {
-    return show(
-      '<p style="margin:0 0 18px;white-space:pre-wrap">' + esc(msg) + '</p>' +
-      '<div class="ym-dialog-btns">' +
-        '<button class="btn-primary" onclick="document.querySelector(\'#ym-dialog .btn-primary\').blur()" id="ym-dlg-ok">' + label('btn.close', 'OK') + '</button>' +
-      '</div>'
-    ).then(function () {
-      // void — alert returns nothing
-    }).finally(function () {
-      // re-wire after render
-    });
-  };
   // wire click after innerHTML render
   var wireOk = function (val) {
     var b = document.getElementById('ym-dlg-ok');

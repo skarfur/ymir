@@ -31,6 +31,13 @@ const SEV_HINTS = {
 
 const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗️" };
 
+// ── Fallback viewPhoto — pages that include their own can override ────────────
+if (typeof window.viewPhoto === 'undefined') {
+  window.viewPhoto = function (url) {
+    window.open(url, '_blank');
+  };
+}
+
 // ── Full card (staff/maintenance.html) ────────────────────────────────────────
 /**
  * Render a full maintenance request card with comments, actions, and resolve button.
@@ -206,10 +213,9 @@ function maintOpenDetail(r, currentUser) {
         e.stopPropagation();
         drop.style.display = drop.style.display==='none' ? 'block' : 'none';
       });
-      document.addEventListener('click', function _close() {
+      document.addEventListener('click', function() {
         drop.style.display='none';
-        document.removeEventListener('click',_close);
-      });
+      }, { once: true });
       drop.querySelectorAll('[data-sev]').forEach(el => {
         el.addEventListener('click', e => {
           e.stopPropagation();
@@ -466,7 +472,7 @@ async function maintResolve(id) {
     await apiPost("resolveMaintenance", { id, resolvedBy: (typeof getUser==='function'?getUser()?.name:'Staff') });
     r.resolved = true; r.resolvedBy = (typeof getUser==='function'?getUser()?.name:'Staff'); r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
-      await apiPost("saveBoat", { id: r.boatId, oos: false, oosReason: "" });
+      await apiPost("saveBoatOos", { id: r.boatId, oos: false, oosReason: "" });
     }
     if (typeof renderStats === "function") renderStats();
     if (typeof renderList  === "function") renderList();
@@ -501,6 +507,7 @@ async function maintAddComment(id) {
  * Expects window._dlMaintenance to hold the local array.
  */
 async function maintResolveRow(id, checked) {
+  if (!checked) return; // un-resolving is not supported; ignore unchecks
   const list = window._dlMaintenance || [];
   const item = list.find(m => m.id === id);
   if (!item) return;
