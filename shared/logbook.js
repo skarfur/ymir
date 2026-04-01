@@ -49,7 +49,7 @@ function tripCard(t){
   const eWv   = wx?.wv!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.waveHeight')}</span><span class="trip-exp-val">${wx.wv.toFixed(1)} m</span></div>` : '';
   const ePres = wx?.pres!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.pressure')}</span><span class="trip-exp-val">${Math.round(wx.pres)} hPa${wx.presTrend?' · '+wx.presTrend:''}</span></div>` : '';
   const flagIcons = {green:'🟢',yellow:'🟡',orange:'🟠',red:'🔴',black:'⚫'};
-  const flagLabels = {green:'Green',yellow:'Yellow',orange:'Orange',red:'Red',black:'Black'};
+  const flagLabels = {green:s('tc.flagGreen'),yellow:s('tc.flagYellow'),orange:s('tc.flagOrange'),red:s('tc.flagRed'),black:s('tc.flagBlack')};
   const eFlag = wx?.flag ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.weatherFlag')}</span><span class="trip-exp-val">${flagIcons[wx.flag]||''} ${flagLabels[wx.flag]||esc(wx.flag)}</span></div>` : '';
 
   // Port rows (keelboat, separate cells for departure/arrival)
@@ -1240,7 +1240,7 @@ async function toggleHelm(tripId, checked) {
 }
 
 async function deleteTripTrack(tripId) {
-  if (!await ymConfirm(IS ? 'Ertu viss um að þú viljir eyða GPS-leiðinni?' : 'Delete this GPS track?')) return;
+  if (!await ymConfirm(s('logbook.deleteTrack'))) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'track' });
     const t = myTrips.find(x => x.id === tripId);
@@ -1251,7 +1251,7 @@ async function deleteTripTrack(tripId) {
 }
 
 async function deleteTripPhoto(tripId, photoUrl) {
-  if (!await ymConfirm(IS ? 'Eyða þessari mynd?' : 'Delete this photo?')) return;
+  if (!await ymConfirm(s('logbook.deletePhoto'))) return;
   try {
     await apiPost('deleteTripFile', { tripId, kennitala: user.kennitala, fileType: 'photo', photoUrl });
     const t = myTrips.find(x => x.id === tripId);
@@ -1328,7 +1328,7 @@ function copyShareLink(tokenId){
   });
 }
 async function revokeShareToken(tokenId){
-  if(!await ymConfirm(IS?'Afturkalla þennan hlekk?':'Revoke this link?'))return;
+  if(!await ymConfirm(s('logbook.revokeLink')))return;
   try{
     await apiPost('revokeShareToken',{tokenId:tokenId,kennitala:user.kennitala});
     showToast(IS?'Hlekkur afturkallaður.':'Link revoked.');

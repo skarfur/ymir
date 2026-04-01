@@ -23,10 +23,10 @@ const SEV_BADGE = {
 };
 
 const SEV_HINTS = {
-  low:      "Minor issue — no immediate action required.",
-  medium:   "Functional issue, usable with care.",
-  high:     "Significant problem — assess before use.",
-  critical: "Safety risk — take out of service immediately.",
+  get low()      { return s('maint.sevHint.low'); },
+  get medium()   { return s('maint.sevHint.medium'); },
+  get high()     { return s('maint.sevHint.high'); },
+  get critical() { return s('maint.sevHint.critical'); },
 };
 
 const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗️" };
@@ -50,7 +50,7 @@ function maintRenderCardCompact(r) {
   const borderCol = SEV_CSS[r.severity] || 'var(--green)';
   const catIcon   = CAT_ICON[r.category] || '⚙️';
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
-    ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">OOS</span>' : '';
+    ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">'+s('maint.oosTag')+'</span>' : '';
   const saumaTag = boolVal(r.saumaklubbur)
     ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
   const boat = esc(r.boatName||r.boatId||r.itemName||r.name||'');
@@ -91,8 +91,8 @@ function maintOpenDetail(r, currentUser) {
     el.innerHTML = `<div class="modal" style="max-width:340px;padding:24px;text-align:center">
       <p id="maintConfirmMsg" style="margin:0 0 18px;font-size:14px;line-height:1.5"></p>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button id="maintConfirmOk" style="padding:7px 22px;border:none;border-radius:20px;background:var(--brass);color:#fff;font-weight:600;cursor:pointer;font-size:13px">Confirm</button>
-        <button id="maintConfirmCancel" style="padding:7px 22px;border:1px solid var(--border);border-radius:20px;background:none;cursor:pointer;font-size:13px">Cancel</button>
+        <button id="maintConfirmOk" style="padding:7px 22px;border:none;border-radius:20px;background:var(--brass);color:#fff;font-weight:600;cursor:pointer;font-size:13px">${s('maint.confirmBtn')}</button>
+        <button id="maintConfirmCancel" style="padding:7px 22px;border:1px solid var(--border);border-radius:20px;background:none;cursor:pointer;font-size:13px">${s('maint.cancelBtn')}</button>
       </div>
     </div>`;
     el.addEventListener('click', e => { if (e.target===el) closeModal('maintConfirmModal'); });
@@ -109,7 +109,7 @@ function maintOpenDetail(r, currentUser) {
   function getBy() {
     return currentUser
       || (typeof getUser==='function' ? getUser()?.name : null)
-      || 'Staff';
+      || s('maint.defaultAuthor');
   }
 
   function renderAndWire() {
@@ -136,7 +136,7 @@ function maintOpenDetail(r, currentUser) {
 
     // OOS: "OOS" when active, "In service" when inactive
     const oosBtn = (r.category==='boat' && !resolved)
-      ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?'OOS':'In service'}</button>`
+      ? `<button id="mdOosBtn" style="padding:3px 11px;border-radius:14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${isOos?'#e74c3c':'var(--surface)'};color:${isOos?'#fff':'var(--muted)'};">${isOos?s('maint.oosTag'):s('maint.inService')}</button>`
       : '';
 
     // Comments: poster · timestamp on top, then text body
@@ -145,13 +145,13 @@ function maintOpenDetail(r, currentUser) {
         <div style="font-size:11px;margin-bottom:3px"><span style="color:var(--text);font-weight:500">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${(c.at||'').slice(0,16).replace('T',' ')}</span></div>
         ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
         ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
-        ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Delete comment">&times;</button>` : ''}
+        ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="${s('maint.deleteComment')}">&times;</button>` : ''}
       </div>`).join('');
 
     // Materials list for saumaklúbbur projects
     const materialsHtml = isSauma && materials.length ? `
       <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--brass);letter-spacing:1px;margin-bottom:6px">MATERIALS</div>
+        <div style="font-size:10px;color:var(--brass);letter-spacing:1px;margin-bottom:6px">${s('maint.materials')}</div>
         ${materials.map((m,i)=>`
           <div class="mat-row" data-midx="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)33;cursor:pointer">
             <input type="checkbox" ${m.purchased?'checked':''} style="width:15px;height:15px;accent-color:var(--green);cursor:pointer" data-matidx="${i}">
@@ -162,7 +162,7 @@ function maintOpenDetail(r, currentUser) {
     document.getElementById('maintDetailBody').innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
         <div style="position:relative;display:inline-block">
-          <span style="font-size:10px;color:var(--muted);margin-right:4px">${isSauma ? 'Priority' : 'Severity'}:</span>
+          <span style="font-size:10px;color:var(--muted);margin-right:4px">${isSauma ? s('maint.priorityLabel') : s('maint.severityLabel')}:</span>
           <span id="mdSevCurrent" class="badge ${SEV_BADGE[r.severity]||'badge-green'}"
             style="cursor:pointer;user-select:none">${r.severity||'low'} ▾</span>
           <div id="mdSevDropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;z-index:20;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
@@ -172,13 +172,13 @@ function maintOpenDetail(r, currentUser) {
         ${oosBtn}
       </div>
       ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 Saumaklúbbur</span>
-        ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ On Hold</span>` : ''}
-        ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">No verkstjóri assigned</span>`}
-        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
+        <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 ${s('maint.saumaBadge')}</span>
+        ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
+        ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
+        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.adoptProject')}</button>` : ''}
       </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px;font-size:12px;color:var(--muted)">
-        ${r.reportedBy ? `<span>Reported by <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
+        ${r.reportedBy ? `<span>${s('maint.reportedByLabel')} <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
         ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>`  : ''}
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
@@ -188,21 +188,21 @@ function maintOpenDetail(r, currentUser) {
       ${!resolved ? `
       <div class="comment-add" style="margin-top:12px">
         <div style="display:flex;gap:6px;align-items:center">
-          <input id="mdCommentInput" type="text" placeholder="Add comment…" style="flex:1">
+          <input id="mdCommentInput" type="text" placeholder="${s('maint.addCommentPh')}" style="flex:1">
           <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="Attach photo">📷
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
-          <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">Post</button>
+          <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">${s('maint.postBtn')}</button>
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
-      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ Pending staff review<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">Approve</button></div>` : ''}
+      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? 'Mark Completed' : 'Mark Resolved'}</button>
-        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${isOnHold ? '▶ Resume' : '⏸ Put On Hold'}</button>` : ''}
-        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">Delete</button>
+        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
+        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
+        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">${s('maint.deleteBtn')}</button>
       </div>`
-      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? 'Completed' : 'Resolved'} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
+      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? s('maint.completedStatus') : s('maint.resolvedStatus')} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
     `;
 
     // Severity dropdown toggle
@@ -221,7 +221,7 @@ function maintOpenDetail(r, currentUser) {
           e.stopPropagation();
           drop.style.display='none';
           const newSev = el.dataset.sev;
-          doConfirm(`Change severity to "${newSev}" without resolving?`, async () => {
+          doConfirm(s('maint.changeSevConfirm',{sev:newSev}), async () => {
             await apiPost('saveMaintenance',{id:r.id,severity:newSev});
             r.severity=newSev; renderAndWire();
             if(typeof renderList==='function') renderList();
@@ -234,7 +234,7 @@ function maintOpenDetail(r, currentUser) {
     // Adopt saumaklúbbur project
     document.getElementById('mdAdoptBtn')?.addEventListener('click', ()=>{
       const by = getBy();
-      doConfirm('Become verkstjóri for this project?', async ()=>{
+      doConfirm(s('maint.adoptConfirm'), async ()=>{
         await apiPost('adoptSaumaklubbur',{id:r.id,name:by});
         r.verkstjori=by; renderAndWire();
         if(typeof renderList==='function') renderList();
@@ -245,7 +245,7 @@ function maintOpenDetail(r, currentUser) {
     // Hold / Resume saumaklúbbur project
     document.getElementById('mdHoldBtn')?.addEventListener('click', ()=>{
       const newHold = !boolVal(r.onHold);
-      const msg = newHold ? 'Put this project on hold?' : 'Resume this project?';
+      const msg = newHold ? s('maint.holdConfirm') : s('maint.resumeConfirm');
       doConfirm(msg, async ()=>{
         await apiPost('holdSaumaklubbur',{id:r.id,onHold:newHold});
         r.onHold=newHold; renderAndWire();
@@ -270,8 +270,8 @@ function maintOpenDetail(r, currentUser) {
     // OOS toggle
     document.getElementById('mdOosBtn')?.addEventListener('click', ()=>{
       const msg = isOos
-        ? 'Return to service without resolving?'
-        : 'Mark as Out of Service without resolving?';
+        ? s('maint.returnToService')
+        : s('maint.markOosConfirm');
       doConfirm(msg, async ()=>{
         await apiPost('saveMaintenance',{id:r.id,markOos:!isOos});
         r.markOos=!isOos; renderAndWire();
@@ -285,7 +285,7 @@ function maintOpenDetail(r, currentUser) {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const idx = parseInt(btn.dataset.cidx);
-        doConfirm('Delete this comment?', async () => {
+        doConfirm(s('maint.deleteCommentConfirm'), async () => {
           const updated = parseJson(r.comments,[]).filter((_,i)=>i!==idx);
           await apiPost('saveMaintenance',{id:r.id,comments:JSON.stringify(updated)});
           r.comments=JSON.stringify(updated); renderAndWire();
@@ -301,7 +301,7 @@ function maintOpenDetail(r, currentUser) {
       photoInput.addEventListener('change', function() {
         const file = this.files[0];
         if (!file) { _mdCommentPhotoData = null; if(previewEl) previewEl.innerHTML=''; return; }
-        if (file.size > 5*1024*1024) { _mdCommentPhotoData = null; if(previewEl) previewEl.innerHTML='<span style="font-size:11px;color:var(--red)">Max 5 MB</span>'; this.value=''; return; }
+        if (file.size > 5*1024*1024) { _mdCommentPhotoData = null; if(previewEl) previewEl.innerHTML='<span style="font-size:11px;color:var(--red)">'+s('maint.maxFileSize')+'</span>'; this.value=''; return; }
         const reader = new FileReader();
         reader.onload = function(ev) {
           const img = new Image();
@@ -332,7 +332,7 @@ function maintOpenDetail(r, currentUser) {
       if(!text && !_mdCommentPhotoData) return;
       const by = getBy();
       const btn = document.getElementById('mdCommentBtn');
-      if(btn) { btn.disabled=true; btn.textContent='Posting…'; }
+      if(btn) { btn.disabled=true; btn.textContent=s('maint.postingBtn'); }
       try {
         let photoUrl = '';
         if (_mdCommentPhotoData) {
@@ -347,7 +347,7 @@ function maintOpenDetail(r, currentUser) {
         _mdCommentPhotoData = null;
         if(input) input.value='';
         renderAndWire();
-      } finally { if(btn){btn.disabled=false;btn.textContent='Post';} }
+      } finally { if(btn){btn.disabled=false;btn.textContent=s('maint.postBtn');} }
     };
     document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});
@@ -355,19 +355,19 @@ function maintOpenDetail(r, currentUser) {
     // Approve sauma project
     document.getElementById('mdApproveBtn')?.addEventListener('click', async ()=>{
       const btn = document.getElementById('mdApproveBtn');
-      if(btn) { btn.disabled=true; btn.textContent='Approving…'; }
+      if(btn) { btn.disabled=true; btn.textContent=s('maint.approvingBtn'); }
       try {
         await apiPost('approveSaumaklubbur',{id:r.id});
         r.approved = true; renderAndWire();
         if(typeof renderList==='function') renderList();
         if(typeof renderStats==='function') renderStats();
         if(typeof renderMaintenance==='function') renderMaintenance();
-      } catch(e) { if(btn){btn.disabled=false;btn.textContent='Approve';} }
+      } catch(e) { if(btn){btn.disabled=false;btn.textContent=s('maint.approveBtn');} }
     });
 
     // Resolve / Complete
     document.getElementById('mdResolveBtn')?.addEventListener('click',()=>{
-      doConfirm(isSauma ? 'Mark this project as completed?' : 'Mark this issue as resolved?', async ()=>{
+      doConfirm(isSauma ? s('maint.completeConfirm') : s('maint.resolveConfirm2'), async ()=>{
         const now=new Date().toISOString().slice(0,16);
         const by=getBy();
         await apiPost('resolveMaintenance',{id:r.id,by});
@@ -380,7 +380,7 @@ function maintOpenDetail(r, currentUser) {
 
     // Delete issue
     document.getElementById('mdDeleteBtn')?.addEventListener('click',()=>{
-      doConfirm('Delete this issue? This cannot be undone.', async ()=>{
+      doConfirm(s('maint.deleteConfirm'), async ()=>{
         await apiPost('deleteMaintenance',{id:r.id});
         closeModal('maintDetailModal');
         if(typeof renderList==='function') renderList();
@@ -402,7 +402,7 @@ function maintRenderCard(r) {
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
     : esc(r.itemName||'');
-  const oosTag = isOos ? '<span class="oos-badge">OOS</span>' : '';
+  const oosTag = isOos ? '<span class="oos-badge">'+s('maint.oosTag')+'</span>' : '';
   const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
 
   const comments = parseJson(r.comments, []);
@@ -437,7 +437,7 @@ function maintRenderCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ ${isSauma ? 'Completed' : 'Resolved'} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ ${isSauma ? s('maint.completedStatus') : s('maint.resolvedStatus')} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 
@@ -465,12 +465,12 @@ function maintRenderRow(m) {
  * Both those functions must exist on the page.
  */
 async function maintResolve(id) {
-  if (!await ymConfirm("Mark this request as resolved?")) return;
+  if (!await ymConfirm(s('maint.resolveConfirm2'))) return;
   const r = (window._maintRequests || []).find(x => x.id === id);
   if (!r) return;
   try {
-    await apiPost("resolveMaintenance", { id, resolvedBy: (typeof getUser==='function'?getUser()?.name:'Staff') });
-    r.resolved = true; r.resolvedBy = (typeof getUser==='function'?getUser()?.name:'Staff'); r.resolvedAt = new Date().toISOString();
+    await apiPost("resolveMaintenance", { id, resolvedBy: (typeof getUser==='function'?getUser()?.name:s('maint.defaultAuthor')) });
+    r.resolved = true; r.resolvedBy = (typeof getUser==='function'?getUser()?.name:s('maint.defaultAuthor')); r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
       await apiPost("saveBoatOos", { id: r.boatId, oos: false, oosReason: "" });
     }
