@@ -280,8 +280,9 @@ function renderBoats() {
   var rowingBoats = _boats.filter(b => {
     var cat = (b.category || '').toLowerCase();
     if (cat !== 'rowing-shell') return false;
-    // Show controlled-access rowing-shells
+    // Show controlled-access or slot-scheduled rowing-shells
     if (b.accessMode === 'controlled') return true;
+    if (boolVal(b.slotSchedulingEnabled)) return true;
     // Show any rowing-shell this user has a reservation for
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
     return false;
@@ -666,7 +667,7 @@ var _cxSlotBoats = [];
 function initCxSlots() {
   // Find rowing-shell boats with slot scheduling
   _cxSlotBoats = (_boats || []).filter(function(b) {
-    return b.slotSchedulingEnabled && (b.category || '').toLowerCase() === 'rowing-shell';
+    return boolVal(b.slotSchedulingEnabled) && (b.category || '').toLowerCase() === 'rowing-shell';
   });
   var sect = document.getElementById('sectSlots');
   // Only show if there are slot-scheduled rowing-shells AND user has active crews
