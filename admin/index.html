@@ -1083,7 +1083,7 @@ async function loadAll() {
     cfgRes   = cfgRes_;
   } catch(e) {
     console.error("loadAll failed:", e);
-    if (statusEl) statusEl.innerHTML = `<div class="empty-state">Load failed: ${e.message}</div>`;
+    if (statusEl) statusEl.innerHTML = `<div class="empty-state">${s('admin.loadFailed')}: ${e.message}</div>`;
     return;
   }
 
@@ -1198,7 +1198,7 @@ async function saveEntity({ apiAction, getArray, setArray, payload, modalId, ren
     if (renderFn) renderFn();
     toast(s("toast.saved"));
   } catch(e) {
-    toast("Save failed: " + e.message, "err");
+    toast(s("toast.saveFailed") + ": " + e.message, "err");
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -1285,7 +1285,7 @@ function openMemberModal(id) {
 async function saveMember() {
   const name      = document.getElementById("mName").value.trim();
   const kennitala = document.getElementById("mKennitala").value.trim();
-  if (!name || !kennitala) { toast("Name and kennitala required.", "err"); return; }
+  if (!name || !kennitala) { toast(s("admin.nameKtRequired"), "err"); return; }
 
   const id      = editingId || ("mbr_" + Date.now().toString(36));
   const payload = {
@@ -1310,16 +1310,16 @@ async function saveMember() {
     closeModal("memberModal");
     renderMembers();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deactivateMember(id) {
-  if (!await ymConfirm("Deactivate this member?")) return;
+  if (!await ymConfirm(s("admin.confirmDeactivateMember"))) return;
   try {
     await apiPost("deleteMember", { id });
     members = members.filter(m => m.id !== id);
     renderMembers();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
 
@@ -1335,7 +1335,7 @@ function renderBoatCats() {
       const lb = (getLang() === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
       return la.localeCompare(lb, locale, { sensitivity: 'base' });
     });
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
+  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noCategories')}</div>`; return; }
    card.innerHTML = active.map(c => `
     <div class="list-row">
       <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
@@ -1351,7 +1351,7 @@ function renderBoatCats() {
 function openBoatCatModal(key) {
   _bcEditingId = key || null;
   const c = key ? _allBoatCats.find(x => x.key === key) : null;
-  document.getElementById("boatCatModalTitle").textContent = c ? "Edit Category" : "Add Boat Category";
+  document.getElementById("boatCatModalTitle").textContent = c ? s('admin.boatCatModal.edit') : s('admin.boatCatModal.add');
   document.getElementById("bcLabelEN").value   = c ? (c.labelEN || "") : "";
   document.getElementById("bcLabelIS").value   = c ? (c.labelIS || "") : "";
   document.getElementById("bcEmoji").value     = c ? (c.emoji   || "") : "";
@@ -1365,7 +1365,7 @@ function openBoatCatModal(key) {
 async function saveBoatCat() {
   const labelEN = document.getElementById("bcLabelEN").value.trim();
   const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
-  if (!labelEN || !key) { toast("Name and key required.", "err"); return; }
+  if (!labelEN || !key) { toast(s("admin.nameKeyRequired"), "err"); return; }
 
   const payload = {
     key,
@@ -1388,12 +1388,12 @@ async function saveBoatCat() {
     renderBoats();
     populateCategorySelects();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteBoatCat() {
   const key = _bcEditingId;
-  if (!key || !await ymConfirm("Remove this category? Boats assigned to it will still exist but may show under 'other'.")) return;
+  if (!key || !await ymConfirm(s("admin.confirmRemoveBoatCat"))) return;
   _allBoatCats = _allBoatCats.map(c => c.key === key ? { ...c, active: false } : c);
   try {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
@@ -1404,7 +1404,7 @@ async function deleteBoatCat() {
     renderBoats();
     populateCategorySelects();
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ BOATS ═════════════════════════════════════════════════════════════════════
@@ -1412,7 +1412,7 @@ async function deleteBoatCat() {
 function renderBoats() {
   const el     = document.getElementById("boatSections");
   const active = boats.filter(b => bool(b.active));
-  if (!active.length) { el.innerHTML = `<div class="empty-state">No boats yet.</div>`; return; }
+  if (!active.length) { el.innerHTML = `<div class="empty-state">${s('admin.noBoats')}</div>`; return; }
 
   const groups = {};
   boatCats.forEach(c => { groups[c.key] = []; });
@@ -1477,7 +1477,7 @@ function populateDefaultPortSelect(selectedId) {
   const sel = document.getElementById("bDefaultPortId");
   if (!sel) return;
   const ports = _allLocations.filter(l => l.type === 'port' && (l.active !== false && l.active !== 'false'));
-  sel.innerHTML = `<option value="">— none —</option>` +
+  sel.innerHTML = `<option value="">${s('admin.optionNone')}</option>` +
     ports.map(p => `<option value="${esc(p.id)}"${p.id === selectedId ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
 }
 
@@ -1621,13 +1621,13 @@ function selectCharterMember(kt, name) {
 
 async function saveCharterFromModal() {
   const boatId = editingId;
-  if (!boatId) { toast("Save the boat first.", "err"); return; }
+  if (!boatId) { toast(s("admin.saveBoatFirst"), "err"); return; }
   const kt   = document.getElementById("bCharterMemberKt").value;
   const name = document.getElementById("bCharterMemberName").textContent;
   const start = document.getElementById("bCharterStart").value;
   const end   = document.getElementById("bCharterEnd").value;
-  if (!kt || !name) { toast("Select a member.", "err"); return; }
-  if (!start || !end) { toast("Set start and end dates.", "err"); return; }
+  if (!kt || !name) { toast(s("admin.selectMember"), "err"); return; }
+  if (!start || !end) { toast(s("admin.setDatesRequired"), "err"); return; }
   try {
     await apiPost('saveCharter', { boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end });
     // Update local boat data
@@ -1636,7 +1636,7 @@ async function saveCharterFromModal() {
     cancelCharterForm();
     renderCharterInfo(b);
     toast(s('boat.charterSaved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeCharterFromModal() {
@@ -1649,7 +1649,7 @@ async function removeCharterFromModal() {
     if (b) delete b.charter;
     renderCharterInfo(b);
     toast(s('boat.charterRemoved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ── Access control helpers ────────────────────────────────────────────────────
@@ -1774,7 +1774,7 @@ async function saveResFromModal() {
   var start = document.getElementById("bResStart").value;
   var end   = document.getElementById("bResEnd").value;
   var note  = document.getElementById("bResNote").value.trim();
-  if (!kt || !name || !start || !end) { toast("Member and dates required.", "err"); return; }
+  if (!kt || !name || !start || !end) { toast(s("admin.memberDatesRequired"), "err"); return; }
   try {
     var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
@@ -1782,7 +1782,7 @@ async function saveResFromModal() {
     cancelResForm();
     renderReservationList(b);
     toast(s('boat.reservationSaved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeResFromModal(resId) {
@@ -1794,12 +1794,12 @@ async function removeResFromModal(resId) {
     if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
     renderReservationList(b);
     toast(s('boat.reservationRemoved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
@@ -1846,12 +1846,12 @@ async function saveBoat() {
     closeModal("boatModal");
     renderBoats();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteBoat(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this boat?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteBoat"))) return;
   _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
   try {
     await apiPost("saveConfig", { boats: _allBoats });
@@ -1859,7 +1859,7 @@ async function deleteBoat(id) {
     renderBoats();
     closeModal("boatModal");
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 function showBoatQR(id) {
@@ -1892,7 +1892,7 @@ function renderLocations() {
   const active = locations
     .filter(l => bool(l.active))
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' }));
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
+  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noLocations')}</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
       <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
@@ -1918,7 +1918,7 @@ function openLocationModal(id) {
 
 async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const id      = editingId || ("loc_" + Date.now().toString(36));
   var latVal = document.getElementById("lLat").value.trim();

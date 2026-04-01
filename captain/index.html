@@ -139,7 +139,7 @@
     <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
       <div class="cq-pills" id="maintPills" style="margin-bottom:0"></div>
-      <select id="mfBoat" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:10px;padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="">All boats</option></select>
+      <select id="mfBoat" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:10px;padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="" data-s="cq.allBoats">All boats</option></select>
     </div>
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
@@ -451,7 +451,7 @@ function buildMaintBoatFilter() {
     .map(m => m.boatName || '')
     .filter(Boolean)
   )].sort();
-  sel.innerHTML = '<option value="">All boats</option>' + boatNames.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+  sel.innerHTML = '<option value="">' + s('cq.allBoats') + '</option>' + boatNames.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
   sel.onchange = function() { _maintBoatFilter = this.value; renderMaint(); };
 }
 
@@ -529,7 +529,7 @@ function renderCrew() {
     return '<div class="cq-card">'
       + '<div class="cq-card-title">' + esc(who || '') + '</div>'
       + '<div class="cq-card-sub">' + esc(c.boatName || '') + ' · ' + esc(c.date || '') + '</div>'
-      + '<div class="cq-card-meta">' + (c.type === 'crew_join' ? 'Requesting to join as crew' : 'Crew assignment pending') + '</div>'
+      + '<div class="cq-card-meta">' + (c.type === 'crew_join' ? s('cq.crewJoinRequest') : s('cq.crewAssignPending')) + '</div>'
       + '<div class="conf-actions">'
         + '<button class="btn-confirm" onclick="respondCrew(\'' + esc(c.id) + '\',\'confirmed\')">' + s('btn.confirm') + '</button>'
         + '<button class="btn-reject" onclick="respondCrew(\'' + esc(c.id) + '\',\'rejected\')">' + s('btn.cancel') + '</button>'
@@ -569,7 +569,7 @@ async function uploadHeadshot() {
   var input = document.getElementById('headshotFile');
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
-  if (file.size > 5 * 1024 * 1024) { showToast('File too large (max 5 MB)', 'err'); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast(s('cq.fileTooLarge'), 'err'); return; }
   var reader = new FileReader();
   reader.onload = async function(e) {
     try {
@@ -752,7 +752,7 @@ async function saveCqReservation() {
   var start = document.getElementById('cqResStart').value;
   var end = document.getElementById('cqResEnd').value;
   var note = document.getElementById('cqResNote').value.trim();
-  if (!kt || !name || !start || !end) { showToast('Member and dates required.', 'err'); return; }
+  if (!kt || !name || !start || !end) { showToast(s('cq.memberDatesRequired'), 'err'); return; }
   try {
     var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _boats.find(x => x.id === _resBoatId);
@@ -786,7 +786,7 @@ function buildFilters() {
   // Year filter
   var years = [...new Set(myTrips.map(function(t) { return (t.date || '').slice(0, 4); }).filter(Boolean))].sort().reverse();
   var yrSel = document.getElementById('fYear');
-  yrSel.innerHTML = '<option value="">All years</option>';
+  yrSel.innerHTML = '<option value="">' + s('cq.allYears') + '</option>';
   years.forEach(function(y) { var o = document.createElement('option'); o.value = y; o.textContent = y; yrSel.appendChild(o); });
   var thisYear = String(new Date().getFullYear());
   if (years.includes(thisYear)) yrSel.value = thisYear;
@@ -794,7 +794,7 @@ function buildFilters() {
   // Category filter (default to keelboat)
   var cats = [...new Set(myTrips.map(function(t) { return (allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || ''; }).filter(Boolean))].sort();
   var cSel = document.getElementById('fCat');
-  cSel.innerHTML = '<option value="">All categories</option>';
+  cSel.innerHTML = '<option value="">' + s('cq.allCategories') + '</option>';
   cats.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = boatEmoji(c.toLowerCase()) + ' ' + c; cSel.appendChild(o); });
   if (cats.map(function(c) { return c.toLowerCase(); }).includes('keelboat')) cSel.value = 'Keelboat';
 
@@ -803,13 +803,13 @@ function buildFilters() {
     .filter(function(t) { return ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase() === 'keelboat'; })
     .map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
   var bSel = document.getElementById('fBoatName');
-  bSel.innerHTML = '<option value="">All boats</option>';
+  bSel.innerHTML = '<option value="">' + s('cq.allBoats') + '</option>';
   keelboatNames.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
 
   // Captain filter (members who isCaptain)
   _captains = _cqMembers.filter(function(m) { return isCaptain(m); }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
   var capSel = document.getElementById('fCaptain');
-  capSel.innerHTML = '<option value="">All captains</option>';
+  capSel.innerHTML = '<option value="">' + s('cq.allCaptains') + '</option>';
   _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = c.name; capSel.appendChild(o); });
 
   // Member filter (anyone with keelboat_crew endorsement)
@@ -819,7 +819,7 @@ function buildFilters() {
     return Array.isArray(certs) && certs.some(function(c) { return c.certId === 'keelboat_crew'; });
   }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
   var mSel = document.getElementById('fMember');
-  mSel.innerHTML = '<option value="">All members</option>';
+  mSel.innerHTML = '<option value="">' + s('cq.allMembers') + '</option>';
   keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = m.name; mSel.appendChild(o); });
 
   ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
@@ -856,7 +856,7 @@ function applyFilter() {
   });
   document.getElementById('tripList').innerHTML = filtered.length
     ? filtered.map(tripCard).join('')
-    : '<div class="empty-note">No trips match this filter.</div>';
+    : '<div class="empty-note">' + s('cq.noTripsMatch') + '</div>';
   document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
 }
 

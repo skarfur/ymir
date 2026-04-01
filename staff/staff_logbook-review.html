@@ -587,10 +587,10 @@ async function tcmAssign() {
   const sub = def?.subcats?.length ? document.getElementById('tcmSubcat').value : null;
   if (def?.subcats?.length && !sub) { showToast(s('cert.level') + ' required.', 'err'); return; }
 
-  if (!_certMember) { showToast('No member selected.', 'err'); return; }
+  if (!_certMember) { showToast(s('logrev.noMemberSelected'), 'err'); return; }
 
   const m = _allMembers.find(x => x.id === _certMember.id);
-  if (!m) { showToast('Member not found.', 'err'); return; }
+  if (!m) { showToast(s('logrev.memberNotFound'), 'err'); return; }
 
   const newCert = {
     certId,
@@ -647,7 +647,7 @@ async function deleteCert(certId, subcatKey) {
     const idx = _allMembers.findIndex(x => x.id === _certMember.id);
     if (idx >= 0) _allMembers[idx] = { ..._allMembers[idx], certifications: JSON.stringify(certs) };
     renderCertPanelList();
-    showToast('Credential removed');
+    showToast(s('logrev.credentialRemoved'));
   } catch (e) {
     showToast(s('toast.error') + ': ' + e.message, 'err');
   }
@@ -701,7 +701,7 @@ function applyCertFilter() {
     return certs.some(c => c.certId === certId && (sub ? c.sub === sub : true));
   });
   if (!matches.length) {
-    el.innerHTML = `<div class="text-muted text-md" style="padding:6px 0">No members found with this credential.</div>`;
+    el.innerHTML = `<div class="text-muted text-md" style="padding:6px 0">${s('logrev.certNoMatches')}</div>`;
     return;
   }
   const color = certColor(def || {});

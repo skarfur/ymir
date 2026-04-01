@@ -882,7 +882,7 @@ function renderLandingChecklist() {
   // GPS track upload block
   var trackBlock=
     '<div style="flex:1;min-width:0">'+
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'GPS-LEIÐ — GPX/KML':'GPS TRACK — GPX/KML')+'</label>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.gpsTrackLabel')+'</label>'+
       '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" onchange="_handleRetTrack(this)" style="font-size:11px;color:var(--text);width:100%">'+
       '<div id="retTrackStatus" style="font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>'+
     '</div>';
@@ -890,13 +890,13 @@ function renderLandingChecklist() {
   // Photo upload block
   var photoBlock=
     '<div style="flex:1;min-width:0">'+
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'MYNDIR':'PHOTOS')+'</label>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.photosLabel')+'</label>'+
       '<input type="file" id="retPhotoFiles" accept="image/*" multiple onchange="_handleRetPhotos(this)" style="font-size:11px;color:var(--text);width:100%">'+
       '<div id="retPhotoPreview" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>'+
     '</div>';
 
   // Distance block (inline-compact)
-  var distLabel=IS?'VEGALENGD (NM)':'DISTANCE (NM)';
+  var distLabel=s('member.distanceLabel');
   var distBlock=
     '<div>'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+distLabel+'</label>'+
@@ -913,8 +913,8 @@ function renderLandingChecklist() {
     portDistRow=
       '<div class="field" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">'+
         '<div style="flex:1;min-width:0">'+
-          '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'⚓️ KOMUSTAÐUR':'⚓️ ARRIVAL PORT')+'</label>'+
-          '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+(IS?'Sama og brottfararstaður':'Same as departure')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
+          '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+'⚓️ '+s('member.arrivalPortLabel')+'</label>'+
+          '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+s('member.sameAsDeparture')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
           '<datalist id="retPortsList">'+portOpts+'</datalist>'+
         '</div>'+
         distBlock+
@@ -926,35 +926,35 @@ function renderLandingChecklist() {
 
   document.getElementById('returnModalBody').innerHTML=
     (items.length?'<div class="section-label mb-10">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
-    '<div id="landCheckErr" class="text-sm text-red" style="display:none;margin:6px 0">'+(IS?'Staðfestu alla liði.':'Please confirm all items.')+'</div>'+
+    '<div id="landCheckErr" class="text-sm text-red" style="display:none;margin:6px 0">'+s('member.confirmAllItems')+'</div>'+
     '<div style="display:flex;gap:8px;margin:12px 0">'+
-      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" onclick="openInlineReport(\'damage\')">&#9888; '+(IS?'Tilkynna skemmdir':'Report damage')+'</button>'+
-      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+(IS?'Tilkynna atvik':'Report incident')+'</button>'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" onclick="openInlineReport(\'damage\')">&#9888; '+s('member.reportDamage')+'</button>'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" onclick="openInlineReport(\'incident\')">&#128680; '+s('member.reportIncident')+'</button>'+
     '</div>'+
     '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
     (((returnCo.crew||1)>1&&/^(keelboat|dinghy)$/.test((returnCo.boatCategory||'').toLowerCase()))?'<div id="helmSection" style="margin-bottom:14px">'+
-      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STÝRI':'HELM')+'</div>'+
+      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+s('member.helmLabel')+'</div>'+
       '<div id="helmToggles">'+
         '<label class="check-label">'+
           '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-self="1" onchange="window._retHelmSelf=this.checked">'+
-          '<span>'+esc(user.name||'')+' <span class="text-xs text-muted">'+(IS?'(þú)':'(you)')+'</span></span>'+
+          '<span>'+esc(user.name||'')+' <span class="text-xs text-muted">'+s('member.youLabel')+'</span></span>'+
         '</label>'+
-        '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
+        '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+s('member.loadingCrew')+'</div>'+
       '</div>'+
     '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'ATHUGASEMDIR SKIPSTJÓRA':"SKIPPER'S COMMENTS")+'</label>'+
-      '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+(IS?'Sýnileg öllum á ferðinni.':'Visible to everyone on this trip.')+'</div>'+
-      '<textarea id="retSkipperNote" rows="2" placeholder="'+(IS?'Athugasemd um ferðina (sýnileg áhöfn)':'Trip note (visible to crew)')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+s('member.skipperNotes')+'</label>'+
+      '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+s('member.notesVisibleAll')+'</div>'+
+      '<textarea id="retSkipperNote" rows="2" placeholder="'+s('member.notesPlaceholder')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEGAR ATHUGASEMDIR':'PERSONAL COMMENTS')+'</label>'+
-      '<textarea id="retNotes" rows="2" placeholder="'+(IS?'Aðeins sýnilegt þér':'Only visible to you')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.personalNotes')+'</label>'+
+      '<textarea id="retNotes" rows="2" placeholder="'+s('member.onlyVisibleYou')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
     '<div class="btn-row">'+
-      '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+(IS?'Til baka':'Back')+'</button>'+
-      '<button class="btn btn-primary" id="retSubmitBtn" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; '+(IS?'Skrá inn':'Check In')+'</button>'+
+      '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" id="retSubmitBtn" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; '+s('member.checkInBtn')+'</button>'+
     '</div>';
   // Render crew toggles now that the DOM is built
   if(window._retCrewTrips && window._retCrewTrips.length) _renderHelmSection();
@@ -973,10 +973,10 @@ function _renderHelmSection(){
     return mem&&mem.role==='guest';
   }
   function _guestTag(t){
-    return _isGuest(t)?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+(IS?'Gestur':'Guest')+'</span>':'';
+    return _isGuest(t)?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:4px">'+s('member.guestLabel')+'</span>':'';
   }
   if(el){
-    if(!entries.length){el.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
+    if(!entries.length){el.textContent=s('member.noNamedCrew');}
     else{el.innerHTML=entries.map(function(t){
       return '<label class="check-label">'+
         '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'">'+
@@ -990,13 +990,13 @@ function _handleRetTrack(input){
   var statusEl=document.getElementById('retTrackStatus');
   var IS=getLang()==='IS';
   if(!file){window._retPendingTrack=null;statusEl.textContent='';return;}
-  statusEl.textContent=IS?'Lesur skrá…':'Reading…';statusEl.style.color='var(--muted)';
+  statusEl.textContent=s('member.readingFile');statusEl.style.color='var(--muted)';
   var reader=new FileReader();
   reader.onload=function(e){
     window._retPendingTrack={fileName:file.name,fileData:e.target.result,mimeType:file.type||'application/octet-stream'};
-    statusEl.textContent=(IS?'Tilbúið: ':'Ready: ')+file.name;statusEl.style.color='var(--brass)';
+    statusEl.textContent=s('member.fileReady',{name:file.name});statusEl.style.color='var(--brass)';
   };
-  reader.onerror=function(){statusEl.textContent=IS?'Lestur mistókst':'Read error';statusEl.style.color='var(--red)';window._retPendingTrack=null;};
+  reader.onerror=function(){statusEl.textContent=s('member.readError');statusEl.style.color='var(--red)';window._retPendingTrack=null;};
   reader.readAsDataURL(file);
 }
 
@@ -1106,7 +1106,7 @@ async function confirmCheckIn(coId) {
 
   // Disable submit while uploading
   var submitBtn=document.getElementById('retSubmitBtn');
-  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=IS?'Hleður upp…':'Uploading…';}
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=s('logbook.uploading');}
 
   // Upload GPS track
   var trackFileUrl='',trackSimplified='',trackSource='',distanceNm=manualDist;
@@ -1116,8 +1116,8 @@ async function confirmCheckIn(coId) {
       if(tr.ok){
         trackFileUrl=tr.trackFileUrl||'';trackSimplified=tr.trackSimplified||'';trackSource=tr.trackSource||'';
         if(!distanceNm&&tr.distanceNm){distanceNm=tr.distanceNm;var dEl=document.getElementById('retDistNm');if(dEl)dEl.value=tr.distanceNm;}
-      } else {showToast(IS?'GPS upphal ekki stillt':'GPS upload not configured','warn');}
-    }catch(e){showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn');}
+      } else {showToast(s('member.gpsNoConfig'),'warn');}
+    }catch(e){showToast(s('member.gpsUploadFailed',{msg:e.message}),'warn');}
   }
 
   // Upload photos in parallel
@@ -1126,8 +1126,8 @@ async function confirmCheckIn(coId) {
     try{
       var pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
       if(pr.ok&&pr.photoUrl)photoUrls.push(pr.photoUrl);
-      else if(!pr.ok)showToast(IS?'Skráarupphal ekki stillt':'Photo upload not configured','warn');
-    }catch(e){showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn');}
+      else if(!pr.ok)showToast(s('member.photoNoConfig'),'warn');
+    }catch(e){showToast(s('member.photoUploadFailed',{msg:e.message}),'warn');}
   }));
 
   // Collect helm self toggle
@@ -1182,7 +1182,7 @@ async function confirmCheckIn(coId) {
     closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
     logbookLoaded=false; showToast(s('toast.checkedIn'));
   } catch(e){
-    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='&#10003; '+(IS?'Skrá inn':'Check In');}
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='&#10003; '+s('member.checkInBtn');}
     if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}
   }
 }
@@ -1228,9 +1228,9 @@ function _renderMemberStaffStatus() {
   const boatBg   = boat   ? '#2980b918;border-color:#2980b944' : 'var(--surface);border-color:var(--border)';
   el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px">'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + dutyBg + ';color:' + dutyCol + '">'
-    + '🧑 ' + (IS ? 'Starfsmaður á vakt' : 'Staff on duty') + '</span>'
+    + '🧑 ' + s('wx.staffOnDuty') + '</span>'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + boatBg + ';color:' + boatCol + '">'
-    + '⛵ ' + (IS ? 'Björunarbátur' : 'Support boat') + '</span>'
+    + '⛵ ' + s('staff.supportBoat') + '</span>'
     + '</div>';
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
 }

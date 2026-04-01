@@ -442,7 +442,7 @@ async function saveCxReservation() {
   var start = document.getElementById('cxResStart').value;
   var end = document.getElementById('cxResEnd').value;
   var note = document.getElementById('cxResNote').value.trim();
-  if (!kt || !name || !start || !end) { showToast('Member and dates required.', 'err'); return; }
+  if (!kt || !name || !start || !end) { showToast(s('cox.memberDatesRequired'), 'err'); return; }
   try {
     var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _boats.find(x => x.id === _resBoatId);
