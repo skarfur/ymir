@@ -1594,7 +1594,7 @@ function saveCheckout_(b) {
           // Cert gate check
           if (!hasAccess && checkBoat.accessGateCert && checkMember && checkMember.certifications) {
             var memberCerts = typeof checkMember.certifications === 'string' ? JSON.parse(checkMember.certifications) : (checkMember.certifications || []);
-            if (Array.isArray(memberCerts) && memberCerts.some(function(c) { return c.sub === checkBoat.accessGateCert; })) hasAccess = true;
+            if (Array.isArray(memberCerts) && memberCerts.some(function(c) { return c.sub === checkBoat.accessGateCert || c.certId === checkBoat.accessGateCert; })) hasAccess = true;
           }
           // Allowlist check
           if (!hasAccess && checkBoat.accessAllowlist && Array.isArray(checkBoat.accessAllowlist) && checkBoat.accessAllowlist.indexOf(checkKt) !== -1) hasAccess = true;

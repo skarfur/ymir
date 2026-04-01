@@ -116,12 +116,13 @@ function getActiveReservation(boat) {
 
 /** Returns true if the boat uses slot-based scheduling. */
 function isSlotScheduled(boat) {
-  return boat && boat.slotSchedulingEnabled === true;
+  return boat && boolVal(boat.slotSchedulingEnabled);
 }
 
 /** Returns true if the boat is available outside of admin-defined slots. */
 function isAvailableOutsideSlots(boat) {
-  return !boat || boat.availableOutsideSlots !== false;
+  if (!boat || boat.availableOutsideSlots === undefined || boat.availableOutsideSlots === null) return true;
+  return boolVal(boat.availableOutsideSlots);
 }
 
 /**
@@ -158,7 +159,8 @@ function canAccessBoat(boat, user, opts) {
     var certs = parseJson(user.certifications, []);
     var today = todayISO();
     if (Array.isArray(certs) && certs.some(function(c) {
-      if (c.sub !== boat.accessGateCert) return false;
+      var matches = c.sub === boat.accessGateCert || c.certId === boat.accessGateCert;
+      if (!matches) return false;
       if (c.expiresAt && c.expiresAt < today) return false;
       return true;
     })) return true;

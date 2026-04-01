@@ -249,6 +249,7 @@ if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/';
 
 const _isCoxswain = isCoxswain(user);
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
+var _membersLoaded = false;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 (async function init() {
@@ -263,18 +264,16 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
   }
 
   try {
-    const [cfgRes, maintRes, tripsRes, membersRes, crewRes, invRes] = await Promise.all([
+    const [cfgRes, maintRes, tripsRes, crewRes, invRes] = await Promise.all([
       apiGet('getConfig'),
       apiGet('getMaintenance'),
-      apiGet('getTrips', { limit: 500 }),
-      apiGet('getMembers'),
+      apiGet('getTrips', { limit: 200 }),
       apiGet('getCrews', { kennitala: user.kennitala }),
       apiGet('getCrewInvites', { kennitala: user.kennitala }),
     ]);
 
     _boats     = (cfgRes.boats     || []);
     _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
-    _members   = (membersRes.members || []).filter(m => m.active !== false && m.active !== 'false');
     _allMaint  = maintRes.requests || maintRes.items || maintRes.maintenance || [];
     _myCrews     = crewRes.crews || [];
     _crewInvites = invRes.invites || [];
@@ -298,6 +297,16 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     showToast(e.message, 'err');
   }
 })();
+
+// Lazy-load members on first modal open (not needed for initial render)
+async function ensureMembersLoaded() {
+  if (_membersLoaded) return;
+  _membersLoaded = true;
+  try {
+    var membersRes = await apiGet('getMembers');
+    _members = (membersRes.members || []).filter(function(m) { return m.active !== false && m.active !== 'false'; });
+  } catch(e) { _members = []; _membersLoaded = false; }
+}
 
 // ══ STATS ════════════════════════════════════════════════════════════════════
 function renderStats() {
@@ -408,6 +417,7 @@ function openResModal(boatId) {
   document.getElementById('cxResEnd').value = '';
   document.getElementById('cxResNote').value = '';
   openModal('resModal');
+  ensureMembersLoaded();
 }
 
 var _searchCxResTimer = null;
@@ -595,6 +605,7 @@ function openCrewInvModal(crewId) {
   document.getElementById('ciMemberSearch').value = '';
   document.getElementById('ciMemberName').textContent = '';
   document.getElementById('ciMemberSuggestions').innerHTML = '';
+  ensureMembersLoaded();
   // Populate pair options
   var crew = _myCrews.find(function(c) { return c.id === crewId; });
   var pairSel = document.getElementById('ciPairId');

@@ -1536,8 +1536,8 @@ function openBoatModal(id) {
   renderAllowlistChips();
   updateAccessFields();
   // Slot scheduling
-  document.getElementById("bSlotScheduling").checked = b && b.slotSchedulingEnabled === true;
-  document.getElementById("bAvailOutside").checked = b ? b.availableOutsideSlots !== false : true;
+  document.getElementById("bSlotScheduling").checked = b && boolVal(b.slotSchedulingEnabled);
+  document.getElementById("bAvailOutside").checked = b ? (b.availableOutsideSlots === undefined || b.availableOutsideSlots === null || boolVal(b.availableOutsideSlots)) : true;
   updateSlotFields();
   // Reservations
   document.getElementById("bReservationForm").classList.add("hidden");
@@ -2797,7 +2797,7 @@ function initSlotCalendar() {
   var sel = document.getElementById("slotCatFilter");
   sel.innerHTML = '';
   var cats = (boatCats || []).filter(function(c) {
-    return (_allBoats || []).some(function(b) { return b.category === c.key && b.accessMode === 'controlled' && b.slotSchedulingEnabled; });
+    return (_allBoats || []).some(function(b) { return b.category === c.key && b.accessMode === 'controlled' && boolVal(b.slotSchedulingEnabled); });
   });
   if (!cats.length) {
     sel.innerHTML = '<option value="">(' + s('slot.noSlotBoats') + ')</option>';
@@ -2821,7 +2821,7 @@ async function loadSlotCalendar() {
   } catch(e) { _slotData = []; }
   // Populate boat filter
   var boatSel = document.getElementById("slotBoatFilter");
-  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && b.slotSchedulingEnabled; });
+  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && boolVal(b.slotSchedulingEnabled); });
   boatSel.innerHTML = '<option value="">' + s('slot.allBoats') + '</option>';
   catBoats.forEach(function(b) { boatSel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'; });
   renderSlotCalendar();
@@ -2831,7 +2831,7 @@ function renderSlotCalendar() {
   var cat = document.getElementById("slotCatFilter").value;
   var boatFilter = document.getElementById("slotBoatFilter").value;
   var catBoats = (_allBoats || []).filter(function(b) {
-    return b.category === cat && b.slotSchedulingEnabled && (!boatFilter || b.id === boatFilter);
+    return b.category === cat && boolVal(b.slotSchedulingEnabled) && (!boatFilter || b.id === boatFilter);
   });
   if (!catBoats.length) {
     document.getElementById("slotCalGrid").innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('slot.noSlotBoats') + '</div>';
@@ -2978,7 +2978,7 @@ async function deleteCurrentSlot() {
 // Recurring slot creation
 function openRecurringSlotModal() {
   var cat = document.getElementById("slotCatFilter").value;
-  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && b.slotSchedulingEnabled; });
+  var catBoats = (_allBoats || []).filter(function(b) { return b.category === cat && boolVal(b.slotSchedulingEnabled); });
   var sel = document.getElementById("rsBoat");
   sel.innerHTML = '';
   catBoats.forEach(function(b) { sel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'; });
