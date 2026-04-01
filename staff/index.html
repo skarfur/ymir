@@ -901,6 +901,7 @@ async function submitCheckout() {
           locationId: lid, locationName: location.name||lid,
           date: new Date().toISOString().slice(0,10),
           timeOut: document.getElementById('coTimeOut').value,
+          timeIn: document.getElementById('coReturnBy').value,
           role: 'crew', wxSnapshot: snap,
         }); } catch(e2) { console.warn('crew confirmation failed for', _cn, e2.message); }
       }
