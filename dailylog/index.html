@@ -1003,7 +1003,7 @@ async function loadDay() {
 
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
-  dom.dateHero.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { day:'numeric', month:'long', year:'numeric' });
+  dom.dateHero.textContent = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
@@ -1106,7 +1106,7 @@ function applyLogData(log, cfgRes) {
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
       const at = log.signedOffAt
-        ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString(L === 'IS' ? 'is-IS' : 'en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        ? ' at ' + fmtTime(log.signedOffAt) : '';
       dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
     }
   }

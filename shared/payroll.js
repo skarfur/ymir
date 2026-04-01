@@ -328,7 +328,11 @@ function punchClockWidget(el, employeeId, opts) {
   function _esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function fmtTime(iso) { return iso ? String(iso).slice(11,16) : '--:--'; }
-  function fmtDate(iso) { return iso ? String(iso).slice(0,10) : ''; }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var p = String(iso).slice(0,10).split('-');
+    return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : String(iso).slice(0,10);
+  }
 
   // ── State: { clockedIn, onBreak, clockedInAt, breakStartedAt, recent, todayEntries }
   function render(state) {

@@ -165,7 +165,7 @@ async function fetchAll() {
     const staffStatus = cfgRes?.staffStatus ?? null;
     render(wx, marine, staffStatus);
     document.getElementById('updatedAt').textContent =
-      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+      'Updated ' + fmtTimeNow();
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
       `<div class="error-msg">⚠️ ${esc(e.message)}<br><span class="text-sm text-muted">${s('wx.checkConnection')}</span></div>`;

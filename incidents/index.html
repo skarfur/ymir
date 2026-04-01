@@ -387,7 +387,7 @@ function openDetail(i) {
     ${field(s('incident.immediateAction'), i.immediateAction)}
     ${field(s('incident.followUp'), i.followUp)}
     ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
-    ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? new Date(i.filedAt).toLocaleString(L==='IS'?'is-IS':'en-GB') : ''))}
+    ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? fmtDate(i.filedAt) + ' ' + fmtTime(i.filedAt) : ''))}
   `;
 
   document.getElementById('notesList').innerHTML = notes.map(n => `
@@ -511,7 +511,7 @@ async function addNote() {
     const i = incidents.find(x => x.id === detailId);
     if (i) {
       const notes = parseJson(i.staffNotes, []);
-      const timeStr = new Date().toLocaleString(L === 'IS' ? 'is-IS' : 'en-GB');
+      const timeStr = fmtDate(new Date().toISOString()) + ' ' + fmtTime(new Date().toISOString());
       notes.push({ by: user.name, at: timeStr, text });
       i.staffNotes = JSON.stringify(notes);
       document.getElementById('notesList').innerHTML += `
