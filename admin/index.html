@@ -1470,7 +1470,7 @@ function renderBoats() {
         <div class="col-head" onclick="toggleSection(this)">
           <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)}</div>
           <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
-            <button class="row-edit" onclick="openBoatModalForCat(${cat.key})">+ Add boat</button>
+            <button class="row-edit" onclick="openBoatModalForCat('${cat.key}')">+ Add boat</button>
             <button class="row-edit" onclick="openBoatCatModal('${cat.key}')">Edit</button>
             <span class="col-toggle">▼</span>
           </div>
