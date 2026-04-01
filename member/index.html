@@ -538,7 +538,7 @@ function advanceToLaunchChecklist() {
       ret:  document.getElementById('launchReturnBy')?.value||'',
       crew: window._launchCrewCount||1,
       crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
-        .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest,student:!isGuest&&cb&&cb.checked};})
+        .map(function(i){var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest};})
         .filter(c=>c.name),
       departurePort:'',
     };
@@ -558,7 +558,7 @@ function advanceToLaunchChecklist() {
     ret:  document.getElementById('launchReturnBy')?.value||'',
     crew: window._launchCrewCount||1,
     crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
-      .map(function(i){var cb=document.querySelector('.crew-student-toggle[data-crew-idx="'+i.dataset.crewIdx+'"]');var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest,student:!isGuest&&cb&&cb.checked};})
+      .map(function(i){var isGuest=!!i.dataset.guest;return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:isGuest};})
       .filter(c=>c.name),
     departurePort: (document.getElementById('launchDeparturePort')?.value||'').trim(),
   };
@@ -618,18 +618,11 @@ function renderCrewInputs() {
     inp.type='text'; inp.placeholder='Crew member '+(i+1)+' name…'; inp.value=existing[i]||'';
     inp.dataset.crewIdx=i;
     inp.style.cssText='flex:1;min-width:0;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
-    const stuLabel=document.createElement('label');
-    stuLabel.style.cssText='display:flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);white-space:nowrap;cursor:pointer;flex-shrink:0';
-    const stuCb=document.createElement('input');
-    stuCb.type='checkbox'; stuCb.className='crew-student-toggle'; stuCb.dataset.crewIdx=i;
-    stuCb.style.cssText='width:13px;height:13px;accent-color:var(--brass)';
-    stuLabel.appendChild(stuCb);
-    stuLabel.appendChild(document.createTextNode(getLang()==='IS'?'Nemi':'Student'));
     const drop=document.createElement('div'); drop.id='crewDrop'+i;
     drop.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
     inp.addEventListener('input',function(){searchCrewMembers(this,drop);});
     inp.addEventListener('blur', function(){setTimeout(()=>{drop.style.display='none';},200);});
-    inputRow.appendChild(inp); inputRow.appendChild(stuLabel);
+    inputRow.appendChild(inp);
     row.appendChild(inputRow); row.appendChild(drop); wrap.appendChild(row);
   }
 }
@@ -654,8 +647,6 @@ function searchCrewMembers(inp,drop) {
     item.addEventListener('mouseout', function(){this.style.background='';});
     item.addEventListener('mousedown',function(e){
       e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;inp.dataset.guest=this.dataset.guest;drop.style.display='none';
-      var stuCb=document.querySelector('.crew-student-toggle[data-crew-idx="'+inp.dataset.crewIdx+'"]');
-      if(stuCb){stuCb.parentElement.style.display=this.dataset.guest?'none':'';if(this.dataset.guest){stuCb.checked=false;}}
     });
     drop.appendChild(item);
   });
@@ -718,20 +709,6 @@ async function submitLaunch() {
             date:new Date().toISOString().slice(0,10), timeOut:tout,
             role:'crew', wxSnapshot:snap,
           }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
-        }));
-      }
-      // Create student confirmations for non-guest crew marked as student
-      var studentCrew=_confCrew.filter(function(cn){return cn.student;});
-      if(studentCrew.length){
-        await Promise.all(studentCrew.map(function(cn){
-          return apiPost('createConfirmation',{
-            type:'student',
-            fromKennitala:user.kennitala, fromName:user.name,
-            toKennitala:cn.kennitala, toName:cn.name,
-            linkedCheckoutId:_coId,
-            boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
-            date:new Date().toISOString().slice(0,10), timeOut:tout,
-          }).catch(function(e2){console.warn('student confirmation:',cn,e2.message);});
         }));
       }
     }

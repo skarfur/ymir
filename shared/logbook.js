@@ -157,10 +157,9 @@ function tripCard(t){
   const skipperMember = linkedSkipper ? allMembers.find(m=>String(m.kennitala)===String(linkedSkipper.kennitala)) : null;
   const skipperGuestTag = (skipperMember && skipperMember.role==='guest') ? guestBadge : '';
   const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.skipperLabel')}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}${skipperGuestTag}</span></div>` : '';
-  const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.crewAboard')}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
-  const crewNamesRow = (linkedCrew.length || unlinkedCrewDisplay.length || pendingCrewNames.length)
-    ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crew')}</span><span class="trip-exp-val">${allCrewDisplay.join(', ')}</span></div>`
-    : '';
+  const _hasCrewNames = linkedCrew.length || unlinkedCrewDisplay.length || pendingCrewNames.length;
+  const crewCountRow = `<div class="trip-exp-row${_hasCrewNames?' trip-exp-full':''}"><span class="trip-exp-lbl">${s('tc.crewAboard')}</span><span class="trip-exp-val">${esc(t.crew||1)}${_hasCrewNames?' — '+allCrewDisplay.join(', '):''}</span></div>`;
+  const crewNamesRow = '';
 
   // Helm assignment row — read-only display showing who was at the helm
   const isOwner = String(t.kennitala) === String(user.kennitala);
