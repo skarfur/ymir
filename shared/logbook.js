@@ -150,8 +150,13 @@ function tripCard(t){
     ? linkedCrewDisplay.concat(unlinkedCrewDisplay).join(', ')
     : esc(t.crew||1);
   // Show pending crew names alongside confirmed ones
-  const pendingCrewNames = pendingCrewConfs.map(c => esc(c.toName||'?')+' '+pendingTag)
-    .concat(pendingCrewIn.map(c => esc(c.fromName||'?')+' '+pendingTag));
+  const pendingCrewNames = pendingCrewConfs.map(c => {
+    const _pm = c.toKennitala ? allMembers.find(m=>String(m.kennitala)===String(c.toKennitala)) : null;
+    return esc(c.toName||'?') + ((_pm && _pm.role==='guest') ? guestBadge : '') +' '+pendingTag;
+  }).concat(pendingCrewIn.map(c => {
+    const _pm = c.fromKennitala ? allMembers.find(m=>String(m.kennitala)===String(c.fromKennitala)) : null;
+    return esc(c.fromName||'?') + ((_pm && _pm.role==='guest') ? guestBadge : '') +' '+pendingTag;
+  }));
   const allCrewDisplay = [crewNames, ...pendingCrewNames].filter(Boolean);
 
   const skipperMember = linkedSkipper ? allMembers.find(m=>String(m.kennitala)===String(linkedSkipper.kennitala)) : null;
@@ -167,19 +172,30 @@ function tripCard(t){
   const showHelmSection = parseInt(t.crew||1) > 1;
   let helmRow = '';
   if (showHelmSection) {
-    const helmNames = [];
-    if (isHelm) helmNames.push(esc(t.memberName||''));
+    const helmEntries = [];
+    if (isHelm) {
+      const _hm = allMembers.find(m=>String(m.kennitala)===String(t.kennitala));
+      helmEntries.push(esc(t.memberName||'') + ((_hm && _hm.role==='guest') ? guestBadge : ''));
+    }
     linkedCrew.forEach(x => {
-      if (x.helm && x.helm!=='false') helmNames.push(esc(x.memberName||x.crewMemberName||'?'));
+      if (x.helm && x.helm!=='false') {
+        const _hm = allMembers.find(m=>String(m.kennitala)===String(x.kennitala));
+        helmEntries.push(esc(x.memberName||x.crewMemberName||'?') + ((_hm && _hm.role==='guest') ? guestBadge : ''));
+      }
     });
     // Pending helm confirmations
-    const pendingHelmNames = pendingHelmConfs.map(c => esc(c.toName||'?'))
-      .concat(pendingHelmIn.map(c => esc(c.fromName||'?')));
-    if (helmNames.length || pendingHelmNames.length) {
-      const confirmedPills = helmNames.map(n =>
+    const pendingHelmEntries = pendingHelmConfs.map(c => {
+      const _hm = c.toKennitala ? allMembers.find(m=>String(m.kennitala)===String(c.toKennitala)) : null;
+      return esc(c.toName||'?') + ((_hm && _hm.role==='guest') ? guestBadge : '');
+    }).concat(pendingHelmIn.map(c => {
+      const _hm = c.fromKennitala ? allMembers.find(m=>String(m.kennitala)===String(c.fromKennitala)) : null;
+      return esc(c.fromName||'?') + ((_hm && _hm.role==='guest') ? guestBadge : '');
+    }));
+    if (helmEntries.length || pendingHelmEntries.length) {
+      const confirmedPills = helmEntries.map(n =>
         `<span class="text-sm text-brass flex-center gap-4" style="display:inline-flex;border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span class="text-xs">⎈</span> ${n}</span>`
       );
-      const pendingPills = pendingHelmNames.map(n =>
+      const pendingPills = pendingHelmEntries.map(n =>
         `<span class="text-sm flex-center gap-4" style="display:inline-flex;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span class="text-xs">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${s('tc.pending')}</span></span>`
       );
       const allPills = confirmedPills.concat(pendingPills).join(' ');
@@ -839,14 +855,19 @@ function renderClubTripsList(){
     document.getElementById('loadMoreTripsBtn').style.display='none';
     return;
   }
-  el.innerHTML=page.map(t=>`
+  const _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+s('tc.guest')+'</span>';
+  el.innerHTML=page.map(t=>{
+    const _sm = t.kennitala ? allMembers.find(m=>String(m.kennitala)===String(t.kennitala)) : null;
+    const _sg = (_sm && _sm.role==='guest') ? _gBadge : '';
+    return `
     <div class="trip-pick-card" onclick="joinTripAsCrew('${esc(t.id)}',this)">
       <div class="tpc-boat">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
       <div class="tpc-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')}
         ${t.beaufort?' · 💨 Force '+esc(t.beaufort):''}
-        · ${esc(t.memberName||'?')} (skipper)
+        · ${esc(t.memberName||'?')}${_sg} (skipper)
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('loadMoreTripsBtn').style.display=
     allClubTrips.length>clubTripsOffset+CLUB_PAGE?'':'none';
 }
