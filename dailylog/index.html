@@ -174,7 +174,6 @@
   <div class="section-heading">
     <span data-s="daily.activities"></span>
     <button class="btn-ghost-sm" id="addActivityBtn" data-s="daily.addActivity"></button>
-    <button class="btn-ghost-sm" id="bulkAddActivityBtn" data-s="daily.bulkAdd"></button>
   </div>
   <div class="content-card" id="activitiesCard">
     <div class="empty-state" id="activitiesEmpty" data-s="daily.noActivities"></div>
@@ -255,28 +254,6 @@
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   id="actSaveBtn"   data-s="btn.save"></button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ BULK ADD ACTIVITIES MODAL ══ -->
-<div class="modal-overlay hidden" id="bulkAddModal" onclick="if(event.target===this)closeModal('bulkAddModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 data-s="daily.bulkAddTitle"></h3>
-      <button class="modal-close-x" onclick="closeModal('bulkAddModal')">&times;</button>
-    </div>
-    <div class="field">
-      <label data-s="daily.actType"></label>
-      <div class="type-btns" id="bulkActTypeBtns"></div>
-    </div>
-    <div class="field">
-      <label data-s="daily.bulkAddHint"></label>
-      <textarea id="bulkAddText" rows="8" style="width:100%;resize:vertical;font-family:monospace;font-size:13px"></textarea>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="bulkAddCancelBtn" data-s="btn.cancel"></button>
-      <button class="btn btn-primary"   id="bulkAddSaveBtn"   data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -418,7 +395,6 @@ const dom = domRefs({
   actNotes:          'actNotes',
   activityModal:     'activityModal',
   addActivityBtn:    'addActivityBtn',
-  bulkAddActivityBtn: 'bulkAddActivityBtn',
   tideH1Time: 'tideH1Time', tideH1Height: 'tideH1Height',
   tideL1Time: 'tideL1Time', tideL1Height: 'tideL1Height',
   tideH2Time: 'tideH2Time', tideH2Height: 'tideH2Height',
@@ -548,9 +524,8 @@ function renderActivitiesReadonly() {
 function renderIncidentSection(incidents) {
   const container = dom.incidentContainer;
   const heading   = dom.incidentHeading;
-  if (!incidents) {
-    heading.textContent = s('daily.incidentReport');
-    container.innerHTML = `<a href="../incidents/" class="incident-btn">
+  const today     = isToday();
+  const fileBtn   = `<a href="../incidents/" class="incident-btn">
       <span class="incident-icon">⚠️</span>
       <div>
         <div class="incident-label">${s('daily.fileIncident')}</div>
@@ -558,11 +533,10 @@ function renderIncidentSection(incidents) {
       </div>
       <span class="ml-auto text-muted" style="font-size:16px">→</span>
     </a>`;
-    return;
-  }
-  if (!incidents.length) {
+  if (!incidents || !incidents.length) {
     heading.textContent = s('daily.incidentReport');
-    container.innerHTML = `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
+    container.innerHTML = today ? fileBtn
+      : `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
     return;
   }
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
@@ -574,7 +548,7 @@ function renderIncidentSection(incidents) {
         <div class="incident-sub">${esc((inc.filedAt||'').slice(0,16).replace('T',' '))}${inc.severity ? ` · <span class="badge badge-${inc.severity === 'critical'?'red':inc.severity === 'high'?'orange':'muted'}">${esc(inc.severity)}</span>` : ''}</div>
       </div>
       <span class="ml-auto text-brass" style="font-size:16px">→</span>
-    </a>`).join('');
+    </a>`).join('') + (today ? fileBtn : '');
 }
 
 // ── Activity type buttons ─────────────────────────────────────────────────────
@@ -690,11 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
   dom.todayBtn.addEventListener('click', () => navigateToToday());
 
   dom.addActivityBtn.addEventListener('click', openActivityModal);
-  dom.bulkAddActivityBtn.addEventListener('click', openBulkAddModal);
   document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
   document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
-  document.getElementById('bulkAddCancelBtn').addEventListener('click', () => closeModal('bulkAddModal'));
-  document.getElementById('bulkAddSaveBtn').addEventListener('click', saveBulkActivities);
 
   dom.saveDraftBtn.addEventListener('click', saveDraft);
   dom.signOffBtn.addEventListener('click',   signOffDay);
@@ -856,67 +827,6 @@ function saveActivity() {
 }
 
 
-// ── Bulk add activities ───────────────────────────────────────────────────────
-let _bulkSelectedActType = null;
-
-function openBulkAddModal() {
-  _bulkSelectedActType = activityTypes[0]?.id || null;
-  renderBulkActTypeBtns();
-  document.getElementById('bulkAddText').value = '';
-  document.getElementById('bulkAddText').placeholder = s('daily.bulkAddPlaceholder');
-  openModal('bulkAddModal');
-}
-
-function renderBulkActTypeBtns() {
-  const container = document.getElementById('bulkActTypeBtns');
-  container.replaceChildren();
-  activityTypes.forEach(t => {
-    const btn = document.createElement('button');
-    btn.className = 'type-btn' + (t.id === _bulkSelectedActType ? ' selected' : '');
-    btn.textContent = L === 'IS' && t.nameIS ? t.nameIS : t.name;
-    btn.addEventListener('click', () => {
-      _bulkSelectedActType = t.id;
-      renderBulkActTypeBtns();
-    });
-    container.appendChild(btn);
-  });
-}
-
-function saveBulkActivities() {
-  const typeObj = activityTypes.find(t => t.id === _bulkSelectedActType);
-  if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
-  const raw = document.getElementById('bulkAddText').value.trim();
-  if (!raw) return;
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  let added = 0;
-  for (const line of lines) {
-    const parts = line.split(',').map(p => p.trim());
-    const name = parts[0] || '';
-    if (!name) continue;
-    activities.push({
-      id:                    'act-' + Date.now() + '-' + added,
-      activityTypeId:        typeObj.id,
-      subtypeId:             '',
-      subtypeName:           '',
-      type:                  L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
-      name,
-      start:                 parts[1] || '',
-      end:                   parts[2] || '',
-      participants:          parts[3] || '',
-      notes:                 parts.slice(4).join(', '),
-      ablerRegistered:       false,
-      linkedGroupCheckoutIds: [],
-    });
-    added++;
-  }
-  if (!added) { showToast(s('daily.bulkNoneValid'), 'warn'); return; }
-  renderActivities();
-  closeModal('bulkAddModal');
-  markDirty();
-  saveDraft();
-  showToast(s('daily.bulkAdded').replace('{count}', added));
-}
-
 function logCurrentWeather() {
   if (!wxData) { showToast(s('wx.unavailable'), 'warn'); return; }
   const snap = wxSnapshot(wxData);
@@ -973,7 +883,6 @@ function _autoFillTide() {
   if (typeof tideExtrema !== 'function') return;
   const extrema = tideExtrema(viewDate);
   tideData = tideToDailyLog(extrema);
-  markDirty();
 }
 
 function _renderDailyTide() {
@@ -1002,8 +911,16 @@ async function loadDay() {
   amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
-  dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
-  dom.dateHero.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { day:'numeric', month:'long', year:'numeric' });
+  const _months_en = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const _months_is = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+  const _days_en = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const _days_is = ['sunnudagur','mánudagur','þriðjudagur','miðvikudagur','fimmtudagur','föstudagur','laugardagur'];
+  const _mArr = L === 'IS' ? _months_is : _months_en;
+  const _dArr = L === 'IS' ? _days_is : _days_en;
+  dom.dateBig.textContent = _dArr[d.getDay()].toUpperCase();
+  dom.dateHero.textContent = L === 'IS'
+    ? d.getDate() + '. ' + _mArr[d.getMonth()] + ' ' + d.getFullYear()
+    : d.getDate() + ' '  + _mArr[d.getMonth()] + ' ' + d.getFullYear();
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
