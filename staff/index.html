@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     members     = (mRes.members    || []).filter(m => m.active !== false && m.active !== 'false');
     maintenance = (maintRes.requests || maintRes.maintenance || [])
-      .filter(r => r.status !== 'resolved' && !r.resolved);
+      .filter(r => r.status !== 'resolved' && !r.resolved && !boolVal(r.saumaklubbur));
 
     if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
       registerBoatCats(cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false'));
