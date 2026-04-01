@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
+<script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
 <script src="../shared/ui.js"></script>
 <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
@@ -272,8 +273,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const [coRes, cfgRes] = await Promise.all([
-      apiGet('getActiveCheckouts'),
-      apiGet('getConfig'),
+      window._earlyCheckouts || apiGet('getActiveCheckouts'),
+      window._earlyConfig || apiGet('getConfig'),
     ]);
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');

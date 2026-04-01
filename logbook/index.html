@@ -11,10 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="../shared/style.css">
 <link rel="stylesheet" href="../shared/tripcard.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" defer></script>
 <script src="../shared/api.js"></script>
+<script>window._earlyTrips=apiGet('getTrips',{limit:500});window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
 <script src="../shared/ui.js"></script>
 <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
@@ -672,13 +670,14 @@ function getTrackLines() {
   return lines;
 }
 
-function initMemberHeatmap() {
+async function initMemberHeatmap() {
   const locData = buildLocStats();
   const trackPts = getAllTrackPoints();
   if (!locData.length && !trackPts.length) return;
 
   document.getElementById('memberHeatmapWrap').style.display = '';
 
+  await loadLeaflet();
   if (_hmMap) { _hmMap.remove(); _hmMap = null; }
   _hmMap = L.map('memberHeatmap', { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
   addSeaLayers(_hmMap);

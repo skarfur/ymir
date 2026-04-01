@@ -336,7 +336,7 @@ function doPost(e) {
 function route_(action, b) {
   switch (action) {
     case 'validateMember': return validateMember_(b.kennitala);
-    case 'getMembers': return getMembers_();
+    case 'getMembers': return getMembers_(b);
     case 'saveMember': return saveMember_(b);
     case 'deleteMember': return deleteMember_(b.id);
     case 'importMembers': return importMembers_(b.rows);
@@ -476,9 +476,19 @@ function validateMember_(kennitala) {
   });
 }
 
-function getMembers_() {
-  const c = cGet_('members'); if (c) return okJ({ members: c });
-  const members = readAll_('members'); cPut_('members', members); return okJ({ members });
+function getMembers_(params) {
+  params = params || {};
+  const c = cGet_('members');
+  const members = c || readAll_('members');
+  if (!c) cPut_('members', members);
+  // Support optional pagination
+  var offset = parseInt(params.offset) || 0;
+  var limit  = parseInt(params.limit)  || 0;
+  if (limit > 0) {
+    var page = members.slice(offset, offset + limit);
+    return okJ({ members: page, total: members.length });
+  }
+  return okJ({ members: members });
 }
 
 function getMemberMap_() {

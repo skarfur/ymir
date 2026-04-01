@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
+  <script>window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
   <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/boats.js" defer></script>
@@ -1054,8 +1055,8 @@ async function loadAll() {
   try {
     if (statusEl) statusEl.innerHTML = '<div class="spinner"></div>';
     const [mRes, cfgRes_] = await Promise.all([
-      apiGet("getMembers"),
-      apiGet("getConfig"),
+      window._earlyMembers || apiGet("getMembers"),
+      window._earlyConfig || apiGet("getConfig"),
     ]);
     members  = mRes.members || [];
     cfgRes   = cfgRes_;
@@ -1224,17 +1225,58 @@ function renderMembers() {
   renderMemberList(active);
 }
 
+var _memberListData = [];
+var _memberRendered = 0;
+var _memberObserver = null;
+var _MEMBER_BATCH = 50;
+
 function renderMemberList(list) {
   const card = document.getElementById("membersCard");
   if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
-  card.innerHTML = list.map(m => `
-    <div class="member-row">
-      <span class="member-name">${esc(m.name || "—")}</span>
-      <span class="member-kt">${esc(m.kennitala || "")}</span>
-      <span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>
-      <button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>
-      <button class="row-edit" onclick="openMemberCertModal('${m.id}')" style="font-size:10px">${s('admin.manageCreds')}</button>
-    </div>`).join("");
+  _memberListData = list;
+  _memberRendered = 0;
+  card.innerHTML = '';
+  _renderMemberBatch(card);
+  _setupMemberScrollObserver(card);
+}
+
+function _renderMemberBatch(card) {
+  var end = Math.min(_memberRendered + _MEMBER_BATCH, _memberListData.length);
+  var frag = document.createDocumentFragment();
+  for (var i = _memberRendered; i < end; i++) {
+    var m = _memberListData[i];
+    var row = document.createElement('div');
+    row.className = 'member-row';
+    row.innerHTML =
+      `<span class="member-name">${esc(m.name || "—")}</span>` +
+      `<span class="member-kt">${esc(m.kennitala || "")}</span>` +
+      `<span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>` +
+      `<button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>` +
+      `<button class="row-edit" onclick="openMemberCertModal('${m.id}')" style="font-size:10px">${s('admin.manageCreds')}</button>`;
+    frag.appendChild(row);
+  }
+  var oldSentinel = card.querySelector('.member-scroll-sentinel');
+  if (oldSentinel) oldSentinel.remove();
+  card.appendChild(frag);
+  _memberRendered = end;
+  if (_memberRendered < _memberListData.length) {
+    var sentinel = document.createElement('div');
+    sentinel.className = 'member-scroll-sentinel';
+    sentinel.style.height = '1px';
+    card.appendChild(sentinel);
+  }
+}
+
+function _setupMemberScrollObserver(card) {
+  if (_memberObserver) _memberObserver.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  _memberObserver = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && _memberRendered < _memberListData.length) {
+      _renderMemberBatch(card);
+    }
+  }, { rootMargin: '200px' });
+  var sentinel = card.querySelector('.member-scroll-sentinel');
+  if (sentinel) _memberObserver.observe(sentinel);
 }
 
 function openMemberModal(id) {
