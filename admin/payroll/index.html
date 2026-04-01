@@ -15,9 +15,10 @@
     @media(max-width:600px){ .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px} }
   </style>
   <script src="../../shared/api.js"></script>
+  <script>document.write('<script src="../../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
   <script src="../../shared/strings.js"></script>
   <script src="../../shared/ui.js"></script>
-  <script src="../../shared/payroll.js"></script>
+  <script src="../../shared/payroll.js" defer></script>
   </head>
 <body>
 <script>var _embedded=new URLSearchParams(window.location.search).get('embed')==='1';</script>

@@ -5,17 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ýmir — Logbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="../shared/style.css">
 <link rel="stylesheet" href="../shared/tripcard.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" defer></script>
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
-<script src="../shared/certs.js"></script>
-<script src="../shared/boats.js"></script>
+<script src="../shared/certs.js" defer></script>
+<script src="../shared/boats.js" defer></script>
 <style>
 .page{max-width:640px;margin:0 auto;padding:20px 16px 60px}
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
@@ -772,7 +776,7 @@ function setHeatMode(mode) {
 }
 
 </script>
-<script src="../shared/logbook.js"></script>
+<script src="../shared/logbook.js" defer></script>
 
 
 <!-- Edit trip modal (skipper only) -->

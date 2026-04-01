@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ýmir — Saumaklúbbur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://script.google.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script src="../shared/ui.js"></script>
+  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
-  <script src="../shared/maintenance.js"></script>
+  <script src="../shared/maintenance.js" defer></script>
   <style>
     .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; transition: max-width .2s; }
     .page-wrap.wide-board { max-width: 1200px; }
