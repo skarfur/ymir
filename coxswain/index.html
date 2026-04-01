@@ -244,9 +244,9 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 
     if (cfgRes.boatCategories) registerBoatCats(cfgRes.boatCategories);
 
-    // Filter trips to rowing shell category
+    // Filter trips to rowing-shell category
     var allTripsRaw = tripsRes.trips || [];
-    _allTrips = allTripsRaw.filter(t => (t.boatCategory || '').toLowerCase() === 'rowing shell');
+    _allTrips = allTripsRaw.filter(t => (t.boatCategory || '').toLowerCase() === 'rowing-shell');
 
     renderStats();
     renderBoats();
@@ -277,14 +277,14 @@ function renderStats() {
 // ══ BOAT AVAILABILITY ════════════════════════════════════════════════════════
 function renderBoats() {
   var el = document.getElementById('boatList');
-  // Show rowing shell boats that are controlled-access with a coxswain gate cert,
+  // Show rowing-shell boats that are controlled-access with a coxswain gate cert,
   // or have reservations for this user, or the user can access
   var rowingBoats = _boats.filter(b => {
     var cat = (b.category || '').toLowerCase();
-    if (cat !== 'rowing shell') return false;
-    // Show controlled-access rowing shells
+    if (cat !== 'rowing-shell') return false;
+    // Show controlled-access rowing-shells
     if (b.accessMode === 'controlled') return true;
-    // Show any rowing shell this user has a reservation for
+    // Show any rowing-shell this user has a reservation for
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
     return false;
   });
@@ -424,7 +424,7 @@ async function removeCxReservation(boatId, resId) {
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
 function renderMaint() {
   var el = document.getElementById('maintList');
-  var rowingBoatIds = _boats.filter(b => (b.category || '').toLowerCase() === 'rowing shell').map(b => b.id);
+  var rowingBoatIds = _boats.filter(b => (b.category || '').toLowerCase() === 'rowing-shell').map(b => b.id);
   var items = _allMaint.filter(m => rowingBoatIds.indexOf(m.boatId) !== -1 && m.status !== 'resolved');
   if (!items.length) {
     el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
@@ -652,12 +652,12 @@ var _cxSlots = [];
 var _cxSlotBoats = [];
 
 function initCxSlots() {
-  // Find rowing shell boats with slot scheduling
+  // Find rowing-shell boats with slot scheduling
   _cxSlotBoats = (_boats || []).filter(function(b) {
-    return b.slotSchedulingEnabled && (b.category || '').toLowerCase() === 'rowing shell';
+    return b.slotSchedulingEnabled && (b.category || '').toLowerCase() === 'rowing-shell';
   });
   var sect = document.getElementById('sectSlots');
-  // Only show if there are slot-scheduled rowing shells AND user has active crews
+  // Only show if there are slot-scheduled rowing-shells AND user has active crews
   var activeCrews = _myCrews.filter(function(c) { return c.status === 'active'; });
   if (!_cxSlotBoats.length || !activeCrews.length) { sect.style.display = 'none'; return; }
   sect.style.display = '';
