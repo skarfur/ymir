@@ -174,6 +174,7 @@
   <div class="section-heading">
     <span data-s="daily.activities"></span>
     <button class="btn-ghost-sm" id="addActivityBtn" data-s="daily.addActivity"></button>
+    <button class="btn-ghost-sm" id="bulkAddActivityBtn" data-s="daily.bulkAdd"></button>
   </div>
   <div class="content-card" id="activitiesCard">
     <div class="empty-state" id="activitiesEmpty" data-s="daily.noActivities"></div>
@@ -254,6 +255,28 @@
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   id="actSaveBtn"   data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BULK ADD ACTIVITIES MODAL ══ -->
+<div class="modal-overlay hidden" id="bulkAddModal" onclick="if(event.target===this)closeModal('bulkAddModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 data-s="daily.bulkAddTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('bulkAddModal')">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="daily.actType"></label>
+      <div class="type-btns" id="bulkActTypeBtns"></div>
+    </div>
+    <div class="field">
+      <label data-s="daily.bulkAddHint"></label>
+      <textarea id="bulkAddText" rows="8" style="width:100%;resize:vertical;font-family:monospace;font-size:13px"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="bulkAddCancelBtn" data-s="btn.cancel"></button>
+      <button class="btn btn-primary"   id="bulkAddSaveBtn"   data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -395,7 +418,7 @@ const dom = domRefs({
   actNotes:          'actNotes',
   activityModal:     'activityModal',
   addActivityBtn:    'addActivityBtn',
-  addActivityBtn: 'addActivityBtn',
+  bulkAddActivityBtn: 'bulkAddActivityBtn',
   tideH1Time: 'tideH1Time', tideH1Height: 'tideH1Height',
   tideL1Time: 'tideL1Time', tideL1Height: 'tideL1Height',
   tideH2Time: 'tideH2Time', tideH2Height: 'tideH2Height',
@@ -667,8 +690,11 @@ document.addEventListener('DOMContentLoaded', () => {
   dom.todayBtn.addEventListener('click', () => navigateToToday());
 
   dom.addActivityBtn.addEventListener('click', openActivityModal);
+  dom.bulkAddActivityBtn.addEventListener('click', openBulkAddModal);
   document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
   document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
+  document.getElementById('bulkAddCancelBtn').addEventListener('click', () => closeModal('bulkAddModal'));
+  document.getElementById('bulkAddSaveBtn').addEventListener('click', saveBulkActivities);
 
   dom.saveDraftBtn.addEventListener('click', saveDraft);
   dom.signOffBtn.addEventListener('click',   signOffDay);
@@ -830,6 +856,67 @@ function saveActivity() {
 }
 
 
+// ── Bulk add activities ───────────────────────────────────────────────────────
+let _bulkSelectedActType = null;
+
+function openBulkAddModal() {
+  _bulkSelectedActType = activityTypes[0]?.id || null;
+  renderBulkActTypeBtns();
+  document.getElementById('bulkAddText').value = '';
+  document.getElementById('bulkAddText').placeholder = s('daily.bulkAddPlaceholder');
+  openModal('bulkAddModal');
+}
+
+function renderBulkActTypeBtns() {
+  const container = document.getElementById('bulkActTypeBtns');
+  container.replaceChildren();
+  activityTypes.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'type-btn' + (t.id === _bulkSelectedActType ? ' selected' : '');
+    btn.textContent = L === 'IS' && t.nameIS ? t.nameIS : t.name;
+    btn.addEventListener('click', () => {
+      _bulkSelectedActType = t.id;
+      renderBulkActTypeBtns();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function saveBulkActivities() {
+  const typeObj = activityTypes.find(t => t.id === _bulkSelectedActType);
+  if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
+  const raw = document.getElementById('bulkAddText').value.trim();
+  if (!raw) return;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  let added = 0;
+  for (const line of lines) {
+    const parts = line.split(',').map(p => p.trim());
+    const name = parts[0] || '';
+    if (!name) continue;
+    activities.push({
+      id:                    'act-' + Date.now() + '-' + added,
+      activityTypeId:        typeObj.id,
+      subtypeId:             '',
+      subtypeName:           '',
+      type:                  L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
+      name,
+      start:                 parts[1] || '',
+      end:                   parts[2] || '',
+      participants:          parts[3] || '',
+      notes:                 parts.slice(4).join(', '),
+      ablerRegistered:       false,
+      linkedGroupCheckoutIds: [],
+    });
+    added++;
+  }
+  if (!added) { showToast(s('daily.bulkNoneValid'), 'warn'); return; }
+  renderActivities();
+  closeModal('bulkAddModal');
+  markDirty();
+  saveDraft();
+  showToast(s('daily.bulkAdded').replace('{count}', added));
+}
+
 function logCurrentWeather() {
   if (!wxData) { showToast(s('wx.unavailable'), 'warn'); return; }
   const snap = wxSnapshot(wxData);
@@ -943,11 +1030,13 @@ async function loadDay() {
 async function loadTodayLog() {
   renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns(); renderIncidentSection([]);
   try {
-    const [logRes, cfgRes] = await Promise.all([
+    const [logRes, cfgRes, incidents] = await Promise.all([
       apiGet('getDailyLog', { date: TODAY }),
       apiGet('getConfig'),
+      loadIncidentsForDate(TODAY),
     ]);
     applyLogData(logRes.log, cfgRes);
+    renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadTodayLog failed:', e.message);
   }
