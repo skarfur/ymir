@@ -1081,7 +1081,7 @@ async function prLoadConfig(){
   if(u)u.value=cfg.personuafslattrUnit||68681;
   // Load allowBreaks from config
   try {
-    var cfgRes = await apiGet('getConfig', { _fresh: true });
+    var cfgRes = await apiGet('getConfig');
     var cb = document.getElementById('cfgAllowBreaks');
     if (cb) cb.checked = !!(cfgRes && cfgRes.allowBreaks);
     var lbl = document.getElementById('cfgAllowBreaksLbl');
