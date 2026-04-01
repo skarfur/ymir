@@ -242,8 +242,19 @@ function toggleLang() {
 
 function fmtDate(iso) {
   if (!iso) return "-";
-  try { return new Date(iso).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }); }
-  catch(e) { return String(iso).slice(0, 10); }
+  try {
+    var d = new Date(iso);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '-' + mm + '-' + d.getFullYear();
+  } catch(e) { return String(iso).slice(0, 10); }
+}
+function fmtDateShort(iso) {
+  if (!iso) return "-";
+  try {
+    var d = new Date(iso);
+    return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  } catch(e) { return String(iso).slice(0, 10); }
 }
 
 function fmtTime(iso) {

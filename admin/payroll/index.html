@@ -228,8 +228,7 @@ var _tsEntries=[],_calYear=new Date().getFullYear(),_calMonth=new Date().getMont
 function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _fmtEU(n){var v=Math.round(n||0),neg=v<0,s=Math.abs(v).toString(),out='';for(var i=0;i<s.length;i++){if(i>0&&(s.length-i)%3===0)out+='.';out+=s[i];}return neg?'-'+out:out;}
 function _fmtTime(iso){if(!iso)return'';var d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
-var _MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-function _fmtDateDMY(iso){if(!iso)return'';var d=new Date(iso);return d.getDate()+'-'+_MONTHS[d.getMonth()]+'-'+d.getFullYear();}
+function _fmtDateDMY(iso){if(!iso)return'';var d=new Date(iso);return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();}
 function kr(n){return _fmtEU(n)+'\u00a0kr.';}
 function fmtMins(m){var h=Math.floor((+m)/60),mn=Math.round((+m)%60);return h+'h '+String(mn).padStart(2,'0')+'m';}
 function toLocal(iso){if(!iso)return '';var d=new Date(iso);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
@@ -384,7 +383,7 @@ function prCalMove(dir){
 }
 function prRenderCalLabel(){
   var d=new Date(_calYear,_calMonth,1);
-  document.getElementById('prCalLabel').textContent=d.toLocaleDateString(locale(),{month:'long',year:'numeric'});
+  document.getElementById('prCalLabel').textContent=String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
 }
 // Pair separate type='in'/type='out' rows into single session entries,
 // and preserve legacy single-row entries (originalTimestamp format).

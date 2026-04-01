@@ -279,7 +279,7 @@ function tideWidget(targetEl, { onData } = {}) {
     // Day label
     const dd = new Date(dateStr + 'T12:00:00Z');
     const dayLabel = isToday ? (IS?'Í dag':'Today')
-      : dd.toLocaleDateString(IS?'is-IS':'en-GB', { weekday:'short', day:'numeric', month:'short' });
+      : String(dd.getDate()).padStart(2,'0') + '-' + String(dd.getMonth()+1).padStart(2,'0');
 
     // Today button now lives in status area (see above)
 
