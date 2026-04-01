@@ -733,7 +733,7 @@ function renderLocationMode() {
   });
 
   const bounds = L.latLngBounds(locData.map(l => [l.lat, l.lng]));
-  _hmMap.fitBounds(bounds.pad(0.15));
+  _hmMap.fitBounds(bounds.pad(0.15), { maxZoom: 11 });
 }
 
 function renderTrackMode() {
@@ -760,7 +760,7 @@ function renderTrackMode() {
   }
 
   const bounds = L.latLngBounds(allPts);
-  _hmMap.fitBounds(bounds.pad(0.1));
+  _hmMap.fitBounds(bounds.pad(0.1), { maxZoom: 11 });
 }
 
 function setHeatMode(mode) {
