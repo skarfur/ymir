@@ -655,8 +655,8 @@ function onCrewChange(){
   sec.style.display='';
   const existing = Array.from(wrap.querySelectorAll('.manual-crew-row')).map(row => {
     const inp = row.querySelector('input[type="text"]');
-    const helm = row.querySelector('input[type="checkbox"]');
-    return { val: inp?.value||'', kt: inp?.dataset.kennitala||'', helm: helm?.checked||false };
+    const cbs = row.querySelectorAll('input[type="checkbox"]');
+    return { val: inp?.value||'', kt: inp?.dataset.kennitala||'', helm: cbs[0]?.checked||false, student: cbs[1]?.checked||false };
   });
   wrap.innerHTML='';
   for(let i = 0; i < n-1; i++){
@@ -679,8 +679,15 @@ function onCrewChange(){
     helmCb.type='checkbox'; helmCb.checked=existing[i]?.helm||false;
     helmLbl.appendChild(helmCb);
     helmLbl.appendChild(document.createTextNode(s('logbook.helmLabel')));
+    const studentLbl = document.createElement('label');
+    studentLbl.className='helm-toggle';
+    const studentCb = document.createElement('input');
+    studentCb.type='checkbox'; studentCb.checked=existing[i]?.student||false;
+    studentLbl.appendChild(studentCb);
+    studentLbl.appendChild(document.createTextNode(s('logbook.studentLabel')));
     fields.appendChild(inp);
     fields.appendChild(helmLbl);
+    fields.appendChild(studentLbl);
     row.appendChild(fields);
     row.appendChild(drop);
     wrap.appendChild(row);
@@ -1077,7 +1084,7 @@ async function submitManual(){
     const linkedId = res.id; // use the skipper trip id as the link
     for(const row of crewInputs){
       const inp = row.querySelector('input[type="text"]');
-      const helmCb = row.querySelector('input[type="checkbox"]');
+      const cbs = row.querySelectorAll('input[type="checkbox"]');
       const cName = inp?.value.trim();
       const cKt = inp?.dataset.kennitala||'';
       if(!cName) continue;
@@ -1089,7 +1096,8 @@ async function submitManual(){
           timeOut, timeIn, hoursDecimal,
           crew, role:'crew', isLinked:true,
           linkedTripId: linkedId,
-          helm: helmCb?.checked||false,
+          helm: cbs[0]?.checked||false,
+          student: cbs[1]?.checked||false,
           beaufort:bft, windDir:wdir, wxSnapshot,
           distanceNm, departurePort:depPort, arrivalPort:arrPort,
           nonClub: isNonClub||false,

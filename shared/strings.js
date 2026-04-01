@@ -1469,6 +1469,7 @@ const STRINGS = {
   'logbook.ports':           { EN:'PORTS',                                         IS:'HÖFNAR' },
   'logbook.portsOptional2':  { EN:'PORTS — OPTIONAL',                              IS:'HÖFNAR — VALFRJÁLST' },
   'logbook.helmLabel':       { EN:'Helm',                                          IS:'Stýri' },
+  'logbook.studentLabel':    { EN:'Student',                                       IS:'Nemi' },
   'logbook.errKtOrPhone':    { EN:'Please enter a kennitala/birth year or phone number.', IS:'Vinsamlegast sláðu inn kennitölu/fæðingarár eða símanúmer.' },
   'logbook.errSaveFailed':   { EN:'Save failed: {msg}',                            IS:'Vistun mistókst: {msg}' },
   'logbook.errFailed':       { EN:'Failed: {msg}',                                 IS:'Mistókst: {msg}' },
