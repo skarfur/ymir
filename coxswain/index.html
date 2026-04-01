@@ -229,7 +229,7 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     const [cfgRes, maintRes, tripsRes, membersRes, crewRes, invRes] = await Promise.all([
       apiGet('getConfig'),
       apiGet('getMaintenance'),
-      apiGet('getTrips', { limit: 500, category: 'rowing-shell' }),
+      apiGet('getTrips', { limit: 500 }),
       apiGet('getMembers'),
       apiGet('getCrews', { kennitala: user.kennitala }),
       apiGet('getCrewInvites', { kennitala: user.kennitala }),
@@ -244,7 +244,9 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 
     if (cfgRes.boatCategories) registerBoatCats(cfgRes.boatCategories);
 
-    _allTrips = tripsRes.trips || [];
+    // Filter trips to coxswain-gated boats
+    var cxBoatIds = new Set(_boats.filter(b => b.accessGateCert === 'coxswain').map(b => b.id));
+    _allTrips = (tripsRes.trips || []).filter(t => cxBoatIds.has(t.boatId));
 
     renderStats();
     renderBoats();
@@ -278,12 +280,11 @@ function renderBoats() {
   // Show rowing-shell boats that are controlled-access with a coxswain gate cert,
   // or have reservations for this user, or the user can access
   var rowingBoats = _boats.filter(b => {
-    var cat = (b.category || '').toLowerCase();
-    if (cat !== 'rowing-shell') return false;
-    // Show controlled-access or slot-scheduled rowing-shells
-    if (b.accessMode === 'controlled') return true;
-    if (boolVal(b.slotSchedulingEnabled)) return true;
-    // Show any rowing-shell this user has a reservation for
+    // Show controlled-access boats gated by coxswain cert
+    if (b.accessMode === 'controlled' && b.accessGateCert === 'coxswain') return true;
+    // Show slot-scheduled boats gated by coxswain cert
+    if (boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'coxswain') return true;
+    // Show any boat this user has a reservation for
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
     return false;
   });
@@ -428,13 +429,13 @@ async function removeCxReservation(boatId, resId) {
 }
 
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
-var _rowingBoatIdSet = null;
+var _coxswainBoatIdSet = null;
 function renderMaint() {
   var el = document.getElementById('maintList');
-  if (!_rowingBoatIdSet) {
-    _rowingBoatIdSet = new Set(_boats.filter(b => (b.category || '').toLowerCase() === 'rowing-shell').map(b => b.id));
+  if (!_coxswainBoatIdSet) {
+    _coxswainBoatIdSet = new Set(_boats.filter(b => b.accessGateCert === 'coxswain').map(b => b.id));
   }
-  var items = _allMaint.filter(m => _rowingBoatIdSet.has(m.boatId) && m.status !== 'resolved');
+  var items = _allMaint.filter(m => _coxswainBoatIdSet.has(m.boatId) && m.status !== 'resolved');
   if (!items.length) {
     el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
     return;
@@ -667,7 +668,7 @@ var _cxSlotBoats = [];
 function initCxSlots() {
   // Find rowing-shell boats with slot scheduling
   _cxSlotBoats = (_boats || []).filter(function(b) {
-    return boolVal(b.slotSchedulingEnabled) && (b.category || '').toLowerCase() === 'rowing-shell';
+    return boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'coxswain';
   });
   var sect = document.getElementById('sectSlots');
   // Only show if there are slot-scheduled rowing-shells AND user has active crews

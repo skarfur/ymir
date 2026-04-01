@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     _cqMembers = (membersRes.members || []).filter(m => m.active !== false && m.active !== 'false');
     _cqCertDefs = certDefsFromConfig(cfgRes.certDefs || []);
     _cqCertCategories = certCategoriesFromConfig(cfgRes.certCategories || []);
-    _allMaint  = maintRes.items || maintRes.maintenance || [];
+    _allMaint  = maintRes.requests || maintRes.items || maintRes.maintenance || [];
     _verificationRequests = verRes.requests || [];
 
     // All trips (logbook shows all, defaults to keelboat filter)
@@ -683,15 +683,22 @@ function openResModal(boatId) {
   openModal('resModal');
 }
 
+var _searchCqResTimer = null;
 function searchCqResMember(q) {
+  clearTimeout(_searchCqResTimer);
   var drop = document.getElementById('cqResMemberSuggestions');
   if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
-  var ql = q.toLowerCase();
-  var hits = _cqMembers.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
-  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
-  drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-    + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
-  drop.style.display = 'block';
+  _searchCqResTimer = setTimeout(function() {
+    var ql = q.toLowerCase();
+    var hits = [], count = 0;
+    for (var i = 0; i < _cqMembers.length && count < 8; i++) {
+      if (((_cqMembers[i].name||'').toLowerCase()).includes(ql)) { hits.push(_cqMembers[i]); count++; }
+    }
+    if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+    drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
+    drop.style.display = 'block';
+  }, 150);
 }
 
 function selectCqResMember(kt, name) {
@@ -828,7 +835,7 @@ var _cqSlotBoats = [];
 function initCqReservations() {
   // Find keelboats with slot scheduling that the captain can access
   _cqSlotBoats = (_boats || []).filter(function(b) {
-    return b.slotSchedulingEnabled && b.accessMode === 'controlled'
+    return boolVal(b.slotSchedulingEnabled) && b.accessMode === 'controlled'
       && (b.category || '').toLowerCase() === 'keelboat';
   });
   var sect = document.getElementById('sectReservations');
@@ -924,20 +931,37 @@ function renderCqSlots() {
 }
 
 async function bookCqSlot(slotId) {
+  var slot = _cqSlots.find(function(sl) { return sl.id === slotId; });
+  if (slot) {
+    slot.bookedByKennitala = user.kennitala;
+    slot.bookedByName = user.name;
+    renderCqSlots();
+  }
   try {
     await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name });
     toast(s('slot.booked'));
+  } catch(e) {
+    toast(e.message || 'Error', 'err');
     loadCqSlots();
-  } catch(e) { toast(e.message || 'Error', 'err'); }
+  }
 }
 
 async function unbookCqSlot(slotId) {
   if (!confirm(s('slot.confirmUnbook'))) return;
+  var slot = _cqSlots.find(function(sl) { return sl.id === slotId; });
+  var prevSlot = slot ? Object.assign({}, slot) : null;
+  if (slot) {
+    slot.bookedByKennitala = '';
+    slot.bookedByName = '';
+    renderCqSlots();
+  }
   try {
     await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
     toast(s('slot.unbooked'));
-    loadCqSlots();
-  } catch(e) { toast(e.message || 'Error', 'err'); }
+  } catch(e) {
+    if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCqSlots(); }
+    toast(e.message || 'Error', 'err');
+  }
 }
 
 function shiftCqWeek(dir) {

@@ -975,7 +975,7 @@ const STRINGS = {
   // ── Coxswain's Seat ───────────────────────────────────────────────────────
   'nav.coxswainSeat':        { EN:'🚣 Coxswain\'s Seat',                   IS:'🚣 Stýrimannssæti' },
   'cox.title':               { EN:'Coxswain\'s Seat',                       IS:'Stýrimannssæti' },
-  'cox.noBoats':             { EN:'No rowing shells assigned',              IS:'Engin róðrarskip úthlutað' },
+  'cox.noBoats':             { EN:'No controlled boats available',          IS:'Engir stýrðir bátar tiltækir' },
   'cox.statsTrips':          { EN:'TRIPS',                                  IS:'FERÐIR' },
   'cox.statsHours':          { EN:'HOURS',                                  IS:'KLST.' },
   'cox.statsDist':           { EN:'DISTANCE',                               IS:'VEGALENGD' },
