@@ -2416,19 +2416,19 @@ async function deleteCertDef() {
     renderCertDefs();
 
     closeModal("certDefModal");
-    toast("Deleted.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("toast.deleted"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function deleteCertDefById(id) {
-  if (!await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
     await apiPost("deleteCertDef", { id });
     certDefs = certDefs.filter(d => d.id !== id);
     renderCertDefs();
 
-    toast("Deleted.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("toast.deleted"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // Subcat row
@@ -2507,9 +2507,9 @@ async function saveAlertConfig() {
   try {
     await apiPost("saveAlertConfig", cfg);
     const msg = document.getElementById("alertSaveMsg");
-    msg.textContent = "✓ Saved";
+    msg.textContent = "✓ " + s("toast.saved");
     setTimeout(() => { msg.textContent = ""; }, 2500);
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 // ══ FLAG CONFIG ═══════════════════════════════════════════════════════════════
@@ -2605,9 +2605,9 @@ function updateFlagPreview(){
 async function saveFlagConfig(){
   var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
   var cfg=getFlagFormValues(),errs=validateFlagConfig(cfg);if(errs.length){errEl.textContent=errs.join(' ');errEl.style.display='block';return;}
-  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
+  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ '+s('toast.saved');setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent=s('toast.saveFailed')+': '+e.message;}
 }
-async function resetFlagConfig(){if(!await ymConfirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
+async function resetFlagConfig(){if(!await ymConfirm(s('admin.confirmResetFlags')))return;loadFlagConfigPanel(null);}
 
 // ══ CSV IMPORT ════════════════════════════════════════════════════════════════
 
