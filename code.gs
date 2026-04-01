@@ -674,6 +674,25 @@ function saveMaintenance_(b) {
   addColIfMissing_('maintenance', 'verkstjori');
   addColIfMissing_('maintenance', 'materials');
   addColIfMissing_('maintenance', 'approved');
+
+  // If an id is provided, update the existing row instead of creating a new one
+  if (b.id) {
+    var updates = {};
+    if (b.severity !== undefined)  updates.severity  = b.severity;
+    if (b.markOos  !== undefined)  updates.markOos   = bool_(b.markOos);
+    if (b.comments !== undefined)  updates.comments  = b.comments;
+    if (b.onHold   !== undefined)  updates.onHold    = bool_(b.onHold);
+    if (b.verkstjori !== undefined) updates.verkstjori = b.verkstjori;
+    if (b.materials !== undefined) updates.materials  = b.materials;
+    if (b.approved !== undefined)  updates.approved   = bool_(b.approved);
+    if (Object.keys(updates).length) {
+      updateRow_('maintenance', 'id', b.id, updates);
+      cDel_('maintenance');
+      return okJ({ id: b.id, updated: true });
+    }
+    return okJ({ id: b.id, noChanges: true });
+  }
+
   const ts = now_(), id = uid_();
   const photoUrl = b.photoUrl || '';
   const isSauma = bool_(b.saumaklubbur) || false;

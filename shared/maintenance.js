@@ -507,6 +507,7 @@ async function maintAddComment(id) {
  * Expects window._dlMaintenance to hold the local array.
  */
 async function maintResolveRow(id, checked) {
+  if (!checked) return; // un-resolving is not supported; ignore unchecks
   const list = window._dlMaintenance || [];
   const item = list.find(m => m.id === id);
   if (!item) return;

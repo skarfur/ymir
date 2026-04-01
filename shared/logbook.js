@@ -762,7 +762,7 @@ async function addNewPort(){
     // Also fill the other port field if empty
     const otherEl=document.getElementById(_lastPortInput==='arrival'?'mDeparturePort':'mArrivalPort');
     if(!otherEl.value) otherEl.value=val;
-    showToast(IS?'Höfn bætt við':'Port added ✓','success');
+    showToast(IS?'Höfn bætt við':'Port added ✓','ok');
   }catch(e){ showToast('Save failed: '+e.message,'err'); allLocs.pop(); }
 }
 
@@ -821,7 +821,7 @@ async function submitJoinTrip(){
       beaufort: t.beaufort||'', windDir: t.windDir||'',
       wxSnapshot: t.wxSnapshot||'',
     });
-    showToast(IS?'Beiðni send til skipstjóra ✓':'Request sent to skipper ✓','success');
+    showToast(IS?'Beiðni send til skipstjóra ✓':'Request sent to skipper ✓','ok');
     closeLogModal();
   }catch(e){
     errEl.textContent=e.message;
@@ -1067,7 +1067,7 @@ async function submitManual(){
     }
 
     renderStats(); buildFilters(); applyFilter();
-    showToast('Trip saved ✓','success');
+    showToast('Trip saved ✓','ok');
     closeLogModal();
   }catch(e){
     errEl.textContent=e.message;
@@ -1235,7 +1235,7 @@ async function deleteTripTrack(tripId) {
     const t = myTrips.find(x => x.id === tripId);
     if (t) { t.trackFileUrl = ''; t.trackSimplified = ''; t.trackSource = ''; }
     applyFilter();
-    showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'success');
+    showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'ok');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1255,7 +1255,7 @@ async function deleteTripPhoto(tripId, photoUrl) {
       await apiPost('saveTrip', { id: tripId, photoMeta: t.photoMeta });
     }
     applyFilter();
-    showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'success');
+    showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'ok');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1563,7 +1563,7 @@ async function editNote(tripId, field) {
     await apiPost('saveTrip', { id: tripId, [field]: val });
     t[field] = val;
     applyFilter();
-    showToast(IS ? 'Athugasemd vistuð' : 'Note saved', 'success');
+    showToast(IS ? 'Athugasemd vistuð' : 'Note saved', 'ok');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1574,7 +1574,7 @@ async function dismissConf(confId) {
     _confirmations.incoming = _confirmations.incoming.filter(c => c.id !== confId);
     _confirmations.outgoing = _confirmations.outgoing.filter(c => c.id !== confId);
     renderConfirmations();
-    showToast(IS ? 'Fjarlægt' : 'Dismissed', 'success');
+    showToast(IS ? 'Fjarlægt' : 'Dismissed', 'ok');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1584,7 +1584,7 @@ async function dismissAllConf() {
     _confirmations.incoming = _confirmations.incoming.filter(c => c.status === 'pending');
     _confirmations.outgoing = _confirmations.outgoing.filter(c => c.status === 'pending');
     renderConfirmations();
-    showToast(IS ? 'Allar fjarlægðar' : 'All dismissed', 'success');
+    showToast(IS ? 'Allar fjarlægðar' : 'All dismissed', 'ok');
   } catch(e) { showToast('Error: ' + e.message, 'err'); }
 }
 
@@ -1711,7 +1711,7 @@ async function submitEditTrip() {
     Object.assign(t, { date, boatId, boatName, boatCategory, locationId: locId, locationName: locName, timeOut, timeIn, hoursDecimal, crew, beaufort: bft, windDir, wxSnapshot, skipperNote, distanceNm, departurePort: depPort, arrivalPort: arrPort });
     closeEditTrip();
     applyFilter();
-    showToast(IS ? 'Ferð uppfærð' : 'Trip updated', 'success');
+    showToast(IS ? 'Ferð uppfærð' : 'Trip updated', 'ok');
   } catch(e) {
     errEl.textContent = 'Error: ' + e.message; errEl.style.display = '';
   }
@@ -1743,7 +1743,7 @@ function inlineUploadTrack(tripId) {
       const t = myTrips.find(x => x.id === tripId);
       if (t) Object.assign(t, updates);
       applyFilter();
-      showToast(IS ? 'GPS-leið bætt við' : 'GPS track added', 'success');
+      showToast(IS ? 'GPS-leið bætt við' : 'GPS track added', 'ok');
     } catch(e) { showToast('Error: ' + e.message, 'err'); }
   };
   input.click();
@@ -1826,7 +1826,7 @@ async function submitInlinePhotos() {
     }
     closePhotoUpload();
     applyFilter();
-    showToast(IS ? 'Myndir bættar við' : 'Photos added', 'success');
+    showToast(IS ? 'Myndir bættar við' : 'Photos added', 'ok');
   } catch(e) {
     document.getElementById('puErr').textContent = 'Error: ' + e.message;
     document.getElementById('puErr').style.display = '';
