@@ -976,6 +976,9 @@ const STRINGS = {
   'slot.bulkNoSlots':        { EN:'No open slots match your criteria',       IS:'Engir lausir tímar passa við valin skilyrði' },
   'slot.bulkBooked':         { EN:'{count} slots booked!',                   IS:'{count} tímar bókaðir!' },
   'slot.bulkPartial':        { EN:'{booked} booked, {skipped} already taken', IS:'{booked} bókaðir, {skipped} þegar teknir' },
+  'slot.createAndBook':      { EN:'+ New Booking',                            IS:'+ Ný bókun' },
+  'slot.createAndBookTitle': { EN:'Create & Book Slot',                       IS:'Búa til og bóka tíma' },
+  'slot.createdAndBooked':   { EN:'Slot created and booked!',                 IS:'Tími búinn til og bókaður!' },
 
   // ── Captain reservations ─────────────────────────────────────────────────
   'cq.reservationsTitle':    { EN:'CHARTERS',                                IS:'LEIGUR' },
