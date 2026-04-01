@@ -402,6 +402,7 @@ function route_(action, b) {
     case 'deleteSlot':            return deleteSlot_(b);
     case 'deleteRecurrenceGroup': return deleteRecurrenceGroup_(b);
     case 'bookSlot':              return bookSlot_(b);
+    case 'bulkBookSlots':         return bulkBookSlots_(b);
     case 'unbookSlot':            return unbookSlot_(b);
     // ── CREWS ─────────────────────────────────────────────────────────────────
     case 'getCrews':              return getCrews_(b);
@@ -1963,6 +1964,62 @@ function unbookSlot_(b) {
   if (!isBooker && !isCrewMember && !isStaff) return failJ('Only the booker, a crew member, or staff can cancel');
   updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' });
   return okJ({ unbooked: true });
+}
+
+function bulkBookSlots_(b) {
+  if (!b.boatId) return failJ('boatId required');
+  if (!b.fromDate || !b.toDate) return failJ('fromDate and toDate required');
+  if (!b.daysOfWeek || !Array.isArray(b.daysOfWeek) || !b.daysOfWeek.length) return failJ('daysOfWeek required (array of 0-6)');
+  if (!b.kennitala) return failJ('kennitala required');
+
+  var cfgMap = getConfigMap_();
+  var boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
+  var boat = boats.find(function(bt) { return bt.id === b.boatId; });
+  if (!boat) return failJ('Boat not found');
+
+  // Validate once: crew or individual certification
+  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
+  if (b.crewId) {
+    var crew = findOne_('crews', 'id', b.crewId);
+    if (!crew || crew.status !== 'active') return failJ('Crew not found or not active');
+    var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.kennitala); }); });
+    if (!isMember) return failJ('You are not a member of this crew');
+    updates.bookedByCrewId = String(b.crewId);
+    updates.bookedByName = String(crew.name || b.memberName || '');
+    updates.bookedByKennitala = String(b.kennitala);
+  } else {
+    if (boat.category === 'keelboat' && boat.accessGateCert) {
+      var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
+      if (!member) return failJ('Member not found');
+      var isStaffRole = member.role === 'staff' || member.role === 'admin';
+      if (!isStaffRole) {
+        var certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []);
+        if (!Array.isArray(certs) || !certs.some(function(c) { return c.sub === boat.accessGateCert; })) {
+          return failJ('You do not have the required certification to book this boat');
+        }
+      }
+    }
+    updates.bookedByKennitala = String(b.kennitala);
+    updates.bookedByName = String(b.memberName || '');
+  }
+
+  // Fetch all slots for this boat in the date range
+  var days = b.daysOfWeek.map(Number);
+  var all = readAll_('reservationSlots');
+  var booked = 0;
+  var skipped = 0;
+  for (var i = 0; i < all.length; i++) {
+    var sl = all[i];
+    if (sl.boatId !== b.boatId) continue;
+    if (sl.date < b.fromDate || sl.date > b.toDate) continue;
+    var slDate = new Date(sl.date + 'T00:00:00');
+    if (days.indexOf(slDate.getDay()) === -1) continue;
+    if (sl.bookedByKennitala) { skipped++; continue; }
+    updateRow_('reservationSlots', 'id', sl.id, updates);
+    booked++;
+  }
+  return okJ({ success: true, booked: booked, skipped: skipped });
 }
 
 

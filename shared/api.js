@@ -48,7 +48,7 @@ async function apiPost(action, payload) {
   }
   // Invalidate crew caches on crew mutations
   if (action === 'createCrew' || action === 'disbandCrew' || action === 'inviteToCrew' ||
-      action === 'respondCrewInvite' || action === 'bookSlot' || action === 'unbookSlot') {
+      action === 'respondCrewInvite' || action === 'bookSlot' || action === 'unbookSlot' || action === 'bulkBookSlots') {
     try {
       sessionStorage.removeItem('ymir_getCrews_');
       sessionStorage.removeItem('ymir_getCrewInvites_');

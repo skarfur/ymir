@@ -174,6 +174,7 @@
         <span id="cqWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
       </div>
     </div>
     <div id="cqSlotGrid" style="overflow-x:auto"></div>
@@ -237,6 +238,37 @@
     </div>
   </div>
 
+</div>
+
+<!-- ══ BULK BOOK MODAL ══ -->
+<div class="modal-overlay hidden" id="cqBulkBookModal" onclick="if(event.target===this)closeModal('cqBulkBookModal')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 data-s="slot.bulkTitle">Bulk Book Slots</h3>
+      <button class="modal-close-x" onclick="closeModal('cqBulkBookModal')">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="slot.daysOfWeek">Days of week</label>
+      <div id="cqBbDays" style="display:flex;gap:6px;flex-wrap:wrap">
+        <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cqBbFromDate"></div>
+      <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cqBbToDate"></div>
+    </div>
+    <div id="cqBbPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="previewCqBulkBook()" data-s="slot.preview">Preview</button>
+      <button class="btn btn-primary" onclick="submitCqBulkBook()" data-s="slot.bulkBook">Bulk Book</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ PORT CHANGE MODAL ══ -->
@@ -962,6 +994,58 @@ async function unbookCqSlot(slotId) {
     if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCqSlots(); }
     toast(e.message || 'Error', 'err');
   }
+}
+
+function openCqBulkBookModal() {
+  document.querySelectorAll('#cqBbDays input').forEach(function(cb) { cb.checked = false; });
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('cqBbFromDate').value = today;
+  var endD = new Date(); endD.setMonth(endD.getMonth() + 1);
+  document.getElementById('cqBbToDate').value = endD.toISOString().slice(0, 10);
+  document.getElementById('cqBbPreview').textContent = '';
+  applyStrings(document.getElementById('cqBulkBookModal'));
+  openModal('cqBulkBookModal');
+}
+
+async function previewCqBulkBook() {
+  var days = [];
+  document.querySelectorAll('#cqBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('cqBbFromDate').value;
+  var toDate = document.getElementById('cqBbToDate').value;
+  if (!days.length || !fromDate || !toDate) { document.getElementById('cqBbPreview').textContent = s('slot.selectDays'); return; }
+  var boatId = document.getElementById('cqResBoat').value;
+  try {
+    var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
+    var slots = res.slots || [];
+    var total = 0; var open = 0;
+    slots.forEach(function(sl) {
+      var d = new Date(sl.date + 'T00:00:00');
+      if (days.indexOf(d.getDay()) === -1) return;
+      total++;
+      if (!sl.bookedByKennitala) open++;
+    });
+    if (open === 0) { document.getElementById('cqBbPreview').textContent = s('slot.bulkNoSlots'); }
+    else { document.getElementById('cqBbPreview').textContent = s('slot.bulkPreview', { open: open, total: total }); }
+  } catch(e) { document.getElementById('cqBbPreview').textContent = e.message || 'Error'; }
+}
+
+async function submitCqBulkBook() {
+  var days = [];
+  document.querySelectorAll('#cqBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('cqBbFromDate').value;
+  var toDate = document.getElementById('cqBbToDate').value;
+  var boatId = document.getElementById('cqResBoat').value;
+  if (!days.length || !fromDate || !toDate || !boatId) { toast(s('slot.missingFields'), 'err'); return; }
+  try {
+    var res = await apiPost('bulkBookSlots', {
+      boatId: boatId, kennitala: user.kennitala, memberName: user.name,
+      fromDate: fromDate, toDate: toDate, daysOfWeek: days,
+    });
+    closeModal('cqBulkBookModal');
+    if (res.skipped > 0) { toast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped })); }
+    else { toast(s('slot.bulkBooked', { count: res.booked })); }
+    loadCqSlots();
+  } catch(e) { toast(e.message || 'Error', 'err'); }
 }
 
 function shiftCqWeek(dir) {
