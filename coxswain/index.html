@@ -100,6 +100,7 @@
         <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
       </div>
     </div>
     <div id="cxSlotGrid" style="overflow-x:auto"></div>
@@ -116,6 +117,37 @@
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
+</div>
+
+<!-- ══ BULK BOOK MODAL ══ -->
+<div class="modal-overlay hidden" id="cxBulkBookModal" onclick="if(event.target===this)closeModal('cxBulkBookModal')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 data-s="slot.bulkTitle">Bulk Book Slots</h3>
+      <button class="modal-close-x" onclick="closeModal('cxBulkBookModal')">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="slot.daysOfWeek">Days of week</label>
+      <div id="cxBbDays" style="display:flex;gap:6px;flex-wrap:wrap">
+        <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
+        <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cxBbFromDate"></div>
+      <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cxBbToDate"></div>
+    </div>
+    <div id="cxBbPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="previewCxBulkBook()" data-s="slot.preview">Preview</button>
+      <button class="btn btn-primary" onclick="submitCxBulkBook()" data-s="slot.bulkBook">Bulk Book</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ RESERVATION MODAL ══ -->
@@ -812,6 +844,62 @@ async function unbookCxSlot(slotId) {
     if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCxSlots(); }
     showToast(e.message || 'Error', 'err');
   }
+}
+
+function openCxBulkBookModal() {
+  var crewId = document.getElementById('cxSlotCrew').value;
+  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  document.querySelectorAll('#cxBbDays input').forEach(function(cb) { cb.checked = false; });
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('cxBbFromDate').value = today;
+  var endD = new Date(); endD.setMonth(endD.getMonth() + 1);
+  document.getElementById('cxBbToDate').value = endD.toISOString().slice(0, 10);
+  document.getElementById('cxBbPreview').textContent = '';
+  applyStrings(document.getElementById('cxBulkBookModal'));
+  openModal('cxBulkBookModal');
+}
+
+async function previewCxBulkBook() {
+  var days = [];
+  document.querySelectorAll('#cxBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('cxBbFromDate').value;
+  var toDate = document.getElementById('cxBbToDate').value;
+  if (!days.length || !fromDate || !toDate) { document.getElementById('cxBbPreview').textContent = s('slot.selectDays'); return; }
+  var boatId = document.getElementById('cxSlotBoat').value;
+  try {
+    var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
+    var slots = res.slots || [];
+    var total = 0; var open = 0;
+    slots.forEach(function(sl) {
+      var d = new Date(sl.date + 'T00:00:00');
+      if (days.indexOf(d.getDay()) === -1) return;
+      total++;
+      if (!sl.bookedByKennitala) open++;
+    });
+    if (open === 0) { document.getElementById('cxBbPreview').textContent = s('slot.bulkNoSlots'); }
+    else { document.getElementById('cxBbPreview').textContent = s('slot.bulkPreview', { open: open, total: total }); }
+  } catch(e) { document.getElementById('cxBbPreview').textContent = e.message || 'Error'; }
+}
+
+async function submitCxBulkBook() {
+  var crewId = document.getElementById('cxSlotCrew').value;
+  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  var days = [];
+  document.querySelectorAll('#cxBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('cxBbFromDate').value;
+  var toDate = document.getElementById('cxBbToDate').value;
+  var boatId = document.getElementById('cxSlotBoat').value;
+  if (!days.length || !fromDate || !toDate || !boatId) { showToast(s('slot.missingFields'), 'err'); return; }
+  try {
+    var res = await apiPost('bulkBookSlots', {
+      boatId: boatId, crewId: crewId, kennitala: user.kennitala, memberName: user.name,
+      fromDate: fromDate, toDate: toDate, daysOfWeek: days,
+    });
+    closeModal('cxBulkBookModal');
+    if (res.skipped > 0) { showToast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped }), 'ok'); }
+    else { showToast(s('slot.bulkBooked', { count: res.booked }), 'ok'); }
+    loadCxSlots();
+  } catch(e) { showToast(e.message || 'Error', 'err'); }
 }
 
 function shiftCxWeek(dir) {
