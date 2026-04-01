@@ -465,12 +465,18 @@ function renderValidation() {
 }
 
 async function respondValidation(id, status) {
+  // Optimistic UI — remove card immediately
+  var prev = _verificationRequests.slice();
+  _verificationRequests = _verificationRequests.filter(r => r.id !== id);
+  renderValidation();
   try {
     await apiPost('respondConfirmation', { id, status, responderName: user.name });
-    _verificationRequests = _verificationRequests.filter(r => r.id !== id);
-    renderValidation();
     showToast(s('toast.saved'), 'ok');
-  } catch (e) { showToast(e.message, 'err'); }
+  } catch (e) {
+    _verificationRequests = prev;
+    renderValidation();
+    showToast(e.message, 'err');
+  }
 }
 
 // ══ CREW APPROVALS ═══════════════════════════════════════════════════════════
@@ -497,12 +503,18 @@ function renderCrew() {
 }
 
 async function respondCrew(id, status) {
+  // Optimistic UI — update card immediately
+  var prev = _crewConfirmations.slice();
+  _crewConfirmations = _crewConfirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
+  renderCrew();
   try {
     await apiPost('respondConfirmation', { id, status, responderName: user.name });
-    _crewConfirmations = _crewConfirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
-    renderCrew();
     showToast(s('toast.saved'), 'ok');
-  } catch (e) { showToast(e.message, 'err'); }
+  } catch (e) {
+    _crewConfirmations = prev;
+    renderCrew();
+    showToast(e.message, 'err');
+  }
 }
 
 
@@ -624,35 +636,36 @@ function openPortModal(boatId) {
 async function savePort() {
   if (!_portBoatId) return;
   var portId = document.getElementById('portSelect').value;
+  var idx = _boats.findIndex(b => b.id === _portBoatId);
+  if (idx < 0) return;
+  var prev = _boats[idx].defaultPortId;
+  _boats[idx].defaultPortId = portId || '';
+  renderBoats();
+  closeModal('portModal');
   try {
-    // Update boat config
-    var cfgRes = await apiGet('getConfig', { _fresh: true });
-    var boats = cfgRes.boats || [];
-    var idx = boats.findIndex(b => b.id === _portBoatId);
-    if (idx >= 0) {
-      boats[idx].defaultPortId = portId || '';
-      await apiPost('saveConfig', { boats: boats });
-      _boats = boats;
-      renderBoats();
-      closeModal('portModal');
-      showToast(s('toast.saved'), 'ok');
-    }
-  } catch (e) { showToast(e.message, 'err'); }
+    await apiPost('saveConfig', { boats: _boats });
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) {
+    _boats[idx].defaultPortId = prev;
+    renderBoats();
+    showToast(e.message, 'err');
+  }
 }
 
 async function toggleBoatOos(boatId, oos) {
+  var idx = _boats.findIndex(b => b.id === boatId);
+  if (idx < 0) return;
+  var prev = _boats[idx].oos;
+  _boats[idx].oos = oos;
+  renderBoats();
   try {
-    var cfgRes = await apiGet('getConfig', { _fresh: true });
-    var boats = cfgRes.boats || [];
-    var idx = boats.findIndex(b => b.id === boatId);
-    if (idx >= 0) {
-      boats[idx].oos = oos;
-      await apiPost('saveConfig', { boats: boats });
-      _boats = boats;
-      renderBoats();
-      showToast(s('toast.saved'), 'ok');
-    }
-  } catch (e) { showToast(e.message, 'err'); }
+    await apiPost('saveConfig', { boats: _boats });
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) {
+    _boats[idx].oos = prev;
+    renderBoats();
+    showToast(e.message, 'err');
+  }
 }
 
 // ══ RESERVATION MANAGEMENT ═══════════════════════════════════════════════════
