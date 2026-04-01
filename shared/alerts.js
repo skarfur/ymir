@@ -237,7 +237,7 @@
       const action = btn.dataset.action;
       const id     = btn.dataset.id;
       btn.disabled = true;
-      btn.textContent = '&';
+      btn.textContent = '…';
 
       if (action === 'silence') {
         try {

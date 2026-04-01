@@ -394,6 +394,7 @@ function route_(action, b) {
     case 'saveCharter': return saveCharter_(b);
     case 'removeCharter': return removeCharter_(b);
     case 'saveBoatAccess': return saveBoatAccess_(b);
+    case 'saveBoatOos': return saveBoatOos_(b);
     case 'saveReservation': return saveReservation_(b);
     case 'removeReservation': return removeReservation_(b);
     // ── RESERVATION SLOTS ─────────────────────────────────────────────────────
@@ -1756,6 +1757,22 @@ function removeCharter_(b) {
   const idx = boats.findIndex(x => x.id === b.boatId);
   if (idx < 0) return failJ('Boat not found');
   delete boats[idx].charter;
+  setConfigSheetValue_('boats', JSON.stringify(boats));
+  cDel_('config');
+  return okJ({ updated: true, boat: boats[idx] });
+}
+
+// ── Boat OOS toggle ──────────────────────────────────────────────────────
+
+function saveBoatOos_(b) {
+  if (!b.id) return failJ('id required');
+  const cfgMap = getConfigMap_();
+  let boats = [];
+  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
+  const idx = boats.findIndex(x => x.id === b.id);
+  if (idx < 0) return failJ('Boat not found');
+  if (b.oos !== undefined) boats[idx].oos = !!b.oos;
+  if (b.oosReason !== undefined) boats[idx].oosReason = String(b.oosReason || '');
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });

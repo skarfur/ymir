@@ -31,7 +31,7 @@ async function apiPost(action, payload) {
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
       action === 'saveCertDef' || action === 'deleteCertDef' ||
       action === 'saveCertCategories' ||
-      action === 'saveBoatAccess' || action === 'saveReservation' || action === 'removeReservation') {
+      action === 'saveBoatAccess' || action === 'saveBoatOos' || action === 'saveReservation' || action === 'removeReservation') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
