@@ -823,7 +823,16 @@ function setHeatMode(mode) {
         </select>
       </div>
     </div>
-    <div class="form-field mt-8"><label>Skipper note <span class="text-muted" style="font-size:9px">(visible to crew)</span></label>
+    <div class="wx-row" style="margin-top:6px">
+      <div class="form-field"><label id="etGustLabel">Gusts (m/s)</label><input type="number" id="etGusts" min="0" step="0.1"></div>
+      <div class="form-field"><label>Air temp (°C)</label><input type="number" id="etAirTemp" step="0.1"></div>
+      <div class="form-field"><label>Sea temp (°C)</label><input type="number" id="etSeaTemp" min="0" step="0.1"></div>
+    </div>
+    <div class="wx-row" style="margin-top:6px">
+      <div class="form-field"><label>Wave height (m)</label><input type="number" id="etWaveHeight" min="0" step="0.1"></div>
+      <div class="form-field"><label>Pressure (hPa)</label><input type="number" id="etPressure" min="900" max="1100" step="1"></div>
+    </div>
+    <div class="form-field mt-8"><label>Skipper's comments <span class="text-muted" style="font-size:9px">(visible to crew)</span></label>
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
     <div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>
