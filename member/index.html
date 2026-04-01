@@ -358,7 +358,7 @@ function openReturnModal(coId) {
 // Step 1 — boat picker
 function renderLaunchPicker(preselectedBoatId) {
   const active=checkouts.filter(c=>c.status==='out');
-  const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos)&&!isChartered(b));
+  const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
       '<div class="mb-12">'+

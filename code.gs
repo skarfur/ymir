@@ -391,8 +391,7 @@ function route_(action, b) {
     case 'saveGroupCheckout': return saveGroupCheckout_(b);
     case 'groupCheckIn': return groupCheckIn_(b);
     case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
-    case 'saveCharter': return saveCharter_(b);
-    case 'removeCharter': return removeCharter_(b);
+    // charter endpoints removed — use saveReservation / removeReservation
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveBoatOos': return saveBoatOos_(b);
     case 'saveReservation': return saveReservation_(b);
@@ -1215,22 +1214,9 @@ function getConfig_() {
   const certCategories = getCertCategoriesFromMap_(cfgMap);
   let boats = [], locations = [];
   try { var bRaw = getConfigValue_('boats', cfgMap); if (bRaw) boats = JSON.parse(bRaw); } catch (e) { }
-  // Lazy migration: charter → reservations
   var boatsMigrated = false;
   boats.forEach(function(bt) {
     if (!bt.accessMode) { bt.accessMode = 'free'; boatsMigrated = true; }
-    if (bt.charter && !bt.reservations) {
-      bt.reservations = [{
-        id: 'res_' + uid_(),
-        memberKennitala: bt.charter.memberKennitala || '',
-        memberName: bt.charter.memberName || '',
-        startDate: bt.charter.startDate || '',
-        endDate: bt.charter.endDate || '',
-        note: 'Migrated from charter',
-      }];
-      delete bt.charter;
-      boatsMigrated = true;
-    }
   });
   if (boatsMigrated) { try { setConfigSheetValue_('boats', JSON.stringify(boats)); } catch(e) {} }
   try { var lRaw = getConfigValue_('locations', cfgMap); if (lRaw) locations = JSON.parse(lRaw); } catch (e) { }
@@ -1746,41 +1732,6 @@ function deleteCheckout_(id) {
   cDel_('checkouts'); return okJ({ deleted });
 }
 
-// ── Charter management ───────────────────────────────────────────────────────
-
-function saveCharter_(b) {
-  if (!b.boatId) return failJ('boatId required');
-  if (!b.memberKennitala || !b.memberName) return failJ('member required');
-  if (!b.startDate || !b.endDate) return failJ('startDate and endDate required');
-  const cfgMap = getConfigMap_();
-  let boats = [];
-  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
-  const idx = boats.findIndex(x => x.id === b.boatId);
-  if (idx < 0) return failJ('Boat not found');
-  boats[idx].charter = {
-    memberKennitala: b.memberKennitala,
-    memberName: b.memberName,
-    startDate: b.startDate,
-    endDate: b.endDate,
-  };
-  setConfigSheetValue_('boats', JSON.stringify(boats));
-  cDel_('config');
-  return okJ({ updated: true, boat: boats[idx] });
-}
-
-function removeCharter_(b) {
-  if (!b.boatId) return failJ('boatId required');
-  const cfgMap = getConfigMap_();
-  let boats = [];
-  try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) { return failJ('Failed to parse boats'); }
-  const idx = boats.findIndex(x => x.id === b.boatId);
-  if (idx < 0) return failJ('Boat not found');
-  delete boats[idx].charter;
-  setConfigSheetValue_('boats', JSON.stringify(boats));
-  cDel_('config');
-  return okJ({ updated: true, boat: boats[idx] });
-}
-
 // ── Boat OOS toggle ──────────────────────────────────────────────────────
 
 function saveBoatOos_(b) {
@@ -1836,8 +1787,6 @@ function saveReservation_(b) {
   };
   if (resIdx >= 0) boats[idx].reservations[resIdx] = res;
   else boats[idx].reservations.push(res);
-  // Also maintain legacy charter field for backward compat
-  boats[idx].charter = { memberKennitala: res.memberKennitala, memberName: res.memberName, startDate: res.startDate, endDate: res.endDate };
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx], reservation: res });
@@ -1853,8 +1802,6 @@ function removeReservation_(b) {
   if (idx < 0) return failJ('Boat not found');
   if (!boats[idx].reservations) boats[idx].reservations = [];
   boats[idx].reservations = boats[idx].reservations.filter(r => r.id !== b.reservationId);
-  // Clear legacy charter if no reservations remain
-  if (!boats[idx].reservations.length) delete boats[idx].charter;
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
   return okJ({ updated: true, boat: boats[idx] });

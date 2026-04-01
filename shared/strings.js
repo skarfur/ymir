@@ -540,7 +540,7 @@ const STRINGS = {
   'admin.tabAlerts':       { EN:'Alerts',                  IS:'Viðvaranir' },
   'admin.tabPayroll':      { EN:'💰 Payroll',             IS:'💰 Launakerfi' },
   'admin.tabFlags':        { EN:'🚩 Flags',                IS:'🚩 Fánar' },
-  'admin.tabReservations': { EN:'📅 Reservations',         IS:'📅 Bókanir' },
+  'admin.tabReservations': { EN:'📅 Charters',              IS:'📅 Leigur' },
   'admin.importCsv':       { EN:'⇪ Import CSV',            IS:'⇪ Flytja inn CSV' },
   'admin.searchMembers':   { EN:'Search name or kennitala…', IS:'Leita að nafni eða kennitölu…' },
   'admin.noMembers':       { EN:'No members yet.',         IS:'Engir félagar ennþá.' },
@@ -887,11 +887,7 @@ const STRINGS = {
   'fleet.delete':            { EN:'Delete',                                IS:'Eyða' },
   'fleet.badgeChartered':    { EN:'CHARTERED',                             IS:'LEIGÐUR' },
   'fleet.badgePrivate':      { EN:'PRIVATE',                               IS:'EINKABÁTUR' },
-  'fleet.charteredTo':       { EN:'Chartered to {name}',                   IS:'Leigður til {name}' },
-  'fleet.charteredUntil':    { EN:'until {date}',                          IS:'til {date}' },
   'fleet.ownedBy':           { EN:'Owner: {name}',                         IS:'Eigandi: {name}' },
-  'fleet.charterOverride':   { EN:'This boat is chartered to {name} until {date}. Override and check out anyway?',
-                               IS:'Þessi bátur er leigður til {name} til {date}. Viltu taka hann út samt?' },
 
   // ── Fleet action popover (staff) ────────────────────────────────────────────
   'fleet.actionCheckout':    { EN:'Check Out',                              IS:'Útskrá' },
@@ -899,21 +895,13 @@ const STRINGS = {
   'fleet.actionMarkOos':     { EN:'Mark Unavailable',                       IS:'Merkja ótiltækan' },
   'fleet.actionMarkAvail':   { EN:'Mark Available',                         IS:'Merkja tiltækan' },
 
-  // ── Boat ownership & charter ──────────────────────────────────────────────
+  // ── Boat ownership ────────────────────────────────────────────────────────
   'boat.ownership':          { EN:'Ownership',                             IS:'Eignarhald' },
   'boat.ownershipClub':      { EN:'Club boat',                             IS:'Klúbbsbátur' },
   'boat.ownershipPrivate':   { EN:'Private boat',                          IS:'Einkabátur' },
   'boat.owner':              { EN:'Owner',                                 IS:'Eigandi' },
-  'boat.charter':            { EN:'Charter',                               IS:'Leiga' },
-  'boat.charterMember':      { EN:'Chartered to',                          IS:'Leigður til' },
-  'boat.charterStart':       { EN:'Start date',                            IS:'Upphafsdagur' },
-  'boat.charterEnd':         { EN:'End date',                              IS:'Lokadagur' },
-  'boat.setCharter':         { EN:'Set Charter',                           IS:'Skrá leigu' },
-  'boat.removeCharter':      { EN:'Remove Charter',                        IS:'Fjarlægja leigu' },
-  'boat.charterSaved':       { EN:'Charter saved',                         IS:'Leiga vistuð' },
-  'boat.charterRemoved':     { EN:'Charter removed',                       IS:'Leiga fjarlægð' },
 
-  // ── Boat access control & reservations ────────────────────────────────────
+  // ── Boat access control & charters ────────────────────────────────────────
   'boat.accessMode':         { EN:'Access Mode',                            IS:'Aðgangshamur' },
   'boat.accessFree':         { EN:'Free Access',                            IS:'Frjáls aðgangur' },
   'boat.accessControlled':   { EN:'Controlled Access',                      IS:'Stýrður aðgangur' },
@@ -921,12 +909,12 @@ const STRINGS = {
   'boat.gateCertNone':       { EN:'None (allowlist only)',                   IS:'Ekkert (aðeins listi)' },
   'boat.allowlist':          { EN:'Allowed Members',                        IS:'Leyfilegir meðlimir' },
   'boat.allowlistAdd':       { EN:'Add member…',                            IS:'Bæta við meðlim…' },
-  'boat.reservations':       { EN:'Reservations',                           IS:'Bókanir' },
-  'boat.addReservation':     { EN:'Add Reservation',                        IS:'Bæta við bókun' },
+  'boat.reservations':       { EN:'Assign Charter',                         IS:'Úthluta leigu' },
+  'boat.addReservation':     { EN:'Add Charter',                            IS:'Bæta við leigu' },
   'boat.removeReservation':  { EN:'Remove',                                 IS:'Fjarlægja' },
-  'boat.reservationSaved':   { EN:'Reservation saved',                      IS:'Bókun vistuð' },
-  'boat.reservationRemoved': { EN:'Reservation removed',                    IS:'Bókun fjarlægð' },
-  'boat.reservedFor':        { EN:'Reserved for {name}',                    IS:'Frátekið fyrir {name}' },
+  'boat.reservationSaved':   { EN:'Charter saved',                          IS:'Leiga vistuð' },
+  'boat.reservationRemoved': { EN:'Charter removed',                        IS:'Leiga fjarlægð' },
+  'boat.reservedFor':        { EN:'Chartered to {name}',                    IS:'Leigður til {name}' },
   'boat.reservedUntil':      { EN:'until {date}',                           IS:'til {date}' },
   'boat.reservationNote':    { EN:'Note',                                   IS:'Athugasemd' },
   'boat.accessDenied':       { EN:'You do not have access to this boat',    IS:'Þú hefur ekki aðgang að þessum bát' },
@@ -990,7 +978,7 @@ const STRINGS = {
   'slot.bulkPartial':        { EN:'{booked} booked, {skipped} already taken', IS:'{booked} bókaðir, {skipped} þegar teknir' },
 
   // ── Captain reservations ─────────────────────────────────────────────────
-  'cq.reservationsTitle':    { EN:'RESERVATIONS',                            IS:'BÓKANIR' },
+  'cq.reservationsTitle':    { EN:'CHARTERS',                                IS:'LEIGUR' },
 
   // ── Coxswain's Seat ───────────────────────────────────────────────────────
   'nav.coxswainSeat':        { EN:'🚣 Coxswain\'s Seat',                   IS:'🚣 Stýrimannssæti' },
@@ -1004,8 +992,8 @@ const STRINGS = {
   'cox.maintenance':         { EN:'MAINTENANCE',                            IS:'VIÐHALD' },
   'cox.readOnly':            { EN:'View only — contact a coxswain for changes', IS:'Aðeins skoðun — hafðu samband við stýrimann' },
   'cox.noMaint':             { EN:'No maintenance requests.',               IS:'Engar viðhaldsbeiðnir.' },
-  'cox.reservations':        { EN:'RESERVATIONS',                           IS:'BÓKANIR' },
-  'cox.addReservation':      { EN:'Add Reservation',                        IS:'Bæta við bókun' },
+  'cox.reservations':        { EN:'CHARTERS',                               IS:'LEIGUR' },
+  'cox.addReservation':      { EN:'Add Charter',                            IS:'Bæta við leigu' },
   'cox.resMember':           { EN:'Member',                                 IS:'Meðlimur' },
   'cox.resStartDate':        { EN:'Start date',                             IS:'Upphafsdagur' },
   'cox.resEndDate':          { EN:'End date',                               IS:'Lokadagur' },
@@ -1208,7 +1196,6 @@ const STRINGS = {
   'admin.ownerClub':         { EN:'Club boat',                           IS:'Klúbbsbátur' },
   'admin.ownerPrivate':      { EN:'Private boat',                        IS:'Einkabátur' },
   'admin.searchMember':      { EN:'Search member...',                    IS:'Leita að félaga...' },
-  'admin.saveCharter':       { EN:'Save Charter',                        IS:'Vista leigu' },
   'admin.oosReason':         { EN:'OOS reason',                          IS:'Ástæða' },
   'admin.openingChecklist':  { EN:'OPENING CHECKLIST',                   IS:'OPNUNARGÁTLISTI' },
   'admin.closingChecklist':  { EN:'CLOSING CHECKLIST',                   IS:'LOKUNARGÁTLISTI' },
@@ -1332,9 +1319,9 @@ const STRINGS = {
   'cq.makeAvailable':        { EN:'Mark available',                       IS:'Merkja tiltækan' },
   'cq.changePort':           { EN:'Change home port',                     IS:'Breyta heimahöfn' },
   'cq.viewPublicProfile':    { EN:'View public profile →',                IS:'Skoða opinbert prófíl →' },
-  'cq.reservations':         { EN:'RESERVATIONS',                          IS:'BÓKANIR' },
-  'cq.noReservations':       { EN:'No reservations.',                      IS:'Engar bókanir.' },
-  'cq.addReservation':       { EN:'Add Reservation',                       IS:'Bæta við bókun' },
+  'cq.reservations':         { EN:'CHARTERS',                              IS:'LEIGUR' },
+  'cq.noReservations':       { EN:'No charters.',                          IS:'Engar leigur.' },
+  'cq.addReservation':       { EN:'Add Charter',                           IS:'Bæta við leigu' },
   'cq.resStartDate':         { EN:'Start date',                            IS:'Upphafsdagur' },
   'cq.resEndDate':           { EN:'End date',                              IS:'Lokadagur' },
   'cq.resNote':              { EN:'Note (optional)',                        IS:'Athugasemd (valfrjálst)' },

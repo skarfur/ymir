@@ -611,8 +611,6 @@ function renderBoats() {
     if (b.accessMode === 'controlled' && b.accessGateCert === 'captain') return true;
     // Boat with active reservation for this captain
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
-    // Legacy: chartered to this captain
-    if (b.charter && String(b.charter.memberKennitala) === String(user.kennitala)) return true;
     return false;
   });
 
@@ -756,7 +754,7 @@ async function saveCqReservation() {
   try {
     var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _boats.find(x => x.id === _resBoatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     closeModal('resModal');
     renderBoats();
     showToast(s('boat.reservationSaved'), 'ok');
@@ -768,7 +766,7 @@ async function removeCqReservation(boatId, resId) {
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _boats.find(x => x.id === boatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderBoats();
     showToast(s('boat.reservationRemoved'), 'ok');
   } catch (e) { showToast(e.message, 'err'); }
