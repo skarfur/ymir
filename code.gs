@@ -355,6 +355,8 @@ function route_(action, b) {
     case 'approveSaumaklubbur':     return approveSaumaklubbur_(b);
     case 'holdSaumaklubbur':        return holdSaumaklubbur_(b);
     case 'toggleMaterial':          return toggleMaterial_(b);
+    case 'addMaterial':             return addMaterial_(b);
+    case 'removeMaterial':          return removeMaterial_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
@@ -1113,6 +1115,36 @@ function toggleMaterial_(b) {
   updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
   cDel_('maintenance');
   return okJ({ toggled: true, materials });
+}
+
+function addMaterial_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.name) return failJ('name required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  let materials = [];
+  try { materials = JSON.parse(ex.materials || '[]'); } catch(e) { materials = []; }
+  materials.push({ name: b.name, purchased: false });
+  addColIfMissing_('maintenance', 'materials');
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  cDel_('maintenance');
+  return okJ({ added: true, materials });
+}
+
+function removeMaterial_(b) {
+  if (!b.id) return failJ('id required');
+  if (b.index === undefined) return failJ('index required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  let materials = [];
+  try { materials = JSON.parse(ex.materials || '[]'); } catch(e) { materials = []; }
+  const idx = parseInt(b.index);
+  if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
+  materials.splice(idx, 1);
+  addColIfMissing_('maintenance', 'materials');
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  cDel_('maintenance');
+  return okJ({ removed: true, materials });
 }
 
 function approveSaumaklubbur_(b) {
