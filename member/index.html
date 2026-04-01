@@ -411,9 +411,7 @@ function _fmtCatLabel(cat) {
   var ico=(c&&c.emoji)?c.emoji:boatEmoji(cat);
   return ico+' '+esc(lbl.toUpperCase());
 }
-// Handles both config objects {text, textIS, sort} and legacy plain strings.
 function _clItemLabel(it) {
-  if(typeof it==='string') return it;
   return (getLang()==='IS'&&it.textIS)?it.textIS:(it.text||'');
 }
 

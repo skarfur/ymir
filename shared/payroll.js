@@ -63,21 +63,12 @@ window.fmtDurationMins = function(mins) {
 };
 
 /* PP OT SPLITTER ═════════════════════════════════════════════════════════════
-   otRules is now an ordered array of tier objects {id, label, labelEN, multiplier, periods}.
-   Higher index = higher priority (checked first). Returns {regularMins, otMins, ot1Mins, ot2Mins}.
-   Backward-compat aliases ot1Mins/ot2Mins map to tiers[0]/tiers[1] by position.
+   otRules is an ordered array of tier objects {id, label, labelEN, multiplier, periods}.
+   Higher index = higher priority (checked first). Returns {regularMins, otMins}.
 ══════════════════════════════════════════════════════════════════════════════ */
-function _legacyOtRulesToArray(rules) {
+function _otRulesToArray(rules) {
   if (!rules) return [];
-  if (Array.isArray(rules)) return rules;
-  // Legacy object {ot1:{...}, ot2:{...}} → ordered array
-  var arr = [];
-  if (rules.ot1) arr.push(Object.assign({ id:'ot1' }, rules.ot1));
-  if (rules.ot2) arr.push(Object.assign({ id:'ot2' }, rules.ot2));
-  Object.keys(rules).forEach(function(k) {
-    if (k !== 'ot1' && k !== 'ot2') arr.push(Object.assign({ id:k }, rules[k]));
-  });
-  return arr;
+  return Array.isArray(rules) ? rules : [];
 }
 
 function _inPeriods(day, hour, periods) {
@@ -105,7 +96,7 @@ function _runLengthDynamic(start, maxMins, cls, tiersArr) {
 }
 
 window.splitOTMinutes = function(entries, otRules) {
-  var tiersArr = _legacyOtRulesToArray(otRules || (window.PAYROLL_CONFIG || {}).otRules);
+  var tiersArr = _otRulesToArray(otRules || (window.PAYROLL_CONFIG || {}).otRules);
   var regularMins = 0;
   var otMins = {};
   tiersArr.forEach(function(t) { otMins[t.id] = 0; });
@@ -129,40 +120,21 @@ window.splitOTMinutes = function(entries, otRules) {
 
   var result = { regularMins: Math.round(regularMins), otMins: {} };
   tiersArr.forEach(function(t) { result.otMins[t.id] = Math.round(otMins[t.id] || 0); });
-  // Backward-compat aliases
-  result.ot1Mins = result.otMins[tiersArr[0] && tiersArr[0].id] || 0;
-  result.ot2Mins = result.otMins[tiersArr[1] && tiersArr[1].id] || 0;
   return result;
 };
 
 /* PP CALCULATE PAYSLIP ════════════════════════════════════════════════════════
-   New signature: calculatePayslip(emp, regularMinutes, otMinutes, manualLines, cfg)
-     otMinutes: object {[tierId]: minutes}  — OR —
-   Legacy:     calculatePayslip(emp, regularMinutes, ot1Min, ot2Min, manualLines, cfg)
-     (detected when 3rd arg is a number)
-   Returns full breakdown; includes otLines[] array + backward-compat ot1/ot2 aliases.
+   calculatePayslip(emp, regularMinutes, otMinutes, manualLines, cfg)
+     otMinutes: object {[tierId]: minutes}
+   Returns full breakdown including otLines[] array.
 ══════════════════════════════════════════════════════════════════════════════ */
-window.calculatePayslip = function(emp, regularMinutes, otMinutesOrOt1, manualLinesOrOt2, cfgOrManual, cfgLegacy) {
-  var otMins, manualLines, cfg;
-  if (typeof otMinutesOrOt1 === 'object' && !Array.isArray(otMinutesOrOt1) && otMinutesOrOt1 !== null) {
-    // New call: (emp, regular, {ot1:x,...}, manual, cfg)
-    otMins      = otMinutesOrOt1 || {};
-    manualLines = manualLinesOrOt2 || [];
-    cfg         = cfgOrManual;
-  } else {
-    // Legacy call: (emp, regular, ot1, ot2, manual, cfg)
-    var _tiers = _legacyOtRulesToArray((window.PAYROLL_CONFIG || {}).otRules);
-    otMins = {};
-    if (_tiers[0]) otMins[_tiers[0].id] = +otMinutesOrOt1  || 0;
-    if (_tiers[1]) otMins[_tiers[1].id] = +manualLinesOrOt2 || 0;
-    manualLines = cfgOrManual || [];
-    cfg         = cfgLegacy;
-  }
+window.calculatePayslip = function(emp, regularMinutes, otMinutes, manualLines, cfg) {
+  var otMins      = otMinutes || {};
   cfg            = Object.assign({}, window.PAYROLL_CONFIG, cfg || {});
   regularMinutes = +regularMinutes || 0;
   manualLines    = manualLines || [];
 
-  var tiersArr = _legacyOtRulesToArray(cfg.otRules);
+  var tiersArr = _otRulesToArray(cfg.otRules);
   var baseRate  = +(emp.baseRateKr) || 0;
   var regularHrs = regularMinutes / 60;
   var dagvinna   = Math.round(regularHrs * baseRate);
