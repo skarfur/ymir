@@ -1936,12 +1936,12 @@ async function saveLocation() {
     closeModal("locationModal");
     renderLocations();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteLocation(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this location?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteLocation"))) return;
   _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
   try {
     await apiPost("saveConfig", { locations: _allLocations });
@@ -1949,7 +1949,7 @@ async function deleteLocation(id) {
     renderLocations();
     closeModal("locationModal");
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ OPENING / CLOSING CHECKLISTS ═════════════════════════════════════════════
@@ -1969,7 +1969,7 @@ function renderCLPhase(cardId, phase) {
   const items = clItems
     .filter(i => norm(String(i.phase).toLowerCase()) === phase && bool(i.active))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  if (!items.length) { card.innerHTML = `<div class="empty-state">No items.</div>`; return; }
+  if (!items.length) { card.innerHTML = `<div class="empty-state">${s('admin.noItems')}</div>`; return; }
   card.innerHTML = items.map(i => `
     <div class="cl-row">
       <span class="cl-phase">${phase === 'opening' ? 'OPEN' : 'CLOSE'}</span>
@@ -1984,7 +1984,7 @@ function openCLModal(id) {
   editingId    = id || null;
   const item   = id ? clItems.find(x => x.id === id) : null;
   const norm   = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : (p || 'opening'));
-  document.getElementById("clModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("clModalTitle").textContent = item ? s('admin.clModal.edit') : s('admin.clModal.add');
   document.getElementById("clPhase").value    = item ? norm(item.phase) : "opening";
   document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
   document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
@@ -1996,7 +1996,7 @@ function openCLModal(id) {
 
 async function saveCLItem() {
   const textEN = document.getElementById("clTextEN").value.trim();
-  if (!textEN) { toast("English text required.", "err"); return; }
+  if (!textEN) { toast(s("admin.textENRequired"), "err"); return; }
   const payload = {
     id:        editingId,
     phase:     document.getElementById("clPhase").value,   // "opening" or "closing"
@@ -2016,13 +2016,13 @@ async function saveCLItem() {
 
 async function deleteCLItem(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this item?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteItem"))) return;
   try {
     await apiPost("deleteChecklistItem", { id: _id });
     clItems = clItems.filter(i => i.id !== _id);
     renderChecklists();
     closeModal("clModal");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ LAUNCH / LANDING CHECKLISTS ══════════════════════════════════════════════
@@ -2045,7 +2045,7 @@ function renderLaunchCLSections() {
     const el    = document.getElementById(phase === "launch" ? "launchCLLaunchList" : "launchCLLandingList");
     if (!el) return;
     const items = (catData[phase] || []).slice().sort((a, b) => (a.sort || 99) - (b.sort || 99));
-    if (!items.length) { el.innerHTML = '<div class="empty-state">No items.</div>'; return; }
+    if (!items.length) { el.innerHTML = '<div class="empty-state">' + s('admin.noItems') + '</div>'; return; }
     el.innerHTML = items.map(i => `
       <div class="cl-row">
         <span style="flex:1;color:var(--text)">${esc(i.text || "")}${i.textIS
@@ -2065,7 +2065,7 @@ function openLaunchCLModal(cat, phase, id) {
     item = _launchCLs[curCat][curPhase].find(x => x.id === id);
   }
   populateCategorySelects();
-  document.getElementById("launchCLModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("launchCLModalTitle").textContent = item ? s('admin.lcModal.edit') : s('admin.lcModal.add');
   document.getElementById("lcCat").value    = curCat;
   document.getElementById("lcPhase").value  = curPhase;
   document.getElementById("lcText").value   = item ? (item.text   || "") : "";
