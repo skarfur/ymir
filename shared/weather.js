@@ -365,10 +365,11 @@ function wxDirStrToDeg(s) {
 // Waves/SST:          Open-Meteo marine API
 // Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart)
 
-async function wxFetch(lat, lon) {
-  const WX_CACHE_TTL = 60000; // 60s cache for Open-Meteo responses
+async function wxFetch(lat, lon, { fresh = false } = {}) {
+  const WX_CACHE_TTL = 300000; // 5min cache — aligns with 10min auto-refresh interval
 
   function _wxCacheGet(key) {
+    if (fresh) return null;
     try {
       const c = sessionStorage.getItem(key);
       if (c) { const o = JSON.parse(c); if (Date.now() - o.ts < WX_CACHE_TTL) return o.data; }
@@ -380,7 +381,7 @@ async function wxFetch(lat, lon) {
   }
 
   // ── 1. BIRK current observations  —  via backend proxy ────────────────────
-  const birkPromise = apiGet('getWeather');
+  const birkPromise = apiGet('getWeather', fresh ? { _fresh: true } : {});
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
   const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
@@ -472,10 +473,10 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
   const loc = { lat: WX_DEFAULT.lat, lon: WX_DEFAULT.lon, label: label || WX_DEFAULT.label };
   let timer = null;
 
-  async function refresh() {
+  async function refresh({ fresh = false } = {}) {
     const IS = typeof getLang === 'function' && getLang() === 'IS';
     try {
-      const { wx, marine } = await wxFetch(loc.lat, loc.lon);
+      const { wx, marine } = await wxFetch(loc.lat, loc.lon, { fresh });
       const c    = wx.current;
       const mc   = marine?.current;
       const hr   = wx.hourly;
@@ -549,7 +550,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </span>
           <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh()" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
+            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
             <a href="../weather/" style="font-size:12px;font-weight:500;color:#fff;background:var(--brass);border-radius:6px;padding:4px 12px;text-decoration:none;white-space:nowrap">→ Full forecast →</a>
           </div>
         </div>`;
