@@ -110,6 +110,7 @@ function maintOpenDetail(r, currentUser) {
     const isOos    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
     const resolved = boolVal(r.resolved);
     const isSauma  = boolVal(r.saumaklubbur);
+    const isOnHold = isSauma && boolVal(r.onHold) && !resolved;
     const comments = parseJson(r.comments, []);
     const materials = parseJson(r.materials, []);
     const subjectLabel = r.category==='boat'
@@ -165,6 +166,7 @@ function maintOpenDetail(r, currentUser) {
       </div>
       ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 Saumaklúbbur</span>
+        ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ On Hold</span>` : ''}
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">No verkstjóri assigned</span>`}
         ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">Adopt Project</button>` : ''}
       </div>` : ''}
@@ -188,8 +190,9 @@ function maintOpenDetail(r, currentUser) {
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
       ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ Pending staff review<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">Approve</button></div>` : ''}
-      <div class="req-actions" style="margin-top:10px;justify-content:space-between">
+      <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? 'Mark Completed' : 'Mark Resolved'}</button>
+        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${isOnHold ? '▶ Resume' : '⏸ Put On Hold'}</button>` : ''}
         <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">Delete</button>
       </div>`
       : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? 'Completed' : 'Resolved'} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
@@ -228,6 +231,18 @@ function maintOpenDetail(r, currentUser) {
       doConfirm('Become verkstjóri for this project?', async ()=>{
         await apiPost('adoptSaumaklubbur',{id:r.id,name:by});
         r.verkstjori=by; renderAndWire();
+        if(typeof renderList==='function') renderList();
+        if(typeof renderMaintenance==='function') renderMaintenance();
+      });
+    });
+
+    // Hold / Resume saumaklúbbur project
+    document.getElementById('mdHoldBtn')?.addEventListener('click', ()=>{
+      const newHold = !boolVal(r.onHold);
+      const msg = newHold ? 'Put this project on hold?' : 'Resume this project?';
+      doConfirm(msg, async ()=>{
+        await apiPost('holdSaumaklubbur',{id:r.id,onHold:newHold});
+        r.onHold=newHold; renderAndWire();
         if(typeof renderList==='function') renderList();
         if(typeof renderMaintenance==='function') renderMaintenance();
       });
