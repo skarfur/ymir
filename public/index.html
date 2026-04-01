@@ -330,7 +330,7 @@ function renderDashboard(data) {
   var footer = document.getElementById('footer');
   footer.style.display = '';
   var now = new Date();
-  var timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  var timeStr = fmtTimeNow();
   document.getElementById('footer-text').textContent = s('pub.dash.lastUpdated') + ' ' + timeStr;
 
   // ── Render duty status pills ──

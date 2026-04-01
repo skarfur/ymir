@@ -482,7 +482,7 @@ let _selectedClubTrip = null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function parseDateParts(d){
   if(!d) return{day:'—',mon:'',yr:''};
-  return{day:d.slice(8,10)||'—',mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}),yr:d.slice(0,4)};
+  return{day:d.slice(8,10)||'—',mon:String(new Date(d+'T12:00:00').getMonth()+1).padStart(2,'0'),yr:d.slice(0,4)};
 }
 function bftLabel(b){
   const n=parseInt(b);

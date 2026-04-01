@@ -693,12 +693,16 @@ async function submitLaunch() {
       checkedOutAt:tout, expectedReturn:ret, status:'out',
       nonClub:isNC,
     });
+    // Update UI immediately — don't block on crew confirmations
+    window._launchFormValues=null;
+    closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
+    showToast(s('staff.coForm.checkedOut'));
+    // Fire crew confirmations in the background (non-blocking)
     if(crewNames.length){
       var _coId=res?.checkoutId||res?.id||'';
-      // Only create confirmations for non-guest crew (guests are stored in crewNames only)
       var _confCrew=crewNames.filter(function(cn){return cn.kennitala&&!cn.guest;});
       if(_confCrew.length){
-        await Promise.all(_confCrew.map(function(cn){
+        Promise.all(_confCrew.map(function(cn){
           return apiPost('createConfirmation',{
             type:'crew_assigned',
             fromKennitala:user.kennitala, fromName:user.name,
@@ -709,12 +713,9 @@ async function submitLaunch() {
             date:new Date().toISOString().slice(0,10), timeOut:tout,
             role:'crew', wxSnapshot:snap,
           }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
-        }));
+        })).catch(function(e3){console.warn('crew confirmations failed:',e3.message);});
       }
     }
-    window._launchFormValues=null;
-    closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
-    showToast(s('staff.coForm.checkedOut'));
   } catch(e){
     var errEl=document.getElementById('launchCheckErr');
     if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}

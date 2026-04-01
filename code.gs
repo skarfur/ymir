@@ -1568,7 +1568,6 @@ function getActiveCheckouts_() {
       guardianPhone: c.guardianPhone || m.guardianPhone || '',
     };
   });
-  cDel_('checkouts');
   return okJ({ checkouts: enriched });
 }
 

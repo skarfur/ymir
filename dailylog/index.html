@@ -911,16 +911,8 @@ async function loadDay() {
   amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
 
   const d = new Date(viewDate + 'T12:00:00');
-  const _months_en = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const _months_is = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
-  const _days_en = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const _days_is = ['sunnudagur','mánudagur','þriðjudagur','miðvikudagur','fimmtudagur','föstudagur','laugardagur'];
-  const _mArr = L === 'IS' ? _months_is : _months_en;
-  const _dArr = L === 'IS' ? _days_is : _days_en;
-  dom.dateBig.textContent = _dArr[d.getDay()].toUpperCase();
-  dom.dateHero.textContent = L === 'IS'
-    ? d.getDate() + '. ' + _mArr[d.getMonth()] + ' ' + d.getFullYear()
-    : d.getDate() + ' '  + _mArr[d.getMonth()] + ' ' + d.getFullYear();
+  dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
+  dom.dateHero.textContent = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
@@ -1023,7 +1015,7 @@ function applyLogData(log, cfgRes) {
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
       const at = log.signedOffAt
-        ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString(L === 'IS' ? 'is-IS' : 'en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        ? ' at ' + fmtTime(log.signedOffAt) : '';
       dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
     }
   }

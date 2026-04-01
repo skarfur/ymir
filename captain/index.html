@@ -338,8 +338,7 @@ const _windUnit = getPref('windUnit', 'bft');
 // parseDateParts / bftLabel used by tripCard()
 function parseDateParts(d) {
   if (!d) return {day:'—',mon:'',yr:''};
-  var IS = getLang() === 'IS';
-  return {day:d.slice(8,10)||'—', mon:new Date(d+'T12:00:00').toLocaleDateString(IS?'is-IS':'en-GB',{month:'short'}), yr:d.slice(0,4)};
+  return {day:d.slice(8,10)||'—', mon:String(new Date(d+'T12:00:00').getMonth()+1).padStart(2,'0'), yr:d.slice(0,4)};
 }
 function bftLabel(b) {
   var n = parseInt(b);
@@ -794,7 +793,8 @@ function buildFilters() {
   var cSel = document.getElementById('fCat');
   cSel.innerHTML = '<option value="">' + s('cq.allCategories') + '</option>';
   cats.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = boatEmoji(c.toLowerCase()) + ' ' + c; cSel.appendChild(o); });
-  if (cats.map(function(c) { return c.toLowerCase(); }).includes('keelboat')) cSel.value = 'Keelboat';
+  var keelboatCat = cats.find(function(c) { return c.toLowerCase() === 'keelboat'; });
+  if (keelboatCat) cSel.value = keelboatCat;
 
   // Boat name filter (keelboats only)
   var keelboatNames = [...new Set(myTrips
@@ -913,7 +913,7 @@ function renderCqSlots() {
   }
   var todayStr = new Date().toISOString().slice(0, 10);
   document.getElementById('cqWeekLabel').textContent =
-    days[0].toISOString().slice(5, 10) + ' – ' + days[6].toISOString().slice(5, 10);
+    fmtDateShort(days[0].toISOString()) + ' – ' + fmtDateShort(days[6].toISOString());
   var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
   // Table calendar — matches admin style
   var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
