@@ -712,31 +712,6 @@
       </div>
       <div id="bReservationActions"></div>
     </div>
-    <!-- Charter -->
-    <div id="bCharterSection">
-      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.charter">CHARTER</div>
-      <div id="bCharterInfo" style="font-size:12px;margin-bottom:6px"></div>
-      <div id="bCharterForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
-        <div class="field">
-          <label data-s="cq.resMember">Member</label>
-          <div style="position:relative">
-            <input type="text" id="bCharterMemberSearch" autocomplete="off" placeholder="" oninput="searchCharterMember(this.value)">
-            <div id="bCharterMemberSuggestions" class="suggest-drop" style="position:relative"></div>
-            <input type="hidden" id="bCharterMemberKt">
-            <div id="bCharterMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label data-s="cq.resStartDate">Start date</label><input type="date" id="bCharterStart"></div>
-          <div class="field"><label data-s="cq.resEndDate">End date</label><input type="date" id="bCharterEnd"></div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelCharterForm()" data-s="btn.cancel"></button>
-          <button class="btn btn-primary" style="font-size:11px" onclick="saveCharterFromModal()" data-s="btn.save"></button>
-        </div>
-      </div>
-      <div id="bCharterActions"></div>
-    </div>
     <div class="check-row">
       <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
     </div>
@@ -1117,8 +1092,6 @@ function _adminWireStrings() {
   if (search) search.placeholder = s('admin.searchMembers');
   const bOwnerSearch = document.getElementById('bOwnerSearch');
   if (bOwnerSearch) bOwnerSearch.placeholder = s('admin.searchMember');
-  const bCharterSearch = document.getElementById('bCharterMemberSearch');
-  if (bCharterSearch) bCharterSearch.placeholder = s('admin.searchMember');
   const mInitials = document.getElementById('mInitials');
   if (mInitials) mInitials.placeholder = s('admin.initialsPlaceholder');
 }
@@ -1533,14 +1506,6 @@ function openBoatModal(id) {
   document.getElementById("bResEnd").value = '';
   document.getElementById("bResNote").value = '';
   renderReservationList(b);
-  // Charter
-  document.getElementById("bCharterForm").classList.add("hidden");
-  document.getElementById("bCharterMemberKt").value = '';
-  document.getElementById("bCharterMemberSearch").value = '';
-  document.getElementById("bCharterMemberName").textContent = '';
-  document.getElementById("bCharterStart").value = '';
-  document.getElementById("bCharterEnd").value = '';
-  renderCharterInfo(b);
   updateOwnershipFields();
   updateBoatModalFields();
   applyStrings(document.getElementById("boatModal"));
@@ -1570,86 +1535,6 @@ function selectBoatOwner(kt, name) {
   document.getElementById("bOwnerName").textContent = name;
   document.getElementById("bOwnerSuggestions").innerHTML = '';
   document.getElementById("bOwnerSuggestions").style.display = 'none';
-}
-
-// ── Charter helpers ───────────────────────────────────────────────────────────
-function renderCharterInfo(boat) {
-  const infoEl = document.getElementById("bCharterInfo");
-  const actEl  = document.getElementById("bCharterActions");
-  if (!boat || boat.ownership === 'private') {
-    infoEl.textContent = '';
-    actEl.innerHTML = '';
-    return;
-  }
-  if (boat.charter && boat.charter.memberName) {
-    const ch = boat.charter;
-    infoEl.innerHTML = `${esc(s('fleet.charteredTo',{name:ch.memberName}))} ${esc(s('fleet.charteredUntil',{date:ch.endDate}))}`;
-    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button> `
-                    + `<button class="btn btn-danger" style="font-size:11px" onclick="removeCharterFromModal()">${esc(s('boat.removeCharter'))}</button>`;
-  } else {
-    infoEl.textContent = '';
-    actEl.innerHTML = `<button class="btn btn-secondary" style="font-size:11px" onclick="showCharterForm()">${esc(s('boat.setCharter'))}</button>`;
-  }
-}
-
-function showCharterForm() {
-  document.getElementById("bCharterForm").classList.remove("hidden");
-}
-
-function cancelCharterForm() {
-  document.getElementById("bCharterForm").classList.add("hidden");
-}
-
-function searchCharterMember(q) {
-  const drop = document.getElementById("bCharterMemberSuggestions");
-  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
-  const ql = q.toLowerCase();
-  const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
-  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
-  drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
-    onclick="selectCharterMember('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
-  drop.style.display = 'block';
-}
-
-function selectCharterMember(kt, name) {
-  document.getElementById("bCharterMemberKt").value = kt;
-  document.getElementById("bCharterMemberSearch").value = '';
-  document.getElementById("bCharterMemberName").textContent = name;
-  document.getElementById("bCharterMemberSuggestions").innerHTML = '';
-  document.getElementById("bCharterMemberSuggestions").style.display = 'none';
-}
-
-async function saveCharterFromModal() {
-  const boatId = editingId;
-  if (!boatId) { toast(s("admin.saveBoatFirst"), "err"); return; }
-  const kt   = document.getElementById("bCharterMemberKt").value;
-  const name = document.getElementById("bCharterMemberName").textContent;
-  const start = document.getElementById("bCharterStart").value;
-  const end   = document.getElementById("bCharterEnd").value;
-  if (!kt || !name) { toast(s("admin.selectMember"), "err"); return; }
-  if (!start || !end) { toast(s("admin.setDatesRequired"), "err"); return; }
-  try {
-    await apiPost('saveCharter', { boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end });
-    // Update local boat data
-    const b = _allBoats.find(x => x.id === boatId);
-    if (b) b.charter = { memberKennitala: kt, memberName: name, startDate: start, endDate: end };
-    cancelCharterForm();
-    renderCharterInfo(b);
-    toast(s('boat.charterSaved'));
-  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
-}
-
-async function removeCharterFromModal() {
-  const boatId = editingId;
-  if (!boatId) return;
-  if (!await ymConfirm(s('boat.removeCharter') + '?')) return;
-  try {
-    await apiPost('removeCharter', { boatId });
-    const b = _allBoats.find(x => x.id === boatId);
-    if (b) delete b.charter;
-    renderCharterInfo(b);
-    toast(s('boat.charterRemoved'));
-  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ── Access control helpers ────────────────────────────────────────────────────
@@ -1778,7 +1663,7 @@ async function saveResFromModal() {
   try {
     var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     cancelResForm();
     renderReservationList(b);
     toast(s('boat.reservationSaved'));
@@ -1791,7 +1676,7 @@ async function removeResFromModal(resId) {
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderReservationList(b);
     toast(s('boat.reservationRemoved'));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -1831,9 +1716,8 @@ async function saveBoat() {
 
   const idx = _allBoats.findIndex(x => x.id === id);
   if (idx >= 0) {
-    // Preserve reservations and charter (managed via separate endpoints)
+    // Preserve reservations (managed via separate endpoints)
     payload.reservations = _allBoats[idx].reservations || [];
-    payload.charter = _allBoats[idx].charter || null;
     _allBoats[idx] = { ..._allBoats[idx], ...payload };
   } else {
     payload.reservations = [];

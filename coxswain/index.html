@@ -446,7 +446,7 @@ async function saveCxReservation() {
   try {
     var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _boats.find(x => x.id === _resBoatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     closeModal('resModal');
     renderBoats();
     showToast(s('boat.reservationSaved'), 'ok');
@@ -458,7 +458,7 @@ async function removeCxReservation(boatId, resId) {
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _boats.find(x => x.id === boatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderBoats();
     showToast(s('boat.reservationRemoved'), 'ok');
   } catch (e) { showToast(e.message, 'err'); }

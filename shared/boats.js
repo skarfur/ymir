@@ -84,15 +84,6 @@ function boatEmoji(cat) {
 
 // ── Ownership / charter helpers ───────────────────────────────────────────────
 
-/** Returns true if the boat has an active charter (today falls within start–end). */
-function isChartered(boat) {
-  if (!boat || !boat.charter) return false;
-  const c = boat.charter;
-  if (!c.startDate || !c.endDate) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return today >= c.startDate && today <= c.endDate;
-}
-
 /** Returns true if the boat is privately owned. */
 function isPrivate(boat) {
   return boat && boat.ownership === 'private';
@@ -255,8 +246,7 @@ function renderBoatCard(boat, opts) {
   const locLine = (status==="avail" && boat.location)
     ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${_besc(boat.location)}</div>` : "";
 
-  // Ownership / charter / reservation info
-  const chartered = isChartered(boat);
+  // Ownership / charter info
   const priv      = isPrivate(boat);
   const activeRes = getActiveReservation(boat);
   const controlled = isControlledAccess(boat);
@@ -271,11 +261,6 @@ function renderBoatCard(boat, opts) {
     charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
                 + `${_besc(s("boat.reservedFor",{name:activeRes.memberName}))} ${_besc(s("boat.reservedUntil",{date:activeRes.endDate}))}`
                 + `</div>`;
-  } else if (chartered) {
-    const ch = boat.charter;
-    charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
-                + `${_besc(s("fleet.charteredTo",{name:ch.memberName}))} ${_besc(s("fleet.charteredUntil",{date:ch.endDate}))}`
-                + `</div>`;
   }
 
   // Use registry-based onclick to avoid JSON-in-attribute encoding problems
@@ -286,22 +271,20 @@ function renderBoatCard(boat, opts) {
     ? ` style="cursor:pointer" onclick="${opts.onClick}"`
     : "";
 
-  // Extra badge for access mode / chartered / private / reserved boats
+  // Extra badge for access mode / chartered / private boats
   let ownerBadge = "";
   if (controlled && !userCanAccess && !opts.staffView) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11;margin-left:4px">${_besc(s("fleet.badgeRestricted"))}</span>`;
   } else if (activeRes) {
-    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeReserved"))}</span>`;
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
   } else if (controlled && userCanAccess && !opts.staffView) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111;margin-left:4px">${_besc(s("fleet.badgeAuthorized"))}</span>`;
-  } else if (chartered) {
-    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
   } else if (priv) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--muted);border-color:var(--border);background:var(--surface);margin-left:4px">${_besc(s("fleet.badgePrivate"))}</span>`;
   }
 
-  // Muted card style for restricted boats (controlled access without authorization, or chartered for non-staff)
-  const isMuted = (!opts.staffView && ((controlled && !userCanAccess) || (chartered && !activeRes)));
+  // Muted card style for restricted boats (controlled access without authorization)
+  const isMuted = (!opts.staffView && controlled && !userCanAccess);
   const charteredMuted = isMuted ? "opacity:.55;pointer-events:none;" : "";
 
   return `<div class="bc-card bc-${status}"${clickAttr} style="${charteredMuted}">`
@@ -479,7 +462,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
     const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
     const isStaffV = !!opts.staffView;
     const fleetUser = opts.currentUser || null;
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaffV || (!isChartered(b) && canAccessBoat(b, fleetUser))));
+    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaffV || canAccessBoat(b, fleetUser)));
     const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
     const catId    = containerId + '-fcat-' + encodeURIComponent(key);
 
@@ -493,7 +476,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
       if (onClickAct) {
         // onClickAction receives the full boat object via registry — always clickable
         clickOpts = { onClickAction: onClickAct };
-      } else if (status === 'avail' && onAvail && (isStaffV || (!isChartered(b) && canAccessBoat(b, fleetUser)))) {
+      } else if (status === 'avail' && onAvail && (isStaffV || canAccessBoat(b, fleetUser))) {
         clickOpts = { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) };
       }
       return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaffV, currentUser: fleetUser }, clickOpts));
