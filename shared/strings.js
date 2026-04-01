@@ -4,6 +4,10 @@
 
 window.s = function s(key, vars, lang) {
   // If a specific language is requested that differs from loaded, fall back to key
+  if (typeof _STRINGS_FLAT === 'undefined') {
+    console.warn('[strings] _STRINGS_FLAT not loaded; language file may be missing');
+    return key;
+  }
   var str = _STRINGS_FLAT[key];
   if (str === undefined) {
     console.warn('[strings] missing key:', key);
