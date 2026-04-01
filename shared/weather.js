@@ -366,6 +366,19 @@ function wxDirStrToDeg(s) {
 // Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart)
 
 async function wxFetch(lat, lon) {
+  const WX_CACHE_TTL = 60000; // 60s cache for Open-Meteo responses
+
+  function _wxCacheGet(key) {
+    try {
+      const c = sessionStorage.getItem(key);
+      if (c) { const o = JSON.parse(c); if (Date.now() - o.ts < WX_CACHE_TTL) return o.data; }
+    } catch(e) {}
+    return null;
+  }
+  function _wxCacheSet(key, data) {
+    try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+  }
+
   // ── 1. BIRK current observations  —  via backend proxy ────────────────────
   const birkPromise = apiGet('getWeather');
 
@@ -374,21 +387,32 @@ async function wxFetch(lat, lon) {
   const currentParams = 'wind_gusts_10m,apparent_temperature,surface_pressure,weather_code';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=${hourlyParams}&current=${currentParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
-  const hourlyPromise = fetch(hourlyUrl).then(r => r.ok ? r.json() : null).catch(() => null);
+  const hourlyCacheKey = `ymir_wx_hourly_${lat}_${lon}`;
+  const hourlyPromise = (() => {
+    const cached = _wxCacheGet(hourlyCacheKey);
+    if (cached) return Promise.resolve(cached);
+    return fetch(hourlyUrl).then(r => r.ok ? r.json() : null).then(d => { if (d) _wxCacheSet(hourlyCacheKey, d); return d; }).catch(() => null);
+  })();
 
   // ── 3. Marine API (waves / SST)  —  unchanged ──────────────────────────────
   const marineParams  = 'wave_height,wave_direction,wave_period,sea_surface_temperature';
   const marineUrl    = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`;
-  const marinePromise = fetch(marineUrl)
-    .then(r => {
-      if (!r.ok) {
-        const fb = WX_MARINE_FALLBACK;
-        return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`)
-          .then(r2 => r2.ok ? r2.json() : null);
-      }
-      return r.json();
-    })
-    .catch(() => null);
+  const marineCacheKey = `ymir_wx_marine_${lat}_${lon}`;
+  const marinePromise = (() => {
+    const cached = _wxCacheGet(marineCacheKey);
+    if (cached) return Promise.resolve(cached);
+    return fetch(marineUrl)
+      .then(r => {
+        if (!r.ok) {
+          const fb = WX_MARINE_FALLBACK;
+          return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${fb.lat}&longitude=${fb.lon}&current=${marineParams}&hourly=${marineParams}&past_hours=3&forecast_hours=9&timezone=auto`)
+            .then(r2 => r2.ok ? r2.json() : null);
+        }
+        return r.json();
+      })
+      .then(d => { if (d) _wxCacheSet(marineCacheKey, d); return d; })
+      .catch(() => null);
+  })();
 
   const [birkRes, hourlyData, marine] = await Promise.all([
     birkPromise, hourlyPromise, marinePromise,
@@ -616,7 +640,11 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
   const WX_REFRESH_MS = 10 * 60 * 1000;
   return {
     refresh,
-    start()  { setTimeout(refresh, 1500); timer = setInterval(refresh, WX_REFRESH_MS); },
+    start()  {
+      targetEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0">Loading weather…</div>';
+      refresh();
+      timer = setInterval(refresh, WX_REFRESH_MS);
+    },
     stop()   { if (timer) clearInterval(timer); },
   };
 }
