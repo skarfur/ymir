@@ -2263,25 +2263,25 @@ async function addCertCategory() {
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
-    toast("Category added.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("admin.categoryAdded"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeCertCategory(idx) {
-  if (!await ymConfirm("Remove this category?")) return;
+  if (!await ymConfirm(s("admin.confirmRemoveCategory"))) return;
   certCategories.splice(idx, 1);
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
-    toast("Category removed.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("admin.categoryRemoved"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
   if (!el) return;
   if (!certDefs.length) {
-    el.innerHTML = `<div class="empty-state">No credential types defined.</div>`;
+    el.innerHTML = `<div class="empty-state">${s('admin.noCertDefs')}</div>`;
     return;
   }
   const locale = getLang() === 'IS' ? 'is' : 'en';
@@ -2305,7 +2305,7 @@ function renderCertDefs() {
           if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
           return parts.join(" · ");
         }).join(", ")
-      : "No subcategories";
+      : s('admin.noSubcategories');
     return `<div class="list-row">
       <div style="flex:1">
         <div class="list-name">${catStr}${esc(d.name)}${authority}${expiryStr}</div>
@@ -2351,7 +2351,7 @@ function openCertDefModal(id) {
 
 function populateCdCategorySelect(selected) {
   const sel = document.getElementById("cdCategory");
-  sel.innerHTML = '<option value="">None</option>';
+  sel.innerHTML = '<option value="">' + s('admin.certCategoryNone') + '</option>';
   certCategories.forEach(c => {
     const o = document.createElement("option");
     o.value = c; o.textContent = c;
@@ -2368,7 +2368,7 @@ function toggleCdEndorsement() {
 async function saveCertDef() {
   const btn  = document.getElementById("saveCertDefBtn");
   const name = document.getElementById("cdName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const newId   = certEditId || ("cert_" + Date.now().toString(36));
   const expires = document.getElementById("cdExpires").checked;
@@ -2400,16 +2400,16 @@ async function saveCertDef() {
     renderCertDefs();
 
     closeModal("certDefModal");
-    toast("Credential type saved.");
+    toast(s("admin.certDefSaved"));
   } catch(e) {
-    toast("Save failed: " + e.message, "err");
+    toast(s("toast.saveFailed") + ": " + e.message, "err");
   } finally {
     btn.disabled = false;
   }
 }
 
 async function deleteCertDef() {
-  if (!certEditId || !await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!certEditId || !await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
     await apiPost("deleteCertDef", { id: certEditId });
     certDefs = certDefs.filter(d => d.id !== certEditId);
