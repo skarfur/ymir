@@ -130,7 +130,7 @@
 </style>
 <div id="ym-alert-inner">
   <div class="yma-header">
-    <span class="yma-title">⚠️ OVERDUE BOATS</span>
+    <span class="yma-title">⚠️ ${s('alert.overdueTitle')}</span>
   </div>
   <div id="ym-alert-cards"></div>
 </div>`;
@@ -183,13 +183,13 @@
 
       const mins = a.minutesOverdue || 0;
       const overdueTxt = mins < 60
-        ? `${mins} min overdue`
-        : `${Math.floor(mins / 60)}h ${mins % 60}min overdue`;
+        ? s('alert.minOverdue',{n:mins})
+        : s('alert.hrsOverdue',{h:Math.floor(mins / 60),m:mins % 60});
 
       // Guardian line — only shown if sailor is a minor
       let guardianLine = '';
       if (a.isMinor && (a.guardianName || a.guardianPhone)) {
-        guardianLine = `<div class="yma-guardian">Guardian: ${_esc(a.guardianName || '')}` +
+        guardianLine = `<div class="yma-guardian">${s('alert.guardian')} ${_esc(a.guardianName || '')}` +
           (a.guardianPhone ? ` · ${_esc(a.guardianPhone)}` : '') + `</div>`;
       }
 
@@ -211,17 +211,17 @@
           </div>
           ${guardianLine}
           ${isSnoozed
-            ? `<span class="yma-snooze-pill">⏰ Snoozed — reappears in ${snoozeRemain} min</span>`
+            ? `<span class="yma-snooze-pill">⏰ ${s('alert.snoozedPill',{n:snoozeRemain})}</span>`
             : `<div class="yma-overdue">+${overdueTxt}</div>`}
         </div>
         <div class="yma-actions">
           ${showSnooze
             ? `<button class="yma-btn yma-btn-snooze" data-action="snooze" data-id="${_esc(id)}" data-mins="${snoozeMins}">
-                 ⏰ Snooze ${snoozeMins}m
+                 ⏰ ${s('alert.snoozeBtn',{n:snoozeMins})}
                </button>`
             : ''}
           ${!isSnoozed
-            ? `<button class="yma-btn" data-action="silence" data-id="${_esc(id)}">Silence</button>`
+            ? `<button class="yma-btn" data-action="silence" data-id="${_esc(id)}">${s('alert.silenceBtn')}</button>`
             : ''}
         </div>`;
 
@@ -251,7 +251,7 @@
           }
         } catch (err) {
           btn.disabled = false;
-          btn.textContent = 'Silence';
+          btn.textContent = s('alert.silenceBtn');
           console.warn('[alerts] silence failed:', err.message);
         }
 
@@ -264,7 +264,7 @@
           _poll();
         } catch (err) {
           btn.disabled = false;
-          btn.textContent = `⏰ Snooze ${mins}m`;
+          btn.textContent = `⏰ ${s('alert.snoozeBtn',{n:mins})}`;
           console.warn('[alerts] snooze failed:', err.message);
         }
       }

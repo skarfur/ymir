@@ -224,8 +224,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (vPts > 0) {
     score += vPts;
     breakdown.push({ factor:'visibility', pts:vPts,
-      label: visKey === 'poor' ? 'Poor visibility' : 'Reduced visibility',
-      labelIS: visKey === 'poor' ? 'Slæm sýn' : 'Skert sýn' });
+      label: visKey === 'poor' ? s('wx.poorVisibility',null,'EN') : s('wx.reducedVisibility',null,'EN'),
+      labelIS: visKey === 'poor' ? s('wx.poorVisibility',null,'IS') : s('wx.reducedVisibility',null,'IS') });
   }
 
   const t = cfg.thresholds;
@@ -244,8 +244,8 @@ function wxStaffStatusHtml(status, lang) {
   if (!status) return '';
   const IS = lang === 'IS';
   const badges = [];
-  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+(IS?'Starfsmaður á vakt':'Staff on duty')+'</span>');
-  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+(IS?'Björgunarbátur á sjó':'Support boat out')+'</span>');
+  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+s('wx.staffOnDuty')+'</span>');
+  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+s('wx.supportBoatOut')+'</span>');
   if (!badges.length) return '';
   let ago = '';
   if (status.updatedAt) {

@@ -395,7 +395,7 @@
 
   /* ── remove cert ───────────────────────────────────────────────────────── */
   window.mcmRemoveCert = async function (key, sub) {
-    if (!await ymConfirm('Remove this credential?')) return;
+    if (!await ymConfirm(s('cert.removeConfirm'))) return;
     var m = _findMember(_memberId);
     if (!m) return;
     var certs = parseJson(m.certifications, []);

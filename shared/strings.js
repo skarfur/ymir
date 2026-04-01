@@ -1348,6 +1348,80 @@ const STRINGS = {
   'tc.weather':              { EN:'Weather',                IS:'Veður' },
   'tc.notesPhotosTrack':     { EN:'Notes, Photos & Track',  IS:'Athugasemdir og myndir' },
 
+  // ── Maintenance — inline strings ───────────────────────────────────────────
+  'maint.sevHint.low':       { EN:'Minor issue — no immediate action required.',   IS:'Minniháttar vandamál — engin tafarlaus aðgerð nauðsynleg.' },
+  'maint.sevHint.medium':    { EN:'Functional issue, usable with care.',           IS:'Nothæft vandamál, nothæft með varúð.' },
+  'maint.sevHint.high':      { EN:'Significant problem — assess before use.',      IS:'Verulegt vandamál — meta áður en notað.' },
+  'maint.sevHint.critical':  { EN:'Safety risk — take out of service immediately.',IS:'Öryggisáhætta — taka úr þjónustu strax.' },
+  'maint.oosTag':            { EN:'OOS',                                           IS:'ÓÞ' },
+  'maint.inService':         { EN:'In service',                                    IS:'Í þjónustu' },
+  'maint.confirmBtn':        { EN:'Confirm',                                       IS:'Staðfesta' },
+  'maint.cancelBtn':         { EN:'Cancel',                                        IS:'Hætta við' },
+  'maint.defaultAuthor':     { EN:'Staff',                                         IS:'Starfsmaður' },
+  'maint.deleteComment':     { EN:'Delete comment',                                IS:'Eyða athugasemd' },
+  'maint.addCommentPh':      { EN:'Add comment…',                                  IS:'Bæta við athugasemd…' },
+  'maint.postBtn':           { EN:'Post',                                          IS:'Birta' },
+  'maint.postingBtn':        { EN:'Posting…',                                      IS:'Birti…' },
+  'maint.approvingBtn':      { EN:'Approving…',                                    IS:'Samþykki…' },
+  'maint.approveBtn':        { EN:'Approve',                                       IS:'Samþykkja' },
+  'maint.saumaBadge':        { EN:'Saumaklúbbur',                                  IS:'Saumaklúbbur' },
+  'maint.onHoldBadge':       { EN:'On Hold',                                       IS:'Í bið' },
+  'maint.noVerkstjori':      { EN:'No verkstjóri assigned',                        IS:'Enginn verkstjóri úthlutaður' },
+  'maint.adoptProject':      { EN:'Adopt Project',                                 IS:'Taka verkefni að mér' },
+  'maint.reportedByLabel':   { EN:'Reported by',                                   IS:'Tilkynnt af' },
+  'maint.pendingReview':     { EN:'Pending staff review',                          IS:'Bíður samþykktar starfsmanna' },
+  'maint.markCompleted':     { EN:'Mark Completed',                                IS:'Merkja lokið' },
+  'maint.markResolved2':     { EN:'Mark Resolved',                                 IS:'Merkja sem lokið' },
+  'maint.resumeBtn':         { EN:'Resume',                                        IS:'Halda áfram' },
+  'maint.putOnHold':         { EN:'Put On Hold',                                   IS:'Setja í bið' },
+  'maint.deleteBtn':         { EN:'Delete',                                        IS:'Eyða' },
+  'maint.completedStatus':   { EN:'Completed',                                     IS:'Lokið' },
+  'maint.resolvedStatus':    { EN:'Resolved',                                      IS:'Lokið' },
+  'maint.severityLabel':     { EN:'Severity',                                      IS:'Alvarleiki' },
+  'maint.priorityLabel':     { EN:'Priority',                                      IS:'Forgangur' },
+  'maint.changeSevConfirm':  { EN:'Change severity to "{sev}" without resolving?', IS:'Breyta alvarleika í "{sev}" án þess að leysa?' },
+  'maint.adoptConfirm':      { EN:'Become verkstjóri for this project?',           IS:'Verða verkstjóri þessa verkefnis?' },
+  'maint.deleteCommentConfirm':{ EN:'Delete this comment?',                        IS:'Eyða þessari athugasemd?' },
+  'maint.holdConfirm':       { EN:'Put this project on hold?',                     IS:'Setja þetta verkefni í bið?' },
+  'maint.resumeConfirm':     { EN:'Resume this project?',                          IS:'Halda áfram með þetta verkefni?' },
+  'maint.completeConfirm':   { EN:'Mark this project as completed?',               IS:'Merkja þetta verkefni sem lokið?' },
+  'maint.resolveConfirm2':   { EN:'Mark this issue as resolved?',                  IS:'Merkja þetta vandamál sem lokið?' },
+  'maint.deleteConfirm':     { EN:'Delete this issue? This cannot be undone.',     IS:'Eyða þessu vandamáli? Þetta er ekki afturkræft.' },
+  'maint.returnToService':   { EN:'Return to service without resolving?',          IS:'Setja aftur í þjónustu án þess að leysa?' },
+  'maint.markOosConfirm':    { EN:'Mark as Out of Service without resolving?',     IS:'Merkja utan þjónustu án þess að leysa?' },
+  'maint.maxFileSize':       { EN:'Max 5 MB',                                      IS:'Hámark 5 MB' },
+  'maint.materials':         { EN:'MATERIALS',                                     IS:'EFNI' },
+
+  // ── Alerts — inline strings ────────────────────────────────────────────────
+  'alert.overdueTitle':      { EN:'OVERDUE BOATS',                                 IS:'BÁTAR YFIRTÍMA' },
+  'alert.minOverdue':        { EN:'{n} min overdue',                               IS:'{n} mín yfirtíma' },
+  'alert.hrsOverdue':        { EN:'{h}h {m}min overdue',                           IS:'{h}klst {m}mín yfirtíma' },
+  'alert.guardian':           { EN:'Guardian:',                                     IS:'Forráðamaður:' },
+  'alert.snoozedPill':       { EN:'Snoozed — reappears in {n} min',               IS:'Frestað — birtist aftur eftir {n} mín' },
+  'alert.snoozeBtn':         { EN:'Snooze {n}m',                                   IS:'Fresta {n}m' },
+  'alert.silenceBtn':        { EN:'Silence',                                       IS:'Þagga' },
+
+  // ── Weather — inline strings ───────────────────────────────────────────────
+  'wx.staffOnDuty':          { EN:'Staff on duty',                                 IS:'Starfsmaður á vakt' },
+  'wx.supportBoatOut':       { EN:'Support boat out',                              IS:'Björgunarbátur á sjó' },
+  'wx.poorVisibility':       { EN:'Poor visibility',                               IS:'Slæm sýn' },
+  'wx.reducedVisibility':    { EN:'Reduced visibility',                            IS:'Skert sýn' },
+
+  // ── Logbook — inline flag labels ───────────────────────────────────────────
+  'tc.flagGreen':            { EN:'Green',   IS:'Grænn' },
+  'tc.flagYellow':           { EN:'Yellow',  IS:'Gulur' },
+  'tc.flagOrange':           { EN:'Orange',  IS:'Appelsínugulur' },
+  'tc.flagRed':              { EN:'Red',     IS:'Rauður' },
+  'tc.flagBlack':            { EN:'Black',   IS:'Svartur' },
+
+  // ── Logbook — confirmation dialogs ──────────────────────────────────────────
+  'logbook.deleteTrack':     { EN:'Delete this GPS track?',                        IS:'Ertu viss um að þú viljir eyða GPS-leiðinni?' },
+  'logbook.deletePhoto':     { EN:'Delete this photo?',                            IS:'Eyða þessari mynd?' },
+  'logbook.revokeLink':      { EN:'Revoke this link?',                            IS:'Afturkalla þennan hlekk?' },
+
+  // ── MCM — inline strings ──────────────────────────────────────────────────
+  'cert.removeConfirm':      { EN:'Remove this credential?',                       IS:'Fjarlægja þetta skírteini?' },
+
 };
 
 window.s = function s(key, vars, lang) {
