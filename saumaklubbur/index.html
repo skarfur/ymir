@@ -12,7 +12,8 @@
   <script src="../shared/strings.js"></script>
   <script src="../shared/maintenance.js"></script>
   <style>
-    .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
+    .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; transition: max-width .2s; }
+    .page-wrap.wide-board { max-width: 1200px; }
     .page-title { font-size: 16px; font-weight: 600; color: var(--brass); margin-bottom: 4px; }
     .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
 
@@ -98,9 +99,43 @@
     .photo-overlay.hidden { display:none; }
     .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; }
 
+    /* ── Kanban board ── */
+    .kanban-board { display:flex; gap:12px; overflow-x:auto; padding-bottom:12px;
+      -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; }
+    .kanban-col { flex:0 0 220px; min-width:220px; max-height:calc(100vh - 200px);
+      display:flex; flex-direction:column; scroll-snap-align:start; }
+    .kanban-col-header { font-size:10px; text-transform:uppercase; letter-spacing:1px;
+      color:var(--muted); padding:8px 10px; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:2px solid var(--border);
+      margin-bottom:8px; position:sticky; top:0; background:var(--bg); z-index:1; }
+    .kanban-col-header .col-count { font-size:10px; color:var(--faint);
+      background:var(--surface); padding:1px 7px; border-radius:10px; }
+    .kanban-col-body { flex:1; overflow-y:auto; padding-right:4px; }
+    .kanban-card { background:var(--card); border:1px solid var(--border); border-radius:6px;
+      padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:border-color .15s; }
+    .kanban-card:hover { border-color:var(--brass)88; }
+    .kanban-card.sev-high   { border-left:3px solid var(--orange); }
+    .kanban-card.sev-medium { border-left:3px solid var(--yellow); }
+    .kanban-card.sev-low    { border-left:3px solid var(--green); }
+    .kanban-card.on-hold    { opacity:.55; }
+    .kanban-card .kc-title { font-size:12px; font-weight:500; color:var(--text);
+      margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kanban-card .kc-meta { display:flex; flex-wrap:wrap; gap:4px; align-items:center;
+      font-size:10px; color:var(--muted); }
+    .kanban-empty { text-align:center; padding:24px 8px; color:var(--faint);
+      font-size:11px; font-style:italic; }
+
+    /* ── View toggle extras ── */
+    .view-bar { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .board-my-filter { font-size:11px; color:var(--muted); cursor:pointer;
+      display:flex; align-items:center; gap:5px; }
+
     /* ── Responsive ── */
     @media(max-width:600px){
       .cat-btns .cat-btn{min-width:60px;padding:6px 4px;font-size:10px}
+      .kanban-board { flex-direction:column; overflow-x:visible; }
+      .kanban-col { flex:none; min-width:100%; max-height:none; }
+      .kanban-col-body { max-height:300px; overflow-y:auto; }
     }
   </style>
 </head>
@@ -118,17 +153,30 @@
 
   <button class="btn btn-primary mb-16" style="width:100%" onclick="openSuggestModal()" data-s="sauma.suggestBtn">+ New sewing circle project</button>
 
-  <!-- Filter bar -->
-  <div class="filter-bar">
+  <!-- View toggle -->
+  <div class="view-bar">
+    <div class="view-toggle">
+      <button id="viewListBtn" class="active" onclick="setView('list')" data-s="sauma.viewList">List</button>
+      <button id="viewBoardBtn" onclick="setView('board')" data-s="sauma.viewBoard">Board</button>
+    </div>
+    <label id="boardMyFilter" class="board-my-filter hidden">
+      <input type="checkbox" id="boardMyOnly" onchange="renderBoard()"> <span data-s="sauma.myBoardFilter">My projects only</span>
+    </label>
+  </div>
+
+  <!-- Filter bar (list view only) -->
+  <div class="filter-bar" id="filterBar">
     <span class="section-label" data-s="lbl.filter">FILTER:</span>
     <button class="filter-btn active" data-filter="open"       onclick="setFilter('open')"       data-s="sauma.filterOpen">Open</button>
     <button class="filter-btn"        data-filter="my"         onclick="setFilter('my')"         data-s="sauma.filterMy">My Projects</button>
     <button class="filter-btn"        data-filter="unassigned" onclick="setFilter('unassigned')" data-s="sauma.filterUnassigned">Unassigned</button>
+    <button class="filter-btn"        data-filter="onhold"     onclick="setFilter('onhold')"     data-s="sauma.filterOnHold">On Hold</button>
     <button class="filter-btn"        data-filter="completed"  onclick="setFilter('completed')"  data-s="sauma.filterCompleted">Completed</button>
     <button class="filter-btn"        data-filter="all"        onclick="setFilter('all')"        data-s="sauma.filterAll">All</button>
   </div>
 
   <div id="projectList"><div class="empty-wrap"><div class="spinner"></div></div></div>
+  <div id="kanbanBoard" class="kanban-board hidden"></div>
 
 </div>
 
@@ -212,6 +260,7 @@
 
 let allProjects = [];
 let currentFilter = "open";
+let currentView = "list";
 let currentUserName = "";
 let boats = [];
 
@@ -261,6 +310,19 @@ function populateBoatSelect() {
 
 // ── Filters ──────────────────────────────────────────────────────────────────
 
+function setView(view) {
+  currentView = view;
+  document.getElementById('viewListBtn').classList.toggle('active', view === 'list');
+  document.getElementById('viewBoardBtn').classList.toggle('active', view === 'board');
+  document.getElementById('projectList').classList.toggle('hidden', view === 'board');
+  document.getElementById('kanbanBoard').classList.toggle('hidden', view === 'list');
+  document.getElementById('filterBar').classList.toggle('hidden', view === 'board');
+  document.getElementById('boardMyFilter').classList.toggle('hidden', view === 'list');
+  document.querySelector('.page-wrap').classList.toggle('wide-board', view === 'board');
+  if (view === 'board') renderBoard();
+  else renderList();
+}
+
 function setFilter(f) {
   currentFilter = f;
   document.querySelectorAll(".filter-btn").forEach(b =>
@@ -274,6 +336,7 @@ function getFiltered() {
     if (currentFilter === "open")       return !resolved;
     if (currentFilter === "completed")  return resolved;
     if (currentFilter === "unassigned") return !resolved && !r.verkstjori;
+    if (currentFilter === "onhold")     return !resolved && boolVal(r.onHold);
     if (currentFilter === "my")         return isMyProject(r);
     return true;
   });
@@ -319,6 +382,7 @@ function renderList() {
     const r = allProjects.find(x => x.id === card.dataset.id);
     if (r) maintOpenDetail(r, currentUserName);
   };
+  if (currentView === 'board') renderBoard();
 }
 
 function renderProjectCard(r) {
@@ -343,6 +407,7 @@ function renderProjectCard(r) {
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
+          ${boolVal(r.onHold) && !resolved ? `<span class="badge badge-yellow">⏸ On Hold</span>` : ''}
           ${r.verkstjori
             ? `<span class="verk-tag">Verkstjóri: ${esc(r.verkstjori)}</span>`
             : `<span class="text-sm text-muted" style="font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
@@ -366,6 +431,86 @@ function renderProjectCard(r) {
 function viewPhoto(url) {
   document.getElementById("overlayImg").src = url;
   document.getElementById("photoOverlay").classList.remove("hidden");
+}
+
+// ── Kanban board ─────────────────────────────────────────────────────────────
+
+function getProjectColumn(r) {
+  if (boolVal(r.resolved))                        return 'done';
+  if (!boolVal(r.approved))                        return 'pending';
+  if (boolVal(r.onHold))                           return 'onhold';
+  if (r.verkstjori)                                return 'inprogress';
+  return 'todo';
+}
+
+function renderBoard() {
+  const myOnly = document.getElementById('boardMyOnly')?.checked;
+  const projects = myOnly ? allProjects.filter(isMyProject) : allProjects;
+
+  const columns = {
+    pending:    { key: 'sauma.colPending',    items: [] },
+    todo:       { key: 'sauma.colTodo',       items: [] },
+    inprogress: { key: 'sauma.colInProgress', items: [] },
+    onhold:     { key: 'sauma.colOnHold',     items: [] },
+    done:       { key: 'sauma.colDone',       items: [] },
+  };
+
+  projects.forEach(r => {
+    const col = getProjectColumn(r);
+    columns[col].items.push(r);
+  });
+
+  const sevOrder = { high: 0, medium: 1, low: 2 };
+  Object.values(columns).forEach(col => {
+    col.items.sort((a, b) =>
+      (sevOrder[a.severity] ?? 2) - (sevOrder[b.severity] ?? 2)
+      || ((b.createdAt || '') > (a.createdAt || '') ? 1 : -1));
+  });
+
+  const board = document.getElementById('kanbanBoard');
+  board.innerHTML = Object.entries(columns).map(([id, col]) => `
+    <div class="kanban-col" data-col="${id}">
+      <div class="kanban-col-header">
+        <span data-s="${col.key}">${s(col.key)}</span>
+        <span class="col-count">${col.items.length}</span>
+      </div>
+      <div class="kanban-col-body">
+        ${col.items.length
+          ? col.items.map(r => renderKanbanCard(r)).join('')
+          : `<div class="kanban-empty" data-s="sauma.colEmpty">${s('sauma.colEmpty')}</div>`}
+      </div>
+    </div>
+  `).join('');
+
+  board.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const r = allProjects.find(x => x.id === card.dataset.id);
+      if (r) maintOpenDetail(r, currentUserName);
+    });
+  });
+}
+
+function renderKanbanCard(r) {
+  const sevClass = 'sev-' + (r.severity || 'low');
+  const onHold   = boolVal(r.onHold) && !boolVal(r.resolved);
+  const catIcon  = CAT_ICON[r.category] || '⚙️';
+  const subject  = r.category === 'boat'
+    ? esc(r.boatName || r.boatId || '')
+    : esc(r.itemName || '');
+  const comments  = parseJson(r.comments, []);
+  const materials = parseJson(r.materials, []);
+  const matDone   = materials.filter(m => m.purchased).length;
+
+  return `<div class="kanban-card ${sevClass}${onHold ? ' on-hold' : ''}" data-id="${esc(r.id || '')}">
+    <div class="kc-title">${catIcon} ${subject}${r.part ? ' · ' + esc(r.part) : ''}</div>
+    <div class="kc-meta">
+      <span class="badge ${SEV_BADGE[r.severity] || 'badge-green'}" style="font-size:9px;padding:1px 5px">${r.severity || 'low'}</span>
+      ${onHold ? `<span class="badge badge-yellow" style="font-size:9px;padding:1px 5px">⏸</span>` : ''}
+      ${r.verkstjori ? `<span class="verk-tag" style="font-size:10px">${esc(r.verkstjori)}</span>` : ''}
+      ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
+      ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
+    </div>
+  </div>`;
 }
 
 // ── Suggest modal ──────────────────────────────────────────────────────────────

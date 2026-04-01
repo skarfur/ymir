@@ -353,6 +353,7 @@ function route_(action, b) {
     case 'uploadMaintenancePhoto':  return uploadMaintenancePhoto_(b);
     case 'adoptSaumaklubbur':       return adoptSaumaklubbur_(b);
     case 'approveSaumaklubbur':     return approveSaumaklubbur_(b);
+    case 'holdSaumaklubbur':        return holdSaumaklubbur_(b);
     case 'toggleMaterial':          return toggleMaterial_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
@@ -1116,6 +1117,18 @@ function adoptSaumaklubbur_(b) {
   updateRow_('maintenance', 'id', b.id, { verkstjori: b.name });
   cDel_('maintenance');
   return okJ({ adopted: true, verkstjori: b.name });
+}
+
+function holdSaumaklubbur_(b) {
+  if (!b.id) return failJ('id required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
+  const onHold = b.onHold !== false && b.onHold !== 'false';
+  addColIfMissing_('maintenance', 'onHold');
+  updateRow_('maintenance', 'id', b.id, { onHold: onHold });
+  cDel_('maintenance');
+  return okJ({ onHold: onHold });
 }
 
 function deleteMaintenance_(b) {
