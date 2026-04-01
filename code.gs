@@ -1817,16 +1817,23 @@ function removeReservation_(b) {
 
 function getSlots_(b) {
   var all = readAll_('reservationSlots');
-  if (b.boatId) all = all.filter(function(s) { return s.boatId === b.boatId; });
+  var catBoatSet = null;
   if (b.category) {
     var cfgMap = getConfigMap_();
     var boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
-    var catBoatIds = boats.filter(function(bt) { return bt.category === b.category; }).map(function(bt) { return bt.id; });
-    all = all.filter(function(s) { return catBoatIds.indexOf(s.boatId) !== -1; });
+    catBoatSet = {};
+    boats.forEach(function(bt) { if (bt.category === b.category) catBoatSet[bt.id] = true; });
   }
-  if (b.fromDate) all = all.filter(function(s) { return s.date >= b.fromDate; });
-  if (b.toDate) all = all.filter(function(s) { return s.date <= b.toDate; });
-  return okJ({ slots: all });
+  var result = [];
+  for (var i = 0; i < all.length; i++) {
+    var s = all[i];
+    if (b.boatId && s.boatId !== b.boatId) continue;
+    if (catBoatSet && !catBoatSet[s.boatId]) continue;
+    if (b.fromDate && s.date < b.fromDate) continue;
+    if (b.toDate && s.date > b.toDate) continue;
+    result.push(s);
+  }
+  return okJ({ slots: result });
 }
 
 function saveSlot_(b) {
@@ -1965,19 +1972,17 @@ function unbookSlot_(b) {
 
 function getCrews_(b) {
   var all = readAll_('crews');
+  // Parse pairs JSON once upfront
+  all.forEach(function(c) {
+    c.pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs || '[]') : (c.pairs || []);
+  });
   if (b.kennitala) {
     var kt = String(b.kennitala);
     all = all.filter(function(c) {
       if (c.status === 'disbanded') return false;
-      var pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs) : (c.pairs || []);
-      return pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
+      return c.pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
     });
   }
-  // Parse pairs JSON for convenience
-  all = all.map(function(c) {
-    c.pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs || '[]') : (c.pairs || []);
-    return c;
-  });
   return okJ({ crews: all });
 }
 
@@ -2148,7 +2153,7 @@ function uploadHeadshot_(b) {
 function getTrips_(kennitala, limit, p) {
   p = p || {};
   const all = readAll_('trips');
-  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.timeIn || t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)));
+  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.timeIn || t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)) && (!p.category || (t.boatCategory || '').toLowerCase() === p.category.toLowerCase()));
   const sorted = filtered.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
   return okJ({ trips: sorted.slice(0, limit || 100) });
 }

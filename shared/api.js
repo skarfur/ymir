@@ -7,7 +7,7 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 async function apiGet(action, params) {
   params = params || {};
   // Cache getConfig in sessionStorage for 60s — called on every page load
-  var _CACHEABLE = { getConfig: 120000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000 };
+  var _CACHEABLE = { getConfig: 120000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewInvites: 30000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_';
@@ -45,6 +45,14 @@ async function apiPost(action, payload) {
   if (action === 'saveMaintenance' || action === 'resolveMaintenance' ||
       action === 'deleteMaintenance' || action === 'addMaintenanceComment') {
     try { sessionStorage.removeItem('ymir_getMaintenance_'); } catch(e) {}
+  }
+  // Invalidate crew caches on crew mutations
+  if (action === 'createCrew' || action === 'disbandCrew' || action === 'inviteToCrew' ||
+      action === 'respondCrewInvite' || action === 'bookSlot' || action === 'unbookSlot') {
+    try {
+      sessionStorage.removeItem('ymir_getCrews_');
+      sessionStorage.removeItem('ymir_getCrewInvites_');
+    } catch(e) {}
   }
   return _call(action, payload);
 }

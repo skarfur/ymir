@@ -229,7 +229,7 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     const [cfgRes, maintRes, tripsRes, membersRes, crewRes, invRes] = await Promise.all([
       apiGet('getConfig'),
       apiGet('getMaintenance'),
-      apiGet('getTrips', { limit: 500 }),
+      apiGet('getTrips', { limit: 500, category: 'rowing-shell' }),
       apiGet('getMembers'),
       apiGet('getCrews', { kennitala: user.kennitala }),
       apiGet('getCrewInvites', { kennitala: user.kennitala }),
@@ -238,15 +238,13 @@ var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
     _boats     = (cfgRes.boats     || []);
     _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     _members   = (membersRes.members || []).filter(m => m.active !== false && m.active !== 'false');
-    _allMaint  = maintRes.items || maintRes.maintenance || [];
+    _allMaint  = maintRes.requests || maintRes.items || maintRes.maintenance || [];
     _myCrews     = crewRes.crews || [];
     _crewInvites = invRes.invites || [];
 
     if (cfgRes.boatCategories) registerBoatCats(cfgRes.boatCategories);
 
-    // Filter trips to rowing-shell category
-    var allTripsRaw = tripsRes.trips || [];
-    _allTrips = allTripsRaw.filter(t => (t.boatCategory || '').toLowerCase() === 'rowing-shell');
+    _allTrips = tripsRes.trips || [];
 
     renderStats();
     renderBoats();
@@ -373,15 +371,22 @@ function openResModal(boatId) {
   openModal('resModal');
 }
 
+var _searchCxResTimer = null;
 function searchCxResMember(q) {
+  clearTimeout(_searchCxResTimer);
   var drop = document.getElementById('cxResMemberSuggestions');
   if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
-  var ql = q.toLowerCase();
-  var hits = _members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
-  if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
-  drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-    + 'onclick="selectCxResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
-  drop.style.display = 'block';
+  _searchCxResTimer = setTimeout(function() {
+    var ql = q.toLowerCase();
+    var hits = [], count = 0;
+    for (var i = 0; i < _members.length && count < 8; i++) {
+      if (((_members[i].name||'').toLowerCase()).includes(ql)) { hits.push(_members[i]); count++; }
+    }
+    if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
+    drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectCxResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
+    drop.style.display = 'block';
+  }, 150);
 }
 
 function selectCxResMember(kt, name) {
@@ -422,10 +427,13 @@ async function removeCxReservation(boatId, resId) {
 }
 
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
+var _rowingBoatIdSet = null;
 function renderMaint() {
   var el = document.getElementById('maintList');
-  var rowingBoatIds = _boats.filter(b => (b.category || '').toLowerCase() === 'rowing-shell').map(b => b.id);
-  var items = _allMaint.filter(m => rowingBoatIds.indexOf(m.boatId) !== -1 && m.status !== 'resolved');
+  if (!_rowingBoatIdSet) {
+    _rowingBoatIdSet = new Set(_boats.filter(b => (b.category || '').toLowerCase() === 'rowing-shell').map(b => b.id));
+  }
+  var items = _allMaint.filter(m => _rowingBoatIdSet.has(m.boatId) && m.status !== 'resolved');
   if (!items.length) {
     el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
     return;
@@ -564,21 +572,25 @@ function openCrewInvModal(crewId) {
   openModal('crewInvModal');
 }
 
+var _searchCrewInvTimer = null;
 function searchCrewInvMember(q) {
+  clearTimeout(_searchCrewInvTimer);
   var drop = document.getElementById('ciMemberSuggestions');
   if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
-  var ql = q.toLowerCase();
-  // Filter to rowers only
-  var hits = _members.filter(function(m) {
-    if (!(m.name || '').toLowerCase().includes(ql)) return false;
-    return hasRowingEndorsement(m);
-  }).slice(0, 8);
-  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
-  drop.innerHTML = hits.map(function(m) {
-    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectCrewInvMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
-  }).join('');
-  drop.style.display = 'block';
+  _searchCrewInvTimer = setTimeout(function() {
+    var ql = q.toLowerCase();
+    var hits = [], count = 0;
+    for (var i = 0; i < _members.length && count < 8; i++) {
+      var m = _members[i];
+      if ((m.name || '').toLowerCase().includes(ql) && hasRowingEndorsement(m)) { hits.push(m); count++; }
+    }
+    if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+    drop.innerHTML = hits.map(function(m) {
+      return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+        + 'onclick="selectCrewInvMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
+    }).join('');
+    drop.style.display = 'block';
+  }, 150);
 }
 
 function selectCrewInvMember(kt, name) {
@@ -762,20 +774,42 @@ function renderCxSlots() {
 async function bookCxSlot(slotId) {
   var crewId = document.getElementById('cxSlotCrew').value;
   if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  var crew = _myCrews.find(function(c) { return c.id === crewId; });
+  var slot = _cxSlots.find(function(sl) { return sl.id === slotId; });
+  if (slot) {
+    slot.bookedByKennitala = user.kennitala;
+    slot.bookedByName = user.name;
+    slot.bookedByCrewId = crewId;
+    slot.bookedByCrewName = crew ? crew.name : '';
+    renderCxSlots();
+  }
   try {
     await apiPost('bookSlot', { slotId: slotId, crewId: crewId, kennitala: user.kennitala, memberName: user.name });
     showToast(s('slot.booked'), 'ok');
+  } catch(e) {
+    showToast(e.message || 'Error', 'err');
     loadCxSlots();
-  } catch(e) { showToast(e.message || 'Error', 'err'); }
+  }
 }
 
 async function unbookCxSlot(slotId) {
   if (!confirm(s('slot.confirmUnbook'))) return;
+  var slot = _cxSlots.find(function(sl) { return sl.id === slotId; });
+  var prevSlot = slot ? Object.assign({}, slot) : null;
+  if (slot) {
+    slot.bookedByKennitala = '';
+    slot.bookedByName = '';
+    slot.bookedByCrewId = '';
+    slot.bookedByCrewName = '';
+    renderCxSlots();
+  }
   try {
     await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
     showToast(s('slot.unbooked'), 'ok');
-    loadCxSlots();
-  } catch(e) { showToast(e.message || 'Error', 'err'); }
+  } catch(e) {
+    if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCxSlots(); }
+    showToast(e.message || 'Error', 'err');
+  }
 }
 
 function shiftCxWeek(dir) {
