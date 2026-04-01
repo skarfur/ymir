@@ -62,16 +62,19 @@ function tripCard(t){
   const linkedCrew = allTrips.filter(x =>
     x.id !== t.id && x.role==='crew' && (
       (x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
-      (x.linkedTripId && x.linkedTripId === t.id)
+      (x.linkedTripId && x.linkedTripId === t.id) ||
+      (t.linkedTripId && x.linkedTripId && x.linkedTripId === t.linkedTripId)
     )
   );
   // For crew members: also find the skipper of this trip
   const linkedSkipper = !isSki ? allTrips.find(x =>
     x.id !== t.id && (!x.role || x.role==='skipper') && (
       (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
-      (t.linkedTripId && x.id === t.linkedTripId)
+      (t.linkedTripId && (x.id === t.linkedTripId || x.linkedCheckoutId === t.linkedCheckoutId))
     )
   ) : null;
+  // Skipper's trip ID — needed for pending handshake lookups from crew perspective
+  const _skipperTripId = isSki ? t.id : (linkedSkipper ? linkedSkipper.id : t.linkedTripId || '');
   // Check for pending handshakes (outgoing confirmations for this trip)
   const pendingCrewConfs = _confirmations.outgoing.filter(c =>
     c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
@@ -118,8 +121,14 @@ function tripCard(t){
   const _shownKts = new Set(linkedCrew.map(x=>String(x.kennitala)).filter(Boolean));
   pendingCrewConfs.forEach(c=>{ if(c.toKennitala) _shownKts.add(String(c.toKennitala)); });
   pendingCrewIn.forEach(c=>{ if(c.fromKennitala) _shownKts.add(String(c.fromKennitala)); });
-  // Guests/unlinked crew: names from crewNames that have no linked trip and no pending confirmation
-  const _unlinkedCrew = _storedCrewNames.filter(cn => cn.name && (!cn.kennitala || !_shownKts.has(String(cn.kennitala))));
+  // Unlinked crew from crewNames: show guests always, non-guests only if no handshake expected
+  const _unlinkedCrew = _storedCrewNames.filter(cn => {
+    if (!cn.name) return false;
+    if (cn.kennitala && _shownKts.has(String(cn.kennitala))) return false;
+    // Guests (no kennitala, or flagged guest, or member role=guest) always visible
+    const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
+    return cn.guest || !cn.kennitala || (cnMember && cnMember.role==='guest');
+  });
 
   const linkedCrewDisplay = linkedCrew.map(x=>{
     const name = esc(x.memberName||x.crewMemberName||'?');
@@ -290,6 +299,7 @@ function tripCard(t){
           ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border);font-size:9px">${s('tc.nonClub')}</span>`:''}
           ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${s('tc.student')}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
+          ${!isVer && isSki && (pendingCrewConfs.length||pendingHelmConfs.length||pendingStudentConfs.length||pendingCrewIn.length||pendingHelmIn.length||pendingStudentIn.length) ? '<span class="trip-badge" style="background:var(--yellow)11;border:1px solid var(--yellow)55;color:var(--yellow);font-size:9px">⏳ '+s('tc.pending')+'</span>' : ''}
           ${(t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ '+s('tc.verificationPending')+'</span>' : ''}
           <span>${esc(dur)}</span>
           ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}

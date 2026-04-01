@@ -2416,7 +2416,7 @@ function respondConfirmation_(b) {
       });
       if (!existing.length) {
         // Get crew count and skipper note — prefer denormalized values, fall back to trip lookup for old rows
-        var origCrew = row.crew || 1, origSkipperNote = row.skipperNote || '';
+        var origCrew = row.crew || 1, origSkipperNote = row.skipperNote || '', origCrewNames = '';
         if (origCrew <= 1 && !origSkipperNote && row.tripId) {
           var origTrip = findOne_('trips', 'id', row.tripId);
           if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; origCrewNames = origTrip.crewNames || ''; }
