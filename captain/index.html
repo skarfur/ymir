@@ -260,6 +260,10 @@
       </div>
     </div>
     <div class="grid2">
+      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cqBbStartTime"></div>
+      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cqBbEndTime"></div>
+    </div>
+    <div class="grid2">
       <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cqBbFromDate"></div>
       <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cqBbToDate"></div>
     </div>
@@ -999,6 +1003,8 @@ async function unbookCqSlot(slotId) {
 function openCqBulkBookModal() {
   document.querySelectorAll('#cqBbDays input').forEach(function(cb) { cb.checked = false; });
   var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('cqBbStartTime').value = '';
+  document.getElementById('cqBbEndTime').value = '';
   document.getElementById('cqBbFromDate').value = today;
   var endD = new Date(); endD.setMonth(endD.getMonth() + 1);
   document.getElementById('cqBbToDate').value = endD.toISOString().slice(0, 10);
@@ -1014,6 +1020,8 @@ async function previewCqBulkBook() {
   var toDate = document.getElementById('cqBbToDate').value;
   if (!days.length || !fromDate || !toDate) { document.getElementById('cqBbPreview').textContent = s('slot.selectDays'); return; }
   var boatId = document.getElementById('cqResBoat').value;
+  var filterStart = document.getElementById('cqBbStartTime').value || '';
+  var filterEnd = document.getElementById('cqBbEndTime').value || '';
   try {
     var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
     var slots = res.slots || [];
@@ -1021,6 +1029,8 @@ async function previewCqBulkBook() {
     slots.forEach(function(sl) {
       var d = new Date(sl.date + 'T00:00:00');
       if (days.indexOf(d.getDay()) === -1) return;
+      if (filterStart && sl.startTime < filterStart) return;
+      if (filterEnd && sl.endTime > filterEnd) return;
       total++;
       if (!sl.bookedByKennitala) open++;
     });
@@ -1035,11 +1045,14 @@ async function submitCqBulkBook() {
   var fromDate = document.getElementById('cqBbFromDate').value;
   var toDate = document.getElementById('cqBbToDate').value;
   var boatId = document.getElementById('cqResBoat').value;
+  var startTime = document.getElementById('cqBbStartTime').value || '';
+  var endTime = document.getElementById('cqBbEndTime').value || '';
   if (!days.length || !fromDate || !toDate || !boatId) { toast(s('slot.missingFields'), 'err'); return; }
   try {
     var res = await apiPost('bulkBookSlots', {
       boatId: boatId, kennitala: user.kennitala, memberName: user.name,
       fromDate: fromDate, toDate: toDate, daysOfWeek: days,
+      startTime: startTime, endTime: endTime,
     });
     closeModal('cqBulkBookModal');
     if (res.skipped > 0) { toast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped })); }

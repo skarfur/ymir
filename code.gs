@@ -2006,6 +2006,8 @@ function bulkBookSlots_(b) {
 
   // Fetch all slots for this boat in the date range
   var days = b.daysOfWeek.map(Number);
+  var filterStart = b.startTime || '';
+  var filterEnd = b.endTime || '';
   var all = readAll_('reservationSlots');
   var booked = 0;
   var skipped = 0;
@@ -2015,6 +2017,8 @@ function bulkBookSlots_(b) {
     if (sl.date < b.fromDate || sl.date > b.toDate) continue;
     var slDate = new Date(sl.date + 'T00:00:00');
     if (days.indexOf(slDate.getDay()) === -1) continue;
+    if (filterStart && sl.startTime < filterStart) continue;
+    if (filterEnd && sl.endTime > filterEnd) continue;
     if (sl.bookedByKennitala) { skipped++; continue; }
     updateRow_('reservationSlots', 'id', sl.id, updates);
     booked++;

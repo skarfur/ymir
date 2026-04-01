@@ -139,6 +139,10 @@
       </div>
     </div>
     <div class="grid2">
+      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cxBbStartTime"></div>
+      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cxBbEndTime"></div>
+    </div>
+    <div class="grid2">
       <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cxBbFromDate"></div>
       <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cxBbToDate"></div>
     </div>
@@ -851,6 +855,8 @@ function openCxBulkBookModal() {
   if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
   document.querySelectorAll('#cxBbDays input').forEach(function(cb) { cb.checked = false; });
   var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('cxBbStartTime').value = '';
+  document.getElementById('cxBbEndTime').value = '';
   document.getElementById('cxBbFromDate').value = today;
   var endD = new Date(); endD.setMonth(endD.getMonth() + 1);
   document.getElementById('cxBbToDate').value = endD.toISOString().slice(0, 10);
@@ -866,6 +872,8 @@ async function previewCxBulkBook() {
   var toDate = document.getElementById('cxBbToDate').value;
   if (!days.length || !fromDate || !toDate) { document.getElementById('cxBbPreview').textContent = s('slot.selectDays'); return; }
   var boatId = document.getElementById('cxSlotBoat').value;
+  var filterStart = document.getElementById('cxBbStartTime').value || '';
+  var filterEnd = document.getElementById('cxBbEndTime').value || '';
   try {
     var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
     var slots = res.slots || [];
@@ -873,6 +881,8 @@ async function previewCxBulkBook() {
     slots.forEach(function(sl) {
       var d = new Date(sl.date + 'T00:00:00');
       if (days.indexOf(d.getDay()) === -1) return;
+      if (filterStart && sl.startTime < filterStart) return;
+      if (filterEnd && sl.endTime > filterEnd) return;
       total++;
       if (!sl.bookedByKennitala) open++;
     });
@@ -889,11 +899,14 @@ async function submitCxBulkBook() {
   var fromDate = document.getElementById('cxBbFromDate').value;
   var toDate = document.getElementById('cxBbToDate').value;
   var boatId = document.getElementById('cxSlotBoat').value;
+  var startTime = document.getElementById('cxBbStartTime').value || '';
+  var endTime = document.getElementById('cxBbEndTime').value || '';
   if (!days.length || !fromDate || !toDate || !boatId) { showToast(s('slot.missingFields'), 'err'); return; }
   try {
     var res = await apiPost('bulkBookSlots', {
       boatId: boatId, crewId: crewId, kennitala: user.kennitala, memberName: user.name,
       fromDate: fromDate, toDate: toDate, daysOfWeek: days,
+      startTime: startTime, endTime: endTime,
     });
     closeModal('cxBulkBookModal');
     if (res.skipped > 0) { showToast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped }), 'ok'); }
