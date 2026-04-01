@@ -1083,7 +1083,7 @@ async function loadAll() {
     cfgRes   = cfgRes_;
   } catch(e) {
     console.error("loadAll failed:", e);
-    if (statusEl) statusEl.innerHTML = `<div class="empty-state">Load failed: ${e.message}</div>`;
+    if (statusEl) statusEl.innerHTML = `<div class="empty-state">${s('admin.loadFailed')}: ${e.message}</div>`;
     return;
   }
 
@@ -1198,7 +1198,7 @@ async function saveEntity({ apiAction, getArray, setArray, payload, modalId, ren
     if (renderFn) renderFn();
     toast(s("toast.saved"));
   } catch(e) {
-    toast("Save failed: " + e.message, "err");
+    toast(s("toast.saveFailed") + ": " + e.message, "err");
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -1285,7 +1285,7 @@ function openMemberModal(id) {
 async function saveMember() {
   const name      = document.getElementById("mName").value.trim();
   const kennitala = document.getElementById("mKennitala").value.trim();
-  if (!name || !kennitala) { toast("Name and kennitala required.", "err"); return; }
+  if (!name || !kennitala) { toast(s("admin.nameKtRequired"), "err"); return; }
 
   const id      = editingId || ("mbr_" + Date.now().toString(36));
   const payload = {
@@ -1310,16 +1310,16 @@ async function saveMember() {
     closeModal("memberModal");
     renderMembers();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deactivateMember(id) {
-  if (!await ymConfirm("Deactivate this member?")) return;
+  if (!await ymConfirm(s("admin.confirmDeactivateMember"))) return;
   try {
     await apiPost("deleteMember", { id });
     members = members.filter(m => m.id !== id);
     renderMembers();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
 
@@ -1335,7 +1335,7 @@ function renderBoatCats() {
       const lb = (getLang() === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
       return la.localeCompare(lb, locale, { sensitivity: 'base' });
     });
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No categories.</div>`; return; }
+  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noCategories')}</div>`; return; }
    card.innerHTML = active.map(c => `
     <div class="list-row">
       <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
@@ -1351,7 +1351,7 @@ function renderBoatCats() {
 function openBoatCatModal(key) {
   _bcEditingId = key || null;
   const c = key ? _allBoatCats.find(x => x.key === key) : null;
-  document.getElementById("boatCatModalTitle").textContent = c ? "Edit Category" : "Add Boat Category";
+  document.getElementById("boatCatModalTitle").textContent = c ? s('admin.boatCatModal.edit') : s('admin.boatCatModal.add');
   document.getElementById("bcLabelEN").value   = c ? (c.labelEN || "") : "";
   document.getElementById("bcLabelIS").value   = c ? (c.labelIS || "") : "";
   document.getElementById("bcEmoji").value     = c ? (c.emoji   || "") : "";
@@ -1365,7 +1365,7 @@ function openBoatCatModal(key) {
 async function saveBoatCat() {
   const labelEN = document.getElementById("bcLabelEN").value.trim();
   const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
-  if (!labelEN || !key) { toast("Name and key required.", "err"); return; }
+  if (!labelEN || !key) { toast(s("admin.nameKeyRequired"), "err"); return; }
 
   const payload = {
     key,
@@ -1388,12 +1388,12 @@ async function saveBoatCat() {
     renderBoats();
     populateCategorySelects();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteBoatCat() {
   const key = _bcEditingId;
-  if (!key || !await ymConfirm("Remove this category? Boats assigned to it will still exist but may show under 'other'.")) return;
+  if (!key || !await ymConfirm(s("admin.confirmRemoveBoatCat"))) return;
   _allBoatCats = _allBoatCats.map(c => c.key === key ? { ...c, active: false } : c);
   try {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
@@ -1404,7 +1404,7 @@ async function deleteBoatCat() {
     renderBoats();
     populateCategorySelects();
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ BOATS ═════════════════════════════════════════════════════════════════════
@@ -1412,7 +1412,7 @@ async function deleteBoatCat() {
 function renderBoats() {
   const el     = document.getElementById("boatSections");
   const active = boats.filter(b => bool(b.active));
-  if (!active.length) { el.innerHTML = `<div class="empty-state">No boats yet.</div>`; return; }
+  if (!active.length) { el.innerHTML = `<div class="empty-state">${s('admin.noBoats')}</div>`; return; }
 
   const groups = {};
   boatCats.forEach(c => { groups[c.key] = []; });
@@ -1477,7 +1477,7 @@ function populateDefaultPortSelect(selectedId) {
   const sel = document.getElementById("bDefaultPortId");
   if (!sel) return;
   const ports = _allLocations.filter(l => l.type === 'port' && (l.active !== false && l.active !== 'false'));
-  sel.innerHTML = `<option value="">— none —</option>` +
+  sel.innerHTML = `<option value="">${s('admin.optionNone')}</option>` +
     ports.map(p => `<option value="${esc(p.id)}"${p.id === selectedId ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
 }
 
@@ -1621,13 +1621,13 @@ function selectCharterMember(kt, name) {
 
 async function saveCharterFromModal() {
   const boatId = editingId;
-  if (!boatId) { toast("Save the boat first.", "err"); return; }
+  if (!boatId) { toast(s("admin.saveBoatFirst"), "err"); return; }
   const kt   = document.getElementById("bCharterMemberKt").value;
   const name = document.getElementById("bCharterMemberName").textContent;
   const start = document.getElementById("bCharterStart").value;
   const end   = document.getElementById("bCharterEnd").value;
-  if (!kt || !name) { toast("Select a member.", "err"); return; }
-  if (!start || !end) { toast("Set start and end dates.", "err"); return; }
+  if (!kt || !name) { toast(s("admin.selectMember"), "err"); return; }
+  if (!start || !end) { toast(s("admin.setDatesRequired"), "err"); return; }
   try {
     await apiPost('saveCharter', { boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end });
     // Update local boat data
@@ -1636,7 +1636,7 @@ async function saveCharterFromModal() {
     cancelCharterForm();
     renderCharterInfo(b);
     toast(s('boat.charterSaved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeCharterFromModal() {
@@ -1649,7 +1649,7 @@ async function removeCharterFromModal() {
     if (b) delete b.charter;
     renderCharterInfo(b);
     toast(s('boat.charterRemoved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ── Access control helpers ────────────────────────────────────────────────────
@@ -1774,7 +1774,7 @@ async function saveResFromModal() {
   var start = document.getElementById("bResStart").value;
   var end   = document.getElementById("bResEnd").value;
   var note  = document.getElementById("bResNote").value.trim();
-  if (!kt || !name || !start || !end) { toast("Member and dates required.", "err"); return; }
+  if (!kt || !name || !start || !end) { toast(s("admin.memberDatesRequired"), "err"); return; }
   try {
     var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
@@ -1782,7 +1782,7 @@ async function saveResFromModal() {
     cancelResForm();
     renderReservationList(b);
     toast(s('boat.reservationSaved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeResFromModal(resId) {
@@ -1794,12 +1794,12 @@ async function removeResFromModal(resId) {
     if (b && res.boat) { b.reservations = res.boat.reservations; b.charter = res.boat.charter; }
     renderReservationList(b);
     toast(s('boat.reservationRemoved'));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
@@ -1846,12 +1846,12 @@ async function saveBoat() {
     closeModal("boatModal");
     renderBoats();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteBoat(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this boat?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteBoat"))) return;
   _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
   try {
     await apiPost("saveConfig", { boats: _allBoats });
@@ -1859,7 +1859,7 @@ async function deleteBoat(id) {
     renderBoats();
     closeModal("boatModal");
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 function showBoatQR(id) {
@@ -1892,7 +1892,7 @@ function renderLocations() {
   const active = locations
     .filter(l => bool(l.active))
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' }));
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No locations yet.</div>`; return; }
+  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noLocations')}</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
       <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
@@ -1918,7 +1918,7 @@ function openLocationModal(id) {
 
 async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const id      = editingId || ("loc_" + Date.now().toString(36));
   var latVal = document.getElementById("lLat").value.trim();
@@ -1936,12 +1936,12 @@ async function saveLocation() {
     closeModal("locationModal");
     renderLocations();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteLocation(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this location?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteLocation"))) return;
   _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
   try {
     await apiPost("saveConfig", { locations: _allLocations });
@@ -1949,7 +1949,7 @@ async function deleteLocation(id) {
     renderLocations();
     closeModal("locationModal");
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ OPENING / CLOSING CHECKLISTS ═════════════════════════════════════════════
@@ -1969,7 +1969,7 @@ function renderCLPhase(cardId, phase) {
   const items = clItems
     .filter(i => norm(String(i.phase).toLowerCase()) === phase && bool(i.active))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  if (!items.length) { card.innerHTML = `<div class="empty-state">No items.</div>`; return; }
+  if (!items.length) { card.innerHTML = `<div class="empty-state">${s('admin.noItems')}</div>`; return; }
   card.innerHTML = items.map(i => `
     <div class="cl-row">
       <span class="cl-phase">${phase === 'opening' ? 'OPEN' : 'CLOSE'}</span>
@@ -1984,7 +1984,7 @@ function openCLModal(id) {
   editingId    = id || null;
   const item   = id ? clItems.find(x => x.id === id) : null;
   const norm   = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : (p || 'opening'));
-  document.getElementById("clModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("clModalTitle").textContent = item ? s('admin.clModal.edit') : s('admin.clModal.add');
   document.getElementById("clPhase").value    = item ? norm(item.phase) : "opening";
   document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
   document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
@@ -1996,7 +1996,7 @@ function openCLModal(id) {
 
 async function saveCLItem() {
   const textEN = document.getElementById("clTextEN").value.trim();
-  if (!textEN) { toast("English text required.", "err"); return; }
+  if (!textEN) { toast(s("admin.textENRequired"), "err"); return; }
   const payload = {
     id:        editingId,
     phase:     document.getElementById("clPhase").value,   // "opening" or "closing"
@@ -2016,13 +2016,13 @@ async function saveCLItem() {
 
 async function deleteCLItem(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this item?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteItem"))) return;
   try {
     await apiPost("deleteChecklistItem", { id: _id });
     clItems = clItems.filter(i => i.id !== _id);
     renderChecklists();
     closeModal("clModal");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ LAUNCH / LANDING CHECKLISTS ══════════════════════════════════════════════
@@ -2045,7 +2045,7 @@ function renderLaunchCLSections() {
     const el    = document.getElementById(phase === "launch" ? "launchCLLaunchList" : "launchCLLandingList");
     if (!el) return;
     const items = (catData[phase] || []).slice().sort((a, b) => (a.sort || 99) - (b.sort || 99));
-    if (!items.length) { el.innerHTML = '<div class="empty-state">No items.</div>'; return; }
+    if (!items.length) { el.innerHTML = '<div class="empty-state">' + s('admin.noItems') + '</div>'; return; }
     el.innerHTML = items.map(i => `
       <div class="cl-row">
         <span style="flex:1;color:var(--text)">${esc(i.text || "")}${i.textIS
@@ -2065,7 +2065,7 @@ function openLaunchCLModal(cat, phase, id) {
     item = _launchCLs[curCat][curPhase].find(x => x.id === id);
   }
   populateCategorySelects();
-  document.getElementById("launchCLModalTitle").textContent = item ? "Edit Item" : "Add Item";
+  document.getElementById("launchCLModalTitle").textContent = item ? s('admin.lcModal.edit') : s('admin.lcModal.add');
   document.getElementById("lcCat").value    = curCat;
   document.getElementById("lcPhase").value  = curPhase;
   document.getElementById("lcText").value   = item ? (item.text   || "") : "";
@@ -2081,7 +2081,7 @@ async function saveLaunchCLItem() {
   const text   = document.getElementById("lcText").value.trim();
   const textIS = document.getElementById("lcTextIS").value.trim();
   const sort   = parseInt(document.getElementById("lcSort").value) || 99;
-  if (!text) { toast("English text required.", "err"); return; }
+  if (!text) { toast(s("admin.textENRequired"), "err"); return; }
   if (!_launchCLs[cat])        _launchCLs[cat] = { launch:[], landing:[] };
   if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
 
@@ -2096,7 +2096,7 @@ async function saveLaunchCLItem() {
     closeModal("launchCLModal");
     renderLaunchCLSections();
     toast(s("toast.saved"));
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 async function deleteLaunchCLItem(cat, phase, id) {
@@ -2106,7 +2106,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
     phase = document.getElementById("lcPhase").value;
     id    = _lcEditingId;
   }
-  if (!await ymConfirm("Delete this item?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteItem"))) return;
   if (_launchCLs[cat]?.[phase]) {
     _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(x => x.id !== id);
   }
@@ -2115,7 +2115,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
     closeModal("launchCLModal");
     renderLaunchCLSections();
     toast(s("toast.deleted"));
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ══ ACTIVITY TYPES ════════════════════════════════════════════════════════════
@@ -2130,7 +2130,7 @@ function renderActTypes() {
       const lb = (getLang() === 'IS' && b.nameIS ? b.nameIS : b.name) || '';
       return la.localeCompare(lb, locale, { sensitivity: 'base' });
     });
-  if (!active.length) { card.innerHTML = `<div class="empty-state">No activity types.</div>`; return; }
+  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noActTypes')}</div>`; return; }
   card.innerHTML = active.map(a => {
     const subs = Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, []);
     return `<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">
@@ -2148,7 +2148,7 @@ function renderActTypes() {
 function openActTypeModal(id) {
   editingId = id || null;
   const a   = id ? actTypes.find(x => x.id === id) : null;
-  document.getElementById("actTypeModalTitle").textContent = a ? "Edit Type" : "Add Activity Type";
+  document.getElementById("actTypeModalTitle").textContent = a ? s('admin.actTypeModal.edit') : s('admin.actTypeModal.add');
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
@@ -2162,7 +2162,7 @@ function openActTypeModal(id) {
 
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
@@ -2180,13 +2180,13 @@ async function saveActType() {
 
 async function deleteActType(id) {
   const _id = id || editingId;
-  if (!await ymConfirm("Delete this activity type?")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteActType"))) return;
   try {
     await apiPost("deleteActivityType", { id: _id });
     actTypes = actTypes.filter(a => a.id !== _id);
     renderActTypes();
     closeModal("actTypeModal");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 function tryParse_(v, fallback) { try { return JSON.parse(v); } catch(e) { return fallback; } }
@@ -2195,7 +2195,7 @@ function renderAtSubtypes() {
   const list = document.getElementById("atSubtypesList");
   if (!list) return;
   if (!window._atSubtypes.length) {
-    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">No subtypes yet.</div>';
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noSubtypes') + '</div>';
     return;
   }
   list.innerHTML = window._atSubtypes.map((st, i) => `
@@ -2243,7 +2243,7 @@ function renderCertCategories() {
   const addWrap = document.getElementById("certCatsAddWrap");
   if (!el) return;
   if (!certCategories.length) {
-    el.innerHTML = `<div class="empty-state">No categories defined. Defaults will be used.</div>`;
+    el.innerHTML = `<div class="empty-state">${s('admin.noCertCategories')}</div>`;
   } else {
     el.innerHTML = certCategories.map((c, i) => `<div class="list-row">
       <div style="flex:1;font-size:12px">${esc(c)}</div>
@@ -2257,31 +2257,31 @@ async function addCertCategory() {
   const input = document.getElementById("newCatInput");
   const name  = input.value.trim();
   if (!name) return;
-  if (certCategories.includes(name)) { toast("Category already exists.", "err"); return; }
+  if (certCategories.includes(name)) { toast(s("admin.categoryExists"), "err"); return; }
   certCategories.push(name);
   input.value = "";
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
-    toast("Category added.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("admin.categoryAdded"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function removeCertCategory(idx) {
-  if (!await ymConfirm("Remove this category?")) return;
+  if (!await ymConfirm(s("admin.confirmRemoveCategory"))) return;
   certCategories.splice(idx, 1);
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
-    toast("Category removed.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("admin.categoryRemoved"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
   if (!el) return;
   if (!certDefs.length) {
-    el.innerHTML = `<div class="empty-state">No credential types defined.</div>`;
+    el.innerHTML = `<div class="empty-state">${s('admin.noCertDefs')}</div>`;
     return;
   }
   const locale = getLang() === 'IS' ? 'is' : 'en';
@@ -2305,7 +2305,7 @@ function renderCertDefs() {
           if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
           return parts.join(" · ");
         }).join(", ")
-      : "No subcategories";
+      : s('admin.noSubcategories');
     return `<div class="list-row">
       <div style="flex:1">
         <div class="list-name">${catStr}${esc(d.name)}${authority}${expiryStr}</div>
@@ -2351,7 +2351,7 @@ function openCertDefModal(id) {
 
 function populateCdCategorySelect(selected) {
   const sel = document.getElementById("cdCategory");
-  sel.innerHTML = '<option value="">None</option>';
+  sel.innerHTML = '<option value="">' + s('admin.certCategoryNone') + '</option>';
   certCategories.forEach(c => {
     const o = document.createElement("option");
     o.value = c; o.textContent = c;
@@ -2368,7 +2368,7 @@ function toggleCdEndorsement() {
 async function saveCertDef() {
   const btn  = document.getElementById("saveCertDefBtn");
   const name = document.getElementById("cdName").value.trim();
-  if (!name) { toast("Name required.", "err"); return; }
+  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
   const newId   = certEditId || ("cert_" + Date.now().toString(36));
   const expires = document.getElementById("cdExpires").checked;
@@ -2400,35 +2400,35 @@ async function saveCertDef() {
     renderCertDefs();
 
     closeModal("certDefModal");
-    toast("Credential type saved.");
+    toast(s("admin.certDefSaved"));
   } catch(e) {
-    toast("Save failed: " + e.message, "err");
+    toast(s("toast.saveFailed") + ": " + e.message, "err");
   } finally {
     btn.disabled = false;
   }
 }
 
 async function deleteCertDef() {
-  if (!certEditId || !await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!certEditId || !await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
     await apiPost("deleteCertDef", { id: certEditId });
     certDefs = certDefs.filter(d => d.id !== certEditId);
     renderCertDefs();
 
     closeModal("certDefModal");
-    toast("Deleted.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("toast.deleted"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function deleteCertDefById(id) {
-  if (!await ymConfirm("Delete this credential type? This won't remove existing assignments.")) return;
+  if (!await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
     await apiPost("deleteCertDef", { id });
     certDefs = certDefs.filter(d => d.id !== id);
     renderCertDefs();
 
-    toast("Deleted.");
-  } catch(e) { toast("Error: " + e.message, "err"); }
+    toast(s("toast.deleted"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // Subcat row
@@ -2507,9 +2507,9 @@ async function saveAlertConfig() {
   try {
     await apiPost("saveAlertConfig", cfg);
     const msg = document.getElementById("alertSaveMsg");
-    msg.textContent = "✓ Saved";
+    msg.textContent = "✓ " + s("toast.saved");
     setTimeout(() => { msg.textContent = ""; }, 2500);
-  } catch(e) { toast("Save failed: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
 // ══ FLAG CONFIG ═══════════════════════════════════════════════════════════════
@@ -2605,9 +2605,9 @@ function updateFlagPreview(){
 async function saveFlagConfig(){
   var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
   var cfg=getFlagFormValues(),errs=validateFlagConfig(cfg);if(errs.length){errEl.textContent=errs.join(' ');errEl.style.display='block';return;}
-  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ Saved';setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent='Save failed: '+e.message;}
+  try{await apiPost('saveConfig',{flagConfig:cfg});if(typeof wxLoadFlagConfig==='function')wxLoadFlagConfig(cfg);updateFlagPreview();msgEl.style.color='var(--green)';msgEl.textContent='✓ '+s('toast.saved');setTimeout(function(){msgEl.textContent='';},3000);}catch(e){msgEl.style.color='var(--red)';msgEl.textContent=s('toast.saveFailed')+': '+e.message;}
 }
-async function resetFlagConfig(){if(!await ymConfirm('Reset all flag settings to defaults?'))return;loadFlagConfigPanel(null);}
+async function resetFlagConfig(){if(!await ymConfirm(s('admin.confirmResetFlags')))return;loadFlagConfigPanel(null);}
 
 // ══ CSV IMPORT ════════════════════════════════════════════════════════════════
 
@@ -2626,7 +2626,7 @@ function handleCSVUpload(input) {
       importResult = parseAblerCSV(e.target.result, members);
       renderImportPreview(importResult);
     } catch(err) {
-      document.getElementById("importError").textContent = "Parse error: " + err.message;
+      document.getElementById("importError").textContent = s("admin.parseError") + ": " + err.message;
       document.getElementById("importError").style.display = "block";
     }
   };
@@ -2795,7 +2795,7 @@ function resolveAmbig(idx, decision) {
 async function confirmImport() {
   if (!importResult) return;
   const btn = document.getElementById("confirmImportBtn");
-  btn.disabled = true; btn.textContent = "Importing…";
+  btn.disabled = true; btn.textContent = s("admin.importing");
   try {
     // Resolve ambiguous entries based on admin decisions
     const extraAdded = [], extraUpdated = [];
@@ -2839,14 +2839,14 @@ async function confirmImport() {
 
     const totalAdded = importResult.added.length + extraAdded.length;
     const totalUpdated = importResult.updated.length + extraUpdated.length;
-    let msg = `Import complete: ${totalAdded} added, ${totalUpdated} updated.`;
-    if (deactivated) msg += ` ${deactivated} deactivated.`;
+    let msg = s('admin.importComplete', { added: totalAdded, updated: totalUpdated });
+    if (deactivated) msg += ' ' + s('admin.importDeactivated', { count: deactivated });
     document.getElementById("importDoneMsg").textContent = msg;
     showImportStep(3);
   } catch(e) {
-    document.getElementById("importError").textContent = "Import failed: " + e.message;
+    document.getElementById("importError").textContent = s("admin.importFailed") + ": " + e.message;
     document.getElementById("importError").style.display = "block";
-    btn.disabled = false; btn.textContent = "Confirm import";
+    btn.disabled = false; btn.textContent = s("admin.confirmImport");
   }
 }
 
@@ -3039,7 +3039,7 @@ async function saveCurrentSlot() {
     closeModal("slotModal");
     toast(s('toast.saved'));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function deleteCurrentSlot() {
@@ -3050,7 +3050,7 @@ async function deleteCurrentSlot() {
     closeModal("slotModal");
     toast(s('toast.deleted'));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // Recurring slot creation
@@ -3111,7 +3111,7 @@ async function saveRecurringSlots() {
     closeModal("recurSlotModal");
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────

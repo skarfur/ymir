@@ -539,8 +539,8 @@ function selectCat(cat) {
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
   document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
   document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
-  if (cat === "equipment") document.getElementById("itemLabel").textContent = "Equipment item";
-  if (cat === "facility")  document.getElementById("itemLabel").textContent = "Location / area";
+  if (cat === "equipment") document.getElementById("itemLabel").textContent = s("sauma.equipmentItem");
+  if (cat === "facility")  document.getElementById("itemLabel").textContent = s("sauma.locationArea");
 }
 
 function selectPrio(sev) {
@@ -575,7 +575,7 @@ function handleSuggestPhoto(input) {
   const preview = document.getElementById("suggestPhotoPreview");
   if (!file) { suggestPhotoData = null; preview.className = "photo-preview"; return; }
   if (file.size > 5*1024*1024) {
-    errEl.textContent = "Image too large. Max is 5 MB.";
+    errEl.textContent = s("sauma.imgTooLarge");
     input.value = ""; suggestPhotoData = null; preview.className = "photo-preview"; return;
   }
   errEl.textContent = "";
@@ -603,26 +603,26 @@ async function submitSuggestion() {
   const btn = document.getElementById("suggestSubmitBtn");
   document.getElementById("suggestErr").classList.add("hidden");
 
-  if (!suggestCat) { showSuggestErr("Please select a category."); return; }
-  if (!suggestPrio) { showSuggestErr("Please select a priority."); return; }
+  if (!suggestCat) { showSuggestErr(s("sauma.selectCategory")); return; }
+  if (!suggestPrio) { showSuggestErr(s("sauma.selectPriority")); return; }
   const desc = document.getElementById("suggestDesc").value.trim();
-  if (!desc) { showSuggestErr("Please describe the project."); return; }
+  if (!desc) { showSuggestErr(s("sauma.describeProject")); return; }
 
   let boatId = "", boatName = "", itemName = "";
   if (suggestCat === "boat") {
     const sel = document.getElementById("suggestBoat");
     boatId = sel.value; boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
-    if (!boatId) { showSuggestErr("Please select a boat."); return; }
+    if (!boatId) { showSuggestErr(s("sauma.selectBoat")); return; }
   } else {
     itemName = document.getElementById("suggestItem").value.trim();
-    if (!itemName) { showSuggestErr("Please enter the item or location."); return; }
+    if (!itemName) { showSuggestErr(s("sauma.enterItem")); return; }
   }
 
-  btn.disabled = true; btn.textContent = "Submitting…";
+  btn.disabled = true; btn.textContent = s("sauma.submitting");
   try {
     let photoUrl = "";
     if (suggestPhotoData) {
-      btn.textContent = "Uploading photo…";
+      btn.textContent = s("sauma.uploadingPhoto");
       const upRes = await apiPost("uploadMaintenancePhoto", suggestPhotoData);
       if (upRes.ok) photoUrl = upRes.photoUrl;
     }
@@ -643,11 +643,11 @@ async function submitSuggestion() {
     const rRes = await apiGet("getMaintenance");
     allProjects = (rRes.requests || []).filter(r => boolVal(r.saumaklubbur));
     renderList();
-    toast("✓ Project submitted for review.");
+    toast("✓ " + s("sauma.submitted"));
   } catch(e) {
     showSuggestErr("Error: " + e.message);
   } finally {
-    btn.disabled = false; btn.textContent = "Submit";
+    btn.disabled = false; btn.textContent = s("btn.submit");
   }
 }
 

@@ -320,7 +320,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderList();
   } catch(e) {
     document.getElementById("reqList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>Failed to load: ${esc(e.message)}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>${esc(s('maint.loadFailed',{msg:e.message}))}</p></div>`;
   }
 
   // Wire filter pill clicks via delegation
@@ -443,7 +443,7 @@ function renderList() {
   const items = getFiltered();
   const el = document.getElementById("reqList");
   if (!items.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>No requests match this filter.</p></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>${s('maint.noFilterMatch')}</p></div>`;
     return;
   }
   const sevOrder = { critical:0, high:1, medium:2, low:3 };
@@ -472,7 +472,7 @@ function renderCard(r) {
 
 // ── Actions ────────────────────────────────────────────────────────────────────
 async function resolveRequest(id) {
-  if (!await ymConfirm("Mark this request as resolved?")) return;
+  if (!await ymConfirm(s('maint.resolveConfirm'))) return;
   const r = allRequests.find(x => x.id === id);
   if (!r) return;
   try {
@@ -488,8 +488,8 @@ async function resolveRequest(id) {
         boats = allBoats.filter(b => b.active !== false && b.active !== "false");
       } catch(e2) { console.warn("Could not clear OOS:", e2.message); }
     }
-    renderStats(); renderList(); toast("✓ Resolved.");
-  } catch(e) { ymAlert("Error: " + e.message); }
+    renderStats(); renderList(); toast(s('maint.resolvedToast'));
+  } catch(e) { ymAlert(s('logbook.errGeneric',{msg:e.message})); }
 }
 
 async function addComment(id) {
@@ -505,8 +505,8 @@ async function addComment(id) {
       comments.push({ by: (window._maintUser?.name || 'Staff'), at: new Date().toISOString(), text });
       r.comments = JSON.stringify(comments);
     }
-    renderList(); toast("Comment added.");
-  } catch(e) { ymAlert("Error: " + e.message); }
+    renderList(); toast(s('maint.commentAdded'));
+  } catch(e) { ymAlert(s('logbook.errGeneric',{msg:e.message})); }
 }
 
 function viewPhoto(url) {
@@ -563,8 +563,8 @@ function selectCat(cat) {
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
   document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
   document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
-  if (cat === "equipment") document.getElementById("itemLabel").textContent = "Equipment item";
-  if (cat === "facility")  document.getElementById("itemLabel").textContent = "Location / area";
+  if (cat === "equipment") document.getElementById("itemLabel").textContent = s('maint.equipmentItem');
+  if (cat === "facility")  document.getElementById("itemLabel").textContent = s('maint.locationArea');
 }
 
 function selectSev(sev) {
@@ -582,7 +582,7 @@ function handlePhotoChange(input) {
   const preview = document.getElementById("photoPreview");
   if (!file) { photoDataUrl = ""; pendingPhotoFile = null; preview.className = "photo-preview"; return; }
   if (file.size > 5 * 1024 * 1024) {
-    errEl.textContent = `Image too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 5 MB.`;
+    errEl.textContent = s('maint.imgTooLarge',{size:(file.size/1024/1024).toFixed(1)});
     input.value = ""; photoDataUrl = ""; pendingPhotoFile = null; preview.className = "photo-preview"; return;
   }
   errEl.textContent = "";
@@ -634,28 +634,28 @@ async function submitRequest() {
   const btn = document.getElementById("submitBtn");
   document.getElementById("newErr").classList.add("hidden");
 
-  if (!selectedCat) { showErr("Please select a category."); return; }
-  if (!selectedSev) { showErr("Please select a severity level."); return; }
+  if (!selectedCat) { showErr(s('maint.errCategory')); return; }
+  if (!selectedSev) { showErr(s('maint.errSeverity')); return; }
   const desc = document.getElementById("newDesc").value.trim();
-  if (!desc) { showErr("Please describe the issue."); return; }
+  if (!desc) { showErr(s('maint.errDescription')); return; }
 
   let boatId = "", boatName = "", itemName = "", markOos = false;
   if (selectedCat === "boat") {
     const sel = document.getElementById("newBoat");
     boatId = sel.value;
     boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
-    if (!boatId) { showErr("Please select a boat."); return; }
+    if (!boatId) { showErr(s('maint.errBoat')); return; }
     markOos = document.getElementById("newOos").checked;
   } else {
     itemName = document.getElementById("newItem").value.trim();
-    if (!itemName) { showErr("Please enter the item or location."); return; }
+    if (!itemName) { showErr(s('maint.errItem')); return; }
   }
 
-  btn.disabled = true; btn.textContent = "Submitting…";
+  btn.disabled = true; btn.textContent = s('maint.submitting');
   try {
     let photoUrl = "";
     if (pendingPhotoFile) {
-      btn.textContent = "Uploading photo…";
+      btn.textContent = s('maint.uploadingPhoto');
       const upRes = await apiPost("uploadMaintenancePhoto", pendingPhotoFile);
       if (upRes.ok) photoUrl = upRes.photoUrl;
       else console.warn("Photo upload skipped:", upRes.error);
@@ -687,11 +687,11 @@ async function submitRequest() {
     const rRes = await apiGet("getMaintenance");
     allRequests = rRes.requests || [];
     renderStats(); renderList();
-    toast("✓ Request submitted.");
+    toast(s('maint.submitted'));
   } catch(e) {
-    showErr("Error: " + e.message);
+    showErr(s('logbook.errGeneric',{msg:e.message}));
   } finally {
-    btn.disabled = false; btn.textContent = "Submit";
+    btn.disabled = false; btn.textContent = s('maint.submitBtn');
   }
 }
 

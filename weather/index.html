@@ -124,14 +124,14 @@ svg.chart { width:100%; overflow:visible; display:block; }
       <div class="text-xs text-muted" id="updatedAt">Loading…</div>
     </div>
     <div class="top-bar-right">
-      <button class="btn btn-secondary text-sm" onclick="fetchAll()" id="refreshBtn" style="padding:6px 12px">↻ Refresh</button>
+      <button class="btn btn-secondary text-sm" onclick="fetchAll()" id="refreshBtn" style="padding:6px 12px">↻ <span data-s="wx.refresh">Refresh</span></button>
     </div>
   </div>
 
 
   <!-- ══ WEATHER CONTENT ══ -->
   <div id="mainContent">
-    <div class="loading-msg">⚓️ Fetching weather data…</div>
+    <div class="loading-msg">⚓️ <span data-s="wx.fetching">Fetching weather data…</span></div>
   </div>
 
 </div><!-- /page -->
@@ -155,8 +155,8 @@ function fmtT(t) { return t ? t.slice(11,16) : '–'; }
 async function fetchAll() {
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshBtn').textContent = '⏳';
-  document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓️ Fetching weather data…</div>';
-  document.getElementById('updatedAt').textContent = 'Updating…';
+  document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓️ ' + s('wx.fetching') + '</div>';
+  document.getElementById('updatedAt').textContent = s('wx.updating');
   try {
     const [{ wx, marine }, cfgRes] = await Promise.all([
       wxFetch(FOSSVOGUR.lat, FOSSVOGUR.lon),
@@ -168,11 +168,11 @@ async function fetchAll() {
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
-      `<div class="error-msg">⚠️ ${esc(e.message)}<br><span class="text-sm text-muted">Check connection and try again.</span></div>`;
-    document.getElementById('updatedAt').textContent = 'Failed';
+      `<div class="error-msg">⚠️ ${esc(e.message)}<br><span class="text-sm text-muted">${s('wx.checkConnection')}</span></div>`;
+    document.getElementById('updatedAt').textContent = s('wx.failed');
   } finally {
     document.getElementById('refreshBtn').disabled = false;
-    document.getElementById('refreshBtn').textContent = '↻ Refresh';
+    document.getElementById('refreshBtn').textContent = '↻ ' + s('wx.refresh');
   }
 }
 
@@ -417,7 +417,7 @@ function drawPresChart(pts, nowI) {
   const svg = document.getElementById('presChart');
   if (!svg) return;
   const hasPres = pts.some(p=>p.pr!=null);
-  if (!hasPres) { svg.innerHTML=`<text class="chart-axis-t" x="50%" y="40" text-anchor="middle">Pressure data unavailable</text>`; return; }
+  if (!hasPres) { svg.innerHTML=`<text class="chart-axis-t" x="50%" y="40" text-anchor="middle">${s('wx.pressureUnavail')}</text>`; return; }
   const W = svg.clientWidth||640, H=80, P={t:8,b:22,l:4,r:4};
   const iW=W-P.l-P.r, iH=H-P.t-P.b;
   const valid = pts.map((p,i)=>({...p,pi:i})).filter(p=>p.pr!=null);

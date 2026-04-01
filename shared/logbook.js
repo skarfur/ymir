@@ -364,7 +364,7 @@ function applyFilter(){
   });
   document.getElementById('tripList').innerHTML=filtered.length
     ? filtered.map(tripCard).join('')
-    : '<div class="empty-note">No trips match this filter.</div>';
+    : '<div class="empty-note">'+s('logbook.noFilter')+'</div>';
   document.getElementById('filterCount').textContent=filtered.length+' / '+myTrips.length;
 }
 
@@ -402,7 +402,7 @@ async function openLogModal(){
     renderClubTripsList();
     return;
   }
-  document.getElementById('recentTripsList').innerHTML='<div class="empty-note">Loading recent trips…</div>';
+  document.getElementById('recentTripsList').innerHTML='<div class="empty-note">'+s('logbook.loadingTrips')+'</div>';
   try{
     const res=await apiGet('getTrips',{limit:100});
     allClubTrips=(res.trips||[])
@@ -433,10 +433,10 @@ function showManualForm(){
   document.getElementById('mDate').value=new Date().toISOString().slice(0,10);
   // Populate boats + locations
   const bSel=document.getElementById('mBoat');
-  bSel.innerHTML='<option value="">Select boat…</option>';
+  bSel.innerHTML='<option value="">'+s('logbook.selectBoat')+'</option>';
   allBoats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=(b.name||b.id);bSel.appendChild(o);});
   const lSel=document.getElementById('mLocation');
-  lSel.innerHTML='<option value="">Select location…</option>';
+  lSel.innerHTML='<option value="">'+s('logbook.selectLocation')+'</option>';
   allLocs.filter(l=>l.type!=='port').forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(l.name||l.id);lSel.appendChild(o);});
   // Populate ports datalist
   populatePortsDatalist();
@@ -541,8 +541,8 @@ function initWindUnitLabels(){
   // For input fields we use a numeric unit; if pref is 'bft', default inputs to m/s
   _mWindUnit = (pref === 'bft') ? 'ms' : pref;
   const label = windUnitLabel(_mWindUnit);
-  document.getElementById('mWindLabel').textContent = 'Wind (' + label + ')';
-  document.getElementById('mGustLabel').textContent = 'Gusts (' + label + ')';
+  document.getElementById('mWindLabel').textContent = s('logbook.windLabel',{unit:label});
+  document.getElementById('mGustLabel').textContent = s('logbook.gustsLabel',{unit:label});
   // Adjust step for knots/kmh/mph (whole numbers more common)
   const step = (_mWindUnit === 'ms') ? '0.1' : '0.1';
   document.getElementById('mWindMs').step = step;
@@ -595,10 +595,10 @@ function onBoatChange(){
   const pd=document.getElementById('portDetails');
   if(isKeelboat){
     pd.setAttribute('open','');
-    document.getElementById('portSummaryLabel').textContent=IS?'HÖFNAR':'PORTS';
+    document.getElementById('portSummaryLabel').textContent=s('logbook.ports');
   } else {
     pd.removeAttribute('open');
-    document.getElementById('portSummaryLabel').textContent=IS?'HÖFNAR — VALFRJÁLST':'PORTS — OPTIONAL';
+    document.getElementById('portSummaryLabel').textContent=s('logbook.portsOptional2');
   }
   // Auto-fill default port if fields are empty
   if(boat?.defaultPortId){
@@ -640,7 +640,7 @@ function onCrewChange(){
     const fields = document.createElement('div');
     fields.className = 'crew-row-fields';
     const inp = document.createElement('input');
-    inp.type='text'; inp.placeholder='Crew member '+(i+1)+' — search by name…';
+    inp.type='text'; inp.placeholder=s('logbook.crewSearchPh',{n:i+1});
     inp.value = existing[i]?.val||'';
     inp.dataset.kennitala = existing[i]?.kt||'';
     inp.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px;box-sizing:border-box';
@@ -653,7 +653,7 @@ function onCrewChange(){
     const helmCb = document.createElement('input');
     helmCb.type='checkbox'; helmCb.checked=existing[i]?.helm||false;
     helmLbl.appendChild(helmCb);
-    helmLbl.appendChild(document.createTextNode(IS?'Stýri':'Helm'));
+    helmLbl.appendChild(document.createTextNode(s('logbook.helmLabel')));
     fields.appendChild(inp);
     fields.appendChild(helmLbl);
     row.appendChild(fields);
@@ -693,7 +693,7 @@ function searchManualMember(inp, dropOrId){
   if(q.length>=3){
     const guest = document.createElement('div');
     guest.className='mm-guest';
-    guest.textContent='+ Add "'+inp.value.trim()+'" as guest';
+    guest.textContent=s('logbook.addAsGuest',{name:inp.value.trim()});
     guest.addEventListener('mousedown',function(e){
       e.preventDefault();
       drop.style.display='none';
@@ -723,7 +723,7 @@ async function confirmLgGuest(){
   const ktOrYear=document.getElementById('lgGuestKtOrYear').value.trim();
   const phone=document.getElementById('lgGuestPhone').value.trim();
   const err=document.getElementById('lgGuestErr');
-  if(!ktOrYear&&!phone){err.textContent='Please enter a kennitala/birth year or phone number.';err.style.display='';return;}
+  if(!ktOrYear&&!phone){err.textContent=s('logbook.errKtOrPhone');err.style.display='';return;}
   err.style.display='none';
   const isYear=/^\d{4}$/.test(ktOrYear);
   try{
@@ -732,7 +732,7 @@ async function confirmLgGuest(){
     allMembers.push(guest);
     closeLgGuestModal();
     if(_lgGuestCallback) _lgGuestCallback(guest);
-  }catch(e){err.textContent='Failed: '+e.message;err.style.display='';}
+  }catch(e){err.textContent=s('logbook.errFailed',{msg:e.message});err.style.display='';}
 }
 
 function watchPortInput(which){
@@ -763,22 +763,22 @@ async function addNewPort(){
     // Also fill the other port field if empty
     const otherEl=document.getElementById(_lastPortInput==='arrival'?'mDeparturePort':'mArrivalPort');
     if(!otherEl.value) otherEl.value=val;
-    showToast(IS?'Höfn bætt við':'Port added ✓','ok');
-  }catch(e){ showToast('Save failed: '+e.message,'err'); allLocs.pop(); }
+    showToast(s('logbook.portAdded'),'success');
+  }catch(e){ showToast(s('logbook.errSaveFailed',{msg:e.message}),'err'); allLocs.pop(); }
 }
 
 function handleTrackFile(input){
   const file=input.files[0];
   if(!file){ _pendingTrack=null; document.getElementById('mTrackStatus').textContent=''; return; }
   const statusEl=document.getElementById('mTrackStatus');
-  statusEl.textContent=IS?'Lesur skrá…':'Reading file…';
+  statusEl.textContent=s('logbook.readingFile');
   const reader=new FileReader();
   reader.onload=function(e){
     _pendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
-    statusEl.textContent=(IS?'Tilbúið: ':'Ready: ')+file.name;
+    statusEl.textContent=s('logbook.fileReady',{name:file.name});
     statusEl.style.color='var(--brass)';
   };
-  reader.onerror=function(){ statusEl.textContent=IS?'Lestur mistókst':'Read error'; statusEl.style.color='var(--red)'; _pendingTrack=null; };
+  reader.onerror=function(){ statusEl.textContent=s('logbook.readError'); statusEl.style.color='var(--red)'; _pendingTrack=null; };
   reader.readAsDataURL(file);
 }
 
@@ -800,12 +800,12 @@ function handlePhotoFiles(input){
 }
 
 async function submitJoinTrip(){
-  if(!_selectedClubTrip){ showToast(IS?'Engin ferð valin':'No trip selected','err'); return; }
+  if(!_selectedClubTrip){ showToast(s('logbook.noTripSelected'),'err'); return; }
   const t=_selectedClubTrip;
   const errEl=document.getElementById('jErr');
   errEl.style.display='none';
   const btn=document.getElementById('jSubmitBtn');
-  btn.disabled=true; btn.textContent=IS?'Sendir beiðni…':'Sending request…';
+  btn.disabled=true; btn.textContent=s('logbook.sendingRequest');
 
   try{
     await apiPost('createConfirmation',{
@@ -822,13 +822,13 @@ async function submitJoinTrip(){
       beaufort: t.beaufort||'', windDir: t.windDir||'',
       wxSnapshot: t.wxSnapshot||'',
     });
-    showToast(IS?'Beiðni send til skipstjóra ✓':'Request sent to skipper ✓','ok');
+    showToast(s('logbook.requestSent'),'success');
     closeLogModal();
   }catch(e){
     errEl.textContent=e.message;
     errEl.style.display='';
     btn.disabled=false;
-    btn.textContent=IS?'Bæta við siglingabók':'Add to my logbook';
+    btn.textContent=s('logbook.addToLogbook');
   }
 }
 
@@ -836,7 +836,7 @@ function renderClubTripsList(){
   const el=document.getElementById('recentTripsList');
   const page=allClubTrips.slice(0, clubTripsOffset+CLUB_PAGE);
   if(!allClubTrips.length){
-    el.innerHTML='<div class="empty-note">No recent club trips found.</div>';
+    el.innerHTML='<div class="empty-note">'+s('logbook.noClubTrips')+'</div>';
     document.getElementById('loadMoreTripsBtn').style.display='none';
     return;
   }
@@ -876,7 +876,7 @@ function joinTripAsCrew(tripId, el){
   );
   if(alreadyInLog){
     el.classList.remove('selected');
-    showToast(IS?'Þessi ferð er nú þegar í siglingabókinni þinni.':'This trip is already in your logbook.','err');
+    showToast(s('logbook.alreadyInLog'),'err');
     return;
   }
 
@@ -884,7 +884,7 @@ function joinTripAsCrew(tripId, el){
   // Reset extras form
   document.getElementById('jErr').style.display='none';
   const btn=document.getElementById('jSubmitBtn');
-  btn.disabled=false; btn.textContent=IS?'Senda beiðni':'Request to join';
+  btn.disabled=false; btn.textContent=s('logbook.requestToJoin');
   document.getElementById('joinExtras').style.display='';
   // Scroll extras into view
   document.getElementById('joinExtras').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -934,25 +934,25 @@ async function submitManual(){
 
   // Validate time format (HH:MM with minutes ≤59)
   const timeRe=/^([01]\d|2[0-3]):[0-5]\d$/;
-  if(timeOut && !timeRe.test(timeOut)){errEl.textContent=IS?'Ógilt brottfarartími (HH:MM).':'Invalid departure time (HH:MM).';errEl.style.display='';return;}
-  if(timeIn  && !timeRe.test(timeIn)){errEl.textContent=IS?'Ógilt komutími (HH:MM).':'Invalid return time (HH:MM).';errEl.style.display='';return;}
+  if(timeOut && !timeRe.test(timeOut)){errEl.textContent=s('logbook.errDepartureTime');errEl.style.display='';return;}
+  if(timeIn  && !timeRe.test(timeIn)){errEl.textContent=s('logbook.errReturnTime');errEl.style.display='';return;}
 
-  if(!date){errEl.textContent='Please enter a date.';errEl.style.display='';return;}
+  if(!date){errEl.textContent=s('logbook.errDate');errEl.style.display='';return;}
   if(isNonClub && !boatName){errEl.textContent=s('logbook.enterBoatName');errEl.style.display='';return;}
   if(isNonClub && !locName){errEl.textContent=s('logbook.enterLocation');errEl.style.display='';return;}
-  if(!isNonClub && !boatId){errEl.textContent='Please select a boat.';errEl.style.display='';return;}
+  if(!isNonClub && !boatId){errEl.textContent=s('logbook.errBoat');errEl.style.display='';return;}
 
   // Validate skipper assignment when role is crew
   if(role==='crew'){
     const skipKt=document.getElementById('mSkipperName').dataset.kennitala||'';
-    if(!skipKt){errEl.textContent=IS?'Vinsamlegast veldu skipara.':'Please select a skipper.';errEl.style.display='';return;}
+    if(!skipKt){errEl.textContent=s('logbook.errSkipper');errEl.style.display='';return;}
   }
 
   // Check for duplicate trip on same date + boat (skip for non-club trips)
   if(!isNonClub){
     const dupeTrip=myTrips.find(x=>x.date===date&&x.boatId===boatId);
     if(dupeTrip){
-      errEl.textContent=IS?'Þú hefur þegar skráð ferð með þessum bát á þessum degi. Vinsamlegast athugaðu siglingabókina.':'You already have a trip logged with this boat on this date. Please check your logbook.';
+      errEl.textContent=s('logbook.errDuplicate');
       errEl.style.display='';
       return;
     }
@@ -990,7 +990,7 @@ async function submitManual(){
 
   // Disable submit while uploading
   const btn=document.getElementById('mSubmitBtn');
-  btn.disabled=true; btn.textContent=IS?'Hleður upp…':'Uploading…';
+  btn.disabled=true; btn.textContent=s('logbook.uploading');
 
   // Upload GPS track
   let trackFileUrl='', trackSimplified='', trackSource='', distanceNm=distInput;
@@ -1003,9 +1003,9 @@ async function submitManual(){
         trackSource=tr.trackSource||'';
         if(!distanceNm && tr.distanceNm) distanceNm=tr.distanceNm;
       } else {
-        showToast(IS?'Skráarupphal ekki stillt — ferð vistuð án viðhengis.':'File upload not configured — trip saved without attachment.','warn');
+        showToast(s('logbook.uploadNoConfig'),'warn');
       }
-    }catch(e){ showToast((IS?'GPS upphal mistókst: ':'GPS upload failed: ')+e.message,'warn'); }
+    }catch(e){ showToast(s('logbook.gpsUploadFailed',{msg:e.message}),'warn'); }
   }
 
   // Upload photos in parallel
@@ -1016,15 +1016,15 @@ async function submitManual(){
     try{
       const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
       if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
-      else if(!pr.ok) showToast(IS?'Skráarupphal ekki stillt':'File upload not configured','warn');
-    }catch(e){ showToast((IS?'Mynda upphal mistókst: ':'Photo upload failed: ')+e.message,'warn'); }
+      else if(!pr.ok) showToast(s('logbook.photoNoConfig'),'warn');
+    }catch(e){ showToast(s('logbook.photoUploadFailed',{msg:e.message}),'warn'); }
   }));
 
   // Build photo metadata
   const photoMeta = {};
   photoUrls.forEach(u => { photoMeta[u] = { shared: mPhotoShared, clubUse: mPhotoClubUse, uploadedBy: user.kennitala }; });
 
-  btn.disabled=false; btn.textContent=IS?'Vista í siglingabók':'Save to logbook';
+  btn.disabled=false; btn.textContent=s('logbook.saveToLogbook');
 
   try{
     const tripBase = {
@@ -1102,7 +1102,7 @@ function toggleTripDetail(btn) {
   const detail = btn.parentElement.querySelector('.trip-detailed');
   if (!detail) return;
   detail.classList.toggle('open');
-  btn.textContent = detail.classList.contains('open') ? (IS ? 'Sýna minna' : 'Show less') : (IS ? 'Sýna meira' : 'Show more');
+  btn.textContent = detail.classList.contains('open') ? s('logbook.showLess') : s('logbook.showMore');
 }
 function toggleSectionDetail(hdr) {
   const detail = hdr.parentElement.querySelector('.exp-section-detail');
@@ -1169,8 +1169,8 @@ function openMapModal(tripId) {
   addSeaLayers(_fullMap);
   const latlngs = pts.map(p => [p.lat, p.lng]);
   L.polyline(latlngs, { color:'#d4af37', weight: 3, opacity: .9 }).addTo(_fullMap);
-  L.circleMarker(latlngs[0], { radius: 6, color:'#27ae60', fillColor:'#27ae60', fillOpacity:1, weight:0 }).bindPopup(IS ? 'Brottför' : 'Departure').addTo(_fullMap);
-  L.circleMarker(latlngs[latlngs.length-1], { radius: 6, color:'#e74c3c', fillColor:'#e74c3c', fillOpacity:1, weight:0 }).bindPopup(IS ? 'Koma' : 'Arrival').addTo(_fullMap);
+  L.circleMarker(latlngs[0], { radius: 6, color:'#27ae60', fillColor:'#27ae60', fillOpacity:1, weight:0 }).bindPopup(s('logbook.departure')).addTo(_fullMap);
+  L.circleMarker(latlngs[latlngs.length-1], { radius: 6, color:'#e74c3c', fillColor:'#e74c3c', fillOpacity:1, weight:0 }).bindPopup(s('logbook.arrival')).addTo(_fullMap);
   _fullMap.fitBounds(L.latLngBounds(latlngs).pad(0.1));
 }
 
@@ -1236,7 +1236,7 @@ async function toggleHelm(tripId, checked) {
     const t = myTrips.find(x => x.id === tripId);
     if (t) t.helm = checked;
     applyFilter();
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 async function deleteTripTrack(tripId) {
@@ -1246,8 +1246,8 @@ async function deleteTripTrack(tripId) {
     const t = myTrips.find(x => x.id === tripId);
     if (t) { t.trackFileUrl = ''; t.trackSimplified = ''; t.trackSource = ''; }
     applyFilter();
-    showToast(IS ? 'GPS-leið eytt' : 'Track deleted', 'ok');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.trackDeleted'), 'success');
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 async function deleteTripPhoto(tripId, photoUrl) {
@@ -1266,8 +1266,8 @@ async function deleteTripPhoto(tripId, photoUrl) {
       await apiPost('saveTrip', { id: tripId, photoMeta: t.photoMeta });
     }
     applyFilter();
-    showToast(IS ? 'Mynd eytt' : 'Photo deleted', 'ok');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.photoDeleted'), 'success');
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 // ── Share tokens ─────────────────────────────────────────────────────────────
@@ -1301,9 +1301,9 @@ function renderShareTokens(tokens){
   el.innerHTML=active.map(function(tk){
     return '<div class="flex-center gap-8 text-sm" style="margin-top:6px">'
       +'<span class="text-green">●</span>'
-      +'<span class="flex-1 text-muted">'+(IS?'Til':'Up to')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+(IS?' skoðanir':' views')+'</span>'
-      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+(IS?'Afrita':'Copy')+'</button>'
-      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" onclick="revokeShareToken(\''+tk.id+'\')">'+(IS?'Afturkalla':'Revoke')+'</button>'
+      +'<span class="flex-1 text-muted">'+s('logbook.upTo')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+' '+s('logbook.views')+'</span>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+s('logbook.copy')+'</button>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" onclick="revokeShareToken(\''+tk.id+'\')">'+s('logbook.revoke')+'</button>'
       +'</div>';
   }).join('');
 }
@@ -1331,7 +1331,7 @@ async function revokeShareToken(tokenId){
   if(!await ymConfirm(s('logbook.revokeLink')))return;
   try{
     await apiPost('revokeShareToken',{tokenId:tokenId,kennitala:user.kennitala});
-    showToast(IS?'Hlekkur afturkallaður.':'Link revoked.');
+    showToast(s('logbook.linkRevoked'));
     loadShareTokens();
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
@@ -1349,7 +1349,7 @@ async function reload(){
     applyFilter();
   }catch(e){
     document.getElementById('tripList').innerHTML=
-      '<div class="empty-note text-red">Could not load logbook: '+esc(e.message)+'</div>';
+      '<div class="empty-note text-red">'+s('logbook.loadFailed',{msg:esc(e.message)})+'</div>';
   }
 }
 
@@ -1382,7 +1382,7 @@ async function reload(){
     warmContainer();
   }catch(e){
     document.getElementById('tripList').innerHTML=
-      '<div class="empty-note text-red">Could not load: '+esc(e.message)+'</div>';
+      '<div class="empty-note text-red">'+s('logbook.loadFailed2',{msg:esc(e.message)})+'</div>';
   }
 })();
 
@@ -1397,8 +1397,8 @@ async function requestTripValidation(id) {
     const t = myTrips.find(x => x.id === id);
     if (t) t.validationRequested = true;
     applyFilter();
-    showToast(IS ? 'Óskað eftir staðfestingu' : 'Verification requested');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.verificationReq'));
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 // ══ CONFIRMATIONS ════════════════════════════════════════════════════════════
@@ -1439,8 +1439,8 @@ function _confDesc(c){
   if(c.type==='crew_assigned') return s('member.crewAssigned');
   if(c.type==='crew_join') return s('member.crewJoin');
   if(c.type==='helm') return s('member.helmReq');
-  if(c.type==='student') return IS?'Nemamerking':'Student badge';
-  if(c.type==='verify') return IS?'Staðfesting ferðar':'Trip verification';
+  if(c.type==='student') return s('logbook.studentBadge');
+  if(c.type==='verify') return s('logbook.tripVerification');
   return c.type;
 }
 
@@ -1451,7 +1451,7 @@ function renderConfirmations(){
   // Check if there are any resolved (non-pending) confirmations for dismiss-all button
   var hasResolved = _confirmations.incoming.concat(_confirmations.outgoing).some(function(c){return c.status!=='pending';});
   var dismissAllBtn = hasResolved
-    ? '<div class="mb-8" style="text-align:right"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+(IS?'Fjarlægja allar afgreiddar':'Dismiss all resolved')+'</button></div>'
+    ? '<div class="mb-8" style="text-align:right"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+s('logbook.dismissAllResolved')+'</button></div>'
     : '';
   // Insert dismiss-all before the incoming section
   var dismissAllEl = document.getElementById('confDismissAll');
@@ -1480,7 +1480,7 @@ function renderConfirmations(){
       var header='<div class="flex-center flex-wrap gap-6 mb-6">'+
         '<span class="conf-boat-info fw-500">'+esc(first.boatName||'')+'</span>'+
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
-        '<span class="conf-name text-xs text-muted">'+(IS?'frá':'from')+' '+esc(first.fromName||'?')+'</span>'+
+        '<span class="conf-name text-xs text-muted">'+s('logbook.from')+' '+esc(first.fromName||'?')+'</span>'+
       '</div>';
       var items=group.map(function(c){
         var isPending=c.status==='pending';
@@ -1493,7 +1493,7 @@ function renderConfirmations(){
             '</div>':
             '<div class="flex-center gap-4 ml-auto">'+
               '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-              '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>'+
+              '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+s('logbook.dismiss')+'</button>'+
               (c.rejectComment?' <span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
             '</div>'
           )+
@@ -1527,7 +1527,7 @@ function renderConfirmations(){
           '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
           '<span class="conf-status '+c.status+' ml-auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+(IS?'Fjarlægja':'Dismiss')+'</button>':'')+
+          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+s('logbook.dismiss')+'</button>':'')+
           (c.rejectComment?'<span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
         '</div>';
       }).join('');
@@ -1548,7 +1548,7 @@ async function respondConf(confId,response,rejectComment){
       // Refresh logbook to show new trip
       reload();
     }
-    showToast(response==='confirmed'?(IS?'Staðfest ✓':'Confirmed ✓'):(IS?'Hafnað':'Rejected'));
+    showToast(response==='confirmed'?s('logbook.confirmed'):s('logbook.rejected'));
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
 
@@ -1564,8 +1564,8 @@ async function editNote(tripId, field) {
   if (!t) return;
   const current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
   const label = field === 'skipperNote'
-    ? (IS ? 'Athugasemdir skipstjóra (sýnilegt áhöfn):' : "Skipper's comments (visible to crew):")
-    : (IS ? 'Persónulegar athugasemdir (aðeins þú sérð):' : 'Personal comments (only you):');
+    ? s('logbook.skipperNoteLabel')
+    : s('logbook.privateNoteLabel');
   const val = await ymPrompt(label, current);
   if (val === null) return;
   try {
@@ -1574,8 +1574,8 @@ async function editNote(tripId, field) {
     await apiPost('saveTrip', { id: tripId, [field]: val });
     t[field] = val;
     applyFilter();
-    showToast(IS ? 'Athugasemd vistuð' : 'Note saved', 'ok');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.noteSaved'), 'success');
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 // ── Dismiss confirmations ───────────────────────────────────────────────────
@@ -1585,8 +1585,8 @@ async function dismissConf(confId) {
     _confirmations.incoming = _confirmations.incoming.filter(c => c.id !== confId);
     _confirmations.outgoing = _confirmations.outgoing.filter(c => c.id !== confId);
     renderConfirmations();
-    showToast(IS ? 'Fjarlægt' : 'Dismissed', 'ok');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.dismissed'), 'success');
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 async function dismissAllConf() {
@@ -1595,8 +1595,8 @@ async function dismissAllConf() {
     _confirmations.incoming = _confirmations.incoming.filter(c => c.status === 'pending');
     _confirmations.outgoing = _confirmations.outgoing.filter(c => c.status === 'pending');
     renderConfirmations();
-    showToast(IS ? 'Allar fjarlægðar' : 'All dismissed', 'ok');
-  } catch(e) { showToast('Error: ' + e.message, 'err'); }
+    showToast(s('logbook.allDismissed'), 'success');
+  } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
 
 // ── Edit trip (skipper only) ────────────────────────────────────────────────
@@ -1605,7 +1605,7 @@ function openEditTrip(tripId) {
   if (!t) return;
   // Only skipper+owner can edit
   if (t.role === 'crew' || String(t.kennitala) !== String(user.kennitala)) {
-    showToast(IS ? 'Aðeins skipstjóri getur breytt ferðinni' : 'Only the skipper can edit this trip', 'err');
+    showToast(s('logbook.onlySkipper'), 'err');
     return;
   }
   document.getElementById('etId').value = t.id;
@@ -1619,7 +1619,7 @@ function openEditTrip(tripId) {
   document.getElementById('etSkipperNote').value = t.skipperNote || '';
   // Populate boat select
   const boatSel = document.getElementById('etBoat');
-  boatSel.innerHTML = '<option value="">Select boat…</option>';
+  boatSel.innerHTML = '<option value="">' + s('logbook.selectBoat') + '</option>';
   allBoats.forEach(b => {
     const o = document.createElement('option');
     o.value = b.id; o.textContent = b.name;
@@ -1628,7 +1628,7 @@ function openEditTrip(tripId) {
   });
   // Populate location select
   const locSel = document.getElementById('etLocation');
-  locSel.innerHTML = '<option value="">Select location…</option>';
+  locSel.innerHTML = '<option value="">' + s('logbook.selectLocation') + '</option>';
   allLocs.forEach(l => {
     const o = document.createElement('option');
     o.value = l.id; o.textContent = l.name;
@@ -1641,20 +1641,20 @@ function openEditTrip(tripId) {
   const etWsRaw = wx?.ws;
   const etWsMs = etWsRaw != null ? parseWsValue(etWsRaw) : null;
   document.getElementById('etWindMs').value = etWsMs != null ? convertWind(etWsMs, _mWindUnit) : '';
-  document.getElementById('etWindLabel').textContent = 'Wind (' + windUnitLabel(_mWindUnit) + ')';
+  document.getElementById('etWindLabel').textContent = s('logbook.windLabel',{unit:windUnitLabel(_mWindUnit)});
   document.getElementById('etWindDir').value = wx?.dir || t.windDir || '';
   document.getElementById('etBft').value = wx?.bft ?? t.beaufort ?? '';
   // Additional weather fields
   const etGustMs = wx?.wg != null ? parseWsValue(wx.wg) : null;
   document.getElementById('etGusts').value = etGustMs != null ? convertWind(etGustMs, _mWindUnit) : '';
-  document.getElementById('etGustLabel').textContent = 'Gusts (' + windUnitLabel(_mWindUnit) + ')';
+  document.getElementById('etGustLabel').textContent = s('logbook.gustsLabel',{unit:windUnitLabel(_mWindUnit)});
   document.getElementById('etAirTemp').value = wx?.tc != null ? Math.round(wx.tc) : '';
   document.getElementById('etSeaTemp').value = wx?.sst != null ? wx.sst.toFixed(1) : '';
   document.getElementById('etWaveHeight').value = wx?.wv != null ? wx.wv.toFixed(1) : '';
   document.getElementById('etPressure').value = wx?.pres != null ? Math.round(wx.pres) : '';
   document.getElementById('etErr').style.display = 'none';
-  document.getElementById('editTripTitle').textContent = IS ? 'Breyta ferð' : 'Edit trip';
-  document.getElementById('etSubmitBtn').textContent = IS ? 'Vista breytingar' : 'Save changes';
+  document.getElementById('editTripTitle').textContent = s('logbook.editTripTitle');
+  document.getElementById('etSubmitBtn').textContent = s('logbook.saveChanges');
   document.getElementById('editTripModal').classList.remove('hidden');
 }
 
@@ -1691,9 +1691,9 @@ async function submitEditTrip() {
   const bft = document.getElementById('etBft').value;
   // Validate
   const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
-  if (timeOut && !timeRe.test(timeOut)) { errEl.textContent = 'Invalid departure time (HH:MM).'; errEl.style.display = ''; return; }
-  if (timeIn && !timeRe.test(timeIn)) { errEl.textContent = 'Invalid return time (HH:MM).'; errEl.style.display = ''; return; }
-  if (!date) { errEl.textContent = 'Please enter a date.'; errEl.style.display = ''; return; }
+  if (timeOut && !timeRe.test(timeOut)) { errEl.textContent = s('logbook.errDepartureTime'); errEl.style.display = ''; return; }
+  if (timeIn && !timeRe.test(timeIn)) { errEl.textContent = s('logbook.errReturnTime'); errEl.style.display = ''; return; }
+  if (!date) { errEl.textContent = s('logbook.errDate'); errEl.style.display = ''; return; }
   // Compute hours
   let hoursDecimal = 0;
   if (timeOut && timeIn) {
@@ -1730,7 +1730,7 @@ async function submitEditTrip() {
   if (Object.keys(wxObj).length) wxSnapshot = JSON.stringify(wxObj);
 
   const btn = document.getElementById('etSubmitBtn');
-  btn.disabled = true; btn.textContent = IS ? 'Vista…' : 'Saving…';
+  btn.disabled = true; btn.textContent = s('logbook.saving');
   try {
     await apiPost('saveTrip', {
       id: tripId, date, boatId, boatName, boatCategory,
@@ -1743,11 +1743,11 @@ async function submitEditTrip() {
     Object.assign(t, { date, boatId, boatName, boatCategory, locationId: locId, locationName: locName, timeOut, timeIn, hoursDecimal, crew, beaufort: bft, windDir, wxSnapshot, skipperNote, distanceNm, departurePort: depPort, arrivalPort: arrPort });
     closeEditTrip();
     applyFilter();
-    showToast(IS ? 'Ferð uppfærð' : 'Trip updated', 'ok');
+    showToast(s('logbook.tripUpdated2'), 'success');
   } catch(e) {
-    errEl.textContent = 'Error: ' + e.message; errEl.style.display = '';
+    errEl.textContent = s('logbook.errGeneric',{msg:e.message}); errEl.style.display = '';
   }
-  btn.disabled = false; btn.textContent = IS ? 'Vista breytingar' : 'Save changes';
+  btn.disabled = false; btn.textContent = s('logbook.saveChanges');
 }
 
 // ── Inline GPS track upload ────────────────────────────────────────────────
@@ -1758,7 +1758,7 @@ function inlineUploadTrack(tripId) {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
-    showToast(IS ? 'Hleð upp GPS-leið…' : 'Uploading GPS track…');
+    showToast(s('logbook.uploadingTrack'));
     try {
       const fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1767,7 +1767,7 @@ function inlineUploadTrack(tripId) {
         reader.readAsDataURL(file);
       });
       const res = await apiPost('uploadTripFile', { fileType: 'track', fileName: file.name, fileData, mimeType: file.type });
-      if (!res.ok) { showToast(IS ? 'Upphal mistókst' : 'Upload failed', 'err'); return; }
+      if (!res.ok) { showToast(s('logbook.uploadFailed'), 'err'); return; }
       // Save track to trip
       const updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
       if (res.distanceNm) updates.distanceNm = res.distanceNm;
@@ -1775,7 +1775,7 @@ function inlineUploadTrack(tripId) {
       const t = myTrips.find(x => x.id === tripId);
       if (t) Object.assign(t, updates);
       applyFilter();
-      showToast(IS ? 'GPS-leið bætt við' : 'GPS track added', 'ok');
+      showToast(s('logbook.trackAdded2'), 'success');
     } catch(e) { showToast('Error: ' + e.message, 'err'); }
   };
   input.click();
@@ -1792,13 +1792,11 @@ function inlineUploadPhotos(tripId) {
   document.getElementById('puShared').checked = true;
   document.getElementById('puClubUse').checked = false;
   document.getElementById('puErr').style.display = 'none';
-  document.getElementById('photoUploadTitle').textContent = IS ? 'Bæta við myndum' : 'Add photos';
-  document.getElementById('puSharedLbl').textContent = IS ? 'Deila með áhöfn' : 'Share with crew';
-  document.getElementById('puClubLbl').textContent = IS ? 'Félagið má nota' : 'Club may use';
-  document.getElementById('puHint').textContent = IS
-    ? 'Deildar myndir sjást öðrum í ferðinni. Myndir merktar fyrir félagið má nota í kynningarefni.'
-    : 'Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.';
-  document.getElementById('puSubmitBtn').textContent = IS ? 'Hlaða upp myndum' : 'Upload photos';
+  document.getElementById('photoUploadTitle').textContent = s('logbook.addPhotosTitle');
+  document.getElementById('puSharedLbl').textContent = s('logbook.shareWithCrew');
+  document.getElementById('puClubLbl').textContent = s('logbook.clubMayUse');
+  document.getElementById('puHint').textContent = s('logbook.photoHint');
+  document.getElementById('puSubmitBtn').textContent = s('logbook.uploadPhotos');
   document.getElementById('photoUploadModal').classList.remove('hidden');
 }
 
@@ -1827,14 +1825,14 @@ async function submitInlinePhotos() {
   const t = myTrips.find(x => x.id === tripId);
   if (!t) return;
   if (!_inlinePhotos.length) {
-    document.getElementById('puErr').textContent = IS ? 'Engar myndir valdar' : 'No photos selected';
+    document.getElementById('puErr').textContent = s('logbook.noPhotosSelected');
     document.getElementById('puErr').style.display = '';
     return;
   }
   const shared = document.getElementById('puShared').checked;
   const clubUse = document.getElementById('puClubUse').checked;
   const btn = document.getElementById('puSubmitBtn');
-  btn.disabled = true; btn.textContent = IS ? 'Hleð upp…' : 'Uploading…';
+  btn.disabled = true; btn.textContent = s('logbook.uploading');
   try {
     let urls = []; try { urls = JSON.parse(t.photoUrls || '[]'); } catch(e) {}
     let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
@@ -1846,7 +1844,7 @@ async function submitInlinePhotos() {
           newUrls.push(res.photoUrl);
           meta[res.photoUrl] = { shared, clubUse, uploadedBy: user.kennitala };
         }
-      } catch(e) { showToast((IS ? 'Upphal mistókst: ' : 'Upload failed: ') + e.message, 'warn'); }
+      } catch(e) { showToast(s('logbook.uploadFailed2',{msg:e.message}), 'warn'); }
     }));
     if (newUrls.length) {
       const allUrls = urls.concat(newUrls);
@@ -1858,12 +1856,12 @@ async function submitInlinePhotos() {
     }
     closePhotoUpload();
     applyFilter();
-    showToast(IS ? 'Myndir bættar við' : 'Photos added', 'ok');
+    showToast(s('logbook.photosAdded2'), 'success');
   } catch(e) {
-    document.getElementById('puErr').textContent = 'Error: ' + e.message;
+    document.getElementById('puErr').textContent = s('logbook.errGeneric',{msg:e.message});
     document.getElementById('puErr').style.display = '';
   }
-  btn.disabled = false; btn.textContent = IS ? 'Hlaða upp myndum' : 'Upload photos';
+  btn.disabled = false; btn.textContent = s('logbook.uploadPhotos');
 }
 
 // Load confirmations after page init
