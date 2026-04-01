@@ -99,16 +99,16 @@ function isCaptain(u) {
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
-function isCoxswain(u) {
+function isReleasedRower(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return (c.sub === 'coxswain' || c.certId === 'released_rower') && _certNotExpired(c); });
+  return Array.isArray(certs) && certs.some(function(c) { return (c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c); });
 }
 function hasRowingEndorsement(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) {
-    return (c.sub === 'coxswain' || c.sub === 'released_rower' || c.certId === 'released_rower') && _certNotExpired(c);
+    return (c.certId === 'rowing_division' || c.sub === 'rowing_division' || c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c);
   });
 }
 

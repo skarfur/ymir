@@ -64,7 +64,7 @@
     <div class="text-sm text-muted" style="margin-top:2px" id="cxSubtitle"></div>
   </div>
 
-  <!-- Read-only banner for non-coxswain rowers -->
+  <!-- Read-only banner for non-released rowers -->
   <div class="cx-readonly hidden" id="cxReadOnly" data-s="cox.readOnly"></div>
 
   <!-- ══ YTD STATS ══ -->
@@ -246,12 +246,12 @@
 // ══ AUTH (runs immediately — api.js is non-deferred) ═════════════════════════
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
+const _isReleasedRower = isReleasedRower(user);
 
 // ══ Wait for deferred scripts (boats.js, certs.js, maintenance.js) ══════════
 document.addEventListener('DOMContentLoaded', function() {
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
-const _isCoxswain = isCoxswain(user);
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 var _membersLoaded = false;
 
@@ -262,8 +262,8 @@ var _membersLoaded = false;
   document.getElementById('cxTitle').textContent = s('cox.title');
   document.getElementById('cxSubtitle').textContent = user.name;
 
-  // Show read-only banner for non-coxswain rowers
-  if (!_isCoxswain) {
+  // Show read-only banner for non-released rowers
+  if (!_isReleasedRower) {
     document.getElementById('cxReadOnly').classList.remove('hidden');
   }
 
@@ -284,8 +284,8 @@ var _membersLoaded = false;
 
     if (cfgRes.boatCategories) registerBoatCats(cfgRes.boatCategories);
 
-    // Filter trips to coxswain-gated boats
-    var cxBoatIds = new Set(_boats.filter(b => b.accessGateCert === 'coxswain').map(b => b.id));
+    // Filter trips to rowing-division-gated boats
+    var cxBoatIds = new Set(_boats.filter(b => b.accessGateCert === 'released_rower').map(b => b.id));
     _allTrips = (tripsRes.trips || []).filter(t => cxBoatIds.has(t.boatId));
 
     renderStats();
@@ -327,13 +327,13 @@ function renderStats() {
 // ══ BOAT AVAILABILITY ════════════════════════════════════════════════════════
 function renderBoats() {
   var el = document.getElementById('boatList');
-  // Show rowing-shell boats that are controlled-access with a coxswain gate cert,
-  // or have reservations for this user, or the user can access
+  // Show rowing-shell boats that are controlled-access with a released_rower gate cert,
+  // or have reservations for this user
   var rowingBoats = _boats.filter(b => {
-    // Show controlled-access boats gated by coxswain cert
-    if (b.accessMode === 'controlled' && b.accessGateCert === 'coxswain') return true;
-    // Show slot-scheduled boats gated by coxswain cert
-    if (boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'coxswain') return true;
+    // Show controlled-access boats gated by released_rower cert
+    if (b.accessMode === 'controlled' && b.accessGateCert === 'released_rower') return true;
+    // Show slot-scheduled boats gated by released_rower cert
+    if (boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'released_rower') return true;
     // Show any boat this user has a reservation for
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
     return false;
@@ -355,7 +355,7 @@ function renderBoats() {
     if (b.reservations && b.reservations.length) {
       resHtml = '<div style="margin-top:8px;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px">' + s('cox.reservations') + '</div>';
       resHtml += b.reservations.map(r => {
-        var removeBtn = _isCoxswain
+        var removeBtn = _isReleasedRower
           ? '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeCxReservation(\'' + esc(b.id) + '\',\'' + esc(r.id) + '\')">&times;</button>'
           : '';
         return '<div style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center">'
@@ -366,9 +366,9 @@ function renderBoats() {
       }).join('');
     }
 
-    // Actions — only for coxswains
+    // Actions — only for released rowers
     var actionsHtml = '';
-    if (_isCoxswain) {
+    if (_isReleasedRower) {
       actionsHtml = '<div class="cx-boat-actions">'
         + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cox.makeAvailable' : 'cox.makeUnavailable') + '</button>'
         + '<button onclick="openResModal(\'' + esc(b.id) + '\')">' + s('cox.addReservation') + '</button>'
@@ -480,13 +480,13 @@ async function removeCxReservation(boatId, resId) {
 }
 
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
-var _coxswainBoatIdSet = null;
+var _rowingBoatIdSet = null;
 function renderMaint() {
   var el = document.getElementById('maintList');
-  if (!_coxswainBoatIdSet) {
-    _coxswainBoatIdSet = new Set(_boats.filter(b => b.accessGateCert === 'coxswain').map(b => b.id));
+  if (!_rowingBoatIdSet) {
+    _rowingBoatIdSet = new Set(_boats.filter(b => b.accessGateCert === 'released_rower').map(b => b.id));
   }
-  var items = _allMaint.filter(m => _coxswainBoatIdSet.has(m.boatId) && m.status !== 'resolved');
+  var items = _allMaint.filter(m => _rowingBoatIdSet.has(m.boatId) && m.status !== 'resolved');
   if (!items.length) {
     el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
     return;
@@ -636,7 +636,7 @@ function searchCrewInvMember(q) {
     var hits = [], count = 0;
     for (var i = 0; i < _members.length && count < 8; i++) {
       var m = _members[i];
-      if ((m.name || '').toLowerCase().includes(ql) && hasRowingEndorsement(m)) { hits.push(m); count++; }
+      if ((m.name || '').toLowerCase().includes(ql) && isReleasedRower(m)) { hits.push(m); count++; }
     }
     if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
     drop.innerHTML = hits.map(function(m) {
@@ -720,12 +720,11 @@ var _cxSlotBoats = [];
 function initCxSlots() {
   // Find rowing-shell boats with slot scheduling
   _cxSlotBoats = (_boats || []).filter(function(b) {
-    return boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'coxswain';
+    return boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'released_rower';
   });
   var sect = document.getElementById('sectSlots');
-  // Only show if there are slot-scheduled rowing-shells AND user has active crews
-  var activeCrews = _myCrews.filter(function(c) { return c.status === 'active'; });
-  if (!_cxSlotBoats.length || !activeCrews.length) { sect.style.display = 'none'; return; }
+  // Show section if there are slot-scheduled boats (no longer requires active crews)
+  if (!_cxSlotBoats.length) { sect.style.display = 'none'; return; }
   sect.style.display = '';
   // Populate boat filter
   var boatSel = document.getElementById('cxSlotBoat');
@@ -733,12 +732,17 @@ function initCxSlots() {
   _cxSlotBoats.forEach(function(b) {
     boatSel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
   });
-  // Populate crew filter
+  // Populate crew filter (may be empty if no active crews yet)
+  var activeCrews = _myCrews.filter(function(c) { return c.status === 'active'; });
   var crewSel = document.getElementById('cxSlotCrew');
   crewSel.innerHTML = '';
-  activeCrews.forEach(function(c) {
-    crewSel.innerHTML += '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
-  });
+  if (!activeCrews.length) {
+    crewSel.innerHTML = '<option value="">' + s('cox.noCrewsShort') + '</option>';
+  } else {
+    activeCrews.forEach(function(c) {
+      crewSel.innerHTML += '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+    });
+  }
   // Init week
   var d = new Date();
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
@@ -827,7 +831,7 @@ function renderCxSlots() {
 
 async function bookCxSlot(slotId) {
   var crewId = document.getElementById('cxSlotCrew').value;
-  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  if (!crewId) { showToast(s('cox.createCrewFirst'), 'err'); return; }
   var crew = _myCrews.find(function(c) { return c.id === crewId; });
   var slot = _cxSlots.find(function(sl) { return sl.id === slotId; });
   if (slot) {
@@ -868,7 +872,7 @@ async function unbookCxSlot(slotId) {
 
 function openCxBulkBookModal() {
   var crewId = document.getElementById('cxSlotCrew').value;
-  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  if (!crewId) { showToast(s('cox.createCrewFirst'), 'err'); return; }
   document.querySelectorAll('#cxBbDays input').forEach(function(cb) { cb.checked = false; });
   var today = new Date().toISOString().slice(0, 10);
   document.getElementById('cxBbStartTime').value = '';
@@ -909,7 +913,7 @@ async function previewCxBulkBook() {
 
 async function submitCxBulkBook() {
   var crewId = document.getElementById('cxSlotCrew').value;
-  if (!crewId) { showToast(s('cox.selectCrew'), 'err'); return; }
+  if (!crewId) { showToast(s('cox.createCrewFirst'), 'err'); return; }
   var days = [];
   document.querySelectorAll('#cxBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
   var fromDate = document.getElementById('cxBbFromDate').value;
