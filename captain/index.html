@@ -175,6 +175,7 @@
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
         <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqCreateSlotModal()" data-s="slot.createAndBook" id="cqCreateSlotBtn">+ New Booking</button>
       </div>
     </div>
     <div id="cqSlotGrid" style="overflow-x:auto"></div>
@@ -271,6 +272,28 @@
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="previewCqBulkBook()" data-s="slot.preview">Preview</button>
       <button class="btn btn-primary" onclick="submitCqBulkBook()" data-s="slot.bulkBook">Bulk Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREATE & BOOK SLOT MODAL ══ -->
+<div class="modal-overlay hidden" id="cqCreateSlotModal" onclick="if(event.target===this)closeModal('cqCreateSlotModal')">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3 data-s="slot.createAndBookTitle">Create & Book Slot</h3>
+      <button class="modal-close-x" onclick="closeModal('cqCreateSlotModal')">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="slot.date">Date</label>
+      <input type="date" id="cqCsDate">
+    </div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cqCsStart"></div>
+      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cqCsEnd"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('cqCreateSlotModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="submitCqCreateSlot()" data-s="slot.createAndBook">+ New Booking</button>
     </div>
   </div>
 </div>
@@ -604,11 +627,11 @@ function renderBoats() {
   var el = document.getElementById('boatList');
   // Find boats: owned, reserved for captain, or controlled-access with captain gate cert
   var myBoats = _boats.filter(b => {
+    // Only privately owned boats belong in "My Boats"
+    if (b.ownership !== 'private') return false;
     // Private boat owned by this captain
-    if (b.ownership === 'private' && (String(b.ownerId || b.ownerKennitala || '') === String(user.kennitala))) return true;
-    // Controlled-access boat with captain gate cert
-    if (b.accessMode === 'controlled' && b.accessGateCert === 'captain') return true;
-    // Boat with active reservation for this captain
+    if (String(b.ownerId || b.ownerKennitala || '') === String(user.kennitala)) return true;
+    // Private boat with active reservation for this captain
     if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
     return false;
   });
@@ -892,6 +915,10 @@ function initCqReservations() {
 async function loadCqSlots() {
   var boatId = document.getElementById('cqResBoat').value;
   if (!boatId) return;
+  // Show "Create & Book" button only when boat is available outside its defined slots
+  var selBoat = _cqSlotBoats.find(function(b) { return b.id === boatId; });
+  var createBtn = document.getElementById('cqCreateSlotBtn');
+  if (createBtn) createBtn.style.display = (selBoat && selBoat.availableOutsideSlots !== false) ? '' : 'none';
   var fromDate = _cqWeekStart.toISOString().slice(0, 10);
   var toD = new Date(_cqWeekStart); toD.setDate(toD.getDate() + 6);
   var toDate = toD.toISOString().slice(0, 10);
@@ -1070,6 +1097,34 @@ function cqWeekToday() {
   d.setHours(0,0,0,0);
   _cqWeekStart = d;
   loadCqSlots();
+}
+
+function openCqCreateSlotModal() {
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('cqCsDate').value = today;
+  document.getElementById('cqCsStart').value = '';
+  document.getElementById('cqCsEnd').value = '';
+  applyStrings(document.getElementById('cqCreateSlotModal'));
+  openModal('cqCreateSlotModal');
+}
+
+async function submitCqCreateSlot() {
+  var boatId = document.getElementById('cqResBoat').value;
+  if (!boatId) { toast(s('slot.missingFields'), 'err'); return; }
+  var date = document.getElementById('cqCsDate').value;
+  var startTime = document.getElementById('cqCsStart').value;
+  var endTime = document.getElementById('cqCsEnd').value;
+  if (!date || !startTime || !endTime) { toast(s('slot.missingFields'), 'err'); return; }
+  if (endTime <= startTime) { toast(s('slot.missingFields'), 'err'); return; }
+  try {
+    // Create the slot
+    var res = await apiPost('saveSlot', { boatId: boatId, date: date, startTime: startTime, endTime: endTime });
+    // Book it for the current user
+    await apiPost('bookSlot', { slotId: res.slotId, kennitala: user.kennitala, memberName: user.name });
+    closeModal('cqCreateSlotModal');
+    toast(s('slot.createdAndBooked'));
+    loadCqSlots();
+  } catch(e) { toast(e.message || 'Error', 'err'); }
 }
 </script>
 </body>
