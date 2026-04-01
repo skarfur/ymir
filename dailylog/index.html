@@ -1017,7 +1017,7 @@ function applyLogData(log, cfgRes) {
     if (log.signedOffBy) {
       dom.signoffBadge.classList.remove('hidden');
       const at = log.signedOffAt
-        ? ' at ' + new Date(log.signedOffAt).toLocaleTimeString(L === 'IS' ? 'is-IS' : 'en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        ? ' at ' + fmtTime(log.signedOffAt) : '';
       dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
     }
   }

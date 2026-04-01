@@ -484,7 +484,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         flagResult: { flagKey, flag, score, breakdown },
       });
 
-      const updTime = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+      const updTime = fmtTimeNow();
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
         <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${IS?'BIRK — Aðstæður':'BIRK — CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>

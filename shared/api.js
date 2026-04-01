@@ -259,7 +259,7 @@ function fmtDateShort(iso) {
 
 function fmtTime(iso) {
   if (!iso) return "-";
-  try { return new Date(iso).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" }); }
+  try { var d = new Date(iso); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
   catch(e) { return ""; }
 }
 
