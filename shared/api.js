@@ -37,8 +37,8 @@ async function apiPost(action, payload) {
       sessionStorage.removeItem('ymir_getMembers_');
     } catch(e) {}
   }
-  // Invalidate trips cache on trip mutations
-  if (action === 'saveTrip' || action === 'deleteTrip' || action === 'setHelm') {
+  // Invalidate trips cache on trip mutations (respondConfirmation can create crew trips)
+  if (action === 'saveTrip' || action === 'deleteTrip' || action === 'setHelm' || action === 'respondConfirmation') {
     try { sessionStorage.removeItem('ymir_getTrips_'); } catch(e) {}
   }
   // Invalidate maintenance cache on maintenance mutations
