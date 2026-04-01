@@ -2626,7 +2626,7 @@ function handleCSVUpload(input) {
       importResult = parseAblerCSV(e.target.result, members);
       renderImportPreview(importResult);
     } catch(err) {
-      document.getElementById("importError").textContent = "Parse error: " + err.message;
+      document.getElementById("importError").textContent = s("admin.parseError") + ": " + err.message;
       document.getElementById("importError").style.display = "block";
     }
   };
@@ -2795,7 +2795,7 @@ function resolveAmbig(idx, decision) {
 async function confirmImport() {
   if (!importResult) return;
   const btn = document.getElementById("confirmImportBtn");
-  btn.disabled = true; btn.textContent = "Importing…";
+  btn.disabled = true; btn.textContent = s("admin.importing");
   try {
     // Resolve ambiguous entries based on admin decisions
     const extraAdded = [], extraUpdated = [];
@@ -2839,14 +2839,14 @@ async function confirmImport() {
 
     const totalAdded = importResult.added.length + extraAdded.length;
     const totalUpdated = importResult.updated.length + extraUpdated.length;
-    let msg = `Import complete: ${totalAdded} added, ${totalUpdated} updated.`;
-    if (deactivated) msg += ` ${deactivated} deactivated.`;
+    let msg = s('admin.importComplete', { added: totalAdded, updated: totalUpdated });
+    if (deactivated) msg += ' ' + s('admin.importDeactivated', { count: deactivated });
     document.getElementById("importDoneMsg").textContent = msg;
     showImportStep(3);
   } catch(e) {
-    document.getElementById("importError").textContent = "Import failed: " + e.message;
+    document.getElementById("importError").textContent = s("admin.importFailed") + ": " + e.message;
     document.getElementById("importError").style.display = "block";
-    btn.disabled = false; btn.textContent = "Confirm import";
+    btn.disabled = false; btn.textContent = s("admin.confirmImport");
   }
 }
 
@@ -3039,7 +3039,7 @@ async function saveCurrentSlot() {
     closeModal("slotModal");
     toast(s('toast.saved'));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 async function deleteCurrentSlot() {
@@ -3050,7 +3050,7 @@ async function deleteCurrentSlot() {
     closeModal("slotModal");
     toast(s('toast.deleted'));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // Recurring slot creation
@@ -3111,7 +3111,7 @@ async function saveRecurringSlots() {
     closeModal("recurSlotModal");
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();
-  } catch(e) { toast("Error: " + e.message, "err"); }
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
