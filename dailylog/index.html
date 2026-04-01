@@ -688,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var nowISO  = new Date().toISOString().slice(0,13);
       var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(tt) { return tt.slice(0,13) === nowISO; }));
       var presObj = wxPressureTrend(hr.surface_pressure, nowIdx);
-      var assessed = wxAssessFlag(ws, wDir, waveH || 0);
+      var assessed = wxScoreFlag(ws, wDir, waveH || 0, null, null, null, 'good');
       wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
                  waveDir:waveDir, sst:sst, flagKey:assessed.flagKey,
                  airT:c.temperature_2m, apparentT:c.apparent_temperature,
@@ -999,8 +999,8 @@ async function loadIncidentsForDate(date) {
 
 function applyLogData(log, cfgRes) {
   const cfg = cfgRes || {};
-  amItems       = cfg.dailyChecklist?.opening || cfg.dailyChecklist?.am  || DEFAULT_AM;
-  pmItems       = cfg.dailyChecklist?.closing  || cfg.dailyChecklist?.pm  || DEFAULT_PM;
+  amItems       = cfg.dailyChecklist?.opening || DEFAULT_AM;
+  pmItems       = cfg.dailyChecklist?.closing  || DEFAULT_PM;
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();

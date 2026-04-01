@@ -248,8 +248,8 @@ function tripCard(t){
     // Filter: show own photos + photos shared with crew
     const visibleUrls = urls.filter((u) => {
       const pm = meta[u];
-      if (!pm) return true; // legacy photos: visible to all
       if (isOwner) return true; // owner always sees own photos
+      if (!pm) return false;
       return pm.shared; // crew only sees shared photos
     });
     if (!visibleUrls.length) return '';
@@ -1134,8 +1134,6 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.trip-card.open').forEach(c => c.classList.remove('open'));
   }
 });
-// Keep old name for backwards compat with any external callers
-function toggleTripCard(card) { openTripCard(card); }
 function toggleTripDetail(btn) {
   const detail = btn.parentElement.querySelector('.trip-detailed');
   if (!detail) return;

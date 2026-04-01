@@ -1223,15 +1223,9 @@ function getConfig_() {
   const c = cGet_('config'); if (c) return okJ(c);
   // Read the config sheet ONCE and look up all keys from the in-memory map
   const cfgMap = getConfigMap_();
-  let activityTypes = [], dailyChecklist = { am: [], pm: [] };
+  let activityTypes = [], dailyChecklist = { opening: [], closing: [] };
   try {
     activityTypes = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
-    // Ensure each type has a subtypes array (for backwards compat)
-    activityTypes = activityTypes.map(function(t) {
-      if (!t.subtypes) t.subtypes = [];
-      else if (typeof t.subtypes === 'string') { try { t.subtypes = JSON.parse(t.subtypes); } catch(e) { t.subtypes = []; } }
-      return t;
-    });
   } catch (e) { }
   try {
     readAll_('dailyCL').filter(r => bool_(r.active)).forEach(r => {
@@ -2542,9 +2536,6 @@ function requestVerification_(b) {
   if (!trip) return failJ('Trip not found', 404);
   if (trip.verified && trip.verified !== 'false') return failJ('Already verified');
 
-  // Mark the trip as validation-requested (backward compat)
-  updateRow_('trips', 'id', b.tripId, { validationRequested: true });
-
   ensureConfirmationCols_();
   var ts = now_(), id = uid_();
   insertRow_('tripConfirmations', {
@@ -3321,40 +3312,6 @@ function sendSmsAlert_(alert, cfg) {
   cfg.staffSmsList.forEach(to => {
     Logger.log('[SMS] to=' + to + ' | ' + message);
   });
-}
-
-// ── One-time migration — run from Apps Script editor ───────────────────────
-function migrateTripColumns() {
-  var ss    = SpreadsheetApp.openById(SHEET_ID_);
-  var sheet = ss.getSheetByName("trips");
-  if (!sheet) { Logger.log("trips sheet not found"); return; }
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  Logger.log("Current headers: " + headers.join(", "));
-
-  // Columns to remove
-  var toRemove = ["windMs","seaState","precip","waveHeight","launchBeaufort","launchWindDir","launchWaveHeight"];
-
-  // Add wxSnapshot if missing
-  if (headers.indexOf("wxSnapshot") === -1) {
-    sheet.getRange(1, headers.length + 1).setValue("wxSnapshot");
-    headers.push("wxSnapshot");
-    Logger.log("Added wxSnapshot column");
-  }
-
-  // Remove redundant columns (work right-to-left so indices stay valid)
-  var removeIndices = [];
-  toRemove.forEach(function(name) {
-    var idx = headers.indexOf(name);
-    if (idx !== -1) removeIndices.push(idx + 1);  // 1-based
-  });
-  removeIndices.sort(function(a,b){return b-a;});
-  removeIndices.forEach(function(col) {
-    sheet.deleteColumn(col);
-    Logger.log("Deleted column " + col);
-  });
-
-  Logger.log("Migration complete. New headers: " + 
-    sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].join(", "));
 }
 
 // ── resolveAlert: called by the email relay page ────────────────────────────

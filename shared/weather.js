@@ -6,7 +6,7 @@
 //
 // FLAG SYSTEM
 // -----------
-// All flag thresholds live in FLAG_CONFIG (below). Admin can edit these via
+// All flag thresholds live in SCORE_CONFIG (below). Admin can edit these via
 // admin/index.html → Flags tab; changes are saved to the backend and fetched
 // on load via wxLoadFlagConfig(). No magic numbers anywhere else.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -33,7 +33,6 @@ let WX_LABEL = WX_DEFAULT.label;
 // SCORE_CONFIG  —  single source of truth for all flag/scoring logic.
 // Admin-editable via admin → Flags tab. wxLoadFlagConfig() merges saved values.
 // wxScoreFlag()  computes total score → flag + full breakdown.
-// wxAssessFlag() is a backwards-compatible wrapper for legacy call sites.
 // ═══════════════════════════════════════════════════════════════════════════════
 const SCORE_CONFIG = {
   thresholds: { yellow: 25, orange: 45, red: 65, black: 80 },
@@ -120,13 +119,6 @@ function wxLoadFlagConfig(saved) {
   }
 }
 
-// Backwards-compat shim
-const FLAG_CONFIG = {
-  get flags()        { return SCORE_CONFIG.flags; },
-  get easterlyDirs() { return SCORE_CONFIG.easterlyDirs; },
-  get wind()  { return { yellow: SCORE_CONFIG.thresholds.yellow, orange: SCORE_CONFIG.thresholds.orange, red: SCORE_CONFIG.thresholds.red }; },
-  get wave()  { const w = SCORE_CONFIG.waves; return { yellow:(w[1]||{}).maxM||0.5, orange:(w[2]||{}).maxM||1.0, red:(w[3]||{}).maxM||1.5 }; },
-};
 
 // ── Unit helpers ───────────────────────────────────────────────────────────────────────────────
 function wxMsToBft(ms) {
@@ -235,10 +227,6 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     reasons: breakdown.map(b => ({ f: flagKey, t: b.label })) };
 }
 
-// Backwards-compat wrapper
-function wxAssessFlag(ws, wDir, waveH) {
-  return wxScoreFlag(ws, wDir, waveH, null, null, null, 'good');
-}
 
 // ── Staff status badge HTML ─────────────────────────────────────────────────────────────────────
 function wxStaffStatusHtml(status, lang) {

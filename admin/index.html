@@ -1064,9 +1064,8 @@ async function loadAll() {
 
   // ── Assign data ───────────────────────────────────────────────────────────
   actTypes       = cfgRes.activityTypes || [];
-  // Support both old phase values (am/pm) and new (opening/closing) for back-compat
-  clItems        = [ ...(cfgRes.dailyChecklist?.opening || cfgRes.dailyChecklist?.am || []),
-                     ...(cfgRes.dailyChecklist?.closing  || cfgRes.dailyChecklist?.pm || []) ];
+  clItems        = [ ...(cfgRes.dailyChecklist?.opening || []),
+                     ...(cfgRes.dailyChecklist?.closing  || []) ];
   certDefs       = certDefsFromConfig(cfgRes.certDefs || []);
   certCategories = certCategoriesFromConfig(cfgRes.certCategories || []);
   _allBoats      = cfgRes.boats      || [];
@@ -1839,7 +1838,6 @@ async function deleteLocation(id) {
 // ══ OPENING / CLOSING CHECKLISTS ═════════════════════════════════════════════
 // Items stored in dailyChecklist.opening[] and dailyChecklist.closing[] in config.
 // Phase field on each item is "opening" or "closing".
-// Back-compat: legacy "am"/"pm" values are normalised on load in loadAll().
 
 function renderChecklists() {
   renderCLPhase("openingCLCard", "opening");
@@ -1848,10 +1846,8 @@ function renderChecklists() {
 
 function renderCLPhase(cardId, phase) {
   const card  = document.getElementById(cardId);
-  // Normalise legacy am→opening, pm→closing for display
-  const norm  = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : p);
   const items = clItems
-    .filter(i => norm(String(i.phase).toLowerCase()) === phase && bool(i.active))
+    .filter(i => String(i.phase).toLowerCase() === phase && bool(i.active))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   if (!items.length) { card.innerHTML = `<div class="empty-state">${s('admin.noItems')}</div>`; return; }
   card.innerHTML = items.map(i => `
@@ -1867,9 +1863,8 @@ function renderCLPhase(cardId, phase) {
 function openCLModal(id) {
   editingId    = id || null;
   const item   = id ? clItems.find(x => x.id === id) : null;
-  const norm   = p => (p === 'am' ? 'opening' : p === 'pm' ? 'closing' : (p || 'opening'));
   document.getElementById("clModalTitle").textContent = item ? s('admin.clModal.edit') : s('admin.clModal.add');
-  document.getElementById("clPhase").value    = item ? norm(item.phase) : "opening";
+  document.getElementById("clPhase").value    = item ? (item.phase || 'opening') : "opening";
   document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
   document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
   document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;

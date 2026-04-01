@@ -394,19 +394,11 @@ function prRenderCalLabel(){
   var d=new Date(_calYear,_calMonth,1);
   document.getElementById('prCalLabel').textContent=String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
 }
-// Pair separate type='in'/type='out' rows into single session entries,
-// and preserve legacy single-row entries (originalTimestamp format).
+// Pair separate type='in'/type='out' rows into single session entries.
 function _pairTimeEntries(rows) {
   var ins   = rows.filter(function(r){ return r.type==='in'; });
   var outs  = rows.filter(function(r){ return r.type==='out'; });
-  var other = rows.filter(function(r){ return r.type!=='in'&&r.type!=='out'&&r.type!=='break_start'&&r.type!=='break_end'; });
   var paired = [];
-  // Legacy single-row entries
-  other.forEach(function(r){
-    var e=Object.assign({},r);
-    if(!e.clockIn&&e.originalTimestamp)e.clockIn=e.originalTimestamp;
-    paired.push(e);
-  });
   // Pair out rows with their matching in rows
   var usedInIds=new Set();
   outs.slice().sort(function(a,b){return a.timestamp>b.timestamp?1:-1;}).forEach(function(out){
@@ -692,8 +684,8 @@ function prPayslipCard(emp,calc,ytd,regularMins){
   h+='</div><div class="psc-hrs">';
   h+='<label class="hrs-label" data-s="payroll.regularHours"></label>';
   h+='<input class="hrs-inp" id="pHrs_'+eid+'" type="number" min="0" step="0.25" value="'+(regularMins/60).toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
-  var _otTiers=typeof _legacyOtRulesToArray==='function'
-    ?_legacyOtRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
+  var _otTiers=typeof _otRulesToArray==='function'
+    ?_otRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
     :((window.PAYROLL_CONFIG||{}).otRules||[]);
   _otTiers.forEach(function(tier){
     var hrs=((calc.otLines||[]).find(function(l){return l.tierId===tier.id;})||{hrs:0}).hrs||0;
@@ -794,8 +786,8 @@ function prGetLines(empId){
 function prRecalc(empId){
   var d=(_previewData.employees||{})[empId];if(!d)return;
   var hrs=+(document.getElementById('pHrs_'+empId)||{value:0}).value||0;
-  var otTiers=typeof _legacyOtRulesToArray==='function'
-    ?_legacyOtRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
+  var otTiers=typeof _otRulesToArray==='function'
+    ?_otRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
     :((window.PAYROLL_CONFIG||{}).otRules||[]);
   var otMins={};
   otTiers.forEach(function(tier){
@@ -1109,7 +1101,7 @@ async function cfgSaveAllowBreaks(){
 }
 function cfgRenderOT(){
   var cfg=window.PAYROLL_CONFIG||{};
-  var tiers=typeof _legacyOtRulesToArray==='function'?_legacyOtRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
+  var tiers=typeof _otRulesToArray==='function'?_otRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
   cfg.otRules=tiers;
   var div=document.getElementById('cfgOTPanel');if(!div)return;
   var html='';
@@ -1138,7 +1130,7 @@ function cfgRenderOT(){
 }
 function cfgAddOTTier(){
   var cfg=window.PAYROLL_CONFIG||{};
-  var tiers=typeof _legacyOtRulesToArray==='function'?_legacyOtRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
+  var tiers=typeof _otRulesToArray==='function'?_otRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
   var n=tiers.length+1;
   tiers.push({id:'ot'+n,label:'Eftirvinna '+n,labelEN:'Overtime '+n,multiplier:1.33,periods:[]});
   cfg.otRules=tiers;window.PAYROLL_CONFIG=cfg;cfgRenderOT();

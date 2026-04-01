@@ -190,7 +190,7 @@ function render(wx, marine, staffStatus) {
   const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
   const { trend: presTrend, diff: presDiff } = wxPressureTrend(hr.surface_pressure, nowIdx);
 
-  // Use wxAssessFlag from shared/weather.js (reads FLAG_CONFIG, admin-editable)
+  // Use wxScoreFlag from shared/weather.js (reads SCORE_CONFIG, admin-editable)
   const _fr = { flagKey:null };
   const { flagKey, flag, score, breakdown, reasons } = wxScoreFlag(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, 'good');
   const presClass = presTrend === 'rising' ? 'rising' : presTrend === 'falling' ? 'falling' : '';
@@ -228,7 +228,7 @@ function render(wx, marine, staffStatus) {
   <div class="flex-1">
     <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
-    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${FLAG_CONFIG.flags[r.f].color};border-color:${FLAG_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
+    ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${SCORE_CONFIG.flags[r.f].color};border-color:${SCORE_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
 ${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
@@ -358,7 +358,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
 function renderHourStrip(pts) {
   const FLAG_COLORS = { green:'#27ae60', yellow:'#f1c40f', orange:'#e67e22', red:'#e74c3c' };
   document.getElementById('hourStrip').innerHTML = pts.map(p => {
-    const { flagKey } = wxAssessFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0);
+    const { flagKey } = wxScoreFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0, null, null, null, 'good');
     return `<div class="h-slot${p.isNow?' now':p.isPast?' past':''}">
       <div class="h-time">${p.isNow ? 'NOW' : p.t}</div>
       <div class="h-main">

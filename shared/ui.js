@@ -59,9 +59,7 @@
     _tid = setTimeout(() => { el.style.opacity = '0'; _tid = null; }, ms);
   };
 
-  // backward-compat aliases
-  window.toast   = (msg, type) => showToast(msg, type);
-  window.showMsg = (msg, type) => showToast(msg, type);
+  window.toast = (msg, type) => showToast(msg, type);
 })();
 
 // ── HTML ESCAPE ────────────────────────────────────────────────────────────────
