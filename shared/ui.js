@@ -22,7 +22,7 @@
 //   staff subpages — 'dailylog' | 'maintenance' | 'logbook-review' | 'incidents'
 //   admin subpages — 'payroll'
 //   member subpages— 'settings' | 'logbook' | 'weather' | 'saumaklubbur'
-//                    'captain' | 'coxswain'
+//                    'captain' | 'coxswain' (rowing division)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
