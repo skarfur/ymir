@@ -455,46 +455,54 @@ function renderFleetStatus(containerId, boats, active, opts) {
   const activeByBoat = new Map();
   active.forEach(c => { activeByBoat.set(c.boatId, c); });
 
-  el.innerHTML = cats.map(cat => {
-    const key      = cat.toLowerCase();
-    const col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
-    const emoji    = boatEmoji(key);
-    const catBoats = boats.filter(b => (b.category||'').toLowerCase() === key);
-    const isStaffV = !!opts.staffView;
-    const fleetUser = opts.currentUser || null;
-    const avail    = catBoats.filter(b => !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaffV || canAccessBoat(b, fleetUser)));
-    const pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
-    const catId    = containerId + '-fcat-' + encodeURIComponent(key);
+  var frag = document.createDocumentFragment();
+  cats.forEach(function(cat) {
+    var key      = cat.toLowerCase();
+    var col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+    var emoji    = boatEmoji(key);
+    var catBoats = boats.filter(function(b) { return (b.category||'').toLowerCase() === key; });
+    var isStaffV = !!opts.staffView;
+    var fleetUser = opts.currentUser || null;
+    var avail    = catBoats.filter(function(b) { return !boolVal(b.oos) && !activeByBoat.has(b.id) && (isStaffV || canAccessBoat(b, fleetUser)); });
+    var pct      = catBoats.length ? Math.round(avail.length / catBoats.length * 100) : 0;
+    var catId    = containerId + '-fcat-' + encodeURIComponent(key);
+    var onClickAct = opts.onClickAction || null;
 
-    const onClickAct = opts.onClickAction || null;
-
-    const cards = catBoats.map(b => {
-      const co  = activeByBoat.get(b.id);
-      const oos = boolVal(b.oos);
-      const status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
-      let clickOpts = {};
+    // Build boat cards into a fragment
+    var gridFrag = document.createDocumentFragment();
+    catBoats.forEach(function(b) {
+      var co  = activeByBoat.get(b.id);
+      var oos = boolVal(b.oos);
+      var status = oos ? 'oos' : co ? (co.isOverdue ? 'overdue' : 'out') : 'avail';
+      var clickOpts = {};
       if (onClickAct) {
-        // onClickAction receives the full boat object via registry — always clickable
         clickOpts = { onClickAction: onClickAct };
       } else if (status === 'avail' && onAvail && (isStaffV || canAccessBoat(b, fleetUser))) {
         clickOpts = { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) };
       }
-      return renderBoatCard(b, Object.assign({ status, checkoutData: co, staffView: isStaffV, currentUser: fleetUser }, clickOpts));
-    }).join('');
+      var tmp = document.createElement('div');
+      tmp.innerHTML = renderBoatCard(b, Object.assign({ status: status, checkoutData: co, staffView: isStaffV, currentUser: fleetUser }, clickOpts));
+      while (tmp.firstChild) gridFrag.appendChild(tmp.firstChild);
+    });
 
-    return `<div class="fleet-status-block">
-      <div class="fsb-header" onclick="${toggleFn}(this)" data-target="${catId}" style="border-left:3px solid ${col.color}">
-        <span class="fsb-emoji">${emoji}</span>
-        <span class="fsb-label">${_besc(_boatCatLabel(cat.toLowerCase()))}</span>
-        <div class="fsb-bar-wrap"><div class="fsb-bar" style="width:${pct}%;background:${col.color}"></div></div>
-        <span class="fsb-count ${avail.length?'has-avail':'none-avail'}" style="color:${avail.length?col.color:'var(--muted)'}">${avail.length}/${catBoats.length}</span>
-        <span class="fsb-arrow">›</span>
-      </div>
-      <div class="fsb-body" id="${catId}" style="display:${collapsed?'none':''}">
-        <div class="fleet-cat-grid">${cards}</div>
-      </div>
-    </div>`;
-  }).join('');
+    var block = document.createElement('div');
+    block.className = 'fleet-status-block';
+    block.innerHTML =
+      '<div class="fsb-header" onclick="' + toggleFn + '(this)" data-target="' + catId + '" style="border-left:3px solid ' + col.color + '">'
+      + '<span class="fsb-emoji">' + emoji + '</span>'
+      + '<span class="fsb-label">' + _besc(_boatCatLabel(key)) + '</span>'
+      + '<div class="fsb-bar-wrap"><div class="fsb-bar" style="width:' + pct + '%;background:' + col.color + '"></div></div>'
+      + '<span class="fsb-count ' + (avail.length ? 'has-avail' : 'none-avail') + '" style="color:' + (avail.length ? col.color : 'var(--muted)') + '">' + avail.length + '/' + catBoats.length + '</span>'
+      + '<span class="fsb-arrow">›</span>'
+      + '</div>'
+      + '<div class="fsb-body" id="' + catId + '" style="display:' + (collapsed ? 'none' : '') + '">'
+      + '<div class="fleet-cat-grid"></div>'
+      + '</div>';
+    block.querySelector('.fleet-cat-grid').appendChild(gridFrag);
+    frag.appendChild(block);
+  });
+  el.innerHTML = '';
+  el.appendChild(frag);
 }
 
 // (boolVal defined in shared/api.js)

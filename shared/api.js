@@ -4,6 +4,11 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENS
 const API_TOKEN  = "ymirsc2026";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
+// ── Service Worker Registration ─────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(BASE_URL + '/sw.js', { scope: BASE_URL + '/' }).catch(function() {});
+}
+
 async function apiGet(action, params) {
   params = params || {};
   // Cache getConfig in sessionStorage for 60s — called on every page load

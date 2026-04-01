@@ -361,6 +361,11 @@ function bftGroup(b){
   return 'strong';
 }
 
+var _filteredTrips = [];
+var _renderedCount = 0;
+var _tripListObserver = null;
+var _TRIP_BATCH = 40;
+
 function applyFilter(){
   // Destroy stale thumb maps before re-rendering
   Object.keys(_thumbMaps).forEach(k => { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
@@ -370,7 +375,7 @@ function applyFilter(){
   const wind= document.getElementById('fWind').value;
   const txt = document.getElementById('fText').value.toLowerCase().trim();
 
-  const filtered=myTrips.filter(t=>{
+  _filteredTrips=myTrips.filter(t=>{
     if(yr  && !(t.date||'').startsWith(yr)) return false;
     if(cat){const tCat=((allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').toLowerCase();if(tCat!==cat.toLowerCase())return false;}
     if(role==='skipper' && t.role==='crew') return false;
@@ -387,10 +392,51 @@ function applyFilter(){
     }
     return true;
   });
-  document.getElementById('tripList').innerHTML=filtered.length
-    ? filtered.map(tripCard).join('')
-    : '<div class="empty-note">'+s('logbook.noFilter')+'</div>';
-  document.getElementById('filterCount').textContent=filtered.length+' / '+myTrips.length;
+
+  _renderedCount = 0;
+  var el = document.getElementById('tripList');
+  if (!_filteredTrips.length) {
+    el.innerHTML = '<div class="empty-note">'+s('logbook.noFilter')+'</div>';
+  } else {
+    el.innerHTML = '';
+    _renderTripBatch(el);
+    _setupTripScrollObserver(el);
+  }
+  document.getElementById('filterCount').textContent=_filteredTrips.length+' / '+myTrips.length;
+}
+
+function _renderTripBatch(el) {
+  var end = Math.min(_renderedCount + _TRIP_BATCH, _filteredTrips.length);
+  var frag = document.createDocumentFragment();
+  for (var i = _renderedCount; i < end; i++) {
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = tripCard(_filteredTrips[i]);
+    while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
+  }
+  // Remove old sentinel before appending new batch
+  var oldSentinel = el.querySelector('.trip-scroll-sentinel');
+  if (oldSentinel) oldSentinel.remove();
+  el.appendChild(frag);
+  _renderedCount = end;
+  // Add sentinel if more items remain
+  if (_renderedCount < _filteredTrips.length) {
+    var sentinel = document.createElement('div');
+    sentinel.className = 'trip-scroll-sentinel';
+    sentinel.style.height = '1px';
+    el.appendChild(sentinel);
+  }
+}
+
+function _setupTripScrollObserver(el) {
+  if (_tripListObserver) _tripListObserver.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  _tripListObserver = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && _renderedCount < _filteredTrips.length) {
+      _renderTripBatch(el);
+    }
+  }, { rootMargin: '200px' });
+  var sentinel = el.querySelector('.trip-scroll-sentinel');
+  if (sentinel) _tripListObserver.observe(sentinel);
 }
 
 function buildFilters(){
@@ -865,26 +911,30 @@ async function submitJoinTrip(){
 }
 
 function renderClubTripsList(){
-  const el=document.getElementById('recentTripsList');
-  const page=allClubTrips.slice(0, clubTripsOffset+CLUB_PAGE);
+  var el=document.getElementById('recentTripsList');
+  var page=allClubTrips.slice(0, clubTripsOffset+CLUB_PAGE);
   if(!allClubTrips.length){
     el.innerHTML='<div class="empty-note">'+s('logbook.noClubTrips')+'</div>';
     document.getElementById('loadMoreTripsBtn').style.display='none';
     return;
   }
-  const _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+s('tc.guest')+'</span>';
-  el.innerHTML=page.map(t=>{
-    const _sm = t.kennitala ? allMembers.find(m=>String(m.kennitala)===String(t.kennitala)) : null;
-    const _sg = (_sm && _sm.role==='guest') ? _gBadge : '';
-    return `
-    <div class="trip-pick-card" onclick="joinTripAsCrew('${esc(t.id)}',this)">
-      <div class="tpc-boat">${esc(t.boatName||'—')} · ${esc(t.locationName||'—')}</div>
-      <div class="tpc-sub">${esc(t.date||'—')} · ${esc(t.timeOut||'')}–${esc(t.timeIn||'')}
-        ${t.beaufort?' · 💨 Force '+esc(t.beaufort):''}
-        · ${esc(t.memberName||'?')}${_sg} (skipper)
-      </div>
-    </div>`;
-  }).join('');
+  var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+s('tc.guest')+'</span>';
+  var frag = document.createDocumentFragment();
+  page.forEach(function(t) {
+    var _sm = t.kennitala ? allMembers.find(function(m){return String(m.kennitala)===String(t.kennitala);}) : null;
+    var _sg = (_sm && _sm.role==='guest') ? _gBadge : '';
+    var card = document.createElement('div');
+    card.className = 'trip-pick-card';
+    card.setAttribute('onclick', "joinTripAsCrew('"+esc(t.id)+"',this)");
+    card.innerHTML =
+      '<div class="tpc-boat">'+esc(t.boatName||'—')+' · '+esc(t.locationName||'—')+'</div>'
+      +'<div class="tpc-sub">'+esc(t.date||'—')+' · '+esc(t.timeOut||'')+'–'+esc(t.timeIn||'')
+      +(t.beaufort?' · 💨 Force '+esc(t.beaufort):'')
+      +' · '+esc(t.memberName||'?')+_sg+' (skipper)</div>';
+    frag.appendChild(card);
+  });
+  el.innerHTML = '';
+  el.appendChild(frag);
   document.getElementById('loadMoreTripsBtn').style.display=
     allClubTrips.length>clubTripsOffset+CLUB_PAGE?'':'none';
 }
@@ -1155,6 +1205,35 @@ function toggleSectionDetail(hdr) {
   }
 }
 
+// ── Lazy Leaflet loader ──────────────────────────────────────────────────────
+var _leafletPromise = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (_leafletPromise) return _leafletPromise;
+  _leafletPromise = new Promise(function(resolve, reject) {
+    // CSS
+    if (!document.querySelector('link[href*="leaflet"]')) {
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+    }
+    // JS
+    var s1 = document.createElement('script');
+    s1.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s1.onload = function() {
+      var s2 = document.createElement('script');
+      s2.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+      s2.onload = resolve;
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
+    s1.onerror = reject;
+    document.head.appendChild(s1);
+  });
+  return _leafletPromise;
+}
+
 // ── Track map rendering ──────────────────────────────────────────────────────
 const _thumbMaps = {};  // id → Leaflet map instance (thumbnails)
 let   _fullMap   = null;
@@ -1164,12 +1243,13 @@ function addSeaLayers(map) {
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom:17, maxZoom:19, opacity:0.9 }).addTo(map);
 }
 
-function initSingleThumbMap(el) {
+async function initSingleThumbMap(el) {
   const id = el.id;
   if (_thumbMaps[id]) return;
   let pts;
   try { pts = JSON.parse(el.dataset.track); } catch(e) { return; }
   if (!pts || pts.length < 2) return;
+  await loadLeaflet();
   const map = L.map(el, { zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false, boxZoom:false, keyboard:false });
   addSeaLayers(map);
   const latlngs = pts.map(p => [p.lat, p.lng]);
@@ -1180,7 +1260,7 @@ function initSingleThumbMap(el) {
   _thumbMaps[id] = map;
 }
 
-function openMapModal(tripId) {
+async function openMapModal(tripId) {
   const trip = myTrips.find(t => t.id === tripId);
   if (!trip) return;
   let pts;
@@ -1201,6 +1281,7 @@ function openMapModal(tripId) {
   div.style.cssText = 'position:absolute;inset:0';
   container.appendChild(div);
 
+  await loadLeaflet();
   _fullMap = L.map(div, { zoomControl: true });
   addSeaLayers(_fullMap);
   const latlngs = pts.map(p => [p.lat, p.lng]);
@@ -1395,9 +1476,9 @@ async function reload(){
   buildHeader('member');
   try{
     const [tripsRes,cfgRes,membersRes]=await Promise.all([
-      apiGet('getTrips',{limit:500}),
-      apiGet('getConfig'),
-      apiGet('getMembers'),
+      window._earlyTrips || apiGet('getTrips',{limit:500}),
+      window._earlyConfig || apiGet('getConfig'),
+      window._earlyMembers || apiGet('getMembers'),
     ]);
     allTrips=tripsRes.trips||[];
     myTrips=allTrips
