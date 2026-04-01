@@ -83,7 +83,7 @@ function hasRowingEndorsement(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) {
-    return c.sub === 'coxswain' || c.certId === 'released_rower';
+    return c.sub === 'coxswain' || c.sub === 'released_rower' || c.certId === 'released_rower';
   });
 }
 
