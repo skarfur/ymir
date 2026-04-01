@@ -369,11 +369,11 @@ var _TRIP_BATCH = 40;
 function applyFilter(){
   // Destroy stale thumb maps before re-rendering
   Object.keys(_thumbMaps).forEach(k => { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
-  const yr  = document.getElementById('fYear').value;
-  const cat = document.getElementById('fCat').value;
-  const role= document.getElementById('fRole').value;
-  const wind= document.getElementById('fWind').value;
-  const txt = document.getElementById('fText').value.toLowerCase().trim();
+  const yr  = (document.getElementById('fYear')||{}).value||'';
+  const cat = (document.getElementById('fCat')||{}).value||'';
+  const role= (document.getElementById('fRole')||{}).value||'';
+  const wind= (document.getElementById('fWind')||{}).value||'';
+  const txt = ((document.getElementById('fText')||{}).value||'').toLowerCase().trim();
 
   _filteredTrips=myTrips.filter(t=>{
     if(yr  && !(t.date||'').startsWith(yr)) return false;
@@ -450,8 +450,8 @@ function buildFilters(){
   const cSel=document.getElementById('fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
-  ['fYear','fCat','fRole','fWind'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilter));
-  document.getElementById('fText').addEventListener('input',applyFilter);
+  ['fYear','fCat','fRole','fWind'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',applyFilter);});
+  const fText=document.getElementById('fText');if(fText)fText.addEventListener('input',applyFilter);
 }
 
 // ── Log manually modal ────────────────────────────────────────────────────────
