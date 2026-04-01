@@ -243,10 +243,14 @@
 </div>
 
 <script>
-// ══ STATE ════════════════════════════════════════════════════════════════════
+// ══ AUTH (runs immediately — api.js is non-deferred) ═════════════════════════
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
 
+// ══ Wait for deferred scripts (boats.js, certs.js, maintenance.js) ══════════
+document.addEventListener('DOMContentLoaded', function() {
+
+// ══ STATE ════════════════════════════════════════════════════════════════════
 const _isCoxswain = isCoxswain(user);
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 var _membersLoaded = false;
@@ -939,6 +943,33 @@ function cxWeekToday() {
   _cxWeekStart = d;
   loadCxSlots();
 }
+
+// ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
+window.toggleBoatOos = toggleBoatOos;
+window.openResModal = openResModal;
+window.removeCxReservation = removeCxReservation;
+window.searchCxResMember = searchCxResMember;
+window.selectCxResMember = selectCxResMember;
+window.saveCxReservation = saveCxReservation;
+window.openCrewModal = openCrewModal;
+window.createNewCrew = createNewCrew;
+window.openCrewInvModal = openCrewInvModal;
+window.searchCrewInvMember = searchCrewInvMember;
+window.selectCrewInvMember = selectCrewInvMember;
+window.sendCrewInvite = sendCrewInvite;
+window.respondInvite = respondInvite;
+window.disbandCrewConfirm = disbandCrewConfirm;
+window.loadCxSlots = loadCxSlots;
+window.renderCxSlots = renderCxSlots;
+window.bookCxSlot = bookCxSlot;
+window.unbookCxSlot = unbookCxSlot;
+window.shiftCxWeek = shiftCxWeek;
+window.cxWeekToday = cxWeekToday;
+window.openCxBulkBookModal = openCxBulkBookModal;
+window.previewCxBulkBook = previewCxBulkBook;
+window.submitCxBulkBook = submitCxBulkBook;
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
