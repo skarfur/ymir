@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ýmir — Payroll</title>
   <link rel="stylesheet" href="../../shared/style.css">
+  <style>
+    .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
+    .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
+      font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
+      margin-bottom:-1px; transition:color .15s,border-color .15s; white-space:nowrap; }
+    .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+    .tab-btn:hover:not(.active) { color:var(--text); }
+    @media(max-width:600px){ .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px} }
+  </style>
   <script src="../../shared/api.js"></script>
   <script src="../../shared/strings.js"></script>
   <script src="../../shared/ui.js"></script>
@@ -19,12 +28,12 @@
       <h2 style="margin:0;font-size:18px" data-s="admin.tabPayroll"></h2>
       <a href="../" style="font-size:11px;color:var(--muted);text-decoration:none">&#8592; Admin</a>
     </div>
-    <div class="pr-tabs">
-      <button class="pr-tab active" data-tab="employees"   onclick="prTab('employees')"   data-s="payroll.tabEmployees"></button>
-      <button class="pr-tab"        data-tab="config"      onclick="prTab('config')"      data-s="payroll.config"></button>
-      <button class="pr-tab"        data-tab="timesheets"  onclick="prTab('timesheets')"  data-s="payroll.tabTimeReporting"></button>
-      <button class="pr-tab"        data-tab="periods"     onclick="prTab('periods')"     data-s="payroll.tabTimesheets"></button>
-      <button class="pr-tab"        data-tab="export-data" onclick="prTab('export-data')" data-s="payroll.tabExportData"></button>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="employees"   onclick="prTab('employees')"   data-s="payroll.tabEmployees"></button>
+      <button class="tab-btn"        data-tab="config"      onclick="prTab('config')"      data-s="payroll.config"></button>
+      <button class="tab-btn"        data-tab="timesheets"  onclick="prTab('timesheets')"  data-s="payroll.tabTimeReporting"></button>
+      <button class="tab-btn"        data-tab="periods"     onclick="prTab('periods')"     data-s="payroll.tabTimesheets"></button>
+      <button class="tab-btn"        data-tab="export-data" onclick="prTab('export-data')" data-s="payroll.tabExportData"></button>
     </div>
 
     <!-- EMPLOYEES -->
@@ -242,7 +251,7 @@ function prTab(tab){
   ['employees','timesheets','periods','export-data','config'].forEach(function(t){
     document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);
   });
-  document.querySelectorAll('.pr-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
   var url=new URL(window.location.href);url.searchParams.set('tab',tab);history.replaceState(null,'',url);
   if(tab==='employees')   prLoadEmployees();
   if(tab==='timesheets')  prInitTimesheets();
