@@ -11,9 +11,9 @@
 <script src="../shared/ui.js"></script>
 <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
-<script src="../shared/boats.js"></script>
-<script src="../shared/certs.js"></script>
-<script src="../shared/maintenance.js"></script>
+<script src="../shared/boats.js" defer></script>
+<script src="../shared/certs.js" defer></script>
+<script src="../shared/maintenance.js" defer></script>
 <style>
 /* ── Stats ── */
 .cx-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
@@ -243,10 +243,14 @@
 </div>
 
 <script>
-// ══ STATE ════════════════════════════════════════════════════════════════════
+// ══ AUTH (runs immediately — api.js is non-deferred) ═════════════════════════
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
 
+// ══ Wait for deferred scripts (boats.js, certs.js, maintenance.js) ══════════
+document.addEventListener('DOMContentLoaded', function() {
+
+// ══ STATE ════════════════════════════════════════════════════════════════════
 const _isCoxswain = isCoxswain(user);
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 var _membersLoaded = false;
@@ -939,6 +943,33 @@ function cxWeekToday() {
   _cxWeekStart = d;
   loadCxSlots();
 }
+
+// ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
+window.toggleBoatOos = toggleBoatOos;
+window.openResModal = openResModal;
+window.removeCxReservation = removeCxReservation;
+window.searchCxResMember = searchCxResMember;
+window.selectCxResMember = selectCxResMember;
+window.saveCxReservation = saveCxReservation;
+window.openCrewModal = openCrewModal;
+window.createNewCrew = createNewCrew;
+window.openCrewInvModal = openCrewInvModal;
+window.searchCrewInvMember = searchCrewInvMember;
+window.selectCrewInvMember = selectCrewInvMember;
+window.sendCrewInvite = sendCrewInvite;
+window.respondInvite = respondInvite;
+window.disbandCrewConfirm = disbandCrewConfirm;
+window.loadCxSlots = loadCxSlots;
+window.renderCxSlots = renderCxSlots;
+window.bookCxSlot = bookCxSlot;
+window.unbookCxSlot = unbookCxSlot;
+window.shiftCxWeek = shiftCxWeek;
+window.cxWeekToday = cxWeekToday;
+window.openCxBulkBookModal = openCxBulkBookModal;
+window.previewCxBulkBook = previewCxBulkBook;
+window.submitCxBulkBook = submitCxBulkBook;
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
