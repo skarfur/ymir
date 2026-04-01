@@ -793,7 +793,8 @@ function buildFilters() {
   var cSel = document.getElementById('fCat');
   cSel.innerHTML = '<option value="">' + s('cq.allCategories') + '</option>';
   cats.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = boatEmoji(c.toLowerCase()) + ' ' + c; cSel.appendChild(o); });
-  if (cats.map(function(c) { return c.toLowerCase(); }).includes('keelboat')) cSel.value = 'Keelboat';
+  var keelboatCat = cats.find(function(c) { return c.toLowerCase() === 'keelboat'; });
+  if (keelboatCat) cSel.value = keelboatCat;
 
   // Boat name filter (keelboats only)
   var keelboatNames = [...new Set(myTrips
