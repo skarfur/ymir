@@ -942,18 +942,14 @@ function renderLandingChecklist() {
         '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
       '</div>'+
     '</div>':'')+
-    ((returnCo.crew||1)>1?'<div id="studentSection" style="margin-bottom:14px">'+
-      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'NEMAR':'STUDENTS')+'</div>'+
-      '<div id="studentToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+(IS?'Hleður áhöfn…':'Loading crew…')+'</div>'+
-    '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'SKIPSTJÓRASKÝRING':'SKIPPER NOTE')+'</label>'+
+      '<label style="display:block;font-size:9px;color:var(--brass);letter-spacing:.8px;margin-bottom:6px">'+(IS?'ATHUGASEMDIR SKIPSTJÓRA':"SKIPPER'S COMMENTS")+'</label>'+
       '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+(IS?'Sýnileg öllum á ferðinni.':'Visible to everyone on this trip.')+'</div>'+
       '<textarea id="retSkipperNote" rows="2" placeholder="'+(IS?'Athugasemd um ferðina (sýnileg áhöfn)':'Trip note (visible to crew)')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEG ATHUGASEMD':'PRIVATE NOTE')+'</label>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+(IS?'PERSÓNULEGAR ATHUGASEMDIR':'PERSONAL COMMENTS')+'</label>'+
       '<textarea id="retNotes" rows="2" placeholder="'+(IS?'Aðeins sýnilegt þér':'Only visible to you')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
     '<div class="btn-row">'+
@@ -985,17 +981,6 @@ function _renderHelmSection(){
       return '<label class="check-label">'+
         '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'">'+
         '<span>'+esc(t.memberName||'?')+_guestTag(t)+'</span></label>';
-    }).join('');}
-  }
-  // Student toggles — guests cannot be students, so only show non-guest crew
-  var stuEl=document.getElementById('studentToggles');
-  if(stuEl){
-    var nonGuests=entries.filter(function(t){return !_isGuest(t);});
-    if(!nonGuests.length){stuEl.textContent=IS?'Engin nefnd áhöfn':'No named crew';}
-    else{stuEl.innerHTML=nonGuests.map(function(t){
-      return '<label class="check-label">'+
-        '<input type="checkbox" class="student-toggle accent-checkbox" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'">'+
-        '<span>'+esc(t.memberName||'?')+'</span></label>';
     }).join('');}
   }
 }
@@ -1181,21 +1166,6 @@ async function confirmCheckIn(coId) {
       }).catch(function(){}));
     });
     if(helmRequests.length) await Promise.all(helmRequests);
-    // Create student confirmation requests (student toggles only show non-guest crew)
-    var studentRequests=[];
-    document.querySelectorAll('.student-toggle').forEach(function(cb){
-      if(!cb.checked) return;
-      studentRequests.push(apiPost('createConfirmation',{
-        type:'student',
-        fromKennitala:user.kennitala, fromName:user.name,
-        toKennitala:cb.dataset.stuKt||'',
-        toName:cb.dataset.stuName||'',
-        linkedCheckoutId:coId,
-        boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
-        date:today,
-      }).catch(function(){}));
-    });
-    if(studentRequests.length) await Promise.all(studentRequests);
     // Update crewNames with helm flag set directly for guests (no handshake needed)
     var _updatedCrewNames=parseJson(co.crewNames,[]);
     var _guestUpdated=false;

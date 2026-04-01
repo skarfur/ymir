@@ -158,7 +158,7 @@ function tripCard(t){
   const skipperGuestTag = (skipperMember && skipperMember.role==='guest') ? guestBadge : '';
   const skipperNameRow = linkedSkipper ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.skipperLabel')}</span><span class="trip-exp-val">${esc(linkedSkipper.memberName||'?')}${skipperGuestTag}</span></div>` : '';
   const crewCountRow = `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.crewAboard')}</span><span class="trip-exp-val">${esc(t.crew||1)}</span></div>`;
-  const crewNamesRow = (linkedCrew.length || pendingCrewNames.length)
+  const crewNamesRow = (linkedCrew.length || unlinkedCrewDisplay.length || pendingCrewNames.length)
     ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crew')}</span><span class="trip-exp-val">${allCrewDisplay.join(', ')}</span></div>`
     : '';
 
@@ -260,8 +260,8 @@ function tripCard(t){
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||eWv||ePres||eFlag);
 
 
-  return `<div class="trip-card" style="border-left:3px solid ${catCol.color}" onclick="toggleTripCard(this)">
-    <div class="trip-card-main">
+  return `<div class="trip-card" style="border-left:3px solid ${catCol.color}">
+    <div class="trip-card-main" onclick="openTripCard(this.parentElement)">
       <div class="trip-date-col">
         <div class="trip-date-day">${esc(p.day)}</div>
         <div class="trip-date-mon">${esc(p.mon)}</div>
@@ -284,7 +284,8 @@ function tripCard(t){
       </div>
       <div class="trip-arrow">▾</div>
     </div>
-    <div class="trip-expand">
+    <div class="trip-expand" onclick="event.stopPropagation()">
+      <button class="trip-card-close" onclick="closeTripCard(this.closest('.trip-card'))">✕</button>
       ${hasBoatDetails?`<div class="exp-section exp-boat">
         <div class="exp-section-hdr">${s('tc.boatDetails')}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
@@ -295,11 +296,11 @@ function tripCard(t){
           const toplineTrip =
               (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
             + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'')
-            + portRow + crewNamesRow + helmRow;
+            + portRow + crewCountRow + crewNamesRow + helmRow;
           const detailTrip =
               (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.sailingArea')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
             + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
-            + distRow + skipperNameRow + crewCountRow;
+            + distRow + skipperNameRow;
           return (hasDetailTrip
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+s('tc.tripDetails')+' <span class="exp-chevron">▾</span></div>'
               + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
@@ -1076,17 +1077,27 @@ async function submitManual(){
 }
 
 // ── Trip card toggle (init maps on first expand) ─────────────────────────────
-function toggleTripCard(card) {
-  card.classList.toggle('open');
-  if (card.classList.contains('open')) {
-    // Defer so the expand section is visible before Leaflet measures it
-    requestAnimationFrame(() => {
-      card.querySelectorAll('.track-map-thumb').forEach(el => {
-        if (!_thumbMaps[el.id]) initSingleThumbMap(el);
-      });
+function openTripCard(card) {
+  if (card.classList.contains('open')) return;
+  card.classList.add('open');
+  // Defer so the expand section is visible before Leaflet measures it
+  requestAnimationFrame(() => {
+    card.querySelectorAll('.track-map-thumb').forEach(el => {
+      if (!_thumbMaps[el.id]) initSingleThumbMap(el);
     });
-  }
+  });
 }
+function closeTripCard(card) {
+  card.classList.remove('open');
+}
+// Close open trip cards when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.trip-card')) {
+    document.querySelectorAll('.trip-card.open').forEach(c => c.classList.remove('open'));
+  }
+});
+// Keep old name for backwards compat with any external callers
+function toggleTripCard(card) { openTripCard(card); }
 function toggleTripDetail(btn) {
   const detail = btn.parentElement.querySelector('.trip-detailed');
   if (!detail) return;
@@ -1553,8 +1564,8 @@ async function editNote(tripId, field) {
   if (!t) return;
   const current = field === 'skipperNote' ? (t.skipperNote||'') : (t.notes||'');
   const label = field === 'skipperNote'
-    ? (IS ? 'Skipstjóraskýring (sýnilegt áhöfn):' : 'Skipper note (visible to crew):')
-    : (IS ? 'Athugasemd (aðeins þú sérð):' : 'Private note (only you):');
+    ? (IS ? 'Athugasemdir skipstjóra (sýnilegt áhöfn):' : "Skipper's comments (visible to crew):")
+    : (IS ? 'Persónulegar athugasemdir (aðeins þú sérð):' : 'Personal comments (only you):');
   const val = await ymPrompt(label, current);
   if (val === null) return;
   try {
@@ -1633,6 +1644,14 @@ function openEditTrip(tripId) {
   document.getElementById('etWindLabel').textContent = 'Wind (' + windUnitLabel(_mWindUnit) + ')';
   document.getElementById('etWindDir').value = wx?.dir || t.windDir || '';
   document.getElementById('etBft').value = wx?.bft ?? t.beaufort ?? '';
+  // Additional weather fields
+  const etGustMs = wx?.wg != null ? parseWsValue(wx.wg) : null;
+  document.getElementById('etGusts').value = etGustMs != null ? convertWind(etGustMs, _mWindUnit) : '';
+  document.getElementById('etGustLabel').textContent = 'Gusts (' + windUnitLabel(_mWindUnit) + ')';
+  document.getElementById('etAirTemp').value = wx?.tc != null ? Math.round(wx.tc) : '';
+  document.getElementById('etSeaTemp').value = wx?.sst != null ? wx.sst.toFixed(1) : '';
+  document.getElementById('etWaveHeight').value = wx?.wv != null ? wx.wv.toFixed(1) : '';
+  document.getElementById('etPressure').value = wx?.pres != null ? Math.round(wx.pres) : '';
   document.getElementById('etErr').style.display = 'none';
   document.getElementById('editTripTitle').textContent = IS ? 'Breyta ferð' : 'Edit trip';
   document.getElementById('etSubmitBtn').textContent = IS ? 'Vista breytingar' : 'Save changes';
@@ -1684,17 +1703,30 @@ async function submitEditTrip() {
     if (mins < 0) mins += 1440;
     hoursDecimal = +(mins / 60).toFixed(2);
   }
-  // Build wx
+  // Additional weather fields
+  const gustRaw = document.getElementById('etGusts').value.trim();
+  const gustMsVal = gustRaw ? convertToMs(parseFloat(gustRaw), _mWindUnit) : null;
+  const airTemp = document.getElementById('etAirTemp').value.trim();
+  const seaTemp = document.getElementById('etSeaTemp').value.trim();
+  const waveHeight = document.getElementById('etWaveHeight').value.trim();
+  const pressure = document.getElementById('etPressure').value.trim();
+  // Build wx — preserve existing snapshot fields not in the form
   let wxSnapshot = '';
-  const wxObj = {};
-  if (bft) wxObj.bft = parseInt(bft);
+  let wxObj = {};
+  try { if (t.wxSnapshot) wxObj = JSON.parse(t.wxSnapshot); } catch(e) { wxObj = {}; }
+  if (bft) wxObj.bft = parseInt(bft); else delete wxObj.bft;
   if (windMsVal != null && !isNaN(windMsVal)) {
     wxObj.ws = +windMsVal.toFixed(1);
   } else if (bft) {
     const range = bftToMsRange(parseInt(bft));
     if (range) wxObj.ws = range[0] + '-' + range[1];
-  }
-  if (windDir) wxObj.dir = windDir;
+  } else { delete wxObj.ws; }
+  if (windDir) wxObj.dir = windDir; else delete wxObj.dir;
+  if (gustMsVal != null && !isNaN(gustMsVal)) wxObj.wg = +gustMsVal.toFixed(1); else delete wxObj.wg;
+  if (airTemp) wxObj.tc = parseFloat(airTemp); else delete wxObj.tc;
+  if (seaTemp) wxObj.sst = parseFloat(seaTemp); else delete wxObj.sst;
+  if (waveHeight) wxObj.wv = parseFloat(waveHeight); else delete wxObj.wv;
+  if (pressure) wxObj.pres = parseInt(pressure); else delete wxObj.pres;
   if (Object.keys(wxObj).length) wxSnapshot = JSON.stringify(wxObj);
 
   const btn = document.getElementById('etSubmitBtn');
