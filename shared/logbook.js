@@ -1068,7 +1068,7 @@ async function submitManual(){
     }
 
     renderStats(); buildFilters(); applyFilter();
-    showToast('Trip saved ✓','success');
+    showToast('Trip saved ✓','ok');
     closeLogModal();
   }catch(e){
     errEl.textContent=e.message;

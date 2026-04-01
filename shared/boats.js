@@ -162,10 +162,15 @@ function canAccessBoat(boat, user, opts) {
   if (isStaff(user)) return true;
   // Private boat owner always has access
   if (boat.ownership === 'private' && String(boat.ownerId || boat.ownerKennitala || '') === String(user.kennitala)) return true;
-  // Check cert gate
+  // Check cert gate (excluding expired certs)
   if (boat.accessGateCert) {
     var certs = parseJson(user.certifications, []);
-    if (Array.isArray(certs) && certs.some(function(c) { return c.sub === boat.accessGateCert; })) return true;
+    var today = todayISO();
+    if (Array.isArray(certs) && certs.some(function(c) {
+      if (c.sub !== boat.accessGateCert) return false;
+      if (c.expiresAt && c.expiresAt < today) return false;
+      return true;
+    })) return true;
   }
   // Check allowlist
   if (boat.accessAllowlist && Array.isArray(boat.accessAllowlist) && boat.accessAllowlist.indexOf(String(user.kennitala)) !== -1) return true;
@@ -345,7 +350,7 @@ function renderCheckoutCard(co, opts) {
   const emoji     = boatEmoji(cat);
   const now       = new Date().toTimeString().slice(0,5);
   const retBy     = co.expectedReturn||co.returnBy||"";
-  const overdue   = retBy && retBy < now;
+  const overdue   = co.isOverdue === true || co.isOverdue === 'true' || (retBy && retBy < now);
   const tout      = (co.checkedOutAt||co.timeOut||"").slice(0,5);
 
   // Top badge (member view only — staff don't need it, they see all)

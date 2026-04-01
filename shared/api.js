@@ -31,7 +31,7 @@ async function apiPost(action, payload) {
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
       action === 'saveCertDef' || action === 'deleteCertDef' ||
       action === 'saveCertCategories' ||
-      action === 'saveBoatAccess' || action === 'saveReservation' || action === 'removeReservation') {
+      action === 'saveBoatAccess' || action === 'saveBoatOos' || action === 'saveReservation' || action === 'removeReservation') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
@@ -86,21 +86,24 @@ function requireAuth(roleFn) {
 
 function isStaff(u) { return u && (u.role === "staff" || u.role === "admin"); }
 function isAdmin(u) { return u && u.role === "admin"; }
+function _certNotExpired(c) {
+  return !c.expiresAt || c.expiresAt >= todayISO();
+}
 function isCaptain(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain'; });
+  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
 function isCoxswain(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'coxswain' || c.certId === 'released_rower'; });
+  return Array.isArray(certs) && certs.some(function(c) { return (c.sub === 'coxswain' || c.certId === 'released_rower') && _certNotExpired(c); });
 }
 function hasRowingEndorsement(u) {
   if (!u || !u.certifications) return false;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) {
-    return c.sub === 'coxswain' || c.sub === 'released_rower' || c.certId === 'released_rower';
+    return (c.sub === 'coxswain' || c.sub === 'released_rower' || c.certId === 'released_rower') && _certNotExpired(c);
   });
 }
 

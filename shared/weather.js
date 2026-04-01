@@ -111,7 +111,8 @@ function wxLoadFlagConfig(saved) {
   if (saved.visibility)            Object.assign(SCORE_CONFIG.visibility, saved.visibility);
   if (saved.easterlyDirs)          SCORE_CONFIG.easterlyDirs  = saved.easterlyDirs;
   if (saved.easterlyPts    != null) SCORE_CONFIG.easterlyPts      = saved.easterlyPts;
-  if (saved.gustModifierPts != null) SCORE_CONFIG.gustModifierPts  = saved.gustModifierPts;
+  if (saved.gustModifier1Pts != null) SCORE_CONFIG.gustModifier1Pts = saved.gustModifier1Pts;
+  if (saved.gustModifier2Pts != null) SCORE_CONFIG.gustModifier2Pts = saved.gustModifier2Pts;
   if (saved.flags) {
     for (const key of ['green','yellow','orange','red','black']) {
       if (saved.flags[key]) Object.assign(SCORE_CONFIG.flags[key], saved.flags[key]);
