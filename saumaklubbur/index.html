@@ -437,7 +437,6 @@ function viewPhoto(url) {
 
 function getProjectColumn(r) {
   if (boolVal(r.resolved))                        return 'done';
-  if (!boolVal(r.approved))                        return 'pending';
   if (boolVal(r.onHold))                           return 'onhold';
   if (r.verkstjori)                                return 'inprogress';
   return 'todo';
@@ -448,7 +447,6 @@ function renderBoard() {
   const projects = myOnly ? allProjects.filter(isMyProject) : allProjects;
 
   const columns = {
-    pending:    { key: 'sauma.colPending',    items: [] },
     todo:       { key: 'sauma.colTodo',       items: [] },
     inprogress: { key: 'sauma.colInProgress', items: [] },
     onhold:     { key: 'sauma.colOnHold',     items: [] },

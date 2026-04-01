@@ -1442,6 +1442,10 @@ const STRINGS = {
   'maint.markOosConfirm':    { EN:'Mark as Out of Service without resolving?',     IS:'Merkja utan þjónustu án þess að leysa?' },
   'maint.maxFileSize':       { EN:'Max 5 MB',                                      IS:'Hámark 5 MB' },
   'maint.materials':         { EN:'MATERIALS',                                     IS:'EFNI' },
+  'maint.addMaterialPh':     { EN:'e.g. Sandpaper 120-grit…',                     IS:'t.d. Sandpappír 120…' },
+  'maint.addMaterialBtn':    { EN:'+ Add',                                        IS:'+ Bæta við' },
+  'maint.removeMaterial':    { EN:'Remove material',                              IS:'Fjarlægja efni' },
+  'maint.removeMaterialConfirm': { EN:'Remove this material?',                   IS:'Fjarlægja þetta efni?' },
 
   // ── Alerts — inline strings ────────────────────────────────────────────────
   'alert.overdueTitle':      { EN:'OVERDUE BOATS',                                 IS:'BÁTAR YFIRTÍMA' },

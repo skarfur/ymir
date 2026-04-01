@@ -149,14 +149,19 @@ function maintOpenDetail(r, currentUser) {
       </div>`).join('');
 
     // Materials list for saumaklúbbur projects
-    const materialsHtml = isSauma && materials.length ? `
+    const materialsHtml = isSauma ? `
       <div style="margin-bottom:14px">
         <div style="font-size:10px;color:var(--brass);letter-spacing:1px;margin-bottom:6px">${s('maint.materials')}</div>
         ${materials.map((m,i)=>`
-          <div class="mat-row" data-midx="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)33;cursor:pointer">
+          <div class="mat-row" data-midx="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)33">
             <input type="checkbox" ${m.purchased?'checked':''} style="width:15px;height:15px;accent-color:var(--green);cursor:pointer" data-matidx="${i}">
-            <span style="${m.purchased?'text-decoration:line-through;color:var(--muted)':''}">${esc(m.name)}</span>
+            <span style="flex:1;${m.purchased?'text-decoration:line-through;color:var(--muted)':''}">${esc(m.name)}</span>
+            ${!resolved ? `<button data-matdelete="${i}" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="${s('maint.removeMaterial')}">&times;</button>` : ''}
           </div>`).join('')}
+        ${!resolved ? `<div style="display:flex;gap:6px;align-items:center;margin-top:8px">
+          <input id="mdMaterialInput" type="text" placeholder="${s('maint.addMaterialPh')}" style="flex:1">
+          <button id="mdAddMaterialBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.addMaterialBtn')}</button>
+        </div>` : ''}
       </div>` : '';
 
     document.getElementById('maintDetailBody').innerHTML = `
@@ -263,7 +268,39 @@ function maintOpenDetail(r, currentUser) {
           const res = await apiPost('toggleMaterial',{id:r.id,index:idx});
           if (res.materials) r.materials = JSON.stringify(res.materials);
           renderAndWire();
+          if(typeof renderList==='function') renderList();
         } catch(e) { cb.disabled = false; }
+      });
+    });
+
+    // Add material
+    const addMat = async () => {
+      const input = document.getElementById('mdMaterialInput');
+      const name = (input?.value||'').trim();
+      if (!name) return;
+      const btn = document.getElementById('mdAddMaterialBtn');
+      if(btn) btn.disabled = true;
+      try {
+        const res = await apiPost('addMaterial',{id:r.id,name});
+        if (res.materials) r.materials = JSON.stringify(res.materials);
+        renderAndWire();
+        if(typeof renderList==='function') renderList();
+      } catch(e) { if(btn) btn.disabled = false; }
+    };
+    document.getElementById('mdAddMaterialBtn')?.addEventListener('click', addMat);
+    document.getElementById('mdMaterialInput')?.addEventListener('keydown', e => { if(e.key==='Enter') addMat(); });
+
+    // Delete material
+    document.querySelectorAll('#maintDetailBody [data-matdelete]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.matdelete);
+        doConfirm(s('maint.removeMaterialConfirm'), async () => {
+          const res = await apiPost('removeMaterial',{id:r.id,index:idx});
+          if (res.materials) r.materials = JSON.stringify(res.materials);
+          renderAndWire();
+          if(typeof renderList==='function') renderList();
+        });
       });
     });
 
