@@ -3400,7 +3400,7 @@ var PUB_CAT_COLORS_ = {
   dinghy:        { color:'#5b9bd5', border:'#5b9bd544', bg:'#1a4a8a22' },
   keelboat:      { color:'#d4af37', border:'#d4af3744', bg:'#d4af3718' },
   kayak:         { color:'#9b59b6', border:'#9b59b644', bg:'#8e44ad18' },
-  'rowing shell':{ color:'#3498db', border:'#3498db44', bg:'#0e6b9a18' },
+  'rowing-shell':{ color:'#3498db', border:'#3498db44', bg:'#0e6b9a18' },
   rowboat:       { color:'#1abc9c', border:'#1abc9c44', bg:'#16a08518' },
   sup:           { color:'#e67e22', border:'#e67e2244', bg:'#e67e2218' },
   wingfoil:      { color:'#e74c3c', border:'#e74c3c44', bg:'#c0392b18' },
