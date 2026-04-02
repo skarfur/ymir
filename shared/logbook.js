@@ -1611,10 +1611,15 @@ async function loadConfirmations(){
     if (resolved.length) {
       resolved.forEach(c => apiPost('dismissConfirmation', { id: c.id }).catch(function(){}));
     }
-    // Only keep pending in local state
-    _confirmations={incoming:incoming.filter(c=>c.status==='pending'),outgoing:outgoing.filter(c=>c.status==='pending')};
+    // Keep pending + confirmed in local state (confirmed needed for helm/student display)
+    _confirmations={
+      incoming:incoming.filter(c=>c.status==='pending'||c.status==='confirmed'),
+      outgoing:outgoing.filter(c=>c.status==='pending'||c.status==='confirmed'),
+    };
     _confirmationsLoaded=true;
     updateConfBadge();
+    // Re-render trips so confirmation badges (pending/helm/student) appear
+    if (typeof applyFilter === 'function') applyFilter();
   }catch(e){
     console.warn('loadConfirmations:',e.message);
     _confirmationsLoaded=true;
@@ -1664,7 +1669,7 @@ function renderConfirmations(){
   if (dismissAllEl) dismissAllEl.innerHTML = '';
 
   // Group incoming confirmations by trip (linkedCheckoutId or tripId)
-  var incoming=_confirmations.incoming.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
+  var incoming=_confirmations.incoming.filter(function(c){return c.status==='pending';}).sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!incoming.length){
     inEl.innerHTML='<div class="empty-note">'+s('member.noIncoming')+'</div>';
   }else{
@@ -1696,7 +1701,7 @@ function renderConfirmations(){
   }
 
   // Group outgoing confirmations by trip
-  var outgoing=_confirmations.outgoing.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
+  var outgoing=_confirmations.outgoing.filter(function(c){return c.status==='pending';}).sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!outgoing.length){
     outEl.innerHTML='<div class="empty-note">'+s('member.noOutgoing')+'</div>';
   }else{
@@ -1728,9 +1733,9 @@ function renderConfirmations(){
 async function respondConf(confId,response,rejectComment){
   try{
     await apiPost('respondConfirmation',{id:confId,response:response,rejectComment:rejectComment||''});
-    // Auto-dismiss resolved confirmation from local state
-    _confirmations.incoming = _confirmations.incoming.filter(c => c.id !== confId);
-    // Fire server-side dismiss in background (non-blocking)
+    // Update local state: mark as confirmed/rejected (keep for display), dismiss server-side
+    var _conf = _confirmations.incoming.find(c => c.id === confId);
+    if (_conf) _conf.status = response === 'confirmed' ? 'confirmed' : 'rejected';
     apiPost('dismissConfirmation', { id: confId }).catch(function(){});
     updateConfBadge();
     renderConfirmations();

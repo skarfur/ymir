@@ -1190,20 +1190,21 @@ async function confirmCheckIn(coId) {
       });
     }
     if(handshakeRequests.length) await Promise.all(handshakeRequests);
-    // Update crewNames with helm/student flags set directly for guests (no handshake needed)
+    // Update crewNames with helm/student flags for all crew (not just guests)
+    // so the skipper's trip record always has the data for display
     var _updatedCrewNames=parseJson(co.crewNames,[]);
-    var _guestUpdated=false;
+    var _crewNamesChanged=false;
     document.querySelectorAll('.helm-toggle').forEach(function(cb){
-      if(!cb.checked||cb.dataset.helmSelf||!cb.dataset.guest) return;
+      if(!cb.checked||cb.dataset.helmSelf) return;
       var cn=_updatedCrewNames.find(function(c){return c.name&&String(c.kennitala)===String(cb.dataset.helmKt);});
-      if(cn){cn.helm=true;_guestUpdated=true;}
+      if(cn&&!cn.helm){cn.helm=true;_crewNamesChanged=true;}
     });
     document.querySelectorAll('.student-toggle').forEach(function(cb){
-      if(!cb.checked||!cb.dataset.guest) return;
+      if(!cb.checked) return;
       var cn=_updatedCrewNames.find(function(c){return c.name&&String(c.kennitala)===String(cb.dataset.stuKt);});
-      if(cn){cn.student=true;_guestUpdated=true;}
+      if(cn&&!cn.student){cn.student=true;_crewNamesChanged=true;}
     });
-    if(_guestUpdated&&_skipperTripId){
+    if(_crewNamesChanged&&_skipperTripId){
       apiPost('saveTrip',{id:_skipperTripId,crewNames:JSON.stringify(_updatedCrewNames)}).catch(function(){});
     }
     window._retCrewTrips=[]; window._retCrewTripsFetched=false;
