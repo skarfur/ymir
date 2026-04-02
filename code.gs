@@ -20,7 +20,7 @@ const TABS_ = {
   maintenance: 'maintenance',
   checkouts: 'checkouts',
   actTypes: 'activity_types',
-  dailyCL: 'daily_checklist',
+  // dailyCL removed — daily checklists now stored as JSON in config key 'dailyChecklist'
   incidents: 'incidents',
   trips: 'trips',
   config: 'config',
@@ -1238,10 +1238,9 @@ function getConfig_() {
     activityTypes = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
   } catch (e) { }
   try {
-    readAll_('dailyCL').filter(r => bool_(r.active)).forEach(r => {
-      const phase = String(r.phase).toLowerCase();
-      if (dailyChecklist[phase]) dailyChecklist[phase].push(r);
-    });
+    const dcRaw = JSON.parse(getConfigValue_('dailyChecklist', cfgMap) || '{}');
+    dailyChecklist.opening = (dcRaw.opening || []).filter(r => bool_(r.active));
+    dailyChecklist.closing = (dcRaw.closing || []).filter(r => bool_(r.active));
   } catch (e) { }
   const overdueAlerts = getAlertConfigFromMap_(cfgMap);
   const flagConfig = getFlagConfigFromMap_(cfgMap);
@@ -1352,27 +1351,50 @@ function deleteActivityType_(b) {
 }
 
 function saveChecklistItem_(b) {
-  const ts = now_(), ex = b.id ? findOne_('dailyCL', 'id', b.id) : null;
-  if (ex) {
-    updateRow_('dailyCL', 'id', b.id, {
-      phase: b.phase || ex.phase, textEN: b.textEN || ex.textEN, textIS: b.textIS || ex.textIS,
-      active: b.active !== undefined ? b.active : ex.active,
-      sortOrder: b.sortOrder || ex.sortOrder,
+  const ts = now_();
+  const dc = JSON.parse(getConfigValue_('dailyChecklist', getConfigMap_()) || '{"opening":[],"closing":[]}');
+  const phase = String(b.phase || 'opening').toLowerCase();
+  if (!dc[phase]) dc[phase] = [];
+
+  if (b.id) {
+    // Update existing item (search both phases in case phase changed)
+    let found = false;
+    ['opening','closing'].forEach(function(p) {
+      const idx = (dc[p] || []).findIndex(function(x) { return x.id === b.id; });
+      if (idx >= 0) {
+        dc[p].splice(idx, 1); // remove from old phase
+        found = true;
+      }
     });
+    if (!found) return failJ('Item not found', 404);
+    dc[phase].push({
+      id: b.id, phase: phase,
+      textEN: b.textEN !== undefined ? b.textEN : '', textIS: b.textIS !== undefined ? b.textIS : '',
+      active: b.active !== undefined ? b.active : true,
+      sortOrder: b.sortOrder || 99,
+    });
+    setConfigSheetValue_('dailyChecklist', JSON.stringify(dc));
     cDel_('config'); return okJ({ id: b.id, updated: true });
   } else {
     const id = uid_();
-    insertRow_('dailyCL', {
-      id, phase: b.phase || 'am', textEN: b.textEN, textIS: b.textIS || '',
+    dc[phase].push({
+      id: id, phase: phase,
+      textEN: b.textEN || '', textIS: b.textIS || '',
       active: true, sortOrder: b.sortOrder || 99, createdAt: ts,
     });
-    cDel_('config'); return okJ({ id, created: true });
+    setConfigSheetValue_('dailyChecklist', JSON.stringify(dc));
+    cDel_('config'); return okJ({ id: id, created: true });
   }
 }
 
 function deleteChecklistItem_(id) {
   if (!id) return failJ('id required');
-  updateRow_('dailyCL', 'id', id, { active: false });
+  const dc = JSON.parse(getConfigValue_('dailyChecklist', getConfigMap_()) || '{"opening":[],"closing":[]}');
+  ['opening','closing'].forEach(function(p) {
+    var idx = (dc[p] || []).findIndex(function(x) { return x.id === id; });
+    if (idx >= 0) dc[p][idx].active = false;
+  });
+  setConfigSheetValue_('dailyChecklist', JSON.stringify(dc));
   cDel_('config'); return okJ({ deleted: true });
 }
 
@@ -4499,9 +4521,7 @@ var SCHEMA_ = {
     'alertSilenced','alertSilencedBy','alertSilencedAt',
     'alertSnoozedUntil','alertFirstSent',
   ],
-  daily_checklist: [
-    'id','phase','textEN','textIS','active','sortOrder','createdAt',
-  ],
+  // daily_checklist removed — now stored as JSON in config key 'dailyChecklist'
   incidents: [
     'id','types','severity','date','time',
     'locationId','locationName','boatId','boatName',
@@ -4628,7 +4648,7 @@ function setupSpreadsheet() {
   var cfgKeys = cfgSheet.getLastRow() >= 2
     ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
     : [];
-  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories'];
+  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist'];
   defaultCfgKeys.forEach(function(k) {
     if (!cfgKeys.includes(k)) {
       cfgSheet.appendRow([k, '']);
