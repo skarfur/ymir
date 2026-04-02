@@ -783,6 +783,167 @@ textarea { min-height: 70px; }
 .cfg-ot-hdr{display:grid;grid-template-columns:2fr 70px 70px 70px 28px;gap:6px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4pxerit;display:block}
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   SLOT CALENDAR — CSS Grid timeline
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.sc-root { overflow-x: auto; }
+
+.sc-grid {
+  display: grid;
+  grid-template-columns: 48px repeat(7, 1fr);
+  position: relative;
+  min-width: 520px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+/* Corner cell (top-left) */
+.sc-corner {
+  grid-row: 1; grid-column: 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* Day headers */
+.sc-day-hdr {
+  grid-row: 1;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+.sc-day-hdr:last-of-type { border-right: none; }
+.sc-day-hdr.sc-today { background: var(--brass)11; }
+.sc-day-hdr.sc-today .sc-day-num { color: var(--brass); font-weight: 500; }
+.sc-day-name { display: block; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; }
+.sc-day-num  { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
+
+/* Time labels (left column) */
+.sc-time-lbl {
+  grid-column: 1;
+  font-size: 9px;
+  color: var(--muted);
+  text-align: right;
+  padding: 0 6px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  border-right: 1px solid var(--border);
+  transform: translateY(-5px);
+  user-select: none;
+}
+
+/* Horizontal gridlines */
+.sc-gridline {
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* ── Slot blocks ── */
+.sc-slot {
+  margin: 1px 2px;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 9px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: box-shadow .12s, transform .12s;
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+}
+.sc-slot:hover { transform: scale(1.02); z-index: 2; }
+
+.sc-slot--open {
+  background: var(--surface);
+  border: 1px solid var(--brass)66;
+  cursor: pointer;
+}
+.sc-slot--open:hover { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass)44; }
+
+.sc-slot--mine {
+  background: var(--brass)18;
+  border: 1px solid var(--brass);
+  border-left: 3px solid var(--brass);
+  cursor: pointer;
+}
+.sc-slot--mine:hover { box-shadow: 0 0 0 1px var(--brass)44; }
+
+.sc-slot--booked {
+  background: var(--green)15;
+  border: 1px solid var(--green)55;
+  border-left: 3px solid var(--green);
+  cursor: default;
+}
+
+.sc-slot-time {
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.sc-slot-who {
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-slot-who--mine {
+  color: var(--brass);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+/* ── Now indicator ── */
+.sc-now-line {
+  height: 2px;
+  background: var(--red);
+  position: relative;
+  z-index: 3;
+  pointer-events: none;
+  align-self: center;
+  border-radius: 1px;
+  box-shadow: 0 0 4px var(--red)88;
+}
+
+/* ── Mobile day picker (hidden on desktop) ── */
+.sc-mobile-picker {
+  display: none;
+  gap: 2px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+}
+.sc-mpick-btn {
+  flex: 1;
+  min-width: 42px;
+  padding: 6px 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 9px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+}
+.sc-mpick-btn.active { border-color: var(--brass); color: var(--brass); background: var(--brass)11; }
+.sc-mpick-btn.today .sc-mpick-num { color: var(--brass); }
+.sc-mpick-day { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: .3px; }
+.sc-mpick-num { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile (≤ 600px)
    ══════════════════════════════════════════════════════════════════════════════ */
 
@@ -850,6 +1011,9 @@ textarea { min-height: 70px; }
   .confirm-emp { min-width: 0; }
   .ml-row { grid-template-columns: 1fr 1fr 60px 28px; gap: 4px; }
   .period-filter-card { gap: 4px; }
+
+  /* ── Slot calendar — mobile picker visible ── */
+  .sc-mobile-picker { display: flex; }
 
   /* ── Utility adjustments ── */
   .detail-field-label { font-size: 9px; }
