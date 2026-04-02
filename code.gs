@@ -2415,11 +2415,19 @@ function respondConfirmation_(b) {
            String(t.linkedTripId) === String(row.tripId));
       });
       if (!existing.length) {
-        // Get crew count and skipper note — prefer denormalized values, fall back to trip lookup for old rows
+        // Get crew count, skipper note, and crewNames from the original trip
         var origCrew = row.crew || 1, origSkipperNote = row.skipperNote || '', origCrewNames = '';
-        if (origCrew <= 1 && !origSkipperNote && row.tripId) {
+        var origDistNm = '', origDepPort = '', origArrPort = '';
+        if (row.tripId) {
           var origTrip = findOne_('trips', 'id', row.tripId);
-          if (origTrip) { origCrew = origTrip.crew || 1; origSkipperNote = origTrip.skipperNote || ''; origCrewNames = origTrip.crewNames || ''; }
+          if (origTrip) {
+            if (origCrew <= 1) origCrew = origTrip.crew || 1;
+            if (!origSkipperNote) origSkipperNote = origTrip.skipperNote || '';
+            origCrewNames = origTrip.crewNames || '';
+            origDistNm = origTrip.distanceNm || '';
+            origDepPort = origTrip.departurePort || '';
+            origArrPort = origTrip.arrivalPort || '';
+          }
         }
         var tripId = uid_();
         insertRow_('trips', {
@@ -2434,7 +2442,7 @@ function respondConfirmation_(b) {
           linkedCheckoutId: row.linkedCheckoutId || '', linkedTripId: row.tripId || '',
           verified: false, verifiedBy: '', verifiedAt: '', staffComment: '',
           validationRequested: false, helm: false,
-          distanceNm: '', departurePort: '', arrivalPort: '',
+          distanceNm: origDistNm, departurePort: origDepPort, arrivalPort: origArrPort,
           trackFileUrl: '', trackSimplified: '', trackSource: '', photoUrls: '',
           crewNames: origCrewNames,
           createdAt: ts,
