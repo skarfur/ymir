@@ -820,6 +820,7 @@ function searchManualMember(inp, dropOrId){
       e.preventDefault();
       inp.value=m.name;
       inp.dataset.kennitala=m.kennitala||'';
+      inp.dataset.guest=m.role==='guest'?'1':'';
       drop.style.display='none';
     });
     drop.appendChild(item);
@@ -831,7 +832,7 @@ function searchManualMember(inp, dropOrId){
     guest.addEventListener('mousedown',function(e){
       e.preventDefault();
       drop.style.display='none';
-      _lgGuestCallback=function(g){ inp.value=g.name; inp.dataset.kennitala=g.kennitala||g.id||''; };
+      _lgGuestCallback=function(g){ inp.value=g.name; inp.dataset.kennitala=g.kennitala||g.id||''; inp.dataset.guest='1'; };
       openLgGuestModal(inp.value.trim());
     });
     drop.appendChild(guest);
