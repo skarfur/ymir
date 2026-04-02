@@ -365,6 +365,10 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       </div>
       <!-- Crew member inputs: shown when crew > 1 -->
       <div id="mCrewSection" class="mb-12" style="display:none">
+        <label class="check-label" style="margin-bottom:8px">
+          <input type="checkbox" id="mHelmSelf" class="accent-checkbox">
+          <span style="font-size:11px">I was at the helm</span>
+        </label>
         <label style="font-size:9px;letter-spacing:.8px">Crew members <span style="font-weight:400;opacity:.6">(search by name)</span></label>
         <div id="mCrewInputs"></div>
         <div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
