@@ -2134,10 +2134,10 @@ function createCrew_(b) {
   pairs[creatorPair].members[creatorSeat] = { kennitala: String(b.kennitala), name: String(b.memberName) };
   var id = 'crew_' + uid_();
   var visibility = (b.visibility === 'invite_only') ? 'invite_only' : 'open';
-  // Auto-assign or accept a chosen color
+  // Accept any hex color or auto-assign from palette
   var CREW_COLORS = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#d4af37','#a78bfa'];
   var color = '';
-  if (b.color && CREW_COLORS.indexOf(b.color) !== -1) {
+  if (b.color && /^#[0-9a-fA-F]{6}$/.test(b.color)) {
     color = b.color;
   } else {
     var existingCount = readAll_('crews').filter(function(c) { return c.status !== 'disbanded'; }).length;
