@@ -951,6 +951,7 @@ var _STRINGS_FLAT = {
   "cox.seatStern": "Aftarstafn",
   "cox.numBoats": "Fjöldi báta",
   "cox.needsMore": "vantar {n} í viðbót",
+  "cox.crewColor": "Litur",
   "cox.tentative": "BRÁÐABIRGÐA",
   "cox.slotReservations": "BÓKANIR Á TÍMUM",
   "pub.dash.title": "Yfirlit klúbbs",

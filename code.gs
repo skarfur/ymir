@@ -2134,13 +2134,22 @@ function createCrew_(b) {
   pairs[creatorPair].members[creatorSeat] = { kennitala: String(b.kennitala), name: String(b.memberName) };
   var id = 'crew_' + uid_();
   var visibility = (b.visibility === 'invite_only') ? 'invite_only' : 'open';
+  // Auto-assign or accept a chosen color
+  var CREW_COLORS = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#d4af37','#a78bfa'];
+  var color = '';
+  if (b.color && CREW_COLORS.indexOf(b.color) !== -1) {
+    color = b.color;
+  } else {
+    var existingCount = readAll_('crews').filter(function(c) { return c.status !== 'disbanded'; }).length;
+    color = CREW_COLORS[existingCount % CREW_COLORS.length];
+  }
   insertRow_('crews', {
     id: id, name: String(b.name), pairs: JSON.stringify(pairs),
     description: String(b.description || ''),
-    visibility: visibility,
+    visibility: visibility, color: color,
     status: 'forming', createdAt: now_(), updatedAt: now_(),
   });
-  return okJ({ created: true, crewId: id, crew: { id: id, name: b.name, pairs: pairs, status: 'forming', description: b.description || '', visibility: visibility } });
+  return okJ({ created: true, crewId: id, crew: { id: id, name: b.name, pairs: pairs, status: 'forming', description: b.description || '', visibility: visibility, color: color } });
 }
 
 function updateCrew_(b) {
@@ -2152,6 +2161,7 @@ function updateCrew_(b) {
   if (b.name !== undefined) updates.name = String(b.name);
   if (b.description !== undefined) updates.description = String(b.description);
   if (b.visibility !== undefined) updates.visibility = (b.visibility === 'invite_only') ? 'invite_only' : 'open';
+  if (b.color !== undefined) updates.color = String(b.color);
   updateRow_('crews', 'id', b.crewId, updates);
   return okJ({ updated: true });
 }

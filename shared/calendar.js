@@ -199,6 +199,14 @@
       block.style.gridRow = startRow + ' / ' + endRow;
       block.style.gridColumn = String(colIdx + 2);
 
+      // Custom slot color (e.g. crew color)
+      var slotColor = self.opts.getSlotColor ? self.opts.getSlotColor(sl) : null;
+      if (slotColor && isBooked) {
+        block.style.borderLeftColor = slotColor;
+        block.style.borderLeftWidth = '3px';
+        block.style.borderLeftStyle = isTentative ? 'dashed' : 'solid';
+      }
+
       var span = endRow - startRow;
       var timeLabel = sl.startTime + '\u2013' + sl.endTime;
       var sub = '';

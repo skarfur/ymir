@@ -46,34 +46,38 @@
   border-radius:6px; padding:8px 12px; margin-bottom:12px; text-align:center; }
 
 /* ── Crew board ── */
-.cb-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:10px; }
-.cb-card--mine { border-left:3px solid var(--brass); }
-.cb-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.cb-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px;
+  border-left:3px solid var(--border); }
+.cb-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
 .cb-name { font-size:13px; font-weight:500; color:var(--text); }
+.cb-count { font-size:10px; color:var(--muted); }
 .cb-badge { font-size:8px; padding:2px 6px; border-radius:10px; font-weight:500; }
 .cb-badge--active { background:var(--green)22; color:var(--green); border:1px solid var(--green)44; }
 .cb-badge--forming { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
 .cb-desc { font-size:11px; color:var(--muted); margin-bottom:8px; font-style:italic; }
-.cb-boats { display:flex; gap:10px; flex-wrap:wrap; }
-.cb-boat { min-width:80px; flex:1; max-width:140px; }
-.cb-boat-label { font-size:9px; color:var(--muted); text-align:center; margin-bottom:4px; letter-spacing:.5px; }
-.cb-seat { display:flex; align-items:center; justify-content:center; height:32px; border:1px solid var(--border);
-  font-size:11px; padding:0 6px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cb-boats { display:flex; gap:8px; flex-wrap:wrap; }
+.cb-boat { min-width:70px; flex:1; }
+.cb-boat-label { font-size:9px; color:var(--muted); text-align:center; margin-bottom:3px; letter-spacing:.5px; }
+.cb-seat { display:flex; align-items:center; gap:4px; height:28px; border:1px solid var(--border);
+  font-size:11px; padding:0 8px; overflow:hidden; white-space:nowrap; }
 .cb-seat:first-of-type { border-radius:6px 6px 0 0; border-bottom:none; }
 .cb-seat:last-of-type { border-radius:0 0 6px 6px; }
 .cb-seat--filled { background:var(--surface); color:var(--text); }
 .cb-seat--you { background:var(--brass)18; color:var(--brass); border-color:var(--brass)66; font-weight:500; }
 .cb-seat--open { background:transparent; color:var(--muted); border-style:dashed; cursor:pointer; transition:all .15s; }
 .cb-seat--open:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
-.cb-seat-role { font-size:8px; color:var(--muted); display:block; line-height:1; margin-bottom:1px; }
-.cb-actions { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+.cb-seat-role { font-size:8px; color:var(--muted); min-width:28px; opacity:.7; }
+.cb-seat-name { overflow:hidden; text-overflow:ellipsis; }
+.cb-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
 .cb-needs { font-size:10px; color:var(--brass); margin-top:6px; }
+.cb-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
 /* ── Responsive ── */
 @media(max-width:600px){
   .cx-stats { grid-template-columns:1fr 1fr; }
   .cx-stat .sn { font-size:20px; }
-  .cb-boat { max-width:none; }
+  .cb-grid { grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -256,6 +260,11 @@
           <option value="1" data-s="cox.seatStern">Stern</option>
         </select>
       </div>
+    </div>
+    <div class="field">
+      <label data-s="cox.crewColor">Color</label>
+      <div id="cmColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <input type="hidden" id="cmColor">
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
@@ -592,12 +601,10 @@ async function loadCrews() {
 
 function renderCrewBoard() {
   var el = document.getElementById('crewBoardList');
-  // Sort: my crews first, then forming crews with open seats, then active
   var sorted = _allBoardCrews.slice().sort(function(a, b) {
     var aMe = _isMyMember(a) ? 0 : 1;
     var bMe = _isMyMember(b) ? 0 : 1;
     if (aMe !== bMe) return aMe - bMe;
-    // Forming before active (open seats more interesting)
     if (a.status !== b.status) return a.status === 'forming' ? -1 : 1;
     return 0;
   });
@@ -605,7 +612,7 @@ function renderCrewBoard() {
     el.innerHTML = '<div class="empty-note">' + s('cox.crewBoardEmpty') + '</div>';
     return;
   }
-  el.innerHTML = sorted.map(function(c) { return renderCrewCard(c); }).join('');
+  el.innerHTML = '<div class="cb-grid">' + sorted.map(function(c) { return renderCrewCard(c); }).join('') + '</div>';
 }
 
 function renderCrewCard(c) {
@@ -615,53 +622,46 @@ function renderCrewCard(c) {
   var totalSeats = pairs.length * 2;
   var filledSeats = totalSeats - openSeats;
   var isOpen = (c.visibility || 'open') !== 'invite_only';
+  var crewColor = c.color || 'var(--border)';
 
-  // Status badge
   var badge = c.status === 'active'
     ? '<span class="cb-badge cb-badge--active">' + s('cox.active') + '</span>'
     : '<span class="cb-badge cb-badge--forming">' + s('cox.forming') + '</span>';
 
-  // Seat count
-  var countLabel = '<span style="font-size:10px;color:var(--muted)">' + filledSeats + '/' + totalSeats + '</span>';
-
-  // Boat columns
   var boatsHtml = '<div class="cb-boats">';
   pairs.forEach(function(p, pi) {
     var members = p.members || [null, null];
     while (members.length < 2) members.push(null);
     boatsHtml += '<div class="cb-boat">';
     boatsHtml += '<div class="cb-boat-label">' + s('cox.boat') + ' ' + (pi + 1) + '</div>';
-    // Bow seat (index 0)
     boatsHtml += renderSeat(c, p.pairId, 0, members[0], isOpen, isMine);
-    // Stern seat (index 1)
     boatsHtml += renderSeat(c, p.pairId, 1, members[1], isOpen, isMine);
     boatsHtml += '</div>';
   });
   boatsHtml += '</div>';
 
-  // Needs-more label
   var needsHtml = '';
   if (openSeats > 0) {
     needsHtml = '<div class="cb-needs">' + s('cox.needsMore', { n: openSeats }) + '</div>';
   }
 
-  // Actions
-  var actionsHtml = '<div class="cb-actions">';
+  var actionsHtml = '';
   if (isMine) {
+    actionsHtml = '<div class="cb-actions">';
     if (c.status === 'forming' && (c.visibility || 'open') === 'invite_only') {
       actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openCrewInvModal(\'' + esc(c.id) + '\')">' + s('cox.inviteMember') + '</button>';
     }
     actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="leaveCrewConfirm(\'' + esc(c.id) + '\')">' + s('cox.leave') + '</button>';
     actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="disbandCrewConfirm(\'' + esc(c.id) + '\')">' + s('cox.disband') + '</button>';
+    actionsHtml += '</div>';
   }
-  actionsHtml += '</div>';
 
-  // Description
   var descHtml = c.description ? '<div class="cb-desc">' + esc(c.description) + '</div>' : '';
 
-  return '<div class="cb-card' + (isMine ? ' cb-card--mine' : '') + '">'
+  return '<div class="cb-card" style="border-left-color:' + esc(crewColor) + '">'
     + '<div class="cb-header">'
-      + '<span class="cb-name">' + esc(c.name) + '</span> ' + badge + ' ' + countLabel
+      + '<span class="cb-name">' + esc(c.name) + '</span> ' + badge
+      + ' <span class="cb-count">' + filledSeats + '/' + totalSeats + '</span>'
     + '</div>'
     + descHtml + boatsHtml + needsHtml + actionsHtml
   + '</div>';
@@ -670,20 +670,18 @@ function renderCrewCard(c) {
 function renderSeat(crew, pairId, seatIdx, member, isOpen, isMine) {
   var kt = String(user.kennitala);
   var isYou = member && String(member.kennitala) === kt;
-  var roleName = seatIdx === 0 ? s('cox.bow') : s('cox.stern');
+  var roleLabel = '<span class="cb-seat-role">' + (seatIdx === 0 ? s('cox.bow') : s('cox.stern')) + '</span>';
   if (isYou) {
-    return '<div class="cb-seat cb-seat--you"><span class="cb-seat-role">' + esc(roleName) + '</span>' + esc(member.name) + '</div>';
+    return '<div class="cb-seat cb-seat--you">' + roleLabel + '<span class="cb-seat-name">' + esc(member.name) + '</span></div>';
   }
   if (member) {
-    return '<div class="cb-seat cb-seat--filled"><span class="cb-seat-role">' + esc(roleName) + '</span>' + esc(member.name) + '</div>';
+    return '<div class="cb-seat cb-seat--filled">' + roleLabel + '<span class="cb-seat-name">' + esc(member.name) + '</span></div>';
   }
-  // Empty seat
   if (isOpen && _isReleasedRower && !isMine) {
     return '<div class="cb-seat cb-seat--open" onclick="joinSeat(\'' + esc(crew.id) + '\',\'' + esc(pairId) + '\',' + seatIdx + ')">'
-      + '<span class="cb-seat-role">' + esc(roleName) + '</span>' + s('cox.join')
-      + '</div>';
+      + roleLabel + '<span class="cb-seat-name">' + s('cox.join') + '</span></div>';
   }
-  return '<div class="cb-seat cb-seat--open" style="cursor:default"><span class="cb-seat-role">' + esc(roleName) + '</span>—</div>';
+  return '<div class="cb-seat cb-seat--open" style="cursor:default">' + roleLabel + '<span class="cb-seat-name">—</span></div>';
 }
 
 function renderCrewInvites() {
@@ -702,6 +700,8 @@ function renderCrewInvites() {
     }).join('');
 }
 
+var CREW_COLORS = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#d4af37','#a78bfa'];
+
 function openCrewModal() {
   document.getElementById('cmCrewName').value = '';
   document.getElementById('cmDescription').value = '';
@@ -715,8 +715,23 @@ function openCrewModal() {
     pairSel.innerHTML = '';
     for (var i = 0; i < n; i++) pairSel.innerHTML += '<option value="' + i + '">' + s('cox.boat') + ' ' + (i + 1) + '</option>';
   };
+  // Color picker
+  var cpEl = document.getElementById('cmColorPicker');
+  var autoIdx = _allBoardCrews.filter(function(c) { return c.status !== 'disbanded'; }).length % CREW_COLORS.length;
+  document.getElementById('cmColor').value = CREW_COLORS[autoIdx];
+  cpEl.innerHTML = CREW_COLORS.map(function(clr, i) {
+    var sel = i === autoIdx ? ';outline:2px solid var(--text);outline-offset:2px' : '';
+    return '<div data-color="' + clr + '" onclick="pickCrewColor(this)" style="width:24px;height:24px;border-radius:50%;background:' + clr + ';cursor:pointer;transition:outline .1s' + sel + '"></div>';
+  }).join('');
   applyStrings(document.getElementById('crewModal'));
   openModal('crewModal');
+}
+
+function pickCrewColor(el) {
+  document.getElementById('cmColor').value = el.getAttribute('data-color');
+  el.parentNode.querySelectorAll('div').forEach(function(d) { d.style.outline = 'none'; });
+  el.style.outline = '2px solid var(--text)';
+  el.style.outlineOffset = '2px';
 }
 
 async function createNewCrew() {
@@ -727,10 +742,11 @@ async function createNewCrew() {
   var mySeat = parseInt(document.getElementById('cmMySeat').value);
   var description = document.getElementById('cmDescription').value.trim();
   var visibility = document.getElementById('cmVisibility').value;
+  var color = document.getElementById('cmColor').value;
   try {
     await apiPost('createCrew', {
       name: name, numPairs: numPairs, creatorPairIndex: myPair, creatorSeatIndex: mySeat,
-      description: description, visibility: visibility,
+      description: description, visibility: visibility, color: color,
       kennitala: user.kennitala, memberName: user.name,
     });
     closeModal('crewModal');
@@ -932,18 +948,21 @@ function renderCxSlots() {
   document.getElementById('cxWeekLabel').textContent =
     fmtDateShort(days[0].toISOString()) + ' – ' + fmtDateShort(days[6].toISOString());
 
-  // Build all active crew IDs for this user
-  var myCrewIds = _myCrews.filter(function(c) { return c.status === 'active'; }).map(function(c) { return c.id; });
+  // Build all my crew IDs (active + forming)
+  var myCrewIds = _myCrews.filter(function(c) { return c.status === 'active' || c.status === 'forming'; }).map(function(c) { return c.id; });
 
-  // Create calendar instance once, then reuse
   if (!_cxCalendar) {
     _cxCalendar = new SlotCalendar('cxSlotGrid', {
       isMine: function(sl) { return sl.bookedByCrewId && myCrewIds.indexOf(sl.bookedByCrewId) !== -1; },
       onBook: function(slotId) { bookCxSlot(slotId); },
       onUnbook: function(slotId) { unbookCxSlot(slotId); },
+      getSlotColor: function(sl) {
+        if (!sl.bookedByCrewId) return null;
+        var crew = _allBoardCrews.find(function(c) { return c.id === sl.bookedByCrewId; });
+        return crew ? (crew.color || null) : null;
+      },
     });
   }
-  // Update isMine closure so it uses current myCrewIds
   _cxCalendar.opts.isMine = function(sl) { return sl.bookedByCrewId && myCrewIds.indexOf(sl.bookedByCrewId) !== -1; };
   _cxCalendar.setWeekStart(_cxWeekStart);
   _cxCalendar.setSlots(_cxSlots);
@@ -1076,6 +1095,7 @@ window.searchCxResMember = searchCxResMember;
 window.selectCxResMember = selectCxResMember;
 window.saveCxReservation = saveCxReservation;
 window.openCrewModal = openCrewModal;
+window.pickCrewColor = pickCrewColor;
 window.createNewCrew = createNewCrew;
 window.joinSeat = joinSeat;
 window.leaveCrewConfirm = leaveCrewConfirm;
