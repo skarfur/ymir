@@ -657,7 +657,6 @@ function searchCrewMembers(inp,drop) {
   const q=inp.value.trim().toLowerCase();
   if(!q||q.length<2){drop.style.display='none';return;}
   const matches=(window._launchMembers||[]).filter(m=>m.name&&m.name.toLowerCase().includes(q)&&m.kennitala!==user.kennitala).slice(0,8);
-  if(!matches.length){drop.style.display='none';return;}
   drop.innerHTML='';
   matches.forEach(m=>{
     const item=document.createElement('div');
@@ -689,7 +688,7 @@ function searchCrewMembers(inp,drop) {
     });
     drop.appendChild(guest);
   }
-  drop.style.display='block';
+  drop.style.display=drop.children.length?'block':'none';
 }
 
 // ── Guest modal (launch flow) ────────────────────────────────────────────────
