@@ -263,8 +263,10 @@
     </div>
     <div class="field">
       <label data-s="cox.crewColor">Color</label>
-      <div id="cmColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      <input type="hidden" id="cmColor">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="color" id="cmColor" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;background:var(--surface);cursor:pointer">
+        <div id="cmColorPicker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('crewModal')" data-s="btn.cancel"></button>
@@ -715,23 +717,33 @@ function openCrewModal() {
     pairSel.innerHTML = '';
     for (var i = 0; i < n; i++) pairSel.innerHTML += '<option value="' + i + '">' + s('cox.boat') + ' ' + (i + 1) + '</option>';
   };
-  // Color picker
+  // Color picker — native input + preset swatches
+  var colorInput = document.getElementById('cmColor');
   var cpEl = document.getElementById('cmColorPicker');
   var autoIdx = _allBoardCrews.filter(function(c) { return c.status !== 'disbanded'; }).length % CREW_COLORS.length;
-  document.getElementById('cmColor').value = CREW_COLORS[autoIdx];
-  cpEl.innerHTML = CREW_COLORS.map(function(clr, i) {
-    var sel = i === autoIdx ? ';outline:2px solid var(--text);outline-offset:2px' : '';
-    return '<div data-color="' + clr + '" onclick="pickCrewColor(this)" style="width:24px;height:24px;border-radius:50%;background:' + clr + ';cursor:pointer;transition:outline .1s' + sel + '"></div>';
+  colorInput.value = CREW_COLORS[autoIdx];
+  cpEl.innerHTML = CREW_COLORS.map(function(clr) {
+    return '<div data-color="' + clr + '" onclick="pickCrewColor(this)" style="width:20px;height:20px;border-radius:50%;background:' + clr + ';cursor:pointer;transition:outline .1s;border:1px solid rgba(0,0,0,.15)"></div>';
   }).join('');
+  _highlightSwatch(cpEl, CREW_COLORS[autoIdx]);
+  colorInput.addEventListener('input', function() { _highlightSwatch(cpEl, null); });
   applyStrings(document.getElementById('crewModal'));
   openModal('crewModal');
 }
 
+function _highlightSwatch(container, activeColor) {
+  container.querySelectorAll('div').forEach(function(d) {
+    if (activeColor && d.getAttribute('data-color') === activeColor) {
+      d.style.outline = '2px solid var(--text)'; d.style.outlineOffset = '2px';
+    } else {
+      d.style.outline = 'none';
+    }
+  });
+}
+
 function pickCrewColor(el) {
   document.getElementById('cmColor').value = el.getAttribute('data-color');
-  el.parentNode.querySelectorAll('div').forEach(function(d) { d.style.outline = 'none'; });
-  el.style.outline = '2px solid var(--text)';
-  el.style.outlineOffset = '2px';
+  _highlightSwatch(el.parentNode, el.getAttribute('data-color'));
 }
 
 async function createNewCrew() {
