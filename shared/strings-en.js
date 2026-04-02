@@ -205,6 +205,7 @@ var _STRINGS_FLAT = {
   "logbook.shareTracks": "Include GPS tracks",
   "logbook.shareCopy": "Generate & copy link",
   "logbook.shareCopied": "Link copied!",
+  "logbook.activeTokens": "Active share tokens",
   "logbook.editTrip": "Edit trip",
   "logbook.addGps": "Add GPS",
   "logbook.addPhotos": "Add photos",
