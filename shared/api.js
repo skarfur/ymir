@@ -4,9 +4,18 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENS
 const API_TOKEN  = "ymirsc2026";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
-// ── Service Worker Registration ─────────────────────────────────────────────
+// ── Service Worker Cleanup ──────────────────────────────────────────────────
+// Unregister any previously-installed service worker and purge its caches
+// so users always get fresh static assets.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(BASE_URL + '/sw.js', { scope: BASE_URL + '/' }).catch(function() {});
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  }).catch(function() {});
+  if (typeof caches !== 'undefined') {
+    caches.keys().then(function(names) {
+      names.forEach(function(n) { caches.delete(n); });
+    }).catch(function() {});
+  }
 }
 
 async function apiGet(action, params) {
