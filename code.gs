@@ -2454,9 +2454,20 @@ function respondConfirmation_(b) {
       }
     }
     if (type === 'helm') {
-      // Set helm on the specified trip
+      // Set helm on the crew member's trip (by tripId or kennitala+checkout)
       if (row.tripId) {
         updateRow_('trips', 'id', row.tripId, { helm: true, updatedAt: ts });
+      } else {
+        var helmKt = row.toKennitala;
+        var helmCoId = row.linkedCheckoutId;
+        if (helmKt && helmCoId) {
+          var helmTrips = readAll_('trips').filter(function(t) {
+            return String(t.kennitala) === String(helmKt) && String(t.linkedCheckoutId) === String(helmCoId);
+          });
+          helmTrips.forEach(function(t) {
+            updateRow_('trips', 'id', t.id, { helm: true, updatedAt: ts });
+          });
+        }
       }
     }
     if (type === 'student') {

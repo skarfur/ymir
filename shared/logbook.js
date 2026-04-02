@@ -86,6 +86,13 @@ function tripCard(t){
     c.status==='pending' && c.type==='helm' &&
     (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
   );
+  const confirmedHelmConfs = _confirmations.outgoing.filter(c =>
+    c.status==='confirmed' && c.type==='helm' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  ).concat(_confirmations.incoming.filter(c =>
+    c.status==='confirmed' && c.type==='helm' &&
+    (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
+  ));
   // Also check incoming pending (requests sent TO this user)
   const pendingCrewIn = _confirmations.incoming.filter(c =>
     c.status==='pending' && (c.type==='crew_assigned'||c.type==='crew_join') &&
@@ -171,7 +178,7 @@ function tripCard(t){
   // 1. Trip owner (the person whose card this is)
   const _ownerCn = _crewNameEntry(t.kennitala);
   const ownerIsStudent = (t.student && t.student!=='false') || !!(_ownerCn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(t.kennitala)) || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
-  const ownerIsHelm = isHelm || !!(_ownerCn?.helm);
+  const ownerIsHelm = isHelm || !!(_ownerCn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(t.kennitala));
   const ownerEntry = esc(t.memberName||'?') + _personBadges({
     skipper: isSki,
     helm: ownerIsHelm,
@@ -191,7 +198,7 @@ function tripCard(t){
   // 3. Linked crew (confirmed via handshake — use crewNames as fallback for helm/student)
   const linkedCrewEntries = linkedCrew.map(x => {
     const cn = _crewNameEntry(x.kennitala);
-    const xHelm = (x.helm && x.helm!=='false') || !!(cn?.helm);
+    const xHelm = (x.helm && x.helm!=='false') || !!(cn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
     const xStudent = (x.student && x.student!=='false') || !!(cn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
     return esc(x.memberName||x.crewMemberName||'?') + _personBadges({
       helm: xHelm, student: xStudent, guest: _memberIsGuest(x.kennitala),
@@ -257,6 +264,15 @@ function tripCard(t){
       const isGuest = cn.guest || !cn.kennitala || _memberIsGuest(cn.kennitala);
       helmEntries.push(esc(cn.name) + (isGuest ? guestBadge : ''));
       helmPlainNames.push(cn.name);
+    });
+    // Confirmed helm from handshake confirmations (fallback when trip record not yet refreshed)
+    confirmedHelmConfs.forEach(c => {
+      const kt = String(c.toKennitala || c.fromKennitala || '');
+      if (!kt || _helmKts.has(kt)) return;
+      _helmKts.add(kt);
+      const name = c.toName || c.fromName || '?';
+      helmEntries.push(esc(name) + (_memberIsGuest(kt) ? guestBadge : ''));
+      helmPlainNames.push(name);
     });
     // Pending helm confirmations
     const pendingHelmEntries = pendingHelmConfs.map(c => {
