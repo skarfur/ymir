@@ -209,8 +209,7 @@ function tripCard(t){
 
   // 4. Unlinked crew (from crewNames — guests and anyone without a linked trip yet)
   const unlinkedEntries = _unlinkedCrew.map(cn => {
-    const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
-    const isGuest = cn.guest || (cnMember ? cnMember.role==='guest' : !cn.kennitala);
+    const isGuest = !!cn.guest;
     const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
     return _personEntry(esc(cn.name), {
       helm: !!cn.helm, student: isStudent, guest: isGuest,
@@ -249,7 +248,7 @@ function tripCard(t){
     }
     linkedCrew.forEach(x => {
       const cn = _crewNameEntry(x.kennitala);
-      if ((x.helm && x.helm!=='false') || cn?.helm) {
+      if ((x.helm && x.helm!=='false') || !!(cn?.helm)) {
         _helmKts.add(String(x.kennitala));
         helmPlainNames.push(x.memberName||x.crewMemberName||'?');
       }
