@@ -1459,7 +1459,7 @@ async function deleteTripPhoto(tripId, photoUrl) {
 // ── Share tokens ─────────────────────────────────────────────────────────────
 function toggleSharePanel(){
   var p=document.getElementById('sharePanel');
-  if(p.style.display==='none'){p.style.display='';renderShareCatChecks();loadShareTokens();}
+  if(p.style.display==='none'){p.style.display='';renderShareCatChecks();}
   else p.style.display='none';
 }
 function renderShareCatChecks(){
@@ -1484,14 +1484,14 @@ function renderShareTokens(tokens){
   var el=document.getElementById('shareActiveTokens');if(!el)return;
   var active=tokens.filter(function(t){return!t.revokedAt||!String(t.revokedAt).trim();});
   if(!active.length){el.innerHTML='';return;}
-  el.innerHTML=active.map(function(tk){
+  el.innerHTML='<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">'+active.map(function(tk){
     return '<div class="flex-center gap-8 text-sm" style="margin-top:6px">'
       +'<span class="text-green">●</span>'
       +'<span class="flex-1 text-muted">'+s('logbook.upTo')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+' '+s('logbook.views')+'</span>'
       +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+s('logbook.copy')+'</button>'
       +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" onclick="revokeShareToken(\''+tk.id+'\')">'+s('logbook.revoke')+'</button>'
       +'</div>';
-  }).join('');
+  }).join('')+'</div>';
 }
 async function generateAndCopyShareLink(){
   try{
@@ -1565,6 +1565,7 @@ async function reload(){
     buildFilters();
     applyFilter();
     renderCerts();
+    loadShareTokens();
     warmContainer();
   }catch(e){
     document.getElementById('tripList').innerHTML=
