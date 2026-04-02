@@ -1484,7 +1484,9 @@ function renderShareTokens(tokens){
   var el=document.getElementById('shareActiveTokens');if(!el)return;
   var active=tokens.filter(function(t){return!t.revokedAt||!String(t.revokedAt).trim();});
   if(!active.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">'+active.map(function(tk){
+  el.innerHTML='<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">'
+    +'<div class="text-sm text-muted" style="font-weight:600;margin-bottom:4px">'+s('logbook.activeTokens')+'</div>'
+    +active.map(function(tk){
     return '<div class="flex-center gap-8 text-sm" style="margin-top:6px">'
       +'<span class="text-green">●</span>'
       +'<span class="flex-1 text-muted">'+s('logbook.upTo')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+' '+s('logbook.views')+'</span>'
