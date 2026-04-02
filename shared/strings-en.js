@@ -950,6 +950,7 @@ var _STRINGS_FLAT = {
   "cox.seatStern": "Stern",
   "cox.numBoats": "Number of boats",
   "cox.needsMore": "needs {n} more",
+  "cox.crewColor": "Color",
   "cox.tentative": "TENTATIVE",
   "cox.slotReservations": "SLOT RESERVATIONS",
   "pub.dash.title": "Club Dashboard",
