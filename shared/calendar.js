@@ -187,9 +187,15 @@
 
       var isMine  = self.opts.isMine ? self.opts.isMine(sl) : false;
       var isBooked = !!sl.bookedByKennitala;
+      var isTentative = sl.tentative === 'true' || sl.tentative === true;
 
       var block = document.createElement('div');
-      block.className = 'sc-slot' + (isMine ? ' sc-slot--mine' : isBooked ? ' sc-slot--booked' : ' sc-slot--open');
+      var cls = 'sc-slot';
+      if (isMine) cls += ' sc-slot--mine';
+      else if (isBooked) cls += ' sc-slot--booked';
+      else cls += ' sc-slot--open';
+      if (isTentative) cls += ' sc-slot--tentative';
+      block.className = cls;
       block.style.gridRow = startRow + ' / ' + endRow;
       block.style.gridColumn = String(colIdx + 2);
 

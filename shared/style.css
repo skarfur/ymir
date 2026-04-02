@@ -885,6 +885,11 @@ textarea { min-height: 70px; }
   cursor: default;
 }
 
+.sc-slot--tentative {
+  border-style: dashed;
+  opacity: 0.75;
+}
+
 .sc-slot-time {
   font-weight: 500;
   color: var(--text);

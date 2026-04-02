@@ -409,9 +409,12 @@ function route_(action, b) {
     case 'unbookSlot':            return unbookSlot_(b);
     // ── CREWS ─────────────────────────────────────────────────────────────────
     case 'getCrews':              return getCrews_(b);
+    case 'getCrewBoard':          return getCrewBoard_(b);
     case 'createCrew':            return createCrew_(b);
     case 'updateCrew':            return updateCrew_(b);
     case 'disbandCrew':           return disbandCrew_(b);
+    case 'joinCrew':              return joinCrew_(b);
+    case 'leaveCrew':             return leaveCrew_(b);
     case 'inviteToCrew':          return inviteToCrew_(b);
     case 'respondCrewInvite':     return respondCrewInvite_(b);
     case 'getCrewInvites':        return getCrewInvites_(b);
@@ -1966,15 +1969,17 @@ function bookSlot_(b) {
   if (!boat) return failJ('Boat not found');
   var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
   if (b.crewId) {
-    // Crew booking (rowing shells)
+    // Crew booking (rowing shells) — active or forming (tentative)
     var crew = findOne_('crews', 'id', b.crewId);
-    if (!crew || crew.status !== 'active') return failJ('Crew not found or not active');
+    if (!crew || crew.status === 'disbanded') return failJ('Crew not found or disbanded');
+    if (crew.status !== 'active' && crew.status !== 'forming') return failJ('Crew not found or not active');
     var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
-    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.kennitala); }); });
+    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === String(b.kennitala); }); });
     if (!isMember) return failJ('You are not a member of this crew');
     updates.bookedByCrewId = String(b.crewId);
     updates.bookedByName = String(crew.name || b.memberName || '');
     updates.bookedByKennitala = String(b.kennitala || '');
+    if (crew.status === 'forming') updates.tentative = 'true';
   } else {
     // Individual booking (keelboats — captain required)
     if (!b.kennitala) return failJ('kennitala required');
@@ -2009,7 +2014,7 @@ function unbookSlot_(b) {
     var crew = findOne_('crews', 'id', slot.bookedByCrewId);
     if (crew) {
       var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
-      isCrewMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
+      isCrewMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === kt; }); });
     }
   }
   var member = kt ? findOne_('members', 'kennitala', kt) : null;
@@ -2034,13 +2039,15 @@ function bulkBookSlots_(b) {
   var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
   if (b.crewId) {
     var crew = findOne_('crews', 'id', b.crewId);
-    if (!crew || crew.status !== 'active') return failJ('Crew not found or not active');
+    if (!crew || crew.status === 'disbanded') return failJ('Crew not found or disbanded');
+    if (crew.status !== 'active' && crew.status !== 'forming') return failJ('Crew not found or not active');
     var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
-    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.kennitala); }); });
+    var isMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === String(b.kennitala); }); });
     if (!isMember) return failJ('You are not a member of this crew');
     updates.bookedByCrewId = String(b.crewId);
     updates.bookedByName = String(crew.name || b.memberName || '');
     updates.bookedByKennitala = String(b.kennitala);
+    if (crew.status === 'forming') updates.tentative = 'true';
   } else {
     if (boat.category === 'keelboat' && boat.accessGateCert) {
       var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
@@ -2094,9 +2101,19 @@ function getCrews_(b) {
     var kt = String(b.kennitala);
     all = all.filter(function(c) {
       if (c.status === 'disbanded') return false;
-      return c.pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === kt; }); });
+      return c.pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === kt; }); });
     });
   }
+  return okJ({ crews: all });
+}
+
+function getCrewBoard_(b) {
+  var all = readAll_('crews');
+  all.forEach(function(c) {
+    c.pairs = typeof c.pairs === 'string' ? JSON.parse(c.pairs || '[]') : (c.pairs || []);
+  });
+  // Return all non-disbanded crews that have open seats or are active
+  all = all.filter(function(c) { return c.status !== 'disbanded'; });
   return okJ({ crews: all });
 }
 
@@ -2107,18 +2124,23 @@ function createCrew_(b) {
   if (numPairs < 2 || numPairs > 3) return failJ('numPairs must be 2 or 3');
   var pairs = [];
   for (var i = 0; i < numPairs; i++) {
-    pairs.push({ pairId: 'pair_' + (i + 1), members: [] });
+    pairs.push({ pairId: 'pair_' + (i + 1), members: [null, null] });
   }
-  // Assign creator to first pair (or specified pair)
+  // Assign creator to chosen seat: pairIndex + seatIndex (0=bow, 1=stern)
   var creatorPair = parseInt(b.creatorPairIndex) || 0;
   if (creatorPair >= pairs.length) creatorPair = 0;
-  pairs[creatorPair].members.push({ kennitala: String(b.kennitala), name: String(b.memberName) });
+  var creatorSeat = parseInt(b.creatorSeatIndex) || 0;
+  if (creatorSeat > 1) creatorSeat = 0;
+  pairs[creatorPair].members[creatorSeat] = { kennitala: String(b.kennitala), name: String(b.memberName) };
   var id = 'crew_' + uid_();
+  var visibility = (b.visibility === 'invite_only') ? 'invite_only' : 'open';
   insertRow_('crews', {
     id: id, name: String(b.name), pairs: JSON.stringify(pairs),
+    description: String(b.description || ''),
+    visibility: visibility,
     status: 'forming', createdAt: now_(), updatedAt: now_(),
   });
-  return okJ({ created: true, crewId: id, crew: { id: id, name: b.name, pairs: pairs, status: 'forming' } });
+  return okJ({ created: true, crewId: id, crew: { id: id, name: b.name, pairs: pairs, status: 'forming', description: b.description || '', visibility: visibility } });
 }
 
 function updateCrew_(b) {
@@ -2128,6 +2150,8 @@ function updateCrew_(b) {
   if (crew.status === 'disbanded') return failJ('Crew is disbanded');
   var updates = { updatedAt: now_() };
   if (b.name !== undefined) updates.name = String(b.name);
+  if (b.description !== undefined) updates.description = String(b.description);
+  if (b.visibility !== undefined) updates.visibility = (b.visibility === 'invite_only') ? 'invite_only' : 'open';
   updateRow_('crews', 'id', b.crewId, updates);
   return okJ({ updated: true });
 }
@@ -2143,6 +2167,65 @@ function disbandCrew_(b) {
   return okJ({ disbanded: true });
 }
 
+function joinCrew_(b) {
+  if (!b.crewId) return failJ('crewId required');
+  if (!b.kennitala || !b.memberName) return failJ('kennitala and memberName required');
+  if (!b.pairId) return failJ('pairId required');
+  var seatIndex = parseInt(b.seatIndex);
+  if (isNaN(seatIndex) || seatIndex < 0 || seatIndex > 1) return failJ('seatIndex must be 0 (bow) or 1 (stern)');
+  var crew = findOne_('crews', 'id', b.crewId);
+  if (!crew) return failJ('Crew not found');
+  if (crew.status === 'disbanded') return failJ('Crew is disbanded');
+  if ((crew.visibility || 'open') === 'invite_only') return failJ('This crew is invite-only');
+  var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+  // Check not already a member
+  var alreadyMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === String(b.kennitala); }); });
+  if (alreadyMember) return failJ('You are already in this crew');
+  var pair = pairs.find(function(p) { return p.pairId === b.pairId; });
+  if (!pair) return failJ('Pair not found');
+  // Ensure members array has 2 slots
+  if (!pair.members) pair.members = [null, null];
+  while (pair.members.length < 2) pair.members.push(null);
+  if (pair.members[seatIndex] !== null) return failJ('This seat is taken');
+  pair.members[seatIndex] = { kennitala: String(b.kennitala), name: String(b.memberName) };
+  // Check if crew is now fully formed
+  var totalMembers = pairs.reduce(function(sum, p) { return sum + (p.members || []).filter(function(m) { return m !== null; }).length; }, 0);
+  var totalSlots = pairs.length * 2;
+  var newStatus = totalMembers >= totalSlots ? 'active' : 'forming';
+  updateRow_('crews', 'id', b.crewId, { pairs: JSON.stringify(pairs), status: newStatus, updatedAt: now_() });
+  return okJ({ joined: true, status: newStatus });
+}
+
+function leaveCrew_(b) {
+  if (!b.crewId) return failJ('crewId required');
+  if (!b.kennitala) return failJ('kennitala required');
+  var crew = findOne_('crews', 'id', b.crewId);
+  if (!crew) return failJ('Crew not found');
+  if (crew.status === 'disbanded') return failJ('Crew is disbanded');
+  var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
+  var found = false;
+  pairs.forEach(function(p) {
+    if (!p.members) return;
+    for (var i = 0; i < p.members.length; i++) {
+      if (p.members[i] && String(p.members[i].kennitala) === String(b.kennitala)) {
+        p.members[i] = null;
+        found = true;
+      }
+    }
+  });
+  if (!found) return failJ('You are not in this crew');
+  // Check if crew is now empty (all seats null)
+  var totalMembers = pairs.reduce(function(sum, p) { return sum + (p.members || []).filter(function(m) { return m !== null; }).length; }, 0);
+  if (totalMembers === 0) {
+    updateRow_('crews', 'id', b.crewId, { status: 'disbanded', updatedAt: now_() });
+    return okJ({ left: true, disbanded: true });
+  }
+  // If was active, revert to forming
+  var newStatus = totalMembers >= pairs.length * 2 ? 'active' : 'forming';
+  updateRow_('crews', 'id', b.crewId, { pairs: JSON.stringify(pairs), status: newStatus, updatedAt: now_() });
+  return okJ({ left: true, status: newStatus });
+}
+
 function inviteToCrew_(b) {
   if (!b.crewId) return failJ('crewId required');
   if (!b.toKennitala || !b.toName) return failJ('Invitee kennitala and name required');
@@ -2155,9 +2238,12 @@ function inviteToCrew_(b) {
   var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
   var pair = pairs.find(function(p) { return p.pairId === b.pairId; });
   if (!pair) return failJ('Pair not found');
-  if ((pair.members || []).length >= 2) return failJ('This pair is full');
+  if (!pair.members) pair.members = [null, null];
+  while (pair.members.length < 2) pair.members.push(null);
+  var openSeats = pair.members.filter(function(m) { return m === null; }).length;
+  if (openSeats === 0) return failJ('This pair is full');
   // Check not already a member
-  var alreadyMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return String(m.kennitala) === String(b.toKennitala); }); });
+  var alreadyMember = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === String(b.toKennitala); }); });
   if (alreadyMember) return failJ('This person is already in the crew');
   // Check no duplicate pending invite
   var existing = readAll_('crewInvites').find(function(inv) {
@@ -2183,19 +2269,28 @@ function respondCrewInvite_(b) {
   if (inv.status !== 'pending') return failJ('Invite already responded to');
   updateRow_('crewInvites', 'id', b.inviteId, { status: b.response, respondedAt: now_() });
   if (b.response === 'accepted') {
-    // Add member to the crew's pair
+    // Add member to the crew's pair (first empty seat)
     var crew = findOne_('crews', 'id', inv.crewId);
     if (crew) {
       var pairs = typeof crew.pairs === 'string' ? JSON.parse(crew.pairs) : (crew.pairs || []);
       var pair = pairs.find(function(p) { return p.pairId === inv.pairId; });
-      if (pair && (pair.members || []).length < 2) {
-        if (!pair.members) pair.members = [];
-        pair.members.push({ kennitala: String(inv.toKennitala), name: String(inv.toName) });
-        // Check if crew is now fully formed
-        var totalMembers = pairs.reduce(function(sum, p) { return sum + (p.members || []).length; }, 0);
-        var totalSlots = pairs.length * 2;
-        var newStatus = totalMembers >= totalSlots ? 'active' : 'forming';
-        updateRow_('crews', 'id', inv.crewId, { pairs: JSON.stringify(pairs), status: newStatus, updatedAt: now_() });
+      if (pair) {
+        if (!pair.members) pair.members = [null, null];
+        while (pair.members.length < 2) pair.members.push(null);
+        // Place in the specified seat or first empty seat
+        var seatIdx = -1;
+        if (b.seatIndex !== undefined) seatIdx = parseInt(b.seatIndex);
+        if (seatIdx < 0 || seatIdx > 1 || pair.members[seatIdx] !== null) {
+          // Fallback to first empty seat
+          seatIdx = pair.members[0] === null ? 0 : (pair.members[1] === null ? 1 : -1);
+        }
+        if (seatIdx >= 0 && pair.members[seatIdx] === null) {
+          pair.members[seatIdx] = { kennitala: String(inv.toKennitala), name: String(inv.toName) };
+          var totalMembers = pairs.reduce(function(sum, p) { return sum + (p.members || []).filter(function(m) { return m !== null; }).length; }, 0);
+          var totalSlots = pairs.length * 2;
+          var newStatus = totalMembers >= totalSlots ? 'active' : 'forming';
+          updateRow_('crews', 'id', inv.crewId, { pairs: JSON.stringify(pairs), status: newStatus, updatedAt: now_() });
+        }
       }
     }
   }
