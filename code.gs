@@ -211,13 +211,13 @@ function getSheet_(tabKey) {
   return s;
 }
 
-const TIME_COLS_ = new Set(['checkedOutAt', 'checkedInAt', 'expectedReturn', 'timeOut', 'timeIn', 'returnBy']);
+const TIME_COLS_ = new Set(['checkedOutAt', 'checkedInAt', 'expectedReturn', 'timeOut', 'timeIn', 'returnBy', 'startTime', 'endTime']);
 
 function sanitizeCell_(col, val) {
   if (!(val instanceof Date)) return val;
   const iso = val.toISOString();
   if (iso.startsWith('1899-12-3') || iso.startsWith('1899-12-2')) {
-    return String(val.getHours()).padStart(2, '0') + ':' + String(val.getMinutes()).padStart(2, '0');
+    return iso.slice(11, 16);
   }
   return TIME_COLS_.has(col) ? iso.slice(11, 16) : iso.slice(0, 10);
 }
