@@ -233,6 +233,25 @@
   </div>
 </div>
 
+<!-- ══ GUEST MODAL (launch crew) ══ -->
+<div class="modal-overlay hidden" id="launchGuestModal" style="z-index:700" onclick="if(event.target===this)closeLaunchGuestModal()">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
+    <div class="flex-between mb-14">
+      <div class="text-md text-brass fw-500" style="letter-spacing:.5px">Add guest</div>
+      <button class="modal-close-x" onclick="closeLaunchGuestModal()">&times;</button>
+    </div>
+    <div class="text-sm text-muted mb-12">This person is not in the member list. Enter their details to add them as a guest.</div>
+    <div class="form-field"><label>Name</label><input type="text" id="launchGuestName" readonly></div>
+    <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="launchGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
+    <div class="form-field"><label>Phone number</label><input type="text" id="launchGuestPhone" placeholder="e.g. 555-1234"></div>
+    <div id="launchGuestErr" class="text-sm text-red mb-6" style="display:none"></div>
+    <div class="flex-center gap-8" style="justify-content:flex-end">
+      <button class="btn-secondary" style="width:auto;padding:6px 14px" onclick="closeLaunchGuestModal()">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:6px 14px" onclick="confirmLaunchGuest()">Add guest</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
@@ -658,7 +677,48 @@ function searchCrewMembers(inp,drop) {
     });
     drop.appendChild(item);
   });
+  // Add "add as guest" option when typed name has 3+ chars
+  if(q.length>=3){
+    const guest=document.createElement('div');
+    guest.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--brass)';
+    guest.textContent=s('logbook.addAsGuest',{name:inp.value.trim()});
+    guest.addEventListener('mousedown',function(e){
+      e.preventDefault(); drop.style.display='none';
+      window._launchGuestCallback=function(g){ inp.value=g.name; inp.dataset.kennitala=g.kennitala||g.id||''; inp.dataset.guest='1'; };
+      openLaunchGuestModal(inp.value.trim());
+    });
+    drop.appendChild(guest);
+  }
   drop.style.display='block';
+}
+
+// ── Guest modal (launch flow) ────────────────────────────────────────────────
+function openLaunchGuestModal(name){
+  document.getElementById('launchGuestName').value=name;
+  document.getElementById('launchGuestKtOrYear').value='';
+  document.getElementById('launchGuestPhone').value='';
+  document.getElementById('launchGuestErr').style.display='none';
+  document.getElementById('launchGuestModal').classList.remove('hidden');
+}
+function closeLaunchGuestModal(){
+  document.getElementById('launchGuestModal').classList.add('hidden');
+  window._launchGuestCallback=null;
+}
+async function confirmLaunchGuest(){
+  const name=document.getElementById('launchGuestName').value.trim();
+  const ktOrYear=document.getElementById('launchGuestKtOrYear').value.trim();
+  const phone=document.getElementById('launchGuestPhone').value.trim();
+  const err=document.getElementById('launchGuestErr');
+  if(!ktOrYear&&!phone){err.textContent=s('logbook.errKtOrPhone');err.style.display='';return;}
+  err.style.display='none';
+  const isYear=/^\d{4}$/.test(ktOrYear);
+  try{
+    const res=await apiPost('saveMember',{name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true});
+    const guest={id:res.id,name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true};
+    if(window._launchMembers) window._launchMembers.push(guest);
+    closeLaunchGuestModal();
+    if(window._launchGuestCallback) window._launchGuestCallback(guest);
+  }catch(e){err.textContent=e.message;err.style.display='';}
 }
 
 // Submit — reads stashed form values so they survive the step-3 checklist transition.

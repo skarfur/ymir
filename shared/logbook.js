@@ -159,15 +159,17 @@ function tripCard(t){
     return _storedCrewNames.find(cn => cn.kennitala && String(cn.kennitala) === String(kt));
   }
 
-  // Helper: build badges string for a person
-  function _personBadges(opts) {
-    let b = '';
-    if (opts.skipper) b += skipperBadge;
-    if (opts.helm)    b += helmBadge;
-    if (opts.student) b += studentBadge;
-    if (opts.guest)   b += guestBadge;
-    if (opts.pending) b += ' ' + pendingTag;
-    return b;
+  // Helper: build formatted name + badges for a person in the expanded card crew list
+  function _personEntry(name, opts) {
+    let suffix = '';
+    if (opts.skipper) suffix += ' <span style="font-size:10px;color:var(--muted)">(skipper)</span>';
+    if (opts.student) suffix += studentBadge;
+    if (opts.guest)   suffix += guestBadge;
+    if (opts.pending) suffix += ' ' + pendingTag;
+    if (opts.helm) {
+      return '<span class="text-brass">⎈ ' + name + '</span>' + suffix;
+    }
+    return name + suffix;
   }
   function _memberIsGuest(kt) {
     if (!kt) return false;
@@ -179,7 +181,7 @@ function tripCard(t){
   const _ownerCn = _crewNameEntry(t.kennitala);
   const ownerIsStudent = (t.student && t.student!=='false') || !!(_ownerCn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(t.kennitala)) || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
   const ownerIsHelm = isHelm || !!(_ownerCn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(t.kennitala));
-  const ownerEntry = esc(t.memberName||'?') + _personBadges({
+  const ownerEntry = _personEntry(esc(t.memberName||'?'), {
     skipper: isSki,
     helm: ownerIsHelm,
     student: ownerIsStudent,
@@ -188,7 +190,7 @@ function tripCard(t){
 
   // 2. Linked skipper (when current trip is a crew trip)
   const _skipCn = linkedSkipper ? _crewNameEntry(linkedSkipper.kennitala) : null;
-  const skipperEntry = linkedSkipper ? esc(linkedSkipper.memberName||'?') + _personBadges({
+  const skipperEntry = linkedSkipper ? _personEntry(esc(linkedSkipper.memberName||'?'), {
     skipper: true,
     helm: (linkedSkipper.helm && linkedSkipper.helm!=='false') || !!(_skipCn?.helm),
     student: false,
@@ -200,7 +202,7 @@ function tripCard(t){
     const cn = _crewNameEntry(x.kennitala);
     const xHelm = (x.helm && x.helm!=='false') || !!(cn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
     const xStudent = (x.student && x.student!=='false') || !!(cn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
-    return esc(x.memberName||x.crewMemberName||'?') + _personBadges({
+    return _personEntry(esc(x.memberName||x.crewMemberName||'?'), {
       helm: xHelm, student: xStudent, guest: _memberIsGuest(x.kennitala),
     });
   });
@@ -210,7 +212,7 @@ function tripCard(t){
     const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
     const isGuest = cn.guest || (cnMember ? cnMember.role==='guest' : !cn.kennitala);
     const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
-    return esc(cn.name) + _personBadges({
+    return _personEntry(esc(cn.name), {
       helm: !!cn.helm, student: isStudent, guest: isGuest,
     });
   });
@@ -218,10 +220,10 @@ function tripCard(t){
   // 5. Pending crew (awaiting handshake)
   const pendingEntries = pendingCrewConfs.map(c => {
     const cn = _crewNameEntry(c.toKennitala);
-    return esc(c.toName||'?') + _personBadges({ guest: _memberIsGuest(c.toKennitala), student: !!(cn?.student), pending: true });
+    return _personEntry(esc(c.toName||'?'), { guest: _memberIsGuest(c.toKennitala), student: !!(cn?.student), pending: true });
   }).concat(pendingCrewIn.map(c => {
     const cn = _crewNameEntry(c.fromKennitala);
-    return esc(c.fromName||'?') + _personBadges({ guest: _memberIsGuest(c.fromKennitala), student: !!(cn?.student), pending: true });
+    return _personEntry(esc(c.fromName||'?'), { guest: _memberIsGuest(c.fromKennitala), student: !!(cn?.student), pending: true });
   }));
 
   // Assemble: owner first, then skipper (if crew view), then crew, then pending
@@ -229,67 +231,40 @@ function tripCard(t){
   if (skipperEntry) allAboard.push(skipperEntry);
   allAboard.push(...linkedCrewEntries, ...unlinkedEntries, ...pendingEntries);
   const aboardCount = Math.max(allAboard.length, parseInt(t.crew||1));
-  const crewCountRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crewAboard')}</span><span class="trip-exp-val">${aboardCount} — ${allAboard.join(', ')}</span></div>`;
+  const crewCountRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crewAboard')} <span style="text-transform:none;letter-spacing:0;font-style:italic">(⎈ = ${s('tc.helm').toLowerCase()})</span></span><span class="trip-exp-val">${aboardCount} — ${allAboard.join(', ')}</span></div>`;
   const crewNamesRow = '';
 
-  // Helm assignment row — read-only display showing who was at the helm
+  // Collect helm plain names for compact card badge (no separate helm section in expanded card)
   const isOwner = String(t.kennitala) === String(user.kennitala);
   const isLinked = !!(t.linkedCheckoutId || t.linkedTripId || t.isLinked);
-  const showHelmSection = aboardCount > 1;
-  let helmRow = '';
   const helmPlainNames = [];
-  if (showHelmSection) {
-    // Collect confirmed helm from: trip records + crewNames fallback
+  const helmRow = '';
+  if (aboardCount > 1) {
     const _helmKts = new Set();
-    const helmEntries = [];
     if (ownerIsHelm) {
       _helmKts.add(String(t.kennitala));
-      helmEntries.push(esc(t.memberName||'') + (_memberIsGuest(t.kennitala) ? guestBadge : ''));
       helmPlainNames.push(t.memberName||'?');
     }
     linkedCrew.forEach(x => {
       const cn = _crewNameEntry(x.kennitala);
       if ((x.helm && x.helm!=='false') || cn?.helm) {
         _helmKts.add(String(x.kennitala));
-        helmEntries.push(esc(x.memberName||x.crewMemberName||'?') + (_memberIsGuest(x.kennitala) ? guestBadge : ''));
         helmPlainNames.push(x.memberName||x.crewMemberName||'?');
       }
     });
-    // Helm from crewNames (guests or anyone not yet in helmEntries)
     _storedCrewNames.forEach(cn => {
       if (!cn.helm || !cn.name) return;
       const kt = cn.kennitala ? String(cn.kennitala) : cn.name;
       if (_helmKts.has(kt)) return;
       _helmKts.add(kt);
-      const isGuest = cn.guest || !cn.kennitala || _memberIsGuest(cn.kennitala);
-      helmEntries.push(esc(cn.name) + (isGuest ? guestBadge : ''));
       helmPlainNames.push(cn.name);
     });
-    // Confirmed helm from handshake confirmations (fallback when trip record not yet refreshed)
     confirmedHelmConfs.forEach(c => {
       const kt = String(c.toKennitala || c.fromKennitala || '');
       if (!kt || _helmKts.has(kt)) return;
       _helmKts.add(kt);
-      const name = c.toName || c.fromName || '?';
-      helmEntries.push(esc(name) + (_memberIsGuest(kt) ? guestBadge : ''));
-      helmPlainNames.push(name);
+      helmPlainNames.push(c.toName || c.fromName || '?');
     });
-    // Pending helm confirmations
-    const pendingHelmEntries = pendingHelmConfs.map(c => {
-      return esc(c.toName||'?') + (_memberIsGuest(c.toKennitala) ? guestBadge : '');
-    }).concat(pendingHelmIn.map(c => {
-      return esc(c.fromName||'?') + (_memberIsGuest(c.fromKennitala) ? guestBadge : '');
-    }));
-    if (helmEntries.length || pendingHelmEntries.length) {
-      const confirmedPills = helmEntries.map(n =>
-        `<span class="text-sm text-brass flex-center gap-4" style="display:inline-flex;border:1px solid var(--brass)55;border-radius:12px;padding:2px 8px;background:var(--brass)08"><span class="text-xs">⎈</span> ${n}</span>`
-      );
-      const pendingPills = pendingHelmEntries.map(n =>
-        `<span class="text-sm flex-center gap-4" style="display:inline-flex;color:var(--yellow);border:1px solid var(--yellow)55;border-radius:12px;padding:2px 8px;background:var(--yellow)08"><span class="text-xs">⎈</span> ${n} <span style="font-size:9px;opacity:.8">${s('tc.pending')}</span></span>`
-      );
-      const allPills = confirmedPills.concat(pendingPills).join(' ');
-      helmRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.atTheHelm')}</span><span class="trip-exp-val"><div class="flex-center flex-wrap gap-4">${allPills}</div></span></div>`;
-    }
   }
 
   // Vessel/boat detail rows from boats config
