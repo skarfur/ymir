@@ -790,16 +790,18 @@ async function renderCoCrewInputs() {
   if (!sec || !wrap) return;
   if (n < 1) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-  const existing = Array.from(wrap.querySelectorAll('input')).map(i => ({ val: i.value, kt: i.dataset.kennitala||'' }));
+  const existing = Array.from(wrap.querySelectorAll('input')).map(i => ({ val: i.value, kt: i.dataset.kennitala||'', guest: i.dataset.guest||'' }));
   wrap.innerHTML = '';
   for (let i = 0; i < n; i++) {
+    const prev = existing[i] || {};
     const row = document.createElement('div');
     row.style.cssText = 'position:relative;margin-bottom:6px';
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.placeholder = s('staff.crewSearchPh',{n:i+1});
-    inp.value = (existing[i] && existing[i].val) || '';
-    inp.dataset.kennitala = (existing[i] && existing[i].kt) || '';
+    inp.value = prev.val || '';
+    inp.dataset.kennitala = prev.kt || '';
+    if (prev.guest) inp.dataset.guest = prev.guest;
     inp.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
     const drop = document.createElement('div');
     drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:200;max-height:160px;overflow-y:auto;display:none';
@@ -834,6 +836,7 @@ function searchCoCrewMembers(inp, drop) {
       e.preventDefault();
       inp.value = m.name;
       inp.dataset.kennitala = m.kennitala || '';
+      inp.dataset.guest = m.role === 'guest' ? '1' : '';
       drop.style.display = 'none';
     });
     drop.appendChild(item);
@@ -882,16 +885,16 @@ async function submitCheckout() {
       memberPhone: member.phone||'', memberIsMinor: member.isMinor||false,
       guardianName: member.guardianName||'', guardianPhone: member.guardianPhone||'',
       wxSnapshot: snap,
-      crewNames: (function(){ var _cn=Array.from(document.querySelectorAll('#coCrewInputs input')).map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||''};}).filter(function(c){return c.name;}); return _cn.length?JSON.stringify(_cn):''; })(),
+      crewNames: (function(){ var _cn=Array.from(document.querySelectorAll('#coCrewInputs input')).map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:!!i.dataset.guest};}).filter(function(c){return c.name;}); return _cn.length?JSON.stringify(_cn):''; })(),
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     // Create confirmation requests for named crew members
     const _crewNames = Array.from(document.querySelectorAll('#coCrewInputs input'))
-      .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'' }))
+      .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala||'', guest: !!i.dataset.guest }))
       .filter(c => c.name);
     if (_crewNames.length) {
       const _coId = res?.checkoutId || res?.id || '';
-      for (const _cn of _crewNames) {
+      for (const _cn of _crewNames.filter(c => c.kennitala && !c.guest)) {
         try { await apiPost('createConfirmation', {
           type: 'crew_assigned',
           fromKennitala: kt, fromName: member.name||kt,
