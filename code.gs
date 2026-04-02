@@ -3775,14 +3775,23 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
   var boatMap = {};
   if (boats) { boats.forEach(function(b) { boatMap[b.id] = b; }); }
 
-  // Build captain lookup: linkedCheckoutId → skipper memberName
+  // Build captain lookup: linkedCheckoutId → skipper memberName + kennitala
   var captainMap = {};
+  var captainKtMap = {};
   if (allTrips) {
     allTrips.forEach(function(t) {
       if (t.linkedCheckoutId && (t.role === 'skipper' || !t.role)) {
         captainMap[t.linkedCheckoutId] = t.memberName || '';
+        captainKtMap[t.linkedCheckoutId] = t.kennitala || '';
       }
     });
+  }
+
+  // Build kennitala → member id map for captain links (only when cutOffDate present)
+  var memberIdByKt = {};
+  if (opts.cutOffDate && opts.scriptUrl) {
+    var members = readAll_('members');
+    members.forEach(function(m) { memberIdByKt[m.kennitala] = m.id; });
   }
 
   // Determine if captain column needed (any trip where role is crew)
@@ -3808,10 +3817,17 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
     if (isHelm) { roleEN += ' · Helm'; roleIS += ' · Stýri'; }
     var catCol = pubCatColor_(t.boatCategory || (boat ? boat.category : ''));
 
-    // Captain name for crew trips
+    // Captain name for crew trips (linked when inside a shared view)
     var captainName = '';
     if (!isSki && t.linkedCheckoutId && captainMap[t.linkedCheckoutId]) {
-      captainName = esc_(captainMap[t.linkedCheckoutId]);
+      var capName = esc_(captainMap[t.linkedCheckoutId]);
+      var capKt = captainKtMap[t.linkedCheckoutId];
+      var capMemberId = capKt ? memberIdByKt[capKt] : null;
+      if (capMemberId && opts.cutOffDate && opts.scriptUrl) {
+        captainName = '<a href="' + esc_(opts.scriptUrl) + '?action=captain&id=' + esc_(capMemberId) + '&cutoff=' + esc_(opts.cutOffDate) + '" style="color:var(--link, #1a73e8);text-decoration:underline">' + capName + '</a>';
+      } else {
+        captainName = capName;
+      }
     }
 
     html += '<tr class="trip-row" data-id="' + idx + '" style="border-left:3px solid ' + catCol.color + '">'
@@ -4259,6 +4275,8 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
     + pubTripTableHtml_(memberTrips, allTrips, boats, {
         includePhotos: opts.includePhotos,
         includeTracks: opts.includeTracks,
+        cutOffDate: opts.cutOffDate || null,
+        scriptUrl: opts.cutOffDate ? scriptUrl : null,
       })
     + '</div>';
 
@@ -4307,10 +4325,12 @@ function publicCaptainRecord_(b) {
   var member = findOne_('members', 'id', b.id);
   if (!member) return htmlR_(pubPageShell_(gs_('pub.title.captain'), '<div class="err-msg">Captain not found.</div>'));
 
+  var cutOff = b.cutoff || null;
   var allTrips = readAll_('trips');
   var captainTrips = allTrips.filter(function(t) {
     return String(t.kennitala) === String(member.kennitala)
-      && (t.role === 'skipper' || t.role === 'captain');
+      && (t.role === 'skipper' || t.role === 'captain')
+      && (!cutOff || (t.date || '') <= cutOff);
   }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
 
   var totalDist = 0, totalHrs = 0;
@@ -4332,6 +4352,12 @@ function publicCaptainRecord_(b) {
 
   var html = headshotHtml + '<h1>' + esc_(member.name) + '</h1>' + bioHtml
     + '<div class="subtitle">' + gs_('pub.lbl.captainSince', { date: esc_(member.createdAt ? member.createdAt.slice(0, 10) : '—') }) + '</div>';
+  if (cutOff) {
+    html += '<div class="info-msg">'
+      + '<span class="lang-en">' + gs_('pub.share.asOf', { date: cutOff }, 'EN') + '</span>'
+      + '<span class="lang-is" style="display:none">' + gs_('pub.share.asOf', { date: cutOff }, 'IS') + '</span>'
+      + '</div>';
+  }
 
   // Stats
   html += '<div class="card" style="display:flex;justify-content:space-around;flex-wrap:wrap">'
