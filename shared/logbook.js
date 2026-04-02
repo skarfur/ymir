@@ -25,11 +25,19 @@ function tripCard(t){
                     cardDir  && `<span class="trip-wind-dir">${esc(cardDir)}</span>`
                    ].filter(Boolean).join('');
 
+  // For crew trips missing data, fall back to the skipper's trip
+  const _skiTrip = !isSki ? allTrips.find(x =>
+    x.id !== t.id && (!x.role || x.role==='skipper') && (
+      (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
+      (t.linkedTripId && x.id === t.linkedTripId)
+    )
+  ) : null;
+
   // Port display (shown on card face for keelboats)
   const tripCat = (allBoats.find(b=>b.id===t.boatId)?.category) || t.boatCategory || '';
   const catCol = BOAT_CAT_COLORS[(tripCat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
-  const dep=t.departurePort||'', arr=t.arrivalPort||'';
+  const dep=t.departurePort||_skiTrip?.departurePort||'', arr=t.arrivalPort||_skiTrip?.arrivalPort||'';
   const portLine = (dep||arr) ? (
     (!arr||!dep||dep===arr) ? `<span>⚓️ ${esc(dep||arr)}</span>`
                             : `<span>⚓️ ${esc(dep)} → ${esc(arr)}</span>`
@@ -66,13 +74,8 @@ function tripCard(t){
       (t.linkedTripId && x.linkedTripId && x.linkedTripId === t.linkedTripId)
     )
   );
-  // For crew members: also find the skipper of this trip
-  const linkedSkipper = !isSki ? allTrips.find(x =>
-    x.id !== t.id && (!x.role || x.role==='skipper') && (
-      (t.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
-      (t.linkedTripId && (x.id === t.linkedTripId || x.linkedCheckoutId === t.linkedCheckoutId))
-    )
-  ) : null;
+  // For crew members: the skipper's trip (already found above for compact card fallback)
+  const linkedSkipper = _skiTrip;
   // Skipper's trip ID — needed for pending handshake lookups from crew perspective
   const _skipperTripId = isSki ? t.id : (linkedSkipper ? linkedSkipper.id : t.linkedTripId || '');
   // Check for pending handshakes (outgoing confirmations for this trip)
@@ -118,9 +121,19 @@ function tripCard(t){
     c.type==='student' && c.status==='pending' &&
     (c.tripId===t.id || (t.linkedCheckoutId && c.linkedCheckoutId===t.linkedCheckoutId))
   );
-  // Parse crewNames stored on the trip/checkout for fallback display (covers guests)
+  // Parse crewNames — try own trip first, fall back to skipper's trip (crew trips may have empty crewNames)
   let _storedCrewNames = [];
   try { if (t.crewNames) _storedCrewNames = typeof t.crewNames === 'string' ? JSON.parse(t.crewNames) : t.crewNames; } catch(e){}
+  if (!_storedCrewNames.length) {
+    // Fall back to skipper's trip crewNames or any linked trip that has them
+    const _srcTrip = linkedSkipper || allTrips.find(x =>
+      x.id !== t.id && x.crewNames && (
+        (x.linkedCheckoutId && x.linkedCheckoutId === t.linkedCheckoutId) ||
+        (x.id === t.linkedTripId)
+      )
+    );
+    try { if (_srcTrip?.crewNames) _storedCrewNames = typeof _srcTrip.crewNames === 'string' ? JSON.parse(_srcTrip.crewNames) : _srcTrip.crewNames; } catch(e){}
+  }
   // Build set of kennitala already shown via linked trips or pending confirmations
   const _shownKts = new Set(linkedCrew.map(x=>String(x.kennitala)).filter(Boolean));
   pendingCrewConfs.forEach(c=>{ if(c.toKennitala) _shownKts.add(String(c.toKennitala)); });
@@ -267,7 +280,8 @@ function tripCard(t){
   const boatLoaRow   = kboat?.loa       ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.loa')}</span><span class="trip-exp-val">${kboat.loa} ft</span></div>` : '';
   const hasBoatDetails = !!(boatRegRow||boatModelRow||boatLoaRow);
 
-  const distRow  = t.distanceNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.distance')}</span><span class="trip-exp-val">${esc(t.distanceNm)} nm</span></div>` : '';
+  const _distNm = t.distanceNm || _skiTrip?.distanceNm || '';
+  const distRow  = _distNm ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.distance')}</span><span class="trip-exp-val">${esc(_distNm)} nm</span></div>` : '';
 
   // Track row: show map thumbnail if simplified track available, otherwise link
   let trackPoints = []; try { if(t.trackSimplified) trackPoints = JSON.parse(t.trackSimplified); } catch(e){}
@@ -350,7 +364,7 @@ function tripCard(t){
           ${!isVer && isSki && (pendingCrewConfs.length||pendingHelmConfs.length||pendingStudentConfs.length||pendingCrewIn.length||pendingHelmIn.length||pendingStudentIn.length) ? '<span class="trip-badge" style="background:var(--yellow)11;border:1px solid var(--yellow)55;color:var(--yellow);font-size:9px">⏳ '+s('tc.pending')+'</span>' : ''}
           ${(t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer ? '<span class="trip-badge" style="background:#1a2a3a;border:1px solid #2e86c1;color:#2e86c1;font-size:9px">⏳ '+s('tc.verificationPending')+'</span>' : ''}
           <span>${esc(dur)}</span>
-          ${t.distanceNm?`<span>${esc(t.distanceNm)} nm</span>`:''}
+          ${_distNm?`<span>${esc(_distNm)} nm</span>`:''}
           ${windLine?'<span class="trip-wind">'+windLine+'</span>':''}
           ${isKeelboat&&portLine?portLine:''}
         </div>
