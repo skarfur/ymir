@@ -226,10 +226,12 @@ function tripCard(t){
     return _personEntry(esc(c.fromName||'?'), { guest: _memberIsGuest(c.fromKennitala), student: !!(cn?.student), pending: true });
   }));
 
-  // Assemble: owner first, then skipper (if crew view), then crew, then pending
+  // Assemble: owner first, then skipper (if crew view), then crew + pending sorted alphabetically
+  const _stripHtml = h => h.replace(/<[^>]*>/g, '').trim();
+  const _sortByName = arr => arr.slice().sort((a, b) => _stripHtml(a).localeCompare(_stripHtml(b), 'is'));
   const allAboard = [ownerEntry];
   if (skipperEntry) allAboard.push(skipperEntry);
-  allAboard.push(...linkedCrewEntries, ...unlinkedEntries, ...pendingEntries);
+  allAboard.push(..._sortByName([...linkedCrewEntries, ...unlinkedEntries, ...pendingEntries]));
   const aboardCount = Math.max(allAboard.length, parseInt(t.crew||1));
   const crewCountRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crewAboard')} <span style="text-transform:none;letter-spacing:0;font-style:italic">(⎈ = ${s('tc.helm').toLowerCase()})</span></span><span class="trip-exp-val">${aboardCount} — ${allAboard.join(', ')}</span></div>`;
   const crewNamesRow = '';
