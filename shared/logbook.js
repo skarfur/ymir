@@ -158,6 +158,8 @@ function tripCard(t){
     if (!kt) return null;
     return _storedCrewNames.find(cn => cn.kennitala && String(cn.kennitala) === String(kt));
   }
+  // Spreadsheet booleans arrive as the string "false" — treat that as falsy
+  function _cnBool(v) { return !!v && v !== 'false'; }
 
   // Helper: build formatted name + badges for a person in the expanded card crew list
   function _personEntry(name, opts) {
@@ -179,8 +181,8 @@ function tripCard(t){
 
   // 1. Trip owner (the person whose card this is)
   const _ownerCn = _crewNameEntry(t.kennitala);
-  const ownerIsStudent = (t.student && t.student!=='false') || !!(_ownerCn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(t.kennitala)) || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
-  const ownerIsHelm = isHelm || !!(_ownerCn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(t.kennitala));
+  const ownerIsStudent = (t.student && t.student!=='false') || _cnBool(_ownerCn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(t.kennitala)) || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
+  const ownerIsHelm = isHelm || _cnBool(_ownerCn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(t.kennitala));
   const ownerEntry = _personEntry(esc(t.memberName||'?'), {
     skipper: isSki,
     helm: ownerIsHelm,
@@ -192,7 +194,7 @@ function tripCard(t){
   const _skipCn = linkedSkipper ? _crewNameEntry(linkedSkipper.kennitala) : null;
   const skipperEntry = linkedSkipper ? _personEntry(esc(linkedSkipper.memberName||'?'), {
     skipper: true,
-    helm: (linkedSkipper.helm && linkedSkipper.helm!=='false') || !!(_skipCn?.helm),
+    helm: (linkedSkipper.helm && linkedSkipper.helm!=='false') || _cnBool(_skipCn?.helm),
     student: false,
     guest: _memberIsGuest(linkedSkipper.kennitala),
   }) : '';
@@ -200,8 +202,8 @@ function tripCard(t){
   // 3. Linked crew (confirmed via handshake — use crewNames as fallback for helm/student)
   const linkedCrewEntries = linkedCrew.map(x => {
     const cn = _crewNameEntry(x.kennitala);
-    const xHelm = (x.helm && x.helm!=='false') || !!(cn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
-    const xStudent = (x.student && x.student!=='false') || !!(cn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
+    const xHelm = (x.helm && x.helm!=='false') || _cnBool(cn?.helm) || confirmedHelmConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
+    const xStudent = (x.student && x.student!=='false') || _cnBool(cn?.student) || studentConfs.some(c=>String(c.toKennitala)===String(x.kennitala));
     return _personEntry(esc(x.memberName||x.crewMemberName||'?'), {
       helm: xHelm, student: xStudent, guest: _memberIsGuest(x.kennitala),
     });
@@ -210,20 +212,20 @@ function tripCard(t){
   // 4. Unlinked crew (from crewNames — guests and anyone without a linked trip yet)
   const unlinkedEntries = _unlinkedCrew.map(cn => {
     const cnMember = cn.kennitala ? allMembers.find(m=>String(m.kennitala)===String(cn.kennitala)) : null;
-    const isGuest = cn.guest || (cnMember ? cnMember.role==='guest' : !cn.kennitala);
-    const isStudent = !!cn.student || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
+    const isGuest = _cnBool(cn.guest) || (cnMember ? cnMember.role==='guest' : !cn.kennitala);
+    const isStudent = _cnBool(cn.student) || studentConfs.some(c=>String(c.toKennitala)===String(cn.kennitala));
     return _personEntry(esc(cn.name), {
-      helm: !!cn.helm, student: isStudent, guest: isGuest,
+      helm: _cnBool(cn.helm), student: isStudent, guest: isGuest,
     });
   });
 
   // 5. Pending crew (awaiting handshake)
   const pendingEntries = pendingCrewConfs.map(c => {
     const cn = _crewNameEntry(c.toKennitala);
-    return _personEntry(esc(c.toName||'?'), { guest: _memberIsGuest(c.toKennitala), student: !!(cn?.student), pending: true });
+    return _personEntry(esc(c.toName||'?'), { guest: _memberIsGuest(c.toKennitala), student: _cnBool(cn?.student), pending: true });
   }).concat(pendingCrewIn.map(c => {
     const cn = _crewNameEntry(c.fromKennitala);
-    return _personEntry(esc(c.fromName||'?'), { guest: _memberIsGuest(c.fromKennitala), student: !!(cn?.student), pending: true });
+    return _personEntry(esc(c.fromName||'?'), { guest: _memberIsGuest(c.fromKennitala), student: _cnBool(cn?.student), pending: true });
   }));
 
   // Assemble: owner first, then skipper (if crew view), then crew + pending sorted alphabetically
@@ -249,13 +251,13 @@ function tripCard(t){
     }
     linkedCrew.forEach(x => {
       const cn = _crewNameEntry(x.kennitala);
-      if ((x.helm && x.helm!=='false') || cn?.helm) {
+      if ((x.helm && x.helm!=='false') || _cnBool(cn?.helm)) {
         _helmKts.add(String(x.kennitala));
         helmPlainNames.push(x.memberName||x.crewMemberName||'?');
       }
     });
     _storedCrewNames.forEach(cn => {
-      if (!cn.helm || !cn.name) return;
+      if (!_cnBool(cn.helm) || !cn.name) return;
       const kt = cn.kennitala ? String(cn.kennitala) : cn.name;
       if (_helmKts.has(kt)) return;
       _helmKts.add(kt);
