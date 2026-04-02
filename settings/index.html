@@ -198,14 +198,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     setToggle('langToggle', btn.dataset.val);
   });
 
-  // Also fetch from server to sync any saved prefs
+  // Always fetch from server to keep local prefs in sync
   try {
     var mRes = await apiGet('getMembers');
     var me = (mRes.members || []).find(function(m) { return String(m.kennitala) === String(user.kennitala); });
     if (me) {
       var serverPrefs = parseJson(me.preferences, {});
-      // If local has no prefs yet, populate from server
-      if (!localStorage.getItem('ymirPrefs') && Object.keys(serverPrefs).length) {
+      if (Object.keys(serverPrefs).length) {
         setPrefs(serverPrefs);
         if (serverPrefs.windUnit) document.getElementById('sWindUnit').value = serverPrefs.windUnit;
         if (serverPrefs.theme) { setToggle('themeToggle', serverPrefs.theme); setTheme(serverPrefs.theme); }

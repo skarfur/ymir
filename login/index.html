@@ -119,6 +119,14 @@ async function doLogin() {
     const user = data.member;
     setUser(user);
 
+    // Sync server preferences → localStorage so all pages see saved settings
+    var serverPrefs = parseJson(user.preferences, {});
+    if (Object.keys(serverPrefs).length) {
+      setPrefs(serverPrefs);
+      if (serverPrefs.theme) setTheme(serverPrefs.theme);
+    }
+    if (user.lang) setLang(user.lang);
+
     // Prefetch data the landing page will need while user is on role picker
     // (or racing the redirect for regular members). Results land in
     // sessionStorage via apiGet's cache, so the target page skips the call.
