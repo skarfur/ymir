@@ -1485,7 +1485,14 @@ let _confirmations={incoming:[],outgoing:[]}, _confirmationsLoaded=false;
 async function loadConfirmations(){
   try{
     const res=await apiGet('getConfirmations',{kennitala:user.kennitala});
-    _confirmations={incoming:res.incoming||[],outgoing:res.outgoing||[]};
+    const incoming = res.incoming||[], outgoing = res.outgoing||[];
+    // Auto-dismiss resolved confirmations server-side in background
+    const resolved = incoming.filter(c=>c.status!=='pending').concat(outgoing.filter(c=>c.status!=='pending'));
+    if (resolved.length) {
+      resolved.forEach(c => apiPost('dismissConfirmation', { id: c.id }).catch(function(){}));
+    }
+    // Only keep pending in local state
+    _confirmations={incoming:incoming.filter(c=>c.status==='pending'),outgoing:outgoing.filter(c=>c.status==='pending')};
     _confirmationsLoaded=true;
     updateConfBadge();
   }catch(e){
@@ -1526,12 +1533,7 @@ function renderConfirmations(){
   var inEl=document.getElementById('incomingConfirmations');
   var outEl=document.getElementById('outgoingConfirmations');
 
-  // Check if there are any resolved (non-pending) confirmations for dismiss-all button
-  var hasResolved = _confirmations.incoming.concat(_confirmations.outgoing).some(function(c){return c.status!=='pending';});
-  var dismissAllBtn = hasResolved
-    ? '<div class="mb-8" style="text-align:right"><button class="trip-more-btn" onclick="dismissAllConf()" style="font-size:10px">'+s('logbook.dismissAllResolved')+'</button></div>'
-    : '';
-  // Insert dismiss-all before the incoming section
+  // Clear dismiss-all area (resolved items are auto-dismissed on load)
   var dismissAllEl = document.getElementById('confDismissAll');
   if (!dismissAllEl) {
     var d = document.createElement('div');
@@ -1539,7 +1541,7 @@ function renderConfirmations(){
     inEl.parentElement.insertBefore(d, inEl.parentElement.querySelector('[data-s="member.incoming"]'));
   }
   dismissAllEl = document.getElementById('confDismissAll');
-  if (dismissAllEl) dismissAllEl.innerHTML = dismissAllBtn;
+  if (dismissAllEl) dismissAllEl.innerHTML = '';
 
   // Group incoming confirmations by trip (linkedCheckoutId or tripId)
   var incoming=_confirmations.incoming.sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
@@ -1561,20 +1563,12 @@ function renderConfirmations(){
         '<span class="conf-name text-xs text-muted">'+s('logbook.from')+' '+esc(first.fromName||'?')+'</span>'+
       '</div>';
       var items=group.map(function(c){
-        var isPending=c.status==='pending';
         return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-type" style="flex-shrink:0">'+_confDesc(c)+'</span>'+
-          (isPending?
-            '<div class="flex-center gap-4 ml-auto">'+
-              '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
-              '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
-            '</div>':
-            '<div class="flex-center gap-4 ml-auto">'+
-              '<span class="conf-status '+c.status+'">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-              '<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+s('logbook.dismiss')+'</button>'+
-              (c.rejectComment?' <span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
-            '</div>'
-          )+
+          '<div class="flex-center gap-4 ml-auto">'+
+            '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
+            '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
+          '</div>'+
         '</div>';
       }).join('');
       return '<div class="conf-card">'+header+items+'</div>';
@@ -1600,13 +1594,10 @@ function renderConfirmations(){
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
       '</div>';
       var items=group.map(function(c){
-        var isPending=c.status==='pending';
         return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
-          '<span class="conf-status '+c.status+' ml-auto">'+s('member.status'+c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</span>'+
-          (!isPending?'<button class="trip-more-btn" onclick="dismissConf(\''+esc(c.id)+'\')" style="font-size:9px;padding:2px 6px;margin:0">'+s('logbook.dismiss')+'</button>':'')+
-          (c.rejectComment?'<span class="text-xs text-muted">'+esc(c.rejectComment)+'</span>':'')+
+          '<span class="conf-status pending ml-auto">'+s('member.statusPending')+'</span>'+
         '</div>';
       }).join('');
       return '<div class="conf-card">'+header+items+'</div>';
@@ -1617,9 +1608,10 @@ function renderConfirmations(){
 async function respondConf(confId,response,rejectComment){
   try{
     await apiPost('respondConfirmation',{id:confId,response:response,rejectComment:rejectComment||''});
-    _confirmations.incoming.forEach(function(c){
-      if(c.id===confId){c.status=response;if(rejectComment)c.rejectComment=rejectComment;}
-    });
+    // Auto-dismiss resolved confirmation from local state
+    _confirmations.incoming = _confirmations.incoming.filter(c => c.id !== confId);
+    // Fire server-side dismiss in background (non-blocking)
+    apiPost('dismissConfirmation', { id: confId }).catch(function(){});
     updateConfBadge();
     renderConfirmations();
     if(response==='confirmed'){
