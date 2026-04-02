@@ -4469,7 +4469,8 @@ var SCHEMA_ = {
   members: [
     'id','kennitala','name','role','email','phone','birthYear',
     'isMinor','guardianName','guardianKennitala','guardianPhone',
-    'active','certifications','initials','lang','createdAt','updatedAt',
+    'active','certifications','initials','lang','preferences',
+    'createdAt','updatedAt',
   ],
   daily_log: [
     'id','date','openingChecks','closingChecks','activities',
@@ -4480,15 +4481,17 @@ var SCHEMA_ = {
     'id','category','boatId','boatName','itemName','part','severity',
     'description','photoUrl','markOos','reportedBy','source','createdAt',
     'resolved','resolvedBy','resolvedAt','comments',
+    'saumaklubbur','verkstjori','materials','approved','onHold',
   ],
   checkouts: [
     // core
     'id','boatId','boatName','boatCategory',
     'memberKennitala','memberName','crew',
+    'memberPhone','memberIsMinor','guardianName','guardianPhone',
     'locationId','locationName',
     'checkedOutAt','expectedReturn','checkedInAt',
     'wxSnapshot','preLaunchChecklist','afterSailChecklist','notes',
-    'status','createdAt','departurePort','crewNames',
+    'status','nonClub','createdAt','departurePort','crewNames',
     // group checkouts
     'isGroup','participants','staffNames','boatNames','boatIds',
     'activityTypeId','activityTypeName','linkedActivityId',
@@ -4516,7 +4519,8 @@ var SCHEMA_ = {
     'crew','role','beaufort','windDir','wxSnapshot','notes',
     'isLinked','linkedCheckoutId','linkedTripId',
     'verified','verifiedBy','verifiedAt','staffComment',
-    'validationRequested','helm','skipperNote',
+    'validationRequested','helm','student','skipperNote',
+    'nonClub','crewNames',
     // keelboat Phase-1 (v6)
     'distanceNm','departurePort','arrivalPort',
     'trackFileUrl','trackSimplified','trackSource',
@@ -4531,9 +4535,10 @@ var SCHEMA_ = {
     'boatId','boatName','boatCategory',
     'locationId','locationName',
     'date','timeOut','timeIn','hoursDecimal',
-    'role','helm',
+    'role','helm','crew','skipperNote',
     'beaufort','windDir','wxSnapshot',
     'rejectComment',
+    'dismissed','dismissedAt',
     'createdAt','respondedAt',
   ],
   reservation_slots: [
@@ -4566,13 +4571,20 @@ var SCHEMA_ = {
     'includePhotos','includeTracks','categories',
   ],
   payroll: [
-    'id','employeeId','period',
+    'id','employeeId','employeeName','kt','period',
+    'periodFrom','periodTo','paymentDate','slipNumber',
+    'bankAccount','orlofsreikningur','title','baseRateKr',
+    'regularMinutes','regularHrs','otMinutes','ot1Hrs','ot2Hrs','totalHours',
+    'dagvinna','eftirvinna1','eftirvinna2','otLines','manualLines','manualTotal',
     'hoursRegular','hoursOT133','hoursOT155',
-    'grossWage','orlofsfe','grossTotal',
-    'lifeyrir','sereignarsjodur','otherWithholdings',
-    'stadgreidslaSkattur','netPay',
-    'tryggingagjald','motframlag','totalEmployerCost',
-    'generatedBy',
+    'grossWage','orlofslaun','orlofsRate','orlofsfe','grossTotal',
+    'employeePension','pensionRate','lifeyrir','sereignarsjodur','sereignRate',
+    'unionDues','otherWithholdings',
+    'taxBase','taxGross','personalCredit','taxWithheld','taxAfterCredit',
+    'stadgreidslaSkattur','netPay','orlofIBanki','totalDeductions',
+    'tryggingagjald','motframlag','employerPension','endurhaefingarsjodur',
+    'totalEmployerCost',
+    'approved','configSnapshot','generatedBy',
   ],
 };
 
