@@ -1170,6 +1170,16 @@ async function submitManual(){
   btn.disabled=false; btn.textContent=s('logbook.saveToLogbook');
 
   try{
+    // Build crewNames JSON from crew inputs
+    const crewInputs = Array.from(document.querySelectorAll('#mCrewInputs .manual-crew-row'));
+    const _crewNamesArr = crewInputs.map(row => {
+      const inp = row.querySelector('input[type="text"]');
+      const cbs = row.querySelectorAll('input[type="checkbox"]');
+      const nm = inp?.value.trim();
+      if (!nm) return null;
+      return { name: nm, kennitala: inp?.dataset.kennitala||'', helm: cbs[0]?.checked||false, student: cbs[1]?.checked||false, guest: !!(inp?.dataset.guest) };
+    }).filter(Boolean);
+    const helmSelf = !!(document.getElementById('mHelmSelf')?.checked);
     const tripBase = {
       date, boatId, boatName, boatCategory,
       locationId:locId, locationName:locName,
@@ -1180,13 +1190,14 @@ async function submitManual(){
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
       photoMeta: Object.keys(photoMeta).length ? JSON.stringify(photoMeta) : '',
       nonClub: isNonClub||false,
+      helm: helmSelf,
+      crewNames: _crewNamesArr.length ? JSON.stringify(_crewNamesArr) : '',
     };
     const res=await apiPost('saveTrip', tripBase);
     const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
     myTrips.unshift(savedTrip);
 
     // Save linked crew trips for named crew members
-    const crewInputs = Array.from(document.querySelectorAll('#mCrewInputs .manual-crew-row'));
     const linkedId = res.id; // use the skipper trip id as the link
     for(const row of crewInputs){
       const inp = row.querySelector('input[type="text"]');
