@@ -104,10 +104,10 @@
     <div class="cx-stat"><div class="sn" id="statDist">—</div><div class="sl" data-s="cox.statsDist"></div></div>
   </div>
 
-  <!-- ══ BOAT AVAILABILITY ══ -->
-  <div class="cx-section" id="sectBoats">
-    <div class="cx-section-hdr" data-s="cox.boatAvailability"></div>
-    <div id="boatList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  <!-- ══ MAINTENANCE ══ -->
+  <div class="cx-section" id="sectMaint">
+    <div class="cx-section-hdr" data-s="cox.maintenance"></div>
+    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
   <!-- ══ CREW BOARD ══ -->
@@ -145,12 +145,6 @@
     </div>
   </div>
 
-  <!-- ══ MAINTENANCE ══ -->
-  <div class="cx-section" id="sectMaint">
-    <div class="cx-section-hdr" data-s="cox.maintenance"></div>
-    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
-
 </div>
 
 <!-- ══ BULK BOOK MODAL ══ -->
@@ -184,34 +178,6 @@
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="previewCxBulkBook()" data-s="slot.preview">Preview</button>
       <button class="btn btn-primary" onclick="submitCxBulkBook()" data-s="slot.bulkBook">Bulk Book</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ RESERVATION MODAL ══ -->
-<div class="modal-overlay hidden" id="resModal" onclick="if(event.target===this)closeModal('resModal')">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3 data-s="boat.addReservation"></h3>
-      <button class="modal-close-x" onclick="closeModal('resModal')">×</button>
-    </div>
-    <div class="field">
-      <label data-s="cox.resMember">Member</label>
-      <div style="position:relative">
-        <input type="text" id="cxResMemberSearch" autocomplete="off" placeholder="" oninput="searchCxResMember(this.value)">
-        <div id="cxResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
-        <input type="hidden" id="cxResMemberKt">
-        <div id="cxResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="field"><label data-s="cox.resStartDate">Start</label><input type="date" id="cxResStart"></div>
-      <div class="field"><label data-s="cox.resEndDate">End</label><input type="date" id="cxResEnd"></div>
-    </div>
-    <div class="field"><label data-s="cox.resNote">Note</label><input type="text" id="cxResNote"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('resModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-primary" onclick="saveCxReservation()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -352,7 +318,6 @@ var _membersLoaded = false;
     _allTrips = (tripsRes.trips || []).filter(t => cxBoatIds.has(t.boatId));
 
     renderStats();
-    renderBoats();
     renderMaint();
     renderCrewBoard();
     renderCrewInvites();
@@ -385,161 +350,6 @@ function renderStats() {
   document.getElementById('statTrips').textContent = myTrips.length;
   document.getElementById('statHours').textContent = totalHrs.toFixed(1);
   document.getElementById('statDist').textContent = '—';
-}
-
-// ══ BOAT AVAILABILITY ════════════════════════════════════════════════════════
-function renderBoats() {
-  var el = document.getElementById('boatList');
-  // Show rowing-shell boats that are controlled-access with a released_rower gate cert,
-  // or have reservations for this user
-  var rowingBoats = _boats.filter(b => {
-    // Show controlled-access boats gated by released_rower cert
-    if (b.accessMode === 'controlled' && b.accessGateCert === 'released_rower') return true;
-    // Show slot-scheduled boats gated by released_rower cert
-    if (boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'released_rower') return true;
-    // Show any boat this user has a reservation for
-    if (b.reservations && b.reservations.some(r => String(r.memberKennitala) === String(user.kennitala))) return true;
-    return false;
-  });
-
-  if (!rowingBoats.length) {
-    el.innerHTML = '<div class="empty-note">' + s('cox.noBoats') + '</div>';
-    return;
-  }
-
-  el.innerHTML = rowingBoats.map(b => {
-    var isOos = boolVal(b.oos);
-    var portName = '';
-    if (b.defaultPortId) { var loc = _locations.find(l => l.id === b.defaultPortId); if (loc) portName = loc.name; }
-    var isControlled = b.accessMode === 'controlled';
-
-    // Reservation list
-    var resHtml = '';
-    if (b.reservations && b.reservations.length) {
-      resHtml = '<div style="margin-top:8px;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px">' + s('cox.reservations') + '</div>';
-      resHtml += b.reservations.map(r => {
-        var removeBtn = _isReleasedRower
-          ? '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeCxReservation(\'' + esc(b.id) + '\',\'' + esc(r.id) + '\')">&times;</button>'
-          : '';
-        return '<div style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center">'
-          + '<span>' + esc(r.memberName) + ' · ' + esc(r.startDate) + ' → ' + esc(r.endDate)
-          + (r.note ? ' · <span style="color:var(--muted)">' + esc(r.note) + '</span>' : '') + '</span>'
-          + removeBtn
-          + '</div>';
-      }).join('');
-    }
-
-    // Actions — only for released rowers
-    var actionsHtml = '';
-    if (_isReleasedRower) {
-      actionsHtml = '<div class="cx-boat-actions">'
-        + '<button onclick="toggleBoatOos(\'' + esc(b.id) + '\',' + !isOos + ')">' + s(isOos ? 'cox.makeAvailable' : 'cox.makeUnavailable') + '</button>'
-        + '<button onclick="openResModal(\'' + esc(b.id) + '\')">' + s('cox.addReservation') + '</button>'
-        + '</div>';
-    }
-
-    return '<div class="cx-boat">'
-      + '<div>'
-        + '<div class="cx-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name)
-          + (isControlled ? ' <span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass)">' + esc(s('fleet.badgeControlled')) + '</span>' : '')
-        + '</div>'
-        + '<div class="cx-boat-sub">'
-          + (isOos ? '<span style="color:var(--red)">OUT OF SERVICE</span>' : '<span style="color:var(--green)">AVAILABLE</span>')
-          + (portName ? ' · ' + esc(portName) : '')
-        + '</div>'
-      + '</div>'
-      + actionsHtml
-      + resHtml
-    + '</div>';
-  }).join('');
-}
-
-async function toggleBoatOos(boatId, oos) {
-  var idx = _boats.findIndex(b => b.id === boatId);
-  if (idx < 0) return;
-  // Optimistic UI update
-  var prev = _boats[idx].oos;
-  _boats[idx].oos = oos;
-  renderBoats();
-  try {
-    await apiPost('saveConfig', { boats: _boats });
-    showToast(s('toast.saved'), 'ok');
-  } catch (e) {
-    _boats[idx].oos = prev;
-    renderBoats();
-    showToast(e.message, 'err');
-  }
-}
-
-// ══ RESERVATION MANAGEMENT ═══════════════════════════════════════════════════
-var _resBoatId = null;
-
-function openResModal(boatId) {
-  _resBoatId = boatId;
-  document.getElementById('cxResMemberKt').value = '';
-  document.getElementById('cxResMemberSearch').value = '';
-  document.getElementById('cxResMemberName').textContent = '';
-  document.getElementById('cxResMemberSuggestions').innerHTML = '';
-  document.getElementById('cxResStart').value = '';
-  document.getElementById('cxResEnd').value = '';
-  document.getElementById('cxResNote').value = '';
-  openModal('resModal');
-  ensureMembersLoaded();
-}
-
-var _searchCxResTimer = null;
-function searchCxResMember(q) {
-  clearTimeout(_searchCxResTimer);
-  var drop = document.getElementById('cxResMemberSuggestions');
-  if (!q || q.length < 2) { drop.innerHTML=''; drop.style.display='none'; return; }
-  _searchCxResTimer = setTimeout(function() {
-    var ql = q.toLowerCase();
-    var hits = [], count = 0;
-    for (var i = 0; i < _members.length && count < 8; i++) {
-      if (((_members[i].name||'').toLowerCase()).includes(ql)) { hits.push(_members[i]); count++; }
-    }
-    if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
-    drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectCxResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
-    drop.style.display = 'block';
-  }, 150);
-}
-
-function selectCxResMember(kt, name) {
-  document.getElementById('cxResMemberKt').value = kt;
-  document.getElementById('cxResMemberSearch').value = '';
-  document.getElementById('cxResMemberName').textContent = name;
-  document.getElementById('cxResMemberSuggestions').innerHTML = '';
-  document.getElementById('cxResMemberSuggestions').style.display = 'none';
-}
-
-async function saveCxReservation() {
-  if (!_resBoatId) return;
-  var kt = document.getElementById('cxResMemberKt').value;
-  var name = document.getElementById('cxResMemberName').textContent;
-  var start = document.getElementById('cxResStart').value;
-  var end = document.getElementById('cxResEnd').value;
-  var note = document.getElementById('cxResNote').value.trim();
-  if (!kt || !name || !start || !end) { showToast(s('cox.memberDatesRequired'), 'err'); return; }
-  try {
-    var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
-    var b = _boats.find(x => x.id === _resBoatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; }
-    closeModal('resModal');
-    renderBoats();
-    showToast(s('boat.reservationSaved'), 'ok');
-  } catch (e) { showToast(e.message, 'err'); }
-}
-
-async function removeCxReservation(boatId, resId) {
-  if (!confirm(s('boat.removeReservation') + '?')) return;
-  try {
-    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
-    var b = _boats.find(x => x.id === boatId);
-    if (b && res.boat) { b.reservations = res.boat.reservations; }
-    renderBoats();
-    showToast(s('boat.reservationRemoved'), 'ok');
-  } catch (e) { showToast(e.message, 'err'); }
 }
 
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
@@ -1102,12 +912,6 @@ function cxWeekToday() {
 }
 
 // ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
-window.toggleBoatOos = toggleBoatOos;
-window.openResModal = openResModal;
-window.removeCxReservation = removeCxReservation;
-window.searchCxResMember = searchCxResMember;
-window.selectCxResMember = selectCxResMember;
-window.saveCxReservation = saveCxReservation;
 window.openCrewModal = openCrewModal;
 window.pickCrewColor = pickCrewColor;
 window.createNewCrew = createNewCrew;
