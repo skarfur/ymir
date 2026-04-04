@@ -13,8 +13,8 @@
 .badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
-.badge-helm{color:var(--text);border-color:var(--border);background:var(--surface)}
-.trip-arrow{padding:10px 10px 10px 0;display:flex;align-items:center;color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
+.badge-helm{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
+.trip-arrow{padding:10px 14px 10px 4px;display:flex;align-items:center;color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
 .trip-card.open .trip-arrow{transform:rotate(180deg)}
 
 /* ── Expanded card ── */

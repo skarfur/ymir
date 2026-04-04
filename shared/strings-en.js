@@ -1244,6 +1244,7 @@ var _STRINGS_FLAT = {
   "tc.helm": "Helm",
   "tc.student": "Student",
   "tc.guest": "Guest",
+  "tc.me": "Me",
   "tc.nonClub": "Non-club",
   "tc.pending": "pending",
   "tc.verificationPending": "Verification pending",
