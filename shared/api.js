@@ -271,6 +271,19 @@ function fmtDateShort(iso) {
   } catch(e) { return String(iso).slice(0, 10); }
 }
 
+var _monthKeys = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun','month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+function fmtWeekRange(startISO, endISO) {
+  try {
+    var a = new Date(startISO), b = new Date(endISO);
+    var aMonth = s(_monthKeys[a.getMonth()]);
+    var bMonth = s(_monthKeys[b.getMonth()]);
+    if (a.getMonth() === b.getMonth()) {
+      return a.getDate() + ' – ' + b.getDate() + ' ' + aMonth;
+    }
+    return a.getDate() + ' ' + aMonth + ' – ' + b.getDate() + ' ' + bMonth;
+  } catch(e) { return fmtDateShort(startISO) + ' – ' + fmtDateShort(endISO); }
+}
+
 function fmtTime(iso) {
   if (!iso) return "-";
   try { var d = new Date(iso); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }

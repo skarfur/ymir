@@ -2847,7 +2847,7 @@ function renderSlotCalendar() {
   var todayStr = new Date().toISOString().slice(0, 10);
   // Update week label
   document.getElementById("slotWeekLabel").textContent =
-    fmtDateShort(days[0].toISOString()) + ' – ' + fmtDateShort(days[6].toISOString());
+    fmtWeekRange(days[0].toISOString(), days[6].toISOString());
   // Build grid
   var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
   html += '<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px">' + s('slot.boat') + '</th>';

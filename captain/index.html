@@ -170,6 +170,7 @@
   <div class="cq-section" id="sectReservations">
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
       <select id="cqResBoat" onchange="loadCqSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
       <div style="display:flex;align-items:center;gap:6px">
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(-1)">&larr;</button>
@@ -939,7 +940,7 @@ function renderCqSlots() {
     var d = new Date(_cqWeekStart); d.setDate(d.getDate() + i); days.push(d);
   }
   document.getElementById('cqWeekLabel').textContent =
-    fmtDateShort(days[0].toISOString()) + ' – ' + fmtDateShort(days[6].toISOString());
+    fmtWeekRange(days[0].toISOString(), days[6].toISOString());
 
   // Create calendar instance once, then reuse
   if (!_cqCalendar) {
