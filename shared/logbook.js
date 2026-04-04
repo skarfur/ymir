@@ -162,7 +162,7 @@ function tripCard(t){
   // Helper: build formatted name + badges for a person in the expanded card crew list
   function _personEntry(name, opts) {
     let suffix = '';
-    if (opts.skipper) suffix += ' <span style="font-size:10px;color:var(--muted)">(skipper)</span>';
+    if (opts.skipper) suffix += skipperBadge;
     if (opts.student) suffix += studentBadge;
     if (opts.guest)   suffix += guestBadge;
     if (opts.pending) suffix += ' ' + pendingTag;
@@ -225,14 +225,15 @@ function tripCard(t){
     return _personEntry(esc(c.fromName||'?'), { guest: _memberIsGuest(c.fromKennitala), student: !!(cn?.student), pending: true });
   }));
 
-  // Assemble: owner first, then skipper (if crew view), then crew + pending sorted alphabetically
+  // Assemble crew list — all entries sorted alphabetically
   const _stripHtml = h => h.replace(/<[^>]*>/g, '').trim();
   const _sortByName = arr => arr.slice().sort((a, b) => _stripHtml(a).localeCompare(_stripHtml(b), 'is'));
   const allAboard = [ownerEntry];
   if (skipperEntry) allAboard.push(skipperEntry);
-  allAboard.push(..._sortByName([...linkedCrewEntries, ...unlinkedEntries, ...pendingEntries]));
-  const aboardCount = Math.max(allAboard.length, parseInt(t.crew||1));
-  const crewCountRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crewAboard')} <span style="text-transform:none;letter-spacing:0;font-style:italic">(⎈ = ${s('tc.helm').toLowerCase()})</span></span><span class="trip-exp-val">${aboardCount} — ${allAboard.join(', ')}</span></div>`;
+  allAboard.push(...linkedCrewEntries, ...unlinkedEntries, ...pendingEntries);
+  const allAboardSorted = _sortByName(allAboard);
+  const aboardCount = Math.max(allAboardSorted.length, parseInt(t.crew||1));
+  const crewCountRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.crewAboard')} (${aboardCount}) <span style="text-transform:none;letter-spacing:0;font-style:italic">(⎈ = ${s('tc.helm').toLowerCase()})</span></span><span class="trip-exp-val"><div style="display:flex;flex-direction:column;gap:2px">${allAboardSorted.map(e=>'<div>'+e+'</div>').join('')}</div></span></div>`;
   const crewNamesRow = '';
 
   // Collect helm plain names for compact card badge (no separate helm section in expanded card)
@@ -244,13 +245,13 @@ function tripCard(t){
     const _helmKts = new Set();
     if (ownerIsHelm) {
       _helmKts.add(String(t.kennitala));
-      helmPlainNames.push(t.memberName||'?');
+      helmPlainNames.push({name: t.memberName||'?', kt: String(t.kennitala)});
     }
     linkedCrew.forEach(x => {
       const cn = _crewNameEntry(x.kennitala);
       if ((x.helm && x.helm!=='false') || !!(cn?.helm)) {
         _helmKts.add(String(x.kennitala));
-        helmPlainNames.push(x.memberName||x.crewMemberName||'?');
+        helmPlainNames.push({name: x.memberName||x.crewMemberName||'?', kt: String(x.kennitala)});
       }
     });
     _storedCrewNames.forEach(cn => {
@@ -258,13 +259,13 @@ function tripCard(t){
       const kt = cn.kennitala ? String(cn.kennitala) : cn.name;
       if (_helmKts.has(kt)) return;
       _helmKts.add(kt);
-      helmPlainNames.push(cn.name);
+      helmPlainNames.push({name: cn.name, kt: cn.kennitala ? String(cn.kennitala) : ''});
     });
     confirmedHelmConfs.forEach(c => {
       const kt = String(c.toKennitala || c.fromKennitala || '');
       if (!kt || _helmKts.has(kt)) return;
       _helmKts.add(kt);
-      helmPlainNames.push(c.toName || c.fromName || '?');
+      helmPlainNames.push({name: c.toName || c.fromName || '?', kt: kt});
     });
   }
 
@@ -352,7 +353,7 @@ function tripCard(t){
         <div class="trip-boat">${esc(t.boatName||'—')}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
-          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${helmPlainNames.map(n=>esc(n)).join(', ')}</span>`:''}
+          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).map(w=>(w[0]||'')).filter(Boolean).join('').toUpperCase();return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_ini(h.name)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
           ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border);font-size:9px">${s('tc.nonClub')}</span>`:''}
           ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${s('tc.student')}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }

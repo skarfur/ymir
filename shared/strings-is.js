@@ -1230,6 +1230,7 @@ var _STRINGS_FLAT = {
   "tc.helm": "Stýri",
   "tc.student": "Nemi",
   "tc.guest": "Gestur",
+  "tc.me": "Ég",
   "tc.nonClub": "Utan félags",
   "tc.pending": "í bið",
   "tc.verificationPending": "Staðfesting í bið",
