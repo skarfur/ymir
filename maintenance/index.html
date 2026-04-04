@@ -218,14 +218,9 @@
       </div>
     </div>
 
-    <div class="field hidden" id="itemField">
-      <label id="itemLabel">Item / Location</label>
-      <input type="text" id="newItem" placeholder="e.g. Wetsuit #3 / Clubhouse roof">
-    </div>
-
     <div class="field">
-      <label>Part / Area</label>
-      <input type="text" id="newPart" placeholder="e.g. Hull, mast, zipper, window…">
+      <label>Location / part</label>
+      <input type="text" id="newPart" placeholder="e.g. Hull, mast, clubhouse roof…">
     </div>
 
     <div class="field" id="sevField">
@@ -519,7 +514,7 @@ function viewPhoto(url) {
 function openNewRequest(prefill) {
   selectedCat = ""; selectedSev = ""; photoDataUrl = ""; pendingPhotoFile = null;
   isSaumaMode = !!(prefill && prefill.saumaklubbur);
-  ["newPart","newDesc","newItem"].forEach(id => document.getElementById(id).value = "");
+  ["newPart","newDesc"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("newBoat").value = "";
   document.getElementById("newOos").checked = false;
   document.getElementById("newPhoto").value = "";
@@ -530,7 +525,6 @@ function openNewRequest(prefill) {
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("sevHint").textContent = "";
   document.getElementById("boatField").classList.add("hidden");
-  document.getElementById("itemField").classList.add("hidden");
   document.getElementById("newVerkstjori").value = "";
   document.getElementById("materialsList").innerHTML = "";
   document.getElementById("newMaterialInput").value = "";
@@ -563,9 +557,6 @@ function selectCat(cat) {
   selectedCat = cat;
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
   document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
-  document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
-  if (cat === "equipment") document.getElementById("itemLabel").textContent = s('maint.equipmentItem');
-  if (cat === "facility")  document.getElementById("itemLabel").textContent = s('maint.locationArea');
 }
 
 function selectSev(sev) {
@@ -640,16 +631,13 @@ async function submitRequest() {
   const desc = document.getElementById("newDesc").value.trim();
   if (!desc) { showErr(s('maint.errDescription')); return; }
 
-  let boatId = "", boatName = "", itemName = "", markOos = false;
+  let boatId = "", boatName = "", markOos = false;
   if (selectedCat === "boat") {
     const sel = document.getElementById("newBoat");
     boatId = sel.value;
     boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
     if (!boatId) { showErr(s('maint.errBoat')); return; }
     markOos = document.getElementById("newOos").checked;
-  } else {
-    itemName = document.getElementById("newItem").value.trim();
-    if (!itemName) { showErr(s('maint.errItem')); return; }
   }
 
   btn.disabled = true; btn.textContent = s('maint.submitting');
@@ -662,7 +650,7 @@ async function submitRequest() {
       else console.warn("Photo upload skipped:", upRes.error);
     }
     await apiPost("saveMaintenance", {
-      category: selectedCat, boatId, boatName, itemName,
+      category: selectedCat, boatId, boatName, itemName: '',
       part:        document.getElementById("newPart").value.trim(),
       severity:    selectedSev,
       description: desc,

@@ -203,14 +203,9 @@
       <select id="suggestBoat"><option value="">Select boat…</option></select>
     </div>
 
-    <div class="field hidden" id="itemField">
-      <label id="itemLabel">Item / Location</label>
-      <input type="text" id="suggestItem" placeholder="e.g. Wetsuit #3 / Clubhouse roof">
-    </div>
-
     <div class="field">
-      <label data-s="maint.part">Part / Area</label>
-      <input type="text" id="suggestPart" placeholder="e.g. Hull, mast, zipper, window…">
+      <label data-s="maint.part">Location / part</label>
+      <input type="text" id="suggestPart" placeholder="e.g. Hull, mast, clubhouse roof…">
     </div>
 
     <div class="field">
@@ -392,7 +387,7 @@ function renderProjectCard(r) {
   const catIcon   = CAT_ICON[r.category] || '⚙️';
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
-    : esc(r.itemName||'');
+    : '';
   const comments = parseJson(r.comments, []);
   const materials = parseJson(r.materials, []);
   const matDone = materials.filter(m=>m.purchased).length;
@@ -403,8 +398,7 @@ function renderProjectCard(r) {
     <div class="req-header">
       <div class="flex-1" style="min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel}
-          ${r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}
+          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
@@ -495,13 +489,13 @@ function renderKanbanCard(r) {
   const catIcon  = CAT_ICON[r.category] || '⚙️';
   const subject  = r.category === 'boat'
     ? esc(r.boatName || r.boatId || '')
-    : esc(r.itemName || '');
+    : '';
   const comments  = parseJson(r.comments, []);
   const materials = parseJson(r.materials, []);
   const matDone   = materials.filter(m => m.purchased).length;
 
   return `<div class="kanban-card ${sevClass}${onHold ? ' on-hold' : ''}" data-id="${esc(r.id || '')}">
-    <div class="kc-title">${catIcon} ${subject}${r.part ? ' · ' + esc(r.part) : ''}</div>
+    <div class="kc-title">${catIcon} ${subject ? subject + (r.part ? ' · ' + esc(r.part) : '') : esc(r.part||'')}</div>
     <div class="kc-meta">
       <span class="badge ${SEV_BADGE[r.severity] || 'badge-green'}" style="font-size:9px;padding:1px 5px">${r.severity || 'low'}</span>
       ${onHold ? `<span class="badge badge-yellow" style="font-size:9px;padding:1px 5px">⏸</span>` : ''}
@@ -516,7 +510,7 @@ function renderKanbanCard(r) {
 
 function openSuggestModal() {
   suggestCat = ""; suggestPrio = ""; suggestPhotoData = null; suggestMaterials = [];
-  ["suggestPart","suggestDesc","suggestItem"].forEach(id => document.getElementById(id).value = "");
+  ["suggestPart","suggestDesc"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("suggestBoat").value = "";
   document.getElementById("suggestPhoto").value = "";
   document.getElementById("suggestPhotoPreview").className = "photo-preview";
@@ -527,7 +521,6 @@ function openSuggestModal() {
   document.querySelectorAll(".prio-btn").forEach(b => b.classList.remove("selected"));
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("boatField").classList.add("hidden");
-  document.getElementById("itemField").classList.add("hidden");
   openModal("suggestModal");
 }
 
@@ -537,9 +530,6 @@ function selectCat(cat) {
   suggestCat = cat;
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("selected", b.dataset.cat === cat));
   document.getElementById("boatField").classList.toggle("hidden", cat !== "boat");
-  document.getElementById("itemField").classList.toggle("hidden", cat === "boat");
-  if (cat === "equipment") document.getElementById("itemLabel").textContent = s("sauma.equipmentItem");
-  if (cat === "facility")  document.getElementById("itemLabel").textContent = s("sauma.locationArea");
 }
 
 function selectPrio(sev) {
@@ -607,14 +597,11 @@ async function submitSuggestion() {
   const desc = document.getElementById("suggestDesc").value.trim();
   if (!desc) { showSuggestErr(s("sauma.describeProject")); return; }
 
-  let boatId = "", boatName = "", itemName = "";
+  let boatId = "", boatName = "";
   if (suggestCat === "boat") {
     const sel = document.getElementById("suggestBoat");
     boatId = sel.value; boatName = sel.selectedOptions[0]?.text?.split(" (")[0] || "";
     if (!boatId) { showSuggestErr(s("sauma.selectBoat")); return; }
-  } else {
-    itemName = document.getElementById("suggestItem").value.trim();
-    if (!itemName) { showSuggestErr(s("sauma.enterItem")); return; }
   }
 
   btn.disabled = true; btn.textContent = s("sauma.submitting");
@@ -626,7 +613,7 @@ async function submitSuggestion() {
       if (upRes.ok) photoUrl = upRes.photoUrl;
     }
     await apiPost("saveMaintenance", {
-      category: suggestCat, boatId, boatName, itemName,
+      category: suggestCat, boatId, boatName, itemName: '',
       part:        document.getElementById("suggestPart").value.trim(),
       severity:    suggestPrio,
       description: desc,

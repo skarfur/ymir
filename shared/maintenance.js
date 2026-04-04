@@ -53,15 +53,15 @@ function maintRenderCardCompact(r) {
     ? '<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">'+s('maint.oosTag')+'</span>' : '';
   const saumaTag = boolVal(r.saumaklubbur)
     ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
-  const boat = esc(r.boatName||r.boatId||r.itemName||r.name||'');
+  const subject = r.category==='boat' ? esc(r.boatName||r.boatId||'') : '';
   const part = esc(r.part||'');
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
     style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s"
     onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''">
     <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden">
       <span style="flex-shrink:0">${catIcon}</span>
-      <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${boat}</span>
-      ${part ? `<span style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
+      ${subject ? `<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
+      ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
     </div>
     ${saumaTag}
     ${oosTag}
@@ -122,10 +122,10 @@ function maintOpenDetail(r, currentUser) {
     const materials = parseJson(r.materials, []);
     const subjectLabel = r.category==='boat'
       ? esc(r.boatName||r.boatId||'')
-      : esc(r.itemName||'');
+      : '';
 
     document.getElementById('maintDetailTitle').textContent =
-      (isSauma ? '🧵 ' : catIcon+' ')+subjectLabel+(r.part ? ' · '+r.part : '');
+      (isSauma ? '🧵 ' : catIcon+' ')+(subjectLabel ? subjectLabel+(r.part ? ' · '+r.part : '') : (r.part||''));
 
     // Severity dropdown — saumaklúbbur only gets low/medium/high
     const allSevs = isSauma ? ['low','medium','high'] : ['low','medium','high','critical'];
@@ -438,7 +438,7 @@ function maintRenderCard(r) {
   const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
-    : esc(r.itemName||'');
+    : '';
   const oosTag = isOos ? '<span class="oos-badge">'+s('maint.oosTag')+'</span>' : '';
   const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
 
@@ -456,14 +456,12 @@ function maintRenderCard(r) {
     <div class="req-header">
       <div style="flex:1;min-width:0">
         <div class="req-title">
-          ${isSauma ? '🧵' : catIcon} ${subjectLabel}
-          ${r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}
+          ${isSauma ? '🧵' : catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}
           ${oosTag} ${saumaBadge}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
           ${isSauma && r.verkstjori ? `<span style="color:var(--brass)">Verkstjóri: ${esc(r.verkstjori)}</span>` : ''}
-          ${r.category==='boat'&&r.itemName ? `<span>${esc(r.itemName)}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
           ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
@@ -485,9 +483,8 @@ function maintRenderRow(m) {
         onchange="maintResolveRow('${m.id}', this.checked)">
       <div class="maint-info">
         <div class="maint-boat">
-          ${esc(m.boatName || m.itemName || "")}
+          ${m.category==='boat' ? esc(m.boatName||m.boatId||'') : ''}${m.category==='boat' && m.part ? ' · ' : ''}${m.part ? esc(m.part) : ''}
           <span class="badge ${SEV_BADGE[m.severity] || "badge-muted"}" style="margin-left:6px">${m.severity || ""}</span>
-          ${m.part ? `<span class="badge badge-muted" style="margin-left:4px">${esc(m.part)}</span>` : ""}
         </div>
         <div class="maint-desc">${esc(m.description || "")}</div>
       </div>
