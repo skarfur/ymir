@@ -550,7 +550,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
         </div>
         <!-- footer: flag pill + status badges -->
-        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
             ${flag.icon} ${flag.label}  —  ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
           </span>
