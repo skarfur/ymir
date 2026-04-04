@@ -300,7 +300,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   const _ssBadgesHtml = (() => {
     if (!staffStatus) return '';
     const IS2   = lang === 'IS';
-    const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
+    const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
     const dCol  = staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
     const bCol  = staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
     const dBg   = staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
@@ -500,7 +500,13 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       const updTime = fmtTimeNow();
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-bottom:8px">${IS?'BIRK — Aðstæður':'BIRK — CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${IS?'BIRK — Aðstæður':'BIRK — CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
+            <a href="../weather/" style="font-size:10px;font-weight:500;color:var(--brass);text-decoration:none;white-space:nowrap">${IS?'Spá':'Forecast'} →</a>
+          </div>
+        </div>
         <!-- 2-row grid, columns locked -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
           <div class="wx-cell">
@@ -543,16 +549,12 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${IS?(trend==='rising'?'hækkun':(trend==='falling'?'lækkun':'stöðugt')):trend}</div>
           </div>
         </div>
-        <!-- footer: flag · refresh · forecast -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;gap:8px;flex-wrap:wrap">
+        <!-- footer: flag pill + status badges -->
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
             ${flag.icon} ${flag.label}  —  ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
           </span>
-          <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
-            <a href="../weather/" style="font-size:12px;font-weight:500;color:#fff;background:var(--brass);border-radius:6px;padding:4px 12px;text-decoration:none;white-space:nowrap">→ Full forecast →</a>
-          </div>
+          <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>`;
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
@@ -591,7 +593,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       if (_ssBadges) {
         const _ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         const _isB = typeof getLang === 'function' && getLang() === 'IS';
-        const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
+        const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
         if (_ss) {
           const _dc  = _ss.onDuty      ? '#27ae60' : '#e74c3c';
           const _bc  = _ss.supportBoat ? '#27ae60' : '#e74c3c';
@@ -615,7 +617,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         if (!_b) return;
         const _ss2  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         const _is2  = typeof getLang === 'function' && getLang() === 'IS';
-        const _bst2 = 'display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid;font-size:10px;font-weight:500;white-space:nowrap;';
+        const _bst2 = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
         if (_ss2) {
           const _dc2  = _ss2.onDuty      ? '#27ae60' : '#e74c3c';
           const _bc2  = _ss2.supportBoat ? '#27ae60' : '#e74c3c';
