@@ -127,11 +127,13 @@
   <!-- ══ DATE NAV ══ -->
   <div class="date-nav">
     <button id="prevBtn">◀</button>
-    <div class="date-big" id="dateBig"></div>
+    <div style="flex:1;text-align:center">
+      <div class="date-big" id="dateBig"></div>
+      <div class="date-hero" id="dateHero"></div>
+    </div>
     <button id="nextBtn">▶</button>
-    <button id="todayBtn" data-s="daily.today"></button>
   </div>
-    <div class="date-hero" id="dateHero"></div>
+  <div class="flex-center mb-8"><button id="todayBtn" class="btn-ghost-sm" data-s="daily.today" style="font-size:11px"></button></div>
 
   <div class="flex-center flex-wrap gap-8 mb-16">
     <div class="signoff-badge hidden" id="signoffBadge"></div>
@@ -198,7 +200,6 @@
   <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">
     <span id="saveMsg"></span>
-    <button class="btn btn-secondary" id="saveDraftBtn" data-s="btn.saveDraft"></button>
     <button class="btn btn-primary"   id="signOffBtn"   data-s="btn.signOff"></button>
   </div>
 
@@ -254,6 +255,7 @@
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="actCancelBtn" data-s="btn.cancel"></button>
+      <button class="btn btn-ghost-sm" id="actSaveAddBtn">Save & add another</button>
       <button class="btn btn-primary"   id="actSaveBtn"   data-s="btn.save"></button>
     </div>
   </div>
@@ -386,7 +388,6 @@ const dom = domRefs({
   incidentContainer: 'incidentContainer',
   incidentHeading:   'incidentHeading',
   saveMsg:           'saveMsg',
-  saveDraftBtn:      'saveDraftBtn',
   signOffBtn:        'signOffBtn',
   actTypeBtns:       'actTypeBtns',
   actName:           'actName',
@@ -525,31 +526,28 @@ function renderActivitiesReadonly() {
 function renderIncidentSection(incidents) {
   const container = dom.incidentContainer;
   const heading   = dom.incidentHeading;
-  const today     = isToday();
-  const fileBtn   = `<a href="../incidents/" class="incident-btn">
-      <span class="incident-icon">⚠️</span>
-      <div>
-        <div class="incident-label">${s('daily.fileIncident')}</div>
-        <div class="incident-sub">${s('daily.incidentSub')}</div>
-      </div>
-      <span class="ml-auto text-muted" style="font-size:16px">→</span>
-    </a>`;
   if (!incidents || !incidents.length) {
     heading.textContent = s('daily.incidentReport');
-    container.innerHTML = today ? fileBtn
-      : `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
+    container.innerHTML = `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
     return;
   }
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
-  container.innerHTML = incidents.map(inc => `
-    <a href="../incidents/#${inc.id}" class="incident-btn">
-      <span class="incident-icon">⚠️</span>
-      <div>
-        <div class="incident-label">${esc(inc.title || s('incident.title'))}</div>
-        <div class="incident-sub">${esc((inc.filedAt||'').slice(0,16).replace('T',' '))}${inc.severity ? ` · <span class="badge badge-${inc.severity === 'critical'?'red':inc.severity === 'high'?'orange':'muted'}">${esc(inc.severity)}</span>` : ''}</div>
+  container.innerHTML = incidents.map(inc => {
+    const types = (function() { try { var t = typeof inc.types === 'string' ? JSON.parse(inc.types) : inc.types; return Array.isArray(t) ? t.map(function(k){ return s('incident.type.'+k)||k; }).join(', ') : ''; } catch(e){ return ''; } })();
+    const time = (inc.filedAt||inc.time||'').slice(11,16) || '';
+    const sevLabel = inc.severity ? inc.severity.charAt(0).toUpperCase() + inc.severity.slice(1) : '';
+    const sevClass = inc.severity === 'critical' ? 'red' : inc.severity === 'high' ? 'orange' : 'muted';
+    const followUp = inc.resolved ? '✓ Resolved' : (inc.followUp ? 'Follow-up pending' : '');
+    return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:center">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;font-size:12px">
+        <span>${esc(types || inc.title || s('incident.title'))}</span>
+        ${sevLabel ? `<span class="badge badge-${sevClass}">${esc(sevLabel)}</span>` : ''}
+        ${time ? `<span class="text-muted">${esc(time)}</span>` : ''}
+        ${followUp ? `<span class="text-muted" style="font-style:italic">${esc(followUp)}</span>` : ''}
       </div>
       <span class="ml-auto text-brass" style="font-size:16px">→</span>
-    </a>`).join('') + (today ? fileBtn : '');
+    </a>`;
+  }).join('');
 }
 
 // ── Activity type buttons ─────────────────────────────────────────────────────
@@ -666,10 +664,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   dom.addActivityBtn.addEventListener('click', openActivityModal);
   document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
-  document.getElementById('actSaveBtn').addEventListener('click',   saveActivity);
+  document.getElementById('actSaveBtn').addEventListener('click',   function() { saveActivity(false); });
+  document.getElementById('actSaveAddBtn').addEventListener('click', function() { saveActivity(true); });
 
-  dom.saveDraftBtn.addEventListener('click', saveDraft);
   dom.signOffBtn.addEventListener('click',   signOffDay);
+  dom.narrativeInput.addEventListener('input', markDirty);
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
 
   // Tide fields are now auto-filled from harmonic prediction (no manual inputs)
@@ -724,7 +723,6 @@ function updateDateNav() {
   dom.todayBtn.disabled = isToday();
   dom.mainWrap.classList.toggle('readonly', !isToday());
   const isEditable = isToday();
-  dom.saveDraftBtn.style.display = isEditable ? '' : 'none';
   dom.signOffBtn.style.display   = isEditable ? '' : 'none';
   dom.logWxBtn.parentElement.style.display = 'block';
   dom.logWxBtn.style.display   = isEditable ? '' : 'none';
@@ -800,7 +798,7 @@ function openActivityModal() {
 }
 function closeActivityModal() { dom.activityModal.classList.add('hidden'); }
 
-function saveActivity() {
+function saveActivity(keepOpen) {
   const name = dom.actName.value.trim();
   const typeObj = activityTypes.find(t => t.id === _selectedActType);
   if (!name)    { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
@@ -822,9 +820,24 @@ function saveActivity() {
     linkedGroupCheckoutIds: _linkedGroupCheckoutIds.slice(),
   });
   renderActivities();
-  closeActivityModal();
   markDirty();
   saveDraft(); // auto-save when activity added
+  if (keepOpen) {
+    // Reset form fields for next entry but keep modal open
+    _selectedSubtype = null;
+    dom.actName.value = '';
+    dom.actStart.value = '';
+    dom.actEnd.value = '';
+    dom.actParticipants.value = '';
+    dom.actNotes.value = '';
+    document.getElementById('actAbler').checked = false;
+    _linkedGroupCheckoutIds = [];
+    renderGroupLinkCards();
+    populateActSubtypes();
+    showToast(s('toast.saved'));
+  } else {
+    closeActivityModal();
+  }
 }
 
 
@@ -886,15 +899,16 @@ function _autoFillTide() {
   tideData = tideToDailyLog(extrema);
 }
 
+let _tideWidgetInstance = null;
 function _renderDailyTide() {
   const el = document.getElementById('dailyTideWidget');
-  if (!el || typeof tideSvgChart !== 'function') return;
-  const extrema = tideExtrema(viewDate);
-  const series  = tideChartSeries(viewDate);
-  const isToday = viewDate === new Date().toISOString().slice(0,10);
-  const nowMs   = isToday ? Date.now() : -1;
-  const svg = tideSvgChart(series, extrema, nowMs, 320, 80);
-  el.innerHTML = `<div class="info-panel" style="padding:8px 10px">${svg}</div>`;
+  if (!el || typeof tideWidget !== 'function') return;
+  if (!_tideWidgetInstance) {
+    _tideWidgetInstance = tideWidget(el, {
+      onData: function(d) { tideData = tideToDailyLog(d.extrema); populateTideFields(); }
+    });
+  }
+  _tideWidgetInstance.refresh();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -913,7 +927,7 @@ async function loadDay() {
 
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
-  dom.dateHero.textContent = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
+  dom.dateHero.textContent = String(d.getDate()).padStart(2,'0') + ' ' + d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { month:'long' }) + ' ' + d.getFullYear();
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
@@ -1039,10 +1053,10 @@ async function signOffDay() {
 }
 
 async function doSave(signOff) {
-  const btn = dom[signOff ? 'signOffBtn' : 'saveDraftBtn'];
-  const orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = signOff ? s('daily.signOffSaving') : s('daily.saveDraftSaving');
+  if (signOff) {
+    dom.signOffBtn.disabled = true;
+    dom.signOffBtn.textContent = s('daily.signOffSaving');
+  }
   dom.saveMsg.textContent = '';
 
   try {
@@ -1062,18 +1076,21 @@ async function doSave(signOff) {
     dirty = false;
     dom.saveMsg.className = 'save-ok';
     dom.saveMsg.textContent = signOff ? s('toast.signedOff') : s('toast.saved');
+    if (!signOff) setTimeout(function(){ dom.saveMsg.textContent = ''; }, 3000);
     if (signOff) {
       dom.signoffBadge.classList.remove('hidden');
       dom.signoffBadge.textContent = s('daily.signedOffBy') + user.name;
     }
-    showToast(signOff ? s('toast.signedOff') : s('toast.saved'));
+    if (signOff) showToast(s('toast.signedOff'));
   } catch(e) {
     dom.saveMsg.className = 'save-err';
     dom.saveMsg.textContent = s('toast.error') + ': ' + e.message;
-    showToast(s('toast.saveFailed') + ': ' + e.message, 'err');
+    if (signOff) showToast(s('toast.saveFailed') + ': ' + e.message, 'err');
   } finally {
-    btn.disabled = false;
-    btn.textContent = orig;
+    if (signOff) {
+      dom.signOffBtn.disabled = false;
+      dom.signOffBtn.textContent = s('btn.signOff');
+    }
   }
 }
 
