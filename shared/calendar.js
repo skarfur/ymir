@@ -118,7 +118,7 @@
     var grid = document.createElement('div');
     grid.className = 'sc-grid';
     grid.style.gridTemplateColumns = mobile ? '42px 1fr' : '48px repeat(7, 1fr)';
-    grid.style.gridTemplateRows = '28px repeat(' + visibleRows + ', 24px)';
+    grid.style.gridTemplateRows = '36px repeat(' + visibleRows + ', 24px)';
     if (mobile) grid.style.minWidth = '0';
 
     // Corner cell
@@ -205,13 +205,19 @@
         block.style.borderLeftColor = slotColor;
         block.style.borderLeftWidth = '3px';
         block.style.borderLeftStyle = isTentative ? 'dashed' : 'solid';
+        if (isMine) {
+          block.style.background = slotColor + '20';
+          block.style.borderColor = slotColor;
+        }
       }
 
       var span = endRow - startRow;
       var timeLabel = sl.startTime + '\u2013' + sl.endTime;
       var sub = '';
-      if (isMine) sub = '<span class="sc-slot-who sc-slot-who--mine">' + esc(s('slot.yours')) + '</span>';
-      else if (isBooked) sub = '<span class="sc-slot-who">' + esc(sl.bookedByName || sl.bookedByCrewName || '') + '</span>';
+      if (isMine) {
+        var mineStyle = slotColor ? ' style="color:' + slotColor + '"' : '';
+        sub = '<span class="sc-slot-who sc-slot-who--mine"' + mineStyle + '>' + esc(s('slot.yours')) + '</span>';
+      } else if (isBooked) sub = '<span class="sc-slot-who">' + esc(sl.bookedByName || sl.bookedByCrewName || '') + '</span>';
 
       if (span <= 1) {
         block.innerHTML = '<span class="sc-slot-time">' + timeLabel + '</span>';
