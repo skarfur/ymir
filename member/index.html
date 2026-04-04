@@ -213,7 +213,7 @@
 
 <!-- ══ LAUNCH MODAL ══ -->
 <div class="modal-overlay hidden" id="launchModal" onclick="if(event.target===this)closeModal('launchModal')">
-  <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
+  <div class="modal" style="max-width:640px;max-height:92vh;overflow-y:auto">
     <div class="modal-header">
       <h3 id="launchModalTitle"></h3>
       <button class="modal-close-x" onclick="closeModal('launchModal')">×</button>
@@ -397,18 +397,20 @@ function renderLaunchPicker(preselectedBoatId) {
   const grouped={};
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
+    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
+      `<div class="mb-12">
+        <div class="section-label">${_fmtCatLabel(cat)}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left"
+          onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">${boatEmoji(cat)} ${esc(b.name)}</button>`).join('')}
+        </div>
+      </div>`).join('')+
     '<div class="mb-12">'+
       '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
         '🚣 '+s('member.nonClubBoat')+
         ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
       '</button>'+
-    '</div>'+
-    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
-      `<div class="mb-12">
-        <div class="section-label">${_fmtCatLabel(cat)}</div>
-        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left"
-          onclick="renderLaunchForm(boats.find(x=>x.id==='${b.id}'))">⛵ ${esc(b.name)}</button>`).join('')}
-      </div>`).join('');
+    '</div>';
 }
 
 // ── Checklists — config wins per-category; defaults fill missing categories ──
