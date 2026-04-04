@@ -8,6 +8,7 @@ var _STRINGS_FLAT = {
   "nav.signOut": "Sign out",
   "nav.langToggle": "IS",
   "btn.save": "Save",
+  "btn.saveClose": "Save & close",
   "btn.cancel": "Cancel",
   "btn.delete": "Delete",
   "btn.edit": "Edit",
