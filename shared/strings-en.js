@@ -994,6 +994,8 @@ var _STRINGS_FLAT = {
   "pub.dash.boatsOut": "Boats Out",
   "pub.dash.captainData": "Captain Data",
   "pub.dash.captainSoon": "Captain profiles and statistics will appear here soon.",
+  "pub.dash.trips": "trips",
+  "pub.dash.viewProfile": "View full profile",
   "pub.dash.comingSoon": "More information coming soon.",
   "admin.expectedColumns": "EXPECTED COLUMNS",
   "admin.colName": "Full name (required)",

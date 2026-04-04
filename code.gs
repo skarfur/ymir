@@ -4193,12 +4193,59 @@ function publicDashboard_() {
       return { certId: c.certId, sub: c.sub || '', label: label };
     });
 
-    // Captain trip stats
+    // Captain keelboat trips
     var captTrips = allTrips.filter(function(t) {
-      return String(t.kennitala) === String(m.kennitala) && (t.role === 'skipper' || t.role === 'captain');
+      return String(t.kennitala) === String(m.kennitala)
+        && (t.role === 'skipper' || t.role === 'captain');
+    }).sort(function(a, b) { return (b.date || '') > (a.date || '') ? 1 : -1; });
+    var captHours = 0, captDist = 0;
+    captTrips.forEach(function(t) { captHours += Number(t.hoursDecimal) || 0; captDist += Number(t.distanceNm) || 0; });
+
+    // Single-line trip rows for display
+    var tripRows = captTrips.map(function(t) {
+      var boat = boatMap[t.boatId] || {};
+      return {
+        date: t.date || '',
+        boatName: t.boatName || '',
+        makeModel: boat.typeModel || '',
+        location: t.locationName || t.departurePort || '',
+        crew: parseInt(t.crew) || 1,
+        duration: t.hoursDecimal ? Number(t.hoursDecimal).toFixed(1) : '',
+        distance: t.distanceNm ? Number(t.distanceNm).toFixed(1) : '',
+      };
     });
-    var captHours = 0;
-    captTrips.forEach(function(t) { captHours += Number(t.hoursDecimal) || 0; });
+
+    // Per-captain location stats for heatmap
+    var captLocStats = {};
+    captTrips.forEach(function(t) {
+      var lid = t.locationId || '';
+      if (!lid) return;
+      if (!captLocStats[lid]) captLocStats[lid] = { count: 0, hours: 0 };
+      captLocStats[lid].count++;
+      captLocStats[lid].hours += parseFloat(t.hoursDecimal) || 0;
+    });
+    var captLocData = [];
+    Object.keys(captLocStats).forEach(function(lid) {
+      var loc = locMap[lid];
+      if (!loc || !loc.coordinates) return;
+      var parts = String(loc.coordinates).split(',');
+      if (parts.length < 2) return;
+      var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+      if (isNaN(lat) || isNaN(lng)) return;
+      captLocData.push({ name: loc.name || lid, lat: lat, lng: lng, count: captLocStats[lid].count, hours: Math.round(captLocStats[lid].hours * 10) / 10 });
+    });
+
+    // Per-captain GPS track lines
+    var captTrackLines = [];
+    captTrips.forEach(function(t) {
+      if (!t.trackSimplified) return;
+      try {
+        var pts = typeof t.trackSimplified === 'string' ? JSON.parse(t.trackSimplified) : t.trackSimplified;
+        if (Array.isArray(pts) && pts.length >= 2) {
+          captTrackLines.push(pts.filter(function(p) { return typeof p.lat === 'number' && typeof p.lng === 'number'; }));
+        }
+      } catch(e) {}
+    });
 
     captains.push({
       id: m.id,
@@ -4208,7 +4255,11 @@ function publicDashboard_() {
       certs: certLabels,
       tripCount: captTrips.length,
       totalHours: Math.round(captHours * 10) / 10,
+      totalDist: Math.round(captDist * 10) / 10,
       captainRecordUrl: scriptUrl + '?action=captain&id=' + m.id,
+      trips: tripRows,
+      locations: captLocData,
+      trackLines: captTrackLines,
     });
   });
 

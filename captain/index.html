@@ -6,7 +6,6 @@
 <title>Ýmir — Captain's Quarters</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://script.google.com">
-<link rel="preconnect" href="https://unpkg.com">
 <link rel="stylesheet" href="../shared/style.css">
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
@@ -84,24 +83,6 @@
 .filter-bar .filter-search-row input { flex:1; min-width:0; }
 .filter-count { font-size:10px; color:var(--muted); white-space:nowrap; }
 
-/* ── Member heatmap ── */
-.cq-heatmap{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
-.cq-heatmap-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 0}
-.cq-heatmap-title{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-.cq-heatmap-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.cq-heatmap-toggle button{background:var(--surface);border:none;color:var(--muted);font-family:inherit;font-size:10px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border)}
-.cq-heatmap-toggle button:last-child{border-right:none}
-.cq-heatmap-toggle button.active{background:var(--brass);color:#000;font-weight:500}
-#cqHeatmap{height:260px;border-radius:0 0 8px 8px}
-
-/* ── Compact trip rows ── */
-.cq-trip-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px}
-.cq-trip-row:last-child{border-bottom:none}
-.cq-trip-date{font-size:11px;color:var(--muted);min-width:70px}
-.cq-trip-boat{font-weight:500;min-width:80px}
-.cq-trip-loc{color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cq-trip-stats{font-size:11px;color:var(--brass);white-space:nowrap}
-
 /* ── Bio section ── */
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
   border-radius:8px; color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
@@ -173,30 +154,6 @@
         <a id="publicProfileLink" href="#" target="_blank" style="font-size:11px;color:var(--brass);text-decoration:none" data-s="cq.viewPublicProfile"></a>
         <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="saveBio()" data-s="btn.save"></button>
       </div>
-    </div>
-  </div>
-
-  <!-- ══ MY KEELBOAT TRIPS (compact) ══ -->
-  <div class="cq-section" id="sectMyTrips">
-    <div class="cq-section-hdr">MY KEELBOAT TRIPS <span class="badge" id="myTripsCount" style="background:var(--brass)22;color:var(--brass)"></span></div>
-    <div class="cq-card" style="padding:0;overflow:hidden">
-      <div id="myTripList"><div class="empty-note" data-s="lbl.loading"></div></div>
-    </div>
-    <button class="cq-show-more" id="myTripsShowMore" style="display:none" onclick="showMoreMyTrips()">Show more…</button>
-  </div>
-
-  <!-- ══ PERSONAL HEATMAP ══ -->
-  <div class="cq-section" id="sectHeatmap" style="display:none">
-    <div class="cq-heatmap">
-      <div class="cq-heatmap-header">
-        <span class="cq-heatmap-title">Heatmap</span>
-        <div class="cq-heatmap-toggle">
-          <button class="active" data-mode="trips" onclick="setCqHeatMode('trips')">Trips</button>
-          <button data-mode="time" onclick="setCqHeatMode('time')">Time</button>
-          <button data-mode="tracks" onclick="setCqHeatMode('tracks')">GPS tracks</button>
-        </div>
-      </div>
-      <div id="cqHeatmap"></div>
     </div>
   </div>
 
@@ -472,8 +429,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     allLocs    = _locations;
 
     renderStats();
-    renderMyTrips();
-    initCqHeatmap();
     buildMaintBoatFilter();
     renderMaint();
     renderValidation();
@@ -499,167 +454,6 @@ function renderStats() {
   document.getElementById('statTrips').textContent = ytd.length;
   document.getElementById('statHours').textContent = hours.toFixed(1);
   document.getElementById('statDist').textContent  = dist.toFixed(1) + ' ' + s('cq.nm');
-}
-
-// ══ MY KEELBOAT TRIPS (compact single-line) ═════════════════════════════
-var _myTripsShown = 10;
-function renderMyTrips() {
-  var el = document.getElementById('myTripList');
-  var trips = _myKeelboatTrips.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  document.getElementById('myTripsCount').textContent = trips.length;
-  if (!trips.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noTripsMatch') + '</div>'; return; }
-  var shown = trips.slice(0, _myTripsShown);
-  el.innerHTML = shown.map(function(t) {
-    var dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '';
-    var dist = t.distanceNm ? (parseFloat(t.distanceNm)||0).toFixed(1)+' nm' : '';
-    var loc = t.locationName || t.departurePort || '';
-    var stats = [dur, dist].filter(Boolean).join(' · ');
-    return '<div class="cq-trip-row">'
-      + '<span class="cq-trip-date">' + esc((t.date||'').slice(0,10)) + '</span>'
-      + '<span class="cq-trip-boat">' + esc(t.boatName||'') + '</span>'
-      + '<span class="cq-trip-loc">' + esc(loc) + '</span>'
-      + '<span class="cq-trip-stats">' + esc(stats) + '</span>'
-      + '</div>';
-  }).join('');
-  document.getElementById('myTripsShowMore').style.display = trips.length > _myTripsShown ? '' : 'none';
-}
-function showMoreMyTrips() {
-  _myTripsShown += 20;
-  renderMyTrips();
-}
-
-// ══ CAPTAIN HEATMAP ═════════════════════════════════════════════════════
-var _cqHmMap = null, _cqHmHeatLayer = null, _cqHmMarkers = [], _cqHmTrackLines = [];
-var _cqHmMode = 'trips';
-
-function buildCqLocStats() {
-  var stats = {};
-  _myKeelboatTrips.forEach(function(t) {
-    var lid = t.locationId || '';
-    if (!lid) return;
-    if (!stats[lid]) stats[lid] = { count: 0, hours: 0 };
-    stats[lid].count++;
-    stats[lid].hours += parseFloat(t.hoursDecimal) || 0;
-  });
-  var result = [];
-  Object.keys(stats).forEach(function(lid) {
-    var loc = allLocs.find(function(l) { return l.id === lid; });
-    if (!loc || !loc.coordinates) return;
-    var parts = String(loc.coordinates).split(',');
-    if (parts.length < 2) return;
-    var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-    if (isNaN(lat) || isNaN(lng)) return;
-    result.push({ id: lid, name: loc.name || lid, lat: lat, lng: lng, tripCount: stats[lid].count, totalHours: Math.round(stats[lid].hours * 10) / 10 });
-  });
-  return result;
-}
-
-function getCqTrackLines() {
-  var lines = [];
-  _myKeelboatTrips.forEach(function(t) {
-    if (!t.trackSimplified) return;
-    try {
-      var pts = JSON.parse(t.trackSimplified);
-      if (Array.isArray(pts) && pts.length >= 2) {
-        lines.push(pts.filter(function(p) { return typeof p.lat === 'number' && typeof p.lng === 'number'; }));
-      }
-    } catch(e) {}
-  });
-  return lines;
-}
-
-function getCqAllTrackPoints() {
-  var allPts = [];
-  _myKeelboatTrips.forEach(function(t) {
-    if (!t.trackSimplified) return;
-    try {
-      var pts = JSON.parse(t.trackSimplified);
-      if (Array.isArray(pts)) pts.forEach(function(p) {
-        if (typeof p.lat === 'number' && typeof p.lng === 'number') allPts.push(p);
-      });
-    } catch(e) {}
-  });
-  return allPts;
-}
-
-async function initCqHeatmap() {
-  var locData = buildCqLocStats();
-  var trackPts = getCqAllTrackPoints();
-  if (!locData.length && !trackPts.length) return;
-
-  document.getElementById('sectHeatmap').style.display = '';
-
-  await loadLeaflet();
-  if (_cqHmMap) { _cqHmMap.remove(); _cqHmMap = null; }
-  _cqHmMap = L.map('cqHeatmap', { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
-  addSeaLayers(_cqHmMap);
-
-  renderCqHeatMode();
-}
-
-function clearCqHeatLayers() {
-  if (_cqHmHeatLayer) { _cqHmMap.removeLayer(_cqHmHeatLayer); _cqHmHeatLayer = null; }
-  _cqHmMarkers.forEach(function(m) { _cqHmMap.removeLayer(m); });
-  _cqHmMarkers = [];
-  _cqHmTrackLines.forEach(function(l) { _cqHmMap.removeLayer(l); });
-  _cqHmTrackLines = [];
-}
-
-function renderCqHeatMode() {
-  if (!_cqHmMap) return;
-  clearCqHeatLayers();
-  if (_cqHmMode === 'tracks') { renderCqTrackMode(); } else { renderCqLocationMode(); }
-}
-
-function renderCqLocationMode() {
-  var locData = buildCqLocStats();
-  if (!locData.length) { _cqHmMap.setView([64.148, -21.965], 11.25); return; }
-  var isTime = _cqHmMode === 'time';
-  var maxVal = locData.reduce(function(m, l) { return Math.max(m, isTime ? l.totalHours : l.tripCount); }, 1);
-  var heatData = locData.map(function(l) { return [l.lat, l.lng, (isTime ? l.totalHours : l.tripCount) / maxVal]; });
-  _cqHmHeatLayer = L.heatLayer(heatData, {
-    radius: 30, blur: 20, maxZoom: 14, max: 1.0,
-    gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-  }).addTo(_cqHmMap);
-  locData.forEach(function(l) {
-    var intensity = (isTime ? l.totalHours : l.tripCount) / maxVal;
-    var radius = Math.max(6, Math.min(20, 6 + intensity * 14));
-    var valLabel = isTime ? l.totalHours + 'h' : l.tripCount + (l.tripCount === 1 ? ' trip' : ' trips');
-    var marker = L.circleMarker([l.lat, l.lng], {
-      radius: radius, color: '#d4af37', fillColor: '#d4af37', fillOpacity: 0.3, weight: 1,
-    }).bindTooltip('<strong>' + esc(l.name) + '</strong><br>' + valLabel + ' &middot; ' + l.totalHours + 'h', { className: 'map-tooltip' }).addTo(_cqHmMap);
-    _cqHmMarkers.push(marker);
-  });
-  var bounds = L.latLngBounds(locData.map(function(l) { return [l.lat, l.lng]; }));
-  _cqHmMap.fitBounds(bounds.pad(0.15), { maxZoom: 11 });
-}
-
-function renderCqTrackMode() {
-  var lines = getCqTrackLines();
-  if (!lines.length) { _cqHmMap.setView([64.148, -21.965], 11.25); return; }
-  var allPts = [];
-  lines.forEach(function(pts) {
-    var latlngs = pts.map(function(p) { return [p.lat, p.lng]; });
-    allPts.push.apply(allPts, latlngs);
-    var line = L.polyline(latlngs, { color: '#d4af37', weight: 2, opacity: 0.6 }).addTo(_cqHmMap);
-    _cqHmTrackLines.push(line);
-  });
-  if (allPts.length) {
-    _cqHmHeatLayer = L.heatLayer(allPts.map(function(p) { return [p[0], p[1], 0.5]; }), {
-      radius: 20, blur: 15, maxZoom: 14, max: 1.0,
-      gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-    }).addTo(_cqHmMap);
-  }
-  var bounds = L.latLngBounds(allPts);
-  _cqHmMap.fitBounds(bounds.pad(0.1), { maxZoom: 11 });
-}
-
-function setCqHeatMode(mode) {
-  _cqHmMode = mode;
-  document.querySelectorAll('.cq-heatmap-toggle button').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-  renderCqHeatMode();
 }
 
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
