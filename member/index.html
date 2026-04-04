@@ -153,17 +153,17 @@
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
-  <div class="wx-widget mb-10" id="wxWidget">
+  <div class="wx-widget mb-16" id="wxWidget">
     <div class="text-muted text-sm" style="padding:6px 0" data-s="wx.loading"></div>
   </div>
 
   <!-- ══ TIDE WIDGET ══ -->
-  <div id="tideWidget" class="mb-10"></div>
+  <div id="tideWidget" class="mb-16"></div>
 
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
-    <a class="act-btn" href="../maintenance/?new=1"        data-s="member.reportIssue"></a>
+    <button class="act-btn" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
     <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
     <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
@@ -230,6 +230,17 @@
       <button class="modal-close-x" onclick="closeModal('returnModal')">×</button>
     </div>
     <div id="returnModalBody"></div>
+  </div>
+</div>
+
+<!-- ══ REPORT ISSUE MODAL ══ -->
+<div class="modal-overlay hidden" id="reportModal" onclick="if(event.target===this)closeModal('reportModal')">
+  <div class="modal" style="max-width:480px;max-height:92vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3 id="reportModalTitle">Report Issue</h3>
+      <button class="modal-close-x" onclick="closeModal('reportModal')">&times;</button>
+    </div>
+    <div id="reportModalBody"></div>
   </div>
 </div>
 
@@ -1136,6 +1147,30 @@ async function submitInlineReport(type) {
     }
     renderLandingChecklist();
     setTimeout(()=>{var note=document.getElementById('reportFlagNote');if(note){note.textContent=type==='damage'?'✓ Damage report submitted.':'✓ Incident report submitted.';note.style.color='var(--green)';note.style.display='block';}},50);
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+}
+
+// ── Standalone report (from quick-action strip) ──────────────────────────────
+function openStandaloneReport() {
+  document.getElementById('reportModalTitle').textContent='Report Issue';
+  document.getElementById('reportModalBody').innerHTML=
+    _maintFormHtml()+
+    '<div id="srErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row"><button class="btn btn-primary" onclick="submitStandaloneReport()">Submit</button></div>';
+  openModal('reportModal');
+  setTimeout(()=>_irSelectCat('boat'),0);
+}
+async function submitStandaloneReport() {
+  var errEl=document.getElementById('srErr'), desc=(document.getElementById('irDesc')||{}).value||'';
+  if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
+  var cat=window._irCat||'boat', sev=window._irSev||'medium';
+  var bid=cat==='boat'?((document.getElementById('irBoat')||{}).value||''):'';
+  var bnm=bid?(boats.find(b=>b.id===bid)||{name:''}).name:'';
+  var item=cat!=='boat'?((document.getElementById('irItem')||{}).value||''):'';
+  try {
+    await apiPost('saveMaintenance',{category:cat,boatId:bid,boatName:bnm,itemName:item,part:(document.getElementById('irPart')||{}).value||'',severity:sev,description:desc,markOos:false,reportedBy:user.name,source:'member-hub'});
+    closeModal('reportModal');
+    toast('✓ Issue reported');
   } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
 }
 
