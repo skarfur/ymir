@@ -12,7 +12,8 @@
 <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <style>
-.settings-page{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.settings-page{max-width:560px;width:100%;background:var(--card);border:1px solid var(--border-l);border-radius:10px;padding:24px 20px 20px;max-height:88vh;overflow-y:auto;position:relative}
 .settings-section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px}
 .settings-section-title{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px;font-weight:600}
 .settings-hint{font-size:11px;color:var(--muted);margin-top:4px}
@@ -33,8 +34,9 @@
 .pill-toggle:hover{border-color:var(--text);color:var(--text)}
 .pill-toggle.active{background:var(--brass);color:#0b1f38;border-color:var(--brass);font-weight:500}
 .pill-toggle input{display:none}
-.save-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
+.save-bar{position:sticky;bottom:-20px;background:var(--card);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
 .save-bar .btn{min-width:120px}
+@media(max-width:600px){.settings-overlay{padding:0;align-items:flex-end}.settings-page{max-height:95vh;border-radius:14px 14px 0 0}}
 </style>
 </head>
 <body>
@@ -43,6 +45,7 @@
   <div class="header-right"></div>
 </header>
 
+<div class="settings-overlay" id="settingsOverlay">
 <div class="settings-page">
   <div class="fw-500 mb-16" style="font-size:16px" data-s="settings.title"></div>
 
@@ -137,8 +140,10 @@
 
   <!-- Save -->
   <div class="save-bar">
-    <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn" data-s="btn.save"></button>
+    <button class="btn btn-ghost" onclick="cancelSettings()" data-s="btn.cancel"></button>
+    <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn" data-s="btn.saveClose"></button>
   </div>
+</div>
 </div>
 
 <script>
@@ -249,6 +254,31 @@ function getToggle(groupId) {
   return active ? active.dataset.val : null;
 }
 
+function goBack() {
+  if (document.referrer && document.referrer.indexOf(location.origin) === 0) {
+    history.back();
+  } else {
+    location.href = '../member/';
+  }
+}
+
+function cancelSettings() {
+  // Revert any live-previewed theme change
+  var prefs = getPrefs();
+  if (prefs.theme) setTheme(prefs.theme);
+  goBack();
+}
+
+// Click outside modal to close
+document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) cancelSettings();
+});
+
+// Escape key to close
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') cancelSettings();
+});
+
 async function saveSettings() {
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
@@ -300,15 +330,16 @@ async function saveSettings() {
     });
     showToast(s('settings.saved'), 'ok');
 
-    // If language changed, reload to apply
+    // If language changed, reload the target page to apply
     if (langChanged) {
-      location.reload();
+      location.href = '../member/';
+    } else {
+      goBack();
     }
   } catch(e) {
     showToast(s('settings.saveFailed') + ': ' + e.message, 'err');
-  } finally {
     btn.disabled = false;
-    btn.textContent = s('btn.save');
+    btn.textContent = s('btn.saveClose');
   }
 }
 </script>

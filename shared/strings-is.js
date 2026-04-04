@@ -8,6 +8,7 @@ var _STRINGS_FLAT = {
   "nav.signOut": "Skrá út",
   "nav.langToggle": "EN",
   "btn.save": "Vista",
+  "btn.saveClose": "Vista & loka",
   "btn.cancel": "Hætta við",
   "btn.delete": "Eyða",
   "btn.edit": "Breyta",
