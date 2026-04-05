@@ -561,6 +561,7 @@ function importMembers_(rows) {
         guardianName: r.guardianName || ex.guardianName || '',
         guardianKennitala: r.guardianKennitala || ex.guardianKennitala || '',
         guardianPhone: r.guardianPhone || ex.guardianPhone || '',
+        initials: ex.initials || extractInitials_(r.name || ex.name),
         active: r.active !== undefined ? bool_(r.active) : ex.active,
         updatedAt: ts,
       });
@@ -572,8 +573,8 @@ function importMembers_(rows) {
         birthYear: r.birthYear || '', isMinor: bool_(r.isMinor) || false,
         guardianName: r.guardianName || '', guardianKennitala: r.guardianKennitala || '',
         guardianPhone: r.guardianPhone || '', active: true,
-        certifications: '', lang: 'EN',
-        createdAt: ts, updatedAt: ts,
+        certifications: '', initials: extractInitials_(r.name),
+        lang: 'EN', createdAt: ts, updatedAt: ts,
       });
       created++;
     }
