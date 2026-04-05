@@ -136,27 +136,6 @@
     <div class="cq-stat"><div class="sn" id="statDist">—</div><div class="sl" data-s="cq.ytdDistance"></div></div>
   </div>
 
-  <!-- ══ BIO & PROFILE ══ -->
-  <div class="cq-section" id="sectBio">
-    <div class="cq-section-hdr" data-s="cq.bioTitle"></div>
-    <div class="cq-card">
-      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">
-        <div id="headshotWrap">
-          <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
-        </div>
-        <div style="flex:1">
-          <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="cq.headshotLabel"></label>
-          <input type="file" id="headshotFile" accept="image/*" style="font-size:11px;color:var(--text);width:100%">
-        </div>
-      </div>
-      <textarea class="cq-bio-area" id="bioText" maxlength="500"></textarea>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-        <a id="publicProfileLink" href="#" target="_blank" style="font-size:11px;color:var(--brass);text-decoration:none" data-s="cq.viewPublicProfile"></a>
-        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="saveBio()" data-s="btn.save"></button>
-      </div>
-    </div>
-  </div>
-
   <!-- ══ MAINTENANCE ══ -->
   <div class="cq-section" id="sectMaint">
     <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
@@ -240,6 +219,26 @@
       </div>
     </div>
     <div id="tripList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ BIO & PROFILE ══ -->
+  <div class="cq-section" id="sectBio">
+    <div class="cq-section-hdr" data-s="cq.bioTitle"></div>
+    <div class="cq-card">
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">
+        <div id="headshotWrap">
+          <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="cq.headshotLabel"></label>
+          <input type="file" id="headshotFile" accept="image/*" style="font-size:11px;color:var(--text);width:100%">
+        </div>
+      </div>
+      <textarea class="cq-bio-area" id="bioText" maxlength="500"></textarea>
+      <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px">
+        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" onclick="saveBio()" data-s="btn.save"></button>
+      </div>
+    </div>
   </div>
 
 </div>
