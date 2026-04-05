@@ -383,9 +383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (user.bio) document.getElementById('bioText').value = user.bio;
   if (user.headshotUrl) renderHeadshot(user.headshotUrl);
 
-  // Public profile link
-  document.getElementById('publicProfileLink').href = SCRIPT_URL + '?action=captain&id=' + user.id;
-
   // Headshot upload handler
   document.getElementById('headshotFile').addEventListener('change', uploadHeadshot);
 
