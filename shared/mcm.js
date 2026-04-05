@@ -193,7 +193,7 @@
     var el = document.getElementById('mcmMemberResults');
     if (!q || q.length < 2) { el.innerHTML = ''; return; }
     var matches = _members().filter(function(m) {
-      return (m.name || '').toLowerCase().includes(q) || (m.kennitala || '').includes(q);
+      return (m.name || '').toLowerCase().includes(q) || String(m.kennitala || '').includes(q);
     }).slice(0, 8);
     el.innerHTML = matches.map(function(m) {
       return '<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" onclick="mcmSelectMember(\'' + m.id + '\')">'
