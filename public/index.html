@@ -118,7 +118,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .future-text p{color:var(--muted);font-size:12px;font-style:italic}
 
 /* ── Captains ───────────────────────────────────────────────────── */
-.captain-list{display:flex;flex-direction:column;gap:20px}
+.captain-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(540px,1fr));gap:20px}
 .captain-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:12px}
 .captain-header{display:flex;align-items:center;gap:16px}
 .captain-headshot{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--brass);flex-shrink:0}
@@ -130,7 +130,6 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .cert-badge{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:10px;color:var(--text)}
 .cert-badge::before{content:'\2713';color:var(--green);font-weight:bold;font-size:9px}
 .captain-bio{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;max-width:600px}
-.captain-link{font-size:11px;color:var(--brass)}
 .captain-placeholder{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center}
 .captain-placeholder p{color:var(--muted);font-size:12px;font-style:italic}
 /* ── Captain trip table ── */
@@ -175,7 +174,7 @@ footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);bor
   .stat-box{padding:14px 16px}
   .stat-val{font-size:26px}
   #map-container{height:260px}
-  .captain-grid{grid-template-columns:1fr}
+  .captain-list{grid-template-columns:1fr}
   .subtitle{display:none}
   .water-grid{grid-template-columns:1fr}
   .modal-overlay{padding:10px;align-items:flex-end}
@@ -419,7 +418,6 @@ function renderDashboard(data) {
         }
       }
 
-      html += '<a class="captain-link" href="' + esc(cap.captainRecordUrl) + '" target="_blank">' + esc(s('pub.dash.viewProfile')) + ' &rarr;</a>';
       html += '</div>';
     });
     html += '</div>';
