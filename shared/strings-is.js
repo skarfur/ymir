@@ -995,6 +995,8 @@ var _STRINGS_FLAT = {
   "pub.dash.boatsOut": "Bátar úti",
   "pub.dash.captainData": "Skipstjóragögn",
   "pub.dash.captainSoon": "Upplýsingar um skipstjóra og tölfræði birtast hér fljótlega.",
+  "pub.dash.trips": "siglingar",
+  "pub.dash.viewProfile": "Sjá fulla prófíl",
   "pub.dash.comingSoon": "Frekari upplýsingar birtast fljótlega.",
   "admin.expectedColumns": "VÆNTIR DÁLKAR",
   "admin.colName": "Fullt nafn (áskilið)",
