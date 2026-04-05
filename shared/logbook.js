@@ -353,7 +353,7 @@ function tripCard(t){
         <div class="trip-boat">${esc(t.boatName||'—')}</div>
         <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
-          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).map(w=>(w[0]||'')).filter(Boolean).join('').toUpperCase();return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_ini(h.name)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
+          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).filter(t=>t&&t!==t.toLowerCase()).map(t=>t.replace(/-/g,'').charAt(0)).join('').toUpperCase();const _memberIni=h=>{const m=allMembers.find(x=>x.kennitala&&String(x.kennitala)===h.kt);return (m&&m.initials)?m.initials:_ini(h.name);};return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_memberIni(h)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
           ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border);font-size:9px">${s('tc.nonClub')}</span>`:''}
           ${(t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)))?`<span class="trip-badge" style="background:#2e86c111;border:1px solid #2e86c155;color:#2e86c1;font-size:9px">${s('tc.student')}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':'' }
