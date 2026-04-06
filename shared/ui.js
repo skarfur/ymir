@@ -267,9 +267,8 @@ window.buildHeader = function (page) {
     if (isCaptainUser && page !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
   }
 
-  // RIGHT: Settings · Weather · lang · sign out
+  // RIGHT: Settings · lang · sign out
   if (user && page !== 'settings') right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
-  if (page !== 'weather') right.appendChild(link(depth + 'weather/', s('nav.weather'), 'hbtn'));
   right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }));
   right.appendChild(btn(s('nav.signOut'),    () => { if (typeof signOut    === 'function') signOut();    }));
 };
