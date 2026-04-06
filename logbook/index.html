@@ -320,9 +320,14 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           <span class="text-muted" style="font-size:9px;font-weight:400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
         </label>
       </div>
-      <!-- Club boat (default) -->
-      <div id="mBoatClub" class="form-field"><label>Boat</label>
-        <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
+      <!-- Club boat + location (default) -->
+      <div id="mClubRow" class="form-row">
+        <div id="mBoatClub" class="form-field"><label>Boat</label>
+          <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
+        </div>
+        <div id="mLocClub" class="form-field"><label>Location</label>
+          <select id="mLocation"><option value="">Select location…</option></select>
+        </div>
       </div>
       <!-- Non-club boat (hidden by default) -->
       <div id="mBoatFree" style="display:none">
@@ -356,15 +361,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           </div>
         </div>
       </div>
-      <!-- Club location (default) -->
-      <div id="mLocClub" class="form-field"><label>Location</label>
-        <select id="mLocation"><option value="">Select location…</option></select>
-      </div>
       <!-- Non-club location (hidden by default) -->
       <div id="mLocFree" class="form-field" style="display:none">
         <label data-s="lbl.location">Location</label>
         <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
-        <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div>
+        <button type="button" class="text-xs text-brass" id="mLocGeoBtn" onclick="useMyLocation('mLocFreeInput','mLocGeoStatus')" style="background:none;border:none;padding:4px 0;cursor:pointer;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
+        <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:2px;display:none"></div>
       </div>
       <div class="form-row">
         <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
@@ -409,7 +411,11 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       </details>
 
       <!-- Weather -->
-      <div class="section-label" style="margin:12px 0 8px">WEATHER (OPTIONAL)</div>
+      <div class="flex-center gap-6" style="margin:12px 0 8px;justify-content:space-between">
+        <div class="section-label">WEATHER (OPTIONAL)</div>
+        <button type="button" class="text-xs text-brass" id="mWxFetchBtn" onclick="fetchCurrentWeather()" style="background:none;border:none;padding:0;cursor:pointer">🌤 Use current weather</button>
+      </div>
+      <div id="mWxFetchStatus" class="text-xs text-muted" style="display:none;margin-bottom:6px"></div>
       <div class="wx-row">
         <div class="form-field"><label>Beaufort</label>
           <select id="mBft" onchange="onBftChange()">
