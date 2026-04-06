@@ -1250,6 +1250,7 @@ var _STRINGS_FLAT = {
   "tc.nonClub": "Non-club",
   "tc.pending": "pending",
   "tc.verificationPending": "Verification pending",
+  "tc.requestVerification": "Request verification",
   "tc.windSpeed": "Wind speed",
   "tc.direction": "Direction",
   "tc.gusts": "Gusts",
