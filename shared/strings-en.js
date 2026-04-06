@@ -1320,6 +1320,7 @@ var _STRINGS_FLAT = {
   "maint.adoptProject": "Adopt Project",
   "maint.reportedByLabel": "Reported by",
   "maint.pendingReview": "Pending staff review",
+  "maint.pendingReviewAlert": "{count} saumaklúbbur project(s) awaiting staff review — tap to review",
   "maint.markCompleted": "Mark Completed",
   "maint.markResolved2": "Mark Resolved",
   "maint.resumeBtn": "Resume",

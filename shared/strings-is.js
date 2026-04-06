@@ -1320,6 +1320,7 @@ var _STRINGS_FLAT = {
   "maint.adoptProject": "Taka verkefni að mér",
   "maint.reportedByLabel": "Tilkynnt af",
   "maint.pendingReview": "Bíður samþykktar starfsmanna",
+  "maint.pendingReviewAlert": "{count} saumaklúbbsverkefni bíða samþykktar — smelltu til að skoða",
   "maint.markCompleted": "Merkja lokið",
   "maint.markResolved2": "Merkja sem lokið",
   "maint.resumeBtn": "Halda áfram",

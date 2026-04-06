@@ -151,6 +151,13 @@
     <button class="btn btn-secondary flex-1" onclick="openNewRequest({saumaklubbur:true})">🧵 New sewing circle project</button>
   </div>
 
+  <!-- Pending sauma review alert -->
+  <div id="pendingReviewAlert" class="hidden" style="margin:10px 0;padding:10px 14px;border-radius:8px;background:var(--brass)11;border:1px solid var(--brass)66;color:var(--brass);font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="showPendingReviews()">
+    <span style="font-size:18px">⏳</span>
+    <span id="pendingReviewAlertText" style="flex:1"></span>
+    <span style="font-size:11px;opacity:.8">→</span>
+  </div>
+
   <!-- Filter bar -->
   <div class="filter-bar-grouped" id="filterBar">
     <div class="filter-group">
@@ -281,6 +288,7 @@
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let allRequests = [];
+window.allRequests = allRequests;
 let boats = [];
 let selectedCat = "";
 let selectedSev = "";
@@ -308,6 +316,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       apiGet("getConfig"),
     ]);
     allRequests = rRes.requests || [];
+    window.allRequests = allRequests;
     window._maintUser = window.user;
     boats = (cfgRes.boats || []).filter(b => b.active !== false && b.active !== "false");
     populateBoatSelect();
@@ -358,6 +367,36 @@ function renderStats() {
   document.getElementById("statOos").textContent      = oos.length;
   document.getElementById("statPending").textContent  = pending.length;
   document.getElementById("statResolved").textContent = resolved.length;
+
+  // Pending review alert banner
+  const alertEl = document.getElementById("pendingReviewAlert");
+  if (alertEl) {
+    if (pending.length > 0) {
+      document.getElementById("pendingReviewAlertText").textContent =
+        s('maint.pendingReviewAlert', { count: pending.length });
+      alertEl.classList.remove("hidden");
+    } else {
+      alertEl.classList.add("hidden");
+    }
+  }
+}
+
+// Activate the "pending review" sauma filter so only awaiting-approval projects show
+function showPendingReviews() {
+  activeFilters.status = new Set(['open']);
+  activeFilters.type   = new Set(['sauma']);
+  activeFilters.sauma  = new Set(['pending']);
+  updateFilterUI();
+  // Reflect the active status pill in the DOM
+  document.querySelectorAll('#filterBar .filter-btn').forEach(btn => {
+    const g = btn.dataset.group, v = btn.dataset.value;
+    btn.classList.toggle('active',
+      (g==='status' && v==='open') ||
+      (g==='type' && v==='sauma') ||
+      (g==='sauma' && v==='pending'));
+  });
+  renderList();
+  document.getElementById('reqList')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── Filter & render ────────────────────────────────────────────────────────────
@@ -675,6 +714,7 @@ async function submitRequest() {
     closeNewModal();
     const rRes = await apiGet("getMaintenance");
     allRequests = rRes.requests || [];
+    window.allRequests = allRequests;
     renderStats(); renderList();
     toast(s('maint.submitted'));
   } catch(e) {
