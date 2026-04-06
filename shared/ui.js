@@ -67,6 +67,37 @@ window.esc = function (s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 };
 
+// ── MEMBER NAME DISAMBIGUATION ────────────────────────────────────────────────
+// When multiple people in an array share the same name, append the birth year
+// to distinguish them. Pass the member (or any {name, birthYear}-like object)
+// and the array it belongs to. Returns a plain string (not HTML-escaped).
+window.memberDisplayName = function (member, allMembers) {
+  if (!member) return '';
+  var name = member.name || '';
+  if (!name || !Array.isArray(allMembers)) return name;
+  var dupes = 0;
+  for (var i = 0; i < allMembers.length; i++) {
+    if (allMembers[i] && allMembers[i].name === name) {
+      if (++dupes > 1) break;
+    }
+  }
+  if (dupes > 1 && member.birthYear) return name + ' (' + member.birthYear + ')';
+  return name;
+};
+
+// Build a Set of names that occur more than once in the given array.
+window.duplicateMemberNames = function (allMembers) {
+  var seen = Object.create(null), dupes = new Set();
+  if (!Array.isArray(allMembers)) return dupes;
+  for (var i = 0; i < allMembers.length; i++) {
+    var n = allMembers[i] && allMembers[i].name;
+    if (!n) continue;
+    if (seen[n]) dupes.add(n);
+    else seen[n] = true;
+  }
+  return dupes;
+};
+
 // ── CACHED DOM REFS ────────────────────────────────────────────────────────────
 window.domRefs = function (idMap) {
   const cache = {};

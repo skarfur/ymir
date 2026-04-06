@@ -486,10 +486,10 @@ function renderSeat(crew, pairId, seatIdx, member, isOpen, isMine) {
   var isYou = member && String(member.kennitala) === kt;
   var roleLabel = '<span class="cb-seat-role">' + (seatIdx === 0 ? s('cox.bow') : s('cox.stern')) + '</span>';
   if (isYou) {
-    return '<div class="cb-seat cb-seat--you">' + roleLabel + '<span class="cb-seat-name">' + esc(member.name) + '</span></div>';
+    return '<div class="cb-seat cb-seat--you">' + roleLabel + '<span class="cb-seat-name">' + esc(memberDisplayName(member, _members)) + '</span></div>';
   }
   if (member) {
-    return '<div class="cb-seat cb-seat--filled">' + roleLabel + '<span class="cb-seat-name">' + esc(member.name) + '</span></div>';
+    return '<div class="cb-seat cb-seat--filled">' + roleLabel + '<span class="cb-seat-name">' + esc(memberDisplayName(member, _members)) + '</span></div>';
   }
   if (isOpen && _isReleasedRower && !isMine) {
     return '<div class="cb-seat cb-seat--open" onclick="joinSeat(\'' + esc(crew.id) + '\',\'' + esc(pairId) + '\',' + seatIdx + ')">'
@@ -642,7 +642,7 @@ function searchCrewInvMember(q) {
     if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
     drop.innerHTML = hits.map(function(m) {
       return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-        + 'onclick="selectCrewInvMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
+        + 'onclick="selectCrewInvMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _members)) + '\')">' + esc(memberDisplayName(m, _members)) + '</div>';
     }).join('');
     drop.style.display = 'block';
   }, 150);

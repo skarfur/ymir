@@ -752,7 +752,7 @@ function searchCqResMember(q) {
     }
     if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
     drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>').join('');
+      + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>').join('');
     drop.style.display = 'block';
   }, 150);
 }
@@ -831,7 +831,7 @@ function buildFilters() {
   _captains = _cqMembers.filter(function(m) { return isCaptain(m); }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
   var capSel = document.getElementById('fCaptain');
   capSel.innerHTML = '<option value="">' + s('cq.allCaptains') + '</option>';
-  _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = c.name; capSel.appendChild(o); });
+  _captains.forEach(function(c) { var o = document.createElement('option'); o.value = c.kennitala; o.textContent = memberDisplayName(c, _captains); capSel.appendChild(o); });
 
   // Member filter (anyone with keelboat_crew endorsement)
   var keelboatMembers = _cqMembers.filter(function(m) {
@@ -841,7 +841,7 @@ function buildFilters() {
   }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
   var mSel = document.getElementById('fMember');
   mSel.innerHTML = '<option value="">' + s('cq.allMembers') + '</option>';
-  keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = m.name; mSel.appendChild(o); });
+  keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = memberDisplayName(m, keelboatMembers); mSel.appendChild(o); });
 
   ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
   document.getElementById('fText').addEventListener('input', applyFilter);
