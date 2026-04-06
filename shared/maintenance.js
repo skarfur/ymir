@@ -203,9 +203,9 @@ function maintOpenDetail(r, currentUser) {
       </div>
       ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
-        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
-        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c;margin-left:auto">${s('maint.deleteBtn')}</button>
+        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c">${s('maint.deleteBtn')}</button>
+        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
+        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px${isSauma && boolVal(r.approved) ? '' : ';margin-left:auto'}">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
       </div>`
       : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? s('maint.completedStatus') : s('maint.resolvedStatus')} ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
     `;
@@ -418,8 +418,21 @@ function maintOpenDetail(r, currentUser) {
     // Delete issue
     document.getElementById('mdDeleteBtn')?.addEventListener('click',()=>{
       doConfirm(s('maint.deleteConfirm'), async ()=>{
-        await apiPost('deleteMaintenance',{id:r.id});
+        try {
+          await apiPost('deleteMaintenance',{id:r.id});
+        } catch(e) {
+          if(typeof ymAlert==='function') ymAlert('Error: '+e.message);
+          return;
+        }
+        // Remove from any in-memory lists the page is using
+        [window.allRequests, window._maintRequests, window._dlMaintenance].forEach(list => {
+          if (Array.isArray(list)) {
+            const idx = list.findIndex(x => x && x.id === r.id);
+            if (idx !== -1) list.splice(idx, 1);
+          }
+        });
         closeModal('maintDetailModal');
+        if(typeof renderStats==='function') renderStats();
         if(typeof renderList==='function') renderList();
         if(typeof renderMaintenance==='function') renderMaintenance();
       });
