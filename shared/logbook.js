@@ -336,6 +336,7 @@ function tripCard(t){
     ${canEditTrip ? `<button class="trip-action-btn primary" onclick="event.stopPropagation();openEditTrip('${esc(t.id)}')">${s('tc.editTrip')}</button>` : ''}
     ${!t.trackFileUrl ? `<button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadTrack('${esc(t.id)}')">${s('tc.addGps')}</button>` : ''}
     <button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadPhotos('${esc(t.id)}')">${s('tc.addPhotos')}</button>
+    ${(!isVer && !t.validationRequested && !_confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) ? `<button class="trip-action-btn" onclick="event.stopPropagation();requestTripValidation('${esc(t.id)}')">${s('tc.requestVerification')}</button>` : ''}
   </div>` : '';
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);
   const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner||actionsRow);

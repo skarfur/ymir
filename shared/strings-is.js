@@ -1250,6 +1250,7 @@ var _STRINGS_FLAT = {
   "tc.nonClub": "Utan félags",
   "tc.pending": "í bið",
   "tc.verificationPending": "Staðfesting í bið",
+  "tc.requestVerification": "Óska eftir staðfestingu",
   "tc.windSpeed": "Vindhraði",
   "tc.direction": "Átt",
   "tc.gusts": "Vindhviður",
