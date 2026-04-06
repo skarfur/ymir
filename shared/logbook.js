@@ -1572,7 +1572,6 @@ async function reload(){
 (async function init(){
   if (window._logbookSkipInit) return;
   applyStrings();
-  buildHeader('member');
   try{
     const [tripsRes,cfgRes,membersRes]=await Promise.all([
       window._earlyTrips || apiGet('getTrips',{limit:500}),
