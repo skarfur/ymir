@@ -16,6 +16,7 @@
   <script src="../shared/ui.js"></script>
   <script src="../shared/certs.js" defer></script>
   <script src="../shared/mcm.js" defer></script>
+  <script src="../shared/calendar.js"></script>
   <style>
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
@@ -182,7 +183,6 @@
                 <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
                 <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">Phone number</span></div>
                 <div class="col-hint-row"><span class="col-hint-field">dob</span><span class="col-hint-vals">Date of birth (YYYY-MM-DD)</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">membership_type</span><span class="col-hint-vals">e.g. full, junior, family</span></div>
               </div>
               <label class="upload-zone" for="csvFile">
                 <div style="font-size:24px">📄</div>
@@ -360,11 +360,11 @@
     <!-- ══ ALERT SETTINGS ═══════════════════════════════════════════════════ -->
     <div id="tab-alerts" class="hidden">
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title">⚠️ <span data-s="admin.overdueAlerts"></span></div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="alertsCard">
+        <div class="col-body" id="alertsCard">
           <div class="grid2 mb-14">
             <div class="field">
               <label data-s="admin.alertFirstMins"></label>
@@ -493,6 +493,7 @@
 
     <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
     <div id="tab-slotCal" class="hidden">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
       <div style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
           <select id="slotCatFilter" onchange="loadSlotCalendar()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
@@ -538,16 +539,6 @@
       <div class="field"><label data-s="lbl.phone"></label><input type="tel" id="mPhone"></div>
       <div class="field"><label data-s="admin.initials"></label><input type="text" id="mInitials" maxlength="10" style="text-transform:uppercase"></div>
       <div class="field"><label data-s="admin.dob"></label><input type="date" id="mDob"></div>
-      <div class="field"><label data-s="admin.membershipType"></label>
-        <select id="mMembershipType">
-          <option value="full" data-s="admin.memFull"></option>
-          <option value="junior" data-s="admin.memJunior"></option>
-          <option value="family" data-s="admin.memFamily"></option>
-          <option value="student" data-s="admin.memStudent"></option>
-          <option value="honorary" data-s="admin.memHonorary"></option>
-          <option value="other" data-s="admin.memOther"></option>
-        </select>
-      </div>
       <div class="field"><label data-s="lbl.role"></label>
         <select id="mRole">
           <option value="member" data-s="lbl.member"></option>
@@ -776,7 +767,7 @@
     </div>
     <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="clTextEN"></div>
     <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="clTextIS"></div>
-    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="clSort" value="99" min="1"></div>
+    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="clSort" value="1" min="1"></div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="clActive" checked> <label for="clActive" data-s="lbl.active"></label>
     </div>
@@ -803,7 +794,7 @@
     </div>
     <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="lcText"></div>
     <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="lcTextIS"></div>
-    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="lcSort" value="99" min="1"></div>
+    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="lcSort" value="1" min="1"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('launchCLModal')" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="lcDeleteBtn" onclick="deleteLaunchCLItem()" data-s="btn.delete"></button>
@@ -832,6 +823,29 @@
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtSubtypeRow()" data-s="btn.add"></button>
       </div>
       <div id="atSubtypesList"></div>
+    </div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
+      <label style="font-size:10px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="admin.bulkSchedule">BULK SCHEDULE</label>
+      <div class="grid2" style="gap:8px;margin-bottom:6px">
+        <div class="field"><label style="font-size:9px" data-s="slot.fromDate">From date</label><input type="date" id="atBsFromDate"></div>
+        <div class="field"><label style="font-size:9px" data-s="slot.toDate">To date</label><input type="date" id="atBsToDate"></div>
+      </div>
+      <div class="field" style="margin-bottom:6px">
+        <label style="font-size:9px" data-s="slot.daysOfWeek">Days of week</label>
+        <div id="atBsDays" style="display:flex;gap:6px;flex-wrap:wrap">
+          <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
+          <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
+        </div>
+      </div>
+      <div class="grid2" style="gap:8px">
+        <div class="field"><label style="font-size:9px" data-s="slot.startTime">Start time</label><input type="time" id="atBsStartTime"></div>
+        <div class="field"><label style="font-size:9px" data-s="slot.endTime">End time</label><input type="time" id="atBsEndTime"></div>
+      </div>
     </div>
     <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-secondary" onclick="closeModal('actTypeModal')" data-s="btn.cancel"></button>
@@ -1250,7 +1264,6 @@ function _renderMemberBatch(card) {
     row.innerHTML =
       `<span class="member-name">${esc((_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || "—"))}</span>` +
       `<span class="member-kt">${esc(m.kennitala || "")}</span>` +
-      `<span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>` +
       `<button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>` +
       `<button class="row-edit" onclick="openMemberCertModal('${m.id}')" style="font-size:10px">${s('admin.manageCreds')}</button>`;
     frag.appendChild(row);
@@ -1289,7 +1302,6 @@ function openMemberModal(id) {
   document.getElementById("mPhone").value          = m ? (m.phone        || "") : "";
   document.getElementById("mInitials").value       = m ? (m.initials     || "") : "";
   document.getElementById("mDob").value            = m ? (m.dob          || "") : "";
-  document.getElementById("mMembershipType").value = m ? (m.membershipType || m.membership_type || "full") : "full";
   document.getElementById("mRole").value           = m ? (m.role         || "member") : "member";
   document.getElementById("mGuardianName").value   = m ? (m.guardianName  || "") : "";
   document.getElementById("mGuardianKt").value     = m ? (m.guardianKt   || "") : "";
@@ -1311,7 +1323,6 @@ async function saveMember() {
     phone:          document.getElementById("mPhone").value.trim(),
     initials:       document.getElementById("mInitials").value.trim().toUpperCase(),
     dob:            document.getElementById("mDob").value,
-    membershipType: document.getElementById("mMembershipType").value,
     role:           document.getElementById("mRole").value,
     guardianName:   document.getElementById("mGuardianName").value.trim(),
     guardianKt:     document.getElementById("mGuardianKt").value.trim(),
@@ -1912,7 +1923,7 @@ function openCLModal(id) {
   document.getElementById("clPhase").value    = item ? (item.phase || 'opening') : "opening";
   document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
   document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
-  document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;
+  document.getElementById("clSort").value     = item ? (item.sortOrder || 1) : 1;
   document.getElementById("clActive").checked = item ? bool(item.active) : true;
   document.getElementById("clDeleteBtn").classList.toggle("hidden", !item);
   openModal("clModal");
@@ -1994,7 +2005,7 @@ function openLaunchCLModal(cat, phase, id) {
   document.getElementById("lcPhase").value  = curPhase;
   document.getElementById("lcText").value   = item ? (item.text   || "") : "";
   document.getElementById("lcTextIS").value = item ? (item.textIS || "") : "";
-  document.getElementById("lcSort").value   = item ? (item.sort   || 99) : 99;
+  document.getElementById("lcSort").value   = item ? (item.sort   || 1) : 1;
   document.getElementById("lcDeleteBtn").classList.toggle("hidden", !item);
   openModal("launchCLModal");
 }
@@ -2077,6 +2088,14 @@ function openActTypeModal(id) {
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
+  // Bulk schedule (use .toISOString().slice(0,10) for ISO date cuts)
+  var bs = (a && (typeof a.bulkSchedule === 'string' ? tryParse_(a.bulkSchedule, null) : a.bulkSchedule)) || {};
+  document.getElementById("atBsFromDate").value = bs.fromDate || '';
+  document.getElementById("atBsToDate").value   = bs.toDate   || '';
+  document.getElementById("atBsStartTime").value = bs.startTime || '';
+  document.getElementById("atBsEndTime").value   = bs.endTime   || '';
+  var bsDays = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+  document.querySelectorAll('#atBsDays input').forEach(function(cb) { cb.checked = bsDays.indexOf(cb.value) !== -1; });
   window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(
     Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, [])
   )) : [];
@@ -2087,11 +2106,21 @@ function openActTypeModal(id) {
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
+  var bsDays = [];
+  document.querySelectorAll('#atBsDays input:checked').forEach(function(cb) { bsDays.push(parseInt(cb.value, 10)); });
+  var bulkSchedule = {
+    fromDate:   document.getElementById("atBsFromDate").value || '',
+    toDate:     document.getElementById("atBsToDate").value   || '',
+    daysOfWeek: bsDays,
+    startTime:  document.getElementById("atBsStartTime").value || '',
+    endTime:    document.getElementById("atBsEndTime").value   || '',
+  };
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
     active:   document.getElementById("atActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
+    bulkSchedule: JSON.stringify(bulkSchedule),
   };
   await saveEntity({
     apiAction: "saveActivityType",
@@ -2570,7 +2599,6 @@ function parseAblerCSV(text, existing) {
       email:          get('email') || get('netfang'),
       phone:          get('phone') || get('simi'),
       dob:            get('dob') || get('date_of_birth'),
-      membershipType: get('membership_type') || get('membership') || get('tegund'),
     };
   }).filter(r => r.kennitala && r.name);
 
@@ -2829,69 +2857,61 @@ async function loadSlotCalendar() {
   renderSlotCalendar();
 }
 
+var _adminCalendars = {};
+
+function _resolveSlotColor(sl) {
+  if (!sl || !sl.bookedByKennitala) return null;
+  if (sl.bookingColor) return sl.bookingColor;
+  if (sl.bookedByCrewId && Array.isArray(window._allCrews)) {
+    var crew = window._allCrews.find(function(c) { return c.id === sl.bookedByCrewId; });
+    if (crew && crew.color) return crew.color;
+  }
+  return null;
+}
+
 function renderSlotCalendar() {
   var cat = document.getElementById("slotCatFilter").value;
   var boatFilter = document.getElementById("slotBoatFilter").value;
   var catBoats = (_allBoats || []).filter(function(b) {
     return b.category === cat && boolVal(b.slotSchedulingEnabled) && (!boatFilter || b.id === boatFilter);
   });
+  var container = document.getElementById("slotCalGrid");
   if (!catBoats.length) {
-    document.getElementById("slotCalGrid").innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('slot.noSlotBoats') + '</div>';
+    container.innerHTML = '<div style="font-size:11px;color:var(--muted)">' + s('slot.noSlotBoats') + '</div>';
+    _adminCalendars = {};
     return;
   }
-  // Build 7-day column headers
-  var days = [];
-  for (var i = 0; i < 7; i++) {
-    var d = new Date(_slotWeekStart);
-    d.setDate(d.getDate() + i);
-    days.push(d);
-  }
-  var todayStr = new Date().toISOString().slice(0, 10);
   // Update week label
-  document.getElementById("slotWeekLabel").textContent =
-    fmtWeekRange(days[0].toISOString(), days[6].toISOString());
-  // Build grid
-  var html = '<table style="width:100%;border-collapse:collapse;font-size:10px">';
-  html += '<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px">' + s('slot.boat') + '</th>';
-  var dayNames = [s('day.sun'), s('day.mon'), s('day.tue'), s('day.wed'), s('day.thu'), s('day.fri'), s('day.sat')];
-  days.forEach(function(d) {
-    var ds = d.toISOString().slice(0, 10);
-    var isToday = ds === todayStr;
-    html += '<th style="padding:4px 6px;border-bottom:1px solid var(--border);min-width:80px;text-align:center'
-      + (isToday ? ';background:var(--brass)11;color:var(--brass)' : '') + '">'
-      + dayNames[d.getDay()] + '<br>' + d.getDate() + '</th>';
-  });
-  html += '</tr></thead><tbody>';
+  var d0 = new Date(_slotWeekStart);
+  var d6 = new Date(_slotWeekStart); d6.setDate(d6.getDate() + 6);
+  document.getElementById("slotWeekLabel").textContent = fmtWeekRange(d0.toISOString(), d6.toISOString());
+
+  // One SlotCalendar per boat (to match captain/rowing calendar styling)
+  container.innerHTML = '';
+  var newCals = {};
   catBoats.forEach(function(boat) {
-    html += '<tr>';
-    html += '<td style="padding:6px;border-bottom:1px solid var(--border);font-weight:500">' + esc(boat.name) + '</td>';
-    days.forEach(function(d) {
-      var ds = d.toISOString().slice(0, 10);
-      var isToday = ds === todayStr;
-      var daySlots = _slotData.filter(function(s) { return s.boatId === boat.id && s.date === ds; });
-      var cellStyle = 'padding:4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);vertical-align:top;cursor:pointer'
-        + (isToday ? ';background:var(--brass)08' : '');
-      html += '<td style="' + cellStyle + '" onclick="openSlotCell(\'' + esc(boat.id) + '\',\'' + ds + '\')">';
-      if (daySlots.length) {
-        daySlots.forEach(function(sl) {
-          var booked = !!sl.bookedByKennitala;
-          var bg = booked ? 'var(--green)22' : 'var(--brass)18';
-          var border = booked ? 'var(--green)' : 'var(--brass)';
-          var label = sl.startTime + '–' + sl.endTime;
-          if (booked) label += '<br>' + esc(sl.bookedByName || '');
-          html += '<div onclick="event.stopPropagation();openSlotModal(\'' + esc(sl.id) + '\')" '
-            + 'style="padding:2px 4px;margin-bottom:2px;border-radius:4px;border:1px solid ' + border
-            + ';background:' + bg + ';font-size:9px;cursor:pointer">' + label + '</div>';
-        });
-      } else {
-        html += '<div style="color:var(--border);font-size:9px;text-align:center">+</div>';
-      }
-      html += '</td>';
+    var boatSlots = _slotData.filter(function(sl) { return sl.boatId === boat.id; });
+    var wrap = document.createElement('div');
+    wrap.style.marginBottom = '16px';
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:11px;font-weight:500;letter-spacing:.5px;margin-bottom:6px;color:var(--text)';
+    hdr.textContent = boat.name;
+    wrap.appendChild(hdr);
+    var gridEl = document.createElement('div');
+    wrap.appendChild(gridEl);
+    container.appendChild(wrap);
+
+    var cal = new SlotCalendar(gridEl, {
+      isMine: function() { return false; },
+      onBook: function(slotId) { openSlotModal(slotId); },
+      onUnbook: function(slotId) { openSlotModal(slotId); },
+      getSlotColor: _resolveSlotColor,
     });
-    html += '</tr>';
+    cal.setWeekStart(_slotWeekStart);
+    cal.setSlots(boatSlots);
+    newCals[boat.id] = cal;
   });
-  html += '</tbody></table>';
-  document.getElementById("slotCalGrid").innerHTML = html;
+  _adminCalendars = newCals;
 }
 
 function shiftSlotWeek(dir) {
