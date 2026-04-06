@@ -1336,7 +1336,9 @@ function saveActivityType_(b) {
     // Parse subtypes safely — frontend sends as JSON string
     let subtypes = [];
     try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
-    const item = { id: b.id || uid_(), name: b.name, nameIS: b.nameIS || '', active: b.active !== false, subtypes, updatedAt: ts };
+    let bulkSchedule = null;
+    try { bulkSchedule = b.bulkSchedule ? (typeof b.bulkSchedule === 'string' ? JSON.parse(b.bulkSchedule) : b.bulkSchedule) : null; } catch(e) { bulkSchedule = null; }
+    const item = { id: b.id || uid_(), name: b.name, nameIS: b.nameIS || '', active: b.active !== false, subtypes, bulkSchedule: bulkSchedule, updatedAt: ts };
     if (idx >= 0) arr[idx] = Object.assign(arr[idx], item);
     else arr.push(Object.assign(item, { createdAt: ts }));
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
@@ -1969,7 +1971,7 @@ function bookSlot_(b) {
   var boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]');
   var boat = boats.find(function(bt) { return bt.id === slot.boatId; });
   if (!boat) return failJ('Boat not found');
-  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
+  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '', bookingColor: String(b.bookingColor || '') };
   if (b.crewId) {
     // Crew booking (rowing shells) — active or forming (tentative)
     var crew = findOne_('crews', 'id', b.crewId);
@@ -2022,7 +2024,7 @@ function unbookSlot_(b) {
   var member = kt ? findOne_('members', 'kennitala', kt) : null;
   var isStaff = member && (member.role === 'staff' || member.role === 'admin');
   if (!isBooker && !isCrewMember && !isStaff) return failJ('Only the booker, a crew member, or staff can cancel');
-  updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' });
+  updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '', bookingColor: '' });
   return okJ({ unbooked: true });
 }
 
@@ -2038,7 +2040,7 @@ function bulkBookSlots_(b) {
   if (!boat) return failJ('Boat not found');
 
   // Validate once: crew or individual certification
-  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '' };
+  var updates = { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '', bookingColor: String(b.bookingColor || '') };
   if (b.crewId) {
     var crew = findOne_('crews', 'id', b.crewId);
     if (!crew || crew.status === 'disbanded') return failJ('Crew not found or disbanded');
@@ -4748,7 +4750,7 @@ var SCHEMA_ = {
   reservation_slots: [
     'id','boatId','date','startTime','endTime',
     'recurrenceGroupId','bookedByKennitala','bookedByName','bookedByCrewId',
-    'note','createdAt',
+    'bookingColor','note','createdAt',
   ],
   crews: [
     'id','name','pairs','status','createdAt','updatedAt',

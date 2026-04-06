@@ -180,6 +180,10 @@
         <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
         <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqCreateSlotModal()" data-s="slot.createAndBook" id="cqCreateSlotBtn">+ New Booking</button>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <label for="cqBookingColor" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
+        <input type="color" id="cqBookingColor" onchange="saveCqBookingColor()" style="width:36px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer">
+      </div>
     </div>
     <div id="cqSlotGrid" style="overflow-x:auto"></div>
     <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
@@ -904,6 +908,13 @@ function initCqReservations() {
   _cqSlotBoats.forEach(function(b) {
     sel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
   });
+  // Initialize booking color picker from user preferences
+  var colorEl = document.getElementById('cqBookingColor');
+  if (colorEl) {
+    var prefs = {};
+    try { prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {}); } catch (e) {}
+    colorEl.value = prefs.bookingColor || '#2e7d32';
+  }
   // Set week start
   var d = new Date();
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
@@ -945,21 +956,46 @@ function renderCqSlots() {
       isMine: function(sl) { return sl.bookedByKennitala && String(sl.bookedByKennitala) === String(user.kennitala); },
       onBook: function(slotId) { bookCqSlot(slotId); },
       onUnbook: function(slotId) { unbookCqSlot(slotId); },
+      getSlotColor: function(sl) { return sl.bookingColor || null; },
     });
   }
   _cqCalendar.setWeekStart(_cqWeekStart);
   _cqCalendar.setSlots(_cqSlots);
 }
 
+function _cqGetBookingColor() {
+  var el = document.getElementById('cqBookingColor');
+  if (el && el.value) return el.value;
+  try {
+    var prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {});
+    return prefs.bookingColor || '';
+  } catch (e) { return ''; }
+}
+
+async function saveCqBookingColor() {
+  var color = document.getElementById('cqBookingColor').value;
+  var prefs = {};
+  try { prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {}); } catch (e) {}
+  prefs.bookingColor = color;
+  user.preferences = prefs;
+  try {
+    await apiPost('savePreferences', { kennitala: user.kennitala, preferences: prefs });
+    toast(s('toast.saved'));
+  } catch(e) { toast(e.message || 'Error', 'err'); }
+  renderCqSlots();
+}
+
 async function bookCqSlot(slotId) {
   var slot = _cqSlots.find(function(sl) { return sl.id === slotId; });
+  var bookingColor = _cqGetBookingColor();
   if (slot) {
     slot.bookedByKennitala = user.kennitala;
     slot.bookedByName = user.name;
+    if (bookingColor) slot.bookingColor = bookingColor;
     renderCqSlots();
   }
   try {
-    await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name });
+    await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name, bookingColor: bookingColor });
     toast(s('slot.booked'));
   } catch(e) {
     toast(e.message || 'Error', 'err');
@@ -1037,7 +1073,7 @@ async function submitCqBulkBook() {
     var res = await apiPost('bulkBookSlots', {
       boatId: boatId, kennitala: user.kennitala, memberName: user.name,
       fromDate: fromDate, toDate: toDate, daysOfWeek: days,
-      startTime: startTime, endTime: endTime,
+      startTime: startTime, endTime: endTime, bookingColor: _cqGetBookingColor(),
     });
     closeModal('cqBulkBookModal');
     if (res.skipped > 0) { toast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped })); }
