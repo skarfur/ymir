@@ -885,11 +885,14 @@ textarea { min-height: 70px; }
 .sc-slot--mine:hover { box-shadow: 0 0 0 1px var(--brass)44; }
 
 .sc-slot--booked {
-  background: var(--green)15;
-  border: 1px solid var(--green)55;
+  background: var(--green);
+  border: 1px solid var(--green);
   border-left: 3px solid var(--green);
+  color: var(--bg);
   cursor: default;
 }
+.sc-slot--booked .sc-slot-time,
+.sc-slot--booked .sc-slot-who { color: var(--bg); }
 
 .sc-slot--tentative {
   border-style: dashed;
