@@ -1224,6 +1224,7 @@ function renderMembers() {
 }
 
 var _memberListData = [];
+var _memberDupNames = null;
 var _memberRendered = 0;
 var _memberObserver = null;
 var _MEMBER_BATCH = 50;
@@ -1232,6 +1233,7 @@ function renderMemberList(list) {
   const card = document.getElementById("membersCard");
   if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
   _memberListData = list;
+  _memberDupNames = duplicateMemberNames(list);
   _memberRendered = 0;
   card.innerHTML = '';
   _renderMemberBatch(card);
@@ -1246,7 +1248,7 @@ function _renderMemberBatch(card) {
     var row = document.createElement('div');
     row.className = 'member-row';
     row.innerHTML =
-      `<span class="member-name">${esc(m.name || "—")}</span>` +
+      `<span class="member-name">${esc((_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || "—"))}</span>` +
       `<span class="member-kt">${esc(m.kennitala || "")}</span>` +
       `<span style="font-size:10px;color:var(--muted);min-width:50px">${esc(m.membershipType || m.membership_type || "")}</span>` +
       `<button class="row-edit" onclick="openMemberModal('${m.id}')">Edit</button>` +
@@ -1567,7 +1569,7 @@ function searchBoatOwner(q) {
   const hits = members.filter(m => (m.name||'').toLowerCase().includes(ql)).slice(0, 8);
   if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
   drop.innerHTML = hits.map(m => `<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
-    onclick="selectBoatOwner('${esc(m.kennitala)}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+    onclick="selectBoatOwner('${esc(m.kennitala)}','${esc(memberDisplayName(m, members))}')">${esc(memberDisplayName(m, members))}</div>`).join('');
   drop.style.display = 'block';
 }
 
@@ -1611,7 +1613,7 @@ function renderAllowlistChips() {
   if (!_editAllowlist.length) { el.innerHTML = ''; return; }
   el.innerHTML = _editAllowlist.map(function(kt) {
     var m = members.find(function(x) { return x.kennitala === kt; });
-    var name = m ? m.name : kt;
+    var name = m ? memberDisplayName(m, members) : kt;
     return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:4px">'
       + esc(name)
       + '<span style="cursor:pointer;color:var(--red);font-size:12px" onclick="removeFromAllowlist(\'' + esc(kt) + '\')">&times;</span>'
@@ -1627,7 +1629,7 @@ function searchAllowlistMember(q) {
   if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="addToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(m.name) + '</div>';
+      + 'onclick="addToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(memberDisplayName(m, members)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }
@@ -1680,7 +1682,7 @@ function searchResMember(q) {
   if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectResMember(\'' + esc(m.kennitala) + '\',\'' + esc(m.name) + '\')">' + esc(m.name) + '</div>';
+      + 'onclick="selectResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, members)) + '\')">' + esc(memberDisplayName(m, members)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }

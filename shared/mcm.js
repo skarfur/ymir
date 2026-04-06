@@ -164,9 +164,10 @@
       // Pre-populated mode (e.g. admin member list)
       var m = _findMember(_memberId);
       searchField.style.display = 'none';
-      nameEl.textContent = m ? m.name : '';
+      var dispName = m ? memberDisplayName(m, _members()) : '';
+      nameEl.textContent = dispName;
       nameEl.style.display = '';
-      titleEl.innerHTML = '<span data-s="admin.credentialsTitle"></span> — <span>' + esc(m ? m.name : '') + '</span>';
+      titleEl.innerHTML = '<span data-s="admin.credentialsTitle"></span> — <span>' + esc(dispName) + '</span>';
       if (m) _renderCurrentCerts(m);
     } else {
       // Search mode (e.g. captain page)
@@ -197,7 +198,7 @@
     }).slice(0, 8);
     el.innerHTML = matches.map(function(m) {
       return '<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" onclick="mcmSelectMember(\'' + m.id + '\')">'
-        + '<div>' + esc(m.name || '\u2014') + '</div>'
+        + '<div>' + esc(memberDisplayName(m, _members()) || '\u2014') + '</div>'
         + '<div style="font-size:10px;color:var(--muted);margin-left:8px">' + esc(m.kennitala || '') + '</div></div>';
     }).join('');
   };
@@ -209,7 +210,7 @@
     var el = document.getElementById('mcmMemberName');
     document.getElementById('mcmMemberResults').innerHTML = '';
     document.getElementById('mcmMemberSearch').value = '';
-    el.textContent = m ? m.name : id;
+    el.textContent = m ? memberDisplayName(m, _members()) : id;
     el.style.display = '';
     if (m) _renderCurrentCerts(m);
   };
