@@ -669,6 +669,62 @@ function useMyLocation(inputId,statusId){
   );
 }
 
+// ── Fetch current weather from Open-Meteo using geolocation ──────────────────
+async function fetchCurrentWeather(){
+  const status=document.getElementById('mWxFetchStatus');
+  const btn=document.getElementById('mWxFetchBtn');
+  function setStatus(msg,err){ if(!status) return; status.textContent=msg; status.style.display=''; status.style.color=err?'var(--red)':'var(--muted)'; }
+  if(!navigator.geolocation){ setStatus('Geolocation not available',true); return; }
+  // Try to reuse coords from non-club location input if already set
+  let lat=null,lng=null;
+  const locInp=document.getElementById('mLocFreeInput');
+  if(locInp && locInp.dataset.lat && locInp.dataset.lng){ lat=locInp.dataset.lat; lng=locInp.dataset.lng; }
+  btn && (btn.disabled=true);
+  setStatus('Locating…');
+  try{
+    if(lat==null){
+      const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:false,timeout:10000}));
+      lat=pos.coords.latitude.toFixed(4); lng=pos.coords.longitude.toFixed(4);
+    }
+    setStatus('Fetching weather…');
+    const cur='wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure';
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=${cur}&wind_speed_unit=ms&timezone=auto`;
+    const marineUrl=`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,sea_surface_temperature&timezone=auto`;
+    const [wxRes,marRes]=await Promise.all([
+      fetch(url).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch(marineUrl).then(r=>r.ok?r.json():null).catch(()=>null),
+    ]);
+    const c=wxRes&&wxRes.current;
+    if(!c){ setStatus('Could not fetch weather',true); btn&&(btn.disabled=false); return; }
+    function setVal(id,v){ const el=document.getElementById(id); if(el && v!=null && v!==''){ el.value=v; } }
+    // Wind speed: convert m/s into user's display unit
+    if(c.wind_speed_10m!=null){
+      const ws=convertWind(c.wind_speed_10m, _mWindUnit);
+      setVal('mWindMs', ws);
+      onWindInput(); // sync Beaufort
+    }
+    if(c.wind_gusts_10m!=null) setVal('mWindGust', convertWind(c.wind_gusts_10m, _mWindUnit));
+    if(c.wind_direction_10m!=null){
+      const dirs=['N','NE','E','SE','S','SW','W','NW'];
+      const idx=Math.round(((c.wind_direction_10m%360)+360)%360/45)%8;
+      setVal('mWindDir', dirs[idx]);
+    }
+    if(c.temperature_2m!=null) setVal('mAirTemp', c.temperature_2m.toFixed(1));
+    if(c.apparent_temperature!=null) setVal('mFeelsLike', c.apparent_temperature.toFixed(1));
+    if(c.surface_pressure!=null) setVal('mPressure', Math.round(c.surface_pressure));
+    const m=marRes&&marRes.current;
+    if(m){
+      if(m.wave_height!=null) setVal('mWave', m.wave_height.toFixed(1));
+      if(m.sea_surface_temperature!=null) setVal('mSeaTemp', m.sea_surface_temperature.toFixed(1));
+    }
+    setStatus('Weather loaded ✓');
+  }catch(e){
+    setStatus('Location denied or unavailable',true);
+  }finally{
+    btn && (btn.disabled=false);
+  }
+}
+
 // ── Wind unit + Beaufort sync helpers ────────────────────────────────────────
 // Determine the numeric wind unit for manual inputs (bft pref → default to m/s for inputs)
 let _mWindUnit = (function(){ var p = getPref('windUnit','bft'); return p === 'bft' ? 'ms' : p; })();
