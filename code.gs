@@ -2581,6 +2581,25 @@ function respondConfirmation_(b) {
           createdAt: ts,
         });
       }
+      // For crew_join: the skipper hadn't planned for this person, so the
+      // skipper's original trip crew count may need to be bumped up so that
+      // total crew never drops below the number of named/linked crew members.
+      if (type === 'crew_join' && row.tripId) {
+        var origSkipTrip = findOne_('trips', 'id', row.tripId);
+        if (origSkipTrip) {
+          var linkedCrewCount = readAll_('trips').filter(function(t) {
+            return String(t.id) !== String(origSkipTrip.id) && (
+              String(t.linkedTripId) === String(origSkipTrip.id) ||
+              (row.linkedCheckoutId && String(t.linkedCheckoutId) === String(row.linkedCheckoutId))
+            );
+          }).length;
+          var neededCrew = linkedCrewCount + 1; // +1 for the skipper
+          var curCrew = parseInt(origSkipTrip.crew) || 1;
+          if (curCrew < neededCrew) {
+            updateRow_('trips', 'id', origSkipTrip.id, { crew: neededCrew, updatedAt: ts });
+          }
+        }
+      }
     }
     if (type === 'helm') {
       // Set helm on the crew member's trip (by tripId or kennitala+checkout)
