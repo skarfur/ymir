@@ -599,9 +599,14 @@ function showManualForm(){
   const pd=document.getElementById('portDetails');
   pd.removeAttribute('open');
   onBoatChange();
+  // Reset notes
+  const sn=document.getElementById('mSkipperNote'); if(sn) sn.value='';
+  document.getElementById('mNotes').value='';
   // Reset non-club state
   document.getElementById('mNonClub').checked=false;
   onNonClubToggle();
+  // Apply crew=1 conditional (hides personal note initially)
+  onCrewChange();
 }
 
 // ── Non-club trip toggle ─────────────────────────────────────────────────────
@@ -614,10 +619,14 @@ function onNonClubToggle(){
   if(!on){
     document.getElementById('mBoatFreeInput').value='';
     document.getElementById('mBoatFreeCat').value='dinghy';
+    document.getElementById('mBoatFreeModel').value='';
+    document.getElementById('mBoatFreeSail').value='';
+    document.getElementById('mBoatFreeReg').value='';
+    document.getElementById('mBoatFreeLen').value='';
     document.getElementById('mLocFreeInput').value='';
     delete document.getElementById('mLocFreeInput').dataset.lat;
     delete document.getElementById('mLocFreeInput').dataset.lng;
-    document.getElementById('mLocGeoStatus').style.display='none';
+    const gs=document.getElementById('mLocGeoStatus'); if(gs) gs.style.display='none';
   }
 }
 
@@ -755,6 +764,9 @@ function onCrewChange(){
   const n = parseInt(document.getElementById('mCrew').value)||1;
   const sec = document.getElementById('mCrewSection');
   const wrap = document.getElementById('mCrewInputs');
+  // Personal note only makes sense when there's crew besides skipper
+  const personalWrap=document.getElementById('mPersonalNoteWrap');
+  if(personalWrap) personalWrap.style.display = (n < 2) ? 'none' : '';
   if(n < 2){ sec.style.display='none'; return; }
   sec.style.display='';
   const existing = Array.from(wrap.querySelectorAll('.manual-crew-row')).map(row => {
@@ -1048,6 +1060,10 @@ async function submitManual(){
     boatCategory=document.getElementById('mBoatFreeCat').value;
     locId='';
     locName=document.getElementById('mLocFreeInput').value.trim();
+    var _ncModel=(document.getElementById('mBoatFreeModel')?.value||'').trim();
+    var _ncSail=(document.getElementById('mBoatFreeSail')?.value||'').trim();
+    var _ncReg=(document.getElementById('mBoatFreeReg')?.value||'').trim();
+    var _ncLen=(document.getElementById('mBoatFreeLen')?.value||'').trim();
   } else {
     boatId=document.getElementById('mBoat').value;
     boatName=document.getElementById('mBoat').selectedOptions[0]?.text||'';
@@ -1072,7 +1088,10 @@ async function submitManual(){
   const feelsLike = document.getElementById('mFeelsLike').value;
   const seaTemp   = document.getElementById('mSeaTemp').value;
   const pressure  = document.getElementById('mPressure').value;
-  const notes     = document.getElementById('mNotes').value.trim();
+  const skipperNote = (document.getElementById('mSkipperNote')?.value||'').trim();
+  // Personal note is only used when there are crew besides the skipper
+  const _crewN    = parseInt(document.getElementById('mCrew').value)||1;
+  const notes     = (_crewN>1) ? document.getElementById('mNotes').value.trim() : '';
   const distInput = parseFloat(document.getElementById('mDistanceNm').value)||'';
   let   depPort   = document.getElementById('mDeparturePort').value.trim();
   let   arrPort   = document.getElementById('mArrivalPort').value.trim();
@@ -1147,7 +1166,11 @@ async function submitManual(){
         trackFileUrl=tr.trackFileUrl||'';
         trackSimplified=tr.trackSimplified||'';
         trackSource=tr.trackSource||'';
-        if(!distanceNm && tr.distanceNm) distanceNm=tr.distanceNm;
+        if(!distanceNm && tr.distanceNm){
+          distanceNm=tr.distanceNm;
+          const dEl=document.getElementById('mDistanceNm');
+          if(dEl) dEl.value=tr.distanceNm;
+        }
       } else {
         showToast(s('logbook.uploadNoConfig'),'warn');
       }
@@ -1187,12 +1210,16 @@ async function submitManual(){
       date, boatId, boatName, boatCategory,
       locationId:locId, locationName:locName,
       timeOut, timeIn, hoursDecimal, crew, role,
-      beaufort:bft, windDir:wdir, notes, wxSnapshot,
+      beaufort:bft, windDir:wdir, notes, skipperNote, wxSnapshot,
       distanceNm, departurePort:depPort, arrivalPort:arrPort,
       trackFileUrl, trackSimplified, trackSource,
       photoUrls: photoUrls.length ? JSON.stringify(photoUrls) : '',
       photoMeta: Object.keys(photoMeta).length ? JSON.stringify(photoMeta) : '',
       nonClub: isNonClub||false,
+      boatModel: isNonClub ? (typeof _ncModel!=='undefined'?_ncModel:'') : '',
+      boatSailNumber: isNonClub ? (typeof _ncSail!=='undefined'?_ncSail:'') : '',
+      boatRegistration: isNonClub ? (typeof _ncReg!=='undefined'?_ncReg:'') : '',
+      boatLengthM: isNonClub ? (typeof _ncLen!=='undefined'?_ncLen:'') : '',
       helm: helmSelf,
       crewNames: _crewNamesArr.length ? JSON.stringify(_crewNamesArr) : '',
     };

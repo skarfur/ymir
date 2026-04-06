@@ -1006,10 +1006,10 @@ function renderLandingChecklist() {
       '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+s('member.notesVisibleAll')+'</div>'+
       '<textarea id="retSkipperNote" rows="2" placeholder="'+s('member.notesPlaceholder')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
-    '<div class="field" style="margin-bottom:14px">'+
+    (((returnCo.crew||1)>1)?('<div class="field" style="margin-bottom:14px">'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.personalNotes')+'</label>'+
       '<textarea id="retNotes" rows="2" placeholder="'+s('member.onlyVisibleYou')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
-    '</div>'+
+    '</div>'):'')+
     '<div class="btn-row">'+
       '<button class="btn btn-secondary" onclick="renderReturnForm()">&#8592; '+s('member.back')+'</button>'+
       '<button class="btn btn-primary" id="retSubmitBtn" onclick="confirmCheckIn(\''+returnCo.id+'\')">&#10003; '+s('member.checkInBtn')+'</button>'+
