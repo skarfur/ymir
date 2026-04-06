@@ -245,12 +245,11 @@ function formatWindValue(ms, beaufort, unit) {
 }
 
 function toggleLang() {
+  // The IS/EN toggle is a temporary UI state and intentionally does not
+  // persist to the server. The user's default language lives in their
+  // saved preferences (see the settings page).
   var next = getLang() === "EN" ? "IS" : "EN";
   setLang(next);
-  var u = getUser();
-  if (u && u.kennitala) {
-    apiPost("setLang", { kennitala: u.kennitala, lang: next }).catch(function() {});
-  }
   location.reload();
 }
 
