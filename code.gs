@@ -341,7 +341,6 @@ function route_(action, b) {
     case 'deleteMember': return deleteMember_(b.id);
     case 'importMembers': return importMembers_(b.rows);
     case 'deactivateMembers': return deactivateMembers_(b.ids);
-    case 'setLang': return setLang_(b.kennitala, b.lang);
     case 'savePreferences': return savePreferences_(b);
     case 'getDailyLog': return getDailyLog_(b.date);
     case 'saveDailyLog': return saveDailyLog_(b);
@@ -471,7 +470,6 @@ function validateMember_(kennitala) {
       guardianPhone: m.guardianPhone || '',
       certifications: m.certifications || '',
       initials: m.initials || extractInitials_(m.name),
-      lang: m.lang || 'EN',
       preferences: m.preferences || '{}',
       bio: m.bio || '',
       headshotUrl: m.headshotUrl || '',
@@ -534,7 +532,6 @@ function saveMember_(b) {
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
       guardianPhone: b.guardianPhone || '', active: true,
       certifications: '', initials: extractInitials_(b.name),
-      lang: b.lang || 'EN',
       createdAt: ts, updatedAt: ts,
     });
     cDel_('members'); return okJ({ id, created: true });
@@ -574,7 +571,7 @@ function importMembers_(rows) {
         guardianName: r.guardianName || '', guardianKennitala: r.guardianKennitala || '',
         guardianPhone: r.guardianPhone || '', active: true,
         certifications: '', initials: extractInitials_(r.name),
-        lang: 'EN', createdAt: ts, updatedAt: ts,
+        createdAt: ts, updatedAt: ts,
       });
       created++;
     }
@@ -592,16 +589,6 @@ function deactivateMembers_(ids) {
   cDel_('members'); return okJ({ deactivated: count });
 }
 
-function setLang_(kennitala, lang) {
-  if (!kennitala) return failJ('kennitala required');
-  const l = String(lang || '').toUpperCase();
-  if (!['EN', 'IS'].includes(l)) return failJ('lang must be EN or IS');
-  const updated = updateRow_('members', 'kennitala', String(kennitala).trim(), { lang: l, updatedAt: now_() });
-  if (!updated) return failJ('Member not found', 404);
-  cDel_('members');
-  return okJ({ lang: l });
-}
-
 function savePreferences_(b) {
   if (!b.kennitala) return failJ('kennitala required');
   const kt = String(b.kennitala).trim();
@@ -614,14 +601,28 @@ function savePreferences_(b) {
   if (b.initials !== undefined) {
     updates.initials = String(b.initials || '').trim().toUpperCase() || extractInitials_(ex.name);
   }
-  // Language
+
+  // Merge preferences JSON (windUnit, theme, statsVisibility, lang, …)
+  // The default language now lives inside preferences rather than a separate column.
+  let prefsObj = null;
+  if (b.preferences !== undefined) {
+    if (typeof b.preferences === 'string') {
+      try { prefsObj = JSON.parse(b.preferences || '{}'); } catch (e) { prefsObj = {}; }
+    } else {
+      prefsObj = b.preferences || {};
+    }
+  }
   if (b.lang !== undefined) {
     const l = String(b.lang || '').toUpperCase();
-    if (['EN', 'IS'].includes(l)) updates.lang = l;
+    if (['EN', 'IS'].includes(l)) {
+      if (!prefsObj) {
+        try { prefsObj = JSON.parse(ex.preferences || '{}'); } catch (e) { prefsObj = {}; }
+      }
+      prefsObj.lang = l;
+    }
   }
-  // Preferences JSON (windUnit, theme, statsVisibility)
-  if (b.preferences !== undefined) {
-    updates.preferences = typeof b.preferences === 'string' ? b.preferences : JSON.stringify(b.preferences);
+  if (prefsObj !== null) {
+    updates.preferences = JSON.stringify(prefsObj);
   }
 
   updateRow_('members', 'kennitala', kt, updates);
@@ -4674,7 +4675,7 @@ var SCHEMA_ = {
   members: [
     'id','kennitala','name','role','email','phone','birthYear',
     'isMinor','guardianName','guardianKennitala','guardianPhone',
-    'active','certifications','initials','lang','preferences',
+    'active','certifications','initials','preferences',
     'createdAt','updatedAt',
   ],
   daily_log: [
@@ -4926,6 +4927,39 @@ function addPreferencesColumn() {
   } else {
     Logger.log('preferences column already exists');
   }
+}
+
+// Migration: move any existing members.lang values into preferences.lang
+// and delete the lang column. Safe to run multiple times.
+function migrateMemberLangIntoPreferences() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('members');
+  if (!sheet) { Logger.log('members tab not found'); return; }
+  var lastCol = sheet.getLastColumn();
+  var lastRow = sheet.getLastRow();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var langIdx = headers.indexOf('lang');
+  var prefIdx = headers.indexOf('preferences');
+  if (prefIdx === -1) { Logger.log('preferences column missing; run addPreferencesColumn first'); return; }
+  if (langIdx === -1) { Logger.log('lang column already removed'); return; }
+  if (lastRow > 1) {
+    var langVals = sheet.getRange(2, langIdx + 1, lastRow - 1, 1).getValues();
+    var prefVals = sheet.getRange(2, prefIdx + 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < langVals.length; i++) {
+      var l = String(langVals[i][0] || '').toUpperCase();
+      if (l !== 'EN' && l !== 'IS') continue;
+      var obj = {};
+      try { obj = JSON.parse(prefVals[i][0] || '{}') || {}; } catch (e) { obj = {}; }
+      if (!obj.lang) {
+        obj.lang = l;
+        prefVals[i][0] = JSON.stringify(obj);
+      }
+    }
+    sheet.getRange(2, prefIdx + 1, lastRow - 1, 1).setValues(prefVals);
+  }
+  sheet.deleteColumn(langIdx + 1);
+  cDel_('members');
+  Logger.log('lang column migrated into preferences and removed');
 }
 
 // ── Focused helper: create reservation_slots, crews, crew_invites tabs ────

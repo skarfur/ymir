@@ -124,8 +124,8 @@ async function doLogin() {
     if (Object.keys(serverPrefs).length) {
       setPrefs(serverPrefs);
       if (serverPrefs.theme) setTheme(serverPrefs.theme);
+      if (serverPrefs.lang) setLang(serverPrefs.lang);
     }
-    if (user.lang) setLang(user.lang);
 
     // Prefetch data the landing page will need while user is on role picker
     // (or racing the redirect for regular members). Results land in
