@@ -325,10 +325,11 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
       </div>
       <!-- Non-club boat (hidden by default) -->
-      <div id="mBoatFree" class="form-field" style="display:none">
-        <label data-s="logbook.boatNameLabel">Boat name</label>
-        <input type="text" id="mBoatFreeInput" placeholder="e.g. Sunfish, RIB, etc." autocomplete="off">
-        <div class="form-row mt-4">
+      <div id="mBoatFree" style="display:none">
+        <div class="form-row">
+          <div class="form-field"><label data-s="logbook.boatNameLabel">Boat name</label>
+            <input type="text" id="mBoatFreeInput" placeholder="e.g. Sunfish, RIB, etc." autocomplete="off">
+          </div>
           <div class="form-field"><label data-s="logbook.boatCategory">Category</label>
             <select id="mBoatFreeCat">
               <option value="dinghy">Dinghy</option><option value="keelboat">Keelboat</option>
@@ -336,6 +337,22 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
               <option value="sup">SUP</option><option value="wingfoil">Wingfoil</option>
               <option value="other">Other</option>
             </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Model / make <span class="text-muted" style="font-size:9px">optional</span></label>
+            <input type="text" id="mBoatFreeModel" placeholder="e.g. Laser Pico" autocomplete="off">
+          </div>
+          <div class="form-field"><label>Sail number <span class="text-muted" style="font-size:9px">optional</span></label>
+            <input type="text" id="mBoatFreeSail" placeholder="e.g. ISL 1234" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Registration <span class="text-muted" style="font-size:9px">optional</span></label>
+            <input type="text" id="mBoatFreeReg" placeholder="e.g. RE-001" autocomplete="off">
+          </div>
+          <div class="form-field"><label>Length (m) <span class="text-muted" style="font-size:9px">optional</span></label>
+            <input type="number" id="mBoatFreeLen" min="0" step="0.1" placeholder="e.g. 6.5">
           </div>
         </div>
       </div>
@@ -346,10 +363,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- Non-club location (hidden by default) -->
       <div id="mLocFree" class="form-field" style="display:none">
         <label data-s="lbl.location">Location</label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off" style="flex:1">
-          <button type="button" class="btn-secondary" id="mLocGeoBtn" onclick="useMyLocation('mLocFreeInput','mLocGeoStatus')" style="white-space:nowrap;font-size:10px;padding:6px 10px" data-s="logbook.useMyLocation">📍 Use my location</button>
-        </div>
+        <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
         <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div>
       </div>
       <div class="form-row">
@@ -357,12 +371,10 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
         <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
           oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" oninput="onCrewChange()"></div>
-        <div class="form-field"><label>Distance (nm) <span class="text-muted" style="font-size:9px">optional</span></label>
+        <div class="form-field"><label>Distance (nm) <span class="text-muted" style="font-size:9px">auto from GPS</span></label>
           <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       </div>
+      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" oninput="onCrewChange()"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
       <div id="mCrewSection" class="mb-12" style="display:none">
         <label class="check-label" style="margin-bottom:8px">
@@ -455,7 +467,14 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           <label><input type="checkbox" id="mPhotoClubUse"> Club may use</label>
         </div>
       </div>
-      <div class="form-field"><label>Notes</label><textarea id="mNotes" rows="2" placeholder="Optional notes…"></textarea></div>
+      <div class="form-field" id="mSkipperNoteWrap">
+        <label>Skipper's note <span class="text-muted" style="font-size:9px">visible to crew</span></label>
+        <textarea id="mSkipperNote" rows="2" placeholder="Notes for the crew…"></textarea>
+      </div>
+      <div class="form-field" id="mPersonalNoteWrap">
+        <label>Personal note <span class="text-muted" style="font-size:9px">only you</span></label>
+        <textarea id="mNotes" rows="2" placeholder="Private notes…"></textarea>
+      </div>
       <div id="mErr" class="text-sm text-red mb-8" style="display:none"></div>
       <button class="btn-primary" id="mSubmitBtn" onclick="submitManual()">Save to logbook</button>
     </div>
