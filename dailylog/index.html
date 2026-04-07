@@ -546,8 +546,9 @@ function renderIncidentSection(incidents) {
     const statusLabel = resolved ? '✓ ' + s('incident.resolved')
       : inReview ? s('incident.statusReview')
       : (inc.followUp ? 'Follow-up pending' : '');
-    const desc = (inc.description || '').slice(0,140);
-    const descMore = (inc.description || '').length > 140 ? '…' : '';
+    const descStr = String(inc.description == null ? '' : inc.description);
+    const desc = descStr.slice(0,140);
+    const descMore = descStr.length > 140 ? '…' : '';
     return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:flex-start">
       <div style="flex:1;font-size:12px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
