@@ -3168,31 +3168,109 @@ async function saveRecurringSlots() {
 }
 
 // ── ROWING PASSPORT ADMIN ─────────────────────────────────────────────────────
+let _passportDef = null;
+let _passportDirty = false;
+
 async function renderPassportAdmin() {
   const card = document.getElementById('passportAdminPreview');
   card.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
   try {
     const res = await apiGet('getRowingPassport', {});
-    const def = res.definition || { passports: [] };
-    let html = '';
-    (def.passports || []).forEach(p => {
-      const totalItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => !i.retired).length, 0);
-      const retiredItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => i.retired).length, 0);
-      html += `<div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px">
-        <div style="font-weight:600;margin-bottom:4px">${esc(p.name?.EN || p.id)} <span style="color:var(--muted);font-weight:400;font-size:10px">(${p.id})</span></div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">v${def.version || 1} · ${totalItems} active items${retiredItems ? ' · ' + retiredItems + ' retired' : ''} · requires ${p.requiredSigs || 2} signatures</div>`;
-      (p.categories || []).forEach(cat => {
-        html += `<div style="margin-top:8px"><div style="font-size:10px;color:var(--brass);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">${esc(cat.name?.EN || cat.id)}</div>`;
-        (cat.items || []).forEach(it => {
-          html += `<div style="font-size:11px;padding:3px 0;${it.retired ? 'opacity:.5;text-decoration:line-through' : ''}">• ${esc(it.name?.EN || it.id)} <span style="color:var(--muted);font-size:9px">${esc(it.id)}</span></div>`;
-        });
-        html += '</div>';
-      });
-      html += '</div>';
-    });
-    card.innerHTML = html || '<div class="empty-note">No passport defined.</div>';
+    _passportDef = res.definition || { version: 1, passports: [] };
+    _passportDirty = false;
+    drawPassportEditor();
   } catch(e) { card.innerHTML = '<div style="color:var(--red)">' + esc(e.message) + '</div>'; }
 }
+
+function drawPassportEditor() {
+  const card = document.getElementById('passportAdminPreview');
+  const def = _passportDef;
+  let html = '';
+  (def.passports || []).forEach((p, pi) => {
+    const totalItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => !i.retired).length, 0);
+    const retiredItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => i.retired).length, 0);
+    html += `<div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:4px">${esc(p.name?.EN || p.id)} <span style="color:var(--muted);font-weight:400;font-size:10px">(${p.id})</span></div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">v${def.version || 1} · ${totalItems} active${retiredItems ? ' · ' + retiredItems + ' retired' : ''} · requires ${p.requiredSigs || 2} signatures</div>`;
+    (p.categories || []).forEach((cat, ci) => {
+      html += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <input type="text" value="${esc(cat.name?.EN || '')}" onchange="ppEditCatLabel(${pi},${ci},'EN',this.value)" placeholder="Category (EN)" style="font-size:11px;flex:1">
+          <input type="text" value="${esc(cat.name?.IS || '')}" onchange="ppEditCatLabel(${pi},${ci},'IS',this.value)" placeholder="Category (IS)" style="font-size:11px;flex:1">
+          <span style="color:var(--muted);font-size:9px">${esc(cat.id)}</span>
+        </div>`;
+      (cat.items || []).forEach((it, ii) => {
+        const retired = !!it.retired;
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr 80px 70px;gap:6px;margin:4px 0;align-items:center;${retired ? 'opacity:.5' : ''}">
+          <input type="text" value="${esc(it.name?.EN || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','EN',this.value)" placeholder="Item (EN)" style="font-size:11px">
+          <input type="text" value="${esc(it.name?.IS || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','IS',this.value)" placeholder="Item (IS)" style="font-size:11px">
+          <span style="color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis">${esc(it.id)}</span>
+          <button class="btn btn-secondary" style="font-size:10px;padding:3px 6px" onclick="ppToggleRetire(${pi},${ci},${ii})">${retired ? s('passport.unretire') : s('passport.retire')}</button>
+        </div>`;
+      });
+      html += `<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px;margin-top:4px" onclick="ppAddItem(${pi},${ci})" data-s="passport.addItem">+ Add item</button>
+      </div>`;
+    });
+    html += `<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="ppAddCategory(${pi})" data-s="passport.addCategory">+ Add category</button></div>`;
+    html += '</div>';
+  });
+  html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+    <button class="btn btn-primary" style="font-size:11px" onclick="ppSaveDef()" data-s="passport.save">Save changes</button>
+    <span id="ppDirtyMark" style="font-size:10px;color:var(--brass)">${_passportDirty ? '● unsaved' : ''}</span>
+  </div>`;
+  card.innerHTML = html;
+}
+
+function _ppMarkDirty() { _passportDirty = true; const m = document.getElementById('ppDirtyMark'); if (m) m.textContent = '● unsaved'; }
+function _ppSlug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-' + Date.now().toString(36)); }
+
+function ppEditCatLabel(pi, ci, lang, val) {
+  const cat = _passportDef.passports[pi].categories[ci];
+  cat.name = cat.name || {}; cat.name[lang] = val;
+  _ppMarkDirty();
+}
+function ppEditItem(pi, ci, ii, field, lang, val) {
+  const it = _passportDef.passports[pi].categories[ci].items[ii];
+  it[field] = it[field] || {}; it[field][lang] = val;
+  _ppMarkDirty();
+}
+function ppToggleRetire(pi, ci, ii) {
+  const it = _passportDef.passports[pi].categories[ci].items[ii];
+  it.retired = !it.retired;
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+function ppAddItem(pi, ci) {
+  const label = prompt('Item name (English)'); if (!label) return;
+  const id = _ppSlug(label);
+  _passportDef.passports[pi].categories[ci].items.push({ id, name: { EN: label, IS: label }, desc: { EN: '', IS: '' } });
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+function ppAddCategory(pi) {
+  const label = prompt('Category name (English)'); if (!label) return;
+  const id = _ppSlug(label);
+  _passportDef.passports[pi].categories.push({ id, name: { EN: label, IS: label }, items: [] });
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+async function ppSaveDef() {
+  if (!_passportDef) return;
+  // Bump version on save
+  _passportDef.version = (_passportDef.version || 0) + 1;
+  try {
+    await apiPost('saveRowingPassportDef', { definition: _passportDef });
+    _passportDirty = false;
+    toast(s('passport.saved'));
+    renderPassportAdmin();
+  } catch(e) { toast(e.message, 'err'); }
+}
+window.ppEditCatLabel = ppEditCatLabel;
+window.ppEditItem = ppEditItem;
+window.ppToggleRetire = ppToggleRetire;
+window.ppAddItem = ppAddItem;
+window.ppAddCategory = ppAddCategory;
+window.ppSaveDef = ppSaveDef;
 
 async function passportImportCsv() {
   const file = document.getElementById('passportCsvFile').files[0];
