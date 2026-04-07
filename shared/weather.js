@@ -365,7 +365,7 @@ function wxDirStrToDeg(s) {
 // Waves/SST:          Open-Meteo marine API
 // Hourly chart data:  Open-Meteo atmosphere API (wind history/forecast for chart)
 
-async function wxFetch(lat, lon, { fresh = false } = {}) {
+async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   const WX_CACHE_TTL = 300000; // 5min cache — aligns with 10min auto-refresh interval
 
   function _wxCacheGet(key) {
@@ -380,12 +380,14 @@ async function wxFetch(lat, lon, { fresh = false } = {}) {
     try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
   }
 
-  // ── 1. BIRK current observations  —  via backend proxy ────────────────────
-  const birkPromise = apiGet('getWeather', fresh ? { _fresh: true } : {});
+  // ── 1. BIRK current observations  —  via backend proxy (skipped for non-club locations) ──
+  const birkPromise = useBirk
+    ? apiGet('getWeather', fresh ? { _fresh: true } : {})
+    : Promise.resolve(null);
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
   const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
-  const currentParams = 'wind_gusts_10m,apparent_temperature,surface_pressure,weather_code';
+  const currentParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure,weather_code';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=${hourlyParams}&current=${currentParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
   const hourlyCacheKey = `ymir_wx_hourly_${lat}_${lon}`;
@@ -430,8 +432,9 @@ async function wxFetch(lat, lon, { fresh = false } = {}) {
   const temp  = obs.temp  != null ? Number(obs.temp)  : null;           // already °C
   const pres  = obs.slp   != null ? Number(obs.slp)   : null;           // hPa sea-level
 
+  const atmCurEarly = hourlyData?.current;
   const wx = {
-    current: {
+    current: useBirk ? {
       wind_speed_10m:      ws,
       wind_direction_10m:  wdDeg,
       wind_gusts_10m:      wg,
@@ -441,6 +444,16 @@ async function wxFetch(lat, lon, { fresh = false } = {}) {
       surface_pressure:    pres,
       _source: 'BIRK',
       _obs_time: obs.reportTime || obs.obsTime || null,
+    } : {
+      wind_speed_10m:       atmCurEarly?.wind_speed_10m      ?? 0,
+      wind_direction_10m:   atmCurEarly?.wind_direction_10m  ?? null,
+      wind_gusts_10m:       atmCurEarly?.wind_gusts_10m      ?? 0,
+      temperature_2m:       atmCurEarly?.temperature_2m      ?? null,
+      apparent_temperature: atmCurEarly?.apparent_temperature ?? null,
+      weather_code:         atmCurEarly?.weather_code        ?? null,
+      surface_pressure:     atmCurEarly?.surface_pressure    ?? null,
+      _source: 'OpenMeteo',
+      _obs_time: atmCurEarly?.time || null,
     },
     // Hourly data for chart  —  from Open-Meteo (or empty fallback)
     hourly: hourlyData?.hourly ?? {
@@ -504,7 +517,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${IS?'BIRK — Aðstæður':'BIRK — CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
-            <a href="../weather/" style="font-size:10px;font-weight:500;color:var(--brass);text-decoration:none;white-space:nowrap">${IS?'Spá':'Forecast'} →</a>
+            <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--brass);text-decoration:none;white-space:nowrap;border:1px solid var(--brass);border-radius:6px;padding:4px 10px;background:var(--brass)12">${IS?'Opna ítarlega spá →':'Open detailed forecast →'}</a>
           </div>
         </div>
         <!-- 2-row grid, columns locked -->
