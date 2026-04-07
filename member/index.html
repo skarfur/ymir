@@ -1114,7 +1114,7 @@ function _irSelectCat(cat) {
 }
 function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
 function _incidentFormHtml() {
-  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["other","📌 Other"]];
+  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["stranding","⚓️ Ran aground"],["other","📌 Other"]];
   var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
   var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
   var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');

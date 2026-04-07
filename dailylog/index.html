@@ -535,15 +535,28 @@ function renderIncidentSection(incidents) {
   container.innerHTML = incidents.map(inc => {
     const types = (function() { try { var t = typeof inc.types === 'string' ? JSON.parse(inc.types) : inc.types; return Array.isArray(t) ? t.map(function(k){ return s('incident.type.'+k)||k; }).join(', ') : ''; } catch(e){ return ''; } })();
     const time = (inc.filedAt||inc.time||'').slice(11,16) || '';
-    const sevLabel = inc.severity ? inc.severity.charAt(0).toUpperCase() + inc.severity.slice(1) : '';
-    const sevClass = inc.severity === 'critical' ? 'red' : inc.severity === 'high' ? 'orange' : 'muted';
-    const followUp = inc.resolved ? '✓ Resolved' : (inc.followUp ? 'Follow-up pending' : '');
-    return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:center">
-      <div style="display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;font-size:12px">
-        <span>${esc(types || inc.title || s('incident.title'))}</span>
-        ${sevLabel ? `<span class="badge badge-${sevClass}">${esc(sevLabel)}</span>` : ''}
-        ${time ? `<span class="text-muted">${esc(time)}</span>` : ''}
-        ${followUp ? `<span class="text-muted" style="font-style:italic">${esc(followUp)}</span>` : ''}
+    const sevLabel = inc.severity ? (s('incident.sev.'+inc.severity) || inc.severity) : '';
+    const sevClass = inc.severity === 'critical' ? 'red'
+      : inc.severity === 'high' ? 'orange'
+      : inc.severity === 'medium' ? 'yellow'
+      : inc.severity === 'low' ? 'green'
+      : 'muted';
+    const resolved = inc.resolved && inc.resolved !== 'false';
+    const inReview = !resolved && inc.status === 'review';
+    const statusLabel = resolved ? '✓ ' + s('incident.resolved')
+      : inReview ? s('incident.statusReview')
+      : (inc.followUp ? 'Follow-up pending' : '');
+    const desc = (inc.description || '').slice(0,140);
+    const descMore = (inc.description || '').length > 140 ? '…' : '';
+    return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:flex-start">
+      <div style="flex:1;font-size:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="fw-500">${esc(types || inc.title || s('incident.title'))}</span>
+          ${sevLabel ? `<span class="badge badge-${sevClass}">${esc(sevLabel)}</span>` : ''}
+          ${time ? `<span class="text-muted">${esc(time)}</span>` : ''}
+          ${statusLabel ? `<span class="text-muted" style="font-style:italic">${esc(statusLabel)}</span>` : ''}
+        </div>
+        ${desc ? `<div class="text-muted" style="margin-top:4px">${esc(desc)}${descMore}</div>` : ''}
       </div>
       <span class="ml-auto text-brass" style="font-size:16px">→</span>
     </a>`;

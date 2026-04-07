@@ -167,8 +167,9 @@
           </div>
         </div>
 
-        <div class="flex-center gap-10">
+        <div class="flex-center gap-10 flex-wrap">
           <button class="btn btn-primary" id="fileBtn"></button>
+          <button class="btn btn-secondary" id="fileReviewBtn"></button>
           <span id="saveMsg" class="text-md text-muted"></span>
         </div>
       </div>
@@ -190,6 +191,16 @@
           <div class="input-row mt-8">
             <input type="text" id="noteInput">
             <button class="btn btn-secondary" id="addNoteBtn"></button>
+          </div>
+        </div>
+
+        <!-- Reviewer comments -->
+        <div class="section-divider">
+          <div class="section-label mb-8" data-s="incident.reviewerNotes"></div>
+          <div class="notes-list" id="reviewerNotesList"></div>
+          <div class="input-row mt-8">
+            <input type="text" id="reviewerNoteInput">
+            <button class="btn btn-secondary" id="addReviewerNoteBtn"></button>
           </div>
         </div>
 
@@ -223,9 +234,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('modeNewLabel').textContent   = s('incident.fileNew');
   document.getElementById('typeLabel').textContent      = s('incident.typeLabel');
   document.getElementById('boatLabel').textContent      = s('incident.boatLabel');
-  document.getElementById('fileBtn').textContent        = s('incident.fileBtn');
+  document.getElementById('fileBtn').textContent        = s('incident.saveCloseFile');
+  document.getElementById('fileReviewBtn').textContent  = s('incident.saveForReview');
   document.getElementById('backToListBtn').textContent  = '← ' + s('incident.viewList');
   document.getElementById('addNoteBtn').textContent     = s('incident.addNoteBtn');
+  document.getElementById('addReviewerNoteBtn').textContent = s('incident.addReviewerNote');
+  document.getElementById('reviewerNoteInput').placeholder  = s('incident.addReviewerNote') + '…';
   document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
 
   // Placeholder text
@@ -292,6 +306,7 @@ const INCIDENT_TYPES = [
   { v:'nearMiss',    key:'incident.type.nearMiss' },
   { v:'missing',     key:'incident.type.missing' },
   { v:'propertyDmg', key:'incident.type.propertyDmg' },
+  { v:'stranding',   key:'incident.type.stranding' },
   { v:'other',       key:'incident.type.other' },
 ];
 
@@ -342,7 +357,13 @@ function renderList() {
       <div class="incident-header">
         <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
         <span class="fw-500 flex-1">${esc(i.title||s('incident.title'))}</span>
-        <span class="badge ${i.resolved&&i.resolved!=='false' ? 'badge-green':'badge-yellow'}">${i.resolved&&i.resolved!=='false' ? s('incident.resolved') : s('incident.open')}</span>
+        ${(function(){
+          const r = i.resolved && i.resolved !== 'false';
+          const rev = !r && i.status === 'review';
+          const cls = r ? 'badge-green' : (rev ? 'badge-orange' : 'badge-yellow');
+          const lbl = r ? s('incident.resolved') : (rev ? s('incident.statusReview') : s('incident.open'));
+          return `<span class="badge ${cls}">${lbl}</span>`;
+        })()}
       </div>
       <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'…':''}</div>
       <div class="incident-meta">
@@ -361,11 +382,13 @@ function openDetail(i) {
   if (!i) return;
   detailId = i.id;
   const notes    = parseJson(i.staffNotes, []);
+  const reviewerNotes = parseJson(i.reviewerNotes, []);
   const types    = parseJson(i.types, []);
   const resolved = i.resolved && i.resolved !== 'false';
+  const inReview = !resolved && i.status === 'review';
 
   document.getElementById('detailStatus').innerHTML =
-    `<span class="badge ${resolved ? 'badge-green' : 'badge-yellow'}">${resolved ? s('incident.resolved') : s('incident.open')}</span>`;
+    `<span class="badge ${resolved ? 'badge-green' : (inReview ? 'badge-orange' : 'badge-yellow')}">${resolved ? s('incident.resolved') : (inReview ? s('incident.statusReview') : s('incident.open'))}</span>`;
 
   document.getElementById('resolveBtn').textContent = resolved ? s('incident.markOpen') : s('incident.markResolved');
 
@@ -396,6 +419,11 @@ function openDetail(i) {
       <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
     </div>`).join('');
 
+  document.getElementById('reviewerNotesList').innerHTML = reviewerNotes.map(n => `
+    <div class="note-item">${esc(n.text)}
+      <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
+    </div>`).join('');
+
   setMode('detail');
 }
 
@@ -421,15 +449,17 @@ function setSev(btn) {
 }
 
 // ── FILE REPORT ───────────────────────────────────────────────────────────────
-async function fileReport() {
+async function fileReport(pathway) {
+  pathway = pathway || 'closed';
   const desc = document.getElementById('iDesc').value.trim();
   if (!desc)               { showToast(s('incident.descRequired'), 'err'); return; }
   if (!selectedTypes.size) { showToast(s('incident.typeRequired'), 'err'); return; }
   if (!selectedSev)        { showToast(s('incident.sevRequired'),  'err'); return; }
 
   const btn = document.getElementById('fileBtn');
+  const btn2 = document.getElementById('fileReviewBtn');
   const msg = document.getElementById('saveMsg');
-  btn.disabled = true; msg.textContent = '';
+  btn.disabled = true; btn2.disabled = true; msg.textContent = '';
 
   const boatSel = document.getElementById('iBoat');
   const locSel  = document.getElementById('iLocation');
@@ -464,10 +494,14 @@ async function fileReport() {
       filedBy:       user.name,
       filedAt:       new Date().toISOString(),
       title:         typeLabels,
+      status:        pathway === 'review' ? 'review' : 'closed',
+      resolved:      pathway === 'closed',
     });
     const newInc = { ...res, types: JSON.stringify([...selectedTypes]),
       description: desc, severity: selectedSev, filedBy: user.name,
-      filedAt: new Date().toISOString(), title: typeLabels };
+      filedAt: new Date().toISOString(), title: typeLabels,
+      status: pathway === 'review' ? 'review' : 'closed',
+      resolved: pathway === 'closed' };
     incidents.unshift(newInc);
     showToast(s('incident.filed'));
     setMode('list');
@@ -477,7 +511,7 @@ async function fileReport() {
     msg.textContent = s('toast.error') + ': ' + e.message;
     showToast(s('toast.saveFailed'), 'err');
   } finally {
-    btn.disabled = false;
+    btn.disabled = false; btn2.disabled = false;
   }
 }
 
@@ -497,11 +531,35 @@ function resetForm() {
 // ── ADD NOTE ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addNoteBtn').addEventListener('click', addNote);
-  document.getElementById('fileBtn').addEventListener('click', fileReport);
+  document.getElementById('addReviewerNoteBtn').addEventListener('click', addReviewerNote);
+  document.getElementById('fileBtn').addEventListener('click', () => fileReport('closed'));
+  document.getElementById('fileReviewBtn').addEventListener('click', () => fileReport('review'));
   document.getElementById('noteInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') addNote();
   });
 });
+
+async function addReviewerNote() {
+  const input = document.getElementById('reviewerNoteInput');
+  const text  = input.value.trim();
+  if (!text || !detailId) return;
+  try {
+    await apiPost('addIncidentNote', { id: detailId, by: user.name, text, at: new Date().toISOString(), kind: 'reviewer' });
+    const i = incidents.find(x => x.id === detailId);
+    if (i) {
+      const notes = parseJson(i.reviewerNotes, []);
+      const timeStr = fmtDate(new Date().toISOString()) + ' ' + fmtTime(new Date().toISOString());
+      notes.push({ by: user.name, at: timeStr, text });
+      i.reviewerNotes = JSON.stringify(notes);
+      document.getElementById('reviewerNotesList').innerHTML += `
+        <div class="note-item">${esc(text)}
+          <div class="note-meta">${esc(user.name)} · ${esc(timeStr)}</div>
+        </div>`;
+    }
+    input.value = '';
+    showToast(s('toast.saved'));
+  } catch(e) { showToast(s('toast.error'), 'err'); }
+}
 
 async function addNote() {
   const input = document.getElementById('noteInput');

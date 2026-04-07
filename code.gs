@@ -1563,7 +1563,9 @@ function createIncident_(b) {
     followUp: b.followUp || '', handOffTo: b.handOffTo || '',
     handOffName: b.handOffName || '', handOffNotes: b.handOffNotes || '',
     photoUrls: '', filedBy: b.filedBy || '', filedAt: ts,
-    resolved: false, resolvedAt: '', staffNotes: '',
+    resolved: !!b.resolved, resolvedAt: b.resolved ? ts : '',
+    staffNotes: '', reviewerNotes: '',
+    status: b.status === 'review' ? 'review' : 'closed',
   });
   cDel_('incidents'); return okJ({ id, created: true });
 }
@@ -1577,9 +1579,11 @@ function resolveIncident_(b) {
 function addIncidentNote_(b) {
   if (!b.id) return failJ('id required');
   const ex = findOne_('incidents', 'id', b.id);
-  const notes = ex ? JSON.parse(ex.staffNotes || '[]') : [];
+  const field = b.kind === 'reviewer' ? 'reviewerNotes' : 'staffNotes';
+  const notes = ex ? JSON.parse(ex[field] || '[]') : [];
   notes.push({ by: b.by || '', at: now_(), text: b.text || '' });
-  updateRow_('incidents', 'id', b.id, { staffNotes: JSON.stringify(notes) });
+  const patch = {}; patch[field] = JSON.stringify(notes);
+  updateRow_('incidents', 'id', b.id, patch);
   cDel_('incidents'); return okJ({ updated: true });
 }
 
@@ -4737,7 +4741,7 @@ var SCHEMA_ = {
     'immediateAction','followUp',
     'handOffTo','handOffName','handOffNotes',
     'photoUrls','filedBy','filedAt',
-    'resolved','resolvedAt','staffNotes',
+    'resolved','resolvedAt','staffNotes','reviewerNotes','status',
   ],
   trips: [
     'id','kennitala','memberName',
