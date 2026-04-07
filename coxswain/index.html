@@ -88,6 +88,9 @@
 .pp-item-desc { color:var(--muted); font-size:10px; margin-top:2px; }
 .pp-item-sigs { color:var(--muted); font-size:9px; margin-top:3px; font-style:italic; }
 .pp-item-count { font-size:10px; color:var(--muted); flex-shrink:0; }
+.pp-asmt { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; }
+.pp-asmt-practical { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
+.pp-asmt-theory    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
 
 /* ── Responsive ── */
 @media(max-width:600px){
@@ -1010,9 +1013,13 @@ function renderPassport() {
         return _esc(so.signerName || '?') + ' · ' + String(so.timestamp || '').slice(0,10) + revokeBtn;
       }).join(' · ');
       var onclick = signingSomeoneElse ? ' onclick="signPassportItemClick(\'' + it.id + '\')"' : '';
+      var assessment = it.assessment || 'practical';
+      var badgeCls = 'pp-asmt pp-asmt-' + assessment;
+      var badgeLbl = s('passport.' + assessment);
       html += '<div class="' + cls + '"' + onclick + '>'
         + '<div class="pp-item-icon">' + icon + '</div>'
-        + '<div class="pp-item-body"><div class="pp-item-name">' + _esc(name) + '</div>'
+        + '<div class="pp-item-body"><div class="pp-item-name">' + _esc(name)
+          + ' <span class="' + badgeCls + '">' + _esc(badgeLbl) + '</span></div>'
         + (desc ? '<div class="pp-item-desc">' + _esc(desc) + '</div>' : '')
         + (signersList ? '<div class="pp-item-sigs">' + signersList + '</div>' : '')
         + '</div><div class="pp-item-count">' + sigText + '</div></div>';

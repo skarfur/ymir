@@ -3201,9 +3201,14 @@ function drawPassportEditor() {
         </div>`;
       (cat.items || []).forEach((it, ii) => {
         const retired = !!it.retired;
-        html += `<div style="display:grid;grid-template-columns:1fr 1fr 80px 70px;gap:6px;margin:4px 0;align-items:center;${retired ? 'opacity:.5' : ''}">
+        const assessment = it.assessment || 'practical';
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr 90px 80px 70px;gap:6px;margin:4px 0;align-items:center;${retired ? 'opacity:.5' : ''}">
           <input type="text" value="${esc(it.name?.EN || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','EN',this.value)" placeholder="Item (EN)" style="font-size:11px">
           <input type="text" value="${esc(it.name?.IS || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','IS',this.value)" placeholder="Item (IS)" style="font-size:11px">
+          <select onchange="ppEditAssessment(${pi},${ci},${ii},this.value)" style="font-size:11px">
+            <option value="practical"${assessment==='practical'?' selected':''}>${s('passport.practical')}</option>
+            <option value="theory"${assessment==='theory'?' selected':''}>${s('passport.theory')}</option>
+          </select>
           <span style="color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis">${esc(it.id)}</span>
           <button class="btn btn-secondary" style="font-size:10px;padding:3px 6px" onclick="ppToggleRetire(${pi},${ci},${ii})">${retired ? s('passport.unretire') : s('passport.retire')}</button>
         </div>`;
@@ -3234,6 +3239,10 @@ function ppEditItem(pi, ci, ii, field, lang, val) {
   it[field] = it[field] || {}; it[field][lang] = val;
   _ppMarkDirty();
 }
+function ppEditAssessment(pi, ci, ii, val) {
+  _passportDef.passports[pi].categories[ci].items[ii].assessment = val;
+  _ppMarkDirty();
+}
 function ppToggleRetire(pi, ci, ii) {
   const it = _passportDef.passports[pi].categories[ci].items[ii];
   it.retired = !it.retired;
@@ -3243,7 +3252,7 @@ function ppToggleRetire(pi, ci, ii) {
 function ppAddItem(pi, ci) {
   const label = prompt('Item name (English)'); if (!label) return;
   const id = _ppSlug(label);
-  _passportDef.passports[pi].categories[ci].items.push({ id, name: { EN: label, IS: label }, desc: { EN: '', IS: '' } });
+  _passportDef.passports[pi].categories[ci].items.push({ id, assessment: 'practical', name: { EN: label, IS: label }, desc: { EN: '', IS: '' } });
   _ppMarkDirty();
   drawPassportEditor();
 }
@@ -3267,6 +3276,7 @@ async function ppSaveDef() {
 }
 window.ppEditCatLabel = ppEditCatLabel;
 window.ppEditItem = ppEditItem;
+window.ppEditAssessment = ppEditAssessment;
 window.ppToggleRetire = ppToggleRetire;
 window.ppAddItem = ppAddItem;
 window.ppAddCategory = ppAddCategory;
@@ -3288,13 +3298,13 @@ async function passportExportCsv() {
   try {
     const res = await apiGet('getRowingPassport', {});
     const def = res.definition || { passports: [] };
-    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is'];
+    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is'];
     const q = v => '"' + String(v || '').replace(/"/g,'""') + '"';
     (def.passports || []).forEach(p => {
       (p.categories || []).forEach(cat => {
         (cat.items || []).forEach(it => {
           if (it.retired) return;
-          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
+          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.assessment || 'practical', it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
         });
       });
     });

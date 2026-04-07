@@ -5254,26 +5254,26 @@ function DEFAULT_ROWING_PASSPORT_() {
             id: 'safety',
             name: { EN: 'Safety', IS: 'Öryggi' },
             items: [
-              { id: 'pfd-use',          name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
-              { id: 'capsize-recovery', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
-              { id: 'cold-water',       name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
+              { id: 'pfd-use',          assessment: 'practical', name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
+              { id: 'capsize-recovery', assessment: 'practical', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
+              { id: 'cold-water',       assessment: 'theory',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
             ],
           },
           {
             id: 'boat-handling',
             name: { EN: 'Boat handling', IS: 'Bátastjórnun' },
             items: [
-              { id: 'launching',     name: { EN: 'Launching & landing',     IS: 'Sjósetning og lending' }, desc: { EN: '', IS: '' } },
-              { id: 'steering',      name: { EN: 'Steering straight',       IS: 'Bein stýring' },          desc: { EN: '', IS: '' } },
-              { id: 'stopping',      name: { EN: 'Stopping & emergency stop', IS: 'Stöðvun og neyðarstöðvun' }, desc: { EN: '', IS: '' } },
+              { id: 'launching',     assessment: 'practical', name: { EN: 'Launching & landing',       IS: 'Sjósetning og lending' },     desc: { EN: '', IS: '' } },
+              { id: 'steering',      assessment: 'practical', name: { EN: 'Steering straight',         IS: 'Bein stýring' },              desc: { EN: '', IS: '' } },
+              { id: 'stopping',      assessment: 'practical', name: { EN: 'Stopping & emergency stop', IS: 'Stöðvun og neyðarstöðvun' }, desc: { EN: '', IS: '' } },
             ],
           },
           {
             id: 'etiquette',
             name: { EN: 'Etiquette & comms', IS: 'Siðir og samskipti' },
             items: [
-              { id: 'right-of-way', name: { EN: 'Right of way',     IS: 'Forgangur' },     desc: { EN: '', IS: '' } },
-              { id: 'radio-checkin', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
+              { id: 'right-of-way',  assessment: 'theory',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
+              { id: 'radio-checkin', assessment: 'practical', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
             ],
           },
         ],
@@ -5481,8 +5481,11 @@ function importRowingPassportCsv_(b) {
       p._catIndex[r.category_id] = cat;
       p.categories.push(cat);
     }
+    var assessment = (r.assessment || '').toLowerCase();
+    if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
     cat.items.push({
       id: r.item_id,
+      assessment: assessment,
       name: { EN: r.item_label_en || r.item_id, IS: r.item_label_is || r.item_label_en || r.item_id },
       desc: { EN: r.description_en || '', IS: r.description_is || '' },
     });
