@@ -32,6 +32,7 @@ const TABS_ = {
   reservationSlots: 'reservation_slots',
   crews: 'crews',
   crewInvites: 'crew_invites',
+  passportSignoffs: 'passport_signoffs',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -418,6 +419,12 @@ function route_(action, b) {
     case 'inviteToCrew':          return inviteToCrew_(b);
     case 'respondCrewInvite':     return respondCrewInvite_(b);
     case 'getCrewInvites':        return getCrewInvites_(b);
+    // ── ROWING PASSPORT ───────────────────────────────────────────────────────
+    case 'getRowingPassport':       return getRowingPassport_(b);
+    case 'saveRowingPassportDef':   return saveRowingPassportDef_(b);
+    case 'signPassportItem':        return signPassportItem_(b);
+    case 'revokePassportSignoff':   return revokePassportSignoff_(b);
+    case 'importRowingPassportCsv': return importRowingPassportCsv_(b);
     case 'saveCaptainBio': return saveCaptainBio_(b);
     case 'uploadHeadshot': return uploadHeadshot_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
@@ -1279,7 +1286,13 @@ function getConfig_() {
     keelboatCalendarId: getConfigValue_('keelboatCalendarId', cfgMap) || '',
     keelboatCalendarSyncActive: getConfigValue_('keelboatCalendarSyncActive', cfgMap) === 'true',
   };
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars };
+  let rowingPassport = null;
+  try {
+    const rpRaw = getConfigValue_('rowingPassport', cfgMap);
+    if (rpRaw) rowingPassport = JSON.parse(rpRaw);
+  } catch (e) {}
+  if (!rowingPassport) rowingPassport = DEFAULT_ROWING_PASSPORT_();
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport };
   cPut_('config', config);
   return okJ(config);
 }
@@ -1330,6 +1343,10 @@ function saveConfig_(b) {
   }
   if (b.boatCategories)    { setConfigSheetValue_('boatCategories',    JSON.stringify(b.boatCategories));    }
 
+  if (b.rowingPassport !== undefined) {
+    setConfigSheetValue_('rowingPassport', JSON.stringify(b.rowingPassport));
+    saved.rowingPassport = true;
+  }
   if (b.activityTypes) { setConfigSheetValue_('activity_types', JSON.stringify(b.activityTypes)); saved.activityTypes = true; }
   if (b.allowBreaks !== undefined) { setConfigSheetValue_('allowBreaks', b.allowBreaks ? 'true' : 'false'); saved.allowBreaks = true; }
   cDel_('config');
@@ -4987,6 +5004,12 @@ var SCHEMA_ = {
     'toKennitala','toName',
     'status','createdAt','respondedAt',
   ],
+  passport_signoffs: [
+    'id','memberId','passportId','itemId',
+    'signerId','signerName','signerRole',
+    'timestamp','note',
+    'revokedBy','revokedAt','revokeReason',
+  ],
   config: ['key','value'],
   employees: [
     'id','kt','name','title','bankAccount','orlofsreikningur',
@@ -5199,5 +5222,392 @@ function addReservationAndCrewTabs() {
   Logger.log('crews tab ready');
   ensureTab_(ss, 'crew_invites', SCHEMA_.crew_invites);
   Logger.log('crew_invites tab ready');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROWING PASSPORT
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Definition lives in config key 'rowingPassport' (JSON). Sign-offs live in the
+// passport_signoffs sheet (append-only with revocation columns). A passport item
+// is "complete" when it has >= requiredSigs (default 2) non-revoked signatures
+// from distinct signers. When ALL non-retired items in the rower passport are
+// complete, the member is auto-promoted from rowing_division/restricted ->
+// rowing_division/released.
+//
+// Stable identifiers: passport.id ('rower'), category.id, item.id. Labels are
+// editable; ids must never change once a sign-off references them.
+
+function DEFAULT_ROWING_PASSPORT_() {
+  return {
+    version: 1,
+    passports: [
+      {
+        id: 'rower',
+        name: { EN: 'Rower Passport', IS: 'Ræðarapassi' },
+        promoteCertId: 'rowing_division',
+        fromSub: 'restricted',
+        toSub: 'released',
+        requiredSigs: 2,
+        categories: [
+          {
+            id: 'safety',
+            name: { EN: 'Safety', IS: 'Öryggi' },
+            items: [
+              { id: 'pfd-use',          name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
+              { id: 'capsize-recovery', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
+              { id: 'cold-water',       name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
+            ],
+          },
+          {
+            id: 'boat-handling',
+            name: { EN: 'Boat handling', IS: 'Bátastjórnun' },
+            items: [
+              { id: 'launching',     name: { EN: 'Launching & landing',     IS: 'Sjósetning og lending' }, desc: { EN: '', IS: '' } },
+              { id: 'steering',      name: { EN: 'Steering straight',       IS: 'Bein stýring' },          desc: { EN: '', IS: '' } },
+              { id: 'stopping',      name: { EN: 'Stopping & emergency stop', IS: 'Stöðvun og neyðarstöðvun' }, desc: { EN: '', IS: '' } },
+            ],
+          },
+          {
+            id: 'etiquette',
+            name: { EN: 'Etiquette & comms', IS: 'Siðir og samskipti' },
+            items: [
+              { id: 'right-of-way', name: { EN: 'Right of way',     IS: 'Forgangur' },     desc: { EN: '', IS: '' } },
+              { id: 'radio-checkin', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function getRowingPassport_(b) {
+  // Returns: { definition, progress (if memberId provided) }
+  const cfgMap = getConfigMap_();
+  let def = null;
+  try {
+    const raw = getConfigValue_('rowingPassport', cfgMap);
+    if (raw) def = JSON.parse(raw);
+  } catch (e) {}
+  if (!def) def = DEFAULT_ROWING_PASSPORT_();
+
+  const result = { definition: def };
+  if (b && b.memberId) {
+    result.progress = computePassportProgress_(b.memberId, def);
+  }
+  return okJ(result);
+}
+
+function computePassportProgress_(memberId, def) {
+  const all = readAll_('passportSignoffs') || [];
+  const mine = all.filter(r => String(r.memberId) === String(memberId) && !r.revokedAt);
+  // Group by passportId + itemId
+  const byKey = {};
+  mine.forEach(r => {
+    const k = (r.passportId || 'rower') + '::' + r.itemId;
+    if (!byKey[k]) byKey[k] = [];
+    byKey[k].push({
+      id: r.id, signerId: r.signerId, signerName: r.signerName,
+      signerRole: r.signerRole, timestamp: r.timestamp, note: r.note || '',
+    });
+  });
+  const out = { passports: {} };
+  (def.passports || []).forEach(p => {
+    const required = Number(p.requiredSigs || 2);
+    const items = {};
+    let completeCount = 0, totalCount = 0;
+    (p.categories || []).forEach(cat => {
+      (cat.items || []).forEach(it => {
+        if (it.retired) return;
+        totalCount++;
+        const sigs = byKey[p.id + '::' + it.id] || [];
+        const distinct = {};
+        sigs.forEach(s => { if (s.signerId) distinct[s.signerId] = s; });
+        const distinctCount = Object.keys(distinct).length;
+        const complete = distinctCount >= required;
+        if (complete) completeCount++;
+        items[it.id] = { signoffs: sigs, complete, distinctSigners: distinctCount, required };
+      });
+    });
+    out.passports[p.id] = { items, totalCount, completeCount, percent: totalCount ? Math.round(100 * completeCount / totalCount) : 0 };
+  });
+  return out;
+}
+
+function signPassportItem_(b) {
+  if (!b.memberId)  return failJ('memberId required');
+  if (!b.itemId)    return failJ('itemId required');
+  if (!b.signerId)  return failJ('signerId required');
+  const passportId = b.passportId || 'rower';
+
+  // Verify signer is staff (or released rower) — reuse existing signer record
+  const signer = readAll_('members').find(m => String(m.id) === String(b.signerId) || String(m.kennitala) === String(b.signerId));
+  if (!signer) return failJ('Signer not found', 404);
+  const signerRole = (signer.role || '').toString().toLowerCase();
+  let signerCerts = [];
+  try { signerCerts = JSON.parse(signer.certifications || '[]'); } catch (e) {}
+  const isStaff = signerRole === 'staff' || signerRole === 'admin' || signerRole === 'manager';
+  const isReleased = signerCerts.some(c => c.certId === 'rowing_division' && (c.sub === 'released' || c.sub === 'coxswain'));
+  if (!isStaff && !isReleased) return failJ('Signer not authorised to sign passport items', 403);
+
+  // Refuse self-sign
+  if (String(signer.id) === String(b.memberId) || String(signer.kennitala) === String(b.memberId)) {
+    return failJ('Cannot sign your own passport', 403);
+  }
+
+  // Verify item exists in current definition
+  const cfgMap = getConfigMap_();
+  let def = null;
+  try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) def = JSON.parse(raw); } catch (e) {}
+  if (!def) def = DEFAULT_ROWING_PASSPORT_();
+  const passport = (def.passports || []).find(p => p.id === passportId);
+  if (!passport) return failJ('Unknown passport: ' + passportId, 404);
+  let item = null;
+  (passport.categories || []).forEach(c => (c.items || []).forEach(i => { if (i.id === b.itemId) item = i; }));
+  if (!item) return failJ('Unknown item: ' + b.itemId, 404);
+  if (item.retired) return failJ('Item retired', 410);
+
+  // Refuse duplicate sign by same signer for same item (non-revoked)
+  const existing = (readAll_('passportSignoffs') || [])
+    .filter(r => !r.revokedAt && String(r.memberId) === String(b.memberId)
+              && r.passportId === passportId && r.itemId === b.itemId
+              && String(r.signerId) === String(signer.id));
+  if (existing.length) return failJ('You have already signed this item', 409);
+
+  insertRow_('passportSignoffs', {
+    id: uid_(),
+    memberId: b.memberId,
+    passportId: passportId,
+    itemId: b.itemId,
+    signerId: signer.id,
+    signerName: signer.name || '',
+    signerRole: isStaff ? 'staff' : 'released_rower',
+    timestamp: now_(),
+    note: b.note || '',
+    revokedBy: '', revokedAt: '', revokeReason: '',
+  });
+
+  // Recompute progress and auto-promote if complete
+  const progress = computePassportProgress_(b.memberId, def);
+  let promoted = false;
+  const pProg = progress.passports[passportId];
+  if (pProg && pProg.totalCount > 0 && pProg.completeCount === pProg.totalCount) {
+    promoted = maybePromoteRower_(b.memberId, passport, signer.name || 'passport');
+  }
+  return okJ({ saved: true, progress, promoted });
+}
+
+function revokePassportSignoff_(b) {
+  if (!b.signoffId) return failJ('signoffId required');
+  const ok = updateRow_('passportSignoffs', 'id', b.signoffId, {
+    revokedBy: b.revokedBy || '',
+    revokedAt: now_(),
+    revokeReason: b.reason || '',
+  });
+  if (!ok) return failJ('Sign-off not found', 404);
+  return okJ({ revoked: true });
+}
+
+function maybePromoteRower_(memberId, passport, byName) {
+  const member = readAll_('members').find(m => String(m.id) === String(memberId));
+  if (!member) return false;
+  let certs = [];
+  try { certs = JSON.parse(member.certifications || '[]'); } catch (e) {}
+  if (!Array.isArray(certs)) certs = [];
+  const certId = passport.promoteCertId || 'rowing_division';
+  const toSub  = passport.toSub || 'released';
+  const fromSub = passport.fromSub || 'restricted';
+  const idx = certs.findIndex(c => c.certId === certId);
+  if (idx >= 0) {
+    if (certs[idx].sub === toSub || certs[idx].sub === 'coxswain') return false; // already at/above
+    certs[idx].sub = toSub;
+    certs[idx].verifiedBy = byName;
+    certs[idx].verifiedAt = now_();
+  } else {
+    certs.push({
+      certId: certId, sub: toSub, category: 'Club Endorsement',
+      assignedBy: byName, assignedAt: now_(), verifiedBy: byName, verifiedAt: now_(),
+      issuingAuthority: '', expires: false, expiresAt: '',
+      description: 'Auto-promoted on passport completion',
+    });
+  }
+  // Drop a stale 'restricted' record if duplicated
+  certs = certs.filter((c, i) => !(c.certId === certId && c.sub === fromSub && i !== idx));
+  updateRow_('members', 'id', memberId, { certifications: JSON.stringify(certs), updatedAt: now_() });
+  cDel_('members');
+  return true;
+}
+
+function saveRowingPassportDef_(b) {
+  if (!b.definition) return failJ('definition required');
+  // Minimal shape validation
+  const def = b.definition;
+  if (!Array.isArray(def.passports)) return failJ('definition.passports must be array');
+  setConfigSheetValue_('rowingPassport', JSON.stringify(def));
+  cDel_('config');
+  return okJ({ saved: true });
+}
+
+function importRowingPassportCsv_(b) {
+  // CSV columns: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is
+  // Existing items not present in CSV are marked retired (NOT deleted) so historical sign-offs remain valid.
+  if (!b.csv) return failJ('csv required');
+  const rows = parsePassportCsv_(b.csv);
+  if (!rows.length) return failJ('CSV is empty or unparseable');
+
+  // Load current def to preserve passport-level fields & retire missing items
+  const cfgMap = getConfigMap_();
+  let current = null;
+  try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) current = JSON.parse(raw); } catch (e) {}
+  if (!current) current = DEFAULT_ROWING_PASSPORT_();
+
+  // Build new shape from CSV
+  const passports = {};
+  rows.forEach(r => {
+    const pid = r.passport_id || 'rower';
+    if (!passports[pid]) {
+      const existing = (current.passports || []).find(p => p.id === pid);
+      passports[pid] = existing
+        ? Object.assign({}, existing, { categories: [] })
+        : { id: pid, name: { EN: pid, IS: pid }, promoteCertId: 'rowing_division', fromSub: 'restricted', toSub: 'released', requiredSigs: 2, categories: [] };
+      passports[pid].categories = [];
+      passports[pid]._catIndex = {};
+    }
+    const p = passports[pid];
+    let cat = p._catIndex[r.category_id];
+    if (!cat) {
+      cat = { id: r.category_id, name: { EN: r.category_label_en || r.category_id, IS: r.category_label_is || r.category_label_en || r.category_id }, items: [] };
+      p._catIndex[r.category_id] = cat;
+      p.categories.push(cat);
+    }
+    cat.items.push({
+      id: r.item_id,
+      name: { EN: r.item_label_en || r.item_id, IS: r.item_label_is || r.item_label_en || r.item_id },
+      desc: { EN: r.description_en || '', IS: r.description_is || '' },
+    });
+  });
+
+  // Retire items present in old def but absent from CSV
+  (current.passports || []).forEach(oldP => {
+    const newP = passports[oldP.id];
+    if (!newP) {
+      // Whole passport removed — keep retired copy
+      passports[oldP.id] = Object.assign({}, oldP, {
+        categories: (oldP.categories || []).map(c => Object.assign({}, c, {
+          items: (c.items || []).map(i => Object.assign({}, i, { retired: true })),
+        })),
+      });
+      return;
+    }
+    const newItemIds = new Set();
+    newP.categories.forEach(c => c.items.forEach(i => newItemIds.add(i.id)));
+    (oldP.categories || []).forEach(oldCat => {
+      (oldCat.items || []).forEach(oldItem => {
+        if (!newItemIds.has(oldItem.id)) {
+          // Find or create the matching new category to host the retired item
+          let hostCat = newP.categories.find(c => c.id === oldCat.id);
+          if (!hostCat) {
+            hostCat = { id: oldCat.id, name: oldCat.name, items: [] };
+            newP.categories.push(hostCat);
+          }
+          hostCat.items.push(Object.assign({}, oldItem, { retired: true }));
+        }
+      });
+    });
+  });
+
+  // Strip _catIndex helpers
+  const newDef = { version: (current.version || 0) + 1, passports: Object.values(passports).map(p => {
+    const copy = Object.assign({}, p);
+    delete copy._catIndex;
+    return copy;
+  }) };
+
+  setConfigSheetValue_('rowingPassport', JSON.stringify(newDef));
+  cDel_('config');
+  return okJ({ saved: true, definition: newDef });
+}
+
+function parsePassportCsv_(text) {
+  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = splitCsvLine_(lines[0]).map(h => h.trim().toLowerCase());
+  const out = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = splitCsvLine_(lines[i]);
+    const row = {};
+    headers.forEach((h, j) => { row[h] = (cells[j] || '').trim(); });
+    if (row.item_id) out.push(row);
+  }
+  return out;
+}
+function splitCsvLine_(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { q = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { q = true; }
+      else if (ch === ',' || ch === ';') { out.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+// One-shot migration: convert legacy 'released_rower' cert assignments to
+// rowing_division sub 'released'; ensure all rowing_division members have a sub.
+// Run manually from the Apps Script editor.
+function migrateRowingDivisionToSubcats() {
+  const sheet = getSheet_('members');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const certIdx = headers.indexOf('certifications');
+  if (certIdx < 0) throw new Error('certifications column missing');
+  let changed = 0;
+  for (let r = 1; r < data.length; r++) {
+    const raw = data[r][certIdx];
+    if (!raw) continue;
+    let certs;
+    try { certs = JSON.parse(raw); } catch (e) { continue; }
+    if (!Array.isArray(certs)) continue;
+    const hasReleasedLegacy = certs.some(c => c.certId === 'released_rower');
+    const rdIdx = certs.findIndex(c => c.certId === 'rowing_division');
+    let didChange = false;
+
+    if (rdIdx >= 0 && !certs[rdIdx].sub) {
+      certs[rdIdx].sub = hasReleasedLegacy ? 'released' : 'restricted';
+      didChange = true;
+    } else if (rdIdx < 0 && hasReleasedLegacy) {
+      certs.push({
+        certId: 'rowing_division', sub: 'released', category: 'Club Endorsement',
+        assignedBy: 'migration', assignedAt: now_(), verifiedBy: 'migration', verifiedAt: now_(),
+        issuingAuthority: '', expires: false, expiresAt: '', description: '',
+      });
+      didChange = true;
+    }
+    if (hasReleasedLegacy) {
+      certs = certs.filter(c => c.certId !== 'released_rower');
+      didChange = true;
+    }
+    if (didChange) {
+      sheet.getRange(r + 1, certIdx + 1).setValue(JSON.stringify(certs));
+      changed++;
+    }
+  }
+  cDel_('members');
+  Logger.log('migrated ' + changed + ' members');
+}
+
+function ensurePassportSignoffsTab() {
+  const ss = SpreadsheetApp.openById(SHEET_ID_);
+  ensureTab_(ss, 'passport_signoffs', SCHEMA_.passport_signoffs);
+  Logger.log('passport_signoffs tab ready');
 }
 

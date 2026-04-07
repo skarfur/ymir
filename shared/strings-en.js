@@ -1568,5 +1568,15 @@ var _STRINGS_FLAT = {
   "sauma.selectCategory": "Please select a category.",
   "sauma.selectPriority": "Please select a priority.",
   "sauma.describeProject": "Please describe the project.",
-  "sauma.selectBoat": "Please select a boat."
+  "sauma.selectBoat": "Please select a boat.",
+  "passport.title": "ROWING PASSPORT",
+  "passport.historyNote": "history",
+  "passport.signerMode": "Sign-off mode — tap items to sign.",
+  "passport.confirmSign": "Sign off this passport item?",
+  "passport.signed": "Signed off.",
+  "passport.promoted": "Passport complete — promoted to Released Rower!",
+  "passport.adminTitle": "Rowing Passport",
+  "passport.importCsv": "Import CSV",
+  "passport.exportCsv": "Export CSV",
+  "passport.csvHelp": "Columns: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is"
 };

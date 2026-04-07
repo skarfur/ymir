@@ -1568,5 +1568,15 @@ var _STRINGS_FLAT = {
   "sauma.selectCategory": "Vinsamlegast veldu flokk.",
   "sauma.selectPriority": "Vinsamlegast veldu forgang.",
   "sauma.describeProject": "Vinsamlegast lýstu verkefninu.",
-  "sauma.selectBoat": "Vinsamlegast veldu bát."
+  "sauma.selectBoat": "Vinsamlegast veldu bát.",
+  "passport.title": "RÆÐARAPASSI",
+  "passport.historyNote": "saga",
+  "passport.signerMode": "Undirritunarstilling — smelltu á atriði til að undirrita.",
+  "passport.confirmSign": "Undirrita þetta atriði?",
+  "passport.signed": "Undirritað.",
+  "passport.promoted": "Passi kláraður — uppfærð(ur) í Released Rower!",
+  "passport.adminTitle": "Ræðarapassi",
+  "passport.importCsv": "Flytja inn CSV",
+  "passport.exportCsv": "Flytja út CSV",
+  "passport.csvHelp": "Dálkar: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is"
 };

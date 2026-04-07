@@ -73,6 +73,22 @@
 .cb-needs { font-size:10px; color:var(--brass); margin-top:6px; }
 .cb-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
+/* ── Passport ── */
+.pp-cat { margin-bottom:14px; }
+.pp-cat-hdr { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.pp-cat-count { font-size:9px; color:var(--brass); }
+.pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-bottom:4px; font-size:11px; }
+.pp-item-signable { cursor:pointer; transition:border-color .15s; }
+.pp-item-signable:hover { border-color:var(--brass); }
+.pp-item-complete { border-left:3px solid var(--green); }
+.pp-item-icon { font-size:14px; color:var(--brass); width:18px; text-align:center; flex-shrink:0; }
+.pp-item-complete .pp-item-icon { color:var(--green); }
+.pp-item-body { flex:1; min-width:0; }
+.pp-item-name { color:var(--text); font-weight:500; }
+.pp-item-desc { color:var(--muted); font-size:10px; margin-top:2px; }
+.pp-item-sigs { color:var(--muted); font-size:9px; margin-top:3px; font-style:italic; }
+.pp-item-count { font-size:10px; color:var(--muted); flex-shrink:0; }
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .cx-stats { grid-template-columns:1fr 1fr; }
@@ -96,6 +112,17 @@
 
   <!-- Read-only banner for non-released rowers -->
   <div class="cx-readonly hidden" id="cxReadOnly" data-s="cox.readOnly"></div>
+
+  <!-- ══ ROWING PASSPORT ══ -->
+  <div class="cx-section" id="sectPassport">
+    <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
+    <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
+      <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
+    </div>
+    <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
+    <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
+    <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
 
   <!-- ══ YTD STATS ══ -->
   <div class="cx-stats" id="cxStats">
@@ -275,6 +302,8 @@
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
 const _isReleasedRower = isReleasedRower(user);
+const _rowingSub = (typeof getRowingSub === 'function') ? getRowingSub(user) : (_isReleasedRower ? 'released' : 'restricted');
+const _isStaffSigner = ['staff','admin','manager'].indexOf(String(user.role || '').toLowerCase()) >= 0;
 
 // ══ Wait for deferred scripts (boats.js, certs.js, maintenance.js) ══════════
 document.addEventListener('DOMContentLoaded', function() {
@@ -282,6 +311,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // ══ STATE ════════════════════════════════════════════════════════════════════
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 var _membersLoaded = false;
+var _passportDef = null, _passportProgress = null;
+var _passportLang = (localStorage.getItem('ymirLang') || 'EN').toUpperCase();
+var _passportSignerMode = false;
+var _passportTargetMemberId = user.id; // own passport by default
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 (async function init() {
@@ -295,14 +328,24 @@ var _membersLoaded = false;
     document.getElementById('cxReadOnly').classList.remove('hidden');
   }
 
+  // Hide non-passport sections for restricted rowers
+  if (_rowingSub === 'restricted') {
+    var hideIds = ['sectMaint','sectCrews','sectSlots','cxStats'];
+    hideIds.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  }
+
   try {
-    const [cfgRes, maintRes, tripsRes, boardRes, invRes] = await Promise.all([
+    const [cfgRes, maintRes, tripsRes, boardRes, invRes, passportRes] = await Promise.all([
       apiGet('getConfig'),
       apiGet('getMaintenance'),
       apiGet('getTrips', { limit: 200 }),
       apiGet('getCrewBoard', {}),
       apiGet('getCrewInvites', { kennitala: user.kennitala }),
+      apiGet('getRowingPassport', { memberId: user.id }),
     ]);
+    _passportDef = passportRes.definition;
+    _passportProgress = passportRes.progress;
+    renderPassport();
 
     _boats     = (cfgRes.boats     || []);
     _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -910,6 +953,76 @@ function cxWeekToday() {
   _cxWeekStart = d;
   loadCxSlots();
 }
+
+// ══ ROWING PASSPORT ══════════════════════════════════════════════════════════
+function _passportLocal(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  return obj[_passportLang] || obj.EN || obj.IS || '';
+}
+function renderPassport() {
+  if (!_passportDef) return;
+  var passport = (_passportDef.passports || []).find(function(p){ return p.id === 'rower'; });
+  if (!passport) { document.getElementById('passportCategories').innerHTML = ''; return; }
+  var prog = (_passportProgress && _passportProgress.passports && _passportProgress.passports.rower) || { items: {}, totalCount: 0, completeCount: 0, percent: 0 };
+  document.getElementById('passportProgressFill').style.width = prog.percent + '%';
+  var label = prog.completeCount + ' / ' + prog.totalCount + ' (' + prog.percent + '%)';
+  if (_rowingSub !== 'restricted') label += ' — ' + s('passport.historyNote');
+  document.getElementById('passportProgressLabel').textContent = label;
+
+  // Show sign-mode banner if staff/released viewing someone else's passport
+  var canSign = (_isStaffSigner || _rowingSub === 'released' || _rowingSub === 'coxswain');
+  var signingSomeoneElse = canSign && String(_passportTargetMemberId) !== String(user.id);
+  document.getElementById('passportSignerBanner').classList.toggle('hidden', !signingSomeoneElse);
+
+  var html = '';
+  (passport.categories || []).forEach(function(cat) {
+    var items = (cat.items || []).filter(function(i){ return !i.retired; });
+    if (!items.length) return;
+    var catName = _passportLocal(cat.name);
+    var catDone = 0;
+    items.forEach(function(it){ if (prog.items[it.id] && prog.items[it.id].complete) catDone++; });
+    html += '<div class="pp-cat"><div class="pp-cat-hdr">' + _esc(catName) + ' <span class="pp-cat-count">' + catDone + '/' + items.length + '</span></div>';
+    items.forEach(function(it) {
+      var st = prog.items[it.id] || { signoffs: [], complete: false, distinctSigners: 0, required: passport.requiredSigs || 2 };
+      var name = _passportLocal(it.name);
+      var desc = _passportLocal(it.desc);
+      var icon = st.complete ? '✔' : (st.distinctSigners > 0 ? '◐' : '○');
+      var cls = 'pp-item' + (st.complete ? ' pp-item-complete' : '') + (signingSomeoneElse ? ' pp-item-signable' : '');
+      var sigText = st.distinctSigners + '/' + st.required;
+      var signersList = st.signoffs.map(function(so){ return _esc(so.signerName || '?') + ' · ' + String(so.timestamp || '').slice(0,10); }).join(' · ');
+      var onclick = signingSomeoneElse ? ' onclick="signPassportItemClick(\'' + it.id + '\')"' : '';
+      html += '<div class="' + cls + '"' + onclick + '>'
+        + '<div class="pp-item-icon">' + icon + '</div>'
+        + '<div class="pp-item-body"><div class="pp-item-name">' + _esc(name) + '</div>'
+        + (desc ? '<div class="pp-item-desc">' + _esc(desc) + '</div>' : '')
+        + (signersList ? '<div class="pp-item-sigs">' + signersList + '</div>' : '')
+        + '</div><div class="pp-item-count">' + sigText + '</div></div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('passportCategories').innerHTML = html;
+}
+function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function signPassportItemClick(itemId) {
+  if (!confirm(s('passport.confirmSign'))) return;
+  try {
+    var res = await apiPost('signPassportItem', {
+      memberId: _passportTargetMemberId,
+      passportId: 'rower',
+      itemId: itemId,
+      signerId: user.id,
+    });
+    _passportProgress = res.progress;
+    renderPassport();
+    if (res.promoted) showToast(s('passport.promoted'), 'ok');
+    else showToast(s('passport.signed'), 'ok');
+  } catch (e) {
+    showToast(e.message, 'err');
+  }
+}
+window.signPassportItemClick = signPassportItemClick;
 
 // ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
 window.openCrewModal = openCrewModal;
