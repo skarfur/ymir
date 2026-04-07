@@ -1581,7 +1581,7 @@ function createIncident_(b) {
     date: b.date || ts.slice(0, 10), time: b.time || ts.slice(11, 16),
     locationId: b.locationId || '', locationName: b.locationName || '',
     boatId: b.boatId || '', boatName: b.boatName || '',
-    description: b.description || '', involved: b.involved || '',
+    description: String(b.description == null ? '' : b.description), involved: b.involved || '',
     witnesses: b.witnesses || '', immediateAction: b.immediateAction || '',
     followUp: b.followUp || '', handOffTo: b.handOffTo || '',
     handOffName: b.handOffName || '', handOffNotes: b.handOffNotes || '',

@@ -901,7 +901,6 @@ function populateTideFields() {
 }
 
 function _autoFillTide() {
-  return; // TEMP DISABLED: investigating runaway CPU hang on daily log page
   if (typeof tideExtrema !== 'function') return;
   const extrema = tideExtrema(viewDate);
   tideData = tideToDailyLog(extrema);
@@ -909,7 +908,6 @@ function _autoFillTide() {
 
 let _tideWidgetInstance = null;
 function _renderDailyTide() {
-  return; // TEMP DISABLED: investigating runaway CPU hang on daily log page
   const el = document.getElementById('dailyTideWidget');
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
@@ -1001,19 +999,11 @@ async function loadPastLog() {
 }
 
 async function loadTodayTrips() {
-  console.log('[dailylog] loadTodayTrips: start');
   try {
-    console.log('[dailylog] loadTodayTrips: calling apiGet(getActiveCheckouts)');
     const res = await apiGet('getActiveCheckouts').then(r => { window._activeCheckouts = (r.checkouts||[]); return r; });
-    console.log('[dailylog] loadTodayTrips: apiGet resolved', res);
     tripsData = res.checkouts || [];
-    console.log('[dailylog] getActiveCheckouts returned',
-      Array.isArray(tripsData) ? tripsData.length + ' trips' : 'NON-ARRAY: ' + typeof tripsData,
-      tripsData);
-  } catch(e) { console.warn('[dailylog] getActiveCheckouts failed:', e); tripsData = []; }
-  console.log('[dailylog] loadTodayTrips: calling renderTrips with', tripsData.length, 'trips');
+  } catch(e) { tripsData = []; }
   renderTrips();
-  console.log('[dailylog] loadTodayTrips: renderTrips returned');
 }
 
 async function loadPastTrips() {
