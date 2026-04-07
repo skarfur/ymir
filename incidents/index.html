@@ -184,16 +184,6 @@
         </div>
         <div id="detailBody"></div>
 
-        <!-- Staff notes -->
-        <div class="section-divider">
-          <div class="section-label mb-8" data-s="incident.staffNotes"></div>
-          <div class="notes-list" id="notesList"></div>
-          <div class="input-row mt-8">
-            <input type="text" id="noteInput">
-            <button class="btn btn-secondary" id="addNoteBtn"></button>
-          </div>
-        </div>
-
         <!-- Reviewer comments -->
         <div class="section-divider">
           <div class="section-label mb-8" data-s="incident.reviewerNotes"></div>
@@ -237,7 +227,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('fileBtn').textContent        = s('incident.saveCloseFile');
   document.getElementById('fileReviewBtn').textContent  = s('incident.saveForReview');
   document.getElementById('backToListBtn').textContent  = '← ' + s('incident.viewList');
-  document.getElementById('addNoteBtn').textContent     = s('incident.addNoteBtn');
   document.getElementById('addReviewerNoteBtn').textContent = s('incident.addReviewerNote');
   document.getElementById('reviewerNoteInput').placeholder  = s('incident.addReviewerNote') + '…';
   document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
@@ -248,7 +237,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('iWitnesses').placeholder  = s('incident.witnessHint');
   document.getElementById('iAction').placeholder     = s('incident.actionHint');
   document.getElementById('iFollowUp').placeholder   = s('incident.followUpHint');
-  document.getElementById('noteInput').placeholder   = s('incident.notePlaceholder');
 
   // Hand-off options
   document.getElementById('iHandNone').textContent       = s('lbl.noneDash');
@@ -352,7 +340,7 @@ function renderList() {
   const sevBadge = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
   el.innerHTML = incidents.map(i => {
     const types = parseJson(i.types, []);
-    const notes = parseJson(i.staffNotes, []);
+    const rNotes = parseJson(i.reviewerNotes, []);
     return `<div class="incident-row" onclick="openDetail(incidentById('${i.id}'))">
       <div class="incident-header">
         <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
@@ -369,7 +357,7 @@ function renderList() {
       <div class="incident-meta">
         ${esc((i.filedAt||'').slice(0,16).replace('T',' '))}
         ${i.boatName ? ' · '+esc(i.boatName) : ''}
-        ${notes.length ? ` · ${notes.length} note${notes.length===1?'':'s'}` : ''}
+        ${rNotes.length ? ` · ${rNotes.length} comment${rNotes.length===1?'':'s'}` : ''}
       </div>
     </div>`;
   }).join('');
@@ -381,7 +369,6 @@ function incidentById(id) { return incidents.find(i => i.id === id); }
 function openDetail(i) {
   if (!i) return;
   detailId = i.id;
-  const notes    = parseJson(i.staffNotes, []);
   const reviewerNotes = parseJson(i.reviewerNotes, []);
   const types    = parseJson(i.types, []);
   const resolved = i.resolved && i.resolved !== 'false';
@@ -413,11 +400,6 @@ function openDetail(i) {
     ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
     ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? fmtDate(i.filedAt) + ' ' + fmtTime(i.filedAt) : ''))}
   `;
-
-  document.getElementById('notesList').innerHTML = notes.map(n => `
-    <div class="note-item">${esc(n.text)}
-      <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
-    </div>`).join('');
 
   document.getElementById('reviewerNotesList').innerHTML = reviewerNotes.map(n => `
     <div class="note-item">${esc(n.text)}
@@ -530,12 +512,11 @@ function resetForm() {
 
 // ── ADD NOTE ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('addNoteBtn').addEventListener('click', addNote);
   document.getElementById('addReviewerNoteBtn').addEventListener('click', addReviewerNote);
   document.getElementById('fileBtn').addEventListener('click', () => fileReport('closed'));
   document.getElementById('fileReviewBtn').addEventListener('click', () => fileReport('review'));
-  document.getElementById('noteInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addNote();
+  document.getElementById('reviewerNoteInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addReviewerNote();
   });
 });
 
@@ -552,28 +533,6 @@ async function addReviewerNote() {
       notes.push({ by: user.name, at: timeStr, text });
       i.reviewerNotes = JSON.stringify(notes);
       document.getElementById('reviewerNotesList').innerHTML += `
-        <div class="note-item">${esc(text)}
-          <div class="note-meta">${esc(user.name)} · ${esc(timeStr)}</div>
-        </div>`;
-    }
-    input.value = '';
-    showToast(s('toast.saved'));
-  } catch(e) { showToast(s('toast.error'), 'err'); }
-}
-
-async function addNote() {
-  const input = document.getElementById('noteInput');
-  const text  = input.value.trim();
-  if (!text || !detailId) return;
-  try {
-    await apiPost('addIncidentNote', { id: detailId, by: user.name, text, at: new Date().toISOString() });
-    const i = incidents.find(x => x.id === detailId);
-    if (i) {
-      const notes = parseJson(i.staffNotes, []);
-      const timeStr = fmtDate(new Date().toISOString()) + ' ' + fmtTime(new Date().toISOString());
-      notes.push({ by: user.name, at: timeStr, text });
-      i.staffNotes = JSON.stringify(notes);
-      document.getElementById('notesList').innerHTML += `
         <div class="note-item">${esc(text)}
           <div class="note-meta">${esc(user.name)} · ${esc(timeStr)}</div>
         </div>`;
