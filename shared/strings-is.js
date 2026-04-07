@@ -205,6 +205,7 @@ var _STRINGS_FLAT = {
   "logbook.sharePhotos": "Taka myndir með",
   "logbook.shareTracks": "Taka GPS-leiðir með",
   "logbook.shareCopy": "Búa til og afrita hlekk",
+  "logbook.exportCsv": "Hlaða niður sem CSV",
   "logbook.shareCopied": "Hlekkur afritaður!",
   "logbook.activeTokens": "Virk deilingartóken",
   "logbook.editTrip": "Breyta ferð",
