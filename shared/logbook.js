@@ -1595,6 +1595,40 @@ async function generateAndCopyShareLink(){
     }
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
+function exportLogbookCsv(){
+  try{
+    var catChecks=document.querySelectorAll('.share-cat-chk:checked');
+    var cats=Array.from(catChecks).map(function(c){return c.value;});
+    var rows=(myTrips||[]).filter(function(t){
+      if(!cats.length) return true;
+      var c=(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';
+      return cats.indexOf(c)!==-1;
+    });
+    if(!rows.length){ showToast(s('logbook.noTrips')||'No trips','err'); return; }
+    var cols=['date','timeOut','timeIn','hoursDecimal','boatName','boatCategory','locationName','beaufort','windDir','notes','skipperNote'];
+    var headers=cols;
+    function csvCell(v){
+      if(v==null) return '';
+      var str=String(v);
+      if(/[",\n\r]/.test(str)) return '"'+str.replace(/"/g,'""')+'"';
+      return str;
+    }
+    var lines=[headers.join(',')];
+    rows.forEach(function(t){
+      lines.push(cols.map(function(k){return csvCell(t[k]);}).join(','));
+    });
+    var csv='\ufeff'+lines.join('\r\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='logbook-'+(user.kennitala||'export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }catch(e){ showToast(s('toast.error')+': '+e.message,'err'); }
+}
 function copyShareLink(tokenId){
   navigator.clipboard.writeText(SCRIPT_URL+'?share='+tokenId).then(function(){
     showToast(s('logbook.shareCopied'));
