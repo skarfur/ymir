@@ -1569,7 +1569,9 @@ function createIncident_(b) {
 
 function resolveIncident_(b) {
   if (!b.id) return failJ('id required');
-  updateRow_('incidents', 'id', b.id, { resolved: b.resolved, resolvedAt: b.resolvedAt || '' });
+  const patch = { resolved: b.resolved, resolvedAt: b.resolvedAt || '' };
+  if (b.status !== undefined) patch.status = b.status;
+  updateRow_('incidents', 'id', b.id, patch);
   cDel_('incidents'); return okJ({ updated: true });
 }
 
