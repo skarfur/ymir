@@ -74,16 +74,26 @@ async function apiPost(action, payload) {
 async function _call(action, payload) {
   payload = payload || {};
   var body = JSON.stringify(Object.assign({ action: action, token: API_TOKEN }, payload));
-  var res  = await fetch(SCRIPT_URL, {
-    method:   "POST",
-    redirect: "follow",
-    headers:  { "Content-Type": "text/plain" },
-    body:     body,
-  });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  var data = await res.json();
-  if (!data.success) throw new Error(data.error || action + " failed");
-  return data;
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 20000) : null;
+  try {
+    var res = await fetch(SCRIPT_URL, {
+      method:   "POST",
+      redirect: "follow",
+      headers:  { "Content-Type": "text/plain" },
+      body:     body,
+      signal:   ctrl ? ctrl.signal : undefined,
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var data = await res.json();
+    if (!data.success) throw new Error(data.error || action + " failed");
+    return data;
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error(action + " timed out");
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 var AUTH_KEY = "ymirUser";
