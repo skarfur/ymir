@@ -956,6 +956,9 @@ async function loadTodayLog() {
     renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadTodayLog failed:', e.message);
+    ['tripsCard','amCard','pmCard'].forEach(id => {
+      dom[id].innerHTML = '<div class="empty-state">Could not load: ' + (e && e.message ? e.message : 'network error') + '</div>';
+    });
   }
   renderChecklists();
   renderActivities();
