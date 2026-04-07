@@ -1336,11 +1336,14 @@ function saveActivityType_(b) {
     // Parse subtypes safely — frontend sends as JSON string
     let subtypes = [];
     try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
-    let bulkSchedule = null;
-    try { bulkSchedule = b.bulkSchedule ? (typeof b.bulkSchedule === 'string' ? JSON.parse(b.bulkSchedule) : b.bulkSchedule) : null; } catch(e) { bulkSchedule = null; }
-    const item = { id: b.id || uid_(), name: b.name, nameIS: b.nameIS || '', active: b.active !== false, subtypes, bulkSchedule: bulkSchedule, updatedAt: ts };
-    if (idx >= 0) arr[idx] = Object.assign(arr[idx], item);
-    else arr.push(Object.assign(item, { createdAt: ts }));
+    // Bulk schedules now live on each subtype (not the parent activity type).
+    const item = { id: b.id || uid_(), name: b.name, nameIS: b.nameIS || '', active: b.active !== false, subtypes, updatedAt: ts };
+    if (idx >= 0) {
+      arr[idx] = Object.assign(arr[idx], item);
+      delete arr[idx].bulkSchedule; // drop any legacy top-level schedule
+    } else {
+      arr.push(Object.assign(item, { createdAt: ts }));
+    }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
     return okJ({ id: item.id, item });

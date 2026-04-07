@@ -824,29 +824,6 @@
       </div>
       <div id="atSubtypesList"></div>
     </div>
-    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
-      <label style="font-size:10px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="admin.bulkSchedule">BULK SCHEDULE</label>
-      <div class="grid2" style="gap:8px;margin-bottom:6px">
-        <div class="field"><label style="font-size:9px" data-s="slot.fromDate">From date</label><input type="date" id="atBsFromDate"></div>
-        <div class="field"><label style="font-size:9px" data-s="slot.toDate">To date</label><input type="date" id="atBsToDate"></div>
-      </div>
-      <div class="field" style="margin-bottom:6px">
-        <label style="font-size:9px" data-s="slot.daysOfWeek">Days of week</label>
-        <div id="atBsDays" style="display:flex;gap:6px;flex-wrap:wrap">
-          <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
-          <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
-        </div>
-      </div>
-      <div class="grid2" style="gap:8px">
-        <div class="field"><label style="font-size:9px" data-s="slot.startTime">Start time</label><input type="time" id="atBsStartTime"></div>
-        <div class="field"><label style="font-size:9px" data-s="slot.endTime">End time</label><input type="time" id="atBsEndTime"></div>
-      </div>
-    </div>
     <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-secondary" onclick="closeModal('actTypeModal')" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()" data-s="btn.delete"></button>
@@ -2088,17 +2065,14 @@ function openActTypeModal(id) {
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
-  // Bulk schedule (use .toISOString().slice(0,10) for ISO date cuts)
-  var bs = (a && (typeof a.bulkSchedule === 'string' ? tryParse_(a.bulkSchedule, null) : a.bulkSchedule)) || {};
-  document.getElementById("atBsFromDate").value = bs.fromDate || '';
-  document.getElementById("atBsToDate").value   = bs.toDate   || '';
-  document.getElementById("atBsStartTime").value = bs.startTime || '';
-  document.getElementById("atBsEndTime").value   = bs.endTime   || '';
-  var bsDays = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
-  document.querySelectorAll('#atBsDays input').forEach(function(cb) { cb.checked = bsDays.indexOf(cb.value) !== -1; });
   window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(
     Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, [])
   )) : [];
+  // Migrate any legacy top-level bulkSchedule onto the first subtype on open
+  var legacyBs = (a && (typeof a.bulkSchedule === 'string' ? tryParse_(a.bulkSchedule, null) : a.bulkSchedule)) || null;
+  if (legacyBs && window._atSubtypes.length && !window._atSubtypes[0].bulkSchedule) {
+    window._atSubtypes[0].bulkSchedule = legacyBs;
+  }
   renderAtSubtypes();
   openModal("actTypeModal");
 }
@@ -2106,21 +2080,12 @@ function openActTypeModal(id) {
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
-  var bsDays = [];
-  document.querySelectorAll('#atBsDays input:checked').forEach(function(cb) { bsDays.push(parseInt(cb.value, 10)); });
-  var bulkSchedule = {
-    fromDate:   document.getElementById("atBsFromDate").value || '',
-    toDate:     document.getElementById("atBsToDate").value   || '',
-    daysOfWeek: bsDays,
-    startTime:  document.getElementById("atBsStartTime").value || '',
-    endTime:    document.getElementById("atBsEndTime").value   || '',
-  };
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
     active:   document.getElementById("atActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
-    bulkSchedule: JSON.stringify(bulkSchedule),
+    bulkSchedule: null,
   };
   await saveEntity({
     apiAction: "saveActivityType",
@@ -2151,7 +2116,20 @@ function renderAtSubtypes() {
     list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noSubtypes') + '</div>';
     return;
   }
-  list.innerHTML = window._atSubtypes.map((st, i) => `
+  const dayLabels = [
+    { v:'1', k:'day.mon', d:'Mon' }, { v:'2', k:'day.tue', d:'Tue' },
+    { v:'3', k:'day.wed', d:'Wed' }, { v:'4', k:'day.thu', d:'Thu' },
+    { v:'5', k:'day.fri', d:'Fri' }, { v:'6', k:'day.sat', d:'Sat' },
+    { v:'0', k:'day.sun', d:'Sun' },
+  ];
+  list.innerHTML = window._atSubtypes.map((st, i) => {
+    const bs = st.bulkSchedule || {};
+    const bsDays = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+    const daysHtml = dayLabels.map(d =>
+      `<label style="font-size:11px"><input type="checkbox" value="${d.v}" ${bsDays.indexOf(d.v)!==-1?'checked':''}
+        onchange="toggleAtStBsDay(${i}, ${d.v}, this.checked)"> <span data-s="${d.k}">${d.d}</span></label>`
+    ).join('');
+    return `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">NAME (EN)</label>
@@ -2170,7 +2148,43 @@ function renderAtSubtypes() {
             oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);this.value=v;window._atSubtypes[${i}].defaultEnd=this.value"></div>
         <button onclick="window._atSubtypes.splice(${i},1);renderAtSubtypes()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
       </div>
-    </div>`).join("");
+      <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:4px" data-s="admin.bulkSchedule">BULK SCHEDULE</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.fromDate">From date</label>
+            <input type="date" value="${esc(bs.fromDate||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              onchange="ensureAtStBs(${i}).fromDate=this.value"></div>
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.toDate">To date</label>
+            <input type="date" value="${esc(bs.toDate||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              onchange="ensureAtStBs(${i}).toDate=this.value"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">${daysHtml}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.startTime">Start time</label>
+            <input type="time" value="${esc(bs.startTime||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              onchange="ensureAtStBs(${i}).startTime=this.value"></div>
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.endTime">End time</label>
+            <input type="time" value="${esc(bs.endTime||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              onchange="ensureAtStBs(${i}).endTime=this.value"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function ensureAtStBs(i) {
+  if (!window._atSubtypes[i].bulkSchedule) {
+    window._atSubtypes[i].bulkSchedule = { fromDate:'', toDate:'', daysOfWeek:[], startTime:'', endTime:'' };
+  }
+  return window._atSubtypes[i].bulkSchedule;
+}
+
+function toggleAtStBsDay(i, day, checked) {
+  var bs = ensureAtStBs(i);
+  if (!Array.isArray(bs.daysOfWeek)) bs.daysOfWeek = [];
+  var idx = bs.daysOfWeek.indexOf(day);
+  if (checked && idx === -1) bs.daysOfWeek.push(day);
+  else if (!checked && idx !== -1) bs.daysOfWeek.splice(idx, 1);
 }
 
 function addAtSubtypeRow() {
