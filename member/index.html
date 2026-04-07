@@ -1087,10 +1087,14 @@ function _handleRetPhotos(input){
 // ── Inline report forms ───────────────────────────────────────────────────────
 function openInlineReport(type) {
   document.getElementById('returnModalTitle').textContent=type==='damage'?'Report Damage':'Report Incident';
+  var actions = type==='damage'
+    ? '<button class="btn btn-primary" onclick="submitInlineReport(\'damage\')">Submit</button>'
+    : '<button class="btn btn-primary" onclick="submitInlineReport(\'incident\',\'closed\')">Save, close &amp; file</button>'
+      +'<button class="btn btn-secondary" onclick="submitInlineReport(\'incident\',\'review\')">Save for review</button>';
   document.getElementById('returnModalBody').innerHTML=
     (type==='damage'?_maintFormHtml():_incidentFormHtml())+
     '<div id="irErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
-    '<div class="btn-row"><button class="btn btn-secondary" onclick="renderLandingChecklist()">&#8592; Back</button><button class="btn btn-primary" onclick="submitInlineReport(\''+type+'\')">Submit</button></div>';
+    '<div class="btn-row"><button class="btn btn-secondary" onclick="renderLandingChecklist()">&#8592; Back</button>'+actions+'</div>';
   if(type==='damage'){setTimeout(()=>{_irSelectCat('boat');var bs=document.getElementById('irBoat');if(bs&&returnCo&&returnCo.boatId)bs.value=returnCo.boatId;},0);}
 }
 function _maintFormHtml() {
@@ -1114,26 +1118,37 @@ function _irSelectCat(cat) {
 }
 function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
 function _incidentFormHtml() {
-  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["other","📌 Other"]];
+  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["stranding","⚓️ Ran aground"],["other","📌 Other"]];
   var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
-  var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
+  var sevBtns=['low','medium','high','critical'].map(s=>'<button type="button" class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
   var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
-  return '<div class="field"><label>Type (select all that apply)</label><div class="ir-type-grid">'+typeBoxes+'</div></div>'
-    +'<div class="field"><label>Severity</label><div class="sev-btns">'+sevBtns+'</div></div>'
+  var locOpts=(locations||[]).map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  var nowD=new Date(), pad=n=>String(n).padStart(2,'0');
+  var dStr=nowD.getFullYear()+'-'+pad(nowD.getMonth()+1)+'-'+pad(nowD.getDate());
+  var tStr=pad(nowD.getHours())+':'+pad(nowD.getMinutes());
+  var preBoat=(returnCo&&returnCo.boatId)||'';
+  return '<div class="field"><label>Type <span style="color:var(--red)">*</span> (select all that apply)</label><div class="ir-type-grid">'+typeBoxes+'</div></div>'
+    +'<div class="field"><label>Severity <span style="color:var(--red)">*</span></label><div class="sev-btns">'+sevBtns+'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="field"><label>Date <span style="color:var(--red)">*</span></label><input type="date" id="irDate" value="'+dStr+'"></div>'
+    +'<div class="field"><label>Time <span style="color:var(--red)">*</span></label><input type="time" id="irTime" value="'+tStr+'"></div>'
+    +'</div>'
+    +'<div class="field"><label>Location <span style="color:var(--red)">*</span></label><select id="irLocation"><option value="">— select —</option>'+locOpts+'</select></div>'
     +'<div class="field"><label>Boat involved (optional)</label><select id="irIncBoat"><option value="">None</option>'+boatOpts+'</select></div>'
-    +'<div class="field"><label>Location</label><input type="text" id="irLocation" placeholder="e.g. Fossvogur, outer mark..."></div>'
-    +'<div class="field"><label>Description</label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'
-    +'<div class="field"><label>People involved (optional)</label><input type="text" id="irPeople" placeholder="Names or count..."></div>'
-    +'<div class="field"><label>Injuries (optional)</label><input type="text" id="irInjuries" placeholder="Describe any injuries..."></div>'
+    +'<div class="field"><label>Description <span style="color:var(--red)">*</span></label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'
+    +'<div class="field"><label>People involved (optional)</label><input type="text" id="irPeople" placeholder="Names (not linked to members)..."></div>'
+    +'<div class="field"><label>Witnesses (optional)</label><input type="text" id="irWitnesses" placeholder="Names (not linked to members)..."></div>'
     +'<div class="field"><label>Immediate action taken (optional)</label><input type="text" id="irAction" placeholder="e.g. First aid given, coastguard called..."></div>'
-    +'<div class="field"><label>Contact / handoff notes (optional)</label><input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>';
+    +'<div class="field"><label>Follow-up required (optional)</label><input type="text" id="irFollowUp" placeholder="Repair, investigation..."></div>'
+    +'<div class="field"><label>Hand-off contact / notes (optional)</label><input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>'
+    +'<script>setTimeout(function(){var b=document.getElementById("irIncBoat");if(b)b.value="'+esc(preBoat)+'";},0);<\/script>';
 }
-async function submitInlineReport(type) {
+async function submitInlineReport(type, pathway) {
   var errEl=document.getElementById('irErr'), desc=(document.getElementById('irDesc')||{}).value||'';
-  if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
-  var co=returnCo;
+  var co=returnCo||{};
   try {
     if(type==='damage'){
+      if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
       var cat=window._irCat||'boat', sev=window._irSev||'medium';
       var bid=cat==='boat'?((document.getElementById('irBoat')||{}).value||co.boatId||''):'';
       var bnm=cat==='boat'?(boats.find(b=>b.id===bid)||{name:co.boatName||''}).name:'';
@@ -1141,11 +1156,40 @@ async function submitInlineReport(type) {
       await apiPost('saveMaintenance',{category:cat,boatId:bid,boatName:bnm,itemName:item,part:(document.getElementById('irPart')||{}).value||'',severity:sev,description:desc,markOos:false,reportedBy:user.name,source:'member-checkin'});
     } else {
       var types=Array.from(document.querySelectorAll('.ir-type-box:checked')).map(el=>el.value);
-      if(!types.length)types=['other'];
-      var sev2=window._irSev||'medium', irBoat=document.getElementById('irIncBoat');
-      var irBoatId=irBoat?irBoat.value:(co.boatId||'');
+      var sev2=window._irSev||'';
+      var locSel=document.getElementById('irLocation');
+      var locId=locSel?locSel.value:'';
+      var locName=(locations.find(l=>l.id===locId)||{}).name||'';
+      var dateV=(document.getElementById('irDate')||{}).value||'';
+      var timeV=(document.getElementById('irTime')||{}).value||'';
+      var missing=[];
+      if(!types.length) missing.push('type');
+      if(!sev2) missing.push('severity');
+      if(!locId) missing.push('location');
+      if(!timeV) missing.push('time');
+      if(!desc.trim()) missing.push('description');
+      if(missing.length){errEl.textContent='Required: '+missing.join(', ');errEl.style.display='block';return;}
+      var irBoat=document.getElementById('irIncBoat');
+      var irBoatId=irBoat?irBoat.value:'';
       var irBoatName=irBoatId?(boats.find(b=>b.id===irBoatId)||{name:''}).name:'';
-      await apiPost('createIncident',{types,severity:sev2,description:desc,boatId:irBoatId,boatName:irBoatName,location:(document.getElementById('irLocation')||{}).value||'',involvedPersons:(document.getElementById('irPeople')||{}).value||'',injuries:(document.getElementById('irInjuries')||{}).value||'',actionTaken:(document.getElementById('irAction')||{}).value||'',handoffNotes:(document.getElementById('irHandoff')||{}).value||'',reportedBy:user.name,source:'member-checkin'});
+      var typeLabelMap={injury:'🩹 Injury',capsize:'⛵ Capsize',collision:'💥 Collision',equipment:'🔧 Equipment failure',medical:'🏥 Medical',nearMiss:'⚡️ Near miss',missing:'🔍 Missing person',propertyDmg:'🏗️ Property damage',stranding:'⚓️ Ran aground',other:'📌 Other'};
+      var typeLabels=types.map(t=>typeLabelMap[t]||t).join(', ');
+      await apiPost('createIncident',{
+        types:JSON.stringify(types), typeLabels, severity:sev2,
+        date:dateV, time:timeV,
+        locationId:locId, locationName:locName,
+        boatId:irBoatId, boatName:irBoatName,
+        description:desc.trim(),
+        involved:(document.getElementById('irPeople')||{}).value||'',
+        witnesses:(document.getElementById('irWitnesses')||{}).value||'',
+        immediateAction:(document.getElementById('irAction')||{}).value||'',
+        followUp:(document.getElementById('irFollowUp')||{}).value||'',
+        handOffNotes:(document.getElementById('irHandoff')||{}).value||'',
+        filedBy:user.name, title:typeLabels,
+        status: pathway==='review' ? 'review' : 'closed',
+        resolved: pathway!=='review',
+        source:'member-checkin',
+      });
     }
     renderLandingChecklist();
     setTimeout(()=>{var note=document.getElementById('reportFlagNote');if(note){note.textContent=type==='damage'?'✓ Damage report submitted.':'✓ Incident report submitted.';note.style.color='var(--green)';note.style.display='block';}},50);
