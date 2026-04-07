@@ -887,6 +887,7 @@ function populateTideFields() {
 }
 
 function _autoFillTide() {
+  return; // TEMP DISABLED: investigating runaway CPU hang on daily log page
   if (typeof tideExtrema !== 'function') return;
   const extrema = tideExtrema(viewDate);
   tideData = tideToDailyLog(extrema);
@@ -894,6 +895,7 @@ function _autoFillTide() {
 
 let _tideWidgetInstance = null;
 function _renderDailyTide() {
+  return; // TEMP DISABLED: investigating runaway CPU hang on daily log page
   const el = document.getElementById('dailyTideWidget');
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
