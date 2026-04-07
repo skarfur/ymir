@@ -118,18 +118,31 @@ function isCaptain(u) {
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
+// Returns the highest-rank rowing subcat key the user holds, or null.
+// One of: 'restricted' | 'released' | 'coxswain' | null.
+// Also recognises the legacy standalone 'released_rower' cert as 'released' (pre-migration).
+function getRowingSub(u) {
+  if (!u || !u.certifications) return null;
+  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
+  if (!Array.isArray(certs)) return null;
+  var rank = { restricted: 1, released: 2, coxswain: 3 };
+  var best = null;
+  for (var i = 0; i < certs.length; i++) {
+    var c = certs[i];
+    if (!_certNotExpired(c)) continue;
+    var sub = null;
+    if (c.certId === 'rowing_division' && c.sub && rank[c.sub]) sub = c.sub;
+    else if (c.certId === 'released_rower' || c.sub === 'released_rower') sub = 'released'; // legacy
+    if (sub && (!best || rank[sub] > rank[best])) best = sub;
+  }
+  return best;
+}
 function isReleasedRower(u) {
-  if (!u || !u.certifications) return false;
-  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return (c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c); });
+  var sub = getRowingSub(u);
+  return sub === 'released' || sub === 'coxswain';
 }
-function hasRowingEndorsement(u) {
-  if (!u || !u.certifications) return false;
-  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) {
-    return (c.certId === 'rowing_division' || c.sub === 'rowing_division' || c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c);
-  });
-}
+function isCoxswain(u) { return getRowingSub(u) === 'coxswain'; }
+function hasRowingEndorsement(u) { return getRowingSub(u) !== null; }
 
 function signOut() {
   clearUser();

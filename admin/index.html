@@ -232,6 +232,7 @@
         <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
+        <button class="tab-btn"        data-tab="passport"   onclick="showTab('passport')"   data-s="passport.adminTitle">Rowing Passport</button>
       </div>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -490,6 +491,25 @@
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
     </div><!-- /tab-flags -->
+
+    <!-- ══ ROWING PASSPORT ═════════════════════════════════════════════════ -->
+    <div id="tab-passport" class="hidden">
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title" data-s="passport.adminTitle">Rowing Passport</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="passportAdminCard">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="passport.csvHelp"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="file" id="passportCsvFile" accept=".csv,text/csv" style="font-size:11px">
+            <button class="btn btn-primary" style="font-size:11px" onclick="passportImportCsv()" data-s="passport.importCsv">Import CSV</button>
+            <button class="btn btn-secondary" style="font-size:11px" onclick="passportExportCsv()" data-s="passport.exportCsv">Export CSV</button>
+          </div>
+          <div id="passportAdminPreview" style="font-size:11px"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
     <div id="tab-slotCal" class="hidden">
@@ -1179,6 +1199,7 @@ function showTab(tab) {
 
   if (tab === 'certs') renderCertDefs();
   if (tab === 'slotCal') initSlotCalendar();
+  if (tab === 'passport') renderPassportAdmin();
 
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
@@ -3144,6 +3165,68 @@ async function saveRecurringSlots() {
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+// ── ROWING PASSPORT ADMIN ─────────────────────────────────────────────────────
+async function renderPassportAdmin() {
+  const card = document.getElementById('passportAdminPreview');
+  card.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
+  try {
+    const res = await apiGet('getRowingPassport', {});
+    const def = res.definition || { passports: [] };
+    let html = '';
+    (def.passports || []).forEach(p => {
+      const totalItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => !i.retired).length, 0);
+      const retiredItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => i.retired).length, 0);
+      html += `<div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px">
+        <div style="font-weight:600;margin-bottom:4px">${esc(p.name?.EN || p.id)} <span style="color:var(--muted);font-weight:400;font-size:10px">(${p.id})</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">v${def.version || 1} · ${totalItems} active items${retiredItems ? ' · ' + retiredItems + ' retired' : ''} · requires ${p.requiredSigs || 2} signatures</div>`;
+      (p.categories || []).forEach(cat => {
+        html += `<div style="margin-top:8px"><div style="font-size:10px;color:var(--brass);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">${esc(cat.name?.EN || cat.id)}</div>`;
+        (cat.items || []).forEach(it => {
+          html += `<div style="font-size:11px;padding:3px 0;${it.retired ? 'opacity:.5;text-decoration:line-through' : ''}">• ${esc(it.name?.EN || it.id)} <span style="color:var(--muted);font-size:9px">${esc(it.id)}</span></div>`;
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    card.innerHTML = html || '<div class="empty-note">No passport defined.</div>';
+  } catch(e) { card.innerHTML = '<div style="color:var(--red)">' + esc(e.message) + '</div>'; }
+}
+
+async function passportImportCsv() {
+  const file = document.getElementById('passportCsvFile').files[0];
+  if (!file) { toast('Choose a CSV file first', 'err'); return; }
+  const text = await file.text();
+  if (!confirm('Import this CSV? Items missing from the CSV will be marked retired (not deleted).')) return;
+  try {
+    await apiPost('importRowingPassportCsv', { csv: text });
+    toast('Passport imported.');
+    renderPassportAdmin();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function passportExportCsv() {
+  try {
+    const res = await apiGet('getRowingPassport', {});
+    const def = res.definition || { passports: [] };
+    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is'];
+    const q = v => '"' + String(v || '').replace(/"/g,'""') + '"';
+    (def.passports || []).forEach(p => {
+      (p.categories || []).forEach(cat => {
+        (cat.items || []).forEach(it => {
+          if (it.retired) return;
+          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
+        });
+      });
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'rowing-passport.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
