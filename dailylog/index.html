@@ -641,13 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
     markDirty();
   });
 
-  dom.actTypeBtns.addEventListener('click', e => {
-    const btn = e.target.closest('[data-type-id]');
-    if (!btn) return;
-    _selectedActType = btn.dataset.typeId;
-    dom.actTypeBtns.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b === btn));
-  });
-
   dom.tripsCard.addEventListener('click', e => {
     const row = e.target.closest('[data-trip-id]');
     if (!row) return;
