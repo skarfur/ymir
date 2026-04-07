@@ -24,13 +24,15 @@
       border-radius:4px; font-size:12px; font-family:inherit; color:var(--text); cursor:pointer; transition:all .15s; }
     .type-toggle.on { background:var(--red)22; border-color:var(--red)88; color:var(--red); }
 
-    .sev-btns { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
-    .sev-btn { padding:7px 14px; background:var(--faint); border:1px solid var(--border);
-      border-radius:4px; font-size:12px; font-family:inherit; cursor:pointer; transition:all .15s; color:var(--text); }
-    .sev-btn[data-v="low"].on    { background:#27ae6022; border-color:#27ae6088; color:var(--green); }
-    .sev-btn[data-v="medium"].on { background:#f1c40f22; border-color:#f1c40f88; color:#c9a800; }
-    .sev-btn[data-v="high"].on   { background:#e67e2222; border-color:#e67e2288; color:var(--orange); }
-    .sev-btn[data-v="critical"].on { background:#e74c3c22; border-color:#e74c3c88; color:var(--red); }
+    .sev-btns { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+    .sev-btn { flex:1; min-width:60px; padding:7px 4px; background:var(--surface);
+      border-radius:6px; border:1px solid; font-size:11px; font-family:inherit;
+      cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .15s; }
+    .sev-btn[data-v="low"]      { color:var(--green);  border-color:#27ae6055; background:#27ae6011; }
+    .sev-btn[data-v="medium"]   { color:#c9a800;       border-color:#f1c40f55; background:#f1c40f11; }
+    .sev-btn[data-v="high"]     { color:var(--orange); border-color:#e67e2255; background:#e67e2211; }
+    .sev-btn[data-v="critical"] { color:var(--red);    border-color:#e74c3c55; background:#e74c3c11; }
+    .sev-btn.on { filter:brightness(1.4); box-shadow:0 0 0 2px currentColor; }
 
     .incident-row { padding:12px 0; border-bottom:1px solid var(--faint); font-size:13px; cursor:pointer; }
     .incident-row:last-child { border-bottom:none; }
@@ -68,6 +70,12 @@
       <button class="mode-btn" id="modeNewBtn" onclick="setMode('new')">
         <span class="icon">⚠️</span><span id="modeNewLabel"></span>
       </button>
+    </div>
+
+    <!-- Needs-review alert -->
+    <div id="reviewAlert" class="hidden" style="background:#e67e2218;border:1px solid #e67e2255;color:var(--orange);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">⚠️</span>
+      <span id="reviewAlertText"></span>
     </div>
 
     <!-- LIST MODE -->
@@ -175,33 +183,35 @@
       </div>
     </div>
 
-    <!-- DETAIL MODE -->
-    <div id="detailMode" class="hidden">
-      <div class="card">
-        <div class="flex-center gap-10 mb-14">
-          <button class="btn-ghost" onclick="setMode('list')" id="backToListBtn"></button>
-          <div id="detailStatus" class="ml-auto"></div>
-        </div>
-        <div id="detailBody"></div>
+  </main>
+</div>
 
-        <!-- Reviewer comments -->
-        <div class="section-divider">
-          <div class="section-label mb-8" data-s="incident.reviewerNotes"></div>
-          <div class="notes-list" id="reviewerNotesList"></div>
-          <div class="input-row mt-8">
-            <input type="text" id="reviewerNoteInput">
-            <button class="btn btn-secondary" id="addReviewerNoteBtn"></button>
-          </div>
-        </div>
+<!-- DETAIL MODAL -->
+<div id="detailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeDetail()">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3 id="detailTitle"></h3>
+      <button class="modal-close-x" onclick="closeDetail()">&times;</button>
+    </div>
+    <div id="detailStatus" class="mb-10"></div>
+    <div id="detailBody"></div>
 
-        <!-- Resolve / reopen -->
-        <div class="flex-center mt-14 gap-8 flex-wrap">
-          <button class="btn btn-primary" id="resolveBtn" onclick="toggleResolve()"></button>
-          <button class="btn-ghost" onclick="setMode('list')" id="backBtn2"></button>
-        </div>
+    <!-- Reviewer comments -->
+    <div class="section-divider">
+      <div class="section-label mb-8" data-s="incident.reviewerNotes"></div>
+      <div class="notes-list" id="reviewerNotesList"></div>
+      <div class="input-row mt-8">
+        <input type="text" id="reviewerNoteInput">
+        <button class="btn btn-secondary" id="addReviewerNoteBtn"></button>
       </div>
     </div>
-  </main>
+
+    <!-- Resolve / reopen -->
+    <div class="flex-center mt-14 gap-8 flex-wrap">
+      <button class="btn btn-primary" id="resolveBtn" onclick="toggleResolve()"></button>
+      <button class="btn-ghost" onclick="closeDetail()" id="backBtn2"></button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -226,7 +236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('boatLabel').textContent      = s('incident.boatLabel');
   document.getElementById('fileBtn').textContent        = s('incident.saveCloseFile');
   document.getElementById('fileReviewBtn').textContent  = s('incident.saveForReview');
-  document.getElementById('backToListBtn').textContent  = '← ' + s('incident.viewList');
   document.getElementById('addReviewerNoteBtn').textContent = s('incident.addReviewerNote');
   document.getElementById('reviewerNoteInput').placeholder  = s('incident.addReviewerNote') + '…';
   document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
@@ -269,6 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
     populateBoatsLocs();
     renderList();
+    updateReviewAlert();
   } catch(e) {
     document.getElementById('incidentsList').innerHTML =
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
@@ -384,10 +394,20 @@ function openDetail(i) {
     return def ? s(def.key) : t;
   }).join(', ');
 
+  document.getElementById('detailTitle').textContent = i.title || s('incident.title');
+
+  const sevLabel = i.severity ? (s('incident.sev.'+i.severity) || i.severity) : '';
+  const sevBadgeMap = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
+  const handoffVal = i.handOffTo
+    ? `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''}${i.handOffNotes ? ' · '+i.handOffNotes : ''}`
+    : '';
+  const filedAtStr = i.filedAt ? (fmtDate(i.filedAt) + ' ' + fmtTime(i.filedAt)) : '';
+  const filedByVal = (i.filedBy || s('lbl.unknown') || '—') + (filedAtStr ? ' · ' + filedAtStr : '');
+
   document.getElementById('detailBody').innerHTML = `
     <div class="mb-12">
-      <div class="fw-500 text-lg mb-6">${esc(i.title||s('incident.title'))}</div>
-      <div class="text-sm text-muted">${typeLabels}</div>
+      <div class="text-sm text-muted mb-4">${esc(typeLabels)}</div>
+      ${sevLabel ? `<span class="badge ${sevBadgeMap[i.severity]||'badge-muted'}">${esc(sevLabel)}</span>` : ''}
     </div>
     ${field(s('lbl.date')+' / '+s('lbl.time'), (i.date||'') + (i.time?' '+i.time:''))}
     ${field(s('lbl.location'), i.locationName)}
@@ -397,8 +417,8 @@ function openDetail(i) {
     ${field(s('incident.witnesses'), i.witnesses)}
     ${field(s('incident.immediateAction'), i.immediateAction)}
     ${field(s('incident.followUp'), i.followUp)}
-    ${i.handOffTo ? field(s('incident.handoffTo'), `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''} ${i.handOffNotes||''}`) : ''}
-    ${field(s('incident.filedBy'), i.filedBy + ' at ' + (i.filedAt ? fmtDate(i.filedAt) + ' ' + fmtTime(i.filedAt) : ''))}
+    ${field(s('incident.handoffTo'), handoffVal)}
+    ${field(s('incident.filedBy'), filedByVal)}
   `;
 
   document.getElementById('reviewerNotesList').innerHTML = reviewerNotes.map(n => `
@@ -406,7 +426,7 @@ function openDetail(i) {
       <div class="note-meta">${esc(n.by)} · ${esc(n.at)}</div>
     </div>`).join('');
 
-  setMode('detail');
+  document.getElementById('detailModal').classList.remove('hidden');
 }
 
 function field(label, val) {
@@ -488,6 +508,7 @@ async function fileReport(pathway) {
     showToast(s('incident.filed'));
     setMode('list');
     renderList();
+    updateReviewAlert();
     resetForm();
   } catch(e) {
     msg.textContent = s('toast.error') + ': ' + e.message;
@@ -548,22 +569,44 @@ async function toggleResolve() {
   if (!i) return;
   const resolved = !(i.resolved && i.resolved !== 'false');
   try {
-    await apiPost('resolveIncident', { id: detailId, resolved, resolvedAt: resolved ? new Date().toISOString() : '' });
+    await apiPost('resolveIncident', { id: detailId, resolved, resolvedAt: resolved ? new Date().toISOString() : '', status: resolved ? 'closed' : (i.status || 'open') });
     i.resolved = resolved;
-    document.getElementById('resolveBtn').textContent = resolved ? s('incident.markOpen') : s('incident.markResolved');
-    document.getElementById('detailStatus').innerHTML =
-      `<span class="badge ${resolved ? 'badge-green' : 'badge-yellow'}">${resolved ? s('incident.resolved') : s('incident.open')}</span>`;
+    if (resolved) i.status = 'closed';
     showToast(s('toast.saved'));
+    renderList();
+    updateReviewAlert();
+    closeDetail();
   } catch(e) { showToast(s('toast.error'), 'err'); }
+}
+
+function updateReviewAlert() {
+  const needs = incidents.filter(i => {
+    const r = i.resolved && i.resolved !== 'false';
+    return !r && (i.status === 'review' || i.followUp);
+  });
+  const el = document.getElementById('reviewAlert');
+  const txt = document.getElementById('reviewAlertText');
+  if (!el) return;
+  if (needs.length) {
+    el.classList.remove('hidden');
+    txt.textContent = `${needs.length} ${s('incident.statusReview')}`;
+  } else {
+    el.classList.add('hidden');
+  }
 }
 
 // ── MODE SWITCHING ────────────────────────────────────────────────────────────
 function setMode(mode) {
   document.getElementById('listMode').classList.toggle('hidden',   mode !== 'list');
   document.getElementById('newMode').classList.toggle('hidden',    mode !== 'new');
-  document.getElementById('detailMode').classList.toggle('hidden', mode !== 'detail');
   document.getElementById('modeListBtn').classList.toggle('active', mode === 'list');
   document.getElementById('modeNewBtn').classList.toggle('active',  mode === 'new');
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.add('hidden');
+  detailId = null;
+  if (window.location.hash) history.replaceState(null,'',window.location.pathname+window.location.search);
 }
 
 function parseJson(v, fallback) {
