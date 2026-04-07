@@ -494,6 +494,38 @@
     <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
     <div id="tab-slotCal" class="hidden">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
+        <div class="grid2">
+          <div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px">Rowing calendar</div>
+            <div class="field">
+              <label>Calendar ID</label>
+              <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="charterRowingCalActive">
+              <label for="charterRowingCalActive">Sync rowing-shell slot bookings</label>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px">Keelboat calendar</div>
+            <div class="field">
+              <label>Calendar ID</label>
+              <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="charterKeelboatCalActive">
+              <label for="charterKeelboatCalActive">Sync keelboat slot bookings</label>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <button class="btn btn-primary" onclick="saveCharterCalendars()">Save calendar settings</button>
+          <span id="charterCalSaveMsg" style="font-size:11px"></span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Ymir only adds, updates, or deletes events it created itself — other items on the calendar are never touched. Use a dedicated secondary calendar and share it with the people who need to see bookings.</div>
+      </div>
       <div style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
           <select id="slotCatFilter" onchange="loadSlotCalendar()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
@@ -817,6 +849,18 @@
     <div class="check-row" style="margin-bottom:10px">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
     </div>
+    <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
+      <div class="field">
+        <label>Calendar ID</label>
+        <input type="text" id="atCalendarId" placeholder="e.g. abc123@group.calendar.google.com">
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="atCalendarSyncActive">
+        <label for="atCalendarSyncActive">Push activities of this type to the calendar</label>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">Events are only added/updated/deleted by Ymir — other items on the calendar are never touched.</div>
+    </div>
     <div style="margin-top:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.subtypes"></label>
@@ -1069,6 +1113,7 @@ async function loadAll() {
   boatCats       = _allBoatCats .filter(c => c.active !== false && c.active !== 'false');
   registerBoatCats(boatCats);
 
+  try { loadCharterCalendars(cfgRes.charterCalendars || {}); } catch(e) { console.warn("loadCharterCalendars:", e.message); }
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
@@ -2064,6 +2109,8 @@ function openActTypeModal(id) {
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
+  document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
+  document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
   window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(
     Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, [])
@@ -2084,6 +2131,8 @@ async function saveActType() {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
     active:   document.getElementById("atActive").checked,
+    calendarId: document.getElementById("atCalendarId").value.trim(),
+    calendarSyncActive: document.getElementById("atCalendarSyncActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
     bulkSchedule: null,
   };
@@ -2830,6 +2879,31 @@ function resetImport() {
 var _slotWeekStart = null; // Monday of current week
 var _slotData = [];        // loaded slots for current view
 var _editingSlot = null;   // slot being edited in modal
+
+function loadCharterCalendars(cc) {
+  document.getElementById("charterRowingCalId").value = cc.rowingCalendarId || "";
+  document.getElementById("charterRowingCalActive").checked = !!cc.rowingCalendarSyncActive;
+  document.getElementById("charterKeelboatCalId").value = cc.keelboatCalendarId || "";
+  document.getElementById("charterKeelboatCalActive").checked = !!cc.keelboatCalendarSyncActive;
+}
+
+async function saveCharterCalendars() {
+  const msg = document.getElementById("charterCalSaveMsg");
+  msg.textContent = "";
+  try {
+    await apiPost("saveCharterCalendars", {
+      rowingCalendarId: document.getElementById("charterRowingCalId").value.trim(),
+      rowingCalendarSyncActive: document.getElementById("charterRowingCalActive").checked,
+      keelboatCalendarId: document.getElementById("charterKeelboatCalId").value.trim(),
+      keelboatCalendarSyncActive: document.getElementById("charterKeelboatCalActive").checked,
+    });
+    msg.textContent = s("toast.saved") || "Saved";
+    msg.style.color = "var(--green)";
+  } catch (e) {
+    msg.textContent = (s("toast.error") || "Error") + ": " + e.message;
+    msg.style.color = "var(--red)";
+  }
+}
 
 function initSlotCalendar() {
   // Set week start to this Monday

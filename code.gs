@@ -373,6 +373,7 @@ function route_(action, b) {
     case 'generateLaunamidlar': return generateLaunamidlar_(b);
     case 'getConfig': return getConfig_();
     case 'saveConfig': return saveConfig_(b);
+    case 'saveCharterCalendars': return saveCharterCalendars_(b);
     case 'saveActivityType': return saveActivityType_(b);
     case 'deleteActivityType': return deleteActivityType_(b.id);
     case 'saveChecklistItem': return saveChecklistItem_(b);
@@ -644,6 +645,13 @@ function getDailyLog_(date) {
 function saveDailyLog_(b) {
   const ts = now_(), date = b.date || ts.slice(0, 10);
   const ex = findOne_('dailyLog', 'date', date);
+  // Sync activities to their activity-type calendars. Mutates b.activities
+  // in place so the stored JSON captures freshly-assigned gcalEventId values.
+  if (b.activities !== undefined) {
+    var oldActs = [];
+    if (ex && ex.activities) { try { oldActs = JSON.parse(ex.activities); } catch (e) {} }
+    syncDailyLogActivities_(date, oldActs, b.activities);
+  }
   if (ex) {
     updateRow_('dailyLog', 'date', date, {
       openingChecks: b.openingChecks !== undefined ? JSON.stringify(b.openingChecks) : ex.openingChecks,
@@ -1265,7 +1273,13 @@ function getConfig_() {
   let boatCategories = [];
   try { var bcRaw = getConfigValue_('boatCategories', cfgMap); if (bcRaw) boatCategories = JSON.parse(bcRaw); } catch (e) { }
   const allowBreaks = getConfigValue_('allowBreaks', cfgMap) === 'true';
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks };
+  const charterCalendars = {
+    rowingCalendarId: getConfigValue_('rowingCalendarId', cfgMap) || '',
+    rowingCalendarSyncActive: getConfigValue_('rowingCalendarSyncActive', cfgMap) === 'true',
+    keelboatCalendarId: getConfigValue_('keelboatCalendarId', cfgMap) || '',
+    keelboatCalendarSyncActive: getConfigValue_('keelboatCalendarSyncActive', cfgMap) === 'true',
+  };
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars };
   cPut_('config', config);
   return okJ(config);
 }
@@ -1337,7 +1351,16 @@ function saveActivityType_(b) {
     let subtypes = [];
     try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
     // Bulk schedules now live on each subtype (not the parent activity type).
-    const item = { id: b.id || uid_(), name: b.name, nameIS: b.nameIS || '', active: b.active !== false, subtypes, updatedAt: ts };
+    const item = {
+      id: b.id || uid_(),
+      name: b.name,
+      nameIS: b.nameIS || '',
+      active: b.active !== false,
+      calendarId: b.calendarId || '',
+      calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
+      subtypes,
+      updatedAt: ts,
+    };
     if (idx >= 0) {
       arr[idx] = Object.assign(arr[idx], item);
       delete arr[idx].bulkSchedule; // drop any legacy top-level schedule
@@ -1904,6 +1927,165 @@ function getSlots_(b) {
   return okJ({ slots: result });
 }
 
+// ── Google Calendar sync helpers ─────────────────────────────────────────
+function saveCharterCalendars_(b) {
+  try {
+    if (b.rowingCalendarId !== undefined)
+      setConfigSheetValue_('rowingCalendarId', String(b.rowingCalendarId || ''));
+    if (b.rowingCalendarSyncActive !== undefined)
+      setConfigSheetValue_('rowingCalendarSyncActive', b.rowingCalendarSyncActive ? 'true' : 'false');
+    if (b.keelboatCalendarId !== undefined)
+      setConfigSheetValue_('keelboatCalendarId', String(b.keelboatCalendarId || ''));
+    if (b.keelboatCalendarSyncActive !== undefined)
+      setConfigSheetValue_('keelboatCalendarSyncActive', b.keelboatCalendarSyncActive ? 'true' : 'false');
+    cDel_('config');
+    return okJ({ saved: true });
+  } catch (e) { return failJ('saveCharterCalendars failed: ' + e.message); }
+}
+
+function gcalParseDateTime_(dateStr, timeStr) {
+  var parts = String(timeStr || '00:00').split(':');
+  var d = new Date(String(dateStr) + 'T00:00:00');
+  d.setHours(parseInt(parts[0] || '0', 10), parseInt(parts[1] || '0', 10), 0, 0);
+  return d;
+}
+
+// Create/update/delete a single calendar event. Only touches events whose id
+// was created by this codebase — never scans by title/time. Returns the
+// resulting eventId (empty string on delete, unchanged on skip/failure).
+function gcalUpsertEvent_(calendarId, existingEventId, title, start, end, description, action) {
+  try {
+    if (!calendarId) return existingEventId || '';
+    var cal = CalendarApp.getCalendarById(calendarId);
+    if (!cal) { console.error('gcal: calendar not found ' + calendarId); return existingEventId || ''; }
+    if (action === 'delete') {
+      if (existingEventId) {
+        var ev = cal.getEventById(existingEventId);
+        if (ev) ev.deleteEvent();
+      }
+      return '';
+    }
+    if (existingEventId) {
+      var ev2 = cal.getEventById(existingEventId);
+      if (ev2) {
+        ev2.setTime(start, end);
+        ev2.setTitle(title);
+        ev2.setDescription(description || '');
+        return existingEventId;
+      }
+    }
+    var created = cal.createEvent(title, start, end, { description: description || '' });
+    return created.getId();
+  } catch (e) {
+    console.error('gcalUpsertEvent_ failed: ' + e);
+    return existingEventId || '';
+  }
+}
+
+function getCharterCalendarForBoat_(boat, cfgMap) {
+  var cat = String((boat && (boat.category || boat.boatCategory)) || '').toLowerCase();
+  if (cat === 'rowing-shell' || cat === 'rowingshell' || cat === 'rowing' || cat === 'rowboat') {
+    return {
+      calendarId: getConfigValue_('rowingCalendarId', cfgMap) || '',
+      enabled: getConfigValue_('rowingCalendarSyncActive', cfgMap) === 'true',
+    };
+  }
+  if (cat === 'keelboat') {
+    return {
+      calendarId: getConfigValue_('keelboatCalendarId', cfgMap) || '',
+      enabled: getConfigValue_('keelboatCalendarSyncActive', cfgMap) === 'true',
+    };
+  }
+  return { calendarId: '', enabled: false };
+}
+
+// Sync a reservation slot to its category's charter calendar. Safe to call
+// after any mutation; fails silently (logs) so slot writes are never blocked.
+function syncSlotToCalendar_(slotId, action) {
+  try {
+    addColIfMissing_('reservationSlots', 'gcalEventId');
+    var cfgMap = getConfigMap_();
+    if (action === 'delete') {
+      // caller must have read the slot before deleting; accept a slot-like
+      // object passed as slotId when id isn't available.
+      return;
+    }
+    var slot = findOne_('reservationSlots', 'id', slotId);
+    if (!slot) return;
+    var boats = [];
+    try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) {}
+    var boat = boats.find(function (bt) { return bt.id === slot.boatId; }) || {};
+    var cal = getCharterCalendarForBoat_(boat, cfgMap);
+    if (!cal.calendarId || !cal.enabled) return;
+    var title = (boat.name || slot.boatId) + ' — ' + (slot.bookedByName || 'Open');
+    var start = gcalParseDateTime_(slot.date, slot.startTime);
+    var end = gcalParseDateTime_(slot.date, slot.endTime);
+    var desc = 'slot:' + slot.id + (slot.note ? ('\n' + slot.note) : '');
+    var newId = gcalUpsertEvent_(cal.calendarId, slot.gcalEventId || '', title, start, end, desc, 'upsert');
+    if (newId && newId !== (slot.gcalEventId || '')) {
+      updateRow_('reservationSlots', 'id', slotId, { gcalEventId: newId });
+    }
+  } catch (e) { console.error('syncSlotToCalendar_ failed: ' + e); }
+}
+
+// Delete the calendar event for a slot that's about to be (or has been)
+// removed. Takes the slot row itself because the DB row may already be gone.
+function deleteSlotCalendarEvent_(slotRow) {
+  try {
+    if (!slotRow || !slotRow.gcalEventId) return;
+    var cfgMap = getConfigMap_();
+    var boats = [];
+    try { boats = JSON.parse(getConfigValue_('boats', cfgMap) || '[]'); } catch (e) {}
+    var boat = boats.find(function (bt) { return bt.id === slotRow.boatId; }) || {};
+    var cal = getCharterCalendarForBoat_(boat, cfgMap);
+    if (!cal.calendarId) return; // no calendar configured → nothing to delete
+    gcalUpsertEvent_(cal.calendarId, slotRow.gcalEventId, '', null, null, '', 'delete');
+  } catch (e) { console.error('deleteSlotCalendarEvent_ failed: ' + e); }
+}
+
+// Sync the activities array of a daily log entry to per-activity-type
+// calendars. Mutates newActs in place to store gcalEventId on each synced item.
+function syncDailyLogActivities_(date, oldActs, newActs) {
+  try {
+    var cfgMap = getConfigMap_();
+    var types = [];
+    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    var typeMap = {};
+    types.forEach(function (t) { typeMap[t.id] = t; });
+    var oldMap = {};
+    (oldActs || []).forEach(function (a) { if (a && a.id) oldMap[a.id] = a; });
+    var seen = {};
+    (newActs || []).forEach(function (a) {
+      if (!a || !a.id) return;
+      seen[a.id] = true;
+      var t = typeMap[a.activityTypeId];
+      var prevId = (oldMap[a.id] && oldMap[a.id].gcalEventId) || a.gcalEventId || '';
+      if (!t || !t.calendarId) { if (prevId) a.gcalEventId = prevId; return; }
+      var enabled = t.calendarSyncActive === true || t.calendarSyncActive === 'true';
+      if (!enabled) { if (prevId) a.gcalEventId = prevId; return; }
+      var start = gcalParseDateTime_(date, a.start || '00:00');
+      var end = gcalParseDateTime_(date, a.end || a.start || '00:00');
+      if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
+      var title = (a.name || t.name) + (a.type ? (' (' + a.type + ')') : '');
+      var desc = 'activity:' + a.id
+        + (a.subtypeName ? ('\n' + a.subtypeName) : '')
+        + (a.participants ? ('\nparticipants: ' + a.participants) : '')
+        + (a.notes ? ('\n' + a.notes) : '');
+      var newId = gcalUpsertEvent_(t.calendarId, prevId, title, start, end, desc, 'upsert');
+      if (newId) a.gcalEventId = newId;
+    });
+    // Deletions: anything in oldMap that no longer appears
+    Object.keys(oldMap).forEach(function (id) {
+      if (seen[id]) return;
+      var a = oldMap[id];
+      if (!a || !a.gcalEventId) return;
+      var t = typeMap[a.activityTypeId];
+      if (!t || !t.calendarId) return;
+      gcalUpsertEvent_(t.calendarId, a.gcalEventId, '', null, null, '', 'delete');
+    });
+  } catch (e) { console.error('syncDailyLogActivities_ failed: ' + e); }
+}
+
 function saveSlot_(b) {
   if (!b.boatId) return failJ('boatId required');
   if (!b.date || !b.startTime || !b.endTime) return failJ('date, startTime, endTime required');
@@ -1923,6 +2105,7 @@ function saveSlot_(b) {
       note: String(b.note || ''), createdAt: now_(),
     });
   }
+  syncSlotToCalendar_(id, 'upsert');
   return okJ({ saved: true, slotId: id });
 }
 
@@ -1951,12 +2134,15 @@ function saveRecurringSlots_(b) {
     }
     d.setDate(d.getDate() + 1);
   }
+  created.forEach(function (sid) { syncSlotToCalendar_(sid, 'upsert'); });
   return okJ({ saved: true, recurrenceGroupId: recId, count: created.length, slotIds: created });
 }
 
 function deleteSlot_(b) {
   if (!b.slotId) return failJ('slotId required');
+  var existing = findOne_('reservationSlots', 'id', b.slotId);
   deleteRow_('reservationSlots', 'id', b.slotId);
+  if (existing) deleteSlotCalendarEvent_(existing);
   return okJ({ deleted: true });
 }
 
@@ -1964,7 +2150,7 @@ function deleteRecurrenceGroup_(b) {
   if (!b.recurrenceGroupId) return failJ('recurrenceGroupId required');
   var all = readAll_('reservationSlots');
   var toDelete = all.filter(function(s) { return s.recurrenceGroupId === b.recurrenceGroupId; });
-  toDelete.forEach(function(s) { deleteRow_('reservationSlots', 'id', s.id); });
+  toDelete.forEach(function(s) { deleteRow_('reservationSlots', 'id', s.id); deleteSlotCalendarEvent_(s); });
   return okJ({ deleted: true, count: toDelete.length });
 }
 
@@ -2009,6 +2195,7 @@ function bookSlot_(b) {
     updates.bookedByName = String(b.memberName || '');
   }
   updateRow_('reservationSlots', 'id', b.slotId, updates);
+  syncSlotToCalendar_(b.slotId, 'upsert');
   return okJ({ booked: true, slotId: b.slotId });
 }
 
@@ -2032,6 +2219,7 @@ function unbookSlot_(b) {
   var isStaff = member && (member.role === 'staff' || member.role === 'admin');
   if (!isBooker && !isCrewMember && !isStaff) return failJ('Only the booker, a crew member, or staff can cancel');
   updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '', bookingColor: '' });
+  syncSlotToCalendar_(b.slotId, 'upsert');
   return okJ({ unbooked: true });
 }
 
@@ -2092,6 +2280,7 @@ function bulkBookSlots_(b) {
     if (filterEnd && sl.endTime > filterEnd) continue;
     if (sl.bookedByKennitala) { skipped++; continue; }
     updateRow_('reservationSlots', 'id', sl.id, updates);
+    syncSlotToCalendar_(sl.id, 'upsert');
     booked++;
   }
   return okJ({ success: true, booked: booked, skipped: skipped });
