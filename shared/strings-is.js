@@ -1578,5 +1578,16 @@ var _STRINGS_FLAT = {
   "passport.adminTitle": "Ræðarapassi",
   "passport.importCsv": "Flytja inn CSV",
   "passport.exportCsv": "Flytja út CSV",
-  "passport.csvHelp": "Dálkar: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is"
+  "passport.csvHelp": "Dálkar: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is",
+  "passport.viewMember": "SKOÐA FÉLAGA",
+  "passport.viewSelf": "Minn passi",
+  "passport.revokeReason": "Ástæða fyrir afturköllun?",
+  "passport.revoked": "Undirritun afturkölluð.",
+  "passport.addCategory": "+ Bæta við flokki",
+  "passport.addItem": "+ Bæta við atriði",
+  "passport.retire": "Hætta",
+  "passport.unretire": "Endurvirkja",
+  "passport.save": "Vista breytingar",
+  "passport.saved": "Passi vistaður.",
+  "passport.unsavedChanges": "Óvistaðar breytingar. Henda?"
 };

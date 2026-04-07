@@ -1578,5 +1578,16 @@ var _STRINGS_FLAT = {
   "passport.adminTitle": "Rowing Passport",
   "passport.importCsv": "Import CSV",
   "passport.exportCsv": "Export CSV",
-  "passport.csvHelp": "Columns: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is"
+  "passport.csvHelp": "Columns: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is",
+  "passport.viewMember": "VIEW MEMBER",
+  "passport.viewSelf": "My passport",
+  "passport.revokeReason": "Reason for revoking this sign-off?",
+  "passport.revoked": "Sign-off revoked.",
+  "passport.addCategory": "+ Add category",
+  "passport.addItem": "+ Add item",
+  "passport.retire": "Retire",
+  "passport.unretire": "Restore",
+  "passport.save": "Save changes",
+  "passport.saved": "Passport saved.",
+  "passport.unsavedChanges": "You have unsaved changes. Discard?"
 };
