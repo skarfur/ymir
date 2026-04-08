@@ -5468,8 +5468,20 @@ function importRowingPassportCsv_(b) {
   // Only item_label_en is strictly required per row. Existing items not
   // present in the CSV are marked retired (not deleted).
   if (!b.csv) return failJ('csv required');
-  const rows = parsePassportCsv_(b.csv);
-  if (!rows.length) return failJ('CSV has no data rows (need at least a header row plus one item).');
+  const parsed = parsePassportCsv_(b.csv);
+  const rows = parsed.rows;
+  if (!rows.length) {
+    const hdrs = parsed.headers || [];
+    if (!hdrs.length) {
+      return failJ('CSV is empty — expected a header row and at least one data row.');
+    }
+    const needed = ['item_id', 'item_label_en'];
+    const missing = needed.filter(h => hdrs.indexOf(h) < 0);
+    if (missing.length === needed.length) {
+      return failJ('CSV headers not recognised. Detected: [' + hdrs.join(', ') + ']. Expected at least one of: item_id, item_label_en. Column names must be lowercase with underscores (e.g. item_label_en, not "Item Label EN").');
+    }
+    return failJ('CSV has no data rows with an item_id or item_label_en. Detected headers: [' + hdrs.join(', ') + '].');
+  }
 
   // Load current def so we can (a) preserve passport-level fields,
   // (b) look up existing ids by label for rows that omit item_id,
@@ -5600,17 +5612,22 @@ function importRowingPassportCsv_(b) {
 }
 
 function parsePassportCsv_(text) {
-  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) return [];
+  // Strip UTF-8 BOM if present (common on Excel/Windows exports)
+  let t = String(text || '');
+  if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+  const lines = t.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (!lines.length) return { rows: [], headers: [] };
   const headers = splitCsvLine_(lines[0]).map(h => h.trim().toLowerCase());
   const out = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = splitCsvLine_(lines[i]);
     const row = {};
     headers.forEach((h, j) => { row[h] = (cells[j] || '').trim(); });
-    if (row.item_id) out.push(row);
+    // Keep the row if it has *either* an item_id or an item_label_en.
+    // The importer resolves the missing one (id from label or label from id).
+    if (row.item_id || row.item_label_en) out.push(row);
   }
-  return out;
+  return { rows: out, headers: headers };
 }
 function splitCsvLine_(line) {
   const out = [];
