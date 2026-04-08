@@ -1579,7 +1579,7 @@ var _STRINGS_FLAT = {
   "passport.importCsv": "Flytja inn CSV",
   "passport.exportCsv": "Flytja út CSV",
   "passport.csvHelp": "Dálkar: passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is. assessment er 'theory' eða 'practical'.",
-  "passport.theory": "Bóklegt",
+  "passport.theoretical": "Bóklegt",
   "passport.practical": "Verklegt",
   "passport.viewMember": "SKOÐA FÉLAGA",
   "passport.viewSelf": "Minn passi",
