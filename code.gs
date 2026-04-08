@@ -5256,7 +5256,7 @@ function DEFAULT_ROWING_PASSPORT_() {
             items: [
               { id: 'pfd-use',          assessment: 'practical', name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
               { id: 'capsize-recovery', assessment: 'practical', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
-              { id: 'cold-water',       assessment: 'theory',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
+              { id: 'cold-water',       assessment: 'theoretical',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
             ],
           },
           {
@@ -5272,7 +5272,7 @@ function DEFAULT_ROWING_PASSPORT_() {
             id: 'etiquette',
             name: { EN: 'Etiquette & comms', IS: 'Siðir og samskipti' },
             items: [
-              { id: 'right-of-way',  assessment: 'theory',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
+              { id: 'right-of-way',  assessment: 'theoretical',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
               { id: 'radio-checkin', assessment: 'practical', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
             ],
           },
@@ -5482,7 +5482,7 @@ function importRowingPassportCsv_(b) {
       p.categories.push(cat);
     }
     var assessment = (r.assessment || '').toLowerCase();
-    if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
+    if (assessment !== 'theoretical' && assessment !== 'practical') assessment = 'practical';
     cat.items.push({
       id: r.item_id,
       assessment: assessment,
