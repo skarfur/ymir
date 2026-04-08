@@ -2754,6 +2754,12 @@ function respondConfirmation_(b) {
   if (b.response === 'rejected' && b.rejectComment) updates.rejectComment = b.rejectComment;
   updateRow_('tripConfirmations', 'id', b.id, updates);
 
+  // On reject — undo any speculative state recorded by the skipper
+  if (b.response === 'rejected') {
+    applyRejectionCleanup_(row, ts);
+    return okJ({ updated: true, status: b.response });
+  }
+
   // On confirm — create the trip record
   if (b.response === 'confirmed') {
     var type = row.type;
@@ -2930,6 +2936,160 @@ function tryAutoVerify_(conf, ts) {
       });
     }
   });
+}
+
+// ── Reject cleanup: roll back skipper-side state when a handshake is rejected
+//
+// helm     → clear the helm flag from the skipper's crewNames entry for the
+//            rejecting member, and from the crew member's own trip row.
+// student  → same, but for the student flag.
+// crew_assigned → the rejecting member never agreed to come along: drop them
+//            from the skipper's crewNames JSON and decrement the trip's crew
+//            count (never below 1, and never below the number of remaining
+//            named/linked crew members).  The rejection record itself stays
+//            visible in the skipper's outgoing list so the skipper can review
+//            and acknowledge the new "number on board" before it's dismissed.
+// crew_join → the skipper said no to a join request: nothing to undo, since
+//            no trip row was created yet.
+// helm/student rejections silently roll back the metadata; nothing else for
+// the skipper to confirm.
+function applyRejectionCleanup_(row, ts) {
+  var type = row.type;
+  if (type === 'helm' || type === 'student') {
+    var flag = type;          // 'helm' or 'student'
+    var memberKt = row.toKennitala; // the rejecting crew member
+    // 1) Clear the flag on the skipper's trip crewNames JSON
+    var skipperTrip = findSkipperTripForConf_(row);
+    if (skipperTrip) {
+      clearCrewNamesFlag_(skipperTrip, memberKt, flag, ts);
+    }
+    // 2) Clear the flag on the crew member's own trip row, if one exists
+    var crewTrips = findCrewMemberTrips_(memberKt, row);
+    crewTrips.forEach(function(t) {
+      if (t[flag] && String(t[flag]) !== 'false') {
+        var u = { updatedAt: ts };
+        u[flag] = false;
+        updateRow_('trips', 'id', t.id, u);
+      }
+    });
+    return;
+  }
+
+  if (type === 'crew_assigned') {
+    // Skipper had added this person; they declined.  Pull them out of the
+    // skipper's crewNames JSON and drop the crew count by one (within bounds).
+    // The skipper's trip may not exist yet (rejection arrived before check-in)
+    // — in that case, update the checkout row instead so the skipper sees the
+    // adjusted count when they return.
+    var rejectingKt = row.toKennitala;
+    var skipperTrip2 = findSkipperTripForConf_(row);
+    if (skipperTrip2) {
+      // Count crew members that still have a linked trip row, so we never drop
+      // the trip's crew count below the number of people actually on board.
+      var linkedCrewCount = readAll_('trips').filter(function(t) {
+        if (String(t.id) === String(skipperTrip2.id)) return false;
+        return (String(t.linkedTripId) === String(skipperTrip2.id)) ||
+          (skipperTrip2.linkedCheckoutId && String(t.linkedCheckoutId) === String(skipperTrip2.linkedCheckoutId));
+      }).length;
+      var minCrew = Math.max(1, linkedCrewCount + 1); // +1 for the skipper
+      removeFromCrewNamesAndDecrement_('trips', skipperTrip2, rejectingKt, minCrew, ts);
+    }
+    if (row.linkedCheckoutId) {
+      var co = findOne_('checkouts', 'id', row.linkedCheckoutId);
+      if (co && (co.status === 'out' || !co.status)) {
+        // Pre-checkin: bring the checkout row into sync as well.
+        removeFromCrewNamesAndDecrement_('checkouts', co, rejectingKt, 1, ts);
+      }
+    }
+    return;
+  }
+
+  // crew_join / verify rejection: nothing to roll back.
+}
+
+// Shared helper used by crew_assigned rejection cleanup: remove a crew member
+// from a row's crewNames JSON and decrement its crew count (subject to a
+// minimum so we never drop below the number of crew already on board).
+function removeFromCrewNamesAndDecrement_(table, rowObj, rejectingKt, minCrew, ts) {
+  var cn = parseCrewNames_(rowObj.crewNames);
+  var nextCn = cn.filter(function(entry) {
+    return !(entry.kennitala && String(entry.kennitala) === String(rejectingKt));
+  });
+  var changed = nextCn.length !== cn.length;
+  var curCrew = parseInt(rowObj.crew) || 1;
+  var newCrew = Math.max(minCrew || 1, curCrew - 1);
+  var updates = {};
+  if (changed) updates.crewNames = JSON.stringify(nextCn);
+  if (newCrew !== curCrew) updates.crew = newCrew;
+  if (table === 'trips' && (changed || newCrew !== curCrew)) updates.updatedAt = ts;
+  if (Object.keys(updates).length) {
+    updateRow_(table, 'id', rowObj.id, updates);
+  }
+}
+
+// Find the skipper's trip row for a confirmation: prefer the explicit tripId
+// (which always points at the skipper trip), then fall back to looking up the
+// captain/skipper trip linked to the same checkout.
+function findSkipperTripForConf_(row) {
+  if (row.tripId) {
+    var byId = findOne_('trips', 'id', row.tripId);
+    if (byId) return byId;
+  }
+  if (row.linkedCheckoutId) {
+    var coTrips = readAll_('trips').filter(function(t) {
+      return String(t.linkedCheckoutId) === String(row.linkedCheckoutId) &&
+        (t.role === 'skipper' || t.role === 'captain');
+    });
+    if (coTrips.length) return coTrips[0];
+  }
+  // crew_join: row.fromKennitala is the joiner, row.toKennitala is the skipper
+  if (row.type === 'crew_join' && row.toKennitala) {
+    var byKt = readAll_('trips').filter(function(t) {
+      return String(t.kennitala) === String(row.toKennitala) &&
+        (row.linkedCheckoutId ? String(t.linkedCheckoutId) === String(row.linkedCheckoutId)
+                              : (row.tripId && String(t.id) === String(row.tripId)));
+    });
+    if (byKt.length) return byKt[0];
+  }
+  return null;
+}
+
+// Find any trip rows belonging to the rejecting crew member that are linked
+// to the same checkout/trip as the confirmation.
+function findCrewMemberTrips_(kt, row) {
+  if (!kt) return [];
+  return readAll_('trips').filter(function(t) {
+    if (String(t.kennitala) !== String(kt)) return false;
+    if (row.linkedCheckoutId && String(t.linkedCheckoutId) === String(row.linkedCheckoutId)) return true;
+    if (row.tripId && String(t.linkedTripId) === String(row.tripId)) return true;
+    return false;
+  });
+}
+
+function parseCrewNames_(raw) {
+  if (!raw) return [];
+  if (typeof raw !== 'string') return Array.isArray(raw) ? raw : [];
+  try { var p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (e) { return []; }
+}
+
+// Clear a flag (helm/student) from the skipper's crewNames JSON entry that
+// matches the given kennitala.  No-op if the entry isn't there or already false.
+function clearCrewNamesFlag_(trip, kt, flag, ts) {
+  if (!kt || !trip) return;
+  var cn = parseCrewNames_(trip.crewNames);
+  var changed = false;
+  cn.forEach(function(entry) {
+    if (entry.kennitala && String(entry.kennitala) === String(kt) && entry[flag]) {
+      entry[flag] = false;
+      changed = true;
+    }
+  });
+  if (changed) {
+    updateRow_('trips', 'id', trip.id, {
+      crewNames: JSON.stringify(cn),
+      updatedAt: ts,
+    });
+  }
 }
 
 // ── Request verification (creates a 'verify' handshake to staff) ────────────
