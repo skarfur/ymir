@@ -1571,7 +1571,7 @@ var _STRINGS_FLAT = {
   "passport.adminTitle": "Ræðarapassi",
   "passport.importCsv": "Flytja inn CSV",
   "passport.exportCsv": "Flytja út CSV",
-  "passport.csvHelp": "Dálkar: passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is. assessment er 'theory' eða 'practical'.",
+  "passport.csvHelp": "Dálkar: passport_id, category_id, category_label_en, category_label_is, item_id, assessment, item_label_en, item_label_is, description_en, description_is. Aðeins item_label_en er skyldudálkur — item_id og category_id eru sjálfkrafa búin til úr enska heitinu ef þau eru tóm (endurnýtt úr fyrri atriðum með sama heiti þannig að eldri undirritanir haldist). assessment er 'theory' eða 'practical' (sjálfgefið 'practical').",
   "passport.theory": "Bóklegt",
   "passport.practical": "Verklegt",
   "passport.viewMember": "SKOÐA FÉLAGA",
