@@ -11,6 +11,7 @@
   <script src="../shared/ui.js"></script>
   <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
+  <script src="../shared/qr.js" defer></script>
   <style>
     .mode-btns { display:flex; gap:8px; margin-bottom:20px; }
     .mode-btn { flex:1; padding:12px; background:var(--card); border:1px solid var(--border);
@@ -115,7 +116,10 @@
           </div>
           <div class="field">
             <label id="boatLabel"></label>
-            <select id="iBoat"><option value="" id="iBoatNone"></option></select>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="iBoat" style="flex:1;min-width:0"><option value="" id="iBoatNone"></option></select>
+              <button type="button" class="btn btn-secondary" id="iBoatScanBtn" onclick="scanBoatForIncident()" style="white-space:nowrap;font-size:10px;padding:6px 10px" data-s="qr.scanBtn"></button>
+            </div>
           </div>
         </div>
 
@@ -337,6 +341,25 @@ function populateBoatsLocs() {
   const lSel = document.getElementById('iLocation');
   locations.forEach(l => {
     const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o);
+  });
+}
+
+// Scan a boat QR code and auto-select it in the boat dropdown
+function scanBoatForIncident() {
+  if (typeof openQRScanner !== 'function') { showToast(s('qr.error'), 'err'); return; }
+  openQRScanner({
+    title: s('qr.scanTitle'),
+    onResult: function (text) {
+      const id = parseBoatIdFromScan(text);
+      if (!id) { showToast(s('qr.invalidCode'), 'err'); return; }
+      const boat = boats.find(b => b.id === id);
+      if (!boat) { showToast(s('qr.boatNotFound'), 'err'); return; }
+      const bSel = document.getElementById('iBoat');
+      bSel.value = id;
+      // Ensure we're in the new-report view so the user sees the selection
+      setMode('new');
+      showToast(boat.name);
+    }
   });
 }
 
