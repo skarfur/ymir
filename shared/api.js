@@ -149,7 +149,7 @@ function signOut() {
   window.location.href = BASE_URL + "/login/";
 }
 
-function getLang()  { return localStorage.getItem("ymirLang") || "EN"; }
+function getLang()  { return localStorage.getItem("ymirLang") || "IS"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -168,6 +168,33 @@ function getPrefs() {
 }
 function setPrefs(p) { localStorage.setItem("ymirPrefs", JSON.stringify(p)); }
 function getPref(key, fallback) { var p = getPrefs(); return p[key] !== undefined ? p[key] : fallback; }
+
+// Default stats visibility for new members: only the four headline metrics are on.
+// Existing saved prefs take precedence — a saved `true` or `false` always wins
+// over these defaults; these only fill in keys the user has never touched.
+var STATS_VIS_DEFAULTS = {
+  career:      false,
+  hours:       true,
+  ytd:         true,
+  skipper:     false,
+  byCategory:  true,
+  distance:    true,
+  longest:     false,
+  avgWind:     false,
+  streak:      false,
+  boats:       false,
+  crew:        false,
+  heavy:       false,
+  night:       false,
+  avgDuration: false,
+  locations:   false,
+  verified:    false,
+};
+function isStatVisible(key, sv) {
+  sv = sv || {};
+  if (sv[key] === undefined) return !!STATS_VIS_DEFAULTS[key];
+  return sv[key] !== false;
+}
 
 // Wind unit conversion — base unit is m/s
 function convertWind(ms, unit) {
@@ -249,7 +276,7 @@ function parseWsValue(ws) {
 }
 
 function formatWindValue(ms, beaufort, unit) {
-  unit = unit || getPref('windUnit', 'bft');
+  unit = unit || getPref('windUnit', 'ms');
   // Handle range values like "5.5-8.0" (from Beaufort-only entry)
   if (typeof ms === 'string' && ms.indexOf('-') !== -1) {
     var parts = ms.split('-').map(Number);

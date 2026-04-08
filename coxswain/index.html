@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/calendar.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
 var _membersLoaded = false;
 var _passportDef = null, _passportProgress = null;
-var _passportLang = (localStorage.getItem('ymirLang') || 'EN').toUpperCase();
+var _passportLang = (localStorage.getItem('ymirLang') || 'IS').toUpperCase();
 var _passportSignerMode = false;
 var _passportTargetMemberId = user.id; // own passport by default
 

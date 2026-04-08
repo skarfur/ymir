@@ -727,12 +727,12 @@ async function fetchCurrentWeather(){
 }
 
 // ── Wind unit + Beaufort sync helpers ────────────────────────────────────────
-// Determine the numeric wind unit for manual inputs (bft pref → default to m/s for inputs)
-let _mWindUnit = (function(){ var p = getPref('windUnit','bft'); return p === 'bft' ? 'ms' : p; })();
+// Determine the numeric wind unit for manual inputs (bft pref → use m/s for inputs)
+let _mWindUnit = (function(){ var p = getPref('windUnit','ms'); return p === 'bft' ? 'ms' : p; })();
 let _bftSyncing = false; // prevent circular updates
 
 function initWindUnitLabels(){
-  const pref = getPref('windUnit', 'bft');
+  const pref = getPref('windUnit', 'ms');
   // For input fields we use a numeric unit; if pref is 'bft', default inputs to m/s
   _mWindUnit = (pref === 'bft') ? 'ms' : pref;
   const label = windUnitLabel(_mWindUnit);
