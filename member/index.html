@@ -10,7 +10,7 @@
 <script src="../shared/api.js"></script>
 <script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
@@ -817,8 +817,8 @@ function _wxSnapHtml(snap) {
   if(!rows.length)        rows.push(["","No detail available"]);
   return rows.map(r=>'<div class="flex-center gap-6 text-sm" style="padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
 }
-// Preferred wind unit for manual entry (non-bft → use directly; bft → default to m/s)
-var _retWindUnit = (function(){ var p = getPref('windUnit','bft'); return p === 'bft' ? 'ms' : p; })();
+// Preferred wind unit for manual entry (non-bft → use directly; bft → use m/s)
+var _retWindUnit = (function(){ var p = getPref('windUnit','ms'); return p === 'bft' ? 'ms' : p; })();
 
 function _updateWxDisplay() {
   var sel=document.querySelector('[name="wxChoice"]:checked'), choice=sel?sel.value:"checkout";
