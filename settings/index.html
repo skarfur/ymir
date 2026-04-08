@@ -120,19 +120,24 @@
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svCrew" checked><span data-s="settings.stats.crew"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svHelmHours" checked><span data-s="settings.stats.helmHours"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svStudent" checked><span data-s="settings.stats.student"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svBoats" checked><span data-s="settings.stats.boats"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svFavBoat" checked><span data-s="settings.stats.favBoat"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.conditions"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svPeakWind" checked><span data-s="settings.stats.peakWind"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svHeavy" checked><span data-s="settings.stats.heavy"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.other"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svLocations" checked><span data-s="settings.stats.locations"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svFavLocation" checked><span data-s="settings.stats.favLocation"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svVerified" checked><span data-s="settings.stats.verified"></span></label>
     </div>
   </div>
@@ -223,8 +228,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function applyStatVis(sv) {
-  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svAvgDuration','svLocations','svVerified'];
-  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified'];
+  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svAvgDuration','svLocations','svVerified','svHelmHours','svStudent','svFavBoat','svFavLocation','svPeakWind'];
+  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
   for (var i = 0; i < ids.length; i++) {
     var el = document.getElementById(ids[i]);
     var on = isStatVisible(keys[i], sv);
@@ -304,6 +309,11 @@ async function saveSettings() {
     avgDuration:document.getElementById('svAvgDuration').checked,
     locations:  document.getElementById('svLocations').checked,
     verified:   document.getElementById('svVerified').checked,
+    helmHours:  document.getElementById('svHelmHours').checked,
+    student:    document.getElementById('svStudent').checked,
+    favBoat:    document.getElementById('svFavBoat').checked,
+    favLocation:document.getElementById('svFavLocation').checked,
+    peakWind:   document.getElementById('svPeakWind').checked,
   };
 
   var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility };
