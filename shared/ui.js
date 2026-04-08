@@ -298,6 +298,26 @@ window.buildHeader = function (page) {
     if (isCaptainUser && page !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
   }
 
+  // RIGHT: guardian-acting-as-ward badge (if applicable)
+  if (user && user.guardianSession && user.guardianSession.kennitala) {
+    const gs = user.guardianSession;
+    const firstGuardianName = (gs.name || '').split(' ')[0];
+    const firstWardName     = (user.name || '').split(' ')[0];
+
+    const badge = document.createElement('span');
+    badge.className = 'hbtn ward-badge';
+    badge.textContent = s('nav.actingAs', { name: firstWardName });
+    badge.style.cursor = 'default';
+    badge.style.opacity = '0.85';
+    right.appendChild(badge);
+
+    const backBtn = btn(
+      s('nav.backToGuardian', { name: firstGuardianName }),
+      () => { if (typeof switchBackToGuardian === 'function') switchBackToGuardian(); }
+    );
+    right.appendChild(backBtn);
+  }
+
   // RIGHT: Settings · lang · sign out
   if (user && page !== 'settings') right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
   right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }));

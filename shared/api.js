@@ -149,6 +149,32 @@ function signOut() {
   window.location.href = BASE_URL + "/login/";
 }
 
+// When a guardian has signed into their ward's account, `user.guardianSession`
+// holds a trimmed snapshot of the guardian's own member record. This helper
+// re-validates the guardian kennitala, restores their full session, and sends
+// them back to the member hub (their own hub-switch buttons can take it from
+// there if they're also staff/admin).
+async function switchBackToGuardian() {
+  var cur = getUser();
+  if (!cur || !cur.guardianSession || !cur.guardianSession.kennitala) return;
+  try {
+    var data = await apiGet('validateMember', { kennitala: cur.guardianSession.kennitala, _fresh: 1 });
+    if (!data || !data.member) throw new Error('guardian not found');
+    setUser(data.member);
+    // Purge any cached per-user data so the guardian's view is not stale.
+    try {
+      sessionStorage.removeItem('ymir_getTrips_');
+      sessionStorage.removeItem('ymir_getCrews_');
+      sessionStorage.removeItem('ymir_getCrewBoard_');
+      sessionStorage.removeItem('ymir_getCrewInvites_');
+    } catch(e) {}
+    window.location.href = BASE_URL + "/member/";
+  } catch(e) {
+    // Fall back to a clean sign-out on any failure so the guardian can re-enter.
+    signOut();
+  }
+}
+
 function getLang()  { return localStorage.getItem("ymirLang") || "IS"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
 
