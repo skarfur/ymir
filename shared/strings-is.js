@@ -907,6 +907,8 @@ var _STRINGS_FLAT = {
   "nav.coxswainSeat": "🚣 Róðurdeild",
   "cox.title": "Róðurdeild",
   "cox.noBoats": "Engir stýrðir bátar tiltækir",
+  "cox.tabCrews": "Hópar og tímar",
+  "cox.tabPassport": "Passi",
   "cox.statsTrips": "FERÐIR",
   "cox.statsHours": "KLST.",
   "cox.statsDist": "VEGALENGD",

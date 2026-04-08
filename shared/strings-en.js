@@ -907,6 +907,8 @@ var _STRINGS_FLAT = {
   "nav.coxswainSeat": "🚣 Rowing Division",
   "cox.title": "Rowing Division",
   "cox.noBoats": "No controlled boats available",
+  "cox.tabCrews": "Crews & Slots",
+  "cox.tabPassport": "Passport",
   "cox.statsTrips": "TRIPS",
   "cox.statsHours": "HOURS",
   "cox.statsDist": "DISTANCE",

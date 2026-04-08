@@ -22,6 +22,14 @@
 .cx-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .cx-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
+/* ── Tab bar ── */
+.cx-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
+.cx-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
+  font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
+  white-space:nowrap; transition:color .15s; text-transform:uppercase; }
+.cx-tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+.cx-tab-btn:hover:not(.active) { color:var(--text); }
+
 /* ── Section headers ── */
 .cx-section { margin-bottom:20px; }
 .cx-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
@@ -116,26 +124,6 @@
   <!-- Read-only banner for non-released rowers -->
   <div class="cx-readonly hidden" id="cxReadOnly" data-s="cox.readOnly"></div>
 
-  <!-- ══ ROWING PASSPORT ══ -->
-  <div class="cx-section" id="sectPassport">
-    <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
-    <div id="passportPicker" class="hidden" style="margin-bottom:10px;position:relative">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
-        <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" oninput="ppSearchMember(this.value)" style="font-size:11px;flex:1;min-width:160px">
-        <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" onclick="ppViewSelf()" data-s="passport.viewSelf">My passport</button>
-      </div>
-      <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10"></div>
-      <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass);margin-top:4px"></div>
-    </div>
-    <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
-      <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
-    </div>
-    <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
-    <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
-    <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
-  </div>
-
   <!-- ══ YTD STATS ══ -->
   <div class="cx-stats" id="cxStats">
     <div class="cx-stat"><div class="sn" id="statTrips">—</div><div class="sl" data-s="cox.statsTrips"></div></div>
@@ -143,46 +131,79 @@
     <div class="cx-stat"><div class="sn" id="statDist">—</div><div class="sl" data-s="cox.statsDist"></div></div>
   </div>
 
-  <!-- ══ MAINTENANCE ══ -->
-  <div class="cx-section" id="sectMaint">
-    <div class="cx-section-hdr" data-s="cox.maintenance"></div>
-    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  <!-- ══ TAB BAR ══ -->
+  <div class="cx-tab-bar" id="cxTabBar">
+    <button class="cx-tab-btn active" data-tab="crews"    onclick="showCxTab('crews')"    data-s="cox.tabCrews"></button>
+    <button class="cx-tab-btn"        data-tab="passport" onclick="showCxTab('passport')" data-s="cox.tabPassport"></button>
   </div>
 
-  <!-- ══ CREW BOARD ══ -->
-  <div class="cx-section" id="sectCrews">
-    <div class="cx-section-hdr" data-s="cox.crewBoard">CREW BOARD</div>
-    <div id="crewInviteList"></div>
-    <div id="crewBoardList"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="margin-top:8px">
-      <button class="btn btn-primary" style="font-size:11px" onclick="openCrewModal()" data-s="cox.createCrew">+ Create Crew</button>
+  <!-- ══ TAB: CREWS & SLOTS ══ -->
+  <div id="cxTab-crews">
+
+    <!-- ══ MAINTENANCE ══ -->
+    <div class="cx-section" id="sectMaint">
+      <div class="cx-section-hdr" data-s="cox.maintenance"></div>
+      <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
-  </div>
 
-  <!-- ══ SLOT RESERVATIONS ══ -->
-  <div class="cx-section" id="sectSlots" style="display:none">
-    <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
-      <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-      <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
-      <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
-        <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+    <!-- ══ CREW BOARD ══ -->
+    <div class="cx-section" id="sectCrews">
+      <div class="cx-section-hdr" data-s="cox.crewBoard">CREW BOARD</div>
+      <div id="crewInviteList"></div>
+      <div id="crewBoardList"><div class="empty-note" data-s="lbl.loading"></div></div>
+      <div style="margin-top:8px">
+        <button class="btn btn-primary" style="font-size:11px" onclick="openCrewModal()" data-s="cox.createCrew">+ Create Crew</button>
       </div>
     </div>
-    <div id="cxSlotGrid" style="overflow-x:auto"></div>
-    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
-      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;opacity:.7"></span> <span data-s="cox.tentative">Tentative</span></span>
+
+    <!-- ══ SLOT RESERVATIONS ══ -->
+    <div class="cx-section" id="sectSlots" style="display:none">
+      <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
+        <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+        <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
+        <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
+          <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+        </div>
+      </div>
+      <div id="cxSlotGrid" style="overflow-x:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;opacity:.7"></span> <span data-s="cox.tentative">Tentative</span></span>
+      </div>
     </div>
-  </div>
+
+  </div><!-- /cxTab-crews -->
+
+  <!-- ══ TAB: PASSPORT ══ -->
+  <div id="cxTab-passport" class="hidden">
+    <div class="cx-section" id="sectPassport">
+      <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
+      <div id="passportPicker" class="hidden" style="margin-bottom:10px;position:relative">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
+          <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" oninput="ppSearchMember(this.value)" style="font-size:11px;flex:1;min-width:160px">
+          <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" onclick="ppViewSelf()" data-s="passport.viewSelf">My passport</button>
+        </div>
+        <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10"></div>
+        <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass);margin-top:4px"></div>
+      </div>
+      <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
+        <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
+      </div>
+      <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
+      <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
+      <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
+    </div>
+  </div><!-- /cxTab-passport -->
 
 </div>
 
@@ -328,6 +349,18 @@ var _passportLang = (localStorage.getItem('ymirLang') || 'IS').toUpperCase();
 var _passportSignerMode = false;
 var _passportTargetMemberId = user.id; // own passport by default
 
+// ══ TAB SWITCHING ════════════════════════════════════════════════════════════
+function showCxTab(tab) {
+  document.querySelectorAll('#cxTabBar .cx-tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  var crewsEl = document.getElementById('cxTab-crews');
+  var passportEl = document.getElementById('cxTab-passport');
+  if (crewsEl) crewsEl.classList.toggle('hidden', tab !== 'crews');
+  if (passportEl) passportEl.classList.toggle('hidden', tab !== 'passport');
+}
+window.showCxTab = showCxTab;
+
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 (async function init() {
   applyTheme();
@@ -340,10 +373,16 @@ var _passportTargetMemberId = user.id; // own passport by default
     document.getElementById('cxReadOnly').classList.remove('hidden');
   }
 
-  // Hide non-passport sections for restricted rowers
+  // Restricted rowers: only passport is available. Hide stats and tab bar,
+  // and show only the passport tab content.
   if (_rowingSub === 'restricted') {
-    var hideIds = ['sectMaint','sectCrews','sectSlots','cxStats'];
-    hideIds.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    var cxStatsEl = document.getElementById('cxStats');
+    if (cxStatsEl) cxStatsEl.style.display = 'none';
+    document.getElementById('cxTabBar').style.display = 'none';
+    showCxTab('passport');
+  } else {
+    // Released rowers (and staff/admin): default to the crews/slots tab.
+    showCxTab('crews');
   }
   // Show member picker for users who can sign for others
   if (_isStaffSigner || _rowingSub === 'released' || _rowingSub === 'coxswain') {
