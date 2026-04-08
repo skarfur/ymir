@@ -1579,7 +1579,7 @@ var _STRINGS_FLAT = {
   "passport.importCsv": "Import CSV",
   "passport.exportCsv": "Export CSV",
   "passport.csvHelp": "Columns: passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is. assessment is 'theory' or 'practical'.",
-  "passport.theory": "Theory",
+  "passport.theory": "Theoretical",
   "passport.practical": "Practical",
   "passport.viewMember": "VIEW MEMBER",
   "passport.viewSelf": "My passport",
