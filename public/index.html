@@ -11,7 +11,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" defer></script>
 <script src="../shared/api.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
@@ -216,7 +216,7 @@ var _staffStatus = null;
 var _wxWidgetInstance = null;
 var _tideWidgetInstance = null;
 
-function lang() { return (typeof getLang === 'function') ? getLang() : 'EN'; }
+function lang() { return (typeof getLang === 'function') ? getLang() : 'IS'; }
 
 function toggleLang() {
   var next = lang() === 'EN' ? 'IS' : 'EN';

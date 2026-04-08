@@ -727,12 +727,12 @@ async function fetchCurrentWeather(){
 }
 
 // ── Wind unit + Beaufort sync helpers ────────────────────────────────────────
-// Determine the numeric wind unit for manual inputs (bft pref → default to m/s for inputs)
-let _mWindUnit = (function(){ var p = getPref('windUnit','bft'); return p === 'bft' ? 'ms' : p; })();
+// Determine the numeric wind unit for manual inputs (bft pref → use m/s for inputs)
+let _mWindUnit = (function(){ var p = getPref('windUnit','ms'); return p === 'bft' ? 'ms' : p; })();
 let _bftSyncing = false; // prevent circular updates
 
 function initWindUnitLabels(){
-  const pref = getPref('windUnit', 'bft');
+  const pref = getPref('windUnit', 'ms');
   // For input fields we use a numeric unit; if pref is 'bft', default inputs to m/s
   _mWindUnit = (pref === 'bft') ? 'ms' : pref;
   const label = windUnitLabel(_mWindUnit);
@@ -1715,15 +1715,20 @@ async function loadConfirmations(){
   try{
     const res=await apiGet('getConfirmations',{kennitala:user.kennitala});
     const incoming = res.incoming||[], outgoing = res.outgoing||[];
-    // Auto-dismiss resolved confirmations server-side in background
-    const resolved = incoming.filter(c=>c.status!=='pending').concat(outgoing.filter(c=>c.status!=='pending'));
+    // Auto-dismiss resolved confirmations server-side in background.
+    // Exception: keep rejected outgoing crew_assigned visible — the skipper
+    // needs to review and acknowledge the resulting crew-count change.
+    const _isCrewRejection = c => c.status==='rejected' && c.type==='crew_assigned';
+    const resolved = incoming.filter(c=>c.status!=='pending')
+      .concat(outgoing.filter(c=>c.status!=='pending' && !_isCrewRejection(c)));
     if (resolved.length) {
       resolved.forEach(c => apiPost('dismissConfirmation', { id: c.id }).catch(function(){}));
     }
-    // Keep pending + confirmed in local state (confirmed needed for helm/student display)
+    // Keep pending + confirmed in local state (confirmed needed for helm/student display).
+    // Outgoing also keeps rejected crew_assigned so the skipper sees the change.
     _confirmations={
       incoming:incoming.filter(c=>c.status==='pending'||c.status==='confirmed'),
-      outgoing:outgoing.filter(c=>c.status==='pending'||c.status==='confirmed'),
+      outgoing:outgoing.filter(c=>c.status==='pending'||c.status==='confirmed'||_isCrewRejection(c)),
     };
     _confirmationsLoaded=true;
     updateConfBadge();
@@ -1737,8 +1742,11 @@ async function loadConfirmations(){
 
 function updateConfBadge(){
   var pending=_confirmations.incoming.filter(function(c){return c.status==='pending';}).length;
+  // Rejected crew_assigned outgoing items also need attention from the skipper
+  var rejected=_confirmations.outgoing.filter(function(c){return c.status==='rejected'&&c.type==='crew_assigned';}).length;
+  var total=pending+rejected;
   var badge=document.getElementById('confBadge');
-  if(badge){badge.textContent=pending;badge.style.display=pending>0?'':'none';}
+  if(badge){badge.textContent=total;badge.style.display=total>0?'':'none';}
 }
 
 async function openConfirmationsModal(){
@@ -1809,8 +1817,11 @@ function renderConfirmations(){
     }).join('');
   }
 
-  // Group outgoing confirmations by trip
-  var outgoing=_confirmations.outgoing.filter(function(c){return c.status==='pending';}).sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
+  // Group outgoing confirmations by trip — show pending and rejected crew_assigned
+  // (the latter need explicit acknowledgement so the skipper sees the count change).
+  var outgoing=_confirmations.outgoing.filter(function(c){
+    return c.status==='pending' || (c.status==='rejected' && c.type==='crew_assigned');
+  }).sort(function(a,b){return(b.createdAt||'').localeCompare(a.createdAt||'');});
   if(!outgoing.length){
     outEl.innerHTML='<div class="empty-note">'+s('member.noOutgoing')+'</div>';
   }else{
@@ -1828,6 +1839,17 @@ function renderConfirmations(){
         '<span class="conf-date-info">'+esc(first.date||'')+(first.timeOut?' '+esc(first.timeOut):'')+'</span>'+
       '</div>';
       var items=group.map(function(c){
+        if(c.status==='rejected'){
+          var why=c.rejectComment?' <span class="text-muted text-xs">— '+esc(c.rejectComment)+'</span>':'';
+          return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
+            '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
+            '<span class="conf-type">'+s('member.crewDeclined')+why+'</span>'+
+            '<div class="flex-center gap-4 ml-auto">'+
+              '<span class="conf-status rejected">'+s('member.statusRejected')+'</span>'+
+              '<button class="btn-confirm" onclick="ackCrewRejection(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.ackBtn')+'</button>'+
+            '</div>'+
+          '</div>';
+        }
         return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
           '<span class="conf-type">'+_confDesc(c)+'</span>'+
@@ -1839,13 +1861,33 @@ function renderConfirmations(){
   }
 }
 
+// Skipper acknowledges that a rejected crew_assigned has been seen — server
+// already adjusted crewNames + crew count when the rejection was recorded;
+// dismissing here just clears it from the notification list.
+async function ackCrewRejection(confId){
+  try{
+    await apiPost('dismissConfirmation',{id:confId});
+    _confirmations.outgoing=_confirmations.outgoing.filter(c=>c.id!==confId);
+    updateConfBadge();
+    renderConfirmations();
+    // Crew count on the skipper's trip may have changed — refresh the logbook view
+    if(typeof reload==='function') reload();
+  }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
+}
+
 async function respondConf(confId,response,rejectComment){
   try{
     await apiPost('respondConfirmation',{id:confId,response:response,rejectComment:rejectComment||''});
     // Update local state: mark as confirmed/rejected (keep for display), dismiss server-side
     var _conf = _confirmations.incoming.find(c => c.id === confId);
     if (_conf) _conf.status = response === 'confirmed' ? 'confirmed' : 'rejected';
-    apiPost('dismissConfirmation', { id: confId }).catch(function(){});
+    // Server-side dismiss hides the row from BOTH parties (single shared flag),
+    // so skip it when rejecting a crew_assigned: the skipper still needs to see
+    // the rejection and acknowledge the resulting crew-count change.
+    var skipDismiss = response==='rejected' && _conf && _conf.type==='crew_assigned';
+    if (!skipDismiss) {
+      apiPost('dismissConfirmation', { id: confId }).catch(function(){});
+    }
     updateConfBadge();
     renderConfirmations();
     if(response==='confirmed'){
