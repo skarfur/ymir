@@ -19,7 +19,7 @@
     .login-logo p { color:var(--muted); font-size:12px; letter-spacing:1px; margin-top:4px; }
     .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
     .lang-row { text-align:center; margin-top:16px; }
-    #roleScreen { display:none; }
+    #roleScreen, #accountScreen { display:none; }
     .role-greeting { color:var(--brass); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; }
     .role-btn {
       width:100%; padding:18px 20px; margin-bottom:10px; border-radius:8px;
@@ -36,6 +36,8 @@
     .role-btn.role-staff  { border-color:var(--brass)44; }
     .role-btn.role-member { border-color:#2ecc7144; }
     .role-btn.role-member:hover { border-color:#2ecc71; }
+    .role-btn.role-ward   { border-color:#9b59b644; }
+    .role-btn.role-ward:hover { border-color:#9b59b6; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
     .back-link:hover { color:var(--brass); }
   </style>
@@ -64,6 +66,15 @@
     </div>
   </div>
 
+  <div id="accountScreen">
+    <div class="card">
+      <div class="role-greeting" id="accountGreeting"></div>
+      <div id="accountBtns"></div>
+      <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+    </div>
+    <span class="back-link" onclick="goBack()" id="accountBackLink"></span>
+  </div>
+
   <div id="roleScreen">
     <div class="card">
       <div class="role-greeting" id="roleGreeting"></div>
@@ -90,6 +101,7 @@ document.getElementById('ktInput').placeholder   = s('login.placeholder');
 document.getElementById('btnText').textContent   = s('login.btn');
 document.getElementById('langBtn').textContent   = s('nav.langToggle');
 document.getElementById('backLink').textContent  = s('login.back');
+document.getElementById('accountBackLink').textContent = s('login.back');
 
 document.getElementById('ktInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
@@ -117,32 +129,17 @@ async function doLogin() {
   try {
     const data = await apiGet('validateMember', { kennitala: kt });
     const user = data.member;
-    setUser(user);
+    const wards = Array.isArray(data.wards) ? data.wards : [];
 
-    // Sync server preferences → localStorage so all pages see saved settings
-    var serverPrefs = parseJson(user.preferences, {});
-    if (Object.keys(serverPrefs).length) {
-      setPrefs(serverPrefs);
-      if (serverPrefs.theme) setTheme(serverPrefs.theme);
-      if (serverPrefs.lang) setLang(serverPrefs.lang);
+    // If this member guards one or more minors, offer an account picker so
+    // they can choose whether to open their own account or a ward's account.
+    // Otherwise go straight to the existing role/redirect flow.
+    if (wards.length) {
+      showAccountPicker(user, wards);
+      return;
     }
 
-    // Prefetch data the landing page will need while user is on role picker
-    // (or racing the redirect for regular members). Results land in
-    // sessionStorage via apiGet's cache, so the target page skips the call.
-    window._prefetchConfig = apiGet('getConfig');
-    if (user.role === 'admin') {
-      window._prefetchMembers = apiGet('getMembers');
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      showRolePicker(user, ['member', 'staff', 'admin']);
-    } else if (user.role === 'staff') {
-      window._prefetchMembers = apiGet('getMembers');
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      showRolePicker(user, ['member', 'staff']);
-    } else {
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      window.location.href = '../member/';
-    }
+    proceedWithUser(user);
   } catch(e) {
     const isNotFound = e.message?.includes('Not found') || e.message?.includes('Inactive');
     err.textContent   = isNotFound ? s('login.notFound') : s('login.error');
@@ -152,9 +149,122 @@ async function doLogin() {
   }
 }
 
+// Persist the chosen user and drive the existing role-picker / redirect flow.
+// `user` is assumed to already carry any `guardianSession` metadata if the
+// active session is a guardian acting as their ward.
+function proceedWithUser(user) {
+  setUser(user);
+
+  // Sync server preferences → localStorage so all pages see saved settings
+  var serverPrefs = parseJson(user.preferences, {});
+  if (Object.keys(serverPrefs).length) {
+    setPrefs(serverPrefs);
+    if (serverPrefs.theme) setTheme(serverPrefs.theme);
+    if (serverPrefs.lang) setLang(serverPrefs.lang);
+  }
+
+  // Prefetch data the landing page will need while user is on role picker
+  // (or racing the redirect for regular members). Results land in
+  // sessionStorage via apiGet's cache, so the target page skips the call.
+  window._prefetchConfig = apiGet('getConfig');
+  if (user.role === 'admin') {
+    window._prefetchMembers = apiGet('getMembers');
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    showRolePicker(user, ['member', 'staff', 'admin']);
+  } else if (user.role === 'staff') {
+    window._prefetchMembers = apiGet('getMembers');
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    showRolePicker(user, ['member', 'staff']);
+  } else {
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    window.location.href = '../member/';
+  }
+}
+
+function showAccountPicker(guardian, wards) {
+  document.getElementById('ktScreen').style.display      = 'none';
+  document.getElementById('roleScreen').style.display    = 'none';
+  document.getElementById('accountScreen').style.display = 'block';
+  document.getElementById('accountGreeting').textContent =
+    s('login.welcome') + ' ' + (guardian.name || '').split(' ')[0] + ' — ' + s('login.chooseAccount');
+
+  const container = document.getElementById('accountBtns');
+  container.innerHTML = '';
+
+  // Guardian's own account
+  const selfBtn = document.createElement('button');
+  selfBtn.className = 'role-btn role-member';
+  selfBtn.innerHTML =
+    '<span class="role-icon">⛵</span>' +
+    '<div>' +
+      '<div class="role-label">' + esc(guardian.name) + '</div>' +
+      '<div class="role-desc">' + s('login.yourAccount') + '</div>' +
+    '</div>';
+  selfBtn.onclick = function() { proceedWithUser(guardian); };
+  container.appendChild(selfBtn);
+
+  // One button per ward
+  wards.forEach(function(w) {
+    const wBtn = document.createElement('button');
+    wBtn.className = 'role-btn role-ward';
+    wBtn.innerHTML =
+      '<span class="role-icon">🧒</span>' +
+      '<div>' +
+        '<div class="role-label">' + esc(w.name) + '</div>' +
+        '<div class="role-desc">' + s('login.wardMinor') +
+          (w.birthYear ? ' · ' + esc(w.birthYear) : '') + '</div>' +
+      '</div>';
+    wBtn.onclick = function() { switchToWard(guardian, w); };
+    container.appendChild(wBtn);
+  });
+}
+
+async function switchToWard(guardian, ward) {
+  const btns = document.querySelectorAll('#accountBtns button');
+  const err  = document.getElementById('accountErr');
+  btns.forEach(function(b) { b.disabled = true; });
+  err.style.display = 'none';
+  // Drop per-user caches so the ward's hub doesn't show stale guardian data
+  // if a previous session left something in sessionStorage.
+  try {
+    ['ymir_getTrips_','ymir_getCrews_','ymir_getCrewBoard_','ymir_getCrewInvites_']
+      .forEach(function(k) { sessionStorage.removeItem(k); });
+  } catch(e) {}
+  try {
+    const data = await apiPost('validateWard', {
+      guardianKennitala: guardian.kennitala,
+      wardKennitala: ward.kennitala,
+    });
+    // Stash a trimmed guardian record on the ward's user object so the
+    // header can surface "Signed in as X — ↶ Back to guardian".
+    const wardUser = Object.assign({}, data.member, {
+      guardianSession: {
+        id: guardian.id,
+        kennitala: guardian.kennitala,
+        name: guardian.name,
+        role: guardian.role,
+      },
+    });
+    proceedWithUser(wardUser);
+  } catch(e) {
+    btns.forEach(function(b) { b.disabled = false; });
+    err.textContent = s('login.wardSwitchError');
+    err.style.display = 'block';
+  }
+}
+
+// Minimal HTML escape used inside dynamically built buttons in this page.
+// shared/ui.js defines a global `esc`, but it isn't loaded on the login page.
+function esc(t) {
+  return String(t == null ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function showRolePicker(user, roles) {
-  document.getElementById('ktScreen').style.display   = 'none';
-  document.getElementById('roleScreen').style.display = 'block';
+  document.getElementById('ktScreen').style.display      = 'none';
+  document.getElementById('accountScreen').style.display = 'none';
+  document.getElementById('roleScreen').style.display    = 'block';
   document.getElementById('roleGreeting').textContent =
     s('login.welcome') + ' ' + user.name.split(' ')[0] + ' — ' + s('login.chooseView');
 
@@ -181,8 +291,11 @@ function showRolePicker(user, roles) {
 }
 
 function goBack() {
-  document.getElementById('ktScreen').style.display   = 'block';
-  document.getElementById('roleScreen').style.display = 'none';
+  document.getElementById('ktScreen').style.display      = 'block';
+  document.getElementById('roleScreen').style.display    = 'none';
+  document.getElementById('accountScreen').style.display = 'none';
+  const accErr = document.getElementById('accountErr');
+  if (accErr) accErr.style.display = 'none';
   document.getElementById('ktInput').value = '';
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('btnText').textContent = s('login.btn');

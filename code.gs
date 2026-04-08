@@ -337,6 +337,7 @@ function doPost(e) {
 function route_(action, b) {
   switch (action) {
     case 'validateMember': return validateMember_(b.kennitala);
+    case 'validateWard': return validateWard_(b);
     case 'getMembers': return getMembers_(b);
     case 'saveMember': return saveMember_(b);
     case 'deleteMember': return deleteMember_(b.id);
@@ -464,25 +465,74 @@ function route_(action, b) {
 // MEMBERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function _publicMember_(m) {
+  return {
+    id: m.id, kennitala: m.kennitala, name: m.name, role: m.role,
+    email: m.email || '', phone: m.phone || '',
+    birthYear: m.birthYear || '', isMinor: bool_(m.isMinor),
+    guardianName: m.guardianName || '', guardianKennitala: m.guardianKennitala || '',
+    guardianPhone: m.guardianPhone || '',
+    certifications: m.certifications || '',
+    initials: m.initials || extractInitials_(m.name),
+    preferences: m.preferences || '{}',
+    bio: m.bio || '',
+    headshotUrl: m.headshotUrl || '',
+  };
+}
+
+// Find all active minor members whose guardianKennitala matches the given kennitala.
+// Returns a trimmed list with just enough info for the account picker.
+function _findWardsOf_(guardianKt) {
+  const kt = String(guardianKt || '').trim();
+  if (!kt) return [];
+  const all = readAll_('members');
+  return all.filter(function(r) {
+    return bool_(r.active) && bool_(r.isMinor) &&
+           String(r.guardianKennitala || '').trim() === kt;
+  }).map(function(r) {
+    return {
+      id: r.id,
+      kennitala: r.kennitala,
+      name: r.name,
+      birthYear: r.birthYear || '',
+    };
+  });
+}
+
 function validateMember_(kennitala) {
   if (!kennitala) return failJ('kennitala required');
   const m = findOne_('members', 'kennitala', String(kennitala).trim());
   if (!m) return failJ('Not found', 404);
   if (!bool_(m.active)) return failJ('Inactive account', 403);
+  // If this member is not themselves a minor, surface any wards they guard
+  // so the login UI can offer account switching.
+  const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
   return okJ({
-    member: {
-      id: m.id, kennitala: m.kennitala, name: m.name, role: m.role,
-      email: m.email || '', phone: m.phone || '',
-      birthYear: m.birthYear || '', isMinor: bool_(m.isMinor),
-      guardianName: m.guardianName || '', guardianKennitala: m.guardianKennitala || '',
-      guardianPhone: m.guardianPhone || '',
-      certifications: m.certifications || '',
-      initials: m.initials || extractInitials_(m.name),
-      preferences: m.preferences || '{}',
-      bio: m.bio || '',
-      headshotUrl: m.headshotUrl || '',
-    }
+    member: _publicMember_(m),
+    wards: wards,
   });
+}
+
+// Return a ward's full member object, but only if `guardianKennitala` is
+// actually listed as the guardian on the ward's member record and the ward
+// is still flagged as a minor and active. Requires the caller to prove the
+// guardian relationship by passing their own kennitala, which must match.
+function validateWard_(b) {
+  const guardianKt = String((b && b.guardianKennitala) || '').trim();
+  const wardKt     = String((b && b.wardKennitala) || '').trim();
+  if (!guardianKt || !wardKt) return failJ('guardianKennitala and wardKennitala required');
+  const guardian = findOne_('members', 'kennitala', guardianKt);
+  if (!guardian) return failJ('Guardian not found', 404);
+  if (!bool_(guardian.active)) return failJ('Inactive account', 403);
+  if (bool_(guardian.isMinor)) return failJ('Minors cannot act as guardians', 403);
+  const ward = findOne_('members', 'kennitala', wardKt);
+  if (!ward) return failJ('Ward not found', 404);
+  if (!bool_(ward.active)) return failJ('Inactive account', 403);
+  if (!bool_(ward.isMinor)) return failJ('Target is not a minor', 403);
+  if (String(ward.guardianKennitala || '').trim() !== guardianKt) {
+    return failJ('Not authorised for this ward', 403);
+  }
+  return okJ({ member: _publicMember_(ward) });
 }
 
 function getMembers_(params) {
