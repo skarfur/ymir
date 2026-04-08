@@ -5416,7 +5416,7 @@ function DEFAULT_ROWING_PASSPORT_() {
             items: [
               { id: 'pfd-use',          assessment: 'practical', name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
               { id: 'capsize-recovery', assessment: 'practical', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
-              { id: 'cold-water',       assessment: 'theoretical',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
+              { id: 'cold-water',       assessment: 'theory',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
             ],
           },
           {
@@ -5432,7 +5432,7 @@ function DEFAULT_ROWING_PASSPORT_() {
             id: 'etiquette',
             name: { EN: 'Etiquette & comms', IS: 'Siðir og samskipti' },
             items: [
-              { id: 'right-of-way',  assessment: 'theoretical',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
+              { id: 'right-of-way',  assessment: 'theory',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
               { id: 'radio-checkin', assessment: 'practical', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
             ],
           },
@@ -5609,22 +5609,68 @@ function saveRowingPassportDef_(b) {
   return okJ({ saved: true });
 }
 
-function importRowingPassportCsv_(b) {
-  // CSV columns: passport_id,category_id,category_label_en,category_label_is,item_id,item_label_en,item_label_is,description_en,description_is
-  // Existing items not present in CSV are marked retired (NOT deleted) so historical sign-offs remain valid.
-  if (!b.csv) return failJ('csv required');
-  const rows = parsePassportCsv_(b.csv);
-  if (!rows.length) return failJ('CSV is empty or unparseable');
+function _slugify_(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
-  // Load current def to preserve passport-level fields & retire missing items
+function importRowingPassportCsv_(b) {
+  // CSV columns (headers, order-independent):
+  //   passport_id (optional, defaults 'rower')
+  //   category_id (optional — auto-slugged from category_label_en if blank)
+  //   category_label_en, category_label_is (label_is optional)
+  //   item_id (optional — reused from existing item with same label_en, else slugged)
+  //   assessment ('theory' | 'practical', defaults 'practical')
+  //   item_label_en (required), item_label_is (optional)
+  //   description_en, description_is (both optional)
+  //
+  // Only item_label_en is strictly required per row. Existing items not
+  // present in the CSV are marked retired (not deleted).
+  if (!b.csv) return failJ('csv required');
+  const parsed = parsePassportCsv_(b.csv);
+  const rows = parsed.rows;
+  if (!rows.length) {
+    const hdrs = parsed.headers || [];
+    if (!hdrs.length) {
+      return failJ('CSV is empty — expected a header row and at least one data row.');
+    }
+    const needed = ['item_id', 'item_label_en'];
+    const missing = needed.filter(h => hdrs.indexOf(h) < 0);
+    if (missing.length === needed.length) {
+      return failJ('CSV headers not recognised. Detected: [' + hdrs.join(', ') + ']. Expected at least one of: item_id, item_label_en. Column names must be lowercase with underscores (e.g. item_label_en, not "Item Label EN").');
+    }
+    return failJ('CSV has no data rows with an item_id or item_label_en. Detected headers: [' + hdrs.join(', ') + '].');
+  }
+
+  // Load current def so we can (a) preserve passport-level fields,
+  // (b) look up existing ids by label for rows that omit item_id,
+  // (c) retire items missing from the new import.
   const cfgMap = getConfigMap_();
   let current = null;
   try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) current = JSON.parse(raw); } catch (e) {}
   if (!current) current = DEFAULT_ROWING_PASSPORT_();
 
+  // Build a lookup: (passportId|categoryId|lowercased labelEn) → existing itemId
+  // Also index by category labelEn → categoryId for category auto-resolution.
+  const existingItemByLabel = {};
+  const existingCatByLabel = {};
+  (current.passports || []).forEach(p => {
+    (p.categories || []).forEach(c => {
+      const catLabelKey = (p.id + '|' + _slugify_(c.name && c.name.EN || c.id));
+      existingCatByLabel[catLabelKey] = c.id;
+      (c.items || []).forEach(i => {
+        const itemLabelKey = (p.id + '|' + c.id + '|' + String((i.name && i.name.EN) || '').toLowerCase().trim());
+        if (itemLabelKey.split('|')[2]) existingItemByLabel[itemLabelKey] = i.id;
+      });
+    });
+  });
+
   // Build new shape from CSV
   const passports = {};
-  rows.forEach(r => {
+  const errors = [];
+  rows.forEach((r, rowIdx) => {
+    const lineNo = rowIdx + 2; // +1 header, +1 1-indexed
     const pid = r.passport_id || 'rower';
     if (!passports[pid]) {
       const existing = (current.passports || []).find(p => p.id === pid);
@@ -5635,21 +5681,56 @@ function importRowingPassportCsv_(b) {
       passports[pid]._catIndex = {};
     }
     const p = passports[pid];
-    let cat = p._catIndex[r.category_id];
+
+    // Resolve category_id: explicit → provided; blank → look up by label, else slug
+    let catId = (r.category_id || '').trim();
+    if (!catId) {
+      const catLabelEn = (r.category_label_en || '').trim();
+      if (!catLabelEn) { errors.push('Row ' + lineNo + ': needs either category_id or category_label_en'); return; }
+      const catKey = pid + '|' + _slugify_(catLabelEn);
+      catId = existingCatByLabel[catKey] || _slugify_(catLabelEn);
+    }
+
+    let cat = p._catIndex[catId];
     if (!cat) {
-      cat = { id: r.category_id, name: { EN: r.category_label_en || r.category_id, IS: r.category_label_is || r.category_label_en || r.category_id }, items: [] };
-      p._catIndex[r.category_id] = cat;
+      cat = { id: catId, name: { EN: r.category_label_en || catId, IS: r.category_label_is || r.category_label_en || catId }, items: [] };
+      p._catIndex[catId] = cat;
       p.categories.push(cat);
     }
-    var assessment = (r.assessment || '').toLowerCase();
-    if (assessment !== 'theoretical' && assessment !== 'practical') assessment = 'practical';
+
+    // Item label_en is required
+    const labelEn = (r.item_label_en || '').trim();
+    if (!labelEn && !(r.item_id || '').trim()) {
+      errors.push('Row ' + lineNo + ': needs either item_id or item_label_en');
+      return;
+    }
+
+    // Resolve item_id: explicit → provided; blank → match existing by label, else slug
+    let itemId = (r.item_id || '').trim();
+    if (!itemId) {
+      const itemKey = pid + '|' + catId + '|' + labelEn.toLowerCase();
+      itemId = existingItemByLabel[itemKey] || _slugify_(labelEn);
+    }
+
+    // Detect duplicate item ids within the same category in this CSV
+    if (cat.items.some(i => i.id === itemId)) {
+      errors.push('Row ' + lineNo + ': duplicate item "' + itemId + '" in category "' + catId + '" (give distinct labels or explicit item_id)');
+      return;
+    }
+
+    let assessment = (r.assessment || '').toLowerCase();
+    // Back-compat: accept historical 'theoretical' spelling and normalise to 'theory'.
+    if (assessment === 'theoretical') assessment = 'theory';
+    if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
     cat.items.push({
-      id: r.item_id,
+      id: itemId,
       assessment: assessment,
-      name: { EN: r.item_label_en || r.item_id, IS: r.item_label_is || r.item_label_en || r.item_id },
+      name: { EN: labelEn || itemId, IS: r.item_label_is || labelEn || itemId },
       desc: { EN: r.description_en || '', IS: r.description_is || '' },
     });
   });
+
+  if (errors.length) return failJ('Import errors:\n' + errors.slice(0, 10).join('\n') + (errors.length > 10 ? '\n(+' + (errors.length - 10) + ' more)' : ''));
 
   // Retire items present in old def but absent from CSV
   (current.passports || []).forEach(oldP => {
@@ -5693,17 +5774,22 @@ function importRowingPassportCsv_(b) {
 }
 
 function parsePassportCsv_(text) {
-  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) return [];
+  // Strip UTF-8 BOM if present (common on Excel/Windows exports)
+  let t = String(text || '');
+  if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+  const lines = t.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (!lines.length) return { rows: [], headers: [] };
   const headers = splitCsvLine_(lines[0]).map(h => h.trim().toLowerCase());
   const out = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = splitCsvLine_(lines[i]);
     const row = {};
     headers.forEach((h, j) => { row[h] = (cells[j] || '').trim(); });
-    if (row.item_id) out.push(row);
+    // Keep the row if it has *either* an item_id or an item_label_en.
+    // The importer resolves the missing one (id from label or label from id).
+    if (row.item_id || row.item_label_en) out.push(row);
   }
-  return out;
+  return { rows: out, headers: headers };
 }
 function splitCsvLine_(line) {
   const out = [];

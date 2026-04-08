@@ -1580,7 +1580,7 @@ var _STRINGS_FLAT = {
   "passport.adminTitle": "Rowing Passport",
   "passport.importCsv": "Import CSV",
   "passport.exportCsv": "Export CSV",
-  "passport.csvHelp": "Columns: passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is. assessment is 'theory' or 'practical'.",
+  "passport.csvHelp": "Columns: passport_id, category_id, category_label_en, category_label_is, item_id, assessment, item_label_en, item_label_is, description_en, description_is. Only item_label_en is required per row — item_id and category_id are auto-generated from the English label if blank (re-used from existing items with matching labels so old sign-offs stay valid). assessment is 'theory' or 'practical' (defaults to 'practical').",
   "passport.theory": "Theoretical",
   "passport.practical": "Practical",
   "passport.viewMember": "VIEW MEMBER",
