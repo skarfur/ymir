@@ -114,7 +114,6 @@
       <label class="pill-toggle active"><input type="checkbox" id="svDistance" checked><span data-s="settings.stats.distance"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svLongest" checked><span data-s="settings.stats.longest"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svAvgDuration" checked><span data-s="settings.stats.avgDuration"></span></label>
-      <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.roles"></div>
@@ -122,13 +121,13 @@
       <label class="pill-toggle active"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svCrew" checked><span data-s="settings.stats.crew"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svBoats" checked><span data-s="settings.stats.boats"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.conditions"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svHeavy" checked><span data-s="settings.stats.heavy"></span></label>
-      <label class="pill-toggle active"><input type="checkbox" id="svNight" checked><span data-s="settings.stats.night"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.other"></div>
@@ -224,8 +223,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function applyStatVis(sv) {
-  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svNight','svAvgDuration','svLocations','svVerified'];
-  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','night','avgDuration','locations','verified'];
+  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svAvgDuration','svLocations','svVerified'];
+  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified'];
   for (var i = 0; i < ids.length; i++) {
     var el = document.getElementById(ids[i]);
     var on = isStatVisible(keys[i], sv);
@@ -302,7 +301,6 @@ async function saveSettings() {
     boats:      document.getElementById('svBoats').checked,
     crew:       document.getElementById('svCrew').checked,
     heavy:      document.getElementById('svHeavy').checked,
-    night:      document.getElementById('svNight').checked,
     avgDuration:document.getElementById('svAvgDuration').checked,
     locations:  document.getElementById('svLocations').checked,
     verified:   document.getElementById('svVerified').checked,

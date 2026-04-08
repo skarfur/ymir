@@ -211,7 +211,6 @@ var STATS_VIS_DEFAULTS = {
   boats:       false,
   crew:        false,
   heavy:       false,
-  night:       false,
   avgDuration: false,
   locations:   false,
   verified:    false,
