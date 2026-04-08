@@ -214,6 +214,11 @@ var STATS_VIS_DEFAULTS = {
   avgDuration: false,
   locations:   false,
   verified:    false,
+  helmHours:   false,
+  student:     false,
+  favBoat:     false,
+  favLocation: false,
+  peakWind:    false,
 };
 function isStatVisible(key, sv) {
   sv = sv || {};
