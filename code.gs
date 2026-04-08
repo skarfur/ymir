@@ -1341,7 +1341,6 @@ function getConfig_() {
     const rpRaw = getConfigValue_('rowingPassport', cfgMap);
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
-  if (!rowingPassport) rowingPassport = DEFAULT_ROWING_PASSPORT_();
   const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport };
   cPut_('config', config);
   return okJ(config);
@@ -5451,59 +5450,17 @@ function addReservationAndCrewTabs() {
 // Stable identifiers: passport.id ('rower'), category.id, item.id. Labels are
 // editable; ids must never change once a sign-off references them.
 
-function DEFAULT_ROWING_PASSPORT_() {
-  return {
-    version: 1,
-    passports: [
-      {
-        id: 'rower',
-        name: { EN: 'Rower Passport', IS: 'Ræðarapassi' },
-        promoteCertId: 'rowing_division',
-        fromSub: 'restricted',
-        toSub: 'released',
-        requiredSigs: 2,
-        categories: [
-          {
-            id: 'safety',
-            name: { EN: 'Safety', IS: 'Öryggi' },
-            items: [
-              { id: 'pfd-use',          assessment: 'practical', name: { EN: 'PFD use & fitting',        IS: 'Notkun og stilling björgunarvestis' }, desc: { EN: '', IS: '' } },
-              { id: 'capsize-recovery', assessment: 'practical', name: { EN: 'Capsize recovery',         IS: 'Endurheimt eftir hvolfi' },             desc: { EN: '', IS: '' } },
-              { id: 'cold-water',       assessment: 'theory',    name: { EN: 'Cold water awareness',     IS: 'Þekking á köldu vatni' },               desc: { EN: '', IS: '' } },
-            ],
-          },
-          {
-            id: 'boat-handling',
-            name: { EN: 'Boat handling', IS: 'Bátastjórnun' },
-            items: [
-              { id: 'launching',     assessment: 'practical', name: { EN: 'Launching & landing',       IS: 'Sjósetning og lending' },     desc: { EN: '', IS: '' } },
-              { id: 'steering',      assessment: 'practical', name: { EN: 'Steering straight',         IS: 'Bein stýring' },              desc: { EN: '', IS: '' } },
-              { id: 'stopping',      assessment: 'practical', name: { EN: 'Stopping & emergency stop', IS: 'Stöðvun og neyðarstöðvun' }, desc: { EN: '', IS: '' } },
-            ],
-          },
-          {
-            id: 'etiquette',
-            name: { EN: 'Etiquette & comms', IS: 'Siðir og samskipti' },
-            items: [
-              { id: 'right-of-way',  assessment: 'theory',    name: { EN: 'Right of way',  IS: 'Forgangur' },          desc: { EN: '', IS: '' } },
-              { id: 'radio-checkin', assessment: 'practical', name: { EN: 'Radio check-in', IS: 'Talstöðvarinnskráning' }, desc: { EN: '', IS: '' } },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-}
-
 function getRowingPassport_(b) {
   // Returns: { definition, progress (if memberId provided) }
+  // If no definition has been configured yet, returns an empty one — the
+  // admin CSV importer / inline editor is the only way to populate it.
   const cfgMap = getConfigMap_();
   let def = null;
   try {
     const raw = getConfigValue_('rowingPassport', cfgMap);
     if (raw) def = JSON.parse(raw);
   } catch (e) {}
-  if (!def) def = DEFAULT_ROWING_PASSPORT_();
+  if (!def) def = { version: 1, passports: [] };
 
   const result = { definition: def };
   if (b && b.memberId) {
@@ -5573,7 +5530,7 @@ function signPassportItem_(b) {
   const cfgMap = getConfigMap_();
   let def = null;
   try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) def = JSON.parse(raw); } catch (e) {}
-  if (!def) def = DEFAULT_ROWING_PASSPORT_();
+  if (!def) return failJ('No rowing passport has been configured yet', 404);
   const passport = (def.passports || []).find(p => p.id === passportId);
   if (!passport) return failJ('Unknown passport: ' + passportId, 404);
   let item = null;
@@ -5702,7 +5659,7 @@ function importRowingPassportCsv_(b) {
   const cfgMap = getConfigMap_();
   let current = null;
   try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) current = JSON.parse(raw); } catch (e) {}
-  if (!current) current = DEFAULT_ROWING_PASSPORT_();
+  if (!current) current = { version: 0, passports: [] };
 
   // Build a lookup: (passportId|categoryId|lowercased labelEn) → existing itemId
   // Also index by category labelEn → categoryId for category auto-resolution.
