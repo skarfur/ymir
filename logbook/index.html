@@ -163,13 +163,12 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="stat-card"><div class="stat-val" id="stBoats">—</div><div class="stat-lbl">Boats</div></div>
     <div class="stat-card"><div class="stat-val" id="stCrew">—</div><div class="stat-lbl">As crew</div></div>
     <div class="stat-card"><div class="stat-val" id="stHeavy">—</div><div class="stat-lbl">Heavy wx</div></div>
-    <div class="stat-card"><div class="stat-val" id="stNight">—</div><div class="stat-lbl">Night sails</div></div>
     <div class="stat-card"><div class="stat-val" id="stAvgDuration">—</div><div class="stat-lbl">Avg duration</div></div>
     <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl">Locations</div></div>
     <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl">Verified</div></div>
   </div>
   <div class="cat-hours" id="catHours" style="display:none">
-    <div class="cat-hours-title">Hours by category</div>
+    <div class="cat-hours-title">Hours by boat category</div>
     <div id="catHoursList"></div>
   </div>
 
@@ -545,11 +544,6 @@ function renderStats(){
   const uniqueBoats=new Set(myTrips.map(t=>t.boatId||t.boatName).filter(Boolean)).size;
   const crewTrips=myTrips.filter(t=>t.role==='crew').length;
   const heavyWx=myTrips.filter(t=>(parseInt(t.beaufort)||0)>=5).length;
-  const nightSails=myTrips.filter(t=>{
-    const ti=parseInt((t.timeIn||'').replace(':',''),10)||0;
-    const to=parseInt((t.timeOut||'').replace(':',''),10)||0;
-    return ti>=2100||ti<=500||to>=2100||to<=500||(to>ti&&ti>0);
-  }).length;
   const avgDur=myTrips.length?hours/myTrips.length:0;
   const uniqueLocs=new Set(myTrips.map(t=>t.locationName||t.locationId).filter(Boolean)).size;
   const verifiedTrips=myTrips.filter(t=>t.verified&&t.verified!=='false').length;
@@ -566,7 +560,6 @@ function renderStats(){
   const stBoatsEl=document.getElementById('stBoats');
   const stCrewEl=document.getElementById('stCrew');
   const stHeavyEl=document.getElementById('stHeavy');
-  const stNightEl=document.getElementById('stNight');
   const stAvgDurEl=document.getElementById('stAvgDuration');
   const stLocsEl=document.getElementById('stLocations');
   const stVerifiedEl=document.getElementById('stVerified');
@@ -586,13 +579,12 @@ function renderStats(){
   if(!isStatVisible('boats',_statsVis)){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
   if(!isStatVisible('crew',_statsVis)){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
   if(!isStatVisible('heavy',_statsVis)){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
-  if(!isStatVisible('night',_statsVis)){stNightEl.parentElement.style.display='none'}else{stNightEl.textContent=nightSails}
   if(!isStatVisible('avgDuration',_statsVis)){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
   if(!isStatVisible('locations',_statsVis)){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
   if(!isStatVisible('verified',_statsVis)){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
 
   // Adjust grid columns based on visible cards
-  const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','night','avgDuration','locations','verified'];
+  const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified'];
   const visibleCards=visKeys.filter(k=>isStatVisible(k,_statsVis)).length;
   const strip=document.querySelector('.stat-strip');
   if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
