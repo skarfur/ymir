@@ -1012,6 +1012,8 @@ var _STRINGS_FLAT = {
   "pub.dash.trips": "trips",
   "pub.dash.viewProfile": "View full profile",
   "pub.dash.comingSoon": "More information coming soon.",
+  "pub.dash.activeMembers": "Active Members",
+  "pub.dash.becomeMember": "Become a Member",
   "admin.expectedColumns": "EXPECTED COLUMNS",
   "admin.colName": "Full name (required)",
   "admin.colKt": "10-digit ID (required)",

@@ -1012,6 +1012,8 @@ var _STRINGS_FLAT = {
   "pub.dash.trips": "siglingar",
   "pub.dash.viewProfile": "Sjá fulla prófíl",
   "pub.dash.comingSoon": "Frekari upplýsingar birtast fljótlega.",
+  "pub.dash.activeMembers": "Virkir félagsmenn",
+  "pub.dash.becomeMember": "Gerast félagi",
   "admin.expectedColumns": "VÆNTIR DÁLKAR",
   "admin.colName": "Fullt nafn (áskilið)",
   "admin.colKt": "10 stafa kennitala (áskilið)",

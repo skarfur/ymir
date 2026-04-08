@@ -4582,6 +4582,8 @@ function publicDashboard_() {
 
   // ── Captains ──
   var members = readAll_('members').filter(function(m) { return m.active === true || m.active === 'TRUE' || m.active === 'true'; });
+  // Active members count excludes guest entries
+  var activeMembersCount = members.filter(function(m) { return m.role !== 'guest'; }).length;
   var captains = [];
   var scriptUrl = ScriptApp.getService().getUrl();
 
@@ -4682,6 +4684,7 @@ function publicDashboard_() {
     ytd: { totalTrips: totalTrips, totalHours: Math.round(totalHours * 10) / 10, byCategory: byCategory },
     locations: locData,
     onWater: { boatCount: boatCount, peopleCount: peopleCount, boats: onWaterBoats },
+    activeMembers: activeMembersCount,
     captains: captains,
     boatCategories: boatCategories.map(function(c) { return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || '', emoji: c.emoji || '' }; }),
     staffStatus: staffStatus,
