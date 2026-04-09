@@ -193,7 +193,7 @@
           <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" oninput="ppSearchMember(this.value)" style="font-size:11px;flex:1;min-width:160px">
           <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" onclick="ppViewSelf()" data-s="passport.viewSelf">My passport</button>
         </div>
-        <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10"></div>
+        <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);border:1px solid var(--border);border-radius:6px;margin-top:2px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
         <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass);margin-top:4px"></div>
       </div>
       <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
-var _membersLoaded = false;
+var _membersLoaded = false, _membersLoadingPromise = null;
 var _passportDef = null, _passportProgress = null;
 var _passportLang = (localStorage.getItem('ymirLang') || 'IS').toUpperCase();
 var _passportSignerMode = false;
@@ -429,14 +429,24 @@ window.showCxTab = showCxTab;
   }
 })();
 
-// Lazy-load members on first modal open (not needed for initial render)
-async function ensureMembersLoaded() {
-  if (_membersLoaded) return;
-  _membersLoaded = true;
-  try {
-    var membersRes = await apiGet('getMembers');
-    _members = (membersRes.members || []).filter(function(m) { return m.active !== false && m.active !== 'false'; });
-  } catch(e) { _members = []; _membersLoaded = false; }
+// Lazy-load members on first modal open (not needed for initial render).
+// Tracks an in-flight promise so concurrent callers wait for the same load
+// instead of silently racing against an empty _members array.
+function ensureMembersLoaded() {
+  if (_membersLoaded) return Promise.resolve();
+  if (_membersLoadingPromise) return _membersLoadingPromise;
+  _membersLoadingPromise = (async function() {
+    try {
+      var membersRes = await apiGet('getMembers');
+      _members = (membersRes.members || []).filter(function(m) { return m.active !== false && m.active !== 'false'; });
+      _membersLoaded = true;
+    } catch(e) {
+      _members = [];
+    } finally {
+      _membersLoadingPromise = null;
+    }
+  })();
+  return _membersLoadingPromise;
 }
 
 // ══ STATS ════════════════════════════════════════════════════════════════════
@@ -1097,10 +1107,13 @@ async function reloadPassportProgress() {
   } catch(e) { showToast(e.message, 'err'); }
 }
 
-function ppSearchMember(q) {
+async function ppSearchMember(q) {
   var box = document.getElementById('ppMemberSuggestions');
   q = (q || '').trim().toLowerCase();
-  if (!q || !_members.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  // Members are lazy-loaded — wait for the in-flight load before filtering,
+  // otherwise the first few keystrokes would race against an empty list.
+  if (!_membersLoaded) await ensureMembersLoaded();
   var hits = _members.filter(function(m){
     if (!hasRowingEndorsement(m)) return false;
     var n = (m.name || '').toLowerCase();
@@ -1108,8 +1121,10 @@ function ppSearchMember(q) {
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 8);
   if (!hits.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  var itemStyle = 'padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)';
   box.innerHTML = hits.map(function(m){
-    return '<div class="suggest-item" onclick="ppSelectMember(\'' + m.id + '\')">' + _esc(m.name) + ' <span style="color:var(--muted);font-size:10px">' + _esc(m.kennitala || '') + '</span></div>';
+    return '<div class="suggest-item" style="' + itemStyle + '" onclick="ppSelectMember(\'' + m.id + '\')">'
+      + _esc(m.name) + ' <span style="color:var(--muted);font-size:10px">' + _esc(m.kennitala || '') + '</span></div>';
   }).join('');
   box.classList.remove('hidden');
 }
