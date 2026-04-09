@@ -1107,27 +1107,28 @@ async function reloadPassportProgress() {
   } catch(e) { showToast(e.message, 'err'); }
 }
 
-// Looser than hasRowingEndorsement: matches any rowing_division cert (with or
-// without a sub) plus the legacy released_rower cert, ignoring expiry and
-// letter case. The picker should surface anyone the club thinks of as a rower,
-// restricted included, even if their certifications haven't been through
-// migrateRowingDivisionToSubcats yet.
+// "Rower division" membership is fuzzy: restricted rowers are not required to
+// have an explicit rowing_division cert written into their certifications JSON
+// (only released rowers and coxswains reliably do), so filtering strictly by
+// cert would hide anyone the club hasn't yet tagged. Treat anyone who isn't
+// staff/admin/manager as a potential rower — the picker is a passport lookup,
+// and non-rowers will just show an empty passport if selected.
 function _ppIsRower(m) {
-  if (!m || !m.certifications) return false;
-  var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
-  if (!Array.isArray(certs)) return false;
-  for (var i = 0; i < certs.length; i++) {
-    var c = certs[i];
-    if (!c) continue;
-    // Accept either certId or id; assignments normally use certId but tolerate
-    // either so stale data shapes don't silently disappear from the picker.
-    var id  = String(c.certId || c.id || '').toLowerCase();
-    var sub = String(c.sub || '').toLowerCase();
-    if (id === 'rowing_division') return true;
-    if (id === 'released_rower' || sub === 'released_rower') return true;
-    if (sub === 'restricted' || sub === 'released' || sub === 'coxswain') return true;
+  if (!m) return false;
+  var role = String(m.role || '').toLowerCase();
+  if (role === 'staff' || role === 'admin' || role === 'manager') {
+    // Staff can still be rowers via an explicit rowing_division cert.
+    if (!m.certifications) return false;
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    if (!Array.isArray(certs)) return false;
+    return certs.some(function(c) {
+      if (!c) return false;
+      var id  = String(c.certId || c.id || '').toLowerCase();
+      var sub = String(c.sub || '').toLowerCase();
+      return id === 'rowing_division' || id === 'released_rower' || sub === 'released_rower';
+    });
   }
-  return false;
+  return true;
 }
 
 async function ppSearchMember(q) {
