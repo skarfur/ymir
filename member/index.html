@@ -164,7 +164,6 @@
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
-    <button class="act-btn" onclick="scanBoatQR()"        data-s="qr.scanBtn"></button>
     <button class="act-btn" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
     <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
@@ -459,6 +458,9 @@ function renderLaunchPicker(preselectedBoatId) {
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
       '<div class="mb-12">'+
+        '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+          s('qr.scanBtn')+
+        '</button>'+
         '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
           '🚣 '+s('member.nonClubBoat')+
           ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
@@ -473,6 +475,11 @@ function renderLaunchPicker(preselectedBoatId) {
   const grouped={};
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
+    '<div class="mb-12">'+
+      '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+        s('qr.scanBtn')+
+      '</button>'+
+    '</div>'+
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
       `<div class="mb-12">
         <div class="section-label">${_fmtCatLabel(cat)}</div>
