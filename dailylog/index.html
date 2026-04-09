@@ -901,6 +901,7 @@ function populateTideFields() {
 }
 
 function _autoFillTide() {
+  return; // DISABLED pending tide widget hang investigation
   if (typeof tideExtrema !== 'function') return;
   const extrema = tideExtrema(viewDate);
   tideData = tideToDailyLog(extrema);
@@ -908,6 +909,7 @@ function _autoFillTide() {
 
 let _tideWidgetInstance = null;
 function _renderDailyTide() {
+  return; // DISABLED pending tide widget hang investigation
   const el = document.getElementById('dailyTideWidget');
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
