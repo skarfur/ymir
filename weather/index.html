@@ -273,7 +273,7 @@ function render(wx, marine, staffStatus) {
     ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${SCORE_CONFIG.flags[r.f].color};border-color:${SCORE_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
-${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
+${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
 
 <!-- WIND HERO -->
 <div class="wind-hero">
