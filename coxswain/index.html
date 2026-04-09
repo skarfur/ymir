@@ -1107,23 +1107,52 @@ async function reloadPassportProgress() {
   } catch(e) { showToast(e.message, 'err'); }
 }
 
+// Looser than hasRowingEndorsement: matches any rowing_division cert (with or
+// without a sub) plus the legacy released_rower cert, ignoring expiry. The
+// picker should surface anyone the club thinks of as a rower, even if their
+// certifications haven't been through migrateRowingDivisionToSubcats yet.
+function _ppIsRower(m) {
+  if (!m || !m.certifications) return false;
+  var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+  if (!Array.isArray(certs)) return false;
+  for (var i = 0; i < certs.length; i++) {
+    var c = certs[i];
+    if (!c) continue;
+    if (c.certId === 'rowing_division') return true;
+    if (c.certId === 'released_rower' || c.sub === 'released_rower') return true;
+  }
+  return false;
+}
+
 async function ppSearchMember(q) {
   var box = document.getElementById('ppMemberSuggestions');
   q = (q || '').trim().toLowerCase();
   if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-  // Members are lazy-loaded — wait for the in-flight load before filtering,
-  // otherwise the first few keystrokes would race against an empty list.
-  if (!_membersLoaded) await ensureMembersLoaded();
+  var itemStyle = 'padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border)';
+  var msgStyle  = itemStyle + ';color:var(--muted);font-style:italic';
+  // Members are lazy-loaded — show a loading note until the fetch settles so
+  // users see that something is happening instead of a blank dropdown.
+  if (!_membersLoaded) {
+    box.innerHTML = '<div style="' + msgStyle + '">' + _esc(s('lbl.loading')) + '</div>';
+    box.classList.remove('hidden');
+    await ensureMembersLoaded();
+    // A later keystroke may have superseded us — bail if the input no longer matches.
+    var cur = (document.getElementById('ppMemberSearch').value || '').trim().toLowerCase();
+    if (cur !== q) return;
+  }
   var hits = _members.filter(function(m){
-    if (!hasRowingEndorsement(m)) return false;
+    if (!_ppIsRower(m)) return false;
     var n = (m.name || '').toLowerCase();
     var k = (m.kennitala || '').toLowerCase();
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 8);
-  if (!hits.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-  var itemStyle = 'padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)';
+  if (!hits.length) {
+    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers</div>';
+    box.classList.remove('hidden');
+    return;
+  }
   box.innerHTML = hits.map(function(m){
-    return '<div class="suggest-item" style="' + itemStyle + '" onclick="ppSelectMember(\'' + m.id + '\')">'
+    return '<div class="suggest-item" style="' + itemStyle + ';cursor:pointer" onclick="ppSelectMember(\'' + m.id + '\')">'
       + _esc(m.name) + ' <span style="color:var(--muted);font-size:10px">' + _esc(m.kennitala || '') + '</span></div>';
   }).join('');
   box.classList.remove('hidden');
