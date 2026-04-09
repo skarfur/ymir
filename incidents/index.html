@@ -425,7 +425,7 @@ function openDetail(i) {
     ? `${i.handOffTo}${i.handOffName ? ' — '+i.handOffName : ''}${i.handOffNotes ? ' · '+i.handOffNotes : ''}`
     : '';
   const filedAtStr = i.filedAt ? (fmtDate(i.filedAt) + ' ' + fmtTime(i.filedAt)) : '';
-  const filedByVal = (i.filedBy || s('lbl.unknown') || '—') + (filedAtStr ? ' · ' + filedAtStr : '');
+  const filedByVal = (i.filedBy || s('lbl.unknown')) + (filedAtStr ? ' · ' + filedAtStr : '');
 
   document.getElementById('detailBody').innerHTML = `
     <div class="mb-12">
