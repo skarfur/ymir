@@ -1107,28 +1107,41 @@ async function reloadPassportProgress() {
   } catch(e) { showToast(e.message, 'err'); }
 }
 
-// "Rower division" membership is fuzzy: restricted rowers are not required to
-// have an explicit rowing_division cert written into their certifications JSON
-// (only released rowers and coxswains reliably do), so filtering strictly by
-// cert would hide anyone the club hasn't yet tagged. Treat anyone who isn't
-// staff/admin/manager as a potential rower — the picker is a passport lookup,
-// and non-rowers will just show an empty passport if selected.
+// Match anyone with a rowing_division club endorsement. Tolerant of legacy
+// data shapes: case-insensitive, accepts either certId or id, also matches
+// the legacy 'released_rower' certId as a synonym.
 function _ppIsRower(m) {
-  if (!m) return false;
-  var role = String(m.role || '').toLowerCase();
-  if (role === 'staff' || role === 'admin' || role === 'manager') {
-    // Staff can still be rowers via an explicit rowing_division cert.
-    if (!m.certifications) return false;
-    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
-    if (!Array.isArray(certs)) return false;
-    return certs.some(function(c) {
-      if (!c) return false;
-      var id  = String(c.certId || c.id || '').toLowerCase();
-      var sub = String(c.sub || '').toLowerCase();
-      return id === 'rowing_division' || id === 'released_rower' || sub === 'released_rower';
-    });
+  if (!m || !m.certifications) return false;
+  var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+  if (!Array.isArray(certs)) return false;
+  for (var i = 0; i < certs.length; i++) {
+    var c = certs[i];
+    if (!c) continue;
+    var id  = String(c.certId || c.id || '').toLowerCase();
+    var sub = String(c.sub || '').toLowerCase();
+    if (id === 'rowing_division' || id === 'released_rower') return true;
+    if (sub === 'released_rower') return true;
   }
-  return true;
+  return false;
+}
+
+// Collect every distinct certId / sub we see across loaded members so the
+// empty-dropdown state can show what's actually in the data. If the user
+// expects restricted rowers but we only see e.g. 'rowing' or nothing at all,
+// this makes the data-shape mismatch visible instead of silent.
+function _ppCertIdSummary() {
+  var seen = {};
+  _members.forEach(function(m) {
+    if (!m || !m.certifications) return;
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    if (!Array.isArray(certs)) return;
+    certs.forEach(function(c) {
+      if (!c) return;
+      var key = (c.certId || c.id || '?') + (c.sub ? '/' + c.sub : '');
+      seen[key] = (seen[key] || 0) + 1;
+    });
+  });
+  return Object.keys(seen).sort().map(function(k) { return k + ':' + seen[k]; }).join(', ');
 }
 
 async function ppSearchMember(q) {
@@ -1154,10 +1167,16 @@ async function ppSearchMember(q) {
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 20);
   if (!hits.length) {
-    // Surface the counts so a silent-empty dropdown is diagnosable: if rowers=0
-    // the filter is the culprit; if rowers>0 the query just didn't match anyone.
-    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers ('
+    // Surface counts + the distinct cert keys we actually see so a silent-empty
+    // dropdown is diagnosable: if rowers=0 the data doesn't contain what we
+    // think it should, and the summary line makes it obvious what IS there.
+    var summary = _ppCertIdSummary();
+    var diag = '<div style="' + msgStyle + '">No matching rowers ('
       + rowers.length + ' of ' + _members.length + ' members)</div>';
+    if (summary) {
+      diag += '<div style="' + msgStyle + ';font-size:10px;word-break:break-all">Certs seen: ' + _esc(summary) + '</div>';
+    }
+    box.innerHTML = diag;
     box.classList.remove('hidden');
     return;
   }
