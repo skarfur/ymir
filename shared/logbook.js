@@ -1604,7 +1604,7 @@ function exportLogbookCsv(){
       var c=(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';
       return cats.indexOf(c)!==-1;
     });
-    if(!rows.length){ showToast(s('logbook.noTrips')||'No trips','err'); return; }
+    if(!rows.length){ showToast(s('logbook.noTrips'),'err'); return; }
     var cols=['date','timeOut','timeIn','hoursDecimal','boatName','boatCategory','locationName','beaufort','windDir','notes','skipperNote'];
     var headers=cols;
     function csvCell(v){
