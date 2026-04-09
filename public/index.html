@@ -491,7 +491,6 @@ function renderFlagBanner(result) {
   if (!el || !result) return;
   var IS = lang() === 'IS';
   var flag = result.flag;
-  var label  = (IS && flag.labelIS)  ? flag.labelIS  : flag.label;
   var advice = (IS && flag.adviceIS) ? flag.adviceIS : flag.advice;
 
   // Clickable chips for contributing factors
@@ -510,12 +509,10 @@ function renderFlagBanner(result) {
 
   el.innerHTML =
     '<div id="pub-flag-click" style="background:' + flag.bg + ';border:1px solid ' + flag.border + ';border-radius:10px;padding:14px 16px;cursor:pointer">'
-    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">'
     + '<span style="font-size:28px">' + flag.icon + '</span>'
-    + '<div>'
-    + '<div style="font-size:15px;font-weight:600;color:' + flag.color + '">' + esc(label) + '</div>'
-    + '<div style="font-size:11px;color:' + flag.color + ';opacity:.85">' + esc(advice) + '</div>'
-    + '</div></div>'
+    + '<div style="font-size:14px;font-weight:600;color:' + flag.color + '">' + esc(advice) + '</div>'
+    + '</div>'
     + chipsHtml
     + '</div>';
 
@@ -540,7 +537,7 @@ function renderFlagBanner(result) {
       var IS2 = lang() === 'IS';
       var title = document.getElementById('wxFlagModalTitle');
       var body  = document.getElementById('wxFlagModalBody');
-      if (title) title.textContent = (IS2 && flag.labelIS ? flag.labelIS : flag.label) + ' · ' + result.score + (IS2 ? ' stig' : ' pts');
+      if (title) title.textContent = flag.icon + ' · ' + result.score + (IS2 ? ' stig' : ' pts');
       if (body)  body.innerHTML = wxFlagDetailHtml(result, _staffStatus, IS2 ? 'IS' : 'EN');
       document.getElementById('wxFlagModal').classList.remove('hidden');
     };
