@@ -118,31 +118,63 @@ function isCaptain(u) {
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
-// Returns the highest-rank rowing subcat key the user holds, or null.
-// One of: 'restricted' | 'released' | 'coxswain' | null.
-// Also recognises the legacy standalone 'released_rower' cert as 'released' (pre-migration).
-function getRowingSub(u) {
-  if (!u || !u.certifications) return null;
+// Internal: walk a user's certifications once and return { hasAny, sub },
+// where hasAny means "has some rowing_division (or legacy released_rower)
+// entry of any shape" and sub is the highest-rank strictly-valid subcat
+// ('restricted' | 'released' | 'coxswain') or null. Tolerant of case,
+// missing `sub`, and stale data shapes — a bare rowing_division cert still
+// marks the user as a rower even without a recognised sub.
+function _rowingCertInfo(u) {
+  var out = { hasAny: false, sub: null };
+  if (!u || !u.certifications) return out;
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  if (!Array.isArray(certs)) return null;
+  if (!Array.isArray(certs)) return out;
   var rank = { restricted: 1, released: 2, coxswain: 3 };
-  var best = null;
+  var bestRank = -1;
   for (var i = 0; i < certs.length; i++) {
     var c = certs[i];
+    if (!c) continue;
     if (!_certNotExpired(c)) continue;
-    var sub = null;
-    if (c.certId === 'rowing_division' && c.sub && rank[c.sub]) sub = c.sub;
-    else if (c.certId === 'released_rower' || c.sub === 'released_rower') sub = 'released'; // legacy
-    if (sub && (!best || rank[sub] > rank[best])) best = sub;
+    var id  = String(c.certId || c.id || '').toLowerCase();
+    var sub = String(c.sub || '').toLowerCase();
+    var isRowing = false;
+    var resolvedSub = null;
+    if (id === 'rowing_division') {
+      isRowing = true;
+      if (rank[sub]) resolvedSub = sub;
+    } else if (id === 'released_rower' || sub === 'released_rower') {
+      isRowing = true;
+      resolvedSub = 'released';
+    }
+    if (!isRowing) continue;
+    out.hasAny = true;
+    if (resolvedSub && rank[resolvedSub] > bestRank) {
+      out.sub = resolvedSub;
+      bestRank = rank[resolvedSub];
+    }
   }
-  return best;
+  return out;
+}
+
+// Returns the highest-rank rowing subcat key the user holds.
+// One of: 'restricted' | 'released' | 'coxswain' | null.
+// Any rowing_division cert without a recognised sub is treated as 'restricted'
+// so pre-migration data and unusual shapes still map to a usable rank.
+function getRowingSub(u) {
+  var info = _rowingCertInfo(u);
+  if (info.sub) return info.sub;
+  if (info.hasAny) return 'restricted';
+  return null;
 }
 function isReleasedRower(u) {
   var sub = getRowingSub(u);
   return sub === 'released' || sub === 'coxswain';
 }
 function isCoxswain(u) { return getRowingSub(u) === 'coxswain'; }
-function hasRowingEndorsement(u) { return getRowingSub(u) !== null; }
+// True if the user has any rowing-division cert at all, regardless of sub or
+// expiry. Used as the gate for "can access the rowing division page" — the
+// page itself then uses getRowingSub to decide what to show inside.
+function hasRowingEndorsement(u) { return _rowingCertInfo(u).hasAny; }
 
 function signOut() {
   clearUser();

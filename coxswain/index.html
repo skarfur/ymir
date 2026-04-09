@@ -1107,42 +1107,9 @@ async function reloadPassportProgress() {
   } catch(e) { showToast(e.message, 'err'); }
 }
 
-// Match anyone with a rowing_division club endorsement. Tolerant of legacy
-// data shapes: case-insensitive, accepts either certId or id, also matches
-// the legacy 'released_rower' certId as a synonym.
-function _ppIsRower(m) {
-  if (!m || !m.certifications) return false;
-  var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
-  if (!Array.isArray(certs)) return false;
-  for (var i = 0; i < certs.length; i++) {
-    var c = certs[i];
-    if (!c) continue;
-    var id  = String(c.certId || c.id || '').toLowerCase();
-    var sub = String(c.sub || '').toLowerCase();
-    if (id === 'rowing_division' || id === 'released_rower') return true;
-    if (sub === 'released_rower') return true;
-  }
-  return false;
-}
-
-// Collect every distinct certId / sub we see across loaded members so the
-// empty-dropdown state can show what's actually in the data. If the user
-// expects restricted rowers but we only see e.g. 'rowing' or nothing at all,
-// this makes the data-shape mismatch visible instead of silent.
-function _ppCertIdSummary() {
-  var seen = {};
-  _members.forEach(function(m) {
-    if (!m || !m.certifications) return;
-    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
-    if (!Array.isArray(certs)) return;
-    certs.forEach(function(c) {
-      if (!c) return;
-      var key = (c.certId || c.id || '?') + (c.sub ? '/' + c.sub : '');
-      seen[key] = (seen[key] || 0) + 1;
-    });
-  });
-  return Object.keys(seen).sort().map(function(k) { return k + ':' + seen[k]; }).join(', ');
-}
+// Match anyone with a rowing_division club endorsement. Delegates to the
+// shared hasRowingEndorsement, which is tolerant of legacy data shapes.
+function _ppIsRower(m) { return hasRowingEndorsement(m); }
 
 async function ppSearchMember(q) {
   var box = document.getElementById('ppMemberSuggestions');
@@ -1160,23 +1127,14 @@ async function ppSearchMember(q) {
     var cur = (document.getElementById('ppMemberSearch').value || '').trim().toLowerCase();
     if (cur !== q) return;
   }
-  var rowers = _members.filter(_ppIsRower);
-  var hits = rowers.filter(function(m){
+  var hits = _members.filter(function(m) {
+    if (!_ppIsRower(m)) return false;
     var n = String(m.name || '').toLowerCase();
     var k = String(m.kennitala || '').toLowerCase();
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 20);
   if (!hits.length) {
-    // Surface counts + the distinct cert keys we actually see so a silent-empty
-    // dropdown is diagnosable: if rowers=0 the data doesn't contain what we
-    // think it should, and the summary line makes it obvious what IS there.
-    var summary = _ppCertIdSummary();
-    var diag = '<div style="' + msgStyle + '">No matching rowers ('
-      + rowers.length + ' of ' + _members.length + ' members)</div>';
-    if (summary) {
-      diag += '<div style="' + msgStyle + ';font-size:10px;word-break:break-all">Certs seen: ' + _esc(summary) + '</div>';
-    }
-    box.innerHTML = diag;
+    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers</div>';
     box.classList.remove('hidden');
     return;
   }
