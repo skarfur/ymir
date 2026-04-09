@@ -1108,9 +1108,10 @@ async function reloadPassportProgress() {
 }
 
 // Looser than hasRowingEndorsement: matches any rowing_division cert (with or
-// without a sub) plus the legacy released_rower cert, ignoring expiry. The
-// picker should surface anyone the club thinks of as a rower, even if their
-// certifications haven't been through migrateRowingDivisionToSubcats yet.
+// without a sub) plus the legacy released_rower cert, ignoring expiry and
+// letter case. The picker should surface anyone the club thinks of as a rower,
+// restricted included, even if their certifications haven't been through
+// migrateRowingDivisionToSubcats yet.
 function _ppIsRower(m) {
   if (!m || !m.certifications) return false;
   var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
@@ -1118,8 +1119,13 @@ function _ppIsRower(m) {
   for (var i = 0; i < certs.length; i++) {
     var c = certs[i];
     if (!c) continue;
-    if (c.certId === 'rowing_division') return true;
-    if (c.certId === 'released_rower' || c.sub === 'released_rower') return true;
+    // Accept either certId or id; assignments normally use certId but tolerate
+    // either so stale data shapes don't silently disappear from the picker.
+    var id  = String(c.certId || c.id || '').toLowerCase();
+    var sub = String(c.sub || '').toLowerCase();
+    if (id === 'rowing_division') return true;
+    if (id === 'released_rower' || sub === 'released_rower') return true;
+    if (sub === 'restricted' || sub === 'released' || sub === 'coxswain') return true;
   }
   return false;
 }
@@ -1140,14 +1146,17 @@ async function ppSearchMember(q) {
     var cur = (document.getElementById('ppMemberSearch').value || '').trim().toLowerCase();
     if (cur !== q) return;
   }
-  var hits = _members.filter(function(m){
-    if (!_ppIsRower(m)) return false;
+  var rowers = _members.filter(_ppIsRower);
+  var hits = rowers.filter(function(m){
     var n = String(m.name || '').toLowerCase();
     var k = String(m.kennitala || '').toLowerCase();
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
-  }).slice(0, 8);
+  }).slice(0, 20);
   if (!hits.length) {
-    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers</div>';
+    // Surface the counts so a silent-empty dropdown is diagnosable: if rowers=0
+    // the filter is the culprit; if rowers>0 the query just didn't match anyone.
+    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers ('
+      + rowers.length + ' of ' + _members.length + ' members)</div>';
     box.classList.remove('hidden');
     return;
   }
