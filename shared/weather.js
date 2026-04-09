@@ -240,9 +240,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 
 
 // ── Staff status badge HTML ─────────────────────────────────────────────────────────────────────
-function wxStaffStatusHtml(status, lang) {
+function wxStaffStatusHtml(status) {
   if (!status) return '';
-  const IS = lang === 'IS';
   const badges = [];
   if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+s('wx.staffOnDuty')+'</span>');
   if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+s('wx.supportBoatOut')+'</span>');
@@ -250,9 +249,9 @@ function wxStaffStatusHtml(status, lang) {
   let ago = '';
   if (status.updatedAt) {
     const mins = Math.round((Date.now() - new Date(status.updatedAt)) / 60000);
-    ago = mins < 2 ? (IS ? 'Rétt á þessu' : 'just now')
-        : mins < 60 ? (IS ? 'fyrir '+mins+' mín' : mins+' min ago')
-        : (IS ? 'fyrir '+Math.floor(mins/60)+' klst' : Math.floor(mins/60)+'h ago');
+    ago = mins < 2  ? s('wx.justNow')
+        : mins < 60 ? s('wx.minAgo', { n: mins })
+        :             s('wx.hrAgo', { n: Math.floor(mins/60) });
   }
   return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">'
     + badges.join('') + (ago ? '<span style="font-size:10px;color:var(--muted)">'+ago+'</span>' : '') + '</div>';
@@ -289,19 +288,19 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
         + '<span style="color:var(--text)">'+(IS && b.labelIS ? b.labelIS : b.label)+'</span>'
         + '<span style="color:'+flag.color+';font-weight:500;min-width:36px;text-align:right">+'+b.pts+'</span></div>'
       ).join('')
-    : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+(IS?'Engin stigagjöf.':'No scoring factors.')+'</div>';
+    : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+s('wx.noScoring')+'</div>';
   const totalRow =
     '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500;cursor:pointer" id="wxFlagPill" title="Tap for details">'
-    + '<span>'+(IS?'Heildarstig':'Total score')+'</span>'
+    + '<span>'+s('wx.totalScore')+'</span>'
     + '<span style="color:'+flag.color+'">'+result.score+'</span></div>';
   let staffHtml = '';
   if (staffStatus) {
     staffHtml =
       '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
-      + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+(IS?'STAÐA STARFSMANNA':'STAFF STATUS')+'</div>'
+      + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+s('wx.staffStatusHdr')+'</div>'
       + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
-      + '<span style="font-size:12px;color:'+(staffStatus.onDuty?'#27ae60':'var(--muted)')+'">> '+(IS?'Starfsmaður á vakt':'Staff on duty')+': <b>'+(staffStatus.onDuty?(IS?'Já':'Yes'):(IS?'Nei':'No'))+'</b></span>'
-      + '<span style="font-size:12px;color:'+(staffStatus.supportBoat?'#5dade2':'var(--muted)')+'>⛵ '+(IS?'Björgunarbátur':'Support boat')+': <b>'+(staffStatus.supportBoat?(IS?'á sjó':'Out'):(IS?'Ekki á sjó':'Not out'))+'</b></span>'
+      + '<span style="font-size:12px;color:'+(staffStatus.onDuty?'#27ae60':'var(--muted)')+'">🧑 '+s('wx.staffOnDuty')+': <b>'+s(staffStatus.onDuty?'wx.yes':'wx.no')+'</b></span>'
+      + '<span style="font-size:12px;color:'+(staffStatus.supportBoat?'#5dade2':'var(--muted)')+'">⛵ '+s('wx.supportBoat')+': <b>'+s(staffStatus.supportBoat?'wx.statusOut':'wx.statusNotOut')+'</b></span>'
       + '</div></div>';
   }
   const desc = IS && flag.descriptionIS ? flag.descriptionIS : (flag.description || '');
@@ -309,16 +308,13 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   // Staff status badges (shown if staffStatus passed)
   const _ssBadgesHtml = (() => {
     if (!staffStatus) return '';
-    const IS2   = lang === 'IS';
     const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
     const dCol  = staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
     const bCol  = staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
     const dBg   = staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
     const bBg   = staffStatus.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-    const dTx   = IS2 ? (staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
-                      : (staffStatus.onDuty      ? 'Staff on duty'                : 'No staff on duty');
-    const bTx   = IS2 ? (staffStatus.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
-                      : (staffStatus.supportBoat ? 'Support boat out'            : 'No support boat');
+    const dTx   = s(staffStatus.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
+    const bTx   = s(staffStatus.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
       + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">🧑 '+dTx+'</span>'
       + '<span style="'+bst+'background:'+bBg+';color:'+bCol+'">⛵ '+bTx+'</span>'
@@ -342,7 +338,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     + '</div>'
     + chipsHtml
     + barHtml
-    + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+(IS?'STIGAÚTREIKNINGUR':'SCORE BREAKDOWN')+'</div>'
+    + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+s('wx.scoreBreakdown')+'</div>'
     + rows + totalRow + staffHtml;
 }
 
@@ -524,52 +520,52 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       targetEl.className = `wx-widget flag-${flagKey}`;
       targetEl.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${IS?'BIRK — Aðstæður':'BIRK — CONDITIONS'}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${s('wx.birkConditions')}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
-            <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--brass);text-decoration:none;white-space:nowrap;border:1px solid var(--brass);border-radius:6px;padding:4px 10px;background:var(--brass)12">${IS?'Opna ítarlega spá →':'Open detailed forecast →'}</a>
+            <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--brass);text-decoration:none;white-space:nowrap;border:1px solid var(--brass);border-radius:6px;padding:4px 10px;background:var(--brass)12">${s('wx.openForecast')}</a>
           </div>
         </div>
         <!-- 2-row grid, columns locked -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'VINDUR':'WIND'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.wind')}</div>
             <div style="display:flex;align-items:center;gap:3px;line-height:1">
               <span style="font-size:32px;color:var(--brass);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
               <span style="font-size:32px;color:var(--brass);font-weight:500;line-height:1">${Math.round(ws)}</span>
               <span style="font-size:12px;color:var(--muted);margin-left:2px">m/s</span>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:5px">
-              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${IS?'Vindstig':'Force'} <b style="color:var(--text)">${bft}</b>
+              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${s('wx.force')} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${IS?'Hviður':'Gusts'} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
+              ${s('wx.gusts')} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'LOFTHITI':'AIR TEMP'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.airTemp')}</div>
             <div style="font-size:28px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? (IS?'líður eins og ':'feels ') + Math.round(c.apparent_temperature) + '°' : ''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? s('wx.feelsLike', { t: Math.round(c.apparent_temperature) }) : ''}</div>
           </div>
           <div class="wx-cell">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${IS?'AÐSTÆÐUR':'CONDITIONS'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.conditions')}</div>
             <div style="font-size:36px;line-height:1">${c.weather_code != null ? wxCondIcon(c.weather_code) : '⛅️'}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : IS?'BIRK mælingar':'BIRK obs'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.weather_code != null ? wxCondDesc(c.weather_code) : s('wx.birkObs')}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'BYLGJUR':'WAVES'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.waves')}</div>
             <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : ''}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : ''}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'SJÓR':'SEA'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.sea')}</div>
             <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : ''}</div>
-            <div style="font-size:10px;color:var(--muted)">${IS?'Yfirborð':'Surface'}</div>
+            <div style="font-size:10px;color:var(--muted)">${s('wx.surface')}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
-            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${IS?'LOFTÞRÝSTINGUR':'PRESSURE'}</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.pressure')}</div>
             <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : ''}</div>
-            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${IS?(trend==='rising'?'hækkun':(trend==='falling'?'lækkun':'stöðugt')):trend}</div>
+            <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${s('wx.pressure' + trend[0].toUpperCase() + trend.slice(1))}</div>
           </div>
         </div>
         <!-- footer: flag pill + status badges -->
@@ -591,7 +587,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">×</button>'
           + '</div><div id="wxFlagModalBody"></div>'
           + '<div style="margin-top:16px"><button class="btn btn-secondary" style="width:100%" onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')">'
-          + (typeof getLang==='function'&&getLang()==='IS' ? 'Loka' : 'Close')
+          + s('btn.close')
           + '</button></div></div></div>';
         document.body.appendChild(_md.firstElementChild);
       }
@@ -599,64 +595,38 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       // ── Wire flag pill click  —  uses snap stored on this element ──
       const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
       if (pill) pill.onclick = () => {
-        const IS  = typeof getLang === 'function' ? getLang() === 'IS' : false;
+        const IS2 = typeof getLang === 'function' ? getLang() === 'IS' : false;
         const r   = targetEl._wxResult;  // exact result that drew this pill
         const ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         const body  = document.getElementById('wxFlagModalBody');
         const title = document.getElementById('wxFlagModalTitle');
         if (!body || !r) return;
-        if (title) title.textContent = r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts');
-        body.innerHTML = wxFlagDetailHtml(r, ss, IS ? 'IS' : 'EN');
+        if (title) title.textContent = r.flag.icon + ' · ' + r.score + ' ' + s('wx.pts');
+        body.innerHTML = wxFlagDetailHtml(r, ss, IS2 ? 'IS' : 'EN');
         if (typeof openModal === 'function') openModal('wxFlagModal');
         else document.getElementById('wxFlagModal')?.classList.remove('hidden');
       };
 
       // ── Render duty status badges ──
-      const _ssBadges = targetEl.querySelector('.wx-status-badges');
-      if (_ssBadges) {
-        const _ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
-        const _isB = typeof getLang === 'function' && getLang() === 'IS';
+      const _renderSsBadges = (container) => {
+        if (!container) return;
+        const _ss = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
+        if (!_ss) { container.innerHTML = ''; return; }
         const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
-        if (_ss) {
-          const _dc  = _ss.onDuty      ? '#27ae60' : '#e74c3c';
-          const _bc  = _ss.supportBoat ? '#27ae60' : '#e74c3c';
-          const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-          const _bbg = _ss.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-          const _dtx = _isB ? (_ss.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
-                            : (_ss.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
-          const _btx = _isB ? (_ss.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
-                            : (_ss.supportBoat ? 'Support boat out'             : 'No support boat');
-          _ssBadges.innerHTML =
-            '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
-            + ' '
-            + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">⛵ '+_btx+'</span>';
-        } else {
-          _ssBadges.innerHTML = '';
-        }
-      }
-      // Expose badge-only re-render so pages can call after toggling duty status
-      targetEl._wxRefreshBadges = () => {
-        const _b = targetEl.querySelector('.wx-status-badges');
-        if (!_b) return;
-        const _ss2  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
-        const _is2  = typeof getLang === 'function' && getLang() === 'IS';
-        const _bst2 = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
-        if (_ss2) {
-          const _dc2  = _ss2.onDuty      ? '#27ae60' : '#e74c3c';
-          const _bc2  = _ss2.supportBoat ? '#27ae60' : '#e74c3c';
-          const _dbg2 = _ss2.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-          const _bbg2 = _ss2.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-          const _is2B = typeof getLang === 'function' && getLang() === 'IS';
-          const _dtx2 = _is2B ? (_ss2.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
-                              : (_ss2.onDuty      ? 'Staff on duty'                 : 'No staff on duty');
-          const _btx2 = _is2B ? (_ss2.supportBoat ? 'Björgunarbátur'           : 'Enginn björgunnarbátur')
-                              : (_ss2.supportBoat ? 'Support boat out'             : 'No support boat');
-          _b.innerHTML =
-            '<span style="'+_bst2+'background:'+_dbg2+';color:'+_dc2+'">🧑 '+_dtx2+'</span>'
-            + ' '
-            + '<span style="'+_bst2+'background:'+_bbg2+';color:'+_bc2+'">⛵ '+_btx2+'</span>';
-        } else { _b.innerHTML = ''; }
+        const _dc  = _ss.onDuty      ? '#27ae60' : '#e74c3c';
+        const _bc  = _ss.supportBoat ? '#27ae60' : '#e74c3c';
+        const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+        const _bbg = _ss.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+        const _dtx = s(_ss.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
+        const _btx = s(_ss.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
+        container.innerHTML =
+          '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
+          + ' '
+          + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">⛵ '+_btx+'</span>';
       };
+      _renderSsBadges(targetEl.querySelector('.wx-status-badges'));
+      // Expose badge-only re-render so pages can call after toggling duty status
+      targetEl._wxRefreshBadges = () => _renderSsBadges(targetEl.querySelector('.wx-status-badges'));
     } catch(e) {
       targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--brass)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
