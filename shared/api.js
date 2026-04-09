@@ -120,10 +120,10 @@ function isCaptain(u) {
 }
 // Internal: walk a user's certifications once and return { hasAny, sub },
 // where hasAny means "has some rowing_division (or legacy released_rower)
-// entry of any shape" and sub is the highest-rank strictly-valid subcat
-// ('restricted' | 'released' | 'coxswain') or null. Tolerant of case,
-// missing `sub`, and stale data shapes — a bare rowing_division cert still
-// marks the user as a rower even without a recognised sub.
+// entry of any shape, regardless of expiry" and sub is the highest-rank
+// strictly-valid, non-expired subcat ('restricted' | 'released' | 'coxswain')
+// or null. Tolerant of case and missing `sub` — a bare rowing_division cert
+// still marks the user as a rower even without a recognised sub.
 function _rowingCertInfo(u) {
   var out = { hasAny: false, sub: null };
   if (!u || !u.certifications) return out;
@@ -134,7 +134,6 @@ function _rowingCertInfo(u) {
   for (var i = 0; i < certs.length; i++) {
     var c = certs[i];
     if (!c) continue;
-    if (!_certNotExpired(c)) continue;
     var id  = String(c.certId || c.id || '').toLowerCase();
     var sub = String(c.sub || '').toLowerCase();
     var isRowing = false;
@@ -147,8 +146,11 @@ function _rowingCertInfo(u) {
       resolvedSub = 'released';
     }
     if (!isRowing) continue;
+    // Membership is permanent — any rowing_division cert, expired or not,
+    // counts for gating access to the rowing division page.
     out.hasAny = true;
-    if (resolvedSub && rank[resolvedSub] > bestRank) {
+    // Feature gating (released vs restricted) uses only non-expired certs.
+    if (resolvedSub && _certNotExpired(c) && rank[resolvedSub] > bestRank) {
       out.sub = resolvedSub;
       bestRank = rank[resolvedSub];
     }
