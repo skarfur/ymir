@@ -1111,6 +1111,23 @@ async function reloadPassportProgress() {
 // shared hasRowingEndorsement, which is tolerant of legacy data shapes.
 function _ppIsRower(m) { return hasRowingEndorsement(m); }
 
+// Dump every distinct certId[/sub] the loaded members carry, with counts, so
+// a silent-empty dropdown makes the data shape visible instead of opaque.
+function _ppCertIdSummary() {
+  var seen = {};
+  _members.forEach(function(m) {
+    if (!m || !m.certifications) { seen['(no-cert-field)'] = (seen['(no-cert-field)'] || 0) + 1; return; }
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    if (!Array.isArray(certs) || !certs.length) { seen['(empty-certs)'] = (seen['(empty-certs)'] || 0) + 1; return; }
+    certs.forEach(function(c) {
+      if (!c) return;
+      var key = (c.certId || c.id || '?') + (c.sub ? '/' + c.sub : '');
+      seen[key] = (seen[key] || 0) + 1;
+    });
+  });
+  return Object.keys(seen).sort().map(function(k) { return k + ':' + seen[k]; }).join(', ');
+}
+
 async function ppSearchMember(q) {
   var box = document.getElementById('ppMemberSuggestions');
   q = (q || '').trim().toLowerCase();
@@ -1127,14 +1144,20 @@ async function ppSearchMember(q) {
     var cur = (document.getElementById('ppMemberSearch').value || '').trim().toLowerCase();
     if (cur !== q) return;
   }
-  var hits = _members.filter(function(m) {
-    if (!_ppIsRower(m)) return false;
+  var rowers = _members.filter(_ppIsRower);
+  var hits = rowers.filter(function(m) {
     var n = String(m.name || '').toLowerCase();
     var k = String(m.kennitala || '').toLowerCase();
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 20);
   if (!hits.length) {
-    box.innerHTML = '<div style="' + msgStyle + '">No matching rowers</div>';
+    var summary = _ppCertIdSummary();
+    var diag = '<div style="' + msgStyle + '">No matching rowers ('
+      + rowers.length + ' of ' + _members.length + ' members)</div>';
+    if (summary) {
+      diag += '<div style="' + msgStyle + ';font-size:10px;word-break:break-all">Certs seen: ' + _esc(summary) + '</div>';
+    }
+    box.innerHTML = diag;
     box.classList.remove('hidden');
     return;
   }
