@@ -316,6 +316,10 @@ function esc(s) {
   return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Safe slice: coerce to string first so numeric timestamps / IDs (e.g. kennitala)
+// from the API don't crash with "slice is not a function".
+function sstr(v) { return v == null ? '' : String(v); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 2 — DEFAULT FALLBACK DATA
 // ════════════════════════════════════════════════════════════════════════════
@@ -418,9 +422,9 @@ function renderTrips() {
     const row   = document.createElement('div');
     row.className = 'trip-row';
     row.dataset.tripId = co.id;
-    const tout  = (co.checkedOutAt||co.timeOut||'').slice(0,5);
-    const tin   = (co.checkedInAt ||co.timeIn ||'').slice(0,5);
-    const retBy = (co.expectedReturn||'').slice(0,5);
+    const tout  = sstr(co.checkedOutAt||co.timeOut).slice(0,5);
+    const tin   = sstr(co.checkedInAt ||co.timeIn).slice(0,5);
+    const retBy = sstr(co.expectedReturn).slice(0,5);
     const overdue = retBy && !tin && retBy < fmtTimeNow();
     row.innerHTML = `<div class="flex-1">
       <div class="trip-boat">${esc(co.boatName||co.boatId)}
@@ -534,7 +538,7 @@ function renderIncidentSection(incidents) {
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
   container.innerHTML = incidents.map(inc => {
     const types = (function() { try { var t = typeof inc.types === 'string' ? JSON.parse(inc.types) : inc.types; return Array.isArray(t) ? t.map(function(k){ return s('incident.type.'+k)||k; }).join(', ') : ''; } catch(e){ return ''; } })();
-    const time = (inc.filedAt||inc.time||'').slice(11,16) || '';
+    const time = sstr(inc.filedAt||inc.time).slice(11,16) || '';
     const sevLabel = inc.severity ? (s('incident.sev.'+inc.severity) || inc.severity) : '';
     const sevClass = inc.severity === 'critical' ? 'red'
       : inc.severity === 'high' ? 'orange'
@@ -546,7 +550,7 @@ function renderIncidentSection(incidents) {
     const statusLabel = resolved ? '✓ ' + s('incident.resolved')
       : inReview ? s('incident.statusReview')
       : (inc.followUp ? 'Follow-up pending' : '');
-    const descStr = String(inc.description == null ? '' : inc.description);
+    const descStr = sstr(inc.description);
     const desc = descStr.slice(0,140);
     const descMore = descStr.length > 140 ? '…' : '';
     return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:flex-start">
@@ -591,7 +595,7 @@ function renderWxLog() {
   wxLog.forEach(function(snap, i) {
     var card = document.createElement("div");
     card.className = "wx-snap-card";
-    var time = snap.time || (snap.ts ? snap.ts.slice(11,16) : "");
+    var time = snap.time || (snap.ts ? sstr(snap.ts).slice(11,16) : "");
     var cells = [
       { lbl:"WIND",     val: (snap.dir||"") + " " + (snap.ws!=null ? (typeof snap.ws==='string'&&snap.ws.indexOf('-')!==-1?snap.ws.split('-').map(function(v){return Math.round(v);}).join('–'):snap.ws)+"m/s · Force "+snap.bft : "—") },
       { lbl:"GUSTS",    val: (snap.wg!=null && snap.wg!==snap.ws) ? snap.wg+"m/s" : null },
@@ -693,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var waveDir = mc.wave_direction != null ? wxDirLabel(mc.wave_direction) : null;
       var sst     = mc.sea_surface_temperature != null ? mc.sea_surface_temperature : null;
       var nowISO  = new Date().toISOString().slice(0,13);
-      var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(tt) { return tt.slice(0,13) === nowISO; }));
+      var nowIdx  = Math.max(0, (hr.time||[]).findIndex(function(tt) { return sstr(tt).slice(0,13) === nowISO; }));
       var presObj = wxPressureTrend(hr.surface_pressure, nowIdx);
       var assessed = wxScoreFlag(ws, wDir, waveH || 0, null, null, null, 'good');
       wxData = { ws:ws, wd:wd, wg:wg, bft:bft, wDir:wDir, waveH:waveH,
@@ -867,7 +871,7 @@ function openTripDetail(id) {
   document.getElementById('tdTitle').textContent    = esc(co.boatName||co.boatId);
   document.getElementById('tdBoat').textContent     = esc(co.boatName||co.boatId);
   document.getElementById('tdLocation').textContent = esc(co.locationName||'—');
-  document.getElementById('tdOut').textContent      = (co.checkedOutAt||co.timeOut||'').slice(0,5)||'—';
+  document.getElementById('tdOut').textContent      = sstr(co.checkedOutAt||co.timeOut).slice(0,5)||'—';
   document.getElementById('tdReturn').textContent   = co.expectedReturn||'—';
   document.getElementById('tdIn').textContent       = (co.checkedInAt||co.timeIn||'')||'—';
   document.getElementById('tdCrew').textContent     = co.crew||1;
@@ -901,7 +905,6 @@ function populateTideFields() {
 }
 
 function _autoFillTide() {
-  return; // DISABLED pending tide widget hang investigation
   if (typeof tideExtrema !== 'function') return;
   const extrema = tideExtrema(viewDate);
   tideData = tideToDailyLog(extrema);
@@ -909,7 +912,6 @@ function _autoFillTide() {
 
 let _tideWidgetInstance = null;
 function _renderDailyTide() {
-  return; // DISABLED pending tide widget hang investigation
   const el = document.getElementById('dailyTideWidget');
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
@@ -1160,7 +1162,7 @@ function renderGroupLinkCards() {
   if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
     return '<div class="flex-between callout-panel text-sm" style="border-left:3px solid #2e86c1;border-color:#2e86c155;border-left-color:#2e86c1;padding:6px 10px">' +
-      '<span>⛵ Group checkout ' + esc(id.slice(-6)) + '</span>' +
+      '<span>⛵ Group checkout ' + esc(sstr(id).slice(-6)) + '</span>' +
       '<button class="btn-dismiss" onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()">✕</button>' +
       '</div>';
   }).join('');
@@ -1185,7 +1187,7 @@ function openGroupLinkPicker() {
       const sel = _groupLinkPickerSelected.has(c.id);
       return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" class="callout-panel mb-6" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border-color:' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;cursor:pointer">' +
         '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
-        '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc((c.checkedOutAt||c.timeOut||'').slice(0,5)) + '</div>' +
+        '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5)) + '</div>' +
         '</div>';
     }).join('');
   }
