@@ -140,8 +140,7 @@ function wxMsToBft(ms) {
 function wxMsToKt(ms)   { return Math.round(ms * 1.944); }
 function wxDirLabel(d)  { if (d == null) return ''; return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
 function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
-function wxBftDesc(b)   { return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'][b] || ''; }
-function wxBftDescIS(b)  { return ['Logn','Andvari','Kul','Gola','Stinningsgola','Kaldi','Stinningskaldi','Allhvass vindur','Hvassviðri','Stormur','Rok','Ofsaveður','Fárviðri'][b] || ''; }
+function wxBftDesc(b)   { const n = Math.max(0, Math.min(12, b|0)); return s('wx.bft'+n) || ''; }
 function wxCondIcon(c)  {
   if (c === 0) return '☀️'; if (c === 1) return '🌤'; if (c === 2) return '⛅️'; if (c === 3) return '☁️';
   if ([45,48].includes(c)) return '🌫️'; if ([51,53,55,61,63,65,80,81,82].includes(c)) return '🌧️';
@@ -175,14 +174,14 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (wBand.pts > 0) {
     score += wBand.pts;
     breakdown.push({ factor:'wind', pts:wBand.pts,
-      label:'Wind Force '+bft+' ('+wxBftDesc(bft)+')', labelIS:'Vindur Vindstig '+bft });
+      label: s('wx.bdWind', { n: bft, desc: wxBftDesc(bft) }) });
   }
 
   const dir = (typeof wDir === 'number' ? wxDirLabel(wDir) : (wDir || '')).toUpperCase().trim();
   if (dir && cfg.easterlyDirs.includes(dir) && bft > 0) {
     score += cfg.easterlyPts;
     breakdown.push({ factor:'direction', pts:cfg.easterlyPts,
-      label:'Easterly wind ('+dir+')', labelIS:'Austruleg vindátt ('+dir+')' });
+      label: s('wx.bdEasterly', { dir }) });
   }
 
   if (wg != null && ws != null && wxMsToBft(wg) > bft) {
@@ -191,8 +190,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     if (_gustPts > 0) {
       score += _gustPts;
       breakdown.push({ factor:'gusts', pts:_gustPts,
-        label:'Gusts Force '+wxMsToBft(wg)+' (sustained Force '+bft+')',
-        labelIS:'Hviður Vindstig '+wxMsToBft(wg) });
+        label: s('wx.bdGusts', { n: wxMsToBft(wg), sust: bft }) });
     }
   }
 
@@ -202,7 +200,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     if (wvBand.pts > 0) {
       score += wvBand.pts;
       breakdown.push({ factor:'waves', pts:wvBand.pts,
-        label:'Waves '+wh.toFixed(1)+' m', labelIS:'Bylgjur '+wh.toFixed(1)+' m' });
+        label: s('wx.bdWaves', { h: wh.toFixed(1) }) });
     }
   }
 
@@ -211,7 +209,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     if (sBand.pts > 0) {
       score += sBand.pts;
       breakdown.push({ factor:'sst', pts:sBand.pts,
-        label:'Sea temp '+sst.toFixed(1)+'°C', labelIS:'Sjávarhiti '+sst.toFixed(1)+'°C' });
+        label: s('wx.bdSst', { t: sst.toFixed(1) }) });
     }
   }
 
@@ -220,7 +218,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
     if (fBand && fBand.pts > 0) {
       score += fBand.pts;
       breakdown.push({ factor:'feelsLike', pts:fBand.pts,
-        label:'Feels like '+Math.round(airT)+'°C', labelIS:'Líður eins og '+Math.round(airT)+'°C' });
+        label: s('wx.bdFeelsLike', { t: Math.round(airT) }) });
     }
   }
 
@@ -228,8 +226,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   if (vPts > 0) {
     score += vPts;
     breakdown.push({ factor:'visibility', pts:vPts,
-      label: visKey === 'poor' ? s('wx.poorVisibility',null,'EN') : s('wx.reducedVisibility',null,'EN'),
-      labelIS: visKey === 'poor' ? s('wx.poorVisibility',null,'IS') : s('wx.reducedVisibility',null,'IS') });
+      label: s(visKey === 'poor' ? 'wx.poorVisibility' : 'wx.reducedVisibility') });
   }
 
   const t = cfg.thresholds;
@@ -285,7 +282,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   const rows = result.breakdown.length
     ? result.breakdown.map(b =>
         '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)44;font-size:12px">'
-        + '<span style="color:var(--text)">'+(IS && b.labelIS ? b.labelIS : b.label)+'</span>'
+        + '<span style="color:var(--text)">'+b.label+'</span>'
         + '<span style="color:'+flag.color+';font-weight:500;min-width:36px;text-align:right">+'+b.pts+'</span></div>'
       ).join('')
     : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+s('wx.noScoring')+'</div>';
@@ -326,7 +323,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       + considerations.map(b =>
           '<span style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid '
           + flag.border+';color:'+flag.color+';background:'+flag.bg+'">'
-          + (IS && b.labelIS ? b.labelIS : b.label)
+          + b.label
           + ' <b>+'+b.pts+'</b></span>'
         ).join('')
       + '</div>'
@@ -539,7 +536,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
               <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${s('wx.force')} <b style="color:var(--text)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${s('wx.gusts')} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${IS?wxBftDescIS(bft):wxBftDesc(bft)}
+              ${s('wx.gusts')} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
