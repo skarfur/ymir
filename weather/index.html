@@ -30,8 +30,7 @@
 
 /* ── Flag banner ── */
 .flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; }
-.flag-label  { font-size:15px; font-weight:500; }
-.flag-advice { font-size:11px; margin-top:3px; opacity:.85; }
+.flag-advice { font-size:14px; font-weight:500; }
 .flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
 .flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }
 
@@ -270,7 +269,6 @@ function render(wx, marine, staffStatus) {
 <div class="flag-banner" onclick="openWfFlagModal()" style="background:${flag.bg};border-color:${flag.border};color:${flag.color};cursor:pointer" title="Tap for score breakdown">
   <div style="font-size:28px;line-height:1">${flag.icon}</div>
   <div class="flex-1">
-    <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
     ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${SCORE_CONFIG.flags[r.f].color};border-color:${SCORE_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
@@ -496,7 +494,7 @@ function openWfFlagModal() {
   const title= document.getElementById('wfFlagModalTitle');
   if (!body) return;
   const r = window._wfFlagResult;
-  if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' pts';
+  if (title) title.textContent = r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts');
   body.innerHTML = typeof wxFlagDetailHtml === 'function'
     ? wxFlagDetailHtml(r, window._wfStaffStatus ?? null, IS ? 'IS' : 'EN')
     : '<div style="color:var(--muted);font-size:12px">Detail unavailable.</div>';

@@ -68,31 +68,42 @@ const SCORE_CONFIG = {
     { minC: -99, pts: 10 },
   ],
   visibility: { good: 0, reduced: 3, poor: 5 },
+  // ─────────────────────────────────────────────────────────────────────────────
+  // flags:
+  //   color / bg / border / icon  — visual constants (NOT admin-editable).
+  //   advice / adviceIS            — short one-line guidance shown next to icon.
+  //   description / descriptionIS  — longer guidance shown in the detail modal.
+  //
+  // Advice and description (both EN + IS) are ADMIN-EDITABLE via
+  // admin/index.html → Flags tab. Edits are persisted as JSON under the
+  // `flagConfig` key in the config sheet (code.gs saveConfig/getFlagConfig_)
+  // and merged into SCORE_CONFIG.flags at page load by wxLoadFlagConfig()
+  // below. The values here are the defaults used when no override is saved.
+  //
+  // There is intentionally no `label` field — the colored banner plus icon
+  // already communicate the flag identity, so a textual "Green"/"Red" label
+  // would be redundant (issue #376).
+  // ─────────────────────────────────────────────────────────────────────────────
   flags: {
     green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢',
-              label:'Green',  labelIS:'Grœnn',
               advice:'Good conditions  —  open to all qualified members.',
               adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.',
               description:'Conditions are suitable for sailing. All qualified members may use boats according to their credential level.',
               descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
     yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
-              label:'Yellow', labelIS:'Gulur',
               advice:'Marginal  —  experienced sailors only.',
               adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.',
               description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Ensure someone ashore knows your plans and expected return time.',
               descriptionIS:'Aðstæður eru á mörkum. Aðeins reyndir siglingar áttu að fara út. Gerið ráð fyrir óvæntum breytingum og tryggist að einhver á landi viti af áætlunum ykkar.' },
     orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠',
-              label:'Orange', labelIS:'Appelsínugulur',
               advice:'Difficult  —  keelboats only; staff auth required for dinghies.',
               adviceIS:'Erfiðar aðstæður — kjólbátar einungis; starfsmaður ¾arfnast heimildar.' },
     red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴',
-              label:'Red',    labelIS:'Rauður',
               advice:'No self-service sailing  —  staff must approve each checkout.',
               adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.',
               description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
               descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlágingu persónulega.' },
     black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⛔',
-              label:'Closed', labelIS:'Lokað',
               advice:'Water closed  —  all sailing suspended.',
               adviceIS:'Sjór lokaður — allar siglingar stöðvaðar.',
               description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
@@ -251,7 +262,6 @@ function wxStaffStatusHtml(status, lang) {
 function wxFlagDetailHtml(result, staffStatus, lang) {
   const IS = lang === 'IS';
   const flag   = result.flag;
-  const label  = (IS && flag.labelIS)  ? flag.labelIS  : flag.label;
   const advice = (IS && flag.adviceIS) ? flag.adviceIS : flag.advice;
   const t = SCORE_CONFIG.thresholds;
   const maxScore = t.black + 20;
@@ -326,8 +336,8 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
       + '</div>'
     : '';
   return _ssBadgesHtml + '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
-    + '<div style="font-size:18px;margin-bottom:6px">'+flag.icon+' <span style="color:'+flag.color+';font-weight:500">'+label+'</span></div>'
-    + '<div style="font-size:12px;color:'+flag.color+';opacity:.85;margin-bottom:6px">'+advice+'</div>'
+    + '<div style="font-size:28px;margin-bottom:6px">'+flag.icon+'</div>'
+    + '<div style="font-size:13px;color:'+flag.color+';font-weight:500;margin-bottom:6px">'+advice+'</div>'
     + (desc ? '<div style="font-size:12px;color:var(--text);line-height:1.55;border-top:1px solid '+flag.border+';padding-top:10px;margin-top:4px">'+desc+'</div>' : '')
     + '</div>'
     + chipsHtml
@@ -565,7 +575,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         <!-- footer: flag pill + status badges -->
         <div style="display:flex;align-items:center;gap:6px;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
-            ${flag.icon} ${flag.label}  —  ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
+            ${flag.icon} ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
           </span>
           <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>`;
@@ -595,7 +605,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const body  = document.getElementById('wxFlagModalBody');
         const title = document.getElementById('wxFlagModalTitle');
         if (!body || !r) return;
-        if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' stig';
+        if (title) title.textContent = r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts');
         body.innerHTML = wxFlagDetailHtml(r, ss, IS ? 'IS' : 'EN');
         if (typeof openModal === 'function') openModal('wxFlagModal');
         else document.getElementById('wxFlagModal')?.classList.remove('hidden');
