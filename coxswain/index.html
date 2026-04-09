@@ -1142,8 +1142,8 @@ async function ppSearchMember(q) {
   }
   var hits = _members.filter(function(m){
     if (!_ppIsRower(m)) return false;
-    var n = (m.name || '').toLowerCase();
-    var k = (m.kennitala || '').toLowerCase();
+    var n = String(m.name || '').toLowerCase();
+    var k = String(m.kennitala || '').toLowerCase();
     return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
   }).slice(0, 8);
   if (!hits.length) {
