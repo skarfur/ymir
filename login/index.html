@@ -89,19 +89,73 @@
 </div>
 
 <script>
-// Wire all strings on load — no hard-coded text in HTML
-document.getElementById('subtitle').textContent  = s('login.subtitle');
-// EN: title above subtitle; IS: subtitle above title
-if (getLang() !== 'IS') {
+// Track the dynamic screen currently shown so we can re-render it when the
+// language changes without losing the user's place in the login flow.
+var _currentScreen = null;
+
+// (Re)apply all UI strings on the page. Called once on load and again
+// whenever the user toggles the language, so we can swap strings in place
+// instead of reloading the page (which would wipe in-progress login state).
+function wireStrings() {
+  var subtitle = document.getElementById('subtitle');
+  subtitle.textContent = s('login.subtitle');
+
+  // EN: title above subtitle; IS: subtitle above title
   var logo = document.querySelector('.login-logo');
-  logo.appendChild(document.getElementById('subtitle'));
+  var h1   = logo.querySelector('h1');
+  if (getLang() === 'IS') {
+    if (subtitle.nextElementSibling !== h1) logo.insertBefore(subtitle, h1);
+  } else {
+    if (logo.lastElementChild !== subtitle) logo.appendChild(subtitle);
+  }
+
+  document.getElementById('ktLabel').textContent         = s('login.kennitala');
+  document.getElementById('ktInput').placeholder         = s('login.placeholder');
+  document.getElementById('langBtn').textContent         = s('nav.langToggle');
+  document.getElementById('backLink').textContent        = s('login.back');
+  document.getElementById('accountBackLink').textContent = s('login.back');
+
+  // Preserve loading state if a sign-in is in flight
+  var loginBtn = document.getElementById('loginBtn');
+  var btnText  = document.getElementById('btnText');
+  if (loginBtn.disabled) {
+    btnText.innerHTML = '<span class="spinner"></span>' + s('login.loading');
+  } else {
+    btnText.textContent = s('login.btn');
+  }
+
+  // Refresh any visible error messages whose string key we tracked
+  ['errMsg', 'accountErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.style.display !== 'none' && el.dataset.sKey) {
+      el.textContent = s(el.dataset.sKey);
+    }
+  });
+
+  // Re-render whichever dynamic screen is currently shown so its labels update
+  if (_currentScreen) {
+    if (_currentScreen.type === 'account') {
+      showAccountPicker(_currentScreen.guardian, _currentScreen.wards);
+    } else if (_currentScreen.type === 'role') {
+      showRolePicker(_currentScreen.user, _currentScreen.roles);
+    }
+  }
 }
-document.getElementById('ktLabel').textContent   = s('login.kennitala');
-document.getElementById('ktInput').placeholder   = s('login.placeholder');
-document.getElementById('btnText').textContent   = s('login.btn');
-document.getElementById('langBtn').textContent   = s('nav.langToggle');
-document.getElementById('backLink').textContent  = s('login.back');
-document.getElementById('accountBackLink').textContent = s('login.back');
+
+wireStrings();
+
+// Override the api.js global on this page only: a full reload() would wipe
+// the typed kennitala or kick the user back to the start screen even if
+// they had already advanced to the role/account picker. Instead, fetch the
+// other language file dynamically and re-apply strings in place.
+function toggleLang() {
+  var next = getLang() === 'EN' ? 'IS' : 'EN';
+  setLang(next);
+  var script = document.createElement('script');
+  script.src = '../shared/strings-' + next.toLowerCase() + '.js';
+  script.onload = wireStrings;
+  document.head.appendChild(script);
+}
 
 document.getElementById('ktInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
@@ -117,11 +171,13 @@ async function doLogin() {
 
   if (kt.length < 10) {
     err.textContent    = s('login.tooShort');
+    err.dataset.sKey   = 'login.tooShort';
     err.style.display  = 'block';
     return;
   }
 
   err.style.display  = 'none';
+  delete err.dataset.sKey;
   btn.disabled       = true;
   document.getElementById('btnText').innerHTML =
     `<span class="spinner"></span>${s('login.loading')}`;
@@ -142,7 +198,9 @@ async function doLogin() {
     proceedWithUser(user);
   } catch(e) {
     const isNotFound = e.message?.includes('Not found') || e.message?.includes('Inactive');
-    err.textContent   = isNotFound ? s('login.notFound') : s('login.error');
+    const key = isNotFound ? 'login.notFound' : 'login.error';
+    err.textContent   = s(key);
+    err.dataset.sKey  = key;
     err.style.display = 'block';
     btn.disabled      = false;
     document.getElementById('btnText').textContent = s('login.btn');
@@ -182,6 +240,7 @@ function proceedWithUser(user) {
 }
 
 function showAccountPicker(guardian, wards) {
+  _currentScreen = { type: 'account', guardian: guardian, wards: wards };
   document.getElementById('ktScreen').style.display      = 'none';
   document.getElementById('roleScreen').style.display    = 'none';
   document.getElementById('accountScreen').style.display = 'block';
@@ -224,6 +283,7 @@ async function switchToWard(guardian, ward) {
   const err  = document.getElementById('accountErr');
   btns.forEach(function(b) { b.disabled = true; });
   err.style.display = 'none';
+  delete err.dataset.sKey;
   // Drop per-user caches so the ward's hub doesn't show stale guardian data
   // if a previous session left something in sessionStorage.
   try {
@@ -248,7 +308,8 @@ async function switchToWard(guardian, ward) {
     proceedWithUser(wardUser);
   } catch(e) {
     btns.forEach(function(b) { b.disabled = false; });
-    err.textContent = s('login.wardSwitchError');
+    err.textContent  = s('login.wardSwitchError');
+    err.dataset.sKey = 'login.wardSwitchError';
     err.style.display = 'block';
   }
 }
@@ -262,6 +323,7 @@ function esc(t) {
 }
 
 function showRolePicker(user, roles) {
+  _currentScreen = { type: 'role', user: user, roles: roles };
   document.getElementById('ktScreen').style.display      = 'none';
   document.getElementById('accountScreen').style.display = 'none';
   document.getElementById('roleScreen').style.display    = 'block';
@@ -291,11 +353,12 @@ function showRolePicker(user, roles) {
 }
 
 function goBack() {
+  _currentScreen = null;
   document.getElementById('ktScreen').style.display      = 'block';
   document.getElementById('roleScreen').style.display    = 'none';
   document.getElementById('accountScreen').style.display = 'none';
   const accErr = document.getElementById('accountErr');
-  if (accErr) accErr.style.display = 'none';
+  if (accErr) { accErr.style.display = 'none'; delete accErr.dataset.sKey; }
   document.getElementById('ktInput').value = '';
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('btnText').textContent = s('login.btn');
