@@ -1229,5 +1229,16 @@ var _STRINGS_FLAT = {
   "passport.unretire": "Restore",
   "passport.save": "Save changes",
   "passport.saved": "Passport saved.",
-  "passport.unsavedChanges": "You have unsaved changes. Discard?"
+  "passport.unsavedChanges": "You have unsaved changes. Discard?",
+  "member.calendar": "📅 Calendar",
+  "member.calTitle": "Club Calendars",
+  "member.calEmpty": "No calendars have been set up yet.",
+  "admin.tabCalendars": "Calendars",
+  "admin.calDesc": "Add Google Calendar IDs that members can view from the member hub. Each calendar appears as an embedded view.",
+  "admin.calName": "Name",
+  "admin.calId": "Calendar ID",
+  "admin.calPlaceholder": "e.g. abc123@group.calendar.google.com",
+  "admin.calAdd": "+ Add calendar",
+  "admin.calEmpty": "No calendars added.",
+  "admin.calRemove": "Remove"
 };
