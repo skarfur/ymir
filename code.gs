@@ -375,6 +375,7 @@ function route_(action, b) {
     case 'removeMaterial':          return removeMaterial_(b);
     case 'followProject':           return followProject_(b);
     case 'unfollowProject':         return unfollowProject_(b);
+    case 'markProjectSeen':         return markProjectSeen_(b);
     case 'getNotifications':        return getNotifications_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
@@ -1318,6 +1319,25 @@ function unfollowProject_(b) {
   updateRow_('maintenance', 'id', b.id, { followers: JSON.stringify(followers) });
   cDel_('maintenance');
   return okJ({ unfollowed: true });
+}
+
+function markProjectSeen_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.kennitala) return failJ('kennitala required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  ensureMaintCols_();
+  var followers = [];
+  try { followers = JSON.parse(ex.followers || '[]'); } catch(e) { followers = []; }
+  var kt = String(b.kennitala);
+  var changed = false;
+  followers.forEach(function(f) {
+    if (String(f.kt) === kt) { f.at = now_(); changed = true; }
+  });
+  if (!changed) return okJ({ notFollowing: true });
+  updateRow_('maintenance', 'id', b.id, { followers: JSON.stringify(followers) });
+  cDel_('maintenance');
+  return okJ({ seen: true });
 }
 
 function deleteMaintenance_(b) {
