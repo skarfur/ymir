@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script>window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
-  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/boats.js" defer></script>
   <script src="../shared/weather.js" defer></script>
@@ -232,6 +232,7 @@
         <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
+        <button class="tab-btn"        data-tab="passport"   onclick="showTab('passport')"   data-s="passport.adminTitle">Rowing Passport</button>
       </div>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -490,6 +491,25 @@
         <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
       </div>
     </div><!-- /tab-flags -->
+
+    <!-- ══ ROWING PASSPORT ═════════════════════════════════════════════════ -->
+    <div id="tab-passport" class="hidden">
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title" data-s="passport.adminTitle">Rowing Passport</div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="passportAdminCard">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="passport.csvHelp"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="file" id="passportCsvFile" accept=".csv,text/csv" style="font-size:11px">
+            <button class="btn btn-primary" style="font-size:11px" onclick="passportImportCsv()" data-s="passport.importCsv">Import CSV</button>
+            <button class="btn btn-secondary" style="font-size:11px" onclick="passportExportCsv()" data-s="passport.exportCsv">Export CSV</button>
+          </div>
+          <div id="passportAdminPreview" style="font-size:11px"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
     <div id="tab-slotCal" class="hidden">
@@ -1179,6 +1199,7 @@ function showTab(tab) {
 
   if (tab === 'certs') renderCertDefs();
   if (tab === 'slotCal') initSlotCalendar();
+  if (tab === 'passport') renderPassportAdmin();
 
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
@@ -2571,7 +2592,7 @@ function loadFlagConfigPanel(c){
   document.getElementById('fcVisReduced').value=vis.reduced!=null?vis.reduced:3;
   document.getElementById('fcVisPoor').value=vis.poor!=null?vis.poor:5;
   var advEl=document.getElementById('fcFlagAdvice');
-  if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px;margin-bottom:4px">'+'<div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+fc.label+'</div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Short advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Stutt ráðlegging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Full description (EN)</label><textarea id="fcDesc_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.description||fc.description||'')+'</textarea></div>'+'<div class="field" style="margin-bottom:0"><label style="font-size:10px">Full lýsingartexti (IS)</label><textarea id="fcDescIS_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.descriptionIS||fc.descriptionIS||'')+'</textarea></div>'+'</div>';}).join('');}
+  if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px;margin-bottom:4px">'+'<div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+key+'</div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Short advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Stutt ráðlegging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Full description (EN)</label><textarea id="fcDesc_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.description||fc.description||'')+'</textarea></div>'+'<div class="field" style="margin-bottom:0"><label style="font-size:10px">Full lýsingartexti (IS)</label><textarea id="fcDescIS_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.descriptionIS||fc.descriptionIS||'')+'</textarea></div>'+'</div>';}).join('');}
   updateFlagPreview();
 }
 function getFlagFormValues(){
@@ -2606,7 +2627,7 @@ function updateFlagPreview(){
     var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');
     var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];
     return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'">'
-      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' '+fl.label+' · <b>'+r.score+'</b> pts</div>'
+      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' · <b>'+r.score+'</b> pts</div>'
       +'<div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';
   }).join('');
   // Restore
@@ -3144,6 +3165,156 @@ async function saveRecurringSlots() {
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+// ── ROWING PASSPORT ADMIN ─────────────────────────────────────────────────────
+let _passportDef = null;
+let _passportDirty = false;
+
+async function renderPassportAdmin() {
+  const card = document.getElementById('passportAdminPreview');
+  card.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
+  try {
+    const res = await apiGet('getRowingPassport', {});
+    _passportDef = res.definition || { version: 1, passports: [] };
+    _passportDirty = false;
+    drawPassportEditor();
+  } catch(e) { card.innerHTML = '<div style="color:var(--red)">' + esc(e.message) + '</div>'; }
+}
+
+function drawPassportEditor() {
+  const card = document.getElementById('passportAdminPreview');
+  const def = _passportDef;
+  let html = '';
+  (def.passports || []).forEach((p, pi) => {
+    const totalItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => !i.retired).length, 0);
+    const retiredItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => i.retired).length, 0);
+    html += `<div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:4px">${esc(p.name?.EN || p.id)} <span style="color:var(--muted);font-weight:400;font-size:10px">(${p.id})</span></div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">v${def.version || 1} · ${totalItems} active${retiredItems ? ' · ' + retiredItems + ' retired' : ''} · requires ${p.requiredSigs || 2} signatures</div>`;
+    (p.categories || []).forEach((cat, ci) => {
+      html += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <input type="text" value="${esc(cat.name?.EN || '')}" onchange="ppEditCatLabel(${pi},${ci},'EN',this.value)" placeholder="Category (EN)" style="font-size:11px;flex:1">
+          <input type="text" value="${esc(cat.name?.IS || '')}" onchange="ppEditCatLabel(${pi},${ci},'IS',this.value)" placeholder="Category (IS)" style="font-size:11px;flex:1">
+          <span style="color:var(--muted);font-size:9px">${esc(cat.id)}</span>
+        </div>`;
+      (cat.items || []).forEach((it, ii) => {
+        const retired = !!it.retired;
+        const assessment = it.assessment || 'practical';
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr 90px 80px 70px;gap:6px;margin:4px 0;align-items:center;${retired ? 'opacity:.5' : ''}">
+          <input type="text" value="${esc(it.name?.EN || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','EN',this.value)" placeholder="Item (EN)" style="font-size:11px">
+          <input type="text" value="${esc(it.name?.IS || '')}" onchange="ppEditItem(${pi},${ci},${ii},'name','IS',this.value)" placeholder="Item (IS)" style="font-size:11px">
+          <select onchange="ppEditAssessment(${pi},${ci},${ii},this.value)" style="font-size:11px">
+            <option value="practical"${assessment==='practical'?' selected':''}>${s('passport.practical')}</option>
+            <option value="theory"${assessment==='theory'?' selected':''}>${s('passport.theory')}</option>
+          </select>
+          <span style="color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis">${esc(it.id)}</span>
+          <button class="btn btn-secondary" style="font-size:10px;padding:3px 6px" onclick="ppToggleRetire(${pi},${ci},${ii})">${retired ? s('passport.unretire') : s('passport.retire')}</button>
+        </div>`;
+      });
+      html += `<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px;margin-top:4px" onclick="ppAddItem(${pi},${ci})" data-s="passport.addItem">+ Add item</button>
+      </div>`;
+    });
+    html += `<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="ppAddCategory(${pi})" data-s="passport.addCategory">+ Add category</button></div>`;
+    html += '</div>';
+  });
+  html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+    <button class="btn btn-primary" style="font-size:11px" onclick="ppSaveDef()" data-s="passport.save">Save changes</button>
+    <span id="ppDirtyMark" style="font-size:10px;color:var(--brass)">${_passportDirty ? '● unsaved' : ''}</span>
+  </div>`;
+  card.innerHTML = html;
+}
+
+function _ppMarkDirty() { _passportDirty = true; const m = document.getElementById('ppDirtyMark'); if (m) m.textContent = '● unsaved'; }
+function _ppSlug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-' + Date.now().toString(36)); }
+
+function ppEditCatLabel(pi, ci, lang, val) {
+  const cat = _passportDef.passports[pi].categories[ci];
+  cat.name = cat.name || {}; cat.name[lang] = val;
+  _ppMarkDirty();
+}
+function ppEditItem(pi, ci, ii, field, lang, val) {
+  const it = _passportDef.passports[pi].categories[ci].items[ii];
+  it[field] = it[field] || {}; it[field][lang] = val;
+  _ppMarkDirty();
+}
+function ppEditAssessment(pi, ci, ii, val) {
+  _passportDef.passports[pi].categories[ci].items[ii].assessment = val;
+  _ppMarkDirty();
+}
+function ppToggleRetire(pi, ci, ii) {
+  const it = _passportDef.passports[pi].categories[ci].items[ii];
+  it.retired = !it.retired;
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+function ppAddItem(pi, ci) {
+  const label = prompt('Item name (English)'); if (!label) return;
+  const id = _ppSlug(label);
+  _passportDef.passports[pi].categories[ci].items.push({ id, assessment: 'practical', name: { EN: label, IS: label }, desc: { EN: '', IS: '' } });
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+function ppAddCategory(pi) {
+  const label = prompt('Category name (English)'); if (!label) return;
+  const id = _ppSlug(label);
+  _passportDef.passports[pi].categories.push({ id, name: { EN: label, IS: label }, items: [] });
+  _ppMarkDirty();
+  drawPassportEditor();
+}
+async function ppSaveDef() {
+  if (!_passportDef) return;
+  // Bump version on save
+  _passportDef.version = (_passportDef.version || 0) + 1;
+  try {
+    await apiPost('saveRowingPassportDef', { definition: _passportDef });
+    _passportDirty = false;
+    toast(s('passport.saved'));
+    renderPassportAdmin();
+  } catch(e) { toast(e.message, 'err'); }
+}
+window.ppEditCatLabel = ppEditCatLabel;
+window.ppEditItem = ppEditItem;
+window.ppEditAssessment = ppEditAssessment;
+window.ppToggleRetire = ppToggleRetire;
+window.ppAddItem = ppAddItem;
+window.ppAddCategory = ppAddCategory;
+window.ppSaveDef = ppSaveDef;
+
+async function passportImportCsv() {
+  const file = document.getElementById('passportCsvFile').files[0];
+  if (!file) { toast('Choose a CSV file first', 'err'); return; }
+  const text = await file.text();
+  if (!confirm('Import this CSV? Items missing from the CSV will be marked retired (not deleted).')) return;
+  try {
+    await apiPost('importRowingPassportCsv', { csv: text });
+    toast('Passport imported.');
+    renderPassportAdmin();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function passportExportCsv() {
+  try {
+    const res = await apiGet('getRowingPassport', {});
+    const def = res.definition || { passports: [] };
+    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is'];
+    const q = v => '"' + String(v || '').replace(/"/g,'""') + '"';
+    (def.passports || []).forEach(p => {
+      (p.categories || []).forEach(cat => {
+        (cat.items || []).forEach(it => {
+          if (it.retired) return;
+          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.assessment || 'practical', it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
+        });
+      });
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'rowing-passport.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────

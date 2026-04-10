@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/calendar.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -177,8 +177,8 @@
         <span id="cqWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCqWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cqWeekToday()" data-s="slot.today">Today</button>
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
         <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqCreateSlotModal()" data-s="slot.createAndBook" id="cqCreateSlotBtn">+ New Booking</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCqBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
         <label for="cqBookingColor" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
@@ -363,7 +363,7 @@ let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
 
 // Globals required by shared/logbook.js
 var allTrips = [], myTrips = [], allBoats = [], allMembers = [], allLocs = [];
-const _windUnit = getPref('windUnit', 'bft');
+const _windUnit = getPref('windUnit', 'ms');
 // parseDateParts / bftLabel used by tripCard()
 function parseDateParts(d) {
   if (!d) return {day:'—',mon:'',yr:''};

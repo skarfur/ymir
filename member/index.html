@@ -10,12 +10,13 @@
 <script src="../shared/api.js"></script>
 <script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
 <script src="../shared/boats.js" defer></script>
 <script src="../shared/certs.js" defer></script>
+<script src="../shared/qr.js" defer></script>
 <style>
 /* ── Quick-action header strip ── */
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
@@ -326,6 +327,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateFormSelects();
     renderActiveCheckouts();
     renderFleetByCat();
+
+    // Handle ?boat=<id> URL param from QR-code scans (native camera → browser)
+    const _qrBoatParam = new URLSearchParams(window.location.search).get('boat');
+    if (_qrBoatParam) {
+      // Clear the URL so a page refresh doesn't retrigger the flow
+      history.replaceState(null, '', window.location.pathname);
+      handleBoatQrScan(_qrBoatParam);
+    }
   } catch(e) {
     document.getElementById('activeList').innerHTML =
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
@@ -333,6 +342,61 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   warmContainer();
 });
+
+// ══ QR SCANNING ══════════════════════════════════════════════════════════════
+// Routes a scanned boat id through the right flow:
+//   - Available boat  → launch flow
+//   - Your boat out   → check-in flow
+//   - Someone else's  → status toast
+//   - OOS / unknown   → warning toast
+function handleBoatQrScan(boatId) {
+  if (!boatId) { showToast(s('qr.invalidCode'), 'err'); return; }
+  const boat = boats.find(b => b.id === boatId);
+  if (!boat) { showToast(s('qr.boatNotFound'), 'err'); return; }
+  const co = checkouts.find(c => c.status === 'out' && c.boatId === boatId);
+  if (co) {
+    if (String(co.memberKennitala) === String(user.kennitala)) {
+      openReturnModal(co.id);
+    } else {
+      showToast(s('qr.boatOutByOther', { name: co.memberName || '' }), 'warn');
+    }
+    return;
+  }
+  if (boolVal(boat.oos)) {
+    showToast(s('qr.boatOos'), 'warn');
+    return;
+  }
+  launchBoatById(boatId);
+}
+
+// In-app camera scan — used from the quick-action strip
+function scanBoatQR() {
+  if (typeof openQRScanner !== 'function') { showToast(s('qr.error'), 'err'); return; }
+  openQRScanner({
+    title: s('qr.scanTitle'),
+    onResult: function (text) {
+      const id = parseBoatIdFromScan(text);
+      handleBoatQrScan(id);
+    }
+  });
+}
+
+// Scan a QR and assign it to the given <select> (used by the report-issue forms)
+function scanBoatForIssue(selectId) {
+  if (typeof openQRScanner !== 'function') { showToast(s('qr.error'), 'err'); return; }
+  openQRScanner({
+    title: s('qr.scanTitle'),
+    onResult: function (text) {
+      const id = parseBoatIdFromScan(text);
+      if (!id) { showToast(s('qr.invalidCode'), 'err'); return; }
+      const boat = boats.find(b => b.id === id);
+      if (!boat) { showToast(s('qr.boatNotFound'), 'err'); return; }
+      const sel = document.getElementById(selectId);
+      if (sel) { sel.value = id; }
+      showToast(boat.name);
+    }
+  });
+}
 
 // ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
 function renderFleetByCat() {
@@ -394,6 +458,9 @@ function renderLaunchPicker(preselectedBoatId) {
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
       '<div class="mb-12">'+
+        '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+          s('qr.scanBtn')+
+        '</button>'+
         '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
           '🚣 '+s('member.nonClubBoat')+
           ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
@@ -408,6 +475,11 @@ function renderLaunchPicker(preselectedBoatId) {
   const grouped={};
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
+    '<div class="mb-12">'+
+      '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+        s('qr.scanBtn')+
+      '</button>'+
+    '</div>'+
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
       `<div class="mb-12">
         <div class="section-label">${_fmtCatLabel(cat)}</div>
@@ -817,8 +889,8 @@ function _wxSnapHtml(snap) {
   if(!rows.length)        rows.push(["","No detail available"]);
   return rows.map(r=>'<div class="flex-center gap-6 text-sm" style="padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
 }
-// Preferred wind unit for manual entry (non-bft → use directly; bft → default to m/s)
-var _retWindUnit = (function(){ var p = getPref('windUnit','bft'); return p === 'bft' ? 'ms' : p; })();
+// Preferred wind unit for manual entry (non-bft → use directly; bft → use m/s)
+var _retWindUnit = (function(){ var p = getPref('windUnit','ms'); return p === 'bft' ? 'ms' : p; })();
 
 function _updateWxDisplay() {
   var sel=document.querySelector('[name="wxChoice"]:checked'), choice=sel?sel.value:"checkout";
@@ -1102,7 +1174,12 @@ function _maintFormHtml() {
   var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" onclick="_irSelectSev(\''+s+'\')">'+s.toUpperCase()+'</button>').join('');
   var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
   return '<div class="field"><label>Category</label><div class="cat-btns">'+catBtns+'</div></div>'
-    +'<div class="field hidden" id="irBoatField"><label>Boat</label><select id="irBoat"><option value="">Select boat...</option>'+boatOpts+'</select></div>'
+    +'<div class="field hidden" id="irBoatField"><label>Boat</label>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<select id="irBoat" style="flex:1;min-width:0"><option value="">Select boat...</option>'+boatOpts+'</select>'
+        +'<button type="button" class="btn btn-secondary" onclick="scanBoatForIssue(\'irBoat\')" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+      +'</div>'
+    +'</div>'
     +'<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label><input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>'
     +'<div class="field"><label>Part / area (optional)</label><input type="text" id="irPart" placeholder="e.g. rudder, mast, zipper..."></div>'
     +'<div class="field"><label>Severity</label><div class="sev-btns">'+sevBtns+'</div></div>'
@@ -1134,7 +1211,12 @@ function _incidentFormHtml() {
     +'<div class="field"><label>Time <span style="color:var(--red)">*</span></label><input type="time" id="irTime" value="'+tStr+'"></div>'
     +'</div>'
     +'<div class="field"><label>Location <span style="color:var(--red)">*</span></label><select id="irLocation"><option value="">— select —</option>'+locOpts+'</select></div>'
-    +'<div class="field"><label>Boat involved (optional)</label><select id="irIncBoat"><option value="">None</option>'+boatOpts+'</select></div>'
+    +'<div class="field"><label>Boat involved (optional)</label>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<select id="irIncBoat" style="flex:1;min-width:0"><option value="">None</option>'+boatOpts+'</select>'
+        +'<button type="button" class="btn btn-secondary" onclick="scanBoatForIssue(\'irIncBoat\')" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+      +'</div>'
+    +'</div>'
     +'<div class="field"><label>Description <span style="color:var(--red)">*</span></label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'
     +'<div class="field"><label>People involved (optional)</label><input type="text" id="irPeople" placeholder="Names (not linked to members)..."></div>'
     +'<div class="field"><label>Witnesses (optional)</label><input type="text" id="irWitnesses" placeholder="Names (not linked to members)..."></div>'

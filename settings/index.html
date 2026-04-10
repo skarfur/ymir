@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <style>
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
@@ -114,26 +114,30 @@
       <label class="pill-toggle active"><input type="checkbox" id="svDistance" checked><span data-s="settings.stats.distance"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svLongest" checked><span data-s="settings.stats.longest"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svAvgDuration" checked><span data-s="settings.stats.avgDuration"></span></label>
-      <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.roles"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svSkipper" checked><span data-s="settings.stats.skipper"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svCrew" checked><span data-s="settings.stats.crew"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svHelmHours" checked><span data-s="settings.stats.helmHours"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svStudent" checked><span data-s="settings.stats.student"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svBoats" checked><span data-s="settings.stats.boats"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svFavBoat" checked><span data-s="settings.stats.favBoat"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svByCategory" checked><span data-s="settings.stats.byCategory"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.conditions"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svAvgWind" checked><span data-s="settings.stats.avgWind"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svPeakWind" checked><span data-s="settings.stats.peakWind"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svHeavy" checked><span data-s="settings.stats.heavy"></span></label>
-      <label class="pill-toggle active"><input type="checkbox" id="svNight" checked><span data-s="settings.stats.night"></span></label>
     </div>
 
     <div class="stat-group-label" data-s="settings.statsGroup.other"></div>
     <div class="pill-grid">
       <label class="pill-toggle active"><input type="checkbox" id="svLocations" checked><span data-s="settings.stats.locations"></span></label>
+      <label class="pill-toggle active"><input type="checkbox" id="svFavLocation" checked><span data-s="settings.stats.favLocation"></span></label>
       <label class="pill-toggle active"><input type="checkbox" id="svVerified" checked><span data-s="settings.stats.verified"></span></label>
     </div>
   </div>
@@ -169,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   setToggle('langToggle', lang);
 
   // Wind unit
-  document.getElementById('sWindUnit').value = prefs.windUnit || 'bft';
+  document.getElementById('sWindUnit').value = prefs.windUnit || 'ms';
 
   // Theme toggle
   setToggle('themeToggle', theme);
@@ -224,11 +228,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function applyStatVis(sv) {
-  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svNight','svAvgDuration','svLocations','svVerified'];
-  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','night','avgDuration','locations','verified'];
+  var ids = ['svCareer','svHours','svYtd','svSkipper','svByCategory','svDistance','svLongest','svAvgWind','svStreak','svBoats','svCrew','svHeavy','svAvgDuration','svLocations','svVerified','svHelmHours','svStudent','svFavBoat','svFavLocation','svPeakWind'];
+  var keys = ['career','hours','ytd','skipper','byCategory','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
   for (var i = 0; i < ids.length; i++) {
     var el = document.getElementById(ids[i]);
-    var on = sv[keys[i]] !== false;
+    var on = isStatVisible(keys[i], sv);
     el.checked = on;
     el.closest('.pill-toggle').classList.toggle('active', on);
   }
@@ -285,7 +289,7 @@ async function saveSettings() {
   btn.textContent = s('lbl.loading');
 
   var initials = document.getElementById('sInitials').value.trim().toUpperCase() || _autoInitials;
-  var lang     = getToggle('langToggle') || 'EN';
+  var lang     = getToggle('langToggle') || 'IS';
   var windUnit = document.getElementById('sWindUnit').value;
   var theme    = getToggle('themeToggle') || 'dark';
 
@@ -302,10 +306,14 @@ async function saveSettings() {
     boats:      document.getElementById('svBoats').checked,
     crew:       document.getElementById('svCrew').checked,
     heavy:      document.getElementById('svHeavy').checked,
-    night:      document.getElementById('svNight').checked,
     avgDuration:document.getElementById('svAvgDuration').checked,
     locations:  document.getElementById('svLocations').checked,
     verified:   document.getElementById('svVerified').checked,
+    helmHours:  document.getElementById('svHelmHours').checked,
+    student:    document.getElementById('svStudent').checked,
+    favBoat:    document.getElementById('svFavBoat').checked,
+    favLocation:document.getElementById('svFavLocation').checked,
+    peakWind:   document.getElementById('svPeakWind').checked,
   };
 
   var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility };

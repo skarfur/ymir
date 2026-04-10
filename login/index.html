@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://script.google.com">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
-  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
   <style>
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
@@ -19,7 +19,7 @@
     .login-logo p { color:var(--muted); font-size:12px; letter-spacing:1px; margin-top:4px; }
     .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
     .lang-row { text-align:center; margin-top:16px; }
-    #roleScreen { display:none; }
+    #roleScreen, #accountScreen { display:none; }
     .role-greeting { color:var(--brass); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; }
     .role-btn {
       width:100%; padding:18px 20px; margin-bottom:10px; border-radius:8px;
@@ -36,6 +36,8 @@
     .role-btn.role-staff  { border-color:var(--brass)44; }
     .role-btn.role-member { border-color:#2ecc7144; }
     .role-btn.role-member:hover { border-color:#2ecc71; }
+    .role-btn.role-ward   { border-color:#9b59b644; }
+    .role-btn.role-ward:hover { border-color:#9b59b6; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
     .back-link:hover { color:var(--brass); }
   </style>
@@ -64,6 +66,15 @@
     </div>
   </div>
 
+  <div id="accountScreen">
+    <div class="card">
+      <div class="role-greeting" id="accountGreeting"></div>
+      <div id="accountBtns"></div>
+      <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+    </div>
+    <span class="back-link" onclick="goBack()" id="accountBackLink"></span>
+  </div>
+
   <div id="roleScreen">
     <div class="card">
       <div class="role-greeting" id="roleGreeting"></div>
@@ -78,18 +89,73 @@
 </div>
 
 <script>
-// Wire all strings on load — no hard-coded text in HTML
-document.getElementById('subtitle').textContent  = s('login.subtitle');
-// EN: title above subtitle; IS: subtitle above title
-if (getLang() !== 'IS') {
+// Track the dynamic screen currently shown so we can re-render it when the
+// language changes without losing the user's place in the login flow.
+var _currentScreen = null;
+
+// (Re)apply all UI strings on the page. Called once on load and again
+// whenever the user toggles the language, so we can swap strings in place
+// instead of reloading the page (which would wipe in-progress login state).
+function wireStrings() {
+  var subtitle = document.getElementById('subtitle');
+  subtitle.textContent = s('login.subtitle');
+
+  // EN: title above subtitle; IS: subtitle above title
   var logo = document.querySelector('.login-logo');
-  logo.appendChild(document.getElementById('subtitle'));
+  var h1   = logo.querySelector('h1');
+  if (getLang() === 'IS') {
+    if (subtitle.nextElementSibling !== h1) logo.insertBefore(subtitle, h1);
+  } else {
+    if (logo.lastElementChild !== subtitle) logo.appendChild(subtitle);
+  }
+
+  document.getElementById('ktLabel').textContent         = s('login.kennitala');
+  document.getElementById('ktInput').placeholder         = s('login.placeholder');
+  document.getElementById('langBtn').textContent         = s('nav.langToggle');
+  document.getElementById('backLink').textContent        = s('login.back');
+  document.getElementById('accountBackLink').textContent = s('login.back');
+
+  // Preserve loading state if a sign-in is in flight
+  var loginBtn = document.getElementById('loginBtn');
+  var btnText  = document.getElementById('btnText');
+  if (loginBtn.disabled) {
+    btnText.innerHTML = '<span class="spinner"></span>' + s('login.loading');
+  } else {
+    btnText.textContent = s('login.btn');
+  }
+
+  // Refresh any visible error messages whose string key we tracked
+  ['errMsg', 'accountErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.style.display !== 'none' && el.dataset.sKey) {
+      el.textContent = s(el.dataset.sKey);
+    }
+  });
+
+  // Re-render whichever dynamic screen is currently shown so its labels update
+  if (_currentScreen) {
+    if (_currentScreen.type === 'account') {
+      showAccountPicker(_currentScreen.guardian, _currentScreen.wards);
+    } else if (_currentScreen.type === 'role') {
+      showRolePicker(_currentScreen.user, _currentScreen.roles);
+    }
+  }
 }
-document.getElementById('ktLabel').textContent   = s('login.kennitala');
-document.getElementById('ktInput').placeholder   = s('login.placeholder');
-document.getElementById('btnText').textContent   = s('login.btn');
-document.getElementById('langBtn').textContent   = s('nav.langToggle');
-document.getElementById('backLink').textContent  = s('login.back');
+
+wireStrings();
+
+// Override the api.js global on this page only: a full reload() would wipe
+// the typed kennitala or kick the user back to the start screen even if
+// they had already advanced to the role/account picker. Instead, fetch the
+// other language file dynamically and re-apply strings in place.
+function toggleLang() {
+  var next = getLang() === 'EN' ? 'IS' : 'EN';
+  setLang(next);
+  var script = document.createElement('script');
+  script.src = '../shared/strings-' + next.toLowerCase() + '.js';
+  script.onload = wireStrings;
+  document.head.appendChild(script);
+}
 
 document.getElementById('ktInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
@@ -105,11 +171,13 @@ async function doLogin() {
 
   if (kt.length < 10) {
     err.textContent    = s('login.tooShort');
+    err.dataset.sKey   = 'login.tooShort';
     err.style.display  = 'block';
     return;
   }
 
   err.style.display  = 'none';
+  delete err.dataset.sKey;
   btn.disabled       = true;
   document.getElementById('btnText').innerHTML =
     `<span class="spinner"></span>${s('login.loading')}`;
@@ -117,44 +185,148 @@ async function doLogin() {
   try {
     const data = await apiGet('validateMember', { kennitala: kt });
     const user = data.member;
-    setUser(user);
+    const wards = Array.isArray(data.wards) ? data.wards : [];
 
-    // Sync server preferences → localStorage so all pages see saved settings
-    var serverPrefs = parseJson(user.preferences, {});
-    if (Object.keys(serverPrefs).length) {
-      setPrefs(serverPrefs);
-      if (serverPrefs.theme) setTheme(serverPrefs.theme);
-      if (serverPrefs.lang) setLang(serverPrefs.lang);
+    // If this member guards one or more minors, offer an account picker so
+    // they can choose whether to open their own account or a ward's account.
+    // Otherwise go straight to the existing role/redirect flow.
+    if (wards.length) {
+      showAccountPicker(user, wards);
+      return;
     }
 
-    // Prefetch data the landing page will need while user is on role picker
-    // (or racing the redirect for regular members). Results land in
-    // sessionStorage via apiGet's cache, so the target page skips the call.
-    window._prefetchConfig = apiGet('getConfig');
-    if (user.role === 'admin') {
-      window._prefetchMembers = apiGet('getMembers');
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      showRolePicker(user, ['member', 'staff', 'admin']);
-    } else if (user.role === 'staff') {
-      window._prefetchMembers = apiGet('getMembers');
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      showRolePicker(user, ['member', 'staff']);
-    } else {
-      window._prefetchCheckouts = apiGet('getActiveCheckouts');
-      window.location.href = '../member/';
-    }
+    proceedWithUser(user);
   } catch(e) {
     const isNotFound = e.message?.includes('Not found') || e.message?.includes('Inactive');
-    err.textContent   = isNotFound ? s('login.notFound') : s('login.error');
+    const key = isNotFound ? 'login.notFound' : 'login.error';
+    err.textContent   = s(key);
+    err.dataset.sKey  = key;
     err.style.display = 'block';
     btn.disabled      = false;
     document.getElementById('btnText').textContent = s('login.btn');
   }
 }
 
+// Persist the chosen user and drive the existing role-picker / redirect flow.
+// `user` is assumed to already carry any `guardianSession` metadata if the
+// active session is a guardian acting as their ward.
+function proceedWithUser(user) {
+  setUser(user);
+
+  // Sync server preferences → localStorage so all pages see saved settings
+  var serverPrefs = parseJson(user.preferences, {});
+  if (Object.keys(serverPrefs).length) {
+    setPrefs(serverPrefs);
+    if (serverPrefs.theme) setTheme(serverPrefs.theme);
+    if (serverPrefs.lang) setLang(serverPrefs.lang);
+  }
+
+  // Prefetch data the landing page will need while user is on role picker
+  // (or racing the redirect for regular members). Results land in
+  // sessionStorage via apiGet's cache, so the target page skips the call.
+  window._prefetchConfig = apiGet('getConfig');
+  if (user.role === 'admin') {
+    window._prefetchMembers = apiGet('getMembers');
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    showRolePicker(user, ['member', 'staff', 'admin']);
+  } else if (user.role === 'staff') {
+    window._prefetchMembers = apiGet('getMembers');
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    showRolePicker(user, ['member', 'staff']);
+  } else {
+    window._prefetchCheckouts = apiGet('getActiveCheckouts');
+    window.location.href = '../member/';
+  }
+}
+
+function showAccountPicker(guardian, wards) {
+  _currentScreen = { type: 'account', guardian: guardian, wards: wards };
+  document.getElementById('ktScreen').style.display      = 'none';
+  document.getElementById('roleScreen').style.display    = 'none';
+  document.getElementById('accountScreen').style.display = 'block';
+  document.getElementById('accountGreeting').textContent =
+    s('login.welcome') + ' ' + (guardian.name || '').split(' ')[0] + ' — ' + s('login.chooseAccount');
+
+  const container = document.getElementById('accountBtns');
+  container.innerHTML = '';
+
+  // Guardian's own account
+  const selfBtn = document.createElement('button');
+  selfBtn.className = 'role-btn role-member';
+  selfBtn.innerHTML =
+    '<span class="role-icon">⛵</span>' +
+    '<div>' +
+      '<div class="role-label">' + esc(guardian.name) + '</div>' +
+      '<div class="role-desc">' + s('login.yourAccount') + '</div>' +
+    '</div>';
+  selfBtn.onclick = function() { proceedWithUser(guardian); };
+  container.appendChild(selfBtn);
+
+  // One button per ward
+  wards.forEach(function(w) {
+    const wBtn = document.createElement('button');
+    wBtn.className = 'role-btn role-ward';
+    wBtn.innerHTML =
+      '<span class="role-icon">🧒</span>' +
+      '<div>' +
+        '<div class="role-label">' + esc(w.name) + '</div>' +
+        '<div class="role-desc">' + s('login.wardMinor') +
+          (w.birthYear ? ' · ' + esc(w.birthYear) : '') + '</div>' +
+      '</div>';
+    wBtn.onclick = function() { switchToWard(guardian, w); };
+    container.appendChild(wBtn);
+  });
+}
+
+async function switchToWard(guardian, ward) {
+  const btns = document.querySelectorAll('#accountBtns button');
+  const err  = document.getElementById('accountErr');
+  btns.forEach(function(b) { b.disabled = true; });
+  err.style.display = 'none';
+  delete err.dataset.sKey;
+  // Drop per-user caches so the ward's hub doesn't show stale guardian data
+  // if a previous session left something in sessionStorage.
+  try {
+    ['ymir_getTrips_','ymir_getCrews_','ymir_getCrewBoard_','ymir_getCrewInvites_']
+      .forEach(function(k) { sessionStorage.removeItem(k); });
+  } catch(e) {}
+  try {
+    const data = await apiPost('validateWard', {
+      guardianKennitala: guardian.kennitala,
+      wardKennitala: ward.kennitala,
+    });
+    // Stash a trimmed guardian record on the ward's user object so the
+    // header can surface "Signed in as X — ↶ Back to guardian".
+    const wardUser = Object.assign({}, data.member, {
+      guardianSession: {
+        id: guardian.id,
+        kennitala: guardian.kennitala,
+        name: guardian.name,
+        role: guardian.role,
+      },
+    });
+    proceedWithUser(wardUser);
+  } catch(e) {
+    btns.forEach(function(b) { b.disabled = false; });
+    err.textContent  = s('login.wardSwitchError');
+    err.dataset.sKey = 'login.wardSwitchError';
+    err.style.display = 'block';
+  }
+}
+
+// Minimal HTML escape used inside dynamically built buttons in this page.
+// shared/ui.js defines a global `esc`, but it isn't loaded on the login page.
+function esc(t) {
+  return String(t == null ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function showRolePicker(user, roles) {
-  document.getElementById('ktScreen').style.display   = 'none';
-  document.getElementById('roleScreen').style.display = 'block';
+  _currentScreen = { type: 'role', user: user, roles: roles };
+  document.getElementById('ktScreen').style.display      = 'none';
+  document.getElementById('accountScreen').style.display = 'none';
+  document.getElementById('roleScreen').style.display    = 'block';
   document.getElementById('roleGreeting').textContent =
     s('login.welcome') + ' ' + user.name.split(' ')[0] + ' — ' + s('login.chooseView');
 
@@ -181,8 +353,12 @@ function showRolePicker(user, roles) {
 }
 
 function goBack() {
-  document.getElementById('ktScreen').style.display   = 'block';
-  document.getElementById('roleScreen').style.display = 'none';
+  _currentScreen = null;
+  document.getElementById('ktScreen').style.display      = 'block';
+  document.getElementById('roleScreen').style.display    = 'none';
+  document.getElementById('accountScreen').style.display = 'none';
+  const accErr = document.getElementById('accountErr');
+  if (accErr) { accErr.style.display = 'none'; delete accErr.dataset.sKey; }
   document.getElementById('ktInput').value = '';
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('btnText').textContent = s('login.btn');

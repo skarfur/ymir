@@ -118,25 +118,98 @@ function isCaptain(u) {
   var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
+// Internal: walk a user's certifications once and return { hasAny, sub },
+// where hasAny means "has some rowing_division (or legacy released_rower)
+// entry of any shape, regardless of expiry" and sub is the highest-rank
+// strictly-valid, non-expired subcat ('restricted' | 'released' | 'coxswain')
+// or null. Tolerant of case and missing `sub` — a bare rowing_division cert
+// still marks the user as a rower even without a recognised sub.
+function _rowingCertInfo(u) {
+  var out = { hasAny: false, sub: null };
+  if (!u || !u.certifications) return out;
+  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
+  if (!Array.isArray(certs)) return out;
+  var rank = { restricted: 1, released: 2, coxswain: 3 };
+  var bestRank = -1;
+  for (var i = 0; i < certs.length; i++) {
+    var c = certs[i];
+    if (!c) continue;
+    var id  = String(c.certId || c.id || '').toLowerCase();
+    var sub = String(c.sub || '').toLowerCase();
+    var isRowing = false;
+    var resolvedSub = null;
+    if (id === 'rowing_division') {
+      isRowing = true;
+      if (rank[sub]) resolvedSub = sub;
+    } else if (id === 'released_rower' || sub === 'released_rower') {
+      isRowing = true;
+      resolvedSub = 'released';
+    }
+    if (!isRowing) continue;
+    // Membership is permanent — any rowing_division cert, expired or not,
+    // counts for gating access to the rowing division page.
+    out.hasAny = true;
+    // Feature gating (released vs restricted) uses only non-expired certs.
+    if (resolvedSub && _certNotExpired(c) && rank[resolvedSub] > bestRank) {
+      out.sub = resolvedSub;
+      bestRank = rank[resolvedSub];
+    }
+  }
+  return out;
+}
+
+// Returns the highest-rank rowing subcat key the user holds.
+// One of: 'restricted' | 'released' | 'coxswain' | null.
+// Any rowing_division cert without a recognised sub is treated as 'restricted'
+// so pre-migration data and unusual shapes still map to a usable rank.
+function getRowingSub(u) {
+  var info = _rowingCertInfo(u);
+  if (info.sub) return info.sub;
+  if (info.hasAny) return 'restricted';
+  return null;
+}
 function isReleasedRower(u) {
-  if (!u || !u.certifications) return false;
-  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) { return (c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c); });
+  var sub = getRowingSub(u);
+  return sub === 'released' || sub === 'coxswain';
 }
-function hasRowingEndorsement(u) {
-  if (!u || !u.certifications) return false;
-  var certs = typeof u.certifications === 'string' ? parseJson(u.certifications, []) : (u.certifications || []);
-  return Array.isArray(certs) && certs.some(function(c) {
-    return (c.certId === 'rowing_division' || c.sub === 'rowing_division' || c.certId === 'released_rower' || c.sub === 'released_rower') && _certNotExpired(c);
-  });
-}
+function isCoxswain(u) { return getRowingSub(u) === 'coxswain'; }
+// True if the user has any rowing-division cert at all, regardless of sub or
+// expiry. Used as the gate for "can access the rowing division page" — the
+// page itself then uses getRowingSub to decide what to show inside.
+function hasRowingEndorsement(u) { return _rowingCertInfo(u).hasAny; }
 
 function signOut() {
   clearUser();
   window.location.href = BASE_URL + "/login/";
 }
 
-function getLang()  { return localStorage.getItem("ymirLang") || "EN"; }
+// When a guardian has signed into their ward's account, `user.guardianSession`
+// holds a trimmed snapshot of the guardian's own member record. This helper
+// re-validates the guardian kennitala, restores their full session, and sends
+// them back to the member hub (their own hub-switch buttons can take it from
+// there if they're also staff/admin).
+async function switchBackToGuardian() {
+  var cur = getUser();
+  if (!cur || !cur.guardianSession || !cur.guardianSession.kennitala) return;
+  try {
+    var data = await apiGet('validateMember', { kennitala: cur.guardianSession.kennitala, _fresh: 1 });
+    if (!data || !data.member) throw new Error('guardian not found');
+    setUser(data.member);
+    // Purge any cached per-user data so the guardian's view is not stale.
+    try {
+      sessionStorage.removeItem('ymir_getTrips_');
+      sessionStorage.removeItem('ymir_getCrews_');
+      sessionStorage.removeItem('ymir_getCrewBoard_');
+      sessionStorage.removeItem('ymir_getCrewInvites_');
+    } catch(e) {}
+    window.location.href = BASE_URL + "/member/";
+  } catch(e) {
+    // Fall back to a clean sign-out on any failure so the guardian can re-enter.
+    signOut();
+  }
+}
+
+function getLang()  { return localStorage.getItem("ymirLang") || "IS"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -155,6 +228,37 @@ function getPrefs() {
 }
 function setPrefs(p) { localStorage.setItem("ymirPrefs", JSON.stringify(p)); }
 function getPref(key, fallback) { var p = getPrefs(); return p[key] !== undefined ? p[key] : fallback; }
+
+// Default stats visibility for new members: only the four headline metrics are on.
+// Existing saved prefs take precedence — a saved `true` or `false` always wins
+// over these defaults; these only fill in keys the user has never touched.
+var STATS_VIS_DEFAULTS = {
+  career:      false,
+  hours:       true,
+  ytd:         true,
+  skipper:     false,
+  byCategory:  true,
+  distance:    true,
+  longest:     false,
+  avgWind:     false,
+  streak:      false,
+  boats:       false,
+  crew:        false,
+  heavy:       false,
+  avgDuration: false,
+  locations:   false,
+  verified:    false,
+  helmHours:   false,
+  student:     false,
+  favBoat:     false,
+  favLocation: false,
+  peakWind:    false,
+};
+function isStatVisible(key, sv) {
+  sv = sv || {};
+  if (sv[key] === undefined) return !!STATS_VIS_DEFAULTS[key];
+  return sv[key] !== false;
+}
 
 // Wind unit conversion — base unit is m/s
 function convertWind(ms, unit) {
@@ -236,7 +340,7 @@ function parseWsValue(ws) {
 }
 
 function formatWindValue(ms, beaufort, unit) {
-  unit = unit || getPref('windUnit', 'bft');
+  unit = unit || getPref('windUnit', 'ms');
   // Handle range values like "5.5-8.0" (from Beaufort-only entry)
   if (typeof ms === 'string' && ms.indexOf('-') !== -1) {
     var parts = ms.split('-').map(Number);

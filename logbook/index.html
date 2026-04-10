@@ -12,7 +12,7 @@
 <script src="../shared/api.js"></script>
 <script>window._earlyTrips=apiGet('getTrips',{limit:500});window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -21,6 +21,7 @@
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
 .stat-val{font-size:22px;font-weight:500;color:var(--text);line-height:1}
+.stat-val.stat-val-text{font-size:13px;font-weight:500;line-height:1.15;padding:4px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:4px}
 .cat-hours{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px}
 .cat-hours-title{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
@@ -159,17 +160,21 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="stat-card"><div class="stat-val" id="stDistance">—</div><div class="stat-lbl">Distance</div></div>
     <div class="stat-card"><div class="stat-val" id="stLongest">—</div><div class="stat-lbl">Longest trip</div></div>
     <div class="stat-card"><div class="stat-val" id="stAvgWind">—</div><div class="stat-lbl">Avg wind</div></div>
+    <div class="stat-card"><div class="stat-val" id="stPeakWind">—</div><div class="stat-lbl">Peak wind</div></div>
     <div class="stat-card"><div class="stat-val" id="stStreak">—</div><div class="stat-lbl">Streak</div></div>
     <div class="stat-card"><div class="stat-val" id="stBoats">—</div><div class="stat-lbl">Boats</div></div>
     <div class="stat-card"><div class="stat-val" id="stCrew">—</div><div class="stat-lbl">As crew</div></div>
+    <div class="stat-card"><div class="stat-val" id="stHelmHours">—</div><div class="stat-lbl">Hours as helm</div></div>
+    <div class="stat-card"><div class="stat-val" id="stStudent">—</div><div class="stat-lbl">As student</div></div>
+    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavBoat">—</div><div class="stat-lbl">Favorite boat</div></div>
+    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavLocation">—</div><div class="stat-lbl">Favorite location</div></div>
     <div class="stat-card"><div class="stat-val" id="stHeavy">—</div><div class="stat-lbl">Heavy wx</div></div>
-    <div class="stat-card"><div class="stat-val" id="stNight">—</div><div class="stat-lbl">Night sails</div></div>
     <div class="stat-card"><div class="stat-val" id="stAvgDuration">—</div><div class="stat-lbl">Avg duration</div></div>
     <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl">Locations</div></div>
     <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl">Verified</div></div>
   </div>
   <div class="cat-hours" id="catHours" style="display:none">
-    <div class="cat-hours-title">Hours by category</div>
+    <div class="cat-hours-title">Hours by boat category</div>
     <div id="catHoursList"></div>
   </div>
 
@@ -493,7 +498,7 @@ requireAuth();
 buildHeader('logbook');
 const user = getUser();
 const IS   = getLang() === 'IS';
-const _windUnit = getPref('windUnit', 'bft');
+const _windUnit = getPref('windUnit', 'ms');
 const _statsVis = (getPrefs().statsVisibility) || {};
 
 let myTrips  = [];
@@ -545,14 +550,30 @@ function renderStats(){
   const uniqueBoats=new Set(myTrips.map(t=>t.boatId||t.boatName).filter(Boolean)).size;
   const crewTrips=myTrips.filter(t=>t.role==='crew').length;
   const heavyWx=myTrips.filter(t=>(parseInt(t.beaufort)||0)>=5).length;
-  const nightSails=myTrips.filter(t=>{
-    const ti=parseInt((t.timeIn||'').replace(':',''),10)||0;
-    const to=parseInt((t.timeOut||'').replace(':',''),10)||0;
-    return ti>=2100||ti<=500||to>=2100||to<=500||(to>ti&&ti>0);
-  }).length;
   const avgDur=myTrips.length?hours/myTrips.length:0;
   const uniqueLocs=new Set(myTrips.map(t=>t.locationName||t.locationId).filter(Boolean)).size;
   const verifiedTrips=myTrips.filter(t=>t.verified&&t.verified!=='false').length;
+  // Hours spent at the helm (includes crew-while-helming, the common use case)
+  const helmHours=myTrips.filter(t=>t.helm&&t.helm!=='false').reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
+  // Trips logged as a student
+  const studentTrips=myTrips.filter(t=>t.student&&t.student!=='false').length;
+  // Favorite boat: most hours aggregated by boatId (fall back to boatName)
+  const boatHours={},boatNames={};
+  myTrips.forEach(t=>{
+    const id=t.boatId||t.boatName;if(!id)return;
+    boatHours[id]=(boatHours[id]||0)+(parseFloat(t.hoursDecimal)||0);
+    if(!boatNames[id])boatNames[id]=(allBoats.find(b=>b.id===t.boatId)?.name)||t.boatName||id;
+  });
+  let favBoatName='',favBoatH=0;
+  Object.entries(boatHours).forEach(([id,h])=>{if(h>favBoatH){favBoatH=h;favBoatName=boatNames[id]}});
+  // Favorite location: most trips at a named location
+  const locCount={};
+  myTrips.forEach(t=>{const n=t.locationName||t.locationId;if(n)locCount[n]=(locCount[n]||0)+1});
+  let favLocName='',favLocN=0;
+  Object.entries(locCount).forEach(([n,c])=>{if(c>favLocN){favLocN=c;favLocName=n}});
+  // Peak wind: highest Beaufort recorded across logged trips
+  const peakBft=myTrips.reduce((m,t)=>{const b=parseInt(t.beaufort);return isNaN(b)?m:Math.max(m,b)},0);
+  const peakBftMs=peakBft?(_bftMs[peakBft]||peakBft*2.5):0;
 
   // Apply stats visibility preferences
   const stTripsEl=document.getElementById('stTrips');
@@ -566,39 +587,51 @@ function renderStats(){
   const stBoatsEl=document.getElementById('stBoats');
   const stCrewEl=document.getElementById('stCrew');
   const stHeavyEl=document.getElementById('stHeavy');
-  const stNightEl=document.getElementById('stNight');
   const stAvgDurEl=document.getElementById('stAvgDuration');
   const stLocsEl=document.getElementById('stLocations');
   const stVerifiedEl=document.getElementById('stVerified');
+  const stHelmHoursEl=document.getElementById('stHelmHours');
+  const stStudentEl=document.getElementById('stStudent');
+  const stFavBoatEl=document.getElementById('stFavBoat');
+  const stFavLocEl=document.getElementById('stFavLocation');
+  const stPeakWindEl=document.getElementById('stPeakWind');
 
-  if(_statsVis.career===false){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
-  if(_statsVis.hours===false){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
-  if(_statsVis.ytd===false){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
-  if(_statsVis.skipper===false){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
-  if(_statsVis.distance===false){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
-  if(_statsVis.longest===false){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
-  if(_statsVis.avgWind===false){stAvgWindEl.parentElement.style.display='none'}else{
+  if(!isStatVisible('career',_statsVis)){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
+  if(!isStatVisible('hours',_statsVis)){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
+  if(!isStatVisible('ytd',_statsVis)){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
+  if(!isStatVisible('skipper',_statsVis)){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
+  if(!isStatVisible('distance',_statsVis)){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
+  if(!isStatVisible('longest',_statsVis)){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
+  if(!isStatVisible('avgWind',_statsVis)){stAvgWindEl.parentElement.style.display='none'}else{
     if(!avgBft){stAvgWindEl.textContent='—'}
     else if(_windUnit==='bft'){stAvgWindEl.textContent='F '+avgBft.toFixed(1)}
     else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
   }
-  if(_statsVis.streak===false){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'w':'—'}
-  if(_statsVis.boats===false){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
-  if(_statsVis.crew===false){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
-  if(_statsVis.heavy===false){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
-  if(_statsVis.night===false){stNightEl.parentElement.style.display='none'}else{stNightEl.textContent=nightSails}
-  if(_statsVis.avgDuration===false){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
-  if(_statsVis.locations===false){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
-  if(_statsVis.verified===false){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
+  if(!isStatVisible('streak',_statsVis)){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'w':'—'}
+  if(!isStatVisible('boats',_statsVis)){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
+  if(!isStatVisible('crew',_statsVis)){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
+  if(!isStatVisible('heavy',_statsVis)){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
+  if(!isStatVisible('avgDuration',_statsVis)){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
+  if(!isStatVisible('locations',_statsVis)){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
+  if(!isStatVisible('verified',_statsVis)){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
+  if(!isStatVisible('helmHours',_statsVis)){stHelmHoursEl.parentElement.style.display='none'}else{stHelmHoursEl.textContent=helmHours?helmHours.toFixed(0)+'h':'—'}
+  if(!isStatVisible('student',_statsVis)){stStudentEl.parentElement.style.display='none'}else{stStudentEl.textContent=studentTrips}
+  if(!isStatVisible('favBoat',_statsVis)){stFavBoatEl.parentElement.style.display='none'}else{stFavBoatEl.textContent=favBoatName||'—';stFavBoatEl.title=favBoatName?favBoatName+' — '+favBoatH.toFixed(0)+'h':''}
+  if(!isStatVisible('favLocation',_statsVis)){stFavLocEl.parentElement.style.display='none'}else{stFavLocEl.textContent=favLocName||'—';stFavLocEl.title=favLocName?favLocName+' — '+favLocN+' trips':''}
+  if(!isStatVisible('peakWind',_statsVis)){stPeakWindEl.parentElement.style.display='none'}else{
+    if(!peakBft){stPeakWindEl.textContent='—'}
+    else if(_windUnit==='bft'){stPeakWindEl.textContent='F '+peakBft}
+    else{stPeakWindEl.textContent=convertWind(peakBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
+  }
 
   // Adjust grid columns based on visible cards
-  const allVis=[_statsVis.career,_statsVis.hours,_statsVis.ytd,_statsVis.skipper,_statsVis.distance,_statsVis.longest,_statsVis.avgWind,_statsVis.streak,_statsVis.boats,_statsVis.crew,_statsVis.heavy,_statsVis.night,_statsVis.avgDuration,_statsVis.locations,_statsVis.verified];
-  const visibleCards=allVis.filter(v=>v!==false).length;
+  const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
+  const visibleCards=visKeys.filter(k=>isStatVisible(k,_statsVis)).length;
   const strip=document.querySelector('.stat-strip');
   if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
   else if(strip && visibleCards===0){strip.style.display='none'}
 
-  if(_statsVis.byCategory===false){document.getElementById('catHours').style.display='none';return}
+  if(!isStatVisible('byCategory',_statsVis)){document.getElementById('catHours').style.display='none';return}
 
   const catH={};
   myTrips.forEach(t=>{

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/calendar.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -21,6 +21,14 @@
 .cx-stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
 .cx-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .cx-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
+
+/* ── Tab bar ── */
+.cx-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
+.cx-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
+  font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
+  white-space:nowrap; transition:color .15s; text-transform:uppercase; }
+.cx-tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+.cx-tab-btn:hover:not(.active) { color:var(--text); }
 
 /* ── Section headers ── */
 .cx-section { margin-bottom:20px; }
@@ -73,6 +81,25 @@
 .cb-needs { font-size:10px; color:var(--brass); margin-top:6px; }
 .cb-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
+/* ── Passport ── */
+.pp-cat { margin-bottom:14px; }
+.pp-cat-hdr { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.pp-cat-count { font-size:9px; color:var(--brass); }
+.pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-bottom:4px; font-size:11px; }
+.pp-item-signable { cursor:pointer; transition:border-color .15s; }
+.pp-item-signable:hover { border-color:var(--brass); }
+.pp-item-complete { border-left:3px solid var(--green); }
+.pp-item-icon { font-size:14px; color:var(--brass); width:18px; text-align:center; flex-shrink:0; }
+.pp-item-complete .pp-item-icon { color:var(--green); }
+.pp-item-body { flex:1; min-width:0; }
+.pp-item-name { color:var(--text); font-weight:500; }
+.pp-item-desc { color:var(--muted); font-size:10px; margin-top:2px; }
+.pp-item-sigs { color:var(--muted); font-size:9px; margin-top:3px; font-style:italic; }
+.pp-item-count { font-size:10px; color:var(--muted); flex-shrink:0; }
+.pp-asmt { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; }
+.pp-asmt-practical { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
+.pp-asmt-theory    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .cx-stats { grid-template-columns:1fr 1fr; }
@@ -104,46 +131,79 @@
     <div class="cx-stat"><div class="sn" id="statDist">—</div><div class="sl" data-s="cox.statsDist"></div></div>
   </div>
 
-  <!-- ══ MAINTENANCE ══ -->
-  <div class="cx-section" id="sectMaint">
-    <div class="cx-section-hdr" data-s="cox.maintenance"></div>
-    <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  <!-- ══ TAB BAR ══ -->
+  <div class="cx-tab-bar" id="cxTabBar">
+    <button class="cx-tab-btn active" data-tab="crews"    onclick="showCxTab('crews')"    data-s="cox.tabCrews"></button>
+    <button class="cx-tab-btn"        data-tab="passport" onclick="showCxTab('passport')" data-s="cox.tabPassport"></button>
   </div>
 
-  <!-- ══ CREW BOARD ══ -->
-  <div class="cx-section" id="sectCrews">
-    <div class="cx-section-hdr" data-s="cox.crewBoard">CREW BOARD</div>
-    <div id="crewInviteList"></div>
-    <div id="crewBoardList"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="margin-top:8px">
-      <button class="btn btn-primary" style="font-size:11px" onclick="openCrewModal()" data-s="cox.createCrew">+ Create Crew</button>
+  <!-- ══ TAB: CREWS & SLOTS ══ -->
+  <div id="cxTab-crews">
+
+    <!-- ══ MAINTENANCE ══ -->
+    <div class="cx-section" id="sectMaint">
+      <div class="cx-section-hdr" data-s="cox.maintenance"></div>
+      <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
-  </div>
 
-  <!-- ══ SLOT RESERVATIONS ══ -->
-  <div class="cx-section" id="sectSlots" style="display:none">
-    <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
-      <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-      <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
-      <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
-        <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+    <!-- ══ CREW BOARD ══ -->
+    <div class="cx-section" id="sectCrews">
+      <div class="cx-section-hdr" data-s="cox.crewBoard">CREW BOARD</div>
+      <div id="crewInviteList"></div>
+      <div id="crewBoardList"><div class="empty-note" data-s="lbl.loading"></div></div>
+      <div style="margin-top:8px">
+        <button class="btn btn-primary" style="font-size:11px" onclick="openCrewModal()" data-s="cox.createCrew">+ Create Crew</button>
       </div>
     </div>
-    <div id="cxSlotGrid" style="overflow-x:auto"></div>
-    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
-      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;opacity:.7"></span> <span data-s="cox.tentative">Tentative</span></span>
+
+    <!-- ══ SLOT RESERVATIONS ══ -->
+    <div class="cx-section" id="sectSlots" style="display:none">
+      <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
+        <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+        <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
+        <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
+          <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+        </div>
+      </div>
+      <div id="cxSlotGrid" style="overflow-x:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass)44;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendYours">Yours</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;opacity:.7"></span> <span data-s="cox.tentative">Tentative</span></span>
+      </div>
     </div>
-  </div>
+
+  </div><!-- /cxTab-crews -->
+
+  <!-- ══ TAB: PASSPORT ══ -->
+  <div id="cxTab-passport" class="hidden">
+    <div class="cx-section" id="sectPassport">
+      <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
+      <div id="passportPicker" class="hidden" style="margin-bottom:10px;position:relative">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
+          <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" oninput="ppSearchMember(this.value)" style="font-size:11px;flex:1;min-width:160px">
+          <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" onclick="ppViewSelf()" data-s="passport.viewSelf">My passport</button>
+        </div>
+        <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);border:1px solid var(--border);border-radius:6px;margin-top:2px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
+        <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass);margin-top:4px"></div>
+      </div>
+      <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
+        <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
+      </div>
+      <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
+      <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
+      <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
+    </div>
+  </div><!-- /cxTab-passport -->
 
 </div>
 
@@ -275,13 +335,31 @@
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
 const _isReleasedRower = isReleasedRower(user);
+const _rowingSub = (typeof getRowingSub === 'function') ? getRowingSub(user) : (_isReleasedRower ? 'released' : 'restricted');
+const _isStaffSigner = ['staff','admin','manager'].indexOf(String(user.role || '').toLowerCase()) >= 0;
 
 // ══ Wait for deferred scripts (boats.js, certs.js, maintenance.js) ══════════
 document.addEventListener('DOMContentLoaded', function() {
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
 var _boats = [], _locations = [], _members = [], _allMaint = [], _allTrips = [];
-var _membersLoaded = false;
+var _membersLoaded = false, _membersLoadingPromise = null;
+var _passportDef = null, _passportProgress = null;
+var _passportLang = (localStorage.getItem('ymirLang') || 'IS').toUpperCase();
+var _passportSignerMode = false;
+var _passportTargetMemberId = user.id; // own passport by default
+
+// ══ TAB SWITCHING ════════════════════════════════════════════════════════════
+function showCxTab(tab) {
+  document.querySelectorAll('#cxTabBar .cx-tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  var crewsEl = document.getElementById('cxTab-crews');
+  var passportEl = document.getElementById('cxTab-passport');
+  if (crewsEl) crewsEl.classList.toggle('hidden', tab !== 'crews');
+  if (passportEl) passportEl.classList.toggle('hidden', tab !== 'passport');
+}
+window.showCxTab = showCxTab;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 (async function init() {
@@ -295,14 +373,35 @@ var _membersLoaded = false;
     document.getElementById('cxReadOnly').classList.remove('hidden');
   }
 
+  // Restricted rowers: only passport is available. Hide stats and tab bar,
+  // and show only the passport tab content.
+  if (_rowingSub === 'restricted') {
+    var cxStatsEl = document.getElementById('cxStats');
+    if (cxStatsEl) cxStatsEl.style.display = 'none';
+    document.getElementById('cxTabBar').style.display = 'none';
+    showCxTab('passport');
+  } else {
+    // Released rowers (and staff/admin): default to the crews/slots tab.
+    showCxTab('crews');
+  }
+  // Show member picker for users who can sign for others
+  if (_isStaffSigner || _rowingSub === 'released' || _rowingSub === 'coxswain') {
+    document.getElementById('passportPicker').classList.remove('hidden');
+    ensureMembersLoaded();
+  }
+
   try {
-    const [cfgRes, maintRes, tripsRes, boardRes, invRes] = await Promise.all([
+    const [cfgRes, maintRes, tripsRes, boardRes, invRes, passportRes] = await Promise.all([
       apiGet('getConfig'),
       apiGet('getMaintenance'),
       apiGet('getTrips', { limit: 200 }),
       apiGet('getCrewBoard', {}),
       apiGet('getCrewInvites', { kennitala: user.kennitala }),
+      apiGet('getRowingPassport', { memberId: user.id }),
     ]);
+    _passportDef = passportRes.definition;
+    _passportProgress = passportRes.progress;
+    renderPassport();
 
     _boats     = (cfgRes.boats     || []);
     _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -330,14 +429,24 @@ var _membersLoaded = false;
   }
 })();
 
-// Lazy-load members on first modal open (not needed for initial render)
-async function ensureMembersLoaded() {
-  if (_membersLoaded) return;
-  _membersLoaded = true;
-  try {
-    var membersRes = await apiGet('getMembers');
-    _members = (membersRes.members || []).filter(function(m) { return m.active !== false && m.active !== 'false'; });
-  } catch(e) { _members = []; _membersLoaded = false; }
+// Lazy-load members on first modal open (not needed for initial render).
+// Tracks an in-flight promise so concurrent callers wait for the same load
+// instead of silently racing against an empty _members array.
+function ensureMembersLoaded() {
+  if (_membersLoaded) return Promise.resolve();
+  if (_membersLoadingPromise) return _membersLoadingPromise;
+  _membersLoadingPromise = (async function() {
+    try {
+      var membersRes = await apiGet('getMembers');
+      _members = (membersRes.members || []).filter(function(m) { return m.active !== false && m.active !== 'false'; });
+      _membersLoaded = true;
+    } catch(e) {
+      _members = [];
+    } finally {
+      _membersLoadingPromise = null;
+    }
+  })();
+  return _membersLoadingPromise;
 }
 
 // ══ STATS ════════════════════════════════════════════════════════════════════
@@ -910,6 +1019,183 @@ function cxWeekToday() {
   _cxWeekStart = d;
   loadCxSlots();
 }
+
+// ══ ROWING PASSPORT ══════════════════════════════════════════════════════════
+function _passportLocal(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  return obj[_passportLang] || obj.EN || obj.IS || '';
+}
+function renderPassport() {
+  if (!_passportDef) return;
+  var passport = (_passportDef.passports || []).find(function(p){ return p.id === 'rower'; });
+  if (!passport) { document.getElementById('passportCategories').innerHTML = ''; return; }
+  var prog = (_passportProgress && _passportProgress.passports && _passportProgress.passports.rower) || { items: {}, totalCount: 0, completeCount: 0, percent: 0 };
+  document.getElementById('passportProgressFill').style.width = prog.percent + '%';
+  var label = prog.completeCount + ' / ' + prog.totalCount + ' (' + prog.percent + '%)';
+  if (_rowingSub !== 'restricted') label += ' — ' + s('passport.historyNote');
+  document.getElementById('passportProgressLabel').textContent = label;
+
+  // Show sign-mode banner if staff/released viewing someone else's passport
+  var canSign = (_isStaffSigner || _rowingSub === 'released' || _rowingSub === 'coxswain');
+  var signingSomeoneElse = canSign && String(_passportTargetMemberId) !== String(user.id);
+  document.getElementById('passportSignerBanner').classList.toggle('hidden', !signingSomeoneElse);
+
+  var html = '';
+  (passport.categories || []).forEach(function(cat) {
+    var items = (cat.items || []).filter(function(i){ return !i.retired; });
+    if (!items.length) return;
+    var catName = _passportLocal(cat.name);
+    var catDone = 0;
+    items.forEach(function(it){ if (prog.items[it.id] && prog.items[it.id].complete) catDone++; });
+    html += '<div class="pp-cat"><div class="pp-cat-hdr">' + _esc(catName) + ' <span class="pp-cat-count">' + catDone + '/' + items.length + '</span></div>';
+    items.forEach(function(it) {
+      var st = prog.items[it.id] || { signoffs: [], complete: false, distinctSigners: 0, required: passport.requiredSigs || 2 };
+      var name = _passportLocal(it.name);
+      var desc = _passportLocal(it.desc);
+      var icon = st.complete ? '✔' : (st.distinctSigners > 0 ? '◐' : '○');
+      var cls = 'pp-item' + (st.complete ? ' pp-item-complete' : '') + (signingSomeoneElse ? ' pp-item-signable' : '');
+      var sigText = st.distinctSigners + '/' + st.required;
+      var canRevoke = _isStaffSigner;
+      var signersList = st.signoffs.map(function(so){
+        var revokeBtn = canRevoke ? ' <a href="#" onclick="revokeSignoffClick(event,\'' + so.id + '\')" style="color:var(--red);text-decoration:none;font-weight:600">✕</a>' : '';
+        return _esc(so.signerName || '?') + ' · ' + String(so.timestamp || '').slice(0,10) + revokeBtn;
+      }).join(' · ');
+      var onclick = signingSomeoneElse ? ' onclick="signPassportItemClick(\'' + it.id + '\')"' : '';
+      var assessment = it.assessment || 'practical';
+      if (assessment === 'theoretical') assessment = 'theory'; // back-compat for older stored data
+      var badgeCls = 'pp-asmt pp-asmt-' + assessment;
+      var badgeLbl = s('passport.' + assessment);
+      html += '<div class="' + cls + '"' + onclick + '>'
+        + '<div class="pp-item-icon">' + icon + '</div>'
+        + '<div class="pp-item-body"><div class="pp-item-name">' + _esc(name)
+          + ' <span class="' + badgeCls + '">' + _esc(badgeLbl) + '</span></div>'
+        + (desc ? '<div class="pp-item-desc">' + _esc(desc) + '</div>' : '')
+        + (signersList ? '<div class="pp-item-sigs">' + signersList + '</div>' : '')
+        + '</div><div class="pp-item-count">' + sigText + '</div></div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('passportCategories').innerHTML = html;
+}
+function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function signPassportItemClick(itemId) {
+  if (!confirm(s('passport.confirmSign'))) return;
+  try {
+    var res = await apiPost('signPassportItem', {
+      memberId: _passportTargetMemberId,
+      passportId: 'rower',
+      itemId: itemId,
+      signerId: user.id,
+    });
+    _passportProgress = res.progress;
+    renderPassport();
+    if (res.promoted) showToast(s('passport.promoted'), 'ok');
+    else showToast(s('passport.signed'), 'ok');
+  } catch (e) {
+    showToast(e.message, 'err');
+  }
+}
+window.signPassportItemClick = signPassportItemClick;
+
+async function reloadPassportProgress() {
+  try {
+    var res = await apiGet('getRowingPassport', { memberId: _passportTargetMemberId });
+    _passportDef = res.definition; _passportProgress = res.progress;
+    renderPassport();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+// Match anyone with a rowing_division club endorsement. Delegates to the
+// shared hasRowingEndorsement, which is tolerant of legacy data shapes.
+function _ppIsRower(m) { return hasRowingEndorsement(m); }
+
+// Dump every distinct certId[/sub] the loaded members carry, with counts, so
+// a silent-empty dropdown makes the data shape visible instead of opaque.
+function _ppCertIdSummary() {
+  var seen = {};
+  _members.forEach(function(m) {
+    if (!m || !m.certifications) { seen['(no-cert-field)'] = (seen['(no-cert-field)'] || 0) + 1; return; }
+    var certs = typeof m.certifications === 'string' ? parseJson(m.certifications, []) : (m.certifications || []);
+    if (!Array.isArray(certs) || !certs.length) { seen['(empty-certs)'] = (seen['(empty-certs)'] || 0) + 1; return; }
+    certs.forEach(function(c) {
+      if (!c) return;
+      var key = (c.certId || c.id || '?') + (c.sub ? '/' + c.sub : '');
+      seen[key] = (seen[key] || 0) + 1;
+    });
+  });
+  return Object.keys(seen).sort().map(function(k) { return k + ':' + seen[k]; }).join(', ');
+}
+
+async function ppSearchMember(q) {
+  var box = document.getElementById('ppMemberSuggestions');
+  q = (q || '').trim().toLowerCase();
+  if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  var itemStyle = 'padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border)';
+  var msgStyle  = itemStyle + ';color:var(--muted);font-style:italic';
+  // Members are lazy-loaded — show a loading note until the fetch settles so
+  // users see that something is happening instead of a blank dropdown.
+  if (!_membersLoaded) {
+    box.innerHTML = '<div style="' + msgStyle + '">' + _esc(s('lbl.loading')) + '</div>';
+    box.classList.remove('hidden');
+    await ensureMembersLoaded();
+    // A later keystroke may have superseded us — bail if the input no longer matches.
+    var cur = (document.getElementById('ppMemberSearch').value || '').trim().toLowerCase();
+    if (cur !== q) return;
+  }
+  var rowers = _members.filter(_ppIsRower);
+  var hits = rowers.filter(function(m) {
+    var n = String(m.name || '').toLowerCase();
+    var k = String(m.kennitala || '').toLowerCase();
+    return n.indexOf(q) >= 0 || k.indexOf(q) >= 0;
+  }).slice(0, 20);
+  if (!hits.length) {
+    var summary = _ppCertIdSummary();
+    var diag = '<div style="' + msgStyle + '">No matching rowers ('
+      + rowers.length + ' of ' + _members.length + ' members)</div>';
+    if (summary) {
+      diag += '<div style="' + msgStyle + ';font-size:10px;word-break:break-all">Certs seen: ' + _esc(summary) + '</div>';
+    }
+    box.innerHTML = diag;
+    box.classList.remove('hidden');
+    return;
+  }
+  box.innerHTML = hits.map(function(m){
+    return '<div class="suggest-item" style="' + itemStyle + ';cursor:pointer" onclick="ppSelectMember(\'' + m.id + '\')">'
+      + _esc(m.name) + ' <span style="color:var(--muted);font-size:10px">' + _esc(m.kennitala || '') + '</span></div>';
+  }).join('');
+  box.classList.remove('hidden');
+}
+async function ppSelectMember(memberId) {
+  var m = _members.find(function(x){ return String(x.id) === String(memberId); });
+  _passportTargetMemberId = memberId;
+  document.getElementById('ppMemberSuggestions').classList.add('hidden');
+  document.getElementById('ppMemberSearch').value = '';
+  document.getElementById('ppCurrentTarget').textContent = m ? ('Viewing: ' + m.name) : '';
+  await reloadPassportProgress();
+}
+function ppViewSelf() {
+  _passportTargetMemberId = user.id;
+  document.getElementById('ppCurrentTarget').textContent = '';
+  document.getElementById('ppMemberSearch').value = '';
+  document.getElementById('ppMemberSuggestions').classList.add('hidden');
+  reloadPassportProgress();
+}
+async function revokeSignoffClick(ev, signoffId) {
+  ev.preventDefault(); ev.stopPropagation();
+  var reason = prompt(s('passport.revokeReason'));
+  if (reason === null) return;
+  try {
+    await apiPost('revokePassportSignoff', { signoffId: signoffId, revokedBy: user.name || '', reason: reason || '' });
+    showToast(s('passport.revoked'), 'ok');
+    await reloadPassportProgress();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+window.ppSearchMember = ppSearchMember;
+window.ppSelectMember = ppSelectMember;
+window.ppViewSelf = ppViewSelf;
+window.revokeSignoffClick = revokeSignoffClick;
 
 // ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
 window.openCrewModal = openCrewModal;

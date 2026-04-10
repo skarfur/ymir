@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script src="../shared/ui.js"></script>
-  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+  <script src="../shared/boats.js"></script>
+  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/certs.js" defer></script>
   <style>
@@ -40,6 +41,10 @@
     .cert-meta { font-size:11px; color:var(--muted); margin-top:2px; }
     .cert-actions { display:flex; gap:6px; flex-shrink:0; }
     .stat-strip + .stat-strip { margin-top:-8px; }
+    .cat-hour-row      { display:flex; align-items:center; gap:8px; margin-bottom:4px; font-size:11px; }
+    .cat-hour-bar-wrap { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .cat-hour-bar      { height:100%; border-radius:3px; transition:width .3s; }
+    .cat-hour-val      { font-size:11px; color:var(--muted); min-width:24px; text-align:right; }
   </style>
 </head>
 <body>
@@ -301,10 +306,19 @@ function updateStats() {
     const c = (t.boatCategory || '').trim() || 'Other';
     catCounts[c] = (catCounts[c] || 0) + 1;
   });
-  const catHtml = Object.entries(catCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, v]) => `<span><strong>${v}</strong> ${esc(k)}</span>`)
-    .join(' &nbsp;·&nbsp; ');
+  const catEntries = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
+  const catMax = catEntries.length ? catEntries[0][1] : 0;
+  const catHtml = catEntries.map(([k, v]) => {
+    const key = (k || '').toLowerCase();
+    const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[key]) || { color: 'var(--brass)' };
+    const pct = catMax ? Math.round(v / catMax * 100) : 0;
+    const label = (typeof _boatCatLabel === 'function') ? _boatCatLabel(key || 'other') : k;
+    return `<div class="cat-hour-row">
+      <span style="min-width:70px;color:var(--text)">${esc(label)}</span>
+      <div class="cat-hour-bar-wrap"><div class="cat-hour-bar" style="width:${pct}%;background:${col.color}"></div></div>
+      <span class="cat-hour-val">${v}</span>
+    </div>`;
+  }).join('');
 
   _set('sTotalTrips',   ytd.length);
   _set('sRequested',    requested);

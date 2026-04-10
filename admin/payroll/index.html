@@ -15,10 +15,9 @@
     @media(max-width:600px){ .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px} }
   </style>
   <script src="../../shared/api.js"></script>
-  <script>document.write('<script src="../../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+  <script>document.write('<script src="../../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../../shared/strings.js"></script>
   <script src="../../shared/ui.js"></script>
-  <script src="../../shared/payroll.js" defer></script>
   </head>
 <body>
 <script>var _embedded=new URLSearchParams(window.location.search).get('embed')==='1';</script>
@@ -30,15 +29,19 @@
       <a href="../" style="font-size:11px;color:var(--muted);text-decoration:none">&#8592; Admin</a>
     </div>
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="employees"   onclick="prTab('employees')"   data-s="payroll.tabEmployees"></button>
-      <button class="tab-btn"        data-tab="config"      onclick="prTab('config')"      data-s="payroll.config"></button>
-      <button class="tab-btn"        data-tab="timesheets"  onclick="prTab('timesheets')"  data-s="payroll.tabTimeReporting"></button>
-      <button class="tab-btn"        data-tab="periods"     onclick="prTab('periods')"     data-s="payroll.tabTimesheets"></button>
-      <button class="tab-btn"        data-tab="export-data" onclick="prTab('export-data')" data-s="payroll.tabExportData"></button>
+      <button class="tab-btn active" data-tab="employees"  onclick="prTab('employees')"  data-s="payroll.tabEmployees"></button>
+      <button class="tab-btn"        data-tab="timesheets" onclick="prTab('timesheets')" data-s="payroll.tabTimeReporting"></button>
     </div>
 
     <!-- EMPLOYEES -->
     <div id="pr-employees">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:14px">
+        <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+          <input type="checkbox" id="cfgAllowBreaks" onchange="cfgSaveAllowBreaks()" style="width:16px;height:16px;accent-color:var(--brass)">
+          <span style="font-size:12px" data-s="payroll.allowBreaks"></span>
+        </label>
+        <span id="cfgAllowBreaksLbl" style="font-size:11px;color:var(--muted)"></span>
+      </div>
       <div id="prEmpList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
 
@@ -54,8 +57,26 @@
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
           <span id="prTsTotal" class="ts-total" style="font-size:11px;color:var(--muted)"></span>
+          <button class="btn btn-secondary" style="font-size:11px" onclick="prToggleExport()" data-s="payroll.export"></button>
           <button class="btn btn-primary" style="font-size:11px" onclick="prOpenModal(null,null)" data-s="payroll.addEntry"></button>
         </div>
+      </div>
+      <!-- EXPORT PANEL -->
+      <div id="prExportPanel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+        <div class="sec-lbl" data-s="payroll.export"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodFrom"></label>
+          <input id="prExpFrom" type="date" style="font-size:11px;padding:3px 6px;width:140px">
+          <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodTo"></label>
+          <input id="prExpTo" type="date" style="font-size:11px;padding:3px 6px;width:140px">
+          <button class="btn btn-primary" style="font-size:11px" onclick="prExportTimeData()" data-s="payroll.export"></button>
+          <span id="prExpMsg" style="font-size:11px"></span>
+        </div>
+        <div style="margin-bottom:6px">
+          <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px" data-s="payroll.externalUrl"></label>
+          <input id="prExpUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" oninput="prSaveExportUrl()" style="width:100%;max-width:560px;font-size:11px;padding:5px 8px">
+        </div>
+        <div style="font-size:10px;color:var(--muted)" data-s="payroll.externalUrlHint"></div>
       </div>
       <div id="prCalView">
         <div class="cal-nav">
@@ -79,110 +100,6 @@
       </div>
     </div>
 
-    <!-- TIMESHEETS / LAUNASEDLAR -->
-    <div id="pr-periods" class="hidden">
-      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodFrom"></label>
-        <input id="prPeriodFrom" type="date" style="font-size:10px;padding:2px 4px;width:120px">
-        <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodTo"></label>
-        <input id="prPeriodTo" type="date" style="font-size:10px;padding:2px 4px;width:120px">
-        <label style="font-size:10px;color:var(--muted)" data-s="payroll.paymentDate"></label>
-        <input id="prPaymentDate" type="date" style="font-size:10px;padding:2px 4px;width:120px">
-        <button class="btn btn-primary" style="font-size:10px;padding:3px 10px" onclick="prBuildPreview()" data-s="payroll.previewPayslips"></button>
-      </div>
-      <div id="prPreviewPanel" class="hidden">
-        <div class="sec-lbl" data-s="payroll.hoursConfirm"></div>
-        <div id="prPreviewList"></div>
-        <div class="action-bar" style="margin-top:16px">
-          <button class="btn btn-primary" onclick="prApprovePeriod()" data-s="payroll.approvePeriod"></button>
-          <span id="prApproveMsg" style="font-size:11px;color:var(--green)"></span>
-        </div>
-      </div>
-      <div class="sec-lbl" style="margin-top:20px" data-s="payroll.pastPeriods"></div>
-      <div id="prPeriodsList"><div class="empty-note" data-s="lbl.loading"></div></div>
-    </div>
-
-    <!-- EXPORT DATA -->
-    <div id="pr-export-data" class="hidden">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
-        <label style="font-size:12px;font-weight:600" data-s="lbl.year"></label>
-        <input id="prLmYear" type="number" value="2026" min="2024" max="2035" style="width:90px">
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportPensionCsv"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="prCsvPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
-          <button class="btn btn-primary" style="font-size:11px" onclick="prExportPensionCsv()" data-s="payroll.exportCsv"></button>
-        </div>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportWithholding"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-          <label style="font-size:11px;white-space:nowrap" data-s="payroll.stadIsat"></label>
-          <input id="prStadIsat" type="text" placeholder="e.g. 50200" style="width:90px;font-size:11px" oninput="prSaveStadConfig()">
-          <select id="prXmlPeriod" style="font-size:11px;min-width:200px"><option value="" data-s="payroll.selectPeriod"></option></select>
-          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowStadgreidsla()" data-s="lbl.view"></button>
-        </div>
-        <div id="prStadTable"></div>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportLaunamidlar"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="prShowLaunamidlar()" data-s="lbl.view"></button>
-        </div>
-        <div id="prLmTable"></div>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.exportPayslipXml"></div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted)" data-s="payroll.exportPlaceholder"></div>
-      </div>
-    </div>
-
-    <!-- CONFIG -->
-    <div id="pr-config" class="hidden">
-      <div class="sec-lbl" data-s="payroll.allowBreaks"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-        <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="cfgAllowBreaks" onchange="cfgSaveAllowBreaks()" style="width:16px;height:16px;accent-color:var(--brass)">
-          <span style="font-size:12px;color:var(--muted)" id="cfgAllowBreaksLbl"></span>
-        </label>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.personuafslattrUnit"></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
-        <input id="cfgCrUnit" type="number" min="1" style="width:120px">
-        <span style="font-size:11px;color:var(--muted)">kr = 1.0</span>
-        <button class="btn btn-primary" style="font-size:11px" onclick="cfgSaveUnit()" data-s="btn.save"></button>
-        <span id="cfgCrMsg" style="font-size:11px;color:var(--green)"></span>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.taxBrackets"></div>
-      <div id="cfgTaxPanel" style="margin-bottom:8px"></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
-        <button class="btn btn-secondary" style="font-size:11px" onclick="cfgAddTaxBracket()" data-s="payroll.addTaxBracket"></button>
-        <button class="btn btn-primary"   style="font-size:11px" onclick="cfgSaveTax()"       data-s="btn.save"></button>
-        <span id="cfgTaxMsg" style="font-size:11px;color:var(--green)"></span>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.otRules"></div>
-      <div id="cfgOTPanel" style="margin-bottom:8px"></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
-        <button class="btn btn-secondary" style="font-size:11px" onclick="cfgAddOTTier()" data-s="payroll.addOTTier"></button>
-        <button class="btn btn-primary"   style="font-size:11px" onclick="cfgSaveOT()"    data-s="btn.save"></button>
-        <span id="cfgOTMsg" style="font-size:11px;color:var(--green)"></span>
-      </div>
-
-      <div class="sec-lbl" data-s="payroll.pensionFunds"></div>
-      <div id="cfgFundsPanel"></div>
-      <button class="btn btn-secondary" style="font-size:11px;margin-top:6px" onclick="cfgAddFund()" data-s="payroll.addFund"></button>
-      <div class="sec-lbl" style="margin-top:20px" data-s="payroll.unions"></div>
-      <div id="cfgUnionsPanel"></div>
-      <button class="btn btn-secondary" style="font-size:11px;margin-top:6px" onclick="cfgAddUnion()" data-s="payroll.addUnion"></button>
-    </div>
   </main>
 </div>
 
@@ -249,22 +166,27 @@ function empName(eid){var e=_tsEmployees.find(function(x){return x.id===eid;});r
 
 /* == Tab router == */
 function prTab(tab){
-  ['employees','timesheets','periods','export-data','config'].forEach(function(t){
+  ['employees','timesheets'].forEach(function(t){
     document.getElementById('pr-'+t).classList.toggle('hidden',t!==tab);
   });
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
   var url=new URL(window.location.href);url.searchParams.set('tab',tab);history.replaceState(null,'',url);
   if(tab==='employees')   prLoadEmployees();
   if(tab==='timesheets')  prInitTimesheets();
-  if(tab==='periods')     prLoadPeriods();
-  if(tab==='export-data') prLoadExportData();
-  if(tab==='config')      prLoadConfig();
 }
 
 /* == EMPLOYEES == */
 async function prLoadEmployees(){
   var list=document.getElementById('prEmpList');
   list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
+  // Load allowBreaks toggle state from config
+  try{
+    var cfgRes=await apiGet('getConfig');
+    var cb=document.getElementById('cfgAllowBreaks');
+    if(cb)cb.checked=!!(cfgRes&&cfgRes.allowBreaks);
+    var lbl=document.getElementById('cfgAllowBreaksLbl');
+    if(lbl)lbl.textContent=(cfgRes&&cfgRes.allowBreaks)?s('lbl.on'):s('lbl.off');
+  }catch(e){}
   try{
     var res=await Promise.all([apiGet('getMembers'),apiGet('getEmployees')]);
     _members=(res[0].members||[]).filter(function(m){return m.role==='staff'||m.role==='admin';});
@@ -281,14 +203,6 @@ async function prLoadEmployees(){
 }
 function prEmpRowHTML(m,emp,act){
   var mid=_e(m.id);
-  var cfg=window.PAYROLL_CONFIG||{};
-  var defP=((emp&&emp.personuafslattr!=null?emp.personuafslattr:1.0)).toFixed(2);
-  var defS=((emp&&emp.sereignarsjodur||0)).toFixed(3);
-  var defU=((emp&&emp.unionDuesRate||cfg.unionDuesRate||0)*100).toFixed(1);
-  var otChecked=(emp&&(emp.otEligible===true||emp.otEligible==='true'))?'checked':'';
-  var funds=(cfg.pensionFunds||[]);
-  var empFundIds=(emp&&emp.pensionFundIds)||[];
-  var unions=(cfg.unions||[]);
   var h='<div class="emp-row" id="emprow_'+mid+'">';
   h+='<span class="emp-name">'+_e(m.name)+'</span>';
   h+='<span class="emp-kt">'+_e(m.kennitala||'')+'</span>';
@@ -299,24 +213,10 @@ function prEmpRowHTML(m,emp,act){
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
   h+='<strong style="font-size:13px">'+_e(m.name)+'</strong>';
   h+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">';
-  h+='<input type="checkbox" id="prEnabled_'+mid+'" '+(act?'checked':'')+' onchange="prToggleFields(\''+mid+'\')">';
+  h+='<input type="checkbox" id="prEnabled_'+mid+'" '+(act?'checked':'')+'>';
   h+='<span data-s="payroll.enablePayroll"></span></label></div>';
-  h+='<div class="emp-fields" id="prFields_'+mid+'"'+(!act?' style="display:none"':'')+' >';
+  h+='<div class="emp-fields">';
   h+='<div class="field"><label data-s="payroll.titleField"></label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title||'')+'"></div>';
-  h+='<div class="field"><label data-s="payroll.baseRate"></label><input id="prRate_'+mid+'" type="number" min="0" value="'+_e(String(emp&&emp.baseRateKr||''))+'"></div>';
-  h+='<div class="field"><label data-s="payroll.bankAccount"></label><input id="prBank_'+mid+'" type="text" value="'+_e(emp&&emp.bankAccount||'')+'"></div>';
-  h+='<div class="field"><label data-s="payroll.orlofsreikningur"></label><input id="prOrlof_'+mid+'" type="text" value="'+_e(emp&&emp.orlofsreikningur||'')+'"></div>';
-  h+='<div class="field"><label data-s="payroll.personuafslattrFraction"></label><input id="prPersona_'+mid+'" type="number" min="0" max="1" step="0.05" value="'+defP+'" title="1.0 = full credit"></div>';
-  h+='<div class="field"><label data-s="payroll.sereignRate"></label><input id="prSereign_'+mid+'" type="number" min="0" max="0.2" step="0.005" value="'+defS+'"></div>';
-  h+='<div class="field"><label data-s="payroll.otEligible"></label><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="prOT_'+mid+'" '+otChecked+'><span data-s="payroll.otEligible"></span></label></div>';
-  h+='<div class="field"><label data-s="payroll.starfshlutfall"></label><input id="prStarfs_'+mid+'" type="number" min="0" max="100" step="1" value="'+_e(String(emp&&emp.starfshlutfall!=null?emp.starfshlutfall:100))+'"></div>';
-  h+='<div class="field"><label data-s="payroll.istarf95"></label><input id="prIstarf_'+mid+'" type="text" value="'+_e(emp&&emp.istarf95||'')+'"></div>';
-  h+='<div class="field"><label data-s="payroll.pensionFundIds"></label><select id="prFund_'+mid+'" style="width:100%"><option value="">—</option>';
-  funds.forEach(function(f){var sel=empFundIds.indexOf(f.id)!==-1?'selected':'';h+='<option value="'+_e(f.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?f.name:f.nameEN||f.name)+'</option>';});
-  h+='</select></div>';
-  h+='<div class="field"><label data-s="payroll.unionId"></label><select id="prUnionSel_'+mid+'" style="width:100%"><option value="">—</option>';
-  unions.forEach(function(u){var sel=(emp&&emp.unionId===u.id)?'selected':'';h+='<option value="'+_e(u.id)+'" '+sel+'>'+(getLang&&getLang()==='IS'?u.name:u.nameEN||u.name)+'</option>';});
-  h+='</select></div>';
   h+='</div>';
   h+='<div style="display:flex;gap:8px;margin-top:10px">';
   h+='<button class="btn btn-primary" style="font-size:11px" onclick="prSaveEmployee(\''+mid+'\')" data-s="btn.save"></button>';
@@ -326,35 +226,33 @@ function prEmpRowHTML(m,emp,act){
   return h;
 }
 function prToggleEdit(mid){var el=document.getElementById('empedit_'+mid);if(!el)return;var was=el.classList.toggle('hidden');if(!was)applyStrings(el);}
-function prToggleFields(mid){var cb=document.getElementById('prEnabled_'+mid);var f=document.getElementById('prFields_'+mid);if(f)f.style.display=(cb&&cb.checked)?'':'none';}
 async function prSaveEmployee(memberId){
   var msg=document.getElementById('prMsg_'+memberId);
   var member=_members.find(function(m){return m.id===memberId;});if(!member)return;
   var existing=_empByMember[memberId]||null;
   var empId=existing?existing.id:('emp_'+Date.now().toString(36));
   function fv(pre){var el=document.getElementById(pre+'_'+memberId);return el?el.value.trim():'';}
-  function fn(pre){var el=document.getElementById(pre+'_'+memberId);return el?+(el.value):0;}
-  function fc(pre){var el=document.getElementById(pre+'_'+memberId);return el?el.checked:false;}
-  var fundEl=document.getElementById('prFund_'+memberId);
-  var unionEl=document.getElementById('prUnionSel_'+memberId);
   var payload={id:empId,memberId:memberId,name:member.name,kt:member.kennitala||'',
-    title:fv('prTitle'),baseRateKr:fn('prRate'),bankAccount:fv('prBank'),
-    orlofsreikningur:fv('prOrlof'),
-    personuafslattr:fn('prPersona'),
-    sereignarsjodur:fn('prSereign'),
-    otEligible:fc('prOT'),
-    starfshlutfall:fn('prStarfs')||100,
-    istarf95:fv('prIstarf'),
-    pensionFundIds:fundEl&&fundEl.value?[fundEl.value]:[],
-    unionId:unionEl?unionEl.value:'',
+    title:fv('prTitle'),
     payrollEnabled:!!(document.getElementById('prEnabled_'+memberId)&&document.getElementById('prEnabled_'+memberId).checked)};
   if(msg)msg.textContent=s('lbl.loading');
   try{
     await apiPost('saveEmployee',payload);
-    _empData[empId]=payload;_empByMember[memberId]=payload;
+    _empData[empId]=Object.assign({},existing||{},payload);
+    _empByMember[memberId]=_empData[empId];
     if(msg){msg.textContent='\u2713';msg.style.color='var(--green)';}
     setTimeout(function(){prLoadEmployees();},800);
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
+}
+async function cfgSaveAllowBreaks(){
+  var cb=document.getElementById('cfgAllowBreaks');
+  var lbl=document.getElementById('cfgAllowBreaksLbl');
+  var val=cb?cb.checked:false;
+  if(lbl)lbl.textContent=val?s('lbl.on'):s('lbl.off');
+  try{
+    await apiPost('saveConfig',{allowBreaks:val});
+    showToast(s('toast.saved'));
+  }catch(e){showToast(e.message,'err');}
 }
 
 /* == TIME REPORTING == */
@@ -565,736 +463,67 @@ async function meDelete(){
   catch(e){document.getElementById('meErr').textContent=e.message;}
 }
 
-/* == TIMESHEETS / LAUNASEDLAR == */
-async function prLoadPeriods(){
-  var list=document.getElementById('prPeriodsList');
-  list.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(list);
-  var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
-  var lastDay=new Date(y,now.getMonth()+1,0).getDate();
-  var fromEl=document.getElementById('prPeriodFrom'),toEl=document.getElementById('prPeriodTo'),payEl=document.getElementById('prPaymentDate');
-  if(fromEl&&!fromEl.value)fromEl.value=y+'-'+mo+'-01';
-  if(toEl&&!toEl.value)toEl.value=y+'-'+mo+'-'+String(lastDay).padStart(2,'0');
-  if(payEl&&!payEl.value)payEl.value=new Date(y,now.getMonth()+1,1).toISOString().slice(0,10);
-  try{
-    var res=await apiGet('getPayroll');
-    var rows=res.payroll||[];
-    if(!rows.length){list.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';applyStrings(list);return;}
-    var byPeriod={};
-    rows.forEach(function(r){
-      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):r.period;
-      if(!byPeriod[k])byPeriod[k]=[];byPeriod[k].push(r);
-      _closedPeriods.add(r.period||r.periodFrom);
-    });
-    list.innerHTML=Object.keys(byPeriod).sort().reverse().map(function(p){
-      var pr=byPeriod[p];
-      var totG=pr.reduce(function(s,r){return s+(+(r.grossTotal||0));},0);
-      var totN=pr.reduce(function(s,r){return s+(+(r.netPay||0));},0);
-      var isApproved=pr[0]&&pr[0].approved;
-      var payDate=pr[0]&&pr[0].paymentDate||'';
-      var pid=p.replace(/[^a-zA-Z0-9]/g,'_');
-      var empRows=pr.map(function(r){
-        return '<tr><td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
-          +'<td style="text-align:right">'+_e(r.totalHours||'\u2013')+'</td>'
-          +'<td style="text-align:right">'+kr(r.grossTotal)+'</td>'
-          +'<td style="text-align:right">'+kr(r.taxWithheld||r.stadgreidslaSkattur||0)+'</td>'
-          +'<td style="text-align:right">'+kr(r.netPay)+'</td>'
-          +'<td><button class="btn btn-secondary" style="font-size:10px;padding:2px 6px"'
-          +' onclick="prViewPayslip(this)" data-row="'+_e(JSON.stringify(r))+'" data-s="payroll.payslip"></button></td></tr>';
-      }).join('');
-      return '<div class="period-card">'
-        +'<div class="period-head" onclick="prToggleId(\'pb_'+pid+'\')">'
-        +'<span class="period-title">'+_e(p)+'</span>'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span class="period-meta">'+s('payroll.grossLabel')+': '+kr(totG)+' \u00b7 '+s('payroll.netLabel')+': '+kr(totN)+' \u00b7 '+pr.length+'</span>'
-        +'<span class="'+(isApproved?'pill-ok':'pill-open')+'" data-s="'+(isApproved?'payroll.periodApproved':'payroll.periodOpen')+'"></span>'
-        +'</div></div>'
-        +'<div class="period-body hidden" id="pb_'+pid+'">'
-        +(payDate?'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+s('payroll.paymentDate')+': '+_e(payDate)+'</div>':'')
-        +'<table class="ts-table"><thead><tr>'
-        +'<th data-s="lbl.name"></th><th style="text-align:right" data-s="payroll.hoursTotal"></th>'
-        +'<th style="text-align:right" data-s="payroll.grossLabel"></th>'
-        +'<th style="text-align:right" data-s="payroll.taxWithheld"></th>'
-        +'<th style="text-align:right" data-s="payroll.netLabel"></th><th></th>'
-        +'</tr></thead><tbody>'+empRows+'</tbody></table>'
-        +'<div class="action-bar" style="margin-top:8px">'
-        +'<button class="btn btn-secondary" style="font-size:11px" onclick="prExportXml(\''+_e(p)+'\')" data-s="payroll.exportXml"></button>'
-        +'</div></div></div>';
-    }).join('');
-    applyStrings(list);
-  }catch(e){list.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
-}
-async function prBuildPreview(){
-  var from=document.getElementById('prPeriodFrom').value;
-  var to  =document.getElementById('prPeriodTo').value;
-  var payDate=document.getElementById('prPaymentDate').value;
-  if(!from||!to){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  var panel=document.getElementById('prPreviewPanel'),listEl=document.getElementById('prPreviewList');
-  listEl.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(listEl);
-  panel.classList.remove('hidden');
-  try{
-    var empRes =await apiGet('getEmployees');
-    var tsRes  =await apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)+'-01'});
-    var ytdRes =await apiGet('getPayroll');
-    var employees=(empRes.employees||[]).filter(function(e){return e.payrollEnabled===true||e.payrollEnabled==='true';});
-    var entries=(tsRes.entries||tsRes.timeEntries||[]).map(function(e){if(!e.clockIn&&e.originalTimestamp)e.clockIn=e.originalTimestamp;return e;});
-    var closedRows=ytdRes.payroll||[];
-    var completed=entries.filter(function(e){return +e.durationMinutes>0;});
-    var entriesByEmp={};
-    completed.forEach(function(e){
-      if(!e.employeeId)return;
-      if(!entriesByEmp[e.employeeId])entriesByEmp[e.employeeId]=[];
-      entriesByEmp[e.employeeId].push(e);
-    });
-    var ytdByEmp={};
-    closedRows.forEach(function(r){
-      var eid=r.employeeId;if(!eid)return;
-      if(!ytdByEmp[eid])ytdByEmp[eid]={grossTotal:0,taxWithheld:0,employeePension:0,netPay:0,orlofIBanki:0,employerPension:0,totalDeductions:0};
-      var y=ytdByEmp[eid];
-      y.grossTotal+=(+(r.grossTotal||0));y.taxWithheld+=(+(r.taxWithheld||r.taxAfterCredit||0));
-      y.employeePension+=(+(r.employeePension||0));y.netPay+=(+(r.netPay||0));
-      y.orlofIBanki+=(+(r.orlofIBanki||0));y.employerPension+=(+(r.employerPension||0));
-      y.totalDeductions+=(+(r.totalDeductions||0));
-    });
-    if(!employees.length){listEl.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(listEl);return;}
-    _previewData={from:from,to:to,payDate:payDate,employees:{}};
-    listEl.innerHTML=employees.map(function(emp){
-      var empEntries=entriesByEmp[emp.id]||[];
-      var otOk=emp.otEligible===true||emp.otEligible==='true';
-      var split=otOk&&typeof splitOTMinutes==='function'
-        ?splitOTMinutes(empEntries,(window.PAYROLL_CONFIG||{}).otRules)
-        :{regularMins:empEntries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0),otMins:{},ot1Mins:0,ot2Mins:0};
-      var ytd=ytdByEmp[emp.id]||{grossTotal:0,taxWithheld:0,employeePension:0,netPay:0,orlofIBanki:0,employerPension:0,totalDeductions:0};
-      _previewData.employees[emp.id]={emp:emp,regularMins:split.regularMins,otMins:split.otMins||{},manualLines:[],ytd:ytd};
-      var calc=calculatePayslip(emp,split.regularMins,split.otMins||{},[],window.PAYROLL_CONFIG);
-      _previewData.employees[emp.id].calc=calc;
-      return prPayslipCard(emp,calc,ytd,split.regularMins);
-    }).join('');
-    applyStrings(listEl);
-  }catch(e){listEl.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
-}
-
-/* Payslip card */
-function prPayslipCard(emp,calc,ytd,regularMins){
-  var eid=_e(emp.id);
-  var rateKr=+(emp.baseRateKr)||0;
-  var h='<div class="payslip-card" id="prevrow_'+eid+'">';
-  h+='<div class="psc-header"><div class="psc-identity">';
-  h+='<div class="psc-name">'+_e(emp.name)+'</div>';
-  h+='<div class="psc-sub">'+_e(emp.title||'')+'</div>';
-  h+='<div class="psc-sub">'+s('payroll.bankAccount')+': '+_e(emp.bankAccount||'\u2014')+'</div>';
-  h+='</div><div class="psc-hrs">';
-  h+='<label class="hrs-label" data-s="payroll.regularHours"></label>';
-  h+='<input class="hrs-inp" id="pHrs_'+eid+'" type="number" min="0" step="0.25" value="'+(regularMins/60).toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
-  var _otTiers=typeof _otRulesToArray==='function'
-    ?_otRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
-    :((window.PAYROLL_CONFIG||{}).otRules||[]);
-  _otTiers.forEach(function(tier){
-    var hrs=((calc.otLines||[]).find(function(l){return l.tierId===tier.id;})||{hrs:0}).hrs||0;
-    h+='<label class="hrs-label">'+_e(tier.labelEN||tier.label||tier.id)+'</label>';
-    h+='<input class="hrs-inp" id="pOt_'+eid+'_'+_e(tier.id)+'" type="number" min="0" step="0.25" value="'+hrs.toFixed(2)+'" onchange="prRecalc(\''+eid+'\')">';
-  });
-  h+='</div></div>';
-  h+='<div style="padding:4px 14px"><div id="pManual_'+eid+'" style="margin-bottom:4px"></div>';
-  h+='<button class="btn-link" onclick="prAddLine(\''+eid+'\')" data-s="payroll.addLine"></button></div>';
-  h+='<div id="pCalc_'+eid+'">'+prCalcHTML(calc,ytd,emp.id)+'</div></div>';
-  return h;
-}
-function prCalcHTML(calc,ytd,empId){
-  var rateKr=calc.regularHrs>0?Math.round(calc.dagvinna/calc.regularHrs):0;
-  var ytdGross=(ytd.grossTotal||0)+calc.grossTotal;
-  var ytdDeduct=(ytd.totalDeductions||0)+calc.totalDeductions;
-  var ytdNet=(ytd.netPay||0)+calc.netPay;
-  function n(v){return _fmtEU(v);}
-  function pct(v){return ((v||0)*100).toFixed(2).replace(/\.?0+$/,'')+'%';}
-  var h='<div class="psc-samtolur"><div class="psc-samtolur-grid">';
-  h+='<div></div><div class="psc-col-hdr" data-s="payroll.periodLabel"></div><div class="psc-col-hdr" data-s="payroll.ytdSection"></div>';
-  h+='<div data-s="payroll.grossLabel"></div><div class="psc-num">'+n(calc.grossTotal)+'</div><div class="psc-num psc-ytd-val">'+n(ytdGross)+'</div>';
-  h+='<div data-s="payroll.totalDeductions"></div><div class="psc-num">'+n(calc.totalDeductions)+'</div><div class="psc-num psc-ytd-val">'+n(ytdDeduct)+'</div>';
-  h+='<div data-s="payroll.netLabel"></div><div class="psc-num psc-net-val">'+n(calc.netPay)+'</div><div class="psc-num psc-ytd-val">'+n(ytdNet)+'</div>';
-  h+='</div></div>';
-  h+='<table class="psc-table"><thead><tr>';
-  h+='<th data-s="payroll.periodLabel"></th><th data-s="lbl.type"></th>';
-  h+='<th class="num" data-s="payroll.units"></th><th class="num" data-s="payroll.rate"></th>';
-  h+='<th class="num" data-s="payroll.amount"></th><th class="num" data-s="payroll.ytdUnits"></th><th class="num">ISK</th>';
-  h+='</tr></thead><tbody>';
-  var per=_previewData.from?_previewData.from+' \u2013 '+(_previewData.to||''):'';
-  function tr(p,type,units,rate,amt,ytdU,ytdA,bold){
-    var cls=bold?' class="psc-total-row"':'';
-    return '<tr'+cls+'><td>'+_e(p)+'</td><td>'+_e(type)+'</td>'
-      +'<td class="num">'+_e(String(units))+'</td><td class="num">'+_e(String(rate))+'</td>'
-      +'<td class="num">'+n(amt)+'</td>'
-      +'<td class="num psc-ytd-val">'+_e(String(ytdU))+'</td>'
-      +'<td class="num psc-ytd-val">'+n(ytdA)+'</td></tr>';
+/* == EXPORT TO EXTERNAL PAYROLL APP == */
+function prToggleExport(){
+  var panel=document.getElementById('prExportPanel');
+  if(!panel)return;
+  var hidden=panel.classList.toggle('hidden');
+  if(!hidden){
+    // First open (or reopen): seed defaults from current calendar month, load saved URL
+    var from=document.getElementById('prExpFrom'),to=document.getElementById('prExpTo');
+    var firstDay=new Date(_calYear,_calMonth,1);
+    var lastDay=new Date(_calYear,_calMonth+1,0);
+    function iso(d){return d.toISOString().slice(0,10);}
+    if(from&&!from.value)from.value=iso(firstDay);
+    if(to&&!to.value)to.value=iso(lastDay);
+    var urlEl=document.getElementById('prExpUrl');
+    if(urlEl&&!urlEl.value){
+      try{urlEl.value=localStorage.getItem('ymir_payroll_export_url')||'';}catch(e){}
+    }
+    applyStrings(panel);
   }
-  var ytdReg=(ytd.regularHrs||0)+calc.regularHrs;
-  h+=tr(per,s('payroll.dagvinna'),calc.regularHrs.toFixed(2),n(rateKr),calc.dagvinna,ytdReg.toFixed(2),(ytd.dagvinna||0)+calc.dagvinna);
-  (calc.otLines||[]).forEach(function(line,li){
-    var ytdAmt=ytd['eftirvinna'+(li+1)]||0;
-    var ytdHrs=ytd['ot'+(li+1)+'Hrs']||0;
-    h+=tr(per,_e(line.labelEN||line.label||line.tierId),(line.hrs||0).toFixed(2),
-      n(Math.round(rateKr*(line.multiplier||1))),line.amount||0,
-      (ytdHrs+(line.hrs||0)).toFixed(2),ytdAmt+(line.amount||0));
-  });
-  (calc.manualLines||[]).forEach(function(l){h+=tr(per,_e(l.label),'—','—',l.amount,'—',0);});
-  h+=tr(per,s('payroll.orlofsRate')+' '+pct(calc.orlofsRate),'—','—',calc.orlofslaun,'—',(ytd.orlofslaun||0)+calc.orlofslaun);
-  h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.grossLabel"></td>'
-    +'<td class="num">'+n(calc.grossTotal)+'</td><td class="num psc-ytd-val" colspan="2">'+n(ytdGross)+'</td></tr>';
-  h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.deductionsSection"></td>'
-    +'<th class="num" data-s="payroll.units"></th><th class="num" data-s="payroll.rate"></th>'
-    +'<th class="num" data-s="payroll.amount"></th><td colspan="2" class="num">ISK</td></tr>';
-  (calc.pensionLines||[]).filter(function(l){return l.employeeAmt>0;}).forEach(function(l){
-    h+=tr('',_e((l.fundName||'')+' \u2013 '+(l.label||'')),'',pct(l.employeeAmt/calc.grossTotal),-l.employeeAmt,'',-(ytd.employeePension||0));
-  });
-  if(calc.sereignarsjodur>0)h+=tr('',s('payroll.sereignRate')+' '+pct(calc.sereignRate),'',pct(calc.sereignRate),-calc.sereignarsjodur,'',0);
-  (calc.unionLines||[]).filter(function(l){return l.employeeAmt>0;}).forEach(function(l){
-    h+=tr('',_e((l.unionName||'')+' \u2013 '+(l.label||'')),'',pct(l.employeeAmt/calc.grossTotal),-l.employeeAmt,'',0);
-  });
-  (window.PAYROLL_CONFIG||{taxBrackets:[]}).taxBrackets.forEach(function(b,i){
-    h+=tr('',s('payroll.taxBracket'+(i+1)),'',pct(b.rate),i===0?-calc.taxGross:0,'',0);
-  });
-  h+=tr('',s('payroll.personuafslattr'),'','',calc.personalCredit,'',0);
-  h+=tr('',s('payroll.taxWithheld'),'',',-',-calc.taxAfterCredit,'',-(ytd.taxWithheld||0));
-  h+=tr('',s('payroll.orlofslaun'),'',',-',-calc.orlofIBanki,'',-(ytd.orlofIBanki||0));
-  h+='<tr class="psc-total-row"><td colspan="4" data-s="payroll.totalDeductions"></td>'
-    +'<td class="num">'+n(-calc.totalDeductions)+'</td><td class="num psc-ytd-val" colspan="2">'+n(-ytdDeduct)+'</td></tr>';
-  h+='<tr class="psc-section-hdr"><td colspan="2" data-s="payroll.employerSection"></td>'
-    +'<td></td><th class="num" data-s="payroll.rate"></th><th class="num" data-s="payroll.amount"></th>'
-    +'<td colspan="2" class="num">ISK</td></tr>';
-  (calc.pensionLines||[]).filter(function(l){return l.employerAmt>0;}).forEach(function(l){
-    h+=tr('',_e((l.fundName||'')+' \u2013 '+(l.label||'')),'',pct(l.employerAmt/calc.grossTotal),l.employerAmt,'',ytd.employerPension||0);
-  });
-  h+=tr('',s('payroll.endurhaefingarsjodur')+' 0.1%','','0.1%',calc.endurhaefingarsjodur,'',0);
-  h+='<tr class="psc-section-hdr"><td colspan="5" data-s="payroll.accumulatedSection"></td>'
-    +'<td class="num" data-s="payroll.now"></td><td class="num" data-s="payroll.ytdSection"></td></tr>';
-  h+='<tr><td colspan="4" data-s="payroll.orlofslaun"></td><td></td>'
-    +'<td class="num psc-ytd-val">'+n(calc.orlofIBanki)+'</td>'
-    +'<td class="num psc-ytd-val">'+n((ytd.orlofIBanki||0)+calc.orlofIBanki)+'</td></tr>';
-  h+='</tbody></table>';
-  h+='<div style="padding:8px 14px">';
-  h+='<button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" onclick="prPreviewLocal(\''+_e(empId||'')+'\')">&#128196; <span data-s="payroll.exportPdf"></span></button>';
-  h+='</div>';
-  return h;
 }
-function prGetLines(empId){
-  var c=document.getElementById('pManual_'+empId);if(!c)return[];
-  var lines=[];
-  c.querySelectorAll('.ml-row').forEach(function(row){
-    var en=row.querySelector('.ml-en'),is=row.querySelector('.ml-is'),amt=row.querySelector('.ml-amt');
-    if(en&&amt)lines.push({label:en.value,labelIS:is?is.value:en.value,amount:+(amt.value)||0});
-  });
-  return lines;
+function prSaveExportUrl(){
+  var el=document.getElementById('prExpUrl');
+  if(!el)return;
+  try{localStorage.setItem('ymir_payroll_export_url',el.value.trim());}catch(e){}
 }
-function prRecalc(empId){
-  var d=(_previewData.employees||{})[empId];if(!d)return;
-  var hrs=+(document.getElementById('pHrs_'+empId)||{value:0}).value||0;
-  var otTiers=typeof _otRulesToArray==='function'
-    ?_otRulesToArray((window.PAYROLL_CONFIG||{}).otRules||[])
-    :((window.PAYROLL_CONFIG||{}).otRules||[]);
-  var otMins={};
-  otTiers.forEach(function(tier){
-    var inp=document.getElementById('pOt_'+empId+'_'+tier.id);
-    otMins[tier.id]=(inp?+(inp.value)||0:0)*60;
-  });
-  var manual=prGetLines(empId);
-  var calc=window.calculatePayslip(d.emp,hrs*60,otMins,manual,window.PAYROLL_CONFIG);
-  d.regularMins=hrs*60;d.otMins=otMins;d.manualLines=manual;d.calc=calc;
-  var el=document.getElementById('pCalc_'+empId);
-  if(el){el.innerHTML=prCalcHTML(calc,d.ytd||{},empId);applyStrings(el);}
-}
-function prAddLine(empId){
-  var c=document.getElementById('pManual_'+empId);if(!c)return;
-  var row=document.createElement('div');row.className='ml-row';
-  row.innerHTML='<input class="ml-en" type="text" data-s-attr="placeholder" data-s="payroll.lineDescription" style="font-size:11px">'
-    +'<input class="ml-is" type="text" data-s-attr="placeholder" data-s="payroll.lineDescriptionIS" style="font-size:11px">'
-    +'<input class="ml-amt" type="number" data-s-attr="placeholder" data-s="payroll.lineAmount" style="font-size:11px;text-align:right" onchange="prRecalc(\''+_e(empId)+'\')">'
-    +'<button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0" onclick="this.parentNode.remove();prRecalc(\''+_e(empId)+'\')">\u00d7</button>';
-  applyStrings(row);c.appendChild(row);
-}
-async function prApprovePeriod(){
-  var from=document.getElementById('prPeriodFrom').value,to=document.getElementById('prPeriodTo').value,payDate=document.getElementById('prPaymentDate').value;
-  if(!from||!to){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  if(!await ymConfirm(s('payroll.approveConfirm')))return;
-  var msg=document.getElementById('prApproveMsg');
-  if(msg){msg.textContent=s('lbl.loading');msg.style.color='var(--muted)';}
-  var rows=Object.keys(_previewData.employees||{}).map(function(empId){
-    var d=_previewData.employees[empId];
-    var c=d.calc||window.calculatePayslip(d.emp,d.regularMins,d.otMins||{},d.manualLines,window.PAYROLL_CONFIG);
-    var totalHrs=c.regularHrs+(c.ot1Hrs||0)+(c.ot2Hrs||0);
-    return {employeeId:empId,employeeName:d.emp.name,kt:d.emp.kt,
-      bankAccount:d.emp.bankAccount,orlofsreikningur:d.emp.orlofsreikningur,
-      title:d.emp.title,baseRateKr:d.emp.baseRateKr,
-      periodFrom:from,periodTo:to,paymentDate:payDate,
-      regularMinutes:d.regularMins,otMinutes:JSON.stringify(d.otMins||{}),manualLines:JSON.stringify(d.manualLines),
-      grossTotal:c.grossTotal,dagvinna:c.dagvinna,
-      eftirvinna1:c.eftirvinna1,eftirvinna2:c.eftirvinna2,otLines:JSON.stringify(c.otLines||[]),
-      orlofslaun:c.orlofslaun,orlofsRate:c.orlofsRate,manualTotal:c.manualTotal,
-      employeePension:c.employeePension,sereignarsjodur:c.sereignarsjodur,sereignRate:c.sereignRate,
-      unionDues:c.totalUnionEmp||c.unionDues||0,
-      taxBase:c.taxBase,taxGross:c.taxGross,personalCredit:c.personalCredit,
-      taxWithheld:c.taxAfterCredit,taxAfterCredit:c.taxAfterCredit,
-      orlofIBanki:c.orlofIBanki,totalDeductions:c.totalDeductions,netPay:c.netPay,
-      employerPension:c.employerPensionAmt,endurhaefingarsjodur:c.endurhaefingarsjodur,
-      regularHrs:c.regularHrs,ot1Hrs:c.ot1Hrs,ot2Hrs:c.ot2Hrs,pensionRate:c.pensionRate,
-      totalHours:totalHrs.toFixed(2),
-      configSnapshot:JSON.stringify(window.PAYROLL_CONFIG||{}),approved:true};
-  });
+async function prExportTimeData(){
+  var msg=document.getElementById('prExpMsg');
+  function setMsg(text,color){if(msg){msg.textContent=text;msg.style.color=color||'';}}
+  var url='';
+  try{url=(localStorage.getItem('ymir_payroll_export_url')||'').trim();}catch(e){}
+  var urlEl=document.getElementById('prExpUrl');
+  if(!url&&urlEl)url=urlEl.value.trim();
+  if(!url){showToast(s('payroll.urlNotSet'),'err');setMsg(s('payroll.urlNotSet'),'var(--red)');return;}
+  var from=(document.getElementById('prExpFrom')||{}).value||'';
+  var to=(document.getElementById('prExpTo')||{}).value||'';
+  if(!from||!to||from>to){showToast(s('payroll.noPeriodDefined'),'err');setMsg(s('payroll.noPeriodDefined'),'var(--red)');return;}
+  setMsg(s('lbl.loading'),'var(--muted)');
   try{
-    var res=await apiPost('closePayPeriod',{periodFrom:from,periodTo:to,paymentDate:payDate,by:user?user.name:'admin',rows:rows});
-    _closedPeriods.add(from.slice(0,7));
-    if(msg){msg.textContent='\u2713 '+s('payroll.periodClosed')+' \u2014 '+(res.rows||rows.length)+' payslips';msg.style.color='var(--green)';}
-    setTimeout(function(){prLoadPeriods();prHide('prPreviewPanel');},1200);
-  }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
-}
-function prViewPayslip(btn){
-  var r=JSON.parse(btn.dataset.row||'{}');
-  var emp={name:r.employeeName||'',kt:r.kt||'',title:r.title||'',bankAccount:r.bankAccount||'',
-    orlofsreikningur:r.orlofsreikningur||'',baseRateKr:r.baseRateKr||0,
-    lifeyrir:r.pensionRate||0.04,personuafslattr:r.personalCredit||68681};
-  var calc={grossTotal:r.grossTotal||0,dagvinna:r.dagvinna||r.grossTotal||0,
-    eftirvinna1:r.eftirvinna1||0,eftirvinna2:r.eftirvinna2||0,
-    orlofslaun:r.orlofslaun||0,orlofsRate:r.orlofsRate||0.1017,
-    manualLines:parseJson(r.manualLines,[]),manualTotal:r.manualTotal||0,
-    employeePension:r.employeePension||0,sereignarsjodur:r.sereignarsjodur||0,sereignRate:r.sereignRate||0,
-    unionDues:r.unionDues||0,unionRate:r.unionRate||0,
-    taxBase:r.taxBase||0,taxGross:r.taxGross||0,personalCredit:r.personalCredit||68681,
-    taxAfterCredit:r.taxAfterCredit||r.taxWithheld||0,
-    orlofIBanki:r.orlofIBanki||0,totalDeductions:r.totalDeductions||0,netPay:r.netPay||0,
-    pensionRate:r.pensionRate||0.04,pensionLines:[],unionLines:[],
-    regularHrs:r.regularHrs||(r.regularMinutes||0)/60,
-    ot1Hrs:r.ot1Hrs||(r.ot1Minutes||0)/60,
-    ot2Hrs:r.ot2Hrs||(r.ot2Minutes||0)/60,
-    employerPensionAmt:r.employerPension||0,endurhaefingarsjodur:r.endurhaefingarsjodur||0};
-  var html=renderPayslip({employee:emp,calc:calc,ytd:{},period:r.periodFrom||'',
-    employer:{employerName:'',employerKt:'',employerAddress:''},
-    paymentDate:r.paymentDate||'',slipNumber:r.slipNumber||''});
-  window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
-}
-function prPreviewLocal(empId){
-  var d=(_previewData.employees||{})[empId];if(!d||!d.calc){showToast(s('payroll.hoursConfirm'),'err');return;}
-  var html=renderPayslip({employee:d.emp,calc:d.calc,ytd:d.ytd||{},period:_previewData.from||'',
-    employer:{employerName:'',employerKt:'',employerAddress:''},
-    paymentDate:_previewData.payDate||'',slipNumber:'PREVIEW'});
-  window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
-}
-async function prExportXml(periodKey){
-  try{
-    var res=await apiPost('generatePayrollXml',{period:periodKey});
-    if(res.xml){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([res.xml],{type:'application/xml'}));a.download='payroll-'+periodKey.replace(/[^\w-]/g,'-')+'.xml';a.click();}
-    else showToast(s('toast.error'),'err');
-  }catch(e){showToast(e.message,'err');}
-}
-
-/* == EXPORT DATA == */
-function prSaveStadConfig(){
-  try{localStorage.setItem('ymir_stad_cfg',JSON.stringify({isat:(document.getElementById('prStadIsat')||{}).value||''}));}catch(e){}
-}
-function prLoadStadConfig(){
-  try{var cfg=JSON.parse(localStorage.getItem('ymir_stad_cfg')||'{}');var el=document.getElementById('prStadIsat');if(el&&cfg.isat)el.value=cfg.isat;}catch(e){}
-}
-async function prLoadExportData(){
-  prLoadStadConfig();
-  try{
-    var res=await apiGet('getPayroll');
-    var rows=res.payroll||[];
-    var periods=[];var seen=new Set();
-    rows.forEach(function(r){
-      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');
-      if(k&&!seen.has(k)){seen.add(k);periods.push(k);}
+    var res=await Promise.all([
+      apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)+'-01'}),
+      apiGet('getEmployees')
+    ]);
+    var payload={
+      from:from,to:to,
+      employees:res[1].employees||[],
+      timeEntries:res[0].entries||res[0].timeEntries||[]
+    };
+    var fetchRes=await fetch(url,{
+      method:'POST',
+      mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      redirect:'follow'
     });
-    periods.sort().reverse();
-    ['prCsvPeriod','prXmlPeriod'].forEach(function(selId){
-      var sel=document.getElementById(selId);if(!sel)return;
-      while(sel.options.length>1)sel.remove(1);
-      periods.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
-    });
-  }catch(e){}
-}
-async function prExportPensionCsv(){
-  var periodKey=document.getElementById('prCsvPeriod').value;
-  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  try{
-    var res=await apiGet('getPayroll');
-    var rows=(res.payroll||[]).filter(function(r){
-      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
-    });
-    if(!rows.length){showToast(s('lbl.noData'),'err');return;}
-    var cfg=window.PAYROLL_CONFIG||{};
-    // Get Bru fund rates from config
-    var bruFund=(cfg.pensionFunds||[]).find(function(f){return f.id==='fund_bru';})||{lines:[]};
-    var empLine=bruFund.lines.find(function(l){return (l.employeeRate||0)>0;})||{employeeRate:0.04};
-    var emrLine=bruFund.lines.find(function(l){return (l.employerRate||0)>0;})||{employerRate:0.115};
-    var empRate=empLine.employeeRate||0.04;
-    var emrRate=emrLine.employerRate||0.115;
-    var header=['Kennitala','Nafn','Launatímabil','Laun','Iðgjald starfsmanns %','Iðgjald starfsmanns','Mótframlag launagreiðanda %','Mótframlag launagreiðanda'];
-    var csvRows=[header];
-    rows.forEach(function(r){
-      // Only include employees assigned to Bru (or with no explicit fund — use Bru as default)
-      var emp=_empData[r.employeeId];
-      var fundIds=emp&&emp.pensionFundIds&&emp.pensionFundIds.length?emp.pensionFundIds:['fund_bru'];
-      if(fundIds.indexOf('fund_bru')===-1)return;
-      var gross=+(r.grossTotal)||0;
-      var eAmt=Math.round(gross*empRate);
-      var erAmt=Math.round(gross*emrRate);
-      var period=r.periodFrom?r.periodFrom.slice(0,7):sstr(r.period).slice(0,7);
-      csvRows.push([r.kt||'',r.employeeName||r.employeeId||'',period,gross,(empRate*100).toFixed(2)+'%',eAmt,(emrRate*100).toFixed(2)+'%',erAmt]);
-    });
-    var csv=csvRows.map(function(row){return row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
-    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='bru-pension-'+periodKey.replace(/[^\w-]/g,'-')+'.csv';a.click();
-  }catch(e){showToast(e.message,'err');}
-}
-async function prShowStadgreidsla(){
-  var periodKey=document.getElementById('prXmlPeriod').value;
-  if(!periodKey){showToast(s('payroll.noPeriodDefined'),'err');return;}
-  var isat=(document.getElementById('prStadIsat')||{}).value||'';
-  var div=document.getElementById('prStadTable');
-  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
-  try{
-    var res=await apiGet('getPayroll');
-    var rows=(res.payroll||[]).filter(function(r){
-      var k=r.periodFrom&&r.periodTo?(r.periodFrom+' \u2013 '+r.periodTo):(r.period||'');return k===periodKey;
-    });
-    if(!rows.length){div.innerHTML='<div class="empty-note" data-s="lbl.noData"></div>';applyStrings(div);return;}
-    var cfg=window.PAYROLL_CONFIG||{};
-    var tryggRate=cfg.tryggingagjaldRate||0.0685;
-    var totLaun=0,totEmpP=0,totEmrP=0,totTrygg=0;
-    var tbRows=rows.map(function(r){
-      var gross=+(r.grossTotal)||0;
-      var empP=+(r.employeePension)||0;
-      var emrP=+(r.employerPension)||0;
-      var trygg=Math.round(gross*tryggRate);
-      var emp=_empData[r.employeeId]||{};
-      var personaPct=Math.round((emp.personuafslattr!=null?+(emp.personuafslattr):1)*100)+'%';
-      var starfshl=+(emp.starfshlutfall)||100;
-      var istarf=_e(emp.istarf95||'');
-      var empIsat=_e(emp.isat95||isat);
-      totLaun+=gross;totEmpP+=empP;totEmrP+=emrP;totTrygg+=trygg;
-      return '<tr>'
-        +'<td>'+_e(r.employeeName||r.employeeId||'')+'</td>'
-        +'<td>'+_e(r.kt||'')+'</td>'
-        +'<td>'+empIsat+'</td>'
-        +'<td class="num">'+starfshl+'</td>'
-        +'<td>'+istarf+'</td>'
-        +'<td class="num">'+kr(gross)+'</td>'
-        +'<td class="num">'+kr(empP)+'</td>'
-        +'<td class="num">'+personaPct+'</td>'
-        +'<td class="num">'+kr(emrP)+'</td>'
-        +'<td class="num">'+kr(trygg)+'</td>'
-        +'</tr>';
-    }).join('');
-    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
-      +'<th>Nafn</th><th>Kennitala</th><th>ISAT95</th>'
-      +'<th class="num">Starfshl.%</th><th>ISTARF95</th>'
-      +'<th class="num">Heildarlaun</th>'
-      +'<th class="num">Lífeyrir&nbsp;4%</th>'
-      +'<th class="num">Persónuafslátt.</th>'
-      +'<th class="num">Mótframlag&nbsp;11,5%</th>'
-      +'<th class="num">Tryggingagjald</th>'
-      +'</tr></thead><tbody>'+tbRows+'</tbody>'
-      +'<tfoot><tr style="font-weight:700">'
-      +'<td colspan="5" data-s="payroll.totalHours" style="color:var(--muted)"></td>'
-      +'<td class="num">'+kr(totLaun)+'</td>'
-      +'<td class="num">'+kr(totEmpP)+'</td>'
-      +'<td></td>'
-      +'<td class="num">'+kr(totEmrP)+'</td>'
-      +'<td class="num">'+kr(totTrygg)+'</td>'
-      +'</tr></tfoot></table></div>';
-    applyStrings(div);
-  }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
-}
-
-/* == LAUNAMIDLAR == */
-async function prShowLaunamidlar(){
-  var year=+(document.getElementById('prLmYear').value)||new Date().getFullYear();
-  var div=document.getElementById('prLmTable');
-  div.innerHTML='<div class="empty-note" data-s="lbl.loading"></div>';applyStrings(div);
-  try{
-    // Ensure employee data is loaded for fund lookups
-    if(!Object.keys(_empData).length){
-      var er=await apiGet('getEmployees');
-      (er.employees||[]).forEach(function(e){_empData[e.id]=e;if(e.memberId)_empByMember[e.memberId]=e;});
-    }
-    var res=await apiGet('getPayroll');
-    var cfg=window.PAYROLL_CONFIG||{};
-    // Group closed period rows by employee, filtered to selected year
-    var byEmp={};
-    (res.payroll||[]).forEach(function(r){
-      var pf=r.periodFrom||r.period||'';
-      if(+pf.slice(0,4)!==year)return;
-      var eid=r.employeeId;if(!eid)return;
-      if(!byEmp[eid])byEmp[eid]={kt:r.kt||'',name:r.employeeName||eid,laun:0,pension:0,sereign:0,stadgr:0};
-      byEmp[eid].laun   +=(+(r.grossTotal)||0);
-      byEmp[eid].pension+=(+(r.employeePension)||0);
-      byEmp[eid].sereign+=(+(r.sereignarsjodur)||0);
-      byEmp[eid].stadgr +=(+(r.taxWithheld||r.taxAfterCredit)||0);
-    });
-    var eids=Object.keys(byEmp);
-    if(!eids.length){div.innerHTML='<div class="empty-note" data-s="payroll.noClosedPeriods"></div>';applyStrings(div);return;}
-    // Resolve fund names from employee records
-    function fundName(eid){
-      var emp=_empData[eid]||{};
-      var fids=emp.pensionFundIds||[];
-      if(!fids.length)return'';
-      var f=(cfg.pensionFunds||[]).find(function(x){return x.id===fids[0];});
-      return f?(f.name||f.nameEN||f.id):'';
-    }
-    var totLaun=0,totPension=0,totSereign=0,totStadgr=0;
-    var rows=eids.map(function(eid){
-      var d=byEmp[eid];
-      var fn=_e(fundName(eid));
-      totLaun+=d.laun;totPension+=d.pension;totSereign+=d.sereign;totStadgr+=d.stadgr;
-      return '<tr>'
-        +'<td><div style="font-weight:600">'+_e(d.name)+'</div>'
-        +'<div style="font-size:11px;color:var(--muted)">'+_e(d.kt)+'</div></td>'
-        +'<td class="num">'+kr(d.laun)+'</td>'
-        +'<td class="num">'+kr(d.pension)+'</td>'
-        +'<td>'+fn+'</td>'
-        +(d.sereign?'<td class="num">'+kr(d.sereign)+'</td>'+'<td>'+fn+'</td>':'<td class="num">—</td><td>—</td>')
-        +'<td class="num">'+kr(d.stadgr)+'</td>'
-        +'</tr>';
-    }).join('');
-    div.innerHTML='<div style="overflow-x:auto"><table class="ts-table"><thead><tr>'
-      +'<th>01 Nafn / Kennitala</th>'
-      +'<th class="num">02 Laun</th>'
-      +'<th class="num">03 Lífeyrissjóðsiðgjald</th>'
-      +'<th>08 Númer lífeyrissjóðs</th>'
-      +'<th class="num">63 Séreignarsparnaður</th>'
-      +'<th>64 Númer séreignarsjóðs</th>'
-      +'<th class="num">71 Staðgreiðsla</th>'
-      +'</tr></thead><tbody>'+rows+'</tbody>'
-      +'<tfoot><tr style="font-weight:700">'
-      +'<td>'+s('lbl.year')+' '+year+'</td>'
-      +'<td class="num">'+kr(totLaun)+'</td>'
-      +'<td class="num">'+kr(totPension)+'</td>'
-      +'<td></td>'
-      +'<td class="num">'+kr(totSereign)+'</td>'
-      +'<td></td>'
-      +'<td class="num">'+kr(totStadgr)+'</td>'
-      +'</tr></tfoot></table></div>';
-  }catch(e){div.innerHTML='<div class="empty-note" style="color:var(--red)">'+_e(e.message)+'</div>';}
-}
-
-/* == CONFIG TAB == */
-async function prLoadConfig(){
-  var cfg=window.PAYROLL_CONFIG||{};
-  var u=document.getElementById('cfgCrUnit');
-  if(u)u.value=cfg.personuafslattrUnit||68681;
-  // Load allowBreaks from config
-  try {
-    var cfgRes = await apiGet('getConfig');
-    var cb = document.getElementById('cfgAllowBreaks');
-    if (cb) cb.checked = !!(cfgRes && cfgRes.allowBreaks);
-    var lbl = document.getElementById('cfgAllowBreaksLbl');
-    if (lbl) lbl.textContent = (cfgRes && cfgRes.allowBreaks) ? s('lbl.on') : s('lbl.off');
-  } catch(e) {}
-  cfgRenderTax();cfgRenderOT();cfgRenderFunds();cfgRenderUnions();
-}
-async function cfgSaveAllowBreaks(){
-  var cb = document.getElementById('cfgAllowBreaks');
-  var lbl = document.getElementById('cfgAllowBreaksLbl');
-  var val = cb ? cb.checked : false;
-  if (lbl) lbl.textContent = val ? s('lbl.on') : s('lbl.off');
-  try {
-    await apiPost('saveConfig', { allowBreaks: val });
-    showToast(s('toast.saved'));
-  } catch(e) { showToast(e.message, 'err'); }
-}
-function cfgRenderOT(){
-  var cfg=window.PAYROLL_CONFIG||{};
-  var tiers=typeof _otRulesToArray==='function'?_otRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
-  cfg.otRules=tiers;
-  var div=document.getElementById('cfgOTPanel');if(!div)return;
-  var html='';
-  tiers.forEach(function(tier,ti){
-    html+='<div class="cfg-fund" style="margin-bottom:12px">';
-    html+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">';
-    html+='<strong style="font-size:11px;min-width:28px;color:var(--muted)">'+_e(tier.id||String(ti+1))+'</strong>';
-    html+='<input id="cfgOT_'+ti+'_label" type="text" placeholder="IS label" value="'+_e(tier.label||'')+'" style="flex:1;min-width:80px;font-size:11px">';
-    html+='<input id="cfgOT_'+ti+'_labelEN" type="text" placeholder="EN label" value="'+_e(tier.labelEN||'')+'" style="flex:1;min-width:80px;font-size:11px">';
-    html+='<label style="font-size:11px;white-space:nowrap" data-s="payroll.otMultiplier"></label>';
-    html+='<input id="cfgOT_'+ti+'_m" type="number" min="1" max="5" step="0.01" value="'+_e(String(tier.multiplier||1))+'" style="width:64px;font-size:11px">';
-    html+='<button class="btn-del" onclick="cfgDeleteOTTier('+ti+')" title="Delete">\u00d7</button>';
-    html+='</div>';
-    html+='<div class="cfg-ot-hdr"><span data-s="payroll.otDays"></span><span data-s="payroll.otFrom"></span><span data-s="payroll.otTo"></span><span></span><span></span></div>';
-    (tier.periods||[]).forEach(function(p,pi){
-      html+='<div class="cfg-ot-row">';
-      html+='<input id="cfgOT_'+ti+'_'+pi+'_d" type="text" value="'+_e((p.days||[]).join(','))+'" style="font-size:11px">';
-      html+='<input id="cfgOT_'+ti+'_'+pi+'_f" type="number" min="0" max="24" value="'+_e(String(p.fromHour||0))+'" style="font-size:11px">';
-      html+='<input id="cfgOT_'+ti+'_'+pi+'_t" type="number" min="0" max="24" value="'+_e(String(p.toHour||24))+'" style="font-size:11px">';
-      html+='<button class="btn-del" onclick="cfgRemoveOTP('+ti+','+pi+')">x</button><span></span>';
-      html+='</div>';
-    });
-    html+='<button class="btn-link" style="margin-top:4px;font-size:11px" onclick="cfgAddOTP('+ti+')">+ <span data-s="payroll.otPeriods"></span></button></div>';
-  });
-  div.innerHTML=html;applyStrings(div);
-}
-function cfgAddOTTier(){
-  var cfg=window.PAYROLL_CONFIG||{};
-  var tiers=typeof _otRulesToArray==='function'?_otRulesToArray(cfg.otRules||[]):(cfg.otRules||[]);
-  var n=tiers.length+1;
-  tiers.push({id:'ot'+n,label:'Eftirvinna '+n,labelEN:'Overtime '+n,multiplier:1.33,periods:[]});
-  cfg.otRules=tiers;window.PAYROLL_CONFIG=cfg;cfgRenderOT();
-}
-function cfgDeleteOTTier(ti){
-  var cfg=window.PAYROLL_CONFIG||{};(cfg.otRules||[]).splice(ti,1);cfgRenderOT();
-}
-function cfgAddOTP(ti){
-  var cfg=window.PAYROLL_CONFIG||{};var tiers=cfg.otRules||[];
-  if(!tiers[ti])return;tiers[ti].periods=tiers[ti].periods||[];
-  tiers[ti].periods.push({days:[1,2,3,4],fromHour:17,toHour:24});cfgRenderOT();
-}
-function cfgRemoveOTP(ti,pi){
-  var cfg=window.PAYROLL_CONFIG||{};var tiers=cfg.otRules||[];
-  if(tiers[ti])tiers[ti].periods.splice(pi,1);cfgRenderOT();
-}
-function cfgSaveOT(){
-  var cfg=window.PAYROLL_CONFIG||{};
-  (cfg.otRules||[]).forEach(function(tier,ti){
-    var lbl=document.getElementById('cfgOT_'+ti+'_label');
-    var lblEN=document.getElementById('cfgOT_'+ti+'_labelEN');
-    var m=document.getElementById('cfgOT_'+ti+'_m');
-    if(lbl)tier.label=lbl.value;
-    if(lblEN)tier.labelEN=lblEN.value;
-    if(m)tier.multiplier=+(m.value)||1;
-    (tier.periods||[]).forEach(function(p,pi){
-      var d=document.getElementById('cfgOT_'+ti+'_'+pi+'_d');
-      var f=document.getElementById('cfgOT_'+ti+'_'+pi+'_f');
-      var t=document.getElementById('cfgOT_'+ti+'_'+pi+'_t');
-      if(d)p.days=(d.value||'').split(',').map(function(x){return +x.trim();}).filter(function(x){return !isNaN(x);});
-      if(f)p.fromHour=+(f.value)||0;if(t)p.toHour=+(t.value)||24;
-    });
-  });
-  cfgPersist();
-  var msg=document.getElementById('cfgOTMsg');if(msg){msg.textContent='\u2713';setTimeout(function(){msg.textContent='';},2000);}
-}
-function cfgRenderTax(){
-  var cfg=window.PAYROLL_CONFIG||{};var brackets=cfg.taxBrackets||[];
-  var div=document.getElementById('cfgTaxPanel');if(!div)return;
-  var html='';
-  brackets.forEach(function(b,i){
-    html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">';
-    html+='<span style="font-size:11px;color:var(--muted);min-width:20px">'+(i+1)+'</span>';
-    html+='<label style="font-size:11px" data-s="payroll.taxBracketUpTo"></label>';
-    html+='<input id="cfgTax_'+i+'_u" type="number" min="0" step="1" value="'+_e(b.upTo==null?'':String(b.upTo))+'" placeholder="\u221e" style="width:90px;font-size:11px">';
-    html+='<label style="font-size:11px" data-s="payroll.taxBracketRate"></label>';
-    html+='<input id="cfgTax_'+i+'_r" type="number" min="0" max="1" step="0.001" value="'+_e(String(b.rate||0))+'" style="width:70px;font-size:11px">';
-    html+='<button class="btn-del" onclick="cfgDeleteTaxBracket('+i+')">\u00d7</button>';
-    html+='</div>';
-  });
-  div.innerHTML=html;applyStrings(div);
-}
-function cfgAddTaxBracket(){
-  var cfg=window.PAYROLL_CONFIG||{};cfg.taxBrackets=cfg.taxBrackets||[];
-  cfg.taxBrackets.push({upTo:null,rate:0.20});window.PAYROLL_CONFIG=cfg;cfgRenderTax();
-}
-function cfgDeleteTaxBracket(i){
-  var cfg=window.PAYROLL_CONFIG||{};(cfg.taxBrackets||[]).splice(i,1);cfgRenderTax();
-}
-function cfgSaveTax(){
-  var cfg=window.PAYROLL_CONFIG||{};
-  (cfg.taxBrackets||[]).forEach(function(b,i){
-    var u=document.getElementById('cfgTax_'+i+'_u');
-    var r=document.getElementById('cfgTax_'+i+'_r');
-    if(u)b.upTo=u.value===''?null:+(u.value);
-    if(r)b.rate=+(r.value)||0;
-  });
-  cfgPersist();
-  var msg=document.getElementById('cfgTaxMsg');if(msg){msg.textContent='\u2713';setTimeout(function(){msg.textContent='';},2000);}
-}
-async function cfgSaveUnit(){
-  var el=document.getElementById('cfgCrUnit');if(!el)return;
-  (window.PAYROLL_CONFIG=window.PAYROLL_CONFIG||{}).personuafslattrUnit=+(el.value)||68681;
-  await cfgPersist();
-  var msg=document.getElementById('cfgCrMsg');if(msg){msg.textContent='\u2713';setTimeout(function(){msg.textContent='';},2000);}
-}
-async function cfgPersist(){
-  try{await apiPost('saveConfig',{payrollConfig:JSON.stringify(window.PAYROLL_CONFIG||{})});showToast(s('toast.saved'));}
-  catch(e){showToast(e.message,'err');}
-}
-function cfgRenderFunds(){
-  var cfg=window.PAYROLL_CONFIG||{};var funds=cfg.pensionFunds||[];
-  var div=document.getElementById('cfgFundsPanel');if(!div)return;
-  div.innerHTML=funds.map(function(fund,fi){
-    var h='<div class="cfg-fund"><div class="cfg-fund-header">';
-    h+='<input id="cfgF_'+fi+'_n"  type="text" value="'+_e(fund.name||'')+'" placeholder="'+s('payroll.fundName')+'" style="flex:1;font-size:12px;font-weight:600">';
-    h+='<input id="cfgF_'+fi+'_ne" type="text" value="'+_e(fund.nameEN||'')+'" placeholder="'+s('payroll.fundNameEN')+'" style="flex:1;font-size:12px">';
-    h+='<button class="btn-del" onclick="cfgRemoveFund('+fi+')">'+s('payroll.deleteEntry')+'</button></div>';
-    h+='<div class="cfg-line-hdr"><span data-s="payroll.lineLabel"></span><span data-s="payroll.lineLabelEN"></span><span data-s="payroll.empRate"></span><span data-s="payroll.emprRate"></span><span></span></div>';
-    (fund.lines||[]).forEach(function(l,li){
-      h+='<div class="cfg-line-row">';
-      h+='<input id="cfgF_'+fi+'_'+li+'_l"  type="text"   value="'+_e(l.label||'')+'"  style="font-size:11px">';
-      h+='<input id="cfgF_'+fi+'_'+li+'_le" type="text"   value="'+_e(l.labelEN||'')+'" style="font-size:11px">';
-      h+='<input id="cfgF_'+fi+'_'+li+'_e"  type="number" value="'+((l.employeeRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
-      h+='<input id="cfgF_'+fi+'_'+li+'_er" type="number" value="'+((l.employerRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
-      h+='<button class="btn-del" onclick="cfgRemoveFundLine('+fi+','+li+')">\u00d7</button></div>';
-    });
-    h+='<div style="display:flex;gap:8px;margin-top:6px">';
-    h+='<button class="btn-link" onclick="cfgAddFundLine('+fi+')">+ '+s('payroll.addLine')+'</button>';
-    h+='<button class="btn btn-secondary" style="font-size:10px" onclick="cfgSaveFund('+fi+')">'+s('btn.save')+'</button></div></div>';
-    return h;
-  }).join('');
-  applyStrings(div);
-}
-function cfgAddFund(){var cfg=window.PAYROLL_CONFIG||{};cfg.pensionFunds=cfg.pensionFunds||[];cfg.pensionFunds.push({id:'fund_'+Date.now().toString(36),name:'',nameEN:'',lines:[{id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0.04,employerRate:0.115}]});cfgRenderFunds();}
-function cfgRemoveFund(fi){var cfg=window.PAYROLL_CONFIG||{};if(cfg.pensionFunds)cfg.pensionFunds.splice(fi,1);cfgRenderFunds();cfgPersist();}
-function cfgAddFundLine(fi){var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(!f)return;f.lines=f.lines||[];f.lines.push({id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0,employerRate:0});cfgRenderFunds();}
-function cfgRemoveFundLine(fi,li){var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(f)f.lines.splice(li,1);cfgRenderFunds();}
-function cfgSaveFund(fi){
-  var cfg=window.PAYROLL_CONFIG||{};var f=(cfg.pensionFunds||[])[fi];if(!f)return;
-  var n=document.getElementById('cfgF_'+fi+'_n'),ne=document.getElementById('cfgF_'+fi+'_ne');
-  if(n)f.name=n.value.trim();if(ne)f.nameEN=ne.value.trim();
-  (f.lines||[]).forEach(function(l,li){
-    var el=document.getElementById('cfgF_'+fi+'_'+li+'_l');
-    var ele=document.getElementById('cfgF_'+fi+'_'+li+'_le');
-    var ee=document.getElementById('cfgF_'+fi+'_'+li+'_e');
-    var er=document.getElementById('cfgF_'+fi+'_'+li+'_er');
-    if(el)l.label=el.value.trim();if(ele)l.labelEN=ele.value.trim();
-    if(ee)l.employeeRate=(+(ee.value)||0)/100;if(er)l.employerRate=(+(er.value)||0)/100;
-  });
-  cfgPersist();
-}
-function cfgRenderUnions(){
-  var cfg=window.PAYROLL_CONFIG||{};var unions=cfg.unions||[];
-  var div=document.getElementById('cfgUnionsPanel');if(!div)return;
-  div.innerHTML=unions.map(function(union,ui){
-    var h='<div class="cfg-union"><div class="cfg-union-header">';
-    h+='<input id="cfgU_'+ui+'_n"  type="text" value="'+_e(union.name||'')+'" placeholder="'+s('payroll.unionName')+'" style="flex:1;font-size:12px;font-weight:600">';
-    h+='<input id="cfgU_'+ui+'_ne" type="text" value="'+_e(union.nameEN||'')+'" placeholder="'+s('payroll.fundNameEN')+'" style="flex:1;font-size:12px">';
-    h+='<button class="btn-del" onclick="cfgRemoveUnion('+ui+')">'+s('payroll.deleteEntry')+'</button></div>';
-    h+='<div class="cfg-line-hdr"><span data-s="payroll.lineLabel"></span><span data-s="payroll.lineLabelEN"></span><span data-s="payroll.empRate"></span><span data-s="payroll.emprRate"></span><span></span></div>';
-    (union.lines||[]).forEach(function(l,li){
-      h+='<div class="cfg-line-row">';
-      h+='<input id="cfgU_'+ui+'_'+li+'_l"  type="text"   value="'+_e(l.label||'')+'"  style="font-size:11px">';
-      h+='<input id="cfgU_'+ui+'_'+li+'_le" type="text"   value="'+_e(l.labelEN||'')+'" style="font-size:11px">';
-      h+='<input id="cfgU_'+ui+'_'+li+'_e"  type="number" value="'+((l.employeeRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
-      h+='<input id="cfgU_'+ui+'_'+li+'_er" type="number" value="'+((l.employerRate||0)*100).toFixed(2)+'" min="0" max="50" step="0.1" style="font-size:11px">';
-      h+='<button class="btn-del" onclick="cfgRemoveUnionLine('+ui+','+li+')">\u00d7</button></div>';
-    });
-    h+='<div style="display:flex;gap:8px;margin-top:6px">';
-    h+='<button class="btn-link" onclick="cfgAddUnionLine('+ui+')">+ '+s('payroll.addLine')+'</button>';
-    h+='<button class="btn btn-secondary" style="font-size:10px" onclick="cfgSaveUnion('+ui+')">'+s('btn.save')+'</button></div></div>';
-    return h;
-  }).join('');
-  applyStrings(div);
-}
-function cfgAddUnion(){var cfg=window.PAYROLL_CONFIG||{};cfg.unions=cfg.unions||[];cfg.unions.push({id:'union_'+Date.now().toString(36),name:'',nameEN:'',lines:[{id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0,employerRate:0}]});cfgRenderUnions();}
-function cfgRemoveUnion(ui){var cfg=window.PAYROLL_CONFIG||{};if(cfg.unions)cfg.unions.splice(ui,1);cfgRenderUnions();cfgPersist();}
-function cfgAddUnionLine(ui){var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(!u)return;u.lines=u.lines||[];u.lines.push({id:'l_'+Date.now().toString(36),label:'',labelEN:'',employeeRate:0,employerRate:0});cfgRenderUnions();}
-function cfgRemoveUnionLine(ui,li){var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(u)u.lines.splice(li,1);cfgRenderUnions();}
-function cfgSaveUnion(ui){
-  var cfg=window.PAYROLL_CONFIG||{};var u=(cfg.unions||[])[ui];if(!u)return;
-  var n=document.getElementById('cfgU_'+ui+'_n'),ne=document.getElementById('cfgU_'+ui+'_ne');
-  if(n)u.name=n.value.trim();if(ne)u.nameEN=ne.value.trim();
-  (u.lines||[]).forEach(function(l,li){
-    var el=document.getElementById('cfgU_'+ui+'_'+li+'_l');
-    var ele=document.getElementById('cfgU_'+ui+'_'+li+'_le');
-    var ee=document.getElementById('cfgU_'+ui+'_'+li+'_e');
-    var er=document.getElementById('cfgU_'+ui+'_'+li+'_er');
-    if(el)l.label=el.value.trim();if(ele)l.labelEN=ele.value.trim();
-    if(ee)l.employeeRate=(+(ee.value)||0)/100;if(er)l.employerRate=(+(er.value)||0)/100;
-  });
-  cfgPersist();
+    if(!fetchRes.ok)throw new Error('HTTP '+fetchRes.status);
+    setMsg('\u2713 '+s('payroll.exportSent'),'var(--green)');
+    showToast(s('payroll.exportSent'));
+  }catch(e){
+    setMsg(s('payroll.exportFailed')+': '+e.message,'var(--red)');
+    showToast(s('payroll.exportFailed')+': '+e.message,'err');
+  }
 }
 
 /* == Init == */

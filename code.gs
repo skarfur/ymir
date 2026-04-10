@@ -32,6 +32,7 @@ const TABS_ = {
   reservationSlots: 'reservation_slots',
   crews: 'crews',
   crewInvites: 'crew_invites',
+  passportSignoffs: 'passport_signoffs',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -347,6 +348,7 @@ function doPost(e) {
 function route_(action, b) {
   switch (action) {
     case 'validateMember': return validateMember_(b.kennitala);
+    case 'validateWard': return validateWard_(b);
     case 'getMembers': return getMembers_(b);
     case 'saveMember': return saveMember_(b);
     case 'deleteMember': return deleteMember_(b.id);
@@ -429,6 +431,12 @@ function route_(action, b) {
     case 'inviteToCrew':          return inviteToCrew_(b);
     case 'respondCrewInvite':     return respondCrewInvite_(b);
     case 'getCrewInvites':        return getCrewInvites_(b);
+    // ── ROWING PASSPORT ───────────────────────────────────────────────────────
+    case 'getRowingPassport':       return getRowingPassport_(b);
+    case 'saveRowingPassportDef':   return saveRowingPassportDef_(b);
+    case 'signPassportItem':        return signPassportItem_(b);
+    case 'revokePassportSignoff':   return revokePassportSignoff_(b);
+    case 'importRowingPassportCsv': return importRowingPassportCsv_(b);
     case 'saveCaptainBio': return saveCaptainBio_(b);
     case 'uploadHeadshot': return uploadHeadshot_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
@@ -468,25 +476,74 @@ function route_(action, b) {
 // MEMBERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function _publicMember_(m) {
+  return {
+    id: m.id, kennitala: m.kennitala, name: m.name, role: m.role,
+    email: m.email || '', phone: m.phone || '',
+    birthYear: m.birthYear || '', isMinor: bool_(m.isMinor),
+    guardianName: m.guardianName || '', guardianKennitala: m.guardianKennitala || '',
+    guardianPhone: m.guardianPhone || '',
+    certifications: m.certifications || '',
+    initials: m.initials || extractInitials_(m.name),
+    preferences: m.preferences || '{}',
+    bio: m.bio || '',
+    headshotUrl: m.headshotUrl || '',
+  };
+}
+
+// Find all active minor members whose guardianKennitala matches the given kennitala.
+// Returns a trimmed list with just enough info for the account picker.
+function _findWardsOf_(guardianKt) {
+  const kt = String(guardianKt || '').trim();
+  if (!kt) return [];
+  const all = readAll_('members');
+  return all.filter(function(r) {
+    return bool_(r.active) && bool_(r.isMinor) &&
+           String(r.guardianKennitala || '').trim() === kt;
+  }).map(function(r) {
+    return {
+      id: r.id,
+      kennitala: r.kennitala,
+      name: r.name,
+      birthYear: r.birthYear || '',
+    };
+  });
+}
+
 function validateMember_(kennitala) {
   if (!kennitala) return failJ('kennitala required');
   const m = findOne_('members', 'kennitala', String(kennitala).trim());
   if (!m) return failJ('Not found', 404);
   if (!bool_(m.active)) return failJ('Inactive account', 403);
+  // If this member is not themselves a minor, surface any wards they guard
+  // so the login UI can offer account switching.
+  const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
   return okJ({
-    member: {
-      id: m.id, kennitala: m.kennitala, name: m.name, role: m.role,
-      email: m.email || '', phone: m.phone || '',
-      birthYear: m.birthYear || '', isMinor: bool_(m.isMinor),
-      guardianName: m.guardianName || '', guardianKennitala: m.guardianKennitala || '',
-      guardianPhone: m.guardianPhone || '',
-      certifications: m.certifications || '',
-      initials: m.initials || extractInitials_(m.name),
-      preferences: m.preferences || '{}',
-      bio: m.bio || '',
-      headshotUrl: m.headshotUrl || '',
-    }
+    member: _publicMember_(m),
+    wards: wards,
   });
+}
+
+// Return a ward's full member object, but only if `guardianKennitala` is
+// actually listed as the guardian on the ward's member record and the ward
+// is still flagged as a minor and active. Requires the caller to prove the
+// guardian relationship by passing their own kennitala, which must match.
+function validateWard_(b) {
+  const guardianKt = String((b && b.guardianKennitala) || '').trim();
+  const wardKt     = String((b && b.wardKennitala) || '').trim();
+  if (!guardianKt || !wardKt) return failJ('guardianKennitala and wardKennitala required');
+  const guardian = findOne_('members', 'kennitala', guardianKt);
+  if (!guardian) return failJ('Guardian not found', 404);
+  if (!bool_(guardian.active)) return failJ('Inactive account', 403);
+  if (bool_(guardian.isMinor)) return failJ('Minors cannot act as guardians', 403);
+  const ward = findOne_('members', 'kennitala', wardKt);
+  if (!ward) return failJ('Ward not found', 404);
+  if (!bool_(ward.active)) return failJ('Inactive account', 403);
+  if (!bool_(ward.isMinor)) return failJ('Target is not a minor', 403);
+  if (String(ward.guardianKennitala || '').trim() !== guardianKt) {
+    return failJ('Not authorised for this ward', 403);
+  }
+  return okJ({ member: _publicMember_(ward) });
 }
 
 function getMembers_(params) {
@@ -1290,7 +1347,12 @@ function getConfig_() {
     keelboatCalendarId: getConfigValue_('keelboatCalendarId', cfgMap) || '',
     keelboatCalendarSyncActive: getConfigValue_('keelboatCalendarSyncActive', cfgMap) === 'true',
   };
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars };
+  let rowingPassport = null;
+  try {
+    const rpRaw = getConfigValue_('rowingPassport', cfgMap);
+    if (rpRaw) rowingPassport = JSON.parse(rpRaw);
+  } catch (e) {}
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport };
   cPut_('config', config);
   return okJ(config);
 }
@@ -1341,6 +1403,10 @@ function saveConfig_(b) {
   }
   if (b.boatCategories)    { setConfigSheetValue_('boatCategories',    JSON.stringify(b.boatCategories));    }
 
+  if (b.rowingPassport !== undefined) {
+    setConfigSheetValue_('rowingPassport', JSON.stringify(b.rowingPassport));
+    saved.rowingPassport = true;
+  }
   if (b.activityTypes) { setConfigSheetValue_('activity_types', JSON.stringify(b.activityTypes)); saved.activityTypes = true; }
   if (b.allowBreaks !== undefined) { setConfigSheetValue_('allowBreaks', b.allowBreaks ? 'true' : 'false'); saved.allowBreaks = true; }
   cDel_('config');
@@ -1606,7 +1672,9 @@ function createIncident_(b) {
 
 function resolveIncident_(b) {
   if (!b.id) return failJ('id required');
-  updateRow_('incidents', 'id', b.id, { resolved: b.resolved, resolvedAt: b.resolvedAt || '' });
+  const patch = { resolved: b.resolved, resolvedAt: b.resolvedAt || '' };
+  if (b.status !== undefined) patch.status = b.status;
+  updateRow_('incidents', 'id', b.id, patch);
   cDel_('incidents'); return okJ({ updated: true });
 }
 
@@ -2077,9 +2145,18 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
       var start = gcalParseDateTime_(date, a.start || '00:00');
       var end = gcalParseDateTime_(date, a.end || a.start || '00:00');
       if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
-      var title = (a.name || t.name) + (a.type ? (' (' + a.type + ')') : '');
+      var typeLabel = t.nameIS || t.name || '';
+      var subLabel = '';
+      if (a.subtypeId) {
+        var subs = Array.isArray(t.subtypes) ? t.subtypes : [];
+        var st = subs.find(function (x) { return x && x.id === a.subtypeId; });
+        if (st) subLabel = st.nameIS || st.name || '';
+      }
+      if (!subLabel) subLabel = a.subtypeName || '';
+      var baseName = a.name || typeLabel;
+      var title = baseName + (typeLabel ? (' (' + typeLabel + ')') : '');
       var desc = 'activity:' + a.id
-        + (a.subtypeName ? ('\n' + a.subtypeName) : '')
+        + (subLabel ? ('\n' + subLabel) : '')
         + (a.participants ? ('\nparticipants: ' + a.participants) : '')
         + (a.notes ? ('\n' + a.notes) : '');
       var newId = gcalUpsertEvent_(t.calendarId, prevId, title, start, end, desc, 'upsert');
@@ -2737,6 +2814,12 @@ function respondConfirmation_(b) {
   if (b.response === 'rejected' && b.rejectComment) updates.rejectComment = b.rejectComment;
   updateRow_('tripConfirmations', 'id', b.id, updates);
 
+  // On reject — undo any speculative state recorded by the skipper
+  if (b.response === 'rejected') {
+    applyRejectionCleanup_(row, ts);
+    return okJ({ updated: true, status: b.response });
+  }
+
   // On confirm — create the trip record
   if (b.response === 'confirmed') {
     var type = row.type;
@@ -2913,6 +2996,160 @@ function tryAutoVerify_(conf, ts) {
       });
     }
   });
+}
+
+// ── Reject cleanup: roll back skipper-side state when a handshake is rejected
+//
+// helm     → clear the helm flag from the skipper's crewNames entry for the
+//            rejecting member, and from the crew member's own trip row.
+// student  → same, but for the student flag.
+// crew_assigned → the rejecting member never agreed to come along: drop them
+//            from the skipper's crewNames JSON and decrement the trip's crew
+//            count (never below 1, and never below the number of remaining
+//            named/linked crew members).  The rejection record itself stays
+//            visible in the skipper's outgoing list so the skipper can review
+//            and acknowledge the new "number on board" before it's dismissed.
+// crew_join → the skipper said no to a join request: nothing to undo, since
+//            no trip row was created yet.
+// helm/student rejections silently roll back the metadata; nothing else for
+// the skipper to confirm.
+function applyRejectionCleanup_(row, ts) {
+  var type = row.type;
+  if (type === 'helm' || type === 'student') {
+    var flag = type;          // 'helm' or 'student'
+    var memberKt = row.toKennitala; // the rejecting crew member
+    // 1) Clear the flag on the skipper's trip crewNames JSON
+    var skipperTrip = findSkipperTripForConf_(row);
+    if (skipperTrip) {
+      clearCrewNamesFlag_(skipperTrip, memberKt, flag, ts);
+    }
+    // 2) Clear the flag on the crew member's own trip row, if one exists
+    var crewTrips = findCrewMemberTrips_(memberKt, row);
+    crewTrips.forEach(function(t) {
+      if (t[flag] && String(t[flag]) !== 'false') {
+        var u = { updatedAt: ts };
+        u[flag] = false;
+        updateRow_('trips', 'id', t.id, u);
+      }
+    });
+    return;
+  }
+
+  if (type === 'crew_assigned') {
+    // Skipper had added this person; they declined.  Pull them out of the
+    // skipper's crewNames JSON and drop the crew count by one (within bounds).
+    // The skipper's trip may not exist yet (rejection arrived before check-in)
+    // — in that case, update the checkout row instead so the skipper sees the
+    // adjusted count when they return.
+    var rejectingKt = row.toKennitala;
+    var skipperTrip2 = findSkipperTripForConf_(row);
+    if (skipperTrip2) {
+      // Count crew members that still have a linked trip row, so we never drop
+      // the trip's crew count below the number of people actually on board.
+      var linkedCrewCount = readAll_('trips').filter(function(t) {
+        if (String(t.id) === String(skipperTrip2.id)) return false;
+        return (String(t.linkedTripId) === String(skipperTrip2.id)) ||
+          (skipperTrip2.linkedCheckoutId && String(t.linkedCheckoutId) === String(skipperTrip2.linkedCheckoutId));
+      }).length;
+      var minCrew = Math.max(1, linkedCrewCount + 1); // +1 for the skipper
+      removeFromCrewNamesAndDecrement_('trips', skipperTrip2, rejectingKt, minCrew, ts);
+    }
+    if (row.linkedCheckoutId) {
+      var co = findOne_('checkouts', 'id', row.linkedCheckoutId);
+      if (co && (co.status === 'out' || !co.status)) {
+        // Pre-checkin: bring the checkout row into sync as well.
+        removeFromCrewNamesAndDecrement_('checkouts', co, rejectingKt, 1, ts);
+      }
+    }
+    return;
+  }
+
+  // crew_join / verify rejection: nothing to roll back.
+}
+
+// Shared helper used by crew_assigned rejection cleanup: remove a crew member
+// from a row's crewNames JSON and decrement its crew count (subject to a
+// minimum so we never drop below the number of crew already on board).
+function removeFromCrewNamesAndDecrement_(table, rowObj, rejectingKt, minCrew, ts) {
+  var cn = parseCrewNames_(rowObj.crewNames);
+  var nextCn = cn.filter(function(entry) {
+    return !(entry.kennitala && String(entry.kennitala) === String(rejectingKt));
+  });
+  var changed = nextCn.length !== cn.length;
+  var curCrew = parseInt(rowObj.crew) || 1;
+  var newCrew = Math.max(minCrew || 1, curCrew - 1);
+  var updates = {};
+  if (changed) updates.crewNames = JSON.stringify(nextCn);
+  if (newCrew !== curCrew) updates.crew = newCrew;
+  if (table === 'trips' && (changed || newCrew !== curCrew)) updates.updatedAt = ts;
+  if (Object.keys(updates).length) {
+    updateRow_(table, 'id', rowObj.id, updates);
+  }
+}
+
+// Find the skipper's trip row for a confirmation: prefer the explicit tripId
+// (which always points at the skipper trip), then fall back to looking up the
+// captain/skipper trip linked to the same checkout.
+function findSkipperTripForConf_(row) {
+  if (row.tripId) {
+    var byId = findOne_('trips', 'id', row.tripId);
+    if (byId) return byId;
+  }
+  if (row.linkedCheckoutId) {
+    var coTrips = readAll_('trips').filter(function(t) {
+      return String(t.linkedCheckoutId) === String(row.linkedCheckoutId) &&
+        (t.role === 'skipper' || t.role === 'captain');
+    });
+    if (coTrips.length) return coTrips[0];
+  }
+  // crew_join: row.fromKennitala is the joiner, row.toKennitala is the skipper
+  if (row.type === 'crew_join' && row.toKennitala) {
+    var byKt = readAll_('trips').filter(function(t) {
+      return String(t.kennitala) === String(row.toKennitala) &&
+        (row.linkedCheckoutId ? String(t.linkedCheckoutId) === String(row.linkedCheckoutId)
+                              : (row.tripId && String(t.id) === String(row.tripId)));
+    });
+    if (byKt.length) return byKt[0];
+  }
+  return null;
+}
+
+// Find any trip rows belonging to the rejecting crew member that are linked
+// to the same checkout/trip as the confirmation.
+function findCrewMemberTrips_(kt, row) {
+  if (!kt) return [];
+  return readAll_('trips').filter(function(t) {
+    if (String(t.kennitala) !== String(kt)) return false;
+    if (row.linkedCheckoutId && String(t.linkedCheckoutId) === String(row.linkedCheckoutId)) return true;
+    if (row.tripId && String(t.linkedTripId) === String(row.tripId)) return true;
+    return false;
+  });
+}
+
+function parseCrewNames_(raw) {
+  if (!raw) return [];
+  if (typeof raw !== 'string') return Array.isArray(raw) ? raw : [];
+  try { var p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (e) { return []; }
+}
+
+// Clear a flag (helm/student) from the skipper's crewNames JSON entry that
+// matches the given kennitala.  No-op if the entry isn't there or already false.
+function clearCrewNamesFlag_(trip, kt, flag, ts) {
+  if (!kt || !trip) return;
+  var cn = parseCrewNames_(trip.crewNames);
+  var changed = false;
+  cn.forEach(function(entry) {
+    if (entry.kennitala && String(entry.kennitala) === String(kt) && entry[flag]) {
+      entry[flag] = false;
+      changed = true;
+    }
+  });
+  if (changed) {
+    updateRow_('trips', 'id', trip.id, {
+      crewNames: JSON.stringify(cn),
+      updatedAt: ts,
+    });
+  }
 }
 
 // ── Request verification (creates a 'verify' handshake to staff) ────────────
@@ -4405,6 +4642,8 @@ function publicDashboard_() {
 
   // ── Captains ──
   var members = readAll_('members').filter(function(m) { return m.active === true || m.active === 'TRUE' || m.active === 'true'; });
+  // Active members count excludes guest entries
+  var activeMembersCount = members.filter(function(m) { return m.role !== 'guest'; }).length;
   var captains = [];
   var scriptUrl = ScriptApp.getService().getUrl();
 
@@ -4505,6 +4744,7 @@ function publicDashboard_() {
     ytd: { totalTrips: totalTrips, totalHours: Math.round(totalHours * 10) / 10, byCategory: byCategory },
     locations: locData,
     onWater: { boatCount: boatCount, peopleCount: peopleCount, boats: onWaterBoats },
+    activeMembers: activeMembersCount,
     captains: captains,
     boatCategories: boatCategories.map(function(c) { return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || '', emoji: c.emoji || '' }; }),
     staffStatus: staffStatus,
@@ -4987,6 +5227,12 @@ var SCHEMA_ = {
     'toKennitala','toName',
     'status','createdAt','respondedAt',
   ],
+  passport_signoffs: [
+    'id','memberId','passportId','itemId',
+    'signerId','signerName','signerRole',
+    'timestamp','note',
+    'revokedBy','revokedAt','revokeReason',
+  ],
   config: ['key','value'],
   employees: [
     'id','kt','name','title','bankAccount','orlofsreikningur',
@@ -5199,5 +5445,439 @@ function addReservationAndCrewTabs() {
   Logger.log('crews tab ready');
   ensureTab_(ss, 'crew_invites', SCHEMA_.crew_invites);
   Logger.log('crew_invites tab ready');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROWING PASSPORT
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Definition lives in config key 'rowingPassport' (JSON). Sign-offs live in the
+// passport_signoffs sheet (append-only with revocation columns). A passport item
+// is "complete" when it has >= requiredSigs (default 2) non-revoked signatures
+// from distinct signers. When ALL non-retired items in the rower passport are
+// complete, the member is auto-promoted from rowing_division/restricted ->
+// rowing_division/released.
+//
+// Stable identifiers: passport.id ('rower'), category.id, item.id. Labels are
+// editable; ids must never change once a sign-off references them.
+
+function getRowingPassport_(b) {
+  // Returns: { definition, progress (if memberId provided) }
+  // If no definition has been configured yet, returns an empty one — the
+  // admin CSV importer / inline editor is the only way to populate it.
+  const cfgMap = getConfigMap_();
+  let def = null;
+  try {
+    const raw = getConfigValue_('rowingPassport', cfgMap);
+    if (raw) def = JSON.parse(raw);
+  } catch (e) {}
+  if (!def) def = { version: 1, passports: [] };
+
+  const result = { definition: def };
+  if (b && b.memberId) {
+    result.progress = computePassportProgress_(b.memberId, def);
+  }
+  return okJ(result);
+}
+
+function computePassportProgress_(memberId, def) {
+  const all = readAll_('passportSignoffs') || [];
+  const mine = all.filter(r => String(r.memberId) === String(memberId) && !r.revokedAt);
+  // Group by passportId + itemId
+  const byKey = {};
+  mine.forEach(r => {
+    const k = (r.passportId || 'rower') + '::' + r.itemId;
+    if (!byKey[k]) byKey[k] = [];
+    byKey[k].push({
+      id: r.id, signerId: r.signerId, signerName: r.signerName,
+      signerRole: r.signerRole, timestamp: r.timestamp, note: r.note || '',
+    });
+  });
+  const out = { passports: {} };
+  (def.passports || []).forEach(p => {
+    const required = Number(p.requiredSigs || 2);
+    const items = {};
+    let completeCount = 0, totalCount = 0;
+    (p.categories || []).forEach(cat => {
+      (cat.items || []).forEach(it => {
+        if (it.retired) return;
+        totalCount++;
+        const sigs = byKey[p.id + '::' + it.id] || [];
+        const distinct = {};
+        sigs.forEach(s => { if (s.signerId) distinct[s.signerId] = s; });
+        const distinctCount = Object.keys(distinct).length;
+        const complete = distinctCount >= required;
+        if (complete) completeCount++;
+        items[it.id] = { signoffs: sigs, complete, distinctSigners: distinctCount, required };
+      });
+    });
+    out.passports[p.id] = { items, totalCount, completeCount, percent: totalCount ? Math.round(100 * completeCount / totalCount) : 0 };
+  });
+  return out;
+}
+
+function signPassportItem_(b) {
+  if (!b.memberId)  return failJ('memberId required');
+  if (!b.itemId)    return failJ('itemId required');
+  if (!b.signerId)  return failJ('signerId required');
+  const passportId = b.passportId || 'rower';
+
+  // Verify signer is staff (or released rower) — reuse existing signer record
+  const signer = readAll_('members').find(m => String(m.id) === String(b.signerId) || String(m.kennitala) === String(b.signerId));
+  if (!signer) return failJ('Signer not found', 404);
+  const signerRole = (signer.role || '').toString().toLowerCase();
+  let signerCerts = [];
+  try { signerCerts = JSON.parse(signer.certifications || '[]'); } catch (e) {}
+  const isStaff = signerRole === 'staff' || signerRole === 'admin' || signerRole === 'manager';
+  const isReleased = signerCerts.some(c => c.certId === 'rowing_division' && (c.sub === 'released' || c.sub === 'coxswain'));
+  if (!isStaff && !isReleased) return failJ('Signer not authorised to sign passport items', 403);
+
+  // Refuse self-sign
+  if (String(signer.id) === String(b.memberId) || String(signer.kennitala) === String(b.memberId)) {
+    return failJ('Cannot sign your own passport', 403);
+  }
+
+  // Verify item exists in current definition
+  const cfgMap = getConfigMap_();
+  let def = null;
+  try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) def = JSON.parse(raw); } catch (e) {}
+  if (!def) return failJ('No rowing passport has been configured yet', 404);
+  const passport = (def.passports || []).find(p => p.id === passportId);
+  if (!passport) return failJ('Unknown passport: ' + passportId, 404);
+  let item = null;
+  (passport.categories || []).forEach(c => (c.items || []).forEach(i => { if (i.id === b.itemId) item = i; }));
+  if (!item) return failJ('Unknown item: ' + b.itemId, 404);
+  if (item.retired) return failJ('Item retired', 410);
+
+  // Refuse duplicate sign by same signer for same item (non-revoked)
+  const existing = (readAll_('passportSignoffs') || [])
+    .filter(r => !r.revokedAt && String(r.memberId) === String(b.memberId)
+              && r.passportId === passportId && r.itemId === b.itemId
+              && String(r.signerId) === String(signer.id));
+  if (existing.length) return failJ('You have already signed this item', 409);
+
+  insertRow_('passportSignoffs', {
+    id: uid_(),
+    memberId: b.memberId,
+    passportId: passportId,
+    itemId: b.itemId,
+    signerId: signer.id,
+    signerName: signer.name || '',
+    signerRole: isStaff ? 'staff' : 'released_rower',
+    timestamp: now_(),
+    note: b.note || '',
+    revokedBy: '', revokedAt: '', revokeReason: '',
+  });
+
+  // Recompute progress and auto-promote if complete
+  const progress = computePassportProgress_(b.memberId, def);
+  let promoted = false;
+  const pProg = progress.passports[passportId];
+  if (pProg && pProg.totalCount > 0 && pProg.completeCount === pProg.totalCount) {
+    promoted = maybePromoteRower_(b.memberId, passport, signer.name || 'passport');
+  }
+  return okJ({ saved: true, progress, promoted });
+}
+
+function revokePassportSignoff_(b) {
+  if (!b.signoffId) return failJ('signoffId required');
+  const ok = updateRow_('passportSignoffs', 'id', b.signoffId, {
+    revokedBy: b.revokedBy || '',
+    revokedAt: now_(),
+    revokeReason: b.reason || '',
+  });
+  if (!ok) return failJ('Sign-off not found', 404);
+  return okJ({ revoked: true });
+}
+
+function maybePromoteRower_(memberId, passport, byName) {
+  const member = readAll_('members').find(m => String(m.id) === String(memberId));
+  if (!member) return false;
+  let certs = [];
+  try { certs = JSON.parse(member.certifications || '[]'); } catch (e) {}
+  if (!Array.isArray(certs)) certs = [];
+  const certId = passport.promoteCertId || 'rowing_division';
+  const toSub  = passport.toSub || 'released';
+  const fromSub = passport.fromSub || 'restricted';
+  const idx = certs.findIndex(c => c.certId === certId);
+  if (idx >= 0) {
+    if (certs[idx].sub === toSub || certs[idx].sub === 'coxswain') return false; // already at/above
+    certs[idx].sub = toSub;
+    certs[idx].verifiedBy = byName;
+    certs[idx].verifiedAt = now_();
+  } else {
+    certs.push({
+      certId: certId, sub: toSub, category: 'Club Endorsement',
+      assignedBy: byName, assignedAt: now_(), verifiedBy: byName, verifiedAt: now_(),
+      issuingAuthority: '', expires: false, expiresAt: '',
+      description: 'Auto-promoted on passport completion',
+    });
+  }
+  // Drop a stale 'restricted' record if duplicated
+  certs = certs.filter((c, i) => !(c.certId === certId && c.sub === fromSub && i !== idx));
+  updateRow_('members', 'id', memberId, { certifications: JSON.stringify(certs), updatedAt: now_() });
+  cDel_('members');
+  return true;
+}
+
+function saveRowingPassportDef_(b) {
+  if (!b.definition) return failJ('definition required');
+  // Minimal shape validation
+  const def = b.definition;
+  if (!Array.isArray(def.passports)) return failJ('definition.passports must be array');
+  setConfigSheetValue_('rowingPassport', JSON.stringify(def));
+  cDel_('config');
+  return okJ({ saved: true });
+}
+
+function _slugify_(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function importRowingPassportCsv_(b) {
+  // CSV columns (headers, order-independent):
+  //   passport_id (optional, defaults 'rower')
+  //   category_id (optional — auto-slugged from category_label_en if blank)
+  //   category_label_en, category_label_is (label_is optional)
+  //   item_id (optional — reused from existing item with same label_en, else slugged)
+  //   assessment ('theory' | 'practical', defaults 'practical')
+  //   item_label_en (required), item_label_is (optional)
+  //   description_en, description_is (both optional)
+  //
+  // Only item_label_en is strictly required per row. Existing items not
+  // present in the CSV are marked retired (not deleted).
+  if (!b.csv) return failJ('csv required');
+  const parsed = parsePassportCsv_(b.csv);
+  const rows = parsed.rows;
+  if (!rows.length) {
+    const hdrs = parsed.headers || [];
+    if (!hdrs.length) {
+      return failJ('CSV is empty — expected a header row and at least one data row.');
+    }
+    const needed = ['item_id', 'item_label_en'];
+    const missing = needed.filter(h => hdrs.indexOf(h) < 0);
+    if (missing.length === needed.length) {
+      return failJ('CSV headers not recognised. Detected: [' + hdrs.join(', ') + ']. Expected at least one of: item_id, item_label_en. Column names must be lowercase with underscores (e.g. item_label_en, not "Item Label EN").');
+    }
+    return failJ('CSV has no data rows with an item_id or item_label_en. Detected headers: [' + hdrs.join(', ') + '].');
+  }
+
+  // Load current def so we can (a) preserve passport-level fields,
+  // (b) look up existing ids by label for rows that omit item_id,
+  // (c) retire items missing from the new import.
+  const cfgMap = getConfigMap_();
+  let current = null;
+  try { const raw = getConfigValue_('rowingPassport', cfgMap); if (raw) current = JSON.parse(raw); } catch (e) {}
+  if (!current) current = { version: 0, passports: [] };
+
+  // Build a lookup: (passportId|categoryId|lowercased labelEn) → existing itemId
+  // Also index by category labelEn → categoryId for category auto-resolution.
+  const existingItemByLabel = {};
+  const existingCatByLabel = {};
+  (current.passports || []).forEach(p => {
+    (p.categories || []).forEach(c => {
+      const catLabelKey = (p.id + '|' + _slugify_(c.name && c.name.EN || c.id));
+      existingCatByLabel[catLabelKey] = c.id;
+      (c.items || []).forEach(i => {
+        const itemLabelKey = (p.id + '|' + c.id + '|' + String((i.name && i.name.EN) || '').toLowerCase().trim());
+        if (itemLabelKey.split('|')[2]) existingItemByLabel[itemLabelKey] = i.id;
+      });
+    });
+  });
+
+  // Build new shape from CSV
+  const passports = {};
+  const errors = [];
+  rows.forEach((r, rowIdx) => {
+    const lineNo = rowIdx + 2; // +1 header, +1 1-indexed
+    const pid = r.passport_id || 'rower';
+    if (!passports[pid]) {
+      const existing = (current.passports || []).find(p => p.id === pid);
+      passports[pid] = existing
+        ? Object.assign({}, existing, { categories: [] })
+        : { id: pid, name: { EN: pid, IS: pid }, promoteCertId: 'rowing_division', fromSub: 'restricted', toSub: 'released', requiredSigs: 2, categories: [] };
+      passports[pid].categories = [];
+      passports[pid]._catIndex = {};
+    }
+    const p = passports[pid];
+
+    // Resolve category_id: explicit → provided; blank → look up by label, else slug
+    let catId = (r.category_id || '').trim();
+    if (!catId) {
+      const catLabelEn = (r.category_label_en || '').trim();
+      if (!catLabelEn) { errors.push('Row ' + lineNo + ': needs either category_id or category_label_en'); return; }
+      const catKey = pid + '|' + _slugify_(catLabelEn);
+      catId = existingCatByLabel[catKey] || _slugify_(catLabelEn);
+    }
+
+    let cat = p._catIndex[catId];
+    if (!cat) {
+      cat = { id: catId, name: { EN: r.category_label_en || catId, IS: r.category_label_is || r.category_label_en || catId }, items: [] };
+      p._catIndex[catId] = cat;
+      p.categories.push(cat);
+    }
+
+    // Item label_en is required
+    const labelEn = (r.item_label_en || '').trim();
+    if (!labelEn && !(r.item_id || '').trim()) {
+      errors.push('Row ' + lineNo + ': needs either item_id or item_label_en');
+      return;
+    }
+
+    // Resolve item_id: explicit → provided; blank → match existing by label, else slug
+    let itemId = (r.item_id || '').trim();
+    if (!itemId) {
+      const itemKey = pid + '|' + catId + '|' + labelEn.toLowerCase();
+      itemId = existingItemByLabel[itemKey] || _slugify_(labelEn);
+    }
+
+    // Detect duplicate item ids within the same category in this CSV
+    if (cat.items.some(i => i.id === itemId)) {
+      errors.push('Row ' + lineNo + ': duplicate item "' + itemId + '" in category "' + catId + '" (give distinct labels or explicit item_id)');
+      return;
+    }
+
+    let assessment = (r.assessment || '').toLowerCase();
+    // Back-compat: accept historical 'theoretical' spelling and normalise to 'theory'.
+    if (assessment === 'theoretical') assessment = 'theory';
+    if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
+    cat.items.push({
+      id: itemId,
+      assessment: assessment,
+      name: { EN: labelEn || itemId, IS: r.item_label_is || labelEn || itemId },
+      desc: { EN: r.description_en || '', IS: r.description_is || '' },
+    });
+  });
+
+  if (errors.length) return failJ('Import errors:\n' + errors.slice(0, 10).join('\n') + (errors.length > 10 ? '\n(+' + (errors.length - 10) + ' more)' : ''));
+
+  // Retire items present in old def but absent from CSV
+  (current.passports || []).forEach(oldP => {
+    const newP = passports[oldP.id];
+    if (!newP) {
+      // Whole passport removed — keep retired copy
+      passports[oldP.id] = Object.assign({}, oldP, {
+        categories: (oldP.categories || []).map(c => Object.assign({}, c, {
+          items: (c.items || []).map(i => Object.assign({}, i, { retired: true })),
+        })),
+      });
+      return;
+    }
+    const newItemIds = new Set();
+    newP.categories.forEach(c => c.items.forEach(i => newItemIds.add(i.id)));
+    (oldP.categories || []).forEach(oldCat => {
+      (oldCat.items || []).forEach(oldItem => {
+        if (!newItemIds.has(oldItem.id)) {
+          // Find or create the matching new category to host the retired item
+          let hostCat = newP.categories.find(c => c.id === oldCat.id);
+          if (!hostCat) {
+            hostCat = { id: oldCat.id, name: oldCat.name, items: [] };
+            newP.categories.push(hostCat);
+          }
+          hostCat.items.push(Object.assign({}, oldItem, { retired: true }));
+        }
+      });
+    });
+  });
+
+  // Strip _catIndex helpers
+  const newDef = { version: (current.version || 0) + 1, passports: Object.values(passports).map(p => {
+    const copy = Object.assign({}, p);
+    delete copy._catIndex;
+    return copy;
+  }) };
+
+  setConfigSheetValue_('rowingPassport', JSON.stringify(newDef));
+  cDel_('config');
+  return okJ({ saved: true, definition: newDef });
+}
+
+function parsePassportCsv_(text) {
+  // Strip UTF-8 BOM if present (common on Excel/Windows exports)
+  let t = String(text || '');
+  if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+  const lines = t.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (!lines.length) return { rows: [], headers: [] };
+  const headers = splitCsvLine_(lines[0]).map(h => h.trim().toLowerCase());
+  const out = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = splitCsvLine_(lines[i]);
+    const row = {};
+    headers.forEach((h, j) => { row[h] = (cells[j] || '').trim(); });
+    // Keep the row if it has *either* an item_id or an item_label_en.
+    // The importer resolves the missing one (id from label or label from id).
+    if (row.item_id || row.item_label_en) out.push(row);
+  }
+  return { rows: out, headers: headers };
+}
+function splitCsvLine_(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { q = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { q = true; }
+      else if (ch === ',' || ch === ';') { out.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+// One-shot migration: convert legacy 'released_rower' cert assignments to
+// rowing_division sub 'released'; ensure all rowing_division members have a sub.
+// Run manually from the Apps Script editor.
+function migrateRowingDivisionToSubcats() {
+  const sheet = getSheet_('members');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const certIdx = headers.indexOf('certifications');
+  if (certIdx < 0) throw new Error('certifications column missing');
+  let changed = 0;
+  for (let r = 1; r < data.length; r++) {
+    const raw = data[r][certIdx];
+    if (!raw) continue;
+    let certs;
+    try { certs = JSON.parse(raw); } catch (e) { continue; }
+    if (!Array.isArray(certs)) continue;
+    const hasReleasedLegacy = certs.some(c => c.certId === 'released_rower');
+    const rdIdx = certs.findIndex(c => c.certId === 'rowing_division');
+    let didChange = false;
+
+    if (rdIdx >= 0 && !certs[rdIdx].sub) {
+      certs[rdIdx].sub = hasReleasedLegacy ? 'released' : 'restricted';
+      didChange = true;
+    } else if (rdIdx < 0 && hasReleasedLegacy) {
+      certs.push({
+        certId: 'rowing_division', sub: 'released', category: 'Club Endorsement',
+        assignedBy: 'migration', assignedAt: now_(), verifiedBy: 'migration', verifiedAt: now_(),
+        issuingAuthority: '', expires: false, expiresAt: '', description: '',
+      });
+      didChange = true;
+    }
+    if (hasReleasedLegacy) {
+      certs = certs.filter(c => c.certId !== 'released_rower');
+      didChange = true;
+    }
+    if (didChange) {
+      sheet.getRange(r + 1, certIdx + 1).setValue(JSON.stringify(certs));
+      changed++;
+    }
+  }
+  cDel_('members');
+  Logger.log('migrated ' + changed + ' members');
+}
+
+function ensurePassportSignoffsTab() {
+  const ss = SpreadsheetApp.openById(SHEET_ID_);
+  ensureTab_(ss, 'passport_signoffs', SCHEMA_.passport_signoffs);
+  Logger.log('passport_signoffs tab ready');
 }
 

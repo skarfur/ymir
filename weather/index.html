@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://script.google.com">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/weather.js"></script>
@@ -30,8 +30,7 @@
 
 /* ── Flag banner ── */
 .flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; }
-.flag-label  { font-size:15px; font-weight:500; }
-.flag-advice { font-size:11px; margin-top:3px; opacity:.85; }
+.flag-advice { font-size:14px; font-weight:500; }
 .flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
 .flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }
 
@@ -125,6 +124,8 @@ svg.chart { width:100%; overflow:visible; display:block; }
       <div class="text-xs text-muted" id="updatedAt">Loading…</div>
     </div>
     <div class="top-bar-right">
+      <button class="btn btn-secondary text-sm" onclick="useMyLocation()" id="geoBtn" style="padding:6px 12px"><span data-s="wx.useMyLocation">📍 My location</span></button>
+      <button class="btn btn-secondary text-sm" onclick="useFossvogur()" id="fossBtn" style="padding:6px 12px;display:none"><span data-s="wx.useFossvogur">⚓ Fossvogur</span></button>
       <button class="btn btn-secondary text-sm" onclick="fetchAll()" id="refreshBtn" style="padding:6px 12px">↻ <span data-s="wx.refresh">Refresh</span></button>
     </div>
   </div>
@@ -144,8 +145,49 @@ buildHeader('weather');
 // LOCATION SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
 const FOSSVOGUR = { lat: 64.1188, lon: -21.9376, label: 'Fossvogur' };
+let CURRENT_LOC = { ...FOSSVOGUR, isDefault: true };
 
+function updateLocDisplay() {
+  document.getElementById('locName').textContent = CURRENT_LOC.label;
+  const latStr = CURRENT_LOC.lat.toFixed(4) + '°' + (CURRENT_LOC.lat >= 0 ? 'N' : 'S');
+  const lonStr = Math.abs(CURRENT_LOC.lon).toFixed(4) + '°' + (CURRENT_LOC.lon >= 0 ? 'E' : 'W');
+  document.getElementById('locCoords').textContent = latStr + ' ' + lonStr;
+  document.getElementById('fossBtn').style.display = CURRENT_LOC.isDefault ? 'none' : '';
+}
 
+function useFossvogur() {
+  CURRENT_LOC = { ...FOSSVOGUR, isDefault: true };
+  updateLocDisplay();
+  fetchAll();
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('updatedAt').textContent = s('wx.geoUnavailable');
+    return;
+  }
+  const btn = document.getElementById('geoBtn');
+  btn.disabled = true;
+  document.getElementById('updatedAt').textContent = s('wx.locating');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      CURRENT_LOC = {
+        lat: +pos.coords.latitude.toFixed(4),
+        lon: +pos.coords.longitude.toFixed(4),
+        label: s('wx.myLocation'),
+        isDefault: false,
+      };
+      updateLocDisplay();
+      btn.disabled = false;
+      fetchAll();
+    },
+    () => {
+      btn.disabled = false;
+      document.getElementById('updatedAt').textContent = s('wx.geoDenied');
+    },
+    { enableHighAccuracy: false, timeout: 10000 }
+  );
+}
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtT(t) { return t ? t.slice(11,16) : '–'; }
@@ -160,7 +202,7 @@ async function fetchAll() {
   document.getElementById('updatedAt').textContent = s('wx.updating');
   try {
     const [{ wx, marine }, cfgRes] = await Promise.all([
-      wxFetch(FOSSVOGUR.lat, FOSSVOGUR.lon),
+      wxFetch(CURRENT_LOC.lat, CURRENT_LOC.lon, { fresh: true, useBirk: CURRENT_LOC.isDefault }),
       apiGet('getConfig').catch(() => null),
     ]);
     const staffStatus = cfgRes?.staffStatus ?? null;
@@ -227,16 +269,15 @@ function render(wx, marine, staffStatus) {
 <div class="flag-banner" onclick="openWfFlagModal()" style="background:${flag.bg};border-color:${flag.border};color:${flag.color};cursor:pointer" title="Tap for score breakdown">
   <div style="font-size:28px;line-height:1">${flag.icon}</div>
   <div class="flex-1">
-    <div class="flag-label">${flag.label}</div>
     <div class="flag-advice">${flag.advice}</div>
     ${reasons.length ? `<div class="flag-reasons">${reasons.map(r=>`<span class="flag-chip" style="color:${SCORE_CONFIG.flags[r.f].color};border-color:${SCORE_CONFIG.flags[r.f].border}">${esc(r.t)}</span>`).join('')}</div>` : ''}
   </div>
 </div>
-${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
+${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
 
 <!-- WIND HERO -->
 <div class="wind-hero">
-  <div class="text-muted mb-12" style="font-size:9px;letter-spacing:1.2px">WIND · BIRK${c._obs_time ? ' · ' + String(c._obs_time).slice(11,16) + ' UTC' : ''}</div>
+  <div class="text-muted mb-12" style="font-size:9px;letter-spacing:1.2px">WIND · ${c._source || 'BIRK'}${c._obs_time ? ' · ' + String(c._obs_time).slice(11,16) + ' UTC' : ''}</div>
   <div class="wind-cols">
     <div class="wind-data">
       <div class="wind-speed-row">
@@ -277,7 +318,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus, null) : ''}
   <div class="info-card">
     <div class="info-lbl">AIR TEMPERATURE</div>
     <div class="info-val">${c.temperature_2m != null ? Math.round(c.temperature_2m) : '–'}<span class="unit">°C</span></div>
-    <div class="info-sub">BIRK station reading</div>
+    <div class="info-sub">${c._source === 'OpenMeteo' ? 'Open-Meteo forecast' : 'BIRK station reading'}</div>
   </div>
   <div class="info-card">
     <div class="info-lbl">SEA TEMPERATURE</div>
@@ -453,7 +494,7 @@ function openWfFlagModal() {
   const title= document.getElementById('wfFlagModalTitle');
   if (!body) return;
   const r = window._wfFlagResult;
-  if (title) title.textContent = (IS && r.flag.labelIS ? r.flag.labelIS : r.flag.label) + ' · ' + r.score + ' pts';
+  if (title) title.textContent = r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts');
   body.innerHTML = typeof wxFlagDetailHtml === 'function'
     ? wxFlagDetailHtml(r, window._wfStaffStatus ?? null, IS ? 'IS' : 'EN')
     : '<div style="color:var(--muted);font-size:12px">Detail unavailable.</div>';

@@ -10,7 +10,7 @@
 <script src="../shared/api.js"></script>
 <script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'EN').toLowerCase()+'.js"><\/script>');</script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
@@ -122,14 +122,6 @@
 .ob-btn-snooze   { background:#e67e22; color:#fff; }
 .ob-btn-silence  { background:#444; color:#ccc; }
 .ob-btn:disabled { opacity:0.5; cursor:default; }
-
-/* ── Flag detail modal ── */
-.flag-level-row { display:flex; align-items:flex-start; gap:14px; padding:12px 0;
-border-bottom:1px solid var(--border)44; }
-.flag-level-row:last-child { border-bottom:none; }
-.flag-icon { font-size:22px; flex-shrink:0; margin-top:1px; }
-.flag-label { font-size:13px; font-weight:500; margin-bottom:3px; }
-.flag-advice { font-size:12px; color:var(--muted); line-height:1.5; }
 
 /* ── Fleet status blocks ────────────────────────────────────────────────── */
 .fleet-status-block { margin-bottom:6px; }
@@ -397,10 +389,11 @@ border-bottom:1px solid var(--border)44; }
       <span class="nc-label" data-s="staff.logbook"></span>
       <span class="nc-desc" data-s="staff.logbookDesc"></span>
     </a>
-    <a href="../incidents/" class="nav-card">
+    <a href="../incidents/" class="nav-card" id="incidentsNavCard" style="position:relative">
       <span class="nc-icon">⚠️</span>
       <span class="nc-label" data-s="staff.incidents"></span>
       <span class="nc-desc" data-s="staff.incidentsDesc"></span>
+      <span id="incidentsNavBadge" class="badge badge-orange hidden" style="position:absolute;top:8px;right:8px;font-size:10px"></span>
     </a>
     <a href="../maintenance/" class="nav-card">
       <span class="nc-icon">🔧</span>
@@ -545,6 +538,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateSelects();
     renderAll();
     renderMaintenance();
+
+    // Incidents needing review / follow-up — badge on nav card
+    apiGet('getIncidents').then(r => {
+      const list = (r && r.incidents) || [];
+      const needs = list.filter(i => {
+        const resolved = i.resolved && i.resolved !== 'false';
+        return !resolved && (i.status === 'review' || i.followUp);
+      }).length;
+      const badge = document.getElementById('incidentsNavBadge');
+      if (badge && needs) { badge.textContent = needs + ' ⚠'; badge.classList.remove('hidden'); badge.title = s('incident.statusReview'); }
+    }).catch(()=>{});
   } catch(e) {
     document.getElementById('activeCheckouts').innerHTML =
       `<div class="empty-note" style="color:var(--red)">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
