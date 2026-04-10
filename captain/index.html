@@ -350,6 +350,127 @@
   </div>
 </div>
 
+<!-- ══ ADD BOAT MODAL (same as admin) ══ -->
+<div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="boatModalTitle" data-s="admin.boatModal.add"></h3>
+      <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
+    </div>
+    <div class="field"><label data-s="lbl.name"></label><input type="text" id="bName"></div>
+    <div class="field"><label data-s="admin.boatCategory"></label>
+      <select id="bCategory" onchange="updateBoatModalFields()"></select>
+    </div>
+    <div class="field">
+      <label data-s="boat.defaultPort">Default port</label>
+      <select id="bDefaultPortId"><option value="" data-s="lbl.noneDash"></option></select>
+    </div>
+    <div class="field">
+      <label id="bRegNoLabel" data-s="boat.registrationNo">Registration no.</label>
+      <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label data-s="boat.typeModel">Type / model</label>
+        <input type="text" id="bTypeModel" placeholder="e.g. Hallberg-Rassy 34">
+      </div>
+      <div class="field">
+        <label data-s="boat.loa">LOA (ft)</label>
+        <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
+      </div>
+    </div>
+    <div class="field">
+      <label data-s="boat.ownership">Ownership</label>
+      <select id="bOwnership" onchange="updateOwnershipFields()">
+        <option value="club" data-s="admin.ownerClub"></option>
+        <option value="private" data-s="admin.ownerPrivate"></option>
+      </select>
+    </div>
+    <div class="field hidden" id="bOwnerField">
+      <label data-s="boat.owner">Owner</label>
+      <div style="position:relative">
+        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="" oninput="searchBoatOwner(this.value)">
+        <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
+        <input type="hidden" id="bOwnerId">
+        <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label data-s="boat.accessMode">Access Mode</label>
+      <select id="bAccessMode" onchange="updateAccessFields()">
+        <option value="free" data-s="boat.accessFree"></option>
+        <option value="controlled" data-s="boat.accessControlled"></option>
+      </select>
+    </div>
+    <div id="bAccessControlledSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+      <div class="field">
+        <label data-s="boat.gateCert">Required Certification</label>
+        <select id="bGateCert"><option value="" data-s="boat.gateCertNone"></option></select>
+      </div>
+      <div class="field">
+        <label data-s="boat.allowlist">Allowed Members</label>
+        <div id="bAllowlistChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+        <div style="position:relative">
+          <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" oninput="searchAllowlistMember(this.value)">
+          <div id="bAllowlistSuggestions" class="suggest-drop" style="position:relative"></div>
+        </div>
+      </div>
+    </div>
+    <div id="bSlotSchedulingSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <input type="checkbox" id="bSlotScheduling" onchange="updateSlotFields()">
+        <label for="bSlotScheduling" style="font-size:11px" data-s="boat.slotScheduling">Enable session slot scheduling</label>
+      </div>
+      <div id="bSlotOptions" class="hidden">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="bAvailOutside" checked>
+          <label for="bAvailOutside" style="font-size:11px" data-s="boat.availOutside">Available outside scheduled slots</label>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px" data-s="boat.availOutsideHint">If unchecked, boat can only be used during booked session slots.</div>
+      </div>
+    </div>
+    <div id="bReservationSection">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.reservations">RESERVATIONS</div>
+      <div id="bReservationList" style="margin-bottom:6px"></div>
+      <div id="bReservationForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+        <div class="field">
+          <label data-s="cq.resMember">Member</label>
+          <div style="position:relative">
+            <input type="text" id="bResMemberSearch" autocomplete="off" placeholder="" oninput="searchBmResMember(this.value)">
+            <div id="bResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+            <input type="hidden" id="bResMemberKt">
+            <div id="bResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label data-s="cq.resStartDate">Start date</label><input type="date" id="bResStart"></div>
+          <div class="field"><label data-s="cq.resEndDate">End date</label><input type="date" id="bResEnd"></div>
+        </div>
+        <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="bResNote"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelBmResForm()" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="saveBmResFromModal()" data-s="btn.save"></button>
+        </div>
+      </div>
+      <div id="bReservationActions"></div>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
+    </div>
+    <div class="field hidden" id="oosReasonField">
+      <label data-s="admin.oosReason"></label><input type="text" id="bOOSReason">
+    </div>
+    <div class="check-row" style="margin-bottom:12px">
+      <input type="checkbox" id="bActive" checked> <label for="bActive" data-s="lbl.active"></label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('boatModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteCqBoat()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveCqBoat()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
@@ -360,6 +481,8 @@ let _boats = [], _locations = [], _allMaint = [], _allTrips = [], _myKeelboatTri
 let _crewConfirmations = [], _verificationRequests = [];
 let _maintFilter = 'open', _maintBoatFilter = '';
 let _cqMembers = [], _cqCertDefs = [], _cqCertCategories = [];
+let _boatCats = [];
+let _editingBoatId = null, _bmEditAllowlist = [];
 
 // Globals required by shared/logbook.js
 var allTrips = [], myTrips = [], allBoats = [], allMembers = [], allLocs = [];
@@ -409,6 +532,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     _cqMembers = (membersRes.members || []).filter(m => m.active !== false && m.active !== 'false');
     _cqCertDefs = certDefsFromConfig(cfgRes.certDefs || []);
     _cqCertCategories = certCategoriesFromConfig(cfgRes.certCategories || []);
+    _boatCats = (cfgRes.boatCategories || []).filter(c => c.active !== false && c.active !== 'false');
+    if (_boatCats.length) registerBoatCats(_boatCats);
     _allMaint  = maintRes.requests || maintRes.items || maintRes.maintenance || [];
     _verificationRequests = verRes.requests || [];
 
@@ -640,7 +765,8 @@ function renderBoats() {
     return false;
   });
 
-  if (!myBoats.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noBoats') + '</div>'; return; }
+  var addBtn = '<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:12px" onclick="openCqBoatModal()">+ ' + esc(s('admin.boatModal.add')) + '</button></div>';
+  if (!myBoats.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noBoats') + '</div>' + addBtn; return; }
   el.innerHTML = myBoats.map(b => {
     var isOos = boolVal(b.oos);
     var portName = '';
@@ -678,7 +804,7 @@ function renderBoats() {
       + '</div>'
       + resHtml
     + '</div>';
-  }).join('');
+  }).join('') + addBtn;
 }
 
 var _portBoatId = null;
@@ -1121,6 +1247,308 @@ async function submitCqCreateSlot() {
     toast(s('slot.createdAndBooked'));
     loadCqSlots();
   } catch(e) { toast(e.message || 'Error', 'err'); }
+}
+
+// ══ ADD BOAT MODAL (captain) ════════════════════════════════════════════════
+function populateCqCategorySelect() {
+  var sorted = _boatCats.slice().sort(function(a, b) {
+    var la = (L === 'IS' && a.labelIS ? a.labelIS : a.labelEN) || '';
+    var lb = (L === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
+    return la.localeCompare(lb);
+  });
+  var opts = sorted.map(function(c) {
+    return '<option value="' + esc(c.key) + '">' + esc(c.emoji || '') + ' ' + esc(L === 'IS' && c.labelIS ? c.labelIS : c.labelEN) + '</option>';
+  }).join('');
+  var bCat = document.getElementById('bCategory');
+  if (bCat) bCat.innerHTML = opts;
+}
+
+function populateCqDefaultPortSelect(selectedId) {
+  var sel = document.getElementById('bDefaultPortId');
+  if (!sel) return;
+  var ports = _locations.filter(function(l) { return l.type === 'port'; });
+  sel.innerHTML = '<option value="">' + s('admin.optionNone') + '</option>'
+    + ports.map(function(p) { return '<option value="' + esc(p.id) + '"' + (p.id === selectedId ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('');
+}
+
+function updateBoatModalFields() {
+  var cat = document.getElementById('bCategory').value;
+  var isKeelboat = cat === 'keelboat';
+  var lbl = document.getElementById('bRegNoLabel');
+  var inp = document.getElementById('bRegNo');
+  lbl.setAttribute('data-s', isKeelboat ? 'boat.registrationNo' : 'boat.sailNo');
+  lbl.textContent = s(isKeelboat ? 'boat.registrationNo' : 'boat.sailNo');
+  inp.placeholder = isKeelboat ? 'e.g. ÍS-342' : 'e.g. 1234';
+}
+
+function updateOwnershipFields() {
+  var isPrivate = document.getElementById('bOwnership').value === 'private';
+  document.getElementById('bOwnerField').classList.toggle('hidden', !isPrivate);
+}
+
+function searchBoatOwner(q) {
+  var drop = document.getElementById('bOwnerSuggestions');
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  var hits = _cqMembers.filter(function(m) { return (m.name || '').toLowerCase().includes(ql); }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectBoatOwner(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectBoatOwner(kt, name) {
+  document.getElementById('bOwnerId').value = kt;
+  document.getElementById('bOwnerSearch').value = '';
+  document.getElementById('bOwnerName').textContent = name;
+  document.getElementById('bOwnerSuggestions').innerHTML = '';
+  document.getElementById('bOwnerSuggestions').style.display = 'none';
+}
+
+function updateAccessFields() {
+  var isControlled = document.getElementById('bAccessMode').value === 'controlled';
+  document.getElementById('bAccessControlledSection').classList.toggle('hidden', !isControlled);
+  document.getElementById('bSlotSchedulingSection').classList.toggle('hidden', !isControlled);
+}
+
+function updateSlotFields() {
+  var enabled = document.getElementById('bSlotScheduling').checked;
+  document.getElementById('bSlotOptions').classList.toggle('hidden', !enabled);
+}
+
+function populateCqGateCertSelect(current) {
+  var sel = document.getElementById('bGateCert');
+  sel.innerHTML = '<option value="">' + esc(s('boat.gateCertNone')) + '</option>';
+  (_cqCertDefs || []).forEach(function(def) {
+    if (!def.subcats || !def.subcats.length) return;
+    def.subcats.forEach(function(sc) {
+      sel.innerHTML += '<option value="' + esc(sc.key) + '"' + (sc.key === current ? ' selected' : '') + '>'
+        + esc((def.name || '') + ' — ' + (sc.label || sc.key)) + '</option>';
+    });
+  });
+}
+
+function renderCqAllowlistChips() {
+  var el = document.getElementById('bAllowlistChips');
+  if (!_bmEditAllowlist.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _bmEditAllowlist.map(function(kt) {
+    var m = _cqMembers.find(function(x) { return x.kennitala === kt; });
+    var name = m ? memberDisplayName(m, _cqMembers) : kt;
+    return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:4px">'
+      + esc(name)
+      + '<span style="cursor:pointer;color:var(--red);font-size:12px" onclick="removeCqFromAllowlist(\'' + esc(kt) + '\')">&times;</span>'
+      + '</span>';
+  }).join('');
+}
+
+function searchAllowlistMember(q) {
+  var drop = document.getElementById('bAllowlistSuggestions');
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  var hits = _cqMembers.filter(function(m) { return (m.name || '').toLowerCase().includes(ql) && _bmEditAllowlist.indexOf(m.kennitala) === -1; }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="addCqToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function addCqToAllowlist(kt) {
+  if (_bmEditAllowlist.indexOf(kt) === -1) _bmEditAllowlist.push(kt);
+  document.getElementById('bAllowlistSearch').value = '';
+  document.getElementById('bAllowlistSuggestions').innerHTML = '';
+  document.getElementById('bAllowlistSuggestions').style.display = 'none';
+  renderCqAllowlistChips();
+}
+
+function removeCqFromAllowlist(kt) {
+  _bmEditAllowlist = _bmEditAllowlist.filter(function(k) { return k !== kt; });
+  renderCqAllowlistChips();
+}
+
+function renderBmReservationList(boat) {
+  var el = document.getElementById('bReservationList');
+  var actEl = document.getElementById('bReservationActions');
+  if (!boat || !boat.reservations || !boat.reservations.length) {
+    el.innerHTML = '';
+    actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showBmResForm()">' + esc(s('boat.addReservation')) + '</button>';
+    return;
+  }
+  el.innerHTML = boat.reservations.map(function(r) {
+    return '<div style="font-size:11px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">'
+      + '<div><strong>' + esc(r.memberName) + '</strong> · ' + esc(r.startDate) + ' → ' + esc(r.endDate)
+      + (r.note ? ' · <span style="color:var(--muted)">' + esc(r.note) + '</span>' : '') + '</div>'
+      + '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeBmResFromModal(\'' + esc(r.id) + '\')">&times;</button>'
+      + '</div>';
+  }).join('');
+  actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showBmResForm()">' + esc(s('boat.addReservation')) + '</button>';
+}
+
+function showBmResForm() {
+  document.getElementById('bReservationForm').classList.remove('hidden');
+}
+
+function cancelBmResForm() {
+  document.getElementById('bReservationForm').classList.add('hidden');
+}
+
+function searchBmResMember(q) {
+  var drop = document.getElementById('bResMemberSuggestions');
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  var hits = _cqMembers.filter(function(m) { return (m.name || '').toLowerCase().includes(ql); }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      + 'onclick="selectBmResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectBmResMember(kt, name) {
+  document.getElementById('bResMemberKt').value = kt;
+  document.getElementById('bResMemberSearch').value = '';
+  document.getElementById('bResMemberName').textContent = name;
+  document.getElementById('bResMemberSuggestions').innerHTML = '';
+  document.getElementById('bResMemberSuggestions').style.display = 'none';
+}
+
+async function saveBmResFromModal() {
+  var boatId = _editingBoatId;
+  if (!boatId) return;
+  var kt = document.getElementById('bResMemberKt').value;
+  var name = document.getElementById('bResMemberName').textContent;
+  var start = document.getElementById('bResStart').value;
+  var end = document.getElementById('bResEnd').value;
+  var note = document.getElementById('bResNote').value.trim();
+  if (!kt || !name || !start || !end) { showToast(s('admin.memberDatesRequired'), 'err'); return; }
+  try {
+    var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var b = _boats.find(function(x) { return x.id === boatId; });
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
+    cancelBmResForm();
+    renderBmReservationList(b);
+    showToast(s('boat.reservationSaved'), 'ok');
+  } catch (e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+async function removeBmResFromModal(resId) {
+  var boatId = _editingBoatId;
+  if (!boatId || !confirm(s('boat.removeReservation') + '?')) return;
+  try {
+    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var b = _boats.find(function(x) { return x.id === boatId; });
+    if (b && res.boat) { b.reservations = res.boat.reservations; }
+    renderBmReservationList(b);
+    showToast(s('boat.reservationRemoved'), 'ok');
+  } catch (e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+function openCqBoatModal(id) {
+  _editingBoatId = id || null;
+  var b = id ? _boats.find(function(x) { return x.id === id; }) : null;
+  document.getElementById('boatModalTitle').textContent = b ? s('admin.boatModal.edit') : s('admin.boatModal.add');
+  populateCqCategorySelect();
+  document.getElementById('bName').value = b ? b.name : '';
+  document.getElementById('bCategory').value = b ? (b.category || _boatCats[0]?.key || 'dinghy') : (_boatCats[0]?.key || 'dinghy');
+  document.getElementById('bOOS').checked = b ? boolVal(b.oos) : false;
+  document.getElementById('bOOSReason').value = b ? (b.oosReason || '') : '';
+  document.getElementById('oosReasonField').classList.toggle('hidden', !b || !boolVal(b.oos));
+  document.getElementById('bActive').checked = b ? boolVal(b.active) : true;
+  document.getElementById('bDeleteBtn').classList.toggle('hidden', !b);
+  document.getElementById('bRegNo').value = b ? (b.registrationNo || '') : '';
+  document.getElementById('bLoa').value = b ? (b.loa || '') : '';
+  document.getElementById('bTypeModel').value = b ? (b.typeModel || '') : '';
+  populateCqDefaultPortSelect(b ? (b.defaultPortId || '') : '');
+  // Ownership — default to private with current user as owner for new boats
+  document.getElementById('bOwnership').value = b ? (b.ownership === 'private' ? 'private' : 'club') : 'private';
+  document.getElementById('bOwnerId').value = b ? (b.ownerId || '') : user.kennitala;
+  document.getElementById('bOwnerSearch').value = '';
+  document.getElementById('bOwnerName').textContent = b && b.ownerName ? b.ownerName : (!b ? user.name : '');
+  document.getElementById('bOwnerSuggestions').innerHTML = '';
+  // Access mode
+  document.getElementById('bAccessMode').value = b && b.accessMode === 'controlled' ? 'controlled' : 'free';
+  populateCqGateCertSelect(b ? (b.accessGateCert || '') : '');
+  _bmEditAllowlist = b && Array.isArray(b.accessAllowlist) ? b.accessAllowlist.slice() : [];
+  renderCqAllowlistChips();
+  updateAccessFields();
+  // Slot scheduling
+  document.getElementById('bSlotScheduling').checked = b && boolVal(b.slotSchedulingEnabled);
+  document.getElementById('bAvailOutside').checked = b ? (b.availableOutsideSlots === undefined || b.availableOutsideSlots === null || boolVal(b.availableOutsideSlots)) : true;
+  updateSlotFields();
+  // Reservations
+  document.getElementById('bReservationForm').classList.add('hidden');
+  document.getElementById('bResMemberKt').value = '';
+  document.getElementById('bResMemberSearch').value = '';
+  document.getElementById('bResMemberName').textContent = '';
+  document.getElementById('bResStart').value = '';
+  document.getElementById('bResEnd').value = '';
+  document.getElementById('bResNote').value = '';
+  renderBmReservationList(b);
+  updateOwnershipFields();
+  updateBoatModalFields();
+  applyStrings(document.getElementById('boatModal'));
+  openModal('boatModal');
+}
+
+async function saveCqBoat() {
+  var name = document.getElementById('bName').value.trim();
+  if (!name) { showToast(s('admin.nameRequired'), 'err'); return; }
+
+  var id = _editingBoatId || ('boat_' + Date.now().toString(36));
+  var cat = document.getElementById('bCategory').value;
+  var ownershipVal = document.getElementById('bOwnership').value;
+  var accessModeVal = document.getElementById('bAccessMode').value;
+  var payload = {
+    id: id, name: name,
+    category: cat,
+    defaultPortId: document.getElementById('bDefaultPortId').value || '',
+    oos: document.getElementById('bOOS').checked,
+    oosReason: document.getElementById('bOOSReason').value.trim(),
+    active: document.getElementById('bActive').checked,
+    registrationNo: document.getElementById('bRegNo').value.trim(),
+    typeModel: document.getElementById('bTypeModel').value.trim(),
+    loa: parseFloat(document.getElementById('bLoa').value) || '',
+    ownership: ownershipVal,
+    ownerId: ownershipVal === 'private' ? (document.getElementById('bOwnerId').value || '') : '',
+    ownerName: ownershipVal === 'private' ? (document.getElementById('bOwnerName').textContent || '') : '',
+    accessMode: accessModeVal,
+    accessGateCert: accessModeVal === 'controlled' ? (document.getElementById('bGateCert').value || '') : '',
+    accessAllowlist: accessModeVal === 'controlled' ? _bmEditAllowlist.slice() : [],
+    slotSchedulingEnabled: accessModeVal === 'controlled' && document.getElementById('bSlotScheduling').checked,
+    availableOutsideSlots: accessModeVal === 'controlled' && document.getElementById('bSlotScheduling').checked ? document.getElementById('bAvailOutside').checked : true
+  };
+
+  var idx = _boats.findIndex(function(x) { return x.id === id; });
+  if (idx >= 0) {
+    payload.reservations = _boats[idx].reservations || [];
+    _boats[idx] = Object.assign({}, _boats[idx], payload);
+  } else {
+    payload.reservations = [];
+    _boats.push(payload);
+  }
+
+  try {
+    await apiPost('saveConfig', { boats: _boats });
+    closeModal('boatModal');
+    renderBoats();
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) { showToast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+}
+
+async function deleteCqBoat() {
+  var id = _editingBoatId;
+  if (!id || !confirm(s('admin.confirmDeleteBoat'))) return;
+  _boats = _boats.map(function(b) { return b.id === id ? Object.assign({}, b, { active: false }) : b; });
+  try {
+    await apiPost('saveConfig', { boats: _boats });
+    renderBoats();
+    closeModal('boatModal');
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) { showToast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
 }
 </script>
 </body>
