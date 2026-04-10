@@ -129,6 +129,13 @@
 .conf-badge { display:inline-flex; align-items:center; justify-content:center;
   min-width:16px; height:16px; border-radius:8px; background:var(--red);
   color:#fff; font-size:9px; font-weight:600; margin-left:4px; padding:0 4px; }
+.act-btn { position:relative; }
+.notif-badge { position:absolute; top:-4px; right:-4px;
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:16px; height:16px; border-radius:8px;
+  background:var(--red); color:#fff;
+  font-size:9px; font-weight:600; padding:0 4px;
+  pointer-events:none; }
 
 /* ── Volunteer event cards ── */
 .vol-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
@@ -183,8 +190,8 @@
   <div class="member-actions">
     <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
     <button class="act-btn" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
-    <a class="act-btn" href="../logbook/"                  data-s="nav.logbook"></a>
-    <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
+    <a class="act-btn" id="logbookBtn" href="../logbook/"    data-s="nav.logbook"></a>
+    <a class="act-btn" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
     <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
     <a class="act-btn" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
     <button class="act-btn" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
@@ -383,8 +390,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
+  // Fetch notification counts (non-blocking)
+  apiGet('getNotifications', { kennitala: user.kennitala }).then(function(res) {
+    if (!res || !res.counts) return;
+    renderNotifBadges(res.counts);
+  }).catch(function() {});
+
   warmContainer();
 });
+
+function renderNotifBadges(c) {
+  var pairs = [
+    ['logbookBtn',  c.confirmations],
+    ['saumaBtn',    c.saumaklubbur],
+    ['captainQBtn', c.captainQ],
+    ['coxswainBtn', c.crewInvites],
+  ];
+  pairs.forEach(function(p) {
+    var id = p[0], count = p[1];
+    if (!count) return;
+    var el = document.getElementById(id);
+    if (!el || el.style.display === 'none') return;
+    var badge = document.createElement('span');
+    badge.className = 'notif-badge';
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.title = count + ' ' + s('member.notifPending');
+    el.appendChild(badge);
+  });
+}
 
 // ══ QR SCANNING ══════════════════════════════════════════════════════════════
 // Routes a scanned boat id through the right flow:

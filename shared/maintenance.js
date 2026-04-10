@@ -120,6 +120,9 @@ function maintOpenDetail(r, currentUser) {
     const isOnHold = isSauma && boolVal(r.onHold) && !resolved;
     const comments = parseJson(r.comments, []);
     const materials = parseJson(r.materials, []);
+    const _mKt = window._maintUser?.kennitala ? String(window._maintUser.kennitala) : '';
+    const followers = parseJson(r.followers, []);
+    const isFollowing = _mKt && followers.some(function(f) { return String(f.kt||f) === _mKt; });
     const subjectLabel = r.category==='boat'
       ? esc(r.boatName||r.boatId||'')
       : '';
@@ -181,6 +184,7 @@ function maintOpenDetail(r, currentUser) {
         ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
         ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.adoptProject')}</button>` : ''}
+        ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</button>` : ''}
       </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px;font-size:12px;color:var(--muted)">
         ${r.reportedBy ? `<span>${s('maint.reportedByLabel')} <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
@@ -257,6 +261,27 @@ function maintOpenDetail(r, currentUser) {
         if(typeof renderList==='function') renderList();
         if(typeof renderMaintenance==='function') renderMaintenance();
       });
+    });
+
+    // Follow / Unfollow saumaklúbbur project
+    document.getElementById('mdFollowBtn')?.addEventListener('click', async ()=>{
+      const kt = window._maintUser?.kennitala;
+      if (!kt) return;
+      const followers = parseJson(r.followers, []);
+      const alreadyFollowing = followers.some(function(f) { return String(f.kt||f) === String(kt); });
+      if (alreadyFollowing) {
+        await apiPost('unfollowProject',{id:r.id,kennitala:kt});
+        r.followers = JSON.stringify(followers.filter(function(f) { return String(f.kt||f) !== String(kt); }));
+        if(typeof toast==='function') toast(s('sauma.unfollowed'));
+      } else {
+        await apiPost('followProject',{id:r.id,kennitala:kt});
+        followers.push({kt:String(kt),at:new Date().toISOString()});
+        r.followers = JSON.stringify(followers);
+        if(typeof toast==='function') toast(s('sauma.followed'));
+      }
+      renderAndWire();
+      if(typeof renderList==='function') renderList();
+      if(typeof renderBoard==='function') renderBoard();
     });
 
     // Material purchase toggle

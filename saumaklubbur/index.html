@@ -258,6 +258,7 @@ let allProjects = [];
 let currentFilter = "open";
 let currentView = "list";
 let currentUserName = "";
+let currentUserKt = "";
 let boats = [];
 
 // Suggest modal state
@@ -270,6 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = requireAuth();
   if (!user) return;
   currentUserName = user.name || "";
+  currentUserKt = user.kennitala || "";
   window._maintUser = user;
 
   buildHeader('saumaklubbur');
@@ -338,9 +340,15 @@ function getFiltered() {
   });
 }
 
+function _isFollowing(r) {
+  var followers = parseJson(r.followers, []);
+  return followers.some(function(f) { return String(f.kt || f) === String(currentUserKt); });
+}
+
 function isMyProject(r) {
   if (!currentUserName) return false;
   if (r.verkstjori && r.verkstjori === currentUserName) return true;
+  if (_isFollowing(r)) return true;
   const comments = parseJson(r.comments, []);
   return comments.some(c => c.by === currentUserName);
 }
@@ -391,6 +399,7 @@ function renderProjectCard(r) {
   const comments = parseJson(r.comments, []);
   const materials = parseJson(r.materials, []);
   const matDone = materials.filter(m=>m.purchased).length;
+  const following = _isFollowing(r);
   const commentCount = comments.length;
   const lastComment = commentCount ? comments[commentCount-1] : null;
 
@@ -415,6 +424,7 @@ function renderProjectCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" onclick="event.stopPropagation();viewPhoto('${esc(r.photoUrl)}')">` : ''}
     <div class="flex-center gap-8 mt-8 text-sm text-muted">
+      ${following ? '<span style="color:var(--brass)" title="' + s('sauma.unfollow') + '">★</span>' : ''}
       <span>💬 ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${sstr(lastComment.at).slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
@@ -502,6 +512,7 @@ function renderKanbanCard(r) {
       ${r.verkstjori ? `<span class="verk-tag" style="font-size:10px">${esc(r.verkstjori)}</span>` : ''}
       ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
       ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
+      ${_isFollowing(r) ? '<span style="color:var(--brass)">★</span>' : ''}
     </div>
   </div>`;
 }

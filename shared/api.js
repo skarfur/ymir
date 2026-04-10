@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 async function apiGet(action, params) {
   params = params || {};
   // Cache getConfig in sessionStorage for 60s — called on every page load
-  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000 };
+  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_';
@@ -59,8 +59,21 @@ async function apiPost(action, payload) {
   }
   // Invalidate maintenance cache on maintenance mutations
   if (action === 'saveMaintenance' || action === 'resolveMaintenance' ||
-      action === 'deleteMaintenance' || action === 'addMaintenanceComment') {
+      action === 'deleteMaintenance' || action === 'addMaintenanceComment' ||
+      action === 'adoptSaumaklubbur' || action === 'approveSaumaklubbur' ||
+      action === 'holdSaumaklubbur' || action === 'toggleMaterial' ||
+      action === 'addMaterial' || action === 'removeMaterial' ||
+      action === 'followProject' || action === 'unfollowProject') {
     try { sessionStorage.removeItem('ymir_getMaintenance_'); } catch(e) {}
+  }
+  // Invalidate notification counts on state-changing actions
+  if (action === 'respondConfirmation' || action === 'dismissConfirmation' || action === 'dismissAllConfirmations' ||
+      action === 'respondCrewInvite' ||
+      action === 'saveMaintenance' || action === 'resolveMaintenance' || action === 'addMaintenanceComment' ||
+      action === 'followProject' || action === 'unfollowProject' ||
+      action === 'adoptSaumaklubbur' || action === 'approveSaumaklubbur' || action === 'holdSaumaklubbur' ||
+      action === 'toggleMaterial' || action === 'addMaterial' || action === 'removeMaterial') {
+    try { sessionStorage.removeItem('ymir_getNotifications_'); } catch(e) {}
   }
   // Invalidate crew caches on crew mutations
   if (action === 'createCrew' || action === 'disbandCrew' || action === 'inviteToCrew' ||

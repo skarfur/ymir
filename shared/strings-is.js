@@ -1275,5 +1275,11 @@ var _STRINGS_FLAT = {
   "admin.calPlaceholder": "t.d. abc123@group.calendar.google.com",
   "admin.calAdd": "+ Bæta við dagatali",
   "admin.calEmpty": "Engin dagatöl skráð.",
-  "admin.calRemove": "Fjarlægja"
+  "admin.calRemove": "Fjarlægja",
+
+  "member.notifPending": "í bið",
+  "sauma.follow": "★ Fylgjast með",
+  "sauma.unfollow": "★ Fylgist með",
+  "sauma.followed": "Fylgist með verkefni ★",
+  "sauma.unfollowed": "Hætt að fylgjast með"
 };

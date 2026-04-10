@@ -1275,5 +1275,11 @@ var _STRINGS_FLAT = {
   "admin.calPlaceholder": "e.g. abc123@group.calendar.google.com",
   "admin.calAdd": "+ Add calendar",
   "admin.calEmpty": "No calendars added.",
-  "admin.calRemove": "Remove"
+  "admin.calRemove": "Remove",
+
+  "member.notifPending": "pending",
+  "sauma.follow": "★ Follow",
+  "sauma.unfollow": "★ Following",
+  "sauma.followed": "Following project ★",
+  "sauma.unfollowed": "Unfollowed project"
 };
