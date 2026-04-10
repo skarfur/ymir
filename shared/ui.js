@@ -15,7 +15,7 @@
 //          ⚓ Staff Hub  (shown to staff/admin when NOT on staff pages)
 //          ⛵ Members    (shown to staff/admin when NOT on member pages)
 //          ⚙ Admin       (shown to admin when NOT on admin page)
-// RIGHT  = ⚙ Settings · ⛅ Weather · lang toggle · Sign out
+// RIGHT  = ⚙ Settings · lang toggle · Sign out
 //
 // page values:
 //   hub pages      — 'staff' | 'admin' | 'member'
