@@ -272,18 +272,18 @@
       <!-- Opening / Closing checklists -->
       <div class="section-label mb-8">DAILY CHECKLISTS</div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title" data-s="admin.openingChecklist"></div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="openingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+        <div class="col-body" id="openingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
       <div class="col-section">
-        <div class="col-head" onclick="toggleSection(this)">
+        <div class="col-head open" onclick="toggleSection(this)">
           <div class="col-title" data-s="admin.closingChecklist"></div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
+        <div class="col-body" id="closingCLCard"><div class="loading-state"><span class="spinner"></span></div></div>
       </div>
       <div style="padding:8px 0 12px">
         <button class="btn btn-primary" onclick="openCLModal()" data-s="admin.addItem"></button>
