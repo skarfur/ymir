@@ -897,7 +897,10 @@ function populateTideFields() {
   dom.tideL1Time.value = tideData.l1t||''; dom.tideL1Height.value = tideData.l1h||'';
   dom.tideH2Time.value = tideData.h2t||''; dom.tideH2Height.value = tideData.h2h||'';
   dom.tideL2Time.value = tideData.l2t||''; dom.tideL2Height.value = tideData.l2h||'';
-  _renderDailyTide();
+  // Note: do NOT call _renderDailyTide() here — the onData callback inside
+  // the tide widget already calls populateTideFields(), so re-rendering
+  // would create an infinite loop: refresh → onData → populateTideFields
+  // → _renderDailyTide → refresh → …
 }
 
 function _autoFillTide() {
