@@ -15,6 +15,7 @@
   <script src="../shared/weather.js" defer></script>
   <script src="../shared/ui.js"></script>
   <script src="../shared/certs.js" defer></script>
+  <script src="../shared/volunteer.js" defer></script>
   <script src="../shared/mcm.js" defer></script>
   <script src="../shared/calendar.js"></script>
   <style>
@@ -2497,25 +2498,40 @@ function renderVolunteerEvents() {
   const card = document.getElementById("volEventsCard");
   const L = getLang();
   const locale = L === 'IS' ? 'is' : 'en';
-  const sorted = volunteerEvents.slice()
-    .filter(e => e.active !== false)
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const today = new Date().toISOString().slice(0, 10);
+  // Expand volunteer-flagged activity types into virtual events so the admin
+  // tab reflects activity-type-defined volunteer activities.
+  const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
+    ? expandVolunteerActivityTypes(actTypes || [], today, null)
+    : [];
+  const merged = (typeof mergeVolunteerEvents === 'function')
+    ? mergeVolunteerEvents(volunteerEvents.filter(e => e.active !== false), virtualEvents)
+    : volunteerEvents.filter(e => e.active !== false).concat(virtualEvents);
+  const sorted = merged.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   if (!sorted.length) {
     card.innerHTML = '<div class="empty-state">' + s('admin.noVolEvents') + '</div>';
     return;
   }
   card.innerHTML = sorted.map(ev => {
     const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
+    const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     const rolesHtml = roles.map(r => {
       const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
-      return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')</span>';
+      const endorseStr = r.requiredEndorsement
+        ? ' <span style="color:var(--brass)">[' + esc((((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; }) || {}).name) || r.requiredEndorsement) + ']</span>'
+        : '';
+      return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')' + endorseStr + '</span>';
     }).join('');
-    return '<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">'
+    const isVirtual = !!ev.virtual;
+    const actions = isVirtual
+      ? '<span style="font-size:9px;color:var(--brass);letter-spacing:.5px;margin-left:auto">' + s('admin.volFromActType') + '</span>'
+      : '<button class="row-edit" onclick="openVolEventModal(\'' + ev.id + '\')">Edit</button>'
+        + '<button class="row-del" onclick="deleteVolEvent(\'' + ev.id + '\')">×</button>';
+    return '<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px' + (isVirtual ? ';border-left:2px solid var(--brass);padding-left:8px' : '') + '">'
       + '<div style="display:flex;align-items:center;gap:10px">'
-      + '<span class="list-name">' + esc(title) + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
-      + '<button class="row-edit" onclick="openVolEventModal(\'' + ev.id + '\')">Edit</button>'
-      + '<button class="row-del" onclick="deleteVolEvent(\'' + ev.id + '\')">×</button>'
+      + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
+      + actions
       + '</div>'
       + (ev.leaderName ? '<div style="font-size:10px;color:var(--muted);padding-left:12px">' + s('admin.volLeader') + ': ' + esc(ev.leaderName) + (ev.leaderPhone && ev.showLeaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>' : '')
       + rolesHtml

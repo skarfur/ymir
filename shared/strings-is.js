@@ -1261,6 +1261,7 @@ var _STRINGS_FLAT = {
   "admin.roleNoRestriction": "— Engin takmörkun —",
   "admin.bulkUsesDefaultTimes": "Notar sjálfgefna tíma",
   "admin.bulkSetDefaultTimes": "Stilltu sjálfgefinn byrjunar-/lokatíma hér að ofan til að nota við magnbókun.",
+  "admin.volFromActType": "ÚR TEGUND STARFSEMI",
 
   "member.volunteerEvents": "SJÁLFBOÐAVIÐBURÐIR",
   "member.volSignUp": "Skrá mig",
@@ -1269,6 +1270,7 @@ var _STRINGS_FLAT = {
   "member.volSignedUp": "Skráð/ur",
   "member.volSlotsLeft": "{n} eftir",
   "member.volLeader": "Ábyrgðarmaður",
+  "member.volNeedsEndorsement": "Réttindi nauðsynleg",
   "member.noVolEvents": "Engir sjálfboðaviðburðir á næstunni.",
   "member.calendar": "📅 Dagatal",
   "member.calTitle": "Dagatöl klúbbsins",

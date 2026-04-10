@@ -16,6 +16,7 @@
 <script src="../shared/tides.js" defer></script>
 <script src="../shared/boats.js" defer></script>
 <script src="../shared/certs.js" defer></script>
+<script src="../shared/volunteer.js" defer></script>
 <script src="../shared/qr.js" defer></script>
 <style>
 /* ── Quick-action header strip ── */
@@ -311,7 +312,7 @@
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
 let boats=[], locations=[], checkouts=[];
-let _volunteerEvents=[], _volunteerSignups=[];
+let _volunteerEvents=[], _volunteerSignups=[], _volunteerActTypes=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
 let _clubCalendars = [];
@@ -370,6 +371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
+    _volunteerActTypes = cfgRes.activityTypes || [];
     _clubCalendars = cfgRes.clubCalendars || [];
     if (_clubCalendars.length) document.getElementById('calendarBtn').style.display = '';
 
@@ -1566,7 +1568,12 @@ function _renderMemberStaffStatus() {
 // ══ VOLUNTEER EVENTS ═══════════════════════════════════════════════════════
 
 async function loadVolunteerSignups() {
-  if (!_volunteerEvents.length) {
+  // Check whether we have any volunteer-flagged activity types (virtual events)
+  // or saved events. If neither, skip the signup fetch entirely.
+  const hasVolActType = (_volunteerActTypes || []).some(function(a) {
+    return a && (a.volunteer === true || a.volunteer === 'true') && (a.active !== false && a.active !== 'false');
+  });
+  if (!_volunteerEvents.length && !hasVolActType) {
     renderMemberVolunteerEvents();
     return;
   }
@@ -1584,9 +1591,24 @@ function renderMemberVolunteerEvents() {
   const user = getUser();
   const kt = user ? user.kennitala : '';
   const today = new Date().toISOString().slice(0, 10);
+  // Expand volunteer-flagged activity types with bulk schedules into virtual
+  // events, then merge with saved events.
+  const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
+    ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
+    : [];
+  const merged = (typeof mergeVolunteerEvents === 'function')
+    ? mergeVolunteerEvents(_volunteerEvents, virtualEvents)
+    : _volunteerEvents.concat(virtualEvents);
+  // Member's own certifications (for endorsement gating)
+  let myCerts = [];
+  try {
+    myCerts = user && user.certifications
+      ? (typeof user.certifications === 'string' ? JSON.parse(user.certifications) : user.certifications)
+      : [];
+  } catch(e) { myCerts = []; }
   // Show only future or today events, sorted by date
-  const upcoming = _volunteerEvents
-    .filter(e => e.date >= today)
+  const upcoming = merged
+    .filter(e => (e.date || '') >= today)
     .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.startTime || '').localeCompare(b.startTime || ''));
   if (!upcoming.length) {
     container.innerHTML = '<div class="empty-note">' + s('member.noVolEvents') + '</div>';
@@ -1594,6 +1616,7 @@ function renderMemberVolunteerEvents() {
   }
   container.innerHTML = upcoming.map(function(ev) {
     const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
+    const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
     const notes = (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     const rolesHtml = roles.map(function(role) {
@@ -1604,9 +1627,14 @@ function renderMemberVolunteerEvents() {
       const isFull = total > 0 && filled >= total;
       const mySignup = signupsForRole.find(function(su) { return su.kennitala === kt; });
       const pct = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
+      const allowed = (typeof memberCanTakeRole === 'function')
+        ? memberCanTakeRole(role, myCerts)
+        : true;
       let btnHtml = '';
       if (mySignup) {
         btnHtml = '<button class="vol-btn signed-up" onclick="memberVolWithdraw(\'' + mySignup.id + '\')">' + s('member.volWithdraw') + '</button>';
+      } else if (!allowed) {
+        btnHtml = '<span style="font-size:10px;color:var(--muted);font-style:italic">' + s('member.volNeedsEndorsement') + '</span>';
       } else if (isFull) {
         btnHtml = '<span style="font-size:10px;color:var(--red);font-weight:500">' + s('member.volFull') + '</span>';
       } else {
@@ -1625,10 +1653,11 @@ function renderMemberVolunteerEvents() {
       ? '<div class="vol-card-leader">' + s('member.volLeader') + ': ' + esc(ev.leaderName) + (ev.showLeaderPhone && ev.leaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>'
       : '';
     const notesHtml = notes ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + esc(notes) + '</div>' : '';
+    const subtitleHtml = subtitle ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(subtitle) + '</div>' : '';
     return '<div class="vol-card">'
       + '<div class="vol-card-date">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</div>'
       + '<div class="vol-card-title">' + esc(title) + '</div>'
-      + leaderHtml + notesHtml
+      + subtitleHtml + leaderHtml + notesHtml
       + rolesHtml
       + '</div>';
   }).join('');
@@ -1638,12 +1667,23 @@ async function memberVolSignup(eventId, roleId) {
   const user = getUser();
   if (!user) return;
   try {
-    const res = await apiPost('volunteerSignup', {
+    // If this is a virtual event (derived from an activity type), send the
+    // source event data so the backend can materialize it before signup.
+    const payload = {
       eventId: eventId,
       roleId: roleId,
       kennitala: user.kennitala,
       name: user.name || '',
-    });
+    };
+    if (String(eventId).indexOf('vae-') === 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      const virt = (typeof expandVolunteerActivityTypes === 'function')
+        ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
+        : [];
+      const src = virt.find(function(e) { return e.id === eventId; });
+      if (src) payload.virtualEvent = src;
+    }
+    const res = await apiPost('volunteerSignup', payload);
     _volunteerSignups.push(res.signup || { id: res.id, eventId: eventId, roleId: roleId, kennitala: user.kennitala, name: user.name });
     renderMemberVolunteerEvents();
     toast(s('toast.saved'));
