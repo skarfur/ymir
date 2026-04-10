@@ -997,6 +997,7 @@ async function loadIncidentsForDate(date) {
 
 function applyLogData(log, cfgRes) {
   const cfg = cfgRes || {};
+  if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
   amItems       = cfg.dailyChecklist?.opening || DEFAULT_AM;
   pmItems       = cfg.dailyChecklist?.closing  || DEFAULT_PM;
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
