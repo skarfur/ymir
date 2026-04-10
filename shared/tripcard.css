@@ -1,5 +1,5 @@
 /* ── Trip card (shared between logbook & captain) ── */
-.trip-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.trip-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm)}
 .trip-card:hover{border-color:var(--brass)}
 .trip-card-main{display:grid;grid-template-columns:52px 1fr auto;align-items:stretch;cursor:pointer}
 .trip-date-col{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;text-align:center}
@@ -46,14 +46,14 @@
 
 /* ── Trip action buttons ── */
 .trip-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
-.trip-action-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:10px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:color .15s,border-color .15s}
+.trip-action-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);padding:4px 10px;font-size:10px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:color .2s,border-color .2s,background .2s}
 .trip-action-btn:hover{color:var(--brass);border-color:var(--brass)}
 .trip-action-btn.primary{color:var(--brass);border-color:var(--brass)55}
-.trip-more-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:3px 10px;font-size:10px;font-family:inherit;cursor:pointer;margin-top:4px;transition:color .15s,border-color .15s}
+.trip-more-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);padding:3px 10px;font-size:10px;font-family:inherit;cursor:pointer;margin-top:4px;transition:color .2s,border-color .2s}
 .trip-more-btn:hover{color:var(--brass);border-color:var(--brass)}
 
 /* ── Photos ── */
-.photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer}
+.photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer}
 .photo-thumb-link{display:block;width:60px;height:60px}
 .trip-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .upload-thumb-wrap{position:relative;display:inline-block;width:72px;height:72px;flex-shrink:0}
@@ -66,7 +66,7 @@
 .photo-sharing-badge.club{color:var(--brass);border:1px solid var(--brass)55;background:var(--brass)11}
 
 /* ── Track map ── */
-.track-map-thumb{width:100%;height:140px;border-radius:6px;border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}
+.track-map-thumb{width:100%;height:140px;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}
 .track-map-thumb .leaflet-control-zoom,.track-map-thumb .leaflet-control-attribution{display:none}
 .track-map-expand-hint{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 8px;border-radius:4px;z-index:500;pointer-events:none;letter-spacing:.4px}
 .track-delete-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-left:8px;opacity:.7}
