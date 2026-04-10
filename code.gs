@@ -5231,8 +5231,40 @@ function volunteerSignup_(b) {
       return failJ('Already signed up for this role');
     }
     // Check slot capacity
-    const events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-    const evt = events.find(e => e.id === b.eventId);
+    let events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
+    let evt = events.find(e => e.id === b.eventId);
+    // If not found and a virtualEvent payload was provided, materialize it
+    // into volunteer_events so future signups and lookups work.
+    if (!evt && b.virtualEvent && String(b.eventId).indexOf('vae-') === 0) {
+      const ve = b.virtualEvent;
+      evt = {
+        id: ve.id,
+        activityTypeId: ve.activityTypeId || ve.sourceActivityTypeId || '',
+        sourceActivityTypeId: ve.sourceActivityTypeId || '',
+        sourceSubtypeId: ve.sourceSubtypeId || '',
+        title: ve.title || '',
+        titleIS: ve.titleIS || '',
+        subtitle: ve.subtitle || '',
+        subtitleIS: ve.subtitleIS || '',
+        date: ve.date || '',
+        startTime: ve.startTime || '',
+        endTime: ve.endTime || '',
+        leaderMemberId: '',
+        leaderName: '',
+        leaderPhone: '',
+        showLeaderPhone: false,
+        notes: '',
+        notesIS: '',
+        roles: Array.isArray(ve.roles) ? ve.roles : [],
+        active: true,
+        createdAt: now_(),
+        updatedAt: now_(),
+        materialized: true,
+      };
+      events.push(evt);
+      setConfigSheetValue_('volunteer_events', JSON.stringify(events));
+      cDel_('config');
+    }
     if (!evt) return failJ('Event not found');
     const role = (Array.isArray(evt.roles) ? evt.roles : []).find(r => r.id === b.roleId);
     if (!role) return failJ('Role not found');

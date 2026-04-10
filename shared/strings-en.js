@@ -1261,6 +1261,7 @@ var _STRINGS_FLAT = {
   "admin.roleNoRestriction": "— No restriction —",
   "admin.bulkUsesDefaultTimes": "Uses default times",
   "admin.bulkSetDefaultTimes": "Set default start/end times above to use with bulk schedule.",
+  "admin.volFromActType": "FROM ACTIVITY TYPE",
 
   "member.volunteerEvents": "VOLUNTEER EVENTS",
   "member.volSignUp": "Sign up",
@@ -1269,6 +1270,7 @@ var _STRINGS_FLAT = {
   "member.volSignedUp": "Signed up",
   "member.volSlotsLeft": "{n} left",
   "member.volLeader": "In charge",
+  "member.volNeedsEndorsement": "Endorsement required",
   "member.noVolEvents": "No upcoming volunteer events.",
   "member.calendar": "📅 Calendar",
   "member.calTitle": "Club Calendars",
