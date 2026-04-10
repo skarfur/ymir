@@ -1264,7 +1264,7 @@ var _STRINGS_FLAT = {
   "member.volSignedUp": "Skráð/ur",
   "member.volSlotsLeft": "{n} eftir",
   "member.volLeader": "Ábyrgðarmaður",
-  "member.noVolEvents": "Engir sjálfboðaviðburðir á næstunni."
+  "member.noVolEvents": "Engir sjálfboðaviðburðir á næstunni.",
   "member.calendar": "📅 Dagatal",
   "member.calTitle": "Dagatöl klúbbsins",
   "member.calEmpty": "Engin dagatöl hafa verið sett upp.",
