@@ -18,15 +18,15 @@
 <style>
 /* ── Stats ── */
 .cx-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-.cx-stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
+.cx-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
 .cx-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .cx-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
 /* ── Tab bar ── */
 .cx-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
 .cx-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-  font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
-  white-space:nowrap; transition:color .15s; text-transform:uppercase; }
+  font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
+  white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
 .cx-tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
 .cx-tab-btn:hover:not(.active) { color:var(--text); }
 
@@ -35,28 +35,28 @@
 .cx-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 
 /* ── Cards ── */
-.cx-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:12px 14px; margin-bottom:8px; }
+.cx-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 
 /* ── Boats ── */
 .cx-boat { display:flex; justify-content:space-between; align-items:flex-start;
-  background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:12px 14px; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; margin-bottom:8px; flex-wrap:wrap; gap:8px; box-shadow:var(--shadow-sm); }
 .cx-boat-name { font-size:13px; font-weight:500; color:var(--text); }
 .cx-boat-sub  { font-size:11px; color:var(--muted); margin-top:3px; }
 .cx-boat-actions { margin-left:auto; display:flex; gap:6px; }
-.cx-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:6px;
-  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
-.cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass); }
+.cx-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
+  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
+.cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
 
 /* ── Read-only banner ── */
 .cx-readonly { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border);
-  border-radius:6px; padding:8px 12px; margin-bottom:12px; text-align:center; }
+  border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:12px; text-align:center; }
 
 /* ── Crew board ── */
 .cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.cb-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px;
-  border-left:3px solid var(--border); }
+.cb-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px;
+  border-left:3px solid var(--border); box-shadow:var(--shadow-sm); }
 .cb-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
 .cb-name { font-size:13px; font-weight:500; color:var(--text); }
 .cb-count { font-size:10px; color:var(--muted); }
@@ -85,8 +85,8 @@
 .pp-cat { margin-bottom:14px; }
 .pp-cat-hdr { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
 .pp-cat-count { font-size:9px; color:var(--brass); }
-.pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-bottom:4px; font-size:11px; }
-.pp-item-signable { cursor:pointer; transition:border-color .15s; }
+.pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:4px; font-size:11px; }
+.pp-item-signable { cursor:pointer; transition:border-color .2s; }
 .pp-item-signable:hover { border-color:var(--brass); }
 .pp-item-complete { border-left:3px solid var(--green); }
 .pp-item-icon { font-size:14px; color:var(--brass); width:18px; text-align:center; flex-shrink:0; }

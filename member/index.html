@@ -23,17 +23,18 @@
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
   flex:1; min-width:100px; background:var(--surface); border:1px solid var(--border);
-  border-radius:8px; padding:10px 12px; cursor:pointer; font-family:inherit;
+  border-radius:var(--radius-md); padding:10px 12px; cursor:pointer; font-family:inherit;
   font-size:11px; color:var(--text); text-align:center; text-decoration:none;
-  transition:border-color .15s,background .15s; display:block;
+  transition:all .2s; display:block; box-shadow:var(--shadow-sm);
 }
-.member-actions .act-btn:hover { border-color:var(--brass); background:var(--card); }
+.member-actions .act-btn:hover { border-color:var(--brass); background:var(--card); transform:translateY(-1px); box-shadow:var(--shadow-md); }
 
 /* ── Tabs ── */
 .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
 .hub-tab  { padding:10px 16px; border:none; background:none; color:var(--muted);
-  font-family:inherit; font-size:11px; letter-spacing:.8px; cursor:pointer;
-  border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s; }
+  font-family:inherit; font-size:11px; letter-spacing:.6px; cursor:pointer;
+  border-bottom:2px solid transparent; white-space:nowrap; transition:color .2s,border-color .2s; margin-bottom:-1px; }
+.hub-tab:hover:not(.active) { color:var(--text); }
 .hub-tab.active { color:var(--brass); border-bottom-color:var(--brass); }
 
 /* ── Boat category section ── */
@@ -54,8 +55,8 @@
 .co-sub   { font-size:10px; color:var(--muted); margin-top:2px; }
 
 /* ── Recent trips ── */
-.pub-trip { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .15s; }
+.pub-trip { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .2s,box-shadow .2s; box-shadow:var(--shadow-sm); }
 .pub-trip:hover { border-color:var(--brass); }
 .pub-trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
 .pub-trip-date  { font-size:10px; color:var(--brass); margin-bottom:2px; }
@@ -71,19 +72,19 @@
 
 /* ── Stats card ── */
 .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px; }
-.stat-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
+.stat-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
 .stat-box .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .stat-box .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
 /* ── Cert badges ── */
-.cert-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
+.cert-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow-sm); }
 .cert-section-title { font-size:9px; color:var(--muted); letter-spacing:1.2px; margin-bottom:10px; }
 /* ── Inline report form styles ── */
 .cat-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-.cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit; cursor:pointer; text-align:center; transition:all .15s; }
+.cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit; cursor:pointer; text-align:center; transition:all .2s; }
 .cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
 .sev-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-.sev-btn { flex:1; min-width:60px; padding:7px 4px; border-radius:6px; border:1px solid; font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .15s; }
+.sev-btn { flex:1; min-width:60px; padding:7px 4px; border-radius:var(--radius-sm); border:1px solid; font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .2s; }
 .sev-btn[data-sev="low"]      { color:var(--green);  border-color:var(--green)55;  background:var(--green)11;  }
 .sev-btn[data-sev="medium"]   { color:var(--yellow); border-color:var(--yellow)55; background:var(--yellow)11; }
 .sev-btn[data-sev="high"]     { color:var(--orange); border-color:var(--orange)55; background:var(--orange)11; }
@@ -92,7 +93,7 @@
 .ir-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; }
 /* ── Fleet status ─────────────────────────── */
 .fleet-status-block { margin-bottom:4px; }
-.fsb-header { display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:6px;background:var(--surface);transition:background .15s;border-left:3px solid transparent; }
+.fsb-header { display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:var(--radius-sm);background:var(--surface);transition:background .2s;border-left:3px solid transparent; }
 .fsb-header:hover { background:var(--surface2,#132233); }
 .fsb-emoji { font-size:14px;flex-shrink:0; }
 .fsb-label { font-size:12px;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.04em; }
@@ -104,7 +105,7 @@
 .fsb-arrow { font-size:11px;color:var(--muted); }
 .fsb-body { padding:4px 0; }
 .fleet-cat-grid { display:flex;flex-wrap:wrap;gap:6px;padding:4px; }
-.bc-card { background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px; }
+.bc-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-size:12px; }
 .bc-avail { border-left:3px solid #2ecc71;cursor:pointer; }
 .bc-avail:hover { background:var(--surface2,#132233); }
 .bc-out { border-left:3px solid var(--brass); }
@@ -112,13 +113,13 @@
 .bc-oos { opacity:.5; }
 
 /* ── Pending confirmations ── */
-.conf-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+.conf-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
   padding:12px 14px; margin-bottom:8px; }
 .conf-card .conf-from { font-size:12px; font-weight:500; color:var(--text); }
 .conf-card .conf-detail { font-size:11px; color:var(--muted); margin-top:3px; }
 .conf-card .conf-boat { font-size:11px; color:var(--brass); margin-top:2px; }
 .conf-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
-.conf-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:6px; cursor:pointer; border:1px solid; }
+.conf-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid; }
 .conf-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }
 .conf-card .btn-confirm:hover { background:var(--green)33; }
 .conf-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
@@ -139,7 +140,7 @@
   pointer-events:none; }
 
 /* ── Volunteer event cards ── */
-.vol-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+.vol-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
   padding:12px 14px; margin-bottom:8px; }
 .vol-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
 .vol-card-title { font-size:13px; font-weight:500; color:var(--text); }

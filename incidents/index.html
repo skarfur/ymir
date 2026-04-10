@@ -15,20 +15,20 @@
   <style>
     .mode-btns { display:flex; gap:8px; margin-bottom:20px; }
     .mode-btn { flex:1; padding:12px; background:var(--card); border:1px solid var(--border);
-      border-radius:8px; font-family:inherit; font-size:13px; color:var(--muted); cursor:pointer;
-      transition:all .15s; text-align:center; }
+      border-radius:var(--radius-md); font-family:inherit; font-size:13px; color:var(--muted); cursor:pointer;
+      transition:all .2s; text-align:center; box-shadow:var(--shadow-sm); }
     .mode-btn.active { background:var(--brass)18; border-color:var(--brass); color:var(--text); }
     .mode-btn .icon { font-size:22px; display:block; margin-bottom:4px; }
 
     .type-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
     .type-toggle { padding:6px 12px; background:var(--faint); border:1px solid var(--border);
-      border-radius:4px; font-size:12px; font-family:inherit; color:var(--text); cursor:pointer; transition:all .15s; }
+      border-radius:var(--radius-sm); font-size:12px; font-family:inherit; color:var(--text); cursor:pointer; transition:all .2s; }
     .type-toggle.on { background:var(--red)22; border-color:var(--red)88; color:var(--red); }
 
     .sev-btns { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
     .sev-btn { flex:1; min-width:60px; padding:7px 4px; background:var(--surface);
-      border-radius:6px; border:1px solid; font-size:11px; font-family:inherit;
-      cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .15s; }
+      border-radius:var(--radius-sm); border:1px solid; font-size:11px; font-family:inherit;
+      cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .2s; }
     .sev-btn[data-v="low"]      { color:var(--green);  border-color:#27ae6055; background:#27ae6011; }
     .sev-btn[data-v="medium"]   { color:#c9a800;       border-color:#f1c40f55; background:#f1c40f11; }
     .sev-btn[data-v="high"]     { color:var(--orange); border-color:#e67e2255; background:#e67e2211; }
@@ -43,7 +43,7 @@
     .incident-meta { font-size:11px; color:var(--muted); margin-top:3px; }
 
     .notes-list { margin-top:8px; }
-    .note-item { background:var(--faint); border-radius:6px; padding:8px 12px; margin-bottom:6px; font-size:12px; }
+    .note-item { background:var(--faint); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:6px; font-size:12px; }
     .note-meta  { color:var(--muted); font-size:11px; margin-top:3px; }
 
     .page { max-width:720px; margin:0 auto; padding:16px 16px 60px; }
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Needs-review alert -->
-    <div id="reviewAlert" class="hidden" style="background:#e67e2218;border:1px solid #e67e2255;color:var(--orange);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;align-items:center;gap:8px">
+    <div id="reviewAlert" class="hidden" style="background:#e67e2218;border:1px solid #e67e2255;color:var(--orange);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm)">
       <span style="font-size:16px">⚠️</span>
       <span id="reviewAlertText"></span>
     </div>

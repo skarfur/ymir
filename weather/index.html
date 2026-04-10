@@ -21,7 +21,7 @@
 .top-bar-left { display:flex; flex-direction:column; gap:3px; }
 .loc-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .loc-name { font-size:16px; color:var(--text); font-weight:500; }
-.loc-coords { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+.loc-coords { font-size:10px; color:var(--muted); font-family:var(--font-mono); }
 .loc-default-badge { font-size:9px; padding:2px 6px; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--muted); letter-spacing:.5px; }
 .top-bar-right { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
@@ -29,7 +29,7 @@
 
 
 /* ── Flag banner ── */
-.flag-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; }
+.flag-banner { border-radius:var(--radius-md); padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--shadow-sm); }
 .flag-advice { font-size:14px; font-weight:500; }
 .flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
 .flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }

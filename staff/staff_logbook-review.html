@@ -16,7 +16,7 @@
   <style>
     .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
     .filter-bar input, .filter-bar select { flex:1; min-width:140px; }
-    .trip-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:8px; }
+    .trip-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
     .trip-card.verified { border-left:3px solid var(--green); }
     .trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
     .trip-date { font-size:10px; color:var(--brass); margin-bottom:3px; }
@@ -29,10 +29,10 @@
     .badge-linked   { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
     .verify-row { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border)44; flex-wrap:wrap; }
     .verify-row input[type="text"] { flex:1; min-width:160px; }
-    .staff-comment { margin-top:8px; padding:8px 10px; background:var(--surface); border-radius:6px; font-size:11px; }
+    .staff-comment { margin-top:8px; padding:8px 10px; background:var(--surface); border-radius:var(--radius-sm); font-size:11px; }
     .staff-comment-label { font-size:9px; color:var(--muted); letter-spacing:1px; margin-bottom:3px; }
     .stat-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
-    .stat-cell { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 10px; text-align:center; }
+    .stat-cell { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 10px; text-align:center; box-shadow:var(--shadow-sm); }
     .stat-n { font-size:22px; color:var(--brass); font-weight:500; }
     .stat-l { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
     .cert-row { display:flex; align-items:flex-start; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); gap:10px; }
@@ -103,13 +103,13 @@
     <div class="section-label mb-14">CERTIFICATIONS</div>
 
     <!-- Mode toggle -->
-    <div class="mb-16" style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content">
+    <div class="mb-16" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;width:fit-content">
       <button id="certModeByMember" onclick="setCertMode('member')"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .15s;background:var(--brass);color:#fff">
+        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .2s;background:var(--brass);color:#fff">
         By member
       </button>
       <button id="certModeByType" onclick="setCertMode('type')"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .15s;background:var(--surface);color:var(--muted)">
+        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .2s;background:var(--surface);color:var(--muted)">
         By credential
       </button>
     </div>
@@ -118,10 +118,10 @@
     <div id="certPanelModeA">
       <div class="mb-14" style="position:relative">
         <input type="text" id="certMemberSearch"
-          class="text-md" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;padding:9px 12px"
+          class="text-md" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;padding:9px 12px"
           oninput="searchCertMember(this.value)">
         <div id="certMemberDrop"
-          style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;z-index:100;display:none;max-height:200px;overflow-y:auto">
+          style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:100;display:none;max-height:200px;overflow-y:auto;box-shadow:var(--shadow-md)">
         </div>
       </div>
 
@@ -145,7 +145,7 @@
     <div id="certPanelModeB" style="display:none">
       <div class="flex-center flex-wrap gap-8 mb-12">
         <select id="certFilterType" onchange="applyCertFilter()"
-          class="flex-1 text-md" style="min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;padding:7px 10px">
+          class="flex-1 text-md" style="min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;padding:7px 10px">
           <option value="">— Select credential —</option>
         </select>
       </div>

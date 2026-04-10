@@ -8,8 +8,8 @@
   <style>
     .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-      font-family:inherit; font-size:11px; letter-spacing:.8px; padding:10px 16px; cursor:pointer;
-      margin-bottom:-1px; transition:color .15s,border-color .15s; white-space:nowrap; }
+      font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
+      margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
     .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
     .tab-btn:hover:not(.active) { color:var(--text); }
     @media(max-width:600px){ .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px} }
@@ -35,7 +35,7 @@
 
     <!-- EMPLOYEES -->
     <div id="pr-employees">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:var(--shadow-sm)">
         <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
           <input type="checkbox" id="cfgAllowBreaks" onchange="cfgSaveAllowBreaks()" style="width:16px;height:16px;accent-color:var(--brass)">
           <span style="font-size:12px" data-s="payroll.allowBreaks"></span>
@@ -62,7 +62,7 @@
         </div>
       </div>
       <!-- EXPORT PANEL -->
-      <div id="prExportPanel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+      <div id="prExportPanel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
         <div class="sec-lbl" data-s="payroll.export"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
           <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodFrom"></label>

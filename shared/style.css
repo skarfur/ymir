@@ -708,7 +708,7 @@ textarea { min-height: 70px; }
 /* ── PAYROLL PAGE ──────────────────────────────────────────────────────────────────────────── */
 
 .pr-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
-.pr-tab{padding:6px 16px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .15s}
+.pr-tab{padding:6px 16px;border:1px solid var(--border);border-radius:16px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .2s}
 .pr-tab.active{background:var(--brass);color:#fff;border-color:var(--brass)}
 .pr-tab:hover:not(.active){border-color:var(--brass);color:var(--brass)}
 .emp-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)44;flex-wrap:wrap}
@@ -721,13 +721,13 @@ textarea { min-height: 70px; }
 .emp-fields .field{margin:0}
 .emp-fields label{font-size:10px}
 .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.cal-nav button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2;font-family:inherit}
+.cal-nav button{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:16px;color:var(--text);line-height:1.2;font-family:inherit;transition:color .2s,border-color .2s}
 .cal-nav button:hover{border-color:var(--brass);color:var(--brass)}
 .cal-month{font-weight:700;font-size:15px;min-width:160px;text-align:center}
 .cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;letter-spacing:.5px}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:6px;padding:5px;background:var(--surface)44;cursor:pointer;transition:background .1s}
+.cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:var(--radius-sm);padding:5px;background:var(--surface)44;cursor:pointer;transition:background .15s,border-color .15s}
 .cal-cell:hover{background:var(--surface);border-color:var(--brass)66}
 .cal-cell.other-month{opacity:.3}
 .cal-cell.today{border-color:var(--brass);background:var(--brass)11}
@@ -736,15 +736,15 @@ textarea { min-height: 70px; }
 .cal-pill{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;line-height:1.5;border:1px solid transparent}
 .cal-pill:hover{filter:brightness(1.1)}
 .cal-more{font-size:9px;color:var(--muted);margin-top:1px;padding-left:2px}
-.view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.view-toggle button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .1s}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.view-toggle button{background:none;border:none;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .2s}
 .view-toggle button.active{background:var(--brass);color:#fff}
 .ts-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:22px}
 .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
 .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
 .ts-table tr:last-child td{border-bottom:none}
 .src-admin{color:var(--brass)}
-.modal-bg{position:fixed;inset:0;background:#00000077;z-index:200;display:flex;align-items:center;justify-content:center}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center}
 .modal-box{background:var(--card);border-radius:var(--radius-lg);padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:var(--shadow-lg)}
 .modal-title{margin:0 0 16px;font-size:15px;font-weight:700}
 .modal-err{font-size:11px;color:var(--red);min-height:14px;margin-bottom:2px}
@@ -757,7 +757,7 @@ textarea { min-height: 70px; }
 .sec-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
 .pill-ok{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
 .pill-open{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border)}
-.confirm-row{background:var(--surface);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.confirm-row{background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .confirm-emp{font-weight:600;font-size:13px;min-width:160px;padding-top:2px}
 .confirm-emp-title{font-size:10px;color:var(--muted)}
 .hrs-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -773,7 +773,7 @@ textarea { min-height: 70px; }
 .lm-table td{padding:5px 10px;border-bottom:1px solid var(--border)44;text-align:right}
 .lm-table td:first-child{text-align:left;font-weight:500}
 .lm-table tr.lm-total td{font-weight:700;border-top:2px solid var(--border);border-bottom:none;background:var(--surface)}
-.btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:6px;cursor:pointer}
+.btn-del{font-size:10px;padding:2px 8px;background:var(--red)22;color:var(--red);border:1px solid var(--red)44;border-radius:var(--radius-sm);cursor:pointer}
 .edited-badge{font-size:9px;color:var(--muted);margin-left:3px}
 /* Payslip cards */
 .payslip-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow-sm)}
@@ -974,14 +974,14 @@ textarea { min-height: 70px; }
   min-width: 42px;
   padding: 6px 2px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--muted);
   font-family: inherit;
   font-size: 9px;
   text-align: center;
   cursor: pointer;
-  transition: all .15s;
+  transition: all .2s;
 }
 .sc-mpick-btn.active { border-color: var(--brass); color: var(--brass); background: var(--brass)11; }
 .sc-mpick-btn.today .sc-mpick-num { color: var(--brass); }

@@ -54,7 +54,7 @@
 #ym-alert-banner {
   background: #1a0a05;
   border-bottom: 2px solid var(--red,#e74c3c);
-  font-family: 'DM Mono', monospace;
+  font-family: inherit;
   font-size: 12px;
 }
 #ym-alert-inner {
