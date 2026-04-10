@@ -103,7 +103,7 @@ const SCORE_CONFIG = {
               adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.',
               description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
               descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlágingu persónulega.' },
-    black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⛔',
+    black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⚫️',
               advice:'Water closed  —  all sailing suspended.',
               adviceIS:'Sjór lokaður — allar siglingar stöðvaðar.',
               description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
