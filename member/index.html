@@ -130,6 +130,24 @@
   min-width:16px; height:16px; border-radius:8px; background:var(--red);
   color:#fff; font-size:9px; font-weight:600; margin-left:4px; padding:0 4px; }
 
+/* ── Volunteer event cards ── */
+.vol-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
+  padding:12px 14px; margin-bottom:8px; }
+.vol-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.vol-card-title { font-size:13px; font-weight:500; color:var(--text); }
+.vol-card-date { font-size:10px; color:var(--brass); margin-bottom:2px; }
+.vol-card-leader { font-size:10px; color:var(--muted); margin-top:4px; }
+.vol-role-row { display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:6px 0; border-top:1px solid var(--border); margin-top:6px; }
+.vol-role-name { font-size:11px; color:var(--text); }
+.vol-role-status { font-size:10px; color:var(--muted); }
+.vol-bar { width:60px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.vol-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
+.vol-btn { padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  color:var(--text); font-family:inherit; font-size:10px; cursor:pointer; transition:border-color .15s; }
+.vol-btn:hover { border-color:var(--brass); }
+.vol-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .fsb-bar-wrap{flex:1;width:auto}
@@ -185,6 +203,11 @@
     <div id="fleetStatus"></div>
   </div>
 
+  <!-- ═══ VOLUNTEER EVENTS ═══ -->
+  <div id="volunteerSection" class="mt-16">
+    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.volunteerEvents"></div>
+    <div id="volunteerList"></div>
+  </div>
 
 </div>
 
@@ -281,6 +304,7 @@
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
 let boats=[], locations=[], checkouts=[];
+let _volunteerEvents=[], _volunteerSignups=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
 let _clubCalendars = [];
@@ -338,12 +362,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       registerBoatCats(_boatCategories);
     }
 
+    _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
     _clubCalendars = cfgRes.clubCalendars || [];
     if (_clubCalendars.length) document.getElementById('calendarBtn').style.display = '';
 
     populateFormSelects();
     renderActiveCheckouts();
     renderFleetByCat();
+    loadVolunteerSignups();
 
     // Handle ?boat=<id> URL param from QR-code scans (native camera → browser)
     const _qrBoatParam = new URLSearchParams(window.location.search).get('boat');
@@ -1504,6 +1530,104 @@ function _renderMemberStaffStatus() {
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
 }
 
+// ══ VOLUNTEER EVENTS ═══════════════════════════════════════════════════════
+
+async function loadVolunteerSignups() {
+  if (!_volunteerEvents.length) {
+    renderMemberVolunteerEvents();
+    return;
+  }
+  try {
+    const res = await apiPost('getVolunteerSignups', {});
+    _volunteerSignups = res.signups || [];
+  } catch(e) { _volunteerSignups = []; }
+  renderMemberVolunteerEvents();
+}
+
+function renderMemberVolunteerEvents() {
+  const container = document.getElementById('volunteerList');
+  if (!container) return;
+  const L = getLang();
+  const user = getUser();
+  const kt = user ? user.kennitala : '';
+  const today = new Date().toISOString().slice(0, 10);
+  // Show only future or today events, sorted by date
+  const upcoming = _volunteerEvents
+    .filter(e => e.date >= today)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.startTime || '').localeCompare(b.startTime || ''));
+  if (!upcoming.length) {
+    container.innerHTML = '<div class="empty-note">' + s('member.noVolEvents') + '</div>';
+    return;
+  }
+  container.innerHTML = upcoming.map(function(ev) {
+    const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
+    const notes = (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
+    const roles = Array.isArray(ev.roles) ? ev.roles : [];
+    const rolesHtml = roles.map(function(role) {
+      const rn = (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
+      const signupsForRole = _volunteerSignups.filter(function(su) { return su.eventId === ev.id && su.roleId === role.id; });
+      const filled = signupsForRole.length;
+      const total = Number(role.slots) || 0;
+      const isFull = total > 0 && filled >= total;
+      const mySignup = signupsForRole.find(function(su) { return su.kennitala === kt; });
+      const pct = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
+      let btnHtml = '';
+      if (mySignup) {
+        btnHtml = '<button class="vol-btn signed-up" onclick="memberVolWithdraw(\'' + mySignup.id + '\')">' + s('member.volWithdraw') + '</button>';
+      } else if (isFull) {
+        btnHtml = '<span style="font-size:10px;color:var(--red);font-weight:500">' + s('member.volFull') + '</span>';
+      } else {
+        btnHtml = '<button class="vol-btn" onclick="memberVolSignup(\'' + ev.id + '\',\'' + role.id + '\')">' + s('member.volSignUp') + '</button>';
+      }
+      return '<div class="vol-role-row">'
+        + '<div><div class="vol-role-name">' + esc(rn) + '</div>'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'
+        + '<div class="vol-bar"><div class="vol-bar-fill" style="width:' + pct + '%"></div></div>'
+        + '<span class="vol-role-status">' + filled + '/' + total + (mySignup ? ' · ' + s('member.volSignedUp') : '') + '</span>'
+        + '</div></div>'
+        + '<div>' + btnHtml + '</div>'
+        + '</div>';
+    }).join('');
+    const leaderHtml = ev.leaderName
+      ? '<div class="vol-card-leader">' + s('member.volLeader') + ': ' + esc(ev.leaderName) + (ev.showLeaderPhone && ev.leaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>'
+      : '';
+    const notesHtml = notes ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + esc(notes) + '</div>' : '';
+    return '<div class="vol-card">'
+      + '<div class="vol-card-date">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</div>'
+      + '<div class="vol-card-title">' + esc(title) + '</div>'
+      + leaderHtml + notesHtml
+      + rolesHtml
+      + '</div>';
+  }).join('');
+}
+
+async function memberVolSignup(eventId, roleId) {
+  const user = getUser();
+  if (!user) return;
+  try {
+    const res = await apiPost('volunteerSignup', {
+      eventId: eventId,
+      roleId: roleId,
+      kennitala: user.kennitala,
+      name: user.name || '',
+    });
+    _volunteerSignups.push(res.signup || { id: res.id, eventId: eventId, roleId: roleId, kennitala: user.kennitala, name: user.name });
+    renderMemberVolunteerEvents();
+    toast(s('toast.saved'));
+  } catch(e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function memberVolWithdraw(signupId) {
+  try {
+    await apiPost('volunteerWithdraw', { id: signupId });
+    _volunteerSignups = _volunteerSignups.filter(function(su) { return su.id !== signupId; });
+    renderMemberVolunteerEvents();
+    toast(s('toast.saved'));
+  } catch(e) {
+    toast(e.message, 'err');
+  }
 // ══ CLUB CALENDAR ════════════════════════════════════════════════════════════
 function openClubCalendar() {
   var el = document.getElementById('calendarContent');
