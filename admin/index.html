@@ -1966,7 +1966,7 @@ function openCLModal(id) {
   document.getElementById("clPhase").value    = item ? (item.phase || 'opening') : "opening";
   document.getElementById("clTextEN").value   = item ? (item.textEN  || "") : "";
   document.getElementById("clTextIS").value   = item ? (item.textIS  || "") : "";
-  document.getElementById("clSort").value     = item ? (item.sortOrder || 1) : 1;
+  document.getElementById("clSort").value     = item ? (item.sortOrder || 99) : 99;
   document.getElementById("clActive").checked = item ? bool(item.active) : true;
   document.getElementById("clDeleteBtn").classList.toggle("hidden", !item);
   openModal("clModal");
@@ -2048,7 +2048,7 @@ function openLaunchCLModal(cat, phase, id) {
   document.getElementById("lcPhase").value  = curPhase;
   document.getElementById("lcText").value   = item ? (item.text   || "") : "";
   document.getElementById("lcTextIS").value = item ? (item.textIS || "") : "";
-  document.getElementById("lcSort").value   = item ? (item.sort   || 1) : 1;
+  document.getElementById("lcSort").value   = item ? (item.sort   || 99) : 99;
   document.getElementById("lcDeleteBtn").classList.toggle("hidden", !item);
   openModal("launchCLModal");
 }
