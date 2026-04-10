@@ -65,6 +65,10 @@
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
     .cl-phase { width:50px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+    .cl-sort-input { width:38px; text-align:center; font-size:11px; padding:2px 4px; border:1px solid var(--border);
+      border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0; }
+    .cl-sort-input:focus { border-color:var(--brass); outline:none; }
+    .cl-update-order { font-size:11px; margin-top:6px; }
 
     /* ── Action buttons ── */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
@@ -1949,14 +1953,17 @@ function renderCLPhase(cardId, phase) {
     .filter(i => String(i.phase).toLowerCase() === phase && bool(i.active))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   if (!items.length) { card.innerHTML = `<div class="empty-state">${s('admin.noItems')}</div>`; return; }
+  const btnId = 'clUpdateOrder_' + phase;
   card.innerHTML = items.map(i => `
     <div class="cl-row">
-      <span class="cl-phase">${phase === 'opening' ? 'OPEN' : 'CLOSE'}</span>
+      <input type="number" class="cl-sort-input" data-cl-id="${i.id}" data-cl-phase="${phase}"
+        value="${i.sortOrder || 99}" min="0" onchange="document.getElementById('${btnId}').classList.remove('hidden')">
       <span style="flex:1;color:var(--text)">${esc(i.textEN || "")}${i.textIS
         ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
       <button class="row-edit" onclick="openCLModal('${i.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCLItem('${i.id}')">×</button>
-    </div>`).join("");
+    </div>`).join("") +
+    `<button id="${btnId}" class="btn btn-primary cl-update-order hidden" onclick="updateCLOrder('${phase}')">Update Order</button>`;
 }
 
 function openCLModal(id) {
@@ -2003,6 +2010,25 @@ async function deleteCLItem(id) {
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
+async function updateCLOrder(phase) {
+  const inputs = document.querySelectorAll(`input.cl-sort-input[data-cl-phase="${phase}"]`);
+  const updates = [];
+  inputs.forEach(inp => {
+    const id = inp.dataset.clId;
+    const val = parseInt(inp.value) || 99;
+    const item = clItems.find(x => x.id === id);
+    if (item && item.sortOrder !== val) { item.sortOrder = val; updates.push(item); }
+  });
+  if (!updates.length) { document.getElementById('clUpdateOrder_' + phase)?.classList.add('hidden'); return; }
+  try {
+    for (const item of updates) {
+      await apiPost("saveChecklistItem", { id: item.id, phase: item.phase, textEN: item.textEN, textIS: item.textIS || "", sortOrder: item.sortOrder, active: item.active });
+    }
+    renderChecklists();
+    toast(s("toast.saved"));
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
+}
+
 // ══ LAUNCH / LANDING CHECKLISTS ══════════════════════════════════════════════
 // Stored in config as: launchChecklists = {
 //   dinghy: { launch:[{id,text,textIS,sort}], landing:[...] }, ...
@@ -2024,13 +2050,17 @@ function renderLaunchCLSections() {
     if (!el) return;
     const items = (catData[phase] || []).slice().sort((a, b) => (a.sort || 99) - (b.sort || 99));
     if (!items.length) { el.innerHTML = '<div class="empty-state">' + s('admin.noItems') + '</div>'; return; }
+    const btnId = 'lcUpdateOrder_' + cat + '_' + phase;
     el.innerHTML = items.map(i => `
       <div class="cl-row">
+        <input type="number" class="cl-sort-input" data-lc-cat="${esc(cat)}" data-lc-phase="${phase}" data-lc-id="${esc(i.id)}"
+          value="${i.sort || 99}" min="0" onchange="document.getElementById('${btnId}').classList.remove('hidden')">
         <span style="flex:1;color:var(--text)">${esc(i.text || "")}${i.textIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(i.textIS)}</span>` : ""}</span>
         <button class="row-edit" onclick="openLaunchCLModal('${esc(cat)}','${phase}','${esc(i.id)}')">Edit</button>
         <button class="row-del"  onclick="deleteLaunchCLItem('${esc(cat)}','${phase}','${esc(i.id)}')">×</button>
-      </div>`).join("");
+      </div>`).join("") +
+      `<button id="${btnId}" class="btn btn-primary cl-update-order hidden" onclick="updateLaunchCLOrder('${esc(cat)}','${phase}')">Update Order</button>`;
   });
 }
 
@@ -2072,6 +2102,24 @@ async function saveLaunchCLItem() {
   try {
     await apiPost("saveConfig", { launchChecklists: _launchCLs });
     closeModal("launchCLModal");
+    renderLaunchCLSections();
+    toast(s("toast.saved"));
+  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
+}
+
+async function updateLaunchCLOrder(cat, phase) {
+  const inputs = document.querySelectorAll(`input.cl-sort-input[data-lc-cat="${cat}"][data-lc-phase="${phase}"]`);
+  let changed = false;
+  inputs.forEach(inp => {
+    const id = inp.dataset.lcId;
+    const val = parseInt(inp.value) || 99;
+    const list = _launchCLs[cat]?.[phase] || [];
+    const item = list.find(x => x.id === id);
+    if (item && item.sort !== val) { item.sort = val; changed = true; }
+  });
+  if (!changed) { document.getElementById('lcUpdateOrder_' + cat + '_' + phase)?.classList.add('hidden'); return; }
+  try {
+    await apiPost("saveConfig", { launchChecklists: _launchCLs });
     renderLaunchCLSections();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
