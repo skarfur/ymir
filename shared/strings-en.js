@@ -1264,7 +1264,7 @@ var _STRINGS_FLAT = {
   "member.volSignedUp": "Signed up",
   "member.volSlotsLeft": "{n} left",
   "member.volLeader": "In charge",
-  "member.noVolEvents": "No upcoming volunteer events."
+  "member.noVolEvents": "No upcoming volunteer events.",
   "member.calendar": "📅 Calendar",
   "member.calTitle": "Club Calendars",
   "member.calEmpty": "No calendars have been set up yet.",
