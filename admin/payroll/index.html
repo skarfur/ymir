@@ -342,7 +342,7 @@ function prRenderCalDays(){
   var byDate={};
   _tsEntries.forEach(function(e){
     if(empId&&e.employeeId!==empId)return;
-    var d=(e.clockIn||e.timestamp||'').slice(0,10);if(!d)return;
+    var d=sstr(e.clockIn||e.timestamp).slice(0,10);if(!d)return;
     if(!byDate[d])byDate[d]=[];byDate[d].push(e);
   });
   var totalCells=startDow+lastDay+(endDow<6?6-endDow:0);

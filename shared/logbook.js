@@ -499,7 +499,7 @@ function _setupTripScrollObserver(el) {
 }
 
 function buildFilters(){
-  const years=[...new Set(myTrips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const years=[...new Set(myTrips.map(t=>sstr(t.date).slice(0,4)).filter(Boolean))].sort().reverse();
   const yrSel=document.getElementById('fYear');
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;yrSel.appendChild(o);});
   const thisYear=String(new Date().getFullYear());

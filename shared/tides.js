@@ -150,7 +150,7 @@ async function fetchSunTimes(lat, lon, dateStr) {
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset&timezone=Atlantic/Reykjavik&start_date=${dateStr}&end_date=${dateStr}`);
     if (!r.ok) return null;
     const j = await r.json();
-    const data = { sunrise: (j.daily?.sunrise?.[0]||'').slice(11,16)||null, sunset: (j.daily?.sunset?.[0]||'').slice(11,16)||null };
+    const data = { sunrise: sstr(j.daily?.sunrise?.[0]).slice(11,16)||null, sunset: sstr(j.daily?.sunset?.[0]).slice(11,16)||null };
     sessionStorage.setItem(k, JSON.stringify({ ts: Date.now(), data }));
     return data;
   } catch(_) { return null; }

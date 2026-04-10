@@ -346,7 +346,7 @@ function punchClockWidget(el, employeeId, opts) {
     var mondayOffset = day === 0 ? -6 : 1 - day;
     var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
     var weekStartISO = weekStart.toISOString().slice(0,10);
-    recent = recent.filter(function(r) { return (r.inTime || '').slice(0,10) >= weekStartISO; });
+    recent = recent.filter(function(r) { return sstr(r.inTime).slice(0,10) >= weekStartISO; });
     if (recent.length) {
       var isOpen = el._pcRecentOpen || false;
       recentHTML = '<div class="pc-recent">'
@@ -412,7 +412,7 @@ function punchClockWidget(el, employeeId, opts) {
   function pcShowSummaryModal(allEntries, empId) {
     var today = new Date().toISOString().slice(0,10);
     var todayEntries = allEntries.filter(function(e) {
-      return (e.timestamp || '').slice(0,10) === today || (e.originalTimestamp || '').slice(0,10) === today;
+      return sstr(e.timestamp).slice(0,10) === today || sstr(e.originalTimestamp).slice(0,10) === today;
     }).sort(function(a,b) { return a.timestamp > b.timestamp ? 1 : -1; });
 
     var ins   = todayEntries.filter(function(e) { return e.type === 'in'; });

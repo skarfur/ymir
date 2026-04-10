@@ -500,10 +500,10 @@ function renderMaint() {
     var resolved = m.resolved || boolVal(m.resolved);
     return '<div class="cq-card">'
       + '<div class="cq-card-title"><span class="sev-dot sev-' + esc(sev) + '"></span>' + esc(m.boatName || m.itemName || 'Unknown') + '</div>'
-      + '<div class="cq-card-sub">' + esc(m.description || '').slice(0, 120) + '</div>'
+      + '<div class="cq-card-sub">' + esc(sstr(m.description)).slice(0, 120) + '</div>'
       + '<div class="cq-card-meta">' + esc(sev.toUpperCase()) + ' · '
         + (resolved ? '<span style="color:var(--green)">RESOLVED</span>' : '<span style="color:var(--yellow)">OPEN</span>')
-        + ' · ' + esc((m.createdAt || '').slice(0, 10))
+        + ' · ' + esc(sstr(m.createdAt).slice(0, 10))
       + '</div>'
     + '</div>';
   }).join('');
@@ -808,7 +808,7 @@ var _captains = [];
 
 function buildFilters() {
   // Year filter
-  var years = [...new Set(myTrips.map(function(t) { return (t.date || '').slice(0, 4); }).filter(Boolean))].sort().reverse();
+  var years = [...new Set(myTrips.map(function(t) { return sstr(t.date).slice(0, 4); }).filter(Boolean))].sort().reverse();
   var yrSel = document.getElementById('fYear');
   yrSel.innerHTML = '<option value="">' + s('cq.allYears') + '</option>';
   years.forEach(function(y) { var o = document.createElement('option'); o.value = y; o.textContent = y; yrSel.appendChild(o); });

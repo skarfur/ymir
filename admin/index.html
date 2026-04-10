@@ -2774,7 +2774,7 @@ function renderImportPreview(res) {
         <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
           <span style="flex:1">${esc(m.name)}</span>
-          ${m.dob && (new Date().getFullYear() - parseInt((m.dob||"").slice(0,4))) < 18
+          ${m.dob && (new Date().getFullYear() - parseInt(sstr(m.dob).slice(0,4))) < 18
             ? `<span class="minor-badge">minor</span>` : ""}
         </div>`).join("")}</div>`;
   }

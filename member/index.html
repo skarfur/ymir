@@ -443,7 +443,7 @@ function openCheckInPicker() {
   openModal('returnModal');
   document.getElementById('returnModalBody').innerHTML=mine.map(c=>
     `<button class="btn btn-secondary mb-8" style="width:100%;text-align:left"
-      onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc((c.checkedOutAt||c.timeOut||'').slice(0,5))}</button>`).join('');
+      onclick="openReturnModal('${c.id}')">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5))}</button>`).join('');
 }
 function openReturnModal(coId) {
   returnCo=checkouts.find(c=>c.id===coId)||null;
@@ -1309,7 +1309,7 @@ async function confirmCheckIn(coId) {
   var notes=(document.getElementById('retNotes')||{}).value||'';
   var skipperNote=(document.getElementById('retSkipperNote')||{}).value||'';
   var co=checkouts.find(function(c){return c.id===coId;}); if(!co) return;
-  var tout=(co.checkedOutAt||co.timeOut||'').slice(0,5);
+  var tout=sstr(co.checkedOutAt||co.timeOut).slice(0,5);
   var h=(tout&&timeIn)?((new Date('2000-01-01T'+timeIn)-new Date('2000-01-01T'+tout))/3600000):0;
   if(h<0) h+=24;
   var today=new Date().toISOString().slice(0,10);

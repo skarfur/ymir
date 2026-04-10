@@ -696,8 +696,8 @@ function renderRecentCheckins() {
     <span>${s('staff.recentDuration')}</span>
   </div>`;
   const rows = recent.map(c => {
-    const tin  = (c.checkedInAt ||c.timeIn ||'').slice(0,5);
-    const tout = (c.checkedOutAt||c.timeOut||'').slice(0,5);
+    const tin  = sstr(c.checkedInAt ||c.timeIn).slice(0,5);
+    const tout = sstr(c.checkedOutAt||c.timeOut).slice(0,5);
     let dur = '';
     if (tout && tin) {
       const [oh,om] = tout.split(':').map(Number);
@@ -928,7 +928,7 @@ async function staffCheckIn(id) {
     await apiPost('checkIn', { id, timeIn });
     // Auto-create trip record for the skipper
     if (co && co.memberKennitala) {
-      const timeOut = (co.checkedOutAt || co.timeOut || '').slice(0, 5);
+      const timeOut = sstr(co.checkedOutAt || co.timeOut).slice(0, 5);
       let hoursDecimal = 0;
       if (timeOut && timeIn) {
         const [oh, om] = timeOut.split(':').map(Number);
@@ -980,7 +980,7 @@ function openCoDetail(id, event) {
   document.getElementById('cdTitle').textContent    = esc(co.boatName || co.boatId);
   document.getElementById('cdBoat').textContent     = esc(co.boatName || co.boatId);
   document.getElementById('cdLocation').textContent = esc(co.locationName || '—');
-  document.getElementById('cdOut').textContent      = (co.checkedOutAt||co.timeOut||'').slice(0,5) || '—';
+  document.getElementById('cdOut').textContent      = sstr(co.checkedOutAt||co.timeOut).slice(0,5) || '—';
   document.getElementById('cdReturn').textContent   = co.expectedReturn || '—';
   document.getElementById('cdCrew').textContent     = co.crew || 1;
   const notesRow = document.getElementById('cdNotesRow');
@@ -1382,7 +1382,7 @@ function renderGroupCard(c) {
   const partic     = parseInt(c.participants) || 0;
   const total      = partic + staffArr.length;
   const boatCount  = boatArr.length;
-  const tout       = (c.checkedOutAt || c.timeOut || '').slice(0, 5);
+  const tout       = sstr(c.checkedOutAt || c.timeOut).slice(0, 5);
   const actName    = c.activityTypeName || '';
 
   // Left column pills: activity → first staff → boats → total
