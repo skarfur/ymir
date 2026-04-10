@@ -295,7 +295,6 @@ window.buildHeader = function (page) {
     if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn'));
     if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn'));
     if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn'));
-    if (isCaptainUser && page !== 'captain') left.appendChild(link(depth + 'captain/', s('nav.captainQuarters'), 'hbtn'));
   }
 
   // RIGHT: guardian-acting-as-ward badge (if applicable)
