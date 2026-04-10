@@ -5259,6 +5259,11 @@ function ensureVolunteerSignupsTab_() {
   ensureTab_(ss, 'volunteer_signups', SCHEMA_.volunteer_signups);
 }
 
+function ensureVolunteerSignupsTab() {
+  ensureVolunteerSignupsTab_();
+  Logger.log('volunteer_signups tab ready');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SPREADSHEET SETUP  — run setupSpreadsheet() from the Apps Script editor
 //
