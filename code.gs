@@ -1360,15 +1360,14 @@ function getConfig_() {
     const rpRaw = getConfigValue_('rowingPassport', cfgMap);
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
-  let volunteerEvents = [];
+  var volunteerEvents = [];
   try { volunteerEvents = JSON.parse(getConfigValue_('volunteer_events', cfgMap) || '[]'); } catch (e) {}
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents };
-  let clubCalendars = [];
+  var clubCalendars = [];
   try {
-    const ccRaw = getConfigValue_('clubCalendars', cfgMap);
+    var ccRaw = getConfigValue_('clubCalendars', cfgMap);
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
   } catch (e) {}
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, clubCalendars };
+  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars };
   cPut_('config', config);
   return okJ(config);
 }
