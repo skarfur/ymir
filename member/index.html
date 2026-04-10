@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._earlyCheckouts || apiGet('getActiveCheckouts'),
       window._earlyConfig || apiGet('getConfig'),
     ]);
-    if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
+    if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); document.getElementById('wxWidget')?._wxRefresh?.(); }
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');

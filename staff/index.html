@@ -532,7 +532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
       registerBoatCats(cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false'));
     }
-    if (typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfgRes.flagConfig);
+    if (typeof wxLoadFlagConfig === 'function' && cfgRes.flagConfig) { wxLoadFlagConfig(cfgRes.flagConfig); document.getElementById('wxWidget')?._wxRefresh?.(); }
     if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); document.getElementById('wxWidget')?._wxRefreshBadges?.(); }
 
     populateSelects();
