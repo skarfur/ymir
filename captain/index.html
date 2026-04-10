@@ -22,7 +22,7 @@
 <style>
 /* ── Stats ── */
 .cq-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-.cq-stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 12px; text-align:center; }
+.cq-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
 .cq-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
 .cq-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
@@ -34,27 +34,27 @@
 /* ── Filter pills ── */
 .cq-pills { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
 .cq-pill { padding:5px 12px; border-radius:16px; border:1px solid var(--border); background:var(--surface);
-  font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .15s; }
+  font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .2s; }
 .cq-pill.active { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
 
 /* ── Compact filter bar ── */
 .cq-filter-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; margin-bottom:10px; align-items:center; }
-.cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+.cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
-  transition:border-color .15s; min-width:0; width:100%; box-sizing:border-box; }
-.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); }
+  transition:border-color .2s,box-shadow .2s; min-width:0; width:100%; box-sizing:border-box; }
+.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
 .cq-filter-search { display:flex; gap:6px; align-items:center; grid-column:1/-1; }
 .cq-filter-search input { flex:1; min-width:0; }
 .cq-filter-count { font-size:9px; color:var(--muted); white-space:nowrap; }
 
 /* ── Cards ── */
-.cq-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:12px 14px; margin-bottom:8px; }
+.cq-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 .cq-card-title { font-size:12px; font-weight:500; color:var(--text); }
 .cq-card-sub { font-size:11px; color:var(--muted); margin-top:3px; }
 .cq-card-meta { font-size:10px; color:var(--brass); margin-top:2px; }
 .cq-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
-.cq-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:6px; cursor:pointer; border:1px solid; }
+.cq-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid; }
 .cq-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }
 .cq-card .btn-confirm:hover { background:var(--green)33; }
 .cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
@@ -69,38 +69,39 @@
 
 
 /* ── Show-more button ── */
-.cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; }
+.cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; transition:border-color .2s,color .2s; }
 .cq-show-more:hover { border-color:var(--brass); color:var(--text); }
 
 /* ── Filter bar (logbook) ── */
 .filter-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; align-items:center; }
-.filter-bar select, .filter-bar input { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+.filter-bar select, .filter-bar input { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:11px; padding:5px 9px; height:30px; outline:none;
-  transition:border-color .15s; width:100%; box-sizing:border-box; }
-.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); }
+  transition:border-color .2s,box-shadow .2s; width:100%; box-sizing:border-box; }
+.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
 .filter-bar .filter-search-row { grid-column:1/-1; display:flex; gap:6px; align-items:center; }
 .filter-bar .filter-search-row input { flex:1; min-width:0; }
 .filter-count { font-size:10px; color:var(--muted); white-space:nowrap; }
 
 /* ── Bio section ── */
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
-  border-radius:8px; color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
-  resize:vertical; box-sizing:border-box; }
+  border-radius:var(--radius-md); color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
+  resize:vertical; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; outline:none; }
+.cq-bio-area:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
 .cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--brass); }
 .cq-headshot-placeholder { width:80px; height:80px; border-radius:50%; background:var(--surface);
   border:2px dashed var(--border); display:flex; align-items:center; justify-content:center;
   font-size:24px; color:var(--muted); }
 
 /* ── Boat cards ── */
-.cq-boat { background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+.cq-boat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); }
 .cq-boat-name { font-size:13px; font-weight:500; }
 .cq-boat-sub { font-size:11px; color:var(--muted); margin-top:2px; }
 .cq-boat-actions { margin-left:auto; display:flex; gap:6px; }
-.cq-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:6px;
-  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
-.cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass); }
+.cq-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
+  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
+.cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
 
 /* ── Responsive ── */
 @media(max-width:600px){

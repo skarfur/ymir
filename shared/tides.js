@@ -271,7 +271,7 @@ function tideWidget(targetEl, { onData } = {}) {
       const lbl = up ? (IS?'Hækkandi':'Rising') : (IS?'Lækkandi':'Falling');
       statusHtml = `<span style="color:${col};font-weight:700;font-size:12px">${up?'↑':'↓'}</span>`
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
-        + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace">${curH.toFixed(1)}m</span>`;
+        + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:var(--font-mono)">${curH.toFixed(1)}m</span>`;
     } else {
       statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Fara á í dag':'Go to today'}</button>`;
     }
