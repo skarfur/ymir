@@ -128,7 +128,7 @@ var _STRINGS_FLAT = {
   "login.member.label": "Member Hub",
   "login.member.desc": "Go sailing, logbook, volunteer",
   "member.launchBoat": "Launch a Boat",
-  "member.reportIssue": "Report Issue",
+  "member.reportIssue": "Report Damage",
   "member.myCheckout": "BOATS OUT NOW",
   "member.myCheckoutSub": "Tap your boat to check in",
   "member.tabFleet": "Fleet",
