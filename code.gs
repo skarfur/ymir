@@ -213,13 +213,24 @@ function getSheet_(tabKey) {
 
 const TIME_COLS_ = new Set(['checkedOutAt', 'checkedInAt', 'expectedReturn', 'timeOut', 'timeIn', 'returnBy', 'startTime', 'endTime']);
 
+// Columns that must always be strings even when Sheets auto-parses them as
+// numbers (e.g. 10-digit kennitalas, numeric IDs, phone numbers).
+// Matched by regex against the column header name so new columns inherit
+// the protection automatically.
+const STRING_COL_RE_ = /kennitala|phone|[Ii]d$|^id$|description|notes|name|title|involved|witnesses|immediateAction|followUp|handOff|filedAt|time$/i;
+
 function sanitizeCell_(col, val) {
-  if (!(val instanceof Date)) return val;
-  const iso = val.toISOString();
-  if (iso.startsWith('1899-12-3') || iso.startsWith('1899-12-2')) {
-    return iso.slice(11, 16);
+  if (val instanceof Date) {
+    const iso = val.toISOString();
+    if (iso.startsWith('1899-12-3') || iso.startsWith('1899-12-2')) {
+      return iso.slice(11, 16);
+    }
+    return TIME_COLS_.has(col) ? iso.slice(11, 16) : iso.slice(0, 10);
   }
-  return TIME_COLS_.has(col) ? iso.slice(11, 16) : iso.slice(0, 10);
+  if (val != null && typeof val === 'number' && STRING_COL_RE_.test(col)) {
+    return String(val);
+  }
+  return val;
 }
 
 function readAll_(tabKey) {

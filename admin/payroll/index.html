@@ -444,7 +444,7 @@ function prRenderCalDays(){
   var byDate={};
   _tsEntries.forEach(function(e){
     if(empId&&e.employeeId!==empId)return;
-    var d=(e.clockIn||e.timestamp||'').slice(0,10);if(!d)return;
+    var d=sstr(e.clockIn||e.timestamp).slice(0,10);if(!d)return;
     if(!byDate[d])byDate[d]=[];byDate[d].push(e);
   });
   var totalCells=startDow+lastDay+(endDow<6?6-endDow:0);
@@ -935,7 +935,7 @@ async function prExportPensionCsv(){
       var gross=+(r.grossTotal)||0;
       var eAmt=Math.round(gross*empRate);
       var erAmt=Math.round(gross*emrRate);
-      var period=r.periodFrom?r.periodFrom.slice(0,7):(r.period||'').slice(0,7);
+      var period=r.periodFrom?r.periodFrom.slice(0,7):sstr(r.period).slice(0,7);
       csvRows.push([r.kt||'',r.employeeName||r.employeeId||'',period,gross,(empRate*100).toFixed(2)+'%',eAmt,(emrRate*100).toFixed(2)+'%',erAmt]);
     });
     var csv=csvRows.map(function(row){return row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');

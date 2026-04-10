@@ -316,10 +316,6 @@ function esc(s) {
   return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Safe slice: coerce to string first so numeric timestamps / IDs (e.g. kennitala)
-// from the API don't crash with "slice is not a function".
-function sstr(v) { return v == null ? '' : String(v); }
-
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 2 — DEFAULT FALLBACK DATA
 // ════════════════════════════════════════════════════════════════════════════

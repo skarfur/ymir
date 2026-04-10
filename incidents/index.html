@@ -353,9 +353,9 @@ function renderList() {
           return `<span class="badge ${cls}">${lbl}</span>`;
         })()}
       </div>
-      <div class="incident-desc">${esc(i.description||'').slice(0,120)}${(i.description||'').length>120?'…':''}</div>
+      <div class="incident-desc">${esc(sstr(i.description)).slice(0,120)}${sstr(i.description).length>120?'…':''}</div>
       <div class="incident-meta">
-        ${esc((i.filedAt||'').slice(0,16).replace('T',' '))}
+        ${esc(sstr(i.filedAt).slice(0,16).replace('T',' '))}
         ${i.boatName ? ' · '+esc(i.boatName) : ''}
         ${rNotes.length ? ` · ${rNotes.length} comment${rNotes.length===1?'':'s'}` : ''}
       </div>

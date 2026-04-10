@@ -232,7 +232,7 @@ function renderBoatCard(boat, opts) {
   // Checkout info line (when out / overdue)
   let infoLine = "";
   if (co && (status==="out"||status==="overdue")) {
-    const tout  = (co.checkedOutAt||co.timeOut||"").slice(0,5);
+    const tout  = sstr(co.checkedOutAt||co.timeOut).slice(0,5);
     const retBy = co.expectedReturn||co.returnBy||"";
     infoLine = `<div style="font-size:11px;color:var(--muted);margin-top:4px">`
              + `${_besc(co.memberName||"")} · ${_besc(co.locationName||"")} · ${_besc(s("fleet.outTime",{t:tout}))}`
@@ -336,7 +336,7 @@ function renderCheckoutCard(co, opts) {
   const now       = new Date().toTimeString().slice(0,5);
   const retBy     = co.expectedReturn||co.returnBy||"";
   const overdue   = co.isOverdue === true || co.isOverdue === 'true' || (retBy && retBy < now);
-  const tout      = (co.checkedOutAt||co.timeOut||"").slice(0,5);
+  const tout      = sstr(co.checkedOutAt||co.timeOut).slice(0,5);
 
   // Top badge (member view only — staff don't need it, they see all)
   let topBadge = "";

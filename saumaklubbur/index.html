@@ -408,7 +408,7 @@ function renderProjectCard(r) {
             : `<span class="text-sm text-muted" style="font-style:italic" data-s="sauma.needsVerkstjori">Needs verkstjóri</span>`}
           ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
-          ${r.createdAt  ? `<span>${(r.createdAt||'').slice(0,10)}</span>` : ''}
+          ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>` : ''}
         </div>
       </div>
     </div>
@@ -416,10 +416,10 @@ function renderProjectCard(r) {
     ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" onclick="event.stopPropagation();viewPhoto('${esc(r.photoUrl)}')">` : ''}
     <div class="flex-center gap-8 mt-8 text-sm text-muted">
       <span>💬 ${commentCount}</span>
-      ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${(lastComment.at||'').slice(0,16).replace('T',' ')}</span>` : ''}
+      ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${sstr(lastComment.at).slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
     ${!boolVal(r.approved) && !resolved ? `<div class="mt-8 text-sm text-brass" style="font-style:italic">⏳ Pending staff review</div>` : ''}
-    ${resolved ? `<div class="mt-8 text-sm text-muted">✓ Completed ${(r.resolvedAt||'').slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div class="mt-8 text-sm text-muted">✓ Completed ${sstr(r.resolvedAt).slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
   </div>`;
 }
 

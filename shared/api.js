@@ -293,6 +293,11 @@ function fmtWeekRange(startISO, endISO) {
   } catch(e) { return fmtDateShort(startISO) + ' – ' + fmtDateShort(endISO); }
 }
 
+// Safe-string: coerce any value to a string.  Handles the common case where
+// Google Sheets returns numeric kennitalas, IDs, or timestamps as JS numbers.
+// Use before .slice(), .trim(), .startsWith() etc. on API-sourced values.
+window.sstr = function(v) { return v == null ? '' : String(v); };
+
 function fmtTime(iso) {
   if (!iso) return "-";
   try { var d = new Date(iso); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
