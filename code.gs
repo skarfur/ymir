@@ -271,6 +271,9 @@ function ensureGroupCols_() {
 function ensureCheckoutContactCols_() {
   ['memberPhone','memberIsMinor','guardianName','guardianPhone'].forEach(c => addColIfMissing_('checkouts', c));
 }
+function ensureMaintCols_() {
+  ['saumaklubbur','verkstjori','materials','approved','onHold','followers','updatedAt'].forEach(c => addColIfMissing_('maintenance', c));
+}
 
 function updateRow_(tabKey, keyField, keyValue, updates) {
   const sheet = getSheet_(tabKey);
@@ -765,12 +768,7 @@ function getMaintenance_() {
 }
 
 function saveMaintenance_(b) {
-  addColIfMissing_('maintenance', 'saumaklubbur');
-  addColIfMissing_('maintenance', 'verkstjori');
-  addColIfMissing_('maintenance', 'materials');
-  addColIfMissing_('maintenance', 'approved');
-  addColIfMissing_('maintenance', 'followers');
-  addColIfMissing_('maintenance', 'updatedAt');
+  ensureMaintCols_();
 
   // If an id is provided, update the existing row instead of creating a new one
   if (b.id) {
@@ -813,6 +811,7 @@ function saveMaintenance_(b) {
 
 function resolveMaintenance_(b) {
   if (!b.id) return failJ('id required');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { resolved: true, resolvedBy: b.resolvedBy || '', resolvedAt: now_(), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ resolved: true });
@@ -1186,6 +1185,7 @@ function xmlEsc_(s){
 function addMaintenanceComment_(b) {
   if (!b.id) return failJ('id required');
   if (!b.text) return failJ('text required');
+  ensureMaintCols_();
   const ex = findOne_('maintenance', 'id', b.id);
   if (!ex) return failJ('Request not found', 404);
   let comments = [];
@@ -1208,7 +1208,7 @@ function toggleMaterial_(b) {
   const idx = parseInt(b.index);
   if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
   materials[idx].purchased = !materials[idx].purchased;
-  addColIfMissing_('maintenance', 'materials');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ toggled: true, materials });
@@ -1222,7 +1222,7 @@ function addMaterial_(b) {
   let materials = [];
   try { materials = JSON.parse(ex.materials || '[]'); } catch(e) { materials = []; }
   materials.push({ name: b.name, purchased: false });
-  addColIfMissing_('maintenance', 'materials');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ added: true, materials });
@@ -1238,7 +1238,7 @@ function removeMaterial_(b) {
   const idx = parseInt(b.index);
   if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
   materials.splice(idx, 1);
-  addColIfMissing_('maintenance', 'materials');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ removed: true, materials });
@@ -1249,7 +1249,7 @@ function approveSaumaklubbur_(b) {
   const ex = findOne_('maintenance', 'id', b.id);
   if (!ex) return failJ('Request not found', 404);
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
-  addColIfMissing_('maintenance', 'approved');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { approved: true, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ approved: true });
@@ -1262,7 +1262,7 @@ function adoptSaumaklubbur_(b) {
   if (!ex) return failJ('Request not found', 404);
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
   if (ex.verkstjori) return failJ('Already has a verkstjóri');
-  addColIfMissing_('maintenance', 'verkstjori');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { verkstjori: b.name, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ adopted: true, verkstjori: b.name });
@@ -1274,7 +1274,7 @@ function holdSaumaklubbur_(b) {
   if (!ex) return failJ('Request not found', 404);
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
   const onHold = b.onHold !== false && b.onHold !== 'false';
-  addColIfMissing_('maintenance', 'onHold');
+  ensureMaintCols_();
   updateRow_('maintenance', 'id', b.id, { onHold: onHold, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ onHold: onHold });
@@ -1286,7 +1286,7 @@ function followProject_(b) {
   const ex = findOne_('maintenance', 'id', b.id);
   if (!ex) return failJ('Request not found', 404);
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
-  addColIfMissing_('maintenance', 'followers');
+  ensureMaintCols_();
   var followers = [];
   try { followers = JSON.parse(ex.followers || '[]'); } catch(e) { followers = []; }
   var kt = String(b.kennitala);
@@ -1302,7 +1302,7 @@ function unfollowProject_(b) {
   if (!b.kennitala) return failJ('kennitala required');
   const ex = findOne_('maintenance', 'id', b.id);
   if (!ex) return failJ('Request not found', 404);
-  addColIfMissing_('maintenance', 'followers');
+  ensureMaintCols_();
   var followers = [];
   try { followers = JSON.parse(ex.followers || '[]'); } catch(e) { followers = []; }
   var kt = String(b.kennitala);
@@ -3232,6 +3232,7 @@ function getVerificationRequests_() {
 // ── Notification counts for member hub badges ────────────────────────────────
 function getNotifications_(b) {
   if (!b.kennitala) return failJ('kennitala required');
+  ensureMaintCols_();
   var kt = String(b.kennitala);
   var counts = { confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0 };
 
