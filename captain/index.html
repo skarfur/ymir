@@ -915,7 +915,7 @@ async function saveCqReservation() {
 }
 
 async function removeCqReservation(boatId, resId) {
-  if (!confirm(s('boat.removeReservation') + '?')) return;
+  if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _boats.find(x => x.id === boatId);
@@ -1131,7 +1131,7 @@ async function bookCqSlot(slotId) {
 }
 
 async function unbookCqSlot(slotId) {
-  if (!confirm(s('slot.confirmUnbook'))) return;
+  if (!(await ymConfirm(s('slot.confirmUnbook')))) return;
   var slot = _cqSlots.find(function(sl) { return sl.id === slotId; });
   var prevSlot = slot ? Object.assign({}, slot) : null;
   if (slot) {
@@ -1438,7 +1438,8 @@ async function saveBmResFromModal() {
 
 async function removeBmResFromModal(resId) {
   var boatId = _editingBoatId;
-  if (!boatId || !confirm(s('boat.removeReservation') + '?')) return;
+  if (!boatId) return;
+  if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _boats.find(function(x) { return x.id === boatId; });
@@ -1542,7 +1543,8 @@ async function saveCqBoat() {
 
 async function deleteCqBoat() {
   var id = _editingBoatId;
-  if (!id || !confirm(s('admin.confirmDeleteBoat'))) return;
+  if (!id) return;
+  if (!(await ymConfirm(s('admin.confirmDeleteBoat')))) return;
   _boats = _boats.map(function(b) { return b.id === id ? Object.assign({}, b, { active: false }) : b; });
   try {
     await apiPost('saveConfig', { boats: _boats });
