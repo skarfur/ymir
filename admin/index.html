@@ -65,8 +65,11 @@
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
     .cl-phase { width:50px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
-    .cl-sort-input { width:38px; text-align:center; font-size:11px; padding:2px 4px; border:1px solid var(--border);
-      border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0; }
+    .cl-sort-input { width:34px; text-align:center; font-size:11px; padding:2px 2px; border:1px solid var(--border);
+      border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0;
+      -moz-appearance:textfield; appearance:textfield; }
+    .cl-sort-input::-webkit-inner-spin-button,
+    .cl-sort-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
     .cl-sort-input:focus { border-color:var(--brass); outline:none; }
     .cl-update-order { font-size:11px; margin-top:6px; }
 
