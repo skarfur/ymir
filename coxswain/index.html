@@ -704,7 +704,7 @@ async function joinSeat(crewId, pairId, seatIndex) {
 }
 
 async function leaveCrewConfirm(crewId) {
-  if (!confirm(s('cox.confirmLeave'))) return;
+  if (!(await ymConfirm(s('cox.confirmLeave')))) return;
   try {
     await apiPost('leaveCrew', { crewId: crewId, kennitala: user.kennitala });
     showToast(s('cox.left'), 'ok');
@@ -803,7 +803,7 @@ async function respondInvite(inviteId, response) {
 }
 
 async function disbandCrewConfirm(crewId) {
-  if (!confirm(s('cox.confirmDisband'))) return;
+  if (!(await ymConfirm(s('cox.confirmDisband')))) return;
   try {
     await apiPost('disbandCrew', { crewId: crewId });
     showToast(s('cox.crewDisbanded'), 'ok');
@@ -923,7 +923,7 @@ async function bookCxSlot(slotId) {
 }
 
 async function unbookCxSlot(slotId) {
-  if (!confirm(s('slot.confirmUnbook'))) return;
+  if (!(await ymConfirm(s('slot.confirmUnbook')))) return;
   var slot = _cxSlots.find(function(sl) { return sl.id === slotId; });
   var prevSlot = slot ? Object.assign({}, slot) : null;
   if (slot) {
@@ -1081,7 +1081,7 @@ function renderPassport() {
 function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 async function signPassportItemClick(itemId) {
-  if (!confirm(s('passport.confirmSign'))) return;
+  if (!(await ymConfirm(s('passport.confirmSign')))) return;
   try {
     var res = await apiPost('signPassportItem', {
       memberId: _passportTargetMemberId,
@@ -1162,7 +1162,7 @@ function ppViewSelf() {
 }
 async function revokeSignoffClick(ev, signoffId) {
   ev.preventDefault(); ev.stopPropagation();
-  var reason = prompt(s('passport.revokeReason'));
+  var reason = await ymPrompt(s('passport.revokeReason'));
   if (reason === null) return;
   try {
     await apiPost('revokePassportSignoff', { signoffId: signoffId, revokedBy: user.name || '', reason: reason || '' });
