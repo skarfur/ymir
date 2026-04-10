@@ -246,7 +246,9 @@
         <button class="tab-btn"        data-tab="flags"      onclick="showTab('flags')"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
+        <button class="tab-btn"        data-tab="volunteers" onclick="showTab('volunteers')" data-s="admin.tabVolunteers"></button>
         <button class="tab-btn"        data-tab="passport"   onclick="showTab('passport')"   data-s="passport.adminTitle">Rowing Passport</button>
+        <button class="tab-btn"        data-tab="clubCal"    onclick="showTab('clubCal')"    data-s="admin.tabCalendars"></button>
       </div>
       <!-- Settings tab dropdown (mobile) -->
       <select class="tab-select" id="settingsTabSelect" onchange="showTab(this.value)">
@@ -258,7 +260,9 @@
         <option value="flags"      data-s="admin.tabFlags"></option>
         <option value="alerts"     data-s="admin.tabAlerts"></option>
         <option value="slotCal"    data-s="admin.tabReservations"></option>
+        <option value="volunteers" data-s="admin.tabVolunteers"></option>
         <option value="passport"   data-s="passport.adminTitle"></option>
+        <option value="clubCal"    data-s="admin.tabCalendars"></option>
       </select>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -344,6 +348,22 @@
         </div>
         <div style="padding:8px 0 4px">
           <button class="btn btn-primary" onclick="openActTypeModal()" data-s="admin.addType"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VOLUNTEERS ════════════════════════════════════════════════════════ -->
+    <div id="tab-volunteers" class="hidden">
+      <div class="col-section">
+        <div class="col-head open" onclick="toggleSection(this)">
+          <div class="col-title" data-s="admin.volEventsTitle"></div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="volEventsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" onclick="openVolEventModal()" data-s="admin.addVolEvent"></button>
         </div>
       </div>
     </div>
@@ -591,6 +611,17 @@
       <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
         <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
         <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+      </div>
+    </div>
+
+    <!-- ══ CLUB CALENDARS ════════════════════════════════════════════════ -->
+    <div id="tab-clubCal" class="hidden">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.calDesc"></div>
+      <div id="clubCalList"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addClubCalRow('','')" data-s="admin.calAdd"></button>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <button class="btn btn-primary" onclick="saveClubCalendars()" data-s="btn.save"></button>
+        <span id="clubCalSaveMsg" style="font-size:11px"></span>
       </div>
     </div>
 
@@ -895,6 +926,9 @@
     <div class="check-row" style="margin-bottom:10px">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
     </div>
+    <div class="check-row" style="margin-bottom:10px">
+      <input type="checkbox" id="atVolunteer"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
+    </div>
     <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
       <div class="field">
@@ -918,6 +952,59 @@
       <button class="btn btn-secondary" onclick="closeModal('actTypeModal')" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" onclick="deleteActType()" data-s="btn.delete"></button>
       <button class="btn btn-primary" onclick="saveActType()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Volunteer event modal -->
+<div class="modal-overlay hidden" id="volEventModal" onclick="if(event.target===this)closeModal('volEventModal')">
+  <div class="modal" style="max-width:560px;max-height:92vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3 id="volEventModalTitle" data-s="admin.volEventModal.add"></h3>
+      <button class="modal-close-x" onclick="closeModal('volEventModal')">&times;</button>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="admin.volTitle"></label><input type="text" id="veTitle"></div>
+      <div class="field"><label data-s="admin.volTitleIS"></label><input type="text" id="veTitleIS"></div>
+    </div>
+    <div class="field">
+      <label data-s="admin.volActType"></label>
+      <select id="veActType"><option value="" data-s="admin.volActTypeNone"></option></select>
+    </div>
+    <div class="grid2" style="margin-top:2px">
+      <div class="field"><label data-s="admin.volDate"></label><input type="date" id="veDate"></div>
+      <div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="admin.volStartTime"></label><input type="time" id="veStartTime"></div>
+      <div class="field"><label data-s="admin.volEndTime"></label><input type="time" id="veEndTime"></div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin:10px 0">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px" data-s="admin.volLeader"></div>
+      <div class="grid2">
+        <div class="field"><label data-s="admin.volLeader"></label><input type="text" id="veLeaderName" placeholder="Name"></div>
+        <div class="field"><label data-s="admin.volLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
+      </div>
+      <div class="field" style="margin-bottom:4px"><label style="font-size:9px;color:var(--muted)">Kennitala / ID</label><input type="text" id="veLeaderId" placeholder="Optional"></div>
+      <div class="check-row">
+        <input type="checkbox" id="veShowPhone"> <label for="veShowPhone" data-s="admin.volShowPhone"></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="admin.volNotes"></label><textarea id="veNotes" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px;resize:vertical"></textarea></div>
+      <div class="field"><label data-s="admin.volNotesIS"></label><textarea id="veNotesIS" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px;resize:vertical"></textarea></div>
+    </div>
+    <div style="margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addVolRoleRow()" data-s="btn.add"></button>
+      </div>
+      <div id="volRolesList"></div>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-secondary" onclick="closeModal('volEventModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="veDeleteBtn" onclick="deleteVolEvent()" data-s="btn.delete"></button>
+      <button class="btn btn-primary" onclick="saveVolEvent()" data-s="btn.save"></button>
     </div>
   </div>
 </div>
@@ -1074,7 +1161,7 @@
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const user = requireAuth(isAdmin);
 
-let members = [], boats = [], locations = [], clItems = [], actTypes = [];
+let members = [], boats = [], locations = [], clItems = [], actTypes = [], volunteerEvents = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 let certCategories = [];
@@ -1146,7 +1233,8 @@ async function loadAll() {
   }
 
   // ── Assign data ───────────────────────────────────────────────────────────
-  actTypes       = cfgRes.activityTypes || [];
+  actTypes        = cfgRes.activityTypes || [];
+  volunteerEvents = cfgRes.volunteerEvents || [];
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || []),
                      ...(cfgRes.dailyChecklist?.closing  || []) ];
   certDefs       = certDefsFromConfig(cfgRes.certDefs || []);
@@ -1160,12 +1248,13 @@ async function loadAll() {
   registerBoatCats(boatCats);
 
   try { loadCharterCalendars(cfgRes.charterCalendars || {}); } catch(e) { console.warn("loadCharterCalendars:", e.message); }
+  try { loadClubCalendars(cfgRes.clubCalendars || []); } catch(e) { console.warn("loadClubCalendars:", e.message); }
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
 
   renderMembers(); renderBoats(); renderLocations();
-  renderChecklists(); renderActTypes();
+  renderChecklists(); renderActTypes(); renderVolunteerEvents();
   renderCertDefs(); renderCertCategories();
   populateCategorySelects();
 }
@@ -1227,6 +1316,7 @@ function showTab(tab) {
 
   if (tab === 'certs') renderCertDefs();
   if (tab === 'slotCal') initSlotCalendar();
+  if (tab === 'volunteers') renderVolunteerEvents();
   if (tab === 'passport') renderPassportAdmin();
 
   const url = new URL(window.location.href);
@@ -2202,6 +2292,7 @@ function openActTypeModal(id) {
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
+  document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
   document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
@@ -2224,6 +2315,7 @@ async function saveActType() {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
     active:   document.getElementById("atActive").checked,
+    volunteer: document.getElementById("atVolunteer").checked,
     calendarId: document.getElementById("atCalendarId").value.trim(),
     calendarSyncActive: document.getElementById("atCalendarSyncActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
@@ -2333,6 +2425,140 @@ function addAtSubtypeRow() {
   if (!window._atSubtypes) window._atSubtypes = [];
   window._atSubtypes.push({ id: "st-"+Date.now(), name: "", nameIS: "", defaultStart: "", defaultEnd: "" });
   renderAtSubtypes();
+}
+
+// ══ VOLUNTEER EVENTS ═════════════════════════════════════════════════════════
+
+let _veEditingId = null;
+
+function renderVolunteerEvents() {
+  const card = document.getElementById("volEventsCard");
+  const L = getLang();
+  const locale = L === 'IS' ? 'is' : 'en';
+  const sorted = volunteerEvents.slice()
+    .filter(e => e.active !== false)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!sorted.length) {
+    card.innerHTML = '<div class="empty-state">' + s('admin.noVolEvents') + '</div>';
+    return;
+  }
+  card.innerHTML = sorted.map(ev => {
+    const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
+    const roles = Array.isArray(ev.roles) ? ev.roles : [];
+    const rolesHtml = roles.map(r => {
+      const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
+      return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')</span>';
+    }).join('');
+    return '<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + '<span class="list-name">' + esc(title) + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
+      + '<button class="row-edit" onclick="openVolEventModal(\'' + ev.id + '\')">Edit</button>'
+      + '<button class="row-del" onclick="deleteVolEvent(\'' + ev.id + '\')">×</button>'
+      + '</div>'
+      + (ev.leaderName ? '<div style="font-size:10px;color:var(--muted);padding-left:12px">' + s('admin.volLeader') + ': ' + esc(ev.leaderName) + (ev.leaderPhone && ev.showLeaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>' : '')
+      + rolesHtml
+      + '</div>';
+  }).join('');
+}
+
+function openVolEventModal(id) {
+  _veEditingId = id || null;
+  const ev = id ? volunteerEvents.find(x => x.id === id) : null;
+  document.getElementById("volEventModalTitle").textContent = ev ? s('admin.volEventModal.edit') : s('admin.volEventModal.add');
+  document.getElementById("veTitle").value = ev ? (ev.title || '') : '';
+  document.getElementById("veTitleIS").value = ev ? (ev.titleIS || '') : '';
+  document.getElementById("veDate").value = ev ? (ev.date || '') : '';
+  document.getElementById("veStartTime").value = ev ? (ev.startTime || '') : '';
+  document.getElementById("veEndTime").value = ev ? (ev.endTime || '') : '';
+  document.getElementById("veLeaderName").value = ev ? (ev.leaderName || '') : '';
+  document.getElementById("veLeaderPhone").value = ev ? (ev.leaderPhone || '') : '';
+  document.getElementById("veLeaderId").value = ev ? (ev.leaderId || '') : '';
+  document.getElementById("veShowPhone").checked = ev ? (ev.showLeaderPhone === true || ev.showLeaderPhone === 'true') : false;
+  document.getElementById("veNotes").value = ev ? (ev.notes || '') : '';
+  document.getElementById("veNotesIS").value = ev ? (ev.notesIS || '') : '';
+  document.getElementById("veDeleteBtn").classList.toggle("hidden", !ev);
+  // Populate activity type select (only volunteer-flagged types)
+  const sel = document.getElementById("veActType");
+  const L = getLang();
+  sel.innerHTML = '<option value="">' + s('admin.volActTypeNone') + '</option>'
+    + actTypes.filter(a => bool(a.volunteer) && bool(a.active)).map(a => {
+      const label = (L === 'IS' && a.nameIS ? a.nameIS : a.name) || a.name;
+      return '<option value="' + a.id + '"' + (ev && ev.activityTypeId === a.id ? ' selected' : '') + '>' + esc(label) + '</option>';
+    }).join('');
+  // Roles
+  window._volRoles = ev && ev.roles ? JSON.parse(JSON.stringify(
+    Array.isArray(ev.roles) ? ev.roles : []
+  )) : [];
+  renderVolRoles();
+  openModal("volEventModal");
+}
+
+async function saveVolEvent() {
+  const title = document.getElementById("veTitle").value.trim();
+  if (!title) { toast(s("admin.nameRequired"), "err"); return; }
+  const payload = {
+    id: _veEditingId,
+    title,
+    titleIS: document.getElementById("veTitleIS").value.trim(),
+    activityTypeId: document.getElementById("veActType").value,
+    date: document.getElementById("veDate").value,
+    startTime: document.getElementById("veStartTime").value,
+    endTime: document.getElementById("veEndTime").value,
+    leaderId: document.getElementById("veLeaderId").value.trim(),
+    leaderName: document.getElementById("veLeaderName").value.trim(),
+    leaderPhone: document.getElementById("veLeaderPhone").value.trim(),
+    showLeaderPhone: document.getElementById("veShowPhone").checked,
+    notes: document.getElementById("veNotes").value.trim(),
+    notesIS: document.getElementById("veNotesIS").value.trim(),
+    roles: JSON.stringify(window._volRoles || []),
+    active: true,
+  };
+  await saveEntity({
+    apiAction: "saveVolunteerEvent",
+    getArray:  () => volunteerEvents,
+    setArray:  arr => { volunteerEvents = arr; },
+    payload, modalId: "volEventModal",
+    renderFn:  renderVolunteerEvents,
+  });
+}
+
+async function deleteVolEvent(id) {
+  const _id = id || _veEditingId;
+  if (!await ymConfirm(s("admin.confirmDeleteVolEvent"))) return;
+  try {
+    await apiPost("deleteVolunteerEvent", { id: _id });
+    volunteerEvents = volunteerEvents.filter(a => a.id !== _id);
+    renderVolunteerEvents();
+    closeModal("volEventModal");
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+function renderVolRoles() {
+  const list = document.getElementById("volRolesList");
+  if (!list) return;
+  if (!window._volRoles || !window._volRoles.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noSubtypes') + '</div>';
+    return;
+  }
+  list.innerHTML = window._volRoles.map(function(r, i) {
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleName') + '</label>'
+      + '<input type="text" value="' + esc(r.name || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].name=this.value"></div>'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleNameIS') + '</label>'
+      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].nameIS=this.value"></div>'
+      + '<button onclick="window._volRoles.splice(' + i + ',1);renderVolRoles()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>'
+      + '</div>'
+      + '<div style="margin-top:6px"><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volSlots') + '</label>'
+      + '<input type="number" min="1" value="' + (r.slots || '') + '" style="width:80px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
+      + '</div>';
+  }).join('');
+}
+
+function addVolRoleRow() {
+  if (!window._volRoles) window._volRoles = [];
+  window._volRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", slots: 1 });
+  renderVolRoles();
 }
 
 // ══ CERTIFICATIONS ════════════════════════════════════════════════════════════
@@ -2990,6 +3216,58 @@ async function saveCharterCalendars() {
       keelboatCalendarId: document.getElementById("charterKeelboatCalId").value.trim(),
       keelboatCalendarSyncActive: document.getElementById("charterKeelboatCalActive").checked,
     });
+    msg.textContent = s("toast.saved") || "Saved";
+    msg.style.color = "var(--green)";
+  } catch (e) {
+    msg.textContent = (s("toast.error") || "Error") + ": " + e.message;
+    msg.style.color = "var(--red)";
+  }
+}
+
+// ── Club Calendars ────────────────────────────────────────────────────────────
+function loadClubCalendars(cals) {
+  var list = document.getElementById("clubCalList");
+  list.innerHTML = "";
+  if (!cals.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin:8px 0" data-s="admin.calEmpty"></div>';
+    applyStrings(list);
+    return;
+  }
+  cals.forEach(function(c) { addClubCalRow(c.name, c.calendarId); });
+}
+
+function addClubCalRow(name, calId) {
+  var list = document.getElementById("clubCalList");
+  // Remove empty-state message if present
+  var empty = list.querySelector("[data-s='admin.calEmpty']");
+  if (empty) empty.parentElement.remove();
+  var row = document.createElement("div");
+  row.className = "grid2";
+  row.style.cssText = "margin-bottom:8px;align-items:end";
+  row.innerHTML =
+    '<div class="field"><label data-s="admin.calName"></label><input type="text" class="ccName" value="' + esc(name) + '"></div>' +
+    '<div style="display:flex;gap:6px;align-items:end"><div class="field" style="flex:1"><label data-s="admin.calId"></label><input type="text" class="ccId" value="' + esc(calId) + '" placeholder="' + (s("admin.calPlaceholder") || "") + '"></div>' +
+    '<button class="btn btn-ghost btn-danger" style="margin-bottom:4px;font-size:10px" onclick="removeClubCalRow(this)" data-s="admin.calRemove"></button></div>';
+  list.appendChild(row);
+  applyStrings(row);
+}
+
+function removeClubCalRow(btn) {
+  btn.closest(".grid2").remove();
+}
+
+async function saveClubCalendars() {
+  var msg = document.getElementById("clubCalSaveMsg");
+  msg.textContent = "";
+  var rows = document.querySelectorAll("#clubCalList .grid2");
+  var cals = [];
+  rows.forEach(function(r) {
+    var name = r.querySelector(".ccName").value.trim();
+    var calId = r.querySelector(".ccId").value.trim();
+    if (name && calId) cals.push({ name: name, calendarId: calId });
+  });
+  try {
+    await apiPost("saveClubCalendars", { calendars: cals });
     msg.textContent = s("toast.saved") || "Saved";
     msg.style.color = "var(--green)";
   } catch (e) {

@@ -33,6 +33,7 @@ const TABS_ = {
   crews: 'crews',
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
+  volunteerSignups: 'volunteer_signups',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -393,6 +394,7 @@ function route_(action, b) {
     case 'getConfig': return getConfig_();
     case 'saveConfig': return saveConfig_(b);
     case 'saveCharterCalendars': return saveCharterCalendars_(b);
+    case 'saveClubCalendars': return saveClubCalendars_(b);
     case 'saveActivityType': return saveActivityType_(b);
     case 'deleteActivityType': return deleteActivityType_(b.id);
     case 'saveChecklistItem': return saveChecklistItem_(b);
@@ -426,6 +428,12 @@ function route_(action, b) {
     case 'bookSlot':              return bookSlot_(b);
     case 'bulkBookSlots':         return bulkBookSlots_(b);
     case 'unbookSlot':            return unbookSlot_(b);
+    // ── VOLUNTEERS ──────────────────────────────────────────────────────────
+    case 'saveVolunteerEvent':    return saveVolunteerEvent_(b);
+    case 'deleteVolunteerEvent':  return deleteVolunteerEvent_(b);
+    case 'getVolunteerSignups':   return getVolunteerSignups_(b);
+    case 'volunteerSignup':       return volunteerSignup_(b);
+    case 'volunteerWithdraw':     return volunteerWithdraw_(b);
     // ── CREWS ─────────────────────────────────────────────────────────────────
     case 'getCrews':              return getCrews_(b);
     case 'getCrewBoard':          return getCrewBoard_(b);
@@ -1391,7 +1399,14 @@ function getConfig_() {
     const rpRaw = getConfigValue_('rowingPassport', cfgMap);
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
-  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport };
+  var volunteerEvents = [];
+  try { volunteerEvents = JSON.parse(getConfigValue_('volunteer_events', cfgMap) || '[]'); } catch (e) {}
+  var clubCalendars = [];
+  try {
+    var ccRaw = getConfigValue_('clubCalendars', cfgMap);
+    if (ccRaw) clubCalendars = JSON.parse(ccRaw);
+  } catch (e) {}
+  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars };
   cPut_('config', config);
   return okJ(config);
 }
@@ -1474,6 +1489,7 @@ function saveActivityType_(b) {
       active: b.active !== false,
       calendarId: b.calendarId || '',
       calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
+      volunteer: b.volunteer === true || b.volunteer === 'true',
       subtypes,
       updatedAt: ts,
     };
@@ -2059,6 +2075,17 @@ function saveCharterCalendars_(b) {
     cDel_('config');
     return okJ({ saved: true });
   } catch (e) { return failJ('saveCharterCalendars failed: ' + e.message); }
+}
+
+function saveClubCalendars_(b) {
+  try {
+    var cals = (b.calendars || []).map(function(c) {
+      return { name: String(c.name || '').trim(), calendarId: String(c.calendarId || '').trim() };
+    }).filter(function(c) { return c.name && c.calendarId; });
+    setConfigSheetValue_('clubCalendars', JSON.stringify(cals));
+    cDel_('config');
+    return okJ({ saved: true });
+  } catch (e) { return failJ('saveClubCalendars failed: ' + e.message); }
 }
 
 function gcalParseDateTime_(dateStr, timeStr) {
@@ -5216,6 +5243,118 @@ function publicShareRecord_(b) {
 }
 
 
+// ── VOLUNTEERS ──────────────────────────────────────────────────────────────
+
+function saveVolunteerEvent_(b) {
+  try {
+    let arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
+    const ts = now_();
+    const idx = b.id ? arr.findIndex(a => a.id === b.id) : -1;
+    let roles = [];
+    try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
+    const item = {
+      id: b.id || uid_(),
+      activityTypeId: b.activityTypeId || '',
+      title: b.title || '',
+      titleIS: b.titleIS || '',
+      date: b.date || '',
+      startTime: b.startTime || '',
+      endTime: b.endTime || '',
+      leaderId: b.leaderId || '',
+      leaderName: b.leaderName || '',
+      leaderPhone: b.leaderPhone || '',
+      showLeaderPhone: b.showLeaderPhone === true || b.showLeaderPhone === 'true',
+      notes: b.notes || '',
+      notesIS: b.notesIS || '',
+      roles,
+      active: b.active !== false,
+      updatedAt: ts,
+    };
+    if (idx >= 0) {
+      arr[idx] = Object.assign(arr[idx], item);
+    } else {
+      arr.push(Object.assign(item, { createdAt: ts }));
+    }
+    setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
+    cDel_('config');
+    return okJ({ id: item.id, item });
+  } catch(e) { return failJ('saveVolunteerEvent failed: ' + e.message); }
+}
+
+function deleteVolunteerEvent_(b) {
+  try {
+    let arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
+    arr = arr.filter(a => a.id !== b.id);
+    setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
+    // Remove all signups for this event
+    try {
+      const signups = readAll_('volunteerSignups');
+      signups.filter(s => s.eventId === b.id).forEach(s => {
+        deleteRow_('volunteerSignups', 'id', s.id);
+      });
+    } catch(e) { /* tab may not exist yet */ }
+    cDel_('config');
+    return okJ({ deleted: true });
+  } catch(e) { return failJ('deleteVolunteerEvent failed: ' + e.message); }
+}
+
+function getVolunteerSignups_(b) {
+  try {
+    ensureVolunteerSignupsTab_();
+    let signups = readAll_('volunteerSignups');
+    if (b.eventId) signups = signups.filter(s => s.eventId === b.eventId);
+    return okJ({ signups });
+  } catch(e) { return failJ('getVolunteerSignups failed: ' + e.message); }
+}
+
+function volunteerSignup_(b) {
+  try {
+    ensureVolunteerSignupsTab_();
+    if (!b.eventId || !b.roleId || !b.kennitala) return failJ('Missing required fields');
+    // Check not already signed up for this role
+    const existing = readAll_('volunteerSignups');
+    if (existing.find(s => s.eventId === b.eventId && s.roleId === b.roleId && s.kennitala === b.kennitala)) {
+      return failJ('Already signed up for this role');
+    }
+    // Check slot capacity
+    const events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
+    const evt = events.find(e => e.id === b.eventId);
+    if (!evt) return failJ('Event not found');
+    const role = (Array.isArray(evt.roles) ? evt.roles : []).find(r => r.id === b.roleId);
+    if (!role) return failJ('Role not found');
+    const filled = existing.filter(s => s.eventId === b.eventId && s.roleId === b.roleId).length;
+    if (role.slots && filled >= Number(role.slots)) return failJ('Role is full');
+    const row = {
+      id: uid_(),
+      eventId: b.eventId,
+      roleId: b.roleId,
+      kennitala: b.kennitala,
+      name: b.name || '',
+      signedUpAt: now_(),
+    };
+    insertRow_('volunteerSignups', row);
+    return okJ({ id: row.id, signup: row });
+  } catch(e) { return failJ('volunteerSignup failed: ' + e.message); }
+}
+
+function volunteerWithdraw_(b) {
+  try {
+    if (!b.id) return failJ('Missing signup id');
+    deleteRow_('volunteerSignups', 'id', b.id);
+    return okJ({ withdrawn: true });
+  } catch(e) { return failJ('volunteerWithdraw failed: ' + e.message); }
+}
+
+function ensureVolunteerSignupsTab_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID_);
+  ensureTab_(ss, 'volunteer_signups', SCHEMA_.volunteer_signups);
+}
+
+function ensureVolunteerSignupsTab() {
+  ensureVolunteerSignupsTab_();
+  Logger.log('volunteer_signups tab ready');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SPREADSHEET SETUP  — run setupSpreadsheet() from the Apps Script editor
 //
@@ -5354,6 +5493,9 @@ var SCHEMA_ = {
     'tryggingagjald','motframlag','employerPension','endurhaefingarsjodur',
     'totalEmployerCost',
     'approved','configSnapshot','generatedBy',
+  ],
+  volunteer_signups: [
+    'id','eventId','roleId','kennitala','name','signedUpAt',
   ],
 };
 
