@@ -1229,5 +1229,11 @@ var _STRINGS_FLAT = {
   "passport.unretire": "Restore",
   "passport.save": "Save changes",
   "passport.saved": "Passport saved.",
-  "passport.unsavedChanges": "You have unsaved changes. Discard?"
+  "passport.unsavedChanges": "You have unsaved changes. Discard?",
+
+  "member.notifPending": "pending",
+  "sauma.follow": "★ Follow",
+  "sauma.unfollow": "★ Following",
+  "sauma.followed": "Following project ★",
+  "sauma.unfollowed": "Unfollowed project"
 };

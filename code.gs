@@ -369,6 +369,9 @@ function route_(action, b) {
     case 'toggleMaterial':          return toggleMaterial_(b);
     case 'addMaterial':             return addMaterial_(b);
     case 'removeMaterial':          return removeMaterial_(b);
+    case 'followProject':           return followProject_(b);
+    case 'unfollowProject':         return unfollowProject_(b);
+    case 'getNotifications':        return getNotifications_(b);
     // ── PAYROLL ────────────────────────────────────────────────────────────────────
     case 'clockIn':             return clockIn_(b);
     case 'clockOut':            return clockOut_(b);
@@ -766,6 +769,8 @@ function saveMaintenance_(b) {
   addColIfMissing_('maintenance', 'verkstjori');
   addColIfMissing_('maintenance', 'materials');
   addColIfMissing_('maintenance', 'approved');
+  addColIfMissing_('maintenance', 'followers');
+  addColIfMissing_('maintenance', 'updatedAt');
 
   // If an id is provided, update the existing row instead of creating a new one
   if (b.id) {
@@ -778,6 +783,7 @@ function saveMaintenance_(b) {
     if (b.materials !== undefined) updates.materials  = b.materials;
     if (b.approved !== undefined)  updates.approved   = bool_(b.approved);
     if (Object.keys(updates).length) {
+      updates.updatedAt = now_();
       updateRow_('maintenance', 'id', b.id, updates);
       cDel_('maintenance');
       return okJ({ id: b.id, updated: true });
@@ -799,6 +805,7 @@ function saveMaintenance_(b) {
     saumaklubbur: isSauma, verkstjori: b.verkstjori || '',
     materials: b.materials || '[]',
     approved: isSauma && !isStaffSource ? false : true,
+    followers: '[]', updatedAt: ts,
   });
   cDel_('maintenance');
   return okJ({ id, created: true });
@@ -806,7 +813,7 @@ function saveMaintenance_(b) {
 
 function resolveMaintenance_(b) {
   if (!b.id) return failJ('id required');
-  updateRow_('maintenance', 'id', b.id, { resolved: true, resolvedBy: b.resolvedBy || '', resolvedAt: now_() });
+  updateRow_('maintenance', 'id', b.id, { resolved: true, resolvedBy: b.resolvedBy || '', resolvedAt: now_(), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ resolved: true });
 }
@@ -1186,7 +1193,7 @@ function addMaintenanceComment_(b) {
   const entry = { by: b.by || '', at: now_(), text: b.text };
   if (b.photoUrl) entry.photoUrl = b.photoUrl;
   comments.push(entry);
-  updateRow_('maintenance', 'id', b.id, { comments: JSON.stringify(comments) });
+  updateRow_('maintenance', 'id', b.id, { comments: JSON.stringify(comments), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ commented: true });
 }
@@ -1202,7 +1209,7 @@ function toggleMaterial_(b) {
   if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
   materials[idx].purchased = !materials[idx].purchased;
   addColIfMissing_('maintenance', 'materials');
-  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ toggled: true, materials });
 }
@@ -1216,7 +1223,7 @@ function addMaterial_(b) {
   try { materials = JSON.parse(ex.materials || '[]'); } catch(e) { materials = []; }
   materials.push({ name: b.name, purchased: false });
   addColIfMissing_('maintenance', 'materials');
-  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ added: true, materials });
 }
@@ -1232,7 +1239,7 @@ function removeMaterial_(b) {
   if (idx < 0 || idx >= materials.length) return failJ('Invalid index');
   materials.splice(idx, 1);
   addColIfMissing_('maintenance', 'materials');
-  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials) });
+  updateRow_('maintenance', 'id', b.id, { materials: JSON.stringify(materials), updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ removed: true, materials });
 }
@@ -1243,7 +1250,7 @@ function approveSaumaklubbur_(b) {
   if (!ex) return failJ('Request not found', 404);
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
   addColIfMissing_('maintenance', 'approved');
-  updateRow_('maintenance', 'id', b.id, { approved: true });
+  updateRow_('maintenance', 'id', b.id, { approved: true, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ approved: true });
 }
@@ -1256,7 +1263,7 @@ function adoptSaumaklubbur_(b) {
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
   if (ex.verkstjori) return failJ('Already has a verkstjóri');
   addColIfMissing_('maintenance', 'verkstjori');
-  updateRow_('maintenance', 'id', b.id, { verkstjori: b.name });
+  updateRow_('maintenance', 'id', b.id, { verkstjori: b.name, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ adopted: true, verkstjori: b.name });
 }
@@ -1268,9 +1275,41 @@ function holdSaumaklubbur_(b) {
   if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
   const onHold = b.onHold !== false && b.onHold !== 'false';
   addColIfMissing_('maintenance', 'onHold');
-  updateRow_('maintenance', 'id', b.id, { onHold: onHold });
+  updateRow_('maintenance', 'id', b.id, { onHold: onHold, updatedAt: now_() });
   cDel_('maintenance');
   return okJ({ onHold: onHold });
+}
+
+function followProject_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.kennitala) return failJ('kennitala required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  if (!bool_(ex.saumaklubbur)) return failJ('Not a saumaklúbbur project');
+  addColIfMissing_('maintenance', 'followers');
+  var followers = [];
+  try { followers = JSON.parse(ex.followers || '[]'); } catch(e) { followers = []; }
+  var kt = String(b.kennitala);
+  if (followers.some(function(f) { return String(f.kt) === kt; })) return okJ({ already: true });
+  followers.push({ kt: kt, at: now_() });
+  updateRow_('maintenance', 'id', b.id, { followers: JSON.stringify(followers) });
+  cDel_('maintenance');
+  return okJ({ followed: true });
+}
+
+function unfollowProject_(b) {
+  if (!b.id) return failJ('id required');
+  if (!b.kennitala) return failJ('kennitala required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  addColIfMissing_('maintenance', 'followers');
+  var followers = [];
+  try { followers = JSON.parse(ex.followers || '[]'); } catch(e) { followers = []; }
+  var kt = String(b.kennitala);
+  followers = followers.filter(function(f) { return String(f.kt) !== kt; });
+  updateRow_('maintenance', 'id', b.id, { followers: JSON.stringify(followers) });
+  cDel_('maintenance');
+  return okJ({ unfollowed: true });
 }
 
 function deleteMaintenance_(b) {
@@ -3188,6 +3227,57 @@ function getVerificationRequests_() {
     return r.type === 'verify' && r.status === 'pending' && !r.dismissed;
   });
   return okJ({ requests: pending });
+}
+
+// ── Notification counts for member hub badges ────────────────────────────────
+function getNotifications_(b) {
+  if (!b.kennitala) return failJ('kennitala required');
+  var kt = String(b.kennitala);
+  var counts = { confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0 };
+
+  // Trip confirmations: pending incoming (non-verify) + captain pending (crew handshakes + verify)
+  var allConf;
+  try { allConf = readAll_('tripConfirmations'); } catch(e) { allConf = []; }
+  var pendingIncoming = allConf.filter(function(r) {
+    return String(r.toKennitala) === kt && r.status === 'pending' && !r.dismissed && r.type !== 'verify';
+  });
+  counts.confirmations = pendingIncoming.length;
+  // Captain queue: crew handshakes directed at me + verify requests (for staff role, counted separately)
+  var captainPending = allConf.filter(function(r) {
+    return String(r.toKennitala) === kt && r.status === 'pending' && !r.dismissed;
+  });
+  counts.captainQ = captainPending.length;
+
+  // Crew invites: pending invites directed at this user
+  var allInv;
+  try { allInv = readAll_('crewInvites'); } catch(e) { allInv = []; }
+  counts.crewInvites = allInv.filter(function(inv) {
+    return String(inv.toKennitala) === kt && inv.status === 'pending';
+  }).length;
+
+  // Saumaklubbur: unresolved unassigned projects + followed projects with updates since follow
+  var allMaint;
+  try { allMaint = readAll_('maintenance'); } catch(e) { allMaint = []; }
+  var saumaCount = 0;
+  allMaint.forEach(function(r) {
+    if (!bool_(r.saumaklubbur) || bool_(r.resolved)) return;
+    if (!bool_(r.approved)) return;
+    // Unassigned projects needing verkstjóri
+    if (!r.verkstjori) { saumaCount++; return; }
+    // Followed projects with updates since follow
+    var followers = [];
+    try { followers = JSON.parse(r.followers || '[]'); } catch(e) { followers = []; }
+    var myFollow = null;
+    for (var i = 0; i < followers.length; i++) {
+      if (String(followers[i].kt) === kt) { myFollow = followers[i]; break; }
+    }
+    if (myFollow && r.updatedAt && myFollow.at && r.updatedAt > myFollow.at) {
+      saumaCount++;
+    }
+  });
+  counts.saumaklubbur = saumaCount;
+
+  return okJ({ counts: counts });
 }
 
 function dismissConfirmation_(b) {

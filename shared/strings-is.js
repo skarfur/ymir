@@ -1229,5 +1229,11 @@ var _STRINGS_FLAT = {
   "passport.unretire": "Endurvirkja",
   "passport.save": "Vista breytingar",
   "passport.saved": "Passi vistaður.",
-  "passport.unsavedChanges": "Óvistaðar breytingar. Henda?"
+  "passport.unsavedChanges": "Óvistaðar breytingar. Henda?",
+
+  "member.notifPending": "í bið",
+  "sauma.follow": "★ Fylgjast með",
+  "sauma.unfollow": "★ Fylgist með",
+  "sauma.followed": "Fylgist með verkefni ★",
+  "sauma.unfollowed": "Hætt að fylgjast með"
 };
