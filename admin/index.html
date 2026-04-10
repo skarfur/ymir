@@ -247,6 +247,7 @@
         <button class="tab-btn"        data-tab="alerts"     onclick="showTab('alerts')"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
         <button class="tab-btn"        data-tab="passport"   onclick="showTab('passport')"   data-s="passport.adminTitle">Rowing Passport</button>
+        <button class="tab-btn"        data-tab="clubCal"    onclick="showTab('clubCal')"    data-s="admin.tabCalendars"></button>
       </div>
       <!-- Settings tab dropdown (mobile) -->
       <select class="tab-select" id="settingsTabSelect" onchange="showTab(this.value)">
@@ -259,6 +260,7 @@
         <option value="alerts"     data-s="admin.tabAlerts"></option>
         <option value="slotCal"    data-s="admin.tabReservations"></option>
         <option value="passport"   data-s="passport.adminTitle"></option>
+        <option value="clubCal"    data-s="admin.tabCalendars"></option>
       </select>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -591,6 +593,17 @@
       <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted)">
         <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
         <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+      </div>
+    </div>
+
+    <!-- ══ CLUB CALENDARS ════════════════════════════════════════════════ -->
+    <div id="tab-clubCal" class="hidden">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.calDesc"></div>
+      <div id="clubCalList"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addClubCalRow('','')" data-s="admin.calAdd"></button>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <button class="btn btn-primary" onclick="saveClubCalendars()" data-s="btn.save"></button>
+        <span id="clubCalSaveMsg" style="font-size:11px"></span>
       </div>
     </div>
 
@@ -1160,6 +1173,7 @@ async function loadAll() {
   registerBoatCats(boatCats);
 
   try { loadCharterCalendars(cfgRes.charterCalendars || {}); } catch(e) { console.warn("loadCharterCalendars:", e.message); }
+  try { loadClubCalendars(cfgRes.clubCalendars || []); } catch(e) { console.warn("loadClubCalendars:", e.message); }
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
@@ -2990,6 +3004,58 @@ async function saveCharterCalendars() {
       keelboatCalendarId: document.getElementById("charterKeelboatCalId").value.trim(),
       keelboatCalendarSyncActive: document.getElementById("charterKeelboatCalActive").checked,
     });
+    msg.textContent = s("toast.saved") || "Saved";
+    msg.style.color = "var(--green)";
+  } catch (e) {
+    msg.textContent = (s("toast.error") || "Error") + ": " + e.message;
+    msg.style.color = "var(--red)";
+  }
+}
+
+// ── Club Calendars ────────────────────────────────────────────────────────────
+function loadClubCalendars(cals) {
+  var list = document.getElementById("clubCalList");
+  list.innerHTML = "";
+  if (!cals.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin:8px 0" data-s="admin.calEmpty"></div>';
+    applyStrings(list);
+    return;
+  }
+  cals.forEach(function(c) { addClubCalRow(c.name, c.calendarId); });
+}
+
+function addClubCalRow(name, calId) {
+  var list = document.getElementById("clubCalList");
+  // Remove empty-state message if present
+  var empty = list.querySelector("[data-s='admin.calEmpty']");
+  if (empty) empty.parentElement.remove();
+  var row = document.createElement("div");
+  row.className = "grid2";
+  row.style.cssText = "margin-bottom:8px;align-items:end";
+  row.innerHTML =
+    '<div class="field"><label data-s="admin.calName"></label><input type="text" class="ccName" value="' + esc(name) + '"></div>' +
+    '<div style="display:flex;gap:6px;align-items:end"><div class="field" style="flex:1"><label data-s="admin.calId"></label><input type="text" class="ccId" value="' + esc(calId) + '" placeholder="' + (s("admin.calPlaceholder") || "") + '"></div>' +
+    '<button class="btn btn-ghost btn-danger" style="margin-bottom:4px;font-size:10px" onclick="removeClubCalRow(this)" data-s="admin.calRemove"></button></div>';
+  list.appendChild(row);
+  applyStrings(row);
+}
+
+function removeClubCalRow(btn) {
+  btn.closest(".grid2").remove();
+}
+
+async function saveClubCalendars() {
+  var msg = document.getElementById("clubCalSaveMsg");
+  msg.textContent = "";
+  var rows = document.querySelectorAll("#clubCalList .grid2");
+  var cals = [];
+  rows.forEach(function(r) {
+    var name = r.querySelector(".ccName").value.trim();
+    var calId = r.querySelector(".ccId").value.trim();
+    if (name && calId) cals.push({ name: name, calendarId: calId });
+  });
+  try {
+    await apiPost("saveClubCalendars", { calendars: cals });
     msg.textContent = s("toast.saved") || "Saved";
     msg.style.color = "var(--green)";
   } catch (e) {
