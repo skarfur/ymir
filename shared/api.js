@@ -119,11 +119,14 @@ function isCaptain(u) {
   return Array.isArray(certs) && certs.some(function(c) { return c.sub === 'captain' && _certNotExpired(c); });
 }
 // Internal: walk a user's certifications once and return { hasAny, sub },
-// where hasAny means "has some rowing_division (or legacy released_rower)
-// entry of any shape, regardless of expiry" and sub is the highest-rank
-// strictly-valid, non-expired subcat ('restricted' | 'released' | 'coxswain')
-// or null. Tolerant of case and missing `sub` — a bare rowing_division cert
-// still marks the user as a rower even without a recognised sub.
+// where hasAny means "has some rowing cert of any shape, regardless of
+// expiry" and sub is the highest-rank non-expired canonical subcat
+// ('restricted' | 'released' | 'coxswain') or null.
+//
+// Handles three data shapes:
+//  1. Default cert defs: certId 'rowing_division', subs 'restricted'/'released'/'coxswain'
+//  2. Custom cert defs:  certId is an auto-ID like 'cert_xxxx', subs 'restricted_rower'/'released_rower'/'coxswain'
+//  3. Legacy:            certId 'released_rower'
 function _rowingCertInfo(u) {
   var out = { hasAny: false, sub: null };
   if (!u || !u.certifications) return out;
@@ -138,16 +141,26 @@ function _rowingCertInfo(u) {
     var sub = String(c.sub || '').toLowerCase();
     var isRowing = false;
     var resolvedSub = null;
+    // Shape 1: default certId 'rowing_division'
     if (id === 'rowing_division') {
       isRowing = true;
-      if (rank[sub]) resolvedSub = sub;
-    } else if (id === 'released_rower' || sub === 'released_rower') {
+      if (rank[sub]) resolvedSub = sub;                      // restricted | released | coxswain
+      else if (sub === 'restricted_rower') resolvedSub = 'restricted';
+      else if (sub === 'released_rower')   resolvedSub = 'released';
+    }
+    // Shape 3: legacy certId
+    else if (id === 'released_rower') {
       isRowing = true;
       resolvedSub = 'released';
     }
+    // Shape 2: custom cert def with a rowing sub value — regardless of certId
+    if (!isRowing) {
+      if (sub === 'restricted_rower' || sub === 'restricted') { isRowing = true; resolvedSub = 'restricted'; }
+      else if (sub === 'released_rower' || sub === 'released') { isRowing = true; resolvedSub = 'released'; }
+      else if (sub === 'coxswain')                             { isRowing = true; resolvedSub = 'coxswain'; }
+    }
     if (!isRowing) continue;
-    // Membership is permanent — any rowing_division cert, expired or not,
-    // counts for gating access to the rowing division page.
+    // Membership is permanent — any rowing cert, expired or not, gates access.
     out.hasAny = true;
     // Feature gating (released vs restricted) uses only non-expired certs.
     if (resolvedSub && _certNotExpired(c) && rank[resolvedSub] > bestRank) {
