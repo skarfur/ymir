@@ -1265,4 +1265,15 @@ var _STRINGS_FLAT = {
   "member.volSlotsLeft": "{n} left",
   "member.volLeader": "In charge",
   "member.noVolEvents": "No upcoming volunteer events."
+  "member.calendar": "📅 Calendar",
+  "member.calTitle": "Club Calendars",
+  "member.calEmpty": "No calendars have been set up yet.",
+  "admin.tabCalendars": "Calendars",
+  "admin.calDesc": "Add Google Calendar IDs that members can view from the member hub. Each calendar appears as an embedded view.",
+  "admin.calName": "Name",
+  "admin.calId": "Calendar ID",
+  "admin.calPlaceholder": "e.g. abc123@group.calendar.google.com",
+  "admin.calAdd": "+ Add calendar",
+  "admin.calEmpty": "No calendars added.",
+  "admin.calRemove": "Remove"
 };

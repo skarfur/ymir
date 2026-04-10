@@ -388,6 +388,7 @@ function route_(action, b) {
     case 'getConfig': return getConfig_();
     case 'saveConfig': return saveConfig_(b);
     case 'saveCharterCalendars': return saveCharterCalendars_(b);
+    case 'saveClubCalendars': return saveClubCalendars_(b);
     case 'saveActivityType': return saveActivityType_(b);
     case 'deleteActivityType': return deleteActivityType_(b.id);
     case 'saveChecklistItem': return saveChecklistItem_(b);
@@ -1362,6 +1363,12 @@ function getConfig_() {
   let volunteerEvents = [];
   try { volunteerEvents = JSON.parse(getConfigValue_('volunteer_events', cfgMap) || '[]'); } catch (e) {}
   const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents };
+  let clubCalendars = [];
+  try {
+    const ccRaw = getConfigValue_('clubCalendars', cfgMap);
+    if (ccRaw) clubCalendars = JSON.parse(ccRaw);
+  } catch (e) {}
+  const config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, clubCalendars };
   cPut_('config', config);
   return okJ(config);
 }
@@ -2030,6 +2037,17 @@ function saveCharterCalendars_(b) {
     cDel_('config');
     return okJ({ saved: true });
   } catch (e) { return failJ('saveCharterCalendars failed: ' + e.message); }
+}
+
+function saveClubCalendars_(b) {
+  try {
+    var cals = (b.calendars || []).map(function(c) {
+      return { name: String(c.name || '').trim(), calendarId: String(c.calendarId || '').trim() };
+    }).filter(function(c) { return c.name && c.calendarId; });
+    setConfigSheetValue_('clubCalendars', JSON.stringify(cals));
+    cDel_('config');
+    return okJ({ saved: true });
+  } catch (e) { return failJ('saveClubCalendars failed: ' + e.message); }
 }
 
 function gcalParseDateTime_(dateStr, timeStr) {

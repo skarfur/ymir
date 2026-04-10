@@ -187,6 +187,7 @@
     <a class="act-btn" href="../saumaklubbur/"             data-s="nav.saumaklubbur"></a>
     <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
     <a class="act-btn" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
+    <button class="act-btn" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -208,6 +209,17 @@
     <div id="volunteerList"></div>
   </div>
 
+</div>
+
+<!-- ══ CLUB CALENDAR MODAL ══ -->
+<div class="modal-overlay hidden" id="calendarModal" onclick="if(event.target===this)closeModal('calendarModal')">
+  <div class="modal" style="max-width:900px;width:95vw;max-height:92vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3 data-s="member.calTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('calendarModal')">×</button>
+    </div>
+    <div id="calendarContent"></div>
+  </div>
 </div>
 
 <!-- ══ MANUAL TRIP MODAL ══ -->
@@ -295,6 +307,7 @@ let boats=[], locations=[], checkouts=[];
 let _volunteerEvents=[], _volunteerSignups=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
+let _clubCalendars = [];
 const L = getLang();
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
@@ -350,6 +363,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
+    _clubCalendars = cfgRes.clubCalendars || [];
+    if (_clubCalendars.length) document.getElementById('calendarBtn').style.display = '';
 
     populateFormSelects();
     renderActiveCheckouts();
@@ -1613,6 +1628,21 @@ async function memberVolWithdraw(signupId) {
   } catch(e) {
     toast(e.message, 'err');
   }
+// ══ CLUB CALENDAR ════════════════════════════════════════════════════════════
+function openClubCalendar() {
+  var el = document.getElementById('calendarContent');
+  if (!_clubCalendars.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">' + (s('member.calEmpty') || '') + '</div>';
+  } else {
+    el.innerHTML = _clubCalendars.map(function(c) {
+      var src = 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(c.calendarId) + '&ctz=Atlantic/Reykjavik';
+      return '<div style="margin-bottom:14px">'
+        + '<div style="font-size:12px;font-weight:600;margin-bottom:6px">' + esc(c.name) + '</div>'
+        + '<iframe src="' + src + '" style="border:0;width:100%;height:400px;border-radius:6px" frameborder="0" scrolling="no"></iframe>'
+        + '</div>';
+    }).join('');
+  }
+  openModal('calendarModal');
 }
 
 </script>

@@ -1265,4 +1265,15 @@ var _STRINGS_FLAT = {
   "member.volSlotsLeft": "{n} eftir",
   "member.volLeader": "Ábyrgðarmaður",
   "member.noVolEvents": "Engir sjálfboðaviðburðir á næstunni."
+  "member.calendar": "📅 Dagatal",
+  "member.calTitle": "Dagatöl klúbbsins",
+  "member.calEmpty": "Engin dagatöl hafa verið sett upp.",
+  "admin.tabCalendars": "Dagatöl",
+  "admin.calDesc": "Bættu við Google Calendar auðkennum sem félagar geta skoðað á félagssvæðinu. Hvert dagatal birtist sem innfellt yfirlit.",
+  "admin.calName": "Nafn",
+  "admin.calId": "Dagatal ID",
+  "admin.calPlaceholder": "t.d. abc123@group.calendar.google.com",
+  "admin.calAdd": "+ Bæta við dagatali",
+  "admin.calEmpty": "Engin dagatöl skráð.",
+  "admin.calRemove": "Fjarlægja"
 };
