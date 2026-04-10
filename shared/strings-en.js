@@ -394,7 +394,7 @@ var _STRINGS_FLAT = {
   "admin.tabActTypes": "Activity Types",
   "admin.tabCerts": "Credentials",
   "admin.tabAlerts": "Alerts",
-  "admin.tabPayroll": "💰 Payroll",
+  "admin.tabPayroll": "Payroll",
   "admin.tabFlags": "Flags",
   "admin.tabReservations": "Charters",
   "admin.bulkSchedule": "BULK SCHEDULE",
