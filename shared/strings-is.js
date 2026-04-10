@@ -1256,6 +1256,11 @@ var _STRINGS_FLAT = {
   "admin.noVolEvents": "Engir sjálfboðaviðburðir.",
   "admin.confirmDeleteVolEvent": "Eyða þessum sjálfboðaviðburði?",
   "admin.volSignups": "skráningar",
+  "admin.noRoles": "Engin hlutverk skilgreind.",
+  "admin.roleEndorsement": "Nauðsynleg réttindi",
+  "admin.roleNoRestriction": "— Engin takmörkun —",
+  "admin.bulkUsesDefaultTimes": "Notar sjálfgefna tíma",
+  "admin.bulkSetDefaultTimes": "Stilltu sjálfgefinn byrjunar-/lokatíma hér að ofan til að nota við magnbókun.",
 
   "member.volunteerEvents": "SJÁLFBOÐAVIÐBURÐIR",
   "member.volSignUp": "Skrá mig",

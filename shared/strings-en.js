@@ -1256,6 +1256,11 @@ var _STRINGS_FLAT = {
   "admin.noVolEvents": "No volunteer events.",
   "admin.confirmDeleteVolEvent": "Delete this volunteer event?",
   "admin.volSignups": "signups",
+  "admin.noRoles": "No roles defined.",
+  "admin.roleEndorsement": "Required endorsement",
+  "admin.roleNoRestriction": "— No restriction —",
+  "admin.bulkUsesDefaultTimes": "Uses default times",
+  "admin.bulkSetDefaultTimes": "Set default start/end times above to use with bulk schedule.",
 
   "member.volunteerEvents": "VOLUNTEER EVENTS",
   "member.volSignUp": "Sign up",

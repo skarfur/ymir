@@ -927,7 +927,14 @@
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
     </div>
     <div class="check-row" style="margin-bottom:10px">
-      <input type="checkbox" id="atVolunteer"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
+      <input type="checkbox" id="atVolunteer" onchange="toggleAtVolunteerSection()"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
+    </div>
+    <div id="atRolesSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtRoleRow()" data-s="btn.add"></button>
+      </div>
+      <div id="atRolesList"></div>
     </div>
     <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
@@ -969,7 +976,7 @@
     </div>
     <div class="field">
       <label data-s="admin.volActType"></label>
-      <select id="veActType"><option value="" data-s="admin.volActTypeNone"></option></select>
+      <select id="veActType" onchange="onVeActTypeChange()"><option value="" data-s="admin.volActTypeNone"></option></select>
     </div>
     <div class="grid2" style="margin-top:2px">
       <div class="field"><label data-s="admin.volDate"></label><input type="date" id="veDate"></div>
@@ -981,11 +988,17 @@
     </div>
     <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin:10px 0">
       <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px" data-s="admin.volLeader"></div>
-      <div class="grid2">
-        <div class="field"><label data-s="admin.volLeader"></label><input type="text" id="veLeaderName" placeholder="Name"></div>
-        <div class="field"><label data-s="admin.volLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
+      <div class="field" style="position:relative;margin-bottom:6px">
+        <label data-s="admin.volLeader"></label>
+        <input type="text" id="veLeaderSearch" autocomplete="off" oninput="searchVolLeader(this.value)" placeholder="">
+        <div id="veLeaderSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:4px;z-index:10;max-height:160px;overflow-y:auto"></div>
+        <input type="hidden" id="veLeaderMemberId">
       </div>
-      <div class="field" style="margin-bottom:4px"><label style="font-size:9px;color:var(--muted)">Kennitala / ID</label><input type="text" id="veLeaderId" placeholder="Optional"></div>
+      <div id="veLeaderChip" style="display:none;margin-bottom:6px"></div>
+      <div class="grid2">
+        <div class="field"><label data-s="admin.volLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
+        <div></div>
+      </div>
       <div class="check-row">
         <input type="checkbox" id="veShowPhone"> <label for="veShowPhone" data-s="admin.volShowPhone"></label>
       </div>
@@ -2273,14 +2286,18 @@ function renderActTypes() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noActTypes')}</div>`; return; }
   card.innerHTML = active.map(a => {
     const subs = Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, []);
+    const roles = Array.isArray(a.roles) ? a.roles : tryParse_(a.roles, []);
+    const isVol = bool(a.volunteer);
     return `<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="list-name">${esc(a.name)}${a.nameIS
-          ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}</span>
+          ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}${isVol
+          ? `<span style="color:var(--brass);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
         <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
         <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
       </div>
       ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
+      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--brass)">[${esc(((certDefs||[]).find(d=>d.id===r.requiredEndorsement)||{}).name||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
     </div>`;
   }).join("");
 }
@@ -2304,6 +2321,12 @@ function openActTypeModal(id) {
   if (legacyBs && window._atSubtypes.length && !window._atSubtypes[0].bulkSchedule) {
     window._atSubtypes[0].bulkSchedule = legacyBs;
   }
+  // Load volunteer roles
+  window._atRoles = a && a.roles ? JSON.parse(JSON.stringify(
+    Array.isArray(a.roles) ? a.roles : tryParse_(a.roles, [])
+  )) : [];
+  toggleAtVolunteerSection();
+  renderAtRoles();
   renderAtSubtypes();
   openModal("actTypeModal");
 }
@@ -2311,14 +2334,16 @@ function openActTypeModal(id) {
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
+  const isVol = document.getElementById("atVolunteer").checked;
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
     active:   document.getElementById("atActive").checked,
-    volunteer: document.getElementById("atVolunteer").checked,
+    volunteer: isVol,
     calendarId: document.getElementById("atCalendarId").value.trim(),
     calendarSyncActive: document.getElementById("atCalendarSyncActive").checked,
     subtypes: JSON.stringify(window._atSubtypes || []),
+    roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
     bulkSchedule: null,
   };
   await saveEntity({
@@ -2392,15 +2417,8 @@ function renderAtSubtypes() {
             <input type="date" value="${esc(bs.toDate||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
               onchange="ensureAtStBs(${i}).toDate=this.value"></div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">${daysHtml}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.startTime">Start time</label>
-            <input type="time" value="${esc(bs.startTime||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
-              onchange="ensureAtStBs(${i}).startTime=this.value"></div>
-          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.endTime">End time</label>
-            <input type="time" value="${esc(bs.endTime||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
-              onchange="ensureAtStBs(${i}).endTime=this.value"></div>
-        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${daysHtml}</div>
+        ${(st.defaultStart || st.defaultEnd) ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + s('admin.bulkUsesDefaultTimes') + ': ' + esc(st.defaultStart || '?') + '–' + esc(st.defaultEnd || '?') + '</div>' : '<div style="font-size:10px;color:var(--muted);margin-top:4px;font-style:italic">' + s('admin.bulkSetDefaultTimes') + '</div>'}
       </div>
     </div>`;
   }).join("");
@@ -2425,6 +2443,50 @@ function addAtSubtypeRow() {
   if (!window._atSubtypes) window._atSubtypes = [];
   window._atSubtypes.push({ id: "st-"+Date.now(), name: "", nameIS: "", defaultStart: "", defaultEnd: "" });
   renderAtSubtypes();
+}
+
+// ── Activity type: volunteer roles ────────────────────────────────────────────
+
+function toggleAtVolunteerSection() {
+  var show = document.getElementById("atVolunteer").checked;
+  document.getElementById("atRolesSection").classList.toggle("hidden", !show);
+}
+
+function renderAtRoles() {
+  var list = document.getElementById("atRolesList");
+  if (!list) return;
+  if (!window._atRoles || !window._atRoles.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noRoles') + '</div>';
+    return;
+  }
+  var endorsements = (certDefs || []).filter(function(d) { return !!d.clubEndorsement; });
+  list.innerHTML = window._atRoles.map(function(r, i) {
+    var endorseOpts = '<option value="">' + s('admin.roleNoRestriction') + '</option>'
+      + endorsements.map(function(e) {
+        return '<option value="' + esc(e.id) + '"' + (r.requiredEndorsement === e.id ? ' selected' : '') + '>' + esc(e.name || '') + '</option>';
+      }).join('');
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleName') + '</label>'
+      + '<input type="text" value="' + esc(r.name || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].name=this.value"></div>'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleNameIS') + '</label>'
+      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].nameIS=this.value"></div>'
+      + '<button onclick="window._atRoles.splice(' + i + ',1);renderAtRoles()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-top:6px;align-items:end">'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volSlots') + '</label>'
+      + '<input type="number" min="1" value="' + (r.slots || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
+      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.roleEndorsement') + '</label>'
+      + '<select style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].requiredEndorsement=this.value">' + endorseOpts + '</select></div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function addAtRoleRow() {
+  if (!window._atRoles) window._atRoles = [];
+  window._atRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", slots: 1, requiredEndorsement: "" });
+  renderAtRoles();
 }
 
 // ══ VOLUNTEER EVENTS ═════════════════════════════════════════════════════════
@@ -2470,10 +2532,21 @@ function openVolEventModal(id) {
   document.getElementById("veDate").value = ev ? (ev.date || '') : '';
   document.getElementById("veStartTime").value = ev ? (ev.startTime || '') : '';
   document.getElementById("veEndTime").value = ev ? (ev.endTime || '') : '';
-  document.getElementById("veLeaderName").value = ev ? (ev.leaderName || '') : '';
+  // Leader member lookup
+  document.getElementById("veLeaderMemberId").value = ev ? (ev.leaderMemberId || '') : '';
   document.getElementById("veLeaderPhone").value = ev ? (ev.leaderPhone || '') : '';
-  document.getElementById("veLeaderId").value = ev ? (ev.leaderId || '') : '';
   document.getElementById("veShowPhone").checked = ev ? (ev.showLeaderPhone === true || ev.showLeaderPhone === 'true') : false;
+  // Show leader chip or search
+  var leaderM = ev && ev.leaderMemberId ? members.find(function(m){ return m.id === ev.leaderMemberId || m.kennitala === ev.leaderMemberId; }) : null;
+  if (!leaderM && ev && ev.leaderName) {
+    leaderM = members.find(function(m){ return (m.name||'') === ev.leaderName; });
+  }
+  if (leaderM) {
+    showVolLeaderChip(leaderM);
+  } else {
+    clearVolLeaderChip();
+    document.getElementById("veLeaderSearch").value = ev ? (ev.leaderName || '') : '';
+  }
   document.getElementById("veNotes").value = ev ? (ev.notes || '') : '';
   document.getElementById("veNotesIS").value = ev ? (ev.notesIS || '') : '';
   document.getElementById("veDeleteBtn").classList.toggle("hidden", !ev);
@@ -2485,10 +2558,12 @@ function openVolEventModal(id) {
       const label = (L === 'IS' && a.nameIS ? a.nameIS : a.name) || a.name;
       return '<option value="' + a.id + '"' + (ev && ev.activityTypeId === a.id ? ' selected' : '') + '>' + esc(label) + '</option>';
     }).join('');
-  // Roles
-  window._volRoles = ev && ev.roles ? JSON.parse(JSON.stringify(
-    Array.isArray(ev.roles) ? ev.roles : []
-  )) : [];
+  // Roles — inherit from activity type for new events, use saved roles for existing
+  if (ev && ev.roles && (Array.isArray(ev.roles) ? ev.roles.length : true)) {
+    window._volRoles = JSON.parse(JSON.stringify(Array.isArray(ev.roles) ? ev.roles : []));
+  } else {
+    window._volRoles = loadRolesFromActType(sel.value);
+  }
   renderVolRoles();
   openModal("volEventModal");
 }
@@ -2496,6 +2571,8 @@ function openVolEventModal(id) {
 async function saveVolEvent() {
   const title = document.getElementById("veTitle").value.trim();
   if (!title) { toast(s("admin.nameRequired"), "err"); return; }
+  var memberId = document.getElementById("veLeaderMemberId").value.trim();
+  var leaderM = memberId ? members.find(function(m){ return m.id === memberId || m.kennitala === memberId; }) : null;
   const payload = {
     id: _veEditingId,
     title,
@@ -2504,8 +2581,8 @@ async function saveVolEvent() {
     date: document.getElementById("veDate").value,
     startTime: document.getElementById("veStartTime").value,
     endTime: document.getElementById("veEndTime").value,
-    leaderId: document.getElementById("veLeaderId").value.trim(),
-    leaderName: document.getElementById("veLeaderName").value.trim(),
+    leaderMemberId: memberId,
+    leaderName: leaderM ? leaderM.name : document.getElementById("veLeaderSearch").value.trim(),
     leaderPhone: document.getElementById("veLeaderPhone").value.trim(),
     showLeaderPhone: document.getElementById("veShowPhone").checked,
     notes: document.getElementById("veNotes").value.trim(),
@@ -2537,10 +2614,15 @@ function renderVolRoles() {
   const list = document.getElementById("volRolesList");
   if (!list) return;
   if (!window._volRoles || !window._volRoles.length) {
-    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noSubtypes') + '</div>';
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noRoles') + '</div>';
     return;
   }
   list.innerHTML = window._volRoles.map(function(r, i) {
+    var endorseLabel = '';
+    if (r.requiredEndorsement) {
+      var eDef = (certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; });
+      endorseLabel = '<div style="font-size:10px;color:var(--brass);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? eDef.name : r.requiredEndorsement) + '</div>';
+    }
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
       + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleName') + '</label>'
@@ -2551,6 +2633,7 @@ function renderVolRoles() {
       + '</div>'
       + '<div style="margin-top:6px"><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volSlots') + '</label>'
       + '<input type="number" min="1" value="' + (r.slots || '') + '" style="width:80px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
+      + endorseLabel
       + '</div>';
   }).join('');
 }
@@ -2559,6 +2642,73 @@ function addVolRoleRow() {
   if (!window._volRoles) window._volRoles = [];
   window._volRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", slots: 1 });
   renderVolRoles();
+}
+
+// ── Volunteer event: leader member autocomplete ──────────────────────────────
+
+function searchVolLeader(q) {
+  var drop = document.getElementById("veLeaderSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  var hits = members.filter(function(m) { return bool(m.active) && (m.name || '').toLowerCase().includes(ql); }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function(m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"'
+      + ' onclick="selectVolLeader(\'' + esc(m.id || m.kennitala) + '\')">' + esc(memberDisplayName(m, members))
+      + (m.phone ? '<span style="color:var(--muted);margin-left:8px;font-size:10px">' + esc(m.phone) + '</span>' : '') + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectVolLeader(id) {
+  var m = members.find(function(x) { return x.id === id || x.kennitala === id; });
+  if (!m) return;
+  document.getElementById("veLeaderMemberId").value = m.id || m.kennitala;
+  document.getElementById("veLeaderPhone").value = m.phone || '';
+  document.getElementById("veLeaderSuggestions").innerHTML = '';
+  document.getElementById("veLeaderSuggestions").style.display = 'none';
+  showVolLeaderChip(m);
+}
+
+function showVolLeaderChip(m) {
+  var chip = document.getElementById("veLeaderChip");
+  var search = document.getElementById("veLeaderSearch");
+  chip.innerHTML = '<span style="font-size:11px;padding:4px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:6px">'
+    + esc(memberDisplayName(m, members))
+    + '<span style="cursor:pointer;color:var(--red);font-size:13px" onclick="clearVolLeaderChip()">&times;</span></span>';
+  chip.style.display = 'block';
+  search.style.display = 'none';
+}
+
+function clearVolLeaderChip() {
+  document.getElementById("veLeaderChip").style.display = 'none';
+  document.getElementById("veLeaderChip").innerHTML = '';
+  document.getElementById("veLeaderMemberId").value = '';
+  document.getElementById("veLeaderPhone").value = '';
+  var search = document.getElementById("veLeaderSearch");
+  search.value = '';
+  search.style.display = '';
+}
+
+// ── Volunteer event: inherit roles from activity type ────────────────────────
+
+function loadRolesFromActType(atId) {
+  if (!atId) return [];
+  var at = actTypes.find(function(a) { return a.id === atId; });
+  if (!at || !at.roles) return [];
+  var roles = Array.isArray(at.roles) ? at.roles : tryParse_(at.roles, []);
+  return roles.map(function(r) {
+    return { id: "r-" + Date.now() + '-' + Math.random().toString(36).slice(2,6), name: r.name || '', nameIS: r.nameIS || '', slots: r.slots || 1, requiredEndorsement: r.requiredEndorsement || '' };
+  });
+}
+
+function onVeActTypeChange() {
+  var atId = document.getElementById("veActType").value;
+  var newRoles = loadRolesFromActType(atId);
+  if (newRoles.length) {
+    window._volRoles = newRoles;
+    renderVolRoles();
+  }
 }
 
 // ══ CERTIFICATIONS ════════════════════════════════════════════════════════════

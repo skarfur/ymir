@@ -1442,7 +1442,11 @@ function saveActivityType_(b) {
     // Parse subtypes safely — frontend sends as JSON string
     let subtypes = [];
     try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
+    // Parse volunteer roles — frontend sends as JSON string
+    let roles = [];
+    try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
     // Bulk schedules now live on each subtype (not the parent activity type).
+    const isVol = b.volunteer === true || b.volunteer === 'true';
     const item = {
       id: b.id || uid_(),
       name: b.name,
@@ -1450,7 +1454,8 @@ function saveActivityType_(b) {
       active: b.active !== false,
       calendarId: b.calendarId || '',
       calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
-      volunteer: b.volunteer === true || b.volunteer === 'true',
+      volunteer: isVol,
+      roles: isVol ? roles : [],
       subtypes,
       updatedAt: ts,
     };
@@ -5169,7 +5174,7 @@ function saveVolunteerEvent_(b) {
       date: b.date || '',
       startTime: b.startTime || '',
       endTime: b.endTime || '',
-      leaderId: b.leaderId || '',
+      leaderMemberId: b.leaderMemberId || b.leaderId || '',
       leaderName: b.leaderName || '',
       leaderPhone: b.leaderPhone || '',
       showLeaderPhone: b.showLeaderPhone === true || b.showLeaderPhone === 'true',
