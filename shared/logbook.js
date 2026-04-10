@@ -1762,7 +1762,13 @@ function closeConfModal(){
   document.body.style.overflow='';
 }
 
-function _confDesc(c){
+function _confDesc(c, outgoing){
+  if(outgoing){
+    var n = esc(c.toName || '?');
+    if(c.type==='crew_assigned') return s('member.crewAssignedOut', {name:n});
+    if(c.type==='crew_join')     return s('member.crewJoinOut',     {name:n});
+    if(c.type==='helm')          return s('member.helmReqOut',      {name:n});
+  }
   if(c.type==='crew_assigned') return s('member.crewAssigned');
   if(c.type==='crew_join') return s('member.crewJoin');
   if(c.type==='helm') return s('member.helmReq');
@@ -1851,8 +1857,7 @@ function renderConfirmations(){
           '</div>';
         }
         return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
-          '<span class="conf-name fw-500 text-sm">'+esc(c.toName||'?')+'</span>'+
-          '<span class="conf-type">'+_confDesc(c)+'</span>'+
+          '<span class="conf-type">'+_confDesc(c, true)+'</span>'+
           '<span class="conf-status pending ml-auto">'+s('member.statusPending')+'</span>'+
         '</div>';
       }).join('');
