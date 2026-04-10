@@ -26,6 +26,11 @@
     .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
+    /* ── Tab dropdown (mobile) ── */
+    .tab-select { display:none; width:100%; padding:10px 12px; margin-bottom:20px;
+      font-family:inherit; font-size:13px; color:var(--text); background:var(--surface);
+      border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+
     /* ── Collapsible section ── */
     .col-section { margin-bottom:16px; }
     .col-head { display:flex; align-items:center; justify-content:space-between;
@@ -124,6 +129,8 @@
 
     /* ── Responsive ── */
     @media(max-width:600px){
+      #settingsTabBar{display:none}
+      .tab-select{display:block}
       .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px}
       .member-kt{width:auto}
       .cl-phase{width:40px;font-size:9px}
@@ -229,7 +236,7 @@
 
     <!-- ══ TOP: SETTINGS ═════════════════════════════════════════════════════ -->
     <div id="top-settings" class="hidden">
-      <!-- Settings inner tab bar -->
+      <!-- Settings inner tab bar (desktop) -->
       <div class="tab-bar" id="settingsTabBar">
         <button class="tab-btn active" data-tab="boats"      onclick="showTab('boats')"      data-s="admin.tabBoats"></button>
         <button class="tab-btn"        data-tab="locations"  onclick="showTab('locations')"  data-s="admin.tabLocations"></button>
@@ -241,6 +248,18 @@
         <button class="tab-btn"        data-tab="slotCal"    onclick="showTab('slotCal')"    data-s="admin.tabReservations"></button>
         <button class="tab-btn"        data-tab="passport"   onclick="showTab('passport')"   data-s="passport.adminTitle">Rowing Passport</button>
       </div>
+      <!-- Settings tab dropdown (mobile) -->
+      <select class="tab-select" id="settingsTabSelect" onchange="showTab(this.value)">
+        <option value="boats"      data-s="admin.tabBoats"></option>
+        <option value="locations"  data-s="admin.tabLocations"></option>
+        <option value="checklists" data-s="admin.tabChecklists"></option>
+        <option value="actTypes"   data-s="admin.tabActTypes"></option>
+        <option value="certs"      data-s="admin.tabCerts"></option>
+        <option value="flags"      data-s="admin.tabFlags"></option>
+        <option value="alerts"     data-s="admin.tabAlerts"></option>
+        <option value="slotCal"    data-s="admin.tabReservations"></option>
+        <option value="passport"   data-s="passport.adminTitle"></option>
+      </select>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
     <div id="tab-boats" class="hidden">
@@ -1201,6 +1220,8 @@ function showTab(tab) {
   document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
+  const sel = document.getElementById('settingsTabSelect');
+  if (sel) sel.value = tab;
   const el = document.getElementById('tab-' + tab);
   if (el) el.classList.remove('hidden');
 
