@@ -154,11 +154,6 @@
   <!-- ══ 2. TIDES (auto-filled from harmonic prediction) ══ -->
   <div class="section-heading" data-s="daily.tides"></div>
   <div id="dailyTideWidget" class="mb-4"></div>
-  <!-- hidden inputs to preserve save/load contract -->
-  <input type="hidden" id="tideH1Time"><input type="hidden" id="tideH1Height">
-  <input type="hidden" id="tideL1Time"><input type="hidden" id="tideL1Height">
-  <input type="hidden" id="tideH2Time"><input type="hidden" id="tideH2Height">
-  <input type="hidden" id="tideL2Time"><input type="hidden" id="tideL2Height">
 
   <!-- ══ 3. TRIPS TODAY ══ -->
   <div class="section-heading">
@@ -397,10 +392,6 @@ const dom = domRefs({
   actNotes:          'actNotes',
   activityModal:     'activityModal',
   addActivityBtn:    'addActivityBtn',
-  tideH1Time: 'tideH1Time', tideH1Height: 'tideH1Height',
-  tideL1Time: 'tideL1Time', tideL1Height: 'tideL1Height',
-  tideH2Time: 'tideH2Time', tideH2Height: 'tideH2Height',
-  tideL2Time: 'tideL2Time', tideL2Height: 'tideL2Height',
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -883,22 +874,6 @@ function openTripDetail(id) {
   openModal('tripDetailModal');
 }
 
-// ── Tide field helpers ────────────────────────────────────────────────────────
-function readTideFields() {
-  return {
-    h1t: dom.tideH1Time.value, h1h: dom.tideH1Height.value,
-    l1t: dom.tideL1Time.value, l1h: dom.tideL1Height.value,
-    h2t: dom.tideH2Time.value, h2h: dom.tideH2Height.value,
-    l2t: dom.tideL2Time.value, l2h: dom.tideL2Height.value,
-  };
-}
-function populateTideFields() {
-  dom.tideH1Time.value = tideData.h1t||''; dom.tideH1Height.value = tideData.h1h||'';
-  dom.tideL1Time.value = tideData.l1t||''; dom.tideL1Height.value = tideData.l1h||'';
-  dom.tideH2Time.value = tideData.h2t||''; dom.tideH2Height.value = tideData.h2h||'';
-  dom.tideL2Time.value = tideData.l2t||''; dom.tideL2Height.value = tideData.l2h||'';
-  _renderDailyTide();
-}
 
 function _autoFillTide() {
   if (typeof tideExtrema !== 'function') return;
@@ -912,7 +887,7 @@ function _renderDailyTide() {
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
     _tideWidgetInstance = tideWidget(el, {
-      onData: function(d) { tideData = tideToDailyLog(d.extrema); populateTideFields(); }
+      onData: function(d) { tideData = tideToDailyLog(d.extrema); }
     });
   }
   _tideWidgetInstance.refresh();
@@ -947,8 +922,6 @@ async function loadDay() {
   dom.wxLogList.replaceChildren();
   dom.wxLogCount.textContent = '';
   dom.tripsCount.textContent = '';
-  ['tideH1Time','tideH1Height','tideL1Time','tideL1Height',
-   'tideH2Time','tideH2Height','tideL2Time','tideL2Height'].forEach(id => { dom[id].value = ''; });
   _renderDailyTide();
 
   if (isToday()) {
@@ -1029,7 +1002,7 @@ function applyLogData(log, cfgRes) {
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
-  populateTideFields();
+
   if (log) {
     logId    = log.id;
     amChecks = sjson(log.openingChecks, {});
@@ -1076,7 +1049,7 @@ async function doSave(signOff) {
       closingChecks: JSON.stringify(pmChecks),
       activities:    JSON.stringify(activities),
       weatherLog:    JSON.stringify(wxLog),
-      tideData:      JSON.stringify(readTideFields()),
+      tideData:      JSON.stringify(tideData),
       narrative:     dom.narrativeInput.value.trim(),
       signOff,
       ...(logId ? { id: logId } : {}),
