@@ -1398,9 +1398,9 @@ function saveConfig_(b) {
 
   if (b.locations !== undefined) {
     setConfigSheetValue_('locations', JSON.stringify(b.locations));
-  if (b.launchChecklists)  { setConfigSheetValue_('launchChecklists',  JSON.stringify(b.launchChecklists));  }
     saved.locations = true;
   }
+  if (b.launchChecklists)  { setConfigSheetValue_('launchChecklists',  JSON.stringify(b.launchChecklists));  }
   if (b.boatCategories)    { setConfigSheetValue_('boatCategories',    JSON.stringify(b.boatCategories));    }
 
   if (b.rowingPassport !== undefined) {
