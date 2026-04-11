@@ -149,6 +149,7 @@ const user = requireAuth();
 let _volEvents = [];
 let _volSignups = [];
 let _volActTypes = [];
+let _volCertDefs = [];
 let _vpView = 'list';
 let _vpMonth = (function() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
 let _vpDayModalIso = null;
@@ -173,6 +174,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     _volEvents   = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
     _volActTypes = cfgRes.activityTypes || [];
+    _volCertDefs = (typeof certDefsFromConfig === 'function'
+      ? certDefsFromConfig(cfgRes.certDefs || [])
+      : (cfgRes.certDefs || []));
     _volSignups  = (suRes && suRes.signups) || [];
   } catch(e) {
     document.getElementById('vpListContainer').innerHTML =
@@ -208,18 +212,6 @@ function getMergedEvents(rangeFrom, rangeTo) {
 function localizedTitle(ev) {
   const L = getLang();
   return (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
-}
-function localizedSubtitle(ev) {
-  const L = getLang();
-  return (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
-}
-function localizedNotes(ev) {
-  const L = getLang();
-  return (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
-}
-function localizedRoleName(role) {
-  const L = getLang();
-  return (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
 }
 
 // "Wed, 15 Apr"
@@ -340,86 +332,27 @@ function renderVpList() {
   container.innerHTML = html;
 }
 
+// Delegate to the shared volunteer card renderer so /volunteer/ and
+// /admin/ stay visually consistent. The shared helper handles the
+// date · title · subtype header line, a leader chip badge, inline
+// signup chips next to the progress bar, and an on-click role
+// description (member mode).
 function renderVpCard(ev) {
-  const title    = localizedTitle(ev);
-  const subtitle = localizedSubtitle(ev);
-  const notes    = localizedNotes(ev);
-  const dayLbl   = formatEventDateLabel(ev);
-  const timeLbl  = formatTimeRange(ev);
-  const roles    = Array.isArray(ev.roles) ? ev.roles : [];
-
-  const leaderHtml = ev.leaderName
-    ? '<div class="vp-card-leader">'
-      + '<span class="vp-card-leader-label">' + s('volunteer.inCharge') + ':</span> '
-      + '<span class="vp-card-leader-name">' + esc(ev.leaderName) + '</span>'
-      + (ev.showLeaderPhone && ev.leaderPhone
-          ? ' <span class="vp-card-leader-phone">· <a href="tel:' + esc(ev.leaderPhone) + '">' + esc(ev.leaderPhone) + '</a></span>'
-          : '')
-      + '</div>'
-    : '';
-
-  const subtitleHtml = subtitle ? '<div class="vp-card-subtitle">' + esc(subtitle) + '</div>' : '';
-  const notesHtml    = notes ? '<div class="vp-card-notes">' + esc(notes) + '</div>' : '';
-
-  const rolesHtml = roles.length
-    ? roles.map(function(r) { return renderVpRole(ev, r); }).join('')
-    : '<div class="vp-card-notes">' + s('admin.noRoles') + '</div>';
-
-  return '<div class="vp-card">'
-    + '<div class="vp-card-date">' + esc(dayLbl) + (timeLbl ? ' · ' + esc(timeLbl) : '') + '</div>'
-    + '<div class="vp-card-title">' + esc(title) + '</div>'
-    + subtitleHtml
-    + leaderHtml
-    + notesHtml
-    + rolesHtml
-    + '</div>';
-}
-
-function renderVpRole(ev, role) {
-  const rn      = localizedRoleName(role);
-  const signups = _volSignups.filter(function(su) { return su.eventId === ev.id && su.roleId === role.id; });
-  const filled  = signups.length;
-  const total   = Number(role.slots) || 0;
-  const isFull  = total > 0 && filled >= total;
-  const mySignup = signups.find(isMineSignup);
-  const pct     = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
-  const allowed = (typeof memberCanTakeRole === 'function') ? memberCanTakeRole(role, _myCerts) : true;
-
-  // Names of all signups; "me" replaces own name
-  const chipsHtml = signups.length
-    ? '<div class="vp-role-signups">'
-      + signups.map(function(su) {
-          const isMine = isMineSignup(su);
-          const label = isMine ? s('volunteer.me') : (su.name || '—');
-          return '<span class="vp-chip' + (isMine ? ' me' : '') + '">' + esc(label) + '</span>';
-        }).join('')
-      + '</div>'
-    : '';
-
-  let actionHtml = '';
-  if (mySignup) {
-    actionHtml = '<button class="vp-btn signed-up" onclick="vpWithdraw(\'' + mySignup.id + '\')">'
-      + s('member.volWithdraw') + '</button>';
-  } else if (!allowed) {
-    actionHtml = '<span class="vp-role-note">' + s('member.volNeedsEndorsement') + '</span>';
-  } else if (isFull) {
-    actionHtml = '<span class="vp-role-note full">' + s('member.volFull') + '</span>';
-  } else {
-    actionHtml = '<button class="vp-btn" onclick="vpSignup(\'' + ev.id + '\',\'' + role.id + '\')">'
-      + s('member.volSignUp') + '</button>';
-  }
-
-  return '<div class="vp-role">'
-    + '<div class="vp-role-left">'
-      + '<div class="vp-role-name">' + esc(rn) + '</div>'
-      + '<div class="vp-role-meta">'
-        + '<div class="vp-bar"><div class="vp-bar-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%"></div></div>'
-        + '<span class="vp-role-status">' + filled + '/' + total + '</span>'
-      + '</div>'
-      + chipsHtml
-    + '</div>'
-    + '<div class="vp-role-right">' + actionHtml + '</div>'
-    + '</div>';
+  return renderVolunteerCard(ev, {
+    mode: 'member',
+    lang: getLang(),
+    signups: _volSignups,
+    certDefs: _volCertDefs,
+    certDefName: (typeof certDefName === 'function') ? certDefName : function(d) { return d && (d.name || d.id) || ''; },
+    esc: esc,
+    s: s,
+    formatDay: formatEventDateLabel,
+    formatTime: formatTimeRange,
+    userKennitala: user && user.kennitala,
+    myCerts: _myCerts,
+    onSignup: 'vpSignup',
+    onWithdraw: 'vpWithdraw',
+  });
 }
 
 // ══ CALENDAR VIEW ════════════════════════════════════════════════════════════
