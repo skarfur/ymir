@@ -1634,7 +1634,7 @@ function renderClubCalendars() {
     theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   }
   var isDark = theme !== 'light';
-  var frameFilter = isDark ? 'filter:invert(0.80) hue-rotate(120deg);' : '';
+  var frameFilter = isDark ? 'filter:invert(0.80) hue-rotate(240deg);' : '';
   // Always white — Google's default — so the invert filter lands on a dark
   // shade on dark theme, and it stays white on light theme.
   var frameBg = '#ffffff';
