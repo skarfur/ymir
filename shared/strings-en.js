@@ -1328,6 +1328,7 @@ var _STRINGS_FLAT = {
   "volunteer.inCharge": "In charge",
   "volunteer.me": "Me",
   "volunteer.more": "more",
+  "volunteer.youSignedUp": "You're signed up",
   "volunteer.noEventsThisDay": "No events on this day.",
   "volunteer.unfilledRoles": "open volunteer slots",
   "admin.tabCalendars": "Calendars",
