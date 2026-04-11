@@ -2725,44 +2725,61 @@ function _volTogglePast() {
   renderVolunteerEvents();
 }
 
+function _volToggleRoleDesc(e, descId) {
+  e.stopPropagation();
+  const el = document.getElementById(descId);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 function _volRowHtml(ev, L) {
   const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
   const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
   const roles = Array.isArray(ev.roles) ? ev.roles : [];
   const rolesHtml = roles.map(r => {
     const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
+    const desc = (L === 'IS' && r.descriptionIS ? r.descriptionIS : r.description) || '';
     const endorseStr = r.requiredEndorsement
       ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
       : '';
     const signups = (volunteerSignups || []).filter(function(su) { return su.eventId === ev.id && su.roleId === r.id; });
     const filled = signups.length;
     const slotsLbl = (r.slots ? (filled + '/' + r.slots) : (filled + '/∞')) + ' ' + s('admin.volSlots').toLowerCase();
-    const chipsHtml = signups.length
-      ? '<div style="padding:2px 0 4px 18px;display:flex;flex-wrap:wrap;gap:4px">'
-        + signups.map(function(su) {
-            // Live-lookup phone + consent from member record so the current
-            // preference state is always reflected (not a stale snapshot).
-            const mem = (members || []).find(function(m) {
-              return String(m.kennitala) === String(su.kennitala);
-            });
-            let showPhone = false;
-            let phone = '';
-            if (mem) {
-              phone = mem.phone || '';
-              let prefs = {};
-              try { prefs = JSON.parse(mem.preferences || '{}'); } catch(e) { prefs = {}; }
-              showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
-            }
-            const phoneHtml = (showPhone && phone)
-              ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(phone) + '</a>'
-              : '';
-            return '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
-              + esc(su.name || '—') + phoneHtml + '</span>';
-          }).join('')
-        + '</div>'
-      : '';
-    return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + slotsLbl + ')' + endorseStr + '</span>'
-      + chipsHtml;
+    const descId = 'vr-desc-' + ev.id + '-' + r.id;
+    const expandable = !!desc;
+    const chipsHtml = signups.map(function(su) {
+      // Live-lookup phone + consent from member record so the current
+      // preference state is always reflected (not a stale snapshot).
+      const mem = (members || []).find(function(m) {
+        return String(m.kennitala) === String(su.kennitala);
+      });
+      let showPhone = false;
+      let phone = '';
+      if (mem) {
+        phone = mem.phone || '';
+        let prefs = {};
+        try { prefs = JSON.parse(mem.preferences || '{}'); } catch(e) { prefs = {}; }
+        showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
+      }
+      const phoneHtml = (showPhone && phone)
+        ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(phone) + '</a>'
+        : '';
+      return '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
+        + esc(su.name || '—') + phoneHtml + '</span>';
+    }).join('');
+    const caret = expandable ? ' <span style="color:var(--muted);font-size:9px">▾</span>' : '';
+    const clickHandler = expandable
+      ? '_volToggleRoleDesc(event, \'' + descId + '\')'
+      : 'event.stopPropagation()';
+    const rowStyle = 'padding:2px 0 2px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px'
+      + (expandable ? ';cursor:pointer' : '');
+    return '<div onclick="' + clickHandler + '" style="' + rowStyle + '">'
+      + '<span style="font-size:10px;color:var(--muted)">→ ' + esc(rn) + ' (' + slotsLbl + ')' + endorseStr + caret + '</span>'
+      + chipsHtml
+      + '</div>'
+      + (expandable
+          ? '<div id="' + descId + '" style="display:none;font-size:10px;color:var(--muted);padding:2px 0 6px 22px;white-space:pre-wrap">' + esc(desc) + '</div>'
+          : '');
   }).join('');
   const stopProp = 'onclick="event.stopPropagation();';
   const leaderHtml = ev.leaderName
