@@ -46,6 +46,7 @@ var _STRINGS_FLAT = {
   "lbl.sortOrder": "Sort order",
   "lbl.selectDots": "Select…",
   "lbl.Dash": "—  —",
+  "msg.unsavedChanges": "You have unsaved changes. Discard them?",
   "toast.saved": "Saved",
   "toast.saveFailed": "Save failed",
   "toast.deleted": "Deleted",

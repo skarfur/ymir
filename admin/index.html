@@ -1334,6 +1334,16 @@ document.addEventListener("DOMContentLoaded", () => {
   buildHeader('admin');
   applyStrings();
   _adminWireStrings();
+  // Enable unsaved-changes guard on all editable admin modals. The guard
+  // snapshots input state when a modal opens and confirms before closing
+  // if any field changed (bypassed when closeModal is called with force=true).
+  [
+    'memberModal', 'boatCatModal', 'boatModal', 'locationModal',
+    'clModal', 'launchCLModal', 'actTypeModal', 'volEventModal',
+    'certCatModal', 'certDefModal', 'recurSlotModal', 'slotModal',
+    'passportSettingsModal', 'passportItemModal', 'passportCategoryModal',
+    'memberCertModal',
+  ].forEach(id => { if (typeof guardUnsavedChanges === 'function') guardUnsavedChanges(id); });
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
     const top = p.get('top') || 'members';
@@ -1490,7 +1500,7 @@ async function saveEntity({ apiAction, getArray, setArray, payload, modalId, ren
       setArray(arr.map(x => x.id === payload.id ? { ...x, ...payload } : x));
       if (!arr.find(x => x.id === payload.id)) setArray([...arr, payload]);
     }
-    if (modalId) closeModal(modalId);
+    if (modalId) closeModal(modalId, true);
     if (renderFn) renderFn();
     toast(s("toast.saved"));
   } catch(e) {
@@ -1643,7 +1653,7 @@ async function saveMember() {
     const idx = members.findIndex(x => x.id === id);
     if (idx >= 0) members[idx] = { ...members[idx], ...payload };
     else          members.push(payload);
-    closeModal("memberModal");
+    closeModal("memberModal", true);
     renderMembers();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -1657,7 +1667,7 @@ async function deactivateMember(id) {
     renderMembers();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
-async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal"); }
+async function deleteMember() { await deactivateMember(editingId); closeModal("memberModal", true); }
 
 // ══ BOAT CATEGORIES ══════════════════════════════════════════════════════════
 
@@ -1719,7 +1729,7 @@ async function saveBoatCat() {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
-    closeModal("boatCatModal");
+    closeModal("boatCatModal", true);
     renderBoatCats();
     renderBoats();
     populateCategorySelects();
@@ -1735,7 +1745,7 @@ async function deleteBoatCat() {
     await apiPost("saveConfig", { boatCategories: _allBoatCats });
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
-    closeModal("boatCatModal");
+    closeModal("boatCatModal", true);
     renderBoatCats();
     renderBoats();
     populateCategorySelects();
@@ -2027,8 +2037,17 @@ async function saveResFromModal() {
     var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
+    // Clear sub-form fields so the boat modal's dirty check doesn't flag
+    // the stale reservation inputs after a successful save.
+    document.getElementById("bResMemberKt").value = '';
+    document.getElementById("bResMemberSearch").value = '';
+    document.getElementById("bResMemberName").textContent = '';
+    document.getElementById("bResStart").value = '';
+    document.getElementById("bResEnd").value = '';
+    document.getElementById("bResNote").value = '';
     cancelResForm();
     renderReservationList(b);
+    if (typeof resnapshotModal === 'function') resnapshotModal('boatModal');
     toast(s('boat.reservationSaved'));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
@@ -2091,7 +2110,7 @@ async function saveBoat() {
   try {
     await apiPost("saveConfig", { boats: _allBoats });
     boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
-    closeModal("boatModal");
+    closeModal("boatModal", true);
     renderBoats();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -2105,7 +2124,7 @@ async function deleteBoat(id) {
     await apiPost("saveConfig", { boats: _allBoats });
     boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
     renderBoats();
-    closeModal("boatModal");
+    closeModal("boatModal", true);
     toast(s("toast.deleted"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
@@ -2181,7 +2200,7 @@ async function saveLocation() {
   try {
     await apiPost("saveConfig", { locations: _allLocations });
     locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
-    closeModal("locationModal");
+    closeModal("locationModal", true);
     renderLocations();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -2195,7 +2214,7 @@ async function deleteLocation(id) {
     await apiPost("saveConfig", { locations: _allLocations });
     locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
     renderLocations();
-    closeModal("locationModal");
+    closeModal("locationModal", true);
     toast(s("toast.deleted"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
@@ -2268,7 +2287,7 @@ async function deleteCLItem(id) {
     await apiPost("deleteChecklistItem", { id: _id });
     clItems = clItems.filter(i => i.id !== _id);
     renderChecklists();
-    closeModal("clModal");
+    closeModal("clModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
@@ -2363,7 +2382,7 @@ async function saveLaunchCLItem() {
 
   try {
     await apiPost("saveConfig", { launchChecklists: _launchCLs });
-    closeModal("launchCLModal");
+    closeModal("launchCLModal", true);
     renderLaunchCLSections();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -2400,7 +2419,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
   }
   try {
     await apiPost("saveConfig", { launchChecklists: _launchCLs });
-    closeModal("launchCLModal");
+    closeModal("launchCLModal", true);
     renderLaunchCLSections();
     toast(s("toast.deleted"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -2497,7 +2516,7 @@ async function deleteActType(id) {
     await apiPost("deleteActivityType", { id: _id });
     actTypes = actTypes.filter(a => a.id !== _id);
     renderActTypes();
-    closeModal("actTypeModal");
+    closeModal("actTypeModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
@@ -2875,7 +2894,7 @@ async function deleteVolEvent(id) {
     await apiPost("deleteVolunteerEvent", { id: _id });
     volunteerEvents = volunteerEvents.filter(a => a.id !== _id);
     renderVolunteerEvents();
-    closeModal("volEventModal");
+    closeModal("volEventModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
@@ -3098,7 +3117,7 @@ async function saveCertCat() {
   });
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
-    closeModal("certCatModal");
+    closeModal("certCatModal", true);
     renderCertCategories();
     renderCertDefs();
     toast(s("toast.saved"));
@@ -3265,7 +3284,7 @@ async function saveCertDef() {
     certEditId = savedId;
     renderCertDefs();
 
-    closeModal("certDefModal");
+    closeModal("certDefModal", true);
     toast(s("admin.certDefSaved"));
   } catch(e) {
     toast(s("toast.saveFailed") + ": " + e.message, "err");
@@ -3281,7 +3300,7 @@ async function deleteCertDef() {
     certDefs = certDefs.filter(d => d.id !== certEditId);
     renderCertDefs();
 
-    closeModal("certDefModal");
+    closeModal("certDefModal", true);
     toast(s("toast.deleted"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
@@ -3990,7 +4009,7 @@ async function saveCurrentSlot() {
       date: date, startTime: startTime, endTime: endTime,
       note: document.getElementById("smNote").value || '',
     });
-    closeModal("slotModal");
+    closeModal("slotModal", true);
     toast(s('toast.saved'));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -4001,7 +4020,7 @@ async function deleteCurrentSlot() {
   if (!(await ymConfirm(s('slot.confirmDelete')))) return;
   try {
     await apiPost("deleteSlot", { slotId: _editingSlot.slotId });
-    closeModal("slotModal");
+    closeModal("slotModal", true);
     toast(s('toast.deleted'));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -4062,7 +4081,7 @@ async function saveRecurringSlots() {
       fromDate: fromDate, toDate: toDate,
       note: document.getElementById("rsNote").value || '',
     });
-    closeModal("recurSlotModal");
+    closeModal("recurSlotModal", true);
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -4224,7 +4243,7 @@ function savePassportSettings() {
   p.fromSub       = document.getElementById('ppsFromSub').value.trim() || 'restricted';
   p.toSub         = document.getElementById('ppsToSub').value.trim() || 'released';
   _ppMarkDirty();
-  closeModal('passportSettingsModal');
+  closeModal('passportSettingsModal', true);
   drawPassportEditor();
 }
 
@@ -4279,7 +4298,7 @@ function savePassportItem() {
     it.retired = payload.retired;
   }
   _ppMarkDirty();
-  closeModal('passportItemModal');
+  closeModal('passportItemModal', true);
   drawPassportEditor();
 }
 
@@ -4298,7 +4317,7 @@ async function deletePassportItem() {
     toast(s('passport.itemRetiredSoft'));
   }
   _ppMarkDirty();
-  closeModal('passportItemModal');
+  closeModal('passportItemModal', true);
   drawPassportEditor();
 }
 
@@ -4337,7 +4356,7 @@ function savePassportCategory() {
     cat.name.IS = nameIS;
   }
   _ppMarkDirty();
-  closeModal('passportCategoryModal');
+  closeModal('passportCategoryModal', true);
   drawPassportEditor();
 }
 
@@ -4349,7 +4368,7 @@ async function deletePassportCategory() {
   p.categories.splice(ci, 1);
   _ppMarkDirty();
   toast(s('passport.categoryDeleted'));
-  closeModal('passportCategoryModal');
+  closeModal('passportCategoryModal', true);
   drawPassportEditor();
 }
 

@@ -46,6 +46,7 @@ var _STRINGS_FLAT = {
   "lbl.sortOrder": "Röðun",
   "lbl.selectDots": "Veldu…",
   "lbl.noneDash": "— ekkert —",
+  "msg.unsavedChanges": "Þú átt óvistaðar breytingar. Henda þeim?",
   "toast.saved": "Vistað",
   "toast.saveFailed": "Mistókst að vista",
   "toast.deleted": "Eytt",

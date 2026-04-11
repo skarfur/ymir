@@ -121,8 +121,71 @@ window.replaceWithFragment = function (container, items, buildNodeFn) {
 };
 
 // ── MODAL HELPERS ──────────────────────────────────────────────────────────────
-window.openModal  = id => document.getElementById(id)?.classList.remove('hidden');
-window.closeModal = id => document.getElementById(id)?.classList.add('hidden');
+// Unsaved-changes guard: opt-in per modal via guardUnsavedChanges(modalId).
+// When a guarded modal is opened, its form inputs are snapshotted; when closed
+// without `force === true`, it confirms before discarding dirty edits.
+;(function () {
+  const _tracked  = new Set();           // modalIds that opt into the guard
+  const _baseline = new Map();           // modalId -> [[el, value], ...]
+
+  function _snapshot(modalId) {
+    const m = document.getElementById(modalId);
+    if (!m) { _baseline.delete(modalId); return; }
+    const snap = [];
+    m.querySelectorAll('input, textarea, select').forEach(el => {
+      if (el.type === 'file') return;
+      const val = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+      snap.push([el, val]);
+    });
+    _baseline.set(modalId, snap);
+  }
+
+  function _isDirty(modalId) {
+    const snap = _baseline.get(modalId);
+    if (!snap) return false;
+    for (let i = 0; i < snap.length; i++) {
+      const el = snap[i][0], was = snap[i][1];
+      if (!el.isConnected) continue;
+      const cur = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+      if (cur !== was) return true;
+    }
+    return false;
+  }
+
+  window.guardUnsavedChanges = function (modalId) { _tracked.add(modalId); };
+  window.isModalDirty        = function (modalId) { return _isDirty(modalId); };
+  window.resnapshotModal     = function (modalId) { if (_tracked.has(modalId)) _snapshot(modalId); };
+
+  window.openModal = function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('hidden');
+    if (_tracked.has(id)) _snapshot(id);
+  };
+
+  window.closeModal = function (id, force) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const doClose = () => { el.classList.add('hidden'); _baseline.delete(id); };
+    if (force === true || !_tracked.has(id) || !_isDirty(id)) { doClose(); return; }
+    const msg = (typeof s === 'function') ? s('msg.unsavedChanges')
+              : 'You have unsaved changes. Discard them?';
+    // ymConfirm returns a promise; close only if the user confirms.
+    Promise.resolve(ymConfirm(msg)).then(ok => { if (ok) doClose(); });
+  };
+
+  // Warn before leaving the page while a guarded modal has unsaved edits.
+  window.addEventListener('beforeunload', function (e) {
+    for (const id of _tracked) {
+      const el = document.getElementById(id);
+      if (el && !el.classList.contains('hidden') && _isDirty(id)) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    }
+  });
+})();
 
 // ── GLOBAL ESCAPE-TO-CLOSE ────────────────────────────────────────────────────
 document.addEventListener('keydown', function (e) {
@@ -134,7 +197,9 @@ document.addEventListener('keydown', function (e) {
   if (!overlays.length) return;
   // pick the one with highest z-index (last in DOM if equal)
   let top = overlays[overlays.length - 1];
-  top.classList.add('hidden');
+  // Route through closeModal so the unsaved-changes guard (if active) fires.
+  if (top.id && typeof window.closeModal === 'function') window.closeModal(top.id);
+  else top.classList.add('hidden');
 });
 
 // ── SYSTEM DIALOGS (ymAlert / ymConfirm / ymPrompt) ──────────────────────────

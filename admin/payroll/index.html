@@ -104,11 +104,11 @@
 </div>
 
 <!-- Entry modal -->
-<div id="prModal" class="modal-bg hidden" onclick="if(event.target===this)prCloseModal()">
+<div id="prModal" class="modal-bg hidden" onclick="if(event.target===this)closeModal('prModal')">
   <div class="modal-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 class="modal-title" id="prModalTitle" style="margin:0"></h3>
-      <button class="modal-close-x" onclick="prCloseModal()">&times;</button>
+      <button class="modal-close-x" onclick="closeModal('prModal')">&times;</button>
     </div>
     <div class="field"><label data-s="payroll.employee"></label>
       <select id="meEmp" style="width:100%"></select></div>
@@ -124,7 +124,7 @@
     <div class="modal-actions">
       <button id="meDelBtn" class="btn-del" style="display:none" onclick="meDelete()" data-s="payroll.deleteEntry"></button>
       <span style="margin-left:auto"></span>
-      <button class="btn btn-secondary" onclick="prCloseModal()" data-s="btn.cancel"></button>
+      <button class="btn btn-secondary" onclick="closeModal('prModal')" data-s="btn.cancel"></button>
       <button class="btn btn-primary" onclick="meSave()" data-s="btn.save"></button>
     </div>
   </div>
@@ -135,6 +135,8 @@
 function prHide(id){var el=document.getElementById(id);if(el)el.classList.add('hidden');}
 function prShow(id){var el=document.getElementById(id);if(el)el.classList.remove('hidden');}
 function prToggleId(id){var el=document.getElementById(id);if(el)el.classList.toggle('hidden');}
+// Opt-in to unsaved-changes guard for the time-entry modal.
+if(typeof guardUnsavedChanges==='function')guardUnsavedChanges('prModal');
 
 /* == Bootstrap == */
 var user=requireAuth(isAdmin);
@@ -225,7 +227,50 @@ function prEmpRowHTML(m,emp,act){
   h+='</div></div>';
   return h;
 }
-function prToggleEdit(mid){var el=document.getElementById('empedit_'+mid);if(!el)return;var was=el.classList.toggle('hidden');if(!was)applyStrings(el);}
+// Inline employee edit panels: track their initial state so we can detect
+// unsaved edits on close / page unload. Keyed by member id.
+var _empEditBaseline={};
+function _empEditSnapshot(mid){
+  var pan=document.getElementById('empedit_'+mid);
+  if(!pan){delete _empEditBaseline[mid];return;}
+  var en=document.getElementById('prEnabled_'+mid);
+  var ti=document.getElementById('prTitle_'+mid);
+  _empEditBaseline[mid]={enabled:en?en.checked:false,title:ti?ti.value:''};
+}
+function _empEditIsDirty(mid){
+  var base=_empEditBaseline[mid];if(!base)return false;
+  var en=document.getElementById('prEnabled_'+mid);
+  var ti=document.getElementById('prTitle_'+mid);
+  if(en&&en.checked!==base.enabled)return true;
+  if(ti&&ti.value!==base.title)return true;
+  return false;
+}
+function _anyEmpEditDirty(){
+  for(var k in _empEditBaseline){
+    var pan=document.getElementById('empedit_'+k);
+    if(pan&&!pan.classList.contains('hidden')&&_empEditIsDirty(k))return true;
+  }
+  return false;
+}
+function prToggleEdit(mid){
+  var el=document.getElementById('empedit_'+mid);if(!el)return;
+  var wasOpen=!el.classList.contains('hidden');
+  if(wasOpen&&_empEditIsDirty(mid)){
+    ymConfirm(s('msg.unsavedChanges')).then(function(ok){
+      if(!ok)return;
+      el.classList.add('hidden');
+      delete _empEditBaseline[mid];
+    });
+    return;
+  }
+  el.classList.toggle('hidden');
+  if(wasOpen){delete _empEditBaseline[mid];return;}
+  applyStrings(el);
+  _empEditSnapshot(mid);
+}
+window.addEventListener('beforeunload',function(e){
+  if(_anyEmpEditDirty()){e.preventDefault();e.returnValue='';return '';}
+});
 async function prSaveEmployee(memberId){
   var msg=document.getElementById('prMsg_'+memberId);
   var member=_members.find(function(m){return m.id===memberId;});if(!member)return;
@@ -240,6 +285,7 @@ async function prSaveEmployee(memberId){
     await apiPost('saveEmployee',payload);
     _empData[empId]=Object.assign({},existing||{},payload);
     _empByMember[memberId]=_empData[empId];
+    delete _empEditBaseline[memberId];
     if(msg){msg.textContent='\u2713';msg.style.color='var(--green)';}
     setTimeout(function(){prLoadEmployees();},800);
   }catch(e){if(msg){msg.textContent=e.message;msg.style.color='var(--red)';}}
@@ -430,9 +476,9 @@ function prOpenModal(entry,dateStr){
     document.getElementById('meNote').value='';
   }
   document.getElementById('meErr').textContent='';
-  prShow('prModal');
+  openModal('prModal');
 }
-function prCloseModal(){prHide('prModal');_editId=null;}
+function prCloseModal(force){closeModal('prModal',force===true);_editId=null;}
 function meCalcMins(){
   var i=document.getElementById('meIn').value,o=document.getElementById('meOut').value;
   if(!i||!o)return;var d=Math.round((new Date(o)-new Date(i))/60000);if(d>0)document.getElementById('meMins').value=d;
@@ -453,13 +499,13 @@ async function meSave(){
     }else{
       await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin entry',source:'admin'});
     }
-    prCloseModal();showToast(s('toast.saved'));prLoadTsEntries();
+    prCloseModal(true);showToast(s('toast.saved'));prLoadTsEntries();
   }catch(e){err.textContent=e.message;}
 }
 async function meDelete(){
   if(!_editId)return;
   if(!await ymConfirm(s('payroll.deleteConfirm')))return;
-  try{await apiPost('adminDeleteTime',{id:_editId});prCloseModal();showToast(s('toast.deleted'));prLoadTsEntries();}
+  try{await apiPost('adminDeleteTime',{id:_editId});prCloseModal(true);showToast(s('toast.deleted'));prLoadTsEntries();}
   catch(e){document.getElementById('meErr').textContent=e.message;}
 }
 

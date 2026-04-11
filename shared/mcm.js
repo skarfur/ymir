@@ -143,6 +143,8 @@
     document.getElementById('mcmDescription').value = '';
     document.getElementById('mcmAssignBtn').textContent = s('cert.assign');
     document.getElementById('mcmCancelEditBtn').classList.add('hidden');
+    // Refresh the unsaved-changes baseline so a just-reset form reads as clean.
+    if (typeof resnapshotModal === 'function') resnapshotModal('memberCertModal');
   }
 
   /* ── open modal ────────────────────────────────────────────────────────── */
