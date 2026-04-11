@@ -1263,8 +1263,12 @@
           <option value="theory" data-s="passport.theory">Theoretical</option>
         </select>
       </div>
-      <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppiId" readonly style="color:var(--muted)"></div>
+      <div class="field">
+        <label data-s="passport.itemModule">Module (teaching order)</label>
+        <input type="number" id="ppiModule" min="0" step="1" placeholder="0">
+      </div>
     </div>
+    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppiId" readonly style="color:var(--muted)"></div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="ppiRetired"> <label for="ppiRetired" data-s="passport.retire">Retire</label>
     </div>
@@ -4090,6 +4094,8 @@ async function saveRecurringSlots() {
 // ── ROWING PASSPORT ADMIN ─────────────────────────────────────────────────────
 let _passportDef = null;
 let _passportDirty = false;
+// Sort mode: 'cat-mod' = Category → Module, 'mod-cat' = Module → Category
+let _passportSortMode = 'cat-mod';
 
 async function renderPassportAdmin() {
   const card = document.getElementById('passportAdminPreview');
@@ -4105,6 +4111,60 @@ async function renderPassportAdmin() {
 // In-memory edit targets for passport modals.
 let _ppEditing = { pi: null, ci: null, ii: null, mode: null };
 
+// Renders a single item row in the admin preview (used by both sort modes).
+// `pi, ci, ii` are the ORIGINAL indices into _passportDef so the edit/retire
+// handlers operate on the real underlying item regardless of display order.
+function _ppRenderItemRow(p, cat, it, pi, ci, ii) {
+  const retired = !!it.retired;
+  const assessment = it.assessment || 'practical';
+  const itemNameEN = it.name?.EN || it.id;
+  const itemNameIS = it.name?.IS || '';
+  const descEN = (it.desc && it.desc.EN) || '';
+  const descIS = (it.desc && it.desc.IS) || '';
+  const descPreview = descEN || descIS || '';
+  const assessmentLabel = assessment === 'theory' ? s('passport.theory') : s('passport.practical');
+  const assessmentColor = assessment === 'theory' ? 'var(--brass)' : 'var(--muted)';
+  const moduleNum = Number(it.module || 0);
+  const moduleBadge = moduleNum > 0
+    ? `<span style="font-size:9px;color:var(--brass);border:1px solid var(--brass);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.moduleShort'))} ${moduleNum}</span>`
+    : '';
+  return `<div style="border-top:1px solid var(--border);padding:8px 0;display:flex;align-items:flex-start;gap:8px;${retired ? 'opacity:.5' : ''}">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:500">
+        ${esc(itemNameEN)}${itemNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(itemNameIS)}</span>` : ''}
+        <span style="font-size:9px;color:${assessmentColor};border:1px solid ${assessmentColor};border-radius:3px;padding:1px 4px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px">${esc(assessmentLabel)}</span>
+        ${moduleBadge}
+        ${retired ? `<span style="font-size:9px;color:var(--red);border:1px solid var(--red);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.retiredBadge'))}</span>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        ${descPreview ? esc(descPreview) : `<em>${esc(s('passport.noDescription'))}</em>`}
+      </div>
+      <div style="font-size:9px;color:var(--faint);margin-top:2px">${esc(it.id)}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportItemModal(${pi},${ci},${ii})" data-s="passport.editItem">Edit</button>
+      <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="ppToggleRetire(${pi},${ci},${ii})">${retired ? esc(s('passport.unretire')) : esc(s('passport.retire'))}</button>
+    </div>
+  </div>`;
+}
+
+// Flatten all items of a passport, preserving original (ci, ii) coordinates.
+function _ppFlattenItems(p) {
+  const out = [];
+  (p.categories || []).forEach((cat, ci) => {
+    (cat.items || []).forEach((it, ii) => {
+      out.push({ cat, ci, it, ii });
+    });
+  });
+  return out;
+}
+
+function ppSetSortMode(mode) {
+  _passportSortMode = (mode === 'mod-cat') ? 'mod-cat' : 'cat-mod';
+  drawPassportEditor();
+}
+window.ppSetSortMode = ppSetSortMode;
+
 function drawPassportEditor() {
   const card = document.getElementById('passportAdminPreview');
   const def = _passportDef;
@@ -4117,7 +4177,17 @@ function drawPassportEditor() {
     applyStrings(card);
     return;
   }
+  const sortMode = _passportSortMode;
+  const isCatMod = sortMode !== 'mod-cat';
   let html = '';
+
+  // Sort-mode toggle (shared across all passports in the editor)
+  html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
+    <button class="btn ${isCatMod ? 'btn-primary' : 'btn-secondary'}" style="font-size:10px;padding:3px 10px" onclick="ppSetSortMode('cat-mod')" data-s="passport.sortCatMod">Category → Module</button>
+    <button class="btn ${!isCatMod ? 'btn-primary' : 'btn-secondary'}" style="font-size:10px;padding:3px 10px" onclick="ppSetSortMode('mod-cat')" data-s="passport.sortModCat">Module → Category</button>
+  </div>`;
+
   (def.passports || []).forEach((p, pi) => {
     const totalItems   = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i => !i.retired).length, 0);
     const retiredItems = (p.categories || []).reduce((sum, c) => sum + (c.items || []).filter(i =>  i.retired).length, 0);
@@ -4140,55 +4210,109 @@ function drawPassportEditor() {
         <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px;white-space:nowrap" onclick="openPassportSettingsModal(${pi})" data-s="passport.editSettings">Edit passport settings</button>
       </div>`;
 
-    (p.categories || []).forEach((cat, ci) => {
-      const catNameEN = cat.name?.EN || cat.id;
-      const catNameIS = cat.name?.IS || '';
-      html += `<div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:12px">${esc(catNameEN)}${catNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(catNameIS)}</span>` : ''}</div>
-            <div style="font-size:9px;color:var(--muted)">${esc(cat.id)}</div>
-          </div>
-          <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportCategoryModal(${pi},${ci})" data-s="passport.editCategory">Edit category</button>
-        </div>`;
-
-      if (!(cat.items || []).length) {
-        html += `<div style="font-size:10px;color:var(--muted);padding:6px 0">— no items —</div>`;
-      } else {
-        (cat.items || []).forEach((it, ii) => {
-          const retired = !!it.retired;
-          const assessment = it.assessment || 'practical';
-          const itemNameEN = it.name?.EN || it.id;
-          const itemNameIS = it.name?.IS || '';
-          const descEN = (it.desc && it.desc.EN) || '';
-          const descIS = (it.desc && it.desc.IS) || '';
-          const descPreview = descEN || descIS || '';
-          const assessmentLabel = assessment === 'theory' ? s('passport.theory') : s('passport.practical');
-          const assessmentColor = assessment === 'theory' ? 'var(--brass)' : 'var(--muted)';
-          html += `<div style="border-top:1px solid var(--border);padding:8px 0;display:flex;align-items:flex-start;gap:8px;${retired ? 'opacity:.5' : ''}">
+    if (isCatMod) {
+      // Category → Module: preserve original category order; within each category
+      // sort items by (module asc, name asc). Adds/edits stay anchored per-category.
+      (p.categories || []).forEach((cat, ci) => {
+        const catNameEN = cat.name?.EN || cat.id;
+        const catNameIS = cat.name?.IS || '';
+        html += `<div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:500">
-                ${esc(itemNameEN)}${itemNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(itemNameIS)}</span>` : ''}
-                <span style="font-size:9px;color:${assessmentColor};border:1px solid ${assessmentColor};border-radius:3px;padding:1px 4px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px">${esc(assessmentLabel)}</span>
-                ${retired ? `<span style="font-size:9px;color:var(--red);border:1px solid var(--red);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.retiredBadge'))}</span>` : ''}
-              </div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                ${descPreview ? esc(descPreview) : `<em>${esc(s('passport.noDescription'))}</em>`}
-              </div>
-              <div style="font-size:9px;color:var(--faint);margin-top:2px">${esc(it.id)}</div>
+              <div style="font-weight:600;font-size:12px">${esc(catNameEN)}${catNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(catNameIS)}</span>` : ''}</div>
+              <div style="font-size:9px;color:var(--muted)">${esc(cat.id)}</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportItemModal(${pi},${ci},${ii})" data-s="passport.editItem">Edit</button>
-              <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="ppToggleRetire(${pi},${ci},${ii})">${retired ? esc(s('passport.unretire')) : esc(s('passport.retire'))}</button>
-            </div>
+            <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportCategoryModal(${pi},${ci})" data-s="passport.editCategory">Edit category</button>
           </div>`;
-        });
+
+        const items = (cat.items || []).map((it, ii) => ({ it, ii }));
+        if (!items.length) {
+          html += `<div style="font-size:10px;color:var(--muted);padding:6px 0">— no items —</div>`;
+        } else {
+          items.sort((a, b) => {
+            const ma = Number(a.it.module || 0);
+            const mb = Number(b.it.module || 0);
+            if (ma !== mb) return ma - mb;
+            return String(a.it.name?.EN || '').localeCompare(String(b.it.name?.EN || ''));
+          });
+          items.forEach(({ it, ii }) => {
+            html += _ppRenderItemRow(p, cat, it, pi, ci, ii);
+          });
+        }
+
+        html += `<div style="margin-top:8px">
+          <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportItemModal(${pi},${ci},null)" data-s="passport.addItem">+ Add item</button>
+        </div></div>`;
+      });
+    } else {
+      // Module → Category: bucket all items by module; within each module bucket
+      // group by their original category so edit handlers still line up. Module 0
+      // (unassigned) is shown last as a dedicated bucket.
+      const flat = _ppFlattenItems(p);
+      const modKeys = {};
+      flat.forEach(entry => {
+        const m = Number(entry.it.module || 0);
+        if (!modKeys[m]) modKeys[m] = [];
+        modKeys[m].push(entry);
+      });
+      const orderedMods = Object.keys(modKeys).map(Number).sort((a, b) => {
+        if (a === 0) return 1;  // unassigned last
+        if (b === 0) return -1;
+        return a - b;
+      });
+
+      if (!orderedMods.length) {
+        html += `<div style="font-size:10px;color:var(--muted);padding:8px 0">— no items —</div>`;
       }
 
-      html += `<div style="margin-top:8px">
-        <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportItemModal(${pi},${ci},null)" data-s="passport.addItem">+ Add item</button>
-      </div></div>`;
-    });
+      orderedMods.forEach(modNum => {
+        const bucket = modKeys[modNum];
+        const modLabel = modNum > 0
+          ? `${s('passport.moduleLabel')} ${modNum}`
+          : s('passport.unassignedModule');
+        html += `<div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface)">
+          <div style="font-weight:700;font-size:12px;color:var(--brass);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${esc(modLabel)} <span style="color:var(--muted);font-weight:400;font-size:10px">· ${bucket.length}</span></div>`;
+
+        // Sub-group by category (preserving the passport's category order)
+        const byCat = {};
+        bucket.forEach(entry => {
+          if (!byCat[entry.ci]) byCat[entry.ci] = [];
+          byCat[entry.ci].push(entry);
+        });
+        const catOrder = Object.keys(byCat).map(Number).sort((a, b) => a - b);
+        catOrder.forEach(ci => {
+          const cat = p.categories[ci];
+          const catNameEN = cat.name?.EN || cat.id;
+          const catNameIS = cat.name?.IS || '';
+          html += `<div style="margin-top:8px;padding-left:8px;border-left:2px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:11px">${esc(catNameEN)}${catNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(catNameIS)}</span>` : ''}</div>
+              </div>
+              <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportCategoryModal(${pi},${ci})" data-s="passport.editCategory">Edit category</button>
+            </div>`;
+          const entries = byCat[ci].slice().sort((a, b) =>
+            String(a.it.name?.EN || '').localeCompare(String(b.it.name?.EN || '')));
+          entries.forEach(({ it, ii }) => {
+            html += _ppRenderItemRow(p, cat, it, pi, ci, ii);
+          });
+          html += `</div>`;
+        });
+
+        html += `</div>`;
+      });
+
+      // In Module → Category mode, "+Add item" is shown per-category at the bottom
+      // so authors can still create items (they'll be assigned a module via the modal).
+      html += `<div style="margin-top:10px;border:1px dashed var(--border);border-radius:6px;padding:10px;background:var(--surface)">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px" data-s="passport.addItemHint">Add a new item to a category:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">`;
+      (p.categories || []).forEach((cat, ci) => {
+        const catNameEN = cat.name?.EN || cat.id;
+        html += `<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="openPassportItemModal(${pi},${ci},null)">+ ${esc(catNameEN)}</button>`;
+      });
+      html += `</div></div>`;
+    }
 
     html += `<div style="margin-top:12px">
       <button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" onclick="openPassportCategoryModal(${pi},null)" data-s="passport.addCategory">+ Add category</button>
@@ -4253,7 +4377,7 @@ function openPassportItemModal(pi, ci, ii) {
   if (!cat) return;
   const adding = (ii === null || ii === undefined);
   _ppEditing = { pi, ci, ii: adding ? null : ii, mode: adding ? 'item-add' : 'item-edit' };
-  const it = adding ? { id: '', name: { EN: '', IS: '' }, desc: { EN: '', IS: '' }, assessment: 'practical', retired: false } : cat.items[ii];
+  const it = adding ? { id: '', name: { EN: '', IS: '' }, desc: { EN: '', IS: '' }, assessment: 'practical', module: 0, retired: false } : cat.items[ii];
   document.getElementById('passportItemModalTitle').textContent =
     adding ? s('passport.newItem') : s('passport.itemTitle');
   document.getElementById('ppiId').value        = it.id || '';
@@ -4262,6 +4386,7 @@ function openPassportItemModal(pi, ci, ii) {
   document.getElementById('ppiDescEN').value    = (it.desc && it.desc.EN) || '';
   document.getElementById('ppiDescIS').value    = (it.desc && it.desc.IS) || '';
   document.getElementById('ppiAssessment').value = it.assessment || 'practical';
+  document.getElementById('ppiModule').value    = Number(it.module || 0) || '';
   document.getElementById('ppiRetired').checked = !!it.retired;
   document.getElementById('ppiDeleteBtn').classList.toggle('hidden', adding);
   openModal('passportItemModal');
@@ -4273,6 +4398,8 @@ function savePassportItem() {
   if (!cat) return;
   const nameEN = document.getElementById('ppiNameEN').value.trim();
   if (!nameEN) { toast(s('passport.nameRequired'), 'err'); return; }
+  let modNum = parseInt(document.getElementById('ppiModule').value, 10);
+  if (!(modNum >= 0)) modNum = 0;
   const payload = {
     name: {
       EN: nameEN,
@@ -4283,6 +4410,7 @@ function savePassportItem() {
       IS: document.getElementById('ppiDescIS').value.trim(),
     },
     assessment: document.getElementById('ppiAssessment').value || 'practical',
+    module: modNum,
     retired: document.getElementById('ppiRetired').checked,
   };
   if (mode === 'item-add') {
@@ -4295,6 +4423,7 @@ function savePassportItem() {
     it.name = payload.name;
     it.desc = payload.desc;
     it.assessment = payload.assessment;
+    it.module = payload.module;
     it.retired = payload.retired;
   }
   _ppMarkDirty();
@@ -4424,13 +4553,14 @@ async function passportExportCsv() {
   try {
     const res = await apiGet('getRowingPassport', {});
     const def = res.definition || { passports: [] };
-    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,assessment,item_label_en,item_label_is,description_en,description_is'];
+    const lines = ['passport_id,category_id,category_label_en,category_label_is,item_id,assessment,module,item_label_en,item_label_is,description_en,description_is'];
     const q = v => '"' + String(v || '').replace(/"/g,'""') + '"';
     (def.passports || []).forEach(p => {
       (p.categories || []).forEach(cat => {
         (cat.items || []).forEach(it => {
           if (it.retired) return;
-          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.assessment || 'practical', it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
+          const mod = Number(it.module || 0) || '';
+          lines.push([p.id, cat.id, cat.name?.EN || '', cat.name?.IS || '', it.id, it.assessment || 'practical', mod, it.name?.EN || '', it.name?.IS || '', it.desc?.EN || '', it.desc?.IS || ''].map(q).join(','));
         });
       });
     });
