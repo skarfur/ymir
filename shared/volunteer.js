@@ -148,7 +148,240 @@
     });
   }
 
+  // Format a date string like "Wed, 15 Apr" using shared day/month
+  // localization keys. Requires a global `s(key)` lookup function.
+  function formatVolunteerDay(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T00:00:00');
+    var dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
+    var months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
+                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+    var sFn = (typeof global.s === 'function') ? global.s : function(k) { return k; };
+    return sFn(dows[d.getDay()]) + ', ' + d.getDate() + ' ' + sFn(months[d.getMonth()]);
+  }
+
+  // Format an event's time range like "14:00–16:00" (or just the start if
+  // no end is set, or '' if neither is set).
+  function formatVolunteerTime(ev) {
+    var a = (ev && ev.startTime || '').slice(0, 5);
+    var b = (ev && ev.endTime || '').slice(0, 5);
+    if (a && b) return a + '–' + b;
+    if (a) return a;
+    return '';
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Shared volunteer-event card renderer
+  //
+  // Produces the HTML for a single volunteer event card. Used by both the
+  // admin volunteer tab and the member-facing volunteer page so they stay
+  // visually consistent. The caller supplies context — signups, members,
+  // the escape/localize helpers, and callback names — so this function
+  // stays free of direct DOM coupling.
+  //
+  // Required context fields:
+  //   mode          — 'admin' | 'member'
+  //   lang          — 'IS' | 'EN'
+  //   signups       — array of volunteer_signups rows (for counts + chips)
+  //   esc           — HTML-escape function
+  //   s             — localized-string lookup function
+  //   formatDay     — function(iso) → "Wed, 15 Apr"
+  //   formatTime    — function(ev)  → "14:00–16:00"
+  //
+  // Admin-only context:
+  //   members       — members array for live phone/consent lookup
+  //   certDefs      — cert definitions (for endorsement labels)
+  //   certDefName   — function(def) → localized name
+  //   onCardClick   — JS expression for card click (e.g. "openVolEventModal('id')")
+  //   onEditClick   — JS for the edit row button
+  //   onDeleteClick — JS for the delete row button
+  //
+  // Member-only context:
+  //   userKennitala — current user's kennitala (for isMine)
+  //   myCerts       — member's cert array for allowed check
+  //   onSignup      — JS for sign-up button onclick
+  //   onWithdraw    — JS for withdraw button onclick
+  function renderVolunteerCard(ev, ctx) {
+    const esc  = ctx.esc;
+    const s    = ctx.s;
+    const L    = ctx.lang || 'EN';
+    const mode = ctx.mode || 'member';
+
+    const title    = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
+    const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
+    const notes    = (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
+    const roles    = Array.isArray(ev.roles) ? ev.roles : [];
+    const dayLbl   = ctx.formatDay  ? ctx.formatDay(ev.date || '') : (ev.date || '');
+    const timeLbl  = ctx.formatTime ? ctx.formatTime(ev) : '';
+
+    // Header row — date · title · subtype all on one line (flex-wrap for narrow screens)
+    const headerHtml = '<div class="vp-card-head">'
+      + '<span class="vp-card-date">' + esc(dayLbl) + (timeLbl ? ' · ' + esc(timeLbl) : '') + '</span>'
+      + '<span class="vp-card-title">' + esc(title) + '</span>'
+      + (subtitle ? '<span class="vp-card-subtitle">· ' + esc(subtitle) + '</span>' : '')
+      + (mode === 'admin'
+          ? '<div class="vp-card-actions">'
+            + '<button class="row-edit" onclick="event.stopPropagation();' + (ctx.onEditClick || '') + '">Edit</button>'
+            + '<button class="row-del" onclick="event.stopPropagation();' + (ctx.onDeleteClick || '') + '">×</button>'
+            + '</div>'
+          : '')
+      + '</div>';
+
+    // Leader chip
+    const leaderHtml = ev.leaderName
+      ? (function() {
+          const phoneLink = (ev.leaderPhone && ev.showLeaderPhone)
+            ? ' · <a href="tel:' + esc(ev.leaderPhone) + '" onclick="event.stopPropagation()">' + esc(ev.leaderPhone) + '</a>'
+            : '';
+          return '<div class="vp-card-leader">'
+            + '<span>' + s('volunteer.inCharge') + ':</span>'
+            + '<span class="vp-chip">' + esc(ev.leaderName) + phoneLink + '</span>'
+            + '</div>';
+        })()
+      : '';
+
+    const notesHtml = notes ? '<div class="vp-card-notes">' + esc(notes) + '</div>' : '';
+
+    const rolesHtml = roles.length
+      ? roles.map(function(r) { return renderVolunteerRole(ev, r, ctx); }).join('')
+      : '<div class="vp-card-notes">' + s('admin.noRoles') + '</div>';
+
+    const cardClass = 'vp-card' + (mode === 'admin' ? ' admin' : '');
+    const cardAttrs = mode === 'admin' && ctx.onCardClick
+      ? 'class="' + cardClass + '" onclick="' + ctx.onCardClick + '"'
+      : 'class="' + cardClass + '"';
+
+    return '<div ' + cardAttrs + '>'
+      + headerHtml
+      + leaderHtml
+      + notesHtml
+      + rolesHtml
+      + '</div>';
+  }
+
+  function renderVolunteerRole(ev, role, ctx) {
+    const esc  = ctx.esc;
+    const s    = ctx.s;
+    const L    = ctx.lang || 'EN';
+    const mode = ctx.mode || 'member';
+
+    const rn   = (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
+    const desc = (L === 'IS' && role.descriptionIS ? role.descriptionIS : role.description) || '';
+
+    const signups = (ctx.signups || []).filter(function(su) {
+      return su.eventId === ev.id && su.roleId === role.id;
+    });
+    const filled = signups.length;
+    const total  = Number(role.slots) || 0;
+    const isFull = total > 0 && filled >= total;
+    const pct    = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
+
+    // Endorsement label
+    let endorseHtml = '';
+    if (role.requiredEndorsement) {
+      const def = (ctx.certDefs || []).find(function(d) { return d && d.id === role.requiredEndorsement; });
+      const name = (def && ctx.certDefName) ? ctx.certDefName(def) : role.requiredEndorsement;
+      endorseHtml = '<span class="vp-role-endorse">[' + esc(name) + ']</span>';
+    }
+
+    // Signup chips — in admin mode, do a live phone/consent lookup on
+    // ctx.members; in member mode, "me" replaces own name.
+    const chipsHtml = signups.map(function(su) {
+      if (mode === 'admin') {
+        const mem = (ctx.members || []).find(function(m) {
+          return String(m.kennitala) === String(su.kennitala);
+        });
+        let showPhone = false;
+        let phone = '';
+        if (mem) {
+          phone = mem.phone || '';
+          let prefs = {};
+          try { prefs = JSON.parse(mem.preferences || '{}'); } catch (e) { prefs = {}; }
+          showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
+        }
+        const phoneHtml = (showPhone && phone)
+          ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()">' + esc(phone) + '</a>'
+          : '';
+        return '<span class="vp-chip">' + esc(su.name || '—') + phoneHtml + '</span>';
+      } else {
+        const isMine = ctx.userKennitala && String(su.kennitala) === String(ctx.userKennitala);
+        const label  = isMine ? s('volunteer.me') : (su.name || '—');
+        return '<span class="vp-chip' + (isMine ? ' me' : '') + '">' + esc(label) + '</span>';
+      }
+    }).join('');
+
+    // Action button (member mode only)
+    let actionHtml = '';
+    if (mode === 'member') {
+      const mySignup = signups.find(function(su) {
+        return ctx.userKennitala && String(su.kennitala) === String(ctx.userKennitala);
+      });
+      const allowed = memberCanTakeRole(role, ctx.myCerts || []);
+      if (mySignup) {
+        actionHtml = '<button class="vp-btn signed-up" onclick="event.stopPropagation();'
+          + (ctx.onWithdraw || '') + '(\'' + mySignup.id + '\')">'
+          + s('member.volWithdraw') + '</button>';
+      } else if (!allowed) {
+        actionHtml = '<span class="vp-role-note">' + s('member.volNeedsEndorsement') + '</span>';
+      } else if (isFull) {
+        actionHtml = '<span class="vp-role-note full">' + s('member.volFull') + '</span>';
+      } else {
+        actionHtml = '<button class="vp-btn" onclick="event.stopPropagation();'
+          + (ctx.onSignup || '') + '(\'' + ev.id + '\',\'' + role.id + '\')">'
+          + s('member.volSignUp') + '</button>';
+      }
+    }
+
+    // Description visibility
+    //   admin  → always visible (no toggle)
+    //   member → hidden by default, expanded on click of the role head
+    const descId = 'vr-desc-' + ev.id + '-' + role.id;
+    let descHtml = '';
+    let headClass = 'vp-role-head';
+    let headClick = '';
+    if (desc) {
+      if (mode === 'admin') {
+        descHtml = '<div class="vp-role-desc">' + esc(desc) + '</div>';
+      } else {
+        descHtml = '<div class="vp-role-desc" id="' + descId + '" style="display:none">' + esc(desc) + '</div>';
+        headClass += ' clickable';
+        headClick = ' onclick="_volToggleRoleDesc(event,\'' + descId + '\')"';
+      }
+    }
+
+    const statusText = (total > 0 ? (filled + '/' + total) : (filled + '/∞'));
+
+    return '<div class="vp-role">'
+      + '<div class="' + headClass + '"' + headClick + '>'
+      + '<div class="vp-role-main">'
+      + '<span class="vp-role-name">' + esc(rn) + '</span>'
+      + '<div class="vp-bar"><div class="vp-bar-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%"></div></div>'
+      + '<span class="vp-role-status">' + statusText + '</span>'
+      + endorseHtml
+      + chipsHtml
+      + '</div>'
+      + (actionHtml ? '<div>' + actionHtml + '</div>' : '')
+      + '</div>'
+      + descHtml
+      + '</div>';
+  }
+
+  // Toggles a hidden description panel. Exposed globally so the inline
+  // onclick attributes produced by renderVolunteerRole can find it
+  // regardless of which page it runs on.
+  function _volToggleRoleDesc(e, descId) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const el = (typeof document !== 'undefined') ? document.getElementById(descId) : null;
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
   global.expandVolunteerActivityTypes = expandVolunteerActivityTypes;
   global.mergeVolunteerEvents         = mergeVolunteerEvents;
   global.memberCanTakeRole            = memberCanTakeRole;
+  global.formatVolunteerDay           = formatVolunteerDay;
+  global.formatVolunteerTime          = formatVolunteerTime;
+  global.renderVolunteerCard          = renderVolunteerCard;
+  global.renderVolunteerRole          = renderVolunteerRole;
+  global._volToggleRoleDesc           = _volToggleRoleDesc;
 })(typeof window !== 'undefined' ? window : this);
