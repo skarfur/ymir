@@ -398,8 +398,12 @@ function renderDashboard(data) {
 
       // ── Certs ──
       if (cap.certs && cap.certs.length) {
+        var capIS = lang() === 'IS';
         html += '<div class="captain-certs">';
-        cap.certs.forEach(function(c) { html += '<span class="cert-badge">' + esc(c.label) + '</span>'; });
+        cap.certs.forEach(function(c) {
+          var lbl = capIS ? (c.labelIS || c.labelEN || c.label || '') : (c.labelEN || c.label || '');
+          html += '<span class="cert-badge">' + esc(lbl) + '</span>';
+        });
         html += '</div>';
       }
 

@@ -1,36 +1,154 @@
 // ÝMIR — shared/certs.js
-// Cert def: { id, name, description, color, category, clubEndorsement, expires, subcats:[{key,label,description,rank}] }
+// Cert def: { id, nameEN, nameIS, descriptionEN, descriptionIS, color, category, clubEndorsement,
+//             expires, subcats:[{key, labelEN, labelIS, descriptionEN, descriptionIS, rank}] }
+//   Legacy fields (name, description, subcats[].label, subcats[].description) are still mirrored
+//   on write for back-compat — readers should go through the helpers below.
+// Cert category: { key, labelEN, labelIS }
+//   `key` is the stable identifier and historically equals labelEN (matching what's
+//   persisted in member-cert records). Never slugify — keys are opaque.
 // Assignment: { certId, sub, category, title, idNumber, issuingAuthority, issueDate, expires, expiresAt, description, assignedBy, assignedAt, verifiedBy, verifiedAt }
 
+// Sentinel key for the synthetic "Club Endorsement" category injected into the
+// assign-credential dropdown. Must match the persisted English label so legacy
+// member-cert records still line up.
+const CLUB_ENDORSEMENT_KEY = 'Club Endorsement';
+
 const DEFAULT_CERT_DEFS = [
-  { id:'world_sailing', name:'World Sailing Certification', description:'', color:'', renewalDays:0,
-    subcats:[{key:'ws1',label:'Level 1',description:'',rank:1},{key:'ws2',label:'Level 2',description:'',rank:2},{key:'ws3',label:'Level 3',description:'',rank:3}] },
-  { id:'rowing_division', name:'Rowing Division', description:'Member of the rowing division.', color:'', renewalDays:0, clubEndorsement:true,
+  { id:'world_sailing', nameEN:'World Sailing Certification', nameIS:'', name:'World Sailing Certification',
+    descriptionEN:'', descriptionIS:'', description:'', color:'', renewalDays:0,
     subcats:[
-      {key:'restricted', label:'Restricted Rower', description:'Member of the rowing division. Must complete the rowing passport to be released.', rank:1},
-      {key:'released',   label:'Released Rower',   description:'Certified to row independently, form crews, and book slots.',                       rank:2},
-      {key:'coxswain',   label:'Coxswain',         description:'Authorized coxswain — may lead crews and supervise other rowers.',                  rank:3},
+      {key:'ws1', labelEN:'Level 1', labelIS:'', label:'Level 1', descriptionEN:'', descriptionIS:'', description:'', rank:1},
+      {key:'ws2', labelEN:'Level 2', labelIS:'', label:'Level 2', descriptionEN:'', descriptionIS:'', description:'', rank:2},
+      {key:'ws3', labelEN:'Level 3', labelIS:'', label:'Level 3', descriptionEN:'', descriptionIS:'', description:'', rank:3},
     ]},
-  { id:'support_boat_skipper', name:'Support Boat Skipper', description:'', color:'', renewalDays:0, subcats:[] },
-  { id:'keelboat_crew', name:'Keelboat Crew', description:'Certified to sail on club keelboats.', color:'#d4af37', renewalDays:0, hasIdNumber:false,
+  { id:'rowing_division', nameEN:'Rowing Division', nameIS:'', name:'Rowing Division',
+    descriptionEN:'Member of the rowing division.', descriptionIS:'', description:'Member of the rowing division.',
+    color:'', renewalDays:0, clubEndorsement:true,
     subcats:[
-      {key:'crew',     label:'Crew',     description:'Certified basic keelboat crew.',                                               rank:1},
-      {key:'helmsman', label:'Helmsman', description:'Certified to helm a keelboat.',                                                rank:2},
-      {key:'captain',  label:'Captain',  description:'Authorized keelboat captain — may skipper club keelboats independently.',      rank:3},
+      {key:'restricted', labelEN:'Restricted Rower', labelIS:'', label:'Restricted Rower',
+       descriptionEN:'Member of the rowing division. Must complete the rowing passport to be released.', descriptionIS:'',
+       description:'Member of the rowing division. Must complete the rowing passport to be released.', rank:1},
+      {key:'released', labelEN:'Released Rower', labelIS:'', label:'Released Rower',
+       descriptionEN:'Certified to row independently, form crews, and book slots.', descriptionIS:'',
+       description:'Certified to row independently, form crews, and book slots.', rank:2},
+      {key:'coxswain', labelEN:'Coxswain', labelIS:'', label:'Coxswain',
+       descriptionEN:'Authorized coxswain — may lead crews and supervise other rowers.', descriptionIS:'',
+       description:'Authorized coxswain — may lead crews and supervise other rowers.', rank:3},
+    ]},
+  { id:'support_boat_skipper', nameEN:'Support Boat Skipper', nameIS:'', name:'Support Boat Skipper',
+    descriptionEN:'', descriptionIS:'', description:'', color:'', renewalDays:0, subcats:[] },
+  { id:'keelboat_crew', nameEN:'Keelboat Crew', nameIS:'', name:'Keelboat Crew',
+    descriptionEN:'Certified to sail on club keelboats.', descriptionIS:'',
+    description:'Certified to sail on club keelboats.',
+    color:'#d4af37', renewalDays:0, hasIdNumber:false,
+    subcats:[
+      {key:'crew', labelEN:'Crew', labelIS:'', label:'Crew',
+       descriptionEN:'Certified basic keelboat crew.', descriptionIS:'',
+       description:'Certified basic keelboat crew.', rank:1},
+      {key:'helmsman', labelEN:'Helmsman', labelIS:'', label:'Helmsman',
+       descriptionEN:'Certified to helm a keelboat.', descriptionIS:'',
+       description:'Certified to helm a keelboat.', rank:2},
+      {key:'captain', labelEN:'Captain', labelIS:'', label:'Captain',
+       descriptionEN:'Authorized keelboat captain — may skipper club keelboats independently.', descriptionIS:'',
+       description:'Authorized keelboat captain — may skipper club keelboats independently.', rank:3},
     ]},
 ];
 
 const DEFAULT_CERT_CATEGORIES = [
-  'Operator License',
-  'First Aid',
-  'Safeguarding',
-  'Coaching/Race Management Qualifications',
-  'Educational Qualifications',
-  'Club Endorsement',
+  { key:'Operator License',                         labelEN:'Operator License',                         labelIS:'' },
+  { key:'First Aid',                                labelEN:'First Aid',                                labelIS:'' },
+  { key:'Safeguarding',                             labelEN:'Safeguarding',                             labelIS:'' },
+  { key:'Coaching/Race Management Qualifications',  labelEN:'Coaching/Race Management Qualifications', labelIS:'' },
+  { key:'Educational Qualifications',               labelEN:'Educational Qualifications',               labelIS:'' },
+  { key:CLUB_ENDORSEMENT_KEY,                       labelEN:CLUB_ENDORSEMENT_KEY,                       labelIS:'' },
 ];
 
+// ── Bilingual read helpers ────────────────────────────────────────────────────
+// Prefer the new *EN/*IS fields, fall back to legacy single-string fields, then
+// to the stable id/key. Safe to call on legacy-shaped objects.
+
+function _lang_() { return (typeof getLang === 'function' ? getLang() : 'EN'); }
+
+function certDefName(def) {
+  if (!def) return '';
+  return (_lang_() === 'IS' && def.nameIS) ? def.nameIS : (def.nameEN || def.name || def.id || '');
+}
+function certDefDescription(def) {
+  if (!def) return '';
+  return (_lang_() === 'IS' && def.descriptionIS) ? def.descriptionIS : (def.descriptionEN || def.description || '');
+}
+function certSubcatLabel(sc) {
+  if (!sc) return '';
+  return (_lang_() === 'IS' && sc.labelIS) ? sc.labelIS : (sc.labelEN || sc.label || sc.key || '');
+}
+function certSubcatDescription(sc) {
+  if (!sc) return '';
+  return (_lang_() === 'IS' && sc.descriptionIS) ? sc.descriptionIS : (sc.descriptionEN || sc.description || '');
+}
+function certCategoryLabel(cat) {
+  if (!cat) return '';
+  if (typeof cat === 'string') return cat;
+  return (_lang_() === 'IS' && cat.labelIS) ? cat.labelIS : (cat.labelEN || cat.key || '');
+}
+function certCategoryKey(cat) {
+  if (!cat) return '';
+  return typeof cat === 'string' ? cat : (cat.key || cat.labelEN || '');
+}
+function certCategoryByKey(cats, key) {
+  if (!key) return null;
+  for (const c of (cats || [])) {
+    if (typeof c === 'string') { if (c === key) return c; }
+    else if (c.key === key || c.labelEN === key) return c;
+  }
+  return null;
+}
+
+// ── Normalizers — pad legacy entries with new fields so consumers always see
+// the extended shape. Mirrors legacy fields on the returned object so code that
+// still reads `def.name` / `sc.label` keeps working until migrated.
+
+function normalizeCertDef(def) {
+  if (!def) return def;
+  const nameEN        = def.nameEN        || def.name        || '';
+  const nameIS        = def.nameIS        || '';
+  const descriptionEN = def.descriptionEN || def.description || '';
+  const descriptionIS = def.descriptionIS || '';
+  const subcats = Array.isArray(def.subcats) ? def.subcats.map(sc => {
+    const labelEN        = sc.labelEN        || sc.label        || '';
+    const labelIS        = sc.labelIS        || '';
+    const scDescEN       = sc.descriptionEN  || sc.description  || '';
+    const scDescIS       = sc.descriptionIS  || '';
+    return Object.assign({}, sc, {
+      labelEN, labelIS, label: labelEN,
+      descriptionEN: scDescEN, descriptionIS: scDescIS, description: scDescEN,
+    });
+  }) : [];
+  return Object.assign({}, def, {
+    nameEN, nameIS, name: nameEN,
+    descriptionEN, descriptionIS, description: descriptionEN,
+    subcats,
+  });
+}
+
+function normalizeCertCategory(raw) {
+  if (raw == null) return { key:'', labelEN:'', labelIS:'' };
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    return { key: s, labelEN: s, labelIS: '' };
+  }
+  const labelEN = (raw.labelEN || raw.label || raw.key || '').trim();
+  const key     = (raw.key || labelEN).trim();
+  return { key, labelEN, labelIS: (raw.labelIS || '').trim() };
+}
+
+function certDefsFromConfig(saved) {
+  const arr = (saved && saved.length) ? saved : DEFAULT_CERT_DEFS;
+  return arr.map(normalizeCertDef);
+}
+
 function certCategoriesFromConfig(saved) {
-  return (saved && saved.length) ? saved : DEFAULT_CERT_CATEGORIES;
+  const arr = (saved && saved.length) ? saved : DEFAULT_CERT_CATEGORIES;
+  return arr.map(normalizeCertCategory);
 }
 
 const _CERT_PALETTE = [
@@ -47,17 +165,18 @@ function certColor(def) {
   return _CERT_PALETTE[h % _CERT_PALETTE.length];
 }
 
-function certDefsFromConfig(saved) {
-  return (saved && saved.length) ? saved : DEFAULT_CERT_DEFS;
-}
-
-function enrichMemberCerts(memberCerts, certDefs) {
+function enrichMemberCerts(memberCerts, certDefs, certCategories) {
   if (!memberCerts || !memberCerts.length) return [];
   const today = todayISO();
+  const cats = certCategories || [];
   return memberCerts.map(c => {
     const def    = c.certId ? (certDefs.find(d => d.id === c.certId) || null) : null;
     const subcat = def?.subcats?.find(s => s.key === c.sub) || null;
     const expiresAt = c.expiresAt || '';
+    const catKey = c.category || def?.category || '';
+    const catObj = catKey ? certCategoryByKey(cats, catKey) : null;
+    const defLabel = def ? certDefName(def) : (c.certId || 'Unknown');
+    const subLabel = subcat ? certSubcatLabel(subcat) : '';
     return {
       ...c,
       def,
@@ -66,12 +185,12 @@ function enrichMemberCerts(memberCerts, certDefs) {
       hasIdNumber: !!def?.hasIdNumber,
       // Resolve display title: for predefined types use def name + subcat; for custom use title
       displayTitle: c.certId
-        ? (subcat
-          ? `${def?.name || c.certId} — ${subcat.label}`
-          : (def?.name || c.certId || 'Unknown'))
+        ? (subcat ? `${defLabel} — ${subLabel}` : defLabel)
         : (c.title || 'Unknown'),
-      // Resolve category: explicit > def category
-      displayCategory: c.category || def?.category || '',
+      // Resolve category: explicit key > def category, localized via category registry if present
+      displayCategory: catObj ? certCategoryLabel(catObj) : catKey,
+      // Keep the stable key around for grouping
+      categoryKey: catKey,
     };
   });
 }
@@ -87,15 +206,22 @@ function groupCerts(enrichedList) {
 }
 
 function groupCertsByCategory(enrichedList) {
+  // Group by the stable category key so IS/EN readers see the same buckets.
+  // The displayCategory (localized) is carried alongside for rendering.
   const grouped = {};
   const endorsements = [];
   for (const c of enrichedList) {
     if (isClubEndorsement(c)) { endorsements.push(c); continue; }
-    const cat = c.displayCategory || 'Uncategorised';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(c);
+    const key   = c.categoryKey || c.displayCategory || 'Uncategorised';
+    const label = c.displayCategory || key;
+    if (!grouped[key]) grouped[key] = { label, items: [] };
+    grouped[key].items.push(c);
   }
-  return { byCategory: grouped, endorsements };
+  // Return a view compatible with both old callers (byCategory[key] = array)
+  // and new callers that want the label: render sites can read group.label.
+  const byCategory = {};
+  Object.keys(grouped).forEach(k => { byCategory[k] = grouped[k].items; });
+  return { byCategory, byCategoryLabeled: grouped, endorsements };
 }
 
 function applyRankRule(certs, newCert, certDefs) {
@@ -111,9 +237,10 @@ function applyRankRule(certs, newCert, certDefs) {
 }
 
 function certBadgeHTML(enriched) {
-  const label = enriched.displayTitle || enriched.subcat
-    ? (enriched.displayTitle || `${enriched.def?.name || enriched.certId} — ${enriched.subcat?.label || ''}`)
-    : (enriched.def?.name || enriched.certId);
+  const defLabel = enriched.def ? certDefName(enriched.def) : (enriched.certId || '');
+  const subLabel = enriched.subcat ? certSubcatLabel(enriched.subcat) : '';
+  const label = enriched.displayTitle
+    || (enriched.subcat ? `${defLabel} — ${subLabel}` : defLabel);
   const expiry = enriched.expiresAt
     ? (enriched.expired
         ? `<span style="color:var(--red);font-size:9px"> · EXPIRED ${enriched.expiresAt}</span>`
@@ -125,10 +252,14 @@ function certBadgeHTML(enriched) {
 function certCardHTML(enriched) {
   const def   = enriched.def || {};
   const color = certColor(def.id ? def : { id: enriched.title || enriched.certId || 'x' });
-  const desc  = enriched.description || enriched.subcat?.description || def.description || '';
-  const label = enriched.displayTitle || (enriched.subcat
-    ? `${def.name || enriched.certId} — ${enriched.subcat.label}`
-    : (def.name || enriched.certId));
+  const defLabel = def && def.id ? certDefName(def) : (enriched.certId || '');
+  const subLabel = enriched.subcat ? certSubcatLabel(enriched.subcat) : '';
+  const desc  = enriched.description
+    || (enriched.subcat ? certSubcatDescription(enriched.subcat) : '')
+    || (def && def.id ? certDefDescription(def) : '')
+    || '';
+  const label = enriched.displayTitle
+    || (enriched.subcat ? `${defLabel} — ${subLabel}` : defLabel);
   const expiryLine = enriched.expiresAt
     ? (enriched.expired
         ? `<span class="ccard-meta ccard-expired-lbl">Expired ${esc(enriched.expiresAt)}</span>`

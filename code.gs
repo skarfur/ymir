@@ -1659,29 +1659,97 @@ function saveAlertConfig_(b) {
 function getCertDefs_() {
   const raw = getConfigSheetValue_('certDefs');
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (e) { return []; }
+  try { return normalizeCertDefsRaw_(JSON.parse(raw)); } catch (e) { return []; }
+}
+
+// Pad legacy cert-def entries with the new bilingual fields so server-side
+// consumers (public record page, captain report, getConfig) always see the
+// extended shape. Mirrors new fields onto legacy fields too.
+function normalizeCertDefsRaw_(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(function (d) {
+    if (!d) return d;
+    var nameEN        = d.nameEN        || d.name        || '';
+    var nameIS        = d.nameIS        || '';
+    var descriptionEN = d.descriptionEN || d.description || '';
+    var descriptionIS = d.descriptionIS || '';
+    var subcats = Array.isArray(d.subcats) ? d.subcats.map(function (sc) {
+      var labelEN  = sc.labelEN       || sc.label       || '';
+      var labelIS  = sc.labelIS       || '';
+      var scDescEN = sc.descriptionEN || sc.description || '';
+      var scDescIS = sc.descriptionIS || '';
+      var out = Object.assign({}, sc, {
+        labelEN: labelEN, labelIS: labelIS, label: labelEN,
+        descriptionEN: scDescEN, descriptionIS: scDescIS, description: scDescEN,
+      });
+      return out;
+    }) : [];
+    return Object.assign({}, d, {
+      nameEN: nameEN, nameIS: nameIS, name: nameEN,
+      descriptionEN: descriptionEN, descriptionIS: descriptionIS, description: descriptionEN,
+      subcats: subcats,
+    });
+  });
+}
+
+// Coerce a legacy string-array of cert categories into the new object form.
+function normalizeCertCategoriesRaw_(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(function (c) {
+    if (c == null) return { key: '', labelEN: '', labelIS: '' };
+    if (typeof c === 'string') {
+      var s = String(c).trim();
+      return { key: s, labelEN: s, labelIS: '' };
+    }
+    var labelEN = String(c.labelEN || c.label || c.key || '').trim();
+    var key     = String(c.key || labelEN).trim();
+    return { key: key, labelEN: labelEN, labelIS: String(c.labelIS || '').trim() };
+  }).filter(function (c) { return c.key; });
 }
 
 function saveCertDef_(b) {
-  if (!b.name) return failJ('name required');
+  // Accept new bilingual fields, fall back to legacy single-field inputs.
+  var nameEN = String(b.nameEN || b.name || '').trim();
+  if (!nameEN) return failJ('name required');
+  var nameIS        = String(b.nameIS || '').trim();
+  var descriptionEN = String(b.descriptionEN || b.description || '').trim();
+  var descriptionIS = String(b.descriptionIS || '').trim();
   const defs = getCertDefs_();
   const payload = {
     id: b.id || ('cert_' + uid_()),
-    name: String(b.name).trim(),
-    description: String(b.description || '').trim(),
+    // New bilingual fields:
+    nameEN: nameEN,
+    nameIS: nameIS,
+    descriptionEN: descriptionEN,
+    descriptionIS: descriptionIS,
+    // Legacy mirrors — keep any half-upgraded caller happy:
+    name: nameEN,
+    description: descriptionEN,
     category: String(b.category || '').trim(),
     issuingAuthority: String(b.issuingAuthority || '').trim(),
     color: String(b.color || '').trim(),
     expires: !!b.expires,
     hasIdNumber: !!b.hasIdNumber,
     clubEndorsement: !!b.clubEndorsement,
-    subcats: Array.isArray(b.subcats) ? b.subcats.map(s => ({
-      key: String(s.key || s.label || '').toLowerCase().replace(/\s+/g, '_'),
-      label: String(s.label || '').trim(),
-      description: String(s.description || '').trim(),
-      rank: s.rank != null ? Number(s.rank) : null,
-      issuingAuthority: String(s.issuingAuthority || '').trim(),
-    })).filter(s => s.label) : [],
+    subcats: Array.isArray(b.subcats) ? b.subcats.map(function (s) {
+      var labelEN  = String(s.labelEN || s.label || '').trim();
+      var labelIS  = String(s.labelIS || '').trim();
+      var scDescEN = String(s.descriptionEN || s.description || '').trim();
+      var scDescIS = String(s.descriptionIS || '').trim();
+      return {
+        key: String(s.key || labelEN || '').toLowerCase().replace(/\s+/g, '_'),
+        // New:
+        labelEN: labelEN,
+        labelIS: labelIS,
+        descriptionEN: scDescEN,
+        descriptionIS: scDescIS,
+        // Legacy mirrors:
+        label: labelEN,
+        description: scDescEN,
+        rank: s.rank != null ? Number(s.rank) : null,
+        issuingAuthority: String(s.issuingAuthority || '').trim(),
+      };
+    }).filter(function (s) { return s.labelEN; }) : [],
   };
   const idx = defs.findIndex(d => d.id === payload.id);
   if (idx >= 0) defs[idx] = payload; else defs.push(payload);
@@ -1750,7 +1818,27 @@ function saveMemberCert_(b) {
 
 function saveCertCategories_(b) {
   if (!Array.isArray(b.categories)) return failJ('categories array required');
-  const categories = b.categories.map(c => String(c).trim()).filter(Boolean);
+  // Accept either legacy Array<string> or new Array<{key,labelEN,labelIS}>.
+  // Normalize to object form with stable key (no slugification — see stable-key
+  // rule in shared/certs.js: key stays equal to labelEN to preserve legacy
+  // member-cert category references).
+  var seen = {};
+  var categories = b.categories.map(function (c) {
+    if (c == null) return null;
+    if (typeof c === 'string') {
+      var s = String(c).trim();
+      return s ? { key: s, labelEN: s, labelIS: '' } : null;
+    }
+    var labelEN = String(c.labelEN || c.label || c.key || '').trim();
+    var key     = String(c.key || labelEN).trim();
+    if (!key) return null;
+    return { key: key, labelEN: labelEN || key, labelIS: String(c.labelIS || '').trim() };
+  }).filter(function (c) {
+    if (!c || !c.key) return false;
+    if (seen[c.key]) return false;
+    seen[c.key] = true;
+    return true;
+  });
   setConfigSheetValue_('certCategories', JSON.stringify(categories));
   cDel_('config');
   return okJ({ saved: true, count: categories.length });
@@ -3751,13 +3839,13 @@ function getFlagConfigFromMap_(cfgMap) {
 function getCertDefsFromMap_(cfgMap) {
   const raw = getConfigValue_('certDefs', cfgMap);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (e) { return []; }
+  try { return normalizeCertDefsRaw_(JSON.parse(raw)); } catch (e) { return []; }
 }
 
 function getCertCategoriesFromMap_(cfgMap) {
   const raw = getConfigValue_('certCategories', cfgMap);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (e) { return []; }
+  try { return normalizeCertCategoriesRaw_(JSON.parse(raw)); } catch (e) { return []; }
 }
 
 function getConfigSheetValue_(key) {
@@ -4443,16 +4531,53 @@ function pubPageShell_(title, bodyHtml) {
     + '</body></html>';
 }
 
-function pubCertBadgesHtml_(certs, certDefs) {
+// Emit both EN and IS spans for a single value so the public record page's
+// existing .lang-en / .lang-is CSS toggle picks the right one. Falls back to
+// the other language when one side is empty.
+function bilingualSpan_(en, is) {
+  var e = en || is || '';
+  var i = is || en || '';
+  return '<span class="lang-en">' + esc_(e) + '</span>'
+       + '<span class="lang-is" style="display:none">' + esc_(i) + '</span>';
+}
+
+function pubCertBadgesHtml_(certs, certDefs, certCategories) {
   if (!certs || !certs.length) {
     return '<div style="color:var(--muted);font-size:12px;font-style:italic">'
       + dl_('pub.lbl.noCerts') + '</div>';
   }
   var today = new Date().toISOString().slice(0, 10);
+  var cats = Array.isArray(certCategories) ? certCategories : [];
+  function findCat(key) {
+    if (!key) return null;
+    for (var i = 0; i < cats.length; i++) {
+      var c = cats[i];
+      if (typeof c === 'string') { if (c === key) return { key: c, labelEN: c, labelIS: '' }; }
+      else if (c && (c.key === key || c.labelEN === key)) return c;
+    }
+    return null;
+  }
   return certs.map(function(c) {
     var def = c.certId ? certDefs.find(function(d) { return d.id === c.certId; }) : null;
     var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
-    var label = c.title || (subcat ? (def.name + ' — ' + subcat.label) : (def ? def.name : (c.certId || 'Unknown')));
+    // Resolve bilingual cert/subcat labels from the normalized def shape.
+    var defNameEN = def ? (def.nameEN || def.name || '') : '';
+    var defNameIS = def ? (def.nameIS || '') : '';
+    var subLabelEN = subcat ? (subcat.labelEN || subcat.label || '') : '';
+    var subLabelIS = subcat ? (subcat.labelIS || '') : '';
+    var labelEN, labelIS;
+    if (c.title) {
+      labelEN = c.title; labelIS = c.title;
+    } else if (subcat) {
+      labelEN = (defNameEN || c.certId || 'Unknown') + ' — ' + subLabelEN;
+      labelIS = ((defNameIS || defNameEN || c.certId || '') + ' — ' + (subLabelIS || subLabelEN));
+    } else if (def) {
+      labelEN = defNameEN || c.certId || 'Unknown';
+      labelIS = defNameIS || defNameEN || c.certId || 'Unknown';
+    } else {
+      labelEN = c.certId || 'Unknown';
+      labelIS = c.certId || 'Unknown';
+    }
     var expired = c.expiresAt && c.expiresAt < today;
     var verifier = c.verifiedBy || c.assignedBy;
     var badgeClass = expired ? 'badge badge-red' : (verifier ? 'badge badge-green' : 'badge badge-yellow');
@@ -4463,12 +4588,18 @@ function pubCertBadgesHtml_(certs, certDefs) {
     var expiryEN = c.expiresAt ? (expired ? 'Expired ' : 'Expires ') + esc_(c.expiresAt) : 'Does not expire';
     var expiryIS = c.expiresAt ? (expired ? 'Útrunnið ' : 'Rennur út ') + esc_(c.expiresAt) : 'Varanlegt';
 
-    // Description
-    var desc = c.description || (subcat && subcat.description ? subcat.description : (def && def.description ? def.description : ''));
+    // Description (bilingual with fallback to legacy single-string field)
+    var descEN = c.description
+      || (subcat && (subcat.descriptionEN || subcat.description) || '')
+      || (def && (def.descriptionEN || def.description) || '');
+    var descIS = c.description
+      || (subcat && subcat.descriptionIS || '')
+      || (def && def.descriptionIS || '')
+      || descEN;
 
     var html = '<div class="cert-card">'
       + '<div class="cert-summary">'
-      + '<div><span class="cert-name">' + esc_(label) + '</span> '
+      + '<div><span class="cert-name">' + bilingualSpan_(labelEN, labelIS) + '</span> '
       + '<span class="' + badgeClass + '">'
       + '<span class="lang-en">' + esc_(statusEN) + '</span>'
       + '<span class="lang-is" style="display:none">' + esc_(statusIS) + '</span>'
@@ -4478,14 +4609,17 @@ function pubCertBadgesHtml_(certs, certDefs) {
       + '<div class="cert-detail">'
       + '<div class="detail-grid">';
     if (c.category) {
+      var catObj = findCat(c.category);
+      var catEN = catObj ? (catObj.labelEN || catObj.key || c.category) : c.category;
+      var catIS = catObj ? (catObj.labelIS || catEN) : c.category;
       html += '<div class="detail-row"><span class="detail-lbl">'
         + '<span class="lang-en">Category</span><span class="lang-is" style="display:none">Flokkur</span>'
-        + '</span><span class="detail-val">' + esc_(c.category) + '</span></div>';
+        + '</span><span class="detail-val">' + bilingualSpan_(catEN, catIS) + '</span></div>';
     }
     if (subcat) {
       html += '<div class="detail-row"><span class="detail-lbl">'
         + '<span class="lang-en">Level</span><span class="lang-is" style="display:none">Stig</span>'
-        + '</span><span class="detail-val">' + esc_(subcat.label) + '</span></div>';
+        + '</span><span class="detail-val">' + bilingualSpan_(subLabelEN, subLabelIS || subLabelEN) + '</span></div>';
     }
     if (c.issuingAuthority) {
       html += '<div class="detail-row"><span class="detail-lbl">'
@@ -4514,10 +4648,10 @@ function pubCertBadgesHtml_(certs, certDefs) {
         + '<span class="lang-en">Verified</span><span class="lang-is" style="display:none">Staðfest</span>'
         + '</span><span class="detail-val">' + esc_(String(verifiedDate).slice(0,10)) + '</span></div>';
     }
-    if (desc) {
+    if (descEN || descIS) {
       html += '<div class="detail-row" style="grid-column:1/-1"><span class="detail-lbl">'
         + '<span class="lang-en">Description</span><span class="lang-is" style="display:none">Lýsing</span>'
-        + '</span><span class="detail-val">' + esc_(desc) + '</span></div>';
+        + '</span><span class="detail-val">' + bilingualSpan_(descEN, descIS) + '</span></div>';
     }
     html += '</div></div></div>';
     return html;
@@ -4840,12 +4974,30 @@ function publicDashboard_() {
     var isCaptain = certs.some(function(c) { return c.sub === 'captain'; });
     if (!isCaptain) return;
 
-    // Build cert labels
+    // Build cert labels — emit both languages so the public dashboard can
+    // pick at render time via its lang() toggle. `label` is kept as an EN
+    // fallback for any untouched client.
     var certLabels = certs.map(function(c) {
       var def = c.certId ? certDefs.find(function(d) { return d.id === c.certId; }) : null;
       var subcat = def && def.subcats ? def.subcats.find(function(s) { return s.key === c.sub; }) : null;
-      var label = c.title || (subcat ? ((def.name || c.certId) + ' — ' + subcat.label) : (def ? def.name : (c.certId || 'Unknown')));
-      return { certId: c.certId, sub: c.sub || '', label: label };
+      var defEN = def ? (def.nameEN || def.name || '') : '';
+      var defIS = def ? (def.nameIS || '') : '';
+      var scEN  = subcat ? (subcat.labelEN || subcat.label || '') : '';
+      var scIS  = subcat ? (subcat.labelIS || '') : '';
+      var labelEN, labelIS;
+      if (c.title) {
+        labelEN = c.title; labelIS = c.title;
+      } else if (subcat) {
+        labelEN = (defEN || c.certId || 'Unknown') + ' — ' + scEN;
+        labelIS = (defIS || defEN || c.certId || 'Unknown') + ' — ' + (scIS || scEN);
+      } else if (def) {
+        labelEN = defEN || c.certId || 'Unknown';
+        labelIS = defIS || defEN || c.certId || 'Unknown';
+      } else {
+        labelEN = c.certId || 'Unknown';
+        labelIS = labelEN;
+      }
+      return { certId: c.certId, sub: c.sub || '', label: labelEN, labelEN: labelEN, labelIS: labelIS };
     });
 
     // Captain keelboat trips
@@ -5028,8 +5180,10 @@ function pubRecordPageHtml_(member, certs, certDefs, opts) {
       + '</div>';
   }
 
-  // Credentials
-  html += '<h2>' + dl_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs) + '</div>';
+  // Credentials — look up cert categories once so the badge renderer can
+  // resolve bilingual labels for the Category detail row.
+  var certCategoriesForPub = getCertCategoriesFromMap_(getConfigMap_());
+  html += '<h2>' + dl_('pub.lbl.certs') + '</h2><div class="card">' + pubCertBadgesHtml_(certs, certDefs, certCategoriesForPub) + '</div>';
 
   // Load boats for make/model/LOA
   var boatsJson = getConfigSheetValue_('boats');

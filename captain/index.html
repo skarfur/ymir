@@ -1326,7 +1326,7 @@ function populateCqGateCertSelect(current) {
     if (!def.subcats || !def.subcats.length) return;
     def.subcats.forEach(function(sc) {
       sel.innerHTML += '<option value="' + esc(sc.key) + '"' + (sc.key === current ? ' selected' : '') + '>'
-        + esc((def.name || '') + ' — ' + (sc.label || sc.key)) + '</option>';
+        + esc(certDefName(def) + ' — ' + certSubcatLabel(sc)) + '</option>';
     });
   });
 }
