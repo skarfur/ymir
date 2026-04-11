@@ -2765,13 +2765,26 @@ function _volRowHtml(ev, L) {
       + chipsHtml;
   }).join('');
   const stopProp = 'onclick="event.stopPropagation();';
+  const leaderHtml = ev.leaderName
+    ? (function() {
+        const phoneLink = (ev.leaderPhone && ev.showLeaderPhone)
+          ? ' · <a href="tel:' + esc(ev.leaderPhone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(ev.leaderPhone) + '</a>'
+          : '';
+        return '<div style="font-size:10px;color:var(--muted);padding:2px 0 4px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">'
+          + '<span>' + s('admin.volLeader') + ':</span>'
+          + '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
+          + esc(ev.leaderName) + phoneLink
+          + '</span>'
+          + '</div>';
+      })()
+    : '';
   return '<div class="list-row" onclick="openVolEventModal(\'' + ev.id + '\')" style="flex-direction:column;align-items:stretch;gap:2px;cursor:pointer">'
     + '<div style="display:flex;align-items:center;gap:10px">'
     + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
     + '<button class="row-edit" ' + stopProp + 'openVolEventModal(\'' + ev.id + '\')">Edit</button>'
     + '<button class="row-del" ' + stopProp + 'deleteVolEvent(\'' + ev.id + '\')">×</button>'
     + '</div>'
-    + (ev.leaderName ? '<div style="font-size:10px;color:var(--muted);padding-left:12px">' + s('admin.volLeader') + ': ' + esc(ev.leaderName) + (ev.leaderPhone && ev.showLeaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>' : '')
+    + leaderHtml
     + rolesHtml
     + '</div>';
 }
