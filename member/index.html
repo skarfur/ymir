@@ -1623,7 +1623,7 @@ function renderClubCalendars() {
     el.innerHTML = '<div class="empty-note">' + (s('member.calEmpty') || '') + '</div>';
     return;
   }
-  // Google Calendar's embed runs cross-origin, so we can't style its interior
+  //  Calendar's embed runs cross-origin, so we can't style its interior
   // directly and its &bgcolor= URL param is ignored in the new agenda view.
   // On dark theme, apply a CSS filter to visually invert the iframe — this is
   // a purely client-side paint effect and doesn't touch iframe content.
@@ -1634,7 +1634,7 @@ function renderClubCalendars() {
     theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   }
   var isDark = theme !== 'light';
-  var frameFilter = isDark ? 'filter:invert(0.92) hue-rotate(180deg);' : '';
+  var frameFilter = isDark ? 'filter:invert(0.80) hue-rotate(180deg);' : '';
   // Always white — Google's default — so the invert filter lands on a dark
   // shade on dark theme, and it stays white on light theme.
   var frameBg = '#ffffff';
