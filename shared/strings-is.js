@@ -1327,6 +1327,7 @@ var _STRINGS_FLAT = {
   "volunteer.inCharge": "Verkstjóri",
   "volunteer.me": "Ég",
   "volunteer.more": "í viðbót",
+  "volunteer.youSignedUp": "Þú ert skráð(ur)",
   "volunteer.noEventsThisDay": "Engir viðburðir þennan dag.",
   "volunteer.unfilledRoles": "laus pláss í sjálfboðaviðburðum",
   "admin.tabCalendars": "Dagatöl",
