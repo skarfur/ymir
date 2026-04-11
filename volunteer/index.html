@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ýmir — Volunteer</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="stylesheet" href="../shared/style.css">
+<script src="../shared/api.js"></script>
+<script>window._earlyConfig=apiGet('getConfig');window._earlyVolSignups=apiPost('getVolunteerSignups',{});</script>
+<script src="../shared/ui.js"></script>
+<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
+<script src="../shared/strings.js"></script>
+<script src="../shared/certs.js" defer></script>
+<script src="../shared/volunteer.js" defer></script>
+<style>
+/* ── Tab bar ── */
+.vp-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.vp-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
+  font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
+  white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
+.vp-tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+.vp-tab-btn:hover:not(.active) { color:var(--text); }
+
+/* ── Section headers ── */
+.vp-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+
+/* ── Event cards (list view) ── */
+.vp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  box-shadow:var(--shadow-sm); padding:12px 14px; margin-bottom:10px; }
+.vp-card-date { font-size:10px; color:var(--brass); margin-bottom:2px; letter-spacing:.5px; text-transform:uppercase; }
+.vp-card-title { font-size:13px; font-weight:500; color:var(--text); }
+.vp-card-subtitle { font-size:10px; color:var(--muted); margin-top:2px; }
+.vp-card-leader { font-size:10px; color:var(--muted); margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.vp-card-leader-label { color:var(--muted); }
+.vp-card-leader-name { color:var(--text); font-weight:500; }
+.vp-card-leader-phone { color:var(--brass); }
+.vp-card-leader-phone a { color:inherit; text-decoration:none; }
+.vp-card-leader-phone a:hover { text-decoration:underline; }
+.vp-card-notes { font-size:10px; color:var(--muted); margin-top:6px; font-style:italic; }
+
+/* ── Role rows ── */
+.vp-role { display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  padding:8px 0; border-top:1px solid var(--border); margin-top:8px; }
+.vp-role-left { flex:1; min-width:0; }
+.vp-role-name { font-size:11px; color:var(--text); font-weight:500; }
+.vp-role-meta { display:flex; align-items:center; gap:6px; margin-top:3px; }
+.vp-bar { width:60px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.vp-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
+.vp-bar-fill.full { background:var(--green); }
+.vp-role-status { font-size:10px; color:var(--muted); }
+.vp-role-signups { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.vp-chip { display:inline-flex; align-items:center; gap:4px; font-size:9px; padding:2px 8px;
+  border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); }
+.vp-chip.me { background:var(--brass)18; border-color:var(--brass); color:var(--brass); font-weight:500; }
+.vp-role-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.vp-btn { padding:5px 11px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  color:var(--text); font-family:inherit; font-size:10px; cursor:pointer; transition:border-color .15s,background .15s; white-space:nowrap; }
+.vp-btn:hover { border-color:var(--brass); }
+.vp-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+.vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
+.vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
+
+/* ── Calendar (month view) ── */
+.vp-cal { border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; background:var(--card); }
+.vp-cal-hdr { display:flex; align-items:center; justify-content:space-between; padding:10px 12px;
+  border-bottom:1px solid var(--border); background:var(--surface); gap:8px; flex-wrap:wrap; }
+.vp-cal-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:.5px; }
+.vp-cal-nav { display:flex; gap:6px; align-items:center; }
+.vp-cal-nav button { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:inherit; font-size:11px; padding:4px 10px; cursor:pointer;
+  transition:border-color .15s, color .15s; min-width:32px; }
+.vp-cal-nav button:hover { border-color:var(--brass); color:var(--brass); }
+.vp-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.vp-cal-dow { font-size:8px; color:var(--muted); text-align:center; padding:6px 4px; letter-spacing:.6px;
+  background:var(--surface); border-bottom:1px solid var(--border); text-transform:uppercase; font-weight:500; }
+.vp-cal-day { min-height:78px; border-right:1px solid var(--border)44; border-bottom:1px solid var(--border)44;
+  padding:4px; position:relative; box-sizing:border-box; }
+.vp-cal-day:nth-child(7n) { border-right:none; }
+.vp-cal-day.other-month { background:var(--surface); opacity:.55; }
+.vp-cal-day.today .vp-cal-day-num { color:var(--brass); font-weight:600; }
+.vp-cal-day-num { font-size:10px; color:var(--muted); margin-bottom:3px; }
+.vp-cal-ev { display:block; margin-top:2px; padding:2px 5px; border-radius:3px;
+  background:var(--brass)1f; border-left:2px solid var(--brass); font-size:9px; color:var(--text);
+  cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:background .15s; }
+.vp-cal-ev:hover { background:var(--brass)33; }
+.vp-cal-ev.full { background:var(--green)18; border-left-color:var(--green); }
+.vp-cal-ev.mine { background:var(--brass)33; border-left-color:var(--brass); font-weight:500; }
+.vp-cal-ev-more { display:block; margin-top:2px; font-size:9px; color:var(--muted); padding:1px 4px; cursor:pointer; }
+.vp-cal-ev-more:hover { color:var(--brass); }
+
+/* ── Empty / placeholder notes ── */
+.vp-empty { font-size:11px; color:var(--muted); padding:14px; text-align:center;
+  border:1px dashed var(--border); border-radius:var(--radius-md); }
+
+/* ── Day-detail modal ── */
+.vp-day-list { display:flex; flex-direction:column; gap:10px; }
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .vp-cal-day { min-height:62px; padding:3px; }
+  .vp-cal-day-num { font-size:9px; }
+  .vp-cal-ev { font-size:8px; padding:1px 3px; }
+  .vp-role-right { align-items:stretch; }
+}
+</style>
+</head>
+<body>
+<header id="ym-header">
+  <div class="header-left"></div>
+  <div class="header-right"></div>
+</header>
+
+<div class="page-content">
+
+  <div class="mb-14">
+    <div style="font-size:16px;font-weight:500;color:var(--text)" data-s="volunteer.title"></div>
+    <div class="text-sm text-muted" style="margin-top:2px" data-s="volunteer.subtitle"></div>
+  </div>
+
+  <!-- ══ TAB BAR ══ -->
+  <div class="vp-tab-bar">
+    <button class="vp-tab-btn active" data-tab="list"     onclick="showVpTab('list')"     data-s="volunteer.tabList"></button>
+    <button class="vp-tab-btn"        data-tab="calendar" onclick="showVpTab('calendar')" data-s="volunteer.tabCalendar"></button>
+  </div>
+
+  <!-- ══ LIST VIEW ══ -->
+  <div id="vpTab-list">
+    <div class="vp-section-hdr" data-s="volunteer.upcoming"></div>
+    <div id="vpListContainer"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
+  <!-- ══ CALENDAR VIEW ══ -->
+  <div id="vpTab-calendar" class="hidden">
+    <div class="vp-cal" id="vpCalendar">
+      <div class="vp-cal-hdr">
+        <div class="vp-cal-title" id="vpCalTitle">—</div>
+        <div class="vp-cal-nav">
+          <button onclick="vpShiftMonth(-1)">‹</button>
+          <button onclick="vpJumpToday()" data-s="slot.today">Today</button>
+          <button onclick="vpShiftMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="vp-cal-grid" id="vpCalGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ DAY DETAIL MODAL ══ -->
+<div class="modal-overlay hidden" id="vpDayModal" onclick="if(event.target===this)closeModal('vpDayModal')">
+  <div class="modal" style="max-width:560px;width:95vw;max-height:92vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3 id="vpDayModalTitle">—</h3>
+      <button class="modal-close-x" onclick="closeModal('vpDayModal')">&times;</button>
+    </div>
+    <div id="vpDayModalBody" class="vp-day-list"></div>
+  </div>
+</div>
+
+<script>
+// ══ STATE ════════════════════════════════════════════════════════════════════
+const user = requireAuth();
+let _volEvents = [];
+let _volSignups = [];
+let _volActTypes = [];
+let _vpView = 'list';
+let _vpMonth = (function() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
+let _vpDayModalIso = null;
+let _myCerts = [];
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  buildHeader('volunteer');
+  applyStrings();
+
+  try { _myCerts = user && user.certifications
+    ? (typeof user.certifications === 'string' ? JSON.parse(user.certifications) : user.certifications)
+    : []; } catch(e) { _myCerts = []; }
+
+  try {
+    const [cfgRes, suRes] = await Promise.all([
+      window._earlyConfig || apiGet('getConfig'),
+      window._earlyVolSignups || apiPost('getVolunteerSignups', {}),
+    ]);
+    _volEvents   = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
+    _volActTypes = cfgRes.activityTypes || [];
+    _volSignups  = (suRes && suRes.signups) || [];
+  } catch(e) {
+    document.getElementById('vpListContainer').innerHTML =
+      '<div class="empty-note text-red">' + s('toast.loadFailed') + ': ' + esc(e.message) + '</div>';
+    return;
+  }
+
+  renderVpList();
+  renderVpCalendar();
+});
+
+// ══ TAB SWITCHING ════════════════════════════════════════════════════════════
+function showVpTab(tab) {
+  _vpView = tab;
+  document.querySelectorAll('.vp-tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('vpTab-list').classList.toggle('hidden', tab !== 'list');
+  document.getElementById('vpTab-calendar').classList.toggle('hidden', tab !== 'calendar');
+  if (tab === 'calendar') renderVpCalendar();
+}
+
+// ══ HELPERS ══════════════════════════════════════════════════════════════════
+function getMergedEvents(rangeFrom, rangeTo) {
+  const virtual = (typeof expandVolunteerActivityTypes === 'function')
+    ? expandVolunteerActivityTypes(_volActTypes || [], rangeFrom || null, rangeTo || null)
+    : [];
+  return (typeof mergeVolunteerEvents === 'function')
+    ? mergeVolunteerEvents(_volEvents, virtual)
+    : _volEvents.concat(virtual);
+}
+
+function localizedTitle(ev) {
+  const L = getLang();
+  return (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
+}
+function localizedSubtitle(ev) {
+  const L = getLang();
+  return (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
+}
+function localizedNotes(ev) {
+  const L = getLang();
+  return (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
+}
+function localizedRoleName(role) {
+  const L = getLang();
+  return (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
+}
+
+// "Wed, 15 Apr"
+function formatDayLabel(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
+  const months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
+                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+  return s(dows[d.getDay()]) + ', ' + d.getDate() + ' ' + s(months[d.getMonth()]);
+}
+
+function formatTimeRange(ev) {
+  const a = (ev.startTime || '').slice(0, 5);
+  const b = (ev.endTime || '').slice(0, 5);
+  if (a && b) return a + '–' + b;
+  if (a) return a;
+  return '';
+}
+
+function isMineSignup(su) {
+  return user && String(su.kennitala) === String(user.kennitala);
+}
+
+// Local-time ISO date (YYYY-MM-DD) — avoids UTC drift on non-zero offsets
+function _localIso(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+function _todayIso() { return _localIso(new Date()); }
+
+// ══ LIST VIEW ════════════════════════════════════════════════════════════════
+function renderVpList() {
+  const container = document.getElementById('vpListContainer');
+  if (!container) return;
+  const today = _todayIso();
+  const merged = getMergedEvents(today, null);
+  const upcoming = merged
+    .filter(function(e) { return (e.date || '') >= today; })
+    .sort(function(a, b) {
+      return (a.date || '').localeCompare(b.date || '')
+        || (a.startTime || '').localeCompare(b.startTime || '');
+    });
+  if (!upcoming.length) {
+    container.innerHTML = '<div class="vp-empty">' + s('member.noVolEvents') + '</div>';
+    return;
+  }
+  container.innerHTML = upcoming.map(renderVpCard).join('');
+}
+
+function renderVpCard(ev) {
+  const title    = localizedTitle(ev);
+  const subtitle = localizedSubtitle(ev);
+  const notes    = localizedNotes(ev);
+  const dayLbl   = formatDayLabel(ev.date || '');
+  const timeLbl  = formatTimeRange(ev);
+  const roles    = Array.isArray(ev.roles) ? ev.roles : [];
+
+  const leaderHtml = ev.leaderName
+    ? '<div class="vp-card-leader">'
+      + '<span class="vp-card-leader-label">' + s('volunteer.inCharge') + ':</span> '
+      + '<span class="vp-card-leader-name">' + esc(ev.leaderName) + '</span>'
+      + (ev.showLeaderPhone && ev.leaderPhone
+          ? ' <span class="vp-card-leader-phone">· <a href="tel:' + esc(ev.leaderPhone) + '">' + esc(ev.leaderPhone) + '</a></span>'
+          : '')
+      + '</div>'
+    : '';
+
+  const subtitleHtml = subtitle ? '<div class="vp-card-subtitle">' + esc(subtitle) + '</div>' : '';
+  const notesHtml    = notes ? '<div class="vp-card-notes">' + esc(notes) + '</div>' : '';
+
+  const rolesHtml = roles.length
+    ? roles.map(function(r) { return renderVpRole(ev, r); }).join('')
+    : '<div class="vp-card-notes">' + s('admin.noRoles') + '</div>';
+
+  return '<div class="vp-card">'
+    + '<div class="vp-card-date">' + esc(dayLbl) + (timeLbl ? ' · ' + esc(timeLbl) : '') + '</div>'
+    + '<div class="vp-card-title">' + esc(title) + '</div>'
+    + subtitleHtml
+    + leaderHtml
+    + notesHtml
+    + rolesHtml
+    + '</div>';
+}
+
+function renderVpRole(ev, role) {
+  const rn      = localizedRoleName(role);
+  const signups = _volSignups.filter(function(su) { return su.eventId === ev.id && su.roleId === role.id; });
+  const filled  = signups.length;
+  const total   = Number(role.slots) || 0;
+  const isFull  = total > 0 && filled >= total;
+  const mySignup = signups.find(isMineSignup);
+  const pct     = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
+  const allowed = (typeof memberCanTakeRole === 'function') ? memberCanTakeRole(role, _myCerts) : true;
+
+  // Names of all signups; "me" replaces own name
+  const chipsHtml = signups.length
+    ? '<div class="vp-role-signups">'
+      + signups.map(function(su) {
+          const isMine = isMineSignup(su);
+          const label = isMine ? s('volunteer.me') : (su.name || '—');
+          return '<span class="vp-chip' + (isMine ? ' me' : '') + '">' + esc(label) + '</span>';
+        }).join('')
+      + '</div>'
+    : '';
+
+  let actionHtml = '';
+  if (mySignup) {
+    actionHtml = '<button class="vp-btn signed-up" onclick="vpWithdraw(\'' + mySignup.id + '\')">'
+      + s('member.volWithdraw') + '</button>';
+  } else if (!allowed) {
+    actionHtml = '<span class="vp-role-note">' + s('member.volNeedsEndorsement') + '</span>';
+  } else if (isFull) {
+    actionHtml = '<span class="vp-role-note full">' + s('member.volFull') + '</span>';
+  } else {
+    actionHtml = '<button class="vp-btn" onclick="vpSignup(\'' + ev.id + '\',\'' + role.id + '\')">'
+      + s('member.volSignUp') + '</button>';
+  }
+
+  return '<div class="vp-role">'
+    + '<div class="vp-role-left">'
+      + '<div class="vp-role-name">' + esc(rn) + '</div>'
+      + '<div class="vp-role-meta">'
+        + '<div class="vp-bar"><div class="vp-bar-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%"></div></div>'
+        + '<span class="vp-role-status">' + filled + '/' + total + '</span>'
+      + '</div>'
+      + chipsHtml
+    + '</div>'
+    + '<div class="vp-role-right">' + actionHtml + '</div>'
+    + '</div>';
+}
+
+// ══ CALENDAR VIEW ════════════════════════════════════════════════════════════
+function renderVpCalendar() {
+  const grid = document.getElementById('vpCalGrid');
+  const titleEl = document.getElementById('vpCalTitle');
+  if (!grid || !titleEl) return;
+
+  const y = _vpMonth.y, m = _vpMonth.m;
+  const monthKeys = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
+                     'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+  titleEl.textContent = s(monthKeys[m]) + ' ' + y;
+
+  // Day-of-week header (Mon-first)
+  const dowKeys = ['day.mon','day.tue','day.wed','day.thu','day.fri','day.sat','day.sun'];
+  let html = dowKeys.map(function(k) { return '<div class="vp-cal-dow">' + s(k) + '</div>'; }).join('');
+
+  // Compute first cell: shift so Monday is column 0
+  const first = new Date(y, m, 1);
+  const dow0 = (first.getDay() + 6) % 7; // Mon=0..Sun=6
+  const startDate = new Date(y, m, 1 - dow0);
+
+  // Always render 6 rows × 7 cols = 42 cells
+  const todayIso = _todayIso();
+
+  // Range for events (whole grid)
+  const lastDate = new Date(startDate);
+  lastDate.setDate(lastDate.getDate() + 41);
+  const fromIso = _localIso(startDate);
+  const toIso   = _localIso(lastDate);
+  const merged  = getMergedEvents(fromIso, toIso);
+
+  // Bucket events by date
+  const byDate = {};
+  merged.forEach(function(ev) {
+    if (!ev.date) return;
+    if (!byDate[ev.date]) byDate[ev.date] = [];
+    byDate[ev.date].push(ev);
+  });
+  Object.keys(byDate).forEach(function(k) {
+    byDate[k].sort(function(a, b) { return (a.startTime || '').localeCompare(b.startTime || ''); });
+  });
+
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const iso = _localIso(d);
+    const isOther = d.getMonth() !== m;
+    const isToday = iso === todayIso;
+    const evs = byDate[iso] || [];
+
+    let evsHtml = '';
+    const maxShow = 2;
+    evs.slice(0, maxShow).forEach(function(ev) {
+      const cls = vpEventCls(ev);
+      const t = (ev.startTime || '').slice(0, 5);
+      const lbl = (t ? t + ' ' : '') + localizedTitle(ev);
+      evsHtml += '<span class="vp-cal-ev ' + cls + '" onclick="vpOpenDay(\'' + iso + '\')" title="' + esc(lbl) + '">'
+        + esc(lbl) + '</span>';
+    });
+    if (evs.length > maxShow) {
+      evsHtml += '<span class="vp-cal-ev-more" onclick="vpOpenDay(\'' + iso + '\')">+'
+        + (evs.length - maxShow) + ' ' + s('volunteer.more') + '</span>';
+    }
+
+    html += '<div class="vp-cal-day' + (isOther ? ' other-month' : '') + (isToday ? ' today' : '') + '"'
+      + (evs.length ? ' onclick="vpOpenDay(\'' + iso + '\')"' : '') + '>'
+      + '<div class="vp-cal-day-num">' + d.getDate() + '</div>'
+      + evsHtml
+      + '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function vpEventCls(ev) {
+  const roles = Array.isArray(ev.roles) ? ev.roles : [];
+  let totalSlots = 0, totalFilled = 0;
+  let mineHere = false;
+  roles.forEach(function(r) {
+    const slots = Number(r.slots) || 0;
+    totalSlots += slots;
+    const su = _volSignups.filter(function(s) { return s.eventId === ev.id && s.roleId === r.id; });
+    totalFilled += su.length;
+    if (su.some(isMineSignup)) mineHere = true;
+  });
+  if (mineHere) return 'mine';
+  if (totalSlots > 0 && totalFilled >= totalSlots) return 'full';
+  return '';
+}
+
+function vpShiftMonth(delta) {
+  let m = _vpMonth.m + delta;
+  let y = _vpMonth.y;
+  while (m < 0)  { m += 12; y--; }
+  while (m > 11) { m -= 12; y++; }
+  _vpMonth = { y: y, m: m };
+  renderVpCalendar();
+}
+
+function vpJumpToday() {
+  const d = new Date();
+  _vpMonth = { y: d.getFullYear(), m: d.getMonth() };
+  renderVpCalendar();
+}
+
+// ══ DAY MODAL ════════════════════════════════════════════════════════════════
+function vpOpenDay(iso) {
+  _vpDayModalIso = iso;
+  vpRenderDayModal();
+  openModal('vpDayModal');
+}
+
+function vpRenderDayModal() {
+  const iso = _vpDayModalIso;
+  if (!iso) return;
+  const merged = getMergedEvents(iso, iso);
+  const evs = merged
+    .filter(function(e) { return e.date === iso; })
+    .sort(function(a, b) { return (a.startTime || '').localeCompare(b.startTime || ''); });
+  document.getElementById('vpDayModalTitle').textContent = formatDayLabel(iso);
+  const body = document.getElementById('vpDayModalBody');
+  if (!evs.length) {
+    body.innerHTML = '<div class="vp-empty">' + s('volunteer.noEventsThisDay') + '</div>';
+  } else {
+    body.innerHTML = evs.map(renderVpCard).join('');
+  }
+}
+
+// ══ SIGNUP / WITHDRAW ════════════════════════════════════════════════════════
+async function vpSignup(eventId, roleId) {
+  if (!user) return;
+  try {
+    const payload = {
+      eventId: eventId,
+      roleId: roleId,
+      kennitala: user.kennitala,
+      name: user.name || '',
+    };
+    if (String(eventId).indexOf('vae-') === 0) {
+      const today = _todayIso();
+      const virt = (typeof expandVolunteerActivityTypes === 'function')
+        ? expandVolunteerActivityTypes(_volActTypes || [], today, null)
+        : [];
+      const src = virt.find(function(e) { return e.id === eventId; });
+      if (src) payload.virtualEvent = src;
+    }
+    const res = await apiPost('volunteerSignup', payload);
+    _volSignups.push(res.signup || { id: res.id, eventId: eventId, roleId: roleId, kennitala: user.kennitala, name: user.name });
+    refreshVpViews();
+    showToast(s('toast.saved'));
+  } catch(e) {
+    showToast(e.message, 'err');
+  }
+}
+
+async function vpWithdraw(signupId) {
+  try {
+    await apiPost('volunteerWithdraw', { id: signupId });
+    _volSignups = _volSignups.filter(function(su) { return su.id !== signupId; });
+    refreshVpViews();
+    showToast(s('toast.saved'));
+  } catch(e) {
+    showToast(e.message, 'err');
+  }
+}
+
+function refreshVpViews() {
+  renderVpList();
+  renderVpCalendar();
+  const dayModal = document.getElementById('vpDayModal');
+  if (dayModal && !dayModal.classList.contains('hidden')) {
+    vpRenderDayModal();
+  }
+}
+</script>
+</body>
+</html>
