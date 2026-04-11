@@ -1643,6 +1643,7 @@ function renderMemberVolunteerEvents() {
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     const rolesHtml = roles.map(function(role) {
       const rn = (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
+      const rdesc = (L === 'IS' && role.descriptionIS ? role.descriptionIS : role.description) || role.description || '';
       const signupsForRole = _volunteerSignups.filter(function(su) { return su.eventId === ev.id && su.roleId === role.id; });
       const filled = signupsForRole.length;
       const total = Number(role.slots) || 0;
@@ -1662,8 +1663,10 @@ function renderMemberVolunteerEvents() {
       } else {
         btnHtml = '<button class="vol-btn" onclick="memberVolSignup(\'' + ev.id + '\',\'' + role.id + '\')">' + s('member.volSignUp') + '</button>';
       }
+      const descHtml = rdesc ? '<div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.35">' + esc(rdesc) + '</div>' : '';
       return '<div class="vol-role-row">'
         + '<div><div class="vol-role-name">' + esc(rn) + '</div>'
+        + descHtml
         + '<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'
         + '<div class="vol-bar"><div class="vol-bar-fill" style="width:' + pct + '%"></div></div>'
         + '<span class="vol-role-status">' + filled + '/' + total + (mySignup ? ' · ' + s('member.volSignedUp') : '') + '</span>'

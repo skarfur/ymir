@@ -111,6 +111,8 @@
                 baseRoleId: r.id || '',
                 name: r.name || '',
                 nameIS: r.nameIS || '',
+                description: r.description || '',
+                descriptionIS: r.descriptionIS || '',
                 slots: r.slots || 1,
                 requiredEndorsement: r.requiredEndorsement || '',
               };
