@@ -6295,6 +6295,7 @@ function importRowingPassportCsv_(b) {
   //   category_label_en, category_label_is (label_is optional)
   //   item_id (optional — reused from existing item with same label_en, else slugged)
   //   assessment ('theory' | 'practical', defaults 'practical')
+  //   module (optional — positive integer reflecting the teaching module; 0/blank = unassigned)
   //   item_label_en (required), item_label_is (optional)
   //   description_en, description_is (both optional)
   //
@@ -6395,9 +6396,13 @@ function importRowingPassportCsv_(b) {
     // Back-compat: accept historical 'theoretical' spelling and normalise to 'theory'.
     if (assessment === 'theoretical') assessment = 'theory';
     if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
+    // Module: optional non-negative integer (0 / blank = unassigned).
+    let moduleNum = parseInt((r.module || '').toString().trim(), 10);
+    if (!(moduleNum >= 0)) moduleNum = 0;
     cat.items.push({
       id: itemId,
       assessment: assessment,
+      module: moduleNum,
       name: { EN: labelEn || itemId, IS: r.item_label_is || labelEn || itemId },
       desc: { EN: r.description_en || '', IS: r.description_is || '' },
     });
