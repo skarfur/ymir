@@ -1580,10 +1580,10 @@ function saveActivityType_(b) {
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
-function deleteActivityType_(b) {
+function deleteActivityType_(id) {
   try {
     let arr = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
-    arr = arr.filter(a => a.id !== b.id);
+    arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
     return okJ({ deleted: true });
