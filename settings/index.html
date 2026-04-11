@@ -96,6 +96,15 @@
     </div>
   </div>
 
+  <!-- Privacy -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.privacy"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle"><input type="checkbox" id="svSharePhoneVol"><span data-s="settings.sharePhoneVol"></span></label>
+    </div>
+    <div class="settings-hint" data-s="settings.sharePhoneVolHint"></div>
+  </div>
+
   <!-- Stats visibility -->
   <div class="settings-section">
     <div class="settings-section-title" data-s="settings.stats"></div>
@@ -221,6 +230,9 @@ document.addEventListener('DOMContentLoaded', async function() {
           applyStatVis(serverPrefs.statsVisibility);
         }
       }
+      var spv = document.getElementById('svSharePhoneVol');
+      spv.checked = serverPrefs.sharePhoneVolunteer === true;
+      spv.closest('.pill-toggle').classList.toggle('active', spv.checked);
       // Show server initials if different
       if (me.initials) document.getElementById('sInitials').value = me.initials;
     }
@@ -316,7 +328,9 @@ async function saveSettings() {
     peakWind:   document.getElementById('svPeakWind').checked,
   };
 
-  var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility };
+  var sharePhoneVolunteer = document.getElementById('svSharePhoneVol').checked;
+
+  var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility, sharePhoneVolunteer: sharePhoneVolunteer };
   var langChanged = lang !== getLang();
 
   // Save locally
