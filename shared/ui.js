@@ -319,7 +319,7 @@ window.buildHeader = function (page) {
 
   // RIGHT: Settings · lang · sign out
   if (user && page !== 'settings') right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
-  right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }, 'hbtn lang-toggle'));
+  right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }, 'hbtn'));
   right.appendChild(btn(s('nav.signOut'),    () => { if (typeof signOut    === 'function') signOut();    }, 'hbtn'));
 };
 
