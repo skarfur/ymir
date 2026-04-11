@@ -22,18 +22,30 @@
 /* ── Quick-action header strip ── */
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
-  flex:1; min-width:100px; background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius-md); padding:10px 12px; cursor:pointer; font-family:inherit;
+  flex:1 1 140px; min-width:110px; min-height:52px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
   font-size:11px; color:var(--text); text-align:center; text-decoration:none;
-  transition:all .2s; display:block; box-shadow:var(--shadow-sm);
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  line-height:1.25; box-shadow:var(--shadow-sm);
+  transition:border-color .15s, background-color .15s, transform .15s, box-shadow .15s;
 }
-.member-actions .act-btn:hover { border-color:var(--brass); background:var(--card); transform:translateY(-1px); box-shadow:var(--shadow-md); }
-.member-actions .act-btn--launch   { border-left:3px solid var(--blue);   }
-.member-actions .act-btn--report   { border-left:3px solid var(--orange); }
-.member-actions .act-btn--logbook  { border-left:3px solid var(--brass);  }
-.member-actions .act-btn--sauma    { border-left:3px solid var(--purple); }
-.member-actions .act-btn--captain  { border-left:3px solid var(--yellow); }
-.member-actions .act-btn--coxswain { border-left:3px solid var(--green);  }
+.member-actions .act-btn::before {
+  flex-shrink:0; font-size:15px; line-height:1;
+  filter:grayscale(.15) saturate(.85);
+}
+.member-actions .act-btn:hover {
+  border-color:var(--brass); background:var(--card);
+  transform:translateY(-1px); box-shadow:var(--shadow-md);
+}
+.member-actions .act-btn:hover::before { filter:none; }
+.member-actions .act-btn--launch::before   { content:'⛵'; }
+.member-actions .act-btn--report::before   { content:'🔧'; }
+.member-actions .act-btn--logbook::before  { content:'📖'; }
+.member-actions .act-btn--sauma::before    { content:'🪡'; }
+.member-actions .act-btn--captain::before  { content:'⚓'; }
+.member-actions .act-btn--coxswain::before { content:'🚣'; }
+.member-actions .act-btn--calendar::before { content:'📅'; }
 
 /* ── Tabs ── */
 .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
@@ -167,7 +179,8 @@
 @media(max-width:600px){
   .fsb-bar-wrap{flex:1;width:auto}
   .ir-type-grid{grid-template-columns:1fr}
-  .member-actions .act-btn{min-width:70px;padding:8px 8px;font-size:10px}
+  .member-actions .act-btn{flex-basis:calc(50% - 4px);min-width:0;min-height:46px;padding:8px 10px;font-size:10px;gap:6px}
+  .member-actions .act-btn::before{font-size:13px}
   .pub-trip{padding:10px 12px}
   .stat-box .sn{font-size:20px}
 }
@@ -202,7 +215,7 @@
     <a class="act-btn act-btn--sauma" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
     <a class="act-btn act-btn--captain" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
     <a class="act-btn act-btn--coxswain" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
-    <button class="act-btn" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
+    <button class="act-btn act-btn--calendar" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
