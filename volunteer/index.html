@@ -86,9 +86,14 @@
   cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:background .15s; }
 .vp-cal-ev:hover { background:var(--brass)33; }
 .vp-cal-ev.full { background:var(--green)18; border-left-color:var(--green); }
-.vp-cal-ev.mine { background:var(--brass)33; border-left-color:var(--brass); font-weight:500; }
+.vp-cal-ev.mine { background:var(--brass); border-left-width:3px; color:#0b1f38; font-weight:600; }
+.vp-cal-ev.mine:hover { background:var(--brass-l); }
+.vp-cal-ev-check { display:inline-block; margin-right:3px; font-weight:700; }
 .vp-cal-ev-more { display:block; margin-top:2px; font-size:9px; color:var(--muted); padding:1px 4px; cursor:pointer; }
 .vp-cal-ev-more:hover { color:var(--brass); }
+/* Day cell dot for days where the user has at least one signup */
+.vp-cal-day.has-mine .vp-cal-day-num::after { content:''; display:inline-block; width:5px; height:5px;
+  border-radius:50%; background:var(--brass); margin-left:5px; vertical-align:middle; }
 
 /* ── Empty / placeholder notes ── */
 .vp-empty { font-size:11px; color:var(--muted); padding:14px; text-align:center;
@@ -416,20 +421,32 @@ function renderVpCalendar() {
     const evs = byDate[iso] || [];
 
     let evsHtml = '';
+    let dayHasMine = false;
     const maxShow = 2;
     evs.slice(0, maxShow).forEach(function(ev) {
       const cls = vpEventCls(ev);
+      const isMine = cls === 'mine';
+      if (isMine) dayHasMine = true;
       const t = (ev.startTime || '').slice(0, 5);
       const lbl = (t ? t + ' ' : '') + localizedTitle(ev);
-      evsHtml += '<span class="vp-cal-ev ' + cls + '" onclick="vpOpenDay(\'' + iso + '\')" title="' + esc(lbl) + '">'
-        + esc(lbl) + '</span>';
+      const titleAttr = (isMine ? s('volunteer.youSignedUp') + ' · ' : '') + lbl;
+      const checkHtml = isMine ? '<span class="vp-cal-ev-check">\u2713</span>' : '';
+      evsHtml += '<span class="vp-cal-ev ' + cls + '" onclick="vpOpenDay(\'' + iso + '\')" title="' + esc(titleAttr) + '">'
+        + checkHtml + esc(lbl) + '</span>';
     });
+    // Also detect "mine" in hidden overflow events so the day dot still appears
+    if (!dayHasMine && evs.length > maxShow) {
+      for (let j = maxShow; j < evs.length; j++) {
+        if (vpEventCls(evs[j]) === 'mine') { dayHasMine = true; break; }
+      }
+    }
     if (evs.length > maxShow) {
       evsHtml += '<span class="vp-cal-ev-more" onclick="vpOpenDay(\'' + iso + '\')">+'
         + (evs.length - maxShow) + ' ' + s('volunteer.more') + '</span>';
     }
 
-    html += '<div class="vp-cal-day' + (isOther ? ' other-month' : '') + (isToday ? ' today' : '') + '"'
+    html += '<div class="vp-cal-day' + (isOther ? ' other-month' : '') + (isToday ? ' today' : '')
+      + (dayHasMine ? ' has-mine' : '') + '"'
       + (evs.length ? ' onclick="vpOpenDay(\'' + iso + '\')"' : '') + '>'
       + '<div class="vp-cal-day-num">' + d.getDate() + '</div>'
       + evsHtml
