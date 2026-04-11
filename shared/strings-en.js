@@ -1335,6 +1335,7 @@ var _STRINGS_FLAT = {
   "volunteer.filterAll": "All",
   "volunteer.filterMine": "My events",
   "volunteer.noMyEvents": "You haven't signed up for any upcoming events.",
+  "volunteer.showMore": "Show more ({n})",
   "volunteer.unfilledRoles": "open volunteer slots",
   "admin.tabCalendars": "Calendars",
   "admin.calDesc": "Add Google Calendar IDs that members can view from the member hub. Each calendar appears as an embedded view.",

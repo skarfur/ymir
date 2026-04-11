@@ -1335,6 +1335,7 @@ var _STRINGS_FLAT = {
   "volunteer.filterAll": "Allir",
   "volunteer.filterMine": "Mínir viðburðir",
   "volunteer.noMyEvents": "Þú hefur ekki skráð þig á neina komandi viðburði.",
+  "volunteer.showMore": "Sýna fleiri ({n})",
   "volunteer.unfilledRoles": "laus pláss í sjálfboðaviðburðum",
   "admin.tabCalendars": "Dagatöl",
   "admin.calDesc": "Bættu við Google Calendar auðkennum sem félagar geta skoðað á félagssvæðinu. Hvert dagatal birtist sem innfellt yfirlit.",

@@ -183,6 +183,8 @@ let _vpMonth = (function() { const d = new Date(); return { y: d.getFullYear(), 
 let _vpDayModalIso = null;
 let _myCerts = [];
 let _vpListFilter = 'all'; // 'all' | 'mine'
+const VP_LIST_PAGE = 20;
+let _vpListShown  = VP_LIST_PAGE;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
@@ -282,6 +284,7 @@ function _todayIso() { return _localIso(new Date()); }
 // ══ LIST VIEW ════════════════════════════════════════════════════════════════
 function vpSetFilter(mode) {
   _vpListFilter = mode;
+  _vpListShown  = VP_LIST_PAGE;
   document.getElementById('vpFilterAll').classList.toggle('active',  mode === 'all');
   document.getElementById('vpFilterMine').classList.toggle('active', mode === 'mine');
   renderVpList();
@@ -295,13 +298,19 @@ function _vpEventHasMine(ev) {
   });
 }
 
-function renderVpList() {
-  const container = document.getElementById('vpListContainer');
-  if (!container) return;
+function vpShowMore() {
+  _vpListShown += VP_LIST_PAGE;
+  renderVpList();
+}
+
+function _vpGetSortedUpcoming() {
   const today = _todayIso();
-  // Use a wide range so every upcoming event materialized in config.volunteer_events
-  // appears, and the virtual fallback expands the full subtype schedules as well.
-  const merged = getMergedEvents(today, '2099-12-31');
+  // Expand one year out — enough for any reasonable season and bounded so
+  // clients don't iterate huge bulk schedules day-by-day.
+  const end = new Date();
+  end.setDate(end.getDate() + 365);
+  const toIso = _localIso(end);
+  const merged = getMergedEvents(today, toIso);
   let upcoming = merged
     .filter(function(e) { return (e.date || '') >= today; })
     .sort(function(a, b) {
@@ -311,12 +320,28 @@ function renderVpList() {
   if (_vpListFilter === 'mine') {
     upcoming = upcoming.filter(_vpEventHasMine);
   }
+  return upcoming;
+}
+
+function renderVpList() {
+  const container = document.getElementById('vpListContainer');
+  if (!container) return;
+  const upcoming = _vpGetSortedUpcoming();
   if (!upcoming.length) {
     const emptyKey = _vpListFilter === 'mine' ? 'volunteer.noMyEvents' : 'member.noVolEvents';
     container.innerHTML = '<div class="vp-empty">' + s(emptyKey) + '</div>';
     return;
   }
-  container.innerHTML = upcoming.map(renderVpCard).join('');
+  const visible = upcoming.slice(0, _vpListShown);
+  let html = visible.map(renderVpCard).join('');
+  if (upcoming.length > _vpListShown) {
+    const remaining = upcoming.length - _vpListShown;
+    html += '<div style="text-align:center;padding:6px 0 2px">'
+      + '<button class="vp-btn" onclick="vpShowMore()">'
+      + esc(s('volunteer.showMore').replace('{n}', remaining))
+      + '</button></div>';
+  }
+  container.innerHTML = html;
 }
 
 function renderVpCard(ev) {
