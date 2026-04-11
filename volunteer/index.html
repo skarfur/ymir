@@ -91,6 +91,10 @@
 .vp-cal-ev.mine { background:var(--brass); border-left-width:3px; color:#0b1f38; font-weight:600; }
 .vp-cal-ev.mine:hover { background:var(--brass-l); }
 .vp-cal-ev-check { display:inline-block; margin-right:3px; font-weight:700; }
+/* Multi-day spans: middle days show a dashed border to hint at continuation */
+.vp-cal-ev-span { border-left-style:dashed; }
+.vp-cal-ev-span-start { border-left-style:solid; }
+.vp-cal-ev-span-end { opacity:.85; }
 .vp-cal-ev-more { display:block; margin-top:2px; font-size:9px; color:var(--muted); padding:1px 4px; cursor:pointer; }
 .vp-cal-ev-more:hover { color:var(--brass); }
 /* Day cell dot for days where the user has at least one signup */
@@ -261,12 +265,36 @@ function formatDayLabel(iso) {
   return s(dows[d.getDay()]) + ', ' + d.getDate() + ' ' + s(months[d.getMonth()]);
 }
 
+// Date label for an event, handling multi-day spans.
+//   Single-day: "Wed, 15 Apr"
+//   Multi-day:  "Wed 15 Apr – Fri 17 Apr"
+function formatEventDateLabel(ev) {
+  const startIso = ev && ev.date ? ev.date : '';
+  const endIso = ev && ev.endDate ? ev.endDate : '';
+  if (!startIso) return '';
+  if (!endIso || endIso === startIso) return formatDayLabel(startIso);
+  const a = new Date(startIso + 'T00:00:00');
+  const b = new Date(endIso + 'T00:00:00');
+  const dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
+  const months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
+                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+  const left = s(dows[a.getDay()]) + ' ' + a.getDate() + ' ' + s(months[a.getMonth()]);
+  const right = s(dows[b.getDay()]) + ' ' + b.getDate() + ' ' + s(months[b.getMonth()]);
+  return left + ' – ' + right;
+}
+
 function formatTimeRange(ev) {
   const a = (ev.startTime || '').slice(0, 5);
   const b = (ev.endTime || '').slice(0, 5);
   if (a && b) return a + '–' + b;
   if (a) return a;
   return '';
+}
+
+// The effective end date for ordering/filtering purposes.
+function _evEndIso(ev) {
+  if (ev && ev.endDate && ev.endDate > (ev.date || '')) return ev.endDate;
+  return ev ? (ev.date || '') : '';
 }
 
 function isMineSignup(su) {
@@ -312,7 +340,8 @@ function _vpGetSortedUpcoming() {
   const toIso = _localIso(end);
   const merged = getMergedEvents(today, toIso);
   let upcoming = merged
-    .filter(function(e) { return (e.date || '') >= today; })
+    // An event is "upcoming" if any part of its span is today or later.
+    .filter(function(e) { return _evEndIso(e) >= today; })
     .sort(function(a, b) {
       return (a.date || '').localeCompare(b.date || '')
         || (a.startTime || '').localeCompare(b.startTime || '');
@@ -348,7 +377,7 @@ function renderVpCard(ev) {
   const title    = localizedTitle(ev);
   const subtitle = localizedSubtitle(ev);
   const notes    = localizedNotes(ev);
-  const dayLbl   = formatDayLabel(ev.date || '');
+  const dayLbl   = formatEventDateLabel(ev);
   const timeLbl  = formatTimeRange(ev);
   const roles    = Array.isArray(ev.roles) ? ev.roles : [];
 
@@ -456,15 +485,33 @@ function renderVpCalendar() {
   const toIso   = _localIso(lastDate);
   const merged  = getMergedEvents(fromIso, toIso);
 
-  // Bucket events by date
+  // Bucket events by date. Multi-day events are placed on every day in their
+  // span (inclusive of start and end). `_vpCalSpanInfo` is attached per-bucket
+  // so the day cell can render "start"/"mid"/"end" markers if desired.
   const byDate = {};
+  function _pushBucket(iso, ev, pos) {
+    if (!byDate[iso]) byDate[iso] = [];
+    byDate[iso].push({ ev: ev, pos: pos });
+  }
   merged.forEach(function(ev) {
     if (!ev.date) return;
-    if (!byDate[ev.date]) byDate[ev.date] = [];
-    byDate[ev.date].push(ev);
+    const startIso = ev.date;
+    const endIso = (ev.endDate && ev.endDate > startIso) ? ev.endDate : startIso;
+    if (startIso === endIso) {
+      _pushBucket(startIso, ev, 'only');
+      return;
+    }
+    // Iterate every day in [startIso, endIso].
+    const a = new Date(startIso + 'T00:00:00');
+    const b = new Date(endIso + 'T00:00:00');
+    for (let d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+      const iso = _localIso(d);
+      const pos = iso === startIso ? 'start' : (iso === endIso ? 'end' : 'mid');
+      _pushBucket(iso, ev, pos);
+    }
   });
   Object.keys(byDate).forEach(function(k) {
-    byDate[k].sort(function(a, b) { return (a.startTime || '').localeCompare(b.startTime || ''); });
+    byDate[k].sort(function(a, b) { return (a.ev.startTime || '').localeCompare(b.ev.startTime || ''); });
   });
 
   for (let i = 0; i < 42; i++) {
@@ -478,21 +525,30 @@ function renderVpCalendar() {
     let evsHtml = '';
     let dayHasMine = false;
     const maxShow = 2;
-    evs.slice(0, maxShow).forEach(function(ev) {
+    evs.slice(0, maxShow).forEach(function(entry) {
+      const ev = entry.ev;
+      const pos = entry.pos;
       const cls = vpEventCls(ev);
       const isMine = cls === 'mine';
       if (isMine) dayHasMine = true;
+      // Only show the time on the first day of a multi-day span; on middle
+      // and end days show a "…" continuation marker in place of the time.
       const t = (ev.startTime || '').slice(0, 5);
-      const lbl = (t ? t + ' ' : '') + localizedTitle(ev);
+      let prefix;
+      if (pos === 'start' || pos === 'only') prefix = t ? t + ' ' : '';
+      else if (pos === 'end') prefix = '…';
+      else prefix = '…';
+      const lbl = prefix + localizedTitle(ev);
       const titleAttr = (isMine ? s('volunteer.youSignedUp') + ' · ' : '') + lbl;
       const checkHtml = isMine ? '<span class="vp-cal-ev-check">\u2713</span>' : '';
-      evsHtml += '<span class="vp-cal-ev ' + cls + '" onclick="vpOpenDay(\'' + iso + '\')" title="' + esc(titleAttr) + '">'
+      const spanCls = pos !== 'only' ? ' vp-cal-ev-span vp-cal-ev-span-' + pos : '';
+      evsHtml += '<span class="vp-cal-ev ' + cls + spanCls + '" onclick="vpOpenDay(\'' + iso + '\')" title="' + esc(titleAttr) + '">'
         + checkHtml + esc(lbl) + '</span>';
     });
     // Also detect "mine" in hidden overflow events so the day dot still appears
     if (!dayHasMine && evs.length > maxShow) {
       for (let j = maxShow; j < evs.length; j++) {
-        if (vpEventCls(evs[j]) === 'mine') { dayHasMine = true; break; }
+        if (vpEventCls(evs[j].ev) === 'mine') { dayHasMine = true; break; }
       }
     }
     if (evs.length > maxShow) {
@@ -551,9 +607,18 @@ function vpOpenDay(iso) {
 function vpRenderDayModal() {
   const iso = _vpDayModalIso;
   if (!iso) return;
-  const merged = getMergedEvents(iso, iso);
+  // Pull the full upcoming range so we catch multi-day events whose span
+  // overlaps this day but whose start date lies outside [iso, iso].
+  const end = new Date();
+  end.setDate(end.getDate() + 365);
+  const merged = getMergedEvents(_localIso(new Date(new Date().getFullYear() - 1, 0, 1)), _localIso(end));
   const evs = merged
-    .filter(function(e) { return e.date === iso; })
+    .filter(function(e) {
+      const startIso = e.date || '';
+      if (!startIso) return false;
+      const endIso = (e.endDate && e.endDate > startIso) ? e.endDate : startIso;
+      return startIso <= iso && iso <= endIso;
+    })
     .sort(function(a, b) { return (a.startTime || '').localeCompare(b.startTime || ''); });
   document.getElementById('vpDayModalTitle').textContent = formatDayLabel(iso);
   const body = document.getElementById('vpDayModalBody');

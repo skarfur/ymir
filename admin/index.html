@@ -986,8 +986,9 @@
     </div>
     <div class="grid2" style="margin-top:2px">
       <div class="field"><label data-s="admin.volDate"></label><input type="date" id="veDate"></div>
-      <div></div>
+      <div class="field"><label data-s="admin.volEndDate"></label><input type="date" id="veEndDate"></div>
     </div>
+    <div style="font-size:10px;color:var(--muted);margin:-4px 0 6px" data-s="admin.volEndDateHint"></div>
     <div class="grid2">
       <div class="field"><label data-s="admin.volStartTime"></label><input type="time" id="veStartTime"></div>
       <div class="field"><label data-s="admin.volEndTime"></label><input type="time" id="veEndTime"></div>
@@ -2780,7 +2781,7 @@ function _volRowHtml(ev, L) {
     : '';
   return '<div class="list-row" onclick="openVolEventModal(\'' + ev.id + '\')" style="flex-direction:column;align-items:stretch;gap:2px;cursor:pointer">'
     + '<div style="display:flex;align-items:center;gap:10px">'
-    + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
+    + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.endDate && ev.endDate !== ev.date ? '→' + esc(ev.endDate) : '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
     + '<button class="row-edit" ' + stopProp + 'openVolEventModal(\'' + ev.id + '\')">Edit</button>'
     + '<button class="row-del" ' + stopProp + 'deleteVolEvent(\'' + ev.id + '\')">×</button>'
     + '</div>'
@@ -2796,6 +2797,7 @@ function openVolEventModal(id) {
   document.getElementById("veTitle").value = ev ? (ev.title || '') : '';
   document.getElementById("veTitleIS").value = ev ? (ev.titleIS || '') : '';
   document.getElementById("veDate").value = ev ? (ev.date || '') : '';
+  document.getElementById("veEndDate").value = ev ? (ev.endDate || '') : '';
   document.getElementById("veStartTime").value = ev ? (ev.startTime || '') : '';
   document.getElementById("veEndTime").value = ev ? (ev.endTime || '') : '';
   // Leader member lookup
@@ -2845,6 +2847,7 @@ async function saveVolEvent() {
     titleIS: document.getElementById("veTitleIS").value.trim(),
     activityTypeId: document.getElementById("veActType").value,
     date: document.getElementById("veDate").value,
+    endDate: document.getElementById("veEndDate").value,
     startTime: document.getElementById("veStartTime").value,
     endTime: document.getElementById("veEndTime").value,
     leaderMemberId: memberId,

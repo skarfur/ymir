@@ -1283,6 +1283,8 @@ var _STRINGS_FLAT = {
   "admin.volTitle": "Titill (EN)",
   "admin.volTitleIS": "Titill (IS)",
   "admin.volDate": "Dagsetning",
+  "admin.volEndDate": "Lokadagsetning (valfrjálst)",
+  "admin.volEndDateHint": "Hafðu autt ef viðburðurinn er einn dagur",
   "admin.volStartTime": "Byrjunartími",
   "admin.volEndTime": "Lokatími",
   "admin.volActType": "Tegund starfsemi",
