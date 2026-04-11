@@ -267,17 +267,7 @@ function renderDashboard(data) {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // 0) MEMBERSHIP — active members count + become-a-member CTA
-  // ═══════════════════════════════════════════════════════════════════
-  html += '<section>';
-  html += '<div class="membership-row">';
-  html += '<div class="stat-box"><div class="stat-val">' + esc(data.activeMembers || 0) + '</div><div class="stat-lbl">' + esc(s('pub.dash.activeMembers')) + '</div></div>';
-  html += '<a class="become-member-btn" href="https://www.abler.io/shop/siglingafelagid/1" target="_blank" rel="noopener">' + esc(s('pub.dash.becomeMember')) + '</a>';
-  html += '</div>';
-  html += '</section>';
-
-  // ═══════════════════════════════════════════════════════════════════
-  // 1) ON THE WATER — stat strip at the very top
+  // 0) ON THE WATER — stat strip at the very top
   // ═══════════════════════════════════════════════════════════════════
   html += '<section>';
   html += '<h2><span class="live-badge"></span>' + esc(s('pub.dash.onWater')) + '</h2>';
@@ -288,7 +278,7 @@ function renderDashboard(data) {
   html += '</section>';
 
   // ═══════════════════════════════════════════════════════════════════
-  // 2) TWO COLUMNS — left: flag + duty + boats | right: weather + tide
+  // 1) TWO COLUMNS — left: flag + duty + boats | right: weather + tide
   // ═══════════════════════════════════════════════════════════════════
   html += '<section>';
   html += '<div class="two-col">';
@@ -332,6 +322,16 @@ function renderDashboard(data) {
   html += '</div>'; // end .two-col
   html += '</section>';
 
+   // ═══════════════════════════════════════════════════════════════════
+  // 2) MEMBERSHIP — active members count + become-a-member CTA
+  // ═══════════════════════════════════════════════════════════════════
+  html += '<section>';
+  html += '<div class="membership-row">';
+  html += '<div class="stat-box"><div class="stat-val">' + esc(data.activeMembers || 0) + '</div><div class="stat-lbl">' + esc(s('pub.dash.activeMembers')) + '</div></div>';
+  html += '<a class="become-member-btn" href="https://www.abler.io/shop/siglingafelagid/1" target="_blank" rel="noopener">' + esc(s('pub.dash.becomeMember')) + '</a>';
+  html += '</div>';
+  html += '</section>';
+  
   // ═══════════════════════════════════════════════════════════════════
   // 3) HEATMAP + YTD STATS + future text
   // ═══════════════════════════════════════════════════════════════════
