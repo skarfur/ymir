@@ -92,16 +92,6 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ── Membership row (active members + CTA) ─────────────────────── */
-.membership-row{display:grid;grid-template-columns:minmax(160px,1fr) 2fr;gap:12px;align-items:stretch;margin-bottom:20px}
-.membership-row .stat-box{padding:16px 20px}
-.become-member-btn{display:flex;align-items:center;justify-content:center;text-align:center;background:var(--brass);color:#0b1f38;border:1px solid var(--brass);border-radius:var(--radius-md);padding:16px 20px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-decoration:none;transition:all .2s ease;box-shadow:var(--shadow-sm)}
-.become-member-btn:hover{opacity:.9;text-decoration:none;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,175,55,.35)}
-@media(max-width:600px){
-  .membership-row{grid-template-columns:1fr}
-  .become-member-btn{padding:14px 16px;font-size:13px}
-}
-
 /* ── Two-column section ─────────────────────────────────────────── */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 
@@ -121,6 +111,16 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .wx-widget .wx-status-badges{display:none!important}
 .wx-cell{padding:4px 0}
 
+/* ── Membership row (active members + CTA) ─────────────────────── */
+.membership-row{display:grid;grid-template-columns:minmax(160px,1fr) 2fr;gap:12px;align-items:stretch;margin-bottom:20px}
+.membership-row .stat-box{padding:16px 20px}
+.become-member-btn{display:flex;align-items:center;justify-content:center;text-align:center;background:var(--brass);color:#0b1f38;border:1px solid var(--brass);border-radius:var(--radius-md);padding:16px 20px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-decoration:none;transition:all .2s ease;box-shadow:var(--shadow-sm)}
+.become-member-btn:hover{opacity:.9;text-decoration:none;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,175,55,.35)}
+@media(max-width:600px){
+  .membership-row{grid-template-columns:1fr}
+  .become-member-btn{padding:14px 16px;font-size:13px}
+}
+  
 /* ── Map + Stats combo ──────────────────────────────────────────── */
 .map-stats{display:grid;grid-template-columns:3fr 1fr 280px;gap:16px;align-items:start}
 #map-container{height:520px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-sm)}
