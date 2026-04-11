@@ -466,6 +466,21 @@ function maintOpenDetail(r, currentUser) {
 
   renderAndWire();
   openModal('maintDetailModal');
+
+  // Mark followed project as seen — clears "updated since follow" notifications
+  (function() {
+    const kt = window._maintUser?.kennitala;
+    if (!kt || !boolVal(r.saumaklubbur)) return;
+    const followers = parseJson(r.followers, []);
+    const myIdx = followers.findIndex(function(f) { return String(f.kt||f) === String(kt); });
+    if (myIdx < 0) return;
+    const myFollow = followers[myIdx];
+    if (!r.updatedAt || !myFollow.at || r.updatedAt <= myFollow.at) return;
+    // Optimistically bump local timestamp so subsequent renders don't re-trigger
+    followers[myIdx] = { kt: String(kt), at: new Date().toISOString() };
+    r.followers = JSON.stringify(followers);
+    apiPost('markProjectSeen', { id: r.id, kennitala: kt }).catch(function() {});
+  })();
 }
 
 function maintRenderCard(r) {

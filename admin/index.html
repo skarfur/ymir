@@ -466,7 +466,7 @@
             <div class="field"><label style="color:#f1c40f">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
             <div class="field"><label style="color:#e67e22">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
             <div class="field"><label style="color:#e74c3c">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#999">⛔ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:#999">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
@@ -1989,7 +1989,8 @@ async function saveResFromModal() {
 
 async function removeResFromModal(resId) {
   var boatId = editingId;
-  if (!boatId || !confirm(s('boat.removeReservation') + '?')) return;
+  if (!boatId) return;
+  if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _allBoats.find(function(x) { return x.id === boatId; });
@@ -3700,7 +3701,7 @@ async function saveCurrentSlot() {
 
 async function deleteCurrentSlot() {
   if (!_editingSlot || !_editingSlot.slotId) return;
-  if (!confirm(s('slot.confirmDelete'))) return;
+  if (!(await ymConfirm(s('slot.confirmDelete')))) return;
   try {
     await apiPost("deleteSlot", { slotId: _editingSlot.slotId });
     closeModal("slotModal");
@@ -4095,7 +4096,7 @@ async function passportImportCsv() {
   const file = document.getElementById('passportCsvFile').files[0];
   if (!file) { toast('Choose a CSV file first', 'err'); return; }
   const text = await file.text();
-  if (!confirm('Import this CSV? Items missing from the CSV will be marked retired (not deleted).')) return;
+  if (!(await ymConfirm('Import this CSV? Items missing from the CSV will be marked retired (not deleted).'))) return;
   try {
     await apiPost('importRowingPassportCsv', { csv: text });
     toast('Passport imported.');

@@ -71,7 +71,7 @@ async function apiPost(action, payload) {
   if (action === 'respondConfirmation' || action === 'dismissConfirmation' || action === 'dismissAllConfirmations' ||
       action === 'respondCrewInvite' ||
       action === 'saveMaintenance' || action === 'resolveMaintenance' || action === 'addMaintenanceComment' ||
-      action === 'followProject' || action === 'unfollowProject' ||
+      action === 'followProject' || action === 'unfollowProject' || action === 'markProjectSeen' ||
       action === 'adoptSaumaklubbur' || action === 'approveSaumaklubbur' || action === 'holdSaumaklubbur' ||
       action === 'toggleMaterial' || action === 'addMaterial' || action === 'removeMaterial') {
     try { sessionStorage.removeItem('ymir_getNotifications_'); } catch(e) {}

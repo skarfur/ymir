@@ -28,6 +28,12 @@
   transition:all .2s; display:block; box-shadow:var(--shadow-sm);
 }
 .member-actions .act-btn:hover { border-color:var(--brass); background:var(--card); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+.member-actions .act-btn--launch   { border-left:3px solid var(--blue);   }
+.member-actions .act-btn--report   { border-left:3px solid var(--orange); }
+.member-actions .act-btn--logbook  { border-left:3px solid var(--brass);  }
+.member-actions .act-btn--sauma    { border-left:3px solid var(--purple); }
+.member-actions .act-btn--captain  { border-left:3px solid var(--yellow); }
+.member-actions .act-btn--coxswain { border-left:3px solid var(--green);  }
 
 /* ── Tabs ── */
 .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
@@ -190,12 +196,12 @@
 
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
-    <button class="act-btn" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
-    <button class="act-btn" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
-    <a class="act-btn" id="logbookBtn" href="../logbook/"    data-s="nav.logbook"></a>
-    <a class="act-btn" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
-    <a class="act-btn" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
-    <a class="act-btn" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
+    <button class="act-btn act-btn--launch" onclick="openLaunchPicker()"  data-s="member.launchBoat"></button>
+    <button class="act-btn act-btn--report" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
+    <a class="act-btn act-btn--logbook" id="logbookBtn" href="../logbook/"    data-s="nav.logbook"></a>
+    <a class="act-btn act-btn--sauma" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
+    <a class="act-btn act-btn--captain" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
+    <a class="act-btn act-btn--coxswain" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
     <button class="act-btn" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
   </div>
 
