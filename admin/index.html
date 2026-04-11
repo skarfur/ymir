@@ -1300,6 +1300,7 @@
 const user = requireAuth(isAdmin);
 
 let members = [], boats = [], locations = [], clItems = [], actTypes = [], volunteerEvents = [];
+let volunteerSignups = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 let certCategories = [];
@@ -1369,6 +1370,13 @@ async function loadAll() {
     if (statusEl) statusEl.innerHTML = `<div class="empty-state">${s('admin.loadFailed')}: ${e.message}</div>`;
     return;
   }
+
+  // Load volunteer signups in the background so the volunteer tab can show
+  // who signed up for each role (with phone if the member opted in).
+  apiPost('getVolunteerSignups', {}).then(res => {
+    volunteerSignups = (res && res.signups) || [];
+    renderVolunteerEvents();
+  }).catch(e => { console.warn('getVolunteerSignups failed:', e.message); });
 
   // ── Assign data ───────────────────────────────────────────────────────────
   actTypes        = cfgRes.activityTypes || [];
@@ -2726,7 +2734,35 @@ function _volRowHtml(ev, L) {
     const endorseStr = r.requiredEndorsement
       ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
       : '';
-    return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')' + endorseStr + '</span>';
+    const signups = (volunteerSignups || []).filter(function(su) { return su.eventId === ev.id && su.roleId === r.id; });
+    const filled = signups.length;
+    const slotsLbl = (r.slots ? (filled + '/' + r.slots) : (filled + '/∞')) + ' ' + s('admin.volSlots').toLowerCase();
+    const chipsHtml = signups.length
+      ? '<div style="padding:2px 0 4px 18px;display:flex;flex-wrap:wrap;gap:4px">'
+        + signups.map(function(su) {
+            // Live-lookup phone + consent from member record so the current
+            // preference state is always reflected (not a stale snapshot).
+            const mem = (members || []).find(function(m) {
+              return String(m.kennitala) === String(su.kennitala);
+            });
+            let showPhone = false;
+            let phone = '';
+            if (mem) {
+              phone = mem.phone || '';
+              let prefs = {};
+              try { prefs = JSON.parse(mem.preferences || '{}'); } catch(e) { prefs = {}; }
+              showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
+            }
+            const phoneHtml = (showPhone && phone)
+              ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(phone) + '</a>'
+              : '';
+            return '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
+              + esc(su.name || '—') + phoneHtml + '</span>';
+          }).join('')
+        + '</div>'
+      : '';
+    return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + slotsLbl + ')' + endorseStr + '</span>'
+      + chipsHtml;
   }).join('');
   const stopProp = 'onclick="event.stopPropagation();';
   return '<div class="list-row" onclick="openVolEventModal(\'' + ev.id + '\')" style="flex-direction:column;align-items:stretch;gap:2px;cursor:pointer">'
