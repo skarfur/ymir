@@ -1305,6 +1305,8 @@ var _STRINGS_FLAT = {
   "admin.bulkUsesDefaultTimes": "Uses default times",
   "admin.bulkSetDefaultTimes": "Set default start/end times above to use with bulk schedule.",
   "admin.volFromActType": "FROM ACTIVITY TYPE",
+  "admin.volShowPast": "Show past events ({n})",
+  "admin.volHidePast": "Hide past events",
 
   "member.volunteerEvents": "VOLUNTEER EVENTS",
   "member.volSignUp": "Sign up",
@@ -1330,6 +1332,9 @@ var _STRINGS_FLAT = {
   "volunteer.more": "more",
   "volunteer.youSignedUp": "You're signed up",
   "volunteer.noEventsThisDay": "No events on this day.",
+  "volunteer.filterAll": "All",
+  "volunteer.filterMine": "My events",
+  "volunteer.noMyEvents": "You haven't signed up for any upcoming events.",
   "volunteer.unfilledRoles": "open volunteer slots",
   "admin.tabCalendars": "Calendars",
   "admin.calDesc": "Add Google Calendar IDs that members can view from the member hub. Each calendar appears as an embedded view.",

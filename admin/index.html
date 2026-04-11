@@ -2660,49 +2660,84 @@ function populateRolePresetPicker(selectId) {
 
 let _veEditingId = null;
 
+let _volSyncDone = false;
+let _volShowPast = false;
+
 function renderVolunteerEvents() {
   const card = document.getElementById("volEventsCard");
+  // One-time backfill: ensure any bulk-scheduled events defined on activity
+  // types are materialized into config.volunteer_events. This is a no-op
+  // once events have been materialized. Runs in the background and triggers
+  // a re-render when it finishes.
+  if (!_volSyncDone) {
+    _volSyncDone = true;
+    (async function() {
+      try {
+        const res = await apiPost('syncVolunteerEvents', {});
+        if (res && res.added > 0) {
+          // apiPost invalidates the getConfig cache; re-fetch to pick up
+          // newly materialized events.
+          try {
+            const cfg = await apiGet('getConfig');
+            volunteerEvents = cfg.volunteerEvents || [];
+            renderVolunteerEvents();
+          } catch(e) {}
+        }
+      } catch(e) { /* non-fatal — keep showing what we have */ }
+    })();
+  }
   const L = getLang();
-  const locale = L === 'IS' ? 'is' : 'en';
   const today = new Date().toISOString().slice(0, 10);
-  // Expand volunteer-flagged activity types into virtual events so the admin
-  // tab reflects activity-type-defined volunteer activities.
-  const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(actTypes || [], today, null)
-    : [];
-  const merged = (typeof mergeVolunteerEvents === 'function')
-    ? mergeVolunteerEvents(volunteerEvents.filter(e => e.active !== false), virtualEvents)
-    : volunteerEvents.filter(e => e.active !== false).concat(virtualEvents);
-  const sorted = merged.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  if (!sorted.length) {
-    card.innerHTML = '<div class="empty-state">' + s('admin.noVolEvents') + '</div>';
+  const all = (volunteerEvents || []).filter(e => e.active !== false);
+  const sorted = all.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')
+    || (a.startTime || '').localeCompare(b.startTime || ''));
+  const upcoming = sorted.filter(e => (e.date || '') >= today);
+  const past     = sorted.filter(e => (e.date || '') <  today);
+  const shown    = _volShowPast ? sorted : upcoming;
+  if (!shown.length) {
+    card.innerHTML = '<div class="empty-state">' + s('admin.noVolEvents') + '</div>'
+      + (past.length ? _volPastToggleHtml(past.length) : '');
     return;
   }
-  card.innerHTML = sorted.map(ev => {
-    const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
-    const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
-    const roles = Array.isArray(ev.roles) ? ev.roles : [];
-    const rolesHtml = roles.map(r => {
-      const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
-      const endorseStr = r.requiredEndorsement
-        ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
-        : '';
-      return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')' + endorseStr + '</span>';
-    }).join('');
-    const isVirtual = !!ev.virtual;
-    const actions = isVirtual
-      ? '<span style="font-size:9px;color:var(--brass);letter-spacing:.5px;margin-left:auto">' + s('admin.volFromActType') + '</span>'
-      : '<button class="row-edit" onclick="openVolEventModal(\'' + ev.id + '\')">Edit</button>'
-        + '<button class="row-del" onclick="deleteVolEvent(\'' + ev.id + '\')">×</button>';
-    return '<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px' + (isVirtual ? ';border-left:2px solid var(--brass);padding-left:8px' : '') + '">'
-      + '<div style="display:flex;align-items:center;gap:10px">'
-      + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
-      + actions
-      + '</div>'
-      + (ev.leaderName ? '<div style="font-size:10px;color:var(--muted);padding-left:12px">' + s('admin.volLeader') + ': ' + esc(ev.leaderName) + (ev.leaderPhone && ev.showLeaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>' : '')
-      + rolesHtml
-      + '</div>';
+  const rowsHtml = shown.map(ev => _volRowHtml(ev, L)).join('');
+  card.innerHTML = rowsHtml + (past.length ? _volPastToggleHtml(past.length) : '');
+}
+
+function _volPastToggleHtml(count) {
+  const lbl = _volShowPast
+    ? s('admin.volHidePast')
+    : s('admin.volShowPast').replace('{n}', count);
+  return '<div style="text-align:center;padding:10px 0 2px">'
+    + '<button class="btn btn-secondary" style="font-size:10px" onclick="_volTogglePast()">' + esc(lbl) + '</button>'
+    + '</div>';
+}
+
+function _volTogglePast() {
+  _volShowPast = !_volShowPast;
+  renderVolunteerEvents();
+}
+
+function _volRowHtml(ev, L) {
+  const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
+  const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
+  const roles = Array.isArray(ev.roles) ? ev.roles : [];
+  const rolesHtml = roles.map(r => {
+    const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
+    const endorseStr = r.requiredEndorsement
+      ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
+      : '';
+    return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')' + endorseStr + '</span>';
   }).join('');
+  const stopProp = 'onclick="event.stopPropagation();';
+  return '<div class="list-row" onclick="openVolEventModal(\'' + ev.id + '\')" style="flex-direction:column;align-items:stretch;gap:2px;cursor:pointer">'
+    + '<div style="display:flex;align-items:center;gap:10px">'
+    + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
+    + '<button class="row-edit" ' + stopProp + 'openVolEventModal(\'' + ev.id + '\')">Edit</button>'
+    + '<button class="row-del" ' + stopProp + 'deleteVolEvent(\'' + ev.id + '\')">×</button>'
+    + '</div>'
+    + (ev.leaderName ? '<div style="font-size:10px;color:var(--muted);padding-left:12px">' + s('admin.volLeader') + ': ' + esc(ev.leaderName) + (ev.leaderPhone && ev.showLeaderPhone ? ' · ' + esc(ev.leaderPhone) : '') + '</div>' : '')
+    + rolesHtml
+    + '</div>';
 }
 
 function openVolEventModal(id) {

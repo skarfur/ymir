@@ -477,6 +477,7 @@ function route_(action, b) {
     case 'getVolunteerSignups':   return getVolunteerSignups_(b);
     case 'volunteerSignup':       return volunteerSignup_(b);
     case 'volunteerWithdraw':     return volunteerWithdraw_(b);
+    case 'syncVolunteerEvents':   return syncVolunteerEvents_(b);
     // ── CREWS ─────────────────────────────────────────────────────────────────
     case 'getCrews':              return getCrews_(b);
     case 'getCrewBoard':          return getCrewBoard_(b);
@@ -1568,7 +1569,14 @@ function saveActivityType_(b) {
     }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
-    return okJ({ id: item.id, item });
+    // Materialize bulk-scheduled volunteer events into volunteer_events so
+    // each occurrence exists as a standalone record that can be edited or
+    // deleted individually from the admin volunteer tab.
+    var materialized = 0;
+    if (isVol) {
+      try { materialized = materializeVolunteerEventsForAt_(item); } catch(e) {}
+    }
+    return okJ({ id: item.id, item, materialized: materialized });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
@@ -5607,6 +5615,153 @@ function ensureVolunteerSignupsTab_() {
 function ensureVolunteerSignupsTab() {
   ensureVolunteerSignupsTab_();
   Logger.log('volunteer_signups tab ready');
+}
+
+// ── Materialize bulk-scheduled volunteer events ─────────────────────────────
+// When an activity type is flagged as volunteer and its subtypes define a
+// bulkSchedule, each occurrence should exist as a concrete row in
+// volunteer_events so admins can view/edit/delete it individually. This
+// mirrors the logic in shared/volunteer.js (expandVolunteerActivityTypes) but
+// runs on the backend so that events are persisted to config, not computed
+// lazily on the client.
+
+function _volExpandActType_(at, fromIso, toIso) {
+  if (!at || at.active === false || at.active === 'false') return [];
+  var isVol = at.volunteer === true || at.volunteer === 'true';
+  if (!isVol) return [];
+  var roles = [];
+  try { roles = at.roles ? (Array.isArray(at.roles) ? at.roles : JSON.parse(at.roles)) : []; } catch(e) { roles = []; }
+  if (!roles.length) return [];
+  var subs = [];
+  try { subs = at.subtypes ? (Array.isArray(at.subtypes) ? at.subtypes : JSON.parse(at.subtypes)) : []; } catch(e) { subs = []; }
+  var out = [];
+  subs.forEach(function(st) {
+    if (!st || !st.bulkSchedule) return;
+    var bs = st.bulkSchedule;
+    var fd = bs.fromDate || '';
+    var td = bs.toDate   || '';
+    if (!fd || !td) return;
+    var startT = st.defaultStart || '';
+    var endT   = st.defaultEnd   || '';
+    if (!startT || !endT) return;
+    var days = Array.isArray(bs.daysOfWeek)
+      ? bs.daysOfWeek.map(function(n) { return parseInt(n, 10); })
+      : [];
+    if (!days.length) return;
+    var effFrom = fd > fromIso ? fd : fromIso;
+    var effTo   = td < toIso   ? td : toIso;
+    if (effFrom > effTo) return;
+    // Iterate day by day using a local-time Date anchor (avoids UTC drift).
+    var a = new Date(effFrom + 'T00:00:00');
+    var b = new Date(effTo   + 'T00:00:00');
+    for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+      var y = d.getFullYear();
+      var mo = d.getMonth() + 1;
+      var da = d.getDate();
+      var iso = y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da;
+      var dow = d.getDay();
+      if (days.indexOf(dow) === -1) continue;
+      var id = 'vae-' + at.id + '-' + (st.id || 'st') + '-' + iso.replace(/-/g, '');
+      out.push({
+        id: id,
+        sourceActivityTypeId: at.id,
+        sourceSubtypeId: st.id || '',
+        activityTypeId: at.id,
+        title: at.name || '',
+        titleIS: at.nameIS || '',
+        subtitle: st.name || '',
+        subtitleIS: st.nameIS || '',
+        date: iso,
+        startTime: startT,
+        endTime: endT,
+        leaderMemberId: '',
+        leaderName: '',
+        leaderPhone: '',
+        showLeaderPhone: false,
+        notes: '',
+        notesIS: '',
+        roles: roles.map(function(r) {
+          return {
+            id: (r.id || 'r') + '-' + iso.replace(/-/g, ''),
+            baseRoleId: r.id || '',
+            name: r.name || '',
+            nameIS: r.nameIS || '',
+            description: r.description || '',
+            descriptionIS: r.descriptionIS || '',
+            slots: r.slots || 1,
+            requiredEndorsement: r.requiredEndorsement || '',
+          };
+        }),
+        active: true,
+        materialized: true,
+      });
+    }
+  });
+  return out;
+}
+
+// Merge expanded events into the existing volunteer_events array. Events that
+// already exist (matched by id) are left untouched so individual admin edits
+// and soft-deletes are preserved. Returns { arr, added } where arr is the
+// updated array and added is the count of new events inserted.
+function _volMergeMaterialized_(arr, expanded) {
+  var existing = {};
+  (arr || []).forEach(function(e) { if (e && e.id) existing[e.id] = true; });
+  var added = 0;
+  var ts = now_();
+  expanded.forEach(function(e) {
+    if (existing[e.id]) return;
+    e.createdAt = ts;
+    e.updatedAt = ts;
+    arr.push(e);
+    added++;
+  });
+  return { arr: arr, added: added };
+}
+
+// Materialize all bulk-scheduled volunteer events for a single activity type
+// into volunteer_events. Safe to call repeatedly — existing events are kept.
+// Returns the count of events added.
+function materializeVolunteerEventsForAt_(at) {
+  if (!at) return 0;
+  var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  // Honor subtype's own toDate; fallback to a far-future cap if absent.
+  var toIso = '2099-12-31';
+  var expanded = _volExpandActType_(at, fromIso, toIso);
+  if (!expanded.length) return 0;
+  var arr = [];
+  try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
+  var merged = _volMergeMaterialized_(arr, expanded);
+  if (merged.added > 0) {
+    setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
+    cDel_('config');
+  }
+  return merged.added;
+}
+
+// Materialize for all active, volunteer-flagged activity types. Intended for
+// one-off backfill of existing data that was stored as "virtual" events.
+function syncVolunteerEvents_(b) {
+  try {
+    var actTypes = [];
+    try { actTypes = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch(e) { actTypes = []; }
+    var arr = [];
+    try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
+    var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var totalAdded = 0;
+    actTypes.forEach(function(at) {
+      var expanded = _volExpandActType_(at, fromIso, '2099-12-31');
+      if (!expanded.length) return;
+      var merged = _volMergeMaterialized_(arr, expanded);
+      arr = merged.arr;
+      totalAdded += merged.added;
+    });
+    if (totalAdded > 0) {
+      setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
+      cDel_('config');
+    }
+    return okJ({ added: totalAdded, total: arr.length });
+  } catch(e) { return failJ('syncVolunteerEvents failed: ' + e.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
