@@ -290,16 +290,6 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:500;cursor:pointer" id="wxFlagPill" title="Tap for details">'
     + '<span>'+s('wx.totalScore')+'</span>'
     + '<span style="color:'+flag.color+'">'+result.score+'</span></div>';
-  let staffHtml = '';
-  if (staffStatus) {
-    staffHtml =
-      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
-      + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+s('wx.staffStatusHdr')+'</div>'
-      + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
-      + '<span style="font-size:12px;color:'+(staffStatus.onDuty?'#27ae60':'var(--muted)')+'">🧑 '+s('wx.staffOnDuty')+': <b>'+s(staffStatus.onDuty?'wx.yes':'wx.no')+'</b></span>'
-      + '<span style="font-size:12px;color:'+(staffStatus.supportBoat?'#5dade2':'var(--muted)')+'">⛵ '+s('wx.supportBoat')+': <b>'+s(staffStatus.supportBoat?'wx.statusOut':'wx.statusNotOut')+'</b></span>'
-      + '</div></div>';
-  }
   const desc = IS && flag.descriptionIS ? flag.descriptionIS : (flag.description || '');
   // Considerations: factors that contributed points
   // Staff status badges (shown if staffStatus passed)
@@ -336,7 +326,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     + chipsHtml
     + barHtml
     + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+s('wx.scoreBreakdown')+'</div>'
-    + rows + totalRow + staffHtml;
+    + rows + totalRow;
 }
 
 
