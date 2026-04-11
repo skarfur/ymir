@@ -1318,6 +1318,7 @@ var _STRINGS_FLAT = {
   "member.calendar": "Calendar",
   "member.calTitle": "CLUB CALENDARS",
   "member.calEmpty": "No calendars have been set up yet.",
+  "member.calOpen": "Open in Google Calendar",
   "nav.volunteer": "Volunteer",
   "volunteer.title": "Volunteer",
   "volunteer.subtitle": "Sign up to help out at club events",
