@@ -26,43 +26,10 @@
 /* ── Section headers ── */
 .vp-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 
-/* ── Event cards (list view) ── */
-.vp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  box-shadow:var(--shadow-sm); padding:12px 14px; margin-bottom:10px; }
-.vp-card-date { font-size:10px; color:var(--brass); margin-bottom:2px; letter-spacing:.5px; text-transform:uppercase; }
-.vp-card-title { font-size:13px; font-weight:500; color:var(--text); }
-.vp-card-subtitle { font-size:10px; color:var(--muted); margin-top:2px; }
-.vp-card-leader { font-size:10px; color:var(--muted); margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.vp-card-leader-label { color:var(--muted); }
-.vp-card-leader-name { color:var(--text); font-weight:500; }
-.vp-card-leader-phone { color:var(--brass); }
-.vp-card-leader-phone a { color:inherit; text-decoration:none; }
-.vp-card-leader-phone a:hover { text-decoration:underline; }
-.vp-card-notes { font-size:10px; color:var(--muted); margin-top:6px; font-style:italic; }
-
-/* ── Role rows ── */
-.vp-role { display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-  padding:8px 0; border-top:1px solid var(--border); margin-top:8px; }
-.vp-role-left { flex:1; min-width:0; }
-.vp-role-name { font-size:11px; color:var(--text); font-weight:500; }
-.vp-role-meta { display:flex; align-items:center; gap:6px; margin-top:3px; }
-.vp-bar { width:60px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
-.vp-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
-.vp-bar-fill.full { background:var(--green); }
-.vp-role-status { font-size:10px; color:var(--muted); }
-.vp-role-signups { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
-.vp-chip { display:inline-flex; align-items:center; gap:4px; font-size:9px; padding:2px 8px;
-  border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); }
-.vp-chip.me { background:var(--brass)18; border-color:var(--brass); color:var(--brass); font-weight:500; }
-.vp-role-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-.vp-btn { padding:5px 11px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
-  color:var(--text); font-family:inherit; font-size:10px; cursor:pointer; transition:border-color .15s,background .15s; white-space:nowrap; }
-.vp-btn:hover { border-color:var(--brass); }
-.vp-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+/* Shared volunteer card styles live in shared/style.css (.vp-card,
+   .vp-role, .vp-chip, .vp-btn, …). Page-local overrides below. */
 .vp-filter-btn { padding:4px 10px; font-size:9px; letter-spacing:.6px; text-transform:uppercase; }
 .vp-filter-btn.active { background:var(--brass); color:#000; border-color:var(--brass); }
-.vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
-.vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
 
 /* ── Calendar (month view) ── */
 .vp-cal { border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; background:var(--card); }
@@ -345,85 +312,19 @@ function renderVpList() {
 }
 
 function renderVpCard(ev) {
-  const title    = localizedTitle(ev);
-  const subtitle = localizedSubtitle(ev);
-  const notes    = localizedNotes(ev);
-  const dayLbl   = formatDayLabel(ev.date || '');
-  const timeLbl  = formatTimeRange(ev);
-  const roles    = Array.isArray(ev.roles) ? ev.roles : [];
-
-  const leaderHtml = ev.leaderName
-    ? '<div class="vp-card-leader">'
-      + '<span class="vp-card-leader-label">' + s('volunteer.inCharge') + ':</span> '
-      + '<span class="vp-card-leader-name">' + esc(ev.leaderName) + '</span>'
-      + (ev.showLeaderPhone && ev.leaderPhone
-          ? ' <span class="vp-card-leader-phone">· <a href="tel:' + esc(ev.leaderPhone) + '">' + esc(ev.leaderPhone) + '</a></span>'
-          : '')
-      + '</div>'
-    : '';
-
-  const subtitleHtml = subtitle ? '<div class="vp-card-subtitle">' + esc(subtitle) + '</div>' : '';
-  const notesHtml    = notes ? '<div class="vp-card-notes">' + esc(notes) + '</div>' : '';
-
-  const rolesHtml = roles.length
-    ? roles.map(function(r) { return renderVpRole(ev, r); }).join('')
-    : '<div class="vp-card-notes">' + s('admin.noRoles') + '</div>';
-
-  return '<div class="vp-card">'
-    + '<div class="vp-card-date">' + esc(dayLbl) + (timeLbl ? ' · ' + esc(timeLbl) : '') + '</div>'
-    + '<div class="vp-card-title">' + esc(title) + '</div>'
-    + subtitleHtml
-    + leaderHtml
-    + notesHtml
-    + rolesHtml
-    + '</div>';
-}
-
-function renderVpRole(ev, role) {
-  const rn      = localizedRoleName(role);
-  const signups = _volSignups.filter(function(su) { return su.eventId === ev.id && su.roleId === role.id; });
-  const filled  = signups.length;
-  const total   = Number(role.slots) || 0;
-  const isFull  = total > 0 && filled >= total;
-  const mySignup = signups.find(isMineSignup);
-  const pct     = total > 0 ? Math.min(100, Math.round(filled / total * 100)) : 0;
-  const allowed = (typeof memberCanTakeRole === 'function') ? memberCanTakeRole(role, _myCerts) : true;
-
-  // Names of all signups; "me" replaces own name
-  const chipsHtml = signups.length
-    ? '<div class="vp-role-signups">'
-      + signups.map(function(su) {
-          const isMine = isMineSignup(su);
-          const label = isMine ? s('volunteer.me') : (su.name || '—');
-          return '<span class="vp-chip' + (isMine ? ' me' : '') + '">' + esc(label) + '</span>';
-        }).join('')
-      + '</div>'
-    : '';
-
-  let actionHtml = '';
-  if (mySignup) {
-    actionHtml = '<button class="vp-btn signed-up" onclick="vpWithdraw(\'' + mySignup.id + '\')">'
-      + s('member.volWithdraw') + '</button>';
-  } else if (!allowed) {
-    actionHtml = '<span class="vp-role-note">' + s('member.volNeedsEndorsement') + '</span>';
-  } else if (isFull) {
-    actionHtml = '<span class="vp-role-note full">' + s('member.volFull') + '</span>';
-  } else {
-    actionHtml = '<button class="vp-btn" onclick="vpSignup(\'' + ev.id + '\',\'' + role.id + '\')">'
-      + s('member.volSignUp') + '</button>';
-  }
-
-  return '<div class="vp-role">'
-    + '<div class="vp-role-left">'
-      + '<div class="vp-role-name">' + esc(rn) + '</div>'
-      + '<div class="vp-role-meta">'
-        + '<div class="vp-bar"><div class="vp-bar-fill' + (isFull ? ' full' : '') + '" style="width:' + pct + '%"></div></div>'
-        + '<span class="vp-role-status">' + filled + '/' + total + '</span>'
-      + '</div>'
-      + chipsHtml
-    + '</div>'
-    + '<div class="vp-role-right">' + actionHtml + '</div>'
-    + '</div>';
+  return renderVolunteerCard(ev, {
+    mode: 'member',
+    lang: getLang(),
+    signups: _volSignups,
+    userKennitala: user && user.kennitala,
+    myCerts: _myCerts,
+    esc: esc,
+    s: s,
+    formatDay: formatDayLabel,
+    formatTime: formatTimeRange,
+    onSignup: 'vpSignup',
+    onWithdraw: 'vpWithdraw',
+  });
 }
 
 // ══ CALENDAR VIEW ════════════════════════════════════════════════════════════

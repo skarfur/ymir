@@ -1077,3 +1077,52 @@ textarea { min-height: 70px; }
   main { padding: 12px 10px; }
   .page-content { padding: 10px 10px 80px; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VOLUNTEER EVENT CARDS (shared between /volunteer/ and /admin/)
+   The same HTML structure is used in both the member-facing volunteer
+   page and the admin volunteers tab. Admin mode adds a .admin class to
+   .vp-card which enables click-to-edit plus hover affordance.
+   ───────────────────────────────────────────────────────────────────────── */
+.vp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  box-shadow:var(--shadow-sm); padding:10px 12px; margin-bottom:8px; }
+.vp-card.admin { cursor:pointer; transition:border-color .2s; }
+.vp-card.admin:hover { border-color:var(--brass)55; }
+
+.vp-card-head { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.vp-card-date { font-size:10px; color:var(--brass); letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
+.vp-card-title { font-size:13px; font-weight:500; color:var(--text); }
+.vp-card-subtitle { font-size:10px; color:var(--muted); }
+.vp-card-actions { margin-left:auto; display:flex; gap:4px; align-items:center; }
+
+.vp-card-leader { font-size:10px; color:var(--muted); margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.vp-card-notes { font-size:10px; color:var(--muted); margin-top:4px; font-style:italic; }
+
+/* Role rows */
+.vp-role { padding:6px 0; border-top:1px solid var(--border)44; margin-top:6px; }
+.vp-role-head { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.vp-role-head.clickable { cursor:pointer; }
+.vp-role-main { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1; min-width:0; }
+.vp-role-name { font-size:11px; color:var(--text); font-weight:500; }
+.vp-bar { width:50px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; flex-shrink:0; }
+.vp-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
+.vp-bar-fill.full { background:var(--green); }
+.vp-role-status { font-size:10px; color:var(--muted); white-space:nowrap; }
+.vp-role-endorse { font-size:9px; color:var(--brass); }
+.vp-role-desc { font-size:10px; color:var(--muted); margin-top:4px; white-space:pre-wrap; padding-left:2px; }
+
+/* Chips — used for signup names and leader badge */
+.vp-chip { display:inline-flex; align-items:center; gap:4px; font-size:9px; padding:2px 8px;
+  border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); white-space:nowrap; }
+.vp-chip.me { background:var(--brass)18; border-color:var(--brass); color:var(--brass); font-weight:500; }
+.vp-chip a { color:var(--brass); text-decoration:none; }
+.vp-chip a:hover { text-decoration:underline; }
+
+/* Action button (member mode — sign up / withdraw) */
+.vp-btn { padding:5px 11px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  color:var(--text); font-family:inherit; font-size:10px; cursor:pointer;
+  transition:border-color .15s,background .15s; white-space:nowrap; }
+.vp-btn:hover { border-color:var(--brass); }
+.vp-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+.vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
+.vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
