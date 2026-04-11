@@ -1283,6 +1283,8 @@ var _STRINGS_FLAT = {
   "admin.volTitle": "Title (EN)",
   "admin.volTitleIS": "Title (IS)",
   "admin.volDate": "Date",
+  "admin.volEndDate": "End date (optional)",
+  "admin.volEndDateHint": "Leave blank for a single-day event",
   "admin.volStartTime": "Start time",
   "admin.volEndTime": "End time",
   "admin.volActType": "Activity",

@@ -1595,7 +1595,10 @@ function renderVolunteerNotifBadge() {
 
   let unfilled = 0;
   merged.forEach(function(ev) {
-    if ((ev.date || '') < today) return;
+    // A multi-day event still counts as upcoming while any part of its span
+    // lies on or after today.
+    const _endIso = (ev.endDate && ev.endDate > (ev.date || '')) ? ev.endDate : (ev.date || '');
+    if (_endIso < today) return;
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     roles.forEach(function(role) {
       const total = Number(role.slots) || 0;

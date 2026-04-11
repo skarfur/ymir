@@ -5482,12 +5482,21 @@ function saveVolunteerEvent_(b) {
     const idx = b.id ? arr.findIndex(a => a.id === b.id) : -1;
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
+    // Normalize endDate: treat blank/same-as-start as single-day (stored as '').
+    // If set and earlier than start, swap so start ≤ end.
+    var _startIso = b.date || '';
+    var _endIso = b.endDate || '';
+    if (_endIso && _startIso && _endIso < _startIso) {
+      var _swap = _endIso; _endIso = _startIso; _startIso = _swap;
+    }
+    if (_endIso && _endIso === _startIso) _endIso = '';
     const item = {
       id: b.id || uid_(),
       activityTypeId: b.activityTypeId || '',
       title: b.title || '',
       titleIS: b.titleIS || '',
-      date: b.date || '',
+      date: _startIso,
+      endDate: _endIso,
       startTime: b.startTime || '',
       endTime: b.endTime || '',
       leaderMemberId: b.leaderMemberId || b.leaderId || '',
@@ -5563,6 +5572,7 @@ function volunteerSignup_(b) {
         subtitle: ve.subtitle || '',
         subtitleIS: ve.subtitleIS || '',
         date: ve.date || '',
+        endDate: ve.endDate || '',
         startTime: ve.startTime || '',
         endTime: ve.endTime || '',
         leaderMemberId: '',
