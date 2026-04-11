@@ -525,7 +525,8 @@ function renderIncidentSection(incidents) {
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
   container.innerHTML = incidents.map(inc => {
     const types = (function() { try { var t = typeof inc.types === 'string' ? JSON.parse(inc.types) : inc.types; return Array.isArray(t) ? t.map(function(k){ return s('incident.type.'+k)||k; }).join(', ') : ''; } catch(e){ return ''; } })();
-    const time = sstr(inc.filedAt||inc.time).slice(11,16) || '';
+    const dateStr = inc.date || sstr(inc.filedAt).slice(0,10);
+    const timeStr = inc.time || sstr(inc.filedAt).slice(11,16);
     const sevLabel = inc.severity ? (s('incident.sev.'+inc.severity) || inc.severity) : '';
     const sevClass = inc.severity === 'critical' ? 'red'
       : inc.severity === 'high' ? 'orange'
@@ -534,20 +535,21 @@ function renderIncidentSection(incidents) {
       : 'muted';
     const resolved = inc.resolved && inc.resolved !== 'false';
     const inReview = !resolved && inc.status === 'review';
-    const statusLabel = resolved ? '✓ ' + s('incident.resolved')
+    const statusLabel = resolved ? s('incident.resolved')
       : inReview ? s('incident.statusReview')
-      : (inc.followUp ? 'Follow-up pending' : '');
+      : s('incident.open');
+    const statusClass = resolved ? 'green' : (inReview ? 'orange' : 'yellow');
     const descStr = sstr(inc.description);
     const desc = descStr.slice(0,140);
     const descMore = descStr.length > 140 ? '…' : '';
-    return `<a href="../incidents/#${inc.id}" class="incident-btn" style="align-items:flex-start">
-      <div style="flex:1;font-size:12px">
+    return `<a href="../incidents/#${esc(inc.id)}" class="incident-btn" style="align-items:flex-start">
+      <div style="flex:1;font-size:12px;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="fw-500">${esc(types || inc.title || s('incident.title'))}</span>
+          <span class="fw-500">${esc(types || inc.title || '')}</span>
           ${sevLabel ? `<span class="badge badge-${sevClass}">${esc(sevLabel)}</span>` : ''}
-          ${time ? `<span class="text-muted">${esc(time)}</span>` : ''}
-          ${statusLabel ? `<span class="text-muted" style="font-style:italic">${esc(statusLabel)}</span>` : ''}
+          <span class="badge badge-${statusClass}">${esc(statusLabel)}</span>
         </div>
+        <div class="text-muted" style="margin-top:3px">${esc(dateStr)}${timeStr ? ' ' + esc(timeStr) : ''}</div>
         ${desc ? `<div class="text-muted" style="margin-top:4px">${esc(desc)}${descMore}</div>` : ''}
       </div>
       <span class="ml-auto text-brass" style="font-size:16px">→</span>
