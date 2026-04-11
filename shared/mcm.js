@@ -216,15 +216,26 @@
   };
 
   /* ── categories ────────────────────────────────────────────────────────── */
+  // Cert category dropdown option values are always the stable `key`, not the
+  // localized label. The "Club Endorsement" entry is a synthetic sentinel whose
+  // key is the English literal — matches legacy member-cert records.
+  var CLUB_KEY = (typeof CLUB_ENDORSEMENT_KEY !== 'undefined') ? CLUB_ENDORSEMENT_KEY : 'Club Endorsement';
+
   function _populateCategories() {
     var sel = document.getElementById('mcmCategory');
     sel.innerHTML = '<option value="">' + s('admin.certCategorySelect') + '</option>';
     var cats = _certCats().slice();
     var hasEndorsements = _certDefs().some(function(d){ return d.clubEndorsement; });
-    if (hasEndorsements && cats.indexOf('Club Endorsement') === -1) cats.push('Club Endorsement');
+    var hasClubCat = cats.some(function(c){ return certCategoryKey(c) === CLUB_KEY; });
+    if (hasEndorsements && !hasClubCat) {
+      cats.push({ key: CLUB_KEY, labelEN: CLUB_KEY, labelIS: '' });
+    }
     cats.forEach(function(c) {
+      var key = certCategoryKey(c);
+      if (!key) return;
+      var label = (key === CLUB_KEY) ? s('cert.clubEndorsements') : certCategoryLabel(c);
       var o = document.createElement('option');
-      o.value = c; o.textContent = c;
+      o.value = key; o.textContent = label;
       sel.appendChild(o);
     });
     var addOpt = document.createElement('option');
@@ -237,14 +248,14 @@
     if (sel.value === '__add__') {
       var name = await ymPrompt('Enter new category name:');
       if (name && name.trim()) {
-        var cat = name.trim();
+        var key = name.trim();
         var cats = _certCats();
-        if (cats.indexOf(cat) === -1) {
-          cats.push(cat);
+        if (!cats.some(function(c){ return certCategoryKey(c) === key; })) {
+          cats.push({ key: key, labelEN: key, labelIS: '' });
           apiPost('saveCertCategories', { categories: cats }).catch(function(e){ console.warn(e); });
         }
         _populateCategories();
-        sel.value = cat;
+        sel.value = key;
       } else {
         sel.value = '';
       }
@@ -258,16 +269,16 @@
     var typeSel  = document.getElementById('mcmCertType');
     typeSel.innerHTML = '<option value="">Select\u2026</option>';
     var filtered = _certDefs().filter(function(d) {
-      if (d.clubEndorsement) return category === 'Club Endorsement';
+      if (d.clubEndorsement) return category === CLUB_KEY;
       if (!category) return true;
       return (d.category || '') === category || !d.category;
     });
     filtered.forEach(function(d) {
       var o = document.createElement('option');
-      o.value = d.id; o.textContent = d.name;
+      o.value = d.id; o.textContent = certDefName(d);
       typeSel.appendChild(o);
     });
-    if (category !== 'Club Endorsement') {
+    if (category !== CLUB_KEY) {
       var customOpt = document.createElement('option');
       customOpt.value = '__custom__'; customOpt.textContent = s('admin.certCustomType');
       typeSel.appendChild(customOpt);
@@ -291,7 +302,7 @@
       sel.innerHTML = '<option value="">Select\u2026</option>';
       def.subcats.forEach(function(sc) {
         var o = document.createElement('option');
-        o.value = sc.key; o.textContent = sc.label;
+        o.value = sc.key; o.textContent = certSubcatLabel(sc);
         sel.appendChild(o);
       });
       sf.style.display = '';
@@ -324,7 +335,7 @@
   function _renderCurrentCerts(m) {
     var wrap  = document.getElementById('mcmCurrentWrap');
     var el    = document.getElementById('mcmCurrentList');
-    var certs = enrichMemberCerts(parseJson(m.certifications, []), _certDefs());
+    var certs = enrichMemberCerts(parseJson(m.certifications, []), _certDefs(), _certCats());
     if (!certs.length) {
       wrap.style.display = '';
       el.innerHTML = '<div class="empty-state">' + s('cert.noCerts') + '</div>';

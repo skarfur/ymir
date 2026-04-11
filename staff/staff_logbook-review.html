@@ -208,6 +208,7 @@ let allTrips    = [];
 let filtered    = [];
 let _allMembers = [];   // single source of truth for member list
 let _certDefs   = [];   // single source of truth for cert definitions
+let _certCats   = [];   // cert categories, used for bilingual label resolution
 let _verifyReqs = [];   // pending 'verify' handshakes
 let _dataLoaded = false;
 
@@ -246,6 +247,7 @@ async function init() {
 
     _allMembers = membersRes.members || [];
     _certDefs   = certDefsFromConfig(cfgRes.certDefs || []);
+    _certCats   = certCategoriesFromConfig(cfgRes.certCategories || []);
     _verifyReqs = verifyRes.requests || [];
     _dataLoaded = true;
 
@@ -281,7 +283,7 @@ function _buildCertTypeSelect() {
   _certDefs.forEach(d => {
     const o = document.createElement('option');
     o.value       = d.id;
-    o.textContent = d.name;
+    o.textContent = certDefName(d);
     sel.appendChild(o);
   });
 }
@@ -497,7 +499,7 @@ function renderCertPanelList() {
   if (!_certMember) return;
 
   const m     = _allMembers.find(x => x.id === _certMember.id);
-  const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs) : [];
+  const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs, _certCats) : [];
 
   if (!certs.length) {
     el.innerHTML = `<div class="text-muted text-md" style="padding:8px 0">${s('cert.noCerts')}</div>`;
@@ -510,9 +512,10 @@ function renderCertPanelList() {
           ? `<span class="text-red">Expired ${esc(c.expiresAt)}</span>`
           : `Expires ${esc(c.expiresAt)}`)
       : 'Does not expire';
+    const defLabel = c.def ? certDefName(c.def) : (c.certId || '');
     const label = c.subcat
-      ? `${esc(c.def?.name || c.certId)} — ${esc(c.subcat.label)}`
-      : esc(c.def?.name || c.certId);
+      ? `${esc(defLabel)} — ${esc(certSubcatLabel(c.subcat))}`
+      : esc(defLabel);
     return `<div class="cert-row">
       <div>
         <div class="cert-name">${label}</div>
@@ -537,7 +540,7 @@ function openCertAssignModal(certId, subcatKey) {
 
   // Show current certs
   const m     = _allMembers.find(x => x.id === _certMember.id);
-  const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs) : [];
+  const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs, _certCats) : [];
   document.getElementById('tcmCurrentList').innerHTML = certs.length
     ? certs.map(certBadgeHTML).join('')
     : `<div class="text-muted text-sm" style="font-style:italic">${s('cert.noCerts')}</div>`;
@@ -631,7 +634,7 @@ async function tcmAssign() {
 
     // Refresh current-certs display inside modal
     document.getElementById('tcmCurrentList').innerHTML =
-      enrichMemberCerts(updated, _certDefs).map(certBadgeHTML).join('');
+      enrichMemberCerts(updated, _certDefs, _certCats).map(certBadgeHTML).join('');
 
     // Reset form
     document.getElementById('tcmCertType').value         = '';
@@ -683,13 +686,13 @@ function _parseJson(v, fallback) {
       d.subcats.forEach(sc => {
         const o = document.createElement('option');
         o.value = d.id + '|' + sc.key;
-        o.textContent = d.name + ' — ' + sc.label;
+        o.textContent = certDefName(d) + ' — ' + certSubcatLabel(sc);
         sel.appendChild(o);
       });
     } else {
       const o = document.createElement('option');
       o.value = d.id + '|';
-      o.textContent = d.name;
+      o.textContent = certDefName(d);
       sel.appendChild(o);
     }
   });

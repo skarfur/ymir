@@ -662,8 +662,9 @@ async function renderCerts(){
   try{
     const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
     const certDefs=certDefsFromConfig(cfgRes.certDefs||[]);
+    const certCategories=certCategoriesFromConfig(cfgRes.certCategories||[]);
     const member=(mRes.members||[]).find(m=>String(m.kennitala)===String(user.kennitala))||{};
-    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs);
+    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs,certCategories);
     if(!certs.length){el.innerHTML=`<div class="empty-note">${s('cert.noCerts')}</div>`;return;}
     certInjectStyles();
     const {credentials,endorsements}=groupCerts(certs);

@@ -382,8 +382,9 @@
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:8px 0 4px" class="hidden" id="certCatsAddWrap">
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="text" id="newCatInput" placeholder="New category name…" style="flex:1;font-size:12px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="newCatInputEN" placeholder="Name (EN)" style="flex:1;min-width:120px;font-size:12px">
+            <input type="text" id="newCatInputIS" placeholder="Nafn (IS)" style="flex:1;min-width:120px;font-size:12px">
             <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="addCertCategory()">+ Add</button>
           </div>
         </div>
@@ -1023,6 +1024,29 @@
   </div>
 </div>
 
+<!-- Credential category modal -->
+<div class="modal-overlay hidden" id="certCatModal" onclick="if(event.target===this)closeModal('certCatModal')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="certCatModalTitle" data-s="admin.certCatModal.edit"></h3>
+      <button class="modal-close-x" onclick="closeModal('certCatModal')">&times;</button>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="ccLabelEN"></div>
+      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="ccLabelIS"></div>
+    </div>
+    <div class="field">
+      <label data-s="admin.keyAutoSet"></label>
+      <input type="text" id="ccKey" readonly style="color:var(--muted)">
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.certCatKeyHint"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('certCatModal')" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" onclick="saveCertCat()" data-s="btn.save"></button>
+    </div>
+  </div>
+</div>
+
 <!-- Credential type modal -->
 <div class="modal-overlay hidden" id="certDefModal" onclick="if(event.target===this)closeModal('certDefModal')">
   <div class="modal" style="max-width:560px">
@@ -1030,13 +1054,19 @@
       <h3 id="certDefModalTitle" data-s="admin.certDefModal.add"></h3>
       <button class="modal-close-x" onclick="closeModal('certDefModal')">&times;</button>
     </div>
-    <div class="field">
-      <label data-s="lbl.name"></label>
-      <input type="text" id="cdName">
+    <div class="grid2">
+      <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="cdNameEN"></div>
+      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="cdNameIS"></div>
     </div>
-    <div class="field">
-      <label><span data-s="admin.certDescLabel"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-      <textarea id="cdDesc" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+    <div class="grid2">
+      <div class="field">
+        <label><span data-s="admin.certDescEN"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="cdDescEN" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+      </div>
+      <div class="field">
+        <label><span data-s="admin.certDescIS"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="cdDescIS" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+      </div>
     </div>
     <div class="field" id="cdCategoryField">
       <label data-s="admin.certDefCategory"></label>
@@ -1784,12 +1814,12 @@ function updateSlotFields() {
 function populateGateCertSelect(current) {
   var sel = document.getElementById("bGateCert");
   sel.innerHTML = '<option value="">' + esc(s('boat.gateCertNone')) + '</option>';
-  // Collect all subcats from all cert defs
+  // Collect all subcats from all cert defs — labels resolved via bilingual helpers.
   (certDefs || []).forEach(function(def) {
     if (!def.subcats || !def.subcats.length) return;
     def.subcats.forEach(function(sc) {
       sel.innerHTML += '<option value="' + esc(sc.key) + '"' + (sc.key === current ? ' selected' : '') + '>'
-        + esc((def.name || '') + ' — ' + (sc.label || sc.key)) + '</option>';
+        + esc(certDefName(def) + ' — ' + certSubcatLabel(sc)) + '</option>';
     });
   });
 }
@@ -2298,7 +2328,7 @@ function renderActTypes() {
         <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
       </div>
       ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
-      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--brass)">[${esc(((certDefs||[]).find(d=>d.id===r.requiredEndorsement)||{}).name||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
+      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--brass)">[${esc(certDefName((certDefs||[]).find(d=>d.id===r.requiredEndorsement))||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
     </div>`;
   }).join("");
 }
@@ -2464,7 +2494,7 @@ function renderAtRoles() {
   list.innerHTML = window._atRoles.map(function(r, i) {
     var endorseOpts = '<option value="">' + s('admin.roleNoRestriction') + '</option>'
       + endorsements.map(function(e) {
-        return '<option value="' + esc(e.id) + '"' + (r.requiredEndorsement === e.id ? ' selected' : '') + '>' + esc(e.name || '') + '</option>';
+        return '<option value="' + esc(e.id) + '"' + (r.requiredEndorsement === e.id ? ' selected' : '') + '>' + esc(certDefName(e)) + '</option>';
       }).join('');
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
@@ -2519,7 +2549,7 @@ function renderVolunteerEvents() {
     const rolesHtml = roles.map(r => {
       const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
       const endorseStr = r.requiredEndorsement
-        ? ' <span style="color:var(--brass)">[' + esc((((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; }) || {}).name) || r.requiredEndorsement) + ']</span>'
+        ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
         : '';
       return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + (r.slots || '∞') + ' ' + s('admin.volSlots').toLowerCase() + ')' + endorseStr + '</span>';
     }).join('');
@@ -2637,7 +2667,7 @@ function renderVolRoles() {
     var endorseLabel = '';
     if (r.requiredEndorsement) {
       var eDef = (certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; });
-      endorseLabel = '<div style="font-size:10px;color:var(--brass);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? eDef.name : r.requiredEndorsement) + '</div>';
+      endorseLabel = '<div style="font-size:10px;color:var(--brass);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? certDefName(eDef) : r.requiredEndorsement) + '</div>';
     }
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
@@ -2739,6 +2769,8 @@ window.mcmGetCertDefs       = function() { return certDefs; };
 window.mcmGetCertCategories = function() { return certCategories; };
 
 // ── Credential categories ─────────────────────────────────────────────────────
+let _ccEditingKey = null;
+
 function renderCertCategories() {
   const el = document.getElementById("certCatsCard");
   const addWrap = document.getElementById("certCatsAddWrap");
@@ -2746,21 +2778,39 @@ function renderCertCategories() {
   if (!certCategories.length) {
     el.innerHTML = `<div class="empty-state">${s('admin.noCertCategories')}</div>`;
   } else {
-    el.innerHTML = certCategories.map((c, i) => `<div class="list-row">
-      <div style="flex:1;font-size:12px">${esc(c)}</div>
-      <button class="row-del" onclick="removeCertCategory(${i})" title="Remove">×</button>
-    </div>`).join('');
+    el.innerHTML = certCategories.map((c) => {
+      const key     = certCategoryKey(c);
+      const labelEN = (c && c.labelEN) || key;
+      const labelIS = (c && c.labelIS) || '';
+      const safeKey = String(key).replace(/'/g, "\\'");
+      return `<div class="list-row">
+        <div style="flex:1;font-size:12px">
+          <strong>${esc(labelEN)}</strong>
+          ${labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(labelIS)}</span>` : ''}
+        </div>
+        <button class="row-edit" onclick="openCertCatModal('${safeKey}')">Edit</button>
+        <button class="row-del" onclick="removeCertCategory('${safeKey}')" title="Remove">×</button>
+      </div>`;
+    }).join('');
   }
   if (addWrap) addWrap.classList.remove("hidden");
 }
 
 async function addCertCategory() {
-  const input = document.getElementById("newCatInput");
-  const name  = input.value.trim();
-  if (!name) return;
-  if (certCategories.includes(name)) { toast(s("admin.categoryExists"), "err"); return; }
-  certCategories.push(name);
-  input.value = "";
+  const inEN = document.getElementById("newCatInputEN");
+  const inIS = document.getElementById("newCatInputIS");
+  const labelEN = inEN.value.trim();
+  const labelIS = inIS ? inIS.value.trim() : '';
+  if (!labelEN) return;
+  // Stable key = labelEN unchanged, to keep legacy member-cert category
+  // references working. Dedupe by key.
+  const key = labelEN;
+  if (certCategories.some(c => certCategoryKey(c) === key)) {
+    toast(s("admin.categoryExists"), "err"); return;
+  }
+  certCategories.push({ key, labelEN, labelIS });
+  inEN.value = "";
+  if (inIS) inIS.value = "";
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
@@ -2768,9 +2818,42 @@ async function addCertCategory() {
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
-async function removeCertCategory(idx) {
+function openCertCatModal(key) {
+  _ccEditingKey = key;
+  const cat = certCategoryByKey(certCategories, key) || { key, labelEN: key, labelIS: '' };
+  document.getElementById("certCatModalTitle").textContent = s('admin.certCatModal.edit');
+  document.getElementById("ccLabelEN").value = cat.labelEN || key;
+  document.getElementById("ccLabelIS").value = cat.labelIS || '';
+  document.getElementById("ccKey").value     = cat.key || key;
+  openModal("certCatModal");
+}
+
+async function saveCertCat() {
+  const key     = _ccEditingKey;
+  const labelEN = document.getElementById("ccLabelEN").value.trim();
+  const labelIS = document.getElementById("ccLabelIS").value.trim();
+  if (!key || !labelEN) { toast(s("admin.nameRequired"), "err"); return; }
+  const idx = certCategories.findIndex(c => certCategoryKey(c) === key);
+  if (idx < 0) { toast(s("toast.error"), "err"); return; }
+  // Update labels but keep key stable — member-cert records reference `key`.
+  const existing = certCategories[idx];
+  certCategories[idx] = Object.assign({}, (typeof existing === 'string' ? { key: existing } : existing), {
+    key, labelEN, labelIS,
+  });
+  try {
+    await apiPost("saveCertCategories", { categories: certCategories });
+    closeModal("certCatModal");
+    renderCertCategories();
+    renderCertDefs();
+    toast(s("toast.saved"));
+  } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+async function removeCertCategory(key) {
   if (!await ymConfirm(s("admin.confirmRemoveCategory"))) return;
-  certCategories.splice(idx, 1);
+  const next = certCategories.filter(c => certCategoryKey(c) !== key);
+  if (next.length === certCategories.length) return;
+  certCategories = next;
   try {
     await apiPost("saveCertCategories", { categories: certCategories });
     renderCertCategories();
@@ -2787,7 +2870,7 @@ function renderCertDefs() {
   }
   const locale = getLang() === 'IS' ? 'is' : 'en';
   const sortedCertDefs = certDefs.slice().sort((a, b) =>
-    (a.name || '').localeCompare(b.name || '', locale, { sensitivity: 'base' })
+    certDefName(a).localeCompare(certDefName(b), locale, { sensitivity: 'base' })
   );
   const certifications = sortedCertDefs.filter(d => !d.clubEndorsement);
   const endorsements   = sortedCertDefs.filter(d => !!d.clubEndorsement);
@@ -2795,23 +2878,34 @@ function renderCertDefs() {
   function certDefRow(d) {
     const authority = d.issuingAuthority
       ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
+    const catObj = d.category ? certCategoryByKey(certCategories, d.category) : null;
+    const catLabel = catObj ? certCategoryLabel(catObj) : d.category;
     const catStr = d.category
-      ? `<span style="color:var(--brass);font-size:10px">[${esc(d.category)}]</span> ` : "";
+      ? `<span style="color:var(--brass);font-size:10px">[${esc(catLabel)}]</span> ` : "";
     const expiryStr = d.expires
       ? `<span style="color:var(--muted)"> · expires</span>` : "";
+    const nameEN = d.nameEN || d.name || '';
+    const nameIS = d.nameIS || '';
+    const name   = certDefName(d);
+    const altName = (getLang() === 'IS' && nameEN && nameEN !== name) ? nameEN
+                    : (getLang() === 'EN' && nameIS && nameIS !== name) ? nameIS
+                    : '';
+    const altHtml = altName
+      ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(altName)}</span>` : '';
     const subcatStr = d.subcats?.length
       ? d.subcats.map(sc => {
-          const parts = [sc.label];
+          const parts = [certSubcatLabel(sc)];
           if (sc.rank != null) parts.push(`rank ${sc.rank}`);
           if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
           return parts.join(" · ");
         }).join(", ")
       : s('admin.noSubcategories');
+    const descStr = certDefDescription(d);
     return `<div class="list-row">
       <div style="flex:1">
-        <div class="list-name">${catStr}${esc(d.name)}${authority}${expiryStr}</div>
+        <div class="list-name">${catStr}${esc(name)}${altHtml}${authority}${expiryStr}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)}</div>
-        ${d.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(d.description)}</div>` : ""}
+        ${descStr ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(descStr)}</div>` : ""}
       </div>
       <button class="row-edit" onclick="openCertDefModal('${d.id}')">Edit</button>
       <button class="row-del"  onclick="deleteCertDefById('${d.id}')" title="Delete">×</button>
@@ -2834,8 +2928,11 @@ function openCertDefModal(id) {
   certEditId = id || null;
   const d    = id ? certDefs.find(x => x.id === id) : null;
   document.getElementById("certDefModalTitle").textContent = d ? s('admin.certEditModal') : s('admin.certAddModal');
-  document.getElementById("cdName").value             = d ? d.name : "";
-  document.getElementById("cdDesc").value             = d ? (d.description || "") : "";
+  // Prefer new bilingual fields, fall back to legacy single-string fields.
+  document.getElementById("cdNameEN").value            = d ? (d.nameEN || d.name || "") : "";
+  document.getElementById("cdNameIS").value            = d ? (d.nameIS || "") : "";
+  document.getElementById("cdDescEN").value            = d ? (d.descriptionEN || d.description || "") : "";
+  document.getElementById("cdDescIS").value            = d ? (d.descriptionIS || "") : "";
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdClubEndorsement").checked = d ? !!d.clubEndorsement : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
@@ -2854,9 +2951,12 @@ function populateCdCategorySelect(selected) {
   const sel = document.getElementById("cdCategory");
   sel.innerHTML = '<option value="">' + s('admin.certCategoryNone') + '</option>';
   certCategories.forEach(c => {
+    const key   = certCategoryKey(c);
+    const label = certCategoryLabel(c);
+    if (!key) return;
     const o = document.createElement("option");
-    o.value = c; o.textContent = c;
-    if (c === selected) o.selected = true;
+    o.value = key; o.textContent = label;
+    if (key === selected) o.selected = true;
     sel.appendChild(o);
   });
 }
@@ -2867,17 +2967,26 @@ function toggleCdEndorsement() {
 }
 
 async function saveCertDef() {
-  const btn  = document.getElementById("saveCertDefBtn");
-  const name = document.getElementById("cdName").value.trim();
-  if (!name) { toast(s("admin.nameRequired"), "err"); return; }
+  const btn    = document.getElementById("saveCertDefBtn");
+  const nameEN = document.getElementById("cdNameEN").value.trim();
+  const nameIS = document.getElementById("cdNameIS").value.trim();
+  if (!nameEN) { toast(s("admin.nameRequired"), "err"); return; }
 
   const newId   = certEditId || ("cert_" + Date.now().toString(36));
   const expires = document.getElementById("cdExpires").checked;
   const isEndorsement = document.getElementById("cdClubEndorsement").checked;
+  const descEN  = document.getElementById("cdDescEN").value.trim();
+  const descIS  = document.getElementById("cdDescIS").value.trim();
   const payload = {
     id:               newId,
-    name,
-    description:      document.getElementById("cdDesc").value.trim(),
+    // New bilingual fields:
+    nameEN,
+    nameIS,
+    descriptionEN:    descEN,
+    descriptionIS:    descIS,
+    // Legacy mirrors for any half-upgraded consumer:
+    name:             nameEN,
+    description:      descEN,
     category:         isEndorsement ? '' : document.getElementById("cdCategory").value.trim(),
     issuingAuthority: document.getElementById("cdIssuingAuthority").value.trim(),
     subcats:          gatherSubcats(),
@@ -2932,7 +3041,8 @@ async function deleteCertDefById(id) {
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
-// Subcat row
+// Subcat row — bilingual label & description inputs. Key is still derived
+// from labelEN so existing data keeps matching.
 let _subcatCounter = 0;
 function addSubcatRow(sc) {
   const i   = _subcatCounter++;
@@ -2940,15 +3050,25 @@ function addSubcatRow(sc) {
   row.className = "list-row";
   row.id = `scrow_${i}`;
   row.style.cssText = "flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-bottom:1px solid var(--border)44";
+  const labelEN = sc?.labelEN ?? sc?.label ?? "";
+  const labelIS = sc?.labelIS ?? "";
+  const descEN  = sc?.descriptionEN ?? sc?.description ?? "";
+  const descIS  = sc?.descriptionIS ?? "";
   row.innerHTML = `
-    <div style="display:grid;grid-template-columns:2fr 3fr 60px auto;gap:8px;align-items:center">
-      <input type="text"   placeholder="Label (e.g. Level 1)" value="${esc(sc?.label || "")}"
-        style="font-size:12px" data-field="label">
-      <input type="text"   placeholder="Description"          value="${esc(sc?.description || "")}"
-        style="font-size:12px" data-field="desc">
+    <div style="display:grid;grid-template-columns:1fr 1fr 60px auto;gap:8px;align-items:center">
+      <input type="text"   placeholder="${esc(s('admin.subcatLabelEN') || 'Label (EN)')}" value="${esc(labelEN)}"
+        style="font-size:12px" data-field="labelEN">
+      <input type="text"   placeholder="${esc(s('admin.subcatLabelIS') || 'Label (IS)')}" value="${esc(labelIS)}"
+        style="font-size:12px" data-field="labelIS">
       <input type="number" placeholder="Rank" min="1" max="99" value="${sc?.rank ?? ""}"
         style="font-size:12px" data-field="rank" title="Rank (higher replaces lower on assign)">
       <button class="row-del" onclick="document.getElementById('scrow_${i}').remove()" title="Remove" style="font-size:16px;padding:2px 6px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <input type="text" placeholder="${esc(s('admin.subcatDescEN') || 'Description (EN)')}" value="${esc(descEN)}"
+        style="font-size:12px" data-field="descEN">
+      <input type="text" placeholder="${esc(s('admin.subcatDescIS') || 'Description (IS)')}" value="${esc(descIS)}"
+        style="font-size:12px" data-field="descIS">
     </div>
     <div>
       <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">ISSUING AUTHORITY</label>
@@ -2960,15 +3080,24 @@ function addSubcatRow(sc) {
 
 function gatherSubcats() {
   return [...document.querySelectorAll("#subcatRows .list-row")].map(row => {
-    const label = row.querySelector('[data-field="label"]').value.trim();
+    const labelEN = row.querySelector('[data-field="labelEN"]').value.trim();
+    const labelIS = row.querySelector('[data-field="labelIS"]').value.trim();
+    const descEN  = row.querySelector('[data-field="descEN"]').value.trim();
+    const descIS  = row.querySelector('[data-field="descIS"]').value.trim();
     return {
-      key:              label.toLowerCase().replace(/\s+/g, "_"),
-      label,
-      description:      row.querySelector('[data-field="desc"]').value.trim(),
+      key:              labelEN.toLowerCase().replace(/\s+/g, "_"),
+      // New bilingual fields:
+      labelEN,
+      labelIS,
+      descriptionEN:    descEN,
+      descriptionIS:    descIS,
+      // Legacy mirrors:
+      label:            labelEN,
+      description:      descEN,
       rank:             parseInt(row.querySelector('[data-field="rank"]').value) || null,
       issuingAuthority: row.querySelector('[data-field="issuingAuthority"]').value.trim(),
     };
-  }).filter(sc => sc.label);
+  }).filter(sc => sc.labelEN);
 }
 
 // ══ ALERT SETTINGS ════════════════════════════════════════════════════════════
