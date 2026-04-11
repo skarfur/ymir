@@ -299,6 +299,22 @@
   </div>
 </div>
 
+<!-- ══ INCIDENT DETAIL MODAL ══ -->
+<div class="modal-overlay hidden" id="incidentDetailModal"
+  onclick="if(event.target===this)closeModal('incidentDetailModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="idTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('incidentDetailModal')">×</button>
+    </div>
+    <div id="idStatusRow" class="mb-10" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div class="info-panel" id="idBody"></div>
+    <div class="flex-center mt-14">
+      <a id="idOpenFull" class="btn-ghost" href="#">→ <span data-s="incident.viewList"></span></a>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 1 — AUTH + CONSTANTS
@@ -513,10 +529,27 @@ function renderActivitiesReadonly() {
   });
 }
 
-// ── Incident section — fully bilingual ───────────────────────────────────────
+// ── Incident helpers — fully bilingual ───────────────────────────────────────
+// Older rows in the incidents sheet were written double-stringified (see the
+// createIncident_ backend fix), so a single JSON.parse yields a string. Peel
+// until we reach an array and return that, otherwise an empty array.
+function _dlParseIncidentTypes(v) {
+  if (v == null || v === '') return [];
+  let cur = v;
+  for (let i = 0; i < 3 && typeof cur === 'string'; i++) {
+    try { cur = JSON.parse(cur); } catch(e) { return []; }
+  }
+  return Array.isArray(cur) ? cur : [];
+}
+
+// Cache the incidents shown under a given daily log so the click handler can
+// look up the row without another network call.
+let _dlIncidentsById = {};
+
 function renderIncidentSection(incidents) {
   const container = dom.incidentContainer;
   const heading   = dom.incidentHeading;
+  _dlIncidentsById = {};
   if (!incidents || !incidents.length) {
     heading.textContent = s('daily.incidentReport');
     container.innerHTML = `<div class="content-card text-muted text-md">${s('daily.noIncidents')}</div>`;
@@ -524,7 +557,11 @@ function renderIncidentSection(incidents) {
   }
   heading.textContent = `${s('daily.incidentReport')} · ${incidents.length}`;
   container.innerHTML = incidents.map(inc => {
-    const types = (function() { try { var t = typeof inc.types === 'string' ? JSON.parse(inc.types) : inc.types; return Array.isArray(t) ? t.map(function(k){ return s('incident.type.'+k)||k; }).join(', ') : ''; } catch(e){ return ''; } })();
+    _dlIncidentsById[inc.id] = inc;
+    const typeList = _dlParseIncidentTypes(inc.types);
+    const typeLabels = typeList
+      .map(function(k) { return s('incident.type.' + k) || k; })
+      .join(', ');
     const dateStr = inc.date || sstr(inc.filedAt).slice(0,10);
     const timeStr = inc.time || sstr(inc.filedAt).slice(11,16);
     const sevLabel = inc.severity ? (s('incident.sev.'+inc.severity) || inc.severity) : '';
@@ -542,19 +579,79 @@ function renderIncidentSection(incidents) {
     const descStr = sstr(inc.description);
     const desc = descStr.slice(0,140);
     const descMore = descStr.length > 140 ? '…' : '';
-    return `<a href="../incidents/#${esc(inc.id)}" class="incident-btn" style="align-items:flex-start">
+    return `<div class="incident-btn" style="align-items:flex-start" data-incident-id="${esc(inc.id)}">
       <div style="flex:1;font-size:12px;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="fw-500">${esc(types || inc.title || '')}</span>
+          <span class="fw-500">${esc(typeLabels || inc.title || '')}</span>
           ${sevLabel ? `<span class="badge badge-${sevClass}">${esc(sevLabel)}</span>` : ''}
           <span class="badge badge-${statusClass}">${esc(statusLabel)}</span>
         </div>
-        <div class="text-muted" style="margin-top:3px">${esc(dateStr)}${timeStr ? ' ' + esc(timeStr) : ''}</div>
+        <div class="text-muted" style="margin-top:3px">${esc(dateStr)}${timeStr ? ' ' + esc(timeStr) : ''}${inc.boatName ? ' · ' + esc(inc.boatName) : ''}</div>
         ${desc ? `<div class="text-muted" style="margin-top:4px">${esc(desc)}${descMore}</div>` : ''}
       </div>
       <span class="ml-auto text-brass" style="font-size:16px">→</span>
-    </a>`;
+    </div>`;
   }).join('');
+}
+
+// ── Incident detail modal ───────────────────────────────────────────────────
+function _dlIncidentField(label, val) {
+  if (val == null || val === '' || val === '—') return '';
+  return '<div class="dl-drow"><span class="dl-dlbl">' + esc(label) + '</span>'
+    + '<span class="dl-dval">' + esc(val) + '</span></div>';
+}
+
+function openIncidentDetail(id) {
+  const inc = _dlIncidentsById[id];
+  if (!inc) return;
+  const typeList = _dlParseIncidentTypes(inc.types);
+  const typeLabels = typeList
+    .map(function(k) { return s('incident.type.' + k) || k; })
+    .join(', ');
+  const sevLabel = inc.severity ? (s('incident.sev.' + inc.severity) || inc.severity) : '';
+  const sevClass = inc.severity === 'critical' ? 'red'
+    : inc.severity === 'high' ? 'orange'
+    : inc.severity === 'medium' ? 'yellow'
+    : inc.severity === 'low' ? 'green'
+    : 'muted';
+  const resolved = inc.resolved && inc.resolved !== 'false';
+  const inReview = !resolved && inc.status === 'review';
+  const statusLabel = resolved ? s('incident.resolved')
+    : inReview ? s('incident.statusReview')
+    : s('incident.open');
+  const statusClass = resolved ? 'green' : (inReview ? 'orange' : 'yellow');
+
+  document.getElementById('idTitle').textContent = typeLabels || inc.title || s('incident.title');
+  document.getElementById('idStatusRow').innerHTML =
+    (sevLabel ? '<span class="badge badge-' + sevClass + '">' + esc(sevLabel) + '</span>' : '')
+    + '<span class="badge badge-' + statusClass + '">' + esc(statusLabel) + '</span>';
+
+  const handoffVal = inc.handOffTo
+    ? (inc.handOffTo
+       + (inc.handOffName  ? ' — ' + inc.handOffName  : '')
+       + (inc.handOffNotes ? ' · ' + inc.handOffNotes : ''))
+    : '';
+  const filedAtStr = inc.filedAt ? (fmtDate(inc.filedAt) + ' ' + fmtTime(inc.filedAt)) : '';
+  const filedByVal = (inc.filedBy || s('lbl.unknown')) + (filedAtStr ? ' · ' + filedAtStr : '');
+  const dateTimeVal = (inc.date || '') + (inc.time ? ' ' + inc.time : '');
+
+  document.getElementById('idBody').innerHTML =
+    _dlIncidentField(s('lbl.date') + ' / ' + s('lbl.time'), dateTimeVal)
+    + _dlIncidentField(s('lbl.location'),                   inc.locationName)
+    + _dlIncidentField(s('incident.boatLabel').replace(' (if applicable)', ''), inc.boatName)
+    + _dlIncidentField(s('incident.description'),           inc.description)
+    + _dlIncidentField(s('incident.personsInvolved'),       inc.involved)
+    + _dlIncidentField(s('incident.witnesses'),             inc.witnesses)
+    + _dlIncidentField(s('incident.immediateAction'),       inc.immediateAction)
+    + _dlIncidentField(s('incident.followUp'),              inc.followUp)
+    + _dlIncidentField(s('incident.handoffTo'),             handoffVal)
+    + _dlIncidentField(s('incident.filedBy'),               filedByVal);
+
+  // Deep-link into /incidents/ for review/resolve controls
+  const full = document.getElementById('idOpenFull');
+  if (full) full.href = '../incidents/#' + encodeURIComponent(inc.id);
+
+  openModal('incidentDetailModal');
 }
 
 // ── Activity type buttons ─────────────────────────────────────────────────────
@@ -652,6 +749,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const row = e.target.closest('[data-trip-id]');
     if (!row) return;
     openTripDetail(row.dataset.tripId);
+  });
+
+  // Open the incident detail modal on card click. The modal reads its
+  // data from _dlIncidentsById, which is populated by renderIncidentSection.
+  dom.incidentContainer.addEventListener('click', e => {
+    const card = e.target.closest('[data-incident-id]');
+    if (!card) return;
+    // Let taps on inner links (e.g. phone) through.
+    if (e.target.closest('a')) return;
+    openIncidentDetail(card.dataset.incidentId);
   });
 
   function debounce(fn, ms) {

@@ -2807,68 +2807,50 @@ function _volTogglePast() {
   renderVolunteerEvents();
 }
 
+// Localized "Wed, 15 Apr" / "Wed 15 Apr – Fri 17 Apr" for a volunteer event.
+function _volFormatDayLabel(ev) {
+  const startIso = ev && ev.date ? ev.date : '';
+  if (!startIso) return '';
+  const endIso = (ev && ev.endDate && ev.endDate !== startIso) ? ev.endDate : '';
+  const dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
+  const months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
+                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
+  const a = new Date(startIso + 'T00:00:00');
+  const left = s(dows[a.getDay()]) + ', ' + a.getDate() + ' ' + s(months[a.getMonth()]);
+  if (!endIso) return left;
+  const b = new Date(endIso + 'T00:00:00');
+  const right = s(dows[b.getDay()]) + ' ' + b.getDate() + ' ' + s(months[b.getMonth()]);
+  return left + ' – ' + right;
+}
+
+function _volFormatTimeRange(ev) {
+  const a = (ev && ev.startTime || '').slice(0, 5);
+  const b = (ev && ev.endTime   || '').slice(0, 5);
+  if (a && b) return a + '–' + b;
+  if (a) return a;
+  return '';
+}
+
+// Admin volunteer row — reuses the shared /volunteer/ card renderer so the
+// two views stay visually identical. Adds an Edit button that opens the
+// full volunteer-event modal and a Delete button for destructive removal.
 function _volRowHtml(ev, L) {
-  const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '—';
-  const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
-  const roles = Array.isArray(ev.roles) ? ev.roles : [];
-  const rolesHtml = roles.map(r => {
-    const rn = (L === 'IS' && r.nameIS ? r.nameIS : r.name) || r.name || '';
-    const endorseStr = r.requiredEndorsement
-      ? ' <span style="color:var(--brass)">[' + esc(certDefName((certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; })) || r.requiredEndorsement) + ']</span>'
-      : '';
-    const signups = (volunteerSignups || []).filter(function(su) { return su.eventId === ev.id && su.roleId === r.id; });
-    const filled = signups.length;
-    const slotsLbl = (r.slots ? (filled + '/' + r.slots) : (filled + '/∞')) + ' ' + s('admin.volSlots').toLowerCase();
-    const chipsHtml = signups.length
-      ? '<div style="padding:2px 0 4px 18px;display:flex;flex-wrap:wrap;gap:4px">'
-        + signups.map(function(su) {
-            // Live-lookup phone + consent from member record so the current
-            // preference state is always reflected (not a stale snapshot).
-            const mem = (members || []).find(function(m) {
-              return String(m.kennitala) === String(su.kennitala);
-            });
-            let showPhone = false;
-            let phone = '';
-            if (mem) {
-              phone = mem.phone || '';
-              let prefs = {};
-              try { prefs = JSON.parse(mem.preferences || '{}'); } catch(e) { prefs = {}; }
-              showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
-            }
-            const phoneHtml = (showPhone && phone)
-              ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(phone) + '</a>'
-              : '';
-            return '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
-              + esc(su.name || '—') + phoneHtml + '</span>';
-          }).join('')
-        + '</div>'
-      : '';
-    return '<span style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px;display:block">→ ' + esc(rn) + ' (' + slotsLbl + ')' + endorseStr + '</span>'
-      + chipsHtml;
-  }).join('');
-  const stopProp = 'onclick="event.stopPropagation();';
-  const leaderHtml = ev.leaderName
-    ? (function() {
-        const phoneLink = (ev.leaderPhone && ev.showLeaderPhone)
-          ? ' · <a href="tel:' + esc(ev.leaderPhone) + '" onclick="event.stopPropagation()" style="color:var(--brass);text-decoration:none">' + esc(ev.leaderPhone) + '</a>'
-          : '';
-        return '<div style="font-size:10px;color:var(--muted);padding:2px 0 4px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">'
-          + '<span>' + s('admin.volLeader') + ':</span>'
-          + '<span style="font-size:10px;color:var(--text);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:2px 8px">'
-          + esc(ev.leaderName) + phoneLink
-          + '</span>'
-          + '</div>';
-      })()
-    : '';
-  return '<div class="list-row" onclick="openVolEventModal(\'' + ev.id + '\')" style="flex-direction:column;align-items:stretch;gap:2px;cursor:pointer">'
-    + '<div style="display:flex;align-items:center;gap:10px">'
-    + '<span class="list-name">' + esc(title) + (subtitle ? '<span style="color:var(--muted);font-size:11px;margin-left:6px">· ' + esc(subtitle) + '</span>' : '') + '<span style="color:var(--muted);font-size:11px;margin-left:8px">' + esc(ev.date || '') + (ev.endDate && ev.endDate !== ev.date ? '→' + esc(ev.endDate) : '') + (ev.startTime ? ' · ' + esc(ev.startTime) : '') + (ev.endTime ? '–' + esc(ev.endTime) : '') + '</span></span>'
-    + '<button class="row-edit" ' + stopProp + 'openVolEventModal(\'' + ev.id + '\')">Edit</button>'
-    + '<button class="row-del" ' + stopProp + 'deleteVolEvent(\'' + ev.id + '\')">×</button>'
-    + '</div>'
-    + leaderHtml
-    + rolesHtml
-    + '</div>';
+  if (typeof renderVolunteerCard !== 'function') return '';
+  return renderVolunteerCard(ev, {
+    mode: 'admin',
+    lang: L || getLang(),
+    signups: volunteerSignups,
+    members: members,
+    certDefs: certDefs,
+    certDefName: (typeof certDefName === 'function') ? certDefName : function(d) { return d && (d.name || d.id) || ''; },
+    esc: esc,
+    s: s,
+    formatDay: _volFormatDayLabel,
+    formatTime: _volFormatTimeRange,
+    onCardClick:   "openVolEventModal('" + ev.id + "')",
+    onEditClick:   "openVolEventModal('" + ev.id + "')",
+    onDeleteClick: "deleteVolEvent('" + ev.id + "')",
+  });
 }
 
 function openVolEventModal(id) {

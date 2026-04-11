@@ -211,7 +211,9 @@
     const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
     const notes    = (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
     const roles    = Array.isArray(ev.roles) ? ev.roles : [];
-    const dayLbl   = ctx.formatDay  ? ctx.formatDay(ev.date || '') : (ev.date || '');
+    // formatDay receives the full event so callers can render multi-day
+    // ranges (ev.date → ev.endDate) as "Wed 15 Apr – Fri 17 Apr".
+    const dayLbl   = ctx.formatDay  ? ctx.formatDay(ev) : (ev.date || '');
     const timeLbl  = ctx.formatTime ? ctx.formatTime(ev) : '';
 
     // Header row — date · title · subtype all on one line (flex-wrap for narrow screens)
