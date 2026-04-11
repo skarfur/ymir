@@ -16,6 +16,7 @@
   <script src="../shared/ui.js"></script>
   <script src="../shared/certs.js" defer></script>
   <script src="../shared/volunteer.js" defer></script>
+  <script src="../shared/volunteer-role-presets.js" defer></script>
   <script src="../shared/mcm.js" defer></script>
   <script src="../shared/calendar.js"></script>
   <style>
@@ -932,9 +933,12 @@
       <input type="checkbox" id="atVolunteer" onchange="toggleAtVolunteerSection()"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
     </div>
     <div id="atRolesSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtRoleRow()" data-s="btn.add"></button>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="atRolePresetPicker" onchange="addAtRoleFromPreset(this.value);this.value=''" style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></select>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addAtRoleRow()" data-s="btn.add"></button>
+        </div>
       </div>
       <div id="atRolesList"></div>
     </div>
@@ -1010,9 +1014,12 @@
       <div class="field"><label data-s="admin.volNotesIS"></label><textarea id="veNotesIS" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px;resize:vertical"></textarea></div>
     </div>
     <div style="margin-top:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap">
         <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addVolRoleRow()" data-s="btn.add"></button>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="veRolePresetPicker" onchange="addVolRoleFromPreset(this.value);this.value=''" style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></select>
+          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="addVolRoleRow()" data-s="btn.add"></button>
+        </div>
       </div>
       <div id="volRolesList"></div>
     </div>
@@ -2574,11 +2581,14 @@ function toggleAtVolunteerSection() {
 function renderAtRoles() {
   var list = document.getElementById("atRolesList");
   if (!list) return;
+  populateRolePresetPicker("atRolePresetPicker");
   if (!window._atRoles || !window._atRoles.length) {
     list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noRoles') + '</div>';
     return;
   }
   var endorsements = (certDefs || []).filter(function(d) { return !!d.clubEndorsement; });
+  var inputStyle = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px';
+  var labelStyle = 'font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px';
   list.innerHTML = window._atRoles.map(function(r, i) {
     var endorseOpts = '<option value="">' + s('admin.roleNoRestriction') + '</option>'
       + endorsements.map(function(e) {
@@ -2586,17 +2596,23 @@ function renderAtRoles() {
       }).join('');
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleName') + '</label>'
-      + '<input type="text" value="' + esc(r.name || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].name=this.value"></div>'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleNameIS') + '</label>'
-      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].nameIS=this.value"></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleName') + '</label>'
+      + '<input type="text" value="' + esc(r.name || '') + '" style="' + inputStyle + '" onchange="window._atRoles[' + i + '].name=this.value"></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleNameIS') + '</label>'
+      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="' + inputStyle + '" onchange="window._atRoles[' + i + '].nameIS=this.value"></div>'
       + '<button onclick="window._atRoles.splice(' + i + ',1);renderAtRoles()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>'
       + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleDescEN') + '</label>'
+      + '<textarea rows="2" style="' + inputStyle + ';resize:vertical" onchange="window._atRoles[' + i + '].description=this.value">' + esc(r.description || '') + '</textarea></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleDescIS') + '</label>'
+      + '<textarea rows="2" style="' + inputStyle + ';resize:vertical" onchange="window._atRoles[' + i + '].descriptionIS=this.value">' + esc(r.descriptionIS || '') + '</textarea></div>'
+      + '</div>'
       + '<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-top:6px;align-items:end">'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volSlots') + '</label>'
-      + '<input type="number" min="1" value="' + (r.slots || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.roleEndorsement') + '</label>'
-      + '<select style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._atRoles[' + i + '].requiredEndorsement=this.value">' + endorseOpts + '</select></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volSlots') + '</label>'
+      + '<input type="number" min="1" value="' + (r.slots || '') + '" style="' + inputStyle + '" onchange="window._atRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.roleEndorsement') + '</label>'
+      + '<select style="' + inputStyle + '" onchange="window._atRoles[' + i + '].requiredEndorsement=this.value">' + endorseOpts + '</select></div>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -2604,8 +2620,40 @@ function renderAtRoles() {
 
 function addAtRoleRow() {
   if (!window._atRoles) window._atRoles = [];
-  window._atRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", slots: 1, requiredEndorsement: "" });
+  window._atRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", description: "", descriptionIS: "", slots: 1, requiredEndorsement: "" });
   renderAtRoles();
+}
+
+function addAtRoleFromPreset(presetId) {
+  var preset = (typeof getVolunteerRolePreset === 'function') ? getVolunteerRolePreset(presetId) : null;
+  if (!preset) return;
+  if (!window._atRoles) window._atRoles = [];
+  window._atRoles.push({
+    id: "r-" + Date.now(),
+    name: preset.name || '',
+    nameIS: preset.nameIS || '',
+    description: preset.description || '',
+    descriptionIS: preset.descriptionIS || '',
+    slots: preset.slots || 1,
+    requiredEndorsement: '',
+  });
+  renderAtRoles();
+}
+
+// Populates a <select> element with a list of standard volunteer role presets.
+// First option is a placeholder; the rest come from shared/volunteer-role-presets.js.
+// Safe to call repeatedly — idempotent when called with the same language.
+function populateRolePresetPicker(selectId) {
+  var sel = document.getElementById(selectId);
+  if (!sel) return;
+  if (typeof listVolunteerRolePresets !== 'function') return;
+  var L = getLang();
+  var presets = listVolunteerRolePresets(L);
+  var placeholder = '<option value="">' + s('admin.volRolePickPreset') + '</option>';
+  sel.innerHTML = placeholder + presets.map(function(p) {
+    var label = (L === 'IS' && p.nameIS ? p.nameIS : p.name) || p.name || p.id;
+    return '<option value="' + esc(p.id) + '">' + esc(label) + '</option>';
+  }).join('');
 }
 
 // ══ VOLUNTEER EVENTS ═════════════════════════════════════════════════════════
@@ -2747,10 +2795,13 @@ async function deleteVolEvent(id) {
 function renderVolRoles() {
   const list = document.getElementById("volRolesList");
   if (!list) return;
+  populateRolePresetPicker("veRolePresetPicker");
   if (!window._volRoles || !window._volRoles.length) {
     list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noRoles') + '</div>';
     return;
   }
+  var inputStyle = 'width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px';
+  var labelStyle = 'font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px';
   list.innerHTML = window._volRoles.map(function(r, i) {
     var endorseLabel = '';
     if (r.requiredEndorsement) {
@@ -2759,13 +2810,19 @@ function renderVolRoles() {
     }
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleName') + '</label>'
-      + '<input type="text" value="' + esc(r.name || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].name=this.value"></div>'
-      + '<div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volRoleNameIS') + '</label>'
-      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].nameIS=this.value"></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleName') + '</label>'
+      + '<input type="text" value="' + esc(r.name || '') + '" style="' + inputStyle + '" onchange="window._volRoles[' + i + '].name=this.value"></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleNameIS') + '</label>'
+      + '<input type="text" value="' + esc(r.nameIS || '') + '" style="' + inputStyle + '" onchange="window._volRoles[' + i + '].nameIS=this.value"></div>'
       + '<button onclick="window._volRoles.splice(' + i + ',1);renderVolRoles()" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>'
       + '</div>'
-      + '<div style="margin-top:6px"><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">' + s('admin.volSlots') + '</label>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleDescEN') + '</label>'
+      + '<textarea rows="2" style="' + inputStyle + ';resize:vertical" onchange="window._volRoles[' + i + '].description=this.value">' + esc(r.description || '') + '</textarea></div>'
+      + '<div><label style="' + labelStyle + '">' + s('admin.volRoleDescIS') + '</label>'
+      + '<textarea rows="2" style="' + inputStyle + ';resize:vertical" onchange="window._volRoles[' + i + '].descriptionIS=this.value">' + esc(r.descriptionIS || '') + '</textarea></div>'
+      + '</div>'
+      + '<div style="margin-top:6px"><label style="' + labelStyle + '">' + s('admin.volSlots') + '</label>'
       + '<input type="number" min="1" value="' + (r.slots || '') + '" style="width:80px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px" onchange="window._volRoles[' + i + '].slots=parseInt(this.value)||0"></div>'
       + endorseLabel
       + '</div>';
@@ -2774,7 +2831,23 @@ function renderVolRoles() {
 
 function addVolRoleRow() {
   if (!window._volRoles) window._volRoles = [];
-  window._volRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", slots: 1 });
+  window._volRoles.push({ id: "r-" + Date.now(), name: "", nameIS: "", description: "", descriptionIS: "", slots: 1, requiredEndorsement: "" });
+  renderVolRoles();
+}
+
+function addVolRoleFromPreset(presetId) {
+  var preset = (typeof getVolunteerRolePreset === 'function') ? getVolunteerRolePreset(presetId) : null;
+  if (!preset) return;
+  if (!window._volRoles) window._volRoles = [];
+  window._volRoles.push({
+    id: "r-" + Date.now(),
+    name: preset.name || '',
+    nameIS: preset.nameIS || '',
+    description: preset.description || '',
+    descriptionIS: preset.descriptionIS || '',
+    slots: preset.slots || 1,
+    requiredEndorsement: '',
+  });
   renderVolRoles();
 }
 
@@ -2832,7 +2905,15 @@ function loadRolesFromActType(atId) {
   if (!at || !at.roles) return [];
   var roles = Array.isArray(at.roles) ? at.roles : tryParse_(at.roles, []);
   return roles.map(function(r) {
-    return { id: "r-" + Date.now() + '-' + Math.random().toString(36).slice(2,6), name: r.name || '', nameIS: r.nameIS || '', slots: r.slots || 1, requiredEndorsement: r.requiredEndorsement || '' };
+    return {
+      id: "r-" + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+      name: r.name || '',
+      nameIS: r.nameIS || '',
+      description: r.description || '',
+      descriptionIS: r.descriptionIS || '',
+      slots: r.slots || 1,
+      requiredEndorsement: r.requiredEndorsement || '',
+    };
   });
 }
 
@@ -3623,7 +3704,7 @@ function addClubCalRow(name, calId) {
   var list = document.getElementById("clubCalList");
   // Remove empty-state message if present
   var empty = list.querySelector("[data-s='admin.calEmpty']");
-  if (empty) empty.parentElement.remove();
+  if (empty) empty.remove();
   var row = document.createElement("div");
   row.className = "grid2";
   row.style.cssText = "margin-bottom:8px;align-items:end";
