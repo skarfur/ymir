@@ -288,6 +288,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
+  // Delegated click handler — opens detail modal for any incident row
+  document.getElementById('incidentsList').addEventListener('click', e => {
+    const row = e.target.closest('.incident-row');
+    if (!row) return;
+    const inc = incidentById(row.dataset.id);
+    if (inc) openDetail(inc);
+  });
+
   // Handle hash → jump to detail
   if (window.location.hash) {
     const id = window.location.hash.slice(1);
@@ -373,25 +381,31 @@ function renderList() {
   const sevBadge = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
   el.innerHTML = incidents.map(i => {
     const types = parseJson(i.types, []);
-    const rNotes = parseJson(i.reviewerNotes, []);
-    return `<div class="incident-row" onclick="openDetail(incidentById('${i.id}'))">
+    const typeLabels = types.map(t => {
+      const def = INCIDENT_TYPES.find(x => x.v === t);
+      return def ? s(def.key) : t;
+    }).join(', ');
+    const sevLabel = i.severity ? (s('incident.sev.'+i.severity) || i.severity) : '';
+    const resolved = i.resolved && i.resolved !== 'false';
+    const inReview = !resolved && i.status === 'review';
+    const statusCls = resolved ? 'badge-green' : (inReview ? 'badge-orange' : 'badge-yellow');
+    const statusLbl = resolved ? s('incident.resolved')
+      : (inReview ? s('incident.statusReview') : s('incident.open'));
+    const dateStr = i.date || sstr(i.filedAt).slice(0, 10);
+    const timeStr = i.time || sstr(i.filedAt).slice(11, 16);
+    const descStr = sstr(i.description);
+    const desc = descStr.slice(0, 140) + (descStr.length > 140 ? '…' : '');
+    return `<div class="incident-row" data-id="${esc(i.id)}">
       <div class="incident-header">
-        <span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(s('incident.sev.'+i.severity)||i.severity||'')}</span>
-        <span class="fw-500 flex-1">${esc(i.title||s('incident.title'))}</span>
-        ${(function(){
-          const r = i.resolved && i.resolved !== 'false';
-          const rev = !r && i.status === 'review';
-          const cls = r ? 'badge-green' : (rev ? 'badge-orange' : 'badge-yellow');
-          const lbl = r ? s('incident.resolved') : (rev ? s('incident.statusReview') : s('incident.open'));
-          return `<span class="badge ${cls}">${lbl}</span>`;
-        })()}
+        <span class="fw-500 flex-1">${esc(typeLabels || i.title || '')}</span>
+        ${sevLabel ? `<span class="badge ${sevBadge[i.severity]||'badge-muted'}">${esc(sevLabel)}</span>` : ''}
+        <span class="badge ${statusCls}">${statusLbl}</span>
       </div>
-      <div class="incident-desc">${esc(sstr(i.description)).slice(0,120)}${sstr(i.description).length>120?'…':''}</div>
       <div class="incident-meta">
-        ${esc(sstr(i.filedAt).slice(0,16).replace('T',' '))}
+        ${esc(dateStr)}${timeStr ? ' ' + esc(timeStr) : ''}
         ${i.boatName ? ' · '+esc(i.boatName) : ''}
-        ${rNotes.length ? ` · ${rNotes.length} comment${rNotes.length===1?'':'s'}` : ''}
       </div>
+      ${desc ? `<div class="incident-desc">${esc(desc)}</div>` : ''}
     </div>`;
   }).join('');
 }
