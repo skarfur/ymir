@@ -47,7 +47,8 @@ async function apiPost(action, payload) {
       action === 'saveCertCategories' ||
       action === 'saveBoatAccess' || action === 'saveBoatOos' || action === 'saveReservation' || action === 'removeReservation' ||
       action === 'saveVolunteerEvent' || action === 'deleteVolunteerEvent' ||
-      action === 'volunteerSignup' || action === 'volunteerWithdraw') {
+      action === 'volunteerSignup' || action === 'volunteerWithdraw' ||
+      action === 'saveRowingPassportDef' || action === 'importRowingPassportCsv') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');
       sessionStorage.removeItem('ymir_getMembers_');
