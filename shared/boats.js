@@ -85,6 +85,107 @@ function boatEmoji(cat) {
   return BOAT_EMOJI[key] || "⛵";
 }
 
+// ── Access-gate registry & normalization ──────────────────────────────────────
+// Pages that need cert-aware access checks (rank gates, legacy subcat-key
+// disambiguation) should call registerCertDefsForBoats(cfgRes.certDefs) after
+// loading config. Pages that don't register still get correct behaviour for
+// structured gates and exact subcat matches — only rank-based gates and
+// legacy-string → certId resolution require defs.
+var _boatAccessCertDefs = [];
+function registerCertDefsForBoats(defs) {
+  _boatAccessCertDefs = Array.isArray(defs) ? defs : [];
+}
+
+/**
+ * Return a {certId, sub, minRank} object describing the boat's access gate,
+ * or null if no gate is set. Handles three input shapes:
+ *   1. New:     boat.accessGate = { certId, sub?, minRank? }
+ *   2. Legacy subcat key:  boat.accessGateCert = 'released'        → resolves via defs
+ *   3. Legacy def id:      boat.accessGateCert = 'support_boat_skipper'
+ * When defs are unavailable and the legacy string can't be resolved, returns
+ * a sub-only shape ({certId:'', sub:raw}) which memberHasGate() treats as a
+ * loose subcat match — preserving pre-migration behaviour.
+ */
+function normalizeAccessGate(boat, certDefs) {
+  if (!boat) return null;
+  var defs = Array.isArray(certDefs) ? certDefs : _boatAccessCertDefs;
+  // Shape 1: structured object
+  if (boat.accessGate && typeof boat.accessGate === 'object' && boat.accessGate.certId) {
+    var minRank = Number(boat.accessGate.minRank || 0) || 0;
+    return {
+      certId:  String(boat.accessGate.certId),
+      sub:     boat.accessGate.sub ? String(boat.accessGate.sub) : '',
+      minRank: minRank > 0 ? minRank : 0,
+    };
+  }
+  // Shape 2/3: bare string
+  var raw = boat.accessGateCert;
+  if (!raw || typeof raw !== 'string') return null;
+  if (defs.length) {
+    // Try subcat key match first (most legacy values are subcat keys)
+    for (var i = 0; i < defs.length; i++) {
+      var def = defs[i];
+      if (def && Array.isArray(def.subcats)) {
+        for (var j = 0; j < def.subcats.length; j++) {
+          if (def.subcats[j] && def.subcats[j].key === raw) {
+            return { certId: def.id, sub: raw, minRank: 0 };
+          }
+        }
+      }
+    }
+    // Then def id match (flat credentials like 'support_boat_skipper')
+    for (var k = 0; k < defs.length; k++) {
+      if (defs[k] && defs[k].id === raw) return { certId: raw, sub: '', minRank: 0 };
+    }
+  }
+  // Unresolved legacy: treat as sub-only match
+  return { certId: '', sub: raw, minRank: 0 };
+}
+
+function _gateSubcatRank(certDefs, certId, subKey) {
+  var defs = Array.isArray(certDefs) ? certDefs : _boatAccessCertDefs;
+  if (!defs.length || !certId || !subKey) return 0;
+  var def = null;
+  for (var i = 0; i < defs.length; i++) { if (defs[i] && defs[i].id === certId) { def = defs[i]; break; } }
+  if (!def || !Array.isArray(def.subcats)) return 0;
+  for (var j = 0; j < def.subcats.length; j++) {
+    var sc = def.subcats[j];
+    if (sc && sc.key === subKey) return Number(sc.rank || 0) || 0;
+  }
+  return 0;
+}
+
+/**
+ * Unified predicate: does `certs` (a member's credentials array) satisfy
+ * `gate` (a normalized access gate)?
+ *
+ * Rules:
+ *   - No gate (null / empty) → always true
+ *   - Expired credentials (c.expiresAt < today) never match
+ *   - gate.minRank > 0: any subcat on the same certId whose rank >= minRank
+ *   - gate.sub: exact subcat match on the same certId
+ *   - gate.certId only: member holds any credential with that certId
+ *   - gate.sub without certId (unresolved legacy): match by sub alone
+ */
+function memberHasGate(certs, gate, certDefs) {
+  if (!gate || (!gate.certId && !gate.sub)) return true;
+  if (!Array.isArray(certs)) return false;
+  var today = todayISO();
+  var defs = Array.isArray(certDefs) ? certDefs : _boatAccessCertDefs;
+  return certs.some(function(c) {
+    if (!c) return false;
+    if (c.expiresAt && c.expiresAt < today) return false;
+    // Legacy sub-only gate (certId unknown): match by sub alone
+    if (!gate.certId) return gate.sub && c.sub === gate.sub;
+    if (c.certId !== gate.certId) return false;
+    if (gate.minRank > 0) {
+      return _gateSubcatRank(defs, gate.certId, c.sub) >= gate.minRank;
+    }
+    if (gate.sub) return c.sub === gate.sub;
+    return true; // certId-only gate satisfied
+  });
+}
+
 // ── Ownership / charter helpers ───────────────────────────────────────────────
 
 /** Returns true if the boat is privately owned. */
@@ -157,16 +258,11 @@ function canAccessBoat(boat, user, opts) {
   if (isStaff(user)) return true;
   // Private boat owner always has access
   if (boat.ownership === 'private' && String(boat.ownerId || boat.ownerKennitala || '') === String(user.kennitala)) return true;
-  // Check cert gate (excluding expired certs)
-  if (boat.accessGateCert) {
+  // Check cert gate via unified helper (honours expiry + rank + new structured shape)
+  var gate = normalizeAccessGate(boat, opts && opts.certDefs);
+  if (gate) {
     var certs = parseJson(user.certifications, []);
-    var today = todayISO();
-    if (Array.isArray(certs) && certs.some(function(c) {
-      var matches = c.sub === boat.accessGateCert || c.certId === boat.accessGateCert;
-      if (!matches) return false;
-      if (c.expiresAt && c.expiresAt < today) return false;
-      return true;
-    })) return true;
+    if (memberHasGate(certs, gate, opts && opts.certDefs)) return true;
   }
   // Check allowlist
   if (boat.accessAllowlist && Array.isArray(boat.accessAllowlist) && boat.accessAllowlist.indexOf(String(user.kennitala)) !== -1) return true;

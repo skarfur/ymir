@@ -411,9 +411,14 @@ window.showCxTab = showCxTab;
     _myCrews = _allBoardCrews.filter(function(c) { return _isMyMember(c); });
 
     if (cfgRes.boatCategories) registerBoatCats(cfgRes.boatCategories);
+    // Register cert defs so normalizeAccessGate can resolve legacy bare-string
+    // gate values (e.g. 'released_rower') to their {certId, sub} object shape.
+    if (cfgRes.certDefs && typeof registerCertDefsForBoats === 'function') {
+      registerCertDefsForBoats(cfgRes.certDefs);
+    }
 
     // Filter trips to rowing-division-gated boats
-    var cxBoatIds = new Set(_boats.filter(b => b.accessGateCert === 'released_rower').map(b => b.id));
+    var cxBoatIds = new Set(_boats.filter(_isRowingGatedBoat).map(function(b) { return b.id; }));
     _allTrips = (tripsRes.trips || []).filter(t => cxBoatIds.has(t.boatId));
 
     renderStats();
@@ -461,12 +466,28 @@ function renderStats() {
   document.getElementById('statDist').textContent = '—';
 }
 
+// ══ ROWING-GATE PREDICATE ════════════════════════════════════════════════════
+// True if the boat's access gate references the rowing division. Uses
+// normalizeAccessGate() to handle both new {accessGate:{certId,sub,minRank}}
+// shapes and legacy bare-string accessGateCert values. Also accepts the known
+// legacy subcat strings so pre-migration clubs that don't use the
+// 'rowing_division' canonical certId still get the right filter.
+function _isRowingGatedBoat(b) {
+  if (!b) return false;
+  var gate = (typeof normalizeAccessGate === 'function') ? normalizeAccessGate(b) : null;
+  if (gate && gate.certId === 'rowing_division') return true;
+  var raw = b.accessGateCert;
+  return raw === 'released_rower' || raw === 'released'
+      || raw === 'restricted_rower' || raw === 'restricted'
+      || raw === 'coxswain' || raw === 'rowing_division';
+}
+
 // ══ MAINTENANCE ══════════════════════════════════════════════════════════════
 var _rowingBoatIdSet = null;
 function renderMaint() {
   var el = document.getElementById('maintList');
   if (!_rowingBoatIdSet) {
-    _rowingBoatIdSet = new Set(_boats.filter(b => b.accessGateCert === 'released_rower').map(b => b.id));
+    _rowingBoatIdSet = new Set(_boats.filter(_isRowingGatedBoat).map(function(b) { return b.id; }));
   }
   var items = _allMaint.filter(m => _rowingBoatIdSet.has(m.boatId) && m.status !== 'resolved');
   if (!items.length) {
@@ -825,7 +846,7 @@ var _cxSlotBoats = [];
 function initCxSlots() {
   // Find rowing-shell boats with slot scheduling
   _cxSlotBoats = (_boats || []).filter(function(b) {
-    return boolVal(b.slotSchedulingEnabled) && b.accessGateCert === 'released_rower';
+    return boolVal(b.slotSchedulingEnabled) && _isRowingGatedBoat(b);
   });
   var sect = document.getElementById('sectSlots');
   // Show section if there are slot-scheduled boats (no longer requires active crews)

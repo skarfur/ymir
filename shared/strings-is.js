@@ -546,6 +546,8 @@ var _STRINGS_FLAT = {
   "boat.accessControlled": "Stýrður aðgangur",
   "boat.gateCert": "Nauðsynleg vottun",
   "boat.gateCertNone": "Ekkert (aðeins listi)",
+  "boat.gateCertAny": "hvaða stig sem er",
+  "boat.gateCertOrHigher": "eða hærra",
   "boat.allowlist": "Leyfilegir meðlimir",
   "boat.reservations": "Úthluta leigu",
   "boat.addReservation": "Bæta við leigu",

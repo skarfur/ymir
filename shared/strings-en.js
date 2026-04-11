@@ -546,6 +546,8 @@ var _STRINGS_FLAT = {
   "boat.accessControlled": "Controlled Access",
   "boat.gateCert": "Required Certification",
   "boat.gateCertNone": "None (Specific members only)",
+  "boat.gateCertAny": "any level",
+  "boat.gateCertOrHigher": "or higher",
   "boat.allowlist": "Allowed Members",
   "boat.reservations": "Charter Status",
   "boat.addReservation": "Assign Charter",

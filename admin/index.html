@@ -1862,7 +1862,7 @@ function openBoatModal(id) {
   document.getElementById("bOwnerSuggestions").innerHTML = '';
   // Access mode
   document.getElementById("bAccessMode").value = b && b.accessMode === 'controlled' ? 'controlled' : 'free';
-  populateGateCertSelect(b ? (b.accessGateCert || '') : '');
+  populateGateCertSelect(_currentGateFor(b));
   _editAllowlist = b && Array.isArray(b.accessAllowlist) ? b.accessAllowlist.slice() : [];
   renderAllowlistChips();
   updateAccessFields();
@@ -1924,15 +1924,69 @@ function updateSlotFields() {
   document.getElementById("bSlotOptions").classList.toggle("hidden", !enabled);
 }
 
-function populateGateCertSelect(current) {
+// Encode a gate descriptor as a stable option value. Empty fields are omitted
+// and the result is a compact JSON string. Decoded by _decodeGateValue().
+function _encodeGateValue(gate) {
+  if (!gate || !gate.certId) return '';
+  var out = { certId: gate.certId };
+  if (gate.sub) out.sub = gate.sub;
+  if (gate.minRank) out.minRank = Number(gate.minRank);
+  return JSON.stringify(out);
+}
+function _decodeGateValue(v) {
+  if (!v) return null;
+  try { var o = JSON.parse(v); return (o && o.certId) ? o : null; } catch (e) { return null; }
+}
+// Return the stored gate for a boat as a {certId, sub, minRank} object, or
+// null. Uses normalizeAccessGate (from shared/boats.js) so legacy boats with
+// just accessGateCert still resolve to the correct {certId, sub} pair.
+function _currentGateFor(boat) {
+  if (!boat) return null;
+  if (typeof normalizeAccessGate === 'function') {
+    return normalizeAccessGate(boat, certDefs);
+  }
+  // Defensive fallback — should not trigger in practice.
+  if (boat.accessGate && boat.accessGate.certId) return boat.accessGate;
+  return null;
+}
+
+function populateGateCertSelect(currentGate) {
   var sel = document.getElementById("bGateCert");
   sel.innerHTML = '<option value="">' + esc(s('boat.gateCertNone')) + '</option>';
-  // Collect all subcats from all cert defs — labels resolved via bilingual helpers.
+  var selectedVal = _encodeGateValue(currentGate);
+  // Build options: one entry per credential "grade".
+  //   Flat defs (no subcats) → a single def-level entry.
+  //   Defs with subcats → a def-level "(any level)" entry, one exact-match
+  //     entry per subcat, plus a "… or higher" entry for each ranked subcat.
+  var anyLbl   = s('boat.gateCertAny');
+  var orHigher = s('boat.gateCertOrHigher');
   (certDefs || []).forEach(function(def) {
-    if (!def.subcats || !def.subcats.length) return;
-    def.subcats.forEach(function(sc) {
-      sel.innerHTML += '<option value="' + esc(sc.key) + '"' + (sc.key === current ? ' selected' : '') + '>'
-        + esc(certDefName(def) + ' — ' + certSubcatLabel(sc)) + '</option>';
+    if (!def || !def.id) return;
+    var defName = certDefName(def);
+    var subs    = Array.isArray(def.subcats) ? def.subcats : [];
+    if (!subs.length) {
+      var v0 = _encodeGateValue({ certId: def.id });
+      sel.innerHTML += '<option value="' + esc(v0) + '"' + (v0 === selectedVal ? ' selected' : '') + '>'
+        + esc(defName) + '</option>';
+      return;
+    }
+    // def-level "(any level)" option
+    var vAny = _encodeGateValue({ certId: def.id });
+    sel.innerHTML += '<option value="' + esc(vAny) + '"' + (vAny === selectedVal ? ' selected' : '') + '>'
+      + esc(defName + ' — ' + anyLbl) + '</option>';
+    // exact-match subcat options
+    subs.forEach(function(sc) {
+      if (!sc || !sc.key) return;
+      var vExact = _encodeGateValue({ certId: def.id, sub: sc.key });
+      sel.innerHTML += '<option value="' + esc(vExact) + '"' + (vExact === selectedVal ? ' selected' : '') + '>'
+        + esc(defName + ' — ' + certSubcatLabel(sc)) + '</option>';
+    });
+    // rank-or-higher options (only for subcats with a numeric rank)
+    subs.forEach(function(sc) {
+      if (!sc || !sc.key || !sc.rank) return;
+      var vRank = _encodeGateValue({ certId: def.id, minRank: Number(sc.rank) });
+      sel.innerHTML += '<option value="' + esc(vRank) + '"' + (vRank === selectedVal ? ' selected' : '') + '>'
+        + esc(defName + ' — ' + certSubcatLabel(sc) + ' ' + orHigher) + '</option>';
     });
   });
 }
@@ -2088,9 +2142,13 @@ async function saveBoat() {
     ownership:      ownershipVal,
     ownerId:        ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
     ownerName:      ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
-    // access control
+    // access control — new structured gate, plus legacy mirror for older readers
     accessMode:     accessModeVal,
-    accessGateCert: accessModeVal === 'controlled' ? (document.getElementById("bGateCert").value || '') : '',
+    accessGate:     accessModeVal === 'controlled' ? _decodeGateValue(document.getElementById("bGateCert").value) : null,
+    accessGateCert: accessModeVal === 'controlled' ? (function() {
+      var _g = _decodeGateValue(document.getElementById("bGateCert").value);
+      return _g ? (_g.sub || _g.certId) : '';
+    })() : '',
     accessAllowlist: accessModeVal === 'controlled' ? _editAllowlist.slice() : [],
     // slot scheduling
     slotSchedulingEnabled: accessModeVal === 'controlled' && document.getElementById("bSlotScheduling").checked,

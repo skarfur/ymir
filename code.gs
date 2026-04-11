@@ -1670,6 +1670,76 @@ function getCertDefs_() {
   try { return normalizeCertDefsRaw_(JSON.parse(raw)); } catch (e) { return []; }
 }
 
+// ── Unified boat access-gate helpers ──────────────────────────────────────────
+// Mirrors normalizeAccessGate / memberHasGate in shared/boats.js. Keep the two
+// in sync: any semantic change here (shape, rank handling, expiry) must also
+// land in shared/boats.js so frontend and backend never disagree.
+function normalizeAccessGate_(boat, certDefs) {
+  if (!boat) return null;
+  var defs = Array.isArray(certDefs) ? certDefs : [];
+  if (boat.accessGate && typeof boat.accessGate === 'object' && boat.accessGate.certId) {
+    var minRank = Number(boat.accessGate.minRank || 0) || 0;
+    return {
+      certId:  String(boat.accessGate.certId),
+      sub:     boat.accessGate.sub ? String(boat.accessGate.sub) : '',
+      minRank: minRank > 0 ? minRank : 0,
+    };
+  }
+  var raw = boat.accessGateCert;
+  if (!raw || typeof raw !== 'string') return null;
+  if (defs.length) {
+    for (var i = 0; i < defs.length; i++) {
+      var def = defs[i];
+      if (def && Array.isArray(def.subcats)) {
+        for (var j = 0; j < def.subcats.length; j++) {
+          if (def.subcats[j] && def.subcats[j].key === raw) {
+            return { certId: def.id, sub: raw, minRank: 0 };
+          }
+        }
+      }
+    }
+    for (var k = 0; k < defs.length; k++) {
+      if (defs[k] && defs[k].id === raw) return { certId: raw, sub: '', minRank: 0 };
+    }
+  }
+  return { certId: '', sub: raw, minRank: 0 };
+}
+
+function _gateSubcatRank_(certDefs, certId, subKey) {
+  if (!Array.isArray(certDefs) || !certDefs.length || !certId || !subKey) return 0;
+  var def = null;
+  for (var i = 0; i < certDefs.length; i++) { if (certDefs[i] && certDefs[i].id === certId) { def = certDefs[i]; break; } }
+  if (!def || !Array.isArray(def.subcats)) return 0;
+  for (var j = 0; j < def.subcats.length; j++) {
+    var sc = def.subcats[j];
+    if (sc && sc.key === subKey) return Number(sc.rank || 0) || 0;
+  }
+  return 0;
+}
+
+function memberHasGate_(certs, gate, certDefs) {
+  if (!gate || (!gate.certId && !gate.sub)) return true;
+  if (!Array.isArray(certs)) return false;
+  var today = new Date().toISOString().slice(0, 10);
+  return certs.some(function(c) {
+    if (!c) return false;
+    if (c.expiresAt && c.expiresAt < today) return false;
+    if (!gate.certId) return gate.sub && c.sub === gate.sub;
+    if (c.certId !== gate.certId) return false;
+    if (gate.minRank > 0) {
+      return _gateSubcatRank_(certDefs, gate.certId, c.sub) >= gate.minRank;
+    }
+    if (gate.sub) return c.sub === gate.sub;
+    return true;
+  });
+}
+
+function _parseMemberCerts_(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try { var p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (e) { return []; }
+}
+
 // Pad legacy cert-def entries with the new bilingual fields so server-side
 // consumers (public record page, captain report, getConfig) always see the
 // extended shape. Mirrors new fields onto legacy fields too.
@@ -1947,10 +2017,14 @@ function saveCheckout_(b) {
           var hasAccess = false;
           // Owner check
           if (checkBoat.ownership === 'private' && String(checkBoat.ownerId || checkBoat.ownerKennitala || '') === checkKt) hasAccess = true;
-          // Cert gate check
-          if (!hasAccess && checkBoat.accessGateCert && checkMember && checkMember.certifications) {
-            var memberCerts = typeof checkMember.certifications === 'string' ? JSON.parse(checkMember.certifications) : (checkMember.certifications || []);
-            if (Array.isArray(memberCerts) && memberCerts.some(function(c) { return c.sub === checkBoat.accessGateCert || c.certId === checkBoat.accessGateCert; })) hasAccess = true;
+          // Cert gate check (unified helper — honours expiry, rank, structured + legacy shapes)
+          if (!hasAccess && checkMember) {
+            var _coDefs = getCertDefsFromMap_(cfgMap);
+            var _coGate = normalizeAccessGate_(checkBoat, _coDefs);
+            if (_coGate) {
+              var memberCerts = _parseMemberCerts_(checkMember.certifications);
+              if (memberHasGate_(memberCerts, _coGate, _coDefs)) hasAccess = true;
+            }
           }
           // Allowlist check
           if (!hasAccess && checkBoat.accessAllowlist && Array.isArray(checkBoat.accessAllowlist) && checkBoat.accessAllowlist.indexOf(checkKt) !== -1) hasAccess = true;
@@ -2149,7 +2223,26 @@ function saveBoatAccess_(b) {
   const idx = boats.findIndex(x => x.id === b.boatId);
   if (idx < 0) return failJ('Boat not found');
   if (b.accessMode !== undefined) boats[idx].accessMode = b.accessMode === 'controlled' ? 'controlled' : 'free';
-  if (b.accessGateCert !== undefined) boats[idx].accessGateCert = String(b.accessGateCert || '');
+  // New structured gate wins. Also mirror a legacy accessGateCert string
+  // (sub || certId) so older readers keep working until fully migrated.
+  if (b.accessGate !== undefined) {
+    if (b.accessGate && typeof b.accessGate === 'object' && b.accessGate.certId) {
+      var _sg = {
+        certId:  String(b.accessGate.certId),
+        sub:     b.accessGate.sub     ? String(b.accessGate.sub)     : '',
+        minRank: Number(b.accessGate.minRank || 0) || 0,
+      };
+      boats[idx].accessGate = _sg;
+      boats[idx].accessGateCert = _sg.sub || _sg.certId;
+    } else {
+      boats[idx].accessGate = null;
+      boats[idx].accessGateCert = '';
+    }
+  } else if (b.accessGateCert !== undefined) {
+    // Legacy callers still work
+    boats[idx].accessGateCert = String(b.accessGateCert || '');
+    if (!b.accessGateCert) boats[idx].accessGate = null;
+  }
   if (b.accessAllowlist !== undefined) boats[idx].accessAllowlist = Array.isArray(b.accessAllowlist) ? b.accessAllowlist.map(String) : [];
   setConfigSheetValue_('boats', JSON.stringify(boats));
   cDel_('config');
@@ -2497,14 +2590,21 @@ function bookSlot_(b) {
   } else {
     // Individual booking (keelboats — captain required)
     if (!b.kennitala) return failJ('kennitala required');
-    if (boat.category === 'keelboat' && boat.accessGateCert) {
-      var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
-      if (!member) return failJ('Member not found');
-      var isStaffRole = member.role === 'staff' || member.role === 'admin';
-      if (!isStaffRole) {
-        var certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []);
-        if (!Array.isArray(certs) || !certs.some(function(c) { return c.sub === boat.accessGateCert; })) {
-          return failJ('You do not have the required certification to book this boat');
+    // Keelboat-only gate: rowing shells enforce cert access via their own
+    // released-rower path. For keelboats, honour the boat's access gate
+    // (structured or legacy) via the unified helper — blocks expired certs.
+    if (boat.category === 'keelboat') {
+      var _bsDefs = getCertDefsFromMap_(cfgMap);
+      var _bsGate = normalizeAccessGate_(boat, _bsDefs);
+      if (_bsGate) {
+        var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
+        if (!member) return failJ('Member not found');
+        var isStaffRole = member.role === 'staff' || member.role === 'admin';
+        if (!isStaffRole) {
+          var certs = _parseMemberCerts_(member.certifications);
+          if (!memberHasGate_(certs, _bsGate, _bsDefs)) {
+            return failJ('You do not have the required certification to book this boat');
+          }
         }
       }
     }
@@ -2565,14 +2665,20 @@ function bulkBookSlots_(b) {
     updates.bookedByKennitala = String(b.kennitala);
     if (crew.status === 'forming') updates.tentative = 'true';
   } else {
-    if (boat.category === 'keelboat' && boat.accessGateCert) {
-      var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
-      if (!member) return failJ('Member not found');
-      var isStaffRole = member.role === 'staff' || member.role === 'admin';
-      if (!isStaffRole) {
-        var certs = typeof member.certifications === 'string' ? JSON.parse(member.certifications) : (member.certifications || []);
-        if (!Array.isArray(certs) || !certs.some(function(c) { return c.sub === boat.accessGateCert; })) {
-          return failJ('You do not have the required certification to book this boat');
+    // Keelboat-only gate (same rationale as bookSlot_): use unified helper so
+    // structured, legacy, and rank-based gates all agree and expiry blocks.
+    if (boat.category === 'keelboat') {
+      var _bbDefs = getCertDefsFromMap_(cfgMap);
+      var _bbGate = normalizeAccessGate_(boat, _bbDefs);
+      if (_bbGate) {
+        var member = findOne_('members', 'kennitala', String(b.kennitala).trim());
+        if (!member) return failJ('Member not found');
+        var isStaffRole = member.role === 'staff' || member.role === 'admin';
+        if (!isStaffRole) {
+          var certs = _parseMemberCerts_(member.certifications);
+          if (!memberHasGate_(certs, _bbGate, _bbDefs)) {
+            return failJ('You do not have the required certification to book this boat');
+          }
         }
       }
     }
