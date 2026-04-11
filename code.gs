@@ -235,18 +235,44 @@ function sanitizeCell_(col, val) {
   return val;
 }
 
-function readAll_(tabKey) {
+// ─────────────────────────────────────────────────────────────────────────────
+// REQUEST-SCOPED SHEET CACHE
+// Each Google Sheets read (sheet.getDataRange().getValues()) is the dominant
+// latency cost in Apps Script.  Memoize raw sheet data per tab inside one
+// doGet/doPost/trigger invocation so reads after the first hit memory only.
+// Cleared at every entry point — see doGet/doPost/checkAndSendOverdueAlerts.
+// ─────────────────────────────────────────────────────────────────────────────
+var _sheetCache_ = {}; // tabKey -> { sheet, headers, values, sanitized }
+
+function clearSheetCache_() { _sheetCache_ = {}; }
+function invalidateSheetCache_(tabKey) { delete _sheetCache_[tabKey]; }
+
+function getSheetData_(tabKey) {
+  if (_sheetCache_[tabKey]) return _sheetCache_[tabKey];
   const sheet = getSheet_(tabKey);
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  const headers = data[0].map(String);
-  return data.slice(1)
+  const headers = (data[0] || []).map(String);
+  // Raw, unfiltered — updateRow_'s (i + 2) arithmetic depends on this array
+  // matching the actual sheet row positions. readAll_ applies the
+  // trailing-blank filter in its mapping step.
+  const values = data.length >= 1 ? data.slice(1) : [];
+  _sheetCache_[tabKey] = { sheet: sheet, headers: headers, values: values, sanitized: null };
+  return _sheetCache_[tabKey];
+}
+
+function readAll_(tabKey) {
+  const c = getSheetData_(tabKey);
+  if (c.sanitized) return c.sanitized;
+  const headers = c.headers;
+  if (!headers.length) { c.sanitized = []; return c.sanitized; }
+  c.sanitized = c.values
     .map(row => {
       const o = {};
       headers.forEach((h, i) => { o[h] = sanitizeCell_(h, row[i]); });
       return o;
     })
     .filter(r => r[headers[0]] !== '' && r[headers[0]] !== null);
+  return c.sanitized;
 }
 
 function findOne_(tabKey, field, value) {
@@ -254,16 +280,21 @@ function findOne_(tabKey, field, value) {
 }
 
 function insertRow_(tabKey, obj) {
-  const sheet = getSheet_(tabKey);
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-  sheet.appendRow(headers.map(h => obj[h] !== undefined ? obj[h] : ''));
+  const c = getSheetData_(tabKey);
+  const row = c.headers.map(h => obj[h] !== undefined ? obj[h] : '');
+  c.sheet.appendRow(row);
+  // appendRow lands at the first blank row, which may not equal
+  // values.length + 2 if the sheet has trailing blanks. Invalidate to keep
+  // the index invariant trivially correct.
+  invalidateSheetCache_(tabKey);
 }
 
 function addColIfMissing_(tabKey, colName) {
-  const sheet = getSheet_(tabKey);
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-  if (!headers.includes(colName)) {
-    sheet.getRange(1, headers.length + 1).setValue(colName);
+  const c = getSheetData_(tabKey);
+  if (!c.headers.includes(colName)) {
+    c.sheet.getRange(1, c.headers.length + 1).setValue(colName);
+    // Header shape changed — drop the cache so the new column is picked up.
+    invalidateSheetCache_(tabKey);
   }
 }
 function ensureGroupCols_() {
@@ -277,17 +308,25 @@ function ensureMaintCols_() {
 }
 
 function updateRow_(tabKey, keyField, keyValue, updates) {
-  const sheet = getSheet_(tabKey);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(String);
+  const c = getSheetData_(tabKey);
+  const sheet = c.sheet, headers = c.headers, values = c.values;
   const keyCol = headers.indexOf(keyField);
   if (keyCol < 0) throw new Error('Field not found: ' + keyField);
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][keyCol]).trim() === String(keyValue).trim()) {
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][keyCol]).trim() === String(keyValue).trim()) {
+      let wrote = false;
       Object.entries(updates).forEach(([k, v]) => {
         const col = headers.indexOf(k);
-        if (col >= 0) sheet.getRange(i + 1, col + 1).setValue(v);
+        if (col >= 0) {
+          // Per-column setValue preserves existing concurrency semantics:
+          // two executions touching disjoint columns on the same row don't
+          // clobber each other.  Keep cache coherent with the write.
+          sheet.getRange(i + 2, col + 1).setValue(v);
+          values[i][col] = v;
+          wrote = true;
+        }
       });
+      if (wrote) c.sanitized = null; // lazy view is stale
       return true;
     }
   }
@@ -295,14 +334,15 @@ function updateRow_(tabKey, keyField, keyValue, updates) {
 }
 
 function deleteRow_(tabKey, keyField, keyValue) {
-  const sheet = getSheet_(tabKey);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(String);
+  const c = getSheetData_(tabKey);
+  const sheet = c.sheet, headers = c.headers, values = c.values;
   const keyCol = headers.indexOf(keyField);
   if (keyCol < 0) throw new Error('Field not found: ' + keyField);
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][keyCol]).trim() === String(keyValue).trim()) {
-      sheet.deleteRow(i + 1);
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (String(values[i][keyCol]).trim() === String(keyValue).trim()) {
+      sheet.deleteRow(i + 2);
+      values.splice(i, 1);
+      c.sanitized = null;
       return true;
     }
   }
@@ -325,6 +365,7 @@ function cDel_(k) { try { CacheService.getScriptCache().remove(k); } catch (e) {
 
 function doGet(e) {
   try {
+    clearSheetCache_();
     const b = e.parameter?.p ? JSON.parse(e.parameter.p) : (e.parameter || {});
     if (b.action === 'resolveFromEmail') return resolveFromEmail_(b);
     // Public query endpoints — no token required (spec §5)
@@ -341,6 +382,7 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    clearSheetCache_();
     const b = JSON.parse(e.postData.contents);
     // Public POST endpoints — no token required
     if (b.action === 'dashboard') return publicDashboard_();
@@ -3861,6 +3903,7 @@ function getCheckoutRow_(id) {
 }
 
 function checkAndSendOverdueAlerts() {
+  clearSheetCache_();
   const cfg = getAlertConfig_();
   const result = getOverdueAlerts_({ _serverSide: true });
   const alerts = (result.success ? (result.alerts || []) : []);
