@@ -1318,6 +1318,7 @@ var _STRINGS_FLAT = {
   "member.calendar": "Dagatal",
   "member.calTitle": "DAGATÖL KLÚBBSINS",
   "member.calEmpty": "Engin dagatöl hafa verið sett upp.",
+  "member.calOpen": "Opna í Google Dagatali",
   "nav.volunteer": "Sjálfboðaliði",
   "volunteer.title": "Sjálfboðaliði",
   "volunteer.subtitle": "Skráðu þig á sjálfboðaviðburði klúbbsins",
