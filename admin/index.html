@@ -3704,7 +3704,7 @@ function addClubCalRow(name, calId) {
   var list = document.getElementById("clubCalList");
   // Remove empty-state message if present
   var empty = list.querySelector("[data-s='admin.calEmpty']");
-  if (empty) empty.parentElement.remove();
+  if (empty) empty.remove();
   var row = document.createElement("div");
   row.className = "grid2";
   row.style.cssText = "margin-bottom:8px;align-items:end";
