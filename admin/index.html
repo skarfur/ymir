@@ -2574,9 +2574,52 @@ async function saveActType() {
 async function deleteActType(id) {
   const _id = id || editingId;
   if (!await ymConfirm(s("admin.confirmDeleteActType"))) return;
+  // Count linked volunteer events and signups so we can warn the admin
+  // before cascading through real signup data.
+  var linkedEventIds = (volunteerEvents || [])
+    .filter(function(e) {
+      if (!e) return false;
+      return (e.sourceActivityTypeId && String(e.sourceActivityTypeId) === String(_id))
+          || (e.activityTypeId       && String(e.activityTypeId)       === String(_id));
+    })
+    .map(function(e) { return e.id; });
+  var linkedSignups = (volunteerSignups || [])
+    .filter(function(su) { return su && linkedEventIds.indexOf(su.eventId) !== -1; }).length;
+  if (linkedSignups > 0) {
+    var warn = s("admin.confirmDeleteActTypeCascade")
+      .replace("{n}", linkedEventIds.length)
+      .replace("{m}", linkedSignups);
+    if (!await ymConfirm(warn)) return;
+  }
   try {
-    await apiPost("deleteActivityType", { id: _id });
+    const res = await apiPost("deleteActivityType", { id: _id });
     actTypes = actTypes.filter(a => a.id !== _id);
+    var removedE = (res && res.removedEvents) || 0;
+    var removedS = (res && res.removedSignups) || 0;
+    if (removedE > 0) {
+      // Drop cascaded events + signups from the in-memory arrays so the
+      // volunteer tab reflects the backend state without a full reload.
+      var droppedIds = {};
+      (volunteerEvents || []).forEach(function(e) {
+        if (!e) return;
+        var belongs = (e.sourceActivityTypeId && String(e.sourceActivityTypeId) === String(_id))
+                   || (e.activityTypeId       && String(e.activityTypeId)       === String(_id));
+        if (belongs) droppedIds[e.id] = true;
+      });
+      volunteerEvents = (volunteerEvents || []).filter(function(e) { return !(e && droppedIds[e.id]); });
+      volunteerSignups = (volunteerSignups || []).filter(function(su) { return !(su && droppedIds[su.eventId]); });
+      if (typeof renderVolunteerEvents === 'function') {
+        try { renderVolunteerEvents(); } catch(e) {}
+      }
+      toast(
+        s("admin.actTypeDeletedCascade")
+          .replace("{n}", removedE)
+          .replace("{m}", removedS),
+        "ok"
+      );
+    } else {
+      toast(s("toast.deleted"), "ok");
+    }
     renderActTypes();
     closeModal("actTypeModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -2778,7 +2821,17 @@ function renderVolunteerEvents() {
   }
   const L = getLang();
   const today = new Date().toISOString().slice(0, 10);
-  const all = (volunteerEvents || []).filter(e => e.active !== false);
+  // Defense-in-depth: hide materialized events whose source activity type is
+  // missing, inactive, or no longer volunteer-flagged. Manually-created events
+  // (no sourceActivityTypeId) are shown regardless.
+  const activeAtIds = new Set((actTypes || [])
+    .filter(a => bool(a.active) && bool(a.volunteer))
+    .map(a => a.id));
+  const all = (volunteerEvents || []).filter(e => {
+    if (!e || e.active === false) return false;
+    if (e.sourceActivityTypeId) return activeAtIds.has(e.sourceActivityTypeId);
+    return true;
+  });
   const sorted = all.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')
     || (a.startTime || '').localeCompare(b.startTime || ''));
   const upcoming = sorted.filter(e => (e.date || '') >= today);

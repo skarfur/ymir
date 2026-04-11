@@ -1569,14 +1569,18 @@ function saveActivityType_(b) {
     }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
-    // Materialize bulk-scheduled volunteer events into volunteer_events so
-    // each occurrence exists as a standalone record that can be edited or
-    // deleted individually from the admin volunteer tab.
-    var materialized = 0;
-    if (isVol) {
-      try { materialized = materializeVolunteerEventsForAt_(item); } catch(e) {}
-    }
-    return okJ({ id: item.id, item, materialized: materialized });
+    // Reconcile bulk-scheduled volunteer events. This both materializes new
+    // occurrences and prunes stale ones (shrunk date range, removed subtype,
+    // volunteer flag toggled off, etc.). Runs unconditionally so that turning
+    // volunteer=false on an existing activity type cleans up its events.
+    var reconcile = { added: 0, removed: 0, softDeleted: 0 };
+    try { reconcile = reconcileVolunteerEventsForAt_(item) || reconcile; } catch(e) {}
+    return okJ({
+      id: item.id,
+      item: item,
+      materialized: reconcile.added,
+      reconcile: reconcile,
+    });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
@@ -1585,8 +1589,40 @@ function deleteActivityType_(id) {
     let arr = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
     arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
+    // Cascade: remove volunteer events linked to this activity type and any
+    // signups attached to them. Materialized events (sourceActivityTypeId ===
+    // id) are always removed. Manually-created events that also reference this
+    // type via activityTypeId are removed too, since from the admin's point of
+    // view they belonged to the type being deleted.
+    var removedEvents = 0;
+    var removedSignups = 0;
+    try {
+      var events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
+      var toRemove = events.filter(function(e) {
+        if (!e) return false;
+        return (e.sourceActivityTypeId && String(e.sourceActivityTypeId) === String(id))
+            || (e.activityTypeId       && String(e.activityTypeId)       === String(id));
+      });
+      if (toRemove.length) {
+        var removedIds = {};
+        toRemove.forEach(function(e) { if (e.id) removedIds[e.id] = true; });
+        var kept = events.filter(function(e) { return !(e && e.id && removedIds[e.id]); });
+        setConfigSheetValue_('volunteer_events', JSON.stringify(kept));
+        removedEvents = toRemove.length;
+        // Cascade signups for each removed event (mirrors deleteVolunteerEvent_).
+        try {
+          ensureVolunteerSignupsTab_();
+          var signups = readAll_('volunteerSignups') || [];
+          signups.forEach(function(s) {
+            if (s && s.eventId && removedIds[s.eventId]) {
+              try { deleteRow_('volunteerSignups', 'id', s.id); removedSignups++; } catch(e) {}
+            }
+          });
+        } catch(e) { /* signups tab may not exist yet */ }
+      }
+    } catch(e) { /* volunteer_events may not exist yet */ }
     cDel_('config');
-    return okJ({ deleted: true });
+    return okJ({ deleted: true, removedEvents: removedEvents, removedSignups: removedSignups });
   } catch(e) { return failJ('deleteActivityType failed: ' + e.message); }
 }
 
@@ -5868,6 +5904,74 @@ function materializeVolunteerEventsForAt_(at) {
     cDel_('config');
   }
   return merged.added;
+}
+
+// Reconcile materialized volunteer events for a single activity type. This is
+// the single source of truth called from saveActivityType_. It both:
+//   1. Adds any occurrences that the current activity type config would produce
+//      but aren't yet present (materialize-new behavior).
+//   2. Prunes materialized events (sourceActivityTypeId === at.id) that would
+//      NOT be produced by the current config — i.e. the bulk schedule shrank,
+//      a subtype was removed, days-of-week changed, or the volunteer flag was
+//      turned off. Events with existing signups are soft-deleted (active=false,
+//      orphaned=true) so history is preserved; events with no signups are
+//      removed outright.
+//
+// Manually-created events (no sourceActivityTypeId) are never touched here
+// even if their activityTypeId happens to match — those are admin-owned rows.
+//
+// Returns { added, removed, softDeleted }.
+function reconcileVolunteerEventsForAt_(at) {
+  var result = { added: 0, removed: 0, softDeleted: 0 };
+  if (!at || !at.id) return result;
+  var arr = [];
+  try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
+  // Compute the set of event IDs the current config would produce. If the
+  // activity type is inactive or no longer volunteer-flagged, _volExpandActType_
+  // returns [] and the "wanted" set is empty — meaning everything materialized
+  // for this type becomes prune-eligible.
+  var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var toIso = '2099-12-31';
+  var expanded = _volExpandActType_(at, fromIso, toIso);
+  var wanted = {};
+  expanded.forEach(function(e) { if (e && e.id) wanted[e.id] = true; });
+  // Load signups once so we can tell which events are still referenced.
+  var signups = [];
+  try { ensureVolunteerSignupsTab_(); signups = readAll_('volunteerSignups') || []; } catch(e) { signups = []; }
+  var signupByEvent = {};
+  signups.forEach(function(s) {
+    if (!s || !s.eventId) return;
+    if (!signupByEvent[s.eventId]) signupByEvent[s.eventId] = 0;
+    signupByEvent[s.eventId]++;
+  });
+  var ts = now_();
+  var next = [];
+  arr.forEach(function(ev) {
+    if (!ev) return;
+    var belongs = ev.sourceActivityTypeId && String(ev.sourceActivityTypeId) === String(at.id);
+    if (!belongs) { next.push(ev); return; }
+    // Belongs to this activity type — check whether current config still wants it.
+    if (wanted[ev.id]) { next.push(ev); return; }
+    // Not wanted anymore. Preserve if signups exist, otherwise drop.
+    if (signupByEvent[ev.id]) {
+      ev.active = false;
+      ev.orphaned = true;
+      ev.updatedAt = ts;
+      next.push(ev);
+      result.softDeleted++;
+    } else {
+      result.removed++;
+      // (dropped — not pushed onto next)
+    }
+  });
+  // Merge in any newly-expanded events (existing IDs are left untouched).
+  var merged = _volMergeMaterialized_(next, expanded);
+  result.added = merged.added;
+  if (result.added > 0 || result.removed > 0 || result.softDeleted > 0) {
+    setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
+    cDel_('config');
+  }
+  return result;
 }
 
 // Materialize for all active, volunteer-flagged activity types. Intended for
