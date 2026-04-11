@@ -1623,21 +1623,21 @@ function renderClubCalendars() {
     el.innerHTML = '<div class="empty-note">' + (s('member.calEmpty') || '') + '</div>';
     return;
   }
-  //  Calendar's embed runs cross-origin, so we can't style its interior
-  // directly and its &bgcolor= URL param is ignored in the new agenda view.
-  // On dark theme, apply a CSS filter to visually invert the iframe — this is
-  // a purely client-side paint effect and doesn't touch iframe content.
-  // hue-rotate(180deg) compensates so colored event markers stay close to
-  // their original hues after the invert.
-  var theme = (typeof getTheme === 'function') ? getTheme() : 'dark';
-  if (theme === 'auto') {
-    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  }
-  var isDark = theme !== 'light';
-  var frameFilter = isDark ? 'filter:invert(0.80);' : '';
-  // Always white — Google's default — so the invert filter lands on a dark
-  // shade on dark theme, and it stays white on light theme.
-  var frameBg = '#ffffff';
+  // Google Calendar's embed runs cross-origin, so we can't style its interior
+  // directly and its &bgcolor= URL param is ignored in the agenda view.
+  //
+  // Dark-mode hack (hardcoded for now — see issue ERHQ5):
+  //   1. filter:invert(1) hue-rotate(180deg) on the iframe flips it so the
+  //      white bg becomes black and the dark text becomes white, while
+  //      colored event markers roughly keep their original hues.
+  //   2. A mix-blend-mode:screen overlay with our dark-card color (#132d50)
+  //      tints the now-black bg to navy — screen math: result = 255 - (255-a)(255-b)/255,
+  //      so black (0) + #132d50 = #132d50, and white (255) + anything = white.
+  //      Text stays fully white, bg hits the site color exactly.
+  //   3. pointer-events:none on the overlay so clicks still reach the iframe.
+  //   4. isolation:isolate on the wrapper keeps the blend scoped to these
+  //      two elements.
+  var CARD_DARK = '#132d50';
   el.innerHTML = _clubCalendars.map(function(c) {
     var cid = encodeURIComponent(c.calendarId);
     var src = 'https://calendar.google.com/calendar/embed'
@@ -1651,7 +1651,10 @@ function renderClubCalendars() {
       +   '<span style="font-size:11px;font-weight:500;color:var(--text)">' + esc(c.name) + '</span>'
       +   '<a href="' + openUrl + '" target="_blank" rel="noopener" style="font-size:11px;color:var(--brass);text-decoration:none">' + esc(s('member.calOpen')) + ' \u2197</a>'
       + '</div>'
-      + '<iframe src="' + src + '" style="border:1px solid var(--border);width:100%;height:380px;border-radius:var(--radius-md);background:' + frameBg + ';display:block;' + frameFilter + '" frameborder="0"></iframe>'
+      + '<div style="position:relative;isolation:isolate;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:' + CARD_DARK + '">'
+      +   '<iframe src="' + src + '" style="border:0;width:100%;height:380px;display:block;background:#ffffff;filter:invert(1) hue-rotate(180deg)" frameborder="0"></iframe>'
+      +   '<div style="position:absolute;inset:0;background:' + CARD_DARK + ';mix-blend-mode:screen;pointer-events:none"></div>'
+      + '</div>'
       + '</div>';
   }).join('');
 }
