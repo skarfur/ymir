@@ -542,10 +542,12 @@ function renderLaunchPicker(preselectedBoatId) {
   const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
-      '<div class="mb-12">'+
-        '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+      '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
+        '<button class="btn btn-secondary" style="grid-column:2;text-align:center" onclick="scanBoatQR()">'+
           s('qr.scanBtn')+
         '</button>'+
+      '</div>'+
+      '<div class="mb-12">'+
         '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="renderNonClubLaunchForm()">'+
           '🚣 '+s('member.nonClubBoat')+
           ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
@@ -560,8 +562,8 @@ function renderLaunchPicker(preselectedBoatId) {
   const grouped={};
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
-    '<div class="mb-12">'+
-      '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" onclick="scanBoatQR()">'+
+    '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
+      '<button class="btn btn-secondary" style="grid-column:2;text-align:center" onclick="scanBoatQR()">'+
         s('qr.scanBtn')+
       '</button>'+
     '</div>'+

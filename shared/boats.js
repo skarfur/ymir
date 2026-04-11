@@ -79,7 +79,10 @@ const BOAT_CAT_COLORS = {
 };
 
 function boatEmoji(cat) {
-  return BOAT_EMOJI[(cat||"").toLowerCase()] || "⛵";
+  const key = (cat||"").toLowerCase();
+  const c = _boatCatRegistry.find(x => x.key === key);
+  if (c && c.emoji) return c.emoji;
+  return BOAT_EMOJI[key] || "⛵";
 }
 
 // ── Ownership / charter helpers ───────────────────────────────────────────────
