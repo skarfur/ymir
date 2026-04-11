@@ -172,8 +172,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._earlyConfig || apiGet('getConfig'),
       window._earlyVolSignups || apiPost('getVolunteerSignups', {}),
     ]);
-    _volEvents   = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
     _volActTypes = cfgRes.activityTypes || [];
+    // Defense-in-depth: hide materialized events whose source activity type is
+    // missing, inactive, or no longer volunteer-flagged. Manually-created
+    // events (no sourceActivityTypeId) are shown regardless. Mirrors the
+    // admin volunteer-tab filter so stale data never leaks through.
+    const _vpActiveAtIds = new Set((_volActTypes || [])
+      .filter(a => a && a.active !== false && a.active !== 'false'
+                   && (a.volunteer === true || a.volunteer === 'true'))
+      .map(a => a.id));
+    _volEvents = (cfgRes.volunteerEvents || []).filter(e => {
+      if (!e || e.active === false) return false;
+      if (e.sourceActivityTypeId) return _vpActiveAtIds.has(e.sourceActivityTypeId);
+      return true;
+    });
     _volCertDefs = (typeof certDefsFromConfig === 'function'
       ? certDefsFromConfig(cfgRes.certDefs || [])
       : (cfgRes.certDefs || []));
