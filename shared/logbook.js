@@ -1876,26 +1876,34 @@ async function ackCrewRejection(confId){
 }
 
 async function respondConf(confId,response,rejectComment){
+  // Optimistic update: flip local state and repaint before the server round-trip
+  // so the UI feels instant. On error we revert below.
+  var _conf = _confirmations.incoming.find(c => c.id === confId);
+  var _prevStatus = _conf ? _conf.status : null;
+  if (_conf) _conf.status = response === 'confirmed' ? 'confirmed' : 'rejected';
+  // Server-side dismiss hides the row from BOTH parties (single shared flag),
+  // so skip it when rejecting a crew_assigned: the skipper still needs to see
+  // the rejection and acknowledge the resulting crew-count change.
+  var skipDismiss = response==='rejected' && _conf && _conf.type==='crew_assigned';
+  updateConfBadge();
+  renderConfirmations();
   try{
     await apiPost('respondConfirmation',{id:confId,response:response,rejectComment:rejectComment||''});
-    // Update local state: mark as confirmed/rejected (keep for display), dismiss server-side
-    var _conf = _confirmations.incoming.find(c => c.id === confId);
-    if (_conf) _conf.status = response === 'confirmed' ? 'confirmed' : 'rejected';
-    // Server-side dismiss hides the row from BOTH parties (single shared flag),
-    // so skip it when rejecting a crew_assigned: the skipper still needs to see
-    // the rejection and acknowledge the resulting crew-count change.
-    var skipDismiss = response==='rejected' && _conf && _conf.type==='crew_assigned';
     if (!skipDismiss) {
       apiPost('dismissConfirmation', { id: confId }).catch(function(){});
     }
-    updateConfBadge();
-    renderConfirmations();
     if(response==='confirmed'){
-      // Refresh logbook to show new trip
+      // Refresh logbook to show the new crew trip created server-side
       reload();
     }
     showToast(response==='confirmed'?s('logbook.confirmed'):s('logbook.rejected'));
-  }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
+  }catch(e){
+    // Revert optimistic change so the UI matches reality
+    if (_conf) _conf.status = _prevStatus;
+    updateConfBadge();
+    renderConfirmations();
+    showToast(s('toast.error')+': '+e.message,'err');
+  }
 }
 
 async function promptRejectConf(confId){
