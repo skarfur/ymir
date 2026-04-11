@@ -48,6 +48,7 @@ async function apiPost(action, payload) {
       action === 'saveBoatAccess' || action === 'saveBoatOos' || action === 'saveReservation' || action === 'removeReservation' ||
       action === 'saveVolunteerEvent' || action === 'deleteVolunteerEvent' ||
       action === 'volunteerSignup' || action === 'volunteerWithdraw' ||
+      action === 'syncVolunteerEvents' ||
       action === 'saveRowingPassportDef' || action === 'importRowingPassportCsv') {
     try {
       sessionStorage.removeItem('ymir_getConfig_');

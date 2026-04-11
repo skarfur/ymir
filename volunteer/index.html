@@ -59,6 +59,8 @@
   color:var(--text); font-family:inherit; font-size:10px; cursor:pointer; transition:border-color .15s,background .15s; white-space:nowrap; }
 .vp-btn:hover { border-color:var(--brass); }
 .vp-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+.vp-filter-btn { padding:4px 10px; font-size:9px; letter-spacing:.6px; text-transform:uppercase; }
+.vp-filter-btn.active { background:var(--brass); color:#000; border-color:var(--brass); }
 .vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
 .vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
 
@@ -132,7 +134,13 @@
 
   <!-- ══ LIST VIEW ══ -->
   <div id="vpTab-list">
-    <div class="vp-section-hdr" data-s="volunteer.upcoming"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+      <div class="vp-section-hdr" style="margin-bottom:0" data-s="volunteer.upcoming"></div>
+      <div style="display:flex;gap:4px">
+        <button id="vpFilterAll"   class="vp-btn vp-filter-btn active" onclick="vpSetFilter('all')"  data-s="volunteer.filterAll"></button>
+        <button id="vpFilterMine"  class="vp-btn vp-filter-btn"        onclick="vpSetFilter('mine')" data-s="volunteer.filterMine"></button>
+      </div>
+    </div>
     <div id="vpListContainer"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
@@ -174,6 +182,9 @@ let _vpView = 'list';
 let _vpMonth = (function() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
 let _vpDayModalIso = null;
 let _myCerts = [];
+let _vpListFilter = 'all'; // 'all' | 'mine'
+const VP_LIST_PAGE = 20;
+let _vpListShown  = VP_LIST_PAGE;
 
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
@@ -271,22 +282,66 @@ function _localIso(d) {
 function _todayIso() { return _localIso(new Date()); }
 
 // ══ LIST VIEW ════════════════════════════════════════════════════════════════
-function renderVpList() {
-  const container = document.getElementById('vpListContainer');
-  if (!container) return;
+function vpSetFilter(mode) {
+  _vpListFilter = mode;
+  _vpListShown  = VP_LIST_PAGE;
+  document.getElementById('vpFilterAll').classList.toggle('active',  mode === 'all');
+  document.getElementById('vpFilterMine').classList.toggle('active', mode === 'mine');
+  renderVpList();
+}
+
+function _vpEventHasMine(ev) {
+  const roles = Array.isArray(ev.roles) ? ev.roles : [];
+  return _volSignups.some(function(su) {
+    return su.eventId === ev.id && isMineSignup(su)
+      && roles.some(function(r) { return r.id === su.roleId; });
+  });
+}
+
+function vpShowMore() {
+  _vpListShown += VP_LIST_PAGE;
+  renderVpList();
+}
+
+function _vpGetSortedUpcoming() {
   const today = _todayIso();
-  const merged = getMergedEvents(today, null);
-  const upcoming = merged
+  // Expand one year out — enough for any reasonable season and bounded so
+  // clients don't iterate huge bulk schedules day-by-day.
+  const end = new Date();
+  end.setDate(end.getDate() + 365);
+  const toIso = _localIso(end);
+  const merged = getMergedEvents(today, toIso);
+  let upcoming = merged
     .filter(function(e) { return (e.date || '') >= today; })
     .sort(function(a, b) {
       return (a.date || '').localeCompare(b.date || '')
         || (a.startTime || '').localeCompare(b.startTime || '');
     });
+  if (_vpListFilter === 'mine') {
+    upcoming = upcoming.filter(_vpEventHasMine);
+  }
+  return upcoming;
+}
+
+function renderVpList() {
+  const container = document.getElementById('vpListContainer');
+  if (!container) return;
+  const upcoming = _vpGetSortedUpcoming();
   if (!upcoming.length) {
-    container.innerHTML = '<div class="vp-empty">' + s('member.noVolEvents') + '</div>';
+    const emptyKey = _vpListFilter === 'mine' ? 'volunteer.noMyEvents' : 'member.noVolEvents';
+    container.innerHTML = '<div class="vp-empty">' + s(emptyKey) + '</div>';
     return;
   }
-  container.innerHTML = upcoming.map(renderVpCard).join('');
+  const visible = upcoming.slice(0, _vpListShown);
+  let html = visible.map(renderVpCard).join('');
+  if (upcoming.length > _vpListShown) {
+    const remaining = upcoming.length - _vpListShown;
+    html += '<div style="text-align:center;padding:6px 0 2px">'
+      + '<button class="vp-btn" onclick="vpShowMore()">'
+      + esc(s('volunteer.showMore').replace('{n}', remaining))
+      + '</button></div>';
+  }
+  container.innerHTML = html;
 }
 
 function renderVpCard(ev) {
