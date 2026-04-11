@@ -42,12 +42,10 @@
 .member-actions .act-btn--launch::before   { content:'🟧'; }
 .member-actions .act-btn--report::before   { content:'🔧'; }
 .member-actions .act-btn--logbook::before  { content:'📖'; }
+.member-actions .act-btn--sauma::before    { content:'🧵'; }
 .member-actions .act-btn--captain::before  { content:'⎈'; }
 .member-actions .act-btn--coxswain::before { content:'🚣'; }
-.member-actions .act-btn--sauma::before    { content:'🧵'; }
-.member-actions .act-btn--volunteer::before { content:'🛟'; }
 .member-actions .act-btn--calendar::before { content:'📅'; }
-
 
 /* ── Tabs ── */
 .hub-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
@@ -159,6 +157,24 @@
   font-size:9px; font-weight:600; padding:0 4px;
   pointer-events:none; }
 
+/* ── Volunteer event cards ── */
+.vol-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
+  padding:12px 14px; margin-bottom:8px; }
+.vol-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.vol-card-title { font-size:13px; font-weight:500; color:var(--text); }
+.vol-card-date { font-size:10px; color:var(--brass); margin-bottom:2px; }
+.vol-card-leader { font-size:10px; color:var(--muted); margin-top:4px; }
+.vol-role-row { display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:6px 0; border-top:1px solid var(--border); margin-top:6px; }
+.vol-role-name { font-size:11px; color:var(--text); }
+.vol-role-status { font-size:10px; color:var(--muted); }
+.vol-bar { width:60px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.vol-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
+.vol-btn { padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
+  color:var(--text); font-family:inherit; font-size:10px; cursor:pointer; transition:border-color .15s; }
+.vol-btn:hover { border-color:var(--brass); }
+.vol-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .fsb-bar-wrap{flex:1;width:auto}
@@ -197,9 +213,9 @@
     <button class="act-btn act-btn--report" onclick="openStandaloneReport()" data-s="member.reportIssue"></button>
     <a class="act-btn act-btn--logbook" id="logbookBtn" href="../logbook/"    data-s="nav.logbook"></a>
     <a class="act-btn act-btn--sauma" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
-    <a class="act-btn act-btn--volunteer" id="volunteerBtn" href="../volunteer/" data-s="nav.volunteer"></a>
     <a class="act-btn act-btn--captain" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
     <a class="act-btn act-btn--coxswain" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
+    <button class="act-btn act-btn--calendar" id="calendarBtn" onclick="openClubCalendar()" data-s="member.calendar" style="display:none"></button>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -215,12 +231,23 @@
     <div id="fleetStatus"></div>
   </div>
 
-  <!-- ═══ CLUB CALENDARS ═══ -->
-  <div id="clubCalendarSection" class="mt-16">
-    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.calTitle"></div>
-    <div id="clubCalendarList"></div>
+  <!-- ═══ VOLUNTEER EVENTS ═══ -->
+  <div id="volunteerSection" class="mt-16">
+    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.volunteerEvents"></div>
+    <div id="volunteerList"></div>
   </div>
 
+</div>
+
+<!-- ══ CLUB CALENDAR MODAL ══ -->
+<div class="modal-overlay hidden" id="calendarModal" onclick="if(event.target===this)closeModal('calendarModal')">
+  <div class="modal" style="max-width:900px;width:95vw;max-height:92vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3 data-s="member.calTitle"></h3>
+      <button class="modal-close-x" onclick="closeModal('calendarModal')">×</button>
+    </div>
+    <div id="calendarContent"></div>
+  </div>
 </div>
 
 <!-- ══ MANUAL TRIP MODAL ══ -->
@@ -366,11 +393,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
     _volunteerActTypes = cfgRes.activityTypes || [];
     _clubCalendars = cfgRes.clubCalendars || [];
+    if (_clubCalendars.length) document.getElementById('calendarBtn').style.display = '';
 
     populateFormSelects();
     renderActiveCheckouts();
     renderFleetByCat();
-    renderClubCalendars();
     loadVolunteerSignups();
 
     // Handle ?boat=<id> URL param from QR-code scans (native camera → browser)
@@ -1560,44 +1587,59 @@ function _renderMemberStaffStatus() {
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
 }
 
-// ══ VOLUNTEER NOTIFICATION BADGE ═════════════════════════════════════════════
-// Volunteer events now live on the dedicated /volunteer/ page. The member hub
-// just fetches signups so it can show an "unfilled roles" badge on the button.
+// ══ VOLUNTEER EVENTS ═══════════════════════════════════════════════════════
 
 async function loadVolunteerSignups() {
+  // Check whether we have any volunteer-flagged activity types (virtual events)
+  // or saved events. If neither, skip the signup fetch entirely.
   const hasVolActType = (_volunteerActTypes || []).some(function(a) {
     return a && (a.volunteer === true || a.volunteer === 'true') && (a.active !== false && a.active !== 'false');
   });
   if (!_volunteerEvents.length && !hasVolActType) {
-    renderVolunteerNotifBadge();
+    renderMemberVolunteerEvents();
     return;
   }
   try {
     const res = await apiPost('getVolunteerSignups', {});
     _volunteerSignups = res.signups || [];
   } catch(e) { _volunteerSignups = []; }
-  renderVolunteerNotifBadge();
+  renderMemberVolunteerEvents();
 }
 
-// Counts unfilled volunteer-role slots across upcoming events (saved + virtual)
-// and shows a notif badge on the Volunteer button if there are any.
-function renderVolunteerNotifBadge() {
-  const btn = document.getElementById('volunteerBtn');
-  if (!btn) return;
-  // Strip any previous badge before recounting
-  btn.querySelectorAll('.notif-badge').forEach(function(b) { b.remove(); });
-
+function renderMemberVolunteerEvents() {
+  const container = document.getElementById('volunteerList');
+  if (!container) return;
+  const L = getLang();
+  const user = getUser();
+  const kt = user ? user.kennitala : '';
   const today = new Date().toISOString().slice(0, 10);
+  // Expand volunteer-flagged activity types with bulk schedules into virtual
+  // events, then merge with saved events.
   const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
     ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
     : [];
   const merged = (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(_volunteerEvents, virtualEvents)
     : _volunteerEvents.concat(virtualEvents);
-
-  let unfilled = 0;
-  merged.forEach(function(ev) {
-    if ((ev.date || '') < today) return;
+  // Member's own certifications (for endorsement gating)
+  let myCerts = [];
+  try {
+    myCerts = user && user.certifications
+      ? (typeof user.certifications === 'string' ? JSON.parse(user.certifications) : user.certifications)
+      : [];
+  } catch(e) { myCerts = []; }
+  // Show only future or today events, sorted by date
+  const upcoming = merged
+    .filter(e => (e.date || '') >= today)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.startTime || '').localeCompare(b.startTime || ''));
+  if (!upcoming.length) {
+    container.innerHTML = '<div class="empty-note">' + s('member.noVolEvents') + '</div>';
+    return;
+  }
+  container.innerHTML = upcoming.map(function(ev) {
+    const title = (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
+    const subtitle = (L === 'IS' && ev.subtitleIS ? ev.subtitleIS : ev.subtitle) || ev.subtitle || '';
+    const notes = (L === 'IS' && ev.notesIS ? ev.notesIS : ev.notes) || ev.notes || '';
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     const rolesHtml = roles.map(function(role) {
       const rn = (L === 'IS' && role.nameIS ? role.nameIS : role.name) || role.name || '';
@@ -1675,29 +1717,32 @@ async function memberVolSignup(eventId, roleId) {
   }
 }
 
-  if (!unfilled) return;
-  const badge = document.createElement('span');
-  badge.className = 'notif-badge';
-  badge.textContent = unfilled > 99 ? '99+' : unfilled;
-  badge.title = unfilled + ' ' + s('volunteer.unfilledRoles');
-  btn.appendChild(badge);
+async function memberVolWithdraw(signupId) {
+  try {
+    await apiPost('volunteerWithdraw', { id: signupId });
+    _volunteerSignups = _volunteerSignups.filter(function(su) { return su.id !== signupId; });
+    renderMemberVolunteerEvents();
+    toast(s('toast.saved'));
+  } catch(e) {
+    toast(e.message, 'err');
+  }
 }
 
-// ══ CLUB CALENDARS (inline embed) ════════════════════════════════════════════
-function renderClubCalendars() {
-  var el = document.getElementById('clubCalendarList');
-  if (!el) return;
+// ══ CLUB CALENDAR ════════════════════════════════════════════════════════════
+function openClubCalendar() {
+  var el = document.getElementById('calendarContent');
   if (!_clubCalendars.length) {
-    el.innerHTML = '<div class="empty-note">' + (s('member.calEmpty') || '') + '</div>';
-    return;
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">' + (s('member.calEmpty') || '') + '</div>';
+  } else {
+    el.innerHTML = _clubCalendars.map(function(c) {
+      var src = 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(c.calendarId) + '&ctz=Atlantic/Reykjavik';
+      return '<div style="margin-bottom:14px">'
+        + '<div style="font-size:12px;font-weight:600;margin-bottom:6px">' + esc(c.name) + '</div>'
+        + '<iframe src="' + src + '" style="border:0;width:100%;height:400px;border-radius:6px" frameborder="0" scrolling="no"></iframe>'
+        + '</div>';
+    }).join('');
   }
-  el.innerHTML = _clubCalendars.map(function(c) {
-    var src = 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(c.calendarId) + '&ctz=Atlantic/Reykjavik';
-    return '<div style="margin-bottom:14px">'
-      + '<div style="font-size:11px;font-weight:500;color:var(--text);margin-bottom:6px">' + esc(c.name) + '</div>'
-      + '<iframe src="' + src + '" style="border:1px solid var(--border);width:100%;height:380px;border-radius:var(--radius-md);background:var(--card)" frameborder="0" scrolling="no"></iframe>'
-      + '</div>';
-  }).join('');
+  openModal('calendarModal');
 }
 
 </script>
