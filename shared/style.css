@@ -198,6 +198,9 @@ main.wide { max-width: 1100px; }
 .hbtn:hover       { color: var(--brass); border-color: var(--brass); background: var(--brass)08; }
 .hbtn.active      { color: var(--brass); border-color: var(--brass); }
 
+/* Lang toggle: lock width so "IS"/"EN" swap doesn't shift the right-side nav cluster */
+.hbtn.lang-toggle { min-width: 2.25em; text-align: center; }
+
 .back-btn {
   background: none;
   border: 1px solid var(--border);
