@@ -2848,12 +2848,16 @@ function renderVolunteerEvents() {
   });
   // Expand virtual events from activity type bulk schedules so they appear
   // immediately after saving, before the background sync materializes them.
+  // Use 365-day horizon to match the volunteer page.
+  const rangeTo = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const virtual = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(actTypes || [], today, null)
+    ? expandVolunteerActivityTypes(actTypes || [], today, rangeTo)
     : [];
   const all = (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(saved, virtual)
     : saved.concat(virtual);
+  // Store merged events so openVolEventModal can find virtual events too.
+  window._volMergedEvents = all;
   const sorted = all.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')
     || (a.startTime || '').localeCompare(b.startTime || ''));
   const upcoming = sorted.filter(e => (e.date || '') >= today);
@@ -2930,7 +2934,10 @@ function _volRowHtml(ev, L) {
 
 function openVolEventModal(id) {
   _veEditingId = id || null;
-  const ev = id ? volunteerEvents.find(x => x.id === id) : null;
+  // Search saved events first, then the merged list (which includes virtual events).
+  const ev = id
+    ? (volunteerEvents.find(x => x.id === id) || (window._volMergedEvents || []).find(x => x.id === id))
+    : null;
   document.getElementById("volEventModalTitle").textContent = ev ? s('admin.volEventModal.edit') : s('admin.volEventModal.add');
   document.getElementById("veTitle").value = ev ? (ev.title || '') : '';
   document.getElementById("veTitleIS").value = ev ? (ev.titleIS || '') : '';
