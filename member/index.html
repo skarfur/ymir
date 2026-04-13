@@ -1619,7 +1619,7 @@ async function loadVolunteerSignups() {
   renderVolunteerNotifBadge();
 }
 
-// Counts unfilled volunteer-role slots across upcoming events (next 7 days)
+// Counts unfilled volunteer-role slots across upcoming events (saved + virtual)
 // and shows a notif badge on the Volunteer button if there are any.
 function renderVolunteerNotifBadge() {
   const btn = document.getElementById('volunteerBtn');
@@ -1628,10 +1628,8 @@ function renderVolunteerNotifBadge() {
   btn.querySelectorAll('.notif-badge').forEach(function(b) { b.remove(); });
 
   const today = new Date().toISOString().slice(0, 10);
-  // Limit badge to 7-day window so the count is actionable, not overwhelming.
-  const badgeHorizon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, badgeHorizon)
+    ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
     : [];
   const merged = (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(_volunteerEvents, virtualEvents)
@@ -1643,8 +1641,6 @@ function renderVolunteerNotifBadge() {
     // lies on or after today.
     const _endIso = (ev.endDate && ev.endDate > (ev.date || '')) ? ev.endDate : (ev.date || '');
     if (_endIso < today) return;
-    // Only count events starting within the badge horizon
-    if ((ev.date || '') > badgeHorizon) return;
     const roles = Array.isArray(ev.roles) ? ev.roles : [];
     roles.forEach(function(role) {
       const total = Number(role.slots) || 0;

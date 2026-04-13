@@ -5970,8 +5970,9 @@ function reconcileVolunteerEventsForAt_(at) {
 // Materialize for all active, volunteer-flagged activity types. Intended for
 // Materialize bulk-scheduled volunteer events for all active, volunteer-flagged
 // activity types. Reads activity_types and volunteer_events once, expands all
-// schedules, merges new events, writes once. No signups sheet access — kept
-// lightweight so it can run as a background call from the admin page.
+// schedules, merges new events, prunes stale ones, writes once. No signups
+// sheet access — kept lightweight so it can run as a background call from the
+// admin page.
 function syncVolunteerEvents_(b) {
   try {
     var actTypes = [];
@@ -5979,19 +5980,39 @@ function syncVolunteerEvents_(b) {
     var arr = [];
     try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
     var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    // Build the full set of wanted event IDs from current activity type config.
+    var wantedIds = {};
     var totalAdded = 0;
     actTypes.forEach(function(at) {
       var expanded = _volExpandActType_(at, fromIso, '2099-12-31');
+      expanded.forEach(function(e) { if (e && e.id) wantedIds[e.id] = true; });
       if (!expanded.length) return;
       var merged = _volMergeMaterialized_(arr, expanded);
       arr = merged.arr;
       totalAdded += merged.added;
     });
-    if (totalAdded > 0) {
+    // Prune stale materialized events: future events with a sourceActivityTypeId
+    // whose ID is no longer in the wanted set (schedule changed, subtype removed,
+    // volunteer flag toggled off, activity type deleted, etc.).
+    var pruned = 0;
+    arr = arr.filter(function(ev) {
+      if (!ev) return false;
+      // Keep manually-created events (no sourceActivityTypeId) untouched.
+      if (!ev.sourceActivityTypeId) return true;
+      // Keep past events (don't rewrite history).
+      if ((ev.date || '') < fromIso) return true;
+      // Keep events the current config still wants.
+      if (wantedIds[ev.id]) return true;
+      // Stale — drop it.
+      pruned++;
+      return false;
+    });
+    var changed = totalAdded > 0 || pruned > 0;
+    if (changed) {
       setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
       cDel_('config');
     }
-    return okJ({ added: totalAdded, total: arr.length });
+    return okJ({ added: totalAdded, pruned: pruned, total: arr.length });
   } catch(e) { return failJ('syncVolunteerEvents failed: ' + e.message); }
 }
 
