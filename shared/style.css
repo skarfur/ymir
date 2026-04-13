@@ -160,8 +160,8 @@ header {
 }
 
 .logo-icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   display: inline-block;
   background: var(--brass);
