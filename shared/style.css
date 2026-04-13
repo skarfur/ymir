@@ -154,21 +154,19 @@ header {
 .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .logo {
-  color: var(--brass);
-  font-size: 18px;
-  font-weight: bold;
   text-decoration: none;
-  letter-spacing: 1px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
 }
 
 .logo-icon {
   width: 26px;
   height: 26px;
   flex-shrink: 0;
-  filter: brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(15deg) brightness(.85);
+  display: inline-block;
+  background: var(--brass);
+  -webkit-mask: url(logo.svg) center/contain no-repeat;
+  mask: url(logo.svg) center/contain no-repeat;
 }
 
 .page-title {
