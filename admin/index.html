@@ -2575,7 +2575,7 @@ async function saveActType() {
   if (isVol) {
     _volSyncDone = false;
     apiPost('syncVolunteerEvents', {}).then(function(res) {
-      if (res && (res.added > 0 || res.removed > 0 || res.softDeleted > 0)) {
+      if (res && res.added > 0) {
         apiGet('getConfig', { _fresh: true }).then(function(cfg) {
           volunteerEvents = cfg.volunteerEvents || [];
           renderVolunteerEvents();
