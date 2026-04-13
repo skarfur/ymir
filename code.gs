@@ -2034,9 +2034,9 @@ function addIncidentNote_(b) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getActiveCheckouts_() {
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const today = now_().slice(0, 10);
   const all = readAll_('checkouts');
-  const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '') > cutoff));
+  const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '').slice(0, 10) === today));
   let memberMap = {};
   try { memberMap = getMemberMap_(); } catch (e) { }
   const enriched = result.map(c => {
@@ -3046,7 +3046,7 @@ function uploadHeadshot_(b) {
 function getTrips_(kennitala, limit, p) {
   p = p || {};
   const all = readAll_('trips');
-  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.timeIn || t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)) && (!p.category || (t.boatCategory || '').toLowerCase() === p.category.toLowerCase()));
+  const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)) && (!p.category || (t.boatCategory || '').toLowerCase() === p.category.toLowerCase()));
   const sorted = filtered.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
   return okJ({ trips: sorted.slice(0, limit || 100) });
 }
