@@ -1083,7 +1083,7 @@ textarea { min-height: 70px; }
   header { padding: 8px 10px; }
   .hbtn { padding: 5px 6px; font-size: 10px; }
   .back-btn { padding: 5px 6px; font-size: 10px; }
-  .logo-icon { width: 20px; height: 20px; }
+  .logo-icon { width: 36px; aspect-ratio: 1170 / 1459 }
   main { padding: 12px 10px; }
   .page-content { padding: 10px 10px 80px; }
 }
