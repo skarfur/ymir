@@ -1,7 +1,7 @@
 var _STRINGS_FLAT = {
-  "nav.staffHub": "⚓️ Vakt",
-  "nav.memberHub": "⛵ Forsíða",
-  "nav.admin": "⚙️ Stjórn",
+  "nav.staffHub": "Vakt",
+  "nav.memberHub": "Forsíða",
+  "nav.admin": "Stjórn",
   "nav.logbook": "Siglingabók",
   "nav.signOut": "Skrá út",
   "nav.langToggle": "EN",
