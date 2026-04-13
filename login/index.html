@@ -14,8 +14,7 @@
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
     .login-box { width:100%; max-width:400px; }
     .login-logo { text-align:center; margin-bottom:32px; }
-    .login-logo img { width:140px; height:auto; display:block; margin:0 auto 12px; filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(15deg) brightness(.85); }
-    .login-logo p { color:var(--muted); font-size:12px; letter-spacing:1px; margin-top:4px; }
+    .login-logo-img { width:140px; height:140px; margin:0 auto 12px; background:var(--brass); -webkit-mask:url(../shared/logo.svg) center/contain no-repeat; mask:url(../shared/logo.svg) center/contain no-repeat; }
     .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
     .lang-row { text-align:center; margin-top:16px; }
     #roleScreen, #accountScreen { display:none; }
@@ -45,8 +44,7 @@
 <body>
 <div class="login-box">
   <div class="login-logo">
-    <img src="../shared/logo.svg" alt="Ýmir Siglingafélag">
-    <p id="subtitle"></p>
+    <div class="login-logo-img" role="img" aria-label="Ýmir Siglingafélag"></div>
   </div>
 
   <div id="ktScreen">
@@ -96,18 +94,6 @@ var _currentScreen = null;
 // whenever the user toggles the language, so we can swap strings in place
 // instead of reloading the page (which would wipe in-progress login state).
 function wireStrings() {
-  var subtitle = document.getElementById('subtitle');
-  subtitle.textContent = s('login.subtitle');
-
-  // EN: title above subtitle; IS: subtitle above title
-  var logo = document.querySelector('.login-logo');
-  var h1   = logo.querySelector('h1');
-  if (getLang() === 'IS') {
-    if (subtitle.nextElementSibling !== h1) logo.insertBefore(subtitle, h1);
-  } else {
-    if (logo.lastElementChild !== subtitle) logo.appendChild(subtitle);
-  }
-
   document.getElementById('ktLabel').textContent         = s('login.kennitala');
   document.getElementById('ktInput').placeholder         = s('login.placeholder');
   document.getElementById('langBtn').textContent         = s('nav.langToggle');

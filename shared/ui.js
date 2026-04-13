@@ -353,13 +353,7 @@ window.buildHeader = function (page) {
 
   // LEFT: logo
   const logo = document.createElement('span');
-  logo.className = 'logo';
-  var img = document.createElement('img');
-  img.className = 'logo-icon';
-  img.src = depth + 'shared/logo.svg';
-  img.alt = '';
-  logo.appendChild(img);
-  logo.appendChild(document.createTextNode('ÝMIR'));
+  logo.className = 'logo logo-icon';
   left.appendChild(logo);
 
   // LEFT: back link on subpages
