@@ -1569,18 +1569,15 @@ function saveActivityType_(b) {
     }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
-    // Reconcile bulk-scheduled volunteer events. This both materializes new
-    // occurrences and prunes stale ones (shrunk date range, removed subtype,
-    // volunteer flag toggled off, etc.). Runs unconditionally so that turning
-    // volunteer=false on an existing activity type cleans up its events.
-    var reconcile = { added: 0, removed: 0, softDeleted: 0 };
-    try { reconcile = reconcileVolunteerEventsForAt_(item) || reconcile; } catch(e) {}
-    return okJ({
-      id: item.id,
-      item: item,
-      materialized: reconcile.added,
-      reconcile: reconcile,
-    });
+    // Materialize bulk-scheduled volunteer events into volunteer_events so
+    // each occurrence exists as a standalone record. Only adds new events —
+    // pruning of stale events is handled by syncVolunteerEvents_ which runs
+    // in the background when the admin Volunteer tab renders.
+    var materialized = 0;
+    if (isVol) {
+      try { materialized = materializeVolunteerEventsForAt_(item); } catch(e) {}
+    }
+    return okJ({ id: item.id, item: item, materialized: materialized });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
@@ -5975,27 +5972,26 @@ function reconcileVolunteerEventsForAt_(at) {
 }
 
 // Materialize for all active, volunteer-flagged activity types. Intended for
-// one-off backfill of existing data that was stored as "virtual" events.
+// Reconcile all activity types: materialize new events AND prune stale ones.
+// Runs in the background when the admin Volunteer tab renders.
 function syncVolunteerEvents_(b) {
   try {
     var actTypes = [];
     try { actTypes = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch(e) { actTypes = []; }
+    var totalAdded = 0, totalRemoved = 0, totalSoftDeleted = 0;
+    actTypes.forEach(function(at) {
+      try {
+        var r = reconcileVolunteerEventsForAt_(at);
+        if (r) {
+          totalAdded += r.added || 0;
+          totalRemoved += r.removed || 0;
+          totalSoftDeleted += r.softDeleted || 0;
+        }
+      } catch(e) {}
+    });
     var arr = [];
     try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
-    var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    var totalAdded = 0;
-    actTypes.forEach(function(at) {
-      var expanded = _volExpandActType_(at, fromIso, '2099-12-31');
-      if (!expanded.length) return;
-      var merged = _volMergeMaterialized_(arr, expanded);
-      arr = merged.arr;
-      totalAdded += merged.added;
-    });
-    if (totalAdded > 0) {
-      setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
-      cDel_('config');
-    }
-    return okJ({ added: totalAdded, total: arr.length });
+    return okJ({ added: totalAdded, removed: totalRemoved, softDeleted: totalSoftDeleted, total: arr.length });
   } catch(e) { return failJ('syncVolunteerEvents failed: ' + e.message); }
 }
 
