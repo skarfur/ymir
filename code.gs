@@ -1569,15 +1569,11 @@ function saveActivityType_(b) {
     }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
-    // Materialize bulk-scheduled volunteer events into volunteer_events so
-    // each occurrence exists as a standalone record. Only adds new events —
-    // pruning of stale events is handled by syncVolunteerEvents_ which runs
-    // in the background when the admin Volunteer tab renders.
-    var materialized = 0;
-    if (isVol) {
-      try { materialized = materializeVolunteerEventsForAt_(item); } catch(e) {}
-    }
-    return okJ({ id: item.id, item: item, materialized: materialized });
+    // Volunteer event materialization is handled by syncVolunteerEvents_
+    // which runs in the background when the admin Volunteer tab renders.
+    // Keeping it out of the save path avoids GAS execution timeouts that
+    // surface as "Failed to fetch" in the browser.
+    return okJ({ id: item.id, item: item });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
