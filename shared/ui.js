@@ -353,7 +353,8 @@ window.buildHeader = function (page) {
 
   // LEFT: logo
   const logo = document.createElement('span');
-  logo.className = 'logo'; logo.textContent = 'ÝMIR';
+  logo.className = 'logo';
+  logo.innerHTML = '<svg class="logo-icon" viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="112" fill="none" stroke="currentColor" stroke-width="5"/><path fill="currentColor" d="M125,258 L125,157 L68,93 A100,100 0 0,0 124,53 L150,148 L176,53 A100,100 0 0,1 232,93 L175,157 L175,258Z"/></svg>ÝMIR';
   left.appendChild(logo);
 
   // LEFT: back link on subpages

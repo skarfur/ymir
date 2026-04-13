@@ -14,8 +14,7 @@
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
     .login-box { width:100%; max-width:400px; }
     .login-logo { text-align:center; margin-bottom:32px; }
-    .login-logo .anchor { font-size:42px; display:block; margin-bottom:8px; }
-    .login-logo h1 { color:var(--brass); font-size:24px; letter-spacing:3px; font-weight:bold; }
+    .login-logo svg { width:140px; height:auto; display:block; margin:0 auto 12px; color:var(--brass); }
     .login-logo p { color:var(--muted); font-size:12px; letter-spacing:1px; margin-top:4px; }
     .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
     .lang-row { text-align:center; margin-top:16px; }
@@ -46,9 +45,14 @@
 <body>
 <div class="login-box">
   <div class="login-logo">
-    <span class="anchor">⚓️</span>
+    <svg viewBox="0 0 300 350" fill="currentColor" aria-label="Ýmir Siglingafélag">
+      <defs><path id="ta" d="M 20,155 A 130,130 0 0,1 280,155"/></defs>
+      <circle cx="150" cy="155" r="112" fill="none" stroke="currentColor" stroke-width="5"/>
+      <path d="M125,263 L125,162 L68,98 A100,100 0 0,0 124,58 L150,153 L176,58 A100,100 0 0,1 232,98 L175,162 L175,263Z"/>
+      <text font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" letter-spacing="3"><textPath href="#ta" startOffset="50%" text-anchor="middle">SIGLINGAFÉLAGIÐ</textPath></text>
+      <text x="150" y="328" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="50" font-weight="900" letter-spacing="4">ÝMIR</text>
+    </svg>
     <p id="subtitle"></p>
-    <h1>ÝMIR</h1>
   </div>
 
   <div id="ktScreen">
