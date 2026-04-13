@@ -2841,11 +2841,19 @@ function renderVolunteerEvents() {
   const activeAtIds = new Set((actTypes || [])
     .filter(a => bool(a.active) && bool(a.volunteer))
     .map(a => a.id));
-  const all = (volunteerEvents || []).filter(e => {
+  const saved = (volunteerEvents || []).filter(e => {
     if (!e || e.active === false) return false;
     if (e.sourceActivityTypeId) return activeAtIds.has(e.sourceActivityTypeId);
     return true;
   });
+  // Expand virtual events from activity type bulk schedules so they appear
+  // immediately after saving, before the background sync materializes them.
+  const virtual = (typeof expandVolunteerActivityTypes === 'function')
+    ? expandVolunteerActivityTypes(actTypes || [], today, null)
+    : [];
+  const all = (typeof mergeVolunteerEvents === 'function')
+    ? mergeVolunteerEvents(saved, virtual)
+    : saved.concat(virtual);
   const sorted = all.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')
     || (a.startTime || '').localeCompare(b.startTime || ''));
   const upcoming = sorted.filter(e => (e.date || '') >= today);
