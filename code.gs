@@ -1569,18 +1569,11 @@ function saveActivityType_(b) {
     }
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     cDel_('config');
-    // Reconcile bulk-scheduled volunteer events. This both materializes new
-    // occurrences and prunes stale ones (shrunk date range, removed subtype,
-    // volunteer flag toggled off, etc.). Runs unconditionally so that turning
-    // volunteer=false on an existing activity type cleans up its events.
-    var reconcile = { added: 0, removed: 0, softDeleted: 0 };
-    try { reconcile = reconcileVolunteerEventsForAt_(item) || reconcile; } catch(e) {}
-    return okJ({
-      id: item.id,
-      item: item,
-      materialized: reconcile.added,
-      reconcile: reconcile,
-    });
+    // Volunteer event materialization is handled by syncVolunteerEvents_
+    // which runs in the background when the admin Volunteer tab renders.
+    // Keeping it out of the save path avoids GAS execution timeouts that
+    // surface as "Failed to fetch" in the browser.
+    return okJ({ id: item.id, item: item });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
@@ -5975,7 +5968,10 @@ function reconcileVolunteerEventsForAt_(at) {
 }
 
 // Materialize for all active, volunteer-flagged activity types. Intended for
-// one-off backfill of existing data that was stored as "virtual" events.
+// Materialize bulk-scheduled volunteer events for all active, volunteer-flagged
+// activity types. Reads activity_types and volunteer_events once, expands all
+// schedules, merges new events, writes once. No signups sheet access — kept
+// lightweight so it can run as a background call from the admin page.
 function syncVolunteerEvents_(b) {
   try {
     var actTypes = [];

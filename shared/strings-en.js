@@ -1,7 +1,7 @@
 var _STRINGS_FLAT = {
-  "nav.staffHub": "⚓️ Staff",
-  "nav.memberHub": "⛵ Home",
-  "nav.admin": "⚙️ Admin",
+  "nav.staffHub": "Staff",
+  "nav.memberHub": "Home",
+  "nav.admin": "Admin",
   "nav.logbook": "Logbook",
   "nav.signOut": "Sign out",
   "nav.langToggle": "IS",
