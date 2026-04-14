@@ -825,13 +825,19 @@ function saveMaintenance_(b) {
   // If an id is provided, update the existing row instead of creating a new one
   if (b.id) {
     var updates = {};
-    if (b.severity !== undefined)  updates.severity  = b.severity;
-    if (b.markOos  !== undefined)  updates.markOos   = bool_(b.markOos);
-    if (b.comments !== undefined)  updates.comments  = b.comments;
-    if (b.onHold   !== undefined)  updates.onHold    = bool_(b.onHold);
-    if (b.verkstjori !== undefined) updates.verkstjori = b.verkstjori;
-    if (b.materials !== undefined) updates.materials  = b.materials;
-    if (b.approved !== undefined)  updates.approved   = bool_(b.approved);
+    if (b.severity    !== undefined) updates.severity    = b.severity;
+    if (b.markOos     !== undefined) updates.markOos     = bool_(b.markOos);
+    if (b.comments    !== undefined) updates.comments    = b.comments;
+    if (b.onHold      !== undefined) updates.onHold      = bool_(b.onHold);
+    if (b.verkstjori  !== undefined) updates.verkstjori  = b.verkstjori;
+    if (b.materials   !== undefined) updates.materials   = b.materials;
+    if (b.approved    !== undefined) updates.approved    = bool_(b.approved);
+    if (b.category    !== undefined) updates.category    = b.category;
+    if (b.boatId      !== undefined) updates.boatId      = b.boatId;
+    if (b.boatName    !== undefined) updates.boatName    = b.boatName;
+    if (b.part        !== undefined) updates.part        = b.part;
+    if (b.description !== undefined) updates.description = b.description;
+    if (b.photoUrl    !== undefined) updates.photoUrl    = b.photoUrl;
     if (Object.keys(updates).length) {
       updates.updatedAt = now_();
       updateRow_('maintenance', 'id', b.id, updates);

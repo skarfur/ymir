@@ -267,6 +267,8 @@ let suggestCat = "";
 let suggestPrio = "";
 let suggestPhotoData = null;
 let suggestMaterials = [];
+let suggestEditingId = "";
+let suggestExistingPhotoUrl = "";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const user = requireAuth();
@@ -408,7 +410,7 @@ function renderProjectCard(r) {
     <div class="req-header">
       <div class="flex-1" style="min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}
+          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
@@ -506,7 +508,7 @@ function renderKanbanCard(r) {
   const matDone   = materials.filter(m => m.purchased).length;
 
   return `<div class="kanban-card ${sevClass}${onHold ? ' on-hold' : ''}" data-id="${esc(r.id || '')}">
-    <div class="kc-title">${catIcon} ${subject ? subject + (r.part ? ' · ' + esc(r.part) : '') : esc(r.part||'')}</div>
+    <div class="kc-title">${catIcon} ${subject ? subject + (r.part ? ' · ' + esc(r.part) : '') : (r.part ? esc(r.part) : esc(maintTitleFallback_(r)))}</div>
     <div class="kc-meta">
       <span class="badge ${SEV_BADGE[r.severity] || 'badge-green'}" style="font-size:9px;padding:1px 5px">${r.severity || 'low'}</span>
       ${onHold ? `<span class="badge badge-yellow" style="font-size:9px;padding:1px 5px">⏸</span>` : ''}
@@ -522,6 +524,7 @@ function renderKanbanCard(r) {
 
 function openSuggestModal() {
   suggestCat = ""; suggestPrio = ""; suggestPhotoData = null; suggestMaterials = [];
+  suggestEditingId = ""; suggestExistingPhotoUrl = "";
   ["suggestPart","suggestDesc"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("suggestBoat").value = "";
   document.getElementById("suggestPhoto").value = "";
@@ -533,10 +536,37 @@ function openSuggestModal() {
   document.querySelectorAll(".prio-btn").forEach(b => b.classList.remove("selected"));
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("boatField").classList.add("hidden");
+  const titleEl = document.querySelector('#suggestModal h3');
+  if (titleEl) titleEl.textContent = s('sauma.suggestTitle');
   openModal("suggestModal");
 }
 
-function closeSuggestModal() { closeModal("suggestModal"); }
+function closeSuggestModal() { closeModal("suggestModal"); suggestEditingId = ""; }
+
+// ── Edit mode ─ reuses #suggestModal, prefilled from an existing record
+function openEditProject(r) {
+  if (!r || !r.id) return;
+  openSuggestModal();
+  suggestEditingId = r.id;
+  selectCat(r.category || '');
+  if (r.boatId) document.getElementById("suggestBoat").value = r.boatId;
+  document.getElementById("suggestPart").value = r.part || '';
+  document.getElementById("suggestDesc").value = r.description || '';
+  if (r.severity) selectPrio(r.severity);
+  suggestMaterials = parseJson(r.materials, []);
+  renderSuggestMaterials();
+  if (r.photoUrl) {
+    suggestExistingPhotoUrl = r.photoUrl;
+    const preview = document.getElementById("suggestPhotoPreview");
+    preview.src = r.photoUrl;
+    preview.className = "photo-preview show";
+  }
+  const titleEl = document.querySelector('#suggestModal h3');
+  if (titleEl) titleEl.textContent = s('maint.editTitle');
+}
+
+// Expose for the shared detail modal's Edit button
+window.maintOpenEdit = openEditProject;
 
 function selectCat(cat) {
   suggestCat = cat;
@@ -618,30 +648,45 @@ async function submitSuggestion() {
 
   btn.disabled = true; btn.textContent = s("sauma.submitting");
   try {
-    let photoUrl = "";
+    let photoUrl = suggestExistingPhotoUrl || "";
     if (suggestPhotoData) {
       btn.textContent = s("sauma.uploadingPhoto");
       const upRes = await apiPost("uploadMaintenancePhoto", suggestPhotoData);
       if (upRes.ok) photoUrl = upRes.photoUrl;
     }
-    await apiPost("saveMaintenance", {
-      category: suggestCat, boatId, boatName, itemName: '',
-      part:        document.getElementById("suggestPart").value.trim(),
-      severity:    suggestPrio,
-      description: desc,
-      markOos:     false,
-      photoUrl,
-      reportedBy:  currentUserName || 'Member',
-      source:      "member",
-      saumaklubbur: true,
-      verkstjori:  '',
-      materials:   suggestMaterials.length ? JSON.stringify(suggestMaterials) : '[]',
-    });
+    const partVal = document.getElementById("suggestPart").value.trim();
+    if (suggestEditingId) {
+      const payload = {
+        id: suggestEditingId,
+        category: suggestCat, boatId, boatName,
+        part:        partVal,
+        severity:    suggestPrio,
+        description: desc,
+        materials:   JSON.stringify(suggestMaterials || []),
+      };
+      if (photoUrl) payload.photoUrl = photoUrl;
+      await apiPost("saveMaintenance", payload);
+    } else {
+      await apiPost("saveMaintenance", {
+        category: suggestCat, boatId, boatName, itemName: '',
+        part:        partVal,
+        severity:    suggestPrio,
+        description: desc,
+        markOos:     false,
+        photoUrl,
+        reportedBy:  currentUserName || 'Member',
+        source:      "member",
+        saumaklubbur: true,
+        verkstjori:  '',
+        materials:   suggestMaterials.length ? JSON.stringify(suggestMaterials) : '[]',
+      });
+    }
+    const wasEditing = suggestEditingId;
     closeSuggestModal();
     const rRes = await apiGet("getMaintenance");
     allProjects = (rRes.requests || []).filter(r => boolVal(r.saumaklubbur));
     renderList();
-    toast("✓ " + s("sauma.submitted"));
+    toast("✓ " + s(wasEditing ? "maint.updated" : "sauma.submitted"));
   } catch(e) {
     showSuggestErr("Error: " + e.message);
   } finally {
