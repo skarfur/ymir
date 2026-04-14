@@ -606,7 +606,8 @@
             <span id="slotWeekLabel" class="week-label"></span>
             <button class="btn btn-secondary" onclick="shiftSlotWeek(1)">&rarr;</button>
             <button class="btn btn-secondary" onclick="slotWeekToday()" data-s="slot.today">Today</button>
-            <button class="btn btn-primary" data-icon="+" onclick="openRecurringSlotModal()"><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
+            <button class="btn btn-primary" data-s="slot.addSingle" data-s-attr="title" onclick="openNewSlotModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addSingle">+ Single</span></button>
+            <button class="btn btn-primary" data-s="slot.addRecurring" data-s-attr="title" onclick="openRecurringSlotModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
           </div>
         </div>
       </div>
@@ -4104,7 +4105,9 @@ function openSlotModal(slotId) {
   var sl = _slotData.find(function(s) { return s.id === slotId; });
   if (!sl) return;
   var boat = (_allBoats || []).find(function(b) { return b.id === sl.boatId; });
-  document.getElementById("slotModalTitle").textContent = s('slot.editTitle');
+  var title = document.getElementById("slotModalTitle");
+  title.setAttribute('data-s', 'slot.editTitle');
+  title.textContent = s('slot.editTitle');
   document.getElementById("slotModalBoatName").textContent = boat ? boat.name : sl.boatId;
   document.getElementById("smDate").value = sl.date;
   document.getElementById("smStartTime").value = sl.startTime;
@@ -4150,6 +4153,27 @@ async function deleteCurrentSlot() {
     toast(s('toast.deleted'));
     loadSlotCalendar();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
+}
+
+// Open slot modal for NEW slot creation (requires a specific boat selected in filter)
+function openNewSlotModal() {
+  var boatId = document.getElementById("slotBoatFilter").value;
+  if (!boatId) { toast(s('slot.selectBoatFirst'), 'err'); return; }
+  var boat = (_allBoats || []).find(function(b) { return b.id === boatId; });
+  if (!boat) return;
+  var title = document.getElementById("slotModalTitle");
+  title.setAttribute('data-s', 'slot.newTitle');
+  title.textContent = s('slot.newTitle');
+  document.getElementById("slotModalBoatName").textContent = boat.name;
+  document.getElementById("smDate").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("smStartTime").value = '18:00';
+  document.getElementById("smEndTime").value = '21:00';
+  document.getElementById("smNote").value = '';
+  document.getElementById("smDeleteBtn").classList.add("hidden");
+  document.getElementById("slotBookedInfo").classList.add("hidden");
+  _editingSlot = { boatId: boatId, slotId: '' };
+  applyStrings(document.getElementById("slotModal"));
+  openModal("slotModal");
 }
 
 // Recurring slot creation

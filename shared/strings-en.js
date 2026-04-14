@@ -586,6 +586,8 @@ var _STRINGS_FLAT = {
   "slot.allBoats": "All boats",
   "slot.today": "Today",
   "slot.addRecurring": "+ Recurring",
+  "slot.addSingle": "+ Single",
+  "slot.selectBoatFirst": "Select a specific boat first",
   "slot.noSlotBoats": "No boats with slot scheduling enabled",
   "slot.boat": "Boat",
   "slot.recurTitle": "Create Recurring Slots",

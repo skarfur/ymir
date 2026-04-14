@@ -586,6 +586,8 @@ var _STRINGS_FLAT = {
   "slot.allBoats": "Allir bátar",
   "slot.today": "Í dag",
   "slot.addRecurring": "+ Endurtekið",
+  "slot.addSingle": "+ Stakur",
+  "slot.selectBoatFirst": "Veldu tiltekinn bát fyrst",
   "slot.noSlotBoats": "Engir bátar með tímabókun virka",
   "slot.boat": "Bátur",
   "slot.recurTitle": "Búa til endurtekna tíma",
