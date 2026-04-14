@@ -66,7 +66,7 @@ var _STRINGS_FLAT = {
   "wx.sea": "SEA",
   "wx.surface": "Surface",
   "wx.force": "Force",
-  "wx.feelsLike": "feels {t}°",
+  "wx.feelsLike": "feels like {t}°",
   "wx.birkObs": "BIRK obs",
   "wx.pressureRising": "rising",
   "wx.pressureFalling": "falling",
