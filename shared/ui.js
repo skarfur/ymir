@@ -367,8 +367,9 @@ window.buildHeader = function (page) {
   if (isAdminSub)  left.appendChild(link(depth + 'admin/',  '← ' + s('nav.admin'),     'back-btn', 'admin'));
   if (isMemberSub) left.appendChild(link(depth + 'member/', '← ' + s('nav.memberHub'), 'back-btn', 'member'));
 
-  // LEFT: hub-switch buttons — switches to the OTHER hubs the user can access
-  if (user) {
+  // LEFT: hub-switch buttons — only on top-level hub pages, not subpages
+  const isSubpage = isStaffSub || isAdminSub || isMemberSub;
+  if (user && !isSubpage) {
     const canStaff = typeof isStaff === 'function' && isStaff(user);
     const canAdmin = typeof isAdmin === 'function' && isAdmin(user);
 
