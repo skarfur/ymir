@@ -12,7 +12,7 @@
 .trip-badge{font-size:9px;letter-spacing:.6px;padding:2px 6px;border-radius:8px;border:1px solid;text-transform:uppercase;flex-shrink:0}
 .badge-skipper{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
-.badge-verified{color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111}
+.badge-verified{color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)}
 .badge-helm{color:var(--brass);border-color:var(--brass)55;background:var(--brass)11}
 .trip-arrow{padding:10px 14px 10px 4px;display:flex;align-items:center;color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
 .trip-card.open .trip-arrow{transform:rotate(180deg)}
@@ -33,9 +33,9 @@
 .exp-section .trip-expand-grid{border-top:none;padding-top:2px;margin-top:0}
 .exp-boat{background:var(--card)}
 .exp-logistics{background:var(--card)}
-.exp-weather{background:rgba(41,128,185,.08)}
+.exp-weather{background:color-mix(in srgb, var(--navy) 8%, transparent)}
 .exp-weather .trip-expand-grid{padding-top:4px}
-.exp-notes{background:rgba(255,255,255,.02)}
+.exp-notes{background:var(--faint)}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
 .exp-section-hdr.expandable{cursor:pointer;display:flex;align-items:center;gap:4px}
 .exp-section-hdr.expandable:hover{color:var(--brass)}
@@ -59,7 +59,7 @@
 .upload-thumb-wrap{position:relative;display:inline-block;width:72px;height:72px;flex-shrink:0}
 .upload-thumb-wrap .photo-thumb{width:72px;height:72px}
 .upload-delete-btn{position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:var(--red);border:2px solid var(--bg);color:#fff;font-size:12px;line-height:16px;text-align:center;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;padding:0}
-.upload-delete-btn:hover{background:#c0392b}
+.upload-delete-btn:hover{background:var(--red);filter:brightness(.85)}
 .photo-sharing-badge{font-size:8px;letter-spacing:.4px;padding:1px 5px;border-radius:4px;text-transform:uppercase;margin-left:4px}
 .photo-sharing-badge.shared{color:var(--green);border:1px solid var(--green)55;background:var(--green)11}
 .photo-sharing-badge.private{color:var(--muted);border:1px solid var(--border);background:var(--surface)}

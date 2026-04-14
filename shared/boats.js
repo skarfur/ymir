@@ -328,7 +328,7 @@ function renderBoatCard(boat, opts) {
 
   // Badge
   const badgeMap = {
-    avail:   { text:s("fleet.badgeAvail"),   style:"color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111" },
+    avail:   { text:s("fleet.badgeAvail"),   style:"color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)" },
     out:     { text:s("fleet.badgeOut"),      style:"color:var(--brass);border-color:var(--brass)55;background:var(--brass)11" },
     overdue: { text:s("fleet.badgeOverdue"),  style:"color:var(--red);border-color:var(--red)55;background:var(--red)11" },
     oos:     { text:s("fleet.badgeOos"),      style:"color:var(--muted);border-color:var(--border);background:var(--surface)" },
@@ -387,7 +387,7 @@ function renderBoatCard(boat, opts) {
   } else if (activeRes) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
   } else if (controlled && userCanAccess && !opts.staffView) {
-    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111;margin-left:4px">${_besc(s("fleet.badgeAuthorized"))}</span>`;
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent);margin-left:4px">${_besc(s("fleet.badgeAuthorized"))}</span>`;
   } else if (priv) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--muted);border-color:var(--border);background:var(--surface);margin-left:4px">${_besc(s("fleet.badgePrivate"))}</span>`;
   }
@@ -449,7 +449,7 @@ function renderCheckoutCard(co, opts) {
   let topBadge = "";
   if (!staffView) {
     if      (overdue) topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">${_besc(s("fleet.badgeOverdue"))}</span>`;
-    else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:#2ecc71;border-color:#2ecc7155;background:#2ecc7111">${_besc(s("fleet.badgeYours"))}</span>`;
+    else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)">${_besc(s("fleet.badgeYours"))}</span>`;
     else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11">${_besc(s("fleet.badgeOut"))}</span>`;
   } else if (overdue) {
     topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠️ ${_besc(s("fleet.badgeOverdue"))}</span>`;
