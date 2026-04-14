@@ -1008,7 +1008,7 @@ textarea { min-height: 70px; }
 .slot-week-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .slot-week-nav .btn { font-size: 11px; padding: 4px 10px; min-height: 0; }
 .slot-week-nav .week-label { font-size: 11px; min-width: 140px; text-align: center; }
-.slot-week-nav .btn[data-icon]::before { content: attr(data-icon); display: none; }
+.slot-week-nav .btn .btn-icon { display: none; width: 14px; height: 14px; vertical-align: middle; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile (≤ 600px)
@@ -1096,8 +1096,8 @@ textarea { min-height: 70px; }
   .slot-week-nav { gap: 3px; }
   .slot-week-nav .btn { min-height: 32px; padding: 4px 8px; font-size: 11px; }
   .slot-week-nav .week-label { min-width: 0; font-size: 10px; white-space: nowrap; }
-  .slot-week-nav .btn[data-icon] .btn-label { display: none; }
-  .slot-week-nav .btn[data-icon]::before { display: inline; font-size: 13px; line-height: 1; }
+  .slot-week-nav .btn .btn-icon { display: inline-block; }
+  .slot-week-nav .btn .btn-icon ~ .btn-label { display: none; }
 }
 
 @media (max-width: 400px) {
