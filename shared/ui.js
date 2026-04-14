@@ -325,12 +325,26 @@ window.buildHeader = function (page) {
     member: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M247.21,172.53A8,8,0,0,0,240,168H144V144h72a8,8,0,0,0,5.92-13.38L144,44.91V8a8,8,0,0,0-14.21-5l-104,128A8,8,0,0,0,32,144h96v24H16a8,8,0,0,0-6.25,13l29.6,37a15.93,15.93,0,0,0,12.49,6H204.16a15.93,15.93,0,0,0,12.49-6l29.6-37A8,8,0,0,0,247.21,172.53ZM197.92,128H144V68.69ZM48.81,128,128,30.53V128Zm155.35,80H51.84l-19.2-24H223.36Z"/></svg>',
   };
 
+  // Lucide icons (MIT) for icon-only header buttons
+  const UI_ICONS_ = {
+    settings: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+    logout:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>',
+  };
+
   // helpers
   function link(href, label, cls, hub) {
     const a = document.createElement('a');
     a.href = href; a.className = cls || 'hbtn';
-    if (hub && NAV_ICONS_[hub]) { a.innerHTML = NAV_ICONS_[hub] + ' ' + label; }
-    else { a.textContent = label; }
+    const iconHtml = (hub && NAV_ICONS_[hub]) ? NAV_ICONS_[hub] + ' ' : '';
+    if ((cls || '').indexOf('back-btn') !== -1) {
+      // back-btn: wrap label in a span so it can be hidden on mobile,
+      // leaving just the hub icon + arrow visible.
+      a.innerHTML = iconHtml + '← <span class="back-label">' + label + '</span>';
+    } else if (iconHtml) {
+      a.innerHTML = iconHtml + label;
+    } else {
+      a.textContent = label;
+    }
     return a;
   }
   function btn(label, fn, cls) {
@@ -357,18 +371,18 @@ window.buildHeader = function (page) {
   left.appendChild(logo);
 
   // LEFT: back link on subpages
-  if (isStaffSub)  left.appendChild(link(depth + 'staff/',  '← ' + s('nav.staffHub'),  'back-btn', 'staff'));
-  if (isAdminSub)  left.appendChild(link(depth + 'admin/',  '← ' + s('nav.admin'),     'back-btn', 'admin'));
-  if (isMemberSub) left.appendChild(link(depth + 'member/', '← ' + s('nav.memberHub'), 'back-btn', 'member'));
+  if (isStaffSub)  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'back-btn', 'staff'));
+  if (isAdminSub)  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'back-btn', 'admin'));
+  if (isMemberSub) left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'back-btn', 'member'));
 
   // LEFT: hub-switch buttons (staff/admin only)
   if (user) {
     const canStaff = typeof isStaff === 'function' && isStaff(user);
     const canAdmin = typeof isAdmin === 'function' && isAdmin(user);
 
-    if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn', 'staff'));
-    if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn', 'member'));
-    if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn', 'admin'));
+    if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn hub-switch', 'staff'));
+    if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn hub-switch', 'member'));
+    if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn hub-switch', 'admin'));
   }
 
   // RIGHT: guardian-acting-as-ward badge (if applicable)
@@ -392,9 +406,19 @@ window.buildHeader = function (page) {
   }
 
   // RIGHT: Settings · lang · sign out
-  if (user && page !== 'settings') right.appendChild(link(depth + 'settings/', s('nav.settings'), 'hbtn'));
+  if (user && page !== 'settings') {
+    const a = link(depth + 'settings/', s('nav.settings'), 'hbtn icon-only');
+    a.innerHTML = UI_ICONS_.settings;
+    a.setAttribute('aria-label', s('nav.settings'));
+    a.title = s('nav.settings');
+    right.appendChild(a);
+  }
   right.appendChild(btn(s('nav.langToggle'), () => { if (typeof toggleLang === 'function') toggleLang(); }, 'hbtn'));
-  right.appendChild(btn(s('nav.signOut'),    () => { if (typeof signOut    === 'function') signOut();    }, 'hbtn'));
+  const so = btn(s('nav.signOut'), () => { if (typeof signOut === 'function') signOut(); }, 'hbtn icon-only');
+  so.innerHTML = UI_ICONS_.logout;
+  so.setAttribute('aria-label', s('nav.signOut'));
+  so.title = s('nav.signOut');
+  right.appendChild(so);
 };
 
 // ── APPLY THEME ON LOAD ────────────────────────────────────────────────────────
