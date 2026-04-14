@@ -198,6 +198,57 @@ function extractInitials_(name) {
     .join('').toUpperCase();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSWORD HASHING
+// The default password for every member is DEFAULT_PASSWORD_ (the club name).
+// Members who have never set one have an empty passwordHash column and can
+// sign in with the default; changing the password stores a per-user SHA-256
+// hash salted with the kennitala and a version tag so identical passwords
+// across members don't collide.
+// ─────────────────────────────────────────────────────────────────────────────
+const DEFAULT_PASSWORD_ = 'siglingafélag';
+const PASSWORD_SALT_    = 'ymir-v1';
+
+function hashPassword_(kennitala, password) {
+  if (!password) return '';
+  const input = String(kennitala || '') + ':' + String(password) + ':' + PASSWORD_SALT_;
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, input, Utilities.Charset.UTF_8);
+  return Utilities.base64Encode(bytes);
+}
+
+function verifyPassword_(member, password) {
+  if (!member) return false;
+  const stored = String(member.passwordHash || '').trim();
+  if (stored) return stored === hashPassword_(member.kennitala, password);
+  // No hash set → default password is accepted.
+  return String(password) === DEFAULT_PASSWORD_;
+}
+
+// Find a member for login by either kennitala (10 digits) or initials
+// (case-insensitive). Returns { member, ambiguous, notFound } so the caller
+// can surface a specific error when initials collide between members.
+function _findMemberForLogin_(username) {
+  if (!username) return { notFound: true };
+  const u = String(username).trim();
+  if (!u) return { notFound: true };
+  const digits = u.replace(/\D/g, '');
+  if (digits.length === 10) {
+    const m = findOne_('members', 'kennitala', digits);
+    if (m) return { member: m };
+    return { notFound: true };
+  }
+  const up = u.toUpperCase();
+  const matches = readAll_('members').filter(function(m) {
+    if (!bool_(m.active)) return false;
+    const init = String(m.initials || extractInitials_(m.name) || '').toUpperCase();
+    return init && init === up;
+  });
+  if (matches.length === 0) return { notFound: true };
+  if (matches.length > 1)  return { ambiguous: true };
+  return { member: matches[0] };
+}
+
 // HTML-escape for server-rendered pages
 function esc_(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -393,8 +444,10 @@ function doPost(e) {
 
 function route_(action, b) {
   switch (action) {
+    case 'loginMember': return loginMember_(b);
     case 'validateMember': return validateMember_(b.kennitala);
     case 'validateWard': return validateWard_(b);
+    case 'setPassword': return setPassword_(b);
     case 'getMembers': return getMembers_(b);
     case 'saveMember': return saveMember_(b);
     case 'deleteMember': return deleteMember_(b.id);
@@ -582,6 +635,62 @@ function validateMember_(kennitala) {
   });
 }
 
+// Password-gated sign-in. Username may be either a 10-digit kennitala or the
+// member's initials (case-insensitive). Returns the same shape as
+// validateMember_ plus `usingDefaultPassword` so the UI can prompt the user
+// to change it when they're still on the club-wide default.
+function loginMember_(b) {
+  const username = String((b && b.username) || '').trim();
+  const password = String((b && b.password) || '');
+  if (!username) return failJ('Username required');
+  if (!password) return failJ('Password required');
+
+  const r = _findMemberForLogin_(username);
+  if (r.ambiguous) return failJ('Ambiguous initials', 409);
+  if (r.notFound || !r.member) return failJ('Not found', 404);
+  const m = r.member;
+  if (!bool_(m.active)) return failJ('Inactive account', 403);
+  if (!verifyPassword_(m, password)) return failJ('Invalid credentials', 401);
+
+  const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
+  return okJ({
+    member: _publicMember_(m),
+    wards: wards,
+    usingDefaultPassword: !String(m.passwordHash || '').trim(),
+  });
+}
+
+// Set or change a member's password. If the member has never set one,
+// the current password is either empty or the default; otherwise it must
+// match the stored hash.
+function setPassword_(b) {
+  if (!b || !b.kennitala) return failJ('kennitala required');
+  const kt = String(b.kennitala).trim();
+  const m = findOne_('members', 'kennitala', kt);
+  if (!m) return failJ('Member not found', 404);
+  if (!bool_(m.active)) return failJ('Inactive account', 403);
+  const cur  = String(b.currentPassword || '');
+  const next = String(b.newPassword || '');
+  if (!next) return failJ('newPassword required');
+  if (next.length < 4) return failJ('Password must be at least 4 characters');
+
+  const stored = String(m.passwordHash || '').trim();
+  if (stored) {
+    if (hashPassword_(kt, cur) !== stored) return failJ('Current password incorrect', 401);
+  } else if (cur && cur !== DEFAULT_PASSWORD_) {
+    // Accept either blank or the default as "current" while unset.
+    return failJ('Current password incorrect', 401);
+  }
+
+  addColIfMissing_('members', 'passwordHash');
+  updateRow_('members', 'kennitala', kt, {
+    passwordHash: hashPassword_(kt, next),
+    updatedAt: now_(),
+  });
+  cDel_('members');
+  return okJ({ saved: true });
+}
+
 // Return a ward's full member object, but only if `guardianKennitala` is
 // actually listed as the guardian on the ward's member record and the ward
 // is still flagged as a minor and active. Requires the caller to prove the
@@ -609,14 +718,23 @@ function getMembers_(params) {
   const c = cGet_('members');
   const members = c || readAll_('members');
   if (!c) cPut_('members', members);
+  // Strip the password hash so it's never served to the client. Leave a
+  // `hasPassword` flag so the UI can tell whether the member is still on the
+  // club-wide default password.
+  const sanitized = members.map(function(m) {
+    const out = Object.assign({}, m);
+    out.hasPassword = !!String(out.passwordHash || '').trim();
+    delete out.passwordHash;
+    return out;
+  });
   // Support optional pagination
   var offset = parseInt(params.offset) || 0;
   var limit  = parseInt(params.limit)  || 0;
   if (limit > 0) {
-    var page = members.slice(offset, offset + limit);
-    return okJ({ members: page, total: members.length });
+    var page = sanitized.slice(offset, offset + limit);
+    return okJ({ members: page, total: sanitized.length });
   }
-  return okJ({ members: members });
+  return okJ({ members: sanitized });
 }
 
 function getMemberMap_() {
