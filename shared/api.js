@@ -39,7 +39,7 @@ async function apiPost(action, payload) {
   // Invalidate config cache when config is saved
   if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember' ||
       action === 'deleteMember' || action === 'saveMemberCert' ||
-      action === 'savePreferences' ||
+      action === 'savePreferences' || action === 'setPassword' ||
       action === 'importMembers' || action === 'deactivateMembers' ||
       action === 'saveActivityType' || action === 'deleteActivityType' ||
       action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
@@ -113,10 +113,53 @@ async function _call(action, payload) {
   }
 }
 
-var AUTH_KEY = "ymirUser";
-function getUser()   { try { return JSON.parse(sessionStorage.getItem(AUTH_KEY)); } catch(e) { return null; } }
-function setUser(u)  { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); }
-function clearUser() { sessionStorage.removeItem(AUTH_KEY); }
+var AUTH_KEY    = "ymirUser";
+var PERSIST_KEY = "ymirStayLoggedIn";
+
+// When "stay logged in" is on (set in settings), the user record is mirrored
+// to localStorage so it survives closing the tab — useful on mobile where the
+// site is pinned as an app. Otherwise it lives only in sessionStorage.
+function getStayLoggedIn() {
+  try { return localStorage.getItem(PERSIST_KEY) === '1'; } catch(e) { return false; }
+}
+function setStayLoggedIn(v) {
+  try {
+    if (v) localStorage.setItem(PERSIST_KEY, '1');
+    else   localStorage.removeItem(PERSIST_KEY);
+  } catch(e) {}
+  // Sync the current user record so the new preference takes effect immediately.
+  var u = getUser();
+  if (u) setUser(u);
+}
+
+function getUser() {
+  try {
+    var s = sessionStorage.getItem(AUTH_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  try {
+    var l = localStorage.getItem(AUTH_KEY);
+    if (l) {
+      var parsed = JSON.parse(l);
+      // Rehydrate into sessionStorage so this tab has a fast local copy.
+      try { sessionStorage.setItem(AUTH_KEY, l); } catch(e) {}
+      return parsed;
+    }
+  } catch(e) {}
+  return null;
+}
+function setUser(u) {
+  var json = JSON.stringify(u);
+  try { sessionStorage.setItem(AUTH_KEY, json); } catch(e) {}
+  try {
+    if (getStayLoggedIn()) localStorage.setItem(AUTH_KEY, json);
+    else                   localStorage.removeItem(AUTH_KEY);
+  } catch(e) {}
+}
+function clearUser() {
+  try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {}
+  try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
+}
 
 function requireAuth(roleFn) {
   var u = getUser();

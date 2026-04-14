@@ -105,6 +105,46 @@
     <div class="settings-hint" data-s="settings.sharePhoneVolHint"></div>
   </div>
 
+  <!-- Sign-in -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.signIn"></div>
+
+    <!-- Username style (display preference) -->
+    <div class="settings-row" style="margin-bottom:12px">
+      <label data-s="settings.usernameStyle"></label>
+      <div class="toggle-group" id="usernameStyleToggle">
+        <button data-val="kt" data-s="settings.usernameStyle.kt"></button>
+        <button data-val="initials" data-s="settings.usernameStyle.initials"></button>
+      </div>
+    </div>
+    <div class="settings-hint mb-10" data-s="settings.usernameStyleHint"></div>
+
+    <!-- Stay logged in -->
+    <div class="pill-grid">
+      <label class="pill-toggle"><input type="checkbox" id="svStayLoggedIn"><span data-s="settings.stayLoggedIn"></span></label>
+    </div>
+    <div class="settings-hint mb-10" data-s="settings.stayLoggedInHint"></div>
+
+    <!-- Password change -->
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px">
+      <label data-s="settings.currentPassword"></label>
+      <input type="password" id="sCurrentPw" autocomplete="current-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <label data-s="settings.newPassword"></label>
+      <input type="password" id="sNewPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-bottom:6px">
+      <label data-s="settings.confirmPassword"></label>
+      <input type="password" id="sConfirmPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row">
+      <button class="btn btn-ghost" type="button" onclick="changePassword()" id="changePwBtn" data-s="settings.changePassword"></button>
+    </div>
+    <div class="settings-hint" data-s="settings.passwordHint"></div>
+    <div id="pwMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
+  </div>
+
   <!-- Stats visibility -->
   <div class="settings-section">
     <div class="settings-section-title" data-s="settings.stats"></div>
@@ -191,6 +231,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   var sv = prefs.statsVisibility || {};
   applyStatVis(sv);
 
+  // Sign-in preferences
+  setToggle('usernameStyleToggle', prefs.usernameStyle || 'kt');
+  var stay = document.getElementById('svStayLoggedIn');
+  stay.checked = getStayLoggedIn();
+  stay.closest('.pill-toggle').classList.toggle('active', stay.checked);
+
+  // Live handler for username-style toggle
+  document.getElementById('usernameStyleToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    setToggle('usernameStyleToggle', btn.dataset.val);
+  });
+
   // Pill toggle behavior
   document.querySelectorAll('.pill-toggle').forEach(function(pill) {
     pill.addEventListener('click', function(e) {
@@ -229,6 +282,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (serverPrefs.statsVisibility) {
           applyStatVis(serverPrefs.statsVisibility);
         }
+        if (serverPrefs.usernameStyle) setToggle('usernameStyleToggle', serverPrefs.usernameStyle);
       }
       var spv = document.getElementById('svSharePhoneVol');
       spv.checked = serverPrefs.sharePhoneVolunteer === true;
@@ -295,6 +349,49 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') cancelSettings();
 });
 
+async function changePassword() {
+  var cur  = document.getElementById('sCurrentPw').value;
+  var next = document.getElementById('sNewPw').value;
+  var conf = document.getElementById('sConfirmPw').value;
+  var btn  = document.getElementById('changePwBtn');
+  var msg  = document.getElementById('pwMsg');
+
+  function showMsg(key, cls) {
+    msg.textContent = s(key);
+    msg.className = 'msg ' + (cls || 'msg-err');
+    msg.style.display = 'block';
+  }
+
+  if (!next || next.length < 4) { showMsg('settings.passwordTooShort'); return; }
+  if (next !== conf)             { showMsg('settings.passwordMismatch'); return; }
+
+  btn.disabled = true;
+  var prevLabel = btn.textContent;
+  btn.textContent = s('lbl.loading');
+  try {
+    await apiPost('setPassword', {
+      kennitala:       user.kennitala,
+      currentPassword: cur,
+      newPassword:     next,
+    });
+    document.getElementById('sCurrentPw').value = '';
+    document.getElementById('sNewPw').value     = '';
+    document.getElementById('sConfirmPw').value = '';
+    // The member now has a real password, so clear the "default password" flag.
+    user.usingDefaultPassword = false;
+    setUser(user);
+    showMsg('settings.passwordChanged', 'msg-ok');
+  } catch (e) {
+    var em = (e && e.message) || '';
+    if (em.indexOf('Current password') >= 0) showMsg('settings.passwordWrongCurrent');
+    else if (em.indexOf('at least') >= 0)     showMsg('settings.passwordTooShort');
+    else                                      showMsg('settings.passwordSaveFailed');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+}
+
 async function saveSettings() {
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
@@ -329,8 +426,17 @@ async function saveSettings() {
   };
 
   var sharePhoneVolunteer = document.getElementById('svSharePhoneVol').checked;
+  var usernameStyle       = getToggle('usernameStyleToggle') || 'kt';
+  var stayLoggedIn        = document.getElementById('svStayLoggedIn').checked;
 
-  var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility, sharePhoneVolunteer: sharePhoneVolunteer };
+  // "Stay logged in" is a per-device flag, not synced to the server, so the
+  // user can enable it on their phone but stay one-shot on a shared laptop.
+  setStayLoggedIn(stayLoggedIn);
+
+  var prefs = {
+    windUnit: windUnit, theme: theme, statsVisibility: statsVisibility,
+    sharePhoneVolunteer: sharePhoneVolunteer, usernameStyle: usernameStyle,
+  };
   var langChanged = lang !== getLang();
 
   // Save locally
