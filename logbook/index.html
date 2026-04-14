@@ -153,7 +153,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 <div class="page">
 
   <!-- Stats -->
-  <div class="stat-strip">
+  <div class="stat-strip" style="display:none">
     <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl">Trips</div></div>
     <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
     <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
@@ -629,7 +629,7 @@ function renderStats(){
   const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
   const visibleCards=visKeys.filter(k=>isStatVisible(k,_statsVis)).length;
   const strip=document.querySelector('.stat-strip');
-  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)'}
+  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)';strip.style.display='grid'}
   else if(strip && visibleCards===0){strip.style.display='none'}
 
   if(!isStatVisible('byCategory',_statsVis)){document.getElementById('catHours').style.display='none';return}
