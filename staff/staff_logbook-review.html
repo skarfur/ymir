@@ -24,7 +24,7 @@
     .trip-meta { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; }
     .trip-notes { font-size:11px; color:var(--muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border)44; line-height:1.5; }
     .badge { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid; flex-shrink:0; }
-    .badge-verified { color:#2ecc71; border-color:#2ecc7155; background:#2ecc7111; }
+    .badge-verified { color:var(--moss); border-color:color-mix(in srgb, var(--moss) 33%, transparent); background:color-mix(in srgb, var(--moss) 8%, transparent); }
     .badge-pending  { color:var(--muted); border-color:var(--border); background:var(--surface); }
     .badge-linked   { color:var(--brass); border-color:var(--brass)55; background:var(--brass)11; }
     .verify-row { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border)44; flex-wrap:wrap; }
@@ -392,7 +392,7 @@ function renderTrips() {
             ${isVer ? ('✓ ' + s('logrev.verified')) : s('logrev.pending')}
           </span>
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
-          ${hasVerifyReq && !isVer ? `<span class="badge" style="color:#2e86c1;border-color:#2e86c155;background:#2e86c111">${s('logrev.verifyRequest')}</span>` : ''}
+          ${hasVerifyReq && !isVer ? `<span class="badge" style="color:var(--navy-l);border-color:color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent)">${s('logrev.verifyRequest')}</span>` : ''}
         </div>
       </div>
       ${t.skipperNote ? `<div class="trip-notes text-brass">📋 ${esc(t.skipperNote)}</div>` : ''}

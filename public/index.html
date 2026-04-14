@@ -17,25 +17,28 @@
 <script src="../shared/tides.js" defer></script>
 <style>
 :root {
-  --bg:      #0b1f38;
-  --surface: #0f2847;
-  --card:    #132d50;
-  --border:  #1e3f6e;
-  --border-l:#1e3f6e;
-  --text:    #d6e4f0;
-  --muted:   #6b92b8;
-  --brass:   #d4af37;
-  --green:   #27ae60;
+  --bg:      #0a1a33;
+  --surface: #11264a;
+  --card:    #15305a;
+  --border:  #23457a;
+  --border-l:#365f9e;
+  --text:    #dce7f5;
+  --muted:   #7a9bc2;
+  --navy:    #3a5ea8;
+  --navy-l:  #5b83cf;
+  --moss:    #4fa55e;
+  --brass:   #d9b441;
+  --green:   var(--moss);
   --red:     #e74c3c;
   --yellow:  #f1c40f;
   --orange:  #e67e22;
-  --blue:    #2980b9;
-  --faint:   #6b92b844;
+  --blue:    var(--navy);
+  --faint:   #1a3863;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'DM Mono', 'Courier New', monospace;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.18);
-  --shadow-md: 0 2px 8px rgba(0,0,0,.22);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,.35);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.22);
+  --shadow-md: 0 2px 10px rgba(0,0,0,.28);
+  --shadow-lg: 0 10px 32px rgba(0,0,0,.40);
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -485,10 +488,10 @@ function renderDutyPills() {
   if (!el || !_staffStatus) { if (el) el.innerHTML = ''; return; }
   var IS = lang() === 'IS';
   var bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
-  var dc  = _staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
-  var bc  = _staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
-  var dbg = _staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-  var bbg = _staffStatus.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+  var dc  = _staffStatus.onDuty      ? 'var(--moss)' : 'var(--red)';
+  var bc  = _staffStatus.supportBoat ? 'var(--moss)' : 'var(--red)';
+  var dbg = _staffStatus.onDuty      ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
+  var bbg = _staffStatus.supportBoat ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
   var dtx = IS ? (_staffStatus.onDuty      ? 'Starfsmaður á vakt' : 'Enginn starfsmaður')
                : (_staffStatus.onDuty      ? 'Staff on duty'      : 'No staff on duty');
   var btx = IS ? (_staffStatus.supportBoat ? 'Björgunarbátur á sjó' : 'Enginn björgunarbátur')

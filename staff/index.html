@@ -149,8 +149,8 @@
   padding:6px 14px; border:none; border-radius:var(--radius-sm); font-size:12px;
   font-weight:bold; cursor:pointer; font-family:inherit;
 }
-.ob-btn-checkin  { background:#27ae60; color:#fff; }
-.ob-btn-snooze   { background:#e67e22; color:#fff; }
+.ob-btn-checkin  { background:var(--moss); color:#fff; }
+.ob-btn-snooze   { background:var(--orange); color:#fff; }
 .ob-btn-silence  { background:#444; color:#ccc; }
 .ob-btn:disabled { opacity:0.5; cursor:default; }
 
@@ -161,7 +161,7 @@
   padding:8px 12px; cursor:pointer; border-radius:var(--radius-sm);
   background:var(--surface); transition:background .2s;
 }
-.fsb-header:hover { background:var(--surface2,#132233); }
+.fsb-header:hover { background:var(--faint); }
 .fsb-label { font-size:12px; color:var(--muted); min-width:80px; text-transform:uppercase; letter-spacing:.04em; }
 .fsb-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
 .fsb-bar { height:100%; background:var(--green); border-radius:3px; transition:width .3s; }
@@ -177,10 +177,10 @@
   border-radius:var(--radius-sm); padding:7px 10px; min-width:90px; border:1px solid transparent;
   font-size:12px; transition:all .2s;
 }
-.bc-boat-card.status-avail { background:#0d2e1a; border-color:var(--green); }
-.bc-boat-card.status-avail:hover { background:#143d22; transform:translateY(-1px); }
-.bc-boat-card.status-out { background:#1a1f0d; border-color:var(--brass,#c8a84b); }
-.bc-boat-card.status-overdue { background:#2e0d0d; border-color:var(--red); }
+.bc-boat-card.status-avail { background:color-mix(in srgb, var(--moss) 12%, transparent); border-color:var(--moss); }
+.bc-boat-card.status-avail:hover { background:color-mix(in srgb, var(--moss) 22%, transparent); transform:translateY(-1px); }
+.bc-boat-card.status-out { background:color-mix(in srgb, var(--brass) 12%, transparent); border-color:var(--brass); }
+.bc-boat-card.status-overdue { background:color-mix(in srgb, var(--red) 12%, transparent); border-color:var(--red); }
 .bc-boat-card.status-oos { background:var(--surface); border-color:var(--border); opacity:.5; }
 .bc-boat-name { font-weight:600; color:var(--text); margin-bottom:2px; }
 .bc-boat-status { font-size:11px; color:var(--muted); }
@@ -230,7 +230,7 @@
 .gm-activity-link{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:10px}
 .gm-activity-link .link-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
 /* Group card in active checkouts */
-.bc-group-card{background:#0a1e2e;border:1px solid var(--border);border-left:4px solid #2e86c1;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow-sm)}
+.bc-group-card{background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid var(--border);border-left:4px solid var(--navy);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow-sm)}
 .bc-group-card.overdue{border-color:var(--red);border-left-color:var(--red)}
 .gc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
 .gc-boats{font-size:13px;font-weight:500;color:var(--text)}
@@ -251,8 +251,8 @@
 .guest-add-hint{font-size:10px;color:var(--brass);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
 .guest-add-hint:hover{background:var(--card)}
 
-#groupCheckOutBtn{background:#2e86c1;border-color:#2e86c1;color:#fff}
-#groupCheckOutBtn:hover{background:#1a6fa8;border-color:#1a6fa8}
+#groupCheckOutBtn{background:var(--navy);border-color:var(--navy);color:#fff}
+#groupCheckOutBtn:hover{background:var(--navy-d);border-color:var(--navy-d)}
 .dl-link-overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:flex-end;justify-content:center}
 .dl-link-overlay.hidden{display:none}
 .dl-link-sheet{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:680px;max-height:80vh;overflow-y:auto}
@@ -316,8 +316,8 @@
   <div id="staffStatusStrip" class="mb-12">
     <div class="section-label mb-8">DUTY STATUS</div>
     <div class="flex-center flex-wrap gap-8">
-      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">No staff on duty</button>
-      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">No support boat</button>
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--red);color:#fff;">No staff on duty</button>
+      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--red);color:#fff;">No support boat</button>
       <span id="staffStatusUpdated" class="text-xs text-muted"></span>
     </div>
   </div>
@@ -1527,8 +1527,8 @@ function renderStaffStatusStrip() {
   const upd     = document.getElementById('staffStatusUpdated');
   if (!btnDuty || !btnBoat) return;
   const base = 'display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;';
-  const on   = 'background:#27ae60;color:#fff;';
-  const off  = 'background:#e74c3c;color:#fff;';
+  const on   = 'background:var(--moss);color:#fff;';
+  const off  = 'background:var(--red);color:#fff;';
   btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? on : off));
   btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? on : off));
   btnDuty.innerHTML = DUTY_ICONS[_staffStatus.onDuty ? 'lifebuoy' : 'lifebuoyOff'] + (_staffStatus.onDuty ? s('staff.staffOnDuty') : s('staff.noStaffOnDuty'));
