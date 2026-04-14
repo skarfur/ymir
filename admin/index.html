@@ -601,13 +601,13 @@
           <select id="slotBoatFilter" onchange="renderSlotCalendar()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px">
             <option value="" data-s="slot.allBoats">All boats</option>
           </select>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftSlotWeek(-1)">&larr;</button>
-            <span id="slotWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftSlotWeek(1)">&rarr;</button>
-            <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="slotWeekToday()" data-s="slot.today">Today</button>
+          <div class="slot-week-nav">
+            <button class="btn btn-secondary" onclick="shiftSlotWeek(-1)">&larr;</button>
+            <span id="slotWeekLabel" class="week-label"></span>
+            <button class="btn btn-secondary" onclick="shiftSlotWeek(1)">&rarr;</button>
+            <button class="btn btn-secondary" onclick="slotWeekToday()" data-s="slot.today">Today</button>
+            <button class="btn btn-primary" data-icon="+" onclick="openRecurringSlotModal()"><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
           </div>
-          <button class="btn btn-primary" style="font-size:11px" onclick="openRecurringSlotModal()" data-s="slot.addRecurring">+ Recurring</button>
         </div>
       </div>
       <div id="slotCalGrid" style="overflow-x:auto"></div>

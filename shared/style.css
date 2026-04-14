@@ -1004,6 +1004,12 @@ textarea { min-height: 70px; }
 .sc-mpick-day { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: .3px; }
 .sc-mpick-num { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
 
+/* ── Slot-calendar week navigation (captain/coxswain/admin) ── */
+.slot-week-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.slot-week-nav .btn { font-size: 11px; padding: 4px 10px; min-height: 0; }
+.slot-week-nav .week-label { font-size: 11px; min-width: 140px; text-align: center; }
+.slot-week-nav .btn[data-icon]::before { content: attr(data-icon); display: none; }
+
 /* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile (≤ 600px)
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -1085,6 +1091,13 @@ textarea { min-height: 70px; }
   .section-heading { margin: 16px 0 8px; }
   .info-panel { padding: 12px; }
   .input-row { flex-wrap: wrap; }
+
+  /* ── Slot-calendar week navigation — compact, allow wrap ── */
+  .slot-week-nav { gap: 4px; }
+  .slot-week-nav .btn { min-height: 32px; padding: 6px 10px; font-size: 11px; }
+  .slot-week-nav .week-label { flex: 1 1 100%; min-width: 0; order: -1; }
+  .slot-week-nav .btn[data-icon] .btn-label { display: none; }
+  .slot-week-nav .btn[data-icon]::before { display: inline; }
 }
 
 @media (max-width: 400px) {
