@@ -20,7 +20,7 @@
     .stay-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin:10px 0 0; justify-content:center; }
     .stay-row input { margin:0; }
     .lang-row { text-align:center; margin-top:16px; }
-    #roleScreen, #accountScreen { display:none; }
+    #roleScreen, #accountScreen, #forceChangeScreen { display:none; }
     .role-greeting { color:var(--brass); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; }
     .role-btn {
       width:100%; padding:18px 20px; margin-bottom:10px; border-radius:var(--radius-md);
@@ -84,6 +84,28 @@
     <span class="back-link" onclick="goBack()" id="accountBackLink"></span>
   </div>
 
+  <div id="forceChangeScreen">
+    <div class="card">
+      <div class="role-greeting" id="changeGreeting"></div>
+      <div class="settings-hint" id="changeHint" style="font-size:12px;color:var(--muted);margin-bottom:14px;text-align:center"></div>
+      <div class="field">
+        <label id="newPwLabel"></label>
+        <input type="password" id="newPwInput" class="pw-input" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label id="confirmPwLabel"></label>
+        <input type="password" id="confirmPwInput" class="pw-input" autocomplete="new-password">
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-primary" id="changeBtn" onclick="submitForceChange()">
+          <span id="changeBtnText"></span>
+        </button>
+      </div>
+      <div id="changeErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+    </div>
+    <span class="back-link" onclick="goBack()" id="changeBackLink"></span>
+  </div>
+
   <div id="roleScreen">
     <div class="card">
       <div class="role-greeting" id="roleGreeting"></div>
@@ -102,6 +124,11 @@
 // language changes without losing the user's place in the login flow.
 var _currentScreen = null;
 
+// Holds onto the password the user just typed + any wards they guard, while
+// they're stuck on the force-change screen. Cleared once they're past it.
+var _pendingOldPassword = null;
+var _pendingWards = [];
+
 // (Re)apply all UI strings on the page. Called once on load and again
 // whenever the user toggles the language, so we can swap strings in place
 // instead of reloading the page (which would wipe in-progress login state).
@@ -114,6 +141,17 @@ function wireStrings() {
   document.getElementById('langBtn').textContent         = s('nav.langToggle');
   document.getElementById('backLink').textContent        = s('login.back');
   document.getElementById('accountBackLink').textContent = s('login.back');
+  document.getElementById('changeBackLink').textContent  = s('login.back');
+  document.getElementById('newPwLabel').textContent      = s('settings.newPassword');
+  document.getElementById('confirmPwLabel').textContent  = s('settings.confirmPassword');
+
+  var changeBtn = document.getElementById('changeBtn');
+  var changeBtnText = document.getElementById('changeBtnText');
+  if (changeBtn.disabled) {
+    changeBtnText.innerHTML = '<span class="spinner"></span>' + s('login.loading');
+  } else {
+    changeBtnText.textContent = s('login.changePw.save');
+  }
 
   // Preserve loading state if a sign-in is in flight
   var loginBtn = document.getElementById('loginBtn');
@@ -125,7 +163,7 @@ function wireStrings() {
   }
 
   // Refresh any visible error messages whose string key we tracked
-  ['errMsg', 'accountErr'].forEach(function(id) {
+  ['errMsg', 'accountErr', 'changeErr'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && el.style.display !== 'none' && el.dataset.sKey) {
       el.textContent = s(el.dataset.sKey);
@@ -138,6 +176,8 @@ function wireStrings() {
       showAccountPicker(_currentScreen.guardian, _currentScreen.wards);
     } else if (_currentScreen.type === 'role') {
       showRolePicker(_currentScreen.user, _currentScreen.roles);
+    } else if (_currentScreen.type === 'forceChange') {
+      showForceChangeScreen(_currentScreen.user);
     }
   }
 }
@@ -160,6 +200,11 @@ function toggleLang() {
 ['ktInput','pwInput'].forEach(function(id) {
   document.getElementById(id).addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
+  });
+});
+['newPwInput','confirmPwInput'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') submitForceChange();
   });
 });
 
@@ -221,6 +266,16 @@ async function doLogin() {
     // password until it's been changed.
     user.usingDefaultPassword = !!data.usingDefaultPassword;
 
+    // First-time sign-in on the club-wide default password: force the user
+    // to choose their own before we let them past this screen. We stash the
+    // pending wards so the account picker still kicks in afterwards.
+    if (data.usingDefaultPassword) {
+      _pendingWards = wards;
+      _pendingOldPassword = password;
+      showForceChangeScreen(user);
+      return;
+    }
+
     // If this member guards one or more minors, offer an account picker so
     // they can choose whether to open their own account or a ward's account.
     // Otherwise go straight to the existing role/redirect flow.
@@ -277,11 +332,78 @@ function proceedWithUser(user) {
   }
 }
 
+function showForceChangeScreen(user) {
+  _currentScreen = { type: 'forceChange', user: user };
+  document.getElementById('ktScreen').style.display          = 'none';
+  document.getElementById('accountScreen').style.display     = 'none';
+  document.getElementById('roleScreen').style.display        = 'none';
+  document.getElementById('forceChangeScreen').style.display = 'block';
+  document.getElementById('changeGreeting').textContent =
+    s('login.welcome') + ' ' + (user.name || '').split(' ')[0] + ' — ' + s('login.changePw.title');
+  document.getElementById('changeHint').textContent = s('login.changePw.hint');
+  document.getElementById('changeBtnText').textContent = s('login.changePw.save');
+  document.getElementById('newPwInput').focus();
+}
+
+async function submitForceChange() {
+  const pw1 = document.getElementById('newPwInput').value;
+  const pw2 = document.getElementById('confirmPwInput').value;
+  const btn = document.getElementById('changeBtn');
+  const err = document.getElementById('changeErr');
+
+  function showErr(key) {
+    err.textContent   = s(key);
+    err.dataset.sKey  = key;
+    err.style.display = 'block';
+  }
+
+  if (!pw1 || pw1.length < 4) { showErr('settings.passwordTooShort'); return; }
+  if (pw1 !== pw2)            { showErr('settings.passwordMismatch'); return; }
+
+  err.style.display = 'none';
+  delete err.dataset.sKey;
+  btn.disabled = true;
+  document.getElementById('changeBtnText').innerHTML =
+    `<span class="spinner"></span>${s('login.loading')}`;
+
+  const user = _currentScreen && _currentScreen.user;
+  if (!user) { btn.disabled = false; return; }
+
+  try {
+    await apiPost('setPassword', {
+      kennitala:       user.kennitala,
+      currentPassword: _pendingOldPassword || '',
+      newPassword:     pw1,
+    });
+
+    user.usingDefaultPassword = false;
+    const wards = _pendingWards || [];
+    _pendingOldPassword = null;
+    _pendingWards = [];
+    document.getElementById('forceChangeScreen').style.display = 'none';
+
+    if (wards.length) {
+      showAccountPicker(user, wards);
+    } else {
+      proceedWithUser(user);
+    }
+  } catch(e) {
+    const msg = (e && e.message) || '';
+    let key = 'settings.passwordSaveFailed';
+    if (msg.indexOf('at least') >= 0)       key = 'settings.passwordTooShort';
+    else if (msg.indexOf('Current password') >= 0) key = 'settings.passwordWrongCurrent';
+    showErr(key);
+    btn.disabled = false;
+    document.getElementById('changeBtnText').textContent = s('login.changePw.save');
+  }
+}
+
 function showAccountPicker(guardian, wards) {
   _currentScreen = { type: 'account', guardian: guardian, wards: wards };
-  document.getElementById('ktScreen').style.display      = 'none';
-  document.getElementById('roleScreen').style.display    = 'none';
-  document.getElementById('accountScreen').style.display = 'block';
+  document.getElementById('ktScreen').style.display          = 'none';
+  document.getElementById('roleScreen').style.display        = 'none';
+  document.getElementById('forceChangeScreen').style.display = 'none';
+  document.getElementById('accountScreen').style.display     = 'block';
   document.getElementById('accountGreeting').textContent =
     s('login.welcome') + ' ' + (guardian.name || '').split(' ')[0] + ' — ' + s('login.chooseAccount');
 
@@ -362,9 +484,10 @@ function esc(t) {
 
 function showRolePicker(user, roles) {
   _currentScreen = { type: 'role', user: user, roles: roles };
-  document.getElementById('ktScreen').style.display      = 'none';
-  document.getElementById('accountScreen').style.display = 'none';
-  document.getElementById('roleScreen').style.display    = 'block';
+  document.getElementById('ktScreen').style.display          = 'none';
+  document.getElementById('accountScreen').style.display     = 'none';
+  document.getElementById('forceChangeScreen').style.display = 'none';
+  document.getElementById('roleScreen').style.display        = 'block';
   document.getElementById('roleGreeting').textContent =
     s('login.welcome') + ' ' + user.name.split(' ')[0] + ' — ' + s('login.chooseView');
 
@@ -392,14 +515,24 @@ function showRolePicker(user, roles) {
 
 function goBack() {
   _currentScreen = null;
-  document.getElementById('ktScreen').style.display      = 'block';
-  document.getElementById('roleScreen').style.display    = 'none';
-  document.getElementById('accountScreen').style.display = 'none';
-  const accErr = document.getElementById('accountErr');
-  if (accErr) { accErr.style.display = 'none'; delete accErr.dataset.sKey; }
+  _pendingOldPassword = null;
+  _pendingWards = [];
+  document.getElementById('ktScreen').style.display          = 'block';
+  document.getElementById('roleScreen').style.display        = 'none';
+  document.getElementById('accountScreen').style.display     = 'none';
+  document.getElementById('forceChangeScreen').style.display = 'none';
+  ['accountErr', 'changeErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; delete el.dataset.sKey; }
+  });
   document.getElementById('ktInput').value = '';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('newPwInput').value = '';
+  document.getElementById('confirmPwInput').value = '';
   document.getElementById('loginBtn').disabled = false;
+  document.getElementById('changeBtn').disabled = false;
   document.getElementById('btnText').textContent = s('login.btn');
+  document.getElementById('changeBtnText').textContent = s('login.changePw.save');
 }
 </script>
 </body>
