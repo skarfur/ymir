@@ -45,7 +45,8 @@
 .wind-sub  { font-size:16px; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:6px; }
 .wind-sub b    { color:var(--text); }
 .wind-sub .sep { color:var(--border); }
-.wind-icon-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; gap:4px; }
+.wind-icon-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; gap:4px; min-width:72px; }
+.wind-cond-icon { font-size:52px; line-height:1; }
 .gust-row  { padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
 .gust-lbl  { font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:3px; }
 .gust-val  { font-size:18px; color:var(--text); }
@@ -55,7 +56,7 @@
 .info-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
 .info-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
 .info-lbl  { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
-.info-val  { font-size:24px; color:var(--text); }
+.info-val  { font-size:24px; color:var(--navy-l); }
 .info-val .unit { font-size:14px; color:var(--muted); margin-left:3px; }
 .info-sub  { font-size:11px; color:var(--muted); margin-top:5px; }
 .rising   { color:var(--green)  !important; }
@@ -90,20 +91,30 @@ svg.chart { width:100%; overflow:visible; display:block; }
 .h-unit  { font-size:9px; color:var(--muted); }
 .h-kt    { font-size:10px; color:var(--muted); line-height:1; }
 .h-gust  { font-size:10px; color:var(--muted); margin-top:1px; }
-.h-wave  { font-size:11px; color:var(--navy-l); margin-top:4px; }
+.h-wave  { font-size:11px; color:var(--navy-l); margin-top:4px; display:flex; align-items:center; justify-content:center; gap:3px; line-height:1; }
+.h-wave svg { width:10px; height:10px; flex-shrink:0; }
 .h-pres  { font-size:10px; color:var(--muted); margin-top:3px; }
 .h-flag  { width:8px; height:8px; border-radius:50%; margin:6px auto 0; }
+
+/* ── Refresh icon button ── */
+.refresh-btn { padding:6px 10px; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; min-width:34px; }
+.refresh-btn .refresh-icon { display:inline-block; line-height:1; }
 
 .loading-msg { text-align:center; padding:48px 0; color:var(--muted); font-size:13px; }
 .error-msg   { text-align:center; padding:32px 0; color:var(--red); font-size:13px; }
 
+@media(max-width:600px){
+  .hourly-strip{gap:10px}
+  .wind-cols{gap:10px}
+  .wind-cond-icon{font-size:44px}
+  .wind-icon-col{min-width:60px}
+}
 @media(max-width:480px) {
   .info-3 { grid-template-columns:1fr 1fr; }
   .wind-ms, .dir-arrow { font-size:40px; }
-}
-@media(max-width:600px){
-  .wind-cols{flex-direction:column}
-  .hourly-strip{gap:10px}
+  .wind-cond-icon { font-size:36px; }
+  .wind-icon-col { min-width:52px; gap:2px; }
+  .wind-hero { padding:16px 14px; }
 }
 </style>
 </head>
@@ -126,7 +137,7 @@ svg.chart { width:100%; overflow:visible; display:block; }
     <div class="top-bar-right">
       <button class="btn btn-secondary text-sm" onclick="useMyLocation()" id="geoBtn" style="padding:6px 12px"><span data-s="wx.useMyLocation">📍 My location</span></button>
       <button class="btn btn-secondary text-sm" onclick="useFossvogur()" id="fossBtn" style="padding:6px 12px;display:none"><span data-s="wx.useFossvogur">⚓ Fossvogur</span></button>
-      <button class="btn btn-secondary text-sm" onclick="fetchAll()" id="refreshBtn" style="padding:6px 12px">↻ <span data-s="wx.refresh">Refresh</span></button>
+      <button class="btn btn-secondary text-sm refresh-btn" onclick="fetchAll()" id="refreshBtn" aria-label="Refresh" title="Refresh"><span class="refresh-icon" id="refreshIcon">↻</span></button>
     </div>
   </div>
 
@@ -196,8 +207,13 @@ function fmtT(t) { return t ? t.slice(11,16) : '–'; }
 // FETCH + RENDER
 // ═══════════════════════════════════════════════════════════════════════════════
 async function fetchAll() {
-  document.getElementById('refreshBtn').disabled = true;
-  document.getElementById('refreshBtn').textContent = '⏳';
+  const rBtn = document.getElementById('refreshBtn');
+  const rIcon = document.getElementById('refreshIcon');
+  const rLabel = s('wx.refresh');
+  rBtn.setAttribute('aria-label', rLabel);
+  rBtn.setAttribute('title', rLabel);
+  rBtn.disabled = true;
+  rIcon.textContent = '⏳';
   document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓️ ' + s('wx.fetching') + '</div>';
   document.getElementById('updatedAt').textContent = s('wx.updating');
   try {
@@ -215,8 +231,8 @@ async function fetchAll() {
       `<div class="error-msg">⚠️ ${esc(e.message)}<br><span class="text-sm text-muted">${s('wx.checkConnection')}</span></div>`;
     document.getElementById('updatedAt').textContent = s('wx.failed');
   } finally {
-    document.getElementById('refreshBtn').disabled = false;
-    document.getElementById('refreshBtn').textContent = '↻ ' + s('wx.refresh');
+    rBtn.disabled = false;
+    rIcon.textContent = '↻';
   }
 }
 
@@ -295,7 +311,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
       </div>
     </div>
     <div class="wind-icon-col">
-      <div style="font-size:52px;line-height:1">${condIcon}</div>
+      <div class="wind-cond-icon">${condIcon}</div>
       <div class="text-xs text-muted" style="text-align:center;margin-top:4px">${condDesc}</div>
     </div>
   </div>
@@ -323,7 +339,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
   </div>
   <div class="info-card">
     <div class="info-lbl">SEA TEMPERATURE</div>
-    <div class="info-val" style="color:var(--navy-l)">${sst != null ? sst.toFixed(1) : '–'}<span class="unit">°C</span></div>
+    <div class="info-val">${sst != null ? sst.toFixed(1) : '–'}<span class="unit">°C</span></div>
     <div class="info-sub">${sst != null ? 'Surface water' : marine ? 'No SST for this cell' : 'Marine unavailable'}</div>
   </div>
 </div>
@@ -378,7 +394,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
   <div class="chart-header">
     <span class="chart-title-txt">PRESSURE TREND · 3H HISTORY + 6H FORECAST</span>
     <div class="chart-legend">
-      <span class="leg-item"><span class="leg-dot" style="background:var(--purple)"></span>hPa</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--navy-l)"></span>hPa</span>
     </div>
   </div>
   <svg class="chart" id="presChart" height="80"></svg>
@@ -398,6 +414,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
 }
 
 // ─── Hourly strip ─────────────────────────────────────────────────────────────
+const WAVE_ICON_ = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>';
 function renderHourStrip(pts) {
   const FLAG_COLORS = { green:'var(--green)', yellow:'var(--yellow)', orange:'var(--orange)', red:'var(--red)' };
   document.getElementById('hourStrip').innerHTML = pts.map(p => {
@@ -411,7 +428,7 @@ function renderHourStrip(pts) {
       </div>
       <div class="h-kt">${wxMsToKt(p.ws)} kt</div>
       <div class="h-gust">↑${Math.round(p.wg)}</div>
-      ${p.mWH != null ? `<div class="h-wave">🌊${p.mWH.toFixed(1)}m</div>` : ''}
+      ${p.mWH != null ? `<div class="h-wave">${WAVE_ICON_}<span>${p.mWH.toFixed(1)}m</span></div>` : ''}
       ${p.pr  != null ? `<div class="h-pres">${Math.round(p.pr)}</div>` : ''}
       <div class="h-flag" style="background:${FLAG_COLORS[flagKey]}"></div>
     </div>`;
@@ -472,13 +489,13 @@ function drawPresChart(pts, nowI) {
   const lpath = valid.map((p,j)=>`${j?'L':'M'}${xOf(p.pi).toFixed(1)},${yOf(p.pr).toFixed(1)}`).join(' ');
   const apath = lpath+` L${xOf(valid[valid.length-1].pi).toFixed(1)},${yOf(minP).toFixed(1)} L${xOf(valid[0].pi).toFixed(1)},${yOf(minP).toFixed(1)} Z`;
   let h = `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}"/>`;
-  h+=`<path class="chart-area c-purple" d="${apath}"/>`;
-  h+=`<path class="chart-line c-purple" d="${lpath}"/>`;
+  h+=`<path class="chart-area c-blue" d="${apath}"/>`;
+  h+=`<path class="chart-line c-blue" d="${lpath}"/>`;
   h+=`<line class="chart-now" x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}"/>`;
   valid.forEach((p,j) => {
     if (j===0||p.isNow||j===valid.length-1) {
       h+=`<text class="chart-axis-t" x="${xOf(p.pi).toFixed(1)}" y="${H-2}" text-anchor="middle">${p.t}</text>`;
-      h+=`<text class="chart-lbl c-purple" x="${xOf(p.pi).toFixed(1)}" y="${yOf(p.pr)-4}" text-anchor="middle">${Math.round(p.pr)}</text>`;
+      h+=`<text class="chart-lbl c-blue" x="${xOf(p.pi).toFixed(1)}" y="${yOf(p.pr)-4}" text-anchor="middle">${Math.round(p.pr)}</text>`;
     }
   });
   svg.innerHTML=h; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
