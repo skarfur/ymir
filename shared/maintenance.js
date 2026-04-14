@@ -31,6 +31,19 @@ const SEV_HINTS = {
 
 const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗️" };
 
+// ── Title fallback ─ used when a card has no boat/part to show ───────────────
+// Returns a truncated description (word boundary) or the "untitled" string, so
+// collapsed cards always have readable text next to the category icon.
+function maintTitleFallback_(r, max) {
+  max = max || 60;
+  const d = (r && r.description) ? String(r.description).trim() : '';
+  if (!d) return s('maint.untitled');
+  if (d.length <= max) return d;
+  const cut = d.slice(0, max);
+  const sp  = cut.lastIndexOf(' ');
+  return (sp > 30 ? cut.slice(0, sp) : cut) + '…';
+}
+
 // ── Fallback viewPhoto — pages that include their own can override ────────────
 if (typeof window.viewPhoto === 'undefined') {
   window.viewPhoto = function (url) {
@@ -55,6 +68,7 @@ function maintRenderCardCompact(r) {
     ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
   const subject = r.category==='boat' ? esc(r.boatName||r.boatId||'') : '';
   const part = esc(r.part||'');
+  const fallback = (!subject && !part) ? esc(maintTitleFallback_(r)) : '';
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
     style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s"
     onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''">
@@ -62,6 +76,7 @@ function maintRenderCardCompact(r) {
       <span style="flex-shrink:0">${catIcon}</span>
       ${subject ? `<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
       ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
+      ${fallback ? `<span style="font-weight:600;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fallback}</span>` : ''}
     </div>
     ${saumaTag}
     ${oosTag}
@@ -128,7 +143,7 @@ function maintOpenDetail(r, currentUser) {
       : '';
 
     document.getElementById('maintDetailTitle').textContent =
-      (isSauma ? '🧵 ' : catIcon+' ')+(subjectLabel ? subjectLabel+(r.part ? ' · '+r.part : '') : (r.part||''));
+      catIcon+' '+(subjectLabel ? subjectLabel+(r.part ? ' · '+r.part : '') : (r.part || maintTitleFallback_(r)));
 
     // Severity dropdown — saumaklúbbur only gets low/medium/high
     const allSevs = isSauma ? ['low','medium','high'] : ['low','medium','high','critical'];
@@ -208,6 +223,7 @@ function maintOpenDetail(r, currentUser) {
       ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:#e74c3c">${s('maint.deleteBtn')}</button>
+        ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${s('btn.edit')}</button>` : ''}
         ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px${isSauma && boolVal(r.approved) ? '' : ';margin-left:auto'}">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
       </div>`
@@ -440,6 +456,13 @@ function maintOpenDetail(r, currentUser) {
       });
     });
 
+    // Edit issue — delegates to the page-provided window.maintOpenEdit handler
+    document.getElementById('mdEditBtn')?.addEventListener('click',()=>{
+      if (typeof window.maintOpenEdit !== 'function') return;
+      closeModal('maintDetailModal');
+      window.maintOpenEdit(r);
+    });
+
     // Delete issue
     document.getElementById('mdDeleteBtn')?.addEventListener('click',()=>{
       doConfirm(s('maint.deleteConfirm'), async ()=>{
@@ -509,7 +532,7 @@ function maintRenderCard(r) {
     <div class="req-header">
       <div style="flex:1;min-width:0">
         <div class="req-title">
-          ${isSauma ? '🧵' : catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}
+          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
           ${oosTag} ${saumaBadge}
         </div>
         <div class="req-meta">

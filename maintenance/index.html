@@ -297,6 +297,7 @@ let photoDataUrl = "";
 let pendingPhotoFile = null;
 let pendingMaterials = [];
 let isSaumaMode = false;
+let editingId = "";
 
 let activeFilters = {
   status:   new Set(['open']),
@@ -553,6 +554,7 @@ function viewPhoto(url) {
 // ── New request modal ──────────────────────────────────────────────────────────
 function openNewRequest(prefill) {
   selectedCat = ""; selectedSev = ""; photoDataUrl = ""; pendingPhotoFile = null;
+  editingId = "";
   isSaumaMode = !!(prefill && prefill.saumaklubbur);
   ["newPart","newDesc"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("newBoat").value = "";
@@ -591,7 +593,38 @@ function openNewRequest(prefill) {
 
 function closeNewModal() {
   document.getElementById("newModal").classList.add("hidden");
+  editingId = "";
 }
+
+// ── Edit request modal ─ reuses #newModal, prefilled from an existing record
+function openEditRequest(r) {
+  if (!r || !r.id) return;
+  openNewRequest({
+    saumaklubbur: boolVal(r.saumaklubbur),
+    category:     r.category || '',
+    boatId:       r.boatId || '',
+    severity:     r.severity || '',
+    description:  r.description || '',
+  });
+  editingId = r.id;
+  document.getElementById("modalTitle").textContent = s('maint.editTitle');
+  document.getElementById("newPart").value = r.part || '';
+  document.getElementById("newOos").checked = boolVal(r.markOos);
+  if (isSaumaMode) {
+    document.getElementById("newVerkstjori").value = r.verkstjori || '';
+    pendingMaterials = parseJson(r.materials, []);
+    renderMaterialsList();
+  }
+  if (r.photoUrl) {
+    photoDataUrl = r.photoUrl;
+    const preview = document.getElementById("photoPreview");
+    preview.src = r.photoUrl;
+    preview.className = "photo-preview show";
+  }
+}
+
+// Expose for the shared detail modal's Edit button
+window.maintOpenEdit = openEditRequest;
 
 function selectCat(cat) {
   selectedCat = cat;
@@ -682,26 +715,42 @@ async function submitRequest() {
 
   btn.disabled = true; btn.textContent = s('maint.submitting');
   try {
-    let photoUrl = "";
+    let photoUrl = photoDataUrl && photoDataUrl.indexOf('data:') !== 0 ? photoDataUrl : "";
     if (pendingPhotoFile) {
       btn.textContent = s('maint.uploadingPhoto');
       const upRes = await apiPost("uploadMaintenancePhoto", pendingPhotoFile);
       if (upRes.ok) photoUrl = upRes.photoUrl;
       else console.warn("Photo upload skipped:", upRes.error);
     }
-    await apiPost("saveMaintenance", {
-      category: selectedCat, boatId, boatName, itemName: '',
-      part:        document.getElementById("newPart").value.trim(),
-      severity:    selectedSev,
-      description: desc,
-      markOos,
-      photoUrl,
-      reportedBy:  (window._maintUser?.name||'Staff'),
-      source:      "staff",
-      saumaklubbur: isSaumaMode,
-      verkstjori:  isSaumaMode ? document.getElementById("newVerkstjori").value.trim() : '',
-      materials:   isSaumaMode && pendingMaterials.length ? JSON.stringify(pendingMaterials) : '',
-    });
+    const partVal = document.getElementById("newPart").value.trim();
+    if (editingId) {
+      const updatePayload = {
+        id: editingId,
+        category: selectedCat, boatId, boatName,
+        part:        partVal,
+        severity:    selectedSev,
+        description: desc,
+        markOos,
+        verkstjori:  isSaumaMode ? document.getElementById("newVerkstjori").value.trim() : '',
+        materials:   isSaumaMode ? JSON.stringify(pendingMaterials || []) : '',
+      };
+      if (photoUrl) updatePayload.photoUrl = photoUrl;
+      await apiPost("saveMaintenance", updatePayload);
+    } else {
+      await apiPost("saveMaintenance", {
+        category: selectedCat, boatId, boatName, itemName: '',
+        part:        partVal,
+        severity:    selectedSev,
+        description: desc,
+        markOos,
+        photoUrl,
+        reportedBy:  (window._maintUser?.name||'Staff'),
+        source:      "staff",
+        saumaklubbur: isSaumaMode,
+        verkstjori:  isSaumaMode ? document.getElementById("newVerkstjori").value.trim() : '',
+        materials:   isSaumaMode && pendingMaterials.length ? JSON.stringify(pendingMaterials) : '',
+      });
+    }
     if (markOos && boatId) {
       try {
         const cfgR2 = await apiGet("getConfig");
@@ -712,12 +761,13 @@ async function submitRequest() {
         boats = allB2.filter(function(b) { return b.active !== false && b.active !== "false"; });
       } catch(e3) { console.warn("Could not set OOS:", e3.message); }
     }
+    const wasEditing = editingId;
     closeNewModal();
     const rRes = await apiGet("getMaintenance");
     allRequests = rRes.requests || [];
     window.allRequests = allRequests;
     renderStats(); renderList();
-    toast(s('maint.submitted'));
+    toast(s(wasEditing ? 'maint.updated' : 'maint.submitted'));
   } catch(e) {
     showErr(s('logbook.errGeneric',{msg:e.message}));
   } finally {
