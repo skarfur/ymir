@@ -2546,11 +2546,31 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
   } catch (e) { console.error('syncDailyLogActivities_ failed: ' + e); }
 }
 
+// Returns true if [startTime, endTime) overlaps any existing slot on the same
+// boat/date (excluding a specific slotId if provided). Times are "HH:MM" — pure
+// string comparison is safe because the format is zero-padded.
+function hasSlotConflict_(boatId, date, startTime, endTime, excludeSlotId) {
+  if (endTime <= startTime) return false;
+  var all = readAll_('reservationSlots');
+  for (var i = 0; i < all.length; i++) {
+    var sl = all[i];
+    if (excludeSlotId && sl.id === excludeSlotId) continue;
+    if (String(sl.boatId) !== String(boatId)) continue;
+    if (String(sl.date) !== String(date)) continue;
+    if (startTime < sl.endTime && endTime > sl.startTime) return true;
+  }
+  return false;
+}
+
 function saveSlot_(b) {
   if (!b.boatId) return failJ('boatId required');
   if (!b.date || !b.startTime || !b.endTime) return failJ('date, startTime, endTime required');
+  if (String(b.endTime) <= String(b.startTime)) return failJ('endTime must be after startTime');
   var id = b.slotId || ('slot_' + uid_());
   var existing = findOne_('reservationSlots', 'id', id);
+  if (hasSlotConflict_(b.boatId, b.date, String(b.startTime), String(b.endTime), existing ? id : null)) {
+    return failJ('Slot conflicts with an existing slot on this boat');
+  }
   if (existing) {
     updateRow_('reservationSlots', 'id', id, {
       date: String(b.date), startTime: String(b.startTime), endTime: String(b.endTime),
@@ -2573,29 +2593,35 @@ function saveRecurringSlots_(b) {
   if (!b.boatId) return failJ('boatId required');
   if (!b.startTime || !b.endTime) return failJ('startTime and endTime required');
   if (!b.fromDate || !b.toDate) return failJ('fromDate and toDate required');
+  if (String(b.endTime) <= String(b.startTime)) return failJ('endTime must be after startTime');
   if (!b.daysOfWeek || !Array.isArray(b.daysOfWeek) || !b.daysOfWeek.length) return failJ('daysOfWeek required (array of 0-6)');
   var recId = 'recur_' + uid_();
   var days = b.daysOfWeek.map(Number);
   var created = [];
+  var skipped = 0;
   var d = new Date(b.fromDate + 'T00:00:00');
   var end = new Date(b.toDate + 'T00:00:00');
   while (d <= end) {
     if (days.indexOf(d.getDay()) !== -1) {
       var dateStr = d.toISOString().slice(0, 10);
-      var slotId = 'slot_' + uid_();
-      insertRow_('reservationSlots', {
-        id: slotId, boatId: String(b.boatId), date: dateStr,
-        startTime: String(b.startTime), endTime: String(b.endTime),
-        recurrenceGroupId: recId,
-        bookedByKennitala: '', bookedByName: '', bookedByCrewId: '',
-        note: String(b.note || ''), createdAt: now_(),
-      });
-      created.push(slotId);
+      if (hasSlotConflict_(b.boatId, dateStr, String(b.startTime), String(b.endTime), null)) {
+        skipped++;
+      } else {
+        var slotId = 'slot_' + uid_();
+        insertRow_('reservationSlots', {
+          id: slotId, boatId: String(b.boatId), date: dateStr,
+          startTime: String(b.startTime), endTime: String(b.endTime),
+          recurrenceGroupId: recId,
+          bookedByKennitala: '', bookedByName: '', bookedByCrewId: '',
+          note: String(b.note || ''), createdAt: now_(),
+        });
+        created.push(slotId);
+      }
     }
     d.setDate(d.getDate() + 1);
   }
   created.forEach(function (sid) { syncSlotToCalendar_(sid, 'upsert'); });
-  return okJ({ saved: true, recurrenceGroupId: recId, count: created.length, slotIds: created });
+  return okJ({ saved: true, recurrenceGroupId: recId, count: created.length, skipped: skipped, slotIds: created });
 }
 
 function deleteSlot_(b) {

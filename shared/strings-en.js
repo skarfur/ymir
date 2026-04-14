@@ -624,6 +624,7 @@ var _STRINGS_FLAT = {
   "slot.createAndBook": "+ New Booking",
   "slot.createAndBookTitle": "Create & Book Slot",
   "slot.createdAndBooked": "Slot created and booked!",
+  "slot.conflict": "That time overlaps an existing slot for this boat",
   "cq.reservationsTitle": "CHARTERS",
   "nav.coxswainSeat": "Rowing Division",
   "cox.title": "Rowing Division",

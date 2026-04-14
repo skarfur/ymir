@@ -624,6 +624,7 @@ var _STRINGS_FLAT = {
   "slot.createAndBook": "+ Ný bókun",
   "slot.createAndBookTitle": "Búa til og bóka tíma",
   "slot.createdAndBooked": "Tími búinn til og bókaður!",
+  "slot.conflict": "Þessi tími skarast við annan tíma á þessum báti",
   "cq.reservationsTitle": "LEIGUR",
   "nav.coxswainSeat": "Róðrardeild",
   "cox.title": "Róðrardeild",
