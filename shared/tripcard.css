@@ -22,7 +22,7 @@
 .trip-card.open .trip-expand{display:block}
 .trip-card-close{position:absolute;top:6px;right:6px;background:none;border:1px solid var(--border);color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;padding:0;line-height:1;transition:color .15s,border-color .15s}
 .trip-card-close:hover{color:var(--brass);border-color:var(--brass)}
-.trip-expand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.trip-expand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
 .trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
 .trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
 .trip-exp-val{color:var(--text)}
@@ -89,11 +89,7 @@
   .trip-date-col{padding:8px 4px}
   .trip-date-day{font-size:14px}
   .trip-date-mon{font-size:12px}
-  .trip-expand-grid{grid-template-columns:1fr 1fr}
   .upload-thumb-wrap,.upload-thumb-wrap .photo-thumb{width:56px;height:56px}
   .photo-thumb{width:48px;height:48px}
   .photo-thumb-link{width:48px;height:48px}
-}
-@media(max-width:400px){
-  .trip-expand-grid{grid-template-columns:1fr}
 }
