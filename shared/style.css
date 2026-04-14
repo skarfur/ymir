@@ -169,7 +169,7 @@ header {
   background: var(--header-bg);
   color: var(--header-text);
   /* Racing stripe: 3px moss below the navy bar — echo of club racing colours */
-  border-bottom: 3px solid var(--moss);
+  border-bottom: 6px solid var(--moss);
   box-shadow: var(--shadow-md);
   padding: 8px 20px;
   display: flex;
