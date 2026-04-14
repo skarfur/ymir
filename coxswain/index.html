@@ -71,10 +71,12 @@
   font-size:11px; padding:0 8px; overflow:hidden; white-space:nowrap; }
 .cb-seat:first-of-type { border-radius:6px 6px 0 0; border-bottom:none; }
 .cb-seat:last-of-type { border-radius:0 0 6px 6px; }
-.cb-seat--filled { background:var(--surface); color:var(--text); }
-.cb-seat--you { background:var(--brass)18; color:var(--brass); border-color:var(--brass)66; font-weight:500; }
+.cb-seat--filled { background:var(--surface); color:var(--text); cursor:pointer; }
+.cb-seat--you { background:var(--brass)18; color:var(--brass); border-color:var(--brass)66; font-weight:500; cursor:pointer; }
 .cb-seat--open { background:transparent; color:var(--muted); border-style:dashed; cursor:pointer; transition:all .15s; }
 .cb-seat--open:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
+.cb-seat--expanded { height:auto; min-height:28px; white-space:normal; padding-top:4px; padding-bottom:4px; }
+.cb-seat--expanded .cb-seat-name { overflow:visible; text-overflow:clip; white-space:normal; word-break:break-word; line-height:1.2; }
 .cb-seat-role { font-size:8px; color:var(--muted); min-width:28px; opacity:.7; }
 .cb-seat-name { overflow:hidden; text-overflow:ellipsis; }
 .cb-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -627,17 +629,27 @@ function renderSeat(crew, pairId, seatIdx, member, isOpen, isMine) {
   var kt = String(user.kennitala);
   var isYou = member && String(member.kennitala) === kt;
   var roleLabel = '<span class="cb-seat-role">' + (seatIdx === 0 ? s('cox.bow') : s('cox.stern')) + '</span>';
-  if (isYou) {
-    return '<div class="cb-seat cb-seat--you">' + roleLabel + '<span class="cb-seat-name">' + esc(memberDisplayName(member, _members)) + '</span></div>';
-  }
   if (member) {
-    return '<div class="cb-seat cb-seat--filled">' + roleLabel + '<span class="cb-seat-name">' + esc(memberDisplayName(member, _members)) + '</span></div>';
+    var full = esc(memberDisplayName(member, _members));
+    var ini  = esc(memberInitials(member, _members)) || full;
+    var cls  = isYou ? 'cb-seat cb-seat--you' : 'cb-seat cb-seat--filled';
+    return '<div class="' + cls + '" title="' + full + '" data-full="' + full + '" data-ini="' + ini + '" onclick="toggleSeatName(this)">'
+      + roleLabel + '<span class="cb-seat-name">' + ini + '</span></div>';
   }
   if (isOpen && _isReleasedRower && !isMine) {
     return '<div class="cb-seat cb-seat--open" onclick="joinSeat(\'' + esc(crew.id) + '\',\'' + esc(pairId) + '\',' + seatIdx + ')">'
       + roleLabel + '<span class="cb-seat-name">' + s('cox.join') + '</span></div>';
   }
   return '<div class="cb-seat cb-seat--open" style="cursor:default">' + roleLabel + '<span class="cb-seat-name">—</span></div>';
+}
+
+// Toggle a filled seat between initials and full name. Uses data- attributes
+// populated by renderSeat so we don't need to re-derive the values here.
+function toggleSeatName(el) {
+  var nameEl = el.querySelector('.cb-seat-name');
+  if (!nameEl) return;
+  var expanded = el.classList.toggle('cb-seat--expanded');
+  nameEl.textContent = expanded ? (el.dataset.full || '') : (el.dataset.ini || '');
 }
 
 function renderCrewInvites() {

@@ -85,6 +85,43 @@ window.memberDisplayName = function (member, allMembers) {
   return name;
 };
 
+// ── MEMBER INITIALS ───────────────────────────────────────────────────────────
+// Compact label for tight spaces. Prefers the stored `initials` field (set by
+// the backend in _memberRow_), otherwise computes from `name` using the same
+// rule as code.gs extractInitials_: split on whitespace, drop all-lowercase
+// tokens (connectors like "van", "de", "af"), strip hyphens, take first char
+// of each remaining token, uppercase. When two members in `allMembers` would
+// collapse to the same initials and the member has a birthYear, append the
+// last two digits as a disambiguator (e.g. "JM'98").
+function _computeInitials(name) {
+  if (!name) return '';
+  return String(name).trim().split(/\s+/)
+    .filter(function(t) { return t && t !== t.toLowerCase(); })
+    .map(function(t) { return t.replace(/-/g, '').charAt(0); })
+    .join('').toUpperCase();
+}
+window.memberInitials = function (member, allMembers) {
+  if (!member) return '';
+  var ini = (member.initials && String(member.initials).trim())
+    || _computeInitials(member.name || '');
+  if (!ini || !Array.isArray(allMembers)) return ini;
+  var dupes = 0;
+  for (var i = 0; i < allMembers.length; i++) {
+    var other = allMembers[i];
+    if (!other) continue;
+    var otherIni = (other.initials && String(other.initials).trim())
+      || _computeInitials(other.name || '');
+    if (otherIni === ini) {
+      if (++dupes > 1) break;
+    }
+  }
+  if (dupes > 1 && member.birthYear) {
+    var yy = String(member.birthYear).slice(-2);
+    return ini + "'" + yy;
+  }
+  return ini;
+};
+
 // Build a Set of names that occur more than once in the given array.
 window.duplicateMemberNames = function (allMembers) {
   var seen = Object.create(null), dupes = new Set();
