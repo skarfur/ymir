@@ -335,16 +335,8 @@ window.buildHeader = function (page) {
   function link(href, label, cls, hub) {
     const a = document.createElement('a');
     a.href = href; a.className = cls || 'hbtn';
-    const iconHtml = (hub && NAV_ICONS_[hub]) ? NAV_ICONS_[hub] + ' ' : '';
-    if ((cls || '').indexOf('back-btn') !== -1) {
-      // back-btn: wrap label in a span so it can be hidden on mobile,
-      // leaving just the hub icon + arrow visible.
-      a.innerHTML = iconHtml + '← <span class="back-label">' + label + '</span>';
-    } else if (iconHtml) {
-      a.innerHTML = iconHtml + label;
-    } else {
-      a.textContent = label;
-    }
+    if (hub && NAV_ICONS_[hub]) { a.innerHTML = NAV_ICONS_[hub] + ' ' + label; }
+    else { a.textContent = label; }
     return a;
   }
   function btn(label, fn, cls) {
@@ -371,18 +363,19 @@ window.buildHeader = function (page) {
   left.appendChild(logo);
 
   // LEFT: back link on subpages
-  if (isStaffSub)  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'back-btn', 'staff'));
-  if (isAdminSub)  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'back-btn', 'admin'));
-  if (isMemberSub) left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'back-btn', 'member'));
+  if (isStaffSub)  left.appendChild(link(depth + 'staff/',  '← ' + s('nav.staffHub'),  'back-btn', 'staff'));
+  if (isAdminSub)  left.appendChild(link(depth + 'admin/',  '← ' + s('nav.admin'),     'back-btn', 'admin'));
+  if (isMemberSub) left.appendChild(link(depth + 'member/', '← ' + s('nav.memberHub'), 'back-btn', 'member'));
 
-  // LEFT: hub-switch buttons (staff/admin only)
-  if (user) {
+  // LEFT: hub-switch buttons — only on top-level hub pages, not subpages
+  const isSubpage = isStaffSub || isAdminSub || isMemberSub;
+  if (user && !isSubpage) {
     const canStaff = typeof isStaff === 'function' && isStaff(user);
     const canAdmin = typeof isAdmin === 'function' && isAdmin(user);
 
-    if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn hub-switch', 'staff'));
-    if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn hub-switch', 'member'));
-    if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn hub-switch', 'admin'));
+    if (canStaff && currentHub !== 'staff')  left.appendChild(link(depth + 'staff/',  s('nav.staffHub'),  'hbtn', 'staff'));
+    if (canStaff && currentHub !== 'member') left.appendChild(link(depth + 'member/', s('nav.memberHub'), 'hbtn', 'member'));
+    if (canAdmin && currentHub !== 'admin')  left.appendChild(link(depth + 'admin/',  s('nav.admin'),     'hbtn', 'admin'));
   }
 
   // RIGHT: guardian-acting-as-ward badge (if applicable)
