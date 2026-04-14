@@ -85,13 +85,13 @@
 
 [data-theme="light"] {
   --bg:       #eef2f8;
-  --surface:  #ffffff;
-  --card:     #ffffff;
+  --surface:  #f6f9f1;
+  --card:     #f2f6ea;
   --border:   #c9d3e4;
   --border-l: #9fb0cc;
   --text:     #0f2045;
   --muted:    #5b6e8a;
-  --faint:    #e4ebf5;
+  --faint:    #e4ecdb;
   --navy:     #274484;
   --navy-d:   #1b3168;
   --navy-l:   #3a5ea8;
@@ -119,13 +119,13 @@
 @media (prefers-color-scheme: light) {
   [data-theme="auto"] {
     --bg:       #eef2f8;
-    --surface:  #ffffff;
-    --card:     #ffffff;
+    --surface:  #f6f9f1;
+    --card:     #f2f6ea;
     --border:   #c9d3e4;
     --border-l: #9fb0cc;
     --text:     #0f2045;
     --muted:    #5b6e8a;
-    --faint:    #e4ebf5;
+    --faint:    #e4ecdb;
     --navy:     #274484;
     --navy-d:   #1b3168;
     --navy-l:   #3a5ea8;
@@ -253,6 +253,7 @@ main.wide { max-width: 1100px; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--moss);
   border-radius: var(--radius-md);
   padding: 18px 20px;
   margin-bottom: 16px;
@@ -287,8 +288,9 @@ main.wide { max-width: 1100px; }
 .section-heading::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: var(--border);
+  height: 2px;
+  background: linear-gradient(to right, var(--navy), var(--moss) 40%, color-mix(in srgb, var(--moss) 20%, transparent));
+  border-radius: 1px;
 }
 
 /* ── FORMS ────────────────────────────────────────────────────────────────────── */
@@ -361,8 +363,8 @@ textarea { min-height: 70px; }
 }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
-.btn-primary  { background: var(--navy);   color: #ffffff; }
-.btn-primary:hover:not(:disabled)  { background: var(--navy-l); box-shadow: 0 2px 8px color-mix(in srgb, var(--brass) 40%, transparent); transform: translateY(-1px); }
+.btn-primary  { background: var(--navy);   color: #ffffff; box-shadow: inset 0 2px 0 var(--moss); }
+.btn-primary:hover:not(:disabled)  { background: var(--navy-l); box-shadow: inset 0 2px 0 var(--moss), 0 2px 8px color-mix(in srgb, var(--brass) 40%, transparent); transform: translateY(-1px); }
 
 .btn-secondary { background: var(--faint);  color: var(--text); }
 .btn-secondary:hover:not(:disabled) { background: var(--border); box-shadow: var(--shadow-sm); }
@@ -488,7 +490,7 @@ textarea { min-height: 70px; }
 
 /* ── MISC ─────────────────────────────────────────────────────────────────────── */
 
-.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.divider { height: 2px; background: linear-gradient(to right, var(--navy), var(--moss) 70%, transparent); margin: 16px 0; border-radius: 1px; }
 
 .empty-state {
   text-align: center;
