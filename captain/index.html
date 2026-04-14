@@ -178,8 +178,8 @@
         <span id="cqWeekLabel" class="week-label"></span>
         <button class="btn btn-secondary" onclick="shiftCqWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" onclick="cqWeekToday()" data-s="slot.today">Today</button>
-        <button class="btn btn-primary" id="cqCreateSlotBtn" data-icon="+" onclick="openCqCreateSlotModal()"><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
-        <button class="btn btn-primary" data-icon="++" onclick="openCqBulkBookModal()"><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
+        <button class="btn btn-primary" id="cqCreateSlotBtn" data-icon="+" data-s="slot.createAndBook" data-s-attr="title" onclick="openCqCreateSlotModal()"><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
+        <button class="btn btn-primary" data-icon="&#8801;" data-s="slot.bulkBook" data-s-attr="title" onclick="openCqBulkBookModal()"><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
         <label for="cqBookingColor" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
