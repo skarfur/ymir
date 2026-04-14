@@ -26,6 +26,18 @@ let WX_LON   = WX_DEFAULT.lon;
 let WX_LABEL = WX_DEFAULT.label;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// DUTY STATUS ICONS  —  Tabler v3 (MIT). Inherit currentColor to match badge text.
+// Consumed by wxFlagDetailHtml() below, staff/index.html toggle buttons, and
+// public/index.html status pills. Loaded via every page that loads weather.js.
+// ═══════════════════════════════════════════════════════════════════════════════
+window.DUTY_ICONS = Object.freeze({
+  ship:        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M2 20a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1"/><path d="M4 18l-1 -5h18l-2 4"/><path d="M5 13v-6h8l4 6"/><path d="M7 7v-4h2"/></svg>',
+  shipOff:     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M3 3l18 18"/><path d="M2 20a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1"/><path d="M4 18l-1 -5h13m4 0h1l-2 4"/><path d="M5 13v-6h2m4 0h2l4 6"/><path d="M7 7v-4h2"/></svg>',
+  lifebuoy:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M15 15l3.35 3.35"/><path d="M9 15l-3.35 3.35"/><path d="M5.65 5.65l3.35 3.35"/><path d="M18.35 5.65l-3.35 3.35"/></svg>',
+  lifebuoyOff: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0"><path d="M3 3l18 18"/><path d="M9.171 5.176a9 9 0 0 1 11.65 11.654m-1.341 2.66a9 9 0 0 1 -12.98 -12.98"/><path d="M10.586 10.589a2 2 0 0 0 2.836 2.823"/><path d="M15 15l3.35 3.35"/><path d="M9 15l-3.35 3.35"/><path d="M5.65 5.65l3.35 3.35"/><path d="M14.95 9.05l3.4 -3.4"/></svg>',
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // FLAG CONFIG  —  single source of truth for all flag logic
 // Admin-editable via admin → Flags tab.  wxLoadFlagConfig() merges saved values.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -240,8 +252,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 function wxStaffStatusHtml(status) {
   if (!status) return '';
   const badges = [];
-  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">🧑 '+s('wx.staffOnDuty')+'</span>');
-  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">⛵ '+s('wx.supportBoatOut')+'</span>');
+  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.lifebuoy+s('wx.staffOnDuty')+'</span>');
+  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.ship+s('wx.supportBoatOut')+'</span>');
   if (!badges.length) return '';
   let ago = '';
   if (status.updatedAt) {
@@ -303,8 +315,8 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     const dTx   = s(staffStatus.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
     const bTx   = s(staffStatus.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
-      + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">🧑 '+dTx+'</span>'
-      + '<span style="'+bst+'background:'+bBg+';color:'+bCol+'">⛵ '+bTx+'</span>'
+      + '<span style="'+bst+'background:'+dBg+';color:'+dCol+'">'+DUTY_ICONS[staffStatus.onDuty ? 'lifebuoy' : 'lifebuoyOff']+dTx+'</span>'
+      + '<span style="'+bst+'background:'+bBg+';color:'+bCol+'">'+DUTY_ICONS[staffStatus.supportBoat ? 'ship' : 'shipOff']+bTx+'</span>'
       + '</div>';
   })();
   const considerations = result.breakdown.filter(b => b.pts > 0);
@@ -607,9 +619,9 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const _dtx = s(_ss.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
         const _btx = s(_ss.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
         container.innerHTML =
-          '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">🧑 '+_dtx+'</span>'
+          '<span style="'+_bst+'background:'+_dbg+';color:'+_dc+'">'+DUTY_ICONS[_ss.onDuty ? 'lifebuoy' : 'lifebuoyOff']+_dtx+'</span>'
           + ' '
-          + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">⛵ '+_btx+'</span>';
+          + '<span style="'+_bst+'background:'+_bbg+';color:'+_bc+'">'+DUTY_ICONS[_ss.supportBoat ? 'ship' : 'shipOff']+_btx+'</span>';
       };
       _renderSsBadges(targetEl.querySelector('.wx-status-badges'));
       // Expose badge-only re-render so pages can call after toggling duty status
