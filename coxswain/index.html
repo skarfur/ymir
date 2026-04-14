@@ -169,12 +169,12 @@
         <select id="cxSlotBoat" onchange="loadCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
         <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
         <select id="cxSlotCrew" onchange="renderCxSlots()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(-1)">&larr;</button>
-          <span id="cxWeekLabel" style="font-size:11px;min-width:140px;text-align:center"></span>
-          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="shiftCxWeek(1)">&rarr;</button>
-          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="cxWeekToday()" data-s="slot.today">Today</button>
-          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openCxBulkBookModal()" data-s="slot.bulkBook">Bulk Book</button>
+        <div class="slot-week-nav">
+          <button class="btn btn-secondary" onclick="shiftCxWeek(-1)">&larr;</button>
+          <span id="cxWeekLabel" class="week-label"></span>
+          <button class="btn btn-secondary" onclick="shiftCxWeek(1)">&rarr;</button>
+          <button class="btn btn-secondary" onclick="cxWeekToday()" data-s="slot.today">Today</button>
+          <button class="btn btn-primary" data-icon="++" onclick="openCxBulkBookModal()"><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
         </div>
       </div>
       <div id="cxSlotGrid" style="overflow-x:auto"></div>
