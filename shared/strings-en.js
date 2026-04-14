@@ -681,7 +681,7 @@ var _STRINGS_FLAT = {
   "cox.numBoats": "Number of boats",
   "cox.needsMore": "needs {n} more",
   "cox.crewColor": "Color",
-  "cq.bookingColor": "My booking color",
+  "cq.bookingColor": "My bookings:",
   "cox.tentative": "TENTATIVE",
   "cox.slotReservations": "SLOT RESERVATIONS",
   "pub.dash.subtitle": "Siglingafélagið Ýmir",
