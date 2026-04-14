@@ -1,6 +1,6 @@
 /* ── Trip card (shared between logbook & captain) ── */
-.trip-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm)}
-.trip-card:hover{border-color:var(--brass)}
+.trip-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--moss);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm)}
+.trip-card:hover{border-color:var(--moss-l)}
 .trip-card-main{display:grid;grid-template-columns:52px 1fr auto;align-items:stretch;cursor:pointer}
 .trip-date-col{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;text-align:center}
 .trip-date-day{font-size:16px;font-weight:500;color:var(--text);line-height:1}
