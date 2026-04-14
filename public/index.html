@@ -494,8 +494,8 @@ function renderDutyPills() {
   var btx = IS ? (_staffStatus.supportBoat ? 'Björgunarbátur á sjó' : 'Enginn björgunarbátur')
                : (_staffStatus.supportBoat ? 'Support boat out'     : 'No support boat');
   el.innerHTML =
-    '<span style="' + bst + 'background:' + dbg + ';color:' + dc + '">🧑 ' + dtx + '</span>'
-    + '<span style="' + bst + 'background:' + bbg + ';color:' + bc + '">⛵ ' + btx + '</span>';
+    '<span style="' + bst + 'background:' + dbg + ';color:' + dc + '">' + DUTY_ICONS[_staffStatus.onDuty ? 'lifebuoy' : 'lifebuoyOff'] + dtx + '</span>'
+    + '<span style="' + bst + 'background:' + bbg + ';color:' + bc + '">' + DUTY_ICONS[_staffStatus.supportBoat ? 'ship' : 'shipOff'] + btx + '</span>';
 }
 
 function renderFlagBanner(result) {

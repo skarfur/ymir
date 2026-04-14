@@ -316,8 +316,8 @@
   <div id="staffStatusStrip" class="mb-12">
     <div class="section-label mb-8">DUTY STATUS</div>
     <div class="flex-center flex-wrap gap-8">
-      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">🧑 No staff on duty</button>
-      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">⛵ No support boat</button>
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">No staff on duty</button>
+      <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:#e74c3c;color:#fff;">No support boat</button>
       <span id="staffStatusUpdated" class="text-xs text-muted"></span>
     </div>
   </div>
@@ -1531,8 +1531,8 @@ function renderStaffStatusStrip() {
   const off  = 'background:#e74c3c;color:#fff;';
   btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? on : off));
   btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? on : off));
-  btnDuty.innerHTML = '🧑 ' + (_staffStatus.onDuty ? s('staff.staffOnDuty') : s('staff.noStaffOnDuty'));
-  btnBoat.innerHTML = '⛵ ' + (_staffStatus.supportBoat ? s('staff.supportBoat') : s('staff.noSupportBoat'));
+  btnDuty.innerHTML = DUTY_ICONS[_staffStatus.onDuty ? 'lifebuoy' : 'lifebuoyOff'] + (_staffStatus.onDuty ? s('staff.staffOnDuty') : s('staff.noStaffOnDuty'));
+  btnBoat.innerHTML = DUTY_ICONS[_staffStatus.supportBoat ? 'ship' : 'shipOff'] + (_staffStatus.supportBoat ? s('staff.supportBoat') : s('staff.noSupportBoat'));
   if (upd && _staffStatus.updatedAt) upd.textContent = s('staff.updatedShort') + ' ' + _staffStatus.updatedAt.slice(11,16) + ' UTC';
 }
 async function toggleStaffStatus(field) {

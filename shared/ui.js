@@ -335,7 +335,7 @@ window.buildHeader = function (page) {
   function link(href, label, cls, hub) {
     const a = document.createElement('a');
     a.href = href; a.className = cls || 'hbtn';
-    if (hub && NAV_ICONS_[hub]) { a.innerHTML = NAV_ICONS_[hub] + ' ' + label; }
+    if (hub && NAV_ICONS_[hub]) { a.innerHTML = NAV_ICONS_[hub] + label; }
     else { a.textContent = label; }
     return a;
   }
