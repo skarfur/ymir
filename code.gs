@@ -34,9 +34,97 @@ const TABS_ = {
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
   volunteerSignups: 'volunteer_signups',
+  sessions: 'sessions',
+  loginAttempts: 'login_attempts',
 };
 
 const CLUB_LANG_ = 'IS';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION & RATE LIMIT CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+// Short-lived sessions expire after 8h of activity; long sessions (the
+// "stay logged in" checkbox) extend out to 60 days and their expiry slides
+// on every authenticated call.
+const SESSION_TTL_SHORT_MS_ = 8 * 60 * 60 * 1000;            // 8 hours
+const SESSION_TTL_LONG_MS_  = 60 * 24 * 60 * 60 * 1000;       // 60 days
+// Throttle lastSeenAt writes: only touch the sheet if the last write is
+// older than 60s. Keeps the sessions sheet from becoming a write hotspot.
+const SESSION_TOUCH_INTERVAL_MS_ = 60 * 1000;
+
+// Rate limiting for loginMember: 5 failed attempts in 15 min → 15-min lockout.
+const LOGIN_WINDOW_MS_    = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS_ = 5;
+const LOGIN_LOCKOUT_MS_   = 15 * 60 * 1000;
+
+// Actions that can be called without a session token. Everything else
+// requires a valid session (see _authCaller_). GET-only public endpoints
+// (lookup, captain, boat, resolveFromEmail, shared records) are gated
+// separately inside doGet.
+const PUBLIC_ACTIONS_ = {
+  loginMember:   true,
+  dashboard:     true,
+  lookup:        true,
+  captain:       true,
+  boat:          true,
+};
+
+// Admin-only actions. Enforced before route_ dispatches.
+const ADMIN_ACTIONS_ = {
+  // saveMember is NOT here — the member hub calls it to register guests.
+  // Admin-only behaviour (editing arbitrary members, role changes, toggling
+  // active) is enforced inside saveMember_.
+  deleteMember:         true,
+  importMembers:        true,
+  deactivateMembers:    true,
+  saveConfig:           true,
+  saveCharterCalendars: true,
+  saveClubCalendars:    true,
+  saveActivityType:     true,
+  deleteActivityType:   true,
+  saveChecklistItem:    true,
+  deleteChecklistItem:  true,
+  saveCertDef:          true,
+  deleteCertDef:        true,
+  saveCertCategories:   true,
+  saveAlertConfig:      true,
+  saveEmployee:         true,
+  closePayPeriod:       true,
+  adminEditTime:        true,
+  adminAddTime:         true,
+  adminDeleteTime:      true,
+  saveRowingPassportDef:   true,
+  importRowingPassportCsv: true,
+  adminResetMemberPassword: true,
+};
+
+// Staff-or-admin actions. Intentionally narrow: many actions like
+// saveCheckout / checkIn / createIncident are called from the member hub
+// too (self-checkout, reporting a damage/incident), so we can't blanket
+// gate them here. Only listing the flows that are strictly staff-only.
+const STAFF_ACTIONS_ = {
+  saveDailyLog:                true,   // daily club log sign-off
+  saveGroupCheckout:           true,   // group check-outs (courses / events)
+  groupCheckIn:                true,
+  linkGroupCheckoutToActivity: true,
+  deleteCheckout:              true,   // staff override; members check in instead
+  silenceAlert:                true,
+  snoozeAlert:                 true,
+  resolveAlert:                true,
+  getOverdueAlerts:            true,
+  resolveIncident:             true,
+  addIncidentNote:             true,
+  getVerificationRequests:     true,
+};
+
+// Actions that mutate a specific member's own data. The caller's kennitala
+// (from the session) must match the target kennitala, unless the caller is
+// an admin. The key names the request-body field that carries the target kt.
+const SELF_OR_ADMIN_ACTIONS_ = {
+  setPassword:      'kennitala',
+  savePreferences:  'kennitala',
+  // saveMemberCert takes memberId rather than kennitala; handled specially.
+};
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,6 +342,273 @@ function esc_(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&l
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SESSION TOKENS
+// Every authenticated API call carries `sessionToken` in its JSON body. The
+// server never stores the raw token — it stores SHA-256(token) in the
+// `sessions` sheet. A stolen sheet cannot be used to hijack live sessions.
+// ─────────────────────────────────────────────────────────────────────────────
+const SESSION_COLS_ = [
+  'id', 'kennitala', 'tokenHash', 'role', 'createdAt',
+  'lastSeenAt', 'expiresAt', 'stayLoggedIn', 'userAgent',
+];
+const LOGIN_ATTEMPT_COLS_ = ['kennitala', 'firstAt', 'count', 'blockedUntil'];
+
+// Create the sheet lazily if it's missing. Called from every session/rate-
+// limit helper so a fresh deployment doesn't need a manual setup step.
+function _ensureSheet_(tabKey, columns) {
+  const name = TABS_[tabKey] || tabKey;
+  const ss = ss_();
+  let sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.getRange(1, 1, 1, columns.length).setValues([columns]);
+    sh.setFrozenRows(1);
+    invalidateSheetCache_(tabKey);
+    return sh;
+  }
+  // Ensure all expected headers exist (additive migrations only).
+  columns.forEach(function(c) { addColIfMissing_(tabKey, c); });
+  return sh;
+}
+
+// 256-bit random token, base64url-encoded (no padding). Two UUIDs give 256
+// bits of entropy; Apps Script has no direct access to a CSPRNG byte API but
+// getUuid() is cryptographically random per the V8 runtime docs.
+function _randomToken_() {
+  const hex = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  const bytes = [];
+  for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
+}
+
+function _hashToken_(token) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, String(token || ''), Utilities.Charset.UTF_8);
+  return Utilities.base64Encode(bytes);
+}
+
+// Truncate the User-Agent string so a malicious client cannot blow up a row
+// with megabytes of junk, while still preserving enough to identify a device.
+function _trimUA_(ua) {
+  ua = String(ua == null ? '' : ua);
+  return ua.length > 200 ? ua.slice(0, 200) : ua;
+}
+
+function _createSession_(kennitala, role, stayLoggedIn, userAgent) {
+  _ensureSheet_('sessions', SESSION_COLS_);
+  const raw = _randomToken_();
+  const hash = _hashToken_(raw);
+  const ttl  = stayLoggedIn ? SESSION_TTL_LONG_MS_ : SESSION_TTL_SHORT_MS_;
+  const now = Date.now();
+  const session = {
+    id:            uid_(),
+    kennitala:     String(kennitala || ''),
+    tokenHash:     hash,
+    role:          String(role || 'member'),
+    createdAt:     new Date(now).toISOString(),
+    lastSeenAt:    new Date(now).toISOString(),
+    expiresAt:     new Date(now + ttl).toISOString(),
+    stayLoggedIn:  !!stayLoggedIn,
+    userAgent:     _trimUA_(userAgent),
+  };
+  insertRow_('sessions', session);
+  return { token: raw, expiresAt: session.expiresAt, id: session.id };
+}
+
+function _findSessionByHash_(hash) {
+  _ensureSheet_('sessions', SESSION_COLS_);
+  return findOne_('sessions', 'tokenHash', hash);
+}
+
+function _deleteSessionByHash_(hash) {
+  try { deleteRow_('sessions', 'tokenHash', hash); } catch (e) {}
+}
+
+function _deleteSessionById_(id) {
+  try { return deleteRow_('sessions', 'id', id); } catch (e) { return false; }
+}
+
+// Revoke every session belonging to a member, optionally keeping one token's
+// session alive (so "changed my password" can sign out every *other* device).
+// Returns the count of sessions that were removed.
+function _revokeSessionsForMember_(kennitala, exceptHash) {
+  _ensureSheet_('sessions', SESSION_COLS_);
+  const kt = String(kennitala || '').trim();
+  if (!kt) return 0;
+  const rows = readAll_('sessions').filter(function(r) {
+    return String(r.kennitala || '').trim() === kt && r.tokenHash !== exceptHash;
+  });
+  let n = 0;
+  rows.forEach(function(r) {
+    if (deleteRow_('sessions', 'id', r.id)) n++;
+  });
+  return n;
+}
+
+// Slide expiry for long-lived ("stay logged in") sessions whenever they're
+// touched. Short sessions keep their original expiry. lastSeenAt is throttled
+// so the sheet isn't written on every request; 60s resolution is good enough
+// for "recent activity" displays.
+function _touchSession_(session) {
+  const now = Date.now();
+  const last = session.lastSeenAt ? new Date(session.lastSeenAt).getTime() : 0;
+  const updates = {};
+  if (now - last >= SESSION_TOUCH_INTERVAL_MS_) {
+    updates.lastSeenAt = new Date(now).toISOString();
+  }
+  if (bool_(session.stayLoggedIn)) {
+    const newExpiry = now + SESSION_TTL_LONG_MS_;
+    const curExpiry = session.expiresAt ? new Date(session.expiresAt).getTime() : 0;
+    // Only write when the slide is meaningful (more than a day past current).
+    if (newExpiry - curExpiry > 24 * 60 * 60 * 1000) {
+      updates.expiresAt = new Date(newExpiry).toISOString();
+    }
+  }
+  if (Object.keys(updates).length) {
+    updateRow_('sessions', 'id', session.id, updates);
+  }
+}
+
+// Resolve the caller from a request body. Returns { kennitala, role, session }
+// on success, or null if the session is missing/expired/invalid. Expired
+// sessions are deleted on encounter so the sheet self-cleans.
+function _authCaller_(b) {
+  const raw = String((b && b.sessionToken) || '').trim();
+  if (!raw) return null;
+  const hash = _hashToken_(raw);
+  const session = _findSessionByHash_(hash);
+  if (!session) return null;
+  const now = Date.now();
+  const expiresAt = session.expiresAt ? new Date(session.expiresAt).getTime() : 0;
+  if (!expiresAt || expiresAt < now) {
+    _deleteSessionByHash_(hash);
+    return null;
+  }
+  // Member role/active state can change after login; always re-check.
+  const m = findOne_('members', 'kennitala', String(session.kennitala || '').trim());
+  if (!m || !bool_(m.active)) {
+    _deleteSessionByHash_(hash);
+    return null;
+  }
+  _touchSession_(session);
+  return {
+    kennitala: String(m.kennitala),
+    role:      String(m.role || session.role || 'member'),
+    member:    m,
+    session:   session,
+    tokenHash: hash,
+  };
+}
+
+function _isAdmin_(caller) { return caller && caller.role === 'admin'; }
+function _isStaff_(caller) { return caller && (caller.role === 'staff' || caller.role === 'admin'); }
+
+// Decide whether `caller` is permitted to run `action` with body `b`.
+// Returns null on allow or a failJ response on deny. Centralises all
+// role/self-or-admin gating so route_ stays a plain dispatch table.
+function _authorize_(action, caller, b) {
+  if (!caller) return failJ('Unauthorized', 401);
+  if (ADMIN_ACTIONS_[action] && !_isAdmin_(caller)) {
+    return failJ('Admin only', 403);
+  }
+  if (STAFF_ACTIONS_[action] && !_isStaff_(caller)) {
+    return failJ('Staff only', 403);
+  }
+  // Self-or-admin: caller.kennitala must equal the body's target kennitala,
+  // or the caller is an admin (useful for password resets, etc.).
+  const ktField = SELF_OR_ADMIN_ACTIONS_[action];
+  if (ktField) {
+    const target = String((b && b[ktField]) || '').trim();
+    if (!target) return failJ('kennitala required');
+    if (target !== caller.kennitala && !_isAdmin_(caller)) {
+      return failJ('Forbidden', 403);
+    }
+  }
+  // saveMemberCert is targeted by memberId, not kennitala.
+  if (action === 'saveMemberCert') {
+    const mid = String((b && b.memberId) || '').trim();
+    if (!mid) return failJ('memberId required');
+    if (!_isAdmin_(caller)) {
+      const m = findOne_('members', 'id', mid);
+      if (!m || String(m.kennitala) !== caller.kennitala) {
+        return failJ('Forbidden', 403);
+      }
+    }
+  }
+  return null;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN RATE LIMITING
+// Keyed by kennitala only — Apps Script does not reliably expose the caller's
+// IP. 5 failures in a 15-min window trip a 15-min lockout. A successful login
+// clears the counter. Admin "reset password" also clears.
+// ─────────────────────────────────────────────────────────────────────────────
+function _checkLoginRate_(kennitala) {
+  _ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
+  const row = findOne_('loginAttempts', 'kennitala', String(kennitala).trim());
+  if (!row) return { ok: true };
+  const now = Date.now();
+  const blockedUntil = row.blockedUntil ? new Date(row.blockedUntil).getTime() : 0;
+  if (blockedUntil && blockedUntil > now) {
+    return { ok: false, retryAt: new Date(blockedUntil).toISOString() };
+  }
+  return { ok: true };
+}
+
+function _bumpLoginAttempts_(kennitala) {
+  _ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
+  const kt = String(kennitala).trim();
+  if (!kt) return;
+  const row = findOne_('loginAttempts', 'kennitala', kt);
+  const now = Date.now();
+  if (!row) {
+    insertRow_('loginAttempts', {
+      kennitala: kt, firstAt: new Date(now).toISOString(), count: 1, blockedUntil: '',
+    });
+    return;
+  }
+  const firstAtMs = row.firstAt ? new Date(row.firstAt).getTime() : now;
+  if (now - firstAtMs > LOGIN_WINDOW_MS_) {
+    updateRow_('loginAttempts', 'kennitala', kt, {
+      firstAt: new Date(now).toISOString(), count: 1, blockedUntil: '',
+    });
+    return;
+  }
+  const newCount = (parseInt(row.count) || 0) + 1;
+  const updates = { count: newCount };
+  if (newCount >= LOGIN_MAX_ATTEMPTS_) {
+    updates.blockedUntil = new Date(now + LOGIN_LOCKOUT_MS_).toISOString();
+  }
+  updateRow_('loginAttempts', 'kennitala', kt, updates);
+}
+
+function _clearLoginAttempts_(kennitala) {
+  const kt = String(kennitala || '').trim();
+  if (!kt) return;
+  try { deleteRow_('loginAttempts', 'kennitala', kt); } catch (e) {}
+}
+
+// Time-driven trigger: wipe expired session rows. Safe to run infrequently
+// because _authCaller_ also removes expired rows on encounter.
+function sweepExpiredSessions() {
+  try { clearSheetCache_(); } catch (e) {}
+  _ensureSheet_('sessions', SESSION_COLS_);
+  const now = Date.now();
+  const rows = readAll_('sessions');
+  let n = 0;
+  rows.forEach(function(r) {
+    const exp = r.expiresAt ? new Date(r.expiresAt).getTime() : 0;
+    if (!exp || exp < now) {
+      if (deleteRow_('sessions', 'id', r.id)) n++;
+    }
+  });
+  return n;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SHEET HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -418,16 +773,28 @@ function doGet(e) {
   try {
     clearSheetCache_();
     const b = e.parameter?.p ? JSON.parse(e.parameter.p) : (e.parameter || {});
+    // Public query endpoints — no auth required.
     if (b.action === 'resolveFromEmail') return resolveFromEmail_(b);
-    // Public query endpoints — no token required (spec §5)
     if (b.action === 'lookup')  return publicLookup_(b);
     if (b.action === 'captain') return publicCaptainRecord_(b);
     if (b.action === 'boat')    return publicBoatRecord_(b);
     if (b.action === 'dashboard') return publicDashboard_();
     if (b.share)                return publicShareRecord_(b);
-    if (!b.token || b.token !== API_TOKEN_) return failJ('Unauthorized', 401);
-    if (!b.action) return okJ({ status: 'ok', ts: now_() });
-    return route_(b.action, b);
+    // Server-side / trigger calls (doGet is used by alert-action emails) can
+    // still present API_TOKEN_. End-user GETs are not used by the app.
+    if (b.token && b.token === API_TOKEN_) {
+      if (!b.action) return okJ({ status: 'ok', ts: now_() });
+      return route_(b.action, b, { kennitala: '_system', role: 'admin', __system: true });
+    }
+    // Session-authenticated GETs, if any.
+    const callerGet = _authCaller_(b);
+    if (callerGet) {
+      if (!b.action) return okJ({ status: 'ok', ts: now_() });
+      const deniedGet = _authorize_(b.action, callerGet, b);
+      if (deniedGet) return deniedGet;
+      return route_(b.action, b, callerGet);
+    }
+    return failJ('Unauthorized', 401);
   } catch (err) { return failJ('Server error: ' + err.message, 500); }
 }
 
@@ -435,21 +802,36 @@ function doPost(e) {
   try {
     clearSheetCache_();
     const b = JSON.parse(e.postData.contents);
-    // Public POST endpoints — no token required
-    if (b.action === 'dashboard') return publicDashboard_();
-    if (!b.token || b.token !== API_TOKEN_) return failJ('Unauthorized', 401);
-    return route_(b.action, b);
+    const action = b.action;
+    // Public POST endpoints — no auth required.
+    if (action && PUBLIC_ACTIONS_[action]) return route_(action, b, null);
+    // Server-side / trigger calls can still present the shared API_TOKEN_.
+    // This keeps cron like checkAndSendOverdueAlerts working without a user.
+    if (b._serverSide && b.token === API_TOKEN_) {
+      return route_(action, b, { kennitala: '_system', role: 'admin', __system: true });
+    }
+    // Everything else requires a valid per-user session token.
+    const caller = _authCaller_(b);
+    if (!caller) return failJ('Unauthorized', 401);
+    const denied = _authorize_(action, caller, b);
+    if (denied) return denied;
+    return route_(action, b, caller);
   } catch (err) { return failJ('Server error: ' + err.message, 500); }
 }
 
-function route_(action, b) {
+function route_(action, b, caller) {
   switch (action) {
     case 'loginMember': return loginMember_(b);
-    case 'validateMember': return validateMember_(b.kennitala);
-    case 'validateWard': return validateWard_(b);
-    case 'setPassword': return setPassword_(b);
+    // Session management
+    case 'signOut':     return signOut_(b, caller);
+    case 'signOutAll':  return signOutAll_(b, caller);
+    case 'listSessions': return listSessions_(b, caller);
+    case 'adminResetMemberPassword': return adminResetMemberPassword_(b, caller);
+    case 'validateMember': return validateMember_(b.kennitala, caller);
+    case 'validateWard': return validateWard_(b, caller);
+    case 'setPassword': return setPassword_(b, caller);
     case 'getMembers': return getMembers_(b);
-    case 'saveMember': return saveMember_(b);
+    case 'saveMember': return saveMember_(b, caller);
     case 'deleteMember': return deleteMember_(b.id);
     case 'importMembers': return importMembers_(b.rows);
     case 'deactivateMembers': return deactivateMembers_(b.ids);
@@ -621,9 +1003,15 @@ function _findWardsOf_(guardianKt) {
   });
 }
 
-function validateMember_(kennitala) {
+function validateMember_(kennitala, caller) {
   if (!kennitala) return failJ('kennitala required');
-  const m = findOne_('members', 'kennitala', String(kennitala).trim());
+  const kt = String(kennitala).trim();
+  // Only the member themselves (or an admin) can re-read a full member
+  // record. All other callers must go through the public lookup endpoints.
+  if (caller && kt !== caller.kennitala && !_isAdmin_(caller)) {
+    return failJ('Forbidden', 403);
+  }
+  const m = findOne_('members', 'kennitala', kt);
   if (!m) return failJ('Not found', 404);
   if (!bool_(m.active)) return failJ('Inactive account', 403);
   // If this member is not themselves a minor, surface any wards they guard
@@ -636,12 +1024,14 @@ function validateMember_(kennitala) {
 }
 
 // Password-gated sign-in. Username may be either a 10-digit kennitala or the
-// member's initials (case-insensitive). Returns the same shape as
-// validateMember_ plus `usingDefaultPassword` so the UI can prompt the user
-// to change it when they're still on the club-wide default.
+// member's initials (case-insensitive). Issues a session token on success
+// and enforces a 5-per-15-min rate limit per kennitala.
+// Response shape: { member, wards, usingDefaultPassword, sessionToken, expiresAt }
 function loginMember_(b) {
   const username = String((b && b.username) || '').trim();
   const password = String((b && b.password) || '');
+  const stay     = bool_(b && b.stayLoggedIn);
+  const ua       = String((b && b.userAgent) || '');
   if (!username) return failJ('Username required');
   if (!password) return failJ('Password required');
 
@@ -650,20 +1040,122 @@ function loginMember_(b) {
   if (r.notFound || !r.member) return failJ('Not found', 404);
   const m = r.member;
   if (!bool_(m.active)) return failJ('Inactive account', 403);
-  if (!verifyPassword_(m, password)) return failJ('Invalid credentials', 401);
+
+  // Rate limit is keyed off the resolved kennitala so initials and kennitala
+  // attempts share a counter.
+  const rate = _checkLoginRate_(m.kennitala);
+  if (!rate.ok) return failJ('Too many attempts', 429);
+
+  if (!verifyPassword_(m, password)) {
+    _bumpLoginAttempts_(m.kennitala);
+    // Re-read the row: this attempt may have crossed the lockout threshold.
+    const after = _checkLoginRate_(m.kennitala);
+    if (!after.ok) return failJ('Too many attempts', 429);
+    return failJ('Invalid credentials', 401);
+  }
+
+  _clearLoginAttempts_(m.kennitala);
+  const session = _createSession_(m.kennitala, m.role || 'member', stay, ua);
 
   const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
   return okJ({
     member: _publicMember_(m),
     wards: wards,
     usingDefaultPassword: !String(m.passwordHash || '').trim(),
+    sessionToken: session.token,
+    expiresAt: session.expiresAt,
+    sessionId: session.id,
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Revoke the caller's current session, or a named session by id (still
+// restricted to the caller's own kennitala so admins can't accidentally
+// sign out a non-admin via a stray id). Returns 200 even when the session
+// no longer exists so the UI can always finish its local cleanup.
+function signOut_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
+  const targetId = String((b && b.sessionId) || '').trim();
+  if (targetId) {
+    const row = findOne_('sessions', 'id', targetId);
+    if (row && String(row.kennitala) === caller.kennitala) {
+      _deleteSessionById_(targetId);
+    }
+    return okJ({ signedOut: true });
+  }
+  if (caller.tokenHash) _deleteSessionByHash_(caller.tokenHash);
+  return okJ({ signedOut: true });
+}
+
+// Revoke every session belonging to the caller. `exceptCurrent` keeps the
+// calling session alive — the setting page uses that to power a "sign out
+// everywhere else" button without logging the user out of the tab they're
+// actively in. Without it, every session (including the current) is wiped.
+function signOutAll_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
+  const exceptCurrent = bool_(b && b.exceptCurrent);
+  const keep = exceptCurrent ? caller.tokenHash : null;
+  const n = _revokeSessionsForMember_(caller.kennitala, keep);
+  return okJ({ signedOut: true, count: n });
+}
+
+// Return the caller's currently-active sessions, newest-first. Raw token
+// hashes are never exposed — the UI uses `id` to drive per-row revoke.
+function listSessions_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
+  _ensureSheet_('sessions', SESSION_COLS_);
+  const now = Date.now();
+  const currentHash = caller.tokenHash || '';
+  const rows = readAll_('sessions')
+    .filter(function(r) {
+      if (String(r.kennitala || '').trim() !== caller.kennitala) return false;
+      const exp = r.expiresAt ? new Date(r.expiresAt).getTime() : 0;
+      return exp && exp > now;
+    })
+    .map(function(r) {
+      return {
+        id:           r.id,
+        createdAt:    r.createdAt,
+        lastSeenAt:   r.lastSeenAt,
+        expiresAt:    r.expiresAt,
+        stayLoggedIn: bool_(r.stayLoggedIn),
+        userAgent:    String(r.userAgent || ''),
+        isCurrent:    currentHash && r.tokenHash === currentHash,
+      };
+    })
+    .sort(function(a, b2) {
+      return String(b2.lastSeenAt || '').localeCompare(String(a.lastSeenAt || ''));
+    });
+  return okJ({ sessions: rows });
+}
+
+// Admin-only: clear a member's password hash (so they can sign in with the
+// default again) and revoke every active session for that kennitala.
+function adminResetMemberPassword_(b, caller) {
+  if (!caller || !_isAdmin_(caller)) return failJ('Admin only', 403);
+  const kt = String((b && b.kennitala) || '').trim();
+  if (!kt) return failJ('kennitala required');
+  const m = findOne_('members', 'kennitala', kt);
+  if (!m) return failJ('Member not found', 404);
+  addColIfMissing_('members', 'passwordHash');
+  updateRow_('members', 'kennitala', kt, {
+    passwordHash: '',
+    updatedAt: now_(),
+  });
+  cDel_('members');
+  _clearLoginAttempts_(kt);
+  const n = _revokeSessionsForMember_(kt);
+  return okJ({ reset: true, sessionsRevoked: n });
 }
 
 // Set or change a member's password. If the member has never set one,
 // the current password is either empty or the default; otherwise it must
-// match the stored hash.
-function setPassword_(b) {
+// match the stored hash. On success every other session for this kennitala
+// is revoked (admins bypass the current-password check).
+function setPassword_(b, caller) {
   if (!b || !b.kennitala) return failJ('kennitala required');
   const kt = String(b.kennitala).trim();
   const m = findOne_('members', 'kennitala', kt);
@@ -674,12 +1166,17 @@ function setPassword_(b) {
   if (!next) return failJ('newPassword required');
   if (next.length < 4) return failJ('Password must be at least 4 characters');
 
+  const isAdminActing = caller && _isAdmin_(caller) && caller.kennitala !== kt;
   const stored = String(m.passwordHash || '').trim();
-  if (stored) {
-    if (hashPassword_(kt, cur) !== stored) return failJ('Current password incorrect', 401);
-  } else if (cur && cur !== DEFAULT_PASSWORD_) {
-    // Accept either blank or the default as "current" while unset.
-    return failJ('Current password incorrect', 401);
+  // Admins resetting someone else's password don't need the current value;
+  // everyone else does.
+  if (!isAdminActing) {
+    if (stored) {
+      if (hashPassword_(kt, cur) !== stored) return failJ('Current password incorrect', 401);
+    } else if (cur && cur !== DEFAULT_PASSWORD_) {
+      // Accept either blank or the default as "current" while unset.
+      return failJ('Current password incorrect', 401);
+    }
   }
 
   addColIfMissing_('members', 'passwordHash');
@@ -688,17 +1185,29 @@ function setPassword_(b) {
     updatedAt: now_(),
   });
   cDel_('members');
-  return okJ({ saved: true });
+  _clearLoginAttempts_(kt);
+  // Invalidate every other session for this member so a stolen laptop is
+  // logged out the moment the owner changes their password. Preserve the
+  // caller's own session when they're changing their own password so the
+  // current tab doesn't get booted in the middle of the save.
+  const keepHash = (caller && caller.kennitala === kt) ? caller.tokenHash : null;
+  const revoked = _revokeSessionsForMember_(kt, keepHash);
+  return okJ({ saved: true, sessionsRevoked: revoked });
 }
 
 // Return a ward's full member object, but only if `guardianKennitala` is
 // actually listed as the guardian on the ward's member record and the ward
 // is still flagged as a minor and active. Requires the caller to prove the
 // guardian relationship by passing their own kennitala, which must match.
-function validateWard_(b) {
+function validateWard_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
   const guardianKt = String((b && b.guardianKennitala) || '').trim();
   const wardKt     = String((b && b.wardKennitala) || '').trim();
   if (!guardianKt || !wardKt) return failJ('guardianKennitala and wardKennitala required');
+  // The caller must be the guardian they claim to be (or an admin helping out).
+  if (guardianKt !== caller.kennitala && !_isAdmin_(caller)) {
+    return failJ('Forbidden', 403);
+  }
   const guardian = findOne_('members', 'kennitala', guardianKt);
   if (!guardian) return failJ('Guardian not found', 404);
   if (!bool_(guardian.active)) return failJ('Inactive account', 403);
@@ -710,7 +1219,18 @@ function validateWard_(b) {
   if (String(ward.guardianKennitala || '').trim() !== guardianKt) {
     return failJ('Not authorised for this ward', 403);
   }
-  return okJ({ member: _publicMember_(ward) });
+  // Mint a short-lived session tied to the ward so the frontend can act on
+  // the ward's behalf without the guardian's token also implicitly auth'ing
+  // arbitrary ward-targeted calls. Always short-lived — a guardian switching
+  // into a ward should not be able to "stay logged in" as the minor.
+  const ua = String((b && b.userAgent) || (caller.session && caller.session.userAgent) || '');
+  const s  = _createSession_(ward.kennitala, ward.role || 'member', false, ua);
+  return okJ({
+    member: _publicMember_(ward),
+    sessionToken: s.token,
+    expiresAt: s.expiresAt,
+    sessionId: s.id,
+  });
 }
 
 function getMembers_(params) {
@@ -754,8 +1274,17 @@ function getBoatMap_(cfgMap) {
   return map;
 }
 
-function saveMember_(b) {
+function saveMember_(b, caller) {
   const ts = now_(), ex = b.id ? findOne_('members', 'id', b.id) : null;
+  const isAdminCaller = _isAdmin_(caller) || (caller && caller.__system);
+  // Non-admin guardrails: members can only register new guests (used by the
+  // member hub's walk-in flow). Anything else — editing any record, creating
+  // non-guest members, role changes — is admin only.
+  if (!isAdminCaller) {
+    if (ex) return failJ('Admin only', 403);
+    const desiredRole = String(b.role || '').toLowerCase();
+    if (desiredRole && desiredRole !== 'guest') return failJ('Admin only', 403);
+  }
   if (ex) {
     updateRow_('members', 'id', b.id, {
       name: b.name || ex.name, role: b.role || ex.role, email: b.email || '',
@@ -770,8 +1299,11 @@ function saveMember_(b) {
     cDel_('members'); return okJ({ id: b.id, updated: true });
   } else {
     const id = uid_();
+    // Force role=guest for non-admin callers so a crafted payload can't sneak
+    // a new admin/staff row past the outer authorise step.
+    const role = isAdminCaller ? (b.role || 'member') : 'guest';
     insertRow_('members', {
-      id, kennitala: b.kennitala, name: b.name, role: b.role || 'member',
+      id, kennitala: b.kennitala, name: b.name, role: role,
       email: b.email || '', phone: b.phone || '', birthYear: b.birthYear || '',
       isMinor: bool_(b.isMinor) || false,
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
