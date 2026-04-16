@@ -1,6 +1,9 @@
 // YMIR - shared/api.js
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
+// API_TOKEN is no longer required for authenticated calls — the session token
+// issued by loginMember is the credential. It is still exposed as a global so
+// hand-wired server-side callers (cron/trigger) can keep using it.
 const API_TOKEN  = "ymirsc2026";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
@@ -77,6 +80,12 @@ async function apiPost(action, payload) {
       action === 'toggleMaterial' || action === 'addMaterial' || action === 'removeMaterial') {
     try { sessionStorage.removeItem('ymir_getNotifications_'); } catch(e) {}
   }
+  // Invalidate sessions cache after session-state mutations so the settings
+  // UI re-fetches the list instead of showing a freshly-revoked row.
+  if (action === 'signOut' || action === 'signOutAll' || action === 'setPassword' ||
+      action === 'adminResetMemberPassword') {
+    try { sessionStorage.removeItem('ymir_listSessions_'); } catch(e) {}
+  }
   // Invalidate crew caches on crew mutations
   if (action === 'createCrew' || action === 'disbandCrew' || action === 'inviteToCrew' ||
       action === 'respondCrewInvite' || action === 'bookSlot' || action === 'unbookSlot' || action === 'bulkBookSlots') {
@@ -90,7 +99,20 @@ async function apiPost(action, payload) {
 
 async function _call(action, payload) {
   payload = payload || {};
-  var body = JSON.stringify(Object.assign({ action: action, token: API_TOKEN }, payload));
+  // Public actions are exempt from session auth; loginMember is where we
+  // obtain the token in the first place. For everything else, attach the
+  // caller's session token so the backend can identify them.
+  var PUBLIC_ACTIONS = { loginMember: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
+  var envelope = { action: action, token: API_TOKEN };
+  if (!PUBLIC_ACTIONS[action]) {
+    var t = _getSessionToken();
+    if (t) envelope.sessionToken = t;
+  }
+  // Loose metadata so listSessions can render a "Chrome on iPhone" label.
+  if (typeof navigator !== 'undefined' && navigator.userAgent) {
+    envelope.userAgent = String(navigator.userAgent).slice(0, 200);
+  }
+  var body = JSON.stringify(Object.assign(envelope, payload));
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 20000) : null;
   try {
@@ -103,7 +125,22 @@ async function _call(action, payload) {
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     var data = await res.json();
-    if (!data.success) throw new Error(data.error || action + " failed");
+    if (!data.success) {
+      // A 401 means our session is gone — wipe local state and bounce the
+      // user back to the login screen instead of leaving them staring at a
+      // broken page. Public actions (login itself) are exempt so login
+      // errors surface their real message. The login page itself also
+      // swallows 401s because it hasn't authenticated yet (a pre-warm call
+      // landing here shouldn't trigger an auth-redirect dance).
+      var onLoginPage = (typeof window !== 'undefined' && window.location &&
+        window.location.pathname.indexOf('/login/') >= 0);
+      if (data.code === 401 && !PUBLIC_ACTIONS[action] && !onLoginPage) {
+        _handleUnauthorized();
+      }
+      var err = new Error(data.error || action + " failed");
+      err.code = data.code;
+      throw err;
+    }
     return data;
   } catch (e) {
     if (e && e.name === 'AbortError') throw new Error(action + " timed out");
@@ -115,6 +152,98 @@ async function _call(action, payload) {
 
 var AUTH_KEY    = "ymirUser";
 var PERSIST_KEY = "ymirStayLoggedIn";
+var SESSION_KEY = "ymirSession";   // { token, expiresAt, id }
+var PARENT_KEY  = "ymirParentSession"; // guardian's session preserved during ward switch
+
+// ── Session token helpers ────────────────────────────────────────────────────
+// The session token lives in sessionStorage (always) and additionally in
+// localStorage when "stay logged in" is on. Expiry is checked on every read
+// so a stale tab doesn't keep firing requests after a long idle.
+function _readSession() {
+  try {
+    var s = sessionStorage.getItem(SESSION_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  try {
+    var l = localStorage.getItem(SESSION_KEY);
+    if (l) {
+      try { sessionStorage.setItem(SESSION_KEY, l); } catch(e) {}
+      return JSON.parse(l);
+    }
+  } catch(e) {}
+  return null;
+}
+function _writeSession(sess) {
+  var json = JSON.stringify(sess);
+  try { sessionStorage.setItem(SESSION_KEY, json); } catch(e) {}
+  try {
+    if (getStayLoggedIn()) localStorage.setItem(SESSION_KEY, json);
+    else                   localStorage.removeItem(SESSION_KEY);
+  } catch(e) {}
+}
+function _clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
+function _getSessionToken() {
+  var s = _readSession();
+  if (!s || !s.token) return null;
+  if (s.expiresAt && new Date(s.expiresAt).getTime() < Date.now()) {
+    _clearSession();
+    return null;
+  }
+  return s.token;
+}
+function setSession(token, expiresAt, id) {
+  if (!token) { _clearSession(); return; }
+  _writeSession({ token: token, expiresAt: expiresAt || null, id: id || null });
+}
+function getSessionInfo() { return _readSession(); }
+
+// Preserve the guardian's session token when switching into a ward's session
+// so "back to guardian" can restore it without a re-login.
+function setParentSession(info) {
+  if (!info) {
+    try { sessionStorage.removeItem(PARENT_KEY); } catch(e) {}
+    try { localStorage.removeItem(PARENT_KEY); } catch(e) {}
+    return;
+  }
+  var json = JSON.stringify(info);
+  try { sessionStorage.setItem(PARENT_KEY, json); } catch(e) {}
+  try {
+    if (getStayLoggedIn()) localStorage.setItem(PARENT_KEY, json);
+    else                   localStorage.removeItem(PARENT_KEY);
+  } catch(e) {}
+}
+function getParentSession() {
+  try {
+    var s = sessionStorage.getItem(PARENT_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  try {
+    var l = localStorage.getItem(PARENT_KEY);
+    if (l) return JSON.parse(l);
+  } catch(e) {}
+  return null;
+}
+
+// Called when a request returns 401: drop local state and send the user
+// back to the login screen. Guarded so we only redirect once — a burst of
+// 401s shouldn't hijack the navigation mid-redirect.
+var _unauthHandled = false;
+function _handleUnauthorized() {
+  if (_unauthHandled) return;
+  _unauthHandled = true;
+  clearUser();
+  _clearSession();
+  setParentSession(null);
+  // Only redirect pages that actually depend on auth; the login page handles
+  // its own 401s (bad credentials, etc.) locally.
+  if (typeof window !== 'undefined' && window.location &&
+      window.location.pathname.indexOf('/login/') < 0) {
+    window.location.href = BASE_URL + "/login/";
+  }
+}
 
 // When "stay logged in" is on (set in settings), the user record is mirrored
 // to localStorage so it survives closing the tab — useful on mobile where the
@@ -163,7 +292,13 @@ function clearUser() {
 
 function requireAuth(roleFn) {
   var u = getUser();
-  if (!u) { window.location.href = BASE_URL + "/login/"; return null; }
+  var token = _getSessionToken();
+  if (!u || !token) {
+    // Clear stale user state if the session has expired out from under us.
+    if (u && !token) clearUser();
+    window.location.href = BASE_URL + "/login/";
+    return null;
+  }
   if (roleFn && !roleFn(u)) { window.location.href = BASE_URL + "/login/"; return null; }
   return u;
 }
@@ -251,20 +386,41 @@ function isCoxswain(u) { return getRowingSub(u) === 'coxswain'; }
 // page itself then uses getRowingSub to decide what to show inside.
 function hasRowingEndorsement(u) { return _rowingCertInfo(u).hasAny; }
 
-function signOut() {
+// Best-effort server sign-out: revoke the session on the backend so another
+// device's listSessions stops showing it, then wipe local state. Network
+// errors don't block the redirect — leaving the user stranded on a failed
+// sign-out is worse than a stale row in the sessions sheet.
+async function signOut() {
+  try {
+    if (_getSessionToken()) {
+      await _call('signOut', {});
+    }
+  } catch (e) { /* ignore; fall through to local cleanup */ }
   clearUser();
+  _clearSession();
+  setParentSession(null);
   window.location.href = BASE_URL + "/login/";
 }
 
 // When a guardian has signed into their ward's account, `user.guardianSession`
-// holds a trimmed snapshot of the guardian's own member record. This helper
-// re-validates the guardian kennitala, restores their full session, and sends
+// holds a trimmed snapshot of the guardian's own member record and the
+// guardian's original session token is stashed under PARENT_KEY. This helper
+// restores the guardian's session, re-fetches their member record, and sends
 // them back to the member hub (their own hub-switch buttons can take it from
 // there if they're also staff/admin).
 async function switchBackToGuardian() {
   var cur = getUser();
   if (!cur || !cur.guardianSession || !cur.guardianSession.kennitala) return;
+  var parent = getParentSession();
   try {
+    // Revoke the ward session on the way out so it doesn't linger in the
+    // backend's sessions sheet. Best-effort.
+    try { await _call('signOut', {}); } catch(e) {}
+    if (!parent || !parent.token) throw new Error('parent session missing');
+    // Restore the guardian's token before the next API call so
+    // validateMember auth's as them.
+    setSession(parent.token, parent.expiresAt || null, parent.id || null);
+    setParentSession(null);
     var data = await apiGet('validateMember', { kennitala: cur.guardianSession.kennitala, _fresh: 1 });
     if (!data || !data.member) throw new Error('guardian not found');
     setUser(data.member);

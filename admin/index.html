@@ -671,6 +671,14 @@
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="mActive" checked> <label for="mActive" data-s="lbl.active"></label>
     </div>
+    <!-- Password status & reset (existing members only) -->
+    <div id="mPwBox" class="hidden" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px" data-s="admin.password"></div>
+        <div id="mPwStatus" style="font-size:12px"></div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="mResetPwBtn" onclick="resetMemberPassword()" data-s="admin.resetPassword"></button>
+    </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('memberModal')" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="mDeleteBtn" onclick="deleteMember()" data-s="admin.deactivate"></button>
@@ -1631,7 +1639,45 @@ function openMemberModal(id) {
   document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
   document.getElementById("mActive").checked       = m ? bool(m.active)  : true;
   document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
+  // Show a compact password status + reset button for existing members.
+  var pwBox = document.getElementById("mPwBox");
+  if (m) {
+    pwBox.classList.remove("hidden");
+    var status = document.getElementById("mPwStatus");
+    if (m.hasPassword) {
+      status.textContent = s('admin.hasCustomPassword');
+      status.style.color = 'var(--muted)';
+    } else {
+      status.textContent = s('admin.usingDefaultPassword');
+      status.style.color = 'var(--brass)';
+    }
+    document.getElementById("mResetPwBtn").disabled = !m.hasPassword;
+  } else {
+    pwBox.classList.add("hidden");
+  }
   openModal("memberModal");
+}
+
+async function resetMemberPassword() {
+  if (!editingId) return;
+  var m = members.find(function(x) { return x.id === editingId; });
+  if (!m) return;
+  var name = m.name || m.kennitala;
+  if (!(await ymConfirm(s('admin.resetPasswordConfirm').replace('{name}', name)))) return;
+  var btn = document.getElementById('mResetPwBtn');
+  btn.disabled = true;
+  try {
+    var res = await apiPost('adminResetMemberPassword', { kennitala: m.kennitala });
+    m.hasPassword = false;
+    var status = document.getElementById('mPwStatus');
+    status.textContent = s('admin.usingDefaultPassword');
+    status.style.color = 'var(--brass)';
+    var n = (res && typeof res.sessionsRevoked === 'number') ? res.sessionsRevoked : 0;
+    toast(s('admin.resetPasswordDone').replace('{n}', n), 'ok');
+  } catch (e) {
+    toast(s('toast.error') + ': ' + e.message, 'err');
+    btn.disabled = false;
+  }
 }
 
 async function saveMember() {

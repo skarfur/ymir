@@ -212,8 +212,10 @@ function toggleLang() {
 // to re-tick it every time on a device they treat as their own.
 document.getElementById('stayLoggedIn').checked = getStayLoggedIn();
 
-// Warm the Apps Script container early so post-login API calls are fast
-apiGet('getConfig');
+// Warm the Apps Script container early so post-login API calls are fast.
+// Swallow the 401 — we're not authenticated yet and the request still
+// spins up the container, which is all we care about here.
+apiGet('getConfig').catch(function() {});
 
 async function doLogin() {
   const rawUser = document.getElementById('ktInput').value.trim();
@@ -258,9 +260,20 @@ async function doLogin() {
   setStayLoggedIn(stay);
 
   try {
-    const data = await apiPost('loginMember', { username: username, password: password });
+    const data = await apiPost('loginMember', {
+      username: username,
+      password: password,
+      stayLoggedIn: stay,
+      userAgent: (navigator.userAgent || '').slice(0, 200),
+    });
     const user = data.member;
     const wards = Array.isArray(data.wards) ? data.wards : [];
+
+    // Stash the session token so every subsequent API call can authenticate
+    // as this user. Expiry is enforced client- and server-side.
+    if (data.sessionToken) {
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+    }
 
     // Flag the user record so downstream pages can nag about the default
     // password until it's been changed.
@@ -288,7 +301,9 @@ async function doLogin() {
   } catch(e) {
     const msg = (e && e.message) || '';
     let key = 'login.error';
-    if (msg.indexOf('Invalid credentials') >= 0)        key = 'login.badPassword';
+    if (msg.indexOf('Too many attempts') >= 0 || (e && e.code === 429))
+                                                        key = 'login.rateLimited';
+    else if (msg.indexOf('Invalid credentials') >= 0)   key = 'login.badPassword';
     else if (msg.indexOf('Ambiguous') >= 0)             key = 'login.ambiguous';
     else if (msg.indexOf('Not found') >= 0 ||
              msg.indexOf('Inactive') >= 0)              key = 'login.notFound';
@@ -451,10 +466,19 @@ async function switchToWard(guardian, ward) {
       .forEach(function(k) { sessionStorage.removeItem(k); });
   } catch(e) {}
   try {
+    // Preserve the guardian's current session so switchBackToGuardian can
+    // restore it without re-login; it's cleared when the user fully signs out.
+    var parent = getSessionInfo();
+    if (parent && parent.token) setParentSession(parent);
     const data = await apiPost('validateWard', {
       guardianKennitala: guardian.kennitala,
       wardKennitala: ward.kennitala,
+      userAgent: (navigator.userAgent || '').slice(0, 200),
     });
+    // Swap to the ward's freshly-minted session for subsequent calls.
+    if (data.sessionToken) {
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+    }
     // Stash a trimmed guardian record on the ward's user object so the
     // header can surface "Signed in as X — ↶ Back to guardian".
     const wardUser = Object.assign({}, data.member, {
