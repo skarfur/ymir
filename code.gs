@@ -344,6 +344,10 @@ function addColIfMissing_(tabKey, colName) {
   const c = getSheetData_(tabKey);
   if (!c.headers.includes(colName)) {
     c.sheet.getRange(1, c.headers.length + 1).setValue(colName);
+    // Force the pending write to be committed before we re-read the sheet,
+    // otherwise getDataRange().getValues() in the next getSheetData_ call
+    // may return stale data that doesn't include the new column header.
+    SpreadsheetApp.flush();
     // Header shape changed — drop the cache so the new column is picked up.
     invalidateSheetCache_(tabKey);
   }
