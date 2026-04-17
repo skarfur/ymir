@@ -316,7 +316,7 @@
   <div id="staffStatusStrip" class="mb-12">
     <div class="section-label mb-8">DUTY STATUS</div>
     <div class="flex-center flex-wrap gap-8">
-      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--red);color:#fff;">No staff on duty</button>
+      <button id="btnStaffOnDuty" onclick="toggleStaffStatus('onDuty')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--orange);color:#fff;">No staff on duty</button>
       <button id="btnSupportBoat" onclick="toggleStaffStatus('supportBoat')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--red);color:#fff;">No support boat</button>
       <span id="staffStatusUpdated" class="text-xs text-muted"></span>
     </div>
@@ -1527,10 +1527,12 @@ function renderStaffStatusStrip() {
   const upd     = document.getElementById('staffStatusUpdated');
   if (!btnDuty || !btnBoat) return;
   const base = 'display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;';
-  const on   = 'background:var(--moss);color:#fff;';
-  const off  = 'background:var(--red);color:#fff;';
-  btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? on : off));
-  btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? on : off));
+  const dutyOn  = 'background:var(--blue);color:#fff;';
+  const dutyOff = 'background:var(--orange);color:#fff;';
+  const boatOn  = 'background:var(--moss);color:#fff;';
+  const boatOff = 'background:var(--red);color:#fff;';
+  btnDuty.setAttribute('style', base + (_staffStatus.onDuty      ? dutyOn : dutyOff));
+  btnBoat.setAttribute('style', base + (_staffStatus.supportBoat ? boatOn : boatOff));
   btnDuty.innerHTML = DUTY_ICONS[_staffStatus.onDuty ? 'lifebuoy' : 'lifebuoyOff'] + (_staffStatus.onDuty ? s('staff.staffOnDuty') : s('staff.noStaffOnDuty'));
   btnBoat.innerHTML = DUTY_ICONS[_staffStatus.supportBoat ? 'ship' : 'shipOff'] + (_staffStatus.supportBoat ? s('staff.supportBoat') : s('staff.noSupportBoat'));
   if (upd && _staffStatus.updatedAt) upd.textContent = s('staff.updatedShort') + ' ' + _staffStatus.updatedAt.slice(11,16) + ' UTC';
