@@ -82,9 +82,11 @@
   --text:     #1a2a3a;
   --muted:    #5a7a96;
   --faint:    #dce4ec;
-  --brass:    #b8941f;
-  --brass-d:  #a07e10;
-  --brass-l:  #d4af37;
+  /* Light mode: brass reads muddy on cream surfaces, so map the brass tokens
+     onto the blue palette. var(--brass)NN concatenations stay valid hex. */
+  --brass:    #2070a8;
+  --brass-d:  #18537e;
+  --brass-l:  #4a9bd4;
   --green:    #1e8e4e;
   --yellow:   #d4a80c;
   --orange:   #c46a1a;
@@ -106,9 +108,9 @@
     --text:     #1a2a3a;
     --muted:    #5a7a96;
     --faint:    #dce4ec;
-    --brass:    #b8941f;
-    --brass-d:  #a07e10;
-    --brass-l:  #d4af37;
+    --brass:    #2070a8;
+    --brass-d:  #18537e;
+    --brass-l:  #4a9bd4;
     --green:    #1e8e4e;
     --yellow:   #d4a80c;
     --orange:   #c46a1a;
@@ -366,7 +368,7 @@ textarea { min-height: 70px; }
 .badge-orange { color: var(--orange); border-color: #e67e2250; background: #e67e2212; }
 .badge-red    { color: var(--red);    border-color: #e74c3c50; background: #e74c3c12; }
 .badge-blue   { color: var(--blue);   border-color: #2980b950; background: #2980b912; }
-.badge-brass  { color: var(--brass);  border-color: #d4af3750; background: #d4af3712; }
+.badge-brass  { color: var(--brass);  border-color: var(--brass)50; background: var(--brass)12; }
 .badge-muted  { color: var(--muted);  border-color: var(--border); background: var(--faint); }
 
 /* ── TABLE ────────────────────────────────────────────────────────────────────── */
@@ -1140,3 +1142,41 @@ textarea { min-height: 70px; }
 .vp-btn.signed-up { background:var(--brass); color:#000; border-color:var(--brass); }
 .vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
 .vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
+
+/* ── LIGHT-MODE BRASS-TEXT OVERRIDES ──────────────────────────────────────────
+   In light mode --brass maps to blue (#2070a8). Dark-navy/black text on that
+   blue drops below WCAG AA, so flip text to white for every selector that
+   paints itself with `background: var(--brass)` plus a hardcoded dark color.
+   Selectors live across many per-page stylesheets but the brass-on-dark-text
+   pattern is identical, so one override block wins via the [data-theme]
+   specificity bump. */
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .vp-btn.signed-up,
+[data-theme="light"] .cap-hm-btn.active,
+[data-theme="light"] .become-member-btn,
+[data-theme="light"] .heatmap-toggle button.active,
+[data-theme="light"] .toggle-group button.active,
+[data-theme="light"] .pill-toggle.active,
+[data-theme="light"] .filter-btn.active,
+[data-theme="light"] .vp-filter-btn.active,
+[data-theme="light"] .vp-cal-ev.mine,
+[data-theme="light"] .import-ambig-btns button.selected,
+[data-theme="light"] .pc-btn-brk-end {
+  color: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] .btn-primary,
+  [data-theme="auto"] .vp-btn.signed-up,
+  [data-theme="auto"] .cap-hm-btn.active,
+  [data-theme="auto"] .become-member-btn,
+  [data-theme="auto"] .heatmap-toggle button.active,
+  [data-theme="auto"] .toggle-group button.active,
+  [data-theme="auto"] .pill-toggle.active,
+  [data-theme="auto"] .filter-btn.active,
+  [data-theme="auto"] .vp-filter-btn.active,
+  [data-theme="auto"] .vp-cal-ev.mine,
+  [data-theme="auto"] .import-ambig-btns button.selected,
+  [data-theme="auto"] .pc-btn-brk-end {
+    color: #ffffff;
+  }
+}
