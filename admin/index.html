@@ -3772,7 +3772,7 @@ function parseAblerCSV(text, existing) {
   });
   const activeOnly = existing.filter(m => boolVal(m.active) !== false && m.active !== 'FALSE');
   activeOnly.forEach(m => {
-    if (['admin','staff','guest'].includes(m.role)) return;
+    if (['admin','staff','guest','guardian'].includes(m.role)) return;
     if (!rows.find(r => r.kennitala === m.kennitala)) flagged.push(m);
   });
   return { added, updated, unchanged, flagged, ambiguous };

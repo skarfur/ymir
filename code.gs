@@ -322,7 +322,11 @@ function _findMemberForLogin_(username) {
   if (!u) return { notFound: true };
   const digits = u.replace(/\D/g, '');
   if (digits.length === 10) {
-    const m = findOne_('members', 'kennitala', digits);
+    let m = findOne_('members', 'kennitala', digits);
+    // Non-member guardians don't have a members row until their first login —
+    // lazy-provision one here so they can authenticate and switch into a
+    // ward's account with the default password.
+    if (!m) m = _ensureGuardianRecord_(digits);
     if (m) return { member: m };
     return { notFound: true };
   }
@@ -1007,6 +1011,47 @@ function _findWardsOf_(guardianKt) {
   });
 }
 
+// Make sure a guardian has a members-sheet row they can log in with.
+// Guardians of minors are not necessarily members themselves, but they still
+// need to authenticate (kt + default password) so they can open their ward's
+// account and manage their own login settings. This helper returns the
+// existing members row if one is already there; otherwise, if the kt is
+// listed as a guardian on at least one active minor, it inserts a role=
+// guardian stub using the guardianName/guardianPhone stored on the ward
+// record (or an explicit hint, used when saving a minor). Returns null if
+// the kt has no relationship to any active minor and no hint was provided.
+function _ensureGuardianRecord_(kt, hintName, hintPhone) {
+  const s = String(kt || '').trim();
+  if (!s || s.length !== 10) return null;
+  const existing = findOne_('members', 'kennitala', s);
+  if (existing) return existing;
+  let name  = hintName  == null ? '' : String(hintName).trim();
+  let phone = hintPhone == null ? '' : String(hintPhone).trim();
+  if (!name) {
+    const ward = readAll_('members').find(function(r) {
+      return bool_(r.active) && bool_(r.isMinor) &&
+             String(r.guardianKennitala || '').trim() === s;
+    });
+    if (!ward) return null;
+    name  = String(ward.guardianName  || '').trim();
+    phone = phone || String(ward.guardianPhone || '').trim();
+  }
+  const ts = now_();
+  const row = {
+    id: uid_(), kennitala: s, name: name, role: 'guardian',
+    email: '', phone: phone, birthYear: '',
+    isMinor: false,
+    guardianName: '', guardianKennitala: '', guardianPhone: '',
+    active: true, certifications: '',
+    initials: extractInitials_(name), preferences: '{}',
+    passwordHash: '',
+    createdAt: ts, updatedAt: ts,
+  };
+  insertRow_('members', row);
+  cDel_('members');
+  return row;
+}
+
 function validateMember_(kennitala, caller) {
   if (!kennitala) return failJ('kennitala required');
   const kt = String(kennitala).trim();
@@ -1212,7 +1257,8 @@ function validateWard_(b, caller) {
   if (guardianKt !== caller.kennitala && !_isAdmin_(caller)) {
     return failJ('Forbidden', 403);
   }
-  const guardian = findOne_('members', 'kennitala', guardianKt);
+  // Auto-provisions a guardian stub for non-member guardians on first use.
+  const guardian = _ensureGuardianRecord_(guardianKt);
   if (!guardian) return failJ('Guardian not found', 404);
   if (!bool_(guardian.active)) return failJ('Inactive account', 403);
   if (bool_(guardian.isMinor)) return failJ('Minors cannot act as guardians', 403);
@@ -1300,7 +1346,11 @@ function saveMember_(b, caller) {
       active: b.active !== undefined ? bool_(b.active) : ex.active,
       updatedAt: ts,
     });
-    cDel_('members'); return okJ({ id: b.id, updated: true });
+    cDel_('members');
+    if (bool_(b.isMinor) && b.guardianKennitala) {
+      _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+    }
+    return okJ({ id: b.id, updated: true });
   } else {
     const id = uid_();
     // Force role=guest for non-admin callers so a crafted payload can't sneak
@@ -1315,7 +1365,11 @@ function saveMember_(b, caller) {
       certifications: '', initials: extractInitials_(b.name),
       createdAt: ts, updatedAt: ts,
     });
-    cDel_('members'); return okJ({ id, created: true });
+    cDel_('members');
+    if (bool_(b.isMinor) && b.guardianKennitala) {
+      _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+    }
+    return okJ({ id, created: true });
   }
 }
 
@@ -1357,7 +1411,15 @@ function importMembers_(rows) {
       created++;
     }
   });
-  cDel_('members'); return okJ({ created, updated });
+  cDel_('members');
+  // Auto-provision guardian stubs for every minor in the import so each
+  // guardian can log in with the default password after the first import.
+  rows.forEach(r => {
+    if (bool_(r.isMinor) && r.guardianKennitala) {
+      _ensureGuardianRecord_(r.guardianKennitala, r.guardianName, r.guardianPhone);
+    }
+  });
+  return okJ({ created, updated });
 }
 
 function deactivateMembers_(ids) {

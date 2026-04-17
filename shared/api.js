@@ -299,12 +299,25 @@ function requireAuth(roleFn) {
     window.location.href = BASE_URL + "/login/";
     return null;
   }
+  // Guardians have no member hub of their own. Bounce them to the guardian
+  // landing page for any destination other than /guardian/ or /settings/,
+  // except when they've already been switched into a ward's session (in
+  // which case they're acting as a member and guardianSession is set).
+  if (u.role === 'guardian' && !u.guardianSession) {
+    var path = (typeof window !== 'undefined' && window.location &&
+                window.location.pathname) || '';
+    if (path.indexOf('/guardian/') < 0 && path.indexOf('/settings/') < 0) {
+      window.location.href = BASE_URL + "/guardian/";
+      return null;
+    }
+  }
   if (roleFn && !roleFn(u)) { window.location.href = BASE_URL + "/login/"; return null; }
   return u;
 }
 
 function isStaff(u) { return u && (u.role === "staff" || u.role === "admin"); }
 function isAdmin(u) { return u && u.role === "admin"; }
+function isGuardian(u) { return u && u.role === "guardian"; }
 function _certNotExpired(c) {
   return !c.expiresAt || c.expiresAt >= todayISO();
 }
@@ -431,7 +444,10 @@ async function switchBackToGuardian() {
       sessionStorage.removeItem('ymir_getCrewBoard_');
       sessionStorage.removeItem('ymir_getCrewInvites_');
     } catch(e) {}
-    window.location.href = BASE_URL + "/member/";
+    // Non-member guardians land on the guardian page (they have no member
+    // hub); member-guardians keep going to the member hub as before.
+    window.location.href = BASE_URL +
+      (data.member.role === 'guardian' ? "/guardian/" : "/member/");
   } catch(e) {
     // Fall back to a clean sign-out on any failure so the guardian can re-enter.
     signOut();

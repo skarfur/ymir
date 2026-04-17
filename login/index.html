@@ -343,6 +343,10 @@ function proceedWithUser(user) {
     window._prefetchMembers = apiGet('getMembers');
     window._prefetchCheckouts = apiGet('getActiveCheckouts');
     showRolePicker(user, ['member', 'staff']);
+  } else if (user.role === 'guardian') {
+    // Guardians don't have a member hub — send them straight to the
+    // guardian landing page, which handles ward switching + settings.
+    window.location.href = '../guardian/';
   } else {
     window._prefetchCheckouts = apiGet('getActiveCheckouts');
     window.location.href = '../member/';
@@ -427,14 +431,18 @@ function showAccountPicker(guardian, wards) {
   const container = document.getElementById('accountBtns');
   container.innerHTML = '';
 
-  // Guardian's own account
+  // Guardian's own account — label differs for guardian-only accounts since
+  // they have no member hub; the button opens their guardian landing page.
   const selfBtn = document.createElement('button');
+  const isGuardianOnly = guardian.role === 'guardian';
   selfBtn.className = 'role-btn role-member';
   selfBtn.innerHTML =
-    '<span class="role-icon">⛵</span>' +
+    '<span class="role-icon">' + (isGuardianOnly ? '👤' : '⛵') + '</span>' +
     '<div>' +
       '<div class="role-label">' + esc(guardian.name) + '</div>' +
-      '<div class="role-desc">' + s('login.yourAccount') + '</div>' +
+      '<div class="role-desc">' +
+        (isGuardianOnly ? s('login.guardianAccount') : s('login.yourAccount')) +
+      '</div>' +
     '</div>';
   selfBtn.onclick = function() { proceedWithUser(guardian); };
   container.appendChild(selfBtn);
