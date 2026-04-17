@@ -6,23 +6,9 @@ function dirArrow(dir) {
 }
 function tripCard(t){
   const p   = parseDateParts(t.date);
-  const dur = t.hoursDecimal ? (parseFloat(t.hoursDecimal)||0).toFixed(1)+'h' : '—';
   const isSki = !t.role || t.role==='skipper';
   const isVer = t.verified && t.verified!=='false';
   const isHelm = t.helm && t.helm!=='false';
-
-  // Parse wx snapshot
-  let wx = null;
-  try { wx = t.wxSnapshot ? JSON.parse(t.wxSnapshot) : null; } catch(e){}
-
-  // Card-face wind: use user's preferred unit
-  const cardWs  = formatWindValue(wx?.ws, t.beaufort, _windUnit);
-  const cardDir = wx?.dir || t.windDir || '';
-  const cardArrow = dirArrow(cardDir);
-  const windLine = [cardArrow && `<span class="trip-wind-arrow">${cardArrow}</span>`,
-                    cardWs   && `<span>${esc(cardWs)}</span>`,
-                    cardDir  && `<span class="trip-wind-dir">${esc(cardDir)}</span>`
-                   ].filter(Boolean).join('');
 
   // For crew trips missing data, fall back to the skipper's trip
   const _skiTrip = !isSki ? allTrips.find(x =>
@@ -31,6 +17,31 @@ function tripCard(t){
       (t.linkedTripId && x.id === t.linkedTripId)
     )
   ) : null;
+
+  // Parse wx snapshot — fall back to skipper's trip for crew cards
+  let wx = null;
+  try {
+    const _wxRaw = t.wxSnapshot || _skiTrip?.wxSnapshot || '';
+    wx = _wxRaw ? JSON.parse(_wxRaw) : null;
+  } catch(e){}
+  const _beaufort = t.beaufort || _skiTrip?.beaufort || '';
+  const _windDir  = t.windDir  || _skiTrip?.windDir  || '';
+
+  // Trip detail fallbacks — crew trips may be missing these, inherit from skipper's trip
+  const _timeOut      = t.timeOut      || _skiTrip?.timeOut      || '';
+  const _timeIn       = t.timeIn       || _skiTrip?.timeIn       || '';
+  const _locationName = t.locationName || _skiTrip?.locationName || '';
+  const _hoursDecimal = t.hoursDecimal || _skiTrip?.hoursDecimal || '';
+  const dur = _hoursDecimal ? (parseFloat(_hoursDecimal)||0).toFixed(1)+'h' : '—';
+
+  // Card-face wind: use user's preferred unit
+  const cardWs  = formatWindValue(wx?.ws, _beaufort, _windUnit);
+  const cardDir = wx?.dir || _windDir || '';
+  const cardArrow = dirArrow(cardDir);
+  const windLine = [cardArrow && `<span class="trip-wind-arrow">${cardArrow}</span>`,
+                    cardWs   && `<span>${esc(cardWs)}</span>`,
+                    cardDir  && `<span class="trip-wind-dir">${esc(cardDir)}</span>`
+                   ].filter(Boolean).join('');
 
   // Port display (shown on card face for keelboats)
   const tripCat = (allBoats.find(b=>b.id===t.boatId)?.category) || t.boatCategory || '';
@@ -43,11 +54,11 @@ function tripCard(t){
   ) : '';
 
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
-  const _expWind = formatWindValue(wx?.ws, t.beaufort, _windUnit);
+  const _expWind = formatWindValue(wx?.ws, _beaufort, _windUnit);
   const _wsNum = wx?.ws != null ? parseWsValue(wx.ws) : null;
-  const _expExtra = _wsNum!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(_wsNum)) : (_windUnit==='bft' && t.beaufort ? ' <small class="text-muted">'+bftLabel(t.beaufort)+'</small>' : '');
+  const _expExtra = _wsNum!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(_wsNum)) : (_windUnit==='bft' && _beaufort ? ' <small class="text-muted">'+bftLabel(_beaufort)+'</small>' : '');
   const eWs = _expWind ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.windSpeed')}</span><span class="trip-exp-val">${esc(_expWind)}${_expExtra}</span></div>` : '';
-  const eDir  = (wx?.dir||t.windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.direction')}</span><span class="trip-exp-val">${dirArrow(wx?.dir||t.windDir)} ${esc(wx?.dir||t.windDir)}</span></div>` : '';
+  const eDir  = (wx?.dir||_windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.direction')}</span><span class="trip-exp-val">${dirArrow(wx?.dir||_windDir)} ${esc(wx?.dir||_windDir)}</span></div>` : '';
   const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.gusts')}</span><span class="trip-exp-val">${_windUnit==='bft'?'Force '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
   const eCond = wx?.cond?.desc ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.conditions')}</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '';
   const eAir  = wx?.tc!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.airTemp')}</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '';
@@ -247,6 +258,15 @@ function tripCard(t){
       _helmKts.add(String(t.kennitala));
       helmPlainNames.push({name: t.memberName||'?', kt: String(t.kennitala)});
     }
+    // Include the linked skipper (when viewing a crew card) if they were at helm
+    if (linkedSkipper) {
+      const skipperHelm = (linkedSkipper.helm && linkedSkipper.helm!=='false') || !!(_skipCn?.helm);
+      const skipperKt = String(linkedSkipper.kennitala||'');
+      if (skipperHelm && skipperKt && !_helmKts.has(skipperKt)) {
+        _helmKts.add(skipperKt);
+        helmPlainNames.push({name: linkedSkipper.memberName||'?', kt: skipperKt});
+      }
+    }
     linkedCrew.forEach(x => {
       const cn = _crewNameEntry(x.kennitala);
       if ((x.helm && x.helm!=='false') || !!(cn?.helm)) {
@@ -374,16 +394,16 @@ function tripCard(t){
         <div class="exp-section-hdr">${s('tc.boatDetails')}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
       </div>`:''}
-      ${(portRow||t.timeOut||t.timeIn||t.locationName||t.crew||distRow||t.hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
+      ${(portRow||_timeOut||_timeIn||_locationName||t.crew||distRow||_hoursDecimal||helmRow)?`<div class="exp-section exp-logistics">
         ${(()=>{
-          const hasDetailTrip = !!(t.locationName||distRow||t.hoursDecimal||crewCountRow||crewNamesRow||helmRow);
+          const hasDetailTrip = !!(_locationName||distRow||_hoursDecimal||crewCountRow||crewNamesRow||helmRow);
           const toplineTrip =
-              (t.timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.departed')+'</span><span class="trip-exp-val">'+esc(t.timeOut)+'</span></div>':'')
-            + (t.timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.returned')+'</span><span class="trip-exp-val">'+esc(t.timeIn)+'</span></div>':'')
+              (_timeOut?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.departed')+'</span><span class="trip-exp-val">'+esc(_timeOut)+'</span></div>':'')
+            + (_timeIn?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.returned')+'</span><span class="trip-exp-val">'+esc(_timeIn)+'</span></div>':'')
             + portRow + crewCountRow + crewNamesRow + helmRow;
           const detailTrip =
-              (t.locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.sailingArea')+'</span><span class="trip-exp-val">'+esc(t.locationName)+'</span></div>':'')
-            + (t.hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
+              (_locationName?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.sailingArea')+'</span><span class="trip-exp-val">'+esc(_locationName)+'</span></div>':'')
+            + (_hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
             + distRow;
           return (hasDetailTrip
             ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+s('tc.tripDetails')+' <span class="exp-chevron">▾</span></div>'
