@@ -84,18 +84,18 @@
 }
 
 [data-theme="light"] {
-  --bg:       #eef2f8;
-  --surface:  #f1f4e8;
-  --card:     #e6ecdd;
-  --border:   #c9d3e4;
+  --bg:       #ffffff;
+  --surface:  #ffffff;
+  --card:     #ffffff;
+  --border:   #d7deeb;
   --border-l: #9fb0cc;
   --text:     #0f2045;
   --muted:    #5b6e8a;
-  --faint:    #d3dbc3;
-  --navy:     #274484;
+  --faint:    #eef2f8;
+  --navy:     #274482;
   --navy-d:   #1b3168;
   --navy-l:   #3a5ea8;
-  --moss:     #34783b;
+  --moss:     #34783c;
   --moss-d:   #265a2c;
   --moss-l:   #4a9152;
   --brass:    #a07b10;
@@ -118,18 +118,18 @@
 
 @media (prefers-color-scheme: light) {
   [data-theme="auto"] {
-    --bg:       #eef2f8;
-    --surface:  #f1f4e8;
-    --card:     #e6ecdd;
-    --border:   #c9d3e4;
+    --bg:       #ffffff;
+    --surface:  #ffffff;
+    --card:     #ffffff;
+    --border:   #d7deeb;
     --border-l: #9fb0cc;
     --text:     #0f2045;
     --muted:    #5b6e8a;
-    --faint:    #d3dbc3;
-    --navy:     #274484;
+    --faint:    #eef2f8;
+    --navy:     #274482;
     --navy-d:   #1b3168;
     --navy-l:   #3a5ea8;
-    --moss:     #34783b;
+    --moss:     #34783c;
     --moss-d:   #265a2c;
     --moss-l:   #4a9152;
     --brass:    #a07b10;
@@ -168,8 +168,8 @@ html, body {
 header {
   background: var(--header-bg);
   color: var(--header-text);
-  /* Racing stripe: 3px moss below the navy bar — echo of club racing colours */
-  border-bottom: 6px solid var(--moss);
+  /* Racing stripe: thick moss band below the navy bar — echo of club racing colours */
+  border-bottom: 10px solid var(--moss);
   box-shadow: var(--shadow-md);
   padding: 8px 20px;
   display: flex;
@@ -253,26 +253,24 @@ main.wide { max-width: 1100px; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--moss);
+  border-left: 8px solid var(--moss);
   border-radius: var(--radius-md);
   padding: 18px 20px;
   margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .card-title {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  margin-bottom: 14px;
-  padding-bottom: 8px;
+  letter-spacing: 1.2px;
+  color: #ffffff;
+  background: var(--navy);
+  border-bottom: 4px solid var(--moss);
   font-weight: bold;
-  /* Navy→moss racing-stripe hint below every card title */
-  background-image: linear-gradient(to right, var(--navy) 0%, var(--moss) 70%, transparent 100%);
-  background-repeat: no-repeat;
-  background-size: 52px 2px;
-  background-position: 0 100%;
+  padding: 10px 16px;
+  margin: -18px -20px 16px -20px;
 }
 
 .section-heading {
@@ -288,9 +286,9 @@ main.wide { max-width: 1100px; }
 .section-heading::after {
   content: "";
   flex: 1;
-  height: 2px;
-  background: linear-gradient(to right, var(--navy), var(--moss) 40%, color-mix(in srgb, var(--moss) 20%, transparent));
-  border-radius: 1px;
+  height: 4px;
+  background: var(--moss);
+  border-radius: 2px;
 }
 
 /* ── FORMS ────────────────────────────────────────────────────────────────────── */
@@ -417,10 +415,10 @@ textarea { min-height: 70px; }
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--muted);
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  color: #ffffff;
+  padding: 10px 12px;
+  border-bottom: 3px solid var(--moss);
+  background: var(--navy);
 }
 .tbl td {
   padding: 10px 12px;
@@ -490,7 +488,7 @@ textarea { min-height: 70px; }
 
 /* ── MISC ─────────────────────────────────────────────────────────────────────── */
 
-.divider { height: 2px; background: linear-gradient(to right, var(--navy), var(--moss) 70%, transparent); margin: 16px 0; border-radius: 1px; }
+.divider { height: 4px; background: var(--moss); margin: 16px 0; border-radius: 2px; }
 
 .empty-state {
   text-align: center;
