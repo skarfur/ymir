@@ -259,7 +259,7 @@ function wxStaffStatusHtml(status) {
   if (!status) return '';
   const badges = [];
   if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--blue) 10%, transparent);border:1px solid color-mix(in srgb, var(--blue) 27%, transparent);color:var(--blue);border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.lifebuoy+s('wx.staffOnDuty')+'</span>');
-  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 27%, transparent);color:var(--navy);border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.ship+s('wx.supportBoatOut')+'</span>');
+  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--blue) 10%, transparent);border:1px solid color-mix(in srgb, var(--blue) 27%, transparent);color:var(--blue);border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.ship+s('wx.supportBoatOut')+'</span>');
   if (!badges.length) return '';
   let ago = '';
   if (status.updatedAt) {
@@ -315,9 +315,9 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     if (!staffStatus) return '';
     const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
     const dCol  = staffStatus.onDuty      ? 'var(--blue)' : 'var(--orange)';
-    const bCol  = staffStatus.supportBoat ? 'var(--moss)' : 'var(--red)';
-    const dBg   = staffStatus.onDuty      ? 'color-mix(in srgb, var(--blue) 8%, transparent);border-color:color-mix(in srgb, var(--blue) 25%, transparent)' : 'color-mix(in srgb, var(--orange) 8%, transparent);border-color:color-mix(in srgb, var(--orange) 25%, transparent)';
-    const bBg   = staffStatus.supportBoat ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
+    const bCol  = staffStatus.supportBoat ? 'var(--blue)' : 'var(--orange)';
+    const dBg   = staffStatus.onDuty      ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
+    const bBg   = staffStatus.supportBoat ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
     const dTx   = s(staffStatus.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
     const bTx   = s(staffStatus.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
@@ -619,9 +619,9 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         if (!_ss) { container.innerHTML = ''; return; }
         const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
         const _dc  = _ss.onDuty      ? 'var(--blue)' : 'var(--orange)';
-        const _bc  = _ss.supportBoat ? 'var(--moss)' : 'var(--red)';
-        const _dbg = _ss.onDuty      ? 'color-mix(in srgb, var(--blue) 8%, transparent);border-color:color-mix(in srgb, var(--blue) 25%, transparent)' : 'color-mix(in srgb, var(--orange) 8%, transparent);border-color:color-mix(in srgb, var(--orange) 25%, transparent)';
-        const _bbg = _ss.supportBoat ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
+        const _bc  = _ss.supportBoat ? 'var(--blue)' : 'var(--orange)';
+        const _dbg = _ss.onDuty      ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
+        const _bbg = _ss.supportBoat ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
         const _dtx = s(_ss.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
         const _btx = s(_ss.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
         container.innerHTML =
