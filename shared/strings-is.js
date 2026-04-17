@@ -1118,7 +1118,7 @@ var _STRINGS_FLAT = {
   "maint.sevHint.medium": "Nothæft vandamál, nothæft með varúð.",
   "maint.sevHint.high": "Verulegt vandamál — meta áður en notað.",
   "maint.sevHint.critical": "Öryggisáhætta — taka úr þjónustu strax.",
-  "maint.oosTag": "ÓÞ",
+  "maint.oosTag": "ÚÞ",
   "maint.inService": "Í þjónustu",
   "maint.confirmBtn": "Staðfesta",
   "maint.cancelBtn": "Hætta við",
