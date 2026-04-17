@@ -97,25 +97,25 @@ const SCORE_CONFIG = {
   // would be redundant (issue #376).
   // ─────────────────────────────────────────────────────────────────────────────
   flags: {
-    green:  { color:'#27ae60', bg:'#27ae6018', border:'#27ae6044', icon:'🟢',
+    green:  { color:'var(--green)', bg:'color-mix(in srgb, var(--green) 10%, transparent)', border:'color-mix(in srgb, var(--green) 27%, transparent)', icon:'🟢',
               advice:'Good conditions  —  open to all qualified members.',
               adviceIS:'Góðar aðstæður — opið öllum hæfum félögum.',
               description:'Conditions are suitable for sailing. All qualified members may use boats according to their credential level.',
               descriptionIS:'Aðstæður eru hæfar fyrir siglingar. Allir hæfir félagar mega taka báta út samkvæmt skírteinastigi.' },
-    yellow: { color:'#f1c40f', bg:'#f1c40f18', border:'#f1c40f44', icon:'🟡',
+    yellow: { color:'var(--yellow)', bg:'color-mix(in srgb, var(--yellow) 10%, transparent)', border:'color-mix(in srgb, var(--yellow) 27%, transparent)', icon:'🟡',
               advice:'Marginal  —  experienced sailors only.',
               adviceIS:'Jaðaraðstæður — aðeins reyndir siglingar.',
               description:'Conditions are marginal. Only experienced sailors with strong boat-handling skills should go out. Ensure someone ashore knows your plans and expected return time.',
               descriptionIS:'Aðstæður eru á mörkum. Aðeins reyndir siglingar áttu að fara út. Gerið ráð fyrir óvæntum breytingum og tryggist að einhver á landi viti af áætlunum ykkar.' },
-    orange: { color:'#e67e22', bg:'#e67e2218', border:'#e67e2244', icon:'🟠',
+    orange: { color:'var(--orange)', bg:'color-mix(in srgb, var(--orange) 10%, transparent)', border:'color-mix(in srgb, var(--orange) 27%, transparent)', icon:'🟠',
               advice:'Difficult  —  keelboats only; staff auth required for dinghies.',
               adviceIS:'Erfiðar aðstæður — kjólbátar einungis; starfsmaður ¾arfnast heimildar.' },
-    red:    { color:'#e74c3c', bg:'#e74c3c18', border:'#e74c3c44', icon:'🔴',
+    red:    { color:'var(--red)', bg:'color-mix(in srgb, var(--red) 10%, transparent)', border:'color-mix(in srgb, var(--red) 27%, transparent)', icon:'🔴',
               advice:'No self-service sailing  —  staff must approve each checkout.',
               adviceIS:'Engin sjálfsafgreiðsla — starfsmaður verður að samþykkja hverja útskráningu.',
               description:'Hazardous conditions. No self-service sailing. Staff must personally assess and authorise every checkout. Experienced keelboat sailors only with direct staff supervision.',
               descriptionIS:'Hættuleg aðstæður. Engin sjálfsafgreiðsla. Starfsmaður verður að meta og samþykkja hverja útlágingu persónulega.' },
-    black:  { color:'#999',    bg:'#99999918', border:'#99999944', icon:'⚫️',
+    black:  { color:'var(--muted)', bg:'color-mix(in srgb, var(--muted) 10%, transparent)', border:'color-mix(in srgb, var(--muted) 27%, transparent)', icon:'⚫️',
               advice:'Water closed  —  all sailing suspended.',
               adviceIS:'Sjór lokaður — allar siglingar stöðvaðar.',
               description:'The water is closed to all sailing. All boats must remain ashore or return to harbour immediately. Check back later for updated conditions.',
@@ -252,8 +252,8 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 function wxStaffStatusHtml(status) {
   if (!status) return '';
   const badges = [];
-  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#27ae6018;border:1px solid #27ae6044;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.lifebuoy+s('wx.staffOnDuty')+'</span>');
-  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:#2980b918;border:1px solid #2980b944;color:#5dade2;border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.ship+s('wx.supportBoatOut')+'</span>');
+  if (status.onDuty)      badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--moss) 10%, transparent);border:1px solid color-mix(in srgb, var(--moss) 27%, transparent);color:var(--moss);border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.lifebuoy+s('wx.staffOnDuty')+'</span>');
+  if (status.supportBoat) badges.push('<span style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 27%, transparent);color:var(--navy);border-radius:20px;padding:3px 10px;font-size:11px">'+DUTY_ICONS.ship+s('wx.supportBoatOut')+'</span>');
   if (!badges.length) return '';
   let ago = '';
   if (status.updatedAt) {
@@ -281,7 +281,7 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
     { pct: Math.round(t.black /maxScore*100), key:'black'  },
   ];
   const markerHtml = markers.map(m =>
-    '<div style="position:absolute;left:'+m.pct+'%;top:0;bottom:0;width:1px;background:'+SCORE_CONFIG.flags[m.key].color+'55"></div>'
+    '<div style="position:absolute;left:'+m.pct+'%;top:0;bottom:0;width:1px;background:color-mix(in srgb, '+SCORE_CONFIG.flags[m.key].color+' 33%, transparent)"></div>'
   ).join('');
   const barHtml =
     '<div style="position:relative;height:10px;background:var(--border);border-radius:5px;margin:12px 0 4px;overflow:hidden">'
@@ -308,10 +308,10 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
   const _ssBadgesHtml = (() => {
     if (!staffStatus) return '';
     const bst   = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;margin-bottom:10px;';
-    const dCol  = staffStatus.onDuty      ? '#27ae60' : '#e74c3c';
-    const bCol  = staffStatus.supportBoat ? '#27ae60' : '#e74c3c';
-    const dBg   = staffStatus.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-    const bBg   = staffStatus.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+    const dCol  = staffStatus.onDuty      ? 'var(--moss)' : 'var(--red)';
+    const bCol  = staffStatus.supportBoat ? 'var(--moss)' : 'var(--red)';
+    const dBg   = staffStatus.onDuty      ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
+    const bBg   = staffStatus.supportBoat ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
     const dTx   = s(staffStatus.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
     const bTx   = s(staffStatus.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
@@ -553,12 +553,12 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.waves')}</div>
-            <div style="font-size:17px;color:#4a9eca">${waveH != null ? waveH.toFixed(1)+'m' : ''}</div>
+            <div style="font-size:17px;color:var(--navy-l)">${waveH != null ? waveH.toFixed(1)+'m' : ''}</div>
             <div style="font-size:10px;color:var(--muted)">${mc?.wave_direction != null ? wxDirArrow(mc.wave_direction)+' '+wxDirLabel(mc.wave_direction) : ''}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.sea')}</div>
-            <div style="font-size:17px;color:#4a9eca">${sst != null ? sst.toFixed(1)+'°C' : ''}</div>
+            <div style="font-size:17px;color:var(--navy-l)">${sst != null ? sst.toFixed(1)+'°C' : ''}</div>
             <div style="font-size:10px;color:var(--muted)">${s('wx.surface')}</div>
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
@@ -612,10 +612,10 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const _ss = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
         if (!_ss) { container.innerHTML = ''; return; }
         const _bst = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;white-space:nowrap;';
-        const _dc  = _ss.onDuty      ? '#27ae60' : '#e74c3c';
-        const _bc  = _ss.supportBoat ? '#27ae60' : '#e74c3c';
-        const _dbg = _ss.onDuty      ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
-        const _bbg = _ss.supportBoat ? '#27ae6015;border-color:#27ae6040' : '#e74c3c15;border-color:#e74c3c40';
+        const _dc  = _ss.onDuty      ? 'var(--moss)' : 'var(--red)';
+        const _bc  = _ss.supportBoat ? 'var(--moss)' : 'var(--red)';
+        const _dbg = _ss.onDuty      ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
+        const _bbg = _ss.supportBoat ? 'color-mix(in srgb, var(--moss) 8%, transparent);border-color:color-mix(in srgb, var(--moss) 25%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent);border-color:color-mix(in srgb, var(--red) 25%, transparent)';
         const _dtx = s(_ss.onDuty      ? 'wx.staffOnDuty'    : 'wx.noStaffOnDuty');
         const _btx = s(_ss.supportBoat ? 'wx.supportBoatOut' : 'wx.noSupportBoat');
         container.innerHTML =

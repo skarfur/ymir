@@ -34,6 +34,14 @@
 .pill-toggle:hover{border-color:var(--text);color:var(--text)}
 .pill-toggle.active{background:var(--brass);color:#0b1f38;border-color:var(--brass);font-weight:500}
 .pill-toggle input{display:none}
+.session-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}
+.session-row .meta{flex:1;min-width:0}
+.session-row .ua{font-size:12px;color:var(--text);word-break:break-word}
+.session-row .when{font-size:10px;color:var(--muted);margin-top:2px}
+.session-row.current{border-color:var(--brass)}
+.session-row.current .badge{display:inline-block;margin-left:6px;font-size:9px;color:var(--brass);border:1px solid var(--brass);border-radius:99px;padding:1px 6px;letter-spacing:.5px;text-transform:uppercase}
+.session-row .row-del{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:11px}
+.session-row .row-del:hover{border-color:var(--red);color:var(--red)}
 .save-bar{position:sticky;bottom:-20px;background:var(--card);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
 .save-bar .btn{min-width:120px}
 @media(max-width:600px){.settings-overlay{padding:0;align-items:flex-end}.settings-page{max-height:95vh;border-radius:var(--radius-lg) var(--radius-lg) 0 0}}
@@ -103,6 +111,57 @@
       <label class="pill-toggle"><input type="checkbox" id="svSharePhoneVol"><span data-s="settings.sharePhoneVol"></span></label>
     </div>
     <div class="settings-hint" data-s="settings.sharePhoneVolHint"></div>
+  </div>
+
+  <!-- Sign-in -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.signIn"></div>
+
+    <!-- Username style (display preference) -->
+    <div class="settings-row" style="margin-bottom:12px">
+      <label data-s="settings.usernameStyle"></label>
+      <div class="toggle-group" id="usernameStyleToggle">
+        <button data-val="kt" data-s="settings.usernameStyle.kt"></button>
+        <button data-val="initials" data-s="settings.usernameStyle.initials"></button>
+      </div>
+    </div>
+    <div class="settings-hint mb-10" data-s="settings.usernameStyleHint"></div>
+
+    <!-- Stay logged in -->
+    <div class="pill-grid">
+      <label class="pill-toggle"><input type="checkbox" id="svStayLoggedIn"><span data-s="settings.stayLoggedIn"></span></label>
+    </div>
+    <div class="settings-hint mb-10" data-s="settings.stayLoggedInHint"></div>
+
+    <!-- Password change -->
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px">
+      <label data-s="settings.currentPassword"></label>
+      <input type="password" id="sCurrentPw" autocomplete="current-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <label data-s="settings.newPassword"></label>
+      <input type="password" id="sNewPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-bottom:6px">
+      <label data-s="settings.confirmPassword"></label>
+      <input type="password" id="sConfirmPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+    </div>
+    <div class="settings-row">
+      <button class="btn btn-ghost" type="button" onclick="changePassword()" id="changePwBtn" data-s="settings.changePassword"></button>
+    </div>
+    <div class="settings-hint" data-s="settings.passwordHint"></div>
+    <div id="pwMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
+  </div>
+
+  <!-- Sign-in activity -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.signInActivity"></div>
+    <div class="settings-hint mb-10" style="margin-top:0" data-s="settings.signInActivityHint"></div>
+    <div id="sessionList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="settings-row" style="margin-top:10px">
+      <button class="btn btn-ghost" type="button" onclick="signOutEverywhereElse()" id="signOutAllBtn" data-s="settings.signOutEverywhereElse"></button>
+    </div>
+    <div id="sessionMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
   </div>
 
   <!-- Stats visibility -->
@@ -191,6 +250,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   var sv = prefs.statsVisibility || {};
   applyStatVis(sv);
 
+  // Sign-in preferences
+  setToggle('usernameStyleToggle', prefs.usernameStyle || 'kt');
+  var stay = document.getElementById('svStayLoggedIn');
+  stay.checked = getStayLoggedIn();
+  stay.closest('.pill-toggle').classList.toggle('active', stay.checked);
+
+  // Live handler for username-style toggle
+  document.getElementById('usernameStyleToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    setToggle('usernameStyleToggle', btn.dataset.val);
+  });
+
   // Pill toggle behavior
   document.querySelectorAll('.pill-toggle').forEach(function(pill) {
     pill.addEventListener('click', function(e) {
@@ -216,6 +288,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     setToggle('langToggle', btn.dataset.val);
   });
 
+  // Load active sessions for the Sign-in activity section. Best-effort —
+  // failures just render the empty state rather than blocking page load.
+  loadSessions().catch(function() {});
+
   // Always fetch from server to keep local prefs in sync
   try {
     var mRes = await apiGet('getMembers');
@@ -229,6 +305,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (serverPrefs.statsVisibility) {
           applyStatVis(serverPrefs.statsVisibility);
         }
+        if (serverPrefs.usernameStyle) setToggle('usernameStyleToggle', serverPrefs.usernameStyle);
       }
       var spv = document.getElementById('svSharePhoneVol');
       spv.checked = serverPrefs.sharePhoneVolunteer === true;
@@ -295,6 +372,184 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') cancelSettings();
 });
 
+// ── Sign-in activity ────────────────────────────────────────────────────────
+async function loadSessions() {
+  var list = document.getElementById('sessionList');
+  list.innerHTML = '<div class="settings-hint">' + s('lbl.loading') + '</div>';
+  try {
+    var data = await apiGet('listSessions', { _fresh: 1 });
+    renderSessions(Array.isArray(data.sessions) ? data.sessions : []);
+  } catch (e) {
+    list.innerHTML = '<div class="settings-hint msg-err">' + s('settings.signInActivityError') + '</div>';
+  }
+}
+
+// Turn a long User-Agent into a compact "Chrome · iOS 17" label. We pattern-
+// match the browser and OS loosely rather than pull in a 30KB parser.
+function summariseUA(ua) {
+  ua = String(ua || '');
+  if (!ua) return s('lbl.unknown');
+  var browser = '';
+  if (/Edg\//.test(ua))          browser = 'Edge';
+  else if (/OPR\//.test(ua))     browser = 'Opera';
+  else if (/Chrome\//.test(ua))  browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua))  browser = 'Safari';
+  var os = '';
+  if (/iPhone|iPad|iPod/.test(ua))    os = 'iOS';
+  else if (/Android/.test(ua))        os = 'Android';
+  else if (/Mac OS X/.test(ua))       os = 'macOS';
+  else if (/Windows/.test(ua))        os = 'Windows';
+  else if (/Linux/.test(ua))          os = 'Linux';
+  return [browser, os].filter(Boolean).join(' · ') || s('lbl.unknown');
+}
+
+function fmtSessionWhen(iso) {
+  if (!iso) return s('lbl.unknown');
+  try {
+    var d = new Date(iso);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mi = String(d.getMinutes()).padStart(2, '0');
+    return dd + '-' + mm + '-' + d.getFullYear() + ' ' + hh + ':' + mi;
+  } catch(e) { return String(iso); }
+}
+
+function renderSessions(sessions) {
+  var list = document.getElementById('sessionList');
+  var btn  = document.getElementById('signOutAllBtn');
+  list.innerHTML = '';
+  if (!sessions.length) {
+    list.innerHTML = '<div class="settings-hint">' + s('settings.signInActivityEmpty') + '</div>';
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = sessions.length <= 1; // only the current device is listed
+  sessions.forEach(function(sess) {
+    var row = document.createElement('div');
+    row.className = 'session-row' + (sess.isCurrent ? ' current' : '');
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var ua = document.createElement('div');
+    ua.className = 'ua';
+    ua.textContent = summariseUA(sess.userAgent);
+    if (sess.isCurrent) {
+      var badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = s('settings.signInActivityCurrent');
+      ua.appendChild(badge);
+    }
+    var when = document.createElement('div');
+    when.className = 'when';
+    when.textContent = s('settings.signInActivityLastSeen') + ': ' + fmtSessionWhen(sess.lastSeenAt) +
+      ' · ' + s('settings.signInActivityCreated') + ': ' + fmtSessionWhen(sess.createdAt);
+    meta.appendChild(ua);
+    meta.appendChild(when);
+    row.appendChild(meta);
+    if (!sess.isCurrent) {
+      var del = document.createElement('button');
+      del.className = 'row-del';
+      del.type = 'button';
+      del.textContent = s('settings.signInActivitySignOut');
+      del.onclick = function() { signOutOne(sess.id); };
+      row.appendChild(del);
+    }
+    list.appendChild(row);
+  });
+}
+
+async function signOutOne(sessionId) {
+  var msg = document.getElementById('sessionMsg');
+  msg.style.display = 'none';
+  try {
+    await apiPost('signOut', { sessionId: sessionId });
+    await loadSessions();
+  } catch (e) {
+    msg.textContent = s('settings.signInActivityError');
+    msg.className = 'msg msg-err';
+    msg.style.display = 'block';
+  }
+}
+
+async function signOutEverywhereElse() {
+  var btn = document.getElementById('signOutAllBtn');
+  var msg = document.getElementById('sessionMsg');
+  msg.style.display = 'none';
+  if (!(await ymConfirm(s('settings.signOutEverywhereElseConfirm')))) return;
+  btn.disabled = true;
+  try {
+    // `exceptCurrent: true` keeps this tab's session alive so the user
+    // isn't punted back to /login/ after revoking remote devices.
+    var data = await apiPost('signOutAll', { exceptCurrent: true });
+    var n = (data && typeof data.count === 'number') ? data.count : 0;
+    msg.textContent = s('settings.signedOutEverywhereElse').replace('{n}', n);
+    msg.className = 'msg msg-ok';
+    msg.style.display = 'block';
+    loadSessions();
+  } catch (e) {
+    msg.textContent = s('settings.signInActivityError');
+    msg.className = 'msg msg-err';
+    msg.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+async function changePassword() {
+  var cur  = document.getElementById('sCurrentPw').value;
+  var next = document.getElementById('sNewPw').value;
+  var conf = document.getElementById('sConfirmPw').value;
+  var btn  = document.getElementById('changePwBtn');
+  var msg  = document.getElementById('pwMsg');
+
+  function showMsg(key, cls) {
+    msg.textContent = s(key);
+    msg.className = 'msg ' + (cls || 'msg-err');
+    msg.style.display = 'block';
+  }
+
+  if (!next || next.length < 4) { showMsg('settings.passwordTooShort'); return; }
+  if (next !== conf)             { showMsg('settings.passwordMismatch'); return; }
+
+  btn.disabled = true;
+  var prevLabel = btn.textContent;
+  btn.textContent = s('lbl.loading');
+  try {
+    var res = await apiPost('setPassword', {
+      kennitala:       user.kennitala,
+      currentPassword: cur,
+      newPassword:     next,
+    });
+    document.getElementById('sCurrentPw').value = '';
+    document.getElementById('sNewPw').value     = '';
+    document.getElementById('sConfirmPw').value = '';
+    // The member now has a real password, so clear the "default password" flag.
+    user.usingDefaultPassword = false;
+    setUser(user);
+    // Surface how many other devices were signed out — the backend revokes
+    // every other session on a password change. Fall back to the plain
+    // success message when nothing else was active.
+    var revoked = res && typeof res.sessionsRevoked === 'number' ? res.sessionsRevoked : 0;
+    if (revoked > 0) {
+      msg.textContent = s('settings.passwordChangedSignedOut').replace('{n}', revoked);
+      msg.className = 'msg msg-ok';
+      msg.style.display = 'block';
+    } else {
+      showMsg('settings.passwordChanged', 'msg-ok');
+    }
+    // Refresh the session list in case the user is watching it.
+    loadSessions().catch(function() {});
+  } catch (e) {
+    var em = (e && e.message) || '';
+    if (em.indexOf('Current password') >= 0) showMsg('settings.passwordWrongCurrent');
+    else if (em.indexOf('at least') >= 0)     showMsg('settings.passwordTooShort');
+    else                                      showMsg('settings.passwordSaveFailed');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+}
+
 async function saveSettings() {
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
@@ -329,8 +584,17 @@ async function saveSettings() {
   };
 
   var sharePhoneVolunteer = document.getElementById('svSharePhoneVol').checked;
+  var usernameStyle       = getToggle('usernameStyleToggle') || 'kt';
+  var stayLoggedIn        = document.getElementById('svStayLoggedIn').checked;
 
-  var prefs = { windUnit: windUnit, theme: theme, statsVisibility: statsVisibility, sharePhoneVolunteer: sharePhoneVolunteer };
+  // "Stay logged in" is a per-device flag, not synced to the server, so the
+  // user can enable it on their phone but stay one-shot on a shared laptop.
+  setStayLoggedIn(stayLoggedIn);
+
+  var prefs = {
+    windUnit: windUnit, theme: theme, statsVisibility: statsVisibility,
+    sharePhoneVolunteer: sharePhoneVolunteer, usernameStyle: usernameStyle,
+  };
   var langChanged = lang !== getLang();
 
   // Save locally

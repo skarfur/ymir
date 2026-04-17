@@ -501,9 +501,9 @@ function renderActivities() {
     row.className = 'activity-row';
     const info = document.createElement('div'); info.className = 'activity-info';
     const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
-    const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:#1a3a1a;border:1px solid #2e7d32;color:#4caf50;border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
+    const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:color-mix(in srgb, var(--moss) 12%, transparent);border:1px solid color-mix(in srgb, var(--moss) 40%, transparent);color:var(--moss);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
-      ? '<span style="font-size:9px;background:var(--card);border:1px solid #2e86c155;border-left:2px solid #2e86c1;border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
+      ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
     info.innerHTML = `<div class="activity-name">${esc(act.name)}${ablerBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-nity-note">${esc(act.notes)}</div>` : ''}`;
@@ -1240,7 +1240,7 @@ function renderGroupLinkCards() {
   if (!wrap) return;
   if (!_linkedGroupCheckoutIds.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = _linkedGroupCheckoutIds.map(function(id) {
-    return '<div class="flex-between callout-panel text-sm" style="border-left:3px solid #2e86c1;border-color:#2e86c155;border-left-color:#2e86c1;padding:6px 10px">' +
+    return '<div class="flex-between callout-panel text-sm" style="border-left:3px solid var(--navy);border-color:color-mix(in srgb, var(--navy) 33%, transparent);border-left-color:var(--navy);padding:6px 10px">' +
       '<span>⛵ Group checkout ' + esc(sstr(id).slice(-6)) + '</span>' +
       '<button class="btn-dismiss" onclick="_linkedGroupCheckoutIds=_linkedGroupCheckoutIds.filter(x=>x!==\'' + id + '\');renderGroupLinkCards()">✕</button>' +
       '</div>';
@@ -1264,7 +1264,7 @@ function openGroupLinkPicker() {
       let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
       let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
       const sel = _groupLinkPickerSelected.has(c.id);
-      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" class="callout-panel mb-6" style="background:' + (sel?'#0a1e2e':'var(--surface)') + ';border-color:' + (sel?'#2e86c1':'var(--border)') + ';border-left:3px solid #2e86c1;cursor:pointer">' +
+      return '<div onclick="toggleGroupLinkPick(\''+c.id+'\')" class="callout-panel mb-6" style="background:' + (sel?'color-mix(in srgb, var(--navy) 12%, transparent)':'var(--surface)') + ';border-color:' + (sel?'var(--navy)':'var(--border)') + ';border-left:3px solid var(--navy);cursor:pointer">' +
         '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
         '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5)) + '</div>' +
         '</div>';

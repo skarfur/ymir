@@ -106,11 +106,11 @@
     .col-hint-vals  { color:var(--muted); }
     .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
     .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
-    .chip-green  { background:#27ae6022; color:#27ae60; border:1px solid #27ae6044; }
-    .chip-brass  { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
-    .chip-orange { background:#e67e2222; color:#e67e22; border:1px solid #e67e2244; }
+    .chip-green  { background:color-mix(in srgb, var(--green) 15%, transparent);  color:var(--green);  border:1px solid color-mix(in srgb, var(--green) 30%, transparent); }
+    .chip-brass  { background:color-mix(in srgb, var(--brass) 15%, transparent);  color:var(--brass);  border:1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
+    .chip-orange { background:color-mix(in srgb, var(--orange) 15%, transparent); color:var(--orange); border:1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
     .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-    .chip-red    { background:#e74c3c22; color:#e74c3c; border:1px solid #e74c3c44; }
+    .chip-red    { background:color-mix(in srgb, var(--red) 15%, transparent);    color:var(--red);    border:1px solid color-mix(in srgb, var(--red) 30%, transparent); }
     .import-list { max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); margin-top:6px; }
     .import-row  { display:flex; gap:10px; padding:6px 12px; border-bottom:1px solid var(--border)33;
       font-size:11px; align-items:center; }
@@ -124,8 +124,8 @@
     .import-ambig-btns button:hover { border-color:var(--brass); }
     .import-ambig-btns button.selected { background:var(--brass); color:#000; border-color:var(--brass); }
 
-    .minor-badge { font-size:10px; background:#f1c40f22; color:#c9a800;
-      border:1px solid #f1c40f44; border-radius:3px; padding:1px 5px; }
+    .minor-badge { font-size:10px; background:color-mix(in srgb, var(--yellow) 15%, transparent); color:var(--yellow);
+      border:1px solid color-mix(in srgb, var(--yellow) 30%, transparent); border-radius:3px; padding:1px 5px; }
     .oos-badge   { font-size:10px; background:var(--red)22; color:var(--red);
       border:1px solid var(--red)44; border-radius:3px; padding:1px 5px; }
 
@@ -214,7 +214,7 @@
               <div class="text-sm text-muted mb-4">Admin/staff roles never overwritten.</div>
               <div class="import-summary" id="importSummary"></div>
               <div id="importLists"></div>
-              <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:#e74c3c11;border-radius:4px;border:1px solid var(--red)44"></div>
+              <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:color-mix(in srgb, var(--red) 8%, transparent);border-radius:4px;border:1px solid color-mix(in srgb, var(--red) 27%, transparent)"></div>
               <div class="btn-row mt-14">
                 <button class="btn btn-secondary" onclick="resetImport()" data-s="admin.backToList"></button>
                 <button class="btn btn-primary" onclick="confirmImport()" id="confirmImportBtn" data-s="admin.confirmImport"></button>
@@ -465,9 +465,9 @@
         </div>
         <div class="col-body" id="flagThresholdsCard">
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-            <div class="field"><label style="color:#f1c40f">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e67e22">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
-            <div class="field"><label style="color:#e74c3c">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:var(--yellow)">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:var(--orange)">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" oninput="updateFlagPreview()"></div>
+            <div class="field"><label style="color:var(--red)">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" oninput="updateFlagPreview()"></div>
             <div class="field"><label style="color:#999">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" oninput="updateFlagPreview()"></div>
           </div>
         </div>
@@ -670,6 +670,14 @@
     </div>
     <div class="check-row" style="margin-bottom:12px">
       <input type="checkbox" id="mActive" checked> <label for="mActive" data-s="lbl.active"></label>
+    </div>
+    <!-- Password status & reset (existing members only) -->
+    <div id="mPwBox" class="hidden" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px" data-s="admin.password"></div>
+        <div id="mPwStatus" style="font-size:12px"></div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="mResetPwBtn" onclick="resetMemberPassword()" data-s="admin.resetPassword"></button>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="closeModal('memberModal')" data-s="btn.cancel"></button>
@@ -1631,7 +1639,45 @@ function openMemberModal(id) {
   document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
   document.getElementById("mActive").checked       = m ? bool(m.active)  : true;
   document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
+  // Show a compact password status + reset button for existing members.
+  var pwBox = document.getElementById("mPwBox");
+  if (m) {
+    pwBox.classList.remove("hidden");
+    var status = document.getElementById("mPwStatus");
+    if (m.hasPassword) {
+      status.textContent = s('admin.hasCustomPassword');
+      status.style.color = 'var(--muted)';
+    } else {
+      status.textContent = s('admin.usingDefaultPassword');
+      status.style.color = 'var(--brass)';
+    }
+    document.getElementById("mResetPwBtn").disabled = !m.hasPassword;
+  } else {
+    pwBox.classList.add("hidden");
+  }
   openModal("memberModal");
+}
+
+async function resetMemberPassword() {
+  if (!editingId) return;
+  var m = members.find(function(x) { return x.id === editingId; });
+  if (!m) return;
+  var name = m.name || m.kennitala;
+  if (!(await ymConfirm(s('admin.resetPasswordConfirm').replace('{name}', name)))) return;
+  var btn = document.getElementById('mResetPwBtn');
+  btn.disabled = true;
+  try {
+    var res = await apiPost('adminResetMemberPassword', { kennitala: m.kennitala });
+    m.hasPassword = false;
+    var status = document.getElementById('mPwStatus');
+    status.textContent = s('admin.usingDefaultPassword');
+    status.style.color = 'var(--brass)';
+    var n = (res && typeof res.sessionsRevoked === 'number') ? res.sessionsRevoked : 0;
+    toast(s('admin.resetPasswordDone').replace('{n}', n), 'ok');
+  } catch (e) {
+    toast(s('toast.error') + ': ' + e.message, 'err');
+    btn.disabled = false;
+  }
 }
 
 async function saveMember() {
@@ -3764,7 +3810,7 @@ function renderImportPreview(res) {
     });
   }
   if (res.added.length) {
-    html += `<div style="font-size:11px;color:#27ae60;margin:10px 0 4px;font-weight:500">NEW (${res.added.length})</div>
+    html += `<div style="font-size:11px;color:var(--green);margin:10px 0 4px;font-weight:500">NEW (${res.added.length})</div>
       <div class="import-list">${res.added.map(m => `
         <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
@@ -3783,7 +3829,7 @@ function renderImportPreview(res) {
         </div>`).join("")}</div>`;
   }
   if (res.flagged.length) {
-    html += `<div style="font-size:11px;color:#e67e22;margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${res.flagged.length})
+    html += `<div style="font-size:11px;color:var(--orange);margin:10px 0 4px;font-weight:500">NOT IN THIS IMPORT (${res.flagged.length})
       <span style="font-weight:400;opacity:.7"> — check to deactivate</span></div>
       <div style="margin-bottom:4px">
         <label style="font-size:10px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px">
