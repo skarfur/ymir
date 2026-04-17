@@ -107,11 +107,11 @@ function tripCard(t){
   const helmLabel = s('tc.helm');
   const helmBadge = ' <span class="text-brass" style="font-size:9px;border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
   const guestLabel = s('tc.guest');
-  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+guestLabel+'</span>';
+  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+guestLabel+'</span>';
   const studentLabel = s('tc.student');
   const studentBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent);color:var(--navy-l);margin-left:2px">'+studentLabel+'</span>';
   const skipperLabel = s('tc.skipper');
-  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+skipperLabel+'</span>';
+  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+skipperLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${s('tc.pending')}</span>`;
 
   // Check for pending/confirmed student confirmations
@@ -884,7 +884,7 @@ function searchManualMember(inp, dropOrId){
     if (m.role==='guest') {
       const badge=document.createElement('span');
       badge.textContent=s('lbl.guest');
-      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);flex-shrink:0';
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);flex-shrink:0';
       item.appendChild(badge);
     }
     item.addEventListener('mousedown',function(e){
@@ -1046,7 +1046,7 @@ function renderClubTripsList(){
     document.getElementById('loadMoreTripsBtn').style.display='none';
     return;
   }
-  var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);margin-left:2px">'+s('tc.guest')+'</span>';
+  var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+s('tc.guest')+'</span>';
   var frag = document.createDocumentFragment();
   page.forEach(function(t) {
     var _sm = t.kennitala ? allMembers.find(function(m){return String(m.kennitala)===String(t.kennitala);}) : null;

@@ -64,7 +64,7 @@
 .stat-row  { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
 .stat-cell { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
   padding:12px 10px; text-align:center; box-shadow:var(--shadow-sm); }
-.stat-n { font-size:22px; color:var(--brass); font-weight:500; }
+.stat-n { font-size:22px; color:var(--brass-fg); font-weight:500; }
 .stat-l { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
 
 /* ── Section card ── */
@@ -76,7 +76,7 @@
 /* ── Checkout form ── */
 .checkout-form { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
   padding:18px; margin-top:12px; box-shadow:var(--shadow-sm); }
-.checkout-form h4 { color:var(--brass); font-size:10px; letter-spacing:1px; margin-bottom:14px; }
+.checkout-form h4 { color:var(--brass-fg); font-size:10px; letter-spacing:1px; margin-bottom:14px; }
 .inline-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .crew-field { display:flex; align-items:center; gap:10px; }
 .crew-btn { width:30px; height:30px; border-radius:50%; border:1px solid var(--border);
@@ -86,7 +86,7 @@
 .crew-num { width:36px; text-align:center; font-size:16px; }
 .ret-btn  { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:11px; padding:4px 8px; cursor:pointer; transition:color .2s,border-color .2s; }
-.ret-btn:hover { border-color:var(--brass); color:var(--brass); }
+.ret-btn:hover { border-color:var(--brass); color:var(--brass-fg); }
 
 /* ── Available by category ── */
 .cat-row { display:flex; align-items:center; gap:10px; padding:6px 0;
@@ -104,7 +104,7 @@
 .fleet-cat-toggle { display:flex; align-items:center; justify-content:space-between;
   padding:8px 0; cursor:pointer; user-select:none; border-bottom:1px solid var(--border)44; }
 .fleet-cat-toggle:last-of-type { border-bottom:none; }
-.fleet-cat-toggle:hover .fct-label { color:var(--brass); }
+.fleet-cat-toggle:hover .fct-label { color:var(--brass-fg); }
 .fct-label   { font-size:11px; font-weight:500; }
 .fct-count   { font-size:10px; color:var(--muted); }
 .fct-arrow   { font-size:10px; color:var(--muted); transition:transform .2s; }
@@ -234,7 +234,7 @@
 .bc-group-card.overdue{border-color:var(--red);border-left-color:var(--red)}
 .gc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
 .gc-boats{font-size:13px;font-weight:500;color:var(--text)}
-.gc-badge{font-size:9px;letter-spacing:.5px;padding:2px 7px;border-radius:10px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass)}
+.gc-badge{font-size:9px;letter-spacing:.5px;padding:2px 7px;border-radius:10px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg)}
 .gc-ret{font-size:13px;font-weight:500;text-align:right}
 .gc-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
 .gc-staff{font-size:11px;color:var(--muted)}
@@ -243,12 +243,12 @@
 .guest-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center}
 .guest-modal-overlay.hidden{display:none}
 .guest-modal{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg)}
-.guest-modal h4{font-size:12px;color:var(--brass);letter-spacing:.5px;margin:0 0 14px}
+.guest-modal h4{font-size:12px;color:var(--brass-fg);letter-spacing:.5px;margin:0 0 14px}
 .guest-modal .gm-field{margin-bottom:10px}
 .guest-modal .gm-field label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px}
 .guest-modal .gm-field input{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px}
 .guest-modal .btn-row{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
-.guest-add-hint{font-size:10px;color:var(--brass);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
+.guest-add-hint{font-size:10px;color:var(--brass-fg);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
 .guest-add-hint:hover{background:var(--card)}
 
 #groupCheckOutBtn{background:var(--navy);border-color:var(--navy);color:#fff}
@@ -389,7 +389,7 @@
       </div>
       <!-- Departure port — shown for keelboats only -->
       <div id="coPortRow" class="field" style="display:none">
-        <label style="color:var(--brass)">⚓️ <span data-s="staff.departurePort"></span></label>
+        <label style="color:var(--brass-fg)">⚓️ <span data-s="staff.departurePort"></span></label>
         <input type="text" list="coPortsList" id="coDeparturePort" autocomplete="off">
         <datalist id="coPortsList"></datalist>
       </div>
@@ -864,7 +864,7 @@ function searchCoCrewMembers(inp, drop) {
     if (m.role === 'guest') {
       const badge = document.createElement('span');
       badge.textContent = s('lbl.guest');
-      badge.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass);flex-shrink:0';
+      badge.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);flex-shrink:0';
       item.appendChild(badge);
     }
     item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });

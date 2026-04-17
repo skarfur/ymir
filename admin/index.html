@@ -25,7 +25,7 @@
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
       font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
       margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
-    .tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+    .tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
     /* ── Tab dropdown (mobile) ── */
@@ -71,7 +71,7 @@
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
-    .cl-phase { width:50px; font-size:10px; color:var(--brass); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+    .cl-phase { width:50px; font-size:10px; color:var(--brass-fg); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
     .cl-sort-input { width: 42px !important; max-width: 42px; min-width: 42px; text-align:center; font-size:11px; padding: 2px 4px !important; border:1px solid var(--border);
       border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0;
       -moz-appearance:textfield; appearance:textfield; }
@@ -83,7 +83,7 @@
     /* ── Action buttons ── */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
       font-size:11px; font-family:inherit; padding:3px 8px; border-radius:var(--radius-sm); transition:all .2s; }
-    .row-edit:hover { color:var(--brass); border-color:var(--brass)55; }
+    .row-edit:hover { color:var(--brass-fg); border-color:var(--brass)55; }
     .row-del  { background:none; border:none; color:var(--border); cursor:pointer;
       font-size:16px; padding:2px 4px; line-height:1; transition:color .2s; }
     .row-del:hover { color:var(--red); }
@@ -102,12 +102,12 @@
     .upload-zone:hover { border-color:var(--brass); }
     .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:16px; }
     .col-hint-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; align-items:flex-start; }
-    .col-hint-field { color:var(--brass); width:120px; flex-shrink:0; }
+    .col-hint-field { color:var(--brass-fg); width:120px; flex-shrink:0; }
     .col-hint-vals  { color:var(--muted); }
     .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
     .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
     .chip-green  { background:color-mix(in srgb, var(--green) 15%, transparent);  color:var(--green);  border:1px solid color-mix(in srgb, var(--green) 30%, transparent); }
-    .chip-brass  { background:color-mix(in srgb, var(--brass) 15%, transparent);  color:var(--brass);  border:1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
+    .chip-brass  { background:color-mix(in srgb, var(--brass) 15%, transparent);  color:var(--brass-fg);  border:1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
     .chip-orange { background:color-mix(in srgb, var(--orange) 15%, transparent); color:var(--orange); border:1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
     .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
     .chip-red    { background:color-mix(in srgb, var(--red) 15%, transparent);    color:var(--red);    border:1px solid color-mix(in srgb, var(--red) 30%, transparent); }
@@ -1834,7 +1834,7 @@ function renderBoats() {
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
             <div class="boat-card-name">${cat.emoji || boatEmoji(cat.key)} ${esc(b.name)}</div>
             <div style="display:flex;gap:4px;flex-shrink:0">
-              ${b.accessMode === 'controlled' ? `<span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass)">${esc(s('fleet.badgeControlled'))}</span>` : ""}
+              ${b.accessMode === 'controlled' ? `<span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass-fg)">${esc(s('fleet.badgeControlled'))}</span>` : ""}
               ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
               ${boatCatBadge(cat.key)}
             </div>
@@ -2271,7 +2271,7 @@ function renderLocations() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noLocations')}</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
-      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
+      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--brass-fg);border:1px solid var(--brass)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
       <button class="row-edit" onclick="openLocationModal('${l.id}')">Edit</button>
       <button class="row-del"  onclick="deleteLocation('${l.id}')">×</button>
     </div>`).join("");
@@ -2555,12 +2555,12 @@ function renderActTypes() {
       <div style="display:flex;align-items:center;gap:10px">
         <span class="list-name">${esc(a.name)}${a.nameIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}${isVol
-          ? `<span style="color:var(--brass);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
+          ? `<span style="color:var(--brass-fg);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
         <button class="row-edit" onclick="openActTypeModal('${a.id}')">Edit</button>
         <button class="row-del"  onclick="deleteActType('${a.id}')">×</button>
       </div>
       ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
-      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--brass)">[${esc(certDefName((certDefs||[]).find(d=>d.id===r.requiredEndorsement))||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
+      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--brass-fg)">[${esc(certDefName((certDefs||[]).find(d=>d.id===r.requiredEndorsement))||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
     </div>`;
   }).join("");
 }
@@ -3085,7 +3085,7 @@ function renderVolRoles() {
     var endorseLabel = '';
     if (r.requiredEndorsement) {
       var eDef = (certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; });
-      endorseLabel = '<div style="font-size:10px;color:var(--brass);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? certDefName(eDef) : r.requiredEndorsement) + '</div>';
+      endorseLabel = '<div style="font-size:10px;color:var(--brass-fg);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? certDefName(eDef) : r.requiredEndorsement) + '</div>';
     }
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'
@@ -3329,7 +3329,7 @@ function renderCertDefs() {
     const catObj = d.category ? certCategoryByKey(certCategories, d.category) : null;
     const catLabel = catObj ? certCategoryLabel(catObj) : d.category;
     const catStr = d.category
-      ? `<span style="color:var(--brass);font-size:10px">[${esc(catLabel)}]</span> ` : "";
+      ? `<span style="color:var(--brass-fg);font-size:10px">[${esc(catLabel)}]</span> ` : "";
     const expiryStr = d.expires
       ? `<span style="color:var(--muted)"> · expires</span>` : "";
     const nameEN = d.nameEN || d.name || '';
@@ -3820,7 +3820,7 @@ function renderImportPreview(res) {
         </div>`).join("")}</div>`;
   }
   if (res.updated.length) {
-    html += `<div style="font-size:11px;color:var(--brass);margin:10px 0 4px;font-weight:500">UPDATED (${res.updated.length})</div>
+    html += `<div style="font-size:11px;color:var(--brass-fg);margin:10px 0 4px;font-weight:500">UPDATED (${res.updated.length})</div>
       <div class="import-list">${res.updated.map(m => `
         <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>
@@ -4318,7 +4318,7 @@ function _ppRenderItemRow(p, cat, it, pi, ci, ii) {
   const assessmentColor = assessment === 'theory' ? 'var(--brass)' : 'var(--muted)';
   const moduleNum = Number(it.module || 0);
   const moduleBadge = moduleNum > 0
-    ? `<span style="font-size:9px;color:var(--brass);border:1px solid var(--brass);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.moduleShort'))} ${moduleNum}</span>`
+    ? `<span style="font-size:9px;color:var(--brass-fg);border:1px solid var(--brass);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.moduleShort'))} ${moduleNum}</span>`
     : '';
   return `<div style="border-top:1px solid var(--border);padding:8px 0;display:flex;align-items:flex-start;gap:8px;${retired ? 'opacity:.5' : ''}">
     <div style="flex:1;min-width:0">
@@ -4364,7 +4364,7 @@ function drawPassportEditor() {
     card.innerHTML = `<div style="color:var(--muted);padding:12px 0">No passports configured. Import a CSV to get started.</div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
         <button class="btn btn-primary" style="font-size:11px" onclick="ppSaveDef()" data-s="passport.save">Save changes</button>
-        <span id="ppDirtyMark" style="font-size:10px;color:var(--brass)">${_passportDirty ? '● unsaved' : ''}</span>
+        <span id="ppDirtyMark" style="font-size:10px;color:var(--brass-fg)">${_passportDirty ? '● unsaved' : ''}</span>
       </div>`;
     applyStrings(card);
     return;
@@ -4463,7 +4463,7 @@ function drawPassportEditor() {
           ? `${s('passport.moduleLabel')} ${modNum}`
           : s('passport.unassignedModule');
         html += `<div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface)">
-          <div style="font-weight:700;font-size:12px;color:var(--brass);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${esc(modLabel)} <span style="color:var(--muted);font-weight:400;font-size:10px">· ${bucket.length}</span></div>`;
+          <div style="font-weight:700;font-size:12px;color:var(--brass-fg);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${esc(modLabel)} <span style="color:var(--muted);font-weight:400;font-size:10px">· ${bucket.length}</span></div>`;
 
         // Sub-group by category (preserving the passport's category order)
         const byCat = {};
@@ -4514,7 +4514,7 @@ function drawPassportEditor() {
 
   html += `<div style="margin-top:14px;display:flex;gap:8px;align-items:center">
     <button class="btn btn-primary" style="font-size:11px" onclick="ppSaveDef()" data-s="passport.save">Save changes</button>
-    <span id="ppDirtyMark" style="font-size:10px;color:var(--brass)">${_passportDirty ? '● unsaved' : ''}</span>
+    <span id="ppDirtyMark" style="font-size:10px;color:var(--brass-fg)">${_passportDirty ? '● unsaved' : ''}</span>
   </div>`;
   card.innerHTML = html;
   applyStrings(card);

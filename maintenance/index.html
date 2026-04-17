@@ -25,14 +25,14 @@
       border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
       letter-spacing:.5px; transition:all .2s; }
     .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-    .filter-btn:hover:not(.active):not(.muted) { border-color:var(--brass); color:var(--brass); }
+    .filter-btn:hover:not(.active):not(.muted) { border-color:var(--brass); color:var(--brass-fg); }
     .filter-btn.muted { opacity:0.3; pointer-events:none; border-style:dashed; }
 
     /* ── Stat strip ── */
     .stat-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:20px; }
     .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
       padding:12px; text-align:center; box-shadow:var(--shadow-sm); }
-    .stat-num { font-size:24px; color:var(--brass); font-weight:500; }
+    .stat-num { font-size:24px; color:var(--brass-fg); font-weight:500; }
     .stat-label { font-size:10px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
     @media(max-width:580px){ .stat-strip { grid-template-columns:repeat(2,1fr); } }
 
@@ -82,7 +82,7 @@
     .modal-overlay.hidden { display:none; }
     .modal { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
       padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
-    .modal h3 { color:var(--brass); margin-bottom:16px; font-size:15px; }
+    .modal h3 { color:var(--brass-fg); margin-bottom:16px; font-size:15px; }
     .field { margin-bottom:14px; }
     .field label { display:block; font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:6px; }
     .field input, .field select, .field textarea {
@@ -108,7 +108,7 @@
     .cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:var(--radius-sm); border:1px solid var(--border);
       background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit;
       cursor:pointer; text-align:center; transition:all .2s; }
-    .cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)11; }
+    .cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)11; }
 
     /* Photo preview */
     .photo-preview { width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);
@@ -153,7 +153,7 @@
   </div>
 
   <!-- Pending sauma review alert -->
-  <div id="pendingReviewAlert" class="hidden" style="margin:10px 0;padding:10px 14px;border-radius:8px;background:var(--brass)11;border:1px solid var(--brass)66;color:var(--brass);font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="showPendingReviews()">
+  <div id="pendingReviewAlert" class="hidden" style="margin:10px 0;padding:10px 14px;border-radius:8px;background:var(--brass)11;border:1px solid var(--brass)66;color:var(--brass-fg);font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="showPendingReviews()">
     <span style="font-size:18px">⏳</span>
     <span id="pendingReviewAlertText" style="flex:1"></span>
     <span style="font-size:11px;opacity:.8">→</span>
