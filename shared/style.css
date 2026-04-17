@@ -87,33 +87,25 @@
   --bg:       #ffffff;
   --surface:  #ffffff;
   --card:     #ffffff;
-  --border:   #d7deeb;
-  --border-l: #9fb0cc;
-  --text:     #0f2045;
-  --muted:    #5b6e8a;
-  --faint:    #eef2f8;
-  --navy:     #274482;
-  --navy-d:   #1b3168;
-  --navy-l:   #3a5ea8;
-  --moss:     #34783c;
-  --moss-d:   #265a2c;
-  --moss-l:   #4a9152;
-  --brass:    #a07b10;
-  --brass-d:  #7d5f08;
-  --brass-l:  #c99820;
-  --green:    var(--moss);
-  --yellow:   #c98a0c;
-  --orange:   #b85a14;
-  --red:      #b52a2a;
-  --blue:     var(--navy);
-  --purple:   #6a4fb8;
-  --header-bg:     #274484;
-  --header-text:   #f4f7fc;
-  --header-muted:  #c2d0e8;
-  --header-border: #3a5ea8;
-  --shadow-sm: 0 1px 3px rgba(15,32,69,.08);
-  --shadow-md: 0 2px 10px rgba(15,32,69,.10);
-  --shadow-lg: 0 12px 32px rgba(15,32,69,.16);
+  --border:   #c8d6e5;
+  --border-l: #a0b4c8;
+  --text:     #1a2a3a;
+  --muted:    #5a7a96;
+  --faint:    #dce4ec;
+  /* Light mode: brass reads muddy on cream surfaces, so map the brass tokens
+     onto the blue palette. var(--brass)NN concatenations stay valid hex. */
+  --brass:    #2070a8;
+  --brass-d:  #18537e;
+  --brass-l:  #4a9bd4;
+  --green:    #1e8e4e;
+  --yellow:   #d4a80c;
+  --orange:   #c46a1a;
+  --red:      #c53030;
+  --blue:     #2070a8;
+  --purple:   #7c5fcf;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.1);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,.15);
 }
 
 @media (prefers-color-scheme: light) {
@@ -121,33 +113,23 @@
     --bg:       #ffffff;
     --surface:  #ffffff;
     --card:     #ffffff;
-    --border:   #d7deeb;
-    --border-l: #9fb0cc;
-    --text:     #0f2045;
-    --muted:    #5b6e8a;
-    --faint:    #eef2f8;
-    --navy:     #274482;
-    --navy-d:   #1b3168;
-    --navy-l:   #3a5ea8;
-    --moss:     #34783c;
-    --moss-d:   #265a2c;
-    --moss-l:   #4a9152;
-    --brass:    #a07b10;
-    --brass-d:  #7d5f08;
-    --brass-l:  #c99820;
-    --green:    var(--moss);
-    --yellow:   #c98a0c;
-    --orange:   #b85a14;
-    --red:      #b52a2a;
-    --blue:     var(--navy);
-    --purple:   #6a4fb8;
-    --header-bg:     #274484;
-    --header-text:   #f4f7fc;
-    --header-muted:  #c2d0e8;
-    --header-border: #3a5ea8;
-    --shadow-sm: 0 1px 3px rgba(15,32,69,.08);
-    --shadow-md: 0 2px 10px rgba(15,32,69,.10);
-    --shadow-lg: 0 12px 32px rgba(15,32,69,.16);
+    --border:   #c8d6e5;
+    --border-l: #a0b4c8;
+    --text:     #1a2a3a;
+    --muted:    #5a7a96;
+    --faint:    #dce4ec;
+    --brass:    #2070a8;
+    --brass-d:  #18537e;
+    --brass-l:  #4a9bd4;
+    --green:    #1e8e4e;
+    --yellow:   #d4a80c;
+    --orange:   #c46a1a;
+    --red:      #c53030;
+    --blue:     #2070a8;
+    --purple:   #7c5fcf;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 2px 8px rgba(0,0,0,.1);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,.15);
   }
 }
 
@@ -399,12 +381,12 @@ textarea { min-height: 70px; }
   border-radius: 20px;
   border: 1px solid;
 }
-.badge-green  { color: var(--green);  border-color: color-mix(in srgb, var(--green)  30%, transparent); background: color-mix(in srgb, var(--green)  8%, transparent); }
-.badge-yellow { color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 30%, transparent); background: color-mix(in srgb, var(--yellow) 8%, transparent); }
-.badge-orange { color: var(--orange); border-color: color-mix(in srgb, var(--orange) 30%, transparent); background: color-mix(in srgb, var(--orange) 8%, transparent); }
-.badge-red    { color: var(--red);    border-color: color-mix(in srgb, var(--red)    30%, transparent); background: color-mix(in srgb, var(--red)    8%, transparent); }
-.badge-blue   { color: var(--blue);   border-color: color-mix(in srgb, var(--blue)   30%, transparent); background: color-mix(in srgb, var(--blue)   8%, transparent); }
-.badge-brass  { color: var(--brass);  border-color: color-mix(in srgb, var(--brass)  30%, transparent); background: color-mix(in srgb, var(--brass)  8%, transparent); }
+.badge-green  { color: var(--green);  border-color: #27ae6050; background: #27ae6012; }
+.badge-yellow { color: var(--yellow); border-color: #f1c40f50; background: #f1c40f12; }
+.badge-orange { color: var(--orange); border-color: #e67e2250; background: #e67e2212; }
+.badge-red    { color: var(--red);    border-color: #e74c3c50; background: #e74c3c12; }
+.badge-blue   { color: var(--blue);   border-color: #2980b950; background: #2980b912; }
+.badge-brass  { color: var(--brass);  border-color: var(--brass)50; background: var(--brass)12; }
 .badge-muted  { color: var(--muted);  border-color: var(--border); background: var(--faint); }
 
 /* ── TABLE ────────────────────────────────────────────────────────────────────── */
@@ -1180,3 +1162,41 @@ textarea { min-height: 70px; }
 .vp-btn.signed-up { background:var(--moss); color:#fff; border-color:var(--moss); }
 .vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
 .vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
+
+/* ── LIGHT-MODE BRASS-TEXT OVERRIDES ──────────────────────────────────────────
+   In light mode --brass maps to blue (#2070a8). Dark-navy/black text on that
+   blue drops below WCAG AA, so flip text to white for every selector that
+   paints itself with `background: var(--brass)` plus a hardcoded dark color.
+   Selectors live across many per-page stylesheets but the brass-on-dark-text
+   pattern is identical, so one override block wins via the [data-theme]
+   specificity bump. */
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .vp-btn.signed-up,
+[data-theme="light"] .cap-hm-btn.active,
+[data-theme="light"] .become-member-btn,
+[data-theme="light"] .heatmap-toggle button.active,
+[data-theme="light"] .toggle-group button.active,
+[data-theme="light"] .pill-toggle.active,
+[data-theme="light"] .filter-btn.active,
+[data-theme="light"] .vp-filter-btn.active,
+[data-theme="light"] .vp-cal-ev.mine,
+[data-theme="light"] .import-ambig-btns button.selected,
+[data-theme="light"] .pc-btn-brk-end {
+  color: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] .btn-primary,
+  [data-theme="auto"] .vp-btn.signed-up,
+  [data-theme="auto"] .cap-hm-btn.active,
+  [data-theme="auto"] .become-member-btn,
+  [data-theme="auto"] .heatmap-toggle button.active,
+  [data-theme="auto"] .toggle-group button.active,
+  [data-theme="auto"] .pill-toggle.active,
+  [data-theme="auto"] .filter-btn.active,
+  [data-theme="auto"] .vp-filter-btn.active,
+  [data-theme="auto"] .vp-cal-ev.mine,
+  [data-theme="auto"] .import-ambig-btns button.selected,
+  [data-theme="auto"] .pc-btn-brk-end {
+    color: #ffffff;
+  }
+}
