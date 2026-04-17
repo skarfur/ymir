@@ -159,10 +159,16 @@ function wxCondIcon(c)  {
   if ([71,73,75,77,85,86].includes(c)) return '❄️'; if ([95,96,99].includes(c)) return '⛈️'; return '☁️';
 }
 function wxCondDesc(c)  {
-  if (c === 0) return 'Clear sky'; if (c === 1) return 'Mainly clear'; if (c === 2) return 'Partly cloudy'; if (c === 3) return 'Overcast';
-  if ([45,48].includes(c)) return 'Fog'; if ([51,53,55].includes(c)) return 'Drizzle';
-  if ([61,63,65,80,81,82].includes(c)) return 'Rain'; if ([71,73,75,77].includes(c)) return 'Snow';
-  if ([95,96,99].includes(c)) return 'Thunderstorm'; return '';
+  if (c === 0) return s('wx.condClearSky');
+  if (c === 1) return s('wx.condMainlyClear');
+  if (c === 2) return s('wx.condPartlyCloudy');
+  if (c === 3) return s('wx.condOvercast');
+  if ([45,48].includes(c)) return s('wx.condFog');
+  if ([51,53,55].includes(c)) return s('wx.condDrizzle');
+  if ([61,63,65,80,81,82].includes(c)) return s('wx.condRain');
+  if ([71,73,75,77].includes(c)) return s('wx.condSnow');
+  if ([95,96,99].includes(c)) return s('wx.condThunderstorm');
+  return '';
 }
 
 /**
@@ -636,7 +642,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
   return {
     refresh,
     start()  {
-      targetEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0">Loading weather…</div>';
+      targetEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0">'+s('wx.loadingWeather')+'</div>';
       refresh();
       timer = setInterval(refresh, WX_REFRESH_MS);
     },
@@ -661,7 +667,7 @@ function wxSnapshot(snap) {
     feels:    snap.apparentT!= null ? Math.round(snap.apparentT)           : null,
     pres:     snap.pres     != null ? Math.round(snap.pres)                : null,
     presTrend:snap.presTrend || null,
-    cond:     snap.code != null ? { icon: wxCondIcon(snap.code), desc: wxCondDesc(snap.code) } : null,
+    cond:     snap.code != null ? { icon: wxCondIcon(snap.code), desc: wxCondDesc(snap.code), code: snap.code } : null,
     flag:     snap.flagKey || '',
     ts:       new Date().toISOString().slice(0,16),
   };

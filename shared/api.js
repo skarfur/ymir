@@ -570,21 +570,22 @@ function parseWsValue(ws) {
 
 function formatWindValue(ms, beaufort, unit) {
   unit = unit || getPref('windUnit', 'ms');
+  var forceLbl = (typeof s === 'function') ? s('wx.force') : 'Force';
   // Handle range values like "5.5-8.0" (from Beaufort-only entry)
   if (typeof ms === 'string' && ms.indexOf('-') !== -1) {
     var parts = ms.split('-').map(Number);
     if (unit === 'bft') {
       var b = beaufort != null ? beaufort : bftFromMs(parts[0]);
-      return b != null ? 'Force ' + b : '';
+      return b != null ? forceLbl + ' ' + b : '';
     }
     return convertWind(parts[0], unit) + '–' + convertWind(parts[1], unit) + ' ' + windUnitLabel(unit);
   }
   if (unit === 'bft') {
     var b = beaufort != null ? beaufort : (ms != null ? bftFromMs(ms) : null);
-    return b != null ? 'Force ' + b : '';
+    return b != null ? forceLbl + ' ' + b : '';
   }
   if (ms != null) return convertWind(ms, unit) + ' ' + windUnitLabel(unit);
-  return beaufort != null ? 'Force ' + beaufort : '';
+  return beaufort != null ? forceLbl + ' ' + beaufort : '';
 }
 
 function toggleLang() {

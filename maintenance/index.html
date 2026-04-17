@@ -141,15 +141,15 @@
 
   <!-- Stats -->
   <div class="stat-strip">
-    <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label">OPEN</div></div>
-    <div class="stat-card"><div class="stat-num text-red" id="statCritical">—</div><div class="stat-label">CRITICAL</div></div>
-    <div class="stat-card"><div class="stat-num text-red" id="statOos">—</div><div class="stat-label">BOATS OOS</div></div>
-    <div class="stat-card"><div class="stat-num text-brass" id="statPending">—</div><div class="stat-label">PENDING REVIEW</div></div>
-    <div class="stat-card"><div class="stat-num text-green" id="statResolved">—</div><div class="stat-label">RESOLVED</div></div>
+    <div class="stat-card"><div class="stat-num" id="statOpen" style="color:var(--orange)">—</div><div class="stat-label" data-s="maint.statOpen"></div></div>
+    <div class="stat-card"><div class="stat-num text-red" id="statCritical">—</div><div class="stat-label" data-s="maint.statCritical"></div></div>
+    <div class="stat-card"><div class="stat-num text-red" id="statOos">—</div><div class="stat-label" data-s="maint.statOos"></div></div>
+    <div class="stat-card"><div class="stat-num text-brass" id="statPending">—</div><div class="stat-label" data-s="maint.statPending"></div></div>
+    <div class="stat-card"><div class="stat-num text-green" id="statResolved">—</div><div class="stat-label" data-s="maint.statResolved"></div></div>
   </div>
   <div class="flex-center gap-8" style="margin:12px 0">
-    <button class="btn btn-primary flex-1" onclick="openNewRequest()">+ New maintenance request</button>
-    <button class="btn btn-secondary flex-1" onclick="openNewRequest({saumaklubbur:true})">🧵 New sewing circle project</button>
+    <button class="btn btn-primary flex-1" onclick="openNewRequest()" data-s="maint.newBtn"></button>
+    <button class="btn btn-secondary flex-1" onclick="openNewRequest({saumaklubbur:true})" data-s="maint.newSaumaBtn"></button>
   </div>
 
   <!-- Pending sauma review alert -->
@@ -162,33 +162,33 @@
   <!-- Filter bar -->
   <div class="filter-bar-grouped" id="filterBar">
     <div class="filter-group">
-      <span class="filter-group-label">STATUS</span>
-      <button class="filter-btn active" data-group="status" data-value="open">Open</button>
-      <button class="filter-btn" data-group="status" data-value="resolved">Resolved</button>
+      <span class="filter-group-label" data-s="maint.groupStatus"></span>
+      <button class="filter-btn active" data-group="status" data-value="open" data-s="maint.filterOpen"></button>
+      <button class="filter-btn" data-group="status" data-value="resolved" data-s="maint.filterResolved"></button>
     </div>
     <div class="filter-group">
-      <span class="filter-group-label">TYPE</span>
-      <button class="filter-btn" data-group="type" data-value="maintenance">Maintenance</button>
-      <button class="filter-btn" data-group="type" data-value="sauma">🧵 Saumaklúbbur</button>
+      <span class="filter-group-label" data-s="maint.groupType"></span>
+      <button class="filter-btn" data-group="type" data-value="maintenance" data-s="maint.filterMaintenance"></button>
+      <button class="filter-btn" data-group="type" data-value="sauma" data-s="maint.filterSauma"></button>
     </div>
     <div class="filter-group">
-      <span class="filter-group-label">CATEGORY</span>
-      <button class="filter-btn" data-group="category" data-value="boat">Boats</button>
-      <button class="filter-btn" data-group="category" data-value="equipment">Equipment</button>
-      <button class="filter-btn" data-group="category" data-value="facility">Facility</button>
+      <span class="filter-group-label" data-s="maint.groupCategory"></span>
+      <button class="filter-btn" data-group="category" data-value="boat" data-s="maint.filterCatBoat"></button>
+      <button class="filter-btn" data-group="category" data-value="equipment" data-s="maint.filterCatEquipment"></button>
+      <button class="filter-btn" data-group="category" data-value="facility" data-s="maint.filterCatFacility"></button>
     </div>
     <div class="filter-group">
-      <span class="filter-group-label">SEVERITY</span>
-      <button class="filter-btn" data-group="severity" data-value="critical">Critical</button>
-      <button class="filter-btn" data-group="severity" data-value="high">High</button>
-      <button class="filter-btn" data-group="severity" data-value="medium">Medium</button>
-      <button class="filter-btn" data-group="severity" data-value="low">Low</button>
+      <span class="filter-group-label" data-s="maint.groupSeverity"></span>
+      <button class="filter-btn" data-group="severity" data-value="critical" data-s="maint.filterCritical"></button>
+      <button class="filter-btn" data-group="severity" data-value="high" data-s="maint.filterHigh"></button>
+      <button class="filter-btn" data-group="severity" data-value="medium" data-s="maint.filterMedium"></button>
+      <button class="filter-btn" data-group="severity" data-value="low" data-s="maint.filterLow"></button>
     </div>
     <div class="filter-group">
-      <span class="filter-group-label">SAUMAKLÚBBUR</span>
-      <button class="filter-btn" data-group="sauma" data-value="unassigned">Unassigned</button>
-      <button class="filter-btn" data-group="sauma" data-value="myprojects">My Projects</button>
-      <button class="filter-btn" data-group="sauma" data-value="pending">Pending Review</button>
+      <span class="filter-group-label" data-s="maint.groupSauma"></span>
+      <button class="filter-btn" data-group="sauma" data-value="unassigned" data-s="maint.filterUnassigned"></button>
+      <button class="filter-btn" data-group="sauma" data-value="myprojects" data-s="maint.filterMyProjects"></button>
+      <button class="filter-btn" data-group="sauma" data-value="pending" data-s="maint.filterPending"></button>
     </div>
   </div>
 
@@ -201,69 +201,69 @@
 <div class="modal-overlay hidden" id="newModal" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modalTitle">🔧 New Maintenance Request</h3>
+      <h3 id="modalTitle" data-s="maint.newTitle"></h3>
       <button class="modal-close-x" onclick="closeNewModal()">&times;</button>
     </div>
 
     <div class="field">
-      <label>Category</label>
+      <label data-s="maint.category"></label>
       <div class="cat-btns">
-        <button class="cat-btn" data-cat="boat"      onclick="selectCat('boat')">⛵ Boat</button>
-        <button class="cat-btn" data-cat="equipment" onclick="selectCat('equipment')">🦺 Equipment</button>
-        <button class="cat-btn" data-cat="facility"  onclick="selectCat('facility')">🏠 Facility</button>
+        <button class="cat-btn" data-cat="boat"      onclick="selectCat('boat')" data-s="maint.catBoat"></button>
+        <button class="cat-btn" data-cat="equipment" onclick="selectCat('equipment')" data-s="maint.catEquipment"></button>
+        <button class="cat-btn" data-cat="facility"  onclick="selectCat('facility')" data-s="maint.catFacility"></button>
       </div>
     </div>
 
     <div class="field hidden" id="boatField">
-      <label>Boat</label>
-      <select id="newBoat"><option value="">Select boat…</option></select>
+      <label data-s="maint.boatLabel"></label>
+      <select id="newBoat"><option value="" data-s="maint.selectBoatPh"></option></select>
       <div id="oosField">
-        <label class="mt-8">Mark boat Out of Service?</label>
+        <label class="mt-8" data-s="maint.markOosLabel"></label>
         <div class="flex-center gap-8" style="margin-top:4px">
           <input type="checkbox" id="newOos" class="accent-checkbox" style="accent-color:var(--red)">
-          <span class="text-md text-muted">Take this boat OOS until repaired</span>
+          <span class="text-md text-muted" data-s="maint.markOosHint"></span>
         </div>
       </div>
     </div>
 
     <div class="field">
-      <label>Location / part</label>
-      <input type="text" id="newPart" placeholder="e.g. Hull, mast, clubhouse roof…">
+      <label data-s="maint.part"></label>
+      <input type="text" id="newPart" data-s="maint.partPh" data-s-attr="placeholder">
     </div>
 
     <div class="field" id="sevField">
-      <label id="sevLabel">Severity</label>
+      <label id="sevLabel" data-s="maint.severity"></label>
       <div class="sev-btns">
-        <button class="sev-btn" data-sev="low"      onclick="selectSev('low')">LOW</button>
-        <button class="sev-btn" data-sev="medium"   onclick="selectSev('medium')">MEDIUM</button>
-        <button class="sev-btn" data-sev="high"     onclick="selectSev('high')">HIGH</button>
-        <button class="sev-btn" data-sev="critical" onclick="selectSev('critical')">CRITICAL</button>
+        <button class="sev-btn" data-sev="low"      onclick="selectSev('low')" data-s="maint.sevLow"></button>
+        <button class="sev-btn" data-sev="medium"   onclick="selectSev('medium')" data-s="maint.sevMedium"></button>
+        <button class="sev-btn" data-sev="high"     onclick="selectSev('high')" data-s="maint.sevHigh"></button>
+        <button class="sev-btn" data-sev="critical" onclick="selectSev('critical')" data-s="maint.sevCritical"></button>
       </div>
       <div id="sevHint" class="text-sm text-muted mb-6"></div>
     </div>
 
     <div class="field">
-      <label>Description</label>
-      <textarea id="newDesc" rows="3" placeholder="Describe the issue…"></textarea>
+      <label data-s="maint.description"></label>
+      <textarea id="newDesc" rows="3" data-s="maint.descPh" data-s-attr="placeholder"></textarea>
     </div>
 
     <div class="field hidden" id="materialsField">
-      <label data-s="sauma.materials">Materials Needed</label>
+      <label data-s="sauma.materials"></label>
       <div id="materialsList"></div>
       <div class="flex-center gap-6 mt-8">
-        <input type="text" id="newMaterialInput" placeholder="e.g. Sandpaper 120-grit…" class="flex-1">
-        <button type="button" class="btn-ghost-sm" onclick="addMaterialToList()">+ Add</button>
+        <input type="text" id="newMaterialInput" data-s="maint.materialPh" data-s-attr="placeholder" class="flex-1">
+        <button type="button" class="btn-ghost-sm" onclick="addMaterialToList()" data-s="btn.add"></button>
       </div>
     </div>
 
     <div class="field hidden" id="verkstjoriField">
-      <label data-s="sauma.verkstjori">Verkstjóri (Project Lead)</label>
-      <input type="text" id="newVerkstjori" placeholder="Name or leave blank…">
-      <span class="text-sm text-muted" data-s="sauma.verkstjoriHint">If left blank, any member can adopt this project.</span>
+      <label data-s="maint.verkstjoriLabel"></label>
+      <input type="text" id="newVerkstjori" data-s="maint.verkstjoriPh" data-s-attr="placeholder">
+      <span class="text-sm text-muted" data-s="sauma.verkstjoriHint"></span>
     </div>
 
     <div class="field" id="photoField">
-      <label>Photo (optional, max 5 MB)</label>
+      <label data-s="maint.photoLabel"></label>
       <input type="file" id="newPhoto" accept="image/*" onchange="handlePhotoChange(this)"
         class="text-md text-muted">
       <img id="photoPreview" class="photo-preview" alt="preview">
@@ -274,8 +274,8 @@
 
     <div id="newErr" class="msg msg-err hidden mb-10"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeNewModal()">Cancel</button>
-      <button class="btn btn-primary"   id="submitBtn" onclick="submitRequest()">Submit</button>
+      <button class="btn btn-secondary" onclick="closeNewModal()" data-s="btn.cancel"></button>
+      <button class="btn btn-primary"   id="submitBtn" onclick="submitRequest()" data-s="btn.submit"></button>
     </div>
   </div>
 </div>
@@ -575,8 +575,8 @@ function openNewRequest(prefill) {
   // Two-mode modal
   document.getElementById("newSaumaklubbur").value = isSaumaMode ? "true" : "false";
   document.getElementById("modalTitle").textContent = isSaumaMode
-    ? '🧵 New sewing circle project' : '🔧 New Maintenance Request';
-  document.getElementById("sevLabel").textContent = isSaumaMode ? 'Priority' : 'Severity';
+    ? s('sauma.suggestTitle') : s('maint.newTitle');
+  document.getElementById("sevLabel").textContent = isSaumaMode ? s('maint.priority') : s('maint.severity');
   document.querySelector('.sev-btn[data-sev="critical"]').classList.toggle("hidden", isSaumaMode);
   document.getElementById("oosField").classList.toggle("hidden", isSaumaMode);
   document.getElementById("verkstjoriField").classList.toggle("hidden", !isSaumaMode);
