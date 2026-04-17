@@ -204,22 +204,22 @@
   <div class="cq-section" id="sectLogbook">
     <div class="cq-section-hdr">LOGBOOK</div>
     <div class="filter-bar">
-      <select id="fYear"><option value="">All years</option></select>
-      <select id="fCat"><option value="">All categories</option></select>
-      <select id="fBoatName"><option value="">All boats</option></select>
-      <select id="fCaptain"><option value="">All captains</option></select>
-      <select id="fMember"><option value="">All members</option></select>
+      <select id="fYear"><option value="" data-s="logbook.filterAllYears"></option></select>
+      <select id="fCat"><option value="" data-s="cq.allCategories"></option></select>
+      <select id="fBoatName"><option value="" data-s="logbook.filterAllBoats"></option></select>
+      <select id="fCaptain"><option value="" data-s="cq.allCaptains"></option></select>
+      <select id="fMember"><option value="" data-s="cq.allMembers"></option></select>
       <select id="fWind">
-        <option value="">Any wind</option>
-        <option value="calm">Calm (Force 0–2)</option>
-        <option value="light">Light (Force 3–4)</option>
-        <option value="moderate">Moderate (Force 5–6)</option>
-        <option value="strong">Strong (Force 7+)</option>
-        <option value="gt4">Above Force 4</option>
-        <option value="lte4">Force 4 or under</option>
+        <option value="" data-s="logbook.filterAnyWind"></option>
+        <option value="calm" data-s="logbook.filterWindCalm"></option>
+        <option value="light" data-s="logbook.filterWindLight"></option>
+        <option value="moderate" data-s="logbook.filterWindModerate"></option>
+        <option value="strong" data-s="logbook.filterWindStrong"></option>
+        <option value="gt4" data-s="logbook.filterWindGt4"></option>
+        <option value="lte4" data-s="logbook.filterWindLte4"></option>
       </select>
       <div class="filter-search-row">
-        <input id="fText" type="text" placeholder="Search…">
+        <input id="fText" type="text" data-s="logbook.searchPh" data-s-attr="placeholder">
         <span class="filter-count" id="filterCount"></span>
       </div>
     </div>

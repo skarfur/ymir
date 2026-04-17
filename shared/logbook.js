@@ -56,11 +56,12 @@ function tripCard(t){
   // Expanded wx cells — order: wind speed, direction, gusts, conditions, air temp, feels like, sea temp, wave height, pressure
   const _expWind = formatWindValue(wx?.ws, _beaufort, _windUnit);
   const _wsNum = wx?.ws != null ? parseWsValue(wx.ws) : null;
-  const _expExtra = _wsNum!=null && _windUnit!=='bft' ? ' · Force '+(wx.bft!=null?wx.bft:bftFromMs(_wsNum)) : (_windUnit==='bft' && _beaufort ? ' <small class="text-muted">'+bftLabel(_beaufort)+'</small>' : '');
+  const _expExtra = _wsNum!=null && _windUnit!=='bft' ? ' · '+s('wx.force')+' '+(wx.bft!=null?wx.bft:bftFromMs(_wsNum)) : (_windUnit==='bft' && _beaufort ? ' <small class="text-muted">'+bftLabel(_beaufort)+'</small>' : '');
   const eWs = _expWind ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.windSpeed')}</span><span class="trip-exp-val">${esc(_expWind)}${_expExtra}</span></div>` : '';
   const eDir  = (wx?.dir||_windDir) ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.direction')}</span><span class="trip-exp-val">${dirArrow(wx?.dir||_windDir)} ${esc(wx?.dir||_windDir)}</span></div>` : '';
-  const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.gusts')}</span><span class="trip-exp-val">${_windUnit==='bft'?'Force '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
-  const eCond = wx?.cond?.desc ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.conditions')}</span><span class="trip-exp-val">${wx.cond.icon||''} ${esc(wx.cond.desc)}</span></div>` : '';
+  const eGust = wx?.wg!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.gusts')}</span><span class="trip-exp-val">${_windUnit==='bft'?s('wx.force')+' '+bftFromMs(wx.wg):convertWind(wx.wg,_windUnit)+' '+windUnitLabel(_windUnit)}</span></div>` : '';
+  const _condDesc = wx?.cond?.code != null ? wxCondDesc(wx.cond.code) : (wx?.cond?.desc || '');
+  const eCond = _condDesc ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.conditions')}</span><span class="trip-exp-val">${wx?.cond?.icon||''} ${esc(_condDesc)}</span></div>` : '';
   const eAir  = wx?.tc!=null   ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.airTemp')}</span><span class="trip-exp-val">${Math.round(wx.tc)}°C</span></div>` : '';
   const eFeel = wx?.feels!=null ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.feelsLike')}</span><span class="trip-exp-val">${Math.round(wx.feels)}°C</span></div>` : '';
   const eSst  = wx?.sst!=null  ? `<div class="trip-exp-row"><span class="trip-exp-lbl">${s('tc.seaTemp')}</span><span class="trip-exp-val">${wx.sst.toFixed(1)}°C</span></div>` : '';

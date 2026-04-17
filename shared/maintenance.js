@@ -197,7 +197,7 @@ function maintOpenDetail(r, currentUser) {
       ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="badge" style="background:var(--brass)22;color:var(--brass-fg);border:1px solid var(--brass)44">🧵 ${s('maint.saumaBadge')}</span>
         ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
-        ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
+        ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">${s('maint.verkstjoriPrefix')} <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
         ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.adoptProject')}</button>` : ''}
         ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</button>` : ''}
       </div>` : ''}
@@ -213,7 +213,7 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-add" style="margin-top:12px">
         <div style="display:flex;gap:6px;align-items:center">
           <input id="mdCommentInput" type="text" placeholder="${s('maint.addCommentPh')}" style="flex:1">
-          <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="Attach photo">📷
+          <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="${s('maint.attachPhoto')}">📷
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
           <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">${s('maint.postBtn')}</button>
@@ -227,7 +227,7 @@ function maintOpenDetail(r, currentUser) {
         ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
         <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px${isSauma && boolVal(r.approved) ? '' : ';margin-left:auto'}">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
       </div>`
-      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">✓ ${isSauma ? s('maint.completedStatus') : s('maint.resolvedStatus')} ${sstr(r.resolvedAt).slice(0,10)} by ${esc(r.resolvedBy||'')}</div>`}
+      : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>`}
     `;
 
     // Severity dropdown toggle
@@ -469,7 +469,7 @@ function maintOpenDetail(r, currentUser) {
         try {
           await apiPost('deleteMaintenance',{id:r.id});
         } catch(e) {
-          if(typeof ymAlert==='function') ymAlert('Error: '+e.message);
+          if(typeof ymAlert==='function') ymAlert(s('logbook.errGeneric', { msg: e.message }));
           return;
         }
         // Remove from any in-memory lists the page is using
@@ -537,7 +537,7 @@ function maintRenderCard(r) {
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
-          ${isSauma && r.verkstjori ? `<span style="color:var(--brass-fg)">Verkstjóri: ${esc(r.verkstjori)}</span>` : ''}
+          ${isSauma && r.verkstjori ? `<span style="color:var(--brass-fg)">${s('maint.verkstjoriPrefix')} ${esc(r.verkstjori)}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>` : ''}
           ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
@@ -548,7 +548,7 @@ function maintRenderCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
-    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">✓ ${isSauma ? s('maint.completedStatus') : s('maint.resolvedStatus')} ${sstr(r.resolvedAt).slice(0,10)} by ${esc(r.resolvedBy||'')}</div>` : ''}
+    ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>` : ''}
   </div>`;
 }
 
@@ -586,8 +586,8 @@ async function maintResolve(id) {
     }
     if (typeof renderStats === "function") renderStats();
     if (typeof renderList  === "function") renderList();
-    toast("✓ Resolved.");
-  } catch(e) { ymAlert("Error: " + e.message); }
+    toast(s('maint.resolvedToast'));
+  } catch(e) { ymAlert(s('logbook.errGeneric', { msg: e.message })); }
 }
 
 /**
@@ -608,8 +608,8 @@ async function maintAddComment(id) {
       r.comments = JSON.stringify(comments);
     }
     if (typeof renderList === "function") renderList();
-    toast("Comment added.");
-  } catch(e) { ymAlert("Error: " + e.message); }
+    toast(s('maint.commentAdded'));
+  } catch(e) { ymAlert(s('logbook.errGeneric', { msg: e.message })); }
 }
 
 /**
@@ -629,7 +629,7 @@ async function maintResolveRow(id, checked) {
     } catch(e) {
       item._done = false;
       if (typeof renderDlMaintenance === "function") renderDlMaintenance();
-      ymAlert("Could not resolve: " + e.message);
+      ymAlert(s('logbook.errGeneric', { msg: e.message }));
     }
   }
 }

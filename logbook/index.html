@@ -217,33 +217,33 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 
   <!-- Credentials -->
   <div class="section-hdr"><span data-s="member.tabCerts"></span></div>
-  <div id="certsList"><div class="empty-note">Loading…</div></div>
+  <div id="certsList"><div class="empty-note" data-s="logbook.loading"></div></div>
 
   <!-- Logbook header -->
   <div class="section-hdr" style="margin-top:24px">
-    <span>Logbook</span>
+    <span data-s="logbook.sectTitle"></span>
   </div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
-    <select id="fYear"><option value="">All years</option></select>
-    <select id="fCat"><option value="">All boats</option></select>
-    <select id="fRole"><option value="">Any role</option><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+    <select id="fYear"><option value="" data-s="logbook.filterAllYears"></option></select>
+    <select id="fCat"><option value="" data-s="logbook.filterAllBoats"></option></select>
+    <select id="fRole"><option value="" data-s="logbook.filterAnyRole"></option><option value="skipper" data-s="logbook.filterRoleSkipper"></option><option value="crew" data-s="logbook.filterRoleCrew"></option></select>
     <select id="fWind">
-      <option value="">Any wind</option>
-      <option value="calm">Calm (Force 0–2)</option>
-      <option value="light">Light (Force 3–4)</option>
-      <option value="moderate">Moderate (Force 5–6)</option>
-      <option value="strong">Strong (Force 7+)</option>
-      <option value="gt4">Above Force 4</option>
-      <option value="lte4">Force 4 or under</option>
+      <option value="" data-s="logbook.filterAnyWind"></option>
+      <option value="calm" data-s="logbook.filterWindCalm"></option>
+      <option value="light" data-s="logbook.filterWindLight"></option>
+      <option value="moderate" data-s="logbook.filterWindModerate"></option>
+      <option value="strong" data-s="logbook.filterWindStrong"></option>
+      <option value="gt4" data-s="logbook.filterWindGt4"></option>
+      <option value="lte4" data-s="logbook.filterWindLte4"></option>
     </select>
     <div class="filter-search-row">
-      <input id="fText" type="text" placeholder="Search…">
+      <input id="fText" type="text" data-s="logbook.searchPh" data-s-attr="placeholder">
       <span class="filter-count" id="filterCount"></span>
     </div>
   </div>
-  <div id="tripList"><div class="empty-note">Loading…</div></div>
+  <div id="tripList"><div class="empty-note" data-s="logbook.loading"></div></div>
 </div>
 
 <!-- Lightbox overlay -->
@@ -315,7 +315,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- Skipper assignment: shown when role=crew -->
       <div class="form-field" id="mSkipperSection" style="display:none;position:relative">
         <label>Skipper</label>
-        <input type="text" id="mSkipperName" autocomplete="off" placeholder="Search by name…"
+        <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
           oninput="searchManualMember(this,'mSkipperDrop')" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
@@ -522,7 +522,8 @@ function parseDateParts(d){
 }
 function bftLabel(b){
   const n=parseInt(b);
-  return['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n]||'Force '+b;
+  if (!isNaN(n) && n>=0 && n<=12) return s('wx.bft'+n);
+  return s('wx.force')+' '+b;
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
