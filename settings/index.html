@@ -164,6 +164,15 @@
     <div id="sessionMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
   </div>
 
+  <!-- Logbook page -->
+  <div class="settings-section">
+    <div class="settings-section-title" data-s="settings.logbookPage"></div>
+    <div class="pill-grid">
+      <label class="pill-toggle"><input type="checkbox" id="svShowHeatmap"><span data-s="settings.showHeatmap"></span></label>
+    </div>
+    <div class="settings-hint" data-s="settings.showHeatmapHint"></div>
+  </div>
+
   <!-- Stats visibility -->
   <div class="settings-section">
     <div class="settings-section-title" data-s="settings.stats"></div>
@@ -250,6 +259,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   var sv = prefs.statsVisibility || {};
   applyStatVis(sv);
 
+  // Logbook page preferences
+  var showHeatmap = prefs.showHeatmap !== false;
+  var shm = document.getElementById('svShowHeatmap');
+  shm.checked = showHeatmap;
+  shm.closest('.pill-toggle').classList.toggle('active', showHeatmap);
+
   // Sign-in preferences
   setToggle('usernameStyleToggle', prefs.usernameStyle || 'kt');
   var stay = document.getElementById('svStayLoggedIn');
@@ -306,6 +321,10 @@ document.addEventListener('DOMContentLoaded', async function() {
           applyStatVis(serverPrefs.statsVisibility);
         }
         if (serverPrefs.usernameStyle) setToggle('usernameStyleToggle', serverPrefs.usernameStyle);
+        var serverShowHeatmap = serverPrefs.showHeatmap !== false;
+        var shm2 = document.getElementById('svShowHeatmap');
+        shm2.checked = serverShowHeatmap;
+        shm2.closest('.pill-toggle').classList.toggle('active', serverShowHeatmap);
       }
       var spv = document.getElementById('svSharePhoneVol');
       spv.checked = serverPrefs.sharePhoneVolunteer === true;
@@ -586,6 +605,7 @@ async function saveSettings() {
   var sharePhoneVolunteer = document.getElementById('svSharePhoneVol').checked;
   var usernameStyle       = getToggle('usernameStyleToggle') || 'kt';
   var stayLoggedIn        = document.getElementById('svStayLoggedIn').checked;
+  var showHeatmap         = document.getElementById('svShowHeatmap').checked;
 
   // "Stay logged in" is a per-device flag, not synced to the server, so the
   // user can enable it on their phone but stay one-shot on a shared laptop.
@@ -594,6 +614,7 @@ async function saveSettings() {
   var prefs = {
     windUnit: windUnit, theme: theme, statsVisibility: statsVisibility,
     sharePhoneVolunteer: sharePhoneVolunteer, usernameStyle: usernameStyle,
+    showHeatmap: showHeatmap,
   };
   var langChanged = lang !== getLang();
 
