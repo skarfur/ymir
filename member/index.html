@@ -1578,9 +1578,9 @@ function _renderMemberStaffStatus() {
   const onDuty = _staffStatus.onDuty;
   const boat   = _staffStatus.supportBoat;
   const dutyCol  = onDuty ? 'var(--blue)' : 'var(--orange)';
-  const boatCol  = boat   ? 'var(--navy)' : 'var(--muted)';
+  const boatCol  = boat   ? 'var(--blue)' : 'var(--orange)';
   const dutyBg   = onDuty ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
-  const boatBg   = boat   ? 'color-mix(in srgb, var(--navy) 10%, transparent);border-color:color-mix(in srgb, var(--navy) 27%, transparent)' : 'var(--surface);border-color:var(--border)';
+  const boatBg   = boat   ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
   el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px">'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + dutyBg + ';color:' + dutyCol + '">'
     + '🧑 ' + s('wx.staffOnDuty') + '</span>'
