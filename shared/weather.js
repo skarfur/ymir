@@ -535,15 +535,15 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
               <span style="font-size:12px;color:var(--muted);margin-left:2px">m/s</span>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:5px">
-              <b style="color:var(--text)">${wDir}</b> · <b style="color:var(--text)">${wxMsToKt(ws)}</b> kt · ${s('wx.force')} <b style="color:var(--text)">${bft}</b>
+              <b style="color:var(--navy-l)">${wDir}</b> · <b style="color:var(--navy-l)">${wxMsToKt(ws)}</b> kt · ${s('wx.force')} <b style="color:var(--navy-l)">${bft}</b>
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px">
-              ${s('wx.gusts')} <b style="color:var(--text)">${Math.round(wg)} m/s</b> · <b style="color:var(--text)">${wxMsToKt(wg)}</b> kt · ${wxBftDesc(bft)}
+              ${s('wx.gusts')} <b style="color:var(--navy-l)">${Math.round(wg)} m/s</b> · <b style="color:var(--navy-l)">${wxMsToKt(wg)}</b> kt · ${wxBftDesc(bft)}
             </div>
           </div>
           <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.airTemp')}</div>
-            <div style="font-size:28px;font-weight:500;color:var(--text);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</div>
+            <div style="font-size:28px;font-weight:500;color:var(--brass-fg);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? s('wx.feelsLike', { t: Math.round(c.apparent_temperature) }) : ''}</div>
           </div>
           <div class="wx-cell">
@@ -563,7 +563,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
           <div class="wx-cell" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">${s('wx.pressure')}</div>
-            <div style="font-size:17px;color:var(--text)">${pres != null ? Math.round(pres) : ''}</div>
+            <div style="font-size:17px;color:var(--navy-l)">${pres != null ? Math.round(pres) : ''}</div>
             <div style="font-size:10px;color:${wxPressureTrendColor(trend)}">${wxPressureTrendIcon(trend)} ${s('wx.pressure' + trend[0].toUpperCase() + trend.slice(1))}</div>
           </div>
         </div>
