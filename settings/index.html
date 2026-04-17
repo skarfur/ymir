@@ -78,7 +78,7 @@
   </div>
 
   <!-- Wind units -->
-  <div class="settings-section">
+  <div class="settings-section" data-member-only>
     <div class="settings-section-title" data-s="settings.windUnit"></div>
     <div class="settings-row">
       <select id="sWindUnit">
@@ -105,7 +105,7 @@
   </div>
 
   <!-- Privacy -->
-  <div class="settings-section">
+  <div class="settings-section" data-member-only>
     <div class="settings-section-title" data-s="settings.privacy"></div>
     <div class="pill-grid">
       <label class="pill-toggle"><input type="checkbox" id="svSharePhoneVol"><span data-s="settings.sharePhoneVol"></span></label>
@@ -174,7 +174,7 @@
   </div>
 
   <!-- Stats visibility -->
-  <div class="settings-section">
+  <div class="settings-section" data-member-only>
     <div class="settings-section-title" data-s="settings.stats"></div>
     <div class="settings-hint mb-10" style="margin-top:0" data-s="settings.statsHint"></div>
 
@@ -236,6 +236,14 @@ var _autoInitials = '';
 document.addEventListener('DOMContentLoaded', async function() {
   buildHeader('settings');
   applyStrings();
+
+  // Guardians don't sail, so hide the sailing-centric sections. They keep the
+  // login, sign-in activity, language, and theme controls.
+  if (typeof isGuardian === 'function' && isGuardian(user)) {
+    document.querySelectorAll('[data-member-only]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+  }
 
   // Load current prefs from localStorage
   var prefs = getPrefs();
@@ -370,7 +378,8 @@ function goBack() {
   if (document.referrer && document.referrer.indexOf(location.origin) === 0) {
     history.back();
   } else {
-    location.href = '../member/';
+    location.href = (typeof isGuardian === 'function' && isGuardian(user))
+      ? '../guardian/' : '../member/';
   }
 }
 
@@ -639,7 +648,8 @@ async function saveSettings() {
 
     // If language changed, reload the target page to apply
     if (langChanged) {
-      location.href = '../member/';
+      location.href = (typeof isGuardian === 'function' && isGuardian(user))
+        ? '../guardian/' : '../member/';
     } else {
       goBack();
     }
