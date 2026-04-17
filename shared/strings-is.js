@@ -959,7 +959,7 @@ var _STRINGS_FLAT = {
   "cq.resEndDate": "Lokadagur",
   "cq.resNote": "Athugasemd (valfrjálst)",
   "cq.resMember": "Meðlimur",
-  "tc.skipper": "Skipari",
+  "tc.skipper": "Skipstjóri",
   "tc.crew": "Áhöfn",
   "tc.helm": "Stýri",
   "tc.student": "Nemi",
