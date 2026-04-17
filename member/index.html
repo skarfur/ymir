@@ -23,12 +23,12 @@
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
   flex:1 1 140px; min-width:110px; min-height:56px;
-  background:var(--surface); border:1px solid var(--border);
+  background:var(--brass)12; border:1px solid var(--brass);
   border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
-  font-size:13px; color:var(--text); text-align:center; text-decoration:none;
+  font-size:13px; font-weight:600; color:var(--brass-fg); text-align:center; text-decoration:none;
   display:inline-flex; align-items:center; justify-content:center; gap:10px;
   line-height:1.25; box-shadow:var(--shadow-sm);
-  transition:border-color .15s, background-color .15s, transform .15s, box-shadow .15s;
+  transition:background-color .15s, transform .15s, box-shadow .15s;
 }
 .member-actions .act-btn::before {
   content:''; display:inline-block; width:16px; height:16px; flex-shrink:0;
@@ -38,7 +38,7 @@
   -webkit-mask-position:center; mask-position:center;
 }
 .member-actions .act-btn:hover {
-  border-color:var(--brass); background:var(--card);
+  background:var(--brass)22;
   transform:translateY(-1px); box-shadow:var(--shadow-md);
 }
 /* Per-button monochrome SVG glyphs (rendered in --brass via mask-image) */
