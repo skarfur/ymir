@@ -734,6 +734,8 @@ function getTrackLines() {
 }
 
 async function initMemberHeatmap() {
+  if (getPref('showHeatmap', true) === false) return;
+
   const locData = buildLocStats();
   const trackPts = getAllTrackPoints();
   if (!locData.length && !trackPts.length) return;
