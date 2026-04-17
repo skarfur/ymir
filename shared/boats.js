@@ -329,7 +329,7 @@ function renderBoatCard(boat, opts) {
   // Badge
   const badgeMap = {
     avail:   { text:s("fleet.badgeAvail"),   style:"color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)" },
-    out:     { text:s("fleet.badgeOut"),      style:"color:var(--brass);border-color:var(--brass)55;background:var(--brass)11" },
+    out:     { text:s("fleet.badgeOut"),      style:"color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11" },
     overdue: { text:s("fleet.badgeOverdue"),  style:"color:var(--red);border-color:var(--red)55;background:var(--red)11" },
     oos:     { text:s("fleet.badgeOos"),      style:"color:var(--muted);border-color:var(--border);background:var(--surface)" },
   };
@@ -363,11 +363,11 @@ function renderBoatCard(boat, opts) {
   const userCanAccess = curUser ? canAccessBoat(boat, curUser) : true;
   let ownerLine = "";
   if (priv && boat.ownerName) {
-    ownerLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">${_besc(s("fleet.ownedBy",{name:boat.ownerName}))}</div>`;
+    ownerLine = `<div style="font-size:10px;color:var(--brass-fg);margin-top:4px">${_besc(s("fleet.ownedBy",{name:boat.ownerName}))}</div>`;
   }
   let charterLine = "";
   if (activeRes) {
-    charterLine = `<div style="font-size:10px;color:var(--brass);margin-top:4px">`
+    charterLine = `<div style="font-size:10px;color:var(--brass-fg);margin-top:4px">`
                 + `${_besc(s("boat.reservedFor",{name:activeRes.memberName}))} ${_besc(s("boat.reservedUntil",{date:activeRes.endDate}))}`
                 + `</div>`;
   }
@@ -385,7 +385,7 @@ function renderBoatCard(boat, opts) {
   if (controlled && !userCanAccess && !opts.staffView) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11;margin-left:4px">${_besc(s("fleet.badgeRestricted"))}</span>`;
   } else if (activeRes) {
-    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
+    ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11;margin-left:4px">${_besc(s("fleet.badgeChartered"))}</span>`;
   } else if (controlled && userCanAccess && !opts.staffView) {
     ownerBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent);margin-left:4px">${_besc(s("fleet.badgeAuthorized"))}</span>`;
   } else if (priv) {
@@ -450,7 +450,7 @@ function renderCheckoutCard(co, opts) {
   if (!staffView) {
     if      (overdue) topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">${_besc(s("fleet.badgeOverdue"))}</span>`;
     else if (isMe)    topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)">${_besc(s("fleet.badgeYours"))}</span>`;
-    else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass);border-color:var(--brass)55;background:var(--brass)11">${_besc(s("fleet.badgeOut"))}</span>`;
+    else              topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11">${_besc(s("fleet.badgeOut"))}</span>`;
   } else if (overdue) {
     topBadge = `<span style="font-size:9px;letter-spacing:.8px;padding:2px 7px;border-radius:10px;border:1px solid;color:var(--red);border-color:var(--red)55;background:var(--red)11">⚠️ ${_besc(s("fleet.badgeOverdue"))}</span>`;
   }
@@ -479,11 +479,11 @@ function renderCheckoutCard(co, opts) {
     if (isMinor && co.guardianName) {
       contactHtml = `<div style="font-size:11px;color:var(--muted);background:var(--card);border:1px solid var(--brass)44;border-radius:6px;padding:7px 10px;margin-top:8px;display:flex;align-items:center;gap:8px">`
                   + `<span>· Minor — guardian: <strong style="color:var(--text)">${_besc(co.guardianName)}</strong></span>`
-                  + `${co.guardianPhone?`<a href="tel:${_besc(co.guardianPhone)}" style="color:var(--brass);text-decoration:none">${_besc(co.guardianPhone)}</a>`:""}`
+                  + `${co.guardianPhone?`<a href="tel:${_besc(co.guardianPhone)}" style="color:var(--brass-fg);text-decoration:none">${_besc(co.guardianPhone)}</a>`:""}`
                   + `</div>`;
     } else if (co.memberPhone) {
       contactHtml = `<div style="font-size:11px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-top:8px;display:flex;align-items:center;gap:8px">`
-                  + `<span>=</span><a href="tel:${_besc(co.memberPhone)}" style="color:var(--brass);text-decoration:none">${_besc(co.memberPhone)}</a>`
+                  + `<span>=</span><a href="tel:${_besc(co.memberPhone)}" style="color:var(--brass-fg);text-decoration:none">${_besc(co.memberPhone)}</a>`
                   + `</div>`;
     }
   }

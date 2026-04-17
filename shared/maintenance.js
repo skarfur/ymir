@@ -65,7 +65,7 @@ function maintRenderCardCompact(r) {
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
     ? '<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">'+s('maint.oosTag')+'</span>' : '';
   const saumaTag = boolVal(r.saumaklubbur)
-    ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
+    ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass-fg);border:1px solid var(--brass)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
   const subject = r.category==='boat' ? esc(r.boatName||r.boatId||'') : '';
   const part = esc(r.part||'');
   const fallback = (!subject && !part) ? esc(maintTitleFallback_(r)) : '';
@@ -169,7 +169,7 @@ function maintOpenDetail(r, currentUser) {
     // Materials list for saumaklúbbur projects
     const materialsHtml = isSauma ? `
       <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--brass);letter-spacing:1px;margin-bottom:6px">${s('maint.materials')}</div>
+        <div style="font-size:10px;color:var(--brass-fg);letter-spacing:1px;margin-bottom:6px">${s('maint.materials')}</div>
         ${materials.map((m,i)=>`
           <div class="mat-row" data-midx="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)33">
             <input type="checkbox" ${m.purchased?'checked':''} style="width:15px;height:15px;accent-color:var(--green);cursor:pointer" data-matidx="${i}">
@@ -195,7 +195,7 @@ function maintOpenDetail(r, currentUser) {
         ${oosBtn}
       </div>
       ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="badge" style="background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44">🧵 ${s('maint.saumaBadge')}</span>
+        <span class="badge" style="background:var(--brass)22;color:var(--brass-fg);border:1px solid var(--brass)44">🧵 ${s('maint.saumaBadge')}</span>
         ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">Verkstjóri: <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
         ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.adoptProject')}</button>` : ''}
@@ -220,7 +220,7 @@ function maintOpenDetail(r, currentUser) {
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
-      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
+      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass-fg)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:var(--red)">${s('maint.deleteBtn')}</button>
         ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${s('btn.edit')}</button>` : ''}
@@ -516,7 +516,7 @@ function maintRenderCard(r) {
     ? esc(r.boatName||r.boatId||'')
     : '';
   const oosTag = isOos ? '<span class="oos-badge">'+s('maint.oosTag')+'</span>' : '';
-  const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass);border:1px solid var(--brass)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
+  const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--brass)22;color:var(--brass-fg);border:1px solid var(--brass)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
 
   const comments = parseJson(r.comments, []);
   const materials = isSauma ? parseJson(r.materials, []) : [];
@@ -537,7 +537,7 @@ function maintRenderCard(r) {
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
-          ${isSauma && r.verkstjori ? `<span style="color:var(--brass)">Verkstjóri: ${esc(r.verkstjori)}</span>` : ''}
+          ${isSauma && r.verkstjori ? `<span style="color:var(--brass-fg)">Verkstjóri: ${esc(r.verkstjori)}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>` : ''}
           ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}

@@ -19,7 +19,7 @@
 /* ── Stats ── */
 .cx-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
 .cx-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
-.cx-stat .sn { font-size:24px; color:var(--brass); font-weight:500; }
+.cx-stat .sn { font-size:24px; color:var(--brass-fg); font-weight:500; }
 .cx-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
 /* ── Tab bar ── */
@@ -27,7 +27,7 @@
 .cx-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
   font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
   white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
-.cx-tab-btn.active { color:var(--brass); border-bottom-color:var(--brass); }
+.cx-tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
 .cx-tab-btn:hover:not(.active) { color:var(--text); }
 
 /* ── Section headers ── */
@@ -47,7 +47,7 @@
 .cx-boat-actions { margin-left:auto; display:flex; gap:6px; }
 .cx-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
   cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
-.cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
+.cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
 
 /* ── Read-only banner ── */
 .cx-readonly { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border);
@@ -62,7 +62,7 @@
 .cb-count { font-size:10px; color:var(--muted); }
 .cb-badge { font-size:8px; padding:2px 6px; border-radius:10px; font-weight:500; }
 .cb-badge--active { background:var(--green)22; color:var(--green); border:1px solid var(--green)44; }
-.cb-badge--forming { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
+.cb-badge--forming { background:var(--brass)22; color:var(--brass-fg); border:1px solid var(--brass)44; }
 .cb-desc { font-size:11px; color:var(--muted); margin-bottom:8px; font-style:italic; }
 .cb-boats { display:flex; gap:8px; flex-wrap:wrap; }
 .cb-boat { min-width:70px; flex:1; }
@@ -72,26 +72,26 @@
 .cb-seat:first-of-type { border-radius:6px 6px 0 0; border-bottom:none; }
 .cb-seat:last-of-type { border-radius:0 0 6px 6px; }
 .cb-seat--filled { background:var(--surface); color:var(--text); cursor:pointer; }
-.cb-seat--you { background:var(--brass)18; color:var(--brass); border-color:var(--brass)66; font-weight:500; cursor:pointer; }
+.cb-seat--you { background:var(--brass)18; color:var(--brass-fg); border-color:var(--brass)66; font-weight:500; cursor:pointer; }
 .cb-seat--open { background:transparent; color:var(--muted); border-style:dashed; cursor:pointer; transition:all .15s; }
-.cb-seat--open:hover { border-color:var(--brass); color:var(--brass); background:var(--brass)08; }
+.cb-seat--open:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
 .cb-seat--expanded { height:auto; min-height:28px; white-space:normal; padding-top:4px; padding-bottom:4px; }
 .cb-seat--expanded .cb-seat-name { overflow:visible; text-overflow:clip; white-space:normal; word-break:break-word; line-height:1.2; }
 .cb-seat-role { font-size:8px; color:var(--muted); min-width:28px; opacity:.7; }
 .cb-seat-name { overflow:hidden; text-overflow:ellipsis; }
 .cb-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-.cb-needs { font-size:10px; color:var(--brass); margin-top:6px; }
+.cb-needs { font-size:10px; color:var(--brass-fg); margin-top:6px; }
 .cb-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
 /* ── Passport ── */
 .pp-cat { margin-bottom:14px; }
 .pp-cat-hdr { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
-.pp-cat-count { font-size:9px; color:var(--brass); }
+.pp-cat-count { font-size:9px; color:var(--brass-fg); }
 .pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:4px; font-size:11px; }
 .pp-item-signable { cursor:pointer; transition:border-color .2s; }
 .pp-item-signable:hover { border-color:var(--brass); }
 .pp-item-complete { border-left:3px solid var(--green); }
-.pp-item-icon { font-size:14px; color:var(--brass); width:18px; text-align:center; flex-shrink:0; }
+.pp-item-icon { font-size:14px; color:var(--brass-fg); width:18px; text-align:center; flex-shrink:0; }
 .pp-item-complete .pp-item-icon { color:var(--green); }
 .pp-item-body { flex:1; min-width:0; }
 .pp-item-name { color:var(--text); font-weight:500; }
@@ -99,11 +99,11 @@
 .pp-item-sigs { color:var(--muted); font-size:9px; margin-top:3px; font-style:italic; }
 .pp-item-count { font-size:10px; color:var(--muted); flex-shrink:0; }
 .pp-asmt { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; }
-.pp-asmt-practical { background:var(--brass)22; color:var(--brass); border:1px solid var(--brass)44; }
+.pp-asmt-practical { background:var(--brass)22; color:var(--brass-fg); border:1px solid var(--brass)44; }
 .pp-asmt-theory    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-.pp-mod { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:4px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; background:var(--surface); color:var(--brass); border:1px solid var(--brass)44; }
+.pp-mod { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:4px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; background:var(--surface); color:var(--brass-fg); border:1px solid var(--brass)44; }
 .pp-sortbtn-active { background:var(--brass) !important; color:var(--card) !important; border-color:var(--brass) !important; }
-.pp-mod-hdr { font-size:11px; color:var(--brass); font-weight:700; letter-spacing:1px; text-transform:uppercase; margin:10px 0 4px; display:flex; align-items:center; gap:8px; }
+.pp-mod-hdr { font-size:11px; color:var(--brass-fg); font-weight:700; letter-spacing:1px; text-transform:uppercase; margin:10px 0 4px; display:flex; align-items:center; gap:8px; }
 .pp-mod-hdr .pp-cat-count { color:var(--muted); font-weight:400; }
 .pp-subcat-hdr { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin:6px 0 4px 0; padding-left:8px; border-left:2px solid var(--border); }
 
@@ -201,13 +201,13 @@
           <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" onclick="ppViewSelf()" data-s="passport.viewSelf">My passport</button>
         </div>
         <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);border:1px solid var(--border);border-radius:6px;margin-top:2px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
-        <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass);margin-top:4px"></div>
+        <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass-fg);margin-top:4px"></div>
       </div>
       <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
         <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
       </div>
       <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
-      <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
+      <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass-fg);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
       <div id="passportSortBar" style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:9px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
         <button class="btn btn-secondary" id="ppSortCatMod" style="font-size:10px;padding:3px 8px" onclick="ppSetSortMode('cat-mod')" data-s="passport.sortCatMod">Category → Module</button>
