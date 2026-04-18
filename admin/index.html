@@ -4093,6 +4093,15 @@ function renderSlotCalendar() {
   var newCals = {};
   catBoats.forEach(function(boat) {
     var boatSlots = _slotData.filter(function(sl) { return sl.boatId === boat.id; });
+    // Enrich with crew name so the calendar identifies bookings by crew.
+    if (Array.isArray(window._allCrews)) {
+      boatSlots.forEach(function(sl) {
+        if (sl.bookedByCrewId && !sl.bookedByCrewName) {
+          var crew = window._allCrews.find(function(c) { return c.id === sl.bookedByCrewId; });
+          if (crew) sl.bookedByCrewName = crew.name;
+        }
+      });
+    }
     var wrap = document.createElement('div');
     wrap.style.marginBottom = '16px';
     var hdr = document.createElement('div');

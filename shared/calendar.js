@@ -230,12 +230,16 @@
       var span = endRow - startRow;
       var timeLabel = sl.startTime + '\u2013' + sl.endTime;
       var sub = '';
-      if (isMine) {
-        var mineStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
-        sub = '<span class="sc-slot-who sc-slot-who--mine"' + mineStyle + '>' + esc(s('slot.yours')) + '</span>';
-      } else if (isBooked) {
-        var bookedStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
-        sub = '<span class="sc-slot-who"' + bookedStyle + '>' + esc(sl.bookedByName || sl.bookedByCrewName || '') + '</span>';
+      if (isBooked) {
+        var whoStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
+        var whoCls = 'sc-slot-who' + (isMine ? ' sc-slot-who--mine' : '');
+        // Crew bookings always show the crew name — "YOURS" alone is ambiguous
+        // for rowers who belong to more than one crew.
+        var whoLabel = sl.bookedByCrewName
+          || (isMine ? s('slot.yours') : (sl.bookedByName || ''));
+        if (whoLabel) {
+          sub = '<span class="' + whoCls + '"' + whoStyle + '>' + esc(whoLabel) + '</span>';
+        }
       }
 
       var timeStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
