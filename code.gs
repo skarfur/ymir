@@ -478,6 +478,41 @@ function testPasswordRoundTrip() {
   Logger.log('verify wrong password:   ' + okBad  + '  (expected false)');
 }
 
+// Editor-run diagnostic: replays the login read-path against an actual
+// stored member and verifies the password from Script Properties. Set
+//   BOOTSTRAP_KENNITALA       = admin kennitala (reused from bootstrap)
+//   BOOTSTRAP_TEST_PASSWORD   = the temp password you're trying to log in with
+// then run. The log reveals exactly what verifyPassword_ sees.
+function testVerifyStoredHash() {
+  const props = PropertiesService.getScriptProperties();
+  const kt = String(props.getProperty('BOOTSTRAP_KENNITALA') || '').trim();
+  const pw = String(props.getProperty('BOOTSTRAP_TEST_PASSWORD') || '').trim();
+  if (!kt || !pw) {
+    Logger.log('Set BOOTSTRAP_KENNITALA and BOOTSTRAP_TEST_PASSWORD Script Properties.');
+    return;
+  }
+  clearSheetCache_();
+  const m = findOne_('members', 'kennitala', kt);
+  if (!m) { Logger.log('no member with kennitala ' + kt); return; }
+  const stored = String(m.passwordHash || '');
+  Logger.log('kennitala:         ' + kt);
+  Logger.log('password entered:  "' + pw + '" (length ' + pw.length + ')');
+  Logger.log('stored hash:       "' + stored + '"');
+  Logger.log('stored type:       ' + typeof m.passwordHash);
+  Logger.log('stored length:     ' + stored.length);
+  Logger.log('stored starts:     ' + stored.substring(0, 22));
+  const parts = stored.split('$');
+  Logger.log('parts count:       ' + parts.length);
+  if (parts.length === 4) {
+    Logger.log('algo:              ' + parts[0]);
+    Logger.log('iterations:        ' + parts[1]);
+    Logger.log('salt b64 length:   ' + parts[2].length);
+    Logger.log('hash b64 length:   ' + parts[3].length);
+  }
+  const ok = verifyPassword_(m, pw);
+  Logger.log('verifyPassword_ result: ' + ok);
+}
+
 // Find a member for login by either kennitala (10 digits) or initials
 // (case-insensitive). Returns { member, ambiguous, notFound } so the caller
 // can surface a specific error when initials collide between members.
