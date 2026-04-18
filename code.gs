@@ -523,7 +523,6 @@ function testVerifyStoredHash() {
   // Mismatch — dump the raw byte arrays so we can see where the divergence
   // is. `expected` comes from the stored hash, `actual` is what we just
   // computed from the entered password + same salt + same iterations.
-  const parts = stored.split('$');
   if (parts.length !== 4) return;
   const salt     = Utilities.base64Decode(parts[2]);
   const expected = Utilities.base64Decode(parts[3]);
