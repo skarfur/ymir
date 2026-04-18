@@ -483,16 +483,20 @@ function testPasswordRoundTrip() {
 }
 
 // Editor-run diagnostic: replays the login read-path against an actual
-// stored member and verifies the password from Script Properties. Set
-//   BOOTSTRAP_KENNITALA       = admin kennitala (reused from bootstrap)
-//   BOOTSTRAP_TEST_PASSWORD   = the temp password you're trying to log in with
-// then run. The log reveals exactly what verifyPassword_ sees.
+// stored member and verifies a password. Reads the kennitala from
+// BOOTSTRAP_KENNITALA and the password from BOOTSTRAP_TEST_PASSWORD,
+// falling back to BOOTSTRAP_PRESET_PASSWORD if the test prop is unset
+// (so the same value used to seed the bootstrap works for the test).
 function testVerifyStoredHash() {
   const props = PropertiesService.getScriptProperties();
   const kt = String(props.getProperty('BOOTSTRAP_KENNITALA') || '').trim();
-  const pw = String(props.getProperty('BOOTSTRAP_TEST_PASSWORD') || '').trim();
+  const pw = String(
+    props.getProperty('BOOTSTRAP_TEST_PASSWORD') ||
+    props.getProperty('BOOTSTRAP_PRESET_PASSWORD') ||
+    ''
+  ).trim();
   if (!kt || !pw) {
-    Logger.log('Set BOOTSTRAP_KENNITALA and BOOTSTRAP_TEST_PASSWORD Script Properties.');
+    Logger.log('Set BOOTSTRAP_KENNITALA and either BOOTSTRAP_PRESET_PASSWORD or BOOTSTRAP_TEST_PASSWORD.');
     return;
   }
   clearSheetCache_();
@@ -515,6 +519,28 @@ function testVerifyStoredHash() {
   }
   const ok = verifyPassword_(m, pw);
   Logger.log('verifyPassword_ result: ' + ok);
+  if (ok) return;
+  // Mismatch — dump the raw byte arrays so we can see where the divergence
+  // is. `expected` comes from the stored hash, `actual` is what we just
+  // computed from the entered password + same salt + same iterations.
+  const parts = stored.split('$');
+  if (parts.length !== 4) return;
+  const salt     = Utilities.base64Decode(parts[2]);
+  const expected = Utilities.base64Decode(parts[3]);
+  const iter     = parseInt(parts[1], 10);
+  const actual   = _pbkdf2_(pw, salt, iter);
+  Logger.log('salt bytes:     [' + Array.prototype.slice.call(salt).join(',') + ']');
+  Logger.log('expected bytes: [' + Array.prototype.slice.call(expected).join(',') + ']');
+  Logger.log('actual bytes:   [' + Array.prototype.slice.call(actual).join(',') + ']');
+  Logger.log('expected type ctor: ' + (expected.constructor && expected.constructor.name));
+  Logger.log('actual type ctor:   ' + (actual.constructor && actual.constructor.name));
+  // Also re-hash with the same password from scratch and log that hash;
+  // if the resulting string differs from `stored`, the bug is in
+  // determinism (salt generation, byte-type coercion in concat, etc.).
+  // If it matches, the bug is in verify-side parsing.
+  const freshHash = hashPassword_(pw);
+  Logger.log('fresh hashPassword_ result: ' + freshHash);
+  Logger.log('matches stored (whole): ' + (freshHash === stored));
 }
 
 // Find a member for login by either kennitala (10 digits) or initials
