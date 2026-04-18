@@ -788,12 +788,6 @@ function doGet(e) {
     if (b.action === 'boat')    return publicBoatRecord_(b);
     if (b.action === 'dashboard') return publicDashboard_();
     if (b.share)                return publicShareRecord_(b);
-    // Server-side / trigger calls (doGet is used by alert-action emails) can
-    // still present API_TOKEN_. End-user GETs are not used by the app.
-    if (b.token && b.token === API_TOKEN_) {
-      if (!b.action) return okJ({ status: 'ok', ts: now_() });
-      return route_(b.action, b, { kennitala: '_system', role: 'admin', __system: true });
-    }
     // Session-authenticated GETs, if any.
     const callerGet = _authCaller_(b);
     if (callerGet) {
