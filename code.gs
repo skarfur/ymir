@@ -320,7 +320,12 @@ function extractInitials_(name) {
 // generated per-member by _genTempPassword_() and flagged via the members
 // sheet column `passwordIsTemp` so the login flow can force a change.
 // ─────────────────────────────────────────────────────────────────────────────
-const PBKDF2_ITERATIONS_ = 100000;
+// Iteration count is limited by Apps Script's per-HMAC-call overhead
+// (roughly single-digit ms in practice, so 100k would stall login).
+// 10k is the highest we can run while keeping login comfortably under
+// a few seconds; the self-describing hash format above lets us bump it
+// later without a schema change.
+const PBKDF2_ITERATIONS_ = 10000;
 
 // 10-character random password using an unambiguous alphabet (no O/0/I/1/l).
 // Used for admin-issued temp passwords — communicated to the member once and
