@@ -542,6 +542,19 @@ function testVerifyStoredHash() {
   Logger.log('matches stored (whole): ' + (freshHash === stored));
 }
 
+// Editor-run helper: clear the login rate-limit lockout for
+// BOOTSTRAP_KENNITALA so the next login attempt isn't rejected by
+// `_checkLoginRate_`. Use after a debugging session where repeated
+// failed attempts have tripped the 5-in-15-min lockout.
+function clearLoginLockout() {
+  const kt = String(
+    PropertiesService.getScriptProperties().getProperty('BOOTSTRAP_KENNITALA') || ''
+  ).trim();
+  if (!kt) { Logger.log('Set BOOTSTRAP_KENNITALA first.'); return; }
+  _clearLoginAttempts_(kt);
+  Logger.log('Cleared login_attempts row for ' + kt + '. You can try signing in again.');
+}
+
 // Find a member for login by either kennitala (10 digits) or initials
 // (case-insensitive). Returns { member, ambiguous, notFound } so the caller
 // can surface a specific error when initials collide between members.
