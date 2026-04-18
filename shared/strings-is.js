@@ -140,7 +140,7 @@ var _STRINGS_FLAT = {
   "login.member.label": "Félagssvæði",
   "login.member.desc": "Inn/útskráning, dagbók, mínar ferðir",
   "member.launchBoat": "Fara á sjó",
-  "member.reportIssue": "Tilkynna vandamál",
+  "member.reportIssue": "Tilkynna viðhaldsmál",
   "member.myCheckout": "BÁTAR Á SJÓNUM",
   "member.myCheckoutSub": "smelltu á þinn bát til að skrá inn",
   "member.tabFleet": "Flotinn",
