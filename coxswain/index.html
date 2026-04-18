@@ -55,8 +55,8 @@
 
 /* ── Crew board ── */
 .cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.cb-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px;
-  border-left:6px solid var(--border); box-shadow:var(--shadow-sm); }
+.cb-card { background:var(--card); border:3px solid var(--border); border-radius:var(--radius-md); padding:14px;
+  box-shadow:var(--shadow-sm); }
 .cb-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
 .cb-name { font-size:13px; font-weight:500; color:var(--text); }
 .cb-count { font-size:10px; color:var(--muted); }
@@ -616,7 +616,7 @@ function renderCrewCard(c) {
 
   var descHtml = c.description ? '<div class="cb-desc">' + esc(c.description) + '</div>' : '';
 
-  return '<div class="cb-card" style="border-left-color:' + esc(crewColor) + '">'
+  return '<div class="cb-card" style="border-color:' + esc(crewColor) + '">'
     + '<div class="cb-header">'
       + '<span class="cb-name">' + esc(c.name) + '</span> ' + badge
       + ' <span class="cb-count">' + filledSeats + '/' + totalSeats + '</span>'
@@ -942,6 +942,14 @@ function renderCxSlots() {
     });
   }
   _cxCalendar.opts.isMine = function(sl) { return sl.bookedByCrewId && myCrewIds.indexOf(sl.bookedByCrewId) !== -1; };
+  // Enrich slots with crew name so the calendar can label each booked slot
+  // by crew (unambiguous when the user belongs to multiple crews).
+  _cxSlots.forEach(function(sl) {
+    if (sl.bookedByCrewId && !sl.bookedByCrewName) {
+      var crew = _allBoardCrews.find(function(c) { return c.id === sl.bookedByCrewId; });
+      if (crew) sl.bookedByCrewName = crew.name;
+    }
+  });
   _cxCalendar.setWeekStart(_cxWeekStart);
   _cxCalendar.setSlots(_cxSlots);
 }
