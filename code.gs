@@ -280,7 +280,8 @@ function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1
 // would interpret as a formula (=, +, -, @) or a line-breaking control
 // (CR/LF/TAB). The apostrophe itself is not rendered to the user; it just
 // forces Sheets to treat the cell as text. Non-strings pass through.
-function sanitizeCell_(v) {
+// Named distinctly from the read-side `sanitizeCell_(col, val)` normalizer.
+function _literalWrite_(v) {
   if (typeof v !== 'string' || v === '') return v;
   var c = v.charCodeAt(0);
   if (c === 0x3D || c === 0x2B || c === 0x2D || c === 0x40 ||
@@ -459,6 +460,22 @@ function bootstrapAdminPassword() {
   Logger.log('Temporary password for ' + name + ': ' + temp);
   Logger.log('Sign in, then use the admin UI to issue temp passwords for everyone else.');
   Logger.log('Remember to delete the BOOTSTRAP_KENNITALA Script Property afterwards.');
+}
+
+// Editor-run diagnostic: round-trip a generated password through
+// hashPassword_ / verifyPassword_ and log whether it verifies. If this
+// prints "verify ok" but real logins still fail, the bug is in the
+// storage/login path, not the crypto.
+function testPasswordRoundTrip() {
+  const pw = _genTempPassword_();
+  const hash = hashPassword_(pw);
+  Logger.log('password: ' + pw);
+  Logger.log('hash:     ' + hash);
+  Logger.log('hash len: ' + hash.length);
+  const okGood = verifyPassword_({ passwordHash: hash }, pw);
+  const okBad  = verifyPassword_({ passwordHash: hash }, pw + 'x');
+  Logger.log('verify correct password: ' + okGood + '  (expected true)');
+  Logger.log('verify wrong password:   ' + okBad  + '  (expected false)');
 }
 
 // Find a member for login by either kennitala (10 digits) or initials
@@ -854,7 +871,7 @@ function findOne_(tabKey, field, value) {
 
 function insertRow_(tabKey, obj) {
   const c = getSheetData_(tabKey);
-  const row = c.headers.map(h => sanitizeCell_(obj[h] !== undefined ? obj[h] : ''));
+  const row = c.headers.map(h => _literalWrite_(obj[h] !== undefined ? obj[h] : ''));
   c.sheet.appendRow(row);
   // appendRow lands at the first blank row, which may not equal
   // values.length + 2 if the sheet has trailing blanks. Invalidate to keep
@@ -898,7 +915,7 @@ function updateRow_(tabKey, keyField, keyValue, updates) {
           // Per-column setValue preserves existing concurrency semantics:
           // two executions touching disjoint columns on the same row don't
           // clobber each other.  Keep cache coherent with the write.
-          sheet.getRange(i + 2, col + 1).setValue(sanitizeCell_(v));
+          sheet.getRange(i + 2, col + 1).setValue(_literalWrite_(v));
           values[i][col] = v;
           wrote = true;
         }
@@ -1954,7 +1971,7 @@ function adminAddTime_(b) {
     var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     // Column order matches sheet: id, employeeId, type, timestamp(clockOut), source, originalTimestamp(clockIn), note, periodKey, durationMinutes
     var periodKey = b.clockIn ? b.clockIn.slice(0,7) + '-01' : new Date().toISOString().slice(0,7) + '-01';
-    sh.appendRow([id, b.employeeId, '', b.timestamp, 'admin', b.clockIn, sanitizeCell_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
+    sh.appendRow([id, b.employeeId, '', b.timestamp, 'admin', b.clockIn, _literalWrite_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
     return okJ({ success: true, id: id });
   } catch(e) {
     return failJ(e.message);
@@ -4959,9 +4976,9 @@ function setConfigSheetValue_(key, value) {
   if (lastRow >= 2) {
     const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(r => String(r[0]).trim());
     const idx = keys.indexOf(key);
-    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(sanitizeCell_(value)); return; }
+    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(_literalWrite_(value)); return; }
   }
-  sheet.appendRow([key, sanitizeCell_(value)]);
+  sheet.appendRow([key, _literalWrite_(value)]);
 }
 
 function getOverdueAlerts_(b) {
@@ -5048,7 +5065,7 @@ function silenceAlert_(b) {
   const row = getCheckoutRow_(b.id);
   if (!row) throw new Error('Checkout not found: ' + b.id);
   row._sheet.getRange(row._sheetRow, row._col1('alertSilenced')).setValue(true);
-  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(sanitizeCell_(b.silencedBy || ''));
+  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(_literalWrite_(b.silencedBy || ''));
   row._sheet.getRange(row._sheetRow, row._col1('alertSilencedAt')).setValue(now_());
   return okJ({ id: b.id });
 }
