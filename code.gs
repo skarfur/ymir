@@ -394,17 +394,19 @@ function verifyPassword_(member, password) {
   return diff === 0;
 }
 
-// One-shot helper for the Apps Script editor. Issue a fresh temporary
-// password for an existing admin so someone can log in and use the admin
-// UI to reset the rest. Logs the plaintext to the execution log — no
+// One-shot helper for the Apps Script editor. Issue a temporary password
+// for an existing admin so someone can log in and use the admin UI to
+// reset the rest. Logs the plaintext to the execution log — no
 // persistence, no sheet write beyond the hash.
 //
 // Usage:
-//   1. Project Settings → Script Properties → add `BOOTSTRAP_KENNITALA`
-//      with the admin's 10-digit kennitala as the value.
-//   2. Select `bootstrapAdminPassword` in the editor → Run.
-//   3. Open Executions / View Logs and copy the temp password.
-//   4. Delete the `BOOTSTRAP_KENNITALA` property once you're signed in.
+//   1. Project Settings → Script Properties → set `BOOTSTRAP_KENNITALA`
+//      to the admin's 10-digit kennitala.
+//   2. Optionally set `BOOTSTRAP_PRESET_PASSWORD` to a password of your
+//      choosing (skip to let the helper generate a random one).
+//   3. Select `bootstrapAdminPassword` → Run.
+//   4. Copy the password from the execution log.
+//   5. Delete both Script Properties once you're signed in.
 function bootstrapAdminPassword() {
   const props = PropertiesService.getScriptProperties();
   const kt = String(props.getProperty('BOOTSTRAP_KENNITALA') || '').trim();
@@ -412,6 +414,7 @@ function bootstrapAdminPassword() {
     Logger.log('Set Script Property BOOTSTRAP_KENNITALA to the admin kennitala, then run again.');
     return;
   }
+  const preset = String(props.getProperty('BOOTSTRAP_PRESET_PASSWORD') || '').trim();
   // Go directly to the sheet instead of through the usual helpers so stale
   // caches or missing-header edge cases can't swallow the write silently.
   const sheet = ss_().getSheetByName(TABS_.members);
@@ -446,9 +449,10 @@ function bootstrapAdminPassword() {
   }
   if (rowIdx < 0) { Logger.log('No member with kennitala ' + kt); return; }
 
-  const temp = _genTempPassword_();
+  const temp = preset || _genTempPassword_();
   const hash = hashPassword_(temp);
   Logger.log('Writing hash of length ' + hash.length + ' to row ' + (rowIdx + 2));
+  if (preset) Logger.log('Using preset password from BOOTSTRAP_PRESET_PASSWORD.');
   sheet.getRange(rowIdx + 2, hashCol + 1).setValue(hash);
   sheet.getRange(rowIdx + 2, tempCol + 1).setValue(true);
   if (updCol >= 0) sheet.getRange(rowIdx + 2, updCol + 1).setValue(now_());
