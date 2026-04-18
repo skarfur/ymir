@@ -1674,10 +1674,75 @@ async function resetMemberPassword() {
     status.style.color = 'var(--brass)';
     var n = (res && typeof res.sessionsRevoked === 'number') ? res.sessionsRevoked : 0;
     toast(s('admin.resetPasswordDone').replace('{n}', n), 'ok');
+    if (res && res.tempPassword) {
+      showTempPasswordDialog([{ name: name, kennitala: m.kennitala, tempPassword: res.tempPassword }]);
+    }
   } catch (e) {
     toast(s('toast.error') + ': ' + e.message, 'err');
     btn.disabled = false;
   }
+}
+
+// Show a modal listing one or more admin-issued temp passwords with copy
+// buttons. Called after saveMember/adminResetMemberPassword/importMembers
+// whenever the backend returns plaintext temp credentials. The modal must
+// stay open long enough for the admin to record the value — the server
+// never retains it.
+function showTempPasswordDialog(items) {
+  if (!items || !items.length) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.zIndex = '300';
+  var box = document.createElement('div');
+  box.className = 'modal';
+  box.style.maxWidth = '480px';
+  var heading = document.createElement('h3');
+  heading.style.margin = '0 0 8px';
+  heading.textContent = items.length === 1 ? s('admin.tempPasswordTitle') : s('admin.tempPasswordTitlePlural');
+  var warn = document.createElement('p');
+  warn.style.cssText = 'color:var(--muted);margin:0 0 14px;font-size:13px';
+  warn.textContent = s('admin.tempPasswordWarning');
+  box.appendChild(heading);
+  box.appendChild(warn);
+  items.forEach(function(it) {
+    var row = document.createElement('div');
+    row.style.cssText = 'margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px';
+    var label = document.createElement('div');
+    label.style.cssText = 'font-size:12px;color:var(--muted)';
+    label.textContent = (it.name || '') + (it.kennitala ? ' · ' + it.kennitala : '');
+    var pwRow = document.createElement('div');
+    pwRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:4px';
+    var code = document.createElement('code');
+    code.style.cssText = 'flex:1;font-size:16px;font-family:monospace;padding:4px 8px;background:var(--faint);border-radius:4px;user-select:all';
+    code.textContent = it.tempPassword;
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-ghost';
+    btn.textContent = s('admin.tempPasswordCopy');
+    btn.onclick = function() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(it.tempPassword).then(function() {
+          toast(s('admin.tempPasswordCopied'), 'ok');
+        });
+      }
+    };
+    pwRow.appendChild(code);
+    pwRow.appendChild(btn);
+    row.appendChild(label);
+    row.appendChild(pwRow);
+    box.appendChild(row);
+  });
+  var btnRow = document.createElement('div');
+  btnRow.className = 'ym-dialog-btns';
+  btnRow.style.marginTop = '14px';
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-primary';
+  closeBtn.textContent = s('btn.close');
+  closeBtn.onclick = function() { overlay.remove(); };
+  btnRow.appendChild(closeBtn);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 async function saveMember() {
@@ -1700,13 +1765,17 @@ async function saveMember() {
   };
 
   try {
-    await apiPost("saveMember", payload);
+    const res = await apiPost("saveMember", payload);
     const idx = members.findIndex(x => x.id === id);
     if (idx >= 0) members[idx] = { ...members[idx], ...payload };
     else          members.push(payload);
     closeModal("memberModal", true);
     renderMembers();
     toast(s("toast.saved"));
+    const temps = [];
+    if (res && res.tempPassword) temps.push({ name: name, kennitala: kennitala, tempPassword: res.tempPassword });
+    if (res && res.guardianTempPassword) temps.push(res.guardianTempPassword);
+    if (temps.length) showTempPasswordDialog(temps);
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
 }
 
@@ -3885,8 +3954,12 @@ async function confirmImport() {
     const toSend = [...importResult.added, ...extraAdded, ...importResult.updated, ...extraUpdated].map(m => {
       const c = { ...m }; delete c._s; delete c._prev; return c;
     });
+    const importTemps = [];
     if (toSend.length) {
-      await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
+      const results = await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
+      results.forEach(r => {
+        if (r && Array.isArray(r.tempPasswords)) importTemps.push(...r.tempPasswords);
+      });
     }
 
     // Deactivate checked flagged members
@@ -3920,6 +3993,7 @@ async function confirmImport() {
     if (deactivated) msg += ' ' + s('admin.importDeactivated', { count: deactivated });
     document.getElementById("importDoneMsg").textContent = msg;
     showImportStep(3);
+    if (importTemps.length) showTempPasswordDialog(importTemps);
   } catch(e) {
     document.getElementById("importError").textContent = s("admin.importFailed") + ": " + e.message;
     document.getElementById("importError").style.display = "block";

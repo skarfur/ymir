@@ -299,29 +299,80 @@ function extractInitials_(name) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PASSWORD HASHING
-// The default password for every member is DEFAULT_PASSWORD_ (the club name).
-// Members who have never set one have an empty passwordHash column and can
-// sign in with the default; changing the password stores a per-user SHA-256
-// hash salted with the kennitala and a version tag so identical passwords
-// across members don't collide.
+// Passwords are stretched with PBKDF2-HMAC-SHA256 using a random 16-byte salt
+// per password. The stored value is self-describing so iteration counts can
+// be tuned later without a schema change:
+//   pbkdf2-sha256$<iterations>$<base64 salt>$<base64 hash>
+// There is no shared default password; admin-issued temp passwords are
+// generated per-member by _genTempPassword_() and flagged via the members
+// sheet column `passwordIsTemp` so the login flow can force a change.
 // ─────────────────────────────────────────────────────────────────────────────
-const DEFAULT_PASSWORD_ = 'siglingafélag';
-const PASSWORD_SALT_    = 'ymir-v1';
+const PBKDF2_ITERATIONS_ = 100000;
 
-function hashPassword_(kennitala, password) {
-  if (!password) return '';
-  const input = String(kennitala || '') + ':' + String(password) + ':' + PASSWORD_SALT_;
+// 10-character random password using an unambiguous alphabet (no O/0/I/1/l).
+// Used for admin-issued temp passwords — communicated to the member once and
+// replaced by a user-chosen password on first login.
+function _genTempPassword_() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const bytes = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256, input, Utilities.Charset.UTF_8);
-  return Utilities.base64Encode(bytes);
+    Utilities.DigestAlgorithm.SHA_256,
+    Utilities.getUuid() + ':' + Utilities.getUuid() + ':' + Date.now(),
+    Utilities.Charset.UTF_8);
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[(bytes[i] & 0xff) % chars.length];
+  return out;
+}
+
+function _genSalt16_() {
+  // UUID v4 gives ~122 bits of randomness; two of them hashed to SHA-256 and
+  // truncated to 16 bytes yields a uniform salt well above the birthday bound
+  // for any realistic user population.
+  const seed = Utilities.getUuid() + Utilities.getUuid();
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, seed, Utilities.Charset.UTF_8);
+  return bytes.slice(0, 16);
+}
+
+// PBKDF2-HMAC-SHA256, one output block (32 bytes). Apps Script's HMAC
+// primitive is slow-ish, so 100k iterations is the target; adjust via
+// PBKDF2_ITERATIONS_ if login latency becomes a problem.
+function _pbkdf2_(password, saltBytes, iterations) {
+  const passBytes = Utilities.newBlob(String(password)).getBytes();
+  // Salt || INT(1) — block index is always 1 since we only need 32 bytes.
+  const block = saltBytes.concat([0, 0, 0, 1]);
+  let u = Utilities.computeHmacSha256Signature(block, passBytes);
+  const t = u.slice();
+  for (let i = 1; i < iterations; i++) {
+    u = Utilities.computeHmacSha256Signature(u, passBytes);
+    for (let j = 0; j < t.length; j++) t[j] = (t[j] ^ u[j]);
+  }
+  return t;
+}
+
+function hashPassword_(password) {
+  if (!password) return '';
+  const salt = _genSalt16_();
+  const hash = _pbkdf2_(password, salt, PBKDF2_ITERATIONS_);
+  return 'pbkdf2-sha256$' + PBKDF2_ITERATIONS_ + '$' +
+         Utilities.base64Encode(salt) + '$' + Utilities.base64Encode(hash);
 }
 
 function verifyPassword_(member, password) {
-  if (!member) return false;
+  if (!member || !password) return false;
   const stored = String(member.passwordHash || '').trim();
-  if (stored) return stored === hashPassword_(member.kennitala, password);
-  // No hash set → default password is accepted.
-  return String(password) === DEFAULT_PASSWORD_;
+  if (!stored) return false;
+  const parts = stored.split('$');
+  if (parts.length !== 4 || parts[0] !== 'pbkdf2-sha256') return false;
+  const iter = parseInt(parts[1], 10);
+  if (!iter || iter < 1000 || iter > 10000000) return false;
+  const salt = Utilities.base64Decode(parts[2]);
+  const expected = Utilities.base64Decode(parts[3]);
+  const actual = _pbkdf2_(password, salt, iter);
+  if (actual.length !== expected.length) return false;
+  // Constant-time compare to avoid leaking the matching prefix via timing.
+  let diff = 0;
+  for (let i = 0; i < actual.length; i++) diff |= (actual[i] ^ expected[i]);
+  return diff === 0;
 }
 
 // Find a member for login by either kennitala (10 digits) or initials
@@ -333,11 +384,7 @@ function _findMemberForLogin_(username) {
   if (!u) return { notFound: true };
   const digits = u.replace(/\D/g, '');
   if (digits.length === 10) {
-    let m = findOne_('members', 'kennitala', digits);
-    // Non-member guardians don't have a members row until their first login —
-    // lazy-provision one here so they can authenticate and switch into a
-    // ward's account with the default password.
-    if (!m) m = _ensureGuardianRecord_(digits);
+    const m = findOne_('members', 'kennitala', digits);
     if (m) return { member: m };
     return { notFound: true };
   }
@@ -1043,6 +1090,7 @@ function _ensureGuardianRecord_(kt, hintName, hintPhone) {
     phone = phone || String(ward.guardianPhone || '').trim();
   }
   const ts = now_();
+  const tempPassword = _genTempPassword_();
   const row = {
     id: uid_(), kennitala: s, name: name, role: 'guardian',
     email: '', phone: phone, birthYear: '',
@@ -1050,11 +1098,15 @@ function _ensureGuardianRecord_(kt, hintName, hintPhone) {
     guardianName: '', guardianKennitala: '', guardianPhone: '',
     active: true, certifications: '',
     initials: extractInitials_(name), preferences: '{}',
-    passwordHash: '',
+    passwordHash: hashPassword_(tempPassword),
+    passwordIsTemp: true,
     createdAt: ts, updatedAt: ts,
   };
   insertRow_('members', row);
   cDel_('members');
+  // Attach the plaintext temp on the in-memory return so callers (admin flows)
+  // can relay it to the guardian. Not a column, so it isn't persisted.
+  row.tempPassword = tempPassword;
   return row;
 }
 
@@ -1116,7 +1168,7 @@ function loginMember_(b) {
   return okJ({
     member: _publicMember_(m),
     wards: wards,
-    usingDefaultPassword: !String(m.passwordHash || '').trim(),
+    usingDefaultPassword: bool_(m.passwordIsTemp),
     sessionToken: session.token,
     expiresAt: session.expiresAt,
     sessionId: session.id,
@@ -1187,8 +1239,9 @@ function listSessions_(b, caller) {
   return okJ({ sessions: rows });
 }
 
-// Admin-only: clear a member's password hash (so they can sign in with the
-// default again) and revoke every active session for that kennitala.
+// Admin-only: issue a fresh random temp password for a member, flag their
+// row so the login flow forces a change, and revoke every active session.
+// The plaintext is returned to the admin once and never persisted.
 function adminResetMemberPassword_(b, caller) {
   if (!caller || !_isAdmin_(caller)) return failJ('Admin only', 403);
   const kt = String((b && b.kennitala) || '').trim();
@@ -1196,20 +1249,23 @@ function adminResetMemberPassword_(b, caller) {
   const m = findOne_('members', 'kennitala', kt);
   if (!m) return failJ('Member not found', 404);
   addColIfMissing_('members', 'passwordHash');
+  addColIfMissing_('members', 'passwordIsTemp');
+  const tempPassword = _genTempPassword_();
   updateRow_('members', 'kennitala', kt, {
-    passwordHash: '',
+    passwordHash: hashPassword_(tempPassword),
+    passwordIsTemp: true,
     updatedAt: now_(),
   });
   cDel_('members');
   _clearLoginAttempts_(kt);
   const n = _revokeSessionsForMember_(kt);
-  return okJ({ reset: true, sessionsRevoked: n });
+  return okJ({ reset: true, sessionsRevoked: n, tempPassword: tempPassword });
 }
 
-// Set or change a member's password. If the member has never set one,
-// the current password is either empty or the default; otherwise it must
-// match the stored hash. On success every other session for this kennitala
-// is revoked (admins bypass the current-password check).
+// Set or change a member's password. Non-admins must supply the current
+// password (which can be either the admin-issued temp or a previous
+// self-chosen value); admins acting on someone else's record skip that
+// check. On success every other session for this kennitala is revoked.
 function setPassword_(b, caller) {
   if (!b || !b.kennitala) return failJ('kennitala required');
   const kt = String(b.kennitala).trim();
@@ -1222,21 +1278,15 @@ function setPassword_(b, caller) {
   if (next.length < 4) return failJ('Password must be at least 4 characters');
 
   const isAdminActing = caller && _isAdmin_(caller) && caller.kennitala !== kt;
-  const stored = String(m.passwordHash || '').trim();
-  // Admins resetting someone else's password don't need the current value;
-  // everyone else does.
   if (!isAdminActing) {
-    if (stored) {
-      if (hashPassword_(kt, cur) !== stored) return failJ('Current password incorrect', 401);
-    } else if (cur && cur !== DEFAULT_PASSWORD_) {
-      // Accept either blank or the default as "current" while unset.
-      return failJ('Current password incorrect', 401);
-    }
+    if (!verifyPassword_(m, cur)) return failJ('Current password incorrect', 401);
   }
 
   addColIfMissing_('members', 'passwordHash');
+  addColIfMissing_('members', 'passwordIsTemp');
   updateRow_('members', 'kennitala', kt, {
-    passwordHash: hashPassword_(kt, next),
+    passwordHash: hashPassword_(next),
+    passwordIsTemp: false,
     updatedAt: now_(),
   });
   cDel_('members');
@@ -1263,8 +1313,7 @@ function validateWard_(b, caller) {
   if (guardianKt !== caller.kennitala && !_isAdmin_(caller)) {
     return failJ('Forbidden', 403);
   }
-  // Auto-provisions a guardian stub for non-member guardians on first use.
-  const guardian = _ensureGuardianRecord_(guardianKt);
+  const guardian = findOne_('members', 'kennitala', guardianKt);
   if (!guardian) return failJ('Guardian not found', 404);
   if (!bool_(guardian.active)) return failJ('Inactive account', 403);
   if (bool_(guardian.isMinor)) return failJ('Minors cannot act as guardians', 403);
@@ -1295,11 +1344,11 @@ function getMembers_(params) {
   const members = c || readAll_('members');
   if (!c) cPut_('members', members);
   // Strip the password hash so it's never served to the client. Leave a
-  // `hasPassword` flag so the UI can tell whether the member is still on the
-  // club-wide default password.
+  // `hasPassword` flag the UI reads to decide whether the member has
+  // chosen their own password yet; admin-issued temps count as "not chosen".
   const sanitized = members.map(function(m) {
     const out = Object.assign({}, m);
-    out.hasPassword = !!String(out.passwordHash || '').trim();
+    out.hasPassword = !!String(out.passwordHash || '').trim() && !bool_(out.passwordIsTemp);
     delete out.passwordHash;
     return out;
   });
@@ -1353,15 +1402,22 @@ function saveMember_(b, caller) {
       updatedAt: ts,
     });
     cDel_('members');
+    let guardianTemp = null;
     if (bool_(b.isMinor) && b.guardianKennitala) {
-      _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      const g = _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      if (g && g.tempPassword) guardianTemp = { kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword };
     }
-    return okJ({ id: b.id, updated: true });
+    const out = { id: b.id, updated: true };
+    if (guardianTemp) out.guardianTempPassword = guardianTemp;
+    return okJ(out);
   } else {
     const id = uid_();
     // Force role=guest for non-admin callers so a crafted payload can't sneak
     // a new admin/staff row past the outer authorise step.
     const role = isAdminCaller ? (b.role || 'member') : 'guest';
+    addColIfMissing_('members', 'passwordHash');
+    addColIfMissing_('members', 'passwordIsTemp');
+    const tempPassword = _genTempPassword_();
     insertRow_('members', {
       id, kennitala: b.kennitala, name: b.name, role: role,
       email: b.email || '', phone: b.phone || '', birthYear: b.birthYear || '',
@@ -1369,13 +1425,18 @@ function saveMember_(b, caller) {
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
       guardianPhone: b.guardianPhone || '', active: true,
       certifications: '', initials: extractInitials_(b.name),
+      passwordHash: hashPassword_(tempPassword), passwordIsTemp: true,
       createdAt: ts, updatedAt: ts,
     });
     cDel_('members');
+    let guardianTemp = null;
     if (bool_(b.isMinor) && b.guardianKennitala) {
-      _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      const g = _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      if (g && g.tempPassword) guardianTemp = { kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword };
     }
-    return okJ({ id, created: true });
+    const out = { id, created: true, tempPassword: tempPassword };
+    if (guardianTemp) out.guardianTempPassword = guardianTemp;
+    return okJ(out);
   }
 }
 
@@ -1387,7 +1448,10 @@ function deleteMember_(id) {
 
 function importMembers_(rows) {
   if (!Array.isArray(rows)) return failJ('rows array required');
+  addColIfMissing_('members', 'passwordHash');
+  addColIfMissing_('members', 'passwordIsTemp');
   const ts = now_(); let created = 0, updated = 0;
+  const tempPasswords = [];
   rows.forEach(r => {
     const ex = findOne_('members', 'kennitala', String(r.kennitala || '').trim());
     if (ex) {
@@ -1405,27 +1469,34 @@ function importMembers_(rows) {
       });
       updated++;
     } else {
+      const temp = _genTempPassword_();
+      const kt = String(r.kennitala).trim();
       insertRow_('members', {
-        id: uid_(), kennitala: String(r.kennitala).trim(), name: r.name || '',
+        id: uid_(), kennitala: kt, name: r.name || '',
         role: r.role || 'member', email: r.email || '', phone: r.phone || '',
         birthYear: r.birthYear || '', isMinor: bool_(r.isMinor) || false,
         guardianName: r.guardianName || '', guardianKennitala: r.guardianKennitala || '',
         guardianPhone: r.guardianPhone || '', active: true,
         certifications: '', initials: extractInitials_(r.name),
+        passwordHash: hashPassword_(temp), passwordIsTemp: true,
         createdAt: ts, updatedAt: ts,
       });
+      tempPasswords.push({ kennitala: kt, name: r.name || '', tempPassword: temp });
       created++;
     }
   });
   cDel_('members');
-  // Auto-provision guardian stubs for every minor in the import so each
-  // guardian can log in with the default password after the first import.
+  // Auto-provision guardian stubs for every minor in the import. Each
+  // guardian gets its own temp password so the admin can relay it.
   rows.forEach(r => {
     if (bool_(r.isMinor) && r.guardianKennitala) {
-      _ensureGuardianRecord_(r.guardianKennitala, r.guardianName, r.guardianPhone);
+      const g = _ensureGuardianRecord_(r.guardianKennitala, r.guardianName, r.guardianPhone);
+      if (g && g.tempPassword) {
+        tempPasswords.push({ kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword });
+      }
     }
   });
-  return okJ({ created, updated });
+  return okJ({ created, updated, tempPasswords });
 }
 
 function deactivateMembers_(ids) {
