@@ -57,6 +57,19 @@ const LOGIN_WINDOW_MS_    = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS_ = 5;
 const LOGIN_LOCKOUT_MS_   = 15 * 60 * 1000;
 
+// Per-session rate limiting for authenticated actions, bucketed by kennitala
+// and minute. Normal actions share one bucket, bulk/heavy actions share a
+// tighter bucket. Counters live in CacheService (ephemeral, no sheet writes
+// per call). Adjust the caps if legitimate use ever trips them.
+const MUTATION_RATE_NORMAL_ = 60;   // requests/minute/caller
+const MUTATION_RATE_BULK_   = 10;   // requests/minute/caller for BULK_ACTIONS_
+const BULK_ACTIONS_ = {
+  importMembers:           true,
+  deactivateMembers:       true,
+  importRowingPassportCsv: true,
+  syncVolunteerEvents:     true,
+};
+
 // Actions that can be called without a session token. Everything else
 // requires a valid session (see _authCaller_). GET-only public endpoints
 // (lookup, captain, boat, resolveFromEmail, shared records) are gated
@@ -652,6 +665,25 @@ function _clearLoginAttempts_(kennitala) {
   try { deleteRow_('loginAttempts', 'kennitala', kt); } catch (e) {}
 }
 
+// Fixed-window rate limit on authenticated actions. Keyed by caller kennitala
+// + bucket + current minute, so a new window opens every 60s automatically.
+// Internal `__system` callers (time triggers invoking route_ directly) are
+// exempt because they aren't subject to the user-facing fairness contract.
+function _checkMutationRate_(caller, action) {
+  if (!caller || caller.__system) return { ok: true };
+  const bucket = BULK_ACTIONS_[action] ? 'bulk' : 'normal';
+  const limit  = BULK_ACTIONS_[action] ? MUTATION_RATE_BULK_ : MUTATION_RATE_NORMAL_;
+  const minute = Math.floor(Date.now() / 60000);
+  const key    = 'rate_' + bucket + '_' + caller.kennitala + '_' + minute;
+  const cache  = CacheService.getScriptCache();
+  const cur    = parseInt(cache.get(key) || '0', 10);
+  if (cur >= limit) return { ok: false };
+  // TTL of 120s covers the current window plus enough slack that read-modify-
+  // write races on the boundary don't lose the counter entirely.
+  cache.put(key, String(cur + 1), 120);
+  return { ok: true };
+}
+
 // Time-driven trigger: wipe expired session rows. Safe to run infrequently
 // because _authCaller_ also removes expired rows on encounter.
 function sweepExpiredSessions() {
@@ -852,6 +884,8 @@ function doGet(e) {
       if (!b.action) return okJ({ status: 'ok', ts: now_() });
       const deniedGet = _authorize_(b.action, callerGet, b);
       if (deniedGet) return deniedGet;
+      const throttledGet = _checkMutationRate_(callerGet, b.action);
+      if (!throttledGet.ok) return failJ('Too many requests', 429);
       return route_(b.action, b, callerGet);
     }
     return failJ('Unauthorized', 401);
@@ -873,6 +907,8 @@ function doPost(e) {
     if (!caller) return failJ('Unauthorized', 401);
     const denied = _authorize_(action, caller, b);
     if (denied) return denied;
+    const throttled = _checkMutationRate_(caller, action);
+    if (!throttled.ok) return failJ('Too many requests', 429);
     return route_(action, b, caller);
   } catch (err) {
     console.error('doPost error:', err && err.stack || err);
