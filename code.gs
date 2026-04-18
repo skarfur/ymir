@@ -320,7 +320,12 @@ function extractInitials_(name) {
 // generated per-member by _genTempPassword_() and flagged via the members
 // sheet column `passwordIsTemp` so the login flow can force a change.
 // ─────────────────────────────────────────────────────────────────────────────
-const PBKDF2_ITERATIONS_ = 100000;
+// Iteration count is limited by Apps Script's per-HMAC-call overhead
+// (roughly single-digit ms in practice, so 100k would stall login).
+// 10k is the highest we can run while keeping login comfortably under
+// a few seconds; the self-describing hash format above lets us bump it
+// later without a schema change.
+const PBKDF2_ITERATIONS_ = 10000;
 
 // 10-character random password using an unambiguous alphabet (no O/0/I/1/l).
 // Used for admin-issued temp passwords — communicated to the member once and
@@ -406,18 +411,52 @@ function bootstrapAdminPassword() {
     Logger.log('Set Script Property BOOTSTRAP_KENNITALA to the admin kennitala, then run again.');
     return;
   }
-  addColIfMissing_('members', 'passwordHash');
-  addColIfMissing_('members', 'passwordIsTemp');
-  const m = findOne_('members', 'kennitala', kt);
-  if (!m) { Logger.log('No member with kennitala ' + kt); return; }
+  // Go directly to the sheet instead of through the usual helpers so stale
+  // caches or missing-header edge cases can't swallow the write silently.
+  const sheet = ss_().getSheetByName(TABS_.members);
+  if (!sheet) { Logger.log('members sheet not found'); return; }
+  const lastCol = sheet.getLastColumn();
+  let headers  = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  function ensureCol(name) {
+    if (headers.indexOf(name) >= 0) return;
+    sheet.getRange(1, headers.length + 1).setValue(name);
+    SpreadsheetApp.flush();
+    headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  }
+  ensureCol('passwordHash');
+  ensureCol('passwordIsTemp');
+
+  const ktCol   = headers.indexOf('kennitala');
+  const hashCol = headers.indexOf('passwordHash');
+  const tempCol = headers.indexOf('passwordIsTemp');
+  const updCol  = headers.indexOf('updatedAt');
+  if (ktCol < 0 || hashCol < 0 || tempCol < 0) {
+    Logger.log('Expected columns missing: kennitala=' + ktCol + ', passwordHash=' + hashCol + ', passwordIsTemp=' + tempCol);
+    return;
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('members sheet is empty'); return; }
+  const data = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  let rowIdx = -1;
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][ktCol]).trim() === kt) { rowIdx = i; break; }
+  }
+  if (rowIdx < 0) { Logger.log('No member with kennitala ' + kt); return; }
+
   const temp = _genTempPassword_();
-  updateRow_('members', 'kennitala', kt, {
-    passwordHash: hashPassword_(temp),
-    passwordIsTemp: true,
-    updatedAt: now_(),
-  });
-  cDel_('members');
-  Logger.log('Temporary password for ' + (m.name || kt) + ': ' + temp);
+  const hash = hashPassword_(temp);
+  Logger.log('Writing hash of length ' + hash.length + ' to row ' + (rowIdx + 2));
+  sheet.getRange(rowIdx + 2, hashCol + 1).setValue(hash);
+  sheet.getRange(rowIdx + 2, tempCol + 1).setValue(true);
+  if (updCol >= 0) sheet.getRange(rowIdx + 2, updCol + 1).setValue(now_());
+  SpreadsheetApp.flush();
+  try { cDel_('members'); } catch (e) {}
+  try { invalidateSheetCache_('members'); } catch (e) {}
+
+  const name = String(data[rowIdx][headers.indexOf('name')] || kt);
+  Logger.log('Temporary password for ' + name + ': ' + temp);
   Logger.log('Sign in, then use the admin UI to issue temp passwords for everyone else.');
   Logger.log('Remember to delete the BOOTSTRAP_KENNITALA Script Property afterwards.');
 }
