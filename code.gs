@@ -388,6 +388,29 @@ function verifyPassword_(member, password) {
   return diff === 0;
 }
 
+// One-shot helper for the Apps Script editor. Issue a fresh temporary
+// password for an existing admin so someone can log in and use the admin
+// UI to reset the rest. Logs the plaintext to the execution log — no
+// persistence, no sheet write beyond the hash. Run via:
+//   Select bootstrapAdminPassword → change the kennitala below → Run.
+function bootstrapAdminPassword(kennitala) {
+  const kt = String(kennitala || '').trim();
+  if (!kt) { Logger.log('Pass a kennitala as the argument.'); return; }
+  addColIfMissing_('members', 'passwordHash');
+  addColIfMissing_('members', 'passwordIsTemp');
+  const m = findOne_('members', 'kennitala', kt);
+  if (!m) { Logger.log('No member with kennitala ' + kt); return; }
+  const temp = _genTempPassword_();
+  updateRow_('members', 'kennitala', kt, {
+    passwordHash: hashPassword_(temp),
+    passwordIsTemp: true,
+    updatedAt: now_(),
+  });
+  cDel_('members');
+  Logger.log('Temporary password for ' + (m.name || kt) + ': ' + temp);
+  Logger.log('Sign in, then use the admin UI to issue temp passwords for everyone else.');
+}
+
 // Find a member for login by either kennitala (10 digits) or initials
 // (case-insensitive). Returns { member, ambiguous, notFound } so the caller
 // can surface a specific error when initials collide between members.
