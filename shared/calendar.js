@@ -26,6 +26,21 @@
 
   function isMobile() { return window.innerWidth <= MOBILE_BP; }
 
+  // Pick readable foreground (black/white) for a given hex background color
+  function contrastText(hex) {
+    if (!hex) return null;
+    var m = /^#?([0-9a-f]+)$/i.exec(hex);
+    if (!m) return null;
+    var h = m[1];
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if (h.length < 6) return null;
+    var r = parseInt(h.substr(0,2), 16);
+    var g = parseInt(h.substr(2,2), 16);
+    var b = parseInt(h.substr(4,2), 16);
+    var y = (r*299 + g*587 + b*114) / 1000;
+    return y > 150 ? '#111' : '#fff';
+  }
+
   // Compute display range from actual slots (avoid wasted empty rows)
   function autoBounds(slots) {
     if (!slots.length) return { startHour: 8, endHour: 18 };
@@ -199,30 +214,35 @@
       block.style.gridRow = startRow + ' / ' + endRow;
       block.style.gridColumn = String(colIdx + 2);
 
-      // Custom slot color (e.g. crew color)
+      // Custom slot color (e.g. crew or captain booking color) fills the
+      // whole block when booked, so the color reads as the primary identifier.
       var slotColor = self.opts.getSlotColor ? self.opts.getSlotColor(sl) : null;
+      var fgColor = null;
       if (slotColor && isBooked) {
-        block.style.borderLeftColor = slotColor;
-        block.style.borderLeftWidth = '3px';
-        block.style.borderLeftStyle = isTentative ? 'dashed' : 'solid';
-        if (isMine) {
-          block.style.background = slotColor + '20';
-          block.style.borderColor = slotColor;
-        }
+        block.style.background = slotColor;
+        block.style.borderColor = slotColor;
+        fgColor = contrastText(slotColor);
+        if (fgColor) block.style.color = fgColor;
+        // "Mine" gets a contrast ring so the owner's block stands out.
+        if (isMine) block.style.boxShadow = 'inset 0 0 0 2px var(--bg)';
       }
 
       var span = endRow - startRow;
       var timeLabel = sl.startTime + '\u2013' + sl.endTime;
       var sub = '';
       if (isMine) {
-        var mineStyle = slotColor ? ' style="color:' + slotColor + '"' : '';
+        var mineStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
         sub = '<span class="sc-slot-who sc-slot-who--mine"' + mineStyle + '>' + esc(s('slot.yours')) + '</span>';
-      } else if (isBooked) sub = '<span class="sc-slot-who">' + esc(sl.bookedByName || sl.bookedByCrewName || '') + '</span>';
+      } else if (isBooked) {
+        var bookedStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
+        sub = '<span class="sc-slot-who"' + bookedStyle + '>' + esc(sl.bookedByName || sl.bookedByCrewName || '') + '</span>';
+      }
 
+      var timeStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
       if (span <= 1) {
-        block.innerHTML = '<span class="sc-slot-time">' + timeLabel + '</span>';
+        block.innerHTML = '<span class="sc-slot-time"' + timeStyle + '>' + timeLabel + '</span>';
       } else {
-        block.innerHTML = '<span class="sc-slot-time">' + timeLabel + '</span>' + sub;
+        block.innerHTML = '<span class="sc-slot-time"' + timeStyle + '>' + timeLabel + '</span>' + sub;
       }
 
       if (isMine && self.opts.onUnbook) {

@@ -907,7 +907,7 @@ textarea { min-height: 70px; }
 
 /* ── Slot blocks ── */
 .sc-slot {
-  margin: 1px 2px;
+  margin: 0 2px;
   border-radius: 4px;
   padding: 3px 5px;
   font-size: 9px;
@@ -917,30 +917,31 @@ textarea { min-height: 70px; }
   justify-content: flex-start;
   transition: box-shadow .12s, transform .12s;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   min-height: 0;
 }
-.sc-slot:hover { transform: scale(1.02); z-index: 2; }
+.sc-slot:hover { transform: scale(1.02); z-index: 3; }
 
 .sc-slot--open {
   background: var(--surface);
-  border: 1px solid var(--brass)66;
+  border: 1px solid var(--border);
   cursor: pointer;
 }
-.sc-slot--open:hover { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass)44; }
+.sc-slot--open:hover { border-color: var(--brass); background: var(--brass)08; box-shadow: 0 0 0 1px var(--brass)44; }
 
 .sc-slot--mine {
-  background: var(--brass)18;
+  background: var(--brass);
   border: 1px solid var(--brass);
-  border-left: 3px solid var(--brass);
+  color: var(--bg);
   cursor: pointer;
 }
-.sc-slot--mine:hover { box-shadow: 0 0 0 1px var(--brass)44; }
+.sc-slot--mine .sc-slot-time,
+.sc-slot--mine .sc-slot-who { color: var(--bg); }
+.sc-slot--mine:hover { box-shadow: 0 0 0 2px var(--brass)66; }
 
 .sc-slot--booked {
   background: var(--green);
   border: 1px solid var(--green);
-  border-left: 3px solid var(--green);
   color: var(--bg);
   cursor: default;
 }
@@ -949,7 +950,6 @@ textarea { min-height: 70px; }
 
 .sc-slot--tentative {
   border-style: dashed;
-  opacity: 0.75;
 }
 
 .sc-slot-time {
@@ -1016,7 +1016,7 @@ textarea { min-height: 70px; }
 .slot-week-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .slot-week-nav .btn { font-size: 11px; padding: 4px 10px; min-height: 0; }
 .slot-week-nav .week-label { font-size: 11px; min-width: 140px; text-align: center; }
-.slot-week-nav .btn .btn-icon { display: none; width: 14px; height: 14px; vertical-align: middle; }
+.slot-week-nav .btn .btn-icon { display: inline-block; width: 14px; height: 14px; vertical-align: middle; margin-right: 5px; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile (≤ 600px)
@@ -1101,7 +1101,7 @@ textarea { min-height: 70px; }
   .slot-week-nav { gap: 3px; }
   .slot-week-nav .btn { min-height: 32px; padding: 4px 8px; font-size: 11px; }
   .slot-week-nav .week-label { min-width: 0; font-size: 10px; white-space: nowrap; }
-  .slot-week-nav .btn .btn-icon { display: inline-block; }
+  .slot-week-nav .btn .btn-icon { margin-right: 0; }
   .slot-week-nav .btn .btn-icon ~ .btn-label { display: none; }
 }
 
