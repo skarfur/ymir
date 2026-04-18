@@ -542,6 +542,19 @@ function testVerifyStoredHash() {
   Logger.log('matches stored (whole): ' + (freshHash === stored));
 }
 
+// Editor-run helper: clear the login rate-limit lockout for
+// BOOTSTRAP_KENNITALA so the next login attempt isn't rejected by
+// `_checkLoginRate_`. Use after a debugging session where repeated
+// failed attempts have tripped the 5-in-15-min lockout.
+function clearLoginLockout() {
+  const kt = String(
+    PropertiesService.getScriptProperties().getProperty('BOOTSTRAP_KENNITALA') || ''
+  ).trim();
+  if (!kt) { Logger.log('Set BOOTSTRAP_KENNITALA first.'); return; }
+  _clearLoginAttempts_(kt);
+  Logger.log('Cleared login_attempts row for ' + kt + '. You can try signing in again.');
+}
+
 // Find a member for login by either kennitala (10 digits) or initials
 // (case-insensitive). Returns { member, ambiguous, notFound } so the caller
 // can surface a specific error when initials collide between members.
@@ -1325,25 +1338,36 @@ function validateMember_(kennitala, caller) {
 // and enforces a 5-per-15-min rate limit per kennitala.
 // Response shape: { member, wards, usingDefaultPassword, sessionToken, expiresAt }
 function loginMember_(b) {
+  Logger.log('[loginMember] entry; body keys: ' + Object.keys(b || {}).join(','));
   const username = String((b && b.username) || '').trim();
   const password = String((b && b.password) || '');
   const stay     = bool_(b && b.stayLoggedIn);
   const ua       = String((b && b.userAgent) || '');
+  Logger.log('[loginMember] username=' + JSON.stringify(username) + ' passwordLen=' + password.length);
   if (!username) return failJ('Username required');
   if (!password) return failJ('Password required');
 
   const r = _findMemberForLogin_(username);
+  Logger.log('[loginMember] _findMemberForLogin_ → ' + JSON.stringify({
+    ambiguous: r.ambiguous, notFound: r.notFound, found: !!r.member,
+  }));
   if (r.ambiguous) return failJ('Ambiguous initials', 409);
   if (r.notFound || !r.member) return failJ('Not found', 404);
   const m = r.member;
+  Logger.log('[loginMember] member: kennitala=' + m.kennitala + ' active=' + m.active +
+             ' role=' + m.role + ' hashLen=' + String(m.passwordHash || '').length +
+             ' passwordIsTemp=' + m.passwordIsTemp);
   if (!bool_(m.active)) return failJ('Inactive account', 403);
 
   // Rate limit is keyed off the resolved kennitala so initials and kennitala
   // attempts share a counter.
   const rate = _checkLoginRate_(m.kennitala);
+  Logger.log('[loginMember] rate: ' + JSON.stringify(rate));
   if (!rate.ok) return failJ('Too many attempts', 429);
 
-  if (!verifyPassword_(m, password)) {
+  const verified = verifyPassword_(m, password);
+  Logger.log('[loginMember] verifyPassword_ → ' + verified);
+  if (!verified) {
     _bumpLoginAttempts_(m.kennitala);
     // Re-read the row: this attempt may have crossed the lockout threshold.
     const after = _checkLoginRate_(m.kennitala);
@@ -1352,9 +1376,14 @@ function loginMember_(b) {
   }
 
   _clearLoginAttempts_(m.kennitala);
+  Logger.log('[loginMember] creating session');
   const session = _createSession_(m.kennitala, m.role || 'member', stay, ua);
+  Logger.log('[loginMember] session created: ' + JSON.stringify({
+    id: session.id, expiresAt: session.expiresAt,
+  }));
 
   const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
+  Logger.log('[loginMember] wards: ' + wards.length);
   return okJ({
     member: _publicMember_(m),
     wards: wards,
