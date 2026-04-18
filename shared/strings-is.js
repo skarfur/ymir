@@ -142,7 +142,7 @@ var _STRINGS_FLAT = {
   "member.launchBoat": "Fara á sjó",
   "member.reportIssue": "Tilkynna viðhaldsmál",
   "member.myCheckout": "BÁTAR Á SJÓNUM",
-  "member.myCheckoutSub": "smelltu á þinn bát til að skrá inn",
+  "member.myCheckoutSub": "smelltu á bát til að skrá inn",
   "member.tabFleet": "Flotinn",
   "member.tabCerts": "Skírteini",
   "member.fleetAvail": "LAUSIR BÁTAR",
