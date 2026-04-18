@@ -47,36 +47,18 @@ window.DUTY_ICONS = Object.freeze({
 // wxScoreFlag()  computes total score → flag + full breakdown.
 // ═══════════════════════════════════════════════════════════════════════════════
 const SCORE_CONFIG = {
+  // Thresholds define the score boundaries between flag colors.
   thresholds: { yellow: 25, orange: 45, red: 65, black: 80 },
-  wind: [
-    { maxBft: 3,  pts: 0  },
-    { maxBft: 4,  pts: 8  },
-    { maxBft: 5,  pts: 16 },
-    { maxBft: 6,  pts: 22 },
-    { maxBft: 7,  pts: 28 },
-    { maxBft: 12, pts: 35 },
-  ],
-  easterlyDirs:    ['E', 'NE', 'SE', 'ENE', 'ESE'],
-  easterlyPts:     5,
-  gustModifier1Pts: 4,   // gusts exactly 1 Force level higher than sustained
-  gustModifier2Pts: 8,   // gusts 2+ Force levels higher than sustained
-  waves: [
-    { maxM: 0.5,  pts: 0  },
-    { maxM: 1.0,  pts: 8  },
-    { maxM: 1.5,  pts: 14 },
-    { maxM: 2.0,  pts: 18 },
-    { maxM: 99,   pts: 22 },
-  ],
-  sst: [
-    { minC: 12,  pts: 0  },
-    { minC: 8,   pts: 5  },
-    { minC: 5,   pts: 10 },
-    { minC: -99, pts: 15 },
-  ],
-  // No defaults — admin must explicitly configure bands via Flags tab.
-  // Empty array means feels-like contributes 0 points (see wxScoreFlag).
+  // All scoring weights below default to empty/zero. Admin must explicitly
+  // configure them via the Flags tab — no silent contributions to the score.
+  wind: [],
+  windDirModifier: { dirs: [], pts: 0 },   // added when wind is from a flagged direction
+  gustModifier1Pts: 0,                     // gusts exactly 1 Force level higher than sustained
+  gustModifier2Pts: 0,                     // gusts 2+ Force levels higher than sustained
+  waves: [],
+  sst: [],
   feelsLike: [],
-  visibility: { good: 0, reduced: 3, poor: 5 },
+  visibility: { good: 0, reduced: 0, poor: 0 },
   // ─────────────────────────────────────────────────────────────────────────────
   // flags:
   //   color / bg / border / icon  — visual constants (NOT admin-editable).
@@ -122,14 +104,16 @@ const SCORE_CONFIG = {
 
 function wxLoadFlagConfig(saved) {
   if (!saved) return;
-  if (saved.thresholds)            Object.assign(SCORE_CONFIG.thresholds, saved.thresholds);
-  if (saved.wind)                  if (saved.wind?.length) SCORE_CONFIG.wind = saved.wind;
-  if (saved.waves)                 if (saved.waves?.length) SCORE_CONFIG.waves = saved.waves;
-  if (saved.sst)                   if (saved.sst?.length) SCORE_CONFIG.sst = saved.sst;
-  if (saved.feelsLike)             if (saved.feelsLike?.length) SCORE_CONFIG.feelsLike = saved.feelsLike;
-  if (saved.visibility)            Object.assign(SCORE_CONFIG.visibility, saved.visibility);
-  if (saved.easterlyDirs)          SCORE_CONFIG.easterlyDirs  = saved.easterlyDirs;
-  if (saved.easterlyPts    != null) SCORE_CONFIG.easterlyPts      = saved.easterlyPts;
+  if (saved.thresholds)              Object.assign(SCORE_CONFIG.thresholds, saved.thresholds);
+  if (saved.wind?.length)            SCORE_CONFIG.wind      = saved.wind;
+  if (saved.waves?.length)           SCORE_CONFIG.waves     = saved.waves;
+  if (saved.sst?.length)             SCORE_CONFIG.sst       = saved.sst;
+  if (saved.feelsLike?.length)       SCORE_CONFIG.feelsLike = saved.feelsLike;
+  if (saved.visibility)              Object.assign(SCORE_CONFIG.visibility, saved.visibility);
+  if (saved.windDirModifier) {
+    if (saved.windDirModifier.dirs)        SCORE_CONFIG.windDirModifier.dirs = saved.windDirModifier.dirs;
+    if (saved.windDirModifier.pts != null) SCORE_CONFIG.windDirModifier.pts  = saved.windDirModifier.pts;
+  }
   if (saved.gustModifier1Pts != null) SCORE_CONFIG.gustModifier1Pts = saved.gustModifier1Pts;
   if (saved.gustModifier2Pts != null) SCORE_CONFIG.gustModifier2Pts = saved.gustModifier2Pts;
   if (saved.flags) {
@@ -186,17 +170,18 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 
   const bft = wxMsToBft(ws || 0);
   const wBand = cfg.wind.find(b => bft <= b.maxBft) || cfg.wind[cfg.wind.length - 1];
-  if (wBand.pts > 0) {
+  if (wBand && wBand.pts > 0) {
     score += wBand.pts;
     breakdown.push({ factor:'wind', pts:wBand.pts,
       label: s('wx.bdWind', { n: bft, desc: wxBftDesc(bft) }) });
   }
 
   const dir = (typeof wDir === 'number' ? wxDirLabel(wDir) : (wDir || '')).toUpperCase().trim();
-  if (dir && cfg.easterlyDirs.includes(dir) && bft > 0) {
-    score += cfg.easterlyPts;
-    breakdown.push({ factor:'direction', pts:cfg.easterlyPts,
-      label: s('wx.bdEasterly', { dir }) });
+  const wdm = cfg.windDirModifier;
+  if (dir && wdm.pts > 0 && wdm.dirs.includes(dir) && bft > 0) {
+    score += wdm.pts;
+    breakdown.push({ factor:'direction', pts:wdm.pts,
+      label: s('wx.bdWindDir', { dir }) });
   }
 
   if (wg != null && ws != null && wxMsToBft(wg) > bft) {
@@ -212,7 +197,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
   const wh = waveH || 0;
   if (wh > 0) {
     const wvBand = cfg.waves.find(b => wh <= b.maxM) || cfg.waves[cfg.waves.length - 1];
-    if (wvBand.pts > 0) {
+    if (wvBand && wvBand.pts > 0) {
       score += wvBand.pts;
       breakdown.push({ factor:'waves', pts:wvBand.pts,
         label: s('wx.bdWaves', { h: wh.toFixed(1) }) });
@@ -221,7 +206,7 @@ function wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey) {
 
   if (sst != null) {
     const sBand = cfg.sst.find(b => sst >= b.minC) || cfg.sst[cfg.sst.length - 1];
-    if (sBand.pts > 0) {
+    if (sBand && sBand.pts > 0) {
       score += sBand.pts;
       breakdown.push({ factor:'sst', pts:sBand.pts,
         label: s('wx.bdSst', { t: sst.toFixed(1) }) });

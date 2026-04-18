@@ -484,10 +484,10 @@
         <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.dirGustMods"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagDirCard">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field"><label data-s="admin.easterlyMod"></label><input type="number" id="fcEasterlyPts" min="0" max="20" value="5" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.easterlyModHint"></div></div>
-            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="4" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="8" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod2Hint"></div></div></div>
+            <div class="field"><label data-s="admin.windDirMod"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.windDirModHint"></div></div>
+            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" oninput="updateFlagPreview()"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod2Hint"></div></div></div>
           </div>
-          <div class="field"><label data-s="admin.easterlyDirs"></label><input type="text" id="fcEasterlyDirs" value="E,NE,SE,ENE,ESE" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
+          <div class="field"><label data-s="admin.windDirDirs"></label><input type="text" id="fcWindDirDirs" value="" placeholder="E,NE,SE" oninput="updateFlagPreview()"></div>
         </div>
       <div class="col-section">
         <div class="col-head" onclick="toggleSection(this)"><div class="col-title" data-s="admin.waveScoring"></div><span class="col-toggle">▼</span></div>
@@ -516,8 +516,8 @@
         <div class="col-body hidden" id="flagVisCard">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
             <div class="field"><label data-s="admin.visGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
-            <div class="field"><label data-s="admin.visReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="3" oninput="updateFlagPreview()"></div>
-            <div class="field"><label data-s="admin.visPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="5" oninput="updateFlagPreview()"></div>
+            <div class="field"><label data-s="admin.visReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
+            <div class="field"><label data-s="admin.visPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="0" oninput="updateFlagPreview()"></div>
           </div>
         </div>
       </div>
@@ -3624,22 +3624,24 @@ function loadFlagConfigPanel(c){
   _fcSstBands=(c.sst||sc.sst).map(function(b){return{minC:b.minC,pts:b.pts};});
   _fcFeelsBands=(c.feelsLike||sc.feelsLike).map(function(b){return{minC:b.minC,pts:b.pts};});
   fcRenderWindBands();fcRenderWaveBands();fcRenderSstBands();fcRenderFeelsBands();
-  document.getElementById('fcEasterlyPts').value=c.easterlyPts!=null?c.easterlyPts:sc.easterlyPts;
-  document.getElementById('fcGust1Pts').value=(c.gustModifier1Pts??sc.gustModifier1Pts)??4;
-  document.getElementById('fcGust2Pts').value=(c.gustModifier2Pts??sc.gustModifier2Pts)??8;
-  document.getElementById('fcEasterlyDirs').value=(c.easterlyDirs||sc.easterlyDirs).join(',');
+  var wdm=c.windDirModifier||sc.windDirModifier||{dirs:[],pts:0};
+  document.getElementById('fcWindDirPts').value=wdm.pts!=null?wdm.pts:0;
+  document.getElementById('fcGust1Pts').value=(c.gustModifier1Pts??sc.gustModifier1Pts)??0;
+  document.getElementById('fcGust2Pts').value=(c.gustModifier2Pts??sc.gustModifier2Pts)??0;
+  document.getElementById('fcWindDirDirs').value=(wdm.dirs||[]).join(',');
   var vis=c.visibility||sc.visibility;
   document.getElementById('fcVisGood').value=vis.good!=null?vis.good:0;
-  document.getElementById('fcVisReduced').value=vis.reduced!=null?vis.reduced:3;
-  document.getElementById('fcVisPoor').value=vis.poor!=null?vis.poor:5;
+  document.getElementById('fcVisReduced').value=vis.reduced!=null?vis.reduced:0;
+  document.getElementById('fcVisPoor').value=vis.poor!=null?vis.poor:0;
   var advEl=document.getElementById('fcFlagAdvice');
   if(advEl){advEl.innerHTML=['green','yellow','orange','red','black'].map(function(key){var fc=SCORE_CONFIG.flags[key],saved=(c.flags&&c.flags[key])||{};return '<div style="background:'+fc.bg+';border:1px solid '+fc.border+';border-radius:8px;padding:10px 12px;margin-bottom:4px">'+'<div style="font-size:12px;color:'+fc.color+';font-weight:500;margin-bottom:8px">'+fc.icon+' '+key+'</div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Short advice (EN)</label><input type="text" id="fcAdvice_'+key+'" value="'+esc(saved.advice||fc.advice||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Stutt ráðlegging (IS)</label><input type="text" id="fcAdviceIS_'+key+'" value="'+esc(saved.adviceIS||fc.adviceIS||'')+'" style="font-size:11px"></div>'+'<div class="field" style="margin-bottom:6px"><label style="font-size:10px">Full description (EN)</label><textarea id="fcDesc_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.description||fc.description||'')+'</textarea></div>'+'<div class="field" style="margin-bottom:0"><label style="font-size:10px">Full lýsingartexti (IS)</label><textarea id="fcDescIS_'+key+'" rows="2" style="font-size:11px;width:100%;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-family:inherit">'+esc(saved.descriptionIS||fc.descriptionIS||'')+'</textarea></div>'+'</div>';}).join('');}
   updateFlagPreview();
 }
 function getFlagFormValues(){
   var t={yellow:parseInt(document.getElementById('fcThreshY').value)||25,orange:parseInt(document.getElementById('fcThreshO').value)||45,red:parseInt(document.getElementById('fcThreshR').value)||65,black:parseInt(document.getElementById('fcThreshB').value)||80};
-  var easterlyDirs=(document.getElementById('fcEasterlyDirs').value||'').split(',').map(function(s){return s.trim().toUpperCase();}).filter(Boolean);
-  var cfg={thresholds:t,wind:fcReadWindBands(),waves:fcReadWaveBands(),sst:fcReadSstBands(),feelsLike:fcReadFeelsBands(),easterlyDirs:easterlyDirs,easterlyPts:parseInt(document.getElementById('fcEasterlyPts').value)||0,gustModifier1Pts:parseInt(document.getElementById('fcGust1Pts').value)||0,
+  var windDirDirs=(document.getElementById('fcWindDirDirs').value||'').split(',').map(function(s){return s.trim().toUpperCase();}).filter(Boolean);
+  var windDirModifier={dirs:windDirDirs,pts:parseInt(document.getElementById('fcWindDirPts').value)||0};
+  var cfg={thresholds:t,wind:fcReadWindBands(),waves:fcReadWaveBands(),sst:fcReadSstBands(),feelsLike:fcReadFeelsBands(),windDirModifier:windDirModifier,gustModifier1Pts:parseInt(document.getElementById('fcGust1Pts').value)||0,
       gustModifier2Pts:parseInt(document.getElementById('fcGust2Pts').value)||0,visibility:{good:parseInt(document.getElementById('fcVisGood').value)||0,reduced:parseInt(document.getElementById('fcVisReduced').value)||0,poor:parseInt(document.getElementById('fcVisPoor').value)||0},flags:{}};
   ['green','yellow','orange','red','black'].forEach(function(key){var en=document.getElementById('fcAdvice_'+key),is=document.getElementById('fcAdviceIS_'+key);var de=document.getElementById('fcDesc_'+key),dis=document.getElementById('fcDescIS_'+key);cfg.flags[key]={advice:en?en.value.trim():'',adviceIS:is?is.value.trim():'',description:de?de.value.trim():'',descriptionIS:dis?dis.value.trim():''};});
   return cfg;
@@ -3660,9 +3662,9 @@ function updateFlagPreview(){
     SCORE_CONFIG.wind=cfg.wind;SCORE_CONFIG.waves=cfg.waves;
     SCORE_CONFIG.sst=cfg.sst;SCORE_CONFIG.feelsLike=cfg.feelsLike;
     Object.assign(SCORE_CONFIG.visibility,cfg.visibility);
-    SCORE_CONFIG.easterlyDirs=cfg.easterlyDirs;
-    SCORE_CONFIG.easterlyPts=cfg.easterlyPts;
-    SCORE_CONFIG.gustModifierPts=cfg.gustModifierPts;
+    SCORE_CONFIG.windDirModifier=cfg.windDirModifier;
+    SCORE_CONFIG.gustModifier1Pts=cfg.gustModifier1Pts;
+    SCORE_CONFIG.gustModifier2Pts=cfg.gustModifier2Pts;
   }catch(e){}
   preview.innerHTML=examples.map(function(ex){
     var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');
@@ -3676,9 +3678,9 @@ function updateFlagPreview(){
   SCORE_CONFIG.wind=snap.wind;SCORE_CONFIG.waves=snap.waves;
   SCORE_CONFIG.sst=snap.sst;SCORE_CONFIG.feelsLike=snap.feelsLike;
   Object.assign(SCORE_CONFIG.visibility,snap.visibility);
-  SCORE_CONFIG.easterlyDirs=snap.easterlyDirs;
-  SCORE_CONFIG.easterlyPts=snap.easterlyPts;
-  SCORE_CONFIG.gustModifierPts=snap.gustModifierPts;
+  SCORE_CONFIG.windDirModifier=snap.windDirModifier;
+  SCORE_CONFIG.gustModifier1Pts=snap.gustModifier1Pts;
+  SCORE_CONFIG.gustModifier2Pts=snap.gustModifier2Pts;
 }
 async function saveFlagConfig(){
   var errEl=document.getElementById('fcValidationError'),msgEl=document.getElementById('fcSaveMsg');errEl.style.display='none';msgEl.textContent='';
