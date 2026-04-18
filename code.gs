@@ -807,11 +807,6 @@ function doPost(e) {
     const action = b.action;
     // Public POST endpoints — no auth required.
     if (action && PUBLIC_ACTIONS_[action]) return route_(action, b, null);
-    // Server-side / trigger calls can still present the shared API_TOKEN_.
-    // This keeps cron like checkAndSendOverdueAlerts working without a user.
-    if (b._serverSide && b.token === API_TOKEN_) {
-      return route_(action, b, { kennitala: '_system', role: 'admin', __system: true });
-    }
     // Everything else requires a valid per-user session token.
     const caller = _authCaller_(b);
     if (!caller) return failJ('Unauthorized', 401);
