@@ -73,12 +73,9 @@ const SCORE_CONFIG = {
     { minC: 5,   pts: 10 },
     { minC: -99, pts: 15 },
   ],
-  feelsLike: [
-    { minC: 10,  pts: 0  },
-    { minC: 5,   pts: 3  },
-    { minC: 0,   pts: 6  },
-    { minC: -99, pts: 10 },
-  ],
+  // No defaults — admin must explicitly configure bands via Flags tab.
+  // Empty array means feels-like contributes 0 points (see wxScoreFlag).
+  feelsLike: [],
   visibility: { good: 0, reduced: 3, poor: 5 },
   // ─────────────────────────────────────────────────────────────────────────────
   // flags:
