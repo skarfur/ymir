@@ -391,11 +391,21 @@ function verifyPassword_(member, password) {
 // One-shot helper for the Apps Script editor. Issue a fresh temporary
 // password for an existing admin so someone can log in and use the admin
 // UI to reset the rest. Logs the plaintext to the execution log — no
-// persistence, no sheet write beyond the hash. Run via:
-//   Select bootstrapAdminPassword → change the kennitala below → Run.
-function bootstrapAdminPassword(kennitala) {
-  const kt = String(kennitala || '').trim();
-  if (!kt) { Logger.log('Pass a kennitala as the argument.'); return; }
+// persistence, no sheet write beyond the hash.
+//
+// Usage:
+//   1. Project Settings → Script Properties → add `BOOTSTRAP_KENNITALA`
+//      with the admin's 10-digit kennitala as the value.
+//   2. Select `bootstrapAdminPassword` in the editor → Run.
+//   3. Open Executions / View Logs and copy the temp password.
+//   4. Delete the `BOOTSTRAP_KENNITALA` property once you're signed in.
+function bootstrapAdminPassword() {
+  const props = PropertiesService.getScriptProperties();
+  const kt = String(props.getProperty('BOOTSTRAP_KENNITALA') || '').trim();
+  if (!kt) {
+    Logger.log('Set Script Property BOOTSTRAP_KENNITALA to the admin kennitala, then run again.');
+    return;
+  }
   addColIfMissing_('members', 'passwordHash');
   addColIfMissing_('members', 'passwordIsTemp');
   const m = findOne_('members', 'kennitala', kt);
@@ -409,6 +419,7 @@ function bootstrapAdminPassword(kennitala) {
   cDel_('members');
   Logger.log('Temporary password for ' + (m.name || kt) + ': ' + temp);
   Logger.log('Sign in, then use the admin UI to issue temp passwords for everyone else.');
+  Logger.log('Remember to delete the BOOTSTRAP_KENNITALA Script Property afterwards.');
 }
 
 // Find a member for login by either kennitala (10 digits) or initials
