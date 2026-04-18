@@ -263,10 +263,21 @@ function ss_() { return SpreadsheetApp.openById(SHEET_ID_); }
 function now_() { return new Date().toISOString(); }
 function uid_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 16); }
 function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1 || v === '1'; }
+// Prefix a literal apostrophe onto any string whose first character Sheets
+// would interpret as a formula (=, +, -, @) or a line-breaking control
+// (CR/LF/TAB). The apostrophe itself is not rendered to the user; it just
+// forces Sheets to treat the cell as text. Non-strings pass through.
+function sanitizeCell_(v) {
+  if (typeof v !== 'string' || v === '') return v;
+  var c = v.charCodeAt(0);
+  if (c === 0x3D || c === 0x2B || c === 0x2D || c === 0x40 ||
+      c === 0x0D || c === 0x0A || c === 0x09) return "'" + v;
+  return v;
+}
 function okJ(data) { return jsonR_({ success: true, ...data }); }
 function failJ(msg, code) { return jsonR_({ success: false, error: msg, code: code || 400 }); }
 function jsonR_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
-function htmlR_(html) { return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); }
+function htmlR_(html) { return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT); }
 function shareUid_() {
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var hex = Utilities.getUuid().replace(/-/g, '');
@@ -691,7 +702,7 @@ function findOne_(tabKey, field, value) {
 
 function insertRow_(tabKey, obj) {
   const c = getSheetData_(tabKey);
-  const row = c.headers.map(h => obj[h] !== undefined ? obj[h] : '');
+  const row = c.headers.map(h => sanitizeCell_(obj[h] !== undefined ? obj[h] : ''));
   c.sheet.appendRow(row);
   // appendRow lands at the first blank row, which may not equal
   // values.length + 2 if the sheet has trailing blanks. Invalidate to keep
@@ -735,7 +746,7 @@ function updateRow_(tabKey, keyField, keyValue, updates) {
           // Per-column setValue preserves existing concurrency semantics:
           // two executions touching disjoint columns on the same row don't
           // clobber each other.  Keep cache coherent with the write.
-          sheet.getRange(i + 2, col + 1).setValue(v);
+          sheet.getRange(i + 2, col + 1).setValue(sanitizeCell_(v));
           values[i][col] = v;
           wrote = true;
         }
@@ -797,7 +808,10 @@ function doGet(e) {
       return route_(b.action, b, callerGet);
     }
     return failJ('Unauthorized', 401);
-  } catch (err) { return failJ('Server error: ' + err.message, 500); }
+  } catch (err) {
+    console.error('doGet error:', err && err.stack || err);
+    return failJ('Server error', 500);
+  }
 }
 
 function doPost(e) {
@@ -813,7 +827,10 @@ function doPost(e) {
     const denied = _authorize_(action, caller, b);
     if (denied) return denied;
     return route_(action, b, caller);
-  } catch (err) { return failJ('Server error: ' + err.message, 500); }
+  } catch (err) {
+    console.error('doPost error:', err && err.stack || err);
+    return failJ('Server error', 500);
+  }
 }
 
 function route_(action, b, caller) {
@@ -1757,7 +1774,7 @@ function adminAddTime_(b) {
     var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     // Column order matches sheet: id, employeeId, type, timestamp(clockOut), source, originalTimestamp(clockIn), note, periodKey, durationMinutes
     var periodKey = b.clockIn ? b.clockIn.slice(0,7) + '-01' : new Date().toISOString().slice(0,7) + '-01';
-    sh.appendRow([id, b.employeeId, '', b.timestamp, 'admin', b.clockIn, b.note || 'admin entry', periodKey, b.durationMinutes]);
+    sh.appendRow([id, b.employeeId, '', b.timestamp, 'admin', b.clockIn, sanitizeCell_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
     return okJ({ success: true, id: id });
   } catch(e) {
     return failJ(e.message);
@@ -4762,9 +4779,9 @@ function setConfigSheetValue_(key, value) {
   if (lastRow >= 2) {
     const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(r => String(r[0]).trim());
     const idx = keys.indexOf(key);
-    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(value); return; }
+    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(sanitizeCell_(value)); return; }
   }
-  sheet.appendRow([key, value]);
+  sheet.appendRow([key, sanitizeCell_(value)]);
 }
 
 function getOverdueAlerts_(b) {
@@ -4851,7 +4868,7 @@ function silenceAlert_(b) {
   const row = getCheckoutRow_(b.id);
   if (!row) throw new Error('Checkout not found: ' + b.id);
   row._sheet.getRange(row._sheetRow, row._col1('alertSilenced')).setValue(true);
-  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(b.silencedBy || '');
+  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(sanitizeCell_(b.silencedBy || ''));
   row._sheet.getRange(row._sheetRow, row._col1('alertSilencedAt')).setValue(now_());
   return okJ({ id: b.id });
 }
