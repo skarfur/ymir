@@ -1,10 +1,6 @@
 // YMIR - shared/api.js
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
-// API_TOKEN is no longer required for authenticated calls — the session token
-// issued by loginMember is the credential. It is still exposed as a global so
-// hand-wired server-side callers (cron/trigger) can keep using it.
-const API_TOKEN  = "ymirsc2026";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
 // ── Service Worker Cleanup ──────────────────────────────────────────────────
@@ -103,7 +99,7 @@ async function _call(action, payload) {
   // obtain the token in the first place. For everything else, attach the
   // caller's session token so the backend can identify them.
   var PUBLIC_ACTIONS = { loginMember: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
-  var envelope = { action: action, token: API_TOKEN };
+  var envelope = { action: action };
   if (!PUBLIC_ACTIONS[action]) {
     var t = _getSessionToken();
     if (t) envelope.sessionToken = t;
