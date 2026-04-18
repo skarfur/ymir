@@ -933,6 +933,70 @@ window.mcmGetCertCategories = function() { return _cqCertCategories; };
 // ══ CAPTAIN LOGBOOK FILTERS (override shared/logbook.js) ════════════════════
 var _captains = [];
 
+// Resolve the skipper's kennitala for a trip. For a crew trip, this walks the
+// linkage (linkedTripId / linkedCheckoutId) back to the skipper row.
+function _tripSkipperKt(t) {
+  if (!t) return '';
+  if (t.role !== 'crew') return String(t.kennitala || '');
+  var skip = null;
+  if (t.linkedTripId) {
+    skip = allTrips.find(function(x) { return x.id === t.linkedTripId; });
+  }
+  if (!skip && t.linkedCheckoutId) {
+    skip = allTrips.find(function(x) {
+      return x.linkedCheckoutId === t.linkedCheckoutId && x.role !== 'crew';
+    });
+  }
+  return skip ? String(skip.kennitala || '') : '';
+}
+
+// Set of kennitala for everyone aboard the voyage that includes trip t:
+// owner + linked skipper + all sibling trips + entries in crewNames.
+function _tripPartyKts(t) {
+  var set = new Set();
+  if (!t) return set;
+  if (t.kennitala) set.add(String(t.kennitala));
+  var skKt = _tripSkipperKt(t);
+  if (skKt) set.add(skKt);
+  var coId = t.linkedCheckoutId || '';
+  var skipperId = t.role === 'crew' ? (t.linkedTripId || '') : t.id;
+  allTrips.forEach(function(x) {
+    var sameVoyage = (coId && x.linkedCheckoutId === coId) ||
+                     (skipperId && (x.id === skipperId || x.linkedTripId === skipperId));
+    if (sameVoyage && x.kennitala) set.add(String(x.kennitala));
+  });
+  var stored = [];
+  try { if (t.crewNames) stored = typeof t.crewNames === 'string' ? JSON.parse(t.crewNames) : t.crewNames; } catch(e) {}
+  if (!stored.length && t.role === 'crew') {
+    var skTrip = null;
+    if (t.linkedTripId) skTrip = allTrips.find(function(x) { return x.id === t.linkedTripId && x.crewNames; });
+    if (!skTrip && t.linkedCheckoutId) {
+      skTrip = allTrips.find(function(x) { return x.linkedCheckoutId === t.linkedCheckoutId && x.role !== 'crew' && x.crewNames; });
+    }
+    if (skTrip) {
+      try { stored = typeof skTrip.crewNames === 'string' ? JSON.parse(skTrip.crewNames) : skTrip.crewNames; } catch(e) {}
+    }
+  }
+  (stored || []).forEach(function(cn) { if (cn && cn.kennitala) set.add(String(cn.kennitala)); });
+  return set;
+}
+
+function _rebuildBoatNameOptions(catFilter) {
+  var lc = (catFilter || '').toLowerCase();
+  var names = [...new Set(myTrips
+    .filter(function(t) {
+      if (!lc) return true;
+      var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase();
+      return tCat === lc;
+    })
+    .map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
+  var bSel = document.getElementById('fBoatName');
+  var prev = bSel.value;
+  bSel.innerHTML = '<option value="">' + s('cq.allBoats') + '</option>';
+  names.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
+  if (names.indexOf(prev) !== -1) bSel.value = prev;
+}
+
 function buildFilters() {
   // Year filter
   var years = [...new Set(myTrips.map(function(t) { return sstr(t.date).slice(0, 4); }).filter(Boolean))].sort().reverse();
@@ -950,13 +1014,8 @@ function buildFilters() {
   var keelboatCat = cats.find(function(c) { return c.toLowerCase() === 'keelboat'; });
   if (keelboatCat) cSel.value = keelboatCat;
 
-  // Boat name filter (keelboats only)
-  var keelboatNames = [...new Set(myTrips
-    .filter(function(t) { return ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase() === 'keelboat'; })
-    .map(function(t) { return t.boatName || ''; }).filter(Boolean))].sort();
-  var bSel = document.getElementById('fBoatName');
-  bSel.innerHTML = '<option value="">' + s('cq.allBoats') + '</option>';
-  keelboatNames.forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; bSel.appendChild(o); });
+  // Boat name filter — options follow the selected category
+  _rebuildBoatNameOptions(cSel.value);
 
   // Captain filter (members who isCaptain)
   _captains = _cqMembers.filter(function(m) { return isCaptain(m); }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
@@ -974,6 +1033,8 @@ function buildFilters() {
   mSel.innerHTML = '<option value="">' + s('cq.allMembers') + '</option>';
   keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = memberDisplayName(m, keelboatMembers); mSel.appendChild(o); });
 
+  // Rebuild boat options when category changes (registered first so it runs before applyFilter)
+  cSel.addEventListener('change', function() { _rebuildBoatNameOptions(this.value); });
   ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
   document.getElementById('fText').addEventListener('input', applyFilter);
 }
@@ -992,8 +1053,8 @@ function applyFilter() {
     if (yr && !(t.date || '').startsWith(yr)) return false;
     if (cat) { var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase(); if (tCat !== cat.toLowerCase()) return false; }
     if (boatName && (t.boatName || '') !== boatName) return false;
-    if (captain && String(t.kennitala) !== String(captain)) return false;
-    if (member && String(t.kennitala) !== String(member)) return false;
+    if (captain && _tripSkipperKt(t) !== String(captain)) return false;
+    if (member && !_tripPartyKts(t).has(String(member))) return false;
     if (wind) {
       var b = parseInt(t.beaufort) || 0;
       if (wind === 'gt4' && b <= 4) return false;
