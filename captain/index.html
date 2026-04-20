@@ -12,6 +12,7 @@
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/list-filter.js"></script>
 <script src="../shared/calendar.js" defer></script>
 <script src="../shared/boats.js" defer></script>
 <script src="../shared/certs.js" defer></script>
@@ -761,6 +762,7 @@ window.mcmGetCertCategories = function() { return _cqCertCategories; };
 
 // ══ CAPTAIN LOGBOOK FILTERS (override shared/logbook.js) ════════════════════
 var _captains = [];
+var _cqTripFilter = null;  // shared/list-filter.js controller built in buildFilters()
 
 // Resolve the skipper's kennitala for a trip. For a crew trip, this walks the
 // linkage (linkedTripId / linkedCheckoutId) back to the skipper row.
@@ -862,45 +864,52 @@ function buildFilters() {
   mSel.innerHTML = '<option value="">' + s('cq.allMembers') + '</option>';
   keelboatMembers.forEach(function(m) { var o = document.createElement('option'); o.value = m.kennitala; o.textContent = memberDisplayName(m, keelboatMembers); mSel.appendChild(o); });
 
-  // Rebuild boat options when category changes (registered first so it runs before applyFilter)
+  // Category change rebuilds boat-name options before the filter re-runs.
   cSel.addEventListener('change', function() { _rebuildBoatNameOptions(this.value); });
-  ['fYear', 'fCat', 'fBoatName', 'fCaptain', 'fMember', 'fWind'].forEach(function(id) { document.getElementById(id).addEventListener('change', applyFilter); });
-  document.getElementById('fText').addEventListener('input', applyFilter);
-}
 
-function applyFilter() {
-  Object.keys(_thumbMaps).forEach(function(k) { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
-  var yr       = document.getElementById('fYear').value;
-  var cat      = document.getElementById('fCat').value;
-  var boatName = document.getElementById('fBoatName').value;
-  var captain  = document.getElementById('fCaptain').value;
-  var member   = document.getElementById('fMember').value;
-  var wind     = document.getElementById('fWind').value;
-  var txt      = document.getElementById('fText').value.toLowerCase().trim();
-
-  var filtered = myTrips.filter(function(t) {
-    if (yr && !(t.date || '').startsWith(yr)) return false;
-    if (cat) { var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase(); if (tCat !== cat.toLowerCase()) return false; }
-    if (boatName && (t.boatName || '') !== boatName) return false;
-    if (captain && _tripSkipperKt(t) !== String(captain)) return false;
-    if (member && !_tripPartyKts(t).has(String(member))) return false;
-    if (wind) {
-      var b = parseInt(t.beaufort) || 0;
-      if (wind === 'gt4' && b <= 4) return false;
-      if (wind === 'lte4' && b > 4) return false;
-      if (['calm', 'light', 'moderate', 'strong'].includes(wind) && bftGroup(b) !== wind) return false;
-    }
-    if (txt) {
-      var hay = [t.boatName, t.memberName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
-      if (!hay.includes(txt)) return false;
-    }
-    return true;
+  var yrInitial  = yrSel.value;
+  var catInitial = cSel.value;
+  _cqTripFilter = createListFilter({
+    source:  function() { return myTrips; },
+    filters: { yr: yrInitial, cat: catInitial, boatName: '', captain: '', member: '', wind: '' },
+    predicate: function(t, f) {
+      if (f.yr && !(t.date || '').startsWith(f.yr)) return false;
+      if (f.cat) {
+        var tCat = ((allBoats.find(function(b) { return b.id === t.boatId; }) || {}).category || t.boatCategory || '').toLowerCase();
+        if (tCat !== f.cat.toLowerCase()) return false;
+      }
+      if (f.boatName && (t.boatName || '') !== f.boatName) return false;
+      if (f.captain  && _tripSkipperKt(t) !== String(f.captain)) return false;
+      if (f.member   && !_tripPartyKts(t).has(String(f.member))) return false;
+      if (f.wind) {
+        var b = parseInt(t.beaufort) || 0;
+        if (f.wind === 'gt4'  && b <= 4) return false;
+        if (f.wind === 'lte4' && b >  4) return false;
+        if (['calm','light','moderate','strong'].includes(f.wind) && bftGroup(b) !== f.wind) return false;
+      }
+      if (f.search) {
+        var hay = [t.boatName, t.memberName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
+        if (!hay.includes(f.search.toLowerCase().trim())) return false;
+      }
+      return true;
+    },
+    render: function(filtered) {
+      // Tear down previous mini-maps before re-rendering cards — leaflet leaks
+      // handlers otherwise.
+      Object.keys(_thumbMaps).forEach(function(k) { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
+      document.getElementById('tripList').innerHTML = filtered.length
+        ? filtered.map(tripCard).join('')
+        : '<div class="empty-note">' + s('cq.noTripsMatch') + '</div>';
+      document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+    },
+  }).autoWire({
+    fields: { fYear: 'yr', fCat: 'cat', fBoatName: 'boatName', fCaptain: 'captain', fMember: 'member', fWind: 'wind' },
+    search: 'fText',
   });
-  document.getElementById('tripList').innerHTML = filtered.length
-    ? filtered.map(tripCard).join('')
-    : '<div class="empty-note">' + s('cq.noTripsMatch') + '</div>';
-  document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
 }
+
+// Kept as a thin shim so existing callers (init, post-save refreshes) keep working.
+function applyFilter() { if (_cqTripFilter) _cqTripFilter.refresh(); }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAPTAIN RESERVATION SLOTS

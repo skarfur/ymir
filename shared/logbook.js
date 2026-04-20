@@ -445,45 +445,10 @@ var _filteredTrips = [];
 var _renderedCount = 0;
 var _tripListObserver = null;
 var _TRIP_BATCH = 40;
+var _tripFilter = null;  // shared/list-filter.js controller — built in buildFilters()
 
-function applyFilter(){
-  // Destroy stale thumb maps before re-rendering
-  Object.keys(_thumbMaps).forEach(k => { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
-  const yr  = (document.getElementById('fYear')||{}).value||'';
-  const cat = (document.getElementById('fCat')||{}).value||'';
-  const role= (document.getElementById('fRole')||{}).value||'';
-  const wind= (document.getElementById('fWind')||{}).value||'';
-  const txt = ((document.getElementById('fText')||{}).value||'').toLowerCase().trim();
-
-  _filteredTrips=myTrips.filter(t=>{
-    if(yr  && !(t.date||'').startsWith(yr)) return false;
-    if(cat){const tCat=((allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').toLowerCase();if(tCat!==cat.toLowerCase())return false;}
-    if(role==='skipper' && t.role==='crew') return false;
-    if(role==='crew'    && t.role!=='crew') return false;
-    if(wind){
-      const b=parseInt(t.beaufort)||0;
-      if(wind==='gt4'  && b<=4)  return false;
-      if(wind==='lte4' && b>4)   return false;
-      if(['calm','light','moderate','strong'].includes(wind) && bftGroup(b)!==wind) return false;
-    }
-    if(txt){
-      const hay=[t.boatName,t.locationName,t.date,t.beaufort,t.windDir,t.notes,t.skipperNote,t.boatCategory].join(' ').toLowerCase();
-      if(!hay.includes(txt)) return false;
-    }
-    return true;
-  });
-
-  _renderedCount = 0;
-  var el = document.getElementById('tripList');
-  if (!_filteredTrips.length) {
-    el.innerHTML = '<div class="empty-note">'+s('logbook.noFilter')+'</div>';
-  } else {
-    el.innerHTML = '';
-    _renderTripBatch(el);
-    _setupTripScrollObserver(el);
-  }
-  document.getElementById('filterCount').textContent=_filteredTrips.length+' / '+myTrips.length;
-}
+// Captain overrides this via its own applyFilter() shim, so we keep a stable name.
+function applyFilter(){ if (_tripFilter) _tripFilter.refresh(); }
 
 function _renderTripBatch(el) {
   var end = Math.min(_renderedCount + _TRIP_BATCH, _filteredTrips.length);
@@ -530,8 +495,48 @@ function buildFilters(){
   const cSel=document.getElementById('fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
-  ['fYear','fCat','fRole','fWind'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',applyFilter);});
-  const fText=document.getElementById('fText');if(fText)fText.addEventListener('input',applyFilter);
+  _tripFilter = createListFilter({
+    source:  function() { return myTrips; },
+    filters: { yr: yrSel.value, cat: '', role: '', wind: '' },
+    predicate: function(t, f) {
+      if (f.yr && !(t.date || '').startsWith(f.yr)) return false;
+      if (f.cat) {
+        const tCat = ((allBoats.find(b => b.id === t.boatId)?.category) || t.boatCategory || '').toLowerCase();
+        if (tCat !== f.cat.toLowerCase()) return false;
+      }
+      if (f.role === 'skipper' && t.role === 'crew') return false;
+      if (f.role === 'crew'    && t.role !== 'crew') return false;
+      if (f.wind) {
+        const b = parseInt(t.beaufort) || 0;
+        if (f.wind === 'gt4'  && b <= 4) return false;
+        if (f.wind === 'lte4' && b >  4) return false;
+        if (['calm','light','moderate','strong'].includes(f.wind) && bftGroup(b) !== f.wind) return false;
+      }
+      if (f.search) {
+        const hay = [t.boatName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
+        if (!hay.includes(f.search.toLowerCase().trim())) return false;
+      }
+      return true;
+    },
+    render: function(filtered) {
+      // Tear down stale thumb maps before re-rendering; batched render below.
+      Object.keys(_thumbMaps).forEach(k => { try { _thumbMaps[k].remove(); } catch(e){} delete _thumbMaps[k]; });
+      _filteredTrips = filtered;
+      _renderedCount = 0;
+      const el = document.getElementById('tripList');
+      if (!filtered.length) {
+        el.innerHTML = '<div class="empty-note">' + s('logbook.noFilter') + '</div>';
+      } else {
+        el.innerHTML = '';
+        _renderTripBatch(el);
+        _setupTripScrollObserver(el);
+      }
+      document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+    },
+  }).autoWire({
+    fields: { fYear: 'yr', fCat: 'cat', fRole: 'role', fWind: 'wind' },
+    search: 'fText',
+  });
 }
 
 // ── Log manually modal ────────────────────────────────────────────────────────
