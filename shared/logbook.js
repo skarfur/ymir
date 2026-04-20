@@ -2006,11 +2006,11 @@ function openEditTrip(tripId) {
   document.getElementById('etBft').value = wx?.bft ?? t.beaufort ?? '';
   // Additional weather fields
   const etGustMs = wx?.wg != null ? parseWsValue(wx.wg) : null;
-  document.getElementById('etGusts').value = etGustMs != null ? convertWind(etGustMs, _mWindUnit) : '';
+  document.getElementById('etWindGust').value = etGustMs != null ? convertWind(etGustMs, _mWindUnit) : '';
   document.getElementById('etGustLabel').textContent = s('logbook.gustsLabel',{unit:windUnitLabel(_mWindUnit)});
   document.getElementById('etAirTemp').value = wx?.tc != null ? Math.round(wx.tc) : '';
   document.getElementById('etSeaTemp').value = wx?.sst != null ? wx.sst.toFixed(1) : '';
-  document.getElementById('etWaveHeight').value = wx?.wv != null ? wx.wv.toFixed(1) : '';
+  document.getElementById('etWave').value = wx?.wv != null ? wx.wv.toFixed(1) : '';
   document.getElementById('etPressure').value = wx?.pres != null ? Math.round(wx.pres) : '';
   document.getElementById('etErr').style.display = 'none';
   document.getElementById('editTripTitle').textContent = s('logbook.editTripTitle');
@@ -2064,11 +2064,11 @@ async function submitEditTrip() {
     hoursDecimal = +(mins / 60).toFixed(2);
   }
   // Additional weather fields
-  const gustRaw = document.getElementById('etGusts').value.trim();
+  const gustRaw = document.getElementById('etWindGust').value.trim();
   const gustMsVal = gustRaw ? convertToMs(parseFloat(gustRaw), _mWindUnit) : null;
   const airTemp = document.getElementById('etAirTemp').value.trim();
   const seaTemp = document.getElementById('etSeaTemp').value.trim();
-  const waveHeight = document.getElementById('etWaveHeight').value.trim();
+  const waveHeight = document.getElementById('etWave').value.trim();
   const pressure = document.getElementById('etPressure').value.trim();
   // Build wx — preserve existing snapshot fields not in the form
   let wxSnapshot = '';
