@@ -540,7 +540,7 @@ const CLUB_PAGE = 10;
 const CLUB_TRIPS_TTL = 30000; // 30s cache
 
 async function openLogModal(){
-  document.getElementById('logModal').classList.remove('hidden');
+  openModal('logModal');
   document.body.style.overflow='hidden';
   _selectedClubTrip=null;
   document.getElementById('joinExtras').style.display='none';
@@ -566,7 +566,7 @@ async function openLogModal(){
 }
 
 function closeLogModal(){
-  document.getElementById('logModal').classList.add('hidden');
+  closeModal('logModal');
   document.body.style.overflow='';
   document.getElementById('joinExtras').style.display='none';
   _selectedClubTrip=null;
@@ -932,34 +932,15 @@ function searchManualMember(inp, dropOrId){
   drop.style.display='block';
 }
 
-// ── Guest modal (logbook) ────────────────────────────────────────────────────
+// ── Guest prompt (logbook) — delegates to shared/guests.js ───────────────────
 let _lgGuestCallback = null;
 function openLgGuestModal(name){
-  document.getElementById('lgGuestName').value=name;
-  document.getElementById('lgGuestKtOrYear').value='';
-  document.getElementById('lgGuestPhone').value='';
-  document.getElementById('lgGuestErr').style.display='none';
-  document.getElementById('logGuestModal').classList.remove('hidden');
-}
-function closeLgGuestModal(){
-  document.getElementById('logGuestModal').classList.add('hidden');
-  _lgGuestCallback=null;
-}
-async function confirmLgGuest(){
-  const name=document.getElementById('lgGuestName').value.trim();
-  const ktOrYear=document.getElementById('lgGuestKtOrYear').value.trim();
-  const phone=document.getElementById('lgGuestPhone').value.trim();
-  const err=document.getElementById('lgGuestErr');
-  if(!ktOrYear&&!phone){err.textContent=s('logbook.errKtOrPhone');err.style.display='';return;}
-  err.style.display='none';
-  const isYear=/^\d{4}$/.test(ktOrYear);
-  try{
-    const res=await apiPost('saveMember',{name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true});
-    const guest={id:res.id,name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true};
-    allMembers.push(guest);
-    closeLgGuestModal();
-    if(_lgGuestCallback) _lgGuestCallback(guest);
-  }catch(e){err.textContent=s('logbook.errFailed',{msg:e.message});err.style.display='';}
+  openGuestPrompt({
+    name: name,
+    targetList: allMembers,
+    onConfirm: function(guest){ if (_lgGuestCallback) _lgGuestCallback(guest); _lgGuestCallback = null; },
+    onCancel:  function(){ _lgGuestCallback = null; },
+  });
 }
 
 function watchPortInput(which){
@@ -1442,8 +1423,7 @@ async function openMapModal(tripId) {
   try { pts = JSON.parse(trip.trackSimplified); } catch(e) { return; }
   if (!pts || pts.length < 2) return;
 
-  const overlay = document.getElementById('mapModal');
-  overlay.classList.remove('hidden');
+  openModal('mapModal');
   document.body.style.overflow = 'hidden';
   document.getElementById('mapModalTitle').textContent =
     (trip.boatName || '') + ' — ' + (trip.date || '') + (trip.distanceNm ? ' · ' + trip.distanceNm + ' nm' : '');
@@ -1467,7 +1447,7 @@ async function openMapModal(tripId) {
 }
 
 function closeMapModal() {
-  document.getElementById('mapModal').classList.add('hidden');
+  closeModal('mapModal');
   document.body.style.overflow = '';
   if (_fullMap) { _fullMap.remove(); _fullMap = null; }
 }
@@ -1772,14 +1752,14 @@ function updateConfBadge(){
 
 async function openConfirmationsModal(){
   document.getElementById('confirmationsTitle').textContent=s('member.confirmationsTitle');
-  document.getElementById('confirmationsModal').classList.remove('hidden');
+  openModal('confirmationsModal');
   document.body.style.overflow='hidden';
   if(!_confirmationsLoaded) await loadConfirmations();
   renderConfirmations();
 }
 
 function closeConfModal(){
-  document.getElementById('confirmationsModal').classList.add('hidden');
+  closeModal('confirmationsModal');
   document.body.style.overflow='';
 }
 
@@ -2035,11 +2015,11 @@ function openEditTrip(tripId) {
   document.getElementById('etErr').style.display = 'none';
   document.getElementById('editTripTitle').textContent = s('logbook.editTripTitle');
   document.getElementById('etSubmitBtn').textContent = s('logbook.saveChanges');
-  document.getElementById('editTripModal').classList.remove('hidden');
+  openModal('editTripModal');
 }
 
 function closeEditTrip() {
-  document.getElementById('editTripModal').classList.add('hidden');
+  closeModal('editTripModal');
 }
 
 async function submitEditTrip() {
@@ -2177,11 +2157,11 @@ function inlineUploadPhotos(tripId) {
   document.getElementById('puClubLbl').textContent = s('logbook.clubMayUse');
   document.getElementById('puHint').textContent = s('logbook.photoHint');
   document.getElementById('puSubmitBtn').textContent = s('logbook.uploadPhotos');
-  document.getElementById('photoUploadModal').classList.remove('hidden');
+  openModal('photoUploadModal');
 }
 
 function closePhotoUpload() {
-  document.getElementById('photoUploadModal').classList.add('hidden');
+  closeModal('photoUploadModal');
   _inlinePhotos = [];
 }
 

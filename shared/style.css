@@ -83,6 +83,13 @@
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  /* Brass-tinted shadow/tint tokens: theme-aware so light mode maps to blue */
+  --brass-tint-xs: color-mix(in srgb, var(--brass)  6%, transparent);
+  --brass-tint-sm: color-mix(in srgb, var(--brass) 15%, transparent);
+  --brass-tint-md: color-mix(in srgb, var(--brass) 35%, transparent);
+  --focus-ring:     0 0 0 3px var(--brass-tint-sm);
+  --brass-glow-sm:  0 2px 8px  var(--brass-tint-md);
+  --brass-glow-md:  0 4px 12px var(--brass-tint-md);
 }
 
 [data-theme="light"] {
@@ -247,6 +254,11 @@ main.wide { max-width: 1100px; }
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
+/* Size/context modifiers */
+.card--sm      { padding: 12px 14px; margin-bottom: 8px; }
+.card--xs      { padding: 10px 12px; margin-bottom: 6px; }
+.card--center  { text-align: center; }
+.card--surface { background: var(--surface); }
 
 .card-title {
   font-size: 11px;
@@ -322,6 +334,21 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--moss) 30%, transparent);
 }
 
+/* Inside modals, fields adopt the brass accent (matches modal headings + CTA). */
+.modal input:focus, .modal select:focus, .modal textarea:focus,
+.modal-sheet input:focus, .modal-sheet select:focus, .modal-sheet textarea:focus,
+.modal--sheet input:focus, .modal--sheet select:focus, .modal--sheet textarea:focus {
+  border-color: var(--brass);
+  box-shadow: var(--focus-ring);
+}
+
+/* Compact field modifier — used in densely packed modals/forms. */
+.field--compact { margin-bottom: 12px; }
+.field--compact label { font-size: 10px; }
+.field--compact input, .field--compact select, .field--compact textarea {
+  padding: 9px 10px; font-size: 13px;
+}
+
 textarea { min-height: 70px; }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -329,6 +356,44 @@ textarea { min-height: 70px; }
 @media (max-width: 580px) {
   .grid2, .grid3 { grid-template-columns: 1fr; }
 }
+
+/* ── FILTER BAR ────────────────────────────────────────────────────────────────
+   4-column grid that collapses to 2→1 on narrower viewports. Used by logbook
+   and captain trip lists. Pair with a <div class="filter-search-row"> child
+   for a full-row search input. Breakpoints align with the app-wide 600/400px
+   pattern. */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.filter-bar select,
+.filter-bar input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 9px;
+  height: 30px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.filter-bar select:focus,
+.filter-bar input:focus {
+  border-color: var(--brass);
+  box-shadow: var(--focus-ring);
+}
+.filter-bar .filter-search-row { grid-column: 1/-1; display: flex; gap: 6px; align-items: center; }
+.filter-bar .filter-search-row input { flex: 1; min-width: 0; }
+.filter-count { font-size: 10px; color: var(--muted); white-space: nowrap; }
+@media (max-width: 600px) { .filter-bar { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 400px) { .filter-bar { grid-template-columns: 1fr; } }
 
 /* ── BUTTONS ──────────────────────────────────────────────────────────────────── */
 
@@ -437,6 +502,16 @@ textarea { min-height: 70px; }
 }
 .modal-overlay.hidden { display: none; }
 
+/* Sheet mode: content docks to the bottom of the viewport (mobile-first). The
+   :has() selector lets the overlay adapt whenever its child uses .modal-sheet
+   or .modal--sheet, so callers only need to set the inner class. */
+.modal-overlay:has(> .modal-sheet),
+.modal-overlay:has(> .modal--sheet) {
+  align-items: flex-end;
+  padding: 0;
+  z-index: 500;
+}
+
 .modal {
   background: var(--card);
   border: 1px solid var(--border-l);
@@ -448,6 +523,29 @@ textarea { min-height: 70px; }
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
 }
+/* Size modifiers */
+.modal--md   { max-width: 520px; }
+.modal--lg   { max-width: 640px; }
+.modal--xl   { max-width: 760px; }
+
+/* Bottom-sheet variant: full-width top-rounded panel, used for log/edit flows */
+.modal-sheet,
+.modal--sheet {
+  background: var(--bg);
+  border: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 20px 20px 40px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+@media (max-width: 600px) {
+  .modal-sheet,
+  .modal--sheet { padding: 16px 14px 32px; max-height: 95vh; }
+}
+
 .modal h3 { color:var(--brass-fg); margin-bottom: 18px; font-size: 16px; }
 
 .modal-header {

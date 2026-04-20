@@ -86,8 +86,8 @@
 }
 .yma-card:last-child { margin-bottom: 0; }
 .yma-card.snoozed {
-  border-color: rgba(212,175,55,.25);
-  background: rgba(212,175,55,.05);
+  border-color: color-mix(in srgb, var(--brass) 25%, transparent);
+  background: var(--brass-tint-xs);
   opacity: .7;
 }
 .yma-info { flex: 1; min-width: 0; }
@@ -98,8 +98,8 @@
 .yma-snooze-pill {
   display: inline-block;
   font-size: 10px;
-  color: #d4af37;
-  border: 1px solid rgba(212,175,55,.35);
+  color: var(--brass-fg);
+  border: 1px solid var(--brass-tint-md);
   border-radius: 10px;
   padding: 2px 8px;
   margin-top: 3px;
@@ -123,10 +123,10 @@
 .yma-btn:hover { background: rgba(231,76,60,.15); }
 .yma-btn:disabled { opacity: .4; cursor: default; }
 .yma-btn-snooze {
-  border-color: rgba(212,175,55,.5);
-  color: #d4af37;
+  border-color: color-mix(in srgb, var(--brass) 50%, transparent);
+  color: var(--brass-fg);
 }
-.yma-btn-snooze:hover { background: rgba(212,175,55,.1); }
+.yma-btn-snooze:hover { background: color-mix(in srgb, var(--brass) 10%, transparent); }
 </style>
 <div id="ym-alert-inner">
   <div class="yma-header">

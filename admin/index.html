@@ -9,8 +9,7 @@
   <link rel="preconnect" href="https://script.google.com">
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
-  <script>window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
-  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
+  <script>prefetch({Config:['getConfig'],Members:['getMembers']});</script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/boats.js" defer></script>
   <script src="../shared/weather.js" defer></script>
@@ -874,7 +873,10 @@
   </div>
 </div>
 
-<!-- Opening/closing checklist item modal -->
+<!-- Opening/closing checklist item modal
+     Sibling: #launchCLModal below (launch/landing phase, with category).
+     Both share the textEN / textIS / sort-order fields; kept as separate
+     modals because their phase enums + ancillary fields differ. -->
 <div class="modal-overlay hidden" id="clModal" onclick="if(event.target===this)closeModal('clModal')">
   <div class="modal">
     <div class="modal-header">

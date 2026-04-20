@@ -2548,19 +2548,14 @@ function getFlagConfig_() {
 
 function saveActivityType_(b) {
   try {
-    let arr = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
-    const ts  = now_();
-    const idx = b.id ? arr.findIndex(a => a.id === b.id) : -1;
-    // Parse subtypes safely — frontend sends as JSON string
+    // Parse JSON-string payloads defensively (frontend may send arrays or strings).
     let subtypes = [];
     try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
-    // Parse volunteer roles — frontend sends as JSON string
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
-    // Bulk schedules now live on each subtype (not the parent activity type).
     const isVol = b.volunteer === true || b.volunteer === 'true';
-    const item = {
-      id: b.id || uid_(),
+    const res = saveConfigListItem_('activity_types', {
+      id: b.id || '',
       name: b.name,
       nameIS: b.nameIS || '',
       active: b.active !== false,
@@ -2569,21 +2564,17 @@ function saveActivityType_(b) {
       volunteer: isVol,
       roles: isVol ? roles : [],
       subtypes,
-      updatedAt: ts,
-    };
-    if (idx >= 0) {
-      arr[idx] = Object.assign(arr[idx], item);
-      delete arr[idx].bulkSchedule; // drop any legacy top-level schedule
-    } else {
-      arr.push(Object.assign(item, { createdAt: ts }));
+    });
+    // Drop any legacy top-level schedule left on existing rows. Bulk schedules
+    // now live per-subtype (migrated in-line during merge).
+    if (res.item && res.item.bulkSchedule !== undefined) {
+      const arr = readConfigList_('activity_types');
+      const idx = arr.findIndex(a => a && a.id === res.id);
+      if (idx >= 0) { delete arr[idx].bulkSchedule; setConfigSheetValue_('activity_types', JSON.stringify(arr)); cDel_('config'); }
     }
-    setConfigSheetValue_('activity_types', JSON.stringify(arr));
-    cDel_('config');
-    // Volunteer event materialization is handled by syncVolunteerEvents_
-    // which runs in the background when the admin Volunteer tab renders.
-    // Keeping it out of the save path avoids GAS execution timeouts that
-    // surface as "Failed to fetch" in the browser.
-    return okJ({ id: item.id, item: item });
+    // Volunteer event materialization runs in the background via syncVolunteerEvents_
+    // when the admin Volunteer tab renders, to avoid execution timeouts here.
+    return okJ({ id: res.id, item: res.item });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
 
@@ -2877,12 +2868,9 @@ function saveCertDef_(b) {
 
 function deleteCertDef_(id) {
   if (!id) return failJ('id required');
-  const defs = getCertDefs_();
-  const updated = defs.filter(d => d.id !== id);
-  if (updated.length === defs.length) return failJ('Cert def not found', 404);
-  setConfigSheetValue_('certDefs', JSON.stringify(updated));
-  cDel_('config');
-  return okJ({ deleted: true });
+  const res = deleteConfigListItem_('certDefs', id);
+  if (!res.deleted) return failJ('Cert def not found', 404);
+  return okJ(res);
 }
 
 function saveMemberCert_(b) {
@@ -5072,6 +5060,82 @@ function setConfigSheetValue_(key, value) {
   sheet.appendRow([key, _literalWrite_(value)]);
 }
 
+// ── Config-list CRUD helpers ──────────────────────────────────────────────────
+// Many admin entities (activity types, cert defs, boat categories, locations,
+// volunteer events, etc.) are stored as JSON arrays under a single config key.
+// These helpers collapse the save/delete boilerplate: parse → find-by-id →
+// merge-or-push → stringify → cache-clear.
+//
+//   saveConfigListItem_('activity_types', { id, ...fields })
+//     → inserts if id empty/missing; merges into existing row otherwise.
+//       Returns { id, item, created|updated: true }.
+//
+//   deleteConfigListItem_('activity_types', id, { soft: true })
+//     → hard-removes by default. With { soft: true } sets active=false instead.
+//       Returns { deleted: true } (or { deactivated: true } for soft delete).
+function readConfigList_(key) {
+  try { return JSON.parse(getConfigSheetValue_(key) || '[]') || []; }
+  catch (e) { return []; }
+}
+
+function saveConfigListItem_(key, patch) {
+  if (!key) throw new Error('saveConfigListItem_: key required');
+  const arr = readConfigList_(key);
+  const ts  = now_();
+  const idx = patch && patch.id ? arr.findIndex(x => x && x.id === patch.id) : -1;
+  let item, created = false;
+  if (idx >= 0) {
+    item = Object.assign(arr[idx], patch, { updatedAt: ts });
+    arr[idx] = item;
+  } else {
+    item = Object.assign({ id: (patch && patch.id) || uid_() }, patch || {}, { createdAt: ts, updatedAt: ts });
+    arr.push(item);
+    created = true;
+  }
+  setConfigSheetValue_(key, JSON.stringify(arr));
+  cDel_('config');
+  return { id: item.id, item: item, created: created, updated: !created };
+}
+
+function deleteConfigListItem_(key, id, opts) {
+  if (!key || !id) throw new Error('deleteConfigListItem_: key and id required');
+  const soft = !!(opts && opts.soft);
+  let arr = readConfigList_(key);
+  if (soft) {
+    const idx = arr.findIndex(x => x && x.id === id);
+    if (idx < 0) return { deleted: false };
+    arr[idx].active = false;
+    arr[idx].updatedAt = now_();
+  } else {
+    const before = arr.length;
+    arr = arr.filter(x => !x || x.id !== id);
+    if (arr.length === before) return { deleted: false };
+  }
+  setConfigSheetValue_(key, JSON.stringify(arr));
+  cDel_('config');
+  return soft ? { deactivated: true } : { deleted: true };
+}
+
+// ── Validation helpers ────────────────────────────────────────────────────────
+// Throw-based validators meant to be wrapped by the handler's own try/catch
+// (which converts the error into a failJ response). Terse enough at call site
+// that using them is usually shorter than an explicit if/return.
+//
+//   const mid = requireField_(b, 'memberId');             // throws if missing
+//   const m   = requireMember_(mid);                      // 404 if no row
+function requireField_(b, field, msg) {
+  var v = b && b[field];
+  if (v == null || v === '') throw new Error(msg || (field + ' required'));
+  return v;
+}
+
+function requireMember_(id) {
+  if (!id) throw new Error('memberId required');
+  var m = findOne_('members', 'id', id);
+  if (!m) throw new Error('Member not found');
+  return m;
+}
+
 function getOverdueAlerts_(b) {
   if (!b._serverSide && (!b || b.token !== API_TOKEN_)) throw new Error('Unauthorized');
   const cfg = getAlertConfig_();
@@ -6669,21 +6733,16 @@ function publicShareRecord_(b) {
 
 function saveVolunteerEvent_(b) {
   try {
-    let arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-    const ts = now_();
-    const idx = b.id ? arr.findIndex(a => a.id === b.id) : -1;
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
     // Normalize endDate: treat blank/same-as-start as single-day (stored as '').
     // If set and earlier than start, swap so start ≤ end.
     var _startIso = b.date || '';
-    var _endIso = b.endDate || '';
-    if (_endIso && _startIso && _endIso < _startIso) {
-      var _swap = _endIso; _endIso = _startIso; _startIso = _swap;
-    }
+    var _endIso   = b.endDate || '';
+    if (_endIso && _startIso && _endIso < _startIso) { var _swap = _endIso; _endIso = _startIso; _startIso = _swap; }
     if (_endIso && _endIso === _startIso) _endIso = '';
-    const item = {
-      id: b.id || uid_(),
+    const res = saveConfigListItem_('volunteer_events', {
+      id: b.id || '',
       activityTypeId: b.activityTypeId || '',
       title: b.title || '',
       titleIS: b.titleIS || '',
@@ -6699,32 +6758,21 @@ function saveVolunteerEvent_(b) {
       notesIS: b.notesIS || '',
       roles,
       active: b.active !== false,
-      updatedAt: ts,
-    };
-    if (idx >= 0) {
-      arr[idx] = Object.assign(arr[idx], item);
-    } else {
-      arr.push(Object.assign(item, { createdAt: ts }));
-    }
-    setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
-    cDel_('config');
-    return okJ({ id: item.id, item });
+    });
+    return okJ({ id: res.id, item: res.item });
   } catch(e) { return failJ('saveVolunteerEvent failed: ' + e.message); }
 }
 
 function deleteVolunteerEvent_(b) {
   try {
-    let arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-    arr = arr.filter(a => a.id !== b.id);
-    setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
-    // Remove all signups for this event
+    deleteConfigListItem_('volunteer_events', b.id);
+    // Cascade: remove all signups for this event.
     try {
       const signups = readAll_('volunteerSignups');
       signups.filter(s => s.eventId === b.id).forEach(s => {
         deleteRow_('volunteerSignups', 'id', s.id);
       });
     } catch(e) { /* tab may not exist yet */ }
-    cDel_('config');
     return okJ({ deleted: true });
   } catch(e) { return failJ('deleteVolunteerEvent failed: ' + e.message); }
 }

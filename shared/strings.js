@@ -1,6 +1,21 @@
-// ÝMIR — shared/strings.js (loader)
-// Language-specific strings are loaded from strings-en.js or strings-is.js.
-// This file provides the s() and applyStrings() functions.
+// ÝMIR — shared/strings.js
+//
+// Loads the language-specific strings file (strings-en.js or strings-is.js)
+// and exposes s() + applyStrings(). Pages include just this one script.
+//
+// Note: document.write() is still the simplest way to inject a synchronous
+// <script> during parse so _STRINGS_FLAT is ready before downstream JS runs.
+// The modern alternatives (dynamic <script> append, top-level await) don't
+// preserve parse order with non-module pages, and rewriting all pages to
+// modules is out of scope.
+;(function () {
+  if (typeof _STRINGS_FLAT !== 'undefined') return;  // already loaded
+  var here = document.currentScript && document.currentScript.src;
+  var base = here ? here.substring(0, here.lastIndexOf('/') + 1) : '';
+  var lang = (localStorage.getItem('ymirLang') || 'IS').toLowerCase();
+  if (lang !== 'en' && lang !== 'is') lang = 'is';
+  document.write('<script src="' + base + 'strings-' + lang + '.js"><\/script>');
+})();
 
 window.s = function s(key, vars, lang) {
   // If a specific language is requested that differs from loaded, fall back to key

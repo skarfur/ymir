@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://script.google.com">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
-<script>window._earlyConfig=apiGet('getConfig');window._earlyVolSignups=apiPost('getVolunteerSignups',{});</script>
+<script>prefetch({Config:['getConfig'],VolSignups:{post:'getVolunteerSignups'}});</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/dateutil.js"></script>
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/volunteer.js" defer></script>
 <style>
@@ -227,41 +227,8 @@ function localizedTitle(ev) {
   return (L === 'IS' && ev.titleIS ? ev.titleIS : ev.title) || ev.title || '';
 }
 
-// "Wed, 15 Apr"
-function formatDayLabel(iso) {
-  if (!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  const dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
-  const months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
-                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
-  return s(dows[d.getDay()]) + ', ' + d.getDate() + ' ' + s(months[d.getMonth()]);
-}
-
-// Date label for an event, handling multi-day spans.
-//   Single-day: "Wed, 15 Apr"
-//   Multi-day:  "Wed 15 Apr – Fri 17 Apr"
-function formatEventDateLabel(ev) {
-  const startIso = ev && ev.date ? ev.date : '';
-  const endIso = ev && ev.endDate ? ev.endDate : '';
-  if (!startIso) return '';
-  if (!endIso || endIso === startIso) return formatDayLabel(startIso);
-  const a = new Date(startIso + 'T00:00:00');
-  const b = new Date(endIso + 'T00:00:00');
-  const dows = ['day.sun','day.mon','day.tue','day.wed','day.thu','day.fri','day.sat'];
-  const months = ['month.jan','month.feb','month.mar','month.apr','month.may','month.jun',
-                  'month.jul','month.aug','month.sep','month.oct','month.nov','month.dec'];
-  const left = s(dows[a.getDay()]) + ' ' + a.getDate() + ' ' + s(months[a.getMonth()]);
-  const right = s(dows[b.getDay()]) + ' ' + b.getDate() + ' ' + s(months[b.getMonth()]);
-  return left + ' – ' + right;
-}
-
-function formatTimeRange(ev) {
-  const a = (ev.startTime || '').slice(0, 5);
-  const b = (ev.endTime || '').slice(0, 5);
-  if (a && b) return a + '–' + b;
-  if (a) return a;
-  return '';
-}
+// Date/time formatters live in shared/dateutil.js:
+//   formatDayLabel(iso), formatEventDateLabel(ev), formatTimeRange(ev)
 
 // The effective end date for ordering/filtering purposes.
 function _evEndIso(ev) {

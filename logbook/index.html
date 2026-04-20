@@ -11,10 +11,10 @@
 <link rel="stylesheet" href="../shared/style.css">
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
-<script>window._earlyTrips=apiGet('getTrips',{limit:500});window._earlyConfig=apiGet('getConfig');window._earlyMembers=apiGet('getMembers');</script>
+<script>prefetch({Trips:['getTrips',{limit:500}],Config:['getConfig'],Members:['getMembers']});</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/guests.js" defer></script>
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/boats.js" defer></script>
 <style>
@@ -32,30 +32,21 @@
 .cat-hour-val{font-size:11px;color:var(--muted);min-width:32px;text-align:right}
 .section-hdr{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin:20px 0 8px;display:flex;align-items:center;justify-content:space-between}
 .cert-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
-.filter-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;align-items:center}
-.filter-bar select,.filter-bar input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:11px;padding:5px 9px;height:30px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;box-sizing:border-box}
-.filter-bar select:focus,.filter-bar input:focus{box-shadow:0 0 0 3px rgba(212,175,55,.15)}
-.filter-bar select:focus,.filter-bar input:focus{border-color:var(--brass)}
-.filter-bar .filter-search-row{grid-column:1/-1;display:flex;gap:6px;align-items:center}
-.filter-bar .filter-search-row input{flex:1;min-width:0}
-.filter-count{font-size:10px;color:var(--muted);white-space:nowrap}
+/* .filter-bar styles moved to shared/style.css */
 .empty-note{font-size:12px;color:var(--muted);padding:20px;text-align:center}
 .load-more{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:4px;transition:border-color .2s,color .2s}
 .load-more:hover{border-color:var(--brass);color:var(--text)}
 
-/* Log manually modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;z-index:500;padding:0}
-.modal-overlay.hidden{display:none}
-.modal-sheet{background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 20px 40px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+/* Log manually modal — overlay/sheet provided by shared/style.css */
 .modal-title{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
 .modal-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0}
+/* .form-field = ultra-compact field variant; inputs inherit shared styling, overrides below trim size */
 .form-field{margin-bottom:12px}
-.form-field label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px}
-.form-field input,.form-field select,.form-field textarea{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:12px;padding:8px 10px;outline:none;transition:border-color .2s,box-shadow .2s}
-.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--brass);box-shadow:0 0 0 3px rgba(212,175,55,.15)}
+.form-field label{font-size:9px;text-transform:uppercase;margin-bottom:4px}
+.form-field input,.form-field select,.form-field textarea{font-size:12px;padding:8px 10px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn-primary{background:var(--brass);color:#000;border:none;border-radius:var(--radius-sm);padding:11px 20px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;width:100%;transition:all .2s}
-.btn-primary:hover{opacity:.9;box-shadow:0 2px 8px rgba(212,175,55,.35);transform:translateY(-1px)}
+.btn-primary:hover{opacity:.9;box-shadow:var(--brass-glow-sm);transform:translateY(-1px)}
 .btn-secondary{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 20px;font-family:inherit;font-size:12px;color:var(--text);cursor:pointer;width:100%;transition:all .2s}
 .trip-pick-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:12px;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm)}
 .trip-pick-card:hover,.trip-pick-card.selected{border-color:var(--brass);background:var(--card)}
@@ -127,21 +118,18 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .photo-meta-row{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--muted);margin-top:4px}
 .photo-meta-row label{display:flex;align-items:center;gap:4px;cursor:pointer}
 .photo-meta-row input[type="checkbox"]{width:14px;height:14px;accent-color:var(--brass)}
-/* ── Responsive ── */
+/* ── Responsive (page-specific; .filter-bar collapse is in shared/style.css) ── */
 @media(max-width:600px){
   .page{padding:16px 12px 60px}
   .stat-strip{grid-template-columns:repeat(2,1fr)}
-  .filter-bar{grid-template-columns:1fr 1fr}
   .form-row{grid-template-columns:1fr}
   .wx-row{grid-template-columns:1fr 1fr}
-  .modal-sheet{border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:16px 14px 32px;max-height:95vh}
   .gm-row{grid-template-columns:1fr}
   .trip-body{padding:8px 10px}
   .lightbox-nav{padding:6px 10px;font-size:20px}
 }
 @media(max-width:400px){
   .stat-strip{grid-template-columns:1fr 1fr}
-  .filter-bar{grid-template-columns:1fr}
   .wx-row{grid-template-columns:1fr}
 }
 </style>
@@ -933,24 +921,7 @@ function setHeatMode(mode) {
   </div>
 </div>
 
-<!-- Guest prompt modal (for adding non-members as crew) -->
-<div class="modal-overlay hidden" id="logGuestModal" style="z-index:700" onclick="if(event.target===this)closeLgGuestModal()">
-  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
-    <div class="flex-between mb-14">
-      <div class="text-md text-brass fw-500" style="letter-spacing:.5px">Add guest</div>
-      <button class="modal-close-x" onclick="closeLgGuestModal()">&times;</button>
-    </div>
-    <div class="text-sm text-muted mb-12">This person is not in the member list. Enter their details to add them as a guest.</div>
-    <div class="form-field"><label>Name</label><input type="text" id="lgGuestName" readonly></div>
-    <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="lgGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
-    <div class="form-field"><label>Phone number</label><input type="text" id="lgGuestPhone" placeholder="e.g. 555-1234"></div>
-    <div id="lgGuestErr" class="text-sm text-red mb-6" style="display:none"></div>
-    <div class="flex-center gap-8" style="justify-content:flex-end">
-      <button class="btn-secondary" style="width:auto;padding:6px 14px" onclick="closeLgGuestModal()">Cancel</button>
-      <button class="btn-primary" style="width:auto;padding:6px 14px" onclick="confirmLgGuest()">Add guest</button>
-    </div>
-  </div>
-</div>
+<!-- Guest prompt is rendered by shared/guests.js; invoked via openGuestPrompt(). -->
 
 </body>
 </html>

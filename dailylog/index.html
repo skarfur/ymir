@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js"></script>
 <script src="../shared/tides.js"></script>
@@ -301,6 +300,10 @@
 </div>
 
 <!-- ══ INCIDENT DETAIL MODAL ══ -->
+<!-- Incident peek — read-only summary with a link out to /incidents/ for the
+     full editor (detailModal there). Intentionally not merged with the
+     editor: this page shows many incidents as part of the day's activities
+     and only needs a quick look. -->
 <div class="modal-overlay hidden" id="incidentDetailModal"
   onclick="if(event.target===this)closeModal('incidentDetailModal')">
   <div class="modal" style="max-width:560px">
@@ -902,9 +905,9 @@ function openActivityModal() {
   dom.actNotes.value = '';
   document.getElementById('actAbler').checked = false;
   renderGroupLinkCards();
-  dom.activityModal.classList.remove('hidden');
+  openModal('activityModal');
 }
-function closeActivityModal() { dom.activityModal.classList.add('hidden'); }
+function closeActivityModal() { closeModal('activityModal'); }
 
 function saveActivity(keepOpen) {
   const name = dom.actName.value.trim();
