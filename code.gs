@@ -4752,7 +4752,13 @@ function saveTripPhoto_(b) {
   try {
     const ext      = (b.fileName || 'photo.jpg').split('.').pop().toLowerCase();
     const ts       = now_().replace(/[: ]/g, '-');
-    const safeName = ts + '_' + (b.fileName || 'photo.' + ext);
+    // Prefix marks the member's sharing choice so admins browsing the Drive
+    // folder can tell shared/club-use photos apart from private uploads.
+    let prefix = 'PRIVATE_';
+    if (b.shared && b.clubUse)      prefix = 'SHARED_CLUB_';
+    else if (b.shared)              prefix = 'SHARED_';
+    else if (b.clubUse)             prefix = 'CLUB_';
+    const safeName = prefix + ts + '_' + (b.fileName || 'photo.' + ext);
     const base64   = b.fileData.replace(/^data:[^;]+;base64,/, '');
     const bytes    = Utilities.base64Decode(base64);
     const mimeMap  = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', heic:'image/heic' };

@@ -1261,7 +1261,7 @@ async function submitManual(){
   const mPhotoClubUse = document.getElementById('mPhotoClubUse').checked;
   await Promise.all(_pendingPhotos.map(async ph=>{
     try{
-      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
+      const pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType,shared:mPhotoShared,clubUse:mPhotoClubUse});
       if(pr.ok && pr.photoUrl) photoUrls.push(pr.photoUrl);
       else if(!pr.ok) showToast(s('logbook.photoNoConfig'),'warn');
     }catch(e){ showToast(s('logbook.photoUploadFailed',{msg:e.message}),'warn'); }
@@ -2219,7 +2219,7 @@ async function submitInlinePhotos() {
     const newUrls = [];
     await Promise.all(_inlinePhotos.map(async ph => {
       try {
-        const res = await apiPost('uploadTripFile', { fileType: 'photo', fileName: ph.fileName, fileData: ph.fileData, mimeType: ph.mimeType });
+        const res = await apiPost('uploadTripFile', { fileType: 'photo', fileName: ph.fileName, fileData: ph.fileData, mimeType: ph.mimeType, shared, clubUse });
         if (res.ok && res.photoUrl) {
           newUrls.push(res.photoUrl);
           meta[res.photoUrl] = { shared, clubUse, uploadedBy: user.kennitala };
