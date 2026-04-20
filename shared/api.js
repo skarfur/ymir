@@ -93,6 +93,33 @@ async function apiPost(action, payload) {
   return _call(action, payload);
 }
 
+// ── Prefetch helper ───────────────────────────────────────────────────────────
+// Fires a batch of API calls in parallel and stashes each promise on window._early<Name>
+// so page init can race them with its first render. Pages consume them as:
+//   const [checkouts, config] = await Promise.all([
+//     window._earlyCheckouts || apiGet('getActiveCheckouts'),
+//     window._earlyConfig    || apiGet('getConfig'),
+//   ]);
+// Call forms:
+//   prefetch({ Config: ['getConfig'], Trips: ['getTrips', { limit: 500 }] })
+//   prefetch({ VolSignups: { post: 'getVolunteerSignups' } })   // POST action
+// Key names become the _early<Name> suffix (e.g. Config → window._earlyConfig).
+function prefetch(calls) {
+  if (!calls) return;
+  Object.keys(calls).forEach(function (name) {
+    var key = '_early' + name;
+    if (window[key]) return; // don't re-fire if page navigates back
+    var spec = calls[name];
+    if (Array.isArray(spec)) {
+      window[key] = apiGet(spec[0], spec[1] || {});
+    } else if (spec && spec.post) {
+      window[key] = apiPost(spec.post, spec.payload || {});
+    } else if (typeof spec === 'string') {
+      window[key] = apiGet(spec);
+    }
+  });
+}
+
 async function _call(action, payload) {
   payload = payload || {};
   // Public actions are exempt from session auth; loginMember is where we

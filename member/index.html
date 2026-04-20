@@ -9,9 +9,8 @@
 <link rel="preconnect" href="https://script.google.com">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
-<script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
+<script>prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>

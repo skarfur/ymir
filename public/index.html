@@ -12,7 +12,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" defer></script>
 <script src="../shared/api.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
@@ -68,7 +67,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 .logo{font-size:18px;font-weight:500;color:var(--brass-fg);letter-spacing:1px}
 .subtitle{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-left:12px}
 .lang-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);cursor:pointer;letter-spacing:.5px;transition:color .2s,border-color .2s,background .2s}
-.lang-btn:hover{color:var(--brass-fg);border-color:var(--brass);background:rgba(212,175,55,.06)}
+.lang-btn:hover{color:var(--brass-fg);border-color:var(--brass);background:var(--brass-tint-xs)}
 
 /* ── Main layout ────────────────────────────────────────────────── */
 main{max-width:1100px;margin:0 auto;padding:24px 20px 48px}
@@ -120,7 +119,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 .membership-row{display:grid;grid-template-columns:minmax(160px,1fr) 2fr;gap:12px;align-items:stretch;margin-bottom:20px}
 .membership-row .stat-box{padding:16px 20px}
 .become-member-btn{display:flex;align-items:center;justify-content:center;text-align:center;background:var(--brass);color:#0b1f38;border:1px solid var(--brass);border-radius:var(--radius-md);padding:16px 20px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-decoration:none;transition:all .2s ease;box-shadow:var(--shadow-sm)}
-.become-member-btn:hover{opacity:.9;text-decoration:none;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,175,55,.35)}
+.become-member-btn:hover{opacity:.9;text-decoration:none;transform:translateY(-1px);box-shadow:var(--brass-glow-md)}
 @media(max-width:600px){
   .membership-row{grid-template-columns:1fr}
   .become-member-btn{padding:14px 16px;font-size:13px}
@@ -176,10 +175,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-msg{text-align:center;padding:40px 20px;color:var(--red);font-size:13px}
 
-/* ── Modal (for flag detail) ────────────────────────────────────── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
-.modal-overlay.hidden{display:none}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+/* Modal styles provided by shared/style.css — flag-detail uses .modal.modal--md.is-responsive-sheet */
 
 /* ── Footer ─────────────────────────────────────────────────────── */
 footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);border-top:1px solid var(--border)}
@@ -200,8 +196,6 @@ footer{text-align:center;padding:16px 20px;font-size:10px;color:var(--muted);bor
   .captain-list{grid-template-columns:1fr}
   .subtitle{display:none}
   .water-grid{grid-template-columns:1fr}
-  .modal-overlay{padding:10px;align-items:flex-end}
-  .modal{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 16px;max-height:90vh}
 }
 </style>
 </head>
@@ -541,7 +535,7 @@ function renderFlagBanner(result) {
       if (!document.getElementById('wxFlagModal')) {
         var md = document.createElement('div');
         md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)this.classList.add(\'hidden\')">'
-          + '<div class="modal" style="max-width:480px">'
+          + '<div class="modal modal--md">'
           + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
           + '<div id="wxFlagModalTitle" style="font-weight:600;font-size:15px"></div>'
           + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">&times;</button>'

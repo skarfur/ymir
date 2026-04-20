@@ -344,14 +344,38 @@ document.addEventListener('keydown', function (e) {
 })();
 
 // ── STANDARD HEADER ────────────────────────────────────────────────────────────
+// buildHeader(page) populates the page-wide nav bar. Pages must include this
+// shell in their HTML (typically as the first <body> child):
+//
+//   <header id="ym-header">
+//     <div class="header-left"></div>
+//     <div class="header-right"></div>
+//   </header>
+//
+// Accepted `page` values:
+//   hub pages      — 'staff' | 'admin' | 'member'
+//   staff subpages — 'dailylog' | 'maintenance' | 'logbook-review' | 'incidents'
+//   admin subpages — 'payroll'
+//   member subpages— 'settings' | 'logbook' | 'weather' | 'saumaklubbur'
+//                    'captain' | 'coxswain' | 'volunteer'
+//   standalone     — 'login' | 'public' | 'guardian' | 'alert-action' (no role nav)
+//
+// If the shell is missing, log a clear warning so developers notice (instead
+// of the header silently vanishing).
 window.buildHeader = function (page) {
   const user = (typeof getUser === 'function') ? getUser() : null;
   const hdr  = document.getElementById('ym-header');
-  if (!hdr) return;
+  if (!hdr) {
+    console.warn('[buildHeader] Missing <header id="ym-header"> on page', page || '(unknown)');
+    return;
+  }
 
   const left  = hdr.querySelector('.header-left');
   const right = hdr.querySelector('.header-right');
-  if (!left || !right) return;
+  if (!left || !right) {
+    console.warn('[buildHeader] #ym-header must contain .header-left and .header-right children (page:', page || '(unknown)', ')');
+    return;
+  }
 
   left.innerHTML = right.innerHTML = '';
 

@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script src="../shared/ui.js"></script>
-  <script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/maintenance.js" defer></script>
   <style>
@@ -60,20 +59,7 @@
     .empty-wrap { text-align:center; padding:40px 20px; color:var(--muted); }
     .empty-icon { font-size:32px; margin-bottom:12px; }
 
-    /* ── Modal ── */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:200;
-      display:flex; align-items:center; justify-content:center; padding:16px; }
-    .modal-overlay.hidden { display:none; }
-    .modal { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
-      padding:22px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
-    .modal h3 { color:var(--brass-fg); margin-bottom:16px; font-size:15px; }
-    .field { margin-bottom:14px; }
-    .field label { display:block; font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:6px; }
-    .field input, .field select, .field textarea {
-      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-      color:var(--text); padding:9px 10px; font-size:13px; font-family:inherit; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; outline:none; }
-    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
-    .field textarea { resize:vertical; min-height:72px; }
+    /* Modal overlay + .modal + .field styles from shared/style.css; form-body uses .field--compact. */
     .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
 
     /* Priority selector */
@@ -185,13 +171,13 @@
 
 <!-- ══ SUGGEST PROJECT MODAL ══ -->
 <div class="modal-overlay hidden" id="suggestModal" onclick="if(event.target===this)closeSuggestModal()">
-  <div class="modal">
+  <div class="modal modal--md">
     <div class="modal-header">
       <h3 data-s="sauma.suggestTitle">🧵 New sewing circle project</h3>
       <button class="modal-close-x" onclick="closeSuggestModal()">&times;</button>
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="maint.category"></label>
       <div class="cat-btns">
         <button class="cat-btn" data-cat="boat"      onclick="selectCat('boat')" data-s="sauma.catBoat"></button>
@@ -200,17 +186,17 @@
       </div>
     </div>
 
-    <div class="field hidden" id="boatField">
+    <div class="field field--compact hidden" id="boatField">
       <label data-s="lbl.boat"></label>
       <select id="suggestBoat"><option value="" data-s="sauma.selectBoatPh"></option></select>
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="maint.part"></label>
       <input type="text" id="suggestPart" data-s="sauma.partPh" data-s-attr="placeholder">
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="sauma.priority"></label>
       <div class="prio-btns">
         <button class="prio-btn" data-sev="low"    onclick="selectPrio('low')" data-s="maint.sevLow"></button>
@@ -219,12 +205,12 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="sauma.description"></label>
       <textarea id="suggestDesc" rows="3" data-s="sauma.descPh" data-s-attr="placeholder"></textarea>
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="sauma.materials"></label>
       <div id="suggestMaterialsList"></div>
       <div class="flex-center gap-6 mt-8">
@@ -233,7 +219,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field field--compact">
       <label data-s="sauma.photoLabel"></label>
       <input type="file" id="suggestPhoto" accept="image/*" onchange="handleSuggestPhoto(this)"
         class="text-md text-muted">

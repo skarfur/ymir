@@ -9,9 +9,8 @@
 <link rel="preconnect" href="https://script.google.com">
 <link rel="stylesheet" href="../shared/style.css">
 <script src="../shared/api.js"></script>
-<script>window._earlyConfig=apiGet('getConfig');window._earlyCheckouts=apiGet('getActiveCheckouts');</script>
+<script>prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});</script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
@@ -1274,12 +1273,12 @@ function openGroupModal() {
   const sec = document.getElementById('gmStaffSection');
   sec.innerHTML = '';
   addGmStaffRow();
-  document.getElementById('groupModal').classList.remove('hidden');
+  openModal('groupModal');
   document.body.style.overflow = 'hidden';
 }
 
 function closeGroupModal() {
-  document.getElementById('groupModal').classList.add('hidden');
+  closeModal('groupModal');
   document.body.style.overflow = '';
 }
 
@@ -1484,7 +1483,7 @@ async function openDlLinkModal(checkoutId) {
         '</div>';
     }).join('');
   }
-  document.getElementById('dlLinkModal').classList.remove('hidden');
+  openModal('dlLinkModal');
 }
 
 function selectDlAct(actId) {
@@ -1509,7 +1508,7 @@ async function confirmDlLink() {
 }
 
 function closeDlLinkModal() {
-  document.getElementById('dlLinkModal').classList.add('hidden');
+  closeModal('dlLinkModal');
   _dlLinkCheckoutId  = null;
   _dlLinkSelectedAct = null;
 }
@@ -1555,11 +1554,11 @@ function openGuestModal(name, callback) {
   document.getElementById('guestKtOrYear').value = '';
   document.getElementById('guestPhone').value = '';
   document.getElementById('guestErr').style.display = 'none';
-  document.getElementById('guestModal').classList.remove('hidden');
+  openModal('guestModal');
 }
 
 function closeGuestModal() {
-  document.getElementById('guestModal').classList.add('hidden');
+  closeModal('guestModal');
   _guestCallback = null;
 }
 

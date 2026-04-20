@@ -11,7 +11,6 @@
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
-<script>document.write('<script src="../shared/strings-'+(localStorage.getItem('ymirLang')||'IS').toLowerCase()+'.js"><\/script>');</script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/calendar.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -43,7 +42,7 @@
 .cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
   transition:border-color .2s,box-shadow .2s; min-width:0; width:100%; box-sizing:border-box; }
-.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
+.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
 .cq-filter-search { display:flex; gap:6px; align-items:center; grid-column:1/-1; }
 .cq-filter-search input { flex:1; min-width:0; }
 .cq-filter-count { font-size:9px; color:var(--muted); white-space:nowrap; }
@@ -74,21 +73,13 @@
   padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; transition:border-color .2s,color .2s; }
 .cq-show-more:hover { border-color:var(--brass); color:var(--text); }
 
-/* ── Filter bar (logbook) ── */
-.filter-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; align-items:center; }
-.filter-bar select, .filter-bar input { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-  color:var(--text); font-family:inherit; font-size:11px; padding:5px 9px; height:30px; outline:none;
-  transition:border-color .2s,box-shadow .2s; width:100%; box-sizing:border-box; }
-.filter-bar select:focus, .filter-bar input:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
-.filter-bar .filter-search-row { grid-column:1/-1; display:flex; gap:6px; align-items:center; }
-.filter-bar .filter-search-row input { flex:1; min-width:0; }
-.filter-count { font-size:10px; color:var(--muted); white-space:nowrap; }
+/* .filter-bar styles moved to shared/style.css */
 
 /* ── Bio section ── */
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-md); color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
   resize:vertical; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; outline:none; }
-.cq-bio-area:focus { border-color:var(--brass); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
+.cq-bio-area:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
 .cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--brass); }
 .cq-headshot-placeholder { width:80px; height:80px; border-radius:50%; background:var(--surface);
   border:2px dashed var(--border); display:flex; align-items:center; justify-content:center;
@@ -105,16 +96,15 @@
 .cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
 
 /* ── Responsive ── */
+/* Page-specific responsive; .filter-bar collapse is in shared/style.css */
 @media(max-width:600px){
   .cq-stats { grid-template-columns:1fr 1fr; }
   .cq-stat .sn { font-size:20px; }
   .cq-filter-bar { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
-  .filter-bar { grid-template-columns:1fr 1fr; }
 }
 @media(max-width:400px){
   .cq-filter-bar { grid-template-columns:1fr 1fr; gap:4px; }
   .cq-filter-bar select, .cq-filter-bar input[type="text"] { font-size:9px; padding:3px 6px; }
-  .filter-bar { grid-template-columns:1fr; }
 }
 </style>
 </head>
