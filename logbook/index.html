@@ -14,6 +14,7 @@
 <script>prefetch({Trips:['getTrips',{limit:500}],Config:['getConfig'],Members:['getMembers']});</script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/trip-form.js"></script>
 <script src="../shared/list-filter.js"></script>
 <script src="../shared/guests.js" defer></script>
 <script src="../shared/certs.js" defer></script>
@@ -411,45 +412,8 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         <button type="button" class="text-xs text-brass" id="mWxFetchBtn" onclick="fetchCurrentWeather()" style="background:none;border:none;padding:0;cursor:pointer">🌤 Use current weather</button>
       </div>
       <div id="mWxFetchStatus" class="text-xs text-muted" style="display:none;margin-bottom:6px"></div>
-      <div class="wx-row">
-        <div class="form-field"><label>Beaufort</label>
-          <select id="mBft" onchange="onBftChange()">
-            <option value="">—</option>
-            <option value="0">0 – Calm</option><option value="1">1 – Light air</option>
-            <option value="2">2 – Light breeze</option><option value="3">3 – Gentle</option>
-            <option value="4">4 – Moderate</option><option value="5">5 – Fresh</option>
-            <option value="6">6 – Strong</option><option value="7">7 – Near gale</option>
-            <option value="8">8 – Gale</option><option value="9">9 – Strong gale</option>
-            <option value="10">10 – Storm</option><option value="11">11 – Violent storm</option>
-            <option value="12">12 – Hurricane</option>
-          </select>
-        </div>
-        <div class="form-field"><label id="mWindLabel">Wind (m/s)</label><input type="number" id="mWindMs" min="0" step="0.1" placeholder="e.g. 8" oninput="onWindInput()"></div>
-        <div class="form-field"><label>Direction</label>
-          <select id="mWindDir">
-            <option value="">—</option>
-            <option>N</option><option>NE</option><option>E</option><option>SE</option>
-            <option>S</option><option>SW</option><option>W</option><option>NW</option>
-          </select>
-        </div>
-      </div>
-      <div class="wx-row">
-        <div class="form-field"><label id="mGustLabel">Gusts (m/s)</label><input type="number" id="mWindGust" min="0" step="0.1" placeholder="" oninput="onGustInput()"></div>
-        <div class="form-field"><label>Wave ht (m)</label><input type="number" id="mWave" min="0" step="0.1" placeholder="0.0"></div>
-      </div>
-      <details class="mb-8">
-        <summary class="text-xs text-muted flex-center gap-4" style="cursor:pointer;list-style:none">
-          <span class="exp-chevron" style="font-size:8px">▾</span> More weather details
-        </summary>
-        <div class="wx-row mt-8">
-          <div class="form-field"><label>Air temp (°C)</label><input type="number" id="mAirTemp" step="0.5" placeholder=""></div>
-          <div class="form-field"><label>Feels like (°C)</label><input type="number" id="mFeelsLike" step="0.5" placeholder=""></div>
-          <div class="form-field"><label>Sea temp (°C)</label><input type="number" id="mSeaTemp" step="0.5" placeholder=""></div>
-        </div>
-        <div class="wx-row">
-          <div class="form-field"><label>Pressure (hPa)</label><input type="number" id="mPressure" min="900" max="1100" placeholder=""></div>
-        </div>
-      </details>
+      <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->
+      <div id="mWxFields"></div>
       <div class="form-field"><label>Distance (nm) <span class="text-muted" style="font-size:9px">auto from GPS track</span></label>
         <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       <!-- GPS Track upload -->
@@ -866,38 +830,37 @@ function setHeatMode(mode) {
       <div class="form-field"><label>Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
     </div>
     <div class="section-label" style="margin:12px 0 8px">WEATHER</div>
-    <div class="wx-row">
-      <div class="form-field"><label id="etWindLabel">Wind (m/s)</label><input type="number" id="etWindMs" min="0" step="0.1"></div>
-      <div class="form-field"><label>Direction</label>
-        <select id="etWindDir"><option value="">—</option>
-          <option>N</option><option>NE</option><option>E</option><option>SE</option>
-          <option>S</option><option>SW</option><option>W</option><option>NW</option>
-        </select>
-      </div>
-      <div class="form-field"><label>Beaufort</label>
-        <select id="etBft"><option value="">—</option>
-          <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-          <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-          <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9+</option>
-        </select>
-      </div>
-    </div>
-    <div class="wx-row" style="margin-top:6px">
-      <div class="form-field"><label id="etGustLabel">Gusts (m/s)</label><input type="number" id="etGusts" min="0" step="0.1"></div>
-      <div class="form-field"><label>Air temp (°C)</label><input type="number" id="etAirTemp" step="0.1"></div>
-      <div class="form-field"><label>Sea temp (°C)</label><input type="number" id="etSeaTemp" min="0" step="0.1"></div>
-    </div>
-    <div class="wx-row" style="margin-top:6px">
-      <div class="form-field"><label>Wave height (m)</label><input type="number" id="etWaveHeight" min="0" step="0.1"></div>
-      <div class="form-field"><label>Pressure (hPa)</label><input type="number" id="etPressure" min="900" max="1100" step="1"></div>
-    </div>
+    <!-- Weather fields rendered by shared/trip-form.js. -->
+    <div id="etWxFields"></div>
     <div class="form-field mt-8"><label>Skipper's comments <span class="text-muted" style="font-size:9px">(visible to crew)</span></label>
+
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
     <div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>
     <button class="btn-primary" id="etSubmitBtn" onclick="submitEditTrip()">Save changes</button>
   </div>
 </div>
+
+<script>
+// Populate shared weather-field markup (from shared/trip-form.js) into both
+// modals. Runs inline right after the last <div id="*WxFields"> is parsed,
+// before shared/logbook.js (deferred) runs — so logbook.js's init can rely
+// on the fields already existing.
+(function () {
+  var mWx  = document.getElementById('mWxFields');
+  var etWx = document.getElementById('etWxFields');
+  if (mWx)  mWx.innerHTML  = tripFormWeatherFieldsHtml('m',  { verboseBft: true, includeFeelsLike: true, wrapExtraInDetails: true });
+  if (etWx) etWx.innerHTML = tripFormWeatherFieldsHtml('et', { extraStep: '0.1' });
+  // logModal's wind/gust inputs had inline handlers in the original markup;
+  // rewire via addEventListener now that the fields exist.
+  var mBft  = document.getElementById('mBft');
+  var mWind = document.getElementById('mWindMs');
+  var mGust = document.getElementById('mWindGust');
+  if (mBft)  mBft.addEventListener('change', function () { if (typeof onBftChange  === 'function') onBftChange();  });
+  if (mWind) mWind.addEventListener('input', function () { if (typeof onWindInput === 'function') onWindInput(); });
+  if (mGust) mGust.addEventListener('input', function () { if (typeof onGustInput === 'function') onGustInput(); });
+})();
+</script>
 
 <!-- Inline photo upload modal -->
 <div class="modal-overlay hidden" id="photoUploadModal" onclick="if(event.target===this)closePhotoUpload()">
