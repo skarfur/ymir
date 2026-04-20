@@ -166,6 +166,8 @@
                 <option value="hospital"  id="iHandHospital"></option>
                 <option value="coastguard" id="iHandCoastguard"></option>
                 <option value="police"    id="iHandPolice"></option>
+                <option value="guardian"  id="iHandGuardian"></option>
+                <option value="self"      id="iHandSelf"></option>
                 <option value="other"     id="iHandOther"></option>
               </select>
             </div>
@@ -258,6 +260,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('iHandHospital').textContent   = 'Hospital';
   document.getElementById('iHandCoastguard').textContent = 'Coastguard';
   document.getElementById('iHandPolice').textContent     = 'Police';
+  document.getElementById('iHandGuardian').textContent   = s('incident.handoff.guardian');
+  document.getElementById('iHandSelf').textContent       = s('incident.handoff.self');
   document.getElementById('iHandOther').textContent      = s('incident.type.other').replace('📌 ','');
 
   // Location/boat selects
@@ -513,12 +517,14 @@ async function fileReport(pathway) {
   }).join(', ');
 
   try {
+    const iDate = document.getElementById('iDate').value;
+    const iTime = document.getElementById('iTime').value;
     const res = await apiPost('createIncident', {
       types:         JSON.stringify([...selectedTypes]),
       typeLabels,
       severity:      selectedSev,
-      date:          document.getElementById('iDate').value,
-      time:          document.getElementById('iTime').value,
+      date:          iDate,
+      time:          iTime,
       locationId:    locSel.value,
       locationName:  locOpt.value ? locOpt.textContent : '',
       boatId:        boatSel.value,
@@ -540,6 +546,7 @@ async function fileReport(pathway) {
     const newInc = { ...res, types: JSON.stringify([...selectedTypes]),
       description: desc, severity: selectedSev, filedBy: user.name,
       filedAt: new Date().toISOString(), title: typeLabels,
+      date: iDate, time: iTime,
       status: pathway === 'review' ? 'review' : 'closed',
       resolved: pathway === 'closed' };
     incidents.unshift(newInc);
