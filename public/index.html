@@ -527,30 +527,15 @@ function renderFlagBanner(result) {
     + chipsHtml
     + '</div>';
 
-  // Wire click → flag detail modal
+  // Wire click → flag detail modal (shared helper in shared/weather.js)
   var clickEl = document.getElementById('pub-flag-click');
   if (clickEl) {
     clickEl.onclick = function() {
-      // Inject modal once
-      if (!document.getElementById('wxFlagModal')) {
-        var md = document.createElement('div');
-        md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)this.classList.add(\'hidden\')">'
-          + '<div class="modal modal--md">'
-          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-          + '<div id="wxFlagModalTitle" style="font-weight:600;font-size:15px"></div>'
-          + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">&times;</button>'
-          + '</div><div id="wxFlagModalBody"></div>'
-          + '<div style="margin-top:16px"><button style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px" onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')">'
-          + (lang() === 'IS' ? 'Loka' : 'Close')
-          + '</button></div></div></div>';
-        document.body.appendChild(md.firstElementChild);
-      }
       var IS2 = lang() === 'IS';
-      var title = document.getElementById('wxFlagModalTitle');
-      var body  = document.getElementById('wxFlagModalBody');
-      if (title) title.textContent = flag.icon + ' · ' + result.score + (IS2 ? ' stig' : ' pts');
-      if (body)  body.innerHTML = wxFlagDetailHtml(result, _staffStatus, IS2 ? 'IS' : 'EN');
-      document.getElementById('wxFlagModal').classList.remove('hidden');
+      showWxFlagModal(
+        flag.icon + ' · ' + result.score + (IS2 ? ' stig' : ' pts'),
+        wxFlagDetailHtml(result, _staffStatus, IS2 ? 'IS' : 'EN')
+      );
     };
   }
 }

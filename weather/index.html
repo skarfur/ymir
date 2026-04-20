@@ -504,38 +504,17 @@ function drawPresChart(pts, nowI) {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 fetchAll();
 
-// ── Flag detail modal ─────────────────────────────────────────────────────────
+// ── Flag detail modal (shared helper in shared/weather.js) ──────────────────
 function openWfFlagModal() {
-  if (!window._wfFlagResult) return;
-  const IS   = document.documentElement.lang === 'is';
-  const body = document.getElementById('wfFlagModalBody');
-  const title= document.getElementById('wfFlagModalTitle');
-  if (!body) return;
-  const r = window._wfFlagResult;
-  if (title) title.textContent = r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts');
-  body.innerHTML = typeof wxFlagDetailHtml === 'function'
-    ? wxFlagDetailHtml(r, window._wfStaffStatus ?? null, IS ? 'IS' : 'EN')
-    : '<div style="color:var(--muted);font-size:12px">Detail unavailable.</div>';
-  openModal('wfFlagModal');
-}
-function closeWfFlagModal() {
-  closeModal('wfFlagModal');
+  if (!window._wfFlagResult || typeof wxFlagDetailHtml !== 'function') return;
+  const IS = document.documentElement.lang === 'is';
+  const r  = window._wfFlagResult;
+  showWxFlagModal(
+    r.flag.icon + ' · ' + r.score + (IS ? ' stig' : ' pts'),
+    wxFlagDetailHtml(r, window._wfStaffStatus ?? null, IS ? 'IS' : 'EN')
+  );
 }
 
 </script>
-
-<!-- ══ FLAG DETAIL MODAL ══ -->
-<div class="modal-overlay hidden" id="wfFlagModal" onclick="if(event.target===this)closeWfFlagModal()">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <h3 id="wfFlagModalTitle"></h3>
-      <button class="modal-close-x" onclick="closeWfFlagModal()">×</button>
-    </div>
-    <div id="wfFlagModalBody"></div>
-    <div class="mt-16">
-      <button class="btn btn-secondary" onclick="closeWfFlagModal()" style="width:100%">Close</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>

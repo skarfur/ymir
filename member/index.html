@@ -12,6 +12,7 @@
 <script>prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});</script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/guests.js" defer></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -311,24 +312,7 @@
   </div>
 </div>
 
-<!-- ══ GUEST MODAL (launch crew) ══ -->
-<div class="modal-overlay hidden" id="launchGuestModal" style="z-index:700" onclick="if(event.target===this)closeLaunchGuestModal()">
-  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:360px;margin:auto">
-    <div class="flex-between mb-14">
-      <div class="text-md text-brass fw-500" style="letter-spacing:.5px">Add guest</div>
-      <button class="modal-close-x" onclick="closeLaunchGuestModal()">&times;</button>
-    </div>
-    <div class="text-sm text-muted mb-12">This person is not in the member list. Enter their details to add them as a guest.</div>
-    <div class="form-field"><label>Name</label><input type="text" id="launchGuestName" readonly></div>
-    <div class="form-field"><label>Kennitala or birth year</label><input type="text" id="launchGuestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
-    <div class="form-field"><label>Phone number</label><input type="text" id="launchGuestPhone" placeholder="e.g. 555-1234"></div>
-    <div id="launchGuestErr" class="text-sm text-red mb-6" style="display:none"></div>
-    <div class="flex-center gap-8" style="justify-content:flex-end">
-      <button class="btn-secondary" style="width:auto;padding:6px 14px" onclick="closeLaunchGuestModal()">Cancel</button>
-      <button class="btn-primary" style="width:auto;padding:6px 14px" onclick="confirmLaunchGuest()">Add guest</button>
-    </div>
-  </div>
-</div>
+<!-- Guest prompt is rendered by shared/guests.js; invoked via openGuestPrompt(). -->
 
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
@@ -879,33 +863,18 @@ function searchCrewMembers(inp,drop) {
   drop.style.display=drop.children.length?'block':'none';
 }
 
-// ── Guest modal (launch flow) ────────────────────────────────────────────────
+// Guest prompt — uses the shared openGuestPrompt() helper. The old openLaunchGuestModal()
+// is preserved as a thin adapter so call sites can keep their existing signature.
 function openLaunchGuestModal(name){
-  document.getElementById('launchGuestName').value=name;
-  document.getElementById('launchGuestKtOrYear').value='';
-  document.getElementById('launchGuestPhone').value='';
-  document.getElementById('launchGuestErr').style.display='none';
-  document.getElementById('launchGuestModal').classList.remove('hidden');
-}
-function closeLaunchGuestModal(){
-  document.getElementById('launchGuestModal').classList.add('hidden');
-  window._launchGuestCallback=null;
-}
-async function confirmLaunchGuest(){
-  const name=document.getElementById('launchGuestName').value.trim();
-  const ktOrYear=document.getElementById('launchGuestKtOrYear').value.trim();
-  const phone=document.getElementById('launchGuestPhone').value.trim();
-  const err=document.getElementById('launchGuestErr');
-  if(!ktOrYear&&!phone){err.textContent=s('logbook.errKtOrPhone');err.style.display='';return;}
-  err.style.display='none';
-  const isYear=/^\d{4}$/.test(ktOrYear);
-  try{
-    const res=await apiPost('saveMember',{name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true});
-    const guest={id:res.id,name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true};
-    if(window._launchMembers) window._launchMembers.push(guest);
-    closeLaunchGuestModal();
-    if(window._launchGuestCallback) window._launchGuestCallback(guest);
-  }catch(e){err.textContent=e.message;err.style.display='';}
+  openGuestPrompt({
+    name: name,
+    targetList: window._launchMembers,
+    onConfirm: function(guest){
+      if (window._launchGuestCallback) window._launchGuestCallback(guest);
+      window._launchGuestCallback = null;
+    },
+    onCancel:  function(){ window._launchGuestCallback=null; },
+  });
 }
 
 // Submit — reads stashed form values so they survive the step-3 checklist transition.

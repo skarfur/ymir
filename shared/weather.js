@@ -254,6 +254,35 @@ function wxStaffStatusHtml(status) {
     + badges.join('') + (ago ? '<span style="font-size:10px;color:var(--muted)">'+ago+'</span>' : '') + '</div>';
 }
 
+// ── Flag detail modal ───────────────────────────────────────────────────────────────
+// Single shared modal used by: this widget's flag pill (staff/member/daily-log),
+// the standalone weather page, and the public dashboard. Lazy-injected once per
+// page via ensureWxFlagModal(); showWxFlagModal() fills + opens it.
+function ensureWxFlagModal() {
+  if (document.getElementById('wxFlagModal')) return;
+  const md = document.createElement('div');
+  md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)closeModal(\'wxFlagModal\')">'
+    + '<div class="modal modal--md">'
+    + '<div class="modal-header">'
+    + '<h3 id="wxFlagModalTitle" style="margin:0"></h3>'
+    + '<button class="modal-close-x" onclick="closeModal(\'wxFlagModal\')">&times;</button>'
+    + '</div><div id="wxFlagModalBody"></div>'
+    + '<div class="btn-row" style="margin-top:16px"><button class="btn btn-secondary" onclick="closeModal(\'wxFlagModal\')">'
+    + (typeof s === 'function' ? s('btn.close') : 'Close')
+    + '</button></div></div></div>';
+  document.body.appendChild(md.firstElementChild);
+}
+
+function showWxFlagModal(title, bodyHtml) {
+  ensureWxFlagModal();
+  const t = document.getElementById('wxFlagModalTitle');
+  const b = document.getElementById('wxFlagModalBody');
+  if (t) t.textContent = title || '';
+  if (b) b.innerHTML   = bodyHtml || '';
+  if (typeof openModal === 'function') openModal('wxFlagModal');
+  else document.getElementById('wxFlagModal').classList.remove('hidden');
+}
+
 // ── Flag score detail panel HTML ───────────────────────────────────────────────────────────────
 function wxFlagDetailHtml(result, staffStatus, lang) {
   const IS = lang === 'IS';
@@ -564,20 +593,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         </div>`;
       targetEl._wxRefresh = refresh;
       targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
-      // ── Inject modal HTML once per page ──
-      if (!document.getElementById('wxFlagModal')) {
-        const _md = document.createElement('div');
-        _md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)this.classList.add(\'hidden\')">'
-          + '<div class="modal" style="max-width:480px">'
-          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-          + '<div id="wxFlagModalTitle" style="font-weight:600;font-size:15px"></div>'
-          + '<button onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px">×</button>'
-          + '</div><div id="wxFlagModalBody"></div>'
-          + '<div style="margin-top:16px"><button class="btn btn-secondary" style="width:100%" onclick="document.getElementById(\'wxFlagModal\').classList.add(\'hidden\')">'
-          + s('btn.close')
-          + '</button></div></div></div>';
-        document.body.appendChild(_md.firstElementChild);
-      }
+      ensureWxFlagModal();
 
       // ── Wire flag pill click  —  uses snap stored on this element ──
       const pill = targetEl.querySelector('#wxFlagPill') || targetEl.querySelector('.flag-pill');
@@ -585,13 +601,11 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         const IS2 = typeof getLang === 'function' ? getLang() === 'IS' : false;
         const r   = targetEl._wxResult;  // exact result that drew this pill
         const ss  = typeof getStaffStatus === 'function' ? getStaffStatus() : null;
-        const body  = document.getElementById('wxFlagModalBody');
-        const title = document.getElementById('wxFlagModalTitle');
-        if (!body || !r) return;
-        if (title) title.textContent = r.flag.icon + ' · ' + r.score + ' ' + s('wx.pts');
-        body.innerHTML = wxFlagDetailHtml(r, ss, IS2 ? 'IS' : 'EN');
-        if (typeof openModal === 'function') openModal('wxFlagModal');
-        else document.getElementById('wxFlagModal')?.classList.remove('hidden');
+        if (!r) return;
+        showWxFlagModal(
+          r.flag.icon + ' · ' + r.score + ' ' + s('wx.pts'),
+          wxFlagDetailHtml(r, ss, IS2 ? 'IS' : 'EN')
+        );
       };
 
       // ── Render duty status badges ──

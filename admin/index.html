@@ -873,7 +873,10 @@
   </div>
 </div>
 
-<!-- Opening/closing checklist item modal -->
+<!-- Opening/closing checklist item modal
+     Sibling: #launchCLModal below (launch/landing phase, with category).
+     Both share the textEN / textIS / sort-order fields; kept as separate
+     modals because their phase enums + ancillary fields differ. -->
 <div class="modal-overlay hidden" id="clModal" onclick="if(event.target===this)closeModal('clModal')">
   <div class="modal">
     <div class="modal-header">

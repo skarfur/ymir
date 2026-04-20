@@ -12,6 +12,7 @@
 <script>prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});</script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="../shared/guests.js" defer></script>
 <script src="../shared/weather.js" defer></script>
 <script src="../shared/tides.js" defer></script>
 <script src="../shared/boats.js" defer></script>
@@ -1546,49 +1547,14 @@ async function toggleStaffStatus(field) {
 }
 
 // ══ GUEST SUPPORT ═══════════════════════════════════════════════════════════
-let _guestCallback = null; // called with { name, kennitala, phone, birthYear, id }
-
+// Guest prompt — delegates to shared openGuestPrompt(). Keep old signature
+// openGuestModal(name, callback) so existing call sites don't need changes.
 function openGuestModal(name, callback) {
-  _guestCallback = callback;
-  document.getElementById('guestName').value = name;
-  document.getElementById('guestKtOrYear').value = '';
-  document.getElementById('guestPhone').value = '';
-  document.getElementById('guestErr').style.display = 'none';
-  openModal('guestModal');
-}
-
-function closeGuestModal() {
-  closeModal('guestModal');
-  _guestCallback = null;
-}
-
-async function confirmGuest() {
-  const name = document.getElementById('guestName').value.trim();
-  const ktOrYear = document.getElementById('guestKtOrYear').value.trim();
-  const phone = document.getElementById('guestPhone').value.trim();
-  const err = document.getElementById('guestErr');
-  if (!ktOrYear && !phone) {
-    err.textContent = s('staff.errKtOrPhone');
-    err.style.display = '';
-    return;
-  }
-  err.style.display = 'none';
-  // Determine if it's a kennitala (6+ digits) or birth year (4 digits)
-  const isYear = /^\d{4}$/.test(ktOrYear);
-  const kennitala = isYear ? '' : ktOrYear;
-  const birthYear = isYear ? ktOrYear : '';
-  try {
-    const res = await apiPost('saveMember', {
-      name, kennitala, birthYear, phone, role: 'guest', active: true,
-    });
-    const guest = { id: res.id, name, kennitala, birthYear, phone, role: 'guest', active: true };
-    members.push(guest);
-    closeGuestModal();
-    if (_guestCallback) _guestCallback(guest);
-  } catch(e) {
-    err.textContent = s('staff.guestSaveFailed',{msg:e.message});
-    err.style.display = '';
-  }
+  openGuestPrompt({
+    name:       name,
+    targetList: members,
+    onConfirm:  callback,
+  });
 }
 
 </script>
@@ -1669,24 +1635,7 @@ async function confirmGuest() {
   </div>
 </div>
 
-<!-- ══ GUEST PROMPT MODAL ══════════════════════════════════════════════ -->
-<div class="guest-modal-overlay hidden" id="guestModal" onclick="if(event.target===this)closeGuestModal()">
-  <div class="guest-modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px">
-      <h4 style="margin:0">Add guest</h4>
-      <button class="modal-close-x" onclick="closeGuestModal()">&times;</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">This person is not in the member list. Enter their details to add them as a guest.</div>
-    <div class="gm-field"><label>Name</label><input type="text" id="guestName" readonly></div>
-    <div class="gm-field"><label>Kennitala or birth year</label><input type="text" id="guestKtOrYear" placeholder="e.g. 1234567890 or 1995"></div>
-    <div class="gm-field"><label>Phone number</label><input type="text" id="guestPhone" placeholder="e.g. 555-1234"></div>
-    <div id="guestErr" style="color:var(--red);font-size:11px;display:none;margin-bottom:6px"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeGuestModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmGuest()">Add guest</button>
-    </div>
-  </div>
-</div>
+<!-- Guest prompt is rendered by shared/guests.js; invoked via openGuestPrompt(). -->
 
 </body>
 </html>

@@ -932,34 +932,15 @@ function searchManualMember(inp, dropOrId){
   drop.style.display='block';
 }
 
-// ── Guest modal (logbook) ────────────────────────────────────────────────────
+// ── Guest prompt (logbook) — delegates to shared/guests.js ───────────────────
 let _lgGuestCallback = null;
 function openLgGuestModal(name){
-  document.getElementById('lgGuestName').value=name;
-  document.getElementById('lgGuestKtOrYear').value='';
-  document.getElementById('lgGuestPhone').value='';
-  document.getElementById('lgGuestErr').style.display='none';
-  openModal('logGuestModal');
-}
-function closeLgGuestModal(){
-  closeModal('logGuestModal');
-  _lgGuestCallback=null;
-}
-async function confirmLgGuest(){
-  const name=document.getElementById('lgGuestName').value.trim();
-  const ktOrYear=document.getElementById('lgGuestKtOrYear').value.trim();
-  const phone=document.getElementById('lgGuestPhone').value.trim();
-  const err=document.getElementById('lgGuestErr');
-  if(!ktOrYear&&!phone){err.textContent=s('logbook.errKtOrPhone');err.style.display='';return;}
-  err.style.display='none';
-  const isYear=/^\d{4}$/.test(ktOrYear);
-  try{
-    const res=await apiPost('saveMember',{name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true});
-    const guest={id:res.id,name,kennitala:isYear?'':ktOrYear,birthYear:isYear?ktOrYear:'',phone,role:'guest',active:true};
-    allMembers.push(guest);
-    closeLgGuestModal();
-    if(_lgGuestCallback) _lgGuestCallback(guest);
-  }catch(e){err.textContent=s('logbook.errFailed',{msg:e.message});err.style.display='';}
+  openGuestPrompt({
+    name: name,
+    targetList: allMembers,
+    onConfirm: function(guest){ if (_lgGuestCallback) _lgGuestCallback(guest); _lgGuestCallback = null; },
+    onCancel:  function(){ _lgGuestCallback = null; },
+  });
 }
 
 function watchPortInput(which){

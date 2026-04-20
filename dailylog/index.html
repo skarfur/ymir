@@ -300,6 +300,10 @@
 </div>
 
 <!-- ══ INCIDENT DETAIL MODAL ══ -->
+<!-- Incident peek — read-only summary with a link out to /incidents/ for the
+     full editor (detailModal there). Intentionally not merged with the
+     editor: this page shows many incidents as part of the day's activities
+     and only needs a quick look. -->
 <div class="modal-overlay hidden" id="incidentDetailModal"
   onclick="if(event.target===this)closeModal('incidentDetailModal')">
   <div class="modal" style="max-width:560px">
