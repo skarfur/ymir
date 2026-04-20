@@ -890,11 +890,19 @@ const STRING_COL_RE_ = /kennitala|phone|[Ii]d$|^id$|description|notes|name|title
 
 function sanitizeCell_(col, val) {
   if (val instanceof Date) {
+    // Format in the script timezone rather than slicing an ISO (UTC)
+    // string. Sheets stores cell values as local-time Date objects, so
+    // UTC slicing drifts by the zone offset — including historical
+    // sub-hour offsets (e.g. Atlantic/Reykjavik LMT for 1899-dated
+    // time-only cells), which surfaces as mis-displayed HH:MM values.
+    const tz = Session.getScriptTimeZone();
     const iso = val.toISOString();
     if (iso.startsWith('1899-12-3') || iso.startsWith('1899-12-2')) {
-      return iso.slice(11, 16);
+      return Utilities.formatDate(val, tz, 'HH:mm');
     }
-    return TIME_COLS_.has(col) ? iso.slice(11, 16) : iso.slice(0, 10);
+    return TIME_COLS_.has(col)
+      ? Utilities.formatDate(val, tz, 'HH:mm')
+      : Utilities.formatDate(val, tz, 'yyyy-MM-dd');
   }
   if (val != null && typeof val === 'number' && STRING_COL_RE_.test(col)) {
     return String(val);
