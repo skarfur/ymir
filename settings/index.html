@@ -297,10 +297,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   });
 
-  // Live theme preview
+  // Live theme preview. Track user interaction so a late-arriving server
+  // sync (below) doesn't clobber the user's selection mid-click.
+  var _userChangedTheme = false;
   document.getElementById('themeToggle').addEventListener('click', function(e) {
     var btn = e.target.closest('button');
     if (!btn) return;
+    _userChangedTheme = true;
     setToggle('themeToggle', btn.dataset.val);
     setTheme(btn.dataset.val);
   });
@@ -325,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (Object.keys(serverPrefs).length) {
         setPrefs(serverPrefs);
         if (serverPrefs.windUnit) document.getElementById('sWindUnit').value = serverPrefs.windUnit;
-        if (serverPrefs.theme) { setToggle('themeToggle', serverPrefs.theme); setTheme(serverPrefs.theme); }
+        if (serverPrefs.theme && !_userChangedTheme) { setToggle('themeToggle', serverPrefs.theme); setTheme(serverPrefs.theme); }
         if (serverPrefs.statsVisibility) {
           applyStatVis(serverPrefs.statsVisibility);
         }
