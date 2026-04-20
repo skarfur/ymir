@@ -11,6 +11,7 @@
   <script src="../shared/api.js"></script>
   <script src="../shared/ui.js"></script>
   <script src="../shared/strings.js"></script>
+  <script src="../shared/list-filter.js"></script>
   <script src="../shared/maintenance.js" defer></script>
   <style>
     .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; 
@@ -286,18 +287,17 @@ let pendingMaterials = [];
 let isSaumaMode = false;
 let editingId = "";
 
-let activeFilters = {
-  status:   new Set(['open']),
-  type:     new Set(),
-  category: new Set(),
-  severity: new Set(),
-  sauma:    new Set(),
-};
+// Filter state lives inside _maintFilter (shared/list-filter.js). activeFilters
+// is kept as an alias onto that state so the existing pill-update code keeps
+// working without threading the controller through everything.
+let _maintFilter = null;
+let activeFilters = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
   buildHeader('maintenance');
   applyStrings();
+  initMaintFilter();
 
   try {
     const [rRes, cfgRes] = await Promise.all([
@@ -311,7 +311,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateBoatSelect();
     renderStats();
     updateFilterUI();
-    renderList();
+    _maintFilter.refresh();  // predicate + render in one shot
   } catch(e) {
     document.getElementById("reqList").innerHTML =
       `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>${esc(s('maint.loadFailed',{msg:e.message}))}</p></div>`;
@@ -388,14 +388,58 @@ function showPendingReviews() {
   document.getElementById('reqList')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ── Filter & render ────────────────────────────────────────────────────────────
-function toggleFilter(group, value) {
-  const set = activeFilters[group];
-  if (set.has(value)) set.delete(value);
-  else set.add(value);
-  updateFilterUI();
-  renderList();
+// ── Filter setup & render ─────────────────────────────────────────────────────
+function initMaintFilter() {
+  _maintFilter = createListFilter({
+    source: () => allRequests || [],
+    filters: {
+      status:   new Set(['open']),
+      type:     new Set(),
+      category: new Set(),
+      severity: new Set(),
+      sauma:    new Set(),
+    },
+    predicate: (r, f) => {
+      const resolved = boolVal(r.resolved);
+      const isSauma  = boolVal(r.saumaklubbur);
+      const anyActive = ['status','type','category','severity','sauma'].some(k => f[k] && f[k].size > 0);
+      const userName = window._maintUser?.name || '';
+
+      // Default: no selections = show open items.
+      if (!anyActive) return !resolved;
+
+      if (f.status.size > 0) {
+        const ok = (f.status.has('open') && !resolved) || (f.status.has('resolved') && resolved);
+        if (!ok) return false;
+      }
+      if (f.type.size > 0) {
+        const ok = (f.type.has('sauma') && isSauma) || (f.type.has('maintenance') && !isSauma);
+        if (!ok) return false;
+      }
+      if (f.category.size > 0 && !f.category.has(r.category)) return false;
+      if (f.severity.size > 0 && !f.severity.has(r.severity)) return false;
+      if (f.sauma.size > 0) {
+        if (!isSauma) return false;
+        const matchUn      = f.sauma.has('unassigned') && !r.verkstjori;
+        const matchMy      = f.sauma.has('myprojects') && (r.verkstjori === userName || parseJson(r.comments,[]).some(c => c.by === userName));
+        const matchPending = f.sauma.has('pending')    && !boolVal(r.approved);
+        if (!matchUn && !matchMy && !matchPending) return false;
+      }
+      return true;
+    },
+    render: renderMaintList,
+  });
+  activeFilters = _maintFilter.state();  // live alias used by updateFilterUI()
 }
+
+function toggleFilter(group, value) {
+  _maintFilter.toggleSetMember(group, value);  // triggers re-render
+  updateFilterUI();
+}
+
+// Back-compat: anything that used to call renderList() now just re-runs the
+// filter pipeline. New code should prefer _maintFilter.refresh().
+function renderList() { if (_maintFilter) _maintFilter.refresh(); }
 
 function updateFilterUI() {
   const tf = activeFilters.type;
@@ -416,55 +460,7 @@ function updateFilterUI() {
   });
 }
 
-function getFiltered() {
-  const f = activeFilters;
-  const anyActive = Object.values(f).some(s => s.size > 0);
-  const userName = window._maintUser?.name || '';
-
-  return allRequests.filter(r => {
-    const resolved = boolVal(r.resolved);
-    const isSauma = boolVal(r.saumaklubbur);
-
-    // Default: no selections = show open items
-    if (!anyActive) return !resolved;
-
-    // STATUS (OR)
-    if (f.status.size > 0) {
-      const ok = (f.status.has('open') && !resolved) || (f.status.has('resolved') && resolved);
-      if (!ok) return false;
-    }
-
-    // TYPE (OR)
-    if (f.type.size > 0) {
-      const ok = (f.type.has('sauma') && isSauma) || (f.type.has('maintenance') && !isSauma);
-      if (!ok) return false;
-    }
-
-    // CATEGORY (OR)
-    if (f.category.size > 0) {
-      if (!f.category.has(r.category)) return false;
-    }
-
-    // SEVERITY (OR)
-    if (f.severity.size > 0) {
-      if (!f.severity.has(r.severity)) return false;
-    }
-
-    // SAUMA-specific (OR within, AND with sauma type)
-    if (f.sauma.size > 0) {
-      if (!isSauma) return false;
-      const matchUn = f.sauma.has('unassigned') && !r.verkstjori;
-      const matchMy = f.sauma.has('myprojects') && (r.verkstjori === userName || parseJson(r.comments,[]).some(c => c.by === userName));
-      const matchPending = f.sauma.has('pending') && !boolVal(r.approved);
-      if (!matchUn && !matchMy && !matchPending) return false;
-    }
-
-    return true;
-  });
-}
-
-function renderList() {
-  const items = getFiltered();
+function renderMaintList(items) {
   const el = document.getElementById("reqList");
   if (!items.length) {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>${s('maint.noFilterMatch')}</p></div>`;
