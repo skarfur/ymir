@@ -110,7 +110,13 @@ async function _call(action, payload) {
   }
   var body = JSON.stringify(Object.assign(envelope, payload));
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 20000) : null;
+  // 60s client abort: most calls return in <2s, but PBKDF2-gated actions
+  // (loginMember runs one, setPassword runs two) can each take ~5-8s on
+  // Apps Script, and any further sheet I/O after the HMAC loop adds on
+  // top. A shorter bound aborts the fetch while the server is still
+  // persisting, which has the confusing effect of failing the UI even
+  // though the write already landed.
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 60000) : null;
   try {
     var res = await fetch(SCRIPT_URL, {
       method:   "POST",
