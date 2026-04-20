@@ -17,6 +17,7 @@
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/mcm.js" defer></script>
 <script src="../shared/maintenance.js" defer></script>
+<script src="../shared/boat-modal.js"></script>
 <script>window._logbookSkipInit = true;</script>
 <script src="../shared/logbook.js" defer></script>
 <style>
@@ -342,126 +343,7 @@
   </div>
 </div>
 
-<!-- ══ ADD BOAT MODAL (same as admin) ══ -->
-<div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="boatModalTitle" data-s="admin.boatModal.add"></h3>
-      <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
-    </div>
-    <div class="field"><label data-s="lbl.name"></label><input type="text" id="bName"></div>
-    <div class="field"><label data-s="admin.boatCategory"></label>
-      <select id="bCategory" onchange="updateBoatModalFields()"></select>
-    </div>
-    <div class="field">
-      <label data-s="boat.defaultPort">Default port</label>
-      <select id="bDefaultPortId"><option value="" data-s="lbl.noneDash"></option></select>
-    </div>
-    <div class="field">
-      <label id="bRegNoLabel" data-s="boat.registrationNo">Registration no.</label>
-      <input type="text" id="bRegNo" placeholder="e.g. ÍS-342">
-    </div>
-    <div class="grid2">
-      <div class="field">
-        <label data-s="boat.typeModel">Type / model</label>
-        <input type="text" id="bTypeModel" placeholder="e.g. Hallberg-Rassy 34">
-      </div>
-      <div class="field">
-        <label data-s="boat.loa">LOA (ft)</label>
-        <input type="number" id="bLoa" min="0" step="0.1" placeholder="e.g. 34.0">
-      </div>
-    </div>
-    <div class="field">
-      <label data-s="boat.ownership">Ownership</label>
-      <select id="bOwnership" onchange="updateOwnershipFields()">
-        <option value="club" data-s="admin.ownerClub"></option>
-        <option value="private" data-s="admin.ownerPrivate"></option>
-      </select>
-    </div>
-    <div class="field hidden" id="bOwnerField">
-      <label data-s="boat.owner">Owner</label>
-      <div style="position:relative">
-        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="" oninput="searchBoatOwner(this.value)">
-        <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
-        <input type="hidden" id="bOwnerId">
-        <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
-      </div>
-    </div>
-    <div class="field">
-      <label data-s="boat.accessMode">Access Mode</label>
-      <select id="bAccessMode" onchange="updateAccessFields()">
-        <option value="free" data-s="boat.accessFree"></option>
-        <option value="controlled" data-s="boat.accessControlled"></option>
-      </select>
-    </div>
-    <div id="bAccessControlledSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
-      <div class="field">
-        <label data-s="boat.gateCert">Required Certification</label>
-        <select id="bGateCert"><option value="" data-s="boat.gateCertNone"></option></select>
-      </div>
-      <div class="field">
-        <label data-s="boat.allowlist">Allowed Members</label>
-        <div id="bAllowlistChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
-        <div style="position:relative">
-          <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" oninput="searchAllowlistMember(this.value)">
-          <div id="bAllowlistSuggestions" class="suggest-drop" style="position:relative"></div>
-        </div>
-      </div>
-    </div>
-    <div id="bSlotSchedulingSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <input type="checkbox" id="bSlotScheduling" onchange="updateSlotFields()">
-        <label for="bSlotScheduling" style="font-size:11px" data-s="boat.slotScheduling">Enable session slot scheduling</label>
-      </div>
-      <div id="bSlotOptions" class="hidden">
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="checkbox" id="bAvailOutside" checked>
-          <label for="bAvailOutside" style="font-size:11px" data-s="boat.availOutside">Available outside scheduled slots</label>
-        </div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px" data-s="boat.availOutsideHint">If unchecked, boat can only be used during booked session slots.</div>
-      </div>
-    </div>
-    <div id="bReservationSection">
-      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:6px" data-s="boat.reservations">RESERVATIONS</div>
-      <div id="bReservationList" style="margin-bottom:6px"></div>
-      <div id="bReservationForm" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
-        <div class="field">
-          <label data-s="cq.resMember">Member</label>
-          <div style="position:relative">
-            <input type="text" id="bResMemberSearch" autocomplete="off" placeholder="" oninput="searchBmResMember(this.value)">
-            <div id="bResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
-            <input type="hidden" id="bResMemberKt">
-            <div id="bResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label data-s="cq.resStartDate">Start date</label><input type="date" id="bResStart"></div>
-          <div class="field"><label data-s="cq.resEndDate">End date</label><input type="date" id="bResEnd"></div>
-        </div>
-        <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="bResNote"></div>
-        <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelBmResForm()" data-s="btn.cancel"></button>
-          <button class="btn btn-primary" style="font-size:11px" onclick="saveBmResFromModal()" data-s="btn.save"></button>
-        </div>
-      </div>
-      <div id="bReservationActions"></div>
-    </div>
-    <div class="check-row">
-      <input type="checkbox" id="bOOS"> <label for="bOOS" data-s="admin.boatOos"></label>
-    </div>
-    <div class="field hidden" id="oosReasonField">
-      <label data-s="admin.oosReason"></label><input type="text" id="bOOSReason">
-    </div>
-    <div class="check-row" style="margin-bottom:12px">
-      <input type="checkbox" id="bActive" checked> <label for="bActive" data-s="lbl.active"></label>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('boatModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteCqBoat()" data-s="btn.delete"></button>
-      <button class="btn btn-primary" onclick="saveCqBoat()" data-s="btn.save"></button>
-    </div>
-  </div>
-</div>
+<!-- Boat modal — markup injected by shared/boat-modal.js (injectBoatModalHtml()). -->
 
 <script>
 // ══ STATE ════════════════════════════════════════════════════════════════════
@@ -492,6 +374,7 @@ function bftLabel(b) {
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('captain');
+  injectBoatModalHtml();
   applyStrings();
 
   document.getElementById('cqTitle').textContent = s('cq.title');
@@ -757,7 +640,7 @@ function renderBoats() {
     return false;
   });
 
-  var addBtn = '<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:12px" onclick="openCqBoatModal()">+ ' + esc(s('admin.boatModal.add')) + '</button></div>';
+  var addBtn = '<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:12px" onclick="openBoatModal()">+ ' + esc(s('admin.boatModal.add')) + '</button></div>';
   if (!myBoats.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noBoats') + '</div>' + addBtn; return; }
   el.innerHTML = myBoats.map(b => {
     var isOos = boolVal(b.oos);
@@ -1438,7 +1321,7 @@ function populateCqGateCertSelect(currentGate) {
   });
 }
 
-function renderCqAllowlistChips() {
+function renderAllowlistChips() {
   var el = document.getElementById('bAllowlistChips');
   if (!_bmEditAllowlist.length) { el.innerHTML = ''; return; }
   el.innerHTML = _bmEditAllowlist.map(function(kt) {
@@ -1446,7 +1329,7 @@ function renderCqAllowlistChips() {
     var name = m ? memberDisplayName(m, _cqMembers) : kt;
     return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:4px">'
       + esc(name)
-      + '<span style="cursor:pointer;color:var(--red);font-size:12px" onclick="removeCqFromAllowlist(\'' + esc(kt) + '\')">&times;</span>'
+      + '<span style="cursor:pointer;color:var(--red);font-size:12px" onclick="removeFromAllowlist(\'' + esc(kt) + '\')">&times;</span>'
       + '</span>';
   }).join('');
 }
@@ -1459,30 +1342,30 @@ function searchAllowlistMember(q) {
   if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="addCqToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+      + 'onclick="addToAllowlist(\'' + esc(m.kennitala) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }
 
-function addCqToAllowlist(kt) {
+function addToAllowlist(kt) {
   if (_bmEditAllowlist.indexOf(kt) === -1) _bmEditAllowlist.push(kt);
   document.getElementById('bAllowlistSearch').value = '';
   document.getElementById('bAllowlistSuggestions').innerHTML = '';
   document.getElementById('bAllowlistSuggestions').style.display = 'none';
-  renderCqAllowlistChips();
+  renderAllowlistChips();
 }
 
-function removeCqFromAllowlist(kt) {
+function removeFromAllowlist(kt) {
   _bmEditAllowlist = _bmEditAllowlist.filter(function(k) { return k !== kt; });
-  renderCqAllowlistChips();
+  renderAllowlistChips();
 }
 
-function renderBmReservationList(boat) {
+function renderReservationList(boat) {
   var el = document.getElementById('bReservationList');
   var actEl = document.getElementById('bReservationActions');
   if (!boat || !boat.reservations || !boat.reservations.length) {
     el.innerHTML = '';
-    actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showBmResForm()">' + esc(s('boat.addReservation')) + '</button>';
+    actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showResForm()">' + esc(s('boat.addReservation')) + '</button>';
     return;
   }
   el.innerHTML = boat.reservations.map(function(r) {
@@ -1492,18 +1375,18 @@ function renderBmReservationList(boat) {
       + '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" onclick="removeBmResFromModal(\'' + esc(r.id) + '\')">&times;</button>'
       + '</div>';
   }).join('');
-  actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showBmResForm()">' + esc(s('boat.addReservation')) + '</button>';
+  actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" onclick="showResForm()">' + esc(s('boat.addReservation')) + '</button>';
 }
 
-function showBmResForm() {
+function showResForm() {
   document.getElementById('bReservationForm').classList.remove('hidden');
 }
 
-function cancelBmResForm() {
+function cancelResForm() {
   document.getElementById('bReservationForm').classList.add('hidden');
 }
 
-function searchBmResMember(q) {
+function searchResMember(q) {
   var drop = document.getElementById('bResMemberSuggestions');
   if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   var ql = q.toLowerCase();
@@ -1511,12 +1394,12 @@ function searchBmResMember(q) {
   if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectBmResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+      + 'onclick="selectResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }
 
-function selectBmResMember(kt, name) {
+function selectResMember(kt, name) {
   document.getElementById('bResMemberKt').value = kt;
   document.getElementById('bResMemberSearch').value = '';
   document.getElementById('bResMemberName').textContent = name;
@@ -1524,7 +1407,7 @@ function selectBmResMember(kt, name) {
   document.getElementById('bResMemberSuggestions').style.display = 'none';
 }
 
-async function saveBmResFromModal() {
+async function saveResFromModal() {
   var boatId = _editingBoatId;
   if (!boatId) return;
   var kt = document.getElementById('bResMemberKt').value;
@@ -1537,8 +1420,8 @@ async function saveBmResFromModal() {
     var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
     var b = _boats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
-    cancelBmResForm();
-    renderBmReservationList(b);
+    cancelResForm();
+    renderReservationList(b);
     showToast(s('boat.reservationSaved'), 'ok');
   } catch (e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
 }
@@ -1551,12 +1434,12 @@ async function removeBmResFromModal(resId) {
     var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
     var b = _boats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
-    renderBmReservationList(b);
+    renderReservationList(b);
     showToast(s('boat.reservationRemoved'), 'ok');
   } catch (e) { showToast(s('toast.error') + ': ' + e.message, 'err'); }
 }
 
-function openCqBoatModal(id) {
+function openBoatModal(id) {
   _editingBoatId = id || null;
   var b = id ? _boats.find(function(x) { return x.id === id; }) : null;
   document.getElementById('boatModalTitle').textContent = b ? s('admin.boatModal.edit') : s('admin.boatModal.add');
@@ -1582,7 +1465,7 @@ function openCqBoatModal(id) {
   document.getElementById('bAccessMode').value = b && b.accessMode === 'controlled' ? 'controlled' : 'free';
   populateCqGateCertSelect(_cqCurrentGateFor(b));
   _bmEditAllowlist = b && Array.isArray(b.accessAllowlist) ? b.accessAllowlist.slice() : [];
-  renderCqAllowlistChips();
+  renderAllowlistChips();
   updateAccessFields();
   // Slot scheduling
   document.getElementById('bSlotScheduling').checked = b && boolVal(b.slotSchedulingEnabled);
@@ -1596,14 +1479,14 @@ function openCqBoatModal(id) {
   document.getElementById('bResStart').value = '';
   document.getElementById('bResEnd').value = '';
   document.getElementById('bResNote').value = '';
-  renderBmReservationList(b);
+  renderReservationList(b);
   updateOwnershipFields();
   updateBoatModalFields();
   applyStrings(document.getElementById('boatModal'));
   openModal('boatModal');
 }
 
-async function saveCqBoat() {
+async function saveBoat() {
   var name = document.getElementById('bName').value.trim();
   if (!name) { showToast(s('admin.nameRequired'), 'err'); return; }
 
@@ -1652,7 +1535,7 @@ async function saveCqBoat() {
   } catch (e) { showToast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
 }
 
-async function deleteCqBoat() {
+async function deleteBoat() {
   var id = _editingBoatId;
   if (!id) return;
   if (!(await ymConfirm(s('admin.confirmDeleteBoat')))) return;
