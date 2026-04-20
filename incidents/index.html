@@ -66,6 +66,17 @@
     .incident-desc { color:var(--muted); font-size:12px; margin-top:4px; }
     .incident-meta { font-size:11px; color:var(--muted); margin-top:3px; }
 
+    .incident-filters { margin-bottom:12px; }
+    .filter-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+    .filter-row:last-child { margin-bottom:0; }
+    .filter-label { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;
+      margin-right:4px; min-width:54px; }
+    .filt-btn { padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
+      color:var(--text); font-family:inherit; font-size:10px; letter-spacing:.4px; cursor:pointer;
+      transition:border-color .15s,background .15s,color .15s; white-space:nowrap; }
+    .filt-btn:hover { border-color:var(--brass); }
+    .filt-btn.active { background:var(--brass); color:#000; border-color:var(--brass); }
+
     .notes-list { margin-top:8px; }
     .note-item { background:var(--faint); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:6px; font-size:12px; }
     .note-meta  { color:var(--muted); font-size:11px; margin-top:3px; }
@@ -105,6 +116,23 @@
 
     <!-- LIST MODE -->
     <div id="listMode">
+      <div class="incident-filters" id="incidentFilters">
+        <div class="filter-row">
+          <span class="filter-label" data-s="incident.filterStatusLbl"></span>
+          <button class="filt-btn active" data-group="status" data-v="all"      onclick="incSetFilter(this)" data-s="incident.filterAll"></button>
+          <button class="filt-btn"        data-group="status" data-v="open"     onclick="incSetFilter(this)" data-s="incident.open"></button>
+          <button class="filt-btn"        data-group="status" data-v="review"   onclick="incSetFilter(this)" data-s="incident.filterReview"></button>
+          <button class="filt-btn"        data-group="status" data-v="resolved" onclick="incSetFilter(this)" data-s="incident.resolved"></button>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label" data-s="lbl.severity"></span>
+          <button class="filt-btn active" data-group="sev" data-v="all"      onclick="incSetFilter(this)" data-s="incident.filterAll"></button>
+          <button class="filt-btn"        data-group="sev" data-v="low"      onclick="incSetFilter(this)" data-s="incident.sev.low"></button>
+          <button class="filt-btn"        data-group="sev" data-v="medium"   onclick="incSetFilter(this)" data-s="incident.sev.medium"></button>
+          <button class="filt-btn"        data-group="sev" data-v="high"     onclick="incSetFilter(this)" data-s="incident.sev.high"></button>
+          <button class="filt-btn"        data-group="sev" data-v="critical" onclick="incSetFilter(this)" data-s="incident.sev.critical"></button>
+        </div>
+      </div>
       <div class="card" id="incidentsList">
         <div class="loading-state"><span class="spinner"></span></div>
       </div>
@@ -253,6 +281,19 @@ let selectedTypes = new Set();
 let selectedSev   = '';
 let boats         = [], locations = [];
 let detailId      = null;
+let _incFilter    = { status: 'all', sev: 'all' };
+
+// Local-time helpers — avoid ISO/UTC slicing so we don't inherit the
+// sub-hour timezone offset issue seen in other time-based features.
+function _localDateStr(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+function _localTimeStr(d) {
+  return String(d.getHours()).padStart(2, '0') + ':'
+    + String(d.getMinutes()).padStart(2, '0');
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -292,8 +333,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('iBoatNone').textContent = s('lbl.noneDash');
 
   // Set defaults
-  document.getElementById('iDate').value = fmtDateNow();
-  document.getElementById('iTime').value = fmtTimeNow();
+  { const _now = new Date();
+    document.getElementById('iDate').value = _localDateStr(_now);
+    document.getElementById('iTime').value = _localTimeStr(_now); }
 
   // Build type grid
   buildTypeGrid();
@@ -400,6 +442,20 @@ function scanBoatForIncident() {
 }
 
 // ── RENDER LIST ───────────────────────────────────────────────────────────────
+function _incStatus(i) {
+  const resolved = i.resolved && i.resolved !== 'false';
+  if (resolved) return 'resolved';
+  return i.status === 'review' ? 'review' : 'open';
+}
+
+function _incSortKey(i) {
+  // Prefer the incident date/time; fall back to filedAt for legacy rows.
+  // Compare on HH:MM strings — both sides are local-time entries, so
+  // lexicographic sort is correct without any timezone conversion.
+  if (i.date) return sstr(i.date) + 'T' + sstr(i.time || '00:00');
+  return sstr(i.filedAt).slice(0, 16);
+}
+
 function renderList() {
   const el = document.getElementById('incidentsList');
   if (!incidents.length) {
@@ -407,20 +463,28 @@ function renderList() {
     return;
   }
   const sevBadge = { low:'badge-green', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
-  el.innerHTML = incidents.map(i => {
+  const filtered = incidents
+    .filter(i => _incFilter.status === 'all' || _incStatus(i) === _incFilter.status)
+    .filter(i => _incFilter.sev === 'all' || i.severity === _incFilter.sev)
+    .slice()
+    .sort((a, b) => _incSortKey(b).localeCompare(_incSortKey(a)));
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-note">${s('incident.noMatching')}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(i => {
     const types = parseJsonArray(i.types);
     const typeLabels = types.map(t => {
       const def = INCIDENT_TYPES.find(x => x.v === t);
       return def ? s(def.key) : t;
     }).join(', ');
     const sevLabel = i.severity ? (s('incident.sev.'+i.severity) || i.severity) : '';
-    const resolved = i.resolved && i.resolved !== 'false';
-    const inReview = !resolved && i.status === 'review';
-    const statusCls = resolved ? 'badge-green' : (inReview ? 'badge-orange' : 'badge-yellow');
-    const statusLbl = resolved ? s('incident.resolved')
-      : (inReview ? s('incident.statusReview') : s('incident.open'));
-    const dateStr = i.date || sstr(i.filedAt).slice(0, 10);
-    const timeStr = i.time || sstr(i.filedAt).slice(11, 16);
+    const st = _incStatus(i);
+    const statusCls = st === 'resolved' ? 'badge-green' : (st === 'review' ? 'badge-orange' : 'badge-yellow');
+    const statusLbl = st === 'resolved' ? s('incident.resolved')
+      : (st === 'review' ? s('incident.statusReview') : s('incident.open'));
+    const dateStr = i.date || (i.filedAt ? fmtDate(i.filedAt) : '');
+    const timeStr = i.time || (i.filedAt ? fmtTime(i.filedAt) : '');
     const descStr = sstr(i.description);
     const desc = descStr.slice(0, 140) + (descStr.length > 140 ? '…' : '');
     return `<div class="incident-row" data-id="${esc(i.id)}">
@@ -436,6 +500,16 @@ function renderList() {
       ${desc ? `<div class="incident-desc">${esc(desc)}</div>` : ''}
     </div>`;
   }).join('');
+}
+
+function incSetFilter(btn) {
+  const group = btn.dataset.group;
+  const v = btn.dataset.v;
+  _incFilter[group] = v;
+  document.querySelectorAll(`.filt-btn[data-group="${group}"]`).forEach(b => {
+    b.classList.toggle('active', b.dataset.v === v);
+  });
+  renderList();
 }
 
 function incidentById(id) { return incidents.find(i => i.id === id); }
@@ -595,8 +669,9 @@ function resetForm() {
     document.getElementById(id).value = '';
   });
   document.getElementById('iHandOffTo').value = '';
-  document.getElementById('iDate').value = fmtDateNow();
-  document.getElementById('iTime').value = fmtTimeNow();
+  { const _now = new Date();
+    document.getElementById('iDate').value = _localDateStr(_now);
+    document.getElementById('iTime').value = _localTimeStr(_now); }
 }
 
 // ── ADD NOTE ──────────────────────────────────────────────────────────────────
