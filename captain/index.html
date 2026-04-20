@@ -18,6 +18,7 @@
 <script src="../shared/mcm.js" defer></script>
 <script src="../shared/maintenance.js" defer></script>
 <script src="../shared/boat-modal.js"></script>
+<script src="../shared/slot-modal.js"></script>
 <script>window._logbookSkipInit = true;</script>
 <script src="../shared/logbook.js" defer></script>
 <style>
@@ -170,8 +171,8 @@
         <span id="cqWeekLabel" class="week-label"></span>
         <button class="btn btn-secondary" onclick="shiftCqWeek(1)">&rarr;</button>
         <button class="btn btn-secondary" onclick="cqWeekToday()" data-s="slot.today">Today</button>
-        <button class="btn btn-primary" id="cqCreateSlotBtn" data-s="slot.createAndBook" data-s-attr="title" onclick="openCqCreateSlotModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
-        <button class="btn btn-primary" data-s="slot.bulkBook" data-s-attr="title" onclick="openCqBulkBookModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
+        <button class="btn btn-primary" id="cqCreateSlotBtn" data-s="slot.createAndBook" data-s-attr="title" onclick="openCreateSlotModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
+        <button class="btn btn-primary" data-s="slot.bulkBook" data-s-attr="title" onclick="openBulkSlotModal()"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
         <label for="cqBookingColor" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
@@ -240,62 +241,7 @@
 
 </div>
 
-<!-- ══ BULK BOOK MODAL ══ -->
-<div class="modal-overlay hidden" id="cqBulkBookModal" onclick="if(event.target===this)closeModal('cqBulkBookModal')">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-header">
-      <h3 data-s="slot.bulkTitle">Bulk Book Slots</h3>
-      <button class="modal-close-x" onclick="closeModal('cqBulkBookModal')">&times;</button>
-    </div>
-    <div class="field">
-      <label data-s="slot.daysOfWeek">Days of week</label>
-      <div id="cqBbDays" style="display:flex;gap:6px;flex-wrap:wrap">
-        <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cqBbStartTime"></div>
-      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cqBbEndTime"></div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cqBbFromDate"></div>
-      <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cqBbToDate"></div>
-    </div>
-    <div id="cqBbPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="previewCqBulkBook()" data-s="slot.preview">Preview</button>
-      <button class="btn btn-primary" onclick="submitCqBulkBook()" data-s="slot.bulkBook">Bulk Book</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ CREATE & BOOK SLOT MODAL ══ -->
-<div class="modal-overlay hidden" id="cqCreateSlotModal" onclick="if(event.target===this)closeModal('cqCreateSlotModal')">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header">
-      <h3 data-s="slot.createAndBookTitle">Create & Book Slot</h3>
-      <button class="modal-close-x" onclick="closeModal('cqCreateSlotModal')">&times;</button>
-    </div>
-    <div class="field">
-      <label data-s="slot.date">Date</label>
-      <input type="date" id="cqCsDate">
-    </div>
-    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cqCsStart"></div>
-      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cqCsEnd"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('cqCreateSlotModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-primary" onclick="submitCqCreateSlot()" data-s="slot.createAndBook">+ New Booking</button>
-    </div>
-  </div>
-</div>
+<!-- Slot modals (recurring + single create-and-book) — markup injected by shared/slot-modal.js -->
 
 <!-- ══ PORT CHANGE MODAL ══ -->
 <div class="modal-overlay hidden" id="portModal" onclick="if(event.target===this)closeModal('portModal')">
@@ -375,6 +321,15 @@ function bftLabel(b) {
 document.addEventListener('DOMContentLoaded', async () => {
   buildHeader('captain');
   injectBoatModalHtml();
+  // Captain's slot context is implicit — the boat is already selected via
+  // #cqResBoat in the reservations section, so we hide rsBoat in the modal.
+  // Notes aren't captured in captain's workflow either.
+  injectRecurringSlotModal({ showBoat: false, showNote: false,
+    previewFn: 'previewBulkSlots', saveFn: 'saveBulkSlots', saveKey: 'slot.bulkBook' });
+  // Single-slot modal: captain creates-and-books in one step (no edit/delete).
+  injectSingleSlotModal({ showBoatName: false, showNote: false, showBookedInfo: false,
+    saveFn: 'saveAndBookSlot', saveKey: 'slot.createAndBook',
+    titleKey: 'slot.createAndBookTitle' });
   applyStrings();
 
   document.getElementById('cqTitle').textContent = s('cq.title');
@@ -1083,28 +1038,28 @@ async function unbookCqSlot(slotId) {
   }
 }
 
-function openCqBulkBookModal() {
-  document.querySelectorAll('#cqBbDays input').forEach(function(cb) { cb.checked = false; });
+function openBulkSlotModal() {
+  document.querySelectorAll('#rsDays input').forEach(function(cb) { cb.checked = false; });
   var today = new Date().toISOString().slice(0, 10);
-  document.getElementById('cqBbStartTime').value = '';
-  document.getElementById('cqBbEndTime').value = '';
-  document.getElementById('cqBbFromDate').value = today;
+  document.getElementById('rsStartTime').value = '';
+  document.getElementById('rsEndTime').value = '';
+  document.getElementById('rsFromDate').value = today;
   var endD = new Date(); endD.setMonth(endD.getMonth() + 1);
-  document.getElementById('cqBbToDate').value = endD.toISOString().slice(0, 10);
-  document.getElementById('cqBbPreview').textContent = '';
-  applyStrings(document.getElementById('cqBulkBookModal'));
-  openModal('cqBulkBookModal');
+  document.getElementById('rsToDate').value = endD.toISOString().slice(0, 10);
+  document.getElementById('rsPreview').textContent = '';
+  applyStrings(document.getElementById('recurSlotModal'));
+  openModal('recurSlotModal');
 }
 
-async function previewCqBulkBook() {
+async function previewBulkSlots() {
   var days = [];
-  document.querySelectorAll('#cqBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
-  var fromDate = document.getElementById('cqBbFromDate').value;
-  var toDate = document.getElementById('cqBbToDate').value;
-  if (!days.length || !fromDate || !toDate) { document.getElementById('cqBbPreview').textContent = s('slot.selectDays'); return; }
+  document.querySelectorAll('#rsDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('rsFromDate').value;
+  var toDate = document.getElementById('rsToDate').value;
+  if (!days.length || !fromDate || !toDate) { document.getElementById('rsPreview').textContent = s('slot.selectDays'); return; }
   var boatId = document.getElementById('cqResBoat').value;
-  var filterStart = document.getElementById('cqBbStartTime').value || '';
-  var filterEnd = document.getElementById('cqBbEndTime').value || '';
+  var filterStart = document.getElementById('rsStartTime').value || '';
+  var filterEnd = document.getElementById('rsEndTime').value || '';
   try {
     var res = await apiGet('getSlots', { boatId: boatId, fromDate: fromDate, toDate: toDate });
     var slots = res.slots || [];
@@ -1117,19 +1072,19 @@ async function previewCqBulkBook() {
       total++;
       if (!sl.bookedByKennitala) open++;
     });
-    if (open === 0) { document.getElementById('cqBbPreview').textContent = s('slot.bulkNoSlots'); }
-    else { document.getElementById('cqBbPreview').textContent = s('slot.bulkPreview', { open: open, total: total }); }
-  } catch(e) { document.getElementById('cqBbPreview').textContent = e.message || 'Error'; }
+    if (open === 0) { document.getElementById('rsPreview').textContent = s('slot.bulkNoSlots'); }
+    else { document.getElementById('rsPreview').textContent = s('slot.bulkPreview', { open: open, total: total }); }
+  } catch(e) { document.getElementById('rsPreview').textContent = e.message || 'Error'; }
 }
 
-async function submitCqBulkBook() {
+async function saveBulkSlots() {
   var days = [];
-  document.querySelectorAll('#cqBbDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
-  var fromDate = document.getElementById('cqBbFromDate').value;
-  var toDate = document.getElementById('cqBbToDate').value;
+  document.querySelectorAll('#rsDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+  var fromDate = document.getElementById('rsFromDate').value;
+  var toDate = document.getElementById('rsToDate').value;
   var boatId = document.getElementById('cqResBoat').value;
-  var startTime = document.getElementById('cqBbStartTime').value || '';
-  var endTime = document.getElementById('cqBbEndTime').value || '';
+  var startTime = document.getElementById('rsStartTime').value || '';
+  var endTime = document.getElementById('rsEndTime').value || '';
   if (!days.length || !fromDate || !toDate || !boatId) { toast(s('slot.missingFields'), 'err'); return; }
   try {
     var res = await apiPost('bulkBookSlots', {
@@ -1137,7 +1092,7 @@ async function submitCqBulkBook() {
       fromDate: fromDate, toDate: toDate, daysOfWeek: days,
       startTime: startTime, endTime: endTime, bookingColor: _cqGetBookingColor(),
     });
-    closeModal('cqBulkBookModal');
+    closeModal('recurSlotModal');
     if (res.skipped > 0) { toast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped })); }
     else { toast(s('slot.bulkBooked', { count: res.booked })); }
     loadCqSlots();
@@ -1157,21 +1112,21 @@ function cqWeekToday() {
   loadCqSlots();
 }
 
-function openCqCreateSlotModal() {
+function openCreateSlotModal() {
   var today = new Date().toISOString().slice(0, 10);
-  document.getElementById('cqCsDate').value = today;
-  document.getElementById('cqCsStart').value = '';
-  document.getElementById('cqCsEnd').value = '';
-  applyStrings(document.getElementById('cqCreateSlotModal'));
-  openModal('cqCreateSlotModal');
+  document.getElementById('smDate').value = today;
+  document.getElementById('smStartTime').value = '';
+  document.getElementById('smEndTime').value = '';
+  applyStrings(document.getElementById('slotModal'));
+  openModal('slotModal');
 }
 
-async function submitCqCreateSlot() {
+async function saveAndBookSlot() {
   var boatId = document.getElementById('cqResBoat').value;
   if (!boatId) { toast(s('slot.missingFields'), 'err'); return; }
-  var date = document.getElementById('cqCsDate').value;
-  var startTime = document.getElementById('cqCsStart').value;
-  var endTime = document.getElementById('cqCsEnd').value;
+  var date = document.getElementById('smDate').value;
+  var startTime = document.getElementById('smStartTime').value;
+  var endTime = document.getElementById('smEndTime').value;
   if (!date || !startTime || !endTime) { toast(s('slot.missingFields'), 'err'); return; }
   if (endTime <= startTime) { toast(s('slot.missingFields'), 'err'); return; }
   // Pre-flight: check loaded slots for overlaps on this boat/date so captains
@@ -1190,7 +1145,7 @@ async function submitCqCreateSlot() {
     var res = await apiPost('saveSlot', { boatId: boatId, date: date, startTime: startTime, endTime: endTime });
     // Book it for the current user
     await apiPost('bookSlot', { slotId: res.slotId, kennitala: user.kennitala, memberName: user.name });
-    closeModal('cqCreateSlotModal');
+    closeModal('slotModal');
     toast(s('slot.createdAndBooked'));
     loadCqSlots();
   } catch(e) { toast(e.message || 'Error', 'err'); }
