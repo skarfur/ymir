@@ -381,6 +381,8 @@ var _STRINGS_FLAT = {
   "incident.handoffTo": "Framselt til",
   "incident.handoffName": "Nafn tengiliðar / tilvísun",
   "incident.handoffNotes": "Athugasemdir um framsendingu",
+  "incident.handoff.guardian": "Forráðamaður",
+  "incident.handoff.self": "Sjálfur/sjálf",
   "incident.descRequired": "Lýsing er skylda.",
   "incident.typeRequired": "Veldu að minnsta kosti eina tegund atviks.",
   "incident.sevRequired": "Veldu alvarleika.",

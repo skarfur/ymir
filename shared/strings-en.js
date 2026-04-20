@@ -381,6 +381,8 @@ var _STRINGS_FLAT = {
   "incident.handoffTo": "Handed off to",
   "incident.handoffName": "Contact name / ref.",
   "incident.handoffNotes": "Handoff notes",
+  "incident.handoff.guardian": "Guardian",
+  "incident.handoff.self": "Self",
   "incident.descRequired": "Description is required.",
   "incident.typeRequired": "Select at least one incident type.",
   "incident.sevRequired": "Select severity.",
