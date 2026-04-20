@@ -1079,7 +1079,10 @@ function doPost(e) {
     return route_(action, b, caller);
   } catch (err) {
     console.error('doPost error:', err && err.stack || err);
-    return failJ('Server error', 500);
+    // TEMPORARY: leak the actual exception message so the login-flow bug
+    // can be diagnosed when the Executions UI isn't expanding versioned
+    // deployment log rows. Roll back to 'Server error' once we're done.
+    return failJ('Server error: ' + (err && (err.stack || err.message) || err), 500);
   }
 }
 
