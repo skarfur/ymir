@@ -21,27 +21,24 @@
     .stay-row input { margin:0; }
     .lang-row { text-align:center; margin-top:16px; }
     #roleScreen, #accountScreen, #forceChangeScreen { display:none; }
-    /* Role/account picker card: deep-navy wash */
-    #roleScreen .card, #accountScreen .card {
-      background: var(--navy-d);
-      border-color: var(--navy-d);
-      color: var(--text);
-    }
     .role-greeting { color:var(--brass-fg); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; font-weight:500; }
+    /* Role/account buttons: mirror the staff page nav-card — brass-tinted wash + solid brass border. */
     .role-btn {
-      width:100%; padding:18px 20px; margin-bottom:10px; border-radius:var(--radius-md);
-      border:1px solid var(--navy-l); background:var(--surface); cursor:pointer;
-      display:flex; align-items:center; gap:14px; transition:all .2s;
+      width:100%; padding:16px 14px; margin-bottom:10px; border-radius:var(--radius-md);
+      border:1px solid var(--brass); background:var(--brass)12; cursor:pointer;
+      display:flex; align-items:center; gap:14px;
+      transition:background-color .15s, transform .15s, box-shadow .15s;
       text-align:left; box-shadow:var(--shadow-sm);
     }
-    .role-btn:hover { border-color:var(--brass); background:var(--card); transform:translateY(-1px); box-shadow:var(--shadow-md); }
-    .role-btn .role-icon { width:22px; height:22px; flex-shrink:0; display:inline-flex; align-items:center; color:var(--brass-fg); }
+    .role-btn:hover { background:var(--brass)22; transform:translateY(-1px); box-shadow:var(--shadow-md); }
+    .role-btn .role-icon { width:24px; height:24px; flex-shrink:0; display:inline-flex; align-items:center; color:var(--brass-fg); }
     .role-btn .role-icon svg { width:100%; height:100%; }
-    .role-btn .role-label { color:var(--text); font-size:13px; font-weight:500; letter-spacing:.5px; }
-    .role-btn .role-desc { color:var(--muted); font-size:11px; margin-top:2px; }
+    .role-btn .role-label { color:var(--brass-fg); font-size:15px; font-weight:600; letter-spacing:.3px; }
+    .role-btn .role-desc { color:var(--muted); font-size:11px; margin-top:2px; line-height:1.4; }
     /* Ward picker keeps a distinct purple accent so guardians recognise it as a separate flow */
-    .role-btn.role-ward   { border-color:#9b59b644; }
-    .role-btn.role-ward:hover { border-color:#9b59b6; }
+    .role-btn.role-ward            { border-color:#9b59b6; background:#9b59b612; }
+    .role-btn.role-ward:hover      { background:#9b59b622; }
+    .role-btn.role-ward .role-label { color:#9b59b6; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
     .back-link:hover { color:var(--brass-fg); }
   </style>
@@ -79,10 +76,8 @@
 
   <div id="accountScreen">
     <div class="role-greeting" id="accountGreeting"></div>
-    <div class="card">
-      <div id="accountBtns"></div>
-      <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
-    </div>
+    <div id="accountBtns"></div>
+    <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
     <span class="back-link" onclick="goBack()" id="accountBackLink"></span>
   </div>
 
@@ -110,9 +105,7 @@
 
   <div id="roleScreen">
     <div class="role-greeting" id="roleGreeting"></div>
-    <div class="card">
-      <div id="roleBtns"></div>
-    </div>
+    <div id="roleBtns"></div>
     <span class="back-link" onclick="goBack()" id="backLink"></span>
   </div>
 
