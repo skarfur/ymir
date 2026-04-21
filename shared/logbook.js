@@ -506,6 +506,12 @@ function buildFilters(){
       }
       if (f.role === 'skipper' && t.role === 'crew') return false;
       if (f.role === 'crew'    && t.role !== 'crew') return false;
+      if (f.role === 'helm'    && !(t.helm    && t.helm    !== 'false')) return false;
+      if (f.role === 'student' && !(t.student && t.student !== 'false')) return false;
+      if (f.role === 'guest') {
+        const _m = allMembers.find(m => String(m.kennitala) === String(t.kennitala));
+        if (!_m || _m.role !== 'guest') return false;
+      }
       if (f.wind) {
         const b = parseInt(t.beaufort) || 0;
         if (f.wind === 'gt4'  && b <= 4) return false;
