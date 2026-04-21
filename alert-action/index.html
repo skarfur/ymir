@@ -1,54 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com https://nominatim.openstreetmap.org https://unpkg.com; frame-src 'self' https://calendar.google.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ýmir — Alert Action</title>
-<style>
-body{margin:0;padding:40px 20px;background:#071526;font-family:system-ui,sans-serif;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box}
-.card{background:#0b1f38;border:1px solid #1e3a5a;border-radius:10px;padding:32px;max-width:440px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-.logo{color:#c8a84b;font-size:22px;font-weight:bold;margin-bottom:24px;letter-spacing:1px}
-.icon{font-size:48px;margin-bottom:16px}
-h2{margin:0 0 12px;font-size:20px}
-p{margin:0 0 24px;color:#7a9cbe;font-size:14px;line-height:1.6}
-.btn{display:inline-block;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;transition:all .2s}
-.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(39,174,96,.35)}
-.btn-primary{background:#27ae60;color:#fff}
-.spinner{width:36px;height:36px;border:3px solid #1e3a5a;border-top-color:#c8a84b;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error{color:#e74c3c}
-</style>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ýmir — Alert Action</title>
+  <link rel="stylesheet" href="alert-action.css">
 </head>
 <body>
-<div class="card">
-  <div class="logo">ÝMIR</div>
-  <div id="state"><div class="spinner"></div><p>Processing…</p></div>
-</div>
-<script>
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
-const p=new URLSearchParams(location.search);
-const op=p.get("op")||"silence";
-const id=p.get("id")||"";
-const token=p.get("token")||"";
-async function run(){
-  const el=document.getElementById("state");
-  try{
-    const body=JSON.stringify({action:"resolveAlert",checkoutId:id,op,token});
-    const res=await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body});
-    const data=await res.json();
-    if(op==="checkInAndClose"){
-      el.innerHTML='<div class="icon">✅</div><h2>'+( navigator.language.startsWith("is")?"Bát skráður inn":"Boat checked in")+'</h2><p>'+( navigator.language.startsWith("is")?"Viðvörunin er lokuð.":"The alert has been closed.")+'</p><a class="btn btn-primary" href="../staff/">'+( navigator.language.startsWith("is")?"Starfsmannavef":"Staff hub")+'</a>';
-    }else if(op==="snooze"){
-      el.innerHTML='<div class="icon">⏱</div><h2>'+( navigator.language.startsWith("is")?"Viðvörun frest að":"Alert snoozed")+'</h2><p>'+( navigator.language.startsWith("is")?"Ny minning kemur fljótlega ef bátinn er enn úti.":"You will be reminded again shortly.")+'</p><a class="btn btn-primary" href="../staff/">'+( navigator.language.startsWith("is")?"Starfsmannavef":"Staff hub")+'</a>';
-    }else{
-      el.innerHTML='<div class="icon">🔕</div><h2>'+( navigator.language.startsWith("is")?"Viðvörun þögguð":"Alert silenced")+'</h2><a class="btn btn-primary" href="../staff/">'+( navigator.language.startsWith("is")?"Starfsmannavef":"Staff hub")+'</a>';
-    }
-  }catch(e){
-    el.innerHTML='<div class="icon error">⚠️</div><h2 class="error">Error</h2><p>'+e.message+"</p>";
-  }
-}
-if(!id||!token){document.getElementById("state").innerHTML='<div class="icon error">⚠️</div><h2 class="error">Invalid link</h2>';}else{run();}
-</script>
+  <div class="card">
+    <div class="logo">ÝMIR</div>
+    <div id="state"><div class="spinner"></div><p>Processing…</p></div>
+  </div>
+  <script src="alert-action.js" defer></script>
 </body>
 </html>
