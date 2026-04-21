@@ -360,6 +360,14 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
 
 
 
+// Visibility (metres) → flag-score key. Thresholds: poor <1km, reduced <5km.
+function wxVisKey(metres) {
+  if (metres == null) return 'good';
+  if (metres < 1000) return 'poor';
+  if (metres < 5000) return 'reduced';
+  return 'good';
+}
+
 function wxPressureTrend(pressureArr, nowIdx) {
   if (!pressureArr || pressureArr.length < 4) return { trend: 'steady', diff: 0 };
   const past = pressureArr[Math.max(0, nowIdx - 3)];
@@ -408,8 +416,8 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
     : Promise.resolve(null);
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
-  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
-  const currentParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure,weather_code';
+  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility';
+  const currentParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure,weather_code,visibility';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=${hourlyParams}&current=${currentParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
   const hourlyCacheKey = `ymir_wx_hourly_${lat}_${lon}`;
@@ -464,6 +472,7 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
       apparent_temperature: temp,   // BIRK doesn't supply feels-like; use actual temp
       weather_code:        null,    // no weather code from BIRK
       surface_pressure:    pres,
+      visibility:          null,    // filled from Open-Meteo below
       _source: 'BIRK',
       _obs_time: obs.reportTime || obs.obsTime || null,
     } : {
@@ -474,13 +483,14 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
       apparent_temperature: atmCurEarly?.apparent_temperature ?? null,
       weather_code:         atmCurEarly?.weather_code        ?? null,
       surface_pressure:     atmCurEarly?.surface_pressure    ?? null,
+      visibility:           atmCurEarly?.visibility          ?? null,
       _source: 'OpenMeteo',
       _obs_time: atmCurEarly?.time || null,
     },
     // Hourly data for chart  —  from Open-Meteo (or empty fallback)
     hourly: hourlyData?.hourly ?? {
       time: [], wind_speed_10m: [], wind_direction_10m: [],
-      wind_gusts_10m: [], surface_pressure: [],
+      wind_gusts_10m: [], surface_pressure: [], visibility: [],
     },
   };
 
@@ -495,6 +505,8 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
       wx.current.surface_pressure = atmCur.surface_pressure;
     if (wx.current.weather_code == null && atmCur.weather_code != null)
       wx.current.weather_code = atmCur.weather_code;
+    if (wx.current.visibility == null && atmCur.visibility != null)
+      wx.current.visibility = atmCur.visibility;
   }
   return { wx, marine };
 }
