@@ -245,6 +245,8 @@ function render(wx, marine, staffStatus) {
   const waveH = mc?.wave_height ?? null;
   const sst   = mc?.sea_surface_temperature ?? null;
   const pres  = c.surface_pressure;
+  const vis   = c.visibility;
+  const visKey = wxVisKey(vis);
 
   const nowISO = new Date().toISOString().slice(0,13);
   const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
@@ -252,7 +254,7 @@ function render(wx, marine, staffStatus) {
 
   // Use wxScoreFlag from shared/weather.js (reads SCORE_CONFIG, admin-editable)
   const _fr = { flagKey:null };
-  const { flagKey, flag, score, breakdown, reasons } = wxScoreFlag(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, 'good');
+  const { flagKey, flag, score, breakdown, reasons } = wxScoreFlag(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, visKey);
   const presClass = presTrend === 'rising' ? 'rising' : presTrend === 'falling' ? 'falling' : '';
 
   // BIRK doesn't provide a weather code — derive a simple description from wind/conditions
@@ -271,6 +273,7 @@ function render(wx, marine, staffStatus) {
       wg:   hr.wind_gusts_10m[i]   || 0,
       wd:   hr.wind_direction_10m[i],
       pr:   hr.surface_pressure?.[i] ?? null,
+      vis:  hr.visibility?.[i] ?? null,
       mWH:  mhr?.wave_height?.[i]  ?? null,
       isNow:  i === nowIdx,
       isPast: i < nowIdx,
@@ -366,13 +369,20 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
   </div>
 </div>
 
-<!-- PRESSURE -->
-<div class="info-card" style="margin-bottom:14px">
-  <div class="info-lbl">BAROMETRIC PRESSURE</div>
-  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-    <div class="info-val">${pres != null ? Math.round(pres) : '–'}<span class="unit">hPa</span></div>
-    <div style="font-size:22px;color:${wxPressureTrendColor(presTrend)}">${wxPressureTrendIcon(presTrend)}</div>
-    <div class="info-sub ${presClass}" style="margin-top:0">${presTrend}${presDiff !== 0 ? ' ('+( presDiff>0?'+':'')+presDiff+' hPa / 3h)' : ''}</div>
+<!-- PRESSURE + VISIBILITY -->
+<div class="info-grid" style="margin-bottom:14px">
+  <div class="info-card">
+    <div class="info-lbl">BAROMETRIC PRESSURE</div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <div class="info-val">${pres != null ? Math.round(pres) : '–'}<span class="unit">hPa</span></div>
+      <div style="font-size:22px;color:${wxPressureTrendColor(presTrend)}">${wxPressureTrendIcon(presTrend)}</div>
+    </div>
+    <div class="info-sub ${presClass}">${presTrend}${presDiff !== 0 ? ' ('+( presDiff>0?'+':'')+presDiff+' hPa / 3h)' : ''}</div>
+  </div>
+  <div class="info-card">
+    <div class="info-lbl">VISIBILITY</div>
+    <div class="info-val">${vis == null ? '–' : vis >= 1000 ? (vis/1000).toFixed(vis >= 10000 ? 0 : 1) : Math.round(vis)}<span class="unit">${vis != null && vis < 1000 ? 'm' : 'km'}</span></div>
+    <div class="info-sub">${vis == null ? 'Unavailable' : visKey === 'poor' ? s('wx.poorVisibility') : visKey === 'reduced' ? s('wx.reducedVisibility') : 'Clear'}</div>
   </div>
 </div>
 
@@ -418,7 +428,7 @@ const WAVE_ICON_ = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" 
 function renderHourStrip(pts) {
   const FLAG_COLORS = { green:'var(--green)', yellow:'var(--yellow)', orange:'var(--orange)', red:'var(--red)' };
   document.getElementById('hourStrip').innerHTML = pts.map(p => {
-    const { flagKey } = wxScoreFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0, null, null, null, 'good');
+    const { flagKey } = wxScoreFlag(p.ws, wxDirLabel(p.wd), p.mWH ?? 0, null, null, null, wxVisKey(p.vis));
     return `<div class="h-slot${p.isNow?' now':p.isPast?' past':''}">
       <div class="h-time">${p.isNow ? 'NOW' : p.t}</div>
       <div class="h-main">
