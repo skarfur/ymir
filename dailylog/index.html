@@ -325,7 +325,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 const user  = requireAuth(isStaff);
 const L     = getLang();
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayISO();
 
 function esc(s) {
   return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

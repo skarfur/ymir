@@ -586,7 +586,7 @@ function showStep1(){
 function showManualForm(){
   document.getElementById('logStep1').style.display='none';
   document.getElementById('logStep2').style.display='';
-  document.getElementById('mDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('mDate').value=todayISO();
   // Populate boats + locations
   const bSel=document.getElementById('mBoat');
   bSel.innerHTML='<option value="">'+s('logbook.selectBoat')+'</option>';
@@ -1628,7 +1628,7 @@ function exportLogbookCsv(){
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
     a.href=url;
-    a.download='logbook-'+(user.kennitala||'export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+    a.download='logbook-'+(user.kennitala||'export')+'-'+todayISO()+'.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
