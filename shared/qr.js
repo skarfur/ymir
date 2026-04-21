@@ -32,6 +32,8 @@
       if (window.jsQR) return resolve(window.jsQR);
       var sc = document.createElement('script');
       sc.src = 'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';
+      sc.integrity = 'sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx';
+      sc.crossOrigin = 'anonymous';
       sc.onload = function () { resolve(window.jsQR); };
       sc.onerror = function () { reject(new Error('qr-lib-load-failed')); };
       document.head.appendChild(sc);
