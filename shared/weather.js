@@ -123,6 +123,44 @@ function wxLoadFlagConfig(saved) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLAG OVERRIDE  —  staff-set manual flag that supersedes the score until midnight
+// Shape: { active, flagKey, notes, notesIS, setAt, setByName, expiresAt }
+// Loaded from getConfig via wxLoadFlagOverride(); wxFlagNow() applies it.
+// ═══════════════════════════════════════════════════════════════════════════════
+let _FLAG_OVERRIDE = null;
+function wxLoadFlagOverride(ov) {
+  if (!ov || !ov.active) { _FLAG_OVERRIDE = null; return; }
+  if (ov.expiresAt && new Date(ov.expiresAt).getTime() <= Date.now()) { _FLAG_OVERRIDE = null; return; }
+  _FLAG_OVERRIDE = ov;
+}
+function wxGetFlagOverride() { return _FLAG_OVERRIDE; }
+
+// Next UTC midnight (Iceland stays on UTC year-round). Used by staff page when setting override.
+function wxNextMidnightUTC() {
+  const d = new Date();
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0);
+}
+
+// Scores + applies override. Same return shape as wxScoreFlag, plus `override` and
+// `autoScored` when the override is active. Forecast/past-hour rendering should keep
+// using wxScoreFlag directly so trajectories still reflect the scoring model.
+function wxFlagNow(ws, wDir, waveH, airT, sst, wg, visKey) {
+  const scored = wxScoreFlag(ws, wDir, waveH, airT, sst, wg, visKey);
+  if (!_FLAG_OVERRIDE) return { ...scored, override: null, autoScored: null };
+  const ov = _FLAG_OVERRIDE;
+  const flag = SCORE_CONFIG.flags[ov.flagKey] || scored.flag;
+  return {
+    flagKey: ov.flagKey,
+    flag,
+    score: scored.score,
+    breakdown: scored.breakdown,
+    reasons: [],
+    override: ov,
+    autoScored: scored,
+  };
+}
+
 
 // ── Unit helpers ───────────────────────────────────────────────────────────────────────────────
 function wxMsToBft(ms) {
@@ -347,6 +385,26 @@ function wxFlagDetailHtml(result, staffStatus, lang) {
         ).join('')
       + '</div>'
     : '';
+  // ── Override mode: show manual notes instead of score breakdown ─────────────
+  if (result.override) {
+    const ov = result.override;
+    const noteText = (IS && ov.notesIS) ? ov.notesIS : (ov.notes || ov.notesIS || '');
+    const setBy    = ov.setByName ? s('wx.overrideBy', { name: ov.setByName }) : '';
+    const setTime  = ov.setAt ? String(ov.setAt).slice(11,16) + ' UTC' : '';
+    const expText  = s('wx.overrideResetsMidnight');
+    const escN     = String(noteText).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    return _ssBadgesHtml + '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="font-size:28px">'+flag.icon+'</div>'
+      + '<span style="font-size:10px;letter-spacing:1.2px;color:'+flag.color+';border:1px solid '+flag.border+';padding:2px 8px;border-radius:10px">'+s('wx.overrideBadge')+'</span></div>'
+      + '<div style="font-size:13px;color:'+flag.color+';font-weight:500;margin-bottom:6px">'+advice+'</div>'
+      + (noteText ? '<div style="font-size:12px;color:var(--text);line-height:1.55;border-top:1px solid '+flag.border+';padding-top:10px;margin-top:4px">'+escN+'</div>' : '')
+      + '</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:14px">'
+      + (setBy ? setBy + ' · ' : '') + (setTime ? setTime + ' · ' : '') + expText
+      + '</div>'
+      + '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:4px">'+s('wx.autoScoreWouldBe')+'</div>'
+      + '<div style="font-size:11px;color:var(--muted);padding:4px 0">' + s('wx.totalScore') + ': ' + result.score + '</div>';
+  }
   return _ssBadgesHtml + '<div style="background:'+flag.bg+';border:1px solid '+flag.border+';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
     + '<div style="font-size:28px;margin-bottom:6px">'+flag.icon+'</div>'
     + '<div style="font-size:13px;color:'+flag.color+';font-weight:500;margin-bottom:6px">'+advice+'</div>'
@@ -533,7 +591,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       const waveH = mc?.wave_height ?? null;
       const sst   = mc?.sea_surface_temperature ?? null;
       const pres  = c.surface_pressure;
-      const { flagKey, flag, score, breakdown, reasons } = wxScoreFlag(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, 'good');
+      const _flagResult = wxFlagNow(ws, wDir, waveH ?? 0, c.temperature_2m, sst, wg, wxVisKey(c.visibility));
+      const { flagKey, flag, score, breakdown, reasons, override } = _flagResult;
 
       const nowISO = new Date().toISOString().slice(0,13);
       const nowIdx = Math.max(0, (hr.time||[]).findIndex(t => t.slice(0,13) === nowISO));
@@ -601,11 +660,12 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         <div style="display:flex;align-items:center;gap:6px;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;flex-wrap:wrap">
           <span class="flag-pill" style="color:${flag.color};border-color:${flag.border};background:${flag.bg};display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer" id="wxFlagPill">
             ${flag.icon} ${IS&&flag.adviceIS?flag.adviceIS:flag.advice}
+            ${override ? `<span style="font-size:9px;letter-spacing:1px;padding:1px 6px;border:1px solid ${flag.border};border-radius:8px;opacity:.85">${s('wx.overrideBadge')}</span>` : ''}
           </span>
           <div class="wx-status-badges" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>`;
       targetEl._wxRefresh = refresh;
-      targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
+      targetEl._wxResult  = { flagKey, flag, score, breakdown, reasons, override, snap: { ws, wDir, waveH, temperature_2m: c.temperature_2m, sst, wg } };
       ensureWxFlagModal();
 
       // ── Wire flag pill click  —  uses snap stored on this element ──

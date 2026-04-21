@@ -323,6 +323,37 @@
     </div>
   </div>
 
+  <!-- ══ WEATHER FLAG OVERRIDE ══════════════════════════════════════════════ -->
+  <div id="flagOverrideCard" class="mb-12" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+    <div class="section-label mb-8" data-s="staff.flagOverrideLabel">WEATHER FLAG OVERRIDE</div>
+    <div id="foActiveRow" class="hidden" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+      <span id="foActiveBadge" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid"></span>
+      <span id="foActiveNotes" style="font-size:12px;color:var(--text);flex:1;min-width:160px;white-space:pre-wrap"></span>
+      <span id="foActiveMeta" class="text-xs text-muted"></span>
+      <button class="btn btn-secondary text-sm" style="padding:4px 10px" onclick="clearFlagOverride()"><span data-s="staff.flagOverrideClear">Clear override</span></button>
+    </div>
+    <div id="foInactiveRow" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+      <span class="text-xs text-muted" data-s="staff.flagOverrideHint">Using live scoring. Set an override to post a staff-picked flag + note until midnight.</span>
+      <button class="btn btn-secondary text-sm" style="padding:4px 10px;margin-left:auto" onclick="toggleFlagOverrideForm(true)"><span data-s="staff.flagOverrideSet">Set override</span></button>
+    </div>
+    <div id="foForm" class="hidden" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+      <div class="flex-center flex-wrap gap-6 mb-8" id="foFlagBtns"></div>
+      <label class="field" style="display:block;margin-bottom:6px">
+        <div class="text-xs text-muted mb-4" data-s="staff.flagOverrideNotes">Notes (shown to members)</div>
+        <textarea id="foNotes" rows="2" style="width:100%;font-family:inherit;font-size:13px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical" placeholder=""></textarea>
+      </label>
+      <label class="field" style="display:block;margin-bottom:8px">
+        <div class="text-xs text-muted mb-4" data-s="staff.flagOverrideNotesIS">Notes (Icelandic)</div>
+        <textarea id="foNotesIS" rows="2" style="width:100%;font-family:inherit;font-size:13px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical" placeholder=""></textarea>
+      </label>
+      <div class="flex-center gap-8">
+        <span class="text-xs text-muted" data-s="staff.flagOverrideMidnight">Auto-reverts to live data at midnight UTC.</span>
+        <button class="btn btn-secondary text-sm" style="padding:4px 10px;margin-left:auto" onclick="toggleFlagOverrideForm(false)"><span data-s="btn.cancel">Cancel</span></button>
+        <button class="btn btn-primary text-sm" style="padding:4px 10px" onclick="saveFlagOverride()"><span data-s="staff.flagOverrideSave">Save override</span></button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ ACTIVE CHECKOUTS ══ -->
   <div class="divider-label" data-s="staff.activeCheckouts">ACTIVE CHECKOUTS</div>
 
@@ -566,6 +597,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (typeof wxLoadFlagConfig === 'function' && cfgRes.flagConfig) { wxLoadFlagConfig(cfgRes.flagConfig); document.getElementById('wxWidget')?._wxRefresh?.(); }
     if (cfgRes.staffStatus) { _staffStatus = cfgRes.staffStatus; renderStaffStatusStrip(); document.getElementById('wxWidget')?._wxRefreshBadges?.(); }
+    _flagOverride = cfgRes.flagOverride || null;
+    if (typeof wxLoadFlagOverride === 'function') wxLoadFlagOverride(_flagOverride);
+    renderFlagOverrideCard();
+    document.getElementById('wxWidget')?._wxRefresh?.();
 
     populateSelects();
     renderAll();
@@ -1544,6 +1579,94 @@ async function toggleStaffStatus(field) {
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
   try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
   catch(e) { showToast('Status saved — sync when online', 'warn'); }
+}
+
+// ══ WEATHER FLAG OVERRIDE ═══════════════════════════════════════════════════
+let _flagOverride = null;  // { active, flagKey, notes, notesIS, setAt, setByName, expiresAt } or null
+let _foDraftFlag = 'yellow';
+
+function renderFlagOverrideCard() {
+  const activeRow   = document.getElementById('foActiveRow');
+  const inactiveRow = document.getElementById('foInactiveRow');
+  const form        = document.getElementById('foForm');
+  const ov = _flagOverride;
+  if (ov && ov.active) {
+    activeRow.classList.remove('hidden');
+    activeRow.style.display = 'flex';
+    inactiveRow.style.display = 'none';
+    form.classList.add('hidden');
+    const flag = (typeof SCORE_CONFIG !== 'undefined' && SCORE_CONFIG.flags[ov.flagKey]) || { icon:'⚑', color:'var(--text)', border:'var(--border)', bg:'var(--surface)', advice:ov.flagKey };
+    const IS  = (typeof getLang === 'function' && getLang() === 'IS');
+    const badge = document.getElementById('foActiveBadge');
+    badge.style.color = flag.color;
+    badge.style.borderColor = flag.border;
+    badge.style.background = flag.bg;
+    badge.textContent = flag.icon + ' ' + ((IS && flag.adviceIS) ? flag.adviceIS : flag.advice || '');
+    const note = (IS && ov.notesIS) ? ov.notesIS : (ov.notes || ov.notesIS || '');
+    document.getElementById('foActiveNotes').textContent = note;
+    const setBy  = ov.setByName ? s('staff.flagOverrideBy', { name: ov.setByName }) : '';
+    const setT   = ov.setAt ? String(ov.setAt).slice(11,16) + ' UTC' : '';
+    document.getElementById('foActiveMeta').textContent = [setBy, setT].filter(Boolean).join(' · ');
+  } else {
+    activeRow.classList.add('hidden');
+    activeRow.style.display = 'none';
+    inactiveRow.style.display = 'flex';
+  }
+}
+
+function renderFoFlagBtns() {
+  const container = document.getElementById('foFlagBtns');
+  if (!container || typeof SCORE_CONFIG === 'undefined') return;
+  const IS = (typeof getLang === 'function' && getLang() === 'IS');
+  container.innerHTML = ['green','yellow','orange','red','black'].map(k => {
+    const f = SCORE_CONFIG.flags[k]; if (!f) return '';
+    const selected = k === _foDraftFlag;
+    const advice = (IS && f.adviceIS) ? f.adviceIS : (f.advice || k);
+    return `<button type="button" onclick="pickFoFlag('${k}')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid ${f.border};background:${selected ? f.bg : 'transparent'};color:${f.color};cursor:pointer;font-family:inherit;${selected ? 'outline:2px solid '+f.border : ''}">${f.icon} ${advice}</button>`;
+  }).join('');
+}
+
+function pickFoFlag(key) { _foDraftFlag = key; renderFoFlagBtns(); }
+
+function toggleFlagOverrideForm(show) {
+  const form = document.getElementById('foForm');
+  if (show) {
+    _foDraftFlag = (_flagOverride?.flagKey) || 'yellow';
+    document.getElementById('foNotes').value   = _flagOverride?.notes   || '';
+    document.getElementById('foNotesIS').value = _flagOverride?.notesIS || '';
+    form.classList.remove('hidden');
+    renderFoFlagBtns();
+  } else {
+    form.classList.add('hidden');
+  }
+}
+
+async function saveFlagOverride() {
+  const notes   = document.getElementById('foNotes').value.trim();
+  const notesIS = document.getElementById('foNotesIS').value.trim();
+  const ov = {
+    active: true,
+    flagKey: _foDraftFlag,
+    notes, notesIS,
+    setAt: new Date().toISOString(),
+    setByName: (typeof user !== 'undefined' && user) ? (user.name || '') : '',
+    expiresAt: new Date(wxNextMidnightUTC()).toISOString(),
+  };
+  _flagOverride = ov;
+  wxLoadFlagOverride(ov);
+  renderFlagOverrideCard();
+  document.getElementById('wxWidget')?._wxRefresh?.();
+  try { await apiPost('saveConfig', { flagOverride: ov }); }
+  catch(e) { showToast(s('staff.flagOverrideSaveFail'), 'warn'); }
+}
+
+async function clearFlagOverride() {
+  _flagOverride = null;
+  wxLoadFlagOverride(null);
+  renderFlagOverrideCard();
+  document.getElementById('wxWidget')?._wxRefresh?.();
+  try { await apiPost('saveConfig', { flagOverride: null }); }
+  catch(e) { showToast(s('staff.flagOverrideSaveFail'), 'warn'); }
 }
 
 // ══ GUEST SUPPORT ═══════════════════════════════════════════════════════════
