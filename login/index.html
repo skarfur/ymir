@@ -21,10 +21,10 @@
     .stay-row input { margin:0; }
     .lang-row { text-align:center; margin-top:16px; }
     #roleScreen, #accountScreen, #forceChangeScreen { display:none; }
-    /* Role/account picker card: deep-navy wash with brass welcome text */
+    /* Role/account picker card: deep-navy wash */
     #roleScreen .card, #accountScreen .card {
       background: var(--navy-d);
-      border-color: var(--navy-l);
+      border-color: var(--navy-d);
       color: var(--text);
     }
     .role-greeting { color:var(--brass-fg); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; font-weight:500; }
@@ -78,8 +78,8 @@
   </div>
 
   <div id="accountScreen">
+    <div class="role-greeting" id="accountGreeting"></div>
     <div class="card">
-      <div class="role-greeting" id="accountGreeting"></div>
       <div id="accountBtns"></div>
       <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
     </div>
@@ -109,8 +109,8 @@
   </div>
 
   <div id="roleScreen">
+    <div class="role-greeting" id="roleGreeting"></div>
     <div class="card">
-      <div class="role-greeting" id="roleGreeting"></div>
       <div id="roleBtns"></div>
     </div>
     <span class="back-link" onclick="goBack()" id="backLink"></span>
