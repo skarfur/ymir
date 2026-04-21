@@ -299,16 +299,23 @@ function wxStaffStatusHtml(status) {
 function ensureWxFlagModal() {
   if (document.getElementById('wxFlagModal')) return;
   const md = document.createElement('div');
-  md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal" onclick="if(event.target===this)closeModal(\'wxFlagModal\')">'
+  md.innerHTML = '<div class="modal-overlay hidden" id="wxFlagModal">'
     + '<div class="modal modal--md">'
     + '<div class="modal-header">'
     + '<h3 id="wxFlagModalTitle" style="margin:0"></h3>'
-    + '<button class="modal-close-x" onclick="closeModal(\'wxFlagModal\')">&times;</button>'
+    + '<button class="modal-close-x" data-wx-close="wxFlagModal">&times;</button>'
     + '</div><div id="wxFlagModalBody"></div>'
-    + '<div class="btn-row" style="margin-top:16px"><button class="btn btn-secondary" onclick="closeModal(\'wxFlagModal\')">'
+    + '<div class="btn-row" style="margin-top:16px"><button class="btn btn-secondary" data-wx-close="wxFlagModal">'
     + (typeof s === 'function' ? s('btn.close') : 'Close')
     + '</button></div></div></div>';
-  document.body.appendChild(md.firstElementChild);
+  const overlay = md.firstElementChild;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeModal('wxFlagModal');
+  });
+  overlay.querySelectorAll('[data-wx-close]').forEach(function(btn) {
+    btn.addEventListener('click', function() { closeModal(btn.dataset.wxClose); });
+  });
 }
 
 function showWxFlagModal(title, bodyHtml) {
@@ -579,6 +586,18 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
   const loc = { lat: WX_DEFAULT.lat, lon: WX_DEFAULT.lon, label: label || WX_DEFAULT.label };
   let timer = null;
 
+  // Delegated refresh-button handler (replaces inline onclick= in innerHTML
+  // templates below, which CSP blocks under strict script-src).
+  if (!targetEl._wxClickBound) {
+    targetEl._wxClickBound = true;
+    targetEl.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-wx-refresh]');
+      if (btn && typeof targetEl._wxRefresh === 'function') {
+        targetEl._wxRefresh({ fresh: btn.dataset.wxRefresh === 'fresh' });
+      }
+    });
+  }
+
   async function refresh({ fresh = false } = {}) {
     const IS = typeof getLang === 'function' && getLang() === 'IS';
     try {
@@ -610,7 +629,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${s('wx.birkConditions')}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            ${showRefreshBtn ? `<button onclick="this.closest('.wx-widget')._wxRefresh({fresh:true})" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
+            ${showRefreshBtn ? `<button data-wx-refresh="fresh" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
             <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--brass-fg);text-decoration:none;white-space:nowrap;border:1px solid var(--brass);border-radius:6px;padding:4px 10px;background:var(--brass)12">${s('wx.openForecast')}</a>
           </div>
         </div>
@@ -702,7 +721,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       // Expose badge-only re-render so pages can call after toggling duty status
       targetEl._wxRefreshBadges = () => _renderSsBadges(targetEl.querySelector('.wx-status-badges'));
     } catch(e) {
-      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--brass-fg)">try full page →</a>${showRefreshBtn ? ` <button onclick="this.closest('.wx-widget')._wxRefresh()" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
+      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--brass-fg)">try full page →</a>${showRefreshBtn ? ` <button data-wx-refresh="" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
     }
   }
