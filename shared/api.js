@@ -683,8 +683,21 @@ function fmtTime(iso) {
   catch(e) { return ""; }
 }
 
-function fmtTimeNow() { return new Date().toTimeString().slice(0, 5); }
-function fmtDateNow() { return new Date().toISOString().slice(0, 10); }
+// Local-date YYYY-MM-DD (vs. toISOString which is UTC and drifts across
+// midnight for non-UTC timezones). Use this for anything the user perceives
+// as "today" in their own timezone — trip dates, checkout dates, filenames.
+window.toLocalISODate = function(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-'
+       + String(d.getMonth() + 1).padStart(2, '0') + '-'
+       + String(d.getDate()).padStart(2, '0');
+};
+
+function fmtTimeNow() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function fmtDateNow() { return window.toLocalISODate(); }
 
 // Shared primitives - single source of truth
 window.boolVal = function(v) {
@@ -697,7 +710,7 @@ window.parseJson = function(v, fallback) {
 };
 
 window.todayISO = function() {
-  return new Date().toISOString().slice(0, 10);
+  return window.toLocalISODate();
 };
 
 window.chunk = function(arr, n) {

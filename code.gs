@@ -274,6 +274,14 @@ function gs_(key, vars, lang) {
 
 function ss_() { return SpreadsheetApp.openById(SHEET_ID_); }
 function now_() { return new Date().toISOString(); }
+// Script-timezone formatters — use these for defaults that go into sheet
+// columns whose values round-trip as local (trip `date`, `timeOut`, `timeIn`,
+// `checkedOutAt`, `checkedInAt`, `expectedReturn`). Slicing `now_()` instead
+// silently stores UTC, which drifts from what the user sees whenever the
+// script timezone isn't UTC.
+function nowLocalDate_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
+function nowLocalTime_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm'); }
+function nowLocalDateTime_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"); }
 function uid_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 16); }
 function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1 || v === '1'; }
 // Prefix a literal apostrophe onto any string whose first character Sheets
@@ -3053,9 +3061,11 @@ function addIncidentNote_(b) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getActiveCheckouts_() {
-  const today = now_().slice(0, 10);
+  // Compare against createdAt's UTC date since createdAt is stored as UTC ISO
+  // via now_(); both operands must share the same reference frame.
+  const todayUtc = now_().slice(0, 10);
   const all = readAll_('checkouts');
-  const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '').slice(0, 10) === today));
+  const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '').slice(0, 10) === todayUtc));
   let memberMap = {};
   try { memberMap = getMemberMap_(); } catch (e) { }
   const enriched = result.map(c => {
@@ -3100,14 +3110,13 @@ function saveCheckout_(b) {
           if (!hasAccess && checkBoat.accessAllowlist && Array.isArray(checkBoat.accessAllowlist) && checkBoat.accessAllowlist.indexOf(checkKt) !== -1) hasAccess = true;
           // Reservation check (date-range)
           if (!hasAccess && checkBoat.reservations && checkBoat.reservations.length) {
-            var today = new Date().toISOString().slice(0, 10);
+            var today = nowLocalDate_();
             hasAccess = checkBoat.reservations.some(function(r) { return String(r.memberKennitala) === checkKt && today >= r.startDate && today <= r.endDate; });
           }
           // Slot-based scheduling check
           if (!hasAccess && checkBoat.slotSchedulingEnabled) {
-            var nowDate = new Date();
-            var todayStr = nowDate.toISOString().slice(0, 10);
-            var nowTime = String(nowDate.getHours()).padStart(2, '0') + ':' + String(nowDate.getMinutes()).padStart(2, '0');
+            var todayStr = nowLocalDate_();
+            var nowTime = nowLocalTime_();
             try {
               var slots = readAll_('reservationSlots').filter(function(s) {
                 return s.boatId === checkBoat.id && s.date === todayStr && s.startTime <= nowTime && s.endTime > nowTime && s.bookedByKennitala;
@@ -3159,7 +3168,7 @@ function saveCheckout_(b) {
         wv: w.wv != null ? parseFloat(w.wv.toFixed ? w.wv.toFixed(1) : w.wv) : (w.waveH != null ? parseFloat(parseFloat(w.waveH).toFixed(1)) : null),
         flag: w.flag || w.flagKey || '',
         tc: w.tc != null ? Math.round(w.tc) : (w.airT != null ? Math.round(w.airT) : null),
-        ts: w.ts || ts.slice(0, 16),
+        ts: w.ts || nowLocalDateTime_(),
       });
     } catch (e) { wxSnap = ''; }
   }
@@ -3168,7 +3177,7 @@ function saveCheckout_(b) {
     memberKennitala: kt,
     memberName: b.memberName || '', crew: b.crew || 1,
     locationId: b.locationId || '', locationName: b.locationName || '',
-    checkedOutAt: b.checkedOutAt || b.timeOut || ts.slice(11, 16),
+    checkedOutAt: b.checkedOutAt || b.timeOut || nowLocalTime_(),
     expectedReturn: b.expectedReturn || b.returnBy || '',
     checkedInAt: '', wxSnapshot: wxSnap,
     preLaunchChecklist: b.preLaunchChecklist || '', notes: b.notes || '',
@@ -3192,7 +3201,7 @@ function saveGroupCheckout_(b) {
         bft: Math.round(w.bft||0), ws: wsVal2, wg: Math.round(w.wg||0),
         dir: w.dir||w.wDir||'',
         wv: w.wv != null ? parseFloat(parseFloat(w.wv).toFixed(1)) : null,
-        flag: w.flag||'', tc: w.tc != null ? Math.round(w.tc) : null, ts: w.ts||ts.slice(0,16),
+        flag: w.flag||'', tc: w.tc != null ? Math.round(w.tc) : null, ts: w.ts||nowLocalDateTime_(),
       });
     } catch(e) { wxSnap = ''; }
   }
@@ -3210,7 +3219,7 @@ function saveGroupCheckout_(b) {
     crew:            parseInt(b.crew) || (parseInt(b.participants)||0) + staffNames.length,
     locationId:      b.locationId || '',
     locationName:    b.locationName || '',
-    checkedOutAt:    b.checkedOutAt || ts.slice(11,16),
+    checkedOutAt:    b.checkedOutAt || nowLocalTime_(),
     expectedReturn:  b.expectedReturn || '',
     checkedInAt:     '',
     wxSnapshot:      wxSnap,
@@ -3231,7 +3240,7 @@ function saveGroupCheckout_(b) {
 
 function groupCheckIn_(b) {
   if (!b.id) return failJ('id required');
-  const checkedInAt = b.timeIn || now_().slice(11, 16);
+  const checkedInAt = b.timeIn || nowLocalTime_();
   updateRow_('checkouts', 'id', b.id, { status: 'in', checkedInAt });
   cDel_('checkouts');
   return okJ({ updated: true, checkedInAt });
@@ -3254,7 +3263,7 @@ function tryParseArr_(v) {
 
 function checkIn_(b) {
   if (!b.id) return failJ('id required');
-  const checkedInAt = b.timeIn || now_().slice(11, 16);
+  const checkedInAt = b.timeIn || nowLocalTime_();
   const updates = { status: 'in', checkedInAt };
   if (b.afterSailChecklist) updates.afterSailChecklist = b.afterSailChecklist;
   updateRow_('checkouts', 'id', b.id, updates);
@@ -4129,7 +4138,7 @@ function saveTrip_(b) {
   }
   insertRow_('trips', {
     id, kennitala: b.kennitala || '', memberName: b.memberName || '',
-    date: b.date || ts.slice(0, 10), timeOut: b.timeOut || '', timeIn: b.timeIn || '',
+    date: b.date || nowLocalDate_(), timeOut: b.timeOut || '', timeIn: b.timeIn || '',
     hoursDecimal: b.hoursDecimal || 0,
     boatId: b.boatId || '', boatName: b.boatName || '', boatCategory: boatCategory,
     locationId: b.locationId || '', locationName: b.locationName || '',
@@ -5333,10 +5342,9 @@ function resolveFromEmail_(b) {
       sheet.getRange(rowIdx+1, col('alertSilenced')+1).setValue(true);
       if (action === 'checkInAndClose') {
         const L = CLUB_LANG_;
-        const now = now_();
         const note = L === 'IS' ? 'Skráð inn sjálfvirkt í gegnum tölvupóstviðvörun.' : 'Checked in automatically via email alert.';
         sheet.getRange(rowIdx+1, col('status')+1).setValue('in');
-        sheet.getRange(rowIdx+1, col('checkedInAt')+1).setValue(now);
+        sheet.getRange(rowIdx+1, col('checkedInAt')+1).setValue(nowLocalTime_());
         sheet.getRange(rowIdx+1, col('notes')+1).setValue(note);
         cDel_('checkouts');
         const L2 = CLUB_LANG_;
@@ -5520,7 +5528,7 @@ function resolveAlert_(b) {
     sheet.getRange(rowIdx+1, col('alertSilenced')+1).setValue(true);
     if (op === 'checkInAndClose') {
       const L            = CLUB_LANG_;
-      const checkedInAt  = now_().slice(11, 16);
+      const checkedInAt  = nowLocalTime_();
       const note         = L === 'IS' ? 'Skráð inn í gegnum viðvörun á vef.' : 'Checked in via web alert.';
       sheet.getRange(rowIdx+1, col('status')+1).setValue('in');
       sheet.getRange(rowIdx+1, col('checkedInAt')+1).setValue(checkedInAt);

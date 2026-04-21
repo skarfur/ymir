@@ -975,7 +975,7 @@ async function submitCheckout() {
           linkedCheckoutId: _coId,
           boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
           locationId: lid, locationName: location.name||lid,
-          date: new Date().toISOString().slice(0,10),
+          date: todayISO(),
           timeOut: document.getElementById('coTimeOut').value,
           timeIn: document.getElementById('coReturnBy').value,
           role: 'crew', wxSnapshot: snap,
@@ -1007,7 +1007,7 @@ async function staffCheckIn(id) {
       try {
         await apiPost('saveTrip', {
           kennitala: co.memberKennitala, memberName: co.memberName || '',
-          date: new Date().toISOString().slice(0, 10),
+          date: todayISO(),
           timeOut, timeIn, hoursDecimal,
           boatId: co.boatId, boatName: co.boatName, boatCategory: co.boatCategory || '',
           locationId: co.locationId, locationName: co.locationName,
@@ -1499,7 +1499,7 @@ async function openDlLinkModal(checkoutId) {
   _dlLinkSelectedAct = null;
   // Fetch today's daily log activities
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     const res   = await apiGet('getDailyLog', { date: today });
     const log   = res.log || {};
     _dlLinkTodayActs = (typeof log.activities === 'string' ? JSON.parse(log.activities||'[]') : (log.activities||[]));

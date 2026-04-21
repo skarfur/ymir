@@ -934,7 +934,7 @@ async function submitLaunch() {
             linkedCheckoutId:_coId,
             boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
             locationId:_locId, locationName:_locName,
-            date:new Date().toISOString().slice(0,10), timeOut:tout,
+            date:todayISO(), timeOut:tout,
             role:'crew', wxSnapshot:snap,
           }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
         })).catch(function(e3){console.warn('crew confirmations failed:',e3.message);});
@@ -1384,7 +1384,7 @@ async function confirmCheckIn(coId) {
   var tout=sstr(co.checkedOutAt||co.timeOut).slice(0,5);
   var h=(tout&&timeIn)?((new Date('2000-01-01T'+timeIn)-new Date('2000-01-01T'+tout))/3600000):0;
   if(h<0) h+=24;
-  var today=new Date().toISOString().slice(0,10);
+  var today=todayISO();
   var errEl=document.getElementById('landCheckErr');
   var IS=getLang()==='IS';
   var isKeel=(co.boatCategory||'').toLowerCase()==='keelboat';
@@ -1513,7 +1513,7 @@ async function confirmCheckIn(coId) {
 
 // ══ MANUAL TRIP MODAL ════════════════════════════════════════════════════════
 function openManualTripModal() {
-  document.getElementById('rDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('rDate').value=todayISO();
   document.getElementById('rTimeOut').value=''; document.getElementById('rTimeIn').value='';
   document.getElementById('rNotes').value=''; document.getElementById('manualTripErr').style.display='none';
   openModal('manualTripModal');
@@ -1586,7 +1586,7 @@ function renderVolunteerNotifBadge() {
   // Strip any previous badge before recounting
   btn.querySelectorAll('.notif-badge').forEach(function(b) { b.remove(); });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
     ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
     : [];
