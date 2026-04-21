@@ -1383,14 +1383,20 @@ function loadLeaflet() {
       var css = document.createElement('link');
       css.rel = 'stylesheet';
       css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      css.integrity = 'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H';
+      css.crossOrigin = 'anonymous';
       document.head.appendChild(css);
     }
     // JS
     var s1 = document.createElement('script');
     s1.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s1.integrity = 'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH';
+    s1.crossOrigin = 'anonymous';
     s1.onload = function() {
       var s2 = document.createElement('script');
       s2.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+      s2.integrity = 'sha384-mFKkGiGvT5vo1fEyGCD3hshDdKmW3wzXW/x+fWriYJArD0R3gawT6lMvLboM22c0';
+      s2.crossOrigin = 'anonymous';
       s2.onload = resolve;
       s2.onerror = reject;
       document.head.appendChild(s2);
