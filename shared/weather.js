@@ -416,10 +416,11 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
     : Promise.resolve(null);
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
+  // Pinned to ICON-EU (6.5km, DWD) for consistent source across all variables including visibility.
   const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,visibility';
   const currentParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,apparent_temperature,surface_pressure,weather_code,visibility';
   const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&hourly=${hourlyParams}&current=${currentParams}&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
+    `&hourly=${hourlyParams}&current=${currentParams}&models=icon_eu&forecast_hours=9&past_hours=3&timezone=auto&wind_speed_unit=ms`;
   const hourlyCacheKey = `ymir_wx_hourly_${lat}_${lon}`;
   const hourlyPromise = (() => {
     const cached = _wxCacheGet(hourlyCacheKey);
