@@ -2446,6 +2446,24 @@ function getConfig_() {
   const overdueAlerts = getAlertConfigFromMap_(cfgMap);
   const flagConfig = getFlagConfigFromMap_(cfgMap);
   const staffStatus   = jsonR_(getConfigValue_('staffStatus', cfgMap));
+  // Staff-set flag override — auto-clears when past `expiresAt` (set to next UTC
+  // midnight by the staff page). Cleared by writing an empty value back so the
+  // next getConfig build is clean, then bypassed for this response.
+  let flagOverride = null;
+  try {
+    const fovRaw = getConfigValue_('flagOverride', cfgMap);
+    if (fovRaw) {
+      const ov = JSON.parse(fovRaw);
+      if (ov && ov.active) {
+        const exp = ov.expiresAt ? new Date(ov.expiresAt).getTime() : 0;
+        if (exp && exp <= Date.now()) {
+          setConfigSheetValue_('flagOverride', '');
+        } else {
+          flagOverride = ov;
+        }
+      }
+    }
+  } catch (e) {}
   const certDefs = getCertDefsFromMap_(cfgMap);
   const certCategories = getCertCategoriesFromMap_(cfgMap);
   let boats = [], locations = [];
@@ -2479,7 +2497,7 @@ function getConfig_() {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
   } catch (e) {}
-  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars };
+  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars };
   cPut_('config', config);
   return okJ(config);
 }
@@ -2516,6 +2534,16 @@ function saveConfig_(b) {
   if (b.staffStatus !== undefined) {
     setConfigSheetValue_('staffStatus', JSON.stringify(b.staffStatus));
     saved.staffStatus = true;
+  }
+  if (b.flagOverride !== undefined) {
+    // Null or { active:false } clears the override; otherwise persist the
+    // full { active, flagKey, notes, notesIS, setAt, setByName, expiresAt } shape.
+    if (!b.flagOverride || b.flagOverride.active === false) {
+      setConfigSheetValue_('flagOverride', '');
+    } else {
+      setConfigSheetValue_('flagOverride', JSON.stringify(b.flagOverride));
+    }
+    saved.flagOverride = true;
   }
 
   if (b.boats !== undefined) {
