@@ -185,7 +185,7 @@
 /* Fleet status bar — emoji pip */
 .fsb-emoji { font-size:14px; flex-shrink:0; }
 /* ── Group checkout modal ────────────────────────────────────────── */
-.group-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:400;display:flex;align-items:flex-end;justify-content:center}
+.group-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:flex-end;justify-content:center}
 .group-modal-overlay.hidden{display:none}
 .group-modal-sheet{background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 20px 36px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
 .group-modal-title{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
@@ -219,7 +219,7 @@
 .gc-staff{font-size:11px;color:var(--muted)}
 
 /* ── Guest prompt modal ── */
-.guest-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center}
+.guest-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:2100;display:flex;align-items:center;justify-content:center}
 .guest-modal-overlay.hidden{display:none}
 .guest-modal{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg)}
 .guest-modal h4{font-size:12px;color:var(--brass-fg);letter-spacing:.5px;margin:0 0 14px}
@@ -232,7 +232,7 @@
 
 #groupCheckOutBtn{background:var(--navy);border-color:var(--navy);color:#fff}
 #groupCheckOutBtn:hover{background:var(--navy-d);border-color:var(--navy-d)}
-.dl-link-overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.dl-link-overlay{position:fixed;inset:0;background:#00000099;z-index:2000;display:flex;align-items:flex-end;justify-content:center}
 .dl-link-overlay.hidden{display:none}
 .dl-link-sheet{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:680px;max-height:80vh;overflow-y:auto}
 .dl-link-title{font-size:14px;font-weight:500;margin-bottom:4px}

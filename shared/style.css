@@ -498,7 +498,7 @@ textarea { min-height: 70px; }
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
-  z-index: 200; padding: 20px;
+  z-index: 2000; padding: 20px;
 }
 .modal-overlay.hidden { display: none; }
 
@@ -509,8 +509,13 @@ textarea { min-height: 70px; }
 .modal-overlay:has(> .modal--sheet) {
   align-items: flex-end;
   padding: 0;
-  z-index: 500;
 }
+
+/* Leaflet maps set position:relative on .leaflet-container and give internal
+   panes z-indexes up to 1000 (controls). Without a stacking context, those
+   escape into the root and paint over modals. `isolation: isolate` caps them
+   inside the map's own box so every modal overlay can safely sit above. */
+.leaflet-container { isolation: isolate; }
 
 .modal {
   background: var(--card);
@@ -866,7 +871,7 @@ textarea { min-height: 70px; }
 .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
 .ts-table tr:last-child td{border-bottom:none}
 .src-admin{color:var(--brass-fg)}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:center;justify-content:center}
 .modal-box{background:var(--card);border-radius:var(--radius-lg);padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:var(--shadow-lg)}
 .modal-title{margin:0 0 16px;font-size:15px;font-weight:700}
 .modal-err{font-size:11px;color:var(--red);min-height:14px;margin-bottom:2px}

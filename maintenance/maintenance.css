@@ -88,7 +88,7 @@
     .photo-preview.show { display:block; }
 
     /* Full-size photo overlay */
-    .photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300;
+    .photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:2100;
       display:flex; align-items:center; justify-content:center; cursor:pointer; }
     .photo-overlay.hidden { display:none; }
     .photo-overlay img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:var(--radius-md); }

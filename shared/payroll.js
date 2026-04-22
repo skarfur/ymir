@@ -281,7 +281,7 @@ function punchClockWidget(el, employeeId, opts) {
       '.pc-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}' +
       '.pc-row:last-child{border-bottom:none}' +
       // End-of-shift modal
-      '.pc-modal-bg{position:fixed;inset:0;background:#00000088;z-index:600;display:flex;align-items:flex-end;justify-content:center}' +
+      '.pc-modal-bg{position:fixed;inset:0;background:#00000088;z-index:2000;display:flex;align-items:flex-end;justify-content:center}' +
       '.pc-modal{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto}' +
       '.pc-modal-title{font-size:14px;font-weight:600;color:var(--brass-fg);margin-bottom:4px;letter-spacing:.3px}' +
       '.pc-modal-sub{font-size:11px;color:var(--muted);margin-bottom:16px}' +
