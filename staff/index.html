@@ -44,7 +44,7 @@
   <div id="tideWidget" class="mb-14"></div>
 
   <div id="staffStatusStrip" class="mb-12">
-    <div class="section-label mb-8">DUTY STATUS</div>
+    <div class="section-label mb-8" data-s="staff.dutyStatusHdr"></div>
     <div class="flex-center flex-wrap gap-8">
       <button id="btnStaffOnDuty" data-staff-click="toggleStaffStatus" data-staff-arg="onDuty" class="items-center gap-6 border-none text-md fw-600 text-nowrap cursor-pointer font-inherit" style="display:inline-flex;padding:6px 14px;border-radius:20px;transition:opacity .15s;background:var(--orange);color:#fff">No staff on duty</button>
       <button id="btnSupportBoat" data-staff-click="toggleStaffStatus" data-staff-arg="supportBoat" class="items-center gap-6 border-none text-md fw-600 text-nowrap cursor-pointer font-inherit" style="display:inline-flex;padding:6px 14px;border-radius:20px;transition:opacity .15s;background:var(--orange);color:#fff">No support boat</button>
@@ -144,9 +144,9 @@
         </div>
       </div>
       <div id="coCrewSection" class="mt-10 d-none">
-        <label class="detail-field-label mb-6" style="display:block">Crew members <span class="fw-400" style="opacity:.6">(optional — search by name)</span></label>
+        <label class="detail-field-label mb-6" style="display:block">Crew members <span class="fw-400" style="opacity:.6" data-s="staff.optSearchName"></span></label>
         <div id="coCrewInputs"></div>
-        <div class="text-xs text-muted mt-4">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted mt-4" data-s="staff.namedCrewNote"></div>
       </div>
       <!-- Departure port — shown for keelboats only -->
       <div id="coPortRow" class="field d-none">
@@ -262,35 +262,35 @@
 <div class="group-modal-overlay hidden" id="groupModal" data-staff-close-self="groupModal">
   <div class="group-modal-sheet">
     <div class="group-modal-title">
-      <span id="groupModalTitle">Group Checkout</span>
+      <span id="groupModalTitle" data-s="staff.groupCheckout"></span>
       <button class="gm-close" data-staff-click="closeGroupModal">✕</button>
     </div>
 
     <!-- Boats -->
     <div class="gm-section">
-      <div class="gm-section-label" id="gmBoatsLabel">Select boats</div>
+      <div class="gm-section-label" id="gmBoatsLabel" data-s="staff.selectBoats"></div>
       <div class="gm-boat-grid" id="gmBoatGrid"></div>
     </div>
 
     <!-- Location + Times -->
     <div class="gm-row mb-16">
       <div class="gm-field">
-        <label id="gmLocLabel" for="gmLocation">Location</label>
+        <label id="gmLocLabel" for="gmLocation" data-s="lbl.location"></label>
         <select id="gmLocation"><option value="">—</option></select>
       </div>
       <div class="gm-field">
-        <label id="gmActivityLabel" for="gmActivity">Activity type</label>
-        <select id="gmActivity"><option value="">— None —</option></select>
+        <label id="gmActivityLabel" for="gmActivity" data-s="staff.activityType"></label>
+        <select id="gmActivity"><option value="" data-s="staff.noneDash"></option></select>
       </div>
     </div>
     <div class="gm-row mb-16">
       <div class="gm-field">
-        <label for="gmTimeOut">Departure</label>
+        <label for="gmTimeOut" data-s="staff.departure"></label>
         <input type="text" id="gmTimeOut" placeholder="HH:MM" maxlength="5"
           data-staff-time-format>
       </div>
       <div class="gm-field">
-        <label for="gmReturnBy">Expected return</label>
+        <label for="gmReturnBy" data-s="staff.expectedReturn"></label>
         <input type="text" id="gmReturnBy" placeholder="HH:MM" maxlength="5"
           data-staff-time-format>
       </div>
@@ -298,7 +298,7 @@
 
     <!-- Participants stepper -->
     <div class="gm-section">
-      <div class="gm-section-label" id="gmParticLabel">Participants (Iðkendur)</div>
+      <div class="gm-section-label" id="gmParticLabel" data-s="staff.participants"></div>
       <div class="gm-stepper">
         <button class="gm-stepper-btn" data-staff-click="adjGroupCount" data-staff-arg="participants" data-staff-arg2="-1">−</button>
         <span class="gm-stepper-val" id="gmParticCount">0</span>
@@ -309,7 +309,7 @@
 
     <!-- Staff on water -->
     <div class="gm-section">
-      <div class="gm-section-label" id="gmStaffLabel">Staff on water <span class="text-9 text-red">*required</span></div>
+      <div class="gm-section-label" id="gmStaffLabel">Staff on water <span class="text-9 text-red" data-s="staff.requiredStar"></span></div>
       <div id="gmStaffSection"></div>
       <button data-staff-click="addGmStaffRow" class="bg-none border-none text-muted text-xs cursor-pointer mt-4">+ Add another</button>
     </div>
@@ -323,8 +323,8 @@
 <!-- ══ DAILY LOG LINK MODAL ══════════════════════════════════════════════ -->
 <div class="dl-link-overlay hidden" id="dlLinkModal">
   <div class="dl-link-sheet">
-    <div class="dl-link-title">Link to daily log activity?</div>
-    <div class="dl-link-sub">This group checkout can be linked to an activity in today's log.</div>
+    <div class="dl-link-title" data-s="staff.linkToDailyLog"></div>
+    <div class="dl-link-sub" data-s="staff.linkHint"></div>
     <div id="dlLinkActList" class="mb-12"></div>
     <div class="d-flex flex-col gap-8">
       <button class="btn btn-primary w-full" data-staff-click="confirmDlLink" id="dlLinkConfirmBtn">Link selected activity</button>

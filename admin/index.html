@@ -68,25 +68,25 @@
           <div id="importStep1" data-step="1">
             <div class="import-card">
               <div class="col-hint mb-16">
-                <div class="section-label mb-8">EXPECTED COLUMNS</div>
-                <div class="col-hint-row"><span class="col-hint-field">name</span><span class="col-hint-vals">Full name (required)</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">kennitala</span><span class="col-hint-vals">10-digit ID (required)</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">email</span><span class="col-hint-vals">Email address</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">phone</span><span class="col-hint-vals">Phone number</span></div>
-                <div class="col-hint-row"><span class="col-hint-field">dob</span><span class="col-hint-vals">Date of birth (YYYY-MM-DD)</span></div>
+                <div class="section-label mb-8" data-s="admin.csv.expectedCols"></div>
+                <div class="col-hint-row"><span class="col-hint-field" data-s="admin.csv.col.name"></span><span class="col-hint-vals" data-s="admin.csv.col.nameHint"></span></div>
+                <div class="col-hint-row"><span class="col-hint-field" data-s="admin.csv.col.kt"></span><span class="col-hint-vals" data-s="admin.csv.col.ktHint"></span></div>
+                <div class="col-hint-row"><span class="col-hint-field" data-s="admin.csv.col.email"></span><span class="col-hint-vals" data-s="admin.csv.col.emailHint"></span></div>
+                <div class="col-hint-row"><span class="col-hint-field" data-s="admin.csv.col.phone"></span><span class="col-hint-vals" data-s="admin.csv.col.phoneHint"></span></div>
+                <div class="col-hint-row"><span class="col-hint-field" data-s="admin.csv.col.dob"></span><span class="col-hint-vals" data-s="admin.csv.col.dobHint"></span></div>
               </div>
               <label class="upload-zone" for="csvFile">
                 <div style="font-size:24px">📄</div>
-                <div class="text-base fw-500">Drop CSV here or click to browse</div>
-                <div class="text-sm text-muted">UTF-8 encoded, comma or semicolon delimited</div>
+                <div class="text-base fw-500" data-s="admin.csv.dropZone"></div>
+                <div class="text-sm text-muted" data-s="admin.csv.encoding"></div>
                 <input type="file" id="csvFile" accept=".csv" class="hidden" data-admin-change-el="handleCSVUpload">
               </label>
             </div>
           </div>
           <div id="importStep2" data-step="2" class="hidden">
             <div class="import-card">
-              <div class="text-base fw-500 mb-10">Review import</div>
-              <div class="text-sm text-muted mb-4">Admin/staff roles never overwritten.</div>
+              <div class="text-base fw-500 mb-10" data-s="admin.csv.review"></div>
+              <div class="text-sm text-muted mb-4" data-s="admin.csv.rolesProtected"></div>
               <div class="import-summary" id="importSummary"></div>
               <div id="importLists"></div>
               <div id="importError" class="text-red text-md mb-8 hidden rounded-4" style="padding:8px;background:color-mix(in srgb, var(--red) 8%, transparent);border:1px solid color-mix(in srgb, var(--red) 27%, transparent)"></div>
@@ -101,8 +101,8 @@
               <div class="mb-10" style="font-size:30px">✓</div>
               <div class="text-lg fw-500 text-green" id="importDoneMsg"></div>
               <div style="margin-top:18px">
-                <button class="btn btn-secondary" data-admin-click="resetImport">Import another</button>
-                <button class="btn btn-primary ml-auto ml-8" data-admin-click="showMemberSub" data-admin-arg="list">View members</button>
+                <button class="btn btn-secondary" data-admin-click="resetImport" data-s="admin.csv.importAnother"></button>
+                <button class="btn btn-primary ml-auto ml-8" data-admin-click="showMemberSub" data-admin-arg="list" data-s="admin.csv.viewMembers"></button>
               </div>
             </div>
           </div>
@@ -157,7 +157,7 @@
     <div id="tab-locations" class="hidden">
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
-          <div class="col-title">LOCATIONS</div>
+          <div class="col-title" data-s="admin.locationsHdr"></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="locationsCard">
@@ -173,7 +173,7 @@
     <div id="tab-checklists" class="hidden">
 
       <!-- Opening / Closing checklists -->
-      <div class="section-label mb-8">DAILY CHECKLISTS</div>
+      <div class="section-label mb-8" data-s="admin.dailyChecklistsHdr"></div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.openingChecklist"></div>
@@ -194,17 +194,17 @@
 
       <!-- Launch / Landing checklists per category -->
       <div class="section-divider mt-8">
-        <div class="section-label mb-12">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
+        <div class="section-label mb-12" data-s="admin.launchLandingHdr"></div>
         <div class="flex-center gap-8 mb-8">
-          <label class="text-sm text-muted">Category:</label>
+          <label class="text-sm text-muted" data-s="admin.categoryColon"></label>
           <select id="launchCLCatFilter" data-admin-change="renderLaunchCLSections"
             class="text-xs bg-surface border-muted rounded-4" style="padding:3px 8px;color:var(--text)">
           </select>
         </div>
         <div id="launchCLCard">
-          <div class="section-label mb-6 text-9">LAUNCH</div>
+          <div class="section-label mb-6 text-9" data-s="admin.launchHdr"></div>
           <div id="launchCLLaunchList"></div>
-          <div class="section-label mb-6 text-9 mt-12">LANDING</div>
+          <div class="section-label mb-6 text-9 mt-12" data-s="admin.landingHdr"></div>
           <div id="launchCLLandingList"></div>
         </div>
         <div style="padding:8px 0 4px">
@@ -261,7 +261,7 @@
           <div class="d-flex gap-8 items-center flex-wrap">
             <input type="text" id="newCatInputEN" placeholder="Name (EN)" class="flex-1 text-md" style="min-width:120px">
             <input type="text" id="newCatInputIS" placeholder="Nafn (IS)" class="flex-1 text-md" style="min-width:120px">
-            <button class="btn btn-primary text-xs" style="padding:5px 12px" data-admin-click="addCertCategory">+ Add</button>
+            <button class="btn btn-primary text-xs" style="padding:5px 12px" data-admin-click="addCertCategory" data-s="admin.addBtn"></button>
           </div>
         </div>
       </div>
@@ -310,22 +310,22 @@
           </div>
           
           <div class="section-divider">
-            <div class="text-sm fw-500 text-muted mb-10" style="letter-spacing:.5px">NOTIFICATION CHANNELS</div>
+            <div class="text-sm fw-500 text-muted mb-10" style="letter-spacing:.5px" data-s="admin.notifyChannelsHdr"></div>
             <div class="flex-col gap-8 mb-14">
-              <label class="check-label text-md"><input type="checkbox" id="chanWeb" checked><span>🌐 Web (in-app banner)</span></label>
-              <label class="check-label text-md"><input type="checkbox" id="chanEmail"><span>✉️ Email <span class="text-xs text-muted">(requires backend setup)</span></span></label>
-              <label class="check-label text-md"><input type="checkbox" id="chanSms"><span>📱 SMS <span class="text-xs text-muted">(requires backend setup)</span></span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanWeb" checked><span data-s="admin.channelWeb"></span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanEmail"><span>✉️ Email <span class="text-xs text-muted" data-s="admin.requiresBackend"></span></span></label>
+              <label class="check-label text-md"><input type="checkbox" id="chanSms"><span>📱 SMS <span class="text-xs text-muted" data-s="admin.requiresBackend"></span></span></label>
             </div>
             <div class="field mb-10">
-              <label class="text-sm">Email recipients (comma-separated)</label>
+              <label class="text-sm" data-s="admin.emailRecipients"></label>
               <textarea id="alertEmailList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
             </div>
             <div class="field mb-14">
-              <label class="text-sm" for="alertSmsList">SMS recipients (comma-separated)</label>
+              <label class="text-sm" for="alertSmsList" data-s="admin.smsRecipients"></label>
               <textarea id="alertSmsList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
             </div>
           </div>
-          <button class="btn btn-primary" data-admin-click="saveAlertConfig">Save alert settings</button>
+          <button class="btn btn-primary" data-admin-click="saveAlertConfig" data-s="admin.saveAlertSettings"></button>
           <span id="alertSaveMsg" class="text-sm text-green" style="margin-left:10px"></span>
         </div>
       </div>
@@ -439,36 +439,36 @@
     <div id="tab-slotCal" class="hidden">
       <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
       <div class="border-muted rounded-6 mb-14" style="padding:12px">
-        <div class="text-9 text-muted mb-8" style="letter-spacing:1px">GOOGLE CALENDAR SYNC</div>
+        <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
         <div class="grid2">
           <div>
-            <div class="text-xs fw-600 mb-4">Rowing calendar</div>
+            <div class="text-xs fw-600 mb-4" data-s="admin.rowingCal"></div>
             <div class="field">
-              <label for="charterRowingCalId">Calendar ID</label>
+              <label for="charterRowingCalId" data-s="admin.calendarId"></label>
               <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
             </div>
             <div class="check-row">
               <input type="checkbox" id="charterRowingCalActive">
-              <label for="charterRowingCalActive">Sync rowing-shell slot bookings</label>
+              <label for="charterRowingCalActive" data-s="admin.syncRowing"></label>
             </div>
           </div>
           <div>
-            <div class="text-xs fw-600 mb-4">Keelboat calendar</div>
+            <div class="text-xs fw-600 mb-4" data-s="admin.keelboatCal"></div>
             <div class="field">
-              <label>Calendar ID</label>
+              <label data-s="admin.calendarId"></label>
               <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
             </div>
             <div class="check-row">
               <input type="checkbox" id="charterKeelboatCalActive">
-              <label for="charterKeelboatCalActive">Sync keelboat slot bookings</label>
+              <label for="charterKeelboatCalActive" data-s="admin.syncKeelboat"></label>
             </div>
           </div>
         </div>
         <div class="d-flex gap-8 items-center mt-8">
-          <button class="btn btn-primary" data-admin-click="saveCharterCalendars">Save calendar settings</button>
+          <button class="btn btn-primary" data-admin-click="saveCharterCalendars" data-s="admin.saveCalSettings"></button>
           <span id="charterCalSaveMsg" class="text-xs"></span>
         </div>
-        <div class="text-10 text-muted mt-6">Ymir only adds, updates, or deletes events it created itself — other items on the calendar are never touched. Use a dedicated secondary calendar and share it with the people who need to see bookings.</div>
+        <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
       </div>
       <div class="mb-12">
         <div class="d-flex items-center gap-10 mb-10 flex-wrap">
@@ -703,16 +703,16 @@
       <div id="atRolesList"></div>
     </div>
     <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
-      <div class="text-9 text-muted mb-8" style="letter-spacing:1px">GOOGLE CALENDAR SYNC</div>
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
       <div class="field">
-        <label>Calendar ID</label>
+        <label data-s="admin.calendarId"></label>
         <input type="text" id="atCalendarId" placeholder="e.g. abc123@group.calendar.google.com">
       </div>
       <div class="check-row">
         <input type="checkbox" id="atCalendarSyncActive">
-        <label for="atCalendarSyncActive">Push activities of this type to the calendar</label>
+        <label for="atCalendarSyncActive" data-s="admin.pushActivitiesTo"></label>
       </div>
-      <div class="text-10 text-muted mt-4">Events are only added/updated/deleted by Ymir — other items on the calendar are never touched.</div>
+      <div class="text-10 text-muted mt-4" data-s="admin.eventsOnlyOurs"></div>
     </div>
     <div class="mt-10">
       <div class="d-flex items-center justify-between mb-6">
@@ -839,7 +839,7 @@
     <div class="field" id="cdCategoryField">
       <label data-s="admin.certDefCategory" for="cdCategory"></label>
       <select id="cdCategory">
-        <option value="">None</option>
+        <option value="" data-s="admin.none"></option>
       </select>
     </div>
     <div class="field">

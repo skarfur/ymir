@@ -38,29 +38,29 @@
     <div class="stat-card"><div class="stat-val" id="stPeakWind">—</div><div class="stat-lbl" data-s="lb.stat.peakWind"></div></div>
     <div class="stat-card"><div class="stat-val" id="stStreak">—</div><div class="stat-lbl" data-s="lb.stat.streak"></div></div>
     <div class="stat-card"><div class="stat-val" id="stBoats">—</div><div class="stat-lbl" data-s="lb.stat.boats"></div></div>
-    <div class="stat-card"><div class="stat-val" id="stCrew">—</div><div class="stat-lbl">As crew</div></div>
-    <div class="stat-card"><div class="stat-val" id="stHelmHours">—</div><div class="stat-lbl">Hours as helm</div></div>
-    <div class="stat-card"><div class="stat-val" id="stStudent">—</div><div class="stat-lbl">As student</div></div>
-    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavBoat">—</div><div class="stat-lbl">Favorite boat</div></div>
-    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavLocation">—</div><div class="stat-lbl">Favorite location</div></div>
-    <div class="stat-card"><div class="stat-val" id="stHeavy">—</div><div class="stat-lbl">Heavy wx</div></div>
-    <div class="stat-card"><div class="stat-val" id="stAvgDuration">—</div><div class="stat-lbl">Avg duration</div></div>
-    <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl">Locations</div></div>
-    <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl">Verified</div></div>
+    <div class="stat-card"><div class="stat-val" id="stCrew">—</div><div class="stat-lbl" data-s="lb.stat.asCrew"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stHelmHours">—</div><div class="stat-lbl" data-s="lb.stat.helmHours"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stStudent">—</div><div class="stat-lbl" data-s="lb.stat.asStudent"></div></div>
+    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavBoat">—</div><div class="stat-lbl" data-s="lb.stat.favBoat"></div></div>
+    <div class="stat-card"><div class="stat-val stat-val-text" id="stFavLocation">—</div><div class="stat-lbl" data-s="lb.stat.favLocation"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stHeavy">—</div><div class="stat-lbl" data-s="lb.stat.heavyWx"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stAvgDuration">—</div><div class="stat-lbl" data-s="lb.stat.avgDuration"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl" data-s="lb.stat.locations"></div></div>
+    <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl" data-s="lb.stat.verified"></div></div>
   </div>
   <div class="cat-hours d-none" id="catHours">
-    <div class="cat-hours-title">Hours by boat category</div>
+    <div class="cat-hours-title" data-s="lb.stat.hoursByCategory"></div>
     <div id="catHoursList"></div>
   </div>
 
   <!-- Member heatmap -->
   <div class="member-heatmap d-none" id="memberHeatmapWrap">
     <div class="member-heatmap-header">
-      <span class="member-heatmap-title">Heatmap</span>
+      <span class="member-heatmap-title" data-s="lb.heatmap"></span>
       <div class="heatmap-toggle">
-        <button class="active" data-mode="trips" data-lb-click="setHeatMode" data-lb-arg="trips">Trips</button>
-        <button data-mode="time" data-lb-click="setHeatMode" data-lb-arg="time">Time</button>
-        <button data-mode="tracks" data-lb-click="setHeatMode" data-lb-arg="tracks">GPS tracks</button>
+        <button class="active" data-mode="trips" data-lb-click="setHeatMode" data-lb-arg="trips" data-s="lb.heatTrips"></button>
+        <button data-mode="time" data-lb-click="setHeatMode" data-lb-arg="time" data-s="lb.heatTime"></button>
+        <button data-mode="tracks" data-lb-click="setHeatMode" data-lb-arg="tracks" data-s="lb.heatTracks"></button>
       </div>
     </div>
     <div id="memberHeatmap"></div>
@@ -69,7 +69,7 @@
   <!-- Share logbook -->
   <div id="shareBar" class="info-panel flex-center flex-wrap gap-10 mb-12" style="padding:10px 14px">
     <button class="btn-secondary text-sm flex-shrink-0" style="width:auto;padding:6px 14px" data-lb-click="toggleSharePanel" data-s="logbook.shareBtn"></button>
-    <button class="btn-secondary text-sm flex-shrink-0" style="width:auto;padding:6px 14px" data-lb-click="openLogModal">+ Manually log a trip</button>
+    <button class="btn-secondary text-sm flex-shrink-0" style="width:auto;padding:6px 14px" data-lb-click="openLogModal"><span data-s="lb.addManualBtn"></span></button>
     <button class="btn-secondary text-sm flex-shrink-0 pos-relative" style="width:auto;padding:6px 14px" data-lb-click="openConfirmationsModal"><span data-s="member.pendingConfirmations"></span><span class="conf-badge d-none" id="confBadge">0</span></button>
     <div id="sharePanel" class="d-none w-full mt-4" style="padding-top:8px;border-top:1px solid var(--border)">
       <div id="shareCatChecks" class="flex-center flex-wrap gap-8 mb-8"></div>
@@ -131,7 +131,7 @@
 <!-- Full-screen map modal -->
 <div class="map-modal-overlay hidden" id="mapModal">
   <div class="map-modal-bar">
-    <span id="mapModalTitle">GPS Track</span>
+    <span id="mapModalTitle" data-s="lb.gpsTrack"></span>
     <button class="map-modal-close" data-lb-click="closeMapModal">&times;</button>
   </div>
   <div class="map-modal-body" id="mapModalBody"></div>
@@ -155,40 +155,40 @@
 <div class="modal-overlay hidden" id="logModal" data-lb-close-self="closeLogModal">
   <div class="modal-sheet">
     <div class="modal-title">
-      <span id="logModalTitle">Add a log entry</span>
+      <span id="logModalTitle" data-s="lb.addEntryTitle"></span>
       <button class="modal-close" data-lb-click="closeLogModal">✕</button>
     </div>
 
     <!-- Step 1: enter manually or join a recent trip -->
     <div id="logStep1">
-      <p class="text-sm text-muted mb-12">Enter a trip manually, or join a recent club trip as crew. You can add notes, photos, and a GPS track to any log entry.</p>
-      <button class="btn-secondary" data-lb-click="showManualForm">Enter manually</button>
+      <p class="text-sm text-muted mb-12" data-s="lb.addEntryBlurb"></p>
+      <button class="btn-secondary" data-lb-click="showManualForm"><span data-s="lb.enterManually"></span></button>
 
-      <div class="text-xs text-muted uppercase" style="margin:12px 0;text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
-      <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
-      <button class="load-more d-none" id="loadMoreTripsBtn" data-lb-click="loadMoreTrips">Load more…</button>
+      <div class="text-xs text-muted uppercase" style="margin:12px 0;text-align:center;letter-spacing:.8px" data-s="lb.orJoin"></div>
+      <div id="recentTripsList"><div class="empty-note" data-s="lb.loadingRecent"></div></div>
+      <button class="load-more d-none" id="loadMoreTripsBtn" data-lb-click="loadMoreTrips"><span data-s="lb.loadMore"></span></button>
 
       <!-- Confirmation request form when a club trip is selected -->
       <div id="joinExtras" class="d-none mt-12 rounded-8" style="padding:14px;background:var(--card);border:1px solid var(--border-l)">
-        <div class="section-label mb-6" style="letter-spacing:.8px">Request to join this trip</div>
-        <p class="text-sm text-muted mb-12">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
+        <div class="section-label mb-6" style="letter-spacing:.8px" data-s="lb.requestJoinTitle"></div>
+        <p class="text-sm text-muted mb-12" data-s="lb.requestJoinBlurb"></p>
         <div id="jErr" class="text-sm text-red mb-8 d-none"></div>
-        <button class="btn-primary" id="jSubmitBtn" data-lb-click="submitJoinTrip">Request to join</button>
+        <button class="btn-primary" id="jSubmitBtn" data-lb-click="submitJoinTrip"><span data-s="lb.requestJoin"></span></button>
       </div>
     </div>
 
     <!-- Step 2: manual entry form -->
     <div id="logStep2" class="d-none">
-      <button class="text-sm text-muted mb-12 bg-none border-none cursor-pointer" data-lb-click="showStep1" style="padding:0">← Back</button>
+      <button class="text-sm text-muted mb-12 bg-none border-none cursor-pointer" data-lb-click="showStep1" style="padding:0"><span data-s="lb.back"></span></button>
       <div class="form-row">
-        <div class="form-field"><label for="mDate">Date</label><input type="date" id="mDate"></div>
-        <div class="form-field"><label for="mRole">Role</label>
-          <select id="mRole" data-lb-change="onRoleChange"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+        <div class="form-field"><label for="mDate" data-s="lbl.date"></label><input type="date" id="mDate"></div>
+        <div class="form-field"><label for="mRole" data-s="lbl.role"></label>
+          <select id="mRole" data-lb-change="onRoleChange"><option value="skipper" data-s="tc.skipper"></option><option value="crew" data-s="lbl.crew"></option></select>
         </div>
       </div>
       <!-- Skipper assignment: shown when role=crew -->
       <div class="form-field d-none pos-relative" id="mSkipperSection">
-        <label for="mSkipperName">Skipper</label>
+        <label for="mSkipperName" data-s="tc.skipper"></label>
         <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
           data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" data-lb-blur-hide="mSkipperDrop">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
@@ -203,11 +203,11 @@
       </div>
       <!-- Club boat + location (default) -->
       <div id="mClubRow" class="form-row">
-        <div id="mBoatClub" class="form-field"><label for="mBoat">Boat</label>
-          <select id="mBoat" data-lb-change="onBoatChange"><option value="">Select boat…</option></select>
+        <div id="mBoatClub" class="form-field"><label for="mBoat" data-s="lbl.boat"></label>
+          <select id="mBoat" data-lb-change="onBoatChange"><option value="" data-s="lb.selectBoat"></option></select>
         </div>
-        <div id="mLocClub" class="form-field"><label for="mLocation">Location</label>
-          <select id="mLocation"><option value="">Select location…</option></select>
+        <div id="mLocClub" class="form-field"><label for="mLocation" data-s="lbl.location"></label>
+          <select id="mLocation"><option value="" data-s="lb.selectLocation"></option></select>
         </div>
       </div>
       <!-- Non-club boat (hidden by default) -->
@@ -218,26 +218,26 @@
           </div>
           <div class="form-field"><label data-s="logbook.boatCategory" for="mBoatFreeCat">Category</label>
             <select id="mBoatFreeCat">
-              <option value="dinghy">Dinghy</option><option value="keelboat">Keelboat</option>
-              <option value="kayak">Kayak</option><option value="rowboat">Rowboat</option>
-              <option value="sup">SUP</option><option value="wingfoil">Wingfoil</option>
-              <option value="other">Other</option>
+              <option value="dinghy" data-s="lb.cat.dinghy"></option><option value="keelboat" data-s="lb.cat.keelboat"></option>
+              <option value="kayak" data-s="lb.cat.kayak"></option><option value="rowboat" data-s="lb.cat.rowboat"></option>
+              <option value="sup" data-s="lb.cat.sup"></option><option value="wingfoil" data-s="lb.cat.wingfoil"></option>
+              <option value="other" data-s="lb.cat.other"></option>
             </select>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label for="mBoatFreeModel">Model / make <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeModel">Model / make <span class="text-muted text-9" data-s="lb.optional"></span></label>
             <input type="text" id="mBoatFreeModel" placeholder="e.g. Laser Pico" autocomplete="off">
           </div>
-          <div class="form-field"><label for="mBoatFreeSail">Sail number <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeSail">Sail number <span class="text-muted text-9" data-s="lb.optional"></span></label>
             <input type="text" id="mBoatFreeSail" placeholder="e.g. ISL 1234" autocomplete="off">
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label for="mBoatFreeReg">Registration <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeReg">Registration <span class="text-muted text-9" data-s="lb.optional"></span></label>
             <input type="text" id="mBoatFreeReg" placeholder="e.g. RE-001" autocomplete="off">
           </div>
-          <div class="form-field"><label for="mBoatFreeLen">Length (m) <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeLen">Length (m) <span class="text-muted text-9" data-s="lb.optional"></span></label>
             <input type="number" id="mBoatFreeLen" min="0" step="0.1" placeholder="e.g. 6.5">
           </div>
         </div>
@@ -250,36 +250,36 @@
         <div id="mLocGeoStatus" class="text-xs text-muted mt-2 d-none"></div>
       </div>
       <div class="form-row">
-        <div class="form-field"><label for="mTimeOut">Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
+        <div class="form-field"><label for="mTimeOut" data-s="lb.departed"></label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
           data-lb-time-format></div>
-        <div class="form-field"><label for="mTimeIn">Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
+        <div class="form-field"><label for="mTimeIn" data-s="lb.returned"></label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
           data-lb-time-format></div>
       </div>
-      <div class="form-field"><label for="mCrew">Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
+      <div class="form-field"><label for="mCrew" data-s="lb.crewAboardTotal"></label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
       <div id="mCrewSection" class="mb-12 d-none">
         <label class="check-label mb-8">
           <input type="checkbox" id="mHelmSelf" class="accent-checkbox">
-          <span class="text-xs">I was at the helm</span>
+          <span class="text-xs" data-s="lb.iWasHelm"></span>
         </label>
-        <label class="text-9" style="letter-spacing:.8px" for="mDeparturePort">Crew members <span class="fw-400" style="opacity:.6">(search by name)</span></label>
+        <label class="text-9" style="letter-spacing:.8px" for="mDeparturePort">Crew members <span class="fw-400" style="opacity:.6" data-s="lb.searchByName"></span></label>
         <div id="mCrewInputs"></div>
-        <div class="text-xs text-muted mt-4">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted mt-4" data-s="lb.namedCrewNote"></div>
       </div>
 
       <!-- Port section: open/prominent for keelboats, collapsed for others -->
       <details id="portDetails" class="mb-12">
         <summary id="portSummary" class="section-label flex-center gap-6 mb-8 cursor-pointer" style="list-style:none">
-          <span>⚓️</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
+          <span>⚓️</span><span id="portSummaryLabel" data-s="lb.portsOptional"></span>
         </summary>
         <div class="form-row mt-6">
           <div class="form-field">
-            <label>Departure port</label>
+            <label data-s="lb.departurePort"></label>
             <input list="portsList" id="mDeparturePort" placeholder="e.g. Reykjavík" autocomplete="off"
               data-lb-input="watchPortInput" data-lb-arg="departure">
           </div>
           <div class="form-field">
-            <label for="mArrivalPort">Arrival port</label>
+            <label for="mArrivalPort" data-s="lb.arrivalPort"></label>
             <input list="portsList" id="mArrivalPort" placeholder="Same as departure" autocomplete="off"
               data-lb-input="watchPortInput" data-lb-arg="arrival">
           </div>
@@ -291,24 +291,24 @@
 
       <!-- Weather -->
       <div class="flex-center gap-6 justify-between" style="margin:12px 0 8px">
-        <div class="section-label">WEATHER (OPTIONAL)</div>
-        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="padding:0">🌤 Use current weather</button>
+        <div class="section-label" data-s="lb.weatherOptional"></div>
+        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="padding:0"><span data-s="lb.useCurrentWx"></span></button>
       </div>
       <div id="mWxFetchStatus" class="text-xs text-muted d-none mb-6"></div>
       <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->
       <div id="mWxFields"></div>
-      <div class="form-field"><label for="mDistanceNm">Distance (nm) <span class="text-muted text-9">auto from GPS track</span></label>
+      <div class="form-field"><label for="mDistanceNm">Distance (nm) <span class="text-muted text-9" data-s="lb.autoFromGps"></span></label>
         <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       <!-- GPS Track upload -->
       <div class="form-field">
-        <label for="mTrackFile">GPS Track — GPX / KML / KMZ <span class="text-muted text-9">optional</span></label>
+        <label for="mTrackFile">GPS Track — GPX / KML / KMZ <span class="text-muted text-9" data-s="lb.optional"></span></label>
         <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" data-lb-change-el="handleTrackFile"
           class="text-sm" style="color:var(--text)">
         <div id="mTrackStatus" class="text-sm text-muted mt-4"></div>
       </div>
       <!-- Photo upload -->
       <div class="form-field">
-        <label for="mPhotoFiles">Photos <span class="text-muted text-9">optional</span></label>
+        <label for="mPhotoFiles">Photos <span class="text-muted text-9" data-s="lb.optional"></span></label>
         <input type="file" id="mPhotoFiles" accept="image/*" multiple data-lb-change-el="handlePhotoFiles"
           class="text-sm" style="color:var(--text)">
         <div id="mPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
@@ -318,15 +318,15 @@
         </div>
       </div>
       <div class="form-field" id="mSkipperNoteWrap">
-        <label for="mSkipperNote">Skipper's note <span class="text-muted text-9">visible to crew</span></label>
+        <label for="mSkipperNote">Skipper's note <span class="text-muted text-9" data-s="lb.visibleToCrew"></span></label>
         <textarea id="mSkipperNote" rows="2" placeholder="Notes for the crew…"></textarea>
       </div>
       <div class="form-field" id="mPersonalNoteWrap">
-        <label for="mNotes">Personal note <span class="text-muted text-9">only you</span></label>
+        <label for="mNotes">Personal note <span class="text-muted text-9" data-s="lb.onlyYou"></span></label>
         <textarea id="mNotes" rows="2" placeholder="Private notes…"></textarea>
       </div>
       <div id="mErr" class="text-sm text-red mb-8 d-none"></div>
-      <button class="btn-primary" id="mSubmitBtn" data-lb-click="submitManual">Save to logbook</button>
+      <button class="btn-primary" id="mSubmitBtn" data-lb-click="submitManual"><span data-s="lb.saveToLogbook"></span></button>
     </div>
   </div>
 </div>
@@ -340,42 +340,42 @@
 <div class="modal-overlay hidden" id="editTripModal" data-lb-close-self="closeEditTrip">
   <div class="modal-sheet">
     <div class="modal-title">
-      <span id="editTripTitle">Edit trip</span>
+      <span id="editTripTitle" data-s="lb.editTrip"></span>
       <button class="modal-close" data-lb-click="closeEditTrip">✕</button>
     </div>
     <input type="hidden" id="etId">
     <div class="form-row">
-      <div class="form-field"><label for="etDate">Date</label><input type="date" id="etDate"></div>
-      <div class="form-field"><label for="etBoat">Boat</label>
-        <select id="etBoat"><option value="">Select boat…</option></select>
+      <div class="form-field"><label for="etDate" data-s="lbl.date"></label><input type="date" id="etDate"></div>
+      <div class="form-field"><label for="etBoat" data-s="lbl.boat"></label>
+        <select id="etBoat"><option value="" data-s="lb.selectBoat"></option></select>
       </div>
     </div>
-    <div class="form-field"><label for="etLocation">Location</label>
-      <select id="etLocation"><option value="">Select location…</option></select>
+    <div class="form-field"><label for="etLocation" data-s="lbl.location"></label>
+      <select id="etLocation"><option value="" data-s="lb.selectLocation"></option></select>
     </div>
     <div class="form-row">
-      <div class="form-field"><label for="etTimeOut">Departed</label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
+      <div class="form-field"><label for="etTimeOut" data-s="lb.departed"></label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
         data-lb-time-format></div>
-      <div class="form-field"><label for="etTimeIn">Returned</label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
+      <div class="form-field"><label for="etTimeIn" data-s="lb.returned"></label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
         data-lb-time-format></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label for="etCrew">Crew aboard</label><input type="number" id="etCrew" min="1" value="1"></div>
-      <div class="form-field"><label for="etDistanceNm">Distance (nm)</label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>
+      <div class="form-field"><label for="etCrew" data-s="lb.crewAboard"></label><input type="number" id="etCrew" min="1" value="1"></div>
+      <div class="form-field"><label for="etDistanceNm" data-s="lb.distanceNm"></label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label for="etDeparturePort">Departure port</label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
-      <div class="form-field"><label for="etArrivalPort">Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
+      <div class="form-field"><label for="etDeparturePort" data-s="lb.departurePort"></label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
+      <div class="form-field"><label for="etArrivalPort" data-s="lb.arrivalPort"></label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
     </div>
-    <div class="section-label" style="margin:12px 0 8px">WEATHER</div>
+    <div class="section-label" style="margin:12px 0 8px" data-s="lb.weatherHdr"></div>
     <!-- Weather fields rendered by shared/trip-form.js. -->
     <div id="etWxFields"></div>
-    <div class="form-field mt-8"><label for="etSkipperNote">Skipper's comments <span class="text-muted text-9">(visible to crew)</span></label>
+    <div class="form-field mt-8"><label for="etSkipperNote">Skipper's comments <span class="text-muted text-9" data-s="lb.parenVisibleToCrew"></span></label>
 
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
     <div id="etErr" class="text-sm text-red mb-8 d-none"></div>
-    <button class="btn-primary" id="etSubmitBtn" data-lb-click="submitEditTrip">Save changes</button>
+    <button class="btn-primary" id="etSubmitBtn" data-lb-click="submitEditTrip"><span data-s="lb.saveChanges"></span></button>
   </div>
 </div>
 
@@ -384,22 +384,22 @@
 <div class="modal-overlay hidden" id="photoUploadModal" data-lb-close-self="closePhotoUpload">
   <div class="modal-sheet" style="max-width:480px">
     <div class="modal-title">
-      <span id="photoUploadTitle">Add photos</span>
+      <span id="photoUploadTitle" data-s="lb.addPhotos"></span>
       <button class="modal-close" data-lb-click="closePhotoUpload">✕</button>
     </div>
     <input type="hidden" id="puTripId">
     <div class="form-field">
-      <label for="puPhotoFiles">Photos</label>
+      <label for="puPhotoFiles" data-s="lb.photosLabel"></label>
       <input type="file" id="puPhotoFiles" accept="image/*" multiple data-lb-change-el="handleInlinePhotos" class="text-sm" style="color:var(--text)">
       <div id="puPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
     </div>
     <div class="photo-meta-row mb-8">
-      <label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl">Share with crew</span></label>
-      <label><input type="checkbox" id="puClubUse"> <span id="puClubLbl">Club may use</span></label>
+      <label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl" data-s="lb.shareWithCrew"></span></label>
+      <label><input type="checkbox" id="puClubUse"> <span id="puClubLbl" data-s="lb.clubMayUse"></span></label>
     </div>
-    <div class="text-xs text-muted mb-12" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
+    <div class="text-xs text-muted mb-12" id="puHint" data-s="lb.photosBlurb"></div>
     <div id="puErr" class="text-sm text-red mb-8 d-none"></div>
-    <button class="btn-primary" id="puSubmitBtn" data-lb-click="submitInlinePhotos">Upload photos</button>
+    <button class="btn-primary" id="puSubmitBtn" data-lb-click="submitInlinePhotos"><span data-s="lb.uploadPhotos"></span></button>
   </div>
 </div>
 
