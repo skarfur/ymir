@@ -550,13 +550,14 @@ textarea { min-height: 70px; }
 .btn-ghost:hover        { color: var(--navy); border-color: var(--navy); background: color-mix(in srgb, var(--navy) 8%, transparent); }
 .btn-ghost.danger:hover { color: var(--red);  border-color: var(--red);  background: color-mix(in srgb, var(--red) 8%, transparent); }
 
-/* Quick-action strip — big accent-wash buttons for landing-page actions.
+/* Quick-action strip — big accent-outlined buttons for landing-page actions.
    Use .quick-actions as the flex wrapper and .act-btn for each button.
+   Add .act-btn--full on a button to make it span its row.
    Portal CSS supplies the per-button SVG glyph via .act-btn--<name>::before. */
 .quick-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .act-btn {
   flex:1 1 140px; min-width:110px; min-height:56px;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: transparent;
   border:1px solid var(--accent);
   border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
   font-size:13px; font-weight:600; color:var(--accent-fg); text-align:center; text-decoration:none;
@@ -564,6 +565,7 @@ textarea { min-height: 70px; }
   line-height:1.25; box-shadow:var(--shadow-sm);
   transition:background-color .15s, transform .15s, box-shadow .15s;
 }
+.act-btn.act-btn--full { flex-basis:100%; }
 .act-btn::before {
   content:''; display:inline-block; width:16px; height:16px; flex-shrink:0;
   background-color:var(--accent-fg);
@@ -572,11 +574,12 @@ textarea { min-height: 70px; }
   -webkit-mask-position:center; mask-position:center;
 }
 .act-btn:hover {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   transform:translateY(-1px); box-shadow:var(--shadow-md);
 }
 @media (max-width:600px) {
   .act-btn { flex-basis:calc(50% - 4px); min-width:0; min-height:50px; padding:8px 10px; font-size:12px; gap:8px; }
+  .act-btn.act-btn--full { flex-basis:100%; }
   .act-btn::before { width:14px; height:14px; }
 }
 

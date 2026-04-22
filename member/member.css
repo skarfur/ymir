@@ -2,7 +2,7 @@
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
   flex:1 1 140px; min-width:110px; min-height:56px;
-  background:var(--accent)12; border:1px solid var(--accent);
+  background:transparent; border:1px solid var(--accent);
   border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
   font-size:13px; font-weight:600; color:var(--accent-fg); text-align:center; text-decoration:none;
   display:inline-flex; align-items:center; justify-content:center; gap:10px;
@@ -17,7 +17,7 @@
   -webkit-mask-position:center; mask-position:center;
 }
 .member-actions .act-btn:hover {
-  background:var(--accent)22;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   transform:translateY(-1px); box-shadow:var(--shadow-md);
 }
 /* Per-button monochrome SVG glyphs (rendered in --accent via mask-image) */
