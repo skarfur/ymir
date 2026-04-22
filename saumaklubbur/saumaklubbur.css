@@ -3,13 +3,8 @@
     .page-title { font-size: 16px; font-weight: 600; color:var(--brass-fg); margin-bottom: 4px; }
     .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
 
-    /* ── Filter bar ── */
-    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
-    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted);
-      border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
-      letter-spacing:.5px; transition:all .2s; }
-    .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-    .filter-btn:hover:not(.active) { border-color:var(--brass); color:var(--brass-fg); }
+    /* Filter pill classes (.filter-bar-grouped / .filter-group / .filter-btn)
+       are defined in shared/style.css. */
 
     /* ── Project card ── */
     .req-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);

@@ -51,15 +51,8 @@
     .incident-meta { font-size:11px; color:var(--muted); margin-top:3px; }
 
     .incident-filters { margin-bottom:12px; }
-    .filter-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
-    .filter-row:last-child { margin-bottom:0; }
-    .filter-label { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;
-      margin-right:4px; min-width:54px; }
-    .filt-btn { padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
-      color:var(--text); font-family:inherit; font-size:10px; letter-spacing:.4px; cursor:pointer;
-      transition:border-color .15s,background .15s,color .15s; white-space:nowrap; }
-    .filt-btn:hover { border-color:var(--brass); }
-    .filt-btn.active { background:var(--brass); color:#000; border-color:var(--brass); }
+    /* Filter pill classes (.filter-row / .filter-label / .filter-btn) are
+       defined in shared/style.css. */
 
     .notes-list { margin-top:8px; }
     .note-item { background:var(--faint); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:6px; font-size:12px; }

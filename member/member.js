@@ -770,7 +770,7 @@ function renderLandingChecklist() {
   var trackBlock=
     '<div style="flex:1;min-width:0">'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.gpsTrackLabel')+'</label>'+
-      '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" data-member-change-this="_handleRetTrack" style="font-size:11px;color:var(--text);width:100%">'+
+      '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" data-member-change-this="_handleRetTrack" class="text-sm w-full">'+
       '<div id="retTrackStatus" style="font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>'+
     '</div>';
 
@@ -778,7 +778,7 @@ function renderLandingChecklist() {
   var photoBlock=
     '<div style="flex:1;min-width:0">'+
       '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.photosLabel')+'</label>'+
-      '<input type="file" id="retPhotoFiles" accept="image/*" multiple data-member-change-this="_handleRetPhotos" style="font-size:11px;color:var(--text);width:100%">'+
+      '<input type="file" id="retPhotoFiles" accept="image/*" multiple data-member-change-this="_handleRetPhotos" class="text-sm w-full">'+
       '<div id="retPhotoPreview" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>'+
     '</div>';
 

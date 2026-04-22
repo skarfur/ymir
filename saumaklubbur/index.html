@@ -39,14 +39,16 @@
   </div>
 
   <!-- Filter bar (list view only) -->
-  <div class="filter-bar" id="filterBar">
-    <span class="section-label" data-s="lbl.filter">FILTER:</span>
-    <button class="filter-btn active" data-filter="open"       data-sk-click="setFilter" data-sk-arg="open"       data-s="sauma.filterOpen">Open</button>
-    <button class="filter-btn"        data-filter="my"         data-sk-click="setFilter" data-sk-arg="my"         data-s="sauma.filterMy">My Projects</button>
-    <button class="filter-btn"        data-filter="unassigned" data-sk-click="setFilter" data-sk-arg="unassigned" data-s="sauma.filterUnassigned">Unassigned</button>
-    <button class="filter-btn"        data-filter="onhold"     data-sk-click="setFilter" data-sk-arg="onhold"     data-s="sauma.filterOnHold">On Hold</button>
-    <button class="filter-btn"        data-filter="completed"  data-sk-click="setFilter" data-sk-arg="completed"  data-s="sauma.filterCompleted">Completed</button>
-    <button class="filter-btn"        data-filter="all"        data-sk-click="setFilter" data-sk-arg="all"        data-s="sauma.filterAll">All</button>
+  <div class="filter-bar-grouped" id="filterBar">
+    <div class="filter-group">
+      <span class="filter-group-label" data-s="lbl.filter">FILTER:</span>
+      <button class="filter-btn active" data-filter="open"       data-sk-click="setFilter" data-sk-arg="open"       data-s="sauma.filterOpen">Open</button>
+      <button class="filter-btn"        data-filter="my"         data-sk-click="setFilter" data-sk-arg="my"         data-s="sauma.filterMy">My Projects</button>
+      <button class="filter-btn"        data-filter="unassigned" data-sk-click="setFilter" data-sk-arg="unassigned" data-s="sauma.filterUnassigned">Unassigned</button>
+      <button class="filter-btn"        data-filter="onhold"     data-sk-click="setFilter" data-sk-arg="onhold"     data-s="sauma.filterOnHold">On Hold</button>
+      <button class="filter-btn"        data-filter="completed"  data-sk-click="setFilter" data-sk-arg="completed"  data-s="sauma.filterCompleted">Completed</button>
+      <button class="filter-btn"        data-filter="all"        data-sk-click="setFilter" data-sk-arg="all"        data-s="sauma.filterAll">All</button>
+    </div>
   </div>
 
   <div id="projectList"><div class="empty-wrap"><div class="spinner"></div></div></div>

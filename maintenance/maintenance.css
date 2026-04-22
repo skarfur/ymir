@@ -2,16 +2,8 @@
   warmContainer();
 }
 
-    /* ── Filter bar ── */
-    .filter-bar-grouped { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
-    .filter-group { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-    .filter-group-label { font-size:9px; color:var(--muted); letter-spacing:1px; min-width:68px; flex-shrink:0; }
-    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted);
-      border-radius:20px; padding:5px 14px; font-size:11px; font-family:inherit; cursor:pointer;
-      letter-spacing:.5px; transition:all .2s; }
-    .filter-btn.active { background:var(--brass); color:#0b1f38; border-color:var(--brass); }
-    .filter-btn:hover:not(.active):not(.muted) { border-color:var(--brass); color:var(--brass-fg); }
-    .filter-btn.muted { opacity:0.3; pointer-events:none; border-style:dashed; }
+    /* Filter pill classes (.filter-bar-grouped / .filter-group / .filter-btn)
+       are defined in shared/style.css. */
 
     /* ── Stat strip ── */
     .stat-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:20px; }

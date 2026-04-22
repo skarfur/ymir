@@ -15,15 +15,8 @@
   font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .2s; }
 .cq-pill.active { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)11; }
 
-/* ── Compact filter bar ── */
-.cq-filter-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; margin-bottom:10px; align-items:center; }
-.cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-  color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
-  transition:border-color .2s,box-shadow .2s; min-width:0; width:100%; box-sizing:border-box; }
-.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
-.cq-filter-search { display:flex; gap:6px; align-items:center; grid-column:1/-1; }
-.cq-filter-search input { flex:1; min-width:0; }
-.cq-filter-count { font-size:9px; color:var(--muted); white-space:nowrap; }
+/* Filter bar classes (.filter-bar / .filter-search-row / .filter-count) are
+   defined in shared/style.css. */
 
 /* ── Cards ── */
 .cq-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
@@ -78,9 +71,4 @@
 @media(max-width:600px){
   .cq-stats { grid-template-columns:1fr 1fr; }
   .cq-stat .sn { font-size:20px; }
-  .cq-filter-bar { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
-}
-@media(max-width:400px){
-  .cq-filter-bar { grid-template-columns:1fr 1fr; gap:4px; }
-  .cq-filter-bar select, .cq-filter-bar input[type="text"] { font-size:9px; padding:3px 6px; }
 }
