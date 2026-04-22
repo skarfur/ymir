@@ -325,7 +325,7 @@ function openEditRequest(r) {
   if (r.photoUrl) {
     photoDataUrl = r.photoUrl;
     const preview = document.getElementById("photoPreview");
-    preview.src = r.photoUrl;
+    preview.src = driveImageUrl(r.photoUrl);
     preview.className = "photo-preview show";
   }
 }
