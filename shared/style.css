@@ -550,6 +550,27 @@ textarea { min-height: 70px; }
 .btn-ghost:hover        { color: var(--navy); border-color: var(--navy); background: color-mix(in srgb, var(--navy) 8%, transparent); }
 .btn-ghost.danger:hover { color: var(--red);  border-color: var(--red);  background: color-mix(in srgb, var(--red) 8%, transparent); }
 
+/* Accent-washed pill — prominent navigation action that isn't THE primary CTA.
+   Uses the same accent-wash vocabulary as .nav-card, .role-btn, .cq-pill.active.
+   Good for rows of equal-weight actions (share / log / review). */
+.btn-accent {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, transform .15s, box-shadow .15s;
+}
+.btn-accent:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
 /* Compact modifier — for section-level CTAs, slot-calendar nav, row actions, etc. */
 .btn-sm { padding: 6px 12px; font-size: 11px; min-height: 0; }
 
