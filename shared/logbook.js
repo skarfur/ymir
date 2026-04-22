@@ -444,9 +444,17 @@ setTimeout(function () {
   };
 
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-trip-nobubble]')) { e.stopPropagation(); return; }
+    // Check for an actionable element first. `.trip-expand` carries
+    // `data-trip-nobubble` so stray clicks inside don't close the card, but
+    // that attribute also covers every nested action button + section header —
+    // so the nobubble guard has to run AFTER we've given data-trip-action a
+    // chance to match, otherwise "Edit trip", "Add GPS", "Request verification"
+    // and the collapsible weather / trip-details sections all silently die.
     var el = e.target.closest('[data-trip-action]');
-    if (!el) return;
+    if (!el) {
+      if (e.target.closest('[data-trip-nobubble]')) { e.stopPropagation(); }
+      return;
+    }
     var action = el.dataset.tripAction;
     e.stopPropagation();
     if (action === 'open-card')      { openTripCard(el.parentElement); return; }
