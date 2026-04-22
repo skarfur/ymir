@@ -306,7 +306,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <div class="form-field" id="mSkipperSection" style="display:none;position:relative">
         <label>Skipper</label>
         <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
-          data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
+          data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" data-lb-blur-hide="mSkipperDrop">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
       <!-- Non-club trip toggle -->

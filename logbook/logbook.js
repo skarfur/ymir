@@ -396,4 +396,16 @@ function setHeatMode(mode) {
     var i = e.target.closest('[data-lb-input]');
     if (i && typeof window[i.dataset.lbInput] === 'function') window[i.dataset.lbInput](i.dataset.lbArg);
   });
+
+  // Hide a dropdown on blur (focusout bubbles; blur doesn't).
+  document.addEventListener('focusout', function (e) {
+    var bh = e.target.closest('[data-lb-blur-hide]');
+    if (bh) {
+      var id = bh.dataset.lbBlurHide;
+      setTimeout(function () {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      }, 200);
+    }
+  });
 })();
