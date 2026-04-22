@@ -171,11 +171,11 @@ function renderProjectCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl ? `<img class="req-photo" src="${esc(driveImageUrl(r.photoUrl))}" data-sk-view-photo="${esc(driveImageUrl(r.photoUrl))}">` : ''}
     <div class="flex-center gap-8 mt-8 text-sm text-muted">
-      ${following ? '<span style="color:var(--brass-fg)" title="' + s('sauma.unfollow') + '">★</span>' : ''}
+      ${following ? '<span style="color:var(--accent)" title="' + s('sauma.unfollow') + '">★</span>' : ''}
       <span>💬 ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${sstr(lastComment.at).slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
-    ${!boolVal(r.approved) && !resolved ? `<div class="mt-8 text-sm text-brass" style="font-style:italic">${s('sauma.pendingReview')}</div>` : ''}
+    ${!boolVal(r.approved) && !resolved ? `<div class="mt-8 text-sm text-accent" style="font-style:italic">${s('sauma.pendingReview')}</div>` : ''}
     ${resolved ? `<div class="mt-8 text-sm text-muted">${s('sauma.completedBy',{date:sstr(r.resolvedAt).slice(0,10),by:esc(r.resolvedBy||'')})}</div>` : ''}
   </div>`;
 }
@@ -259,7 +259,7 @@ function renderKanbanCard(r) {
       ${r.verkstjori ? `<span class="verk-tag" style="font-size:10px">${esc(r.verkstjori)}</span>` : ''}
       ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
       ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
-      ${_isFollowing(r) ? '<span style="color:var(--brass-fg)">★</span>' : ''}
+      ${_isFollowing(r) ? '<span style="color:var(--accent)">★</span>' : ''}
     </div>
   </div>`;
 }

@@ -1,7 +1,7 @@
 /* ── Stats ── */
 .cq-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
 .cq-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
-.cq-stat .sn { font-size:24px; color:var(--brass-fg); font-weight:500; }
+.cq-stat .sn { font-size:24px; color:var(--accent); font-weight:500; }
 .cq-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
 /* ── Section headers ── */
@@ -13,7 +13,7 @@
 .cq-pills { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
 .cq-pill { padding:5px 12px; border-radius:16px; border:1px solid var(--border); background:var(--surface);
   font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .2s; }
-.cq-pill.active { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)11; }
+.cq-pill.active { border-color:var(--accent); color:var(--accent); background:var(--accent)11; }
 
 /* Filter bar classes (.filter-bar / .filter-search-row / .filter-count) are
    defined in shared/style.css. */
@@ -23,7 +23,7 @@
   padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 .cq-card-title { font-size:12px; font-weight:500; color:var(--text); }
 .cq-card-sub { font-size:11px; color:var(--muted); margin-top:3px; }
-.cq-card-meta { font-size:10px; color:var(--brass-fg); margin-top:2px; }
+.cq-card-meta { font-size:10px; color:var(--accent); margin-top:2px; }
 .cq-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
 .cq-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid; }
 .cq-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }
@@ -42,7 +42,7 @@
 /* ── Show-more button ── */
 .cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
   padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; transition:border-color .2s,color .2s; }
-.cq-show-more:hover { border-color:var(--brass); color:var(--text); }
+.cq-show-more:hover { border-color:var(--accent); color:var(--text); }
 
 /* .filter-bar styles moved to shared/style.css */
 
@@ -50,8 +50,8 @@
 .cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-md); color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
   resize:vertical; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; outline:none; }
-.cq-bio-area:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
-.cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--brass); }
+.cq-bio-area:focus { border-color:var(--accent); box-shadow:var(--focus-ring); }
+.cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--accent); }
 .cq-headshot-placeholder { width:80px; height:80px; border-radius:50%; background:var(--surface);
   border:2px dashed var(--border); display:flex; align-items:center; justify-content:center;
   font-size:24px; color:var(--muted); }
@@ -64,7 +64,7 @@
 .cq-boat-actions { margin-left:auto; display:flex; gap:6px; }
 .cq-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
   cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
-.cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
+.cq-boat-actions button:hover { border-color:var(--accent); color:var(--accent); background:var(--accent)08; }
 
 /* ── Responsive ── */
 /* Page-specific responsive; .filter-bar collapse is in shared/style.css */

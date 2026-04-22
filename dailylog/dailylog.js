@@ -271,7 +271,7 @@ function renderIncidentSection(incidents) {
         <div class="text-muted" style="margin-top:3px">${esc(dateStr)}${timeStr ? ' ' + esc(timeStr) : ''}${inc.boatName ? ' · ' + esc(inc.boatName) : ''}</div>
         ${desc ? `<div class="text-muted" style="margin-top:4px">${esc(desc)}${descMore}</div>` : ''}
       </div>
-      <span class="ml-auto text-brass" style="font-size:16px">→</span>
+      <span class="ml-auto text-accent" style="font-size:16px">→</span>
     </div>`;
   }).join('');
 }

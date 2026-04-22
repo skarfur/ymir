@@ -312,7 +312,7 @@ function renderCrewInvites() {
   if (!_crewInvites.length) { el.innerHTML = ''; return; }
   el.innerHTML = '<div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">' + s('cox.pendingInvites') + '</div>'
     + _crewInvites.map(function(inv) {
-      return '<div class="cx-card" style="border-left:3px solid var(--brass)">'
+      return '<div class="cx-card" style="border-left:3px solid var(--accent)">'
         + '<div style="font-size:12px;font-weight:500">' + esc(inv.crewName || '') + '</div>'
         + '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + s('cox.invitedBy') + ': ' + esc(inv.fromName) + ' · ' + s('cox.boat') + ' ' + esc(inv.pairId || '').replace('pair_', '') + '</div>'
         + '<div style="display:flex;gap:6px;margin-top:8px">'

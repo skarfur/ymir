@@ -238,7 +238,7 @@ function renderVolRoles() {
     var endorseLabel = '';
     if (r.requiredEndorsement) {
       var eDef = (certDefs || []).find(function(d){ return d.id === r.requiredEndorsement; });
-      endorseLabel = '<div style="font-size:10px;color:var(--brass-fg);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? certDefName(eDef) : r.requiredEndorsement) + '</div>';
+      endorseLabel = '<div style="font-size:10px;color:var(--accent);margin-top:4px">' + s('admin.roleEndorsement') + ': ' + esc(eDef ? certDefName(eDef) : r.requiredEndorsement) + '</div>';
     }
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">'

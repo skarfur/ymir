@@ -99,7 +99,7 @@ function openMemberModal(id) {
       status.style.color = 'var(--muted)';
     } else {
       status.textContent = s('admin.usingDefaultPassword');
-      status.style.color = 'var(--brass)';
+      status.style.color = 'var(--accent)';
     }
     document.getElementById("mResetPwBtn").disabled = !m.hasPassword;
   } else {
@@ -121,7 +121,7 @@ async function resetMemberPassword() {
     m.hasPassword = false;
     var status = document.getElementById('mPwStatus');
     status.textContent = s('admin.usingDefaultPassword');
-    status.style.color = 'var(--brass)';
+    status.style.color = 'var(--accent)';
     var n = (res && typeof res.sessionsRevoked === 'number') ? res.sessionsRevoked : 0;
     toast(s('admin.resetPasswordDone').replace('{n}', n), 'ok');
     if (res && res.tempPassword) {

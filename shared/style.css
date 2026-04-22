@@ -60,11 +60,9 @@
   --moss:     #4fa55e;
   --moss-d:   #34783b;
   --moss-l:   #6fc27f;
-  --brass:    #d9b441;
-  --brass-d:  #b8941f;
-  --brass-l:  #e8c84a;
-  --brass-fg: #d9b441;
-  --logo-color: var(--brass);
+  /* --accent: theme-aware primary accent. Gold in dark, blue in light. */
+  --accent:   #d9b441;
+  --logo-color: var(--accent);
   --green:    var(--moss);
   --yellow:   #f1c40f;
   --orange:   #e67e22;
@@ -83,13 +81,13 @@
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  /* Brass-tinted shadow/tint tokens: theme-aware so light mode maps to blue */
-  --brass-tint-xs: color-mix(in srgb, var(--brass)  6%, transparent);
-  --brass-tint-sm: color-mix(in srgb, var(--brass) 15%, transparent);
-  --brass-tint-md: color-mix(in srgb, var(--brass) 35%, transparent);
-  --focus-ring:     0 0 0 3px var(--brass-tint-sm);
-  --brass-glow-sm:  0 2px 8px  var(--brass-tint-md);
-  --brass-glow-md:  0 4px 12px var(--brass-tint-md);
+  /* Theme-aware tint/glow tokens derived from --accent. */
+  --accent-tint-xs: color-mix(in srgb, var(--accent)  6%, transparent);
+  --accent-tint-sm: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-tint-md: color-mix(in srgb, var(--accent) 35%, transparent);
+  --focus-ring:     0 0 0 3px var(--accent-tint-sm);
+  --accent-glow-sm: 0 2px 8px  var(--accent-tint-md);
+  --accent-glow-md: 0 4px 12px var(--accent-tint-md);
 }
 
 [data-theme="light"] {
@@ -101,12 +99,9 @@
   --text:     #1a2a3a;
   --muted:    #5a7a96;
   --faint:    #dce4ec;
-  /* Light mode: brass reads muddy on cream surfaces, so map the brass tokens
-     onto the blue palette. var(--brass)NN concatenations stay valid hex. */
-  --brass:    #2070a8;
-  --brass-d:  #18537e;
-  --brass-l:  #4a9bd4;
-  --brass-fg: #1e8e4e;
+  /* Gold reads muddy on white, so --accent maps to blue in light mode.
+     Value stays 6-hex so var(--accent)NN alpha-append patterns remain valid. */
+  --accent:   #2070a8;
   --logo-color: #fff;
   --green:    #1e8e4e;
   --yellow:   #d4a80c;
@@ -129,10 +124,7 @@
     --text:     #1a2a3a;
     --muted:    #5a7a96;
     --faint:    #dce4ec;
-    --brass:    #2070a8;
-    --brass-d:  #18537e;
-    --brass-l:  #4a9bd4;
-    --brass-fg: #1e8e4e;
+    --accent:   #2070a8;
     --logo-color: #fff;
     --green:    #1e8e4e;
     --yellow:   #d4a80c;
@@ -389,11 +381,11 @@ input[type=file]:disabled { opacity: .45; cursor: not-allowed; }
 input[type=file]:disabled::file-selector-button,
 input[type=file]:disabled::-webkit-file-upload-button { cursor: not-allowed; }
 
-/* Inside modals, fields adopt the brass accent (matches modal headings + CTA). */
+/* Inside modals, fields adopt the accent color (matches modal headings + CTA). */
 .modal input:focus, .modal select:focus, .modal textarea:focus,
 .modal-sheet input:focus, .modal-sheet select:focus, .modal-sheet textarea:focus,
 .modal--sheet input:focus, .modal--sheet select:focus, .modal--sheet textarea:focus {
-  border-color: var(--brass);
+  border-color: var(--accent);
   box-shadow: var(--focus-ring);
 }
 
@@ -446,7 +438,7 @@ textarea { min-height: 70px; }
 }
 .filter-bar select:focus,
 .filter-bar input:focus {
-  border-color: var(--brass);
+  border-color: var(--accent);
   box-shadow: var(--focus-ring);
 }
 .filter-bar .filter-search-row { grid-column: 1/-1; display: flex; gap: 6px; align-items: center; }
@@ -481,8 +473,8 @@ textarea { min-height: 70px; }
   border-radius: 20px; padding: 5px 14px; font-size: 11px; font-family: inherit; cursor: pointer;
   letter-spacing: .5px; transition: all .2s; white-space: nowrap;
 }
-.filter-btn:hover:not(.active):not(.muted) { border-color: var(--brass); color: var(--brass-fg); }
-.filter-btn.active { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
+.filter-btn:hover:not(.active):not(.muted) { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active { background: var(--accent); color: #0b1f38; border-color: var(--accent); }
 .filter-btn.muted { opacity: .3; pointer-events: none; border-style: dashed; }
 
 /* ── UPLOAD ZONE ───────────────────────────────────────────────────────────────
@@ -494,7 +486,7 @@ textarea { min-height: 70px; }
   text-align: center; cursor: pointer; transition: border-color .2s;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.upload-zone:hover { border-color: var(--brass); }
+.upload-zone:hover { border-color: var(--accent); }
 
 /* ── BUTTONS ──────────────────────────────────────────────────────────────────── */
 
@@ -513,7 +505,7 @@ textarea { min-height: 70px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .btn-primary  { background: var(--navy);   color: #ffffff; }
-.btn-primary:hover:not(:disabled)  { background: var(--navy-l); box-shadow: 0 2px 8px color-mix(in srgb, var(--brass) 40%, transparent); transform: translateY(-1px); }
+.btn-primary:hover:not(:disabled)  { background: var(--navy-l); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-1px); }
 
 .btn-secondary { background: var(--faint);  color: var(--text); }
 .btn-secondary:hover:not(:disabled) { background: var(--border); box-shadow: var(--shadow-sm); }
@@ -558,7 +550,7 @@ textarea { min-height: 70px; }
 .badge-orange { color: var(--orange); border-color: #e67e2250; background: #e67e2212; }
 .badge-red    { color: var(--red);    border-color: #e74c3c50; background: #e74c3c12; }
 .badge-blue   { color: var(--blue);   border-color: #2980b950; background: #2980b912; }
-.badge-brass  { color:var(--brass-fg);  border-color: var(--brass)50; background: var(--brass)12; }
+.badge-accent { color:var(--accent);    border-color: var(--accent)50; background: var(--accent)12; }
 .badge-muted  { color: var(--muted);  border-color: var(--border); background: var(--faint); }
 
 /* ── TABLE ────────────────────────────────────────────────────────────────────── */
@@ -655,7 +647,7 @@ textarea { min-height: 70px; }
   .modal--sheet { padding: 16px 14px 32px; max-height: 95vh; }
 }
 
-.modal h3 { color:var(--brass-fg); margin-bottom: 18px; font-size: 16px; }
+.modal h3 { color:var(--accent); margin-bottom: 18px; font-size: 16px; }
 
 .modal-header {
   display: flex;
@@ -734,7 +726,7 @@ textarea { min-height: 70px; }
   box-shadow: var(--shadow-sm);
 }
 .bc-card.bc-avail   { }
-.bc-card.bc-out     { border-left: 3px solid var(--brass); }
+.bc-card.bc-out     { border-left: 3px solid var(--accent); }
 .bc-card.bc-overdue { border-left: 3px solid var(--red); }
 .bc-card.bc-oos     { opacity: .55; }
 
@@ -768,7 +760,7 @@ textarea { min-height: 70px; }
 /* ── SVG CHARTS (shared across tide / wind / pressure) ───────────────────────── */
 
 /* Color modifiers — apply to area, line, dash, dot, lbl */
-.c-brass  { fill: var(--brass);  stroke: var(--brass);  }
+.c-accent  { fill: var(--accent);  stroke: var(--accent);  }
 .c-blue   { fill: var(--blue);   stroke: var(--blue);   }
 .c-purple { fill: var(--purple); stroke: var(--purple); }
 .c-muted  { fill: var(--muted);  stroke: var(--muted);  }
@@ -780,7 +772,7 @@ textarea { min-height: 70px; }
 .chart-dash   { fill: none; stroke-width: 1; stroke-dasharray: 4,3; opacity: 0.45; }
 .chart-dot    { opacity: 0.8; }
 .chart-now    { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3,3; }
-.chart-now-t  { font: 8px var(--font-mono); fill: var(--brass); }
+.chart-now-t  { font: 8px var(--font-mono); fill: var(--accent); }
 .chart-axis-t { font: 8px var(--font-mono); fill: var(--muted); }
 .chart-lbl    { font: 9px var(--font-mono); }
 .chart-lbl-bg { fill: var(--card); opacity: 0.85; }
@@ -816,7 +808,7 @@ textarea { min-height: 70px; }
 .text-muted      { color: var(--muted); }
 .text-red        { color: var(--red); }
 .text-green      { color: var(--green); }
-.text-brass      { color:var(--brass-fg); }
+.text-accent     { color:var(--accent); }
 .text-xs         { font-size: 10px; }
 .text-sm         { font-size: 11px; }
 .text-md         { font-size: 12px; }
@@ -861,11 +853,11 @@ textarea { min-height: 70px; }
 .input-row { display: flex; gap: 8px; }
 .input-row input { flex: 1; }
 
-/* Accent checkbox — brass-colored checkbox used in checklists */
+/* Accent checkbox — used in checklists */
 .accent-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: var(--brass);
+  accent-color: var(--accent);
 }
 
 /* Check label — flex row for checkbox + label in lists */
@@ -908,7 +900,7 @@ textarea { min-height: 70px; }
   cursor: pointer;
   transition: color .2s, border-color .2s, background .2s;
 }
-.btn-ghost-sm:hover { color:var(--brass-fg); border-color: var(--brass); background: var(--brass)08; }
+.btn-ghost-sm:hover { color:var(--accent); border-color: var(--accent); background: var(--accent)08; }
 
 /* Dashed add button */
 .btn-dashed {
@@ -959,11 +951,11 @@ textarea { min-height: 70px; }
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;letter-spacing:.5px}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .cal-cell{min-height:80px;border:1px solid var(--border)44;border-radius:var(--radius-sm);padding:5px;background:var(--surface)44;cursor:pointer;transition:background .15s,border-color .15s}
-.cal-cell:hover{background:var(--surface);border-color:var(--brass)66}
+.cal-cell:hover{background:var(--surface);border-color:var(--accent)66}
 .cal-cell.other-month{opacity:.3}
-.cal-cell.today{border-color:var(--brass);background:var(--brass)11}
+.cal-cell.today{border-color:var(--accent);background:var(--accent)11}
 .cal-day-num{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:block}
-.cal-cell.today .cal-day-num{color:var(--brass-fg)}
+.cal-cell.today .cal-day-num{color:var(--accent)}
 .cal-pill{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;line-height:1.5;border:1px solid transparent}
 .cal-pill:hover{filter:brightness(1.1)}
 .cal-more{font-size:9px;color:var(--muted);margin-top:1px;padding-left:2px}
@@ -974,7 +966,7 @@ textarea { min-height: 70px; }
 .ts-table th{text-align:left;padding:5px 8px;font-size:10px;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;letter-spacing:.4px}
 .ts-table td{padding:5px 8px;border-bottom:1px solid var(--border)44;vertical-align:middle}
 .ts-table tr:last-child td{border-bottom:none}
-.src-admin{color:var(--brass-fg)}
+.src-admin{color:var(--accent)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:center;justify-content:center}
 .modal-box{background:var(--card);border-radius:var(--radius-lg);padding:22px 26px;min-width:320px;max-width:460px;width:90vw;box-shadow:var(--shadow-lg)}
 .modal-title{margin:0 0 16px;font-size:15px;font-weight:700}
@@ -1019,16 +1011,16 @@ textarea { min-height: 70px; }
 .psc-col-hdr{font-size:10px;font-weight:700;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:.4px}
 .psc-num{text-align:right;font-weight:500;white-space:nowrap}
 .psc-net-val{font-weight:700;color:var(--green)}
-.psc-ytd-val{color:var(--brass-fg)}
+.psc-ytd-val{color:var(--accent)}
 .psc-table{width:100%;border-collapse:collapse;font-size:11px;padding:0 14px 12px}
 .psc-table th,.psc-table td{padding:3px 8px;border-bottom:1px solid var(--border)22;vertical-align:middle}
 .psc-table th{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)66;background:var(--surface)88}
 .psc-table .num{text-align:right}
 .psc-table td:first-child,.psc-table td:nth-child(2){color:var(--muted)}
 .psc-total-row td,.psc-total-row th{font-weight:700;border-top:2px solid var(--border)66;border-bottom:2px solid var(--border)66;background:var(--surface);color:var(--text)!important}
-.psc-total-row .psc-ytd-val{color:var(--brass-fg)!important}
+.psc-total-row .psc-ytd-val{color:var(--accent)!important}
 .psc-section-hdr td,.psc-section-hdr th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface)55;padding-top:8px;border-top:2px solid var(--border)}
-.btn-link{background:none;border:none;cursor:pointer;color:var(--brass-fg);font-size:10px;padding:0 14px 10px;font-family:inherit;display:block}
+.btn-link{background:none;border:none;cursor:pointer;color:var(--accent);font-size:10px;padding:0 14px 10px;font-family:inherit;display:block}
 /* Period filter */
 .period-filter-card{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:14px}
 .filter-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
@@ -1086,8 +1078,8 @@ textarea { min-height: 70px; }
   line-height: 1.1;
 }
 .sc-day-hdr:last-of-type { border-right: none; }
-.sc-day-hdr.sc-today { background: var(--brass)11; }
-.sc-day-hdr.sc-today .sc-day-num { color:var(--brass-fg); font-weight: 500; }
+.sc-day-hdr.sc-today { background: var(--accent)11; }
+.sc-day-hdr.sc-today .sc-day-num { color:var(--accent); font-weight: 500; }
 .sc-day-name { display: block; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; line-height: 1; }
 .sc-day-num  { display: block; font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2; }
 
@@ -1134,17 +1126,17 @@ textarea { min-height: 70px; }
   border: 1px solid var(--border);
   cursor: pointer;
 }
-.sc-slot--open:hover { border-color: var(--brass); background: var(--brass)08; box-shadow: 0 0 0 1px var(--brass)44; }
+.sc-slot--open:hover { border-color: var(--accent); background: var(--accent)08; box-shadow: 0 0 0 1px var(--accent)44; }
 
 .sc-slot--mine {
-  background: var(--brass);
-  border: 1px solid var(--brass);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: var(--bg);
   cursor: pointer;
 }
 .sc-slot--mine .sc-slot-time,
 .sc-slot--mine .sc-slot-who { color: var(--bg); }
-.sc-slot--mine:hover { box-shadow: 0 0 0 2px var(--brass)66; }
+.sc-slot--mine:hover { box-shadow: 0 0 0 2px var(--accent)66; }
 
 .sc-slot--booked {
   background: var(--green);
@@ -1173,7 +1165,7 @@ textarea { min-height: 70px; }
   white-space: nowrap;
 }
 .sc-slot-who--mine {
-  color:var(--brass-fg);
+  color:var(--accent);
   font-weight: 600;
   font-size: 9px;
   text-transform: uppercase;
@@ -1214,8 +1206,8 @@ textarea { min-height: 70px; }
   cursor: pointer;
   transition: all .2s;
 }
-.sc-mpick-btn.active { border-color: var(--brass); color:var(--brass-fg); background: var(--brass)11; }
-.sc-mpick-btn.today .sc-mpick-num { color:var(--brass-fg); }
+.sc-mpick-btn.active { border-color: var(--accent); color:var(--accent); background: var(--accent)11; }
+.sc-mpick-btn.today .sc-mpick-num { color:var(--accent); }
 .sc-mpick-day { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: .3px; }
 .sc-mpick-num { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
 
@@ -1332,10 +1324,10 @@ textarea { min-height: 70px; }
 .vp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
   box-shadow:var(--shadow-sm); padding:10px 12px; margin-bottom:8px; }
 .vp-card.admin { cursor:pointer; transition:border-color .2s; }
-.vp-card.admin:hover { border-color:var(--brass)55; }
+.vp-card.admin:hover { border-color:var(--accent)55; }
 
 .vp-card-head { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
-.vp-card-date { font-size:10px; color:var(--brass-fg); letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
+.vp-card-date { font-size:10px; color:var(--accent); letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
 .vp-card-title { font-size:13px; font-weight:500; color:var(--text); }
 .vp-card-subtitle { font-size:10px; color:var(--muted); }
 .vp-card-actions { margin-left:auto; display:flex; gap:4px; align-items:center; }
@@ -1350,33 +1342,33 @@ textarea { min-height: 70px; }
 .vp-role-main { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1; min-width:0; }
 .vp-role-name { font-size:11px; color:var(--text); font-weight:500; }
 .vp-bar { width:50px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; flex-shrink:0; }
-.vp-bar-fill { height:100%; background:var(--brass); border-radius:2px; transition:width .2s; }
+.vp-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width .2s; }
 .vp-bar-fill.full { background:var(--green); }
 .vp-role-status { font-size:10px; color:var(--muted); white-space:nowrap; }
-.vp-role-endorse { font-size:9px; color:var(--brass-fg); }
+.vp-role-endorse { font-size:9px; color:var(--accent); }
 .vp-role-desc { font-size:10px; color:var(--muted); margin-top:4px; white-space:pre-wrap; padding-left:2px; }
 
 /* Chips — used for signup names and leader badge */
 .vp-chip { display:inline-flex; align-items:center; gap:4px; font-size:9px; padding:2px 8px;
   border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); white-space:nowrap; }
-.vp-chip.me { background:var(--brass)18; border-color:var(--brass); color:var(--brass-fg); font-weight:500; }
-.vp-chip a { color:var(--brass-fg); text-decoration:none; }
+.vp-chip.me { background:var(--accent)18; border-color:var(--accent); color:var(--accent); font-weight:500; }
+.vp-chip a { color:var(--accent); text-decoration:none; }
 .vp-chip a:hover { text-decoration:underline; }
 
 /* Action button (member mode — sign up / withdraw) */
 .vp-btn { padding:5px 11px; border:1px solid var(--border); border-radius:4px; background:var(--surface);
   color:var(--text); font-family:inherit; font-size:10px; cursor:pointer;
   transition:border-color .15s,background .15s; white-space:nowrap; }
-.vp-btn:hover { border-color:var(--brass); }
+.vp-btn:hover { border-color:var(--accent); }
 .vp-btn.signed-up { background:var(--moss); color:#fff; border-color:var(--moss); }
 .vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
 .vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
 
 /* ── LIGHT-MODE BRASS-TEXT OVERRIDES ──────────────────────────────────────────
-   In light mode --brass maps to blue (#2070a8). Dark-navy/black text on that
+   In light mode --accent maps to blue (#2070a8). Dark-navy/black text on that
    blue drops below WCAG AA, so flip text to white for every selector that
-   paints itself with `background: var(--brass)` plus a hardcoded dark color.
-   Selectors live across many per-page stylesheets but the brass-on-dark-text
+   paints itself with `background: var(--accent)` plus a hardcoded dark color.
+   Selectors live across many per-page stylesheets but the accent-on-dark-text
    pattern is identical, so one override block wins via the [data-theme]
    specificity bump. */
 [data-theme="light"] .btn-primary,
@@ -1467,7 +1459,7 @@ textarea { min-height: 70px; }
   left: -9999px;
   top: 0;
   padding: 8px 14px;
-  background: var(--brass);
+  background: var(--accent);
   color: #fff;
   font-weight: 500;
   z-index: 10000;
@@ -1476,6 +1468,6 @@ textarea { min-height: 70px; }
 }
 .skip-link:focus {
   left: 0;
-  outline: 2px solid var(--brass-fg);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

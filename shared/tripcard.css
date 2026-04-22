@@ -10,12 +10,12 @@
 .trip-boat{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
 .trip-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
 .trip-badge{font-size:9px;letter-spacing:.6px;padding:2px 6px;border-radius:8px;border:1px solid;text-transform:uppercase;flex-shrink:0}
-.badge-skipper{color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11}
+.badge-skipper{color:var(--accent);border-color:var(--accent)55;background:var(--accent)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)}
-.badge-helm{color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11}
+.badge-helm{color:var(--accent);border-color:var(--accent)55;background:var(--accent)11}
 .trip-arrow{padding:14px 18px 14px 10px;display:flex;align-items:center;color:var(--muted);font-size:14px;transition:transform .2s,color .2s;flex-shrink:0}
-.trip-card:hover .trip-arrow,.trip-card.open .trip-arrow{color:var(--brass-fg)}
+.trip-card:hover .trip-arrow,.trip-card.open .trip-arrow{color:var(--accent)}
 .trip-card.open .trip-arrow{transform:rotate(180deg)}
 
 /* ── Expanded card ── */
@@ -37,7 +37,7 @@
 .exp-notes{background:var(--faint)}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
 .exp-section-hdr.expandable{cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0}
-.exp-section-hdr.expandable:hover{color:var(--brass-fg)}
+.exp-section-hdr.expandable:hover{color:var(--accent)}
 .exp-section-hdr .exp-chevron{font-size:13px;line-height:1;transition:transform .2s;transform:rotate(0deg)}
 .exp-section-hdr.expanded .exp-chevron{transform:rotate(180deg)}
 .exp-section-detail{display:none;margin-top:4px}
@@ -46,10 +46,10 @@
 /* ── Trip action buttons ── */
 .trip-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
 .trip-action-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);padding:4px 10px;font-size:10px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:color .2s,border-color .2s,background .2s}
-.trip-action-btn:hover{color:var(--brass-fg);border-color:var(--brass)}
-.trip-action-btn.primary{color:var(--brass-fg);border-color:var(--brass)55}
+.trip-action-btn:hover{color:var(--accent);border-color:var(--accent)}
+.trip-action-btn.primary{color:var(--accent);border-color:var(--accent)55}
 .trip-more-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);padding:3px 10px;font-size:10px;font-family:inherit;cursor:pointer;margin-top:4px;transition:color .2s,border-color .2s}
-.trip-more-btn:hover{color:var(--brass-fg);border-color:var(--brass)}
+.trip-more-btn:hover{color:var(--accent);border-color:var(--accent)}
 
 /* ── Photos ── */
 .photo-thumb{width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer}
@@ -62,7 +62,7 @@
 .photo-sharing-badge{font-size:8px;letter-spacing:.4px;padding:1px 5px;border-radius:4px;text-transform:uppercase;margin-left:4px}
 .photo-sharing-badge.shared{color:var(--green);border:1px solid var(--green)55;background:var(--green)11}
 .photo-sharing-badge.private{color:var(--muted);border:1px solid var(--border);background:var(--surface)}
-.photo-sharing-badge.club{color:var(--brass-fg);border:1px solid var(--brass)55;background:var(--brass)11}
+.photo-sharing-badge.club{color:var(--accent);border:1px solid var(--accent)55;background:var(--accent)11}
 
 /* ── Track map ── */
 .track-map-thumb{width:100%;height:140px;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;cursor:pointer;margin-top:4px;position:relative}

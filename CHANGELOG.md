@@ -3,6 +3,29 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — color token cleanup (`--brass` → `--accent`)
+
+The `--brass` family of CSS variables was semantically confused: the token was
+named "brass" but held a theme-aware accent color (gold in dark mode, blue in
+light mode), and a parallel `--brass-fg` token silently diverged in light
+mode (green instead of blue) so active tabs rendered with a blue underline and
+a green label. Renamed for clarity and merged the duplicate:
+
+- `--brass` → `--accent` (theme-aware primary accent; gold `#d9b441` dark,
+  blue `#2070a8` light).
+- `--brass-fg` deleted; all 160 usages fold into `--accent`. In light mode
+  that means active-tab labels, stat numbers, role labels, etc. are now blue
+  instead of green, matching the underlines/borders on the same elements.
+- `--brass-tint-xs/sm/md` → `--accent-tint-xs/sm/md`.
+- `--brass-glow-sm/md` → `--accent-glow-sm/md`.
+- `--brass-d` (zero uses) and `--brass-l` (one use) deleted; the single
+  `--brass-l` hover in `volunteer.css` now uses `--accent`.
+- `.text-brass`, `.badge-brass`, `.c-brass`, `.chip-brass` utility classes
+  renamed to `.text-accent`, `.badge-accent`, `.c-accent`, `.chip-accent`.
+
+The `var(--accent)NN` alpha-append pattern still works — both theme values
+stay 6-hex. `--logo-color`, `--purple`, `--navy`, `--moss`, `--green`, and
+the `--header-*` tokens were left alone; each has a distinct semantic role.
 ## Unreleased — stop kicking users to login on wrong password / bad Google token
 
 `setPassword_` (`members.gs`) returned HTTP 401 when the user typed their
