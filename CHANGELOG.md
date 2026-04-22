@@ -26,6 +26,18 @@ a green label. Renamed for clarity and merged the duplicate:
 The `var(--accent)NN` alpha-append pattern still works — both theme values
 stay 6-hex. `--logo-color`, `--purple`, `--navy`, `--moss`, `--green`, and
 the `--header-*` tokens were left alone; each has a distinct semantic role.
+## Unreleased — stop kicking users to login on wrong password / bad Google token
+
+`setPassword_` (`members.gs`) returned HTTP 401 when the user typed their
+current password wrong during a password change, and `linkGoogleAccount_`
+returned 401 when the submitted Google ID token failed verification. The
+frontend's global `_call` handler in `shared/api.js` treats any 401 from a
+non-public action as "session expired" and wipes local state before
+redirecting to `/login/`, so these input-credential failures were bouncing
+users out of a still-valid session before `settings.js` could surface its
+nice "Current password is incorrect" message. Both backend returns now use
+403 (session is valid, request credential rejected); reserve 401 for actual
+session-auth failures.
 
 ## Unreleased — light theme is the default
 

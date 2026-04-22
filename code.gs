@@ -1042,9 +1042,6 @@ function ensureGroupCols_() {
 function ensureCheckoutContactCols_() {
   ['memberPhone','memberIsMinor','guardianName','guardianPhone'].forEach(c => addColIfMissing_('checkouts', c));
 }
-function ensureMaintCols_() {
-  ['saumaklubbur','verkstjori','materials','approved','onHold','followers','updatedAt'].forEach(c => addColIfMissing_('maintenance', c));
-}
 
 function updateRow_(tabKey, keyField, keyValue, updates) {
   validateRow_(tabKey, updates);
