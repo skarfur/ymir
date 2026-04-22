@@ -16,7 +16,7 @@ function renderShareCatChecks(){
   if(!cats.length){el.innerHTML='';return;}
   el.innerHTML=cats.map(function(c){
     var key=c.toLowerCase();
-    var col=BOAT_CAT_COLORS[key]||BOAT_CAT_COLORS.other;
+    var col=boatCatColors(key);
     return '<label class="flex-center" style="font-size:11px;color:'+col.color+';gap:5px;text-transform:none;letter-spacing:0;margin:0;padding:3px 8px;border-radius:10px;border:1px solid '+col.border+';background:'+col.bg+'">'
       +'<input type="checkbox" class="share-cat-chk" value="'+esc(c)+'" checked style="width:14px;height:14px;accent-color:'+col.color+'">'
       +esc(_boatCatLabel(c))+'</label>';

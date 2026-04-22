@@ -85,6 +85,26 @@ const BOAT_CAT_COLORS = {
   other:         { bg:"#1e3f6e",   color:"#6b92b8",  border:"#2a5490"   },
 };
 
+// Admin-configurable per-category color. Returns the triplet {bg, color, border}
+// used by badge, fleet-status bar, and admin boat-card backgrounds.
+// Precedence: category.color (admin override) → BOAT_CAT_COLORS[key] → .other
+function boatCatColors(catKey) {
+  const key  = (catKey || '').toLowerCase();
+  const cat  = _boatCatRegistry.find(x => x.key === key);
+  const hex  = cat && typeof cat.color === 'string' ? cat.color.trim() : '';
+  if (/^#[0-9a-f]{6}$/i.test(hex)) {
+    return { color: hex, bg: hex + '18', border: hex + '44' };
+  }
+  return BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+}
+
+// Built-in default color for a category key (used by the admin "reset" button).
+// Returns the text color (hex) from the hardcoded fallback map.
+function boatCatDefaultColor(catKey) {
+  const key = (catKey || '').toLowerCase();
+  return (BOAT_CAT_COLORS[key] && BOAT_CAT_COLORS[key].color) || BOAT_CAT_COLORS.other.color;
+}
+
 function boatEmoji(cat) {
   const key = (cat||"").toLowerCase();
   const c = _boatCatRegistry.find(x => x.key === key);
@@ -285,7 +305,7 @@ function canAccessBoat(boat, user, opts) {
 
 function boatCatBadge(cat) {
   const key = (cat||"other").toLowerCase();
-  const col = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+  const col = boatCatColors(key);
   const label = _boatCatLabel(key);
   return `<span style="font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:10px;`
        + `border:1px solid ${col.border};background:${col.bg};color:${col.color};display:inline-block">`
@@ -567,7 +587,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
   var frag = document.createDocumentFragment();
   cats.forEach(function(cat) {
     var key      = cat.toLowerCase();
-    var col      = BOAT_CAT_COLORS[key] || BOAT_CAT_COLORS.other;
+    var col      = boatCatColors(key);
     var emoji    = boatEmoji(key);
     var catBoats = boats.filter(function(b) { return (b.category||'').toLowerCase() === key; });
     var isStaffV = !!opts.staffView;

@@ -11,15 +11,17 @@ let certCategories = [];
 const bool = v => v === true || v === 'true' || v === 1 || v === '1' || v === 'TRUE';
 
 // ── Default boat categories (seeded if none in config) ────────────────────────
+// Colors mirror BOAT_CAT_COLORS in shared/boats.js so fresh installs match the
+// historical palette. Admin can override per-category via the category modal.
 const DEFAULT_BOAT_CATS = [
-  { key:'dinghy',        labelEN:'Dinghy',        labelIS:'Skíðbátur',    emoji:'⛵', active:true },
-  { key:'keelboat',      labelEN:'Keelboat',      labelIS:'Kjölbátur',    emoji:'⛵', active:true },
-  { key:'kayak',         labelEN:'Kayak',         labelIS:'Kajak',        emoji:'🛶', active:true },
-  { key:'rowing-shell',  labelEN:'Rowing Shell',  labelIS:'Róðrarbátur',  emoji:'🚣', active:true },
-  { key:'rowboat',       labelEN:'Rowboat',       labelIS:'Árabátur',     emoji:'🚣', active:true },
-  { key:'sup',           labelEN:'SUP',           labelIS:'SUP',          emoji:'🏄', active:true },
-  { key:'wingfoil',      labelEN:'Wingfoil',      labelIS:'Wingfoil',     emoji:'🪁', active:true },
-  { key:'other',         labelEN:'Other',         labelIS:'Annað',        emoji:'🚤', active:true },
+  { key:'dinghy',        labelEN:'Dinghy',        labelIS:'Skíðbátur',    emoji:'⛵', color:'#5b9bd5', active:true },
+  { key:'keelboat',      labelEN:'Keelboat',      labelIS:'Kjölbátur',    emoji:'⛵', color:'#d4af37', active:true },
+  { key:'kayak',         labelEN:'Kayak',         labelIS:'Kajak',        emoji:'🛶', color:'#9b59b6', active:true },
+  { key:'rowing-shell',  labelEN:'Rowing Shell',  labelIS:'Róðrarbátur',  emoji:'🚣', color:'#3498db', active:true },
+  { key:'rowboat',       labelEN:'Rowboat',       labelIS:'Árabátur',     emoji:'🚣', color:'#1abc9c', active:true },
+  { key:'sup',           labelEN:'SUP',           labelIS:'SUP',          emoji:'🏄', color:'#e67e22', active:true },
+  { key:'wingfoil',      labelEN:'Wingfoil',      labelIS:'Wingfoil',     emoji:'🪁', color:'#e74c3c', active:true },
+  { key:'other',         labelEN:'Other',         labelIS:'Annað',        emoji:'🚤', color:'#6b92b8', active:true },
 ];
 let _allBoatCats = [];   // full list including inactive
 let boatCats     = [];   // active only
@@ -68,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!_bcEditingId) {
       document.getElementById("bcKey").value = e.target.value.toLowerCase().trim().replace(/\s+/g, '-');
     }
+    if (typeof updateBoatCatColorPreview === 'function') updateBoatCatColorPreview();
   });
 
   warmContainer();

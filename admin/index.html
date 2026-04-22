@@ -578,6 +578,14 @@
       <div class="field"><label data-s="admin.keyAutoSet" for="bcKey"></label><input type="text" id="bcKey" placeholder="dinghy" class="text-muted"></div>
     </div>
     <div class="text-xs text-muted mb-10" data-s="admin.keyHint"></div>
+    <div class="field mb-12">
+      <label for="bcColor" data-s="admin.boatCatModal.color"></label>
+      <div class="d-flex items-center gap-6 flex-wrap">
+        <input type="color" id="bcColor" value="#6b92b8" data-admin-input="updateBoatCatColorPreview">
+        <span id="bcColorPreview" aria-hidden="true"></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-admin-click="resetBoatCatColor" data-s="admin.boatCatModal.resetColor"></button>
+      </div>
+    </div>
     <div class="check-row mb-12">
       <input type="checkbox" id="bcActive" checked> <label for="bcActive" data-s="lbl.active"></label>
     </div>

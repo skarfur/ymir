@@ -149,7 +149,7 @@ function renderStats(){
   if(entries.length>1){
     const max=entries[0][1];
     document.getElementById('catHoursList').innerHTML=entries.map(([cat,h])=>{
-      const col=BOAT_CAT_COLORS[(cat||'').toLowerCase()]||BOAT_CAT_COLORS.other;
+      const col=boatCatColors(cat);
       const pct=max?Math.round(h/max*100):0;
       return `<div class="cat-hour-row">
         <span class="text-lg" style="width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
