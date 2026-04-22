@@ -231,7 +231,7 @@ function incSetFilter(btn) {
   const group = btn.dataset.group;
   const v = btn.dataset.v;
   _incFilter[group] = v;
-  document.querySelectorAll(`.filt-btn[data-group="${group}"]`).forEach(b => {
+  document.querySelectorAll(`#incidentFilters .filter-btn[data-group="${group}"]`).forEach(b => {
     b.classList.toggle('active', b.dataset.v === v);
   });
   renderList();

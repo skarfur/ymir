@@ -52,7 +52,7 @@
     <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
     <div class="d-flex gap-8 items-center flex-wrap mb-10">
       <div class="cq-pills" id="maintPills" style="margin-bottom:0"></div>
-      <select id="mfBoat" class="bg-surface border-muted rounded-6 font-inherit text-10" style="color:var(--text);padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="" data-s="cq.allBoats">All boats</option></select>
+      <select id="mfBoat" class="filter-select" style="max-width:140px"><option value="" data-s="cq.allBoats">All boats</option></select>
     </div>
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
@@ -82,7 +82,7 @@
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
     <div class="d-flex items-center gap-8 mb-10 flex-wrap">
       <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" for="cqResBoat">Boat</label>
-      <select id="cqResBoat" data-cq-change="loadCqSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
+      <select id="cqResBoat" data-cq-change="loadCqSlots" class="filter-select"></select>
       <div class="slot-week-nav">
         <button class="btn btn-secondary btn-sm" data-cq-click="shiftCqWeek" data-cq-arg="-1">&larr;</button>
         <span id="cqWeekLabel" class="week-label"></span>
@@ -146,7 +146,7 @@
         </div>
         <div class="flex-1">
           <label class="text-9 text-muted mb-6" style="letter-spacing:.8px;display:block" data-s="cq.headshotLabel" for="headshotFile"></label>
-          <input type="file" id="headshotFile" accept="image/*" class="text-xs w-full" style="color:var(--text)">
+          <input type="file" id="headshotFile" accept="image/*" class="text-xs w-full">
         </div>
       </div>
       <textarea class="cq-bio-area" id="bioText" maxlength="500"></textarea>

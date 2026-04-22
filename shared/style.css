@@ -395,6 +395,47 @@ textarea { min-height: 70px; }
 @media (max-width: 600px) { .filter-bar { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 400px) { .filter-bar { grid-template-columns: 1fr; } }
 
+/* Compact standalone select — matches `.filter-bar select` metrics but sits in
+   any flex/inline toolbar (admin slot calendar, etc.) without the grid parent. */
+.filter-select {
+  width: auto;
+  height: 30px;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+/* ── FILTER PILLS ──────────────────────────────────────────────────────────────
+   Rounded pill-button filters used by maintenance, saumaklubbur, incidents.
+   Wrap in <div class="filter-bar-grouped"> for a vertical stack, and nest each
+   row in <div class="filter-group"> (with optional <span class="filter-group-label">
+   or <span class="filter-label">). */
+.filter-bar-grouped { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.filter-group-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; min-width: 68px; flex-shrink: 0; }
+.filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.filter-row:last-child { margin-bottom: 0; }
+.filter-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; min-width: 54px; }
+
+.filter-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 20px; padding: 5px 14px; font-size: 11px; font-family: inherit; cursor: pointer;
+  letter-spacing: .5px; transition: all .2s; white-space: nowrap;
+}
+.filter-btn:hover:not(.active):not(.muted) { border-color: var(--brass); color: var(--brass-fg); }
+.filter-btn.active { background: var(--brass); color: #0b1f38; border-color: var(--brass); }
+.filter-btn.muted { opacity: .3; pointer-events: none; border-style: dashed; }
+
+/* ── UPLOAD ZONE ───────────────────────────────────────────────────────────────
+   Dashed drop-zone wrapper for <input type="file"> — used by admin CSV import
+   and any portal that wants a label-wrapped file picker instead of the bare
+   file input. Pair with a hidden <input type="file"> inside the label. */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 28px;
+  text-align: center; cursor: pointer; transition: border-color .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.upload-zone:hover { border-color: var(--brass); }
+
 /* ── BUTTONS ──────────────────────────────────────────────────────────────────── */
 
 .btn {
