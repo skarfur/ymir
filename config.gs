@@ -359,7 +359,7 @@ function normalizeAccessGate_(boat, certDefs) {
   return { certId: '', sub: raw, minRank: 0 };
 }
 
-function _gateSubcatRank_(certDefs, certId, subKey) {
+function gateSubcatRank_(certDefs, certId, subKey) {
   if (!Array.isArray(certDefs) || !certDefs.length || !certId || !subKey) return 0;
   var def = null;
   for (var i = 0; i < certDefs.length; i++) { if (certDefs[i] && certDefs[i].id === certId) { def = certDefs[i]; break; } }
@@ -381,14 +381,14 @@ function memberHasGate_(certs, gate, certDefs) {
     if (!gate.certId) return gate.sub && c.sub === gate.sub;
     if (c.certId !== gate.certId) return false;
     if (gate.minRank > 0) {
-      return _gateSubcatRank_(certDefs, gate.certId, c.sub) >= gate.minRank;
+      return gateSubcatRank_(certDefs, gate.certId, c.sub) >= gate.minRank;
     }
     if (gate.sub) return c.sub === gate.sub;
     return true;
   });
 }
 
-function _parseMemberCerts_(raw) {
+function parseMemberCerts_(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
   try { var p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (e) { return []; }

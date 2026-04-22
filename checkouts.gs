@@ -44,7 +44,7 @@ function saveCheckout_(b) {
             var _coDefs = getCertDefsFromMap_(cfgMap);
             var _coGate = normalizeAccessGate_(checkBoat, _coDefs);
             if (_coGate) {
-              var memberCerts = _parseMemberCerts_(checkMember.certifications);
+              var memberCerts = parseMemberCerts_(checkMember.certifications);
               if (memberHasGate_(memberCerts, _coGate, _coDefs)) hasAccess = true;
             }
           }
@@ -648,7 +648,7 @@ function bookSlot_(b) {
         if (!member) return failJ('Member not found');
         var isStaffRole = member.role === 'staff' || member.role === 'admin';
         if (!isStaffRole) {
-          var certs = _parseMemberCerts_(member.certifications);
+          var certs = parseMemberCerts_(member.certifications);
           if (!memberHasGate_(certs, _bsGate, _bsDefs)) {
             return failJ('You do not have the required certification to book this boat');
           }
@@ -722,7 +722,7 @@ function bulkBookSlots_(b) {
         if (!member) return failJ('Member not found');
         var isStaffRole = member.role === 'staff' || member.role === 'admin';
         if (!isStaffRole) {
-          var certs = _parseMemberCerts_(member.certifications);
+          var certs = parseMemberCerts_(member.certifications);
           if (!memberHasGate_(certs, _bbGate, _bbDefs)) {
             return failJ('You do not have the required certification to book this boat');
           }

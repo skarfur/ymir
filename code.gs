@@ -71,7 +71,7 @@ const BULK_ACTIONS_ = {
 };
 
 // Actions that can be called without a session token. Everything else
-// requires a valid session (see _authCaller_). GET-only public endpoints
+// requires a valid session (see authCaller_). GET-only public endpoints
 // (lookup, captain, boat, resolveFromEmail, shared records) are gated
 // separately inside doGet.
 const PUBLIC_ACTIONS_ = {
@@ -284,6 +284,16 @@ function now_() { return new Date().toISOString(); }
 function nowLocalDate_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
 function nowLocalTime_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm'); }
 function nowLocalDateTime_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"); }
+// Required-column lookup. Use this when you INDEX into a row with the result
+// (e.g. values[i][col]) — a plain headers.indexOf() silently returns -1 and
+// miswrites to/reads from column "−1" if the sheet drifts from the code.
+// requiredCol_ throws loudly instead, turning a silent bug into a stack trace.
+// For existence checks (e.g. addColIfMissing_) keep using headers.indexOf().
+function requiredCol_(headers, name) {
+  var i = headers.indexOf(name);
+  if (i < 0) throw new Error('Missing column "' + name + '" in sheet');
+  return i;
+}
 function uid_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 16); }
 function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1 || v === '1'; }
 // Prefix a literal apostrophe onto any string whose first character Sheets
@@ -291,7 +301,7 @@ function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1
 // (CR/LF/TAB). The apostrophe itself is not rendered to the user; it just
 // forces Sheets to treat the cell as text. Non-strings pass through.
 // Named distinctly from the read-side `sanitizeCell_(col, val)` normalizer.
-function _literalWrite_(v) {
+function literalWrite_(v) {
   if (typeof v !== 'string' || v === '') return v;
   var c = v.charCodeAt(0);
   if (c === 0x3D || c === 0x2B || c === 0x2D || c === 0x40 ||
@@ -351,7 +361,7 @@ function extractInitials_(name) {
 // be tuned later without a schema change:
 //   pbkdf2-sha256$<iterations>$<base64 salt>$<base64 hash>
 // There is no shared default password; admin-issued temp passwords are
-// generated per-member by _genTempPassword_() and flagged via the members
+// generated per-member by genTempPassword_() and flagged via the members
 // sheet column `passwordIsTemp` so the login flow can force a change.
 // ─────────────────────────────────────────────────────────────────────────────
 // Iteration count is limited by Apps Script's per-HMAC-call overhead
@@ -364,7 +374,7 @@ const PBKDF2_ITERATIONS_ = 10000;
 // 10-character random password using an unambiguous alphabet (no O/0/I/1/l).
 // Used for admin-issued temp passwords — communicated to the member once and
 // replaced by a user-chosen password on first login.
-function _genTempPassword_() {
+function genTempPassword_() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const bytes = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
@@ -375,7 +385,7 @@ function _genTempPassword_() {
   return out;
 }
 
-function _genSalt16_() {
+function genSalt16_() {
   // UUID v4 gives ~122 bits of randomness; two of them hashed to SHA-256 and
   // truncated to 16 bytes yields a uniform salt well above the birthday bound
   // for any realistic user population.
@@ -388,7 +398,7 @@ function _genSalt16_() {
 // PBKDF2-HMAC-SHA256, one output block (32 bytes). Apps Script's HMAC
 // primitive is slow-ish, so 100k iterations is the target; adjust via
 // PBKDF2_ITERATIONS_ if login latency becomes a problem.
-function _pbkdf2_(password, saltBytes, iterations) {
+function pbkdf2_(password, saltBytes, iterations) {
   const passBytes = Utilities.newBlob(String(password)).getBytes();
   // Salt || INT(1) — block index is always 1 since we only need 32 bytes.
   const block = saltBytes.concat([0, 0, 0, 1]);
@@ -403,8 +413,8 @@ function _pbkdf2_(password, saltBytes, iterations) {
 
 function hashPassword_(password) {
   if (!password) return '';
-  const salt = _genSalt16_();
-  const hash = _pbkdf2_(password, salt, PBKDF2_ITERATIONS_);
+  const salt = genSalt16_();
+  const hash = pbkdf2_(password, salt, PBKDF2_ITERATIONS_);
   return 'pbkdf2-sha256$' + PBKDF2_ITERATIONS_ + '$' +
          Utilities.base64Encode(salt) + '$' + Utilities.base64Encode(hash);
 }
@@ -419,7 +429,7 @@ function verifyPassword_(member, password) {
   if (!iter || iter < 1000 || iter > 10000000) return false;
   const salt = Utilities.base64Decode(parts[2]);
   const expected = Utilities.base64Decode(parts[3]);
-  const actual = _pbkdf2_(password, salt, iter);
+  const actual = pbkdf2_(password, salt, iter);
   if (actual.length !== expected.length) return false;
   // Constant-time compare to avoid leaking the matching prefix via timing.
   let diff = 0;
@@ -482,7 +492,7 @@ function bootstrapAdminPassword() {
   }
   if (rowIdx < 0) { Logger.log('No member with kennitala ' + kt); return; }
 
-  const temp = preset || _genTempPassword_();
+  const temp = preset || genTempPassword_();
   const hash = hashPassword_(temp);
   Logger.log('Writing hash of length ' + hash.length + ' to row ' + (rowIdx + 2));
   if (preset) Logger.log('Using preset password from BOOTSTRAP_PRESET_PASSWORD.');
@@ -504,7 +514,7 @@ function bootstrapAdminPassword() {
 // prints "verify ok" but real logins still fail, the bug is in the
 // storage/login path, not the crypto.
 function testPasswordRoundTrip() {
-  const pw = _genTempPassword_();
+  const pw = genTempPassword_();
   const hash = hashPassword_(pw);
   Logger.log('password: ' + pw);
   Logger.log('hash:     ' + hash);
@@ -560,7 +570,7 @@ function testVerifyStoredHash() {
   const salt     = Utilities.base64Decode(parts[2]);
   const expected = Utilities.base64Decode(parts[3]);
   const iter     = parseInt(parts[1], 10);
-  const actual   = _pbkdf2_(pw, salt, iter);
+  const actual   = pbkdf2_(pw, salt, iter);
   Logger.log('salt bytes:     [' + Array.prototype.slice.call(salt).join(',') + ']');
   Logger.log('expected bytes: [' + Array.prototype.slice.call(expected).join(',') + ']');
   Logger.log('actual bytes:   [' + Array.prototype.slice.call(actual).join(',') + ']');
@@ -577,21 +587,21 @@ function testVerifyStoredHash() {
 
 // Editor-run helper: clear the login rate-limit lockout for
 // BOOTSTRAP_KENNITALA so the next login attempt isn't rejected by
-// `_checkLoginRate_`. Use after a debugging session where repeated
+// `checkLoginRate_`. Use after a debugging session where repeated
 // failed attempts have tripped the 5-in-15-min lockout.
 function clearLoginLockout() {
   const kt = String(
     PropertiesService.getScriptProperties().getProperty('BOOTSTRAP_KENNITALA') || ''
   ).trim();
   if (!kt) { Logger.log('Set BOOTSTRAP_KENNITALA first.'); return; }
-  _clearLoginAttempts_(kt);
+  clearLoginAttempts_(kt);
   Logger.log('Cleared login_attempts row for ' + kt + '. You can try signing in again.');
 }
 
 // Find a member for login by either kennitala (10 digits) or initials
 // (case-insensitive). Returns { member, ambiguous, notFound } so the caller
 // can surface a specific error when initials collide between members.
-function _findMemberForLogin_(username) {
+function findMemberForLogin_(username) {
   if (!username) return { notFound: true };
   const u = String(username).trim();
   if (!u) return { notFound: true };
@@ -630,7 +640,7 @@ const LOGIN_ATTEMPT_COLS_ = ['kennitala', 'firstAt', 'count', 'blockedUntil'];
 
 // Create the sheet lazily if it's missing. Called from every session/rate-
 // limit helper so a fresh deployment doesn't need a manual setup step.
-function _ensureSheet_(tabKey, columns) {
+function ensureSheet_(tabKey, columns) {
   const name = TABS_[tabKey] || tabKey;
   const ss = ss_();
   let sh = ss.getSheetByName(name);
@@ -649,14 +659,14 @@ function _ensureSheet_(tabKey, columns) {
 // 256-bit random token, base64url-encoded (no padding). Two UUIDs give 256
 // bits of entropy; Apps Script has no direct access to a CSPRNG byte API but
 // getUuid() is cryptographically random per the V8 runtime docs.
-function _randomToken_() {
+function randomToken_() {
   const hex = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   const bytes = [];
   for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
   return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
 }
 
-function _hashToken_(token) {
+function hashToken_(token) {
   const bytes = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256, String(token || ''), Utilities.Charset.UTF_8);
   return Utilities.base64Encode(bytes);
@@ -664,15 +674,15 @@ function _hashToken_(token) {
 
 // Truncate the User-Agent string so a malicious client cannot blow up a row
 // with megabytes of junk, while still preserving enough to identify a device.
-function _trimUA_(ua) {
+function trimUA_(ua) {
   ua = String(ua == null ? '' : ua);
   return ua.length > 200 ? ua.slice(0, 200) : ua;
 }
 
-function _createSession_(kennitala, role, stayLoggedIn, userAgent) {
-  _ensureSheet_('sessions', SESSION_COLS_);
-  const raw = _randomToken_();
-  const hash = _hashToken_(raw);
+function createSession_(kennitala, role, stayLoggedIn, userAgent) {
+  ensureSheet_('sessions', SESSION_COLS_);
+  const raw = randomToken_();
+  const hash = hashToken_(raw);
   const ttl  = stayLoggedIn ? SESSION_TTL_LONG_MS_ : SESSION_TTL_SHORT_MS_;
   const now = Date.now();
   const session = {
@@ -684,30 +694,30 @@ function _createSession_(kennitala, role, stayLoggedIn, userAgent) {
     lastSeenAt:    new Date(now).toISOString(),
     expiresAt:     new Date(now + ttl).toISOString(),
     stayLoggedIn:  !!stayLoggedIn,
-    userAgent:     _trimUA_(userAgent),
+    userAgent:     trimUA_(userAgent),
   };
   insertRow_('sessions', session);
   return { token: raw, expiresAt: session.expiresAt, id: session.id };
 }
 
-function _findSessionByHash_(hash) {
-  _ensureSheet_('sessions', SESSION_COLS_);
+function findSessionByHash_(hash) {
+  ensureSheet_('sessions', SESSION_COLS_);
   return findOne_('sessions', 'tokenHash', hash);
 }
 
-function _deleteSessionByHash_(hash) {
+function deleteSessionByHash_(hash) {
   try { deleteRow_('sessions', 'tokenHash', hash); } catch (e) {}
 }
 
-function _deleteSessionById_(id) {
+function deleteSessionById_(id) {
   try { return deleteRow_('sessions', 'id', id); } catch (e) { return false; }
 }
 
 // Revoke every session belonging to a member, optionally keeping one token's
 // session alive (so "changed my password" can sign out every *other* device).
 // Returns the count of sessions that were removed.
-function _revokeSessionsForMember_(kennitala, exceptHash) {
-  _ensureSheet_('sessions', SESSION_COLS_);
+function revokeSessionsForMember_(kennitala, exceptHash) {
+  ensureSheet_('sessions', SESSION_COLS_);
   const kt = String(kennitala || '').trim();
   if (!kt) return 0;
   const rows = readAll_('sessions').filter(function(r) {
@@ -724,7 +734,7 @@ function _revokeSessionsForMember_(kennitala, exceptHash) {
 // touched. Short sessions keep their original expiry. lastSeenAt is throttled
 // so the sheet isn't written on every request; 60s resolution is good enough
 // for "recent activity" displays.
-function _touchSession_(session) {
+function touchSession_(session) {
   const now = Date.now();
   const last = session.lastSeenAt ? new Date(session.lastSeenAt).getTime() : 0;
   const updates = {};
@@ -747,25 +757,25 @@ function _touchSession_(session) {
 // Resolve the caller from a request body. Returns { kennitala, role, session }
 // on success, or null if the session is missing/expired/invalid. Expired
 // sessions are deleted on encounter so the sheet self-cleans.
-function _authCaller_(b) {
+function authCaller_(b) {
   const raw = String((b && b.sessionToken) || '').trim();
   if (!raw) return null;
-  const hash = _hashToken_(raw);
-  const session = _findSessionByHash_(hash);
+  const hash = hashToken_(raw);
+  const session = findSessionByHash_(hash);
   if (!session) return null;
   const now = Date.now();
   const expiresAt = session.expiresAt ? new Date(session.expiresAt).getTime() : 0;
   if (!expiresAt || expiresAt < now) {
-    _deleteSessionByHash_(hash);
+    deleteSessionByHash_(hash);
     return null;
   }
   // Member role/active state can change after login; always re-check.
   const m = findOne_('members', 'kennitala', String(session.kennitala || '').trim());
   if (!m || !bool_(m.active)) {
-    _deleteSessionByHash_(hash);
+    deleteSessionByHash_(hash);
     return null;
   }
-  _touchSession_(session);
+  touchSession_(session);
   return {
     kennitala: String(m.kennitala),
     role:      String(m.role || session.role || 'member'),
@@ -775,18 +785,18 @@ function _authCaller_(b) {
   };
 }
 
-function _isAdmin_(caller) { return caller && caller.role === 'admin'; }
-function _isStaff_(caller) { return caller && (caller.role === 'staff' || caller.role === 'admin'); }
+function isAdmin_(caller) { return caller && caller.role === 'admin'; }
+function isStaff_(caller) { return caller && (caller.role === 'staff' || caller.role === 'admin'); }
 
 // Decide whether `caller` is permitted to run `action` with body `b`.
 // Returns null on allow or a failJ response on deny. Centralises all
 // role/self-or-admin gating so route_ stays a plain dispatch table.
-function _authorize_(action, caller, b) {
+function authorize_(action, caller, b) {
   if (!caller) return failJ('Unauthorized', 401);
-  if (ADMIN_ACTIONS_[action] && !_isAdmin_(caller)) {
+  if (ADMIN_ACTIONS_[action] && !isAdmin_(caller)) {
     return failJ('Admin only', 403);
   }
-  if (STAFF_ACTIONS_[action] && !_isStaff_(caller)) {
+  if (STAFF_ACTIONS_[action] && !isStaff_(caller)) {
     return failJ('Staff only', 403);
   }
   // Self-or-admin: caller.kennitala must equal the body's target kennitala,
@@ -795,7 +805,7 @@ function _authorize_(action, caller, b) {
   if (ktField) {
     const target = String((b && b[ktField]) || '').trim();
     if (!target) return failJ('kennitala required');
-    if (target !== caller.kennitala && !_isAdmin_(caller)) {
+    if (target !== caller.kennitala && !isAdmin_(caller)) {
       return failJ('Forbidden', 403);
     }
   }
@@ -803,7 +813,7 @@ function _authorize_(action, caller, b) {
   if (action === 'saveMemberCert') {
     const mid = String((b && b.memberId) || '').trim();
     if (!mid) return failJ('memberId required');
-    if (!_isAdmin_(caller)) {
+    if (!isAdmin_(caller)) {
       const m = findOne_('members', 'id', mid);
       if (!m || String(m.kennitala) !== caller.kennitala) {
         return failJ('Forbidden', 403);
@@ -820,8 +830,8 @@ function _authorize_(action, caller, b) {
 // IP. 5 failures in a 15-min window trip a 15-min lockout. A successful login
 // clears the counter. Admin "reset password" also clears.
 // ─────────────────────────────────────────────────────────────────────────────
-function _checkLoginRate_(kennitala) {
-  _ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
+function checkLoginRate_(kennitala) {
+  ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
   const row = findOne_('loginAttempts', 'kennitala', String(kennitala).trim());
   if (!row) return { ok: true };
   const now = Date.now();
@@ -832,8 +842,8 @@ function _checkLoginRate_(kennitala) {
   return { ok: true };
 }
 
-function _bumpLoginAttempts_(kennitala) {
-  _ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
+function bumpLoginAttempts_(kennitala) {
+  ensureSheet_('loginAttempts', LOGIN_ATTEMPT_COLS_);
   const kt = String(kennitala).trim();
   if (!kt) return;
   const row = findOne_('loginAttempts', 'kennitala', kt);
@@ -859,7 +869,7 @@ function _bumpLoginAttempts_(kennitala) {
   updateRow_('loginAttempts', 'kennitala', kt, updates);
 }
 
-function _clearLoginAttempts_(kennitala) {
+function clearLoginAttempts_(kennitala) {
   const kt = String(kennitala || '').trim();
   if (!kt) return;
   try { deleteRow_('loginAttempts', 'kennitala', kt); } catch (e) {}
@@ -869,7 +879,7 @@ function _clearLoginAttempts_(kennitala) {
 // + bucket + current minute, so a new window opens every 60s automatically.
 // Internal `__system` callers (time triggers invoking route_ directly) are
 // exempt because they aren't subject to the user-facing fairness contract.
-function _checkMutationRate_(caller, action) {
+function checkMutationRate_(caller, action) {
   if (!caller || caller.__system) return { ok: true };
   const bucket = BULK_ACTIONS_[action] ? 'bulk' : 'normal';
   const limit  = BULK_ACTIONS_[action] ? MUTATION_RATE_BULK_ : MUTATION_RATE_NORMAL_;
@@ -885,10 +895,10 @@ function _checkMutationRate_(caller, action) {
 }
 
 // Time-driven trigger: wipe expired session rows. Safe to run infrequently
-// because _authCaller_ also removes expired rows on encounter.
+// because authCaller_ also removes expired rows on encounter.
 function sweepExpiredSessions() {
   try { clearSheetCache_(); } catch (e) {}
-  _ensureSheet_('sessions', SESSION_COLS_);
+  ensureSheet_('sessions', SESSION_COLS_);
   const now = Date.now();
   const rows = readAll_('sessions');
   let n = 0;
@@ -1012,7 +1022,7 @@ function validateRow_(tabKey, obj) {
 function insertRow_(tabKey, obj) {
   validateRow_(tabKey, obj);
   const c = getSheetData_(tabKey);
-  const row = c.headers.map(h => _literalWrite_(obj[h] !== undefined ? obj[h] : ''));
+  const row = c.headers.map(h => literalWrite_(obj[h] !== undefined ? obj[h] : ''));
   c.sheet.appendRow(row);
   // appendRow lands at the first blank row, which may not equal
   // values.length + 2 if the sheet has trailing blanks. Invalidate to keep
@@ -1057,7 +1067,7 @@ function updateRow_(tabKey, keyField, keyValue, updates) {
           // Per-column setValue preserves existing concurrency semantics:
           // two executions touching disjoint columns on the same row don't
           // clobber each other.  Keep cache coherent with the write.
-          sheet.getRange(i + 2, col + 1).setValue(_literalWrite_(v));
+          sheet.getRange(i + 2, col + 1).setValue(literalWrite_(v));
           values[i][col] = v;
           wrote = true;
         }
@@ -1131,12 +1141,12 @@ function doGet(e) {
     }
     if (b.share)                return publicShareRecord_(b);
     // Session-authenticated GETs, if any.
-    const callerGet = _authCaller_(b);
+    const callerGet = authCaller_(b);
     if (callerGet) {
       if (!b.action) return okJ({ status: 'ok', ts: now_() });
-      const deniedGet = _authorize_(b.action, callerGet, b);
+      const deniedGet = authorize_(b.action, callerGet, b);
       if (deniedGet) return deniedGet;
-      const throttledGet = _checkMutationRate_(callerGet, b.action);
+      const throttledGet = checkMutationRate_(callerGet, b.action);
       if (!throttledGet.ok) return failJ('Too many requests', 429);
       return route_(b.action, b, callerGet);
     }
@@ -1155,11 +1165,11 @@ function doPost(e) {
     // Public POST endpoints — no auth required.
     if (action && PUBLIC_ACTIONS_[action]) return route_(action, b, null);
     // Everything else requires a valid per-user session token.
-    const caller = _authCaller_(b);
+    const caller = authCaller_(b);
     if (!caller) return failJ('Unauthorized', 401);
-    const denied = _authorize_(action, caller, b);
+    const denied = authorize_(action, caller, b);
     if (denied) return denied;
-    const throttled = _checkMutationRate_(caller, action);
+    const throttled = checkMutationRate_(caller, action);
     if (!throttled.ok) return failJ('Too many requests', 429);
     return route_(action, b, caller);
   } catch (err) {

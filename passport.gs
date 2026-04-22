@@ -181,7 +181,7 @@ function saveRowingPassportDef_(b) {
   return okJ({ saved: true });
 }
 
-function _slugify_(s) {
+function slugify_(s) {
   return String(s || '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -230,7 +230,7 @@ function importRowingPassportCsv_(b) {
   const existingCatByLabel = {};
   (current.passports || []).forEach(p => {
     (p.categories || []).forEach(c => {
-      const catLabelKey = (p.id + '|' + _slugify_(c.name && c.name.EN || c.id));
+      const catLabelKey = (p.id + '|' + slugify_(c.name && c.name.EN || c.id));
       existingCatByLabel[catLabelKey] = c.id;
       (c.items || []).forEach(i => {
         const itemLabelKey = (p.id + '|' + c.id + '|' + String((i.name && i.name.EN) || '').toLowerCase().trim());
@@ -260,8 +260,8 @@ function importRowingPassportCsv_(b) {
     if (!catId) {
       const catLabelEn = (r.category_label_en || '').trim();
       if (!catLabelEn) { errors.push('Row ' + lineNo + ': needs either category_id or category_label_en'); return; }
-      const catKey = pid + '|' + _slugify_(catLabelEn);
-      catId = existingCatByLabel[catKey] || _slugify_(catLabelEn);
+      const catKey = pid + '|' + slugify_(catLabelEn);
+      catId = existingCatByLabel[catKey] || slugify_(catLabelEn);
     }
 
     let cat = p._catIndex[catId];
@@ -282,7 +282,7 @@ function importRowingPassportCsv_(b) {
     let itemId = (r.item_id || '').trim();
     if (!itemId) {
       const itemKey = pid + '|' + catId + '|' + labelEn.toLowerCase();
-      itemId = existingItemByLabel[itemKey] || _slugify_(labelEn);
+      itemId = existingItemByLabel[itemKey] || slugify_(labelEn);
     }
 
     // Detect duplicate item ids within the same category in this CSV

@@ -2,7 +2,7 @@
 // MEMBERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function _publicMember_(m) {
+function publicMember_(m) {
   return {
     id: m.id, kennitala: m.kennitala, name: m.name, role: m.role,
     email: m.email || '', phone: m.phone || '',
@@ -19,7 +19,7 @@ function _publicMember_(m) {
 
 // Find all active minor members whose guardianKennitala matches the given kennitala.
 // Returns a trimmed list with just enough info for the account picker.
-function _findWardsOf_(guardianKt) {
+function findWardsOf_(guardianKt) {
   const kt = String(guardianKt || '').trim();
   if (!kt) return [];
   const all = readAll_('members');
@@ -45,7 +45,7 @@ function _findWardsOf_(guardianKt) {
 // guardian stub using the guardianName/guardianPhone stored on the ward
 // record (or an explicit hint, used when saving a minor). Returns null if
 // the kt has no relationship to any active minor and no hint was provided.
-function _ensureGuardianRecord_(kt, hintName, hintPhone) {
+function ensureGuardianRecord_(kt, hintName, hintPhone) {
   const s = String(kt || '').trim();
   if (!s || s.length !== 10) return null;
   const existing = findOne_('members', 'kennitala', s);
@@ -62,7 +62,7 @@ function _ensureGuardianRecord_(kt, hintName, hintPhone) {
     phone = phone || String(ward.guardianPhone || '').trim();
   }
   const ts = now_();
-  const tempPassword = _genTempPassword_();
+  const tempPassword = genTempPassword_();
   const row = {
     id: uid_(), kennitala: s, name: name, role: 'guardian',
     email: '', phone: phone, birthYear: '',
@@ -87,7 +87,7 @@ function validateMember_(kennitala, caller) {
   const kt = String(kennitala).trim();
   // Only the member themselves (or an admin) can re-read a full member
   // record. All other callers must go through the public lookup endpoints.
-  if (caller && kt !== caller.kennitala && !_isAdmin_(caller)) {
+  if (caller && kt !== caller.kennitala && !isAdmin_(caller)) {
     return failJ('Forbidden', 403);
   }
   const m = findOne_('members', 'kennitala', kt);
@@ -95,9 +95,9 @@ function validateMember_(kennitala, caller) {
   if (!bool_(m.active)) return failJ('Inactive account', 403);
   // If this member is not themselves a minor, surface any wards they guard
   // so the login UI can offer account switching.
-  const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
+  const wards = bool_(m.isMinor) ? [] : findWardsOf_(m.kennitala);
   return okJ({
-    member: _publicMember_(m),
+    member: publicMember_(m),
     wards: wards,
   });
 }
@@ -114,7 +114,7 @@ function loginMember_(b) {
   if (!username) return failJ('Username required');
   if (!password) return failJ('Password required');
 
-  const r = _findMemberForLogin_(username);
+  const r = findMemberForLogin_(username);
   if (r.ambiguous) return failJ('Ambiguous initials', 409);
   if (r.notFound || !r.member) return failJ('Not found', 404);
   const m = r.member;
@@ -122,23 +122,23 @@ function loginMember_(b) {
 
   // Rate limit is keyed off the resolved kennitala so initials and kennitala
   // attempts share a counter.
-  const rate = _checkLoginRate_(m.kennitala);
+  const rate = checkLoginRate_(m.kennitala);
   if (!rate.ok) return failJ('Too many attempts', 429);
 
   if (!verifyPassword_(m, password)) {
-    _bumpLoginAttempts_(m.kennitala);
+    bumpLoginAttempts_(m.kennitala);
     // Re-read the row: this attempt may have crossed the lockout threshold.
-    const after = _checkLoginRate_(m.kennitala);
+    const after = checkLoginRate_(m.kennitala);
     if (!after.ok) return failJ('Too many attempts', 429);
     return failJ('Invalid credentials', 401);
   }
 
-  _clearLoginAttempts_(m.kennitala);
-  const session = _createSession_(m.kennitala, m.role || 'member', stay, ua);
+  clearLoginAttempts_(m.kennitala);
+  const session = createSession_(m.kennitala, m.role || 'member', stay, ua);
 
-  const wards = bool_(m.isMinor) ? [] : _findWardsOf_(m.kennitala);
+  const wards = bool_(m.isMinor) ? [] : findWardsOf_(m.kennitala);
   return okJ({
-    member: _publicMember_(m),
+    member: publicMember_(m),
     wards: wards,
     usingDefaultPassword: bool_(m.passwordIsTemp),
     sessionToken: session.token,
@@ -161,11 +161,11 @@ function signOut_(b, caller) {
   if (targetId) {
     const row = findOne_('sessions', 'id', targetId);
     if (row && String(row.kennitala) === caller.kennitala) {
-      _deleteSessionById_(targetId);
+      deleteSessionById_(targetId);
     }
     return okJ({ signedOut: true });
   }
-  if (caller.tokenHash) _deleteSessionByHash_(caller.tokenHash);
+  if (caller.tokenHash) deleteSessionByHash_(caller.tokenHash);
   return okJ({ signedOut: true });
 }
 
@@ -177,7 +177,7 @@ function signOutAll_(b, caller) {
   if (!caller) return failJ('Unauthorized', 401);
   const exceptCurrent = bool_(b && b.exceptCurrent);
   const keep = exceptCurrent ? caller.tokenHash : null;
-  const n = _revokeSessionsForMember_(caller.kennitala, keep);
+  const n = revokeSessionsForMember_(caller.kennitala, keep);
   return okJ({ signedOut: true, count: n });
 }
 
@@ -185,7 +185,7 @@ function signOutAll_(b, caller) {
 // hashes are never exposed — the UI uses `id` to drive per-row revoke.
 function listSessions_(b, caller) {
   if (!caller) return failJ('Unauthorized', 401);
-  _ensureSheet_('sessions', SESSION_COLS_);
+  ensureSheet_('sessions', SESSION_COLS_);
   const now = Date.now();
   const currentHash = caller.tokenHash || '';
   const rows = readAll_('sessions')
@@ -215,22 +215,22 @@ function listSessions_(b, caller) {
 // row so the login flow forces a change, and revoke every active session.
 // The plaintext is returned to the admin once and never persisted.
 function adminResetMemberPassword_(b, caller) {
-  if (!caller || !_isAdmin_(caller)) return failJ('Admin only', 403);
+  if (!caller || !isAdmin_(caller)) return failJ('Admin only', 403);
   const kt = String((b && b.kennitala) || '').trim();
   if (!kt) return failJ('kennitala required');
   const m = findOne_('members', 'kennitala', kt);
   if (!m) return failJ('Member not found', 404);
   addColIfMissing_('members', 'passwordHash');
   addColIfMissing_('members', 'passwordIsTemp');
-  const tempPassword = _genTempPassword_();
+  const tempPassword = genTempPassword_();
   updateRow_('members', 'kennitala', kt, {
     passwordHash: hashPassword_(tempPassword),
     passwordIsTemp: true,
     updatedAt: now_(),
   });
   cDel_('members');
-  _clearLoginAttempts_(kt);
-  const n = _revokeSessionsForMember_(kt);
+  clearLoginAttempts_(kt);
+  const n = revokeSessionsForMember_(kt);
   return okJ({ reset: true, sessionsRevoked: n, tempPassword: tempPassword });
 }
 
@@ -249,7 +249,7 @@ function setPassword_(b, caller) {
   if (!next) return failJ('newPassword required');
   if (next.length < 4) return failJ('Password must be at least 4 characters');
 
-  const isAdminActing = caller && _isAdmin_(caller) && caller.kennitala !== kt;
+  const isAdminActing = caller && isAdmin_(caller) && caller.kennitala !== kt;
   if (!isAdminActing) {
     if (!verifyPassword_(m, cur)) return failJ('Current password incorrect', 401);
   }
@@ -262,13 +262,13 @@ function setPassword_(b, caller) {
     updatedAt: now_(),
   });
   cDel_('members');
-  _clearLoginAttempts_(kt);
+  clearLoginAttempts_(kt);
   // Invalidate every other session for this member so a stolen laptop is
   // logged out the moment the owner changes their password. Preserve the
   // caller's own session when they're changing their own password so the
   // current tab doesn't get booted in the middle of the save.
   const keepHash = (caller && caller.kennitala === kt) ? caller.tokenHash : null;
-  const revoked = _revokeSessionsForMember_(kt, keepHash);
+  const revoked = revokeSessionsForMember_(kt, keepHash);
   return okJ({ saved: true, sessionsRevoked: revoked });
 }
 
@@ -282,7 +282,7 @@ function validateWard_(b, caller) {
   const wardKt     = String((b && b.wardKennitala) || '').trim();
   if (!guardianKt || !wardKt) return failJ('guardianKennitala and wardKennitala required');
   // The caller must be the guardian they claim to be (or an admin helping out).
-  if (guardianKt !== caller.kennitala && !_isAdmin_(caller)) {
+  if (guardianKt !== caller.kennitala && !isAdmin_(caller)) {
     return failJ('Forbidden', 403);
   }
   const guardian = findOne_('members', 'kennitala', guardianKt);
@@ -301,9 +301,9 @@ function validateWard_(b, caller) {
   // arbitrary ward-targeted calls. Always short-lived — a guardian switching
   // into a ward should not be able to "stay logged in" as the minor.
   const ua = String((b && b.userAgent) || (caller.session && caller.session.userAgent) || '');
-  const s  = _createSession_(ward.kennitala, ward.role || 'member', false, ua);
+  const s  = createSession_(ward.kennitala, ward.role || 'member', false, ua);
   return okJ({
-    member: _publicMember_(ward),
+    member: publicMember_(ward),
     sessionToken: s.token,
     expiresAt: s.expiresAt,
     sessionId: s.id,
@@ -353,7 +353,7 @@ function getBoatMap_(cfgMap) {
 
 function saveMember_(b, caller) {
   const ts = now_(), ex = b.id ? findOne_('members', 'id', b.id) : null;
-  const isAdminCaller = _isAdmin_(caller) || (caller && caller.__system);
+  const isAdminCaller = isAdmin_(caller) || (caller && caller.__system);
   // Non-admin guardrails: members can only register new guests (used by the
   // member hub's walk-in flow). Anything else — editing any record, creating
   // non-guest members, role changes — is admin only.
@@ -376,7 +376,7 @@ function saveMember_(b, caller) {
     cDel_('members');
     let guardianTemp = null;
     if (bool_(b.isMinor) && b.guardianKennitala) {
-      const g = _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      const g = ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
       if (g && g.tempPassword) guardianTemp = { kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword };
     }
     const out = { id: b.id, updated: true };
@@ -389,7 +389,7 @@ function saveMember_(b, caller) {
     const role = isAdminCaller ? (b.role || 'member') : 'guest';
     addColIfMissing_('members', 'passwordHash');
     addColIfMissing_('members', 'passwordIsTemp');
-    const tempPassword = _genTempPassword_();
+    const tempPassword = genTempPassword_();
     insertRow_('members', {
       id, kennitala: b.kennitala, name: b.name, role: role,
       email: b.email || '', phone: b.phone || '', birthYear: b.birthYear || '',
@@ -403,7 +403,7 @@ function saveMember_(b, caller) {
     cDel_('members');
     let guardianTemp = null;
     if (bool_(b.isMinor) && b.guardianKennitala) {
-      const g = _ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
+      const g = ensureGuardianRecord_(b.guardianKennitala, b.guardianName, b.guardianPhone);
       if (g && g.tempPassword) guardianTemp = { kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword };
     }
     const out = { id, created: true, tempPassword: tempPassword };
@@ -441,7 +441,7 @@ function importMembers_(rows) {
       });
       updated++;
     } else {
-      const temp = _genTempPassword_();
+      const temp = genTempPassword_();
       const kt = String(r.kennitala).trim();
       insertRow_('members', {
         id: uid_(), kennitala: kt, name: r.name || '',
@@ -462,7 +462,7 @@ function importMembers_(rows) {
   // guardian gets its own temp password so the admin can relay it.
   rows.forEach(r => {
     if (bool_(r.isMinor) && r.guardianKennitala) {
-      const g = _ensureGuardianRecord_(r.guardianKennitala, r.guardianName, r.guardianPhone);
+      const g = ensureGuardianRecord_(r.guardianKennitala, r.guardianName, r.guardianPhone);
       if (g && g.tempPassword) {
         tempPasswords.push({ kennitala: g.kennitala, name: g.name, tempPassword: g.tempPassword });
       }
