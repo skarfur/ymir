@@ -1,0 +1,118 @@
+# Changelog
+
+Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
+Commit hashes reference the `main` branch.
+
+## Unreleased — security, CSP, and accessibility hardening
+
+Large cross-cutting pass started from an external code review. Grouped by the
+review's categories; see commit messages for per-change detail.
+
+**Security**
+
+- `code.gs`: `SHEET_ID_` / `API_TOKEN_` constants read from `PropertiesService`
+  at runtime instead of being hard-coded source literals. Apps Script project
+  needs two Script Properties set (`SHEET_ID`, `API_TOKEN`) before deploy.
+- All four public endpoints (`lookup`, `captain`, `boat`, `dashboard`) now
+  gated by a `publicRateLimit_` helper backed by `CacheService`. Per-licence
+  throttle on `lookup` (10 attempts / 15 min) blocks initials-guessing;
+  others are 60–120 req/min global.
+- `validateRow_` called at the top of `insertRow_` / `updateRow_` — rejects
+  unknown tab keys, non-object payloads, and strings over 45 kB (Sheets
+  cell cap is 50 kB; margin avoids silent truncation).
+- SRI on every CDN load (Leaflet, Leaflet-heat, jsQR) for both the static
+  `<script src>` tags and the dynamic loaders in `shared/logbook.js` and
+  `shared/qr.js`.
+
+**CSP — `script-src 'self'` on every portal**
+
+- All 19 portal `index.html` files had their inline `<script>` blocks
+  extracted to per-portal `<portal>.js` companions.
+- All 10 shared JS modules that emitted inline `onclick=` attributes were
+  refactored to `data-*` + document-level delegated listeners. Affected
+  modules: `certs`, `weather`, `volunteer`, `maintenance`, `payroll`,
+  `boats`, `slot-modal`, `mcm`, `boat-modal`, `logbook`.
+- The shared rendering APIs (`renderVolunteerCard`, `renderBoatCard`,
+  `renderCheckoutCard`, `renderFleetStatus`) now take function **names**
+  as strings instead of pre-interpolated JS expression strings. Call sites
+  in `admin/`, `staff/`, `member/` updated atomically.
+
+**Frontend correctness**
+
+- `shared/api.js` cache-invalidation: the six-branch if-chain is now a
+  declarative `_INVALIDATES` map from action name to list of getXxx cache
+  keys to evict. Adding a write just adds a table row.
+- `apiGet._inflight` dedupes parallel identical requests — common on page
+  init when two components both fetch `getConfig` or `getMembers` during
+  the cache-miss window. Keys clear in a `finally` to avoid leaks.
+- `_handleUnauthorized` shows a bilingual "Your session expired" toast
+  for 1.5 s before redirecting to `/login/`, instead of silent page-blank.
+- `shared/logbook.js` builds `_boatById` / `_memberByKt` Maps when
+  `allBoats` / `allMembers` reload and replaces 10 per-trip `.find()`
+  calls with `_boat(id)` / `_member(kt)` — `O(n²)` → `O(n)` on render.
+- Service-worker cleanup block in `api.js` gated behind a one-shot
+  localStorage flag instead of running on every page load.
+
+**Accessibility**
+
+- `<ymir-header>` emits a visually-hidden skip link as the first Tab stop
+  on every portal; tags the first content sibling with `id="ym-main"` so
+  the link always has a target.
+- `Layout.annotateTabBars` auto-annotates every `.tab-bar` / `.vp-tab-bar`
+  / `.pr-tabs` as a WAI-ARIA `tablist` with `role`, `aria-selected`,
+  `aria-controls`, `aria-labelledby`, and arrow-key navigation.
+- 186 `for=` attributes added to `<label>` elements that preceded an id'd
+  input. `<img>` elements now always have `alt`.
+- `shared/ui.js` `openModal` / `closeModal` save and restore prior focus;
+  document-level Tab / Shift-Tab trap keeps focus within the top-most
+  open modal.
+
+**i18n**
+
+- `tools/check-strings.js` diffs the key sets of `shared/strings-en.js`
+  and `shared/strings-is.js`. Exits non-zero with a missing-key list;
+  wired into CI.
+- `shared/strings.js` sets `document.documentElement.lang` to the active
+  language on load. Static `<html lang>` unified to `lang="en"` across
+  all 19 portals (the dynamic setter overrides).
+- 19 new stat-label keys added for the highest-visibility hardcoded
+  strings (logbook personal-stats grid, admin YTD panel,
+  member report-issue modal, alert-action spinner).
+
+**Architecture / naming**
+
+- `code.gs` monolith split into 13 domain-scoped files
+  (`_setup`, `alerts`, `checkouts`, `code`, `config`, `data`, `incidents`,
+  `maintenance`, `members`, `passport`, `payroll`, `public`, `trips`).
+- `data.gs` exposes a `data_` namespace of domain-oriented readers over
+  the sheet primitives.
+- 31 functions with double-prefix names (`_foo_`) renamed to trailing-
+  underscore-only (`foo_`) per CLAUDE.md convention. No call-site
+  collisions.
+- `requiredCol_(headers, name)` helper replaces the silent-`-1`-return
+  `headers.indexOf(name)` pattern in five `alerts.gs` sites that index
+  rows with the result. Missing columns throw loudly instead of
+  miswriting to column −1.
+
+**Tooling (this release)**
+
+- Added `.gitignore`, `.eslintrc.json`, `.prettierrc.json`,
+  `.prettierignore`, minimal `package.json`, and
+  `.github/workflows/checks.yml` — CI runs strings parity, syntax check
+  on every `.js` / `.gs`, and (non-blocking for now) ESLint / Prettier.
+- `tools/check-syntax.js` parse-checks every `.js` and `.gs` file.
+
+## v6
+
+Apps Script backend. Previously lived as a comment at the top of
+`code.gs`; moved here on the Unreleased pass.
+
+- Boats and locations moved from dedicated sheets to config-sheet JSON.
+  `getConfig` now returns `boats` + `locations`; `saveConfig` accepts
+  them.
+- Removed one-time setup functions (`addLangColumnIfNeeded`,
+  `addAlertColumnsIfNeeded`, `createSheetStructure`). Run these from
+  v5 if you need to re-bootstrap a sheet.
+- Removed now-unused sheet-based boat/location handlers: `getBoats_`,
+  `saveBoat_`, `deleteBoat_`, `getLocations_`, `saveLocation_`,
+  `deleteLocation_`.

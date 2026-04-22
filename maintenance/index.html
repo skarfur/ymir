@@ -91,7 +91,7 @@
     </div>
 
     <div class="field field--compact">
-      <label data-s="maint.category"></label>
+      <label data-s="maint.category" for="newBoat"></label>
       <div class="cat-btns">
         <button class="cat-btn" data-cat="boat"      data-mt-click="selectCat" data-mt-arg="boat" data-s="maint.catBoat"></button>
         <button class="cat-btn" data-cat="equipment" data-mt-click="selectCat" data-mt-arg="equipment" data-s="maint.catEquipment"></button>
@@ -103,7 +103,7 @@
       <label data-s="maint.boatLabel"></label>
       <select id="newBoat"><option value="" data-s="maint.selectBoatPh"></option></select>
       <div id="oosField">
-        <label class="mt-8" data-s="maint.markOosLabel"></label>
+        <label class="mt-8" data-s="maint.markOosLabel" for="newPart"></label>
         <div class="flex-center gap-8 mt-4">
           <input type="checkbox" id="newOos" class="accent-checkbox" style="accent-color:var(--red)">
           <span class="text-md text-muted" data-s="maint.markOosHint"></span>
@@ -117,7 +117,7 @@
     </div>
 
     <div class="field field--compact" id="sevField">
-      <label id="sevLabel" data-s="maint.severity"></label>
+      <label id="sevLabel" data-s="maint.severity" for="newDesc"></label>
       <div class="sev-btns">
         <button class="sev-btn" data-sev="low"      data-mt-click="selectSev" data-mt-arg="low" data-s="maint.sevLow"></button>
         <button class="sev-btn" data-sev="medium"   data-mt-click="selectSev" data-mt-arg="medium" data-s="maint.sevMedium"></button>
@@ -133,7 +133,7 @@
     </div>
 
     <div class="field field--compact hidden" id="materialsField">
-      <label data-s="sauma.materials"></label>
+      <label data-s="sauma.materials" for="newVerkstjori"></label>
       <div id="materialsList"></div>
       <div class="flex-center gap-6 mt-8">
         <input type="text" id="newMaterialInput" data-s="maint.materialPh" data-s-attr="placeholder" class="flex-1">
@@ -148,7 +148,7 @@
     </div>
 
     <div class="field field--compact" id="photoField">
-      <label data-s="maint.photoLabel"></label>
+      <label data-s="maint.photoLabel" for="newPhoto"></label>
       <input type="file" id="newPhoto" accept="image/*" data-mt-change-el="handlePhotoChange"
         class="text-md text-muted">
       <img id="photoPreview" class="photo-preview" alt="preview">

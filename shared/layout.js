@@ -90,6 +90,21 @@
   // `data-page="..."` is forwarded to buildHeader() on connection if
   // window.buildHeader is available (it will be, since ui.js is in the
   // core include set).
+  // Pick the element a skip-link should land focus on. Walks forward from
+  // the header looking for the first "real" content container; ignores
+  // modal overlays (hidden, and they'd strand focus). Falls back to the
+  // header itself if the portal is unusual.
+  function _findMainTarget(hdr) {
+    var n = hdr.nextElementSibling;
+    while (n) {
+      if (!n.matches('.modal-overlay, .group-modal-overlay, .guest-modal-overlay, .map-modal-overlay, .modal-bg, [hidden]')) {
+        return n;
+      }
+      n = n.nextElementSibling;
+    }
+    return hdr;
+  }
+
   if (typeof customElements !== 'undefined' && !customElements.get('ymir-header')) {
     customElements.define('ymir-header', class extends HTMLElement {
       connectedCallback() {
@@ -102,15 +117,112 @@
         if (host.className) hdr.className = host.className;
         var page = host.getAttribute('data-page') || '';
         hdr.innerHTML = '<div class="header-left"></div><div class="header-right"></div>';
-        host.replaceWith(hdr);
+
+        // Skip link precedes the header — first Tab stop for keyboard
+        // users, visually hidden until focused (see .skip-link in
+        // shared/style.css). Translation-ready via data-s; falls back to
+        // hard-coded English if strings.js hasn't applied yet.
+        var skip = document.createElement('a');
+        skip.className = 'skip-link';
+        skip.href = '#ym-main';
+        skip.setAttribute('data-s', 'a11y.skip');
+        skip.textContent = 'Skip to main content';
+        host.replaceWith(skip, hdr);
+
+        // Tag the first real content container so the skip link has a
+        // target. Done after replaceWith so _findMainTarget walks the
+        // live DOM, not the pre-upgrade state.
+        var main = _findMainTarget(hdr);
+        if (main && !main.id) main.id = 'ym-main';
+        if (main && !main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+
+        if (typeof global.applyStrings === 'function') global.applyStrings(skip.parentNode);
         if (page && typeof global.buildHeader === 'function') {
           // buildHeader may race DOMContentLoaded; call on next tick so
           // user state (getUser) has had a chance to resolve.
-          setTimeout(function () { try { global.buildHeader(page); } catch (e) { console.warn(e); } }, 0);
+          setTimeout(function () { try { global.buildHeader(page); } catch (e) { Logger && Logger.log ? Logger.log(e) : null; } }, 0);
         }
       }
     });
   }
+
+  // ── ARIA auto-annotation for tab bars ────────────────────────────────────
+  // Walks every container with a tab-bar-ish class and annotates it as a
+  // WAI-ARIA tablist with proper role / aria-selected / aria-controls /
+  // keyboard arrow support. Idempotent — safe to call multiple times as
+  // tab bars get injected dynamically.
+  var TAB_BAR_SELECTORS = '.tab-bar, .vp-tab-bar, .pr-tabs';
+  function _annotateTabBars(root) {
+    root = root || document;
+    root.querySelectorAll(TAB_BAR_SELECTORS).forEach(function (bar) {
+      if (bar.getAttribute('role') === 'tablist') return;
+      bar.setAttribute('role', 'tablist');
+      var tabs = Array.prototype.slice.call(
+        bar.querySelectorAll('button, [role="tab"]')
+      );
+      tabs.forEach(function (tab, i) {
+        tab.setAttribute('role', 'tab');
+        var selected = tab.classList.contains('active');
+        tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+        tab.tabIndex = selected ? 0 : -1;
+        // If the tab's data-tab / data-top / data-val points at a panel id
+        // that exists, link them up so screen readers announce the panel.
+        var key = tab.dataset.tab || tab.dataset.top || tab.dataset.val;
+        if (key) {
+          var panel = document.getElementById('tab-' + key)
+                    || document.getElementById('top-' + key)
+                    || document.getElementById(key);
+          if (panel) {
+            if (!panel.id) panel.id = 'tab-' + key;
+            tab.setAttribute('aria-controls', panel.id);
+            if (!panel.getAttribute('role')) panel.setAttribute('role', 'tabpanel');
+            if (!panel.getAttribute('aria-labelledby')) {
+              if (!tab.id) tab.id = panel.id + '-tab';
+              panel.setAttribute('aria-labelledby', tab.id);
+            }
+          }
+        }
+      });
+      // Sync aria-selected after the portal's existing click handler
+      // toggles .active. Runs on next tick so we read the post-handler
+      // DOM state, not the pre-click one.
+      bar.addEventListener('click', function (e) {
+        if (!e.target.closest('[role="tab"]')) return;
+        setTimeout(function () {
+          tabs.forEach(function (t) {
+            var sel = t.classList.contains('active');
+            t.setAttribute('aria-selected', sel ? 'true' : 'false');
+            t.tabIndex = sel ? 0 : -1;
+          });
+        }, 0);
+      });
+      // Arrow-key navigation between tabs — ARIA Authoring Practices.
+      bar.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' &&
+            e.key !== 'Home' && e.key !== 'End') return;
+        var curr = tabs.indexOf(document.activeElement);
+        if (curr < 0) return;
+        var next = curr;
+        if (e.key === 'ArrowRight') next = (curr + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') next = (curr - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        tabs[next].focus();
+        tabs[next].click();
+        e.preventDefault();
+      });
+    });
+  }
+  // Run once after DOM parse; also expose for pages that create tab bars
+  // dynamically (admin/settings sub-tab bar etc.).
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { _annotateTabBars(); });
+    } else {
+      _annotateTabBars();
+    }
+  }
+  Layout.annotateTabBars = _annotateTabBars;
 
   global.YmirLayout = Layout;
 })(typeof window !== 'undefined' ? window : this);

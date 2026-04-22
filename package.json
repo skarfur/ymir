@@ -1,0 +1,17 @@
+{
+  "name": "ymir",
+  "private": true,
+  "description": "Ýmir Sailing Club management app — static frontend + Google Apps Script backend",
+  "scripts": {
+    "check:strings": "node tools/check-strings.js",
+    "check:syntax":  "node tools/check-syntax.js",
+    "check":         "npm run check:strings && npm run check:syntax && npm run lint",
+    "lint":          "eslint --no-error-on-unmatched-pattern 'shared/**/*.js' '*/*.js' 'tools/**/*.js'",
+    "lint:gs":       "eslint --no-error-on-unmatched-pattern --ext .gs --resolve-plugins-relative-to . '*.gs'",
+    "format":        "prettier --check 'shared/**/*.{js,css}' '*/*.{js,css,html}'"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0"
+  }
+}

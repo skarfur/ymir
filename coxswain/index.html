@@ -68,9 +68,9 @@
     <div class="cx-section d-none" id="sectSlots">
       <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
       <div class="d-flex items-center gap-8 mb-10 flex-wrap">
-        <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Boat</label>
+        <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" for="cxSlotBoat">Boat</label>
         <select id="cxSlotBoat" data-cx-change="loadCxSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
-        <label data-s="slot.filterCrew" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Crew</label>
+        <label data-s="slot.filterCrew" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" for="cxSlotCrew">Crew</label>
         <select id="cxSlotCrew" data-cx-change="renderCxSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
         <div class="slot-week-nav">
           <button class="btn btn-secondary" data-cx-click="shiftCxWeek" data-cx-arg="-1">&larr;</button>
@@ -97,7 +97,7 @@
       <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
       <div id="passportPicker" class="hidden mb-10 pos-relative">
         <div class="d-flex gap-8 items-center flex-wrap">
-          <label class="text-10 text-muted" style="letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
+          <label class="text-10 text-muted" style="letter-spacing:.5px" data-s="passport.viewMember" for="ppMemberSearch">VIEW MEMBER</label>
           <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" data-cx-input-val="ppSearchMember" class="text-xs flex-1" style="min-width:160px">
           <button class="btn btn-secondary text-10" style="padding:4px 10px" data-cx-click="ppViewSelf" data-s="passport.viewSelf">My passport</button>
         </div>
@@ -128,7 +128,7 @@
       <button class="modal-close-x" data-cx-close="cxBulkBookModal">&times;</button>
     </div>
     <div class="field">
-      <label data-s="slot.daysOfWeek">Days of week</label>
+      <label data-s="slot.daysOfWeek" for="cxBbStartTime">Days of week</label>
       <div id="cxBbDays" class="d-flex gap-6 flex-wrap">
         <label class="text-xs"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
         <label class="text-xs"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
@@ -141,11 +141,11 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="slot.startTime">Start time</label><input type="time" id="cxBbStartTime"></div>
-      <div class="field"><label data-s="slot.endTime">End time</label><input type="time" id="cxBbEndTime"></div>
+      <div class="field"><label data-s="slot.endTime" for="cxBbEndTime">End time</label><input type="time" id="cxBbEndTime"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cxBbFromDate"></div>
-      <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cxBbToDate"></div>
+      <div class="field"><label data-s="slot.fromDate" for="cxBbFromDate">From date</label><input type="date" id="cxBbFromDate"></div>
+      <div class="field"><label data-s="slot.toDate" for="cxBbToDate">To date</label><input type="date" id="cxBbToDate"></div>
     </div>
     <div id="cxBbPreview" class="text-10 text-muted mb-8"></div>
     <div class="btn-row">
@@ -163,23 +163,23 @@
       <button class="modal-close-x" data-cx-close="crewModal">×</button>
     </div>
     <div class="field">
-      <label data-s="cox.crewName">Crew name</label>
+      <label data-s="cox.crewName" for="cmCrewName">Crew name</label>
       <input type="text" id="cmCrewName" placeholder="e.g., Thunderbolts" class="text-md">
     </div>
     <div class="field">
-      <label data-s="cox.description">Description</label>
+      <label data-s="cox.description" for="cmDescription">Description</label>
       <input type="text" id="cmDescription" class="text-md" data-placeholder-s="cox.descPlaceholder" placeholder="e.g., Mon & Wed 7am, casual pace">
     </div>
     <div class="gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field">
-        <label data-s="cox.numBoats">Number of boats</label>
+        <label data-s="cox.numBoats" for="cmNumPairs">Number of boats</label>
         <select id="cmNumPairs" class="text-md">
           <option value="2">2</option>
           <option value="3">3</option>
         </select>
       </div>
       <div class="field">
-        <label data-s="cox.visibility">Visibility</label>
+        <label data-s="cox.visibility" for="cmVisibility">Visibility</label>
         <select id="cmVisibility" class="text-md">
           <option value="open" data-s="cox.visOpen">Open — anyone can join</option>
           <option value="invite_only" data-s="cox.visInvite">Invite only</option>
@@ -188,14 +188,14 @@
     </div>
     <div class="gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field">
-        <label data-s="cox.boat">Boat</label>
+        <label data-s="cox.boat" for="cmMyPair">Boat</label>
         <select id="cmMyPair" class="text-md">
           <option value="0">Boat 1</option>
           <option value="1">Boat 2</option>
         </select>
       </div>
       <div class="field">
-        <label data-s="cox.yourSeat">Your seat</label>
+        <label data-s="cox.yourSeat" for="cmMySeat">Your seat</label>
         <select id="cmMySeat" class="text-md">
           <option value="0" data-s="cox.seatBow">Bow</option>
           <option value="1" data-s="cox.seatStern">Stern</option>
@@ -203,7 +203,7 @@
       </div>
     </div>
     <div class="field">
-      <label data-s="cox.crewColor">Color</label>
+      <label data-s="cox.crewColor" for="ciPairId">Color</label>
       <div class="d-flex items-center gap-8">
         <input type="color" id="cmColor" class="border-muted rounded-6 bg-surface cursor-pointer" style="width:32px;height:32px;padding:2px">
         <div id="cmColorPicker" class="d-flex flex-wrap" style="gap:5px"></div>

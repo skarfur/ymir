@@ -1,14 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// ÝMIR SAILING CLUB — Apps Script Backend   v6
+// ÝMIR SAILING CLUB — Apps Script Backend
 // ═══════════════════════════════════════════════════════════════════════════════
-//
-// v6 changes:
-//  • Boats and locations moved from dedicated sheets to config sheet JSON
-//    (getConfig now returns boats + locations; saveConfig accepts them)
-//  • Removed one-time setup functions (addLangColumnIfNeeded, addAlertColumnsIfNeeded,
-//    createSheetStructure) — run these from v5 if needed
-//  • Removed now-unused getBoats_, saveBoat_, deleteBoat_, getLocations_,
-//    saveLocation_, deleteLocation_ sheet-based handlers
+// Version history lives in /CHANGELOG.md at the repo root.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SHEET_ID_ = PropertiesService.getScriptProperties().getProperty('SHEET_ID');

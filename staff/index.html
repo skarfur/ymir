@@ -67,7 +67,7 @@
     </div>
     <div id="foForm" class="hidden mt-10" style="border-top:1px solid var(--border);padding-top:10px">
       <div class="flex-center flex-wrap gap-6 mb-8" id="foFlagBtns"></div>
-      <label class="field mb-6" style="display:block">
+      <label class="field mb-6" style="display:block" for="coBoat">
         <div class="text-xs text-muted mb-4" data-s="staff.flagOverrideNotes">Notes (shown to members)</div>
         <textarea id="foNotes" rows="2" class="w-full font-inherit text-base border-muted rounded-6 bg-surface" style="padding:6px;color:var(--text);resize:vertical" placeholder=""></textarea>
       </label>
@@ -116,14 +116,14 @@
       <div class="inline-fields">
         <div class="field"><label id="boatLabel"></label>
           <select id="coBoat" data-staff-change="onCoBoatChange"><option value="" id="selectBoatOpt"></option></select></div>
-        <div class="field"><label id="locationLabel"></label>
+        <div class="field"><label id="locationLabel" for="coLocation"></label>
           <select id="coLocation"><option value="" id="selectLocOpt"></option></select></div>
       </div>
       <div class="inline-fields">
-        <div class="field"><label id="departureLabel"></label>
+        <div class="field"><label id="departureLabel" for="coTimeOut"></label>
           <input type="text" id="coTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>
         <div class="field">
-          <label id="estReturnLabel"></label>
+          <label id="estReturnLabel" for="coDeparturePort"></label>
           <div class="d-flex items-center flex-wrap" style="gap:5px">
             <input type="text" id="coReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" class="flex-1" style="min-width:80px" data-staff-time-format>
             <div class="d-flex gap-3">
@@ -155,7 +155,7 @@
         <datalist id="coPortsList"></datalist>
       </div>
       <div class="field">
-        <label id="notesLabel"></label>
+        <label id="notesLabel" for="coNotes"></label>
         <input type="text" id="coNotes">
       </div>
       <div class="btn-row">
@@ -275,22 +275,22 @@
     <!-- Location + Times -->
     <div class="gm-row mb-16">
       <div class="gm-field">
-        <label id="gmLocLabel">Location</label>
+        <label id="gmLocLabel" for="gmLocation">Location</label>
         <select id="gmLocation"><option value="">—</option></select>
       </div>
       <div class="gm-field">
-        <label id="gmActivityLabel">Activity type</label>
+        <label id="gmActivityLabel" for="gmActivity">Activity type</label>
         <select id="gmActivity"><option value="">— None —</option></select>
       </div>
     </div>
     <div class="gm-row mb-16">
       <div class="gm-field">
-        <label>Departure</label>
+        <label for="gmTimeOut">Departure</label>
         <input type="text" id="gmTimeOut" placeholder="HH:MM" maxlength="5"
           data-staff-time-format>
       </div>
       <div class="gm-field">
-        <label>Expected return</label>
+        <label for="gmReturnBy">Expected return</label>
         <input type="text" id="gmReturnBy" placeholder="HH:MM" maxlength="5"
           data-staff-time-format>
       </div>

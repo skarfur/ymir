@@ -58,15 +58,15 @@
       <div id="prExportPanel" class="hidden bg-surface border-muted mb-14" style="border-radius:var(--radius-md);padding:14px 16px;box-shadow:var(--shadow-sm)">
         <div class="sec-lbl" data-s="payroll.export"></div>
         <div class="d-flex gap-8 items-center flex-wrap mb-10">
-          <label class="text-10 text-muted" data-s="payroll.periodFrom"></label>
+          <label class="text-10 text-muted" data-s="payroll.periodFrom" for="prExpFrom"></label>
           <input id="prExpFrom" type="date" class="text-xs" style="padding:3px 6px;width:140px">
-          <label class="text-10 text-muted" data-s="payroll.periodTo"></label>
+          <label class="text-10 text-muted" data-s="payroll.periodTo" for="prExpTo"></label>
           <input id="prExpTo" type="date" class="text-xs" style="padding:3px 6px;width:140px">
           <button class="btn btn-primary text-xs" data-pr-click="prExportTimeData" data-s="payroll.export"></button>
           <span id="prExpMsg" class="text-xs"></span>
         </div>
         <div class="mb-6">
-          <label class="text-10 text-muted mb-4" style="display:block" data-s="payroll.externalUrl"></label>
+          <label class="text-10 text-muted mb-4" style="display:block" data-s="payroll.externalUrl" for="prExpUrl"></label>
           <input id="prExpUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" data-pr-input="prSaveExportUrl" class="w-full text-xs" style="max-width:560px;padding:5px 8px">
         </div>
         <div class="text-10 text-muted" data-s="payroll.externalUrlHint"></div>
@@ -103,15 +103,15 @@
       <h3 class="modal-title" id="prModalTitle" style="margin:0"></h3>
       <button class="modal-close-x" data-pr-close="prModal">&times;</button>
     </div>
-    <div class="field"><label data-s="payroll.employee"></label>
+    <div class="field"><label data-s="payroll.employee" for="meEmp"></label>
       <select id="meEmp" class="w-full"></select></div>
-    <div class="field"><label data-s="payroll.clockInLabel"></label>
+    <div class="field"><label data-s="payroll.clockInLabel" for="meIn"></label>
       <input id="meIn" type="datetime-local" class="w-full"></div>
-    <div class="field"><label data-s="payroll.clockOutLabel"></label>
+    <div class="field"><label data-s="payroll.clockOutLabel" for="meOut"></label>
       <input id="meOut" type="datetime-local" class="w-full" data-pr-change="meCalcMins"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" class="fw-400 text-muted"></span></label>
+    <div class="field"><label for="meMins"><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" class="fw-400 text-muted"></span></label>
       <input id="meMins" type="number" min="0" class="w-full"></div>
-    <div class="field"><label data-s="payroll.noteOptional"></label>
+    <div class="field"><label data-s="payroll.noteOptional" for="meNote"></label>
       <input id="meNote" type="text" class="w-full" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
     <div id="meErr" class="modal-err"></div>
     <div class="modal-actions">

@@ -1,0 +1,45 @@
+{
+  "root": true,
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "script"
+  },
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "rules": {
+    "no-unused-vars": ["warn", { "args": "none", "varsIgnorePattern": "^_" }],
+    "no-undef":       "off",
+    "no-redeclare":  "warn",
+    "no-empty":      ["warn", { "allowEmptyCatch": true }],
+    "no-prototype-builtins": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tools/**/*.js"],
+      "env": { "node": true, "browser": false }
+    },
+    {
+      "files": ["*.gs"],
+      "env": { "browser": false, "node": false },
+      "globals": {
+        "SpreadsheetApp":    "readonly",
+        "Session":           "readonly",
+        "ContentService":    "readonly",
+        "CacheService":      "readonly",
+        "Utilities":         "readonly",
+        "PropertiesService": "readonly",
+        "Logger":            "readonly",
+        "UrlFetchApp":       "readonly",
+        "HtmlService":       "readonly",
+        "DriveApp":          "readonly",
+        "ScriptApp":         "readonly",
+        "MimeType":          "readonly",
+        "MailApp":           "readonly",
+        "GmailApp":          "readonly",
+        "CalendarApp":       "readonly"
+      }
+    }
+  ]
+}
