@@ -99,7 +99,7 @@
         <div class="d-flex gap-8 items-center flex-wrap">
           <label class="text-10 text-muted" style="letter-spacing:.5px" data-s="passport.viewMember" for="ppMemberSearch">VIEW MEMBER</label>
           <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" data-cx-input-val="ppSearchMember" class="text-xs flex-1" style="min-width:160px">
-          <button class="btn btn-secondary text-10" style="padding:4px 10px" data-cx-click="ppViewSelf" data-s="passport.viewSelf">My passport</button>
+          <button class="btn btn-secondary btn-sm" data-cx-click="ppViewSelf" data-s="passport.viewSelf">My passport</button>
         </div>
         <div id="ppMemberSuggestions" class="suggest-drop hidden border-muted rounded-6 mt-2" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
         <div id="ppCurrentTarget" class="text-10 text-brass mt-4"></div>
@@ -111,8 +111,8 @@
       <div id="passportSignerBanner" class="hidden text-10 text-brass bg-surface border-muted rounded-6 mb-10" style="padding:6px 10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
       <div id="passportSortBar" class="d-flex gap-6 items-center mb-10 flex-wrap">
         <span class="text-9 text-muted" style="letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
-        <button class="btn btn-secondary text-10" id="ppSortCatMod" style="padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
-        <button class="btn btn-secondary text-10" id="ppSortModCat" style="padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
+        <button class="btn btn-secondary btn-sm" id="ppSortCatMod" data-cx-click="ppSetSortMode" data-cx-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
+        <button class="btn btn-secondary btn-sm" id="ppSortModCat" data-cx-click="ppSetSortMode" data-cx-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
       </div>
       <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>

@@ -262,10 +262,10 @@ function renderCrewCard(c) {
   if (isMine) {
     actionsHtml = '<div class="cb-actions">';
     if (c.status === 'forming' && (c.visibility || 'open') === 'invite_only') {
-      actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-cx-click="openCrewInvModal" data-cx-arg="'+esc(c.id)+'">' + s('cox.inviteMember') + '</button>';
+      actionsHtml += '<button class="btn btn-secondary btn-sm" data-cx-click="openCrewInvModal" data-cx-arg="'+esc(c.id)+'">' + s('cox.inviteMember') + '</button>';
     }
-    actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-cx-click="leaveCrewConfirm" data-cx-arg="'+esc(c.id)+'">' + s('cox.leave') + '</button>';
-    actionsHtml += '<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-cx-click="disbandCrewConfirm" data-cx-arg="'+esc(c.id)+'">' + s('cox.disband') + '</button>';
+    actionsHtml += '<button class="btn btn-secondary btn-sm" data-cx-click="leaveCrewConfirm" data-cx-arg="'+esc(c.id)+'">' + s('cox.leave') + '</button>';
+    actionsHtml += '<button class="btn btn-secondary btn-sm" data-cx-click="disbandCrewConfirm" data-cx-arg="'+esc(c.id)+'">' + s('cox.disband') + '</button>';
     actionsHtml += '</div>';
   }
 
@@ -316,8 +316,8 @@ function renderCrewInvites() {
         + '<div style="font-size:12px;font-weight:500">' + esc(inv.crewName || '') + '</div>'
         + '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + s('cox.invitedBy') + ': ' + esc(inv.fromName) + ' · ' + s('cox.boat') + ' ' + esc(inv.pairId || '').replace('pair_', '') + '</div>'
         + '<div style="display:flex;gap:6px;margin-top:8px">'
-          + '<button class="btn btn-primary" style="font-size:10px;padding:3px 10px" data-cx-click="respondInvite" data-cx-arg="'+esc(inv.id)+'" data-cx-arg2="accepted">' + s('cox.accept') + '</button>'
-          + '<button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" data-cx-click="respondInvite" data-cx-arg="'+esc(inv.id)+'" data-cx-arg2="rejected">' + s('cox.reject') + '</button>'
+          + '<button class="btn btn-primary btn-sm" data-cx-click="respondInvite" data-cx-arg="'+esc(inv.id)+'" data-cx-arg2="accepted">' + s('cox.accept') + '</button>'
+          + '<button class="btn btn-secondary btn-sm" data-cx-click="respondInvite" data-cx-arg="'+esc(inv.id)+'" data-cx-arg2="rejected">' + s('cox.reject') + '</button>'
         + '</div>'
       + '</div>';
     }).join('');

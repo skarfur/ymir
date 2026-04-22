@@ -957,8 +957,8 @@ function renderGroupCard(c) {
     + '</div>'
     + '<div class="gc-meta">' + esc(c.locationName||'—') + ' \u00b7 Out ' + esc(tout) + '</div>'
     + '<div style="display:flex;gap:6px;margin-top:10px">'
-    + '<button class="btn btn-primary" style="font-size:11px;flex:1" data-staff-click="staffGroupCheckIn" data-staff-arg="' + esc(c.id) + '">\u2693 ' + s('staff.checkInAll') + '</button>'
-    + '<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" data-staff-click="staffDeleteCheckout" data-staff-arg="' + esc(c.id) + '">\u2715</button>'
+    + '<button class="btn btn-primary btn-sm" style="flex:1" data-staff-click="staffGroupCheckIn" data-staff-arg="' + esc(c.id) + '">\u2693 ' + s('staff.checkInAll') + '</button>'
+    + '<button class="btn btn-secondary btn-sm" style="color:var(--muted)" data-staff-click="staffDeleteCheckout" data-staff-arg="' + esc(c.id) + '">\u2715</button>'
     + '</div>';
   return div;
 }

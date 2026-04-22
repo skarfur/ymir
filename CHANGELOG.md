@@ -48,6 +48,18 @@ future sign-ins on that device can complete in one click.
   `GOOGLE_CLIENT_ID` constant in `shared/api.js`. Run
   `setupSpreadsheet()` to add the new `googleEmail` column, then
   optionally `autoLinkGmailAddresses()` once to backfill existing rows.
+## Unreleased — unified compact button size
+
+- **`.btn-sm` modifier in `shared/style.css`** — one canonical compact size
+  (`padding: 6px 12px; font-size: 11px; min-height: 0;`) replaces ~40 ad-hoc
+  inline `style="padding:…;font-size:…"` overrides spread across captain,
+  staff, coxswain, admin, member, weather, incidents, and the shared boat /
+  slot / maintenance / payroll / boats modules. Mobile caps the touch target
+  at 32px (between `.btn`'s 44px and `.btn-ghost`'s 36px).
+- **Captain's slot-week-nav aligns with the rest** — removed the
+  `.slot-week-nav .btn` size rule; the strip now uses `.btn-sm` directly,
+  so "Assign cred", "+ Add boat", "← →", "New Booking" and "Bulk Book" all
+  share the same height/padding instead of drifting by 1–3px each.
 
 ## Unreleased — logbook bug fixes
 

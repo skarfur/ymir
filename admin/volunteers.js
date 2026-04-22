@@ -77,7 +77,7 @@ function _volPastToggleHtml(count) {
     ? s('admin.volHidePast')
     : s('admin.volShowPast').replace('{n}', count);
   return '<div style="text-align:center;padding:10px 0 2px">'
-    + '<button class="btn btn-secondary" style="font-size:10px" data-admin-click="_volTogglePast">' + esc(lbl) + '</button>'
+    + '<button class="btn btn-secondary btn-sm" data-admin-click="_volTogglePast">' + esc(lbl) + '</button>'
     + '</div>';
 }
 

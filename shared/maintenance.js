@@ -190,7 +190,7 @@ function maintOpenDetail(r, currentUser) {
           </div>`).join('')}
         ${!resolved ? `<div style="display:flex;gap:6px;align-items:center;margin-top:8px">
           <input id="mdMaterialInput" type="text" placeholder="${s('maint.addMaterialPh')}" style="flex:1">
-          <button id="mdAddMaterialBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.addMaterialBtn')}</button>
+          <button id="mdAddMaterialBtn" class="btn btn-secondary btn-sm">${s('maint.addMaterialBtn')}</button>
         </div>` : ''}
       </div>` : '';
 
@@ -210,8 +210,8 @@ function maintOpenDetail(r, currentUser) {
         <span class="badge" style="background:var(--brass)22;color:var(--brass-fg);border:1px solid var(--brass)44">🧵 ${s('maint.saumaBadge')}</span>
         ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">${s('maint.verkstjoriPrefix')} <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
-        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${s('maint.adoptProject')}</button>` : ''}
-        ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn btn-secondary" style="font-size:11px;padding:4px 12px">${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</button>` : ''}
+        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary btn-sm">${s('maint.adoptProject')}</button>` : ''}
+        ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn btn-secondary btn-sm">${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</button>` : ''}
       </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px;font-size:12px;color:var(--muted)">
         ${r.reportedBy ? `<span>${s('maint.reportedByLabel')} <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
@@ -228,16 +228,16 @@ function maintOpenDetail(r, currentUser) {
           <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="${s('maint.attachPhoto')}">📷
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
-          <button id="mdCommentBtn" class="btn btn-secondary" style="font-size:12px">${s('maint.postBtn')}</button>
+          <button id="mdCommentBtn" class="btn btn-secondary btn-sm">${s('maint.postBtn')}</button>
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
-      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass-fg)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary" style="font-size:11px;padding:4px 14px;margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
+      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--brass)11;border:1px solid var(--brass)44;font-size:12px;color:var(--brass-fg)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary btn-sm" style="margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <button id="mdDeleteBtn" class="btn btn-secondary" style="font-size:12px;color:var(--red)">${s('maint.deleteBtn')}</button>
-        ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px">${s('btn.edit')}</button>` : ''}
-        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
-        <button id="mdResolveBtn" class="btn btn-primary" style="font-size:12px;padding:7px 16px${isSauma && boolVal(r.approved) ? '' : ';margin-left:auto'}">${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
+        <button id="mdDeleteBtn" class="btn btn-secondary btn-sm" style="color:var(--red)">${s('maint.deleteBtn')}</button>
+        ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary btn-sm">${s('btn.edit')}</button>` : ''}
+        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary btn-sm" style="margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
+        <button id="mdResolveBtn" class="btn btn-primary btn-sm"${isSauma && boolVal(r.approved) ? '' : ' style="margin-left:auto"'}>${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
       </div>`
       : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>`}
     `;
