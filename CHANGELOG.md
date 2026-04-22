@@ -29,7 +29,7 @@ mode (green instead of blue) so active tabs rendered with a blue underline and
 a green label. Renamed for clarity and merged the duplicate:
 
 - `--brass` → `--accent` (theme-aware primary accent; gold `#d9b441` dark,
-  canonical brand blue `#452682` light). Used for borders, button
+  canonical brand blue `#163274` light). Used for borders, button
   backgrounds, underlines — the *structural* accent.
 - `--brass-fg` → `--accent-fg` (theme-aware text/icon accent; gold `#d9b441`
   dark, green `#1e8e4e` light). Used for `color:` on active-tab labels,
