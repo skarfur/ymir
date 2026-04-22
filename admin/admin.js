@@ -595,10 +595,10 @@ function renderBoats() {
       const label = (L === 'IS' && cat.labelIS) ? cat.labelIS : cat.labelEN;
       const cards = (groups[cat.key] || []).map(b => `
         <div class="boat-card${bool(b.oos) ? " oos" : ""}">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
+          <div class="boat-card-head">
             <div class="boat-card-name">${cat.emoji || boatEmoji(cat.key)} ${esc(b.name)}</div>
-            <div style="display:flex;gap:4px;flex-shrink:0">
-              ${b.accessMode === 'controlled' ? `<span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass-fg)">${esc(s('fleet.badgeControlled'))}</span>` : ""}
+            <div class="boat-card-badges">
+              ${b.accessMode === 'controlled' ? `<span class="boat-card-badge boat-card-badge-controlled">${esc(s('fleet.badgeControlled'))}</span>` : ""}
               ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
               ${boatCatBadge(cat.key)}
             </div>
@@ -3594,9 +3594,6 @@ function _removeElementById(id) { var e = document.getElementById(id); if (e) e.
   }
 
   document.addEventListener('click', function (e) {
-    // stopPropagation-only marker
-    if (e.target.closest('[data-admin-nobubble]')) { e.stopPropagation(); return; }
-
     // Modal close-self (click on the overlay element itself)
     var cs = e.target.closest('[data-admin-close-self]');
     if (cs && e.target === cs) { closeModal(cs.id); return; }
@@ -3605,9 +3602,17 @@ function _removeElementById(id) { var e = document.getElementById(id); if (e) e.
     var cl = e.target.closest('[data-admin-close]');
     if (cl) { closeModal(cl.dataset.adminClose); return; }
 
-    // Toggle section (expandable panels)
+    // Toggle section (expandable panels) — skip when the click originates from a
+    // nobubble region inside the section (buttons, inputs, etc.)
     var ts = e.target.closest('[data-admin-toggle-section]');
-    if (ts) { if (typeof toggleSection === 'function') toggleSection(ts); return; }
+    if (ts) {
+      var nb = e.target.closest('[data-admin-nobubble]');
+      if (!(nb && ts.contains(nb))) {
+        if (typeof toggleSection === 'function') toggleSection(ts);
+        return;
+      }
+      // fall through so data-admin-click on nested buttons still fires
+    }
 
     // Show element by id
     var se = e.target.closest('[data-admin-show-el]');

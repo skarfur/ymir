@@ -169,7 +169,7 @@ function renderProjectCard(r) {
       </div>
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
-    ${r.photoUrl ? `<img class="req-photo" src="${esc(r.photoUrl)}" data-sk-view-photo="${esc(r.photoUrl)}">` : ''}
+    ${r.photoUrl ? `<img class="req-photo" src="${esc(driveImageUrl(r.photoUrl))}" data-sk-view-photo="${esc(driveImageUrl(r.photoUrl))}">` : ''}
     <div class="flex-center gap-8 mt-8 text-sm text-muted">
       ${following ? '<span style="color:var(--brass-fg)" title="' + s('sauma.unfollow') + '">★</span>' : ''}
       <span>💬 ${commentCount}</span>
@@ -302,7 +302,7 @@ function openEditProject(r) {
   if (r.photoUrl) {
     suggestExistingPhotoUrl = r.photoUrl;
     const preview = document.getElementById("suggestPhotoPreview");
-    preview.src = r.photoUrl;
+    preview.src = driveImageUrl(r.photoUrl);
     preview.className = "photo-preview show";
   }
   const titleEl = document.querySelector('#suggestModal h3');

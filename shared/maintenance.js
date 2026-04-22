@@ -44,6 +44,19 @@ function maintTitleFallback_(r, max) {
   return (sp > 30 ? cut.slice(0, sp) : cut) + '…';
 }
 
+// ── Drive URL normalisation ───────────────────────────────────────────────────
+// Drive's file.getUrl() returns a "viewer" page URL (…/file/d/<ID>/view) which
+// cannot be loaded as an <img src>. Convert to the thumbnail endpoint so the
+// same URL works for inline previews and the lightbox overlay.
+function driveImageUrl(url) {
+  if (!url) return '';
+  const u = String(url);
+  const m = u.match(/\/d\/([a-zA-Z0-9_-]+)/) || u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1600';
+  return u;
+}
+window.driveImageUrl = driveImageUrl;
+
 // ── Fallback viewPhoto — pages that include their own can override ────────────
 if (typeof window.viewPhoto === 'undefined') {
   window.viewPhoto = function (url) {
@@ -161,7 +174,7 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-item" style="position:relative;padding-right:24px">
         <div style="font-size:11px;margin-bottom:3px"><span style="color:var(--text);font-weight:500">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${sstr(c.at).slice(0,16).replace('T',' ')}</span></div>
         ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
-        ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" data-view-photo="${esc(c.photoUrl)}">` : ''}
+        ${c.photoUrl ? `<img src="${esc(driveImageUrl(c.photoUrl))}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" data-view-photo="${esc(driveImageUrl(c.photoUrl))}">` : ''}
         ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="${s('maint.deleteComment')}">&times;</button>` : ''}
       </div>`).join('');
 
@@ -205,7 +218,7 @@ function maintOpenDetail(r, currentUser) {
         ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>`  : ''}
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
-      ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" data-view-photo="${esc(r.photoUrl)}">` : ''}
+      ${r.photoUrl    ? `<img src="${esc(driveImageUrl(r.photoUrl))}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" data-view-photo="${esc(driveImageUrl(r.photoUrl))}">` : ''}
       ${materialsHtml}
       ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
       ${!resolved ? `
@@ -524,7 +537,7 @@ function maintRenderCard(r) {
     <div class="comment-item">
       <div style="font-size:11px;margin-bottom:2px"><span class="comment-by">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${sstr(c.at).slice(0,16).replace('T',' ')}</span></div>
       ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
-      ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" data-view-photo="${esc(c.photoUrl)}">` : ''}
+      ${c.photoUrl ? `<img src="${esc(driveImageUrl(c.photoUrl))}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" data-view-photo="${esc(driveImageUrl(c.photoUrl))}">` : ''}
     </div>`).join('');
 
   return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
@@ -545,7 +558,7 @@ function maintRenderCard(r) {
       </div>
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
-    ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" data-view-photo="${esc(r.photoUrl)}">` : ''}
+    ${r.photoUrl    ? `<img class="req-photo" src="${esc(driveImageUrl(r.photoUrl))}" style="cursor:pointer" data-view-photo="${esc(driveImageUrl(r.photoUrl))}">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
     ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>` : ''}
   </div>`;
