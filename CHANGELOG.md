@@ -3,6 +3,18 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — light theme is the default
+
+New users (and anyone without a saved `ymirTheme`) now get light mode out of
+the box. `shared/api.js` `getTheme()` defaults to `"light"`; `settings.js`
+`saveSettings` falls back to `"light"` when nothing is selected. The login
+page now calls `applyTheme()` on load — previously it didn't load `ui.js`, so
+the form always rendered with the `:root` dark palette regardless of the
+user's saved preference. The Google sign-in button also measures its
+container and renders at the card's actual inner width (clamped to GSI's
+200-400px range) so it lines up flush with the password inputs on every
+screen instead of sitting at a hard-coded 320px.
+
 ## Unreleased — Google sign-in (one-click, with password fallback)
 
 Members can link a Google account and sign in with Google Identity Services'
