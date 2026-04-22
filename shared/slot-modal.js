@@ -40,11 +40,11 @@
     const saveFn   = c.saveFn   || 'saveCurrentSlot';
     const deleteFn = c.deleteFn || null;
     return ''
-      + '<div class="modal-overlay hidden" id="slotModal" onclick="if(event.target===this)closeModal(\'slotModal\')">'
+      + '<div class="modal-overlay hidden" id="slotModal" data-sm-close-self>'
       +   '<div class="modal" style="max-width:360px">'
       +     '<div class="modal-header">'
       +       '<h3 id="slotModalTitle" data-s="' + title + '"></h3>'
-      +       '<button class="modal-close-x" onclick="closeModal(\'slotModal\')">&times;</button>'
+      +       '<button class="modal-close-x" data-sm-close="slotModal">&times;</button>'
       +     '</div>'
       +     (c.showBoatName ? '<div id="slotModalBoatName" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>' : '')
       +     '<div class="field"><label data-s="slot.date"></label><input type="date" id="smDate"></div>'
@@ -55,9 +55,9 @@
       +     (c.showNote ? '<div class="field"><label data-s="slot.note"></label><input type="text" id="smNote" style="font-size:11px"></div>' : '')
       +     (c.showBookedInfo ? '<div id="slotBookedInfo" class="hidden" style="font-size:11px;color:var(--green);margin-bottom:8px"></div>' : '')
       +     '<div class="btn-row">'
-      +       (deleteFn ? '<button class="btn btn-danger hidden" id="smDeleteBtn" style="font-size:11px" onclick="' + deleteFn + '()" data-s="btn.delete"></button>' : '')
-      +       '<button class="btn btn-secondary" onclick="closeModal(\'slotModal\')" data-s="btn.cancel"></button>'
-      +       '<button class="btn btn-primary" onclick="' + saveFn + '()" data-s="' + saveKey + '"></button>'
+      +       (deleteFn ? '<button class="btn btn-danger hidden" id="smDeleteBtn" style="font-size:11px" data-sm-fn="' + deleteFn + '" data-s="btn.delete"></button>' : '')
+      +       '<button class="btn btn-secondary" data-sm-close="slotModal" data-s="btn.cancel"></button>'
+      +       '<button class="btn btn-primary" data-sm-fn="' + saveFn + '" data-s="' + saveKey + '"></button>'
       +     '</div>'
       +   '</div>'
       + '</div>';
@@ -82,11 +82,11 @@
       '<label style="font-size:11px"><input type="checkbox" value="' + v + '"> <span data-s="' + k + '"></span></label>'
     ).join('');
     return ''
-      + '<div class="modal-overlay hidden" id="recurSlotModal" onclick="if(event.target===this)closeModal(\'recurSlotModal\')">'
+      + '<div class="modal-overlay hidden" id="recurSlotModal" data-sm-close-self>'
       +   '<div class="modal" style="max-width:440px">'
       +     '<div class="modal-header">'
       +       '<h3 data-s="slot.recurTitle"></h3>'
-      +       '<button class="modal-close-x" onclick="closeModal(\'recurSlotModal\')">&times;</button>'
+      +       '<button class="modal-close-x" data-sm-close="recurSlotModal">&times;</button>'
       +     '</div>'
       +     (c.showBoat ? '<div class="field"><label data-s="slot.boat"></label><select id="rsBoat" style="font-size:11px"></select></div>' : '')
       +     '<div class="field"><label data-s="slot.daysOfWeek"></label>'
@@ -103,8 +103,8 @@
       +     (c.showNote ? '<div class="field"><label data-s="slot.note"></label><input type="text" id="rsNote" style="font-size:11px"></div>' : '')
       +     '<div id="rsPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>'
       +     '<div class="btn-row">'
-      +       '<button class="btn btn-secondary" onclick="' + previewFn + '()" data-s="slot.preview"></button>'
-      +       '<button class="btn btn-primary" onclick="' + saveFn + '()" data-s="' + saveKey + '"></button>'
+      +       '<button class="btn btn-secondary" data-sm-fn="' + previewFn + '" data-s="slot.preview"></button>'
+      +       '<button class="btn btn-primary" data-sm-fn="' + saveFn + '" data-s="' + saveKey + '"></button>'
       +     '</div>'
       +   '</div>'
       + '</div>';
@@ -121,3 +121,19 @@
   window.injectSingleSlotModal    = function (cfg) { injectOnce('slotModal',      singleSlotModalHtml(cfg)); };
   window.injectRecurringSlotModal = function (cfg) { injectOnce('recurSlotModal', recurringSlotModalHtml(cfg)); };
 })();
+
+// Delegated click handler for data-sm-* attrs (replaces inline onclicks
+// in the slot-modal templates above for CSP-strict pages).
+if (typeof document !== 'undefined' && !document._smClickListener) {
+  document._smClickListener = true;
+  document.addEventListener('click', function(e) {
+    var self = e.target.closest('[data-sm-close-self]');
+    if (self && e.target === self) { closeModal(self.id); return; }
+    var close = e.target.closest('[data-sm-close]');
+    if (close) { closeModal(close.dataset.smClose); return; }
+    var act = e.target.closest('[data-sm-fn]');
+    if (act && typeof window[act.dataset.smFn] === 'function') {
+      window[act.dataset.smFn]();
+    }
+  });
+}
