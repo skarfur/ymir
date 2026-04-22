@@ -999,6 +999,23 @@
   </div>
 </div>
 
+<!-- Per-tab modules: each is a single-concern slice of the old admin.js
+     monolith, 40-550 lines each. All use defer so order here is purely
+     documentary — DOMContentLoaded waits for every one. admin.js loads
+     last because its DOMContentLoaded handler (loadAll, showTopTab,
+     etc.) calls functions defined across these modules. -->
+<script src="members.js" defer></script>
+<script src="boats.js" defer></script>
+<script src="locations.js" defer></script>
+<script src="checklists.js" defer></script>
+<script src="act-types.js" defer></script>
+<script src="volunteers.js" defer></script>
+<script src="certs.js" defer></script>
+<script src="alerts.js" defer></script>
+<script src="flags.js" defer></script>
+<script src="import.js" defer></script>
+<script src="calendars.js" defer></script>
+<script src="passport.js" defer></script>
 <script src="admin.js" defer></script>
 </body>
 </html>

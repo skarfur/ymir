@@ -1574,7 +1574,7 @@ var _STRINGS_FLAT = {
   "sauma.follow": "★ Follow",
   "sauma.unfollow": "★ Following",
   "sauma.followed": "Following project ★",
-  "sauma.unfollowed": "Unfollowed project"
+  "sauma.unfollowed": "Unfollowed project",
 
   "lb.stat.asCrew": "As crew",
   "lb.stat.helmHours": "Hours as helm",

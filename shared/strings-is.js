@@ -1574,7 +1574,7 @@ var _STRINGS_FLAT = {
   "sauma.follow": "★ Fylgjast með",
   "sauma.unfollow": "★ Fylgist með",
   "sauma.followed": "Fylgist með verkefni ★",
-  "sauma.unfollowed": "Hætt að fylgjast með"
+  "sauma.unfollowed": "Hætt að fylgjast með",
 
   "lb.stat.asCrew": "Sem áhöfn",
   "lb.stat.helmHours": "Klst við stýri",
