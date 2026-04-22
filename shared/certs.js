@@ -363,7 +363,7 @@ function certInjectStyles() {
     ".cert-badge::before{content:'\u2713';color:var(--green);font-weight:bold}",
     '.cert-badge-expired{border-color:var(--red);opacity:.65}',
     ".cert-badge-expired::before{content:'\u2715';color:var(--red)}",
-    '.ccard{--cc:var(--brass);background:var(--card);border:1px solid var(--border);border-left:4px solid var(--cc);border-radius:8px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s}',
+    '.ccard{--cc:var(--accent);background:var(--card);border:1px solid var(--border);border-left:4px solid var(--cc);border-radius:8px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s}',
     '.ccard[role="button"]{cursor:pointer}',
     '.ccard[role="button"]:hover{box-shadow:0 2px 10px rgba(0,0,0,.18)}',
     '.ccard-top{display:flex;align-items:center;gap:12px;padding:12px 14px}',

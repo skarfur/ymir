@@ -109,7 +109,7 @@ function updateStats() {
   const catMax = catEntries.length ? catEntries[0][1] : 0;
   const catHtml = catEntries.map(([k, v]) => {
     const key = (k || '').toLowerCase();
-    const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[key]) || { color: 'var(--brass)' };
+    const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[key]) || { color: 'var(--accent)' };
     const pct = catMax ? Math.round(v / catMax * 100) : 0;
     const label = (typeof _boatCatLabel === 'function') ? _boatCatLabel(key || 'other') : k;
     return `<div class="cat-hour-row">
@@ -192,7 +192,7 @@ function renderTrips() {
           ${hasVerifyReq && !isVer ? `<span class="badge" style="color:var(--navy-l);border-color:color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent)">${s('logrev.verifyRequest')}</span>` : ''}
         </div>
       </div>
-      ${t.skipperNote ? `<div class="trip-notes text-brass">📋 ${esc(t.skipperNote)}</div>` : ''}
+      ${t.skipperNote ? `<div class="trip-notes text-accent">📋 ${esc(t.skipperNote)}</div>` : ''}
       ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
       ${t.staffComment && isVer ? `
         <div class="staff-comment">
@@ -499,9 +499,9 @@ function setCertMode(mode) {
   const isMember = mode === 'member';
   document.getElementById('certPanelModeA').style.display  = isMember ? '' : 'none';
   document.getElementById('certPanelModeB').style.display  = isMember ? 'none' : '';
-  document.getElementById('certModeByMember').style.background = isMember ? 'var(--brass)' : 'var(--surface)';
+  document.getElementById('certModeByMember').style.background = isMember ? 'var(--accent)' : 'var(--surface)';
   document.getElementById('certModeByMember').style.color      = isMember ? '#fff' : 'var(--muted)';
-  document.getElementById('certModeByType').style.background   = isMember ? 'var(--surface)' : 'var(--brass)';
+  document.getElementById('certModeByType').style.background   = isMember ? 'var(--surface)' : 'var(--accent)';
   document.getElementById('certModeByType').style.color        = isMember ? 'var(--muted)' : '#fff';
 }
   

@@ -125,7 +125,7 @@ function renderCertDefs() {
     const catObj = d.category ? certCategoryByKey(certCategories, d.category) : null;
     const catLabel = catObj ? certCategoryLabel(catObj) : d.category;
     const catStr = d.category
-      ? `<span style="color:var(--brass-fg);font-size:10px">[${esc(catLabel)}]</span> ` : "";
+      ? `<span style="color:var(--accent);font-size:10px">[${esc(catLabel)}]</span> ` : "";
     const expiryStr = d.expires
       ? `<span style="color:var(--muted)"> · expires</span>` : "";
     const nameEN = d.nameEN || d.name || '';

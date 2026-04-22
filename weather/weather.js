@@ -250,7 +250,7 @@ ${staffStatus ? wxStaffStatusHtml(staffStatus) : ''}
   <div class="chart-header">
     <span class="chart-title-txt">WIND & WAVES · 3H HISTORY + 6H FORECAST</span>
     <div class="chart-legend">
-      <span class="leg-item"><span class="leg-dot" style="background:var(--brass)"></span>Wind m/s</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--accent)"></span>Wind m/s</span>
       <span class="leg-item" style="opacity:.55;font-style:italic">— — Gusts</span>
       ${marine ? `<span class="leg-item"><span class="leg-dot" style="background:var(--navy-l)"></span>Waves m</span>` : ''}
     </div>
@@ -326,15 +326,15 @@ function drawWindChart(pts, nowI) {
   const nowX = xOf(nowI).toFixed(1);
   let h = `<rect class="chart-past" x="${P.l}" y="${P.t}" width="${Math.max(0,parseFloat(nowX)-P.l)}" height="${iH}"/>`;
   if (waves.some(v=>v>0)) { h+=`<path class="chart-area c-blue" d="${area(waves)}"/>`;h+=`<path class="chart-line c-blue" d="${line(waves)}"/>`; }
-  h+=`<path class="chart-area c-brass" d="${area(winds)}"/>`;
-  h+=`<path class="chart-line c-brass" d="${line(winds)}"/>`;
-  h+=`<path class="chart-dash c-brass" d="${line(gusts)}"/>`;
+  h+=`<path class="chart-area c-accent" d="${area(winds)}"/>`;
+  h+=`<path class="chart-line c-accent" d="${line(winds)}"/>`;
+  h+=`<path class="chart-dash c-accent" d="${line(gusts)}"/>`;
   h+=`<line class="chart-now" x1="${nowX}" y1="${P.t}" x2="${nowX}" y2="${H-P.b}"/>`;
   h+=`<text class="chart-now-t" x="${nowX}" y="${H-P.b+11}" text-anchor="middle">NOW</text>`;
   pts.forEach((p,i) => {
-    h+=`<circle class="chart-dot ${p.isPast?'c-muted':'c-brass'}" cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2"/>`;
+    h+=`<circle class="chart-dot ${p.isPast?'c-muted':'c-accent'}" cx="${xOf(i).toFixed(1)}" cy="${yOf(p.ws).toFixed(1)}" r="2"/>`;
     if (p.isNow||i===0||i===pts.length-1) {
-      h+=`<text class="chart-lbl c-brass" x="${xOf(i).toFixed(1)}" y="${(yOf(p.ws)-4).toFixed(1)}" text-anchor="middle">${Math.round(p.ws)}</text>`;
+      h+=`<text class="chart-lbl c-accent" x="${xOf(i).toFixed(1)}" y="${(yOf(p.ws)-4).toFixed(1)}" text-anchor="middle">${Math.round(p.ws)}</text>`;
       if (p.mWH != null)
         h+=`<text class="chart-lbl c-blue" x="${xOf(i).toFixed(1)}" y="${(yOf(p.mWH)-4).toFixed(1)}" text-anchor="middle">${p.mWH.toFixed(1)}</text>`;
     }

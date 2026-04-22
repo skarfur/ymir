@@ -2,25 +2,25 @@
 .member-actions { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .member-actions .act-btn {
   flex:1 1 140px; min-width:110px; min-height:56px;
-  background:var(--brass)12; border:1px solid var(--brass);
+  background:var(--accent)12; border:1px solid var(--accent);
   border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
-  font-size:13px; font-weight:600; color:var(--brass-fg); text-align:center; text-decoration:none;
+  font-size:13px; font-weight:600; color:var(--accent); text-align:center; text-decoration:none;
   display:inline-flex; align-items:center; justify-content:center; gap:10px;
   line-height:1.25; box-shadow:var(--shadow-sm);
   transition:background-color .15s, transform .15s, box-shadow .15s;
 }
 .member-actions .act-btn::before {
   content:''; display:inline-block; width:16px; height:16px; flex-shrink:0;
-  background-color:var(--brass-fg);
+  background-color:var(--accent);
   -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
   -webkit-mask-size:contain; mask-size:contain;
   -webkit-mask-position:center; mask-position:center;
 }
 .member-actions .act-btn:hover {
-  background:var(--brass)22;
+  background:var(--accent)22;
   transform:translateY(-1px); box-shadow:var(--shadow-md);
 }
-/* Per-button monochrome SVG glyphs (rendered in --brass via mask-image) */
+/* Per-button monochrome SVG glyphs (rendered in --accent via mask-image) */
 /* Launch: Lucide sailboat */
 .member-actions .act-btn--launch::before {
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 2v15'/%3E%3Cpath d='M7 22a4 4 0 0 1-4-4 1 1 0 0 1 1-1h16a1 1 0 0 1 1 1 4 4 0 0 1-4 4z'/%3E%3Cpath d='M9.159 2.46a1 1 0 0 1 1.521-.193l9.977 8.98A1 1 0 0 1 20 13H4a1 1 0 0 1-.824-1.567z'/%3E%3C/svg%3E");
@@ -63,12 +63,12 @@
   font-family:inherit; font-size:11px; letter-spacing:.6px; cursor:pointer;
   border-bottom:2px solid transparent; white-space:nowrap; transition:color .2s,border-color .2s; margin-bottom:-1px; }
 .hub-tab:hover:not(.active) { color:var(--text); }
-.hub-tab.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
+.hub-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
 /* ── Boat category section ── */
 .boat-cat-toggle { display:flex; align-items:center; justify-content:space-between;
   padding:9px 0; cursor:pointer; user-select:none; border-bottom:1px solid var(--border)44; }
-.boat-cat-toggle:hover .bct-label { color:var(--brass-fg); }
+.boat-cat-toggle:hover .bct-label { color:var(--accent); }
 .bct-label { font-size:11px; font-weight:500; }
 .bct-count { font-size:10px; color:var(--muted); }
 .bct-arrow { font-size:10px; color:var(--muted); transition:transform .2s; }
@@ -85,9 +85,9 @@
 /* ── Recent trips ── */
 .pub-trip { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
   padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .2s,box-shadow .2s; box-shadow:var(--shadow-sm); }
-.pub-trip:hover { border-color:var(--brass); }
+.pub-trip:hover { border-color:var(--accent); }
 .pub-trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-.pub-trip-date  { font-size:10px; color:var(--brass-fg); margin-bottom:2px; }
+.pub-trip-date  { font-size:10px; color:var(--accent); margin-bottom:2px; }
 .pub-trip-title { font-size:12px; font-weight:500; }
 .pub-trip-meta  { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; }
 
@@ -101,16 +101,16 @@
 /* ── Stats card ── */
 .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px; }
 .stat-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
-.stat-box .sn { font-size:24px; color:var(--brass-fg); font-weight:500; }
+.stat-box .sn { font-size:24px; color:var(--accent); font-weight:500; }
 .stat-box .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
 
 /* ── Cert badges ── */
 .cert-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow-sm); }
-.cert-section-title { font-size:9px; color:var(--brass-fg); letter-spacing:1.2px; margin-bottom:10px; }
+.cert-section-title { font-size:9px; color:var(--accent); letter-spacing:1.2px; margin-bottom:10px; }
 /* ── Inline report form styles ── */
 .cat-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 .cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit; cursor:pointer; text-align:center; transition:all .2s; }
-.cat-btn.selected, .cat-btn:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)11; }
+.cat-btn.selected, .cat-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent)11; }
 .sev-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 .sev-btn { flex:1; min-width:60px; padding:7px 4px; border-radius:var(--radius-sm); border:1px solid; font-size:11px; font-family:inherit; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.4px; transition:all .2s; }
 .sev-btn[data-sev="low"]      { color:var(--green);  border-color:var(--green)55;  background:var(--green)11;  }
@@ -137,7 +137,7 @@
 .bc-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-size:12px; }
 .bc-avail { border-left:3px solid var(--moss);cursor:pointer; }
 .bc-avail:hover { background:var(--faint); }
-.bc-out { border-left:3px solid var(--brass); }
+.bc-out { border-left:3px solid var(--accent); }
 .bc-overdue { border-left:3px solid var(--red); }
 .bc-oos { opacity:.5; }
 
@@ -146,7 +146,7 @@
   padding:12px 14px; margin-bottom:8px; }
 .conf-card .conf-from { font-size:12px; font-weight:500; color:var(--text); }
 .conf-card .conf-detail { font-size:11px; color:var(--muted); margin-top:3px; }
-.conf-card .conf-boat { font-size:11px; color:var(--brass-fg); margin-top:2px; }
+.conf-card .conf-boat { font-size:11px; color:var(--accent); margin-top:2px; }
 .conf-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
 .conf-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid; }
 .conf-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }

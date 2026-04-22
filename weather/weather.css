@@ -23,8 +23,8 @@
 .wind-cols { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
 .wind-data { flex:1; }
 .wind-speed-row { display:flex; align-items:center; gap:6px; line-height:1; }
-.dir-arrow { font-size:56px; color:var(--brass-fg); line-height:1; font-weight:700; }
-.wind-ms   { font-size:56px; font-weight:500; color:var(--brass-fg); line-height:1; }
+.dir-arrow { font-size:56px; color:var(--accent); line-height:1; font-weight:700; }
+.wind-ms   { font-size:56px; font-weight:500; color:var(--accent); line-height:1; }
 .wind-unit { font-size:18px; color:var(--muted); }
 .wind-sub  { font-size:16px; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:6px; }
 .wind-sub b    { color:var(--navy-l); }
@@ -66,12 +66,12 @@ svg.chart { width:100%; overflow:visible; display:block; }
   border-radius:8px; padding:9px 6px; text-align:center;
   scroll-snap-align:start;
 }
-.h-slot.now  { border-color:var(--brass); }
+.h-slot.now  { border-color:var(--accent); }
 .h-slot.past { opacity:.5; }
 .h-time  { font-size:10px; color:var(--muted); margin-bottom:6px; }
 .h-main  { display:flex; align-items:center; justify-content:center; gap:3px; line-height:1; margin-bottom:2px; }
-.h-dir   { font-size:18px; color:var(--brass-fg); font-weight:500; line-height:1; }
-.h-wind  { font-size:18px; color:var(--brass-fg); font-weight:500; line-height:1; }
+.h-dir   { font-size:18px; color:var(--accent); font-weight:500; line-height:1; }
+.h-wind  { font-size:18px; color:var(--accent); font-weight:500; line-height:1; }
 .h-unit  { font-size:9px; color:var(--muted); }
 .h-kt    { font-size:10px; color:var(--muted); line-height:1; }
 .h-gust  { font-size:10px; color:var(--muted); margin-top:1px; }

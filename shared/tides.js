@@ -220,7 +220,7 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
   events.forEach(e => {
     const ex = xOf(e.time.getTime()), ey = yOf(e.height);
     const isHigh = e.type === 'high';
-    const cc = isHigh ? 'c-brass' : 'c-blue';
+    const cc = isHigh ? 'c-accent' : 'c-blue';
     const timeTxt = fmtT(e.time);
     const htTxt = e.height.toFixed(1) + 'm';
 
@@ -273,7 +273,7 @@ function tideWidget(targetEl, { onData } = {}) {
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
         + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:var(--font-mono)">${curH.toFixed(1)}m</span>`;
     } else {
-      statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--brass-fg);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Fara á í dag':'Go to today'}</button>`;
+      statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--accent);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Fara á í dag':'Go to today'}</button>`;
     }
 
     // Day label

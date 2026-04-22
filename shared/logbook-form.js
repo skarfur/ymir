@@ -375,7 +375,7 @@ function searchManualMember(inp, dropOrId){
     if (m.role==='guest') {
       const badge=document.createElement('span');
       badge.textContent=s('lbl.guest');
-      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);flex-shrink:0';
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);flex-shrink:0';
       item.appendChild(badge);
     }
     item.addEventListener('mousedown',function(e){
@@ -454,7 +454,7 @@ function handleTrackFile(input){
   reader.onload=function(e){
     _pendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
     statusEl.textContent=s('logbook.fileReady',{name:file.name});
-    statusEl.style.color='var(--brass)';
+    statusEl.style.color='var(--accent)';
   };
   reader.onerror=function(){ statusEl.textContent=s('logbook.readError'); statusEl.style.color='var(--red)'; _pendingTrack=null; };
   reader.readAsDataURL(file);
@@ -518,7 +518,7 @@ function renderClubTripsList(){
     document.getElementById('loadMoreTripsBtn').style.display='none';
     return;
   }
-  var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+s('tc.guest')+'</span>';
+  var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:2px">'+s('tc.guest')+'</span>';
   var frag = document.createDocumentFragment();
   page.forEach(function(t) {
     var _sm = t.kennitala ? _member(t.kennitala) : null;

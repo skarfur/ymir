@@ -3,7 +3,7 @@
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
       font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
       margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
-    .tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
     /* ── Tab dropdown (mobile) ── */
@@ -16,7 +16,7 @@
     .col-head { display:flex; align-items:center; justify-content:space-between;
       padding:10px 14px; background:var(--surface); border:1px solid var(--border);
       border-radius:var(--radius-md); cursor:pointer; user-select:none; transition:border-color .2s,box-shadow .2s; box-shadow:var(--shadow-sm); }
-    .col-head:hover { border-color:var(--brass)55; }
+    .col-head:hover { border-color:var(--accent)55; }
     .col-head.open { border-radius:var(--radius-md) var(--radius-md) 0 0; border-bottom-color:transparent; box-shadow:none; }
     .col-title { font-size:11px; letter-spacing:.8px; color:var(--muted); display:flex; align-items:center; gap:10px; }
     .col-title strong { color:var(--text); font-size:13px; letter-spacing:0; }
@@ -41,8 +41,8 @@
     .boat-card-badges { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; max-width:100%; }
     .boat-card-badges > * { max-width:100%; }
     .boat-card-badge-controlled { font-size:8px; letter-spacing:.5px; padding:2px 6px; border-radius:10px;
-      border:1px solid color-mix(in srgb, var(--brass) 40%, transparent);
-      background:color-mix(in srgb, var(--brass) 10%, transparent); color:var(--brass-fg); }
+      border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); }
     .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
 
     /* ── Generic row ── */
@@ -55,19 +55,19 @@
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
-    .cl-phase { width:50px; font-size:10px; color:var(--brass-fg); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+    .cl-phase { width:50px; font-size:10px; color:var(--accent); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
     .cl-sort-input { width: 42px !important; max-width: 42px; min-width: 42px; text-align:center; font-size:11px; padding: 2px 4px !important; border:1px solid var(--border);
       border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0;
       -moz-appearance:textfield; appearance:textfield; }
     .cl-sort-input::-webkit-inner-spin-button,
     .cl-sort-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-    .cl-sort-input:focus { border-color:var(--brass); outline:none; }
+    .cl-sort-input:focus { border-color:var(--accent); outline:none; }
     .cl-update-order { font-size:11px; margin-top:6px; }
 
     /* ── Action buttons ── */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
       font-size:11px; font-family:inherit; padding:3px 8px; border-radius:var(--radius-sm); transition:all .2s; }
-    .row-edit:hover { color:var(--brass-fg); border-color:var(--brass)55; }
+    .row-edit:hover { color:var(--accent); border-color:var(--accent)55; }
     .row-del  { background:none; border:none; color:var(--border); cursor:pointer;
       font-size:16px; padding:2px 4px; line-height:1; transition:color .2s; }
     .row-del:hover { color:var(--red); }
@@ -83,12 +83,12 @@
     /* .upload-zone is defined in shared/style.css. */
     .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:16px; }
     .col-hint-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; align-items:flex-start; }
-    .col-hint-field { color:var(--brass-fg); width:120px; flex-shrink:0; }
+    .col-hint-field { color:var(--accent); width:120px; flex-shrink:0; }
     .col-hint-vals  { color:var(--muted); }
     .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
     .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
     .chip-green  { background:color-mix(in srgb, var(--green) 15%, transparent);  color:var(--green);  border:1px solid color-mix(in srgb, var(--green) 30%, transparent); }
-    .chip-brass  { background:color-mix(in srgb, var(--brass) 15%, transparent);  color:var(--brass-fg);  border:1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
+    .chip-accent  { background:color-mix(in srgb, var(--accent) 15%, transparent);  color:var(--accent);  border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
     .chip-orange { background:color-mix(in srgb, var(--orange) 15%, transparent); color:var(--orange); border:1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
     .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
     .chip-red    { background:color-mix(in srgb, var(--red) 15%, transparent);    color:var(--red);    border:1px solid color-mix(in srgb, var(--red) 30%, transparent); }
@@ -97,13 +97,13 @@
       font-size:11px; align-items:center; }
     .import-row:last-child { border-bottom:none; }
     .import-row label { display:flex; align-items:center; gap:6px; cursor:pointer; }
-    .import-row input[type=checkbox] { accent-color:var(--brass); }
+    .import-row input[type=checkbox] { accent-color:var(--accent); }
     .import-ambig { background:#9b59b622; border:1px solid #9b59b644; border-radius:var(--radius-sm); padding:8px 12px;
       font-size:11px; margin-bottom:6px; display:flex; gap:10px; align-items:center; }
     .import-ambig-btns button { font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid var(--border);
       background:var(--surface); color:var(--text); cursor:pointer; margin-left:4px; }
-    .import-ambig-btns button:hover { border-color:var(--brass); }
-    .import-ambig-btns button.selected { background:var(--brass); color:#000; border-color:var(--brass); }
+    .import-ambig-btns button:hover { border-color:var(--accent); }
+    .import-ambig-btns button.selected { background:var(--accent); color:#000; border-color:var(--accent); }
 
     .minor-badge { font-size:10px; background:color-mix(in srgb, var(--yellow) 15%, transparent); color:var(--yellow);
       border:1px solid color-mix(in srgb, var(--yellow) 30%, transparent); border-radius:3px; padding:1px 5px; }

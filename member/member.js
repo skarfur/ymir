@@ -358,7 +358,7 @@ function renderLaunchForm(boat) {
   document.getElementById('launchModalBody').innerHTML=
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
-    (isKeel?'<div class="field"><label style="color:var(--brass-fg)">⚓️ '+s('member.departurePort')+'</label>'+
+    (isKeel?'<div class="field"><label style="color:var(--accent)">⚓️ '+s('member.departurePort')+'</label>'+
       '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div class="grid2 mb-12 gap-10">'+
@@ -522,7 +522,7 @@ function searchCrewMembers(inp,drop) {
     if (m.role==='guest') {
       const badge=document.createElement('span');
       badge.textContent=s('lbl.guest');
-      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);flex-shrink:0';
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);flex-shrink:0';
       item.appendChild(badge);
     }
     item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||''; item.dataset.guest=m.role==='guest'?'1':'';
@@ -536,7 +536,7 @@ function searchCrewMembers(inp,drop) {
   // Add "add as guest" option when typed name has 3+ chars
   if(q.length>=3){
     const guest=document.createElement('div');
-    guest.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--brass-fg)';
+    guest.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--accent)';
     guest.textContent=s('logbook.addAsGuest',{name:inp.value.trim()});
     guest.addEventListener('mousedown',function(e){
       e.preventDefault(); drop.style.display='none';
@@ -673,9 +673,9 @@ function renderReturnForm() {
   window._retCoSnap=coSnap; window._retTimeIn=null; window._retWxSnap=null;
   function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',wsv=sn.ws,w='';if(wsv!=null){w=(typeof wsv==='string'&&wsv.indexOf('-')!==-1)?wsv.split('-').map(function(v){return Math.round(v);}).join('–')+'m/s ':wsv+'m/s ';}return(d+' '+w+'Force '+(sn.bft||'?')).trim();}
   var def=coSnap?'checkout':nowSnap?'now':'manual';
-  var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
-  var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
-  var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>Manual</b></span></label>';
+  var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--accent)" data-member-change="_updateWxDisplay"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
+  var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--accent)" data-member-change="_updateWxDisplay"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
+  var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--accent)" data-member-change="_updateWxDisplay"><span><b>Manual</b></span></label>';
   var manF='<div id="wxManualFields" style="display:'+(def==='manual'?'grid':'none')+';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
     +'<div class="field"><label>Force (0-12)</label><input type="number" id="manBft" min="0" max="12" data-member-input="_updateWxDisplay"></div>'
     +'<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" data-member-input="_updateWxDisplay"></div>'
@@ -800,7 +800,7 @@ function renderLandingChecklist() {
     portDistRow=
       '<div class="field" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">'+
         '<div style="flex:1;min-width:0">'+
-          '<label style="display:block;font-size:9px;color:var(--brass-fg);letter-spacing:.8px;margin-bottom:6px">'+'⚓️ '+s('member.arrivalPortLabel')+'</label>'+
+          '<label style="display:block;font-size:9px;color:var(--accent);letter-spacing:.8px;margin-bottom:6px">'+'⚓️ '+s('member.arrivalPortLabel')+'</label>'+
           '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+s('member.sameAsDeparture')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
           '<datalist id="retPortsList">'+portOpts+'</datalist>'+
         '</div>'+
@@ -831,7 +831,7 @@ function renderLandingChecklist() {
     '</div>':'')+
     portDistRow+uploadRow+distStandaloneRow+
     '<div class="field" style="margin-bottom:14px">'+
-      '<label style="display:block;font-size:9px;color:var(--brass-fg);letter-spacing:.8px;margin-bottom:6px">'+s('member.skipperNotes')+'</label>'+
+      '<label style="display:block;font-size:9px;color:var(--accent);letter-spacing:.8px;margin-bottom:6px">'+s('member.skipperNotes')+'</label>'+
       '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+s('member.notesVisibleAll')+'</div>'+
       '<textarea id="retSkipperNote" rows="2" placeholder="'+s('member.notesPlaceholder')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
     '</div>'+
@@ -860,7 +860,7 @@ function _renderHelmSection(){
     return mem&&mem.role==='guest';
   }
   function _guestTag(t){
-    return _isGuest(t)?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:4px">'+s('member.guestLabel')+'</span>':'';
+    return _isGuest(t)?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:4px">'+s('member.guestLabel')+'</span>':'';
   }
   if(el){
     if(!entries.length){el.textContent=s('member.noNamedCrew');}
@@ -904,10 +904,10 @@ function _handleRetTrack(input){
           } else {
             statusEl.textContent=s('member.fileReady',{name:file.name});
           }
-          statusEl.style.color='var(--brass)';
+          statusEl.style.color='var(--accent)';
         } else {
           statusEl.textContent=s('member.fileReady',{name:file.name});
-          statusEl.style.color='var(--brass)';
+          statusEl.style.color='var(--accent)';
         }
         return tr;
       })
@@ -915,7 +915,7 @@ function _handleRetTrack(input){
         pending.uploadError=err;
         if(window._retPendingTrack===pending){
           statusEl.textContent=s('member.fileReady',{name:file.name});
-          statusEl.style.color='var(--brass)';
+          statusEl.style.color='var(--accent)';
         }
       });
   };
@@ -982,7 +982,7 @@ function _irSelectCat(cat) {
 function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
 function _incidentFormHtml() {
   var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["stranding","⚓️ Ran aground"],["other","📌 Other"]];
-  var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
+  var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--accent)"><span>'+tp[1]+'</span></label>').join('');
   var sevBtns=['low','medium','high','critical'].map(s=>'<button type="button" class="sev-btn" data-sev="'+s+'" data-member-click="_irSelectSev" data-member-arg="'+s+'">'+s.toUpperCase()+'</button>').join('');
   var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
   var locOpts=(locations||[]).map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
@@ -1358,7 +1358,7 @@ function renderClubCalendars() {
     return '<div style="margin-bottom:14px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'
       +   '<span style="font-size:11px;font-weight:500;color:var(--text)">' + esc(c.name) + '</span>'
-      +   '<a href="' + openUrl + '" target="_blank" rel="noopener" style="font-size:11px;color:var(--brass-fg);text-decoration:none">' + esc(s('member.calOpen')) + ' \u2197</a>'
+      +   '<a href="' + openUrl + '" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);text-decoration:none">' + esc(s('member.calOpen')) + ' \u2197</a>'
       + '</div>'
       + '<div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
       +   '<iframe src="' + src + '" style="border:0;width:100%;height:380px;display:block" frameborder="0"></iframe>'

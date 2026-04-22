@@ -1,18 +1,18 @@
 .mode-btns { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
     .mode-btn {
       flex:1 1 140px; min-width:110px; min-height:56px;
-      background:var(--brass)12; border:1px solid var(--brass);
+      background:var(--accent)12; border:1px solid var(--accent);
       border-radius:var(--radius-md); padding:10px 14px; cursor:pointer; font-family:inherit;
-      font-size:13px; font-weight:600; color:var(--brass-fg); text-align:center; text-decoration:none;
+      font-size:13px; font-weight:600; color:var(--accent); text-align:center; text-decoration:none;
       display:inline-flex; align-items:center; justify-content:center; gap:10px;
       line-height:1.25; box-shadow:var(--shadow-sm);
       transition:background-color .15s, transform .15s, box-shadow .15s;
     }
-    .mode-btn:hover { background:var(--brass)22; transform:translateY(-1px); box-shadow:var(--shadow-md); }
-    .mode-btn.active { background:color-mix(in srgb, var(--brass) 22%, transparent); box-shadow:var(--shadow-md); }
+    .mode-btn:hover { background:var(--accent)22; transform:translateY(-1px); box-shadow:var(--shadow-md); }
+    .mode-btn.active { background:color-mix(in srgb, var(--accent) 22%, transparent); box-shadow:var(--shadow-md); }
     .mode-btn::before {
       content:''; display:inline-block; width:16px; height:16px; flex-shrink:0;
-      background-color:var(--brass-fg);
+      background-color:var(--accent);
       -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
       -webkit-mask-size:contain; mask-size:contain;
       -webkit-mask-position:center; mask-position:center;

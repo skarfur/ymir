@@ -196,7 +196,7 @@
       <!-- Non-club trip toggle -->
       <div class="form-field mb-8">
         <label class="flex-center gap-6 cursor-pointer text-xs">
-          <input type="checkbox" id="mNonClub" data-lb-change="onNonClubToggle" style="width:auto;accent-color:var(--brass)">
+          <input type="checkbox" id="mNonClub" data-lb-change="onNonClubToggle" style="width:auto;accent-color:var(--accent)">
           <span data-s="logbook.nonClubToggle">Non-club trip</span>
           <span class="text-muted text-9 fw-400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
         </label>
@@ -246,7 +246,7 @@
       <div id="mLocFree" class="form-field" style="display:none">
         <label data-s="lbl.location" for="mLocFreeInput">Location</label>
         <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
-        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="padding:4px 0;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
+        <button type="button" class="text-xs text-accent bg-none border-none cursor-pointer" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="padding:4px 0;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
         <div id="mLocGeoStatus" class="text-xs text-muted mt-2" style="display:none"></div>
       </div>
       <div class="form-row">
@@ -285,14 +285,14 @@
           </div>
         </div>
         <datalist id="portsList"></datalist>
-        <div id="addPortHint" class="text-xs text-brass cursor-pointer mt-4" style="display:none"
+        <div id="addPortHint" class="text-xs text-accent cursor-pointer mt-4" style="display:none"
           data-lb-click="addNewPort">+ Add "<span id="addPortName"></span>" to ports list</div>
       </details>
 
       <!-- Weather -->
       <div class="flex-center gap-6 justify-between" style="margin:12px 0 8px">
         <div class="section-label" data-s="lb.weatherOptional"></div>
-        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="padding:0"><span data-s="lb.useCurrentWx"></span></button>
+        <button type="button" class="text-xs text-accent bg-none border-none cursor-pointer" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="padding:0"><span data-s="lb.useCurrentWx"></span></button>
       </div>
       <div id="mWxFetchStatus" class="text-xs text-muted mb-6" style="display:none"></div>
       <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->

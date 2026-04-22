@@ -328,7 +328,7 @@ function renderBoats() {
     return '<div class="cq-boat">'
       + '<div>'
         + '<div class="cq-boat-name">' + esc(boatEmoji(b.category)) + ' ' + esc(b.name)
-          + (isControlled ? ' <span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--brass)44;background:var(--brass)11;color:var(--brass-fg)">' + esc(s('fleet.badgeControlled')) + '</span>' : '')
+          + (isControlled ? ' <span style="font-size:8px;letter-spacing:.5px;padding:2px 6px;border-radius:10px;border:1px solid var(--accent)44;background:var(--accent)11;color:var(--accent)">' + esc(s('fleet.badgeControlled')) + '</span>' : '')
         + '</div>'
         + '<div class="cq-boat-sub">'
           + (isOos ? '<span style="color:var(--red)">OUT OF SERVICE</span>' : '<span style="color:var(--green)">AVAILABLE</span>')

@@ -2,7 +2,7 @@
 .date-nav { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .date-nav button { background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:12px; padding:5px 12px; cursor:pointer; transition:border-color .2s,color .2s; }
-.date-nav button:hover { border-color:var(--brass); color:var(--brass-fg); }
+.date-nav button:hover { border-color:var(--accent); color:var(--accent); }
 .date-big { font-size:13px; font-weight:400; color:var(--muted); letter-spacing:.5px; flex:1; text-align:center; }
 .date-hero { font-size:28px; font-weight:500; color:var(--text); text-align:center; margin:4px 0 12px; line-height:1.1; }
 .signoff-badge { display:inline-flex; align-items:center; gap:6px;
@@ -21,12 +21,12 @@
 
 /* ── Checklists ── */
 .cl-progress-line { font-size:11px; color:var(--muted); margin-bottom:8px; }
-.cl-progress-line span { color:var(--brass-fg); font-weight:500; }
+.cl-progress-line span { color:var(--accent); font-weight:500; }
 .cl-bar-wrap { height:4px; background:var(--border); border-radius:2px; margin-bottom:12px; overflow:hidden; }
-.cl-bar      { height:100%; background:var(--brass); border-radius:2px; transition:width .3s; }
+.cl-bar      { height:100%; background:var(--accent); border-radius:2px; transition:width .3s; }
 .checklist-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
 .checklist-item:last-child { border-bottom:none; }
-.checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--brass); flex-shrink:0; margin-top:2px; cursor:pointer; }
+.checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--accent); flex-shrink:0; margin-top:2px; cursor:pointer; }
 .item-text { font-size:13px; transition:opacity .15s; }
 .checklist-item.done .item-text { opacity:.35; text-decoration:line-through; }
 
@@ -52,7 +52,7 @@
 .incident-btn { display:flex; align-items:center; gap:12px; padding:12px 16px;
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
   text-decoration:none; color:var(--text); transition:border-color .2s,box-shadow .2s; margin-bottom:4px; cursor:pointer; box-shadow:var(--shadow-sm); }
-.incident-btn:hover { border-color:var(--brass); box-shadow:var(--shadow-md); }
+.incident-btn:hover { border-color:var(--accent); box-shadow:var(--shadow-md); }
 .incident-icon { font-size:22px; flex-shrink:0; }
 .incident-label { font-size:13px; font-weight:500; }
 .incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
@@ -60,7 +60,7 @@
 /* ── Weather log ── */
 .wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 .wx-snap-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.wx-snap-time { color:var(--brass-fg); font-weight:500; font-size:14px; flex:1; }
+.wx-snap-time { color:var(--accent); font-weight:500; font-size:14px; flex:1; }
 .wx-snap-flag { font-size:16px; }
 .wx-snap-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; }
 .wx-snap-label { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-bottom:2px; }
@@ -80,7 +80,7 @@
 .type-btn { padding:5px 12px; background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-sm); font-size:12px; font-family:inherit; color:var(--text);
   cursor:pointer; transition:all .2s; }
-.type-btn.selected { background:var(--brass)22; border-color:var(--brass); color:var(--brass-fg); }
+.type-btn.selected { background:var(--accent)22; border-color:var(--accent); color:var(--accent); }
 
 /* ── Trip detail modal ── */
 .dl-drow { display:flex; gap:12px; padding:5px 0; border-bottom:1px solid var(--border); font-size:13px; }

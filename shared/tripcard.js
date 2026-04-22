@@ -127,13 +127,13 @@ function tripCard(t){
 
   // ── Build unified "everyone aboard" list ──────────────────────────────────
   const helmLabel = s('tc.helm');
-  const helmBadge = ' <span class="text-brass" style="font-size:9px;border:1px solid var(--brass)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
+  const helmBadge = ' <span class="text-accent" style="font-size:9px;border:1px solid var(--accent)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
   const guestLabel = s('tc.guest');
-  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+guestLabel+'</span>';
+  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:2px">'+guestLabel+'</span>';
   const studentLabel = s('tc.student');
   const studentBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent);color:var(--navy-l);margin-left:2px">'+studentLabel+'</span>';
   const skipperLabel = s('tc.skipper');
-  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+skipperLabel+'</span>';
+  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:2px">'+skipperLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${s('tc.pending')}</span>`;
 
   // Check for pending/confirmed student confirmations
@@ -189,7 +189,7 @@ function tripCard(t){
     if (opts.guest)   suffix += guestBadge;
     if (opts.pending) suffix += ' ' + pendingTag;
     if (opts.helm) {
-      return '<span class="text-brass">⎈ ' + name + '</span>' + suffix;
+      return '<span class="text-accent">⎈ ' + name + '</span>' + suffix;
     }
     return name + suffix;
   }
@@ -319,15 +319,15 @@ function tripCard(t){
       <div class="track-map-thumb" id="tmap-${esc(t.id)}" data-trip-action="open-map" data-trip-id="${esc(t.id)}" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${s('tc.clickToExpand')}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-brass" style="margin-top:4px;display:inline-block" data-trip-nobubble>⬇ ${s('tc.downloadFile')}</a>`:''}
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-accent" style="margin-top:4px;display:inline-block" data-trip-nobubble>⬇ ${s('tc.downloadFile')}</a>`:''}
     </span></div>`;
   } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-brass" data-trip-nobubble>📍 ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-accent" data-trip-nobubble>📍 ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
   // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
   const canEditSkipperNote = isSki && isOwner;
-  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl text-brass">${s('tc.skipperNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?s('tc.visibleToCrew'):s('tc.fromSkipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${s('tc.noNoteYet')}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" data-trip-action="edit-note" data-trip-id="${esc(t.id)}" data-trip-arg="skipperNote" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
+  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl text-accent">${s('tc.skipperNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?s('tc.visibleToCrew'):s('tc.fromSkipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${s('tc.noNoteYet')}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" data-trip-action="edit-note" data-trip-id="${esc(t.id)}" data-trip-arg="skipperNote" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
   // Private note (only visible to owner) — always show for owner with edit
   const canEditNote = isOwner;
   const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.privateNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${s('tc.onlyYou')}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span class="text-muted" style="font-style:italic">${s('tc.noPrivateNoteYet')}</span>`}${canEditNote?` <button class="trip-more-btn" data-trip-action="edit-note" data-trip-id="${esc(t.id)}" data-trip-arg="notes" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
