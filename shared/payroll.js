@@ -297,7 +297,7 @@ function punchClockWidget(el, employeeId, opts) {
   }
 
   function t(k) { return typeof s === 'function' ? s(k) : k.split('.').pop(); }
-  function _esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function _esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   function fmtTime(iso) { return iso ? String(iso).slice(11,16) : '--:--'; }
   function fmtDate(iso) {
