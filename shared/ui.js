@@ -193,23 +193,80 @@ window.replaceWithFragment = function (container, items, buildNodeFn) {
   window.isModalDirty        = function (modalId) { return _isDirty(modalId); };
   window.resnapshotModal     = function (modalId) { if (_tracked.has(modalId)) _snapshot(modalId); };
 
+  // Focus management. Tracks which element had focus before each modal
+  // opened so we can restore on close; picks the first focusable inside
+  // the modal to focus on open. Keyed by modal id so nested modals (rare
+  // but possible — maintenance detail inside admin) don't clobber each
+  // other.
+  const _priorFocus = new Map();
+  const FOCUSABLE_SEL = 'a[href],button:not([disabled]),textarea:not([disabled]),' +
+    'input:not([disabled]):not([type=hidden]),select:not([disabled]),' +
+    '[tabindex]:not([tabindex="-1"])';
+  function _focusablesIn(el) {
+    return Array.from(el.querySelectorAll(FOCUSABLE_SEL))
+      .filter(n => !n.hidden && n.offsetParent !== null);
+  }
+
   window.openModal = function (id) {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('hidden');
     if (_tracked.has(id)) _snapshot(id);
+    // Save whatever had focus so closeModal can put it back.
+    _priorFocus.set(id, document.activeElement);
+    // Focus the first focusable inside the modal. Fall back to the modal
+    // container itself (with tabindex=-1) so ESC / Tab still work even
+    // when the body is empty at open time.
+    const first = _focusablesIn(el)[0];
+    if (first) { try { first.focus(); } catch (e) {} }
+    else {
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+      try { el.focus(); } catch (e) {}
+    }
   };
 
   window.closeModal = function (id, force) {
     const el = document.getElementById(id);
     if (!el) return;
-    const doClose = () => { el.classList.add('hidden'); _baseline.delete(id); };
+    const doClose = () => {
+      el.classList.add('hidden');
+      _baseline.delete(id);
+      // Restore focus to whatever had it before open — keyboard users
+      // don't want to be kicked back to <body>.
+      const prior = _priorFocus.get(id);
+      _priorFocus.delete(id);
+      if (prior && typeof prior.focus === 'function' && document.contains(prior)) {
+        try { prior.focus(); } catch (e) {}
+      }
+    };
     if (force === true || !_tracked.has(id) || !_isDirty(id)) { doClose(); return; }
     const msg = (typeof s === 'function') ? s('msg.unsavedChanges')
               : 'You have unsaved changes. Discard them?';
     // ymConfirm returns a promise; close only if the user confirms.
     Promise.resolve(ymConfirm(msg)).then(ok => { if (ok) doClose(); });
   };
+
+  // Focus trap: keep Tab / Shift+Tab within the top-most open modal.
+  // Registered once at module load.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    const overlays = document.querySelectorAll(
+      '.modal-overlay:not(.hidden), .modal-bg:not(.hidden), ' +
+      '.group-modal-overlay:not(.hidden), .guest-modal-overlay:not(.hidden), ' +
+      '.map-modal-overlay:not(.hidden)'
+    );
+    if (!overlays.length) return;
+    const top = overlays[overlays.length - 1];
+    const focusables = _focusablesIn(top);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last  = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      last.focus(); e.preventDefault();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      first.focus(); e.preventDefault();
+    }
+  });
 
   // Warn before leaving the page while a guarded modal has unsaved edits.
   window.addEventListener('beforeunload', function (e) {

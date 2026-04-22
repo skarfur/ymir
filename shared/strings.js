@@ -14,6 +14,13 @@
   var base = here ? here.substring(0, here.lastIndexOf('/') + 1) : '';
   var lang = (localStorage.getItem('ymirLang') || 'IS').toLowerCase();
   if (lang !== 'en' && lang !== 'is') lang = 'is';
+  // Sync <html lang> to the active UI language so screen readers, search
+  // engines, and browser translation prompts pick the right language. The
+  // static lang= in each portal's HTML head is a placeholder — this is
+  // the canonical value. Runs before the language file loads so any
+  // server-rendered lang-aware text (none today, but future-proof) is
+  // consistent with the strings about to be applied.
+  try { document.documentElement.lang = lang; } catch (e) {}
   document.write('<script src="' + base + 'strings-' + lang + '.js"><\/script>');
 })();
 

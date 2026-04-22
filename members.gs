@@ -528,7 +528,11 @@ function savePreferences_(b) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getDailyLog_(date) {
-  const d = date || now_().slice(0, 10);
+  // Daily-log rows are keyed by the local date the user sees on the hub,
+  // not by UTC. now_().slice(0,10) gave UTC, which wraps a day late for
+  // any non-UTC script timezone — fine at UTC+0 (Iceland today) but wrong
+  // anywhere else. nowLocalDate_() matches the format saveDailyLog_ writes.
+  const d = date || nowLocalDate_();
   const log = findOne_('dailyLog', 'date', d);
   return okJ({ log: log || null, date: d });
 }

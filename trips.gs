@@ -7,7 +7,10 @@ function getTrips_(kennitala, limit, p) {
   const all = readAll_('trips');
   const filtered = all.filter(t => (!kennitala || String(t.kennitala) === String(kennitala)) && (!p.date || (t.date || '').slice(0, 10) === p.date) && (!p.linkedCheckoutId || String(t.linkedCheckoutId) === String(p.linkedCheckoutId)) && (!p.category || (t.boatCategory || '').toLowerCase() === p.category.toLowerCase()));
   const sorted = filtered.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
-  return okJ({ trips: sorted.slice(0, limit || 100) });
+  const offset = parseInt(p.offset) || 0;
+  const lim    = limit || 100;
+  const page   = sorted.slice(offset, offset + lim);
+  return okJ({ trips: page, total: sorted.length, offset: offset, limit: lim });
 }
 
 function saveTrip_(b) {
