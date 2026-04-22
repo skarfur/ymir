@@ -295,8 +295,8 @@ function tideWidget(targetEl, { onData } = {}) {
     const moonHtml = `<span style="font-size:12px">${moon.icon}</span><span style="font-size:9px;color:var(--muted)">${moon.label}</span>`;
 
     const disclaimer = IS
-      ? 'Áætluð harmonískt spálíkan, ekki byggt á birtum gögnum. Vænta má fráviks upp á ±15–30 mín.'
-      : 'Estimated harmonic prediction model, not from published data. Expect deviation of ±15–30 min';
+      ? 'Áætluð harmonískt spálíkan, ekki byggt á birtum gögnum. Vænta má fráviks upp á 30 mín.'
+      : 'Estimated harmonic prediction model, not from published data. Expect deviations up to 30 min';
 
     // Chart
     const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 640, 120);
