@@ -15,15 +15,15 @@
 .chart-lbl-bg { fill: var(--card); opacity: 0.85; }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
-a{color:var(--accent);text-decoration:none}
+a{color:var(--accent-fg);text-decoration:none}
 a:hover{text-decoration:underline}
 
 /* ── Header ─────────────────────────────────────────────────────── */
 header{background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-md);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:500;color:var(--accent);letter-spacing:1px}
+.logo{font-size:18px;font-weight:500;color:var(--accent-fg);letter-spacing:1px}
 .subtitle{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-left:12px}
 .lang-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);cursor:pointer;letter-spacing:.5px;transition:color .2s,border-color .2s,background .2s}
-.lang-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-tint-xs)}
+.lang-btn:hover{color:var(--accent-fg);border-color:var(--accent);background:var(--accent-tint-xs)}
 
 /* ── Main layout ────────────────────────────────────────────────── */
 main{max-width:1100px;margin:0 auto;padding:24px 20px 48px}
@@ -33,7 +33,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 /* ── Stat boxes ─────────────────────────────────────────────────── */
 .stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
 .stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;flex:1;min-width:140px;text-align:center;box-shadow:var(--shadow-sm)}
-.stat-val{font-size:32px;font-weight:500;color:var(--accent);line-height:1.2}
+.stat-val{font-size:32px;font-weight:500;color:var(--accent-fg);line-height:1.2}
 .stat-lbl{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-top:4px}
 
 /* ── Category breakdown ─────────────────────────────────────────── */
@@ -47,7 +47,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:1.2px;text-t
 /* ── On the water strip ─────────────────────────────────────────── */
 .stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
 .strip-cell{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 10px;text-align:center;box-shadow:var(--shadow-sm)}
-.strip-n{font-size:22px;color:var(--accent);font-weight:500}
+.strip-n{font-size:22px;color:var(--accent-fg);font-weight:500}
 .strip-l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
 .live-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}

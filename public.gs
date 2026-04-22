@@ -36,7 +36,7 @@ function pubPageShell_(title, bodyHtml) {
     + '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>'
     + '<style>'
     + ':root{--bg:#0b1f38;--card:#132d50;--surface:#0f2847;--border:#1e3f6e;--border-l:#2a5490;'
-    + '--text:#d6e4f0;--muted:#6b92b8;--faint:#2a4a6e;--accent:#d4af37;'
+    + '--text:#d6e4f0;--muted:#6b92b8;--faint:#2a4a6e;--accent:#d4af37;--accent-fg:#d4af37;'
     + '--green:#27ae60;--yellow:#f1c40f;--orange:#e67e22;--red:#e74c3c;--blue:#2980b9}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{background:var(--bg);color:var(--text);font-family:"DM Mono","Courier New",monospace;'
@@ -49,10 +49,10 @@ function pubPageShell_(title, bodyHtml) {
     + '.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}'
     // Header bar
     + '.pub-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}'
-    + '.pub-logo{color:var(--accent);font-size:18px;font-weight:700;letter-spacing:1px}'
+    + '.pub-logo{color:var(--accent-fg);font-size:18px;font-weight:700;letter-spacing:1px}'
     + '.pub-lang-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;'
     + 'padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer;transition:color .15s,border-color .15s}'
-    + '.pub-lang-btn:hover{color:var(--accent);border-color:var(--accent)}'
+    + '.pub-lang-btn:hover{color:var(--accent-fg);border-color:var(--accent)}'
     // Table
     + 'table{width:100%;border-collapse:collapse;font-size:12px}'
     + 'th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;'
@@ -80,7 +80,7 @@ function pubPageShell_(title, bodyHtml) {
     + '.badge-yellow{color:var(--yellow);border-color:#f1c40f50;background:#f1c40f12}'
     + '.badge-red{color:var(--red);border-color:#e74c3c50;background:#e74c3c12}'
     + '.badge-muted{color:var(--muted);border-color:var(--border);background:var(--faint)}'
-    + '.badge-accent{color:var(--accent);border-color:#d4af3750;background:#d4af3712}'
+    + '.badge-accent{color:var(--accent-fg);border-color:#d4af3750;background:#d4af3712}'
     // Cert cards
     + '.cert-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;'
     + 'margin-bottom:6px;cursor:pointer;transition:border-color .15s}'
@@ -117,7 +117,7 @@ function pubPageShell_(title, bodyHtml) {
     + '.detail-extra.open{display:block}'
     + '.detail-more-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:3px 10px;'
     + 'font-size:10px;font-family:inherit;cursor:pointer;margin-top:6px;transition:color .15s,border-color .15s}'
-    + '.detail-more-btn:hover{color:var(--accent);border-color:var(--accent)}'
+    + '.detail-more-btn:hover{color:var(--accent-fg);border-color:var(--accent)}'
     // Form
     + '.form-group{margin-bottom:14px}'
     + '.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px}'
@@ -470,7 +470,7 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
           + '<div class="pub-track-map" id="tmap-' + idx + '" data-track="' + trackJson + '" data-title="' + mapTitle + '" onclick="openPubMapModal(' + idx + ')">'
           + '<div class="pub-map-hint"><span class="lang-en">Click to expand</span><span class="lang-is" style="display:none">Smelltu til að stækka</span></div></div>';
         if (t.trackFileUrl) {
-          html += '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="color:var(--accent);font-size:10px;margin-top:4px;display:inline-block">⬇ '
+          html += '<a href="' + esc_(t.trackFileUrl) + '" target="_blank" style="color:var(--accent-fg);font-size:10px;margin-top:4px;display:inline-block">⬇ '
             + '<span class="lang-en">Download file</span><span class="lang-is" style="display:none">Sækja skrá</span></a>';
         }
         html += '</div>';

@@ -24,12 +24,12 @@ function renderActTypes() {
       <div style="display:flex;align-items:center;gap:10px">
         <span class="list-name">${esc(a.name)}${a.nameIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}${isVol
-          ? `<span style="color:var(--accent);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
+          ? `<span style="color:var(--accent-fg);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
         <button class="row-edit" data-admin-click="openActTypeModal" data-admin-arg="${a.id}">Edit</button>
         <button class="row-del"  data-admin-click="deleteActType" data-admin-arg="${a.id}">×</button>
       </div>
       ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
-      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--accent)">[${esc(certDefName((certDefs||[]).find(d=>d.id===r.requiredEndorsement))||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
+      ${isVol && roles.length ? roles.map(r=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">⚑ ${esc(r.name||'')}${r.slots?' ('+r.slots+')':''}${r.requiredEndorsement?` <span style="color:var(--accent-fg)">[${esc(certDefName((certDefs||[]).find(d=>d.id===r.requiredEndorsement))||r.requiredEndorsement)}]</span>`:''}</div>`).join('') : ''}
     </div>`;
   }).join("");
 }

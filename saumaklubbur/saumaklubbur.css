@@ -1,6 +1,6 @@
 .page-wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; transition: max-width .2s; }
     .page-wrap.wide-board { max-width: 1200px; }
-    .page-title { font-size: 16px; font-weight: 600; color:var(--accent); margin-bottom: 4px; }
+    .page-title { font-size: 16px; font-weight: 600; color:var(--accent-fg); margin-bottom: 4px; }
     .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
 
     /* Filter pill classes (.filter-bar-grouped / .filter-group / .filter-btn)
@@ -23,7 +23,7 @@
     .req-photo:hover { opacity:.8; }
     .comment-thread { margin-top:8px; border-top:1px solid var(--border)44; padding-top:8px; }
     .comment-item { margin-bottom:8px; }
-    .verk-tag { font-size:11px; color:var(--accent); font-weight:500; }
+    .verk-tag { font-size:11px; color:var(--accent-fg); font-weight:500; }
 
     /* ── Badges ── */
     .badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:4px; font-weight:500; letter-spacing:.3px; }
@@ -32,7 +32,7 @@
     .badge-orange { background:var(--orange)22; color:var(--orange); border:1px solid var(--orange)44; }
     .badge-red    { background:var(--red)22;    color:var(--red);    border:1px solid var(--red)44; }
     .badge-muted  { background:var(--surface);  color:var(--muted);  border:1px solid var(--border); }
-    .badge-accent  { background:var(--accent)22;  color:var(--accent);  border:1px solid var(--accent)44; }
+    .badge-accent  { background:var(--accent)22;  color:var(--accent-fg);  border:1px solid var(--accent)44; }
     .oos-badge { font-size:10px; background:var(--red)22; color:var(--red);
       border:1px solid var(--red)44; border-radius:3px; padding:2px 6px; font-weight:500; }
 
@@ -57,7 +57,7 @@
     .cat-btn { flex:1; min-width:80px; padding:8px 6px; border-radius:var(--radius-sm); border:1px solid var(--border);
       background:var(--surface); color:var(--muted); font-size:11px; font-family:inherit;
       cursor:pointer; text-align:center; transition:all .2s; }
-    .cat-btn.selected, .cat-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent)11; }
+    .cat-btn.selected, .cat-btn:hover { border-color:var(--accent); color:var(--accent-fg); background:var(--accent)11; }
 
     .photo-preview { width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);
       border:1px solid var(--border); margin-top:6px; display:none; }

@@ -1,7 +1,7 @@
 .page{max-width:640px;margin:0 auto;padding:20px 16px 60px}
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 10px;text-align:center;box-shadow:var(--shadow-sm)}
-.stat-val{font-size:22px;font-weight:500;color:var(--accent);line-height:1}
+.stat-val{font-size:22px;font-weight:500;color:var(--accent-fg);line-height:1}
 .stat-val.stat-val-text{font-size:13px;font-weight:500;line-height:1.15;padding:4px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat-lbl{font-size:9px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:3px}
 .cat-hours{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
@@ -36,7 +36,7 @@
 .manual-member-drop{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:200;max-height:180px;overflow-y:auto;display:none;box-shadow:var(--shadow-md)}
 .manual-member-drop .mm-item{padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)}
 .manual-member-drop .mm-item:hover{background:var(--card)}
-.manual-member-drop .mm-guest{font-size:10px;color:var(--accent);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
+.manual-member-drop .mm-guest{font-size:10px;color:var(--accent-fg);cursor:pointer;padding:6px 10px;border-bottom:1px solid var(--border)}
 .manual-member-drop .mm-guest:hover{background:var(--card)}
 .manual-crew-row{position:relative;margin-bottom:8px}
 .manual-crew-row .crew-row-fields{display:flex;gap:8px;align-items:center}
@@ -81,7 +81,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 .conf-card .conf-line{font-size:11px;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .conf-card .conf-line .conf-name{font-weight:500}
 .conf-card .conf-line .conf-type{color:var(--muted)}
-.conf-card .conf-line .conf-boat-info{color:var(--accent)}
+.conf-card .conf-line .conf-boat-info{color:var(--accent-fg)}
 .conf-card .conf-line .conf-date-info{color:var(--muted);font-size:10px}
 .conf-card .conf-actions{display:flex;gap:6px;margin-top:6px}
 .conf-card .conf-actions button{font-size:10px;font-family:inherit;padding:4px 10px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid}

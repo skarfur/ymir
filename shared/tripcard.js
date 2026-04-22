@@ -129,11 +129,11 @@ function tripCard(t){
   const helmLabel = s('tc.helm');
   const helmBadge = ' <span class="text-accent" style="font-size:9px;border:1px solid var(--accent)55;border-radius:4px;padding:0 3px;margin-left:2px">'+helmLabel+'</span>';
   const guestLabel = s('tc.guest');
-  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:2px">'+guestLabel+'</span>';
+  const guestBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent-fg);margin-left:2px">'+guestLabel+'</span>';
   const studentLabel = s('tc.student');
   const studentBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent);color:var(--navy-l);margin-left:2px">'+studentLabel+'</span>';
   const skipperLabel = s('tc.skipper');
-  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);margin-left:2px">'+skipperLabel+'</span>';
+  const skipperBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent-fg);margin-left:2px">'+skipperLabel+'</span>';
   const pendingTag = `<span class="conf-status pending" style="font-size:9px;padding:1px 6px">${s('tc.pending')}</span>`;
 
   // Check for pending/confirmed student confirmations

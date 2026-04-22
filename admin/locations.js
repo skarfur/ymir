@@ -14,7 +14,7 @@ function renderLocations() {
   if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noLocations')}</div>`; return; }
   card.innerHTML = active.map(l => `
     <div class="list-row">
-      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--accent);border:1px solid var(--accent)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
+      <span class="list-name">${esc(l.name)}${l.type==='port' ? ' <span style="font-size:9px;color:var(--accent-fg);border:1px solid var(--accent)44;border-radius:4px;padding:1px 5px;margin-left:4px">⚓️ PORT</span>' : ' <span style="font-size:9px;color:var(--ice);border:1px solid var(--ice)44;border-radius:4px;padding:1px 5px;margin-left:4px">⛵ SAILING AREA</span>'}</span>
       <button class="row-edit" data-admin-click="openLocationModal" data-admin-arg="${l.id}">Edit</button>
       <button class="row-del"  data-admin-click="deleteLocation" data-admin-arg="${l.id}">×</button>
     </div>`).join("");

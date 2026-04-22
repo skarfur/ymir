@@ -40,7 +40,7 @@
       '      <input type="text" id="mcmMemberSearch" data-mcm-input="mcmFilterMembers" autocomplete="off" placeholder="">',
       '      <div id="mcmMemberResults" style="max-height:120px;overflow-y:auto;margin-top:4px"></div>',
       '    </div>',
-      '    <div id="mcmMemberName" style="margin-top:6px;margin-bottom:10px;font-size:12px;font-weight:500;color:var(--accent);display:none"></div>',
+      '    <div id="mcmMemberName" style="margin-top:6px;margin-bottom:10px;font-size:12px;font-weight:500;color:var(--accent-fg);display:none"></div>',
       '',
       '    <!-- Current certs -->',
       '    <div id="mcmCurrentWrap" style="margin-bottom:14px;display:none">',
@@ -349,7 +349,7 @@
       var expiry = c.expiresAt
         ? (c.expired ? ' \u00b7 <span style="color:var(--red)">EXPIRED ' + c.expiresAt + '</span>' : ' \u00b7 exp. ' + c.expiresAt)
         : ' \u00b7 Does not expire';
-      var catLine  = c.displayCategory ? '<span style="color:var(--accent)">[' + esc(c.displayCategory) + ']</span> ' : '';
+      var catLine  = c.displayCategory ? '<span style="color:var(--accent-fg)">[' + esc(c.displayCategory) + ']</span> ' : '';
       var authLine = c.issuingAuthority ? ' \u00b7 ' + esc(c.issuingAuthority) : '';
       var verifiedLine = c.verifiedBy ? ' \u00b7 verified by ' + esc(c.verifiedBy) : (c.assignedBy ? ' \u00b7 by ' + esc(c.assignedBy) : '');
       var dateLine = c.verifiedAt || c.assignedAt ? ' on ' + (c.verifiedAt || c.assignedAt) : '';

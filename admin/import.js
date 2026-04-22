@@ -136,7 +136,7 @@ function renderImportPreview(res) {
         </div>`).join("")}</div>`;
   }
   if (res.updated.length) {
-    html += `<div style="font-size:11px;color:var(--accent);margin:10px 0 4px;font-weight:500">UPDATED (${res.updated.length})</div>
+    html += `<div style="font-size:11px;color:var(--accent-fg);margin:10px 0 4px;font-weight:500">UPDATED (${res.updated.length})</div>
       <div class="import-list">${res.updated.map(m => `
         <div class="import-row">
           <span style="color:var(--muted);width:80px">${esc(m.kennitala)}</span>

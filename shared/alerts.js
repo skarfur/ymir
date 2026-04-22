@@ -98,7 +98,7 @@
 .yma-snooze-pill {
   display: inline-block;
   font-size: 10px;
-  color: var(--accent);
+  color: var(--accent-fg);
   border: 1px solid var(--accent-tint-md);
   border-radius: 10px;
   padding: 2px 8px;
@@ -124,7 +124,7 @@
 .yma-btn:disabled { opacity: .4; cursor: default; }
 .yma-btn-snooze {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  color: var(--accent);
+  color: var(--accent-fg);
 }
 .yma-btn-snooze:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 </style>
