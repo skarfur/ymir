@@ -194,6 +194,85 @@ function verifyGoogleIdToken_(idToken) {
   return payload;
 }
 
+// Normalise an email for Google-link comparison. Lowercase + trim. We don't
+// collapse Gmail dots (f.oo@gmail.com ≠ foo@gmail.com here) because Google's
+// ID-token `email` claim returns the address the user actually registered
+// with, so stripping dots on our side would create false matches.
+function normGoogleEmail_(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+// True iff the email is a personal Gmail address. @gmail.com and
+// @googlemail.com are Google Accounts by definition — no MX check needed.
+function isGmailAddress_(email) {
+  return /@(gmail|googlemail)\.com$/.test(normGoogleEmail_(email));
+}
+
+// Check the email's domain for MX records pointing at Google (Workspace).
+// Uses Google's DNS-over-HTTPS endpoint so Apps Script can resolve without
+// a real resolver. Cached per-domain for 24h in the script cache — a fresh
+// import of 500 members with 20 unique domains only costs 20 lookups.
+// Returns true only on a clean, signed match; any failure mode (timeout,
+// non-200, malformed JSON) returns false so we silently fall back to
+// manual linking rather than mis-populate.
+function mxPointsToGoogle_(domain) {
+  var d = String(domain || '').trim().toLowerCase();
+  if (!d) return false;
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'mxGoogle:' + d;
+  var cached = cache.get(cacheKey);
+  if (cached === 'y') return true;
+  if (cached === 'n') return false;
+  var isGoogle = false;
+  try {
+    var resp = UrlFetchApp.fetch(
+      'https://dns.google/resolve?name=' + encodeURIComponent(d) + '&type=MX',
+      { muteHttpExceptions: true, followRedirects: false }
+    );
+    if (resp.getResponseCode() === 200) {
+      var body = JSON.parse(resp.getContentText() || '{}');
+      // Status 0 = NOERROR. Anything else (NXDOMAIN, SERVFAIL) → false.
+      if (body.Status === 0 && Array.isArray(body.Answer)) {
+        isGoogle = body.Answer.some(function(a) {
+          var txt = String(a.data || '').toLowerCase();
+          // MX data is "<preference> <hostname>." — match the hostname
+          // suffix so aspmx.l.google.com., alt1.aspmx.l.google.com.,
+          // googlemail.l.google.com., etc. all count.
+          return /\s(\S*\.)?google(mail)?\.com\.?\s*$/.test(' ' + txt);
+        });
+      }
+    }
+  } catch (e) { /* fall through to false */ }
+  cache.put(cacheKey, isGoogle ? 'y' : 'n', 86400);
+  return isGoogle;
+}
+
+// If the email looks like it's backed by a Google account (personal Gmail
+// or a Workspace domain whose MX is Google), return the normalised email
+// so it can be stored in googleEmail for auto-link. Otherwise return ''.
+function resolveGoogleEmail_(email) {
+  var e = normGoogleEmail_(email);
+  if (!e) return '';
+  if (isGmailAddress_(e)) return e;
+  var at = e.lastIndexOf('@');
+  if (at < 0) return '';
+  var domain = e.slice(at + 1);
+  if (mxPointsToGoogle_(domain)) return e;
+  return '';
+}
+
+// Pick the value to write into `googleEmail` for a create or update: an
+// explicit CSV/payload value wins; otherwise keep an already-linked value;
+// otherwise try to auto-resolve from the row's primary email. Keeps
+// re-imports from clobbering a manual link in settings.
+function pickGoogleEmail_(explicit, existing, sourceEmail) {
+  var e = normGoogleEmail_(explicit);
+  if (e) return e;
+  var ex = normGoogleEmail_(existing);
+  if (ex) return ex;
+  return resolveGoogleEmail_(sourceEmail);
+}
+
 // Public sign-in via a Google ID token. The frontend's GIS one-tap flow
 // posts the credential here; we verify it, look up a member by their
 // previously-linked googleEmail, and mint a session. Unlinked members are
@@ -504,15 +583,18 @@ function saveMember_(b, caller) {
     const role = isAdminCaller ? (b.role || 'member') : 'guest';
     addColIfMissing_('members', 'passwordHash');
     addColIfMissing_('members', 'passwordIsTemp');
+    addColIfMissing_('members', 'googleEmail');
     const tempPassword = genTempPassword_();
+    const emailVal = b.email || '';
     insertRow_('members', {
       id, kennitala: b.kennitala, name: b.name, role: role,
-      email: b.email || '', phone: b.phone || '', birthYear: b.birthYear || '',
+      email: emailVal, phone: b.phone || '', birthYear: b.birthYear || '',
       isMinor: bool_(b.isMinor) || false,
       guardianName: b.guardianName || '', guardianKennitala: b.guardianKennitala || '',
       guardianPhone: b.guardianPhone || '', active: true,
       certifications: '', initials: extractInitials_(b.name),
       passwordHash: hashPassword_(tempPassword), passwordIsTemp: true,
+      googleEmail: pickGoogleEmail_(b.googleEmail, '', emailVal),
       createdAt: ts, updatedAt: ts,
     });
     cDel_('members');
@@ -537,13 +619,15 @@ function importMembers_(rows) {
   if (!Array.isArray(rows)) return failJ('rows array required');
   addColIfMissing_('members', 'passwordHash');
   addColIfMissing_('members', 'passwordIsTemp');
+  addColIfMissing_('members', 'googleEmail');
   const ts = now_(); let created = 0, updated = 0;
   const tempPasswords = [];
   rows.forEach(r => {
     const ex = findOne_('members', 'kennitala', String(r.kennitala || '').trim());
     if (ex) {
+      const emailVal = r.email || ex.email || '';
       updateRow_('members', 'kennitala', ex.kennitala, {
-        name: r.name || ex.name, email: r.email || ex.email || '',
+        name: r.name || ex.name, email: emailVal,
         phone: r.phone || ex.phone || '', role: r.role || ex.role || 'member',
         birthYear: r.birthYear || ex.birthYear || '',
         isMinor: r.isMinor !== undefined ? bool_(r.isMinor) : ex.isMinor,
@@ -552,20 +636,23 @@ function importMembers_(rows) {
         guardianPhone: r.guardianPhone || ex.guardianPhone || '',
         initials: ex.initials || extractInitials_(r.name || ex.name),
         active: r.active !== undefined ? bool_(r.active) : ex.active,
+        googleEmail: pickGoogleEmail_(r.googleEmail, ex.googleEmail, emailVal),
         updatedAt: ts,
       });
       updated++;
     } else {
       const temp = genTempPassword_();
       const kt = String(r.kennitala).trim();
+      const emailVal = r.email || '';
       insertRow_('members', {
         id: uid_(), kennitala: kt, name: r.name || '',
-        role: r.role || 'member', email: r.email || '', phone: r.phone || '',
+        role: r.role || 'member', email: emailVal, phone: r.phone || '',
         birthYear: r.birthYear || '', isMinor: bool_(r.isMinor) || false,
         guardianName: r.guardianName || '', guardianKennitala: r.guardianKennitala || '',
         guardianPhone: r.guardianPhone || '', active: true,
         certifications: '', initials: extractInitials_(r.name),
         passwordHash: hashPassword_(temp), passwordIsTemp: true,
+        googleEmail: pickGoogleEmail_(r.googleEmail, '', emailVal),
         createdAt: ts, updatedAt: ts,
       });
       tempPasswords.push({ kennitala: kt, name: r.name || '', tempPassword: temp });

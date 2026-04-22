@@ -32,12 +32,22 @@ future sign-ins on that device can complete in one click.
   `strings-en.js` and `strings-is.js`. `shared/api.js` invalidates
   `getMembers` after `linkGoogleAccount` / `unlinkGoogleAccount`, and
   exposes a public `GOOGLE_CLIENT_ID` constant alongside `SCRIPT_URL`.
+- **Auto-link on import (`members.gs`, `_setup.gs`).** `importMembers_` and
+  `saveMember_` pre-populate `googleEmail` whenever a row's email is
+  provably a Google Account — personal Gmail (`@gmail.com`,
+  `@googlemail.com`) is matched directly; every other domain is tested by
+  resolving MX records via `https://dns.google/resolve` (script-cache TTL
+  24h per domain). Explicit `googleEmail` in the payload wins; an
+  existing link is never overwritten. New one-shot editor helper
+  `autoLinkGmailAddresses()` backfills the same logic onto existing
+  members whose `googleEmail` is still empty.
 - **Deployment prerequisites.** Create an OAuth 2.0 Client ID in Google
   Cloud Console with the site origin (e.g. `https://skarfur.github.io`) and
   `http://localhost:*` on "Authorized JavaScript origins". Set the client
   ID on both the Apps Script `GOOGLE_CLIENT_ID` script property and the
   `GOOGLE_CLIENT_ID` constant in `shared/api.js`. Run
-  `setupSpreadsheet()` to add the new `googleEmail` column.
+  `setupSpreadsheet()` to add the new `googleEmail` column, then
+  optionally `autoLinkGmailAddresses()` once to backfill existing rows.
 
 ## Unreleased — logbook bug fixes
 
