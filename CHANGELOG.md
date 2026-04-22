@@ -3,6 +3,76 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — light theme is the default
+
+New users (and anyone without a saved `ymirTheme`) now get light mode out of
+the box. `shared/api.js` `getTheme()` defaults to `"light"`; `settings.js`
+`saveSettings` falls back to `"light"` when nothing is selected. The login
+page now calls `applyTheme()` on load — previously it didn't load `ui.js`, so
+the form always rendered with the `:root` dark palette regardless of the
+user's saved preference. The Google sign-in button also measures its
+container and renders at the card's actual inner width (clamped to GSI's
+200-400px range) so it lines up flush with the password inputs on every
+screen instead of sitting at a hard-coded 320px.
+
+## Unreleased — Google sign-in (one-click, with password fallback)
+
+Members can link a Google account and sign in with Google Identity Services'
+one-tap / "Sign in with Google" button. Password sign-in stays as the
+primary backup and as the linking mechanism — members log in with their
+password once, then link their Google account from Settings → Sign-in, and
+future sign-ins on that device can complete in one click.
+
+- **Backend (`members.gs`, `code.gs`, `_setup.gs`).** New `loginWithGoogle`
+  public action verifies the Google ID token via
+  `oauth2.googleapis.com/tokeninfo` (checks `aud`, `iss`, `exp`,
+  `email_verified`), looks up a member by a new `googleEmail` column, and
+  mints a session via the existing `createSession_` path. New authenticated
+  `linkGoogleAccount` / `unlinkGoogleAccount` actions manage the link on the
+  caller's own member row; linking refuses an email that's already tied to
+  another member. `publicMember_` now exposes `googleEmail`. Requires the
+  `GOOGLE_CLIENT_ID` script property to be set.
+- **Login portal (`login/index.html`, `login/login.js`, `login/login.css`).**
+  GIS button renders above the kennitala/password form when
+  `GOOGLE_CLIENT_ID` is configured; one-tap prompt fires on load. CSP
+  updated to allow `https://accounts.google.com/gsi/`.
+- **Settings portal (`settings/`).** New "Google account" row inside the
+  Sign-in section: shows the linked email + a Disconnect button, or a
+  "Continue with Google" link button. CSP updated to match login.
+- **Strings + cache.** `login.or`, `login.googleNotLinked`,
+  `login.googleError`, and nine `settings.google*` keys added to both
+  `strings-en.js` and `strings-is.js`. `shared/api.js` invalidates
+  `getMembers` after `linkGoogleAccount` / `unlinkGoogleAccount`, and
+  exposes a public `GOOGLE_CLIENT_ID` constant alongside `SCRIPT_URL`.
+- **Auto-link on import (`members.gs`, `_setup.gs`).** `importMembers_` and
+  `saveMember_` pre-populate `googleEmail` whenever a row's email is
+  provably a Google Account — personal Gmail (`@gmail.com`,
+  `@googlemail.com`) is matched directly; every other domain is tested by
+  resolving MX records via `https://dns.google/resolve` (script-cache TTL
+  24h per domain). Explicit `googleEmail` in the payload wins; an
+  existing link is never overwritten. New one-shot editor helper
+  `autoLinkGmailAddresses()` backfills the same logic onto existing
+  members whose `googleEmail` is still empty.
+- **Deployment prerequisites.** Create an OAuth 2.0 Client ID in Google
+  Cloud Console with the site origin (e.g. `https://skarfur.github.io`) and
+  `http://localhost:*` on "Authorized JavaScript origins". Set the client
+  ID on both the Apps Script `GOOGLE_CLIENT_ID` script property and the
+  `GOOGLE_CLIENT_ID` constant in `shared/api.js`. Run
+  `setupSpreadsheet()` to add the new `googleEmail` column, then
+  optionally `autoLinkGmailAddresses()` once to backfill existing rows.
+## Unreleased — unified compact button size
+
+- **`.btn-sm` modifier in `shared/style.css`** — one canonical compact size
+  (`padding: 6px 12px; font-size: 11px; min-height: 0;`) replaces ~40 ad-hoc
+  inline `style="padding:…;font-size:…"` overrides spread across captain,
+  staff, coxswain, admin, member, weather, incidents, and the shared boat /
+  slot / maintenance / payroll / boats modules. Mobile caps the touch target
+  at 32px (between `.btn`'s 44px and `.btn-ghost`'s 36px).
+- **Captain's slot-week-nav aligns with the rest** — removed the
+  `.slot-week-nav .btn` size rule; the strip now uses `.btn-sm` directly,
+  so "Assign cred", "+ Add boat", "← →", "New Booking" and "Bulk Book" all
+  share the same height/padding instead of drifting by 1–3px each.
+
 ## Unreleased — logbook bug fixes
 
 Surface-level fixes for the logbook portal after the inline-style → utility-class

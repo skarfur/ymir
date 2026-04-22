@@ -28,3 +28,6 @@ body { display:flex; align-items:center; justify-content:center; min-height:100v
     .role-btn.role-ward .role-label { color:#9b59b6; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
     .back-link:hover { color:var(--brass-fg); }
+    #googleBtn { display:flex; justify-content:center; }
+    .login-or { display:flex; align-items:center; gap:10px; margin:14px 0 6px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+    .login-or::before, .login-or::after { content:""; flex:1; height:1px; background:var(--border); }

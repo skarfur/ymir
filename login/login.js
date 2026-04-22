@@ -1,3 +1,6 @@
+// login/ doesn't load shared/ui.js, which is where every other page calls this.
+applyTheme();
+
 // Track the dynamic screen currently shown so we can re-render it when the
 // language changes without losing the user's place in the login flow.
 var _currentScreen = null;
@@ -41,12 +44,15 @@ function wireStrings() {
   }
 
   // Refresh any visible error messages whose string key we tracked
-  ['errMsg', 'accountErr', 'changeErr'].forEach(function(id) {
+  ['errMsg', 'accountErr', 'changeErr', 'googleErr'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && el.style.display !== 'none' && el.dataset.sKey) {
       el.textContent = s(el.dataset.sKey);
     }
   });
+
+  var gd = document.getElementById('googleDividerText');
+  if (gd) gd.textContent = s('login.or');
 
   // Re-render whichever dynamic screen is currently shown so its labels update
   if (_currentScreen) {
@@ -94,6 +100,92 @@ document.getElementById('stayLoggedIn').checked = getStayLoggedIn();
 // Swallow the 401 — we're not authenticated yet and the request still
 // spins up the container, which is all we care about here.
 apiGet('getConfig').catch(function() {});
+
+// ── Google one-tap sign-in ──────────────────────────────────────────────────
+// Poll briefly for the GSI library to load (it's async deferred). When it's
+// ready — and only if the admin has configured a client ID — render the
+// button and enable one-tap. The password form remains the fallback.
+(function waitForGoogleIdentity(attempts) {
+  attempts = attempts || 0;
+  if (!GOOGLE_CLIENT_ID) return;
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    if (attempts > 40) return; // ~10s
+    setTimeout(function(){ waitForGoogleIdentity(attempts + 1); }, 250);
+    return;
+  }
+  try {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    // Unhide first so getBoundingClientRect returns the real inner width —
+    // GSI's width param is a fixed pixel int (min 200, max 400), so match it
+    // to the card so the button lines up with the inputs below on any screen.
+    document.getElementById('googleBtnWrap').classList.remove('d-none');
+    var wrap = document.getElementById('googleBtn');
+    var avail = Math.round(wrap.getBoundingClientRect().width) || 320;
+    google.accounts.id.renderButton(wrap, {
+      type: 'standard',
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'filled_black' : 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      logo_alignment: 'center',
+      width: Math.max(200, Math.min(400, avail)),
+    });
+    document.getElementById('googleDividerText').textContent = s('login.or');
+    google.accounts.id.prompt();
+  } catch (e) {
+    // Swallow — any failure (blocked third-party cookies, wrong origin)
+    // just means the user falls back to the password form.
+  }
+})();
+
+async function handleGoogleCredential(resp) {
+  var err = document.getElementById('googleErr');
+  err.classList.add('d-none');
+  delete err.dataset.sKey;
+  if (!resp || !resp.credential) return;
+  var stay = document.getElementById('stayLoggedIn').checked;
+  setStayLoggedIn(stay);
+  try {
+    var data = await apiPost('loginWithGoogle', {
+      idToken: resp.credential,
+      stayLoggedIn: stay,
+      userAgent: (navigator.userAgent || '').slice(0, 200),
+    });
+    var user = data.member;
+    var wards = Array.isArray(data.wards) ? data.wards : [];
+    if (data.sessionToken) {
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+    }
+    user.usingDefaultPassword = !!data.usingDefaultPassword;
+    if (data.usingDefaultPassword) {
+      // Rare path: a Google-linked member whose password was admin-reset.
+      // Keep the same "choose a password" gate so they don't end up with
+      // only a temp password on file.
+      _pendingWards = wards;
+      _pendingOldPassword = '';
+      showForceChangeScreen(user);
+      return;
+    }
+    if (wards.length) {
+      showAccountPicker(user, wards);
+      return;
+    }
+    proceedWithUser(user);
+  } catch (e) {
+    var msg = (e && e.message) || '';
+    var key = 'login.googleError';
+    if (msg.indexOf('not linked') >= 0) key = 'login.googleNotLinked';
+    else if (msg.indexOf('Inactive') >= 0) key = 'login.notFound';
+    err.textContent  = s(key);
+    err.dataset.sKey = key;
+    err.classList.remove('d-none');
+  }
+}
 
 async function doLogin() {
   const rawUser = document.getElementById('ktInput').value.trim();

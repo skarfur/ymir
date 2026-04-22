@@ -400,7 +400,6 @@ function tripCard(t){
       <div class="trip-arrow">▾</div>
     </div>
     <div class="trip-expand" data-trip-nobubble>
-      <button class="trip-card-close" data-trip-action="close-card">✕</button>
       ${hasBoatDetails?`<div class="exp-section exp-boat">
         <div class="exp-section-hdr">${s('tc.boatDetails')}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>

@@ -6,6 +6,7 @@ document.getElementById('changePwBtn').addEventListener('click', function() { ch
 document.getElementById('signOutAllBtn').addEventListener('click', function() { signOutEverywhereElse(); });
 document.getElementById('cancelBtn').addEventListener('click', function() { cancelSettings(); });
 document.getElementById('saveBtn').addEventListener('click', function() { saveSettings(); });
+document.getElementById('googleUnlinkBtn').addEventListener('click', function() { unlinkGoogle(); });
 
 var _autoInitials = '';
 
@@ -365,7 +366,7 @@ async function saveSettings() {
   var initials = document.getElementById('sInitials').value.trim().toUpperCase() || _autoInitials;
   var lang     = getToggle('langToggle') || 'IS';
   var windUnit = document.getElementById('sWindUnit').value;
-  var theme    = getToggle('themeToggle') || 'dark';
+  var theme    = getToggle('themeToggle') || 'light';
 
   var statsVisibility = {
     career:     document.getElementById('svCareer').checked,
@@ -438,3 +439,92 @@ async function saveSettings() {
     btn.textContent = s('btn.saveClose');
   }
 }
+
+// ── Google account linking ──────────────────────────────────────────────────
+function renderGoogleLinkState() {
+  var section  = document.getElementById('googleLinkSection');
+  var linked   = document.getElementById('googleLinkedRow');
+  var unlinked = document.getElementById('googleUnlinkedRow');
+  var emailEl  = document.getElementById('googleLinkedEmail');
+  if (!GOOGLE_CLIENT_ID) { section.classList.add('d-none'); return; }
+  section.classList.remove('d-none');
+  if (user.googleEmail) {
+    emailEl.textContent = user.googleEmail;
+    linked.classList.remove('d-none');
+    unlinked.classList.add('d-none');
+  } else {
+    linked.classList.add('d-none');
+    unlinked.classList.remove('d-none');
+    initGoogleLinkButton();
+  }
+}
+
+function initGoogleLinkButton() {
+  var host = document.getElementById('googleLinkBtn');
+  if (!host || host.dataset.rendered === '1') return;
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    setTimeout(initGoogleLinkButton, 300);
+    return;
+  }
+  try {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleLinkCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    google.accounts.id.renderButton(host, {
+      type: 'standard',
+      theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_black',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'rectangular',
+      logo_alignment: 'center',
+      width: 320,
+    });
+    host.dataset.rendered = '1';
+  } catch (e) { /* blocked origin / cookies — nothing to do */ }
+}
+
+async function handleGoogleLinkCredential(resp) {
+  var msg = document.getElementById('googleMsg');
+  msg.classList.add('d-none');
+  if (!resp || !resp.credential) return;
+  try {
+    var data = await apiPost('linkGoogleAccount', { idToken: resp.credential });
+    user.googleEmail = data.googleEmail || '';
+    setUser(user);
+    msg.textContent = s('settings.googleLinked').replace('{email}', user.googleEmail);
+    msg.className = 'msg msg-ok mt-8 text-xs';
+    msg.classList.remove('d-none');
+    renderGoogleLinkState();
+  } catch (e) {
+    var em = (e && e.message) || '';
+    var key = 'settings.googleLinkFailed';
+    if (em.indexOf('another member') >= 0) key = 'settings.googleLinkTaken';
+    msg.textContent = s(key);
+    msg.className = 'msg msg-err mt-8 text-xs';
+    msg.classList.remove('d-none');
+  }
+}
+
+async function unlinkGoogle() {
+  var msg = document.getElementById('googleMsg');
+  msg.classList.add('d-none');
+  if (!(await ymConfirm(s('settings.googleUnlinkConfirm')))) return;
+  try {
+    await apiPost('unlinkGoogleAccount', {});
+    user.googleEmail = '';
+    setUser(user);
+    msg.textContent = s('settings.googleUnlinked');
+    msg.className = 'msg msg-ok mt-8 text-xs';
+    msg.classList.remove('d-none');
+    renderGoogleLinkState();
+  } catch (e) {
+    msg.textContent = s('settings.googleUnlinkFailed');
+    msg.className = 'msg msg-err mt-8 text-xs';
+    msg.classList.remove('d-none');
+  }
+}
+
+renderGoogleLinkState();

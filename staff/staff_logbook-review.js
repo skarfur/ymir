@@ -204,9 +204,9 @@ function renderTrips() {
         <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
                value="${esc(t.staffComment || '')}" class="text-md">
         ${isVer
-          ? `<button class="btn btn-secondary text-sm" style="padding:5px 12px;flex-shrink:0"
+          ? `<button class="btn btn-secondary btn-sm" style="flex-shrink:0"
                data-slr-click="unverifyTrip" data-slr-arg="${esc(t.id)}">✗ ${s('logrev.unverify')}</button>`
-          : `<button class="btn btn-primary text-sm" style="padding:5px 14px;flex-shrink:0"
+          : `<button class="btn btn-primary btn-sm" style="flex-shrink:0"
                data-slr-click="verifyTrip" data-slr-arg="${esc(t.id)}">✓ ${s('logrev.verify')}</button>`}
       </div>
     </div>`;
@@ -319,9 +319,9 @@ function renderCertPanelList() {
         <div class="cert-meta">${expiry}${c.assignedAt ? ' · Issued ' + esc(c.assignedAt) : ''}</div>
       </div>
       <div class="cert-actions">
-        <button class="btn btn-secondary text-sm" style="padding:4px 10px"
+        <button class="btn btn-secondary btn-sm"
           data-slr-click="editCert" data-slr-arg="${esc(c.certId)}" data-slr-arg2="${esc(c.sub||'')}">Edit</button>
-        <button class="btn btn-secondary text-sm text-red" style="padding:4px 10px"
+        <button class="btn btn-secondary btn-sm text-red"
           data-slr-click="deleteCert" data-slr-arg="${esc(c.certId)}" data-slr-arg2="${esc(c.sub||'')}">✕</button>
       </div>
     </div>`;

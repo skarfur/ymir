@@ -2,6 +2,10 @@
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
 const BASE_URL   = "https://skarfur.github.io/ymir";
+// Google Identity Services OAuth 2.0 Client ID (public by design). Leave
+// empty to disable one-tap sign-in client-side; backend also refuses to
+// verify tokens unless the GOOGLE_CLIENT_ID script property is set.
+const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
 // ── Service Worker Cleanup (one-shot per browser) ──────────────────────────
 // The app used to register a SW; it was removed long ago. This block
@@ -118,6 +122,10 @@ var _INVALIDATES = {
   // Session-state changes. Settings page re-fetches its "signed in on…" list.
   signOut:                 ['listSessions'],
   signOutAll:              ['listSessions'],
+  // Google link state lives on the member record; refresh the member list
+  // (admin views) and the current user after a link/unlink.
+  linkGoogleAccount:        ['getMembers'],
+  unlinkGoogleAccount:      ['getMembers'],
   adminResetMemberPassword:['listSessions'],
   // Crews + invites.
   createCrew:              ['getCrews', 'getCrewInvites'],
@@ -174,7 +182,7 @@ async function _call(action, payload) {
   // Public actions are exempt from session auth; loginMember is where we
   // obtain the token in the first place. For everything else, attach the
   // caller's session token so the backend can identify them.
-  var PUBLIC_ACTIONS = { loginMember: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
+  var PUBLIC_ACTIONS = { loginMember: 1, loginWithGoogle: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
   var envelope = { action: action };
   if (!PUBLIC_ACTIONS[action]) {
     var t = _getSessionToken();
@@ -544,7 +552,7 @@ function getLang()  { return localStorage.getItem("ymirLang") || "IS"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
-function getTheme()  { return localStorage.getItem("ymirTheme") || "dark"; }
+function getTheme()  { return localStorage.getItem("ymirTheme") || "light"; }
 function setTheme(t) {
   localStorage.setItem("ymirTheme", t);
   document.documentElement.setAttribute("data-theme", t);

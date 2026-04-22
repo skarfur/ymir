@@ -55,7 +55,7 @@
       +     (c.showNote ? '<div class="field"><label data-s="slot.note"></label><input type="text" id="smNote" style="font-size:11px"></div>' : '')
       +     (c.showBookedInfo ? '<div id="slotBookedInfo" class="hidden" style="font-size:11px;color:var(--green);margin-bottom:8px"></div>' : '')
       +     '<div class="btn-row">'
-      +       (deleteFn ? '<button class="btn btn-danger hidden" id="smDeleteBtn" style="font-size:11px" data-sm-fn="' + deleteFn + '" data-s="btn.delete"></button>' : '')
+      +       (deleteFn ? '<button class="btn btn-danger hidden" id="smDeleteBtn" data-sm-fn="' + deleteFn + '" data-s="btn.delete"></button>' : '')
       +       '<button class="btn btn-secondary" data-sm-close="slotModal" data-s="btn.cancel"></button>'
       +       '<button class="btn btn-primary" data-sm-fn="' + saveFn + '" data-s="' + saveKey + '"></button>'
       +     '</div>'

@@ -492,12 +492,12 @@ function renderCheckoutCard(co, opts) {
   let actionsHtml = "";
   if (staffView && (opts.onCheckIn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:10px">`
-                + (opts.onCheckIn ? `<button class="btn btn-primary" style="font-size:11px;flex:1" data-boat-action="check-in" data-boat-fn="${opts.onCheckIn}" data-co-id="${co.id}">✓ ${_besc(s("fleet.checkIn"))}</button>` : "")
-                + (opts.onDelete  ? `<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" data-boat-action="delete" data-boat-fn="${opts.onDelete}" data-co-id="${co.id}">× ${_besc(s("fleet.delete"))}</button>` : "")
+                + (opts.onCheckIn ? `<button class="btn btn-primary btn-sm" style="flex:1" data-boat-action="check-in" data-boat-fn="${opts.onCheckIn}" data-co-id="${co.id}">✓ ${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onDelete  ? `<button class="btn btn-secondary btn-sm" style="color:var(--muted)" data-boat-action="delete" data-boat-fn="${opts.onDelete}" data-co-id="${co.id}">× ${_besc(s("fleet.delete"))}</button>` : "")
                 + `</div>`;
   } else if (!staffView && isMe && (opts.onReturn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:8px">`
-                + (opts.onReturn ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" data-boat-action="return" data-boat-fn="${opts.onReturn}" data-co-id="${co.id}">${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onReturn ? `<button class="btn btn-secondary btn-sm" data-boat-action="return" data-boat-fn="${opts.onReturn}" data-co-id="${co.id}">${_besc(s("fleet.checkIn"))}</button>` : "")
                 + (opts.onDelete ? `<button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="${_besc(s("fleet.delete"))}" data-boat-action="delete" data-boat-fn="${opts.onDelete}" data-co-id="${co.id}">×</button>` : "")
                 + `</div>`;
   }

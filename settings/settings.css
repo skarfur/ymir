@@ -1,4 +1,4 @@
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px}
 .settings-page{max-width:560px;width:100%;background:var(--card);border:1px solid var(--border-l);border-radius:var(--radius-lg);padding:24px 20px 20px;max-height:88vh;overflow-y:auto;position:relative;box-shadow:var(--shadow-lg)}
 .settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
 .settings-section-title{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px;font-weight:600}
