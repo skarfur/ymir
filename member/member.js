@@ -887,8 +887,37 @@ function _handleRetTrack(input){
   statusEl.textContent=s('member.readingFile');statusEl.style.color='var(--muted)';
   var reader=new FileReader();
   reader.onload=function(e){
-    window._retPendingTrack={fileName:file.name,fileData:e.target.result,mimeType:file.type||'application/octet-stream'};
-    statusEl.textContent=s('member.fileReady',{name:file.name});statusEl.style.color='var(--brass)';
+    var pending={fileName:file.name,fileData:e.target.result,mimeType:file.type||'application/octet-stream',
+                 uploadPromise:null,uploadResult:null,uploadError:null};
+    window._retPendingTrack=pending;
+    statusEl.textContent=s('logbook.uploadingTrack');statusEl.style.color='var(--muted)';
+    // Eagerly upload so distance is calculated before the user submits
+    pending.uploadPromise=apiPost('uploadTripFile',{fileType:'track',fileName:pending.fileName,fileData:pending.fileData,mimeType:pending.mimeType})
+      .then(function(tr){
+        pending.uploadResult=tr;
+        if(window._retPendingTrack!==pending) return tr; // superseded by another file pick
+        if(tr && tr.ok){
+          if(tr.distanceNm){
+            var dEl=document.getElementById('retDistNm');
+            if(dEl && !dEl.value) dEl.value=tr.distanceNm;
+            statusEl.textContent=s('member.fileReady',{name:file.name})+' · '+tr.distanceNm+' nm';
+          } else {
+            statusEl.textContent=s('member.fileReady',{name:file.name});
+          }
+          statusEl.style.color='var(--brass)';
+        } else {
+          statusEl.textContent=s('member.fileReady',{name:file.name});
+          statusEl.style.color='var(--brass)';
+        }
+        return tr;
+      })
+      .catch(function(err){
+        pending.uploadError=err;
+        if(window._retPendingTrack===pending){
+          statusEl.textContent=s('member.fileReady',{name:file.name});
+          statusEl.style.color='var(--brass)';
+        }
+      });
   };
   reader.onerror=function(){statusEl.textContent=s('member.readError');statusEl.style.color='var(--red)';window._retPendingTrack=null;};
   reader.readAsDataURL(file);
@@ -1080,12 +1109,18 @@ async function confirmCheckIn(coId) {
   var submitBtn=document.getElementById('retSubmitBtn');
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=s('logbook.uploading');}
 
-  // Upload GPS track
+  // Upload GPS track (reuse eager upload from file pick if already complete)
   var trackFileUrl='',trackSimplified='',trackSource='',distanceNm=manualDist;
   if(window._retPendingTrack){
+    var pending=window._retPendingTrack;
     try{
-      var tr=await apiPost('uploadTripFile',{fileType:'track',fileName:window._retPendingTrack.fileName,fileData:window._retPendingTrack.fileData,mimeType:window._retPendingTrack.mimeType});
-      if(tr.ok){
+      if(pending.uploadPromise) await pending.uploadPromise;
+      if(pending.uploadError) throw pending.uploadError;
+      var tr=pending.uploadResult;
+      if(!tr){
+        tr=await apiPost('uploadTripFile',{fileType:'track',fileName:pending.fileName,fileData:pending.fileData,mimeType:pending.mimeType});
+      }
+      if(tr && tr.ok){
         trackFileUrl=tr.trackFileUrl||'';trackSimplified=tr.trackSimplified||'';trackSource=tr.trackSource||'';
         if(!distanceNm&&tr.distanceNm){distanceNm=tr.distanceNm;var dEl=document.getElementById('retDistNm');if(dEl)dEl.value=tr.distanceNm;}
       } else {showToast(s('member.gpsNoConfig'),'warn');}
