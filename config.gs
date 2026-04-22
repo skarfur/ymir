@@ -17,7 +17,8 @@ function getConfig_() {
   } catch (e) { }
   const overdueAlerts = getAlertConfigFromMap_(cfgMap);
   const flagConfig = getFlagConfigFromMap_(cfgMap);
-  const staffStatus   = jsonR_(getConfigValue_('staffStatus', cfgMap));
+  let staffStatus = null;
+  try { staffStatus = JSON.parse(getConfigValue_('staffStatus', cfgMap) || 'null'); } catch (e) {}
   // Staff-set flag override — auto-clears when past `expiresAt` (set to next UTC
   // midnight by the staff page). Cleared by writing an empty value back so the
   // next getConfig build is clean, then bypassed for this response.
