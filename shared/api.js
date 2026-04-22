@@ -26,68 +26,107 @@ async function apiGet(action, params) {
       var _ck = 'ymir_' + action + '_';
       var _cs = sessionStorage.getItem(_ck);
       if (_cs) { var _cp = JSON.parse(_cs); if (Date.now() - _cp.ts < _CACHEABLE[action]) return _cp.data; }
-      var _cr = await _call(action, params);
-      sessionStorage.setItem(_ck, JSON.stringify({ ts: Date.now(), data: _cr }));
-      return _cr;
+      // In-flight dedup: if an identical request is already running (cache
+      // miss during page init often fires several parallel apiGet calls for
+      // the same action), reuse the pending promise instead of kicking off
+      // a second network round-trip. Key includes params so requests that
+      // differ by ID aren't collapsed.
+      var _dk = _ck + JSON.stringify(params);
+      if (apiGet._inflight[_dk]) return apiGet._inflight[_dk];
+      var _p = (async function () {
+        try {
+          var data = await _call(action, params);
+          sessionStorage.setItem(_ck, JSON.stringify({ ts: Date.now(), data: data }));
+          return data;
+        } finally {
+          delete apiGet._inflight[_dk];
+        }
+      })();
+      apiGet._inflight[_dk] = _p;
+      return _p;
     } catch(e) { /* fall through */ }
   }
   return _call(action, params);
 }
+apiGet._inflight = {};
+// Which cache entries each write-action invalidates. Single source of truth.
+// Keys are apiPost action names; values are the getXxx reads whose cached
+// sessionStorage copy should be dropped after the POST so the next call
+// picks up fresh data. An action absent from this table evicts nothing.
+var _INVALIDATES = {
+  // Config + members: any edit to config or any member record refreshes both.
+  saveConfig:              ['getConfig', 'getMembers'],
+  saveMembers:             ['getConfig', 'getMembers'],
+  saveMember:              ['getConfig', 'getMembers'],
+  deleteMember:            ['getConfig', 'getMembers'],
+  saveMemberCert:          ['getConfig', 'getMembers'],
+  savePreferences:         ['getConfig', 'getMembers'],
+  setPassword:             ['getConfig', 'getMembers', 'listSessions'],
+  importMembers:           ['getConfig', 'getMembers'],
+  deactivateMembers:       ['getConfig', 'getMembers'],
+  saveActivityType:        ['getConfig', 'getMembers'],
+  deleteActivityType:      ['getConfig', 'getMembers'],
+  saveChecklistItem:       ['getConfig', 'getMembers'],
+  deleteChecklistItem:     ['getConfig', 'getMembers'],
+  saveCertDef:             ['getConfig', 'getMembers'],
+  deleteCertDef:           ['getConfig', 'getMembers'],
+  saveCertCategories:      ['getConfig', 'getMembers'],
+  saveBoatAccess:          ['getConfig', 'getMembers'],
+  saveBoatOos:             ['getConfig', 'getMembers'],
+  saveReservation:         ['getConfig', 'getMembers'],
+  removeReservation:       ['getConfig', 'getMembers'],
+  saveVolunteerEvent:      ['getConfig', 'getMembers'],
+  deleteVolunteerEvent:    ['getConfig', 'getMembers'],
+  volunteerSignup:         ['getConfig', 'getMembers'],
+  volunteerWithdraw:       ['getConfig', 'getMembers'],
+  syncVolunteerEvents:     ['getConfig', 'getMembers'],
+  saveRowingPassportDef:   ['getConfig', 'getMembers'],
+  importRowingPassportCsv: ['getConfig', 'getMembers'],
+  // Trips.
+  saveTrip:                ['getTrips'],
+  deleteTrip:              ['getTrips'],
+  setHelm:                 ['getTrips'],
+  // respondConfirmation can mint a new crew-trip row AND clear a notification.
+  respondConfirmation:     ['getTrips', 'getNotifications'],
+  // Maintenance — most also change notification counts (follower pings, etc.).
+  saveMaintenance:         ['getMaintenance', 'getNotifications'],
+  resolveMaintenance:      ['getMaintenance', 'getNotifications'],
+  deleteMaintenance:       ['getMaintenance'],
+  addMaintenanceComment:   ['getMaintenance', 'getNotifications'],
+  adoptSaumaklubbur:       ['getMaintenance', 'getNotifications'],
+  approveSaumaklubbur:     ['getMaintenance', 'getNotifications'],
+  holdSaumaklubbur:        ['getMaintenance', 'getNotifications'],
+  toggleMaterial:          ['getMaintenance', 'getNotifications'],
+  addMaterial:             ['getMaintenance', 'getNotifications'],
+  removeMaterial:          ['getMaintenance', 'getNotifications'],
+  followProject:           ['getMaintenance', 'getNotifications'],
+  unfollowProject:         ['getMaintenance', 'getNotifications'],
+  // Notification-only.
+  dismissConfirmation:     ['getNotifications'],
+  dismissAllConfirmations: ['getNotifications'],
+  markProjectSeen:         ['getNotifications'],
+  // Session-state changes. Settings page re-fetches its "signed in on…" list.
+  signOut:                 ['listSessions'],
+  signOutAll:              ['listSessions'],
+  adminResetMemberPassword:['listSessions'],
+  // Crews + invites.
+  createCrew:              ['getCrews', 'getCrewInvites'],
+  disbandCrew:             ['getCrews', 'getCrewInvites'],
+  inviteToCrew:            ['getCrews', 'getCrewInvites'],
+  respondCrewInvite:       ['getCrews', 'getCrewInvites', 'getNotifications'],
+  bookSlot:                ['getCrews', 'getCrewInvites'],
+  unbookSlot:              ['getCrews', 'getCrewInvites'],
+  bulkBookSlots:           ['getCrews', 'getCrewInvites'],
+};
+
 async function apiPost(action, payload) {
   payload = payload || {};
-  // Invalidate config cache when config is saved
-  if (action === 'saveConfig' || action === 'saveMembers' || action === 'saveMember' ||
-      action === 'deleteMember' || action === 'saveMemberCert' ||
-      action === 'savePreferences' || action === 'setPassword' ||
-      action === 'importMembers' || action === 'deactivateMembers' ||
-      action === 'saveActivityType' || action === 'deleteActivityType' ||
-      action === 'saveChecklistItem' || action === 'deleteChecklistItem' ||
-      action === 'saveCertDef' || action === 'deleteCertDef' ||
-      action === 'saveCertCategories' ||
-      action === 'saveBoatAccess' || action === 'saveBoatOos' || action === 'saveReservation' || action === 'removeReservation' ||
-      action === 'saveVolunteerEvent' || action === 'deleteVolunteerEvent' ||
-      action === 'volunteerSignup' || action === 'volunteerWithdraw' ||
-      action === 'syncVolunteerEvents' ||
-      action === 'saveRowingPassportDef' || action === 'importRowingPassportCsv') {
+  var invalidates = _INVALIDATES[action];
+  if (invalidates) {
     try {
-      sessionStorage.removeItem('ymir_getConfig_');
-      sessionStorage.removeItem('ymir_getMembers_');
-    } catch(e) {}
-  }
-  // Invalidate trips cache on trip mutations (respondConfirmation can create crew trips)
-  if (action === 'saveTrip' || action === 'deleteTrip' || action === 'setHelm' || action === 'respondConfirmation') {
-    try { sessionStorage.removeItem('ymir_getTrips_'); } catch(e) {}
-  }
-  // Invalidate maintenance cache on maintenance mutations
-  if (action === 'saveMaintenance' || action === 'resolveMaintenance' ||
-      action === 'deleteMaintenance' || action === 'addMaintenanceComment' ||
-      action === 'adoptSaumaklubbur' || action === 'approveSaumaklubbur' ||
-      action === 'holdSaumaklubbur' || action === 'toggleMaterial' ||
-      action === 'addMaterial' || action === 'removeMaterial' ||
-      action === 'followProject' || action === 'unfollowProject') {
-    try { sessionStorage.removeItem('ymir_getMaintenance_'); } catch(e) {}
-  }
-  // Invalidate notification counts on state-changing actions
-  if (action === 'respondConfirmation' || action === 'dismissConfirmation' || action === 'dismissAllConfirmations' ||
-      action === 'respondCrewInvite' ||
-      action === 'saveMaintenance' || action === 'resolveMaintenance' || action === 'addMaintenanceComment' ||
-      action === 'followProject' || action === 'unfollowProject' || action === 'markProjectSeen' ||
-      action === 'adoptSaumaklubbur' || action === 'approveSaumaklubbur' || action === 'holdSaumaklubbur' ||
-      action === 'toggleMaterial' || action === 'addMaterial' || action === 'removeMaterial') {
-    try { sessionStorage.removeItem('ymir_getNotifications_'); } catch(e) {}
-  }
-  // Invalidate sessions cache after session-state mutations so the settings
-  // UI re-fetches the list instead of showing a freshly-revoked row.
-  if (action === 'signOut' || action === 'signOutAll' || action === 'setPassword' ||
-      action === 'adminResetMemberPassword') {
-    try { sessionStorage.removeItem('ymir_listSessions_'); } catch(e) {}
-  }
-  // Invalidate crew caches on crew mutations
-  if (action === 'createCrew' || action === 'disbandCrew' || action === 'inviteToCrew' ||
-      action === 'respondCrewInvite' || action === 'bookSlot' || action === 'unbookSlot' || action === 'bulkBookSlots') {
-    try {
-      sessionStorage.removeItem('ymir_getCrews_');
-      sessionStorage.removeItem('ymir_getCrewInvites_');
+      invalidates.forEach(function (k) {
+        sessionStorage.removeItem('ymir_' + k + '_');
+      });
     } catch(e) {}
   }
   return _call(action, payload);
@@ -268,9 +307,17 @@ function _handleUnauthorized() {
   setParentSession(null);
   // Only redirect pages that actually depend on auth; the login page handles
   // its own 401s (bad credentials, etc.) locally.
-  if (typeof window !== 'undefined' && window.location &&
-      window.location.pathname.indexOf('/login/') < 0) {
-    window.location.href = BASE_URL + "/login/";
+  if (typeof window === 'undefined' || !window.location ||
+      window.location.pathname.indexOf('/login/') >= 0) return;
+  // Show a toast so the user understands why they're about to bounce back
+  // to login. Falls back to immediate redirect if ui.js hasn't loaded yet
+  // (toast helper is in shared/ui.js; not every page includes it).
+  var msg = (typeof s === 'function') ? s('toast.sessionExpired') : 'Your session expired.';
+  if (typeof window.showToast === 'function') {
+    try { window.showToast(msg, 'warn', 2000); } catch(e) {}
+    setTimeout(function () { window.location.href = BASE_URL + '/login/'; }, 1500);
+  } else {
+    window.location.href = BASE_URL + '/login/';
   }
 }
 

@@ -54,6 +54,7 @@ var _STRINGS_FLAT = {
   "toast.loadFailed": "Hleðsla mistókst",
   "toast.signedOff": "Undirritað ✓",
   "toast.checkedIn": "Skráð inn ✓",
+  "toast.sessionExpired": "Setan rann út. Skrái þig út…",
   "wx.wind": "VINDUR",
   "wx.gusts": "HVIÐA",
   "wx.waves": "BYLGJUR",
