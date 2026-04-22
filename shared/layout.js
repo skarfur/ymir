@@ -41,7 +41,9 @@
     "upgrade-insecure-requests";
 
   // Portals that embed Leaflet (captain, logbook, public) need to whitelist
-  // unpkg for script + style.
+  // unpkg for script + style. connect-src must also include unpkg so DevTools
+  // can fetch source maps (leaflet.js.map, leaflet-heat.js.map) without CSP
+  // blocking the request.
   var CSP_LEAFLET_ =
     CSP_BASE_.replace(
       "script-src 'self'",
@@ -49,6 +51,9 @@
     ).replace(
       "style-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://unpkg.com"
+    ).replace(
+      "connect-src 'self'",
+      "connect-src 'self' https://unpkg.com"
     );
 
   // Alert-action is the public email-response page — minimal surface area,
