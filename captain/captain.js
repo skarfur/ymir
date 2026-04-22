@@ -647,6 +647,7 @@ function initCqReservations() {
     var prefs = {};
     try { prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {}); } catch (e) {}
     colorEl.value = prefs.bookingColor || '#2e7d32';
+    if (typeof renderColorSwatches === 'function') renderColorSwatches('cqBookingColor', 'cqBookingColorSwatches');
   }
   // Set week start
   var d = new Date();

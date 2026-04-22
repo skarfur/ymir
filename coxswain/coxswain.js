@@ -323,8 +323,6 @@ function renderCrewInvites() {
     }).join('');
 }
 
-var CREW_COLORS = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#d4af37','#a78bfa'];
-
 function openCrewModal() {
   document.getElementById('cmCrewName').value = '';
   document.getElementById('cmDescription').value = '';
@@ -338,33 +336,13 @@ function openCrewModal() {
     pairSel.innerHTML = '';
     for (var i = 0; i < n; i++) pairSel.innerHTML += '<option value="' + i + '">' + s('cox.boat') + ' ' + (i + 1) + '</option>';
   };
-  // Color picker — native input + preset swatches
-  var colorInput = document.getElementById('cmColor');
-  var cpEl = document.getElementById('cmColorPicker');
-  var autoIdx = _allBoardCrews.filter(function(c) { return c.status !== 'disbanded'; }).length % CREW_COLORS.length;
-  colorInput.value = CREW_COLORS[autoIdx];
-  cpEl.innerHTML = CREW_COLORS.map(function(clr) {
-    return '<div data-color="' + clr + '" data-cx-click-el="pickCrewColor" style="width:20px;height:20px;border-radius:50%;background:' + clr + ';cursor:pointer;transition:outline .1s;border:1px solid rgba(0,0,0,.15)"></div>';
-  }).join('');
-  _highlightSwatch(cpEl, CREW_COLORS[autoIdx]);
-  colorInput.addEventListener('input', function() { _highlightSwatch(cpEl, null); });
+  // Auto-rotate default colour through the shared palette, then render swatches
+  var palette = window.YMIR_PALETTE || [];
+  var autoIdx = _allBoardCrews.filter(function(c) { return c.status !== 'disbanded'; }).length % palette.length;
+  document.getElementById('cmColor').value = palette[autoIdx] || '#e74c3c';
+  renderColorSwatches('cmColor', 'cmColorPicker');
   applyStrings(document.getElementById('crewModal'));
   openModal('crewModal');
-}
-
-function _highlightSwatch(container, activeColor) {
-  container.querySelectorAll('div').forEach(function(d) {
-    if (activeColor && d.getAttribute('data-color') === activeColor) {
-      d.style.outline = '2px solid var(--text)'; d.style.outlineOffset = '2px';
-    } else {
-      d.style.outline = 'none';
-    }
-  });
-}
-
-function pickCrewColor(el) {
-  document.getElementById('cmColor').value = el.getAttribute('data-color');
-  _highlightSwatch(el.parentNode, el.getAttribute('data-color'));
 }
 
 async function createNewCrew() {
@@ -984,7 +962,6 @@ window.revokeSignoffClick = revokeSignoffClick;
 
 // ── Expose onclick handlers to global scope (they live inside DOMContentLoaded closure) ──
 window.openCrewModal = openCrewModal;
-window.pickCrewColor = pickCrewColor;
 window.createNewCrew = createNewCrew;
 window.joinSeat = joinSeat;
 window.leaveCrewConfirm = leaveCrewConfirm;
