@@ -689,7 +689,14 @@ function _renderDailyTide() {
 // ════════════════════════════════════════════════════════════════════════════
 function sjson(v, fallback) {
   if (!v) return fallback;
-  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return fallback; }
+  try {
+    var parsed = typeof v === 'string' ? JSON.parse(v) : v;
+    // Legacy rows were written double-encoded by the client; unwrap once more.
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) {}
+    }
+    return parsed;
+  } catch (e) { return fallback; }
 }
 
 async function loadDay() {
@@ -837,11 +844,11 @@ async function doSave(signOff) {
   try {
     const payload = {
       date:          viewDate,
-      openingChecks: JSON.stringify(amChecks),
-      closingChecks: JSON.stringify(pmChecks),
-      activities:    JSON.stringify(activities),
-      weatherLog:    JSON.stringify(wxLog),
-      tideData:      JSON.stringify(tideData),
+      openingChecks: amChecks,
+      closingChecks: pmChecks,
+      activities:    activities,
+      weatherLog:    wxLog,
+      tideData:      tideData,
       narrative:     dom.narrativeInput.value.trim(),
       signOff,
       ...(logId ? { id: logId } : {}),

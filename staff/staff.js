@@ -977,7 +977,11 @@ async function openDlLinkModal(checkoutId) {
     const today = todayISO();
     const res   = await apiGet('getDailyLog', { date: today });
     const log   = res.log || {};
-    _dlLinkTodayActs = (typeof log.activities === 'string' ? JSON.parse(log.activities||'[]') : (log.activities||[]));
+    var _acts = log.activities;
+    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
+    // Legacy rows were double-encoded; unwrap once more if needed.
+    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
+    _dlLinkTodayActs = Array.isArray(_acts) ? _acts : [];
   } catch(e) { _dlLinkTodayActs = []; }
 
   const list = document.getElementById('dlLinkActList');
