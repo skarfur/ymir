@@ -80,6 +80,9 @@ var _INVALIDATES = {
   volunteerSignup:         ['getConfig', 'getMembers'],
   volunteerWithdraw:       ['getConfig', 'getMembers'],
   syncVolunteerEvents:     ['getConfig', 'getMembers'],
+  // Staff hub writes (landed on main after this file was refactored).
+  saveFlagOverride:        ['getConfig', 'getMembers'],
+  saveStaffStatus:         ['getConfig', 'getMembers'],
   saveRowingPassportDef:   ['getConfig', 'getMembers'],
   importRowingPassportCsv: ['getConfig', 'getMembers'],
   // Trips.
