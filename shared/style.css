@@ -983,6 +983,24 @@ textarea { min-height: 70px; }
 
 .hidden { display: none !important; }
 
+/* ── ORPHAN-ROW PREVENTION (CSS grids) ───────────────────────────────────────
+   Apply `.no-orphans-<N>` to a CSS grid that has N equal columns; the last
+   card alone on its trailing row expands to fill the row, and for even-column
+   grids a trailing pair splits the row evenly. Add `.no-orphans-sm-2` when
+   the grid collapses to 2 columns at ≤600px. Rules are breakpoint-scoped so
+   they never fire against the wrong column count.
+   Example: <div class="stat-strip no-orphans-4 no-orphans-sm-2">…</div> */
+@media (min-width: 601px) {
+  .no-orphans-3 > *:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+  .no-orphans-4 > *:last-child:nth-child(4n+1) { grid-column: 1 / -1; }
+  .no-orphans-4 > *:nth-child(4n+1):nth-last-child(2),
+  .no-orphans-4 > *:nth-child(4n+1):nth-last-child(2) ~ * { grid-column: span 2; }
+  .no-orphans-5 > *:last-child:nth-child(5n+1) { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .no-orphans-sm-2 > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
 /* ── Payslip preview cards ── */
 /* ── PAYROLL PAGE ──────────────────────────────────────────────────────────────────────────── */
 

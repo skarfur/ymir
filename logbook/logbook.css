@@ -18,10 +18,6 @@
 }
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stat-strip:empty{display:none}
-/* Orphan-row prevention at 4 cols: a final row with 1 card spans 4; a final row with 2 spans 2+2. */
-.stat-strip > .stat-card:last-child:nth-child(4n+1){grid-column:span 4}
-.stat-strip > .stat-card:nth-child(4n+1):nth-last-child(2),
-.stat-strip > .stat-card:nth-child(4n+1):nth-last-child(2) ~ .stat-card{grid-column:span 2}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 10px;text-align:center;box-shadow:var(--shadow-sm)}
 .stat-val{font-size:22px;font-weight:500;color:var(--accent-fg);line-height:1}
 .stat-val.stat-val-text{font-size:13px;font-weight:500;line-height:1.15;padding:4px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -124,11 +120,6 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 @media(max-width:600px){
   .page{padding:16px 12px 60px}
   .stat-strip{grid-template-columns:repeat(2,1fr)}
-  /* Reset 4-col orphan spans, then apply the 2-col orphan rule: odd-positioned last card spans 2. */
-  .stat-strip > .stat-card:last-child:nth-child(4n+1),
-  .stat-strip > .stat-card:nth-child(4n+1):nth-last-child(2),
-  .stat-strip > .stat-card:nth-child(4n+1):nth-last-child(2) ~ .stat-card{grid-column:auto}
-  .stat-strip > .stat-card:last-child:nth-child(odd){grid-column:span 2}
   .form-row{grid-template-columns:1fr}
   .wx-row{grid-template-columns:1fr 1fr}
   .gm-row{grid-template-columns:1fr}

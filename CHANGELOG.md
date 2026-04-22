@@ -3,6 +3,23 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — no-orphan utility for CSS grids
+
+Shared utility classes `.no-orphans-<N>` / `.no-orphans-sm-2` in
+`shared/style.css` prevent a lone stat card from sitting on a trailing row.
+Rules are breakpoint-scoped (desktop variants inside `@media (min-width:601px)`,
+`sm-2` inside `@media (max-width:600px)`), so a class applied for desktop
+columns stays out of the way when the grid collapses on mobile.
+
+Applied to `logbook` (4→2), `maintenance` (5→2), `staff` (3→2), `captain`
+(3→2), and `coxswain` (3→2). Bumped `maintenance`'s odd 580px breakpoint
+to 600px to match the rest of the app.
+
+In `logbook`, the stats-visibility hide path now removes the card from the
+DOM (was `style.display='none'` on the wrapper). The `:nth-child` selectors
+need accurate sibling counts to pick the orphan, so `renderStats()` caches
+the strip's initial HTML once and restores it at the top of each render.
+
 ## Unreleased — logbook confirmations load without the 1.5s lag
 
 The logbook page had a hard-coded 1500ms delay before the crew-confirmations
