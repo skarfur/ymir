@@ -308,7 +308,7 @@ function renderNonClubLaunchForm() {
     '<div class="field"><label>'+s('lbl.location')+'</label>'+
     '<div style="display:flex;gap:6px;align-items:center">'+
       '<input type="text" id="launchLocFree" placeholder="'+s('logbook.locationNamePh')+'" autocomplete="off" style="flex:1">'+
-      '<button type="button" class="btn btn-secondary" data-member-click="useMyLocation" data-member-arg="launchLocFree" data-member-arg2="launchLocGeoStatus" style="white-space:nowrap;font-size:10px;padding:6px 10px">📍 '+s('logbook.useMyLocation')+'</button>'+
+      '<button type="button" class="btn btn-secondary btn-sm" data-member-click="useMyLocation" data-member-arg="launchLocFree" data-member-arg2="launchLocGeoStatus" style="white-space:nowrap">📍 '+s('logbook.useMyLocation')+'</button>'+
     '</div>'+
     '<div id="launchLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div></div>'+
     '<div class="grid2 mb-12 gap-10">'+
@@ -317,9 +317,9 @@ function renderNonClubLaunchForm() {
       '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
       '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
       '<div class="flex-center gap-4" style="margin-top:5px">'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
       '</div></div>'+
     '</div>'+
     '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
@@ -367,9 +367,9 @@ function renderLaunchForm(boat) {
       '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
       '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
       '<div class="flex-center gap-4" style="margin-top:5px">'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
-        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
       '</div></div>'+
     '</div>'+
     '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
@@ -815,8 +815,8 @@ function renderLandingChecklist() {
     (items.length?'<div class="section-label mb-10">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
     '<div id="landCheckErr" class="text-sm text-red" style="display:none;margin:6px 0">'+s('member.confirmAllItems')+'</div>'+
     '<div style="display:flex;gap:8px;margin:12px 0">'+
-      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" data-member-click="openInlineReport" data-member-arg="damage"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg> '+s('member.reportDamage')+'</button>'+
-      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" data-member-click="openInlineReport" data-member-arg="incident"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> '+s('member.reportIncident')+'</button>'+
+      '<button type="button" class="btn btn-secondary btn-sm" style="flex:1;color:var(--orange);border-color:var(--orange)55" data-member-click="openInlineReport" data-member-arg="damage"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg> '+s('member.reportDamage')+'</button>'+
+      '<button type="button" class="btn btn-secondary btn-sm" style="flex:1;color:var(--red);border-color:var(--red)55" data-member-click="openInlineReport" data-member-arg="incident"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> '+s('member.reportIncident')+'</button>'+
     '</div>'+
     '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
     (((returnCo.crew||1)>1&&/^(keelboat|dinghy)$/.test((returnCo.boatCategory||'').toLowerCase()))?'<div id="helmSection" style="margin-bottom:14px">'+
@@ -963,7 +963,7 @@ function _maintFormHtml() {
     +'<div class="field hidden" id="irBoatField"><label>Boat</label>'
       +'<div style="display:flex;gap:6px;align-items:center">'
         +'<select id="irBoat" style="flex:1;min-width:0"><option value="">Select boat...</option>'+boatOpts+'</select>'
-        +'<button type="button" class="btn btn-secondary" data-member-click="scanBoatForIssue" data-member-arg="irBoat" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+        +'<button type="button" class="btn btn-secondary btn-sm" data-member-click="scanBoatForIssue" data-member-arg="irBoat" style="white-space:nowrap">'+s('qr.scanBtn')+'</button>'
       +'</div>'
     +'</div>'
     +'<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label><input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>'
@@ -1000,7 +1000,7 @@ function _incidentFormHtml() {
     +'<div class="field"><label>Boat involved (optional)</label>'
       +'<div style="display:flex;gap:6px;align-items:center">'
         +'<select id="irIncBoat" style="flex:1;min-width:0"><option value="">None</option>'+boatOpts+'</select>'
-        +'<button type="button" class="btn btn-secondary" data-member-click="scanBoatForIssue" data-member-arg="irIncBoat" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+        +'<button type="button" class="btn btn-secondary btn-sm" data-member-click="scanBoatForIssue" data-member-arg="irIncBoat" style="white-space:nowrap">'+s('qr.scanBtn')+'</button>'
       +'</div>'
     +'</div>'
     +'<div class="field"><label>Description <span style="color:var(--red)">*</span></label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'

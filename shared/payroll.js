@@ -471,8 +471,8 @@ function punchClockWidget(el, employeeId, opts) {
       + '<input type="datetime-local" id="pcEditTs" value="' + localDt + '">'
       + '<input type="text" id="pcEditNote" placeholder="Note (optional)">'
       + '<div style="display:flex;gap:6px">'
-      + '<button class="btn btn-primary" style="flex:1;font-size:11px" data-pc-action="save-edit" data-pc-id="' + id + '" data-pc-emp="' + empId + '">Save</button>'
-      + '<button class="btn btn-secondary" style="font-size:11px" data-pc-clear="pcEditArea">Cancel</button>'
+      + '<button class="btn btn-primary btn-sm" style="flex:1" data-pc-action="save-edit" data-pc-id="' + id + '" data-pc-emp="' + empId + '">Save</button>'
+      + '<button class="btn btn-secondary btn-sm" data-pc-clear="pcEditArea">Cancel</button>'
       + '</div></div>';
   };
 
