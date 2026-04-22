@@ -111,21 +111,21 @@ function renderBoats() {
   });
   el.innerHTML = sortedCats
     .map(cat => {
-      const label = (L === 'IS' && cat.labelIS) ? cat.labelIS : cat.labelEN;
+      const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[cat.key]) || (typeof BOAT_CAT_COLORS !== 'undefined' ? BOAT_CAT_COLORS.other : null);
+      const cardStyle = col ? `background:${col.bg};border-color:${col.border}` : '';
       const cards = (groups[cat.key] || []).map(b => `
-        <div class="boat-card${bool(b.oos) ? " oos" : ""}">
+        <div class="boat-card${bool(b.oos) ? " oos" : ""}" style="${cardStyle}">
           <div class="boat-card-head">
             <div class="boat-card-name">${cat.emoji || boatEmoji(cat.key)} ${esc(b.name)}</div>
             <div class="boat-card-badges">
               ${b.accessMode === 'controlled' ? `<span class="boat-card-badge boat-card-badge-controlled">${esc(s('fleet.badgeControlled'))}</span>` : ""}
               ${bool(b.oos) ? `<span class="oos-badge">OOS</span>` : ""}
-              ${boatCatBadge(cat.key)}
             </div>
           </div>
-          ${b.oosReason ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${esc(b.oosReason)}</div>` : ""}
-          ${(b.registrationNo || b.typeModel) ? `<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
+          ${b.oosReason ? `<div class="boat-card-meta">${esc(b.oosReason)}</div>` : ""}
+          ${(b.registrationNo || b.typeModel) ? `<div class="boat-card-meta">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
           <div class="boat-card-actions">
-            <button class="row-edit" style="flex:1" data-admin-click="openBoatModal" data-admin-arg="${b.id}">Edit</button>
+            <button class="row-edit flex-1" data-admin-click="openBoatModal" data-admin-arg="${b.id}">Edit</button>
             <button class="row-edit" data-admin-click="showBoatQR" data-admin-arg="${b.id}" title="Show QR code">🔳</button>
             <button class="row-del"  data-admin-click="deleteBoat" data-admin-arg="${b.id}" title="Delete">×</button>
           </div>
@@ -134,9 +134,11 @@ function renderBoats() {
       return `<div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title">${cat.emoji || boatEmoji(cat.key)} ${boatCatBadge(cat.key)}</div>
-          <div style="display:flex;align-items:center;gap:6px" data-admin-nobubble>
-            <button class="row-edit" data-admin-click="openBoatModalForCat" data-admin-arg="${cat.key}">+ Add boat</button>
-            <button class="row-edit" data-admin-click="openBoatCatModal" data-admin-arg="${cat.key}">Edit</button>
+          <div class="col-head-actions">
+            <span class="col-head-btns" data-admin-nobubble>
+              <button class="row-edit" data-admin-click="openBoatModalForCat" data-admin-arg="${cat.key}">+ Add boat</button>
+              <button class="row-edit" data-admin-click="openBoatCatModal" data-admin-arg="${cat.key}">Edit</button>
+            </span>
             <span class="col-toggle">▼</span>
           </div>
         </div>

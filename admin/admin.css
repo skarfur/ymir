@@ -33,17 +33,23 @@
     .member-kt   { color:var(--muted); font-size:11px; width:88px; flex-shrink:0; }
 
     /* ── Boat cards ── */
-    .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
-    .boat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; box-shadow:var(--shadow-sm); min-width:0; overflow:hidden; }
+    .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+    .boat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:8px 10px; box-shadow:var(--shadow-sm); min-width:0; overflow:hidden; }
     .boat-card.oos { opacity:.55; }
-    .boat-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-bottom:4px; flex-wrap:wrap; }
-    .boat-card-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; min-width:0; flex:1 1 auto; word-break:break-word; overflow-wrap:anywhere; }
+    .boat-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; flex-wrap:wrap; }
+    .boat-card-name { font-size:13px; font-weight:500; color:var(--text); min-width:0; flex:1 1 auto; word-break:break-word; overflow-wrap:anywhere; }
     .boat-card-badges { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; max-width:100%; }
     .boat-card-badges > * { max-width:100%; }
     .boat-card-badge-controlled { font-size:8px; letter-spacing:.5px; padding:2px 6px; border-radius:10px;
       border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
       background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); }
-    .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
+    .boat-card-meta { font-size:10px; color:var(--muted); margin-top:2px; }
+    .boat-card-actions { display:flex; gap:6px; margin-top:8px; }
+
+    /* Collapsible section head — the chevron sits outside the nobubble region
+       so clicks on it still toggle the section. */
+    .col-head-actions { display:flex; align-items:center; gap:8px; }
+    .col-head-btns { display:inline-flex; align-items:center; gap:6px; }
 
     /* ── Generic row ── */
     .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;

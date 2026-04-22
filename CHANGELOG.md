@@ -3,6 +3,23 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — admin boats tab polish
+
+Three small fixes to the admin → Boats sub-tab:
+
+- Chevron now reliably expands/collapses a category. The `▼` span used to sit
+  inside the header's `data-admin-nobubble` wrapper, so the delegated
+  `toggleSection` handler ignored clicks on it and the chevron had no handler
+  of its own — dead zone. Moved the chevron out of the nobubble region.
+- Boat cards now shade with their category color (background + border pulled
+  from `BOAT_CAT_COLORS` in `shared/boats.js`). The per-card category badge is
+  redundant once cards are grouped under a category section, so it's gone.
+- Tightened the card grid (180px min, 8px gap) and padding (8px 10px) for a
+  more compact look; `.boat-card-meta` replaces inline `style="font-size:…"`
+  on the reg-no / model / OOS-reason lines.
+
+Touches `admin/boats.js`, `admin/admin.css`.
+
 ## Unreleased — color token cleanup (`--brass` → `--accent`)
 
 The `--brass` family of CSS variables was semantically confused: the token was
