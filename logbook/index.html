@@ -4,6 +4,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
 <title>Ýmir — Logbook</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://script.google.com">
@@ -12,6 +13,7 @@
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
+<script src="../shared/layout.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/trip-form.js"></script>
 <script src="../shared/list-filter.js"></script>
@@ -21,10 +23,7 @@
 <link rel="stylesheet" href="logbook.css">
 </head>
 <body>
-<header id="ym-header">
-  <div class="header-left"></div>
-  <div class="header-right"></div>
-</header>
+<ymir-header></ymir-header>
 <div class="page">
 
   <!-- Stats -->
@@ -333,6 +332,7 @@
 </div>
 
 <script src="logbook.js" defer></script>
+<script src="../shared/tripcard.js" defer></script>
 <script src="../shared/logbook.js" defer></script>
 
 

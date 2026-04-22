@@ -1052,7 +1052,7 @@ async function toggleStaffStatus(field) {
   _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
   renderStaffStatusStrip();
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
-  try { await apiPost('saveConfig', { staffStatus: _staffStatus }); }
+  try { await apiPost('saveStaffStatus', { staffStatus: _staffStatus }); }
   catch(e) { showToast('Status saved — sync when online', 'warn'); }
 }
 
@@ -1127,21 +1127,35 @@ async function saveFlagOverride() {
     setByName: (typeof user !== 'undefined' && user) ? (user.name || '') : '',
     expiresAt: new Date(wxNextMidnightUTC()).toISOString(),
   };
+  const prev = _flagOverride;
   _flagOverride = ov;
   wxLoadFlagOverride(ov);
   renderFlagOverrideCard();
   document.getElementById('wxWidget')?._wxRefresh?.();
-  try { await apiPost('saveConfig', { flagOverride: ov }); }
-  catch(e) { showToast(s('staff.flagOverrideSaveFail'), 'warn'); }
+  try { await apiPost('saveFlagOverride', { flagOverride: ov }); }
+  catch(e) {
+    _flagOverride = prev;
+    wxLoadFlagOverride(prev);
+    renderFlagOverrideCard();
+    document.getElementById('wxWidget')?._wxRefresh?.();
+    showToast(s('staff.flagOverrideSaveFail'), 'warn');
+  }
 }
 
 async function clearFlagOverride() {
+  const prev = _flagOverride;
   _flagOverride = null;
   wxLoadFlagOverride(null);
   renderFlagOverrideCard();
   document.getElementById('wxWidget')?._wxRefresh?.();
-  try { await apiPost('saveConfig', { flagOverride: null }); }
-  catch(e) { showToast(s('staff.flagOverrideSaveFail'), 'warn'); }
+  try { await apiPost('saveFlagOverride', { flagOverride: null }); }
+  catch(e) {
+    _flagOverride = prev;
+    wxLoadFlagOverride(prev);
+    renderFlagOverrideCard();
+    document.getElementById('wxWidget')?._wxRefresh?.();
+    showToast(s('staff.flagOverrideSaveFail'), 'warn');
+  }
 }
 
 // ══ GUEST SUPPORT ═══════════════════════════════════════════════════════════

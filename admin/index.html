@@ -4,6 +4,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
   <title>Ýmir — Admin</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://script.google.com">
@@ -13,6 +14,7 @@
   <script src="../shared/boats.js" defer></script>
   <script src="../shared/weather.js" defer></script>
   <script src="../shared/ui.js"></script>
+  <script src="../shared/layout.js"></script>
   <script src="../shared/certs.js" defer></script>
   <script src="../shared/volunteer.js" defer></script>
   <script src="../shared/volunteer-role-presets.js" defer></script>
@@ -24,10 +26,7 @@
 </head>
 <body>
 <div class="page">
-  <header id="ym-header">
-    <div class="header-left"></div>
-    <div class="header-right"></div>
-  </header>
+  <ymir-header></ymir-header>
 
   <main>
     <!-- Top-level tab bar -->

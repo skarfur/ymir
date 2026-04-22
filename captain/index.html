@@ -4,6 +4,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
 <title>Ýmir — Captain's Quarters</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://script.google.com">
@@ -11,6 +12,7 @@
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
 <script src="../shared/ui.js"></script>
+<script src="../shared/layout.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/list-filter.js"></script>
 <script src="../shared/calendar.js" defer></script>
@@ -20,14 +22,12 @@
 <script src="../shared/maintenance.js" defer></script>
 <script src="../shared/boat-modal.js"></script>
 <script src="../shared/slot-modal.js"></script>
+<script src="../shared/tripcard.js" defer></script>
 <script src="../shared/logbook.js" defer></script>
 <link rel="stylesheet" href="captain.css">
 </head>
 <body>
-<header id="ym-header">
-  <div class="header-left"></div>
-  <div class="header-right"></div>
-</header>
+<ymir-header></ymir-header>
 
 <div class="page-content">
 

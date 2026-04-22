@@ -4,16 +4,18 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="../../shared/logo.svg">
   <title>Ýmir — Payroll</title>
   <link rel="stylesheet" href="../../shared/style.css">
   <link rel="stylesheet" href="payroll.css">
   <script src="../../shared/api.js"></script>
   <script src="../../shared/strings.js"></script>
   <script src="../../shared/ui.js"></script>
+  <script src="../../shared/layout.js"></script>
   </head>
 <body>
 <div class="page">
-  <header id="ym-header" class="pr-standalone-only"><div class="header-left"></div><div class="header-right"></div></header>
+  <ymir-header class="pr-standalone-only"></ymir-header>
   <main>
     <div class="pr-standalone-only d-flex items-baseline gap-12" style="margin-bottom:20px">
       <h2 style="margin:0;font-size:18px" data-s="admin.tabPayroll"></h2>
