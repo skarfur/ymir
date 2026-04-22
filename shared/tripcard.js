@@ -55,7 +55,7 @@ function tripCard(t){
 
   // Port display (shown on card face for keelboats)
   const tripCat = (allBoats.find(b=>b.id===t.boatId)?.category) || t.boatCategory || '';
-  const catCol = BOAT_CAT_COLORS[(tripCat||'').toLowerCase()] || BOAT_CAT_COLORS.other;
+  const catCol = boatCatColors(tripCat);
   const isKeelboat = (t.boatCategory||'').toLowerCase()==='keelboat';
   const dep=t.departurePort||_skiTrip?.departurePort||'', arr=t.arrivalPort||_skiTrip?.arrivalPort||'';
   const portLine = (dep||arr) ? (

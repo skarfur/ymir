@@ -16,16 +16,21 @@ function renderBoatCats() {
       return la.localeCompare(lb, locale, { sensitivity: 'base' });
     });
   if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noCategories')}</div>`; return; }
-   card.innerHTML = active.map(c => `
+   card.innerHTML = active.map(c => {
+    const col = boatCatColors(c.key);
+    const swatch = `<span style="width:14px;height:14px;border-radius:3px;background:${col.color};border:1px solid ${col.border};display:inline-block;flex-shrink:0" aria-hidden="true"></span>`;
+    return `
     <div class="list-row">
       <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
+      ${swatch}
       <span class="list-name">
         <strong>${esc(c.labelEN)}</strong>
         ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
         <span style="color:var(--border);font-size:10px;margin-left:8px">${esc(c.key)}</span>
       </span>
       <button class="row-edit" data-admin-click="openBoatCatModal" data-admin-arg="${c.key}">Edit</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 function openBoatCatModal(key) {
@@ -38,8 +43,31 @@ function openBoatCatModal(key) {
   document.getElementById("bcKey").value       = c ? c.key : "";
   document.getElementById("bcKey").readOnly    = !!c;  // key immutable after creation
   document.getElementById("bcActive").checked  = c ? bool(c.active) : true;
+  // Color: use saved override if valid, else fall back to the resolved color
+  // (built-in default for known keys, or "other" color for custom keys).
+  const rawColor = c && typeof c.color === 'string' ? c.color.trim() : '';
+  const color = /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor : boatCatDefaultColor(c ? c.key : 'other');
+  document.getElementById("bcColor").value = color;
+  updateBoatCatColorPreview();
   document.getElementById("bcDeleteBtn").classList.toggle("hidden", !c);
   openModal("boatCatModal");
+}
+
+function updateBoatCatColorPreview() {
+  const hex = document.getElementById("bcColor").value;
+  const preview = document.getElementById("bcColorPreview");
+  if (!preview) return;
+  const label = document.getElementById("bcLabelEN").value.trim() || s('admin.boatCatModal.colorPreviewLabel');
+  const border = hex + '44';
+  const bg     = hex + '18';
+  preview.innerHTML = `<span style="font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:10px;`
+    + `border:1px solid ${border};background:${bg};color:${hex};display:inline-block">${esc(label)}</span>`;
+}
+
+function resetBoatCatColor() {
+  const key = document.getElementById("bcKey").value.trim().toLowerCase();
+  document.getElementById("bcColor").value = boatCatDefaultColor(key);
+  updateBoatCatColorPreview();
 }
 
 async function saveBoatCat() {
@@ -47,11 +75,13 @@ async function saveBoatCat() {
   const key     = document.getElementById("bcKey").value.trim().toLowerCase().replace(/\s+/g,'-');
   if (!labelEN || !key) { toast(s("admin.nameKeyRequired"), "err"); return; }
 
+  const rawColor = document.getElementById("bcColor").value.trim();
   const payload = {
     key,
     labelEN,
     labelIS:  document.getElementById("bcLabelIS").value.trim(),
     emoji:    document.getElementById("bcEmoji").value.trim(),
+    color:    /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor.toLowerCase() : '',
     active:   document.getElementById("bcActive").checked,
   };
 
@@ -111,7 +141,7 @@ function renderBoats() {
   });
   el.innerHTML = sortedCats
     .map(cat => {
-      const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[cat.key]) || (typeof BOAT_CAT_COLORS !== 'undefined' ? BOAT_CAT_COLORS.other : null);
+      const col = (typeof boatCatColors === 'function') ? boatCatColors(cat.key) : null;
       const cardStyle = col ? `background:${col.bg};border-color:${col.border}` : '';
       const cards = (groups[cat.key] || []).map(b => `
         <div class="boat-card${bool(b.oos) ? " oos" : ""}" style="${cardStyle}">

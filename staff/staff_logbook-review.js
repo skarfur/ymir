@@ -109,7 +109,7 @@ function updateStats() {
   const catMax = catEntries.length ? catEntries[0][1] : 0;
   const catHtml = catEntries.map(([k, v]) => {
     const key = (k || '').toLowerCase();
-    const col = (typeof BOAT_CAT_COLORS !== 'undefined' && BOAT_CAT_COLORS[key]) || { color: 'var(--accent)' };
+    const col = (typeof boatCatColors === 'function') ? boatCatColors(key) : { color: 'var(--accent)' };
     const pct = catMax ? Math.round(v / catMax * 100) : 0;
     const label = (typeof _boatCatLabel === 'function') ? _boatCatLabel(key || 'other') : k;
     return `<div class="cat-hour-row">
