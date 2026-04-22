@@ -105,6 +105,9 @@ async function removeCertCategory(key) {
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 
+// Remember which rows are expanded so re-renders preserve the state.
+const _certDefExpanded = new Set();
+
 function renderCertDefs() {
   const el = document.getElementById("certDefsCard");
   if (!el) return;
@@ -112,60 +115,127 @@ function renderCertDefs() {
     el.innerHTML = `<div class="empty-state">${s('admin.noCertDefs')}</div>`;
     return;
   }
-  const locale = getLang() === 'IS' ? 'is' : 'en';
-  const sortedCertDefs = certDefs.slice().sort((a, b) =>
+  const isIS   = getLang() === 'IS';
+  const locale = isIS ? 'is' : 'en';
+
+  const certifications = certDefs.filter(d => !d.clubEndorsement);
+  const endorsements   = certDefs.filter(d => !!d.clubEndorsement);
+
+  // Group certifications by category key (active-language sorted).
+  const groups = new Map();
+  certifications.forEach(d => {
+    const key = d.category || '';
+    if (!groups.has(key)) {
+      groups.set(key, { key, catObj: key ? certCategoryByKey(certCategories, key) : null, items: [] });
+    }
+    groups.get(key).items.push(d);
+  });
+  const groupList = [...groups.values()].sort((a, b) => {
+    // Uncategorized sinks to the bottom.
+    if (!a.key && b.key) return 1;
+    if (a.key && !b.key) return -1;
+    const la = a.catObj ? certCategoryLabel(a.catObj) : a.key;
+    const lb = b.catObj ? certCategoryLabel(b.catObj) : b.key;
+    return la.localeCompare(lb, locale, { sensitivity: 'base' });
+  });
+  groupList.forEach(g => g.items.sort((a, b) =>
+    certDefName(a).localeCompare(certDefName(b), locale, { sensitivity: 'base' })
+  ));
+  endorsements.sort((a, b) =>
     certDefName(a).localeCompare(certDefName(b), locale, { sensitivity: 'base' })
   );
-  const certifications = sortedCertDefs.filter(d => !d.clubEndorsement);
-  const endorsements   = sortedCertDefs.filter(d => !!d.clubEndorsement);
 
   function certDefRow(d) {
-    const authority = d.issuingAuthority
-      ? `<span style="color:var(--muted)"> · ${esc(d.issuingAuthority)}</span>` : "";
-    const catObj = d.category ? certCategoryByKey(certCategories, d.category) : null;
-    const catLabel = catObj ? certCategoryLabel(catObj) : d.category;
-    const catStr = d.category
-      ? `<span style="color:var(--accent-fg);font-size:10px">[${esc(catLabel)}]</span> ` : "";
-    const expiryStr = d.expires
-      ? `<span style="color:var(--muted)"> · expires</span>` : "";
     const nameEN = d.nameEN || d.name || '';
     const nameIS = d.nameIS || '';
-    const name   = certDefName(d);
-    const altName = (getLang() === 'IS' && nameEN && nameEN !== name) ? nameEN
-                    : (getLang() === 'EN' && nameIS && nameIS !== name) ? nameIS
-                    : '';
-    const altHtml = altName
-      ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${esc(altName)}</span>` : '';
-    const subcatStr = d.subcats?.length
-      ? d.subcats.map(sc => {
-          const parts = [certSubcatLabel(sc)];
-          if (sc.rank != null) parts.push(`rank ${sc.rank}`);
-          if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
-          return parts.join(" · ");
-        }).join(", ")
-      : s('admin.noSubcategories');
-    const descStr = certDefDescription(d);
-    return `<div class="list-row">
-      <div style="flex:1">
-        <div class="list-name">${catStr}${esc(name)}${altHtml}${authority}${expiryStr}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(subcatStr)}</div>
-        ${descStr ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(descStr)}</div>` : ""}
+    // Active language on top, the other language faint beneath (skip if identical/empty).
+    const namePrimary   = isIS ? (nameIS || nameEN) : (nameEN || nameIS);
+    const nameSecondary = isIS
+      ? (nameEN && nameEN !== namePrimary ? nameEN : '')
+      : (nameIS && nameIS !== namePrimary ? nameIS : '');
+    const authority = d.issuingAuthority ? esc(d.issuingAuthority) : '';
+
+    // Expanded-only detail strings.
+    const catObj   = d.category ? certCategoryByKey(certCategories, d.category) : null;
+    const catLabel = catObj ? certCategoryLabel(catObj) : d.category;
+    const descEN   = d.descriptionEN || d.description || '';
+    const descIS   = d.descriptionIS || '';
+    const subcats  = (d.subcats || []).map(sc => {
+      const parts = [certSubcatLabel(sc)];
+      if (sc.rank != null) parts.push(`rank ${sc.rank}`);
+      if (sc.issuingAuthority) parts.push(sc.issuingAuthority);
+      return parts.join(' · ');
+    });
+    const flags = [];
+    if (d.expires)     flags.push('expires');
+    if (d.hasIdNumber) flags.push('ID number');
+    if (d.color)       flags.push(`color ${d.color}`);
+
+    const isOpen = _certDefExpanded.has(d.id);
+    const detailRow = (label, value) => value
+      ? `<div><span style="color:var(--faint)">${esc(label)}:</span> ${value}</div>` : '';
+    const descHtml = (descEN || descIS)
+      ? [descEN ? esc(descEN) : '', descIS ? `<em style="color:var(--muted)">${esc(descIS)}</em>` : '']
+          .filter(Boolean).join('<br>')
+      : '';
+
+    return `<div class="list-row cd-row" style="align-items:flex-start">
+      <div class="cd-summary flex-1 pos-relative cursor-pointer" data-admin-click="toggleCertDefRow" data-admin-arg="${esc(d.id)}" style="min-width:0">
+        <div style="display:flex;align-items:flex-start;gap:6px">
+          <span class="cd-caret" style="color:var(--muted);font-size:10px;line-height:1.4;user-select:none">${isOpen ? '▾' : '▸'}</span>
+          <div style="flex:1;min-width:0">
+            <div class="list-name" style="font-weight:600">${esc(namePrimary)}</div>
+            ${nameSecondary ? `<div style="color:var(--muted);font-size:11px">${esc(nameSecondary)}</div>` : ''}
+            ${authority ? `<div style="color:var(--muted);font-size:11px;margin-top:2px">${authority}</div>` : ''}
+          </div>
+        </div>
+        <div class="cd-expanded ${isOpen ? '' : 'hidden'}" style="font-size:11px;color:var(--muted);margin:8px 0 2px 16px;line-height:1.55">
+          ${detailRow('Category', catLabel ? `<span style="color:var(--accent-fg)">${esc(catLabel)}</span>` : '')}
+          ${detailRow('Description', descHtml)}
+          ${subcats.length
+            ? detailRow('Subcategories', subcats.map(esc).join(', '))
+            : `<div style="font-style:italic">${esc(s('admin.noSubcategories'))}</div>`}
+          ${detailRow('Flags', flags.length ? esc(flags.join(', ')) : '')}
+        </div>
       </div>
-      <button class="row-edit" data-admin-click="openCertDefModal" data-admin-arg="${d.id}">Edit</button>
-      <button class="row-del"  data-admin-click="deleteCertDefById" data-admin-arg="${d.id}" title="Delete">×</button>
+      <button class="row-edit" data-admin-click="openCertDefModal"  data-admin-arg="${esc(d.id)}">Edit</button>
+      <button class="row-del"  data-admin-click="deleteCertDefById" data-admin-arg="${esc(d.id)}" title="Delete">×</button>
     </div>`;
   }
 
+  const sectionHeader = (label, extraMargin) =>
+    `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:${extraMargin}px 0 6px">${esc(label)}</div>`;
+  const groupHeader = (label) =>
+    `<div style="font-size:11px;color:var(--accent-fg);letter-spacing:.5px;margin:10px 0 4px;text-transform:uppercase">${esc(label)}</div>`;
+
   let html = '';
-  if (certifications.length) {
-    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:8px 0 6px">${s('admin.certTypes')}</div>`;
-    html += certifications.map(certDefRow).join('');
+  if (groupList.length) {
+    html += sectionHeader(s('admin.certTypes'), 8);
+    groupList.forEach(g => {
+      const label = g.catObj ? certCategoryLabel(g.catObj) : (g.key || '—');
+      html += groupHeader(label);
+      html += g.items.map(certDefRow).join('');
+    });
   }
   if (endorsements.length) {
-    html += `<div style="font-size:9px;color:var(--muted);letter-spacing:1.2px;margin:${certifications.length ? '16' : '8'}px 0 6px">${s('cert.clubEndorsements')}</div>`;
+    html += sectionHeader(s('cert.clubEndorsements'), groupList.length ? 16 : 8);
     html += endorsements.map(certDefRow).join('');
   }
   el.innerHTML = html;
+}
+
+function toggleCertDefRow(id) {
+  if (!id) return;
+  if (_certDefExpanded.has(id)) _certDefExpanded.delete(id);
+  else                          _certDefExpanded.add(id);
+  // Swap caret + toggle visibility without a full re-render.
+  const row = document.querySelector(`.cd-summary[data-admin-arg="${CSS.escape(id)}"]`);
+  if (!row) return;
+  const expanded = _certDefExpanded.has(id);
+  const caret    = row.querySelector('.cd-caret');
+  const detail   = row.querySelector('.cd-expanded');
+  if (caret)  caret.textContent = expanded ? '▾' : '▸';
+  if (detail) detail.classList.toggle('hidden', !expanded);
 }
 
 function openCertDefModal(id) {
