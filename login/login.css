@@ -1,6 +1,8 @@
 body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
     .login-box { width:100%; max-width:400px; }
-    .login-logo { text-align:center; margin-bottom:32px; }
+    /* Racing stripe under the logo — echoes the main app header's moss band
+       so the club's green brand color is present on every login screen. */
+    .login-logo { text-align:center; margin-bottom:32px; padding-bottom:14px; border-bottom:6px solid var(--moss); }
     .login-logo-img { width:210px; height:210px; margin:0 auto 12px; background:var(--accent); -webkit-mask:url(../shared/logo.svg) center/contain no-repeat; mask:url(../shared/logo.svg) center/contain no-repeat; }
     .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
     .pw-input { text-align:center; font-size:18px; letter-spacing:2px; margin-top:10px; }

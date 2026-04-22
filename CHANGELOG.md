@@ -12,7 +12,7 @@ mode (green instead of blue) so active tabs rendered with a blue underline and
 a green label. Renamed for clarity and merged the duplicate:
 
 - `--brass` → `--accent` (theme-aware primary accent; gold `#d9b441` dark,
-  blue `#2070a8` light).
+  canonical brand blue `#452682` light).
 - `--brass-fg` deleted; all 160 usages fold into `--accent`. In light mode
   that means active-tab labels, stat numbers, role labels, etc. are now blue
   instead of green, matching the underlines/borders on the same elements.

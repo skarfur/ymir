@@ -99,9 +99,10 @@
   --text:     #1a2a3a;
   --muted:    #5a7a96;
   --faint:    #dce4ec;
-  /* Gold reads muddy on white, so --accent maps to blue in light mode.
-     Value stays 6-hex so var(--accent)NN alpha-append patterns remain valid. */
-  --accent:   #2070a8;
+  /* Gold reads muddy on white, so --accent maps to the canonical brand blue
+     in light mode. Value stays 6-hex so var(--accent)NN alpha-append
+     patterns remain valid. */
+  --accent:   #452682;
   --logo-color: #fff;
   --green:    #1e8e4e;
   --yellow:   #d4a80c;
@@ -124,7 +125,7 @@
     --text:     #1a2a3a;
     --muted:    #5a7a96;
     --faint:    #dce4ec;
-    --accent:   #2070a8;
+    --accent:   #452682;
     --logo-color: #fff;
     --green:    #1e8e4e;
     --yellow:   #d4a80c;
