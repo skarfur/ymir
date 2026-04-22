@@ -302,25 +302,25 @@ function tripCard(t){
 
   // Track row: show map thumbnail if simplified track available, otherwise link
   let trackPoints = []; try { if(t.trackSimplified) trackPoints = JSON.parse(t.trackSimplified); } catch(e){}
-  const trackDeleteBtn = isOwner && t.trackFileUrl ? `<button class="track-delete-btn" onclick="event.stopPropagation();deleteTripTrack('${esc(t.id)}')">${s('tc.deleteTrack')}</button>` : '';
+  const trackDeleteBtn = isOwner && t.trackFileUrl ? `<button class="track-delete-btn" data-trip-action="delete-track" data-trip-id="${esc(t.id)}">${s('tc.deleteTrack')}</button>` : '';
   let trackRow = '';
   if (trackPoints.length >= 2) {
     trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span><span class="trip-exp-val">
-      <div class="track-map-thumb" id="tmap-${esc(t.id)}" onclick="event.stopPropagation();openMapModal('${esc(t.id)}')" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+      <div class="track-map-thumb" id="tmap-${esc(t.id)}" data-trip-action="open-map" data-trip-id="${esc(t.id)}" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${s('tc.clickToExpand')}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-brass" style="margin-top:4px;display:inline-block" onclick="event.stopPropagation()">⬇ ${s('tc.downloadFile')}</a>`:''}
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-brass" style="margin-top:4px;display:inline-block" data-trip-nobubble>⬇ ${s('tc.downloadFile')}</a>`:''}
     </span></div>`;
   } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-brass" onclick="event.stopPropagation()">📍 ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-brass" data-trip-nobubble>📍 ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
   // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
   const canEditSkipperNote = isSki && isOwner;
-  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl text-brass">${s('tc.skipperNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?s('tc.visibleToCrew'):s('tc.fromSkipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${s('tc.noNoteYet')}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','skipperNote')" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
+  const skipperNoteRow = (t.skipperNote || canEditSkipperNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl text-brass">${s('tc.skipperNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${isSki?s('tc.visibleToCrew'):s('tc.fromSkipper')}</span></span><span class="trip-exp-val" id="skipperNote-${esc(t.id)}">${t.skipperNote?esc(t.skipperNote):`<span class="text-muted" style="font-style:italic">${s('tc.noNoteYet')}</span>`}${canEditSkipperNote?` <button class="trip-more-btn" data-trip-action="edit-note" data-trip-id="${esc(t.id)}" data-trip-arg="skipperNote" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
   // Private note (only visible to owner) — always show for owner with edit
   const canEditNote = isOwner;
-  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.privateNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${s('tc.onlyYou')}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span class="text-muted" style="font-style:italic">${s('tc.noPrivateNoteYet')}</span>`}${canEditNote?` <button class="trip-more-btn" onclick="event.stopPropagation();editNote('${esc(t.id)}','notes')" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
+  const notesRow = (t.notes || canEditNote) ? `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.privateNote')} <span style="font-weight:400;opacity:.6;font-size:8px;text-transform:none">${s('tc.onlyYou')}</span></span><span class="trip-exp-val" id="privateNote-${esc(t.id)}">${t.notes?esc(t.notes):`<span class="text-muted" style="font-style:italic">${s('tc.noPrivateNoteYet')}</span>`}${canEditNote?` <button class="trip-more-btn" data-trip-action="edit-note" data-trip-id="${esc(t.id)}" data-trip-arg="notes" style="margin-left:6px">${s('tc.edit')}</button>`:''}</span></div>` : '';
   const photosRow = (()=>{
     let urls=[]; try{if(t.photoUrls)urls=JSON.parse(t.photoUrls);}catch(e){}
     let meta={}; try{if(t.photoMeta)meta=JSON.parse(t.photoMeta);}catch(e){}
@@ -334,7 +334,7 @@ function tripCard(t){
     if (!visibleUrls.length) return '';
     const thumbs = visibleUrls.map((u,idx) => {
       const pm = meta[u] || {};
-      const delBtn = isOwner ? `<button class="upload-delete-btn" onclick="event.stopPropagation();deleteTripPhoto('${esc(t.id)}','${esc(u)}')" title="${s('tc.delete')}">&times;</button>` : '';
+      const delBtn = isOwner ? `<button class="upload-delete-btn" data-trip-action="delete-photo" data-trip-id="${esc(t.id)}" data-trip-arg="${esc(u)}" title="${s('tc.delete')}">&times;</button>` : '';
       const badges = isOwner ? (
         (pm.shared ? `<span class="photo-sharing-badge shared">${s('tc.shared')}</span>` : `<span class="photo-sharing-badge private">${s('tc.private')}</span>`)
         + (pm.clubUse ? `<span class="photo-sharing-badge club">${s('tc.club')}</span>` : '')
@@ -343,8 +343,8 @@ function tripCard(t){
         <div class="upload-thumb-wrap">
           ${delBtn}
           <img src="${esc(u)}" class="photo-thumb" loading="lazy"
-            onclick="event.stopPropagation();openLightboxUrl('${esc(t.id)}','${esc(u)}')"
-            onerror="this.parentElement.style.display='none'">
+            data-trip-action="open-lightbox" data-trip-id="${esc(t.id)}" data-trip-arg="${esc(u)}"
+            data-trip-hide-on-err>
         </div>
         ${badges?`<div style="margin-top:2px">${badges}</div>`:''}
       </div>`;
@@ -354,10 +354,10 @@ function tripCard(t){
   // Action buttons: edit (skipper+owner only), add GPS/photos (owner)
   const canEditTrip = isSki && isOwner;
   const actionsRow = isOwner ? `<div class="trip-actions trip-exp-full">
-    ${canEditTrip ? `<button class="trip-action-btn primary" onclick="event.stopPropagation();openEditTrip('${esc(t.id)}')">${s('tc.editTrip')}</button>` : ''}
-    ${!t.trackFileUrl ? `<button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadTrack('${esc(t.id)}')">${s('tc.addGps')}</button>` : ''}
-    <button class="trip-action-btn" onclick="event.stopPropagation();inlineUploadPhotos('${esc(t.id)}')">${s('tc.addPhotos')}</button>
-    ${(!isVer && !t.validationRequested && !_confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) ? `<button class="trip-action-btn" onclick="event.stopPropagation();requestTripValidation('${esc(t.id)}')">${s('tc.requestVerification')}</button>` : ''}
+    ${canEditTrip ? `<button class="trip-action-btn primary" data-trip-action="edit-trip" data-trip-id="${esc(t.id)}">${s('tc.editTrip')}</button>` : ''}
+    ${!t.trackFileUrl ? `<button class="trip-action-btn" data-trip-action="upload-track" data-trip-id="${esc(t.id)}">${s('tc.addGps')}</button>` : ''}
+    <button class="trip-action-btn" data-trip-action="upload-photos" data-trip-id="${esc(t.id)}">${s('tc.addPhotos')}</button>
+    ${(!isVer && !t.validationRequested && !_confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) ? `<button class="trip-action-btn" data-trip-action="request-validate" data-trip-id="${esc(t.id)}">${s('tc.requestVerification')}</button>` : ''}
   </div>` : '';
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);
   const hasNotes   = !!(skipperNoteRow||notesRow||photosRow||trackRow||isOwner||actionsRow);
@@ -365,7 +365,7 @@ function tripCard(t){
 
 
   return `<div class="trip-card" style="border-left:3px solid ${catCol.color}">
-    <div class="trip-card-main" onclick="openTripCard(this.parentElement)">
+    <div class="trip-card-main" data-trip-action="open-card">
       <div class="trip-date-col">
         <div class="trip-date-day">${esc(p.day)}</div>
         <div class="trip-date-mon">${esc(p.mon)}</div>
@@ -389,8 +389,8 @@ function tripCard(t){
       </div>
       <div class="trip-arrow">▾</div>
     </div>
-    <div class="trip-expand" onclick="event.stopPropagation()">
-      <button class="trip-card-close" onclick="closeTripCard(this.closest('.trip-card'))">✕</button>
+    <div class="trip-expand" data-trip-nobubble>
+      <button class="trip-card-close" data-trip-action="close-card">✕</button>
       ${hasBoatDetails?`<div class="exp-section exp-boat">
         <div class="exp-section-hdr">${s('tc.boatDetails')}</div>
         <div class="trip-expand-grid">${boatRegRow}${boatModelRow}${boatLoaRow}</div>
@@ -407,7 +407,7 @@ function tripCard(t){
             + (_hoursDecimal?'<div class="trip-exp-row"><span class="trip-exp-lbl">'+s('tc.duration')+'</span><span class="trip-exp-val">'+dur+'</span></div>':'')
             + distRow;
           return (hasDetailTrip
-            ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+s('tc.tripDetails')+' <span class="exp-chevron">▾</span></div>'
+            ? '<div class="exp-section-hdr expandable" data-trip-action="toggle-section">'+s('tc.tripDetails')+' <span class="exp-chevron">▾</span></div>'
               + (toplineTrip ? '<div class="trip-expand-grid">'+toplineTrip+'</div>' : '')
               + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailTrip+'</div></div>'
             : '<div class="exp-section-hdr">'+s('tc.tripDetails')+'</div>'
@@ -419,7 +419,7 @@ function tripCard(t){
           const toplineWx = eWs + eWv + eCond;
           const detailWx = eDir + eGust + eAir + eFeel + eSst + ePres + eFlag;
           return (hasDetailWx
-            ? '<div class="exp-section-hdr expandable" onclick="event.stopPropagation();toggleSectionDetail(this)">'+s('tc.weather')+' <span class="exp-chevron">▾</span></div>'
+            ? '<div class="exp-section-hdr expandable" data-trip-action="toggle-section">'+s('tc.weather')+' <span class="exp-chevron">▾</span></div>'
               + (toplineWx ? '<div class="trip-expand-grid">'+toplineWx+'</div>' : '')
               + '<div class="exp-section-detail"><div class="trip-expand-grid">'+detailWx+'</div></div>'
             : '<div class="exp-section-hdr">'+s('tc.weather')+'</div>'
@@ -1593,8 +1593,8 @@ function renderShareTokens(tokens){
     return '<div class="flex-center gap-8 text-sm" style="margin-top:6px">'
       +'<span class="text-green">●</span>'
       +'<span class="flex-1 text-muted">'+s('logbook.upTo')+' '+esc(tk.cutOffDate||'')+' · '+(tk.accessCount||0)+' '+s('logbook.views')+'</span>'
-      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" onclick="copyShareLink(\''+tk.id+'\')">'+s('logbook.copy')+'</button>'
-      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" onclick="revokeShareToken(\''+tk.id+'\')">'+s('logbook.revoke')+'</button>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px" data-trip-action="copy-share" data-trip-id="'+tk.id+'">'+s('logbook.copy')+'</button>'
+      +'<button class="btn-ghost-sm" style="font-size:10px;padding:2px 8px;color:var(--red)" data-trip-action="revoke-share" data-trip-id="'+tk.id+'">'+s('logbook.revoke')+'</button>'
       +'</div>';
   }).join('')+'</div>';
 }
@@ -1832,8 +1832,8 @@ function renderConfirmations(){
         return '<div class="flex-center flex-wrap gap-6" style="padding:4px 0;border-top:1px solid var(--border)22">'+
           '<span class="conf-type" style="flex-shrink:0">'+_confDesc(c)+'</span>'+
           '<div class="flex-center gap-4 ml-auto">'+
-            '<button class="btn-confirm" onclick="respondConf(\''+esc(c.id)+'\',\'confirmed\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
-            '<button class="btn-reject" onclick="promptRejectConf(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
+            '<button class="btn-confirm" data-trip-action="respond-conf" data-trip-id="'+esc(c.id)+'" data-trip-arg="confirmed" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.confirmBtn')+'</button>'+
+            '<button class="btn-reject" data-trip-action="reject-conf" data-trip-id="'+esc(c.id)+'" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.rejectBtn')+'</button>'+
           '</div>'+
         '</div>';
       }).join('');
@@ -1870,7 +1870,7 @@ function renderConfirmations(){
             '<span class="conf-type">'+s('member.crewDeclined')+why+'</span>'+
             '<div class="flex-center gap-4 ml-auto">'+
               '<span class="conf-status rejected">'+s('member.statusRejected')+'</span>'+
-              '<button class="btn-confirm" onclick="ackCrewRejection(\''+esc(c.id)+'\')" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.ackBtn')+'</button>'+
+              '<button class="btn-confirm" data-trip-action="ack-rej" data-trip-id="'+esc(c.id)+'" style="font-size:10px;font-family:inherit;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid">'+s('member.ackBtn')+'</button>'+
             '</div>'+
           '</div>';
         }
@@ -2244,3 +2244,57 @@ async function submitInlinePhotos() {
 // Load confirmations after page init
 setTimeout(loadConfirmations,1500);
 
+
+// Delegated handlers for data-trip-* attrs on rendered logbook DOM
+// (replaces inline onclick/onerror in the trip-card / confirmation /
+// share-token templates above for CSP-strict pages).
+(function () {
+  if (typeof document === 'undefined' || document._tripClickListener) return;
+  document._tripClickListener = true;
+
+  var SINGLE = {
+    'delete-track':     'deleteTripTrack',
+    'open-map':         'openMapModal',
+    'edit-trip':        'openEditTrip',
+    'upload-track':     'inlineUploadTrack',
+    'upload-photos':    'inlineUploadPhotos',
+    'request-validate': 'requestTripValidation',
+    'copy-share':       'copyShareLink',
+    'revoke-share':     'revokeShareToken',
+    'reject-conf':      'promptRejectConf',
+    'ack-rej':          'ackCrewRejection',
+  };
+  var TWO = {
+    'delete-photo':  'deleteTripPhoto',
+    'open-lightbox': 'openLightboxUrl',
+    'edit-note':     'editNote',
+    'respond-conf':  'respondConf',
+  };
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-trip-nobubble]')) { e.stopPropagation(); return; }
+    var el = e.target.closest('[data-trip-action]');
+    if (!el) return;
+    var action = el.dataset.tripAction;
+    e.stopPropagation();
+    if (action === 'open-card')      { openTripCard(el.parentElement); return; }
+    if (action === 'close-card')     { closeTripCard(el.closest('.trip-card')); return; }
+    if (action === 'toggle-section') { toggleSectionDetail(el); return; }
+    var id = el.dataset.tripId;
+    if (SINGLE[action] && typeof window[SINGLE[action]] === 'function') {
+      window[SINGLE[action]](id);
+      return;
+    }
+    if (TWO[action] && typeof window[TWO[action]] === 'function') {
+      window[TWO[action]](id, el.dataset.tripArg);
+    }
+  });
+
+  // image onerror doesn't bubble, so listen in capture phase
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (img && img.matches && img.matches('[data-trip-hide-on-err]') && img.parentElement) {
+      img.parentElement.style.display = 'none';
+    }
+  }, true);
+})();
