@@ -1605,7 +1605,7 @@ var _STRINGS_FLAT = {
   "lb.heatTrips": "Ferðir",
   "lb.heatTime": "Tími",
   "lb.heatTracks": "GPS slóðir",
-  "lb.addManualBtn": "+ Skrá ferð handvirkt",
+  "lb.addManualBtn": "Skrá ferð handvirkt",
   "lb.gpsTrack": "GPS slóð",
   "lb.addEntryTitle": "Bæta við færslu",
   "lb.addEntryBlurb": "Skráðu ferð handvirkt eða taktu þátt í nýlegri félagsferð sem áhöfn. Þú getur bætt við myndum, GPS slóð og athugasemdum eftir á.",
