@@ -1,0 +1,1415 @@
+prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});
+
+// ══ STATE ════════════════════════════════════════════════════════════════════
+const user = requireAuth();
+let _staffStatus = { onDuty: false, supportBoat: false };
+let boats=[], locations=[], checkouts=[];
+let _volunteerEvents=[], _volunteerSignups=[], _volunteerActTypes=[];
+let currentWx=null;
+let launchBoat=null, returnCo=null;
+let _clubCalendars = [];
+const L = getLang();
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  buildHeader('member');
+  applyStrings();
+  if (typeof isCaptain === 'function' && isCaptain(user)) {
+    document.getElementById('captainQBtn').style.display = '';
+  }
+  if (typeof hasRowingEndorsement === 'function' && hasRowingEndorsement(user)) {
+    document.getElementById('coxswainBtn').style.display = '';
+  }
+
+  document.getElementById('welcomeName').textContent = user.name || s('member.tabFleet');
+  document.getElementById('welcomeSub').textContent  = user.kennitala || '';
+
+  document.getElementById('launchModalTitle').textContent  = s('member.launchTitle');
+  document.getElementById('returnModalTitle').textContent  = s('member.checkInTitle');
+  document.getElementById('manualTripTitle').textContent   = s('member.manualTrip');
+  document.getElementById('manualTripSaveBtn').textContent = s('btn.save');
+  document.getElementById('rBoatOpt').textContent          = s('lbl.selectDots');
+  document.getElementById('rLocOpt').textContent           = s('lbl.selectDots');
+  document.getElementById('rDepartedLabel').textContent    = s('member.departed');
+  document.getElementById('rReturnedLabel').textContent    = s('member.returned');
+  document.getElementById('rNotes').placeholder            = s('lbl.optional');
+
+  wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
+  tideWidget(document.getElementById('tideWidget')).start();
+
+  try {
+    const [coRes, cfgRes] = await Promise.all([
+      window._earlyCheckouts || apiGet('getActiveCheckouts'),
+      window._earlyConfig || apiGet('getConfig'),
+    ]);
+    if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); document.getElementById('wxWidget')?._wxRefresh?.(); }
+    checkouts = coRes.checkouts || [];
+    boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
+    locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
+
+    // Merge config checklists over defaults — config wins per-category,
+    // defaults fill in for any category not yet configured in admin.
+    if (cfgRes.staffStatus) {
+      _staffStatus = cfgRes.staffStatus;
+      _renderMemberStaffStatus();
+    }
+    if (cfgRes.launchChecklists) {
+      _launchChecklists = Object.assign({}, DEFAULT_LAUNCH_CHECKLISTS, cfgRes.launchChecklists);
+    }
+
+    if (cfgRes.boatCategories && cfgRes.boatCategories.length) {
+      _boatCategories = cfgRes.boatCategories.filter(c => c.active !== false && c.active !== 'false');
+      registerBoatCats(_boatCategories);
+    }
+
+    _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
+    _volunteerActTypes = cfgRes.activityTypes || [];
+    _clubCalendars = cfgRes.clubCalendars || [];
+
+    populateFormSelects();
+    renderActiveCheckouts();
+    renderFleetByCat();
+    renderClubCalendars();
+    loadVolunteerSignups();
+
+    // Handle ?boat=<id> URL param from QR-code scans (native camera → browser)
+    const _qrBoatParam = new URLSearchParams(window.location.search).get('boat');
+    if (_qrBoatParam) {
+      // Clear the URL so a page refresh doesn't retrigger the flow
+      history.replaceState(null, '', window.location.pathname);
+      handleBoatQrScan(_qrBoatParam);
+    }
+  } catch(e) {
+    document.getElementById('activeList').innerHTML =
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+  }
+
+  // Fetch notification counts (non-blocking)
+  apiGet('getNotifications', { kennitala: user.kennitala }).then(function(res) {
+    if (!res || !res.counts) return;
+    renderNotifBadges(res.counts);
+  }).catch(function() {});
+
+  warmContainer();
+});
+
+function renderNotifBadges(c) {
+  var pairs = [
+    ['logbookBtn',  c.confirmations],
+    ['saumaBtn',    c.saumaklubbur],
+    ['captainQBtn', c.captainQ],
+    ['coxswainBtn', c.crewInvites],
+  ];
+  pairs.forEach(function(p) {
+    var id = p[0], count = p[1];
+    if (!count) return;
+    var el = document.getElementById(id);
+    if (!el || el.style.display === 'none') return;
+    var badge = document.createElement('span');
+    badge.className = 'notif-badge';
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.title = count + ' ' + s('member.notifPending');
+    el.appendChild(badge);
+  });
+}
+
+// ══ QR SCANNING ══════════════════════════════════════════════════════════════
+// Routes a scanned boat id through the right flow:
+//   - Available boat  → launch flow
+//   - Your boat out   → check-in flow
+//   - Someone else's  → status toast
+//   - OOS / unknown   → warning toast
+function handleBoatQrScan(boatId) {
+  if (!boatId) { showToast(s('qr.invalidCode'), 'err'); return; }
+  const boat = boats.find(b => b.id === boatId);
+  if (!boat) { showToast(s('qr.boatNotFound'), 'err'); return; }
+  const co = checkouts.find(c => c.status === 'out' && c.boatId === boatId);
+  if (co) {
+    if (String(co.memberKennitala) === String(user.kennitala)) {
+      openReturnModal(co.id);
+    } else {
+      showToast(s('qr.boatOutByOther', { name: co.memberName || '' }), 'warn');
+    }
+    return;
+  }
+  if (boolVal(boat.oos)) {
+    showToast(s('qr.boatOos'), 'warn');
+    return;
+  }
+  launchBoatById(boatId);
+}
+
+// In-app camera scan — used from the quick-action strip
+function scanBoatQR() {
+  if (typeof openQRScanner !== 'function') { showToast(s('qr.error'), 'err'); return; }
+  openQRScanner({
+    title: s('qr.scanTitle'),
+    onResult: function (text) {
+      const id = parseBoatIdFromScan(text);
+      handleBoatQrScan(id);
+    }
+  });
+}
+
+// Scan a QR and assign it to the given <select> (used by the report-issue forms)
+function scanBoatForIssue(selectId) {
+  if (typeof openQRScanner !== 'function') { showToast(s('qr.error'), 'err'); return; }
+  openQRScanner({
+    title: s('qr.scanTitle'),
+    onResult: function (text) {
+      const id = parseBoatIdFromScan(text);
+      if (!id) { showToast(s('qr.invalidCode'), 'err'); return; }
+      const boat = boats.find(b => b.id === id);
+      if (!boat) { showToast(s('qr.boatNotFound'), 'err'); return; }
+      const sel = document.getElementById(selectId);
+      if (sel) { sel.value = id; }
+      showToast(boat.name);
+    }
+  });
+}
+
+// ══ FLEET BY CATEGORY ════════════════════════════════════════════════════════
+function renderFleetByCat() {
+  const active = checkouts.filter(c => c.status === 'out');
+  renderFleetStatus('fleetStatus', boats, active, { onAvailClick:'launchBoatById', toggleFn:'toggleFleetCat', collapsed:true, currentUser: user });
+}
+function toggleCat(el) { toggleFleetCat(el); }
+function toggleFleetCat(toggle) {
+  const targetId = toggle.dataset.target;
+  const body  = targetId ? document.getElementById(targetId) : toggle.nextElementSibling;
+  const arrow = toggle.querySelector('.fsb-arrow,.bct-arrow,.fct-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
+}
+
+// ══ ACTIVE CHECKOUTS ═════════════════════════════════════════════════════════
+function renderActiveCheckouts() {
+  const el   = document.getElementById('activeList');
+  const active = checkouts.filter(c => c.status==='out');
+  if (!active.length) { el.innerHTML = `<div class="empty-note">${s('member.noCheckouts')}</div>`; return; }
+  active.sort((a, b) => (a.memberKennitala === user.kennitala ? 0 : 1) - (b.memberKennitala === user.kennitala ? 0 : 1));
+  boatRegistry.setCos(active);
+  el.innerHTML = active.map(c => {
+    const isMe = c.memberKennitala === user.kennitala;
+    return renderCheckoutCard(c, {
+      isMe,
+      staffView: false,
+      onReturn: isMe ? 'openReturnModal' : undefined
+    });
+  }).join('');
+}
+
+// ══ LAUNCH FLOW ══════════════════════════════════════════════════════════════
+// Step 1: boat picker  →  Step 2: form (time/crew/location)  →  Step 3: pre-launch checklist  →  submit
+
+function openLaunchPicker() { openModal('launchModal'); renderLaunchPicker(); }
+function launchBoatById(id) { openModal('launchModal'); renderLaunchPicker(id); }
+function openCheckInPicker() {
+  const mine=checkouts.filter(c=>c.status==='out'&&c.memberKennitala===user.kennitala);
+  if(!mine.length){showToast(s('member.noCheckouts'),'warn');return;}
+  if(mine.length===1){openReturnModal(mine[0].id);return;}
+  openModal('returnModal');
+  document.getElementById('returnModalBody').innerHTML=mine.map(c=>
+    `<button class="btn btn-secondary mb-8" style="width:100%;text-align:left"
+      data-member-click="openReturnModal" data-member-arg="${c.id}">⛵ ${esc(c.boatName)} — ${s('member.departed').toLowerCase()} ${esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5))}</button>`).join('');
+}
+function openReturnModal(coId) {
+  returnCo=checkouts.find(c=>c.id===coId)||null;
+  window._retCrewTrips=[]; window._retCrewTripsFetched=false;
+  openModal('returnModal'); renderReturnForm();
+}
+
+// Step 1 — boat picker
+function renderLaunchPicker(preselectedBoatId) {
+  const active=checkouts.filter(c=>c.status==='out');
+  const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
+  if(!avail.length){
+    document.getElementById('launchModalBody').innerHTML=
+      '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
+        '<button class="btn btn-secondary" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
+          s('qr.scanBtn')+
+        '</button>'+
+      '</div>'+
+      '<div class="mb-12">'+
+        '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" data-member-click="renderNonClubLaunchForm">'+
+          '🚣 '+s('member.nonClubBoat')+
+          ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
+        '</button>'+
+      '</div>'+
+      `<div class="empty-note">${s('member.noBoats')}</div>`;
+    return;
+  }
+  const selected=preselectedBoatId?avail.find(b=>b.id===preselectedBoatId):null;
+  // Pre-selected boat (QR scan / fleet grid) goes straight to the form.
+  if(selected){renderLaunchForm(selected);return;}
+  const grouped={};
+  avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
+      '<button class="btn btn-secondary" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
+        s('qr.scanBtn')+
+      '</button>'+
+    '</div>'+
+    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
+      `<div class="mb-12">
+        <div class="section-label">${_fmtCatLabel(cat)}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left"
+          data-member-click="_renderLaunchFormById" data-member-arg="${b.id}">${boatEmoji(cat)} ${esc(b.name)}</button>`).join('')}
+        </div>
+      </div>`).join('')+
+    '<div class="mb-12">'+
+      '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" data-member-click="renderNonClubLaunchForm">'+
+        '🚣 '+s('member.nonClubBoat')+
+        ' <span class="text-muted" style="font-size:9px;font-weight:400;margin-left:4px">'+s('member.nonClubHint')+'</span>'+
+      '</button>'+
+    '</div>';
+}
+
+// ── Checklists — config wins per-category; defaults fill missing categories ──
+var DEFAULT_LAUNCH_CHECKLISTS = {
+  dinghy:         { launch:["Dressed for conditions & activity","PFD worn & correctly fitted","Boat drained & plug replaced","Rigging in good condition","Stopper knots in place","Sail reefed if advisable"], landing:["Boat & trolley rinsed","Rudder stowed correctly","PFD & Other gear rinsed and stored","Damage & incidents reported, if any"] },
+  keelboat:       { launch:["Dressed for conditions & activity","PFD worn & correctly fitted","Engine & fuel checked","VHF tested"], landing:["Engine secured","Docklines secure & tidy","Fuel replaced","Damage & incidents reported if any"] },
+  kayak:          { launch:["PFD on","Paddle leash attached","Spray deck fitted","Bilge pump aboard"], landing:["Kayak drained","Gear stowed","Paddle secured"] },
+  rowingshell:    { launch:["PFD accessible","Bow ball fitted","Foot stretcher set","Oarlocks secure"], landing:["Boat rinsed + stored","Oars stowed","Riggers checked"] },
+  rowboat:        { launch:["Life jacket fitted","Oars secured","Bailer aboard"], landing:["Boat secured","Oars stowed","Damage reported if any"] },
+  sup:            { launch:["Leash on","PFD attached to board"], landing:["Board rinsed","Leash coiled","Fin checked"] },
+  wingfoil:       { launch:["Helmet on","Impact vest on","Leash on","Wind within limits"], landing:["Equipment rinsed","Lines coiled","Wing folded"] },
+  other:          { launch:["Life jacket fitted","Safety check complete"], landing:["Equipment secured","Damage reported if any"] },
+  nonclub:        { launch:[], landing:[] },
+};
+var _launchChecklists = DEFAULT_LAUNCH_CHECKLISTS;
+var _boatCategories   = null;
+
+function _fmtCatLabel(cat) {
+  var c=_boatCategories&&_boatCategories.find(x=>x.key===cat);
+  var lbl=c?(getLang()==='IS'&&c.labelIS?c.labelIS:c.labelEN):cat.replace(/[-_]/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
+  var ico=(c&&c.emoji)?c.emoji:boatEmoji(cat);
+  return ico+' '+esc(lbl.toUpperCase());
+}
+function _clItemLabel(it) {
+  return (getLang()==='IS'&&it.textIS)?it.textIS:(it.text||'');
+}
+
+// Step 2a — non-club boat launch form
+function renderNonClubLaunchForm() {
+  launchBoat={id:'',name:'',category:'',nonClub:true};
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+s('member.nonClubBoat');
+  var catOpts=['dinghy','keelboat','kayak','rowboat','sup','wingfoil','other'].map(function(c){
+    return '<option value="'+c+'">'+_fmtCatLabel(c).replace(/^\S+\s*/,'')+'</option>';
+  }).join('');
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="field"><label>'+s('logbook.boatNameLabel')+'</label>'+
+    '<input type="text" id="launchBoatName" placeholder="'+s('logbook.boatNamePh')+'" autocomplete="off"></div>'+
+    '<div class="field"><label>'+s('logbook.boatCategory')+'</label>'+
+    '<select id="launchBoatCat">'+catOpts+'</select></div>'+
+    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      '<input type="text" id="launchLocFree" placeholder="'+s('logbook.locationNamePh')+'" autocomplete="off" style="flex:1">'+
+      '<button type="button" class="btn btn-secondary" data-member-click="useMyLocation" data-member-arg="launchLocFree" data-member-arg2="launchLocGeoStatus" style="white-space:nowrap;font-size:10px;padding:6px 10px">📍 '+s('logbook.useMyLocation')+'</button>'+
+    '</div>'+
+    '<div id="launchLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div></div>'+
+    '<div class="grid2 mb-12 gap-10">'+
+      '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
+      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
+      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
+      '<div class="flex-center gap-4" style="margin-top:5px">'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
+    '<div class="flex-center gap-12">'+
+      '<button type="button" data-member-click="adjLaunchCrew" data-member-arg="-1" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>'+
+      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>'+
+      '<button type="button" data-member-click="adjLaunchCrew" data-member-arg="1"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
+    '</div></div>'+
+    '<div id="launchCrewSection" style="display:none" class="mt-12">'+
+      '<label class="section-label" style="display:block">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
+      '<div id="launchCrewInputs"></div>'+
+      '<div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
+    '</div>'+
+    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" data-member-click="renderLaunchPicker">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" data-member-click="advanceToLaunchChecklist">'+s('member.continue')+'</button>'+
+    '</div>';
+  window._launchCrewCount=1;
+  renderCrewInputs();
+  if(!window._launchMembers){
+    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
+  }
+}
+
+// Step 2 — time / crew / location form
+function renderLaunchForm(boat) {
+  if(!boat) return;
+  launchBoat=boat;
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+boat.name;
+  var isKeel=(boat.category||'').toLowerCase()==='keelboat';
+  var locOpts=locations.filter(function(l){return l.type!=='port';}).map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  var portOpts=isKeel?locations.filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join(''):'';
+  var defaultPort='';
+  if(isKeel&&boat.defaultPortId){var _hp=locations.find(function(l){return l.id===boat.defaultPortId;});if(_hp)defaultPort=_hp.name;}
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
+    (isKeel?'<div class="field"><label style="color:var(--brass-fg)">⚓️ '+s('member.departurePort')+'</label>'+
+      '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+
+      '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
+    '<div class="grid2 mb-12 gap-10">'+
+      '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
+      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
+      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
+      '<div class="flex-center gap-4" style="margin-top:5px">'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
+        '<button type="button" class="btn btn-secondary" style="font-size:10px;padding:2px 7px" data-member-click="_addToLaunchOut" data-member-arg="120">+2h</button>'+
+      '</div></div>'+
+    '</div>'+
+    '<div class="field"><label>'+s('staff.coForm.crew')+'</label>'+
+    '<div class="flex-center gap-12">'+
+      '<button type="button" data-member-click="adjLaunchCrew" data-member-arg="-1" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">−</button>'+
+      '<span id="launchCrewNum" style="width:24px;text-align:center;font-size:16px">1</span>'+
+      '<button type="button" data-member-click="adjLaunchCrew" data-member-arg="1"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:16px;cursor:pointer">+</button>'+
+    '</div></div>'+
+    '<div id="launchCrewSection" style="display:none" class="mt-12">'+
+      '<label class="section-label" style="display:block">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>'+
+      '<div id="launchCrewInputs"></div>'+
+      '<div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>'+
+    '</div>'+
+    '<div id="launchErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" data-member-click="renderLaunchPicker">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" data-member-click="advanceToLaunchChecklist">'+s('member.continue')+'</button>'+
+    '</div>';
+  window._launchCrewCount=1;
+  renderCrewInputs();
+  if(!window._launchMembers){
+    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
+  }
+}
+
+// Validate form then stash values and advance to step 3.
+function advanceToLaunchChecklist() {
+  var err=document.getElementById('launchErr');
+  var isNC=launchBoat&&launchBoat.nonClub;
+  if(isNC){
+    // Non-club: validate free-text fields
+    var bname=(document.getElementById('launchBoatName')?.value||'').trim();
+    var lname=(document.getElementById('launchLocFree')?.value||'').trim();
+    if(!bname){err.textContent=s('logbook.enterBoatName');err.style.display='block';return;}
+    if(!lname){err.textContent=s('logbook.enterLocation');err.style.display='block';return;}
+    err.style.display='none';
+    window._launchFormValues={
+      nonClub:true,
+      lid:'', locationName:lname,
+      boatName:bname, boatCategory:document.getElementById('launchBoatCat')?.value||'other',
+      tout: document.getElementById('launchTimeOut')?.value||'',
+      ret:  document.getElementById('launchReturnBy')?.value||'',
+      crew: window._launchCrewCount||1,
+      crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
+        .map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:!!i.dataset.guest,student:!!i.dataset.student};})
+        .filter(c=>c.name),
+      departurePort:'',
+    };
+    // Use the non-club virtual boat with stashed values for checklist
+    var ncBoat={id:'',name:bname,category:document.getElementById('launchBoatCat')?.value||'other',nonClub:true};
+    launchBoat=ncBoat;
+    renderLaunchChecklist(ncBoat);
+    return;
+  }
+  var lid=document.getElementById('launchLocation')?.value;
+  if(!lid){err.textContent=s('staff.coForm.errLocation');err.style.display='block';return;}
+  err.style.display='none';
+  // Stash form values — they survive the step transition to the checklist.
+  window._launchFormValues={
+    lid,
+    tout: document.getElementById('launchTimeOut')?.value||'',
+    ret:  document.getElementById('launchReturnBy')?.value||'',
+    crew: window._launchCrewCount||1,
+    crewNames: Array.from(document.querySelectorAll('#launchCrewInputs input[type="text"]'))
+      .map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:!!i.dataset.guest,student:!!i.dataset.student};})
+      .filter(c=>c.name),
+    departurePort: (document.getElementById('launchDeparturePort')?.value||'').trim(),
+  };
+  renderLaunchChecklist(launchBoat);
+}
+
+// Step 3 — pre-launch checklist
+function renderLaunchChecklist(boat) {
+  if(!boat) return;
+  launchBoat=boat;
+  document.getElementById('launchModalTitle').textContent=s('member.launchTitle')+' — '+(boat.nonClub?s('member.nonClubBoat'):boat.name);
+  var cat=boat.nonClub?'nonclub':(boat.category||'other').toLowerCase();
+  var cl=_launchChecklists[cat]||_launchChecklists.other||{};
+  // cl.launch is an array of {id,text,textIS,sort} objects (config) or plain strings (defaults).
+  var items=Array.isArray(cl.launch)?cl.launch.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
+
+  document.getElementById('launchModalBody').innerHTML=
+    '<div class="section-label mb-12">PRE-LAUNCH — '+_fmtCatLabel(cat)+'</div>'+
+    (!items.length
+      ?'<div style="font-size:12px;color:var(--muted);padding:8px 0;font-style:italic">'+s('member.noChecklist')+'</div>'
+      :items.map((it,i)=>
+          '<label class="check-label">'+
+          '<input type="checkbox" class="launch-check accent-checkbox" data-idx="'+i+'">'+
+          '<span>'+esc(_clItemLabel(it))+'</span></label>').join('')
+    )+
+    '<div id="launchCheckErr" class="text-sm text-red mt-8" style="display:none">'+(L==='IS'?'Vinsamlegast staðfestu alla liði.':'Please confirm all items before proceeding.')+'</div>'+
+    '<div class="btn-row" style="margin-top:14px">'+
+      '<button class="btn btn-secondary" data-member-click="'+(boat.nonClub?'renderNonClubLaunchForm':'_renderLaunchFormFromState')+'">← '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" data-member-click="submitLaunch">⛵ '+s('member.launchBoat').replace('⛵ ','')+'</button>'+
+    '</div>';
+}
+
+function _addToLaunchOut(mins) {
+  var base=document.getElementById('launchTimeOut').value||fmtTimeNow();
+  var parts=base.split(':').map(Number);
+  var total=parts[0]*60+parts[1]+mins;
+  document.getElementById('launchReturnBy').value=String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+}
+function adjLaunchCrew(d) {
+  window._launchCrewCount=Math.max(1,Math.min(20,(window._launchCrewCount||1)+d));
+  document.getElementById('launchCrewNum').textContent=window._launchCrewCount;
+  renderCrewInputs();
+}
+function renderCrewInputs() {
+  const n=(window._launchCrewCount||1)-1;
+  const sec=document.getElementById('launchCrewSection');
+  const wrap=document.getElementById('launchCrewInputs');
+  if(!sec||!wrap) return;
+  if(n<1){sec.style.display='none';return;}
+  sec.style.display='';
+  const existing=Array.from(wrap.querySelectorAll('input[type="text"]')).map(i=>({value:i.value,kennitala:i.dataset.kennitala||'',guest:i.dataset.guest||'',student:i.dataset.student||''}));
+  wrap.innerHTML='';
+  for(let i=0;i<n;i++){
+    const prev=existing[i]||{};
+    const row=document.createElement('div'); row.style.cssText='position:relative;margin-bottom:6px';
+    const inputRow=document.createElement('div'); inputRow.style.cssText='display:flex;align-items:center;gap:6px';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.placeholder='Crew member '+(i+1)+' name…'; inp.value=prev.value||'';
+    inp.dataset.crewIdx=i;
+    if(prev.kennitala) inp.dataset.kennitala=prev.kennitala;
+    if(prev.guest) inp.dataset.guest=prev.guest;
+    if(prev.student) inp.dataset.student=prev.student;
+    inp.style.cssText='flex:1;min-width:0;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:6px 8px';
+    const stuCb=document.createElement('input'); stuCb.type='checkbox'; stuCb.className='accent-checkbox crew-student-cb'; stuCb.title=s('tc.student'); stuCb.checked=!!prev.student;
+    stuCb.addEventListener('change',function(){inp.dataset.student=this.checked?'1':'';});
+    const stuLbl=document.createElement('label'); stuLbl.style.cssText='display:flex;align-items:center;gap:3px;font-size:9px;color:var(--navy-l);white-space:nowrap;cursor:pointer';
+    stuLbl.appendChild(stuCb); stuLbl.appendChild(document.createTextNode(s('tc.student')));
+    const drop=document.createElement('div'); drop.id='crewDrop'+i;
+    drop.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:100;max-height:160px;overflow-y:auto;display:none';
+    inp.addEventListener('input',function(){searchCrewMembers(this,drop);});
+    inp.addEventListener('blur', function(){setTimeout(()=>{drop.style.display='none';},200);});
+    inputRow.appendChild(inp); inputRow.appendChild(stuLbl);
+    row.appendChild(inputRow); row.appendChild(drop); wrap.appendChild(row);
+  }
+}
+function searchCrewMembers(inp,drop) {
+  const q=inp.value.trim().toLowerCase();
+  if(!q||q.length<2){drop.style.display='none';return;}
+  const matches=(window._launchMembers||[]).filter(m=>m.name&&m.name.toLowerCase().includes(q)&&m.kennitala!==user.kennitala).slice(0,8);
+  drop.innerHTML='';
+  matches.forEach(m=>{
+    const item=document.createElement('div');
+    item.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px';
+    item.appendChild(document.createTextNode(m.name));
+    if (m.role==='guest') {
+      const badge=document.createElement('span');
+      badge.textContent=s('lbl.guest');
+      badge.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);flex-shrink:0';
+      item.appendChild(badge);
+    }
+    item.dataset.name=m.name; item.dataset.kennitala=m.kennitala||''; item.dataset.guest=m.role==='guest'?'1':'';
+    item.addEventListener('mouseover',function(){this.style.background='var(--card)';});
+    item.addEventListener('mouseout', function(){this.style.background='';});
+    item.addEventListener('mousedown',function(e){
+      e.preventDefault();inp.value=this.dataset.name;inp.dataset.kennitala=this.dataset.kennitala;inp.dataset.guest=this.dataset.guest;drop.style.display='none';
+    });
+    drop.appendChild(item);
+  });
+  // Add "add as guest" option when typed name has 3+ chars
+  if(q.length>=3){
+    const guest=document.createElement('div');
+    guest.style.cssText='padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--brass-fg)';
+    guest.textContent=s('logbook.addAsGuest',{name:inp.value.trim()});
+    guest.addEventListener('mousedown',function(e){
+      e.preventDefault(); drop.style.display='none';
+      window._launchGuestCallback=function(g){ inp.value=g.name; inp.dataset.kennitala=g.kennitala||g.id||''; inp.dataset.guest='1'; };
+      openLaunchGuestModal(inp.value.trim());
+    });
+    drop.appendChild(guest);
+  }
+  drop.style.display=drop.children.length?'block':'none';
+}
+
+// Guest prompt — uses the shared openGuestPrompt() helper. The old openLaunchGuestModal()
+// is preserved as a thin adapter so call sites can keep their existing signature.
+function openLaunchGuestModal(name){
+  openGuestPrompt({
+    name: name,
+    targetList: window._launchMembers,
+    onConfirm: function(guest){
+      if (window._launchGuestCallback) window._launchGuestCallback(guest);
+      window._launchGuestCallback = null;
+    },
+    onCancel:  function(){ window._launchGuestCallback=null; },
+  });
+}
+
+// Submit — reads stashed form values so they survive the step-3 checklist transition.
+async function submitLaunch() {
+  var boxes=document.querySelectorAll('.launch-check');
+  if(boxes.length&&!Array.from(boxes).every(b=>b.checked)){
+    document.getElementById('launchCheckErr').style.display='block'; return;
+  }
+  var fv=window._launchFormValues||{};
+  var isNC=!!fv.nonClub;
+  var lid=fv.lid, tout=fv.tout, ret=fv.ret, crewCount=fv.crew||1, crewNames=fv.crewNames||[], depPort=fv.departurePort||'';
+  var _boatId=isNC?'':launchBoat.id;
+  var _boatName=isNC?(fv.boatName||''):launchBoat.name;
+  var _boatCat=isNC?(fv.boatCategory||''):launchBoat.category||'';
+  var _locId=isNC?'':lid;
+  var _locName=isNC?(fv.locationName||''):(locations.find(l=>l.id===lid)||{}).name||lid;
+  if(!isNC&&!lid){showToast(s('staff.coForm.errLocation'),'err');return;}
+  if(isNC&&!_boatName){showToast(s('logbook.enterBoatName'),'err');return;}
+  if(isNC&&!_locName){showToast(s('logbook.enterLocation'),'err');return;}
+  var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
+  try {
+    var res=await apiPost('saveCheckout',{
+      memberKennitala:user.kennitala, memberName:user.name,
+      boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
+      locationId:_locId, locationName:_locName,
+      checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
+      departurePort:depPort,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
+      memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
+      guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
+      wxSnapshot:snap,
+      nonClub:isNC,
+    });
+    // Optimistic update — push new checkout locally instead of refetching
+    checkouts.push({
+      id:res.id, boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
+      memberKennitala:user.kennitala, memberName:user.name, crew:crewCount,
+      crewNames:crewNames.length?JSON.stringify(crewNames):'',
+      locationId:_locId, locationName:_locName,
+      checkedOutAt:tout, expectedReturn:ret, status:'out',
+      nonClub:isNC,
+    });
+    // Update UI immediately — don't block on crew confirmations
+    window._launchFormValues=null;
+    closeModal('launchModal'); renderActiveCheckouts(); renderFleetByCat();
+    showToast(s('staff.coForm.checkedOut'));
+    // Fire crew confirmations in the background (non-blocking)
+    if(crewNames.length){
+      var _coId=res?.checkoutId||res?.id||'';
+      var _confCrew=crewNames.filter(function(cn){return cn.kennitala&&!cn.guest;});
+      if(_confCrew.length){
+        Promise.all(_confCrew.map(function(cn){
+          return apiPost('createConfirmation',{
+            type:'crew_assigned',
+            fromKennitala:user.kennitala, fromName:user.name,
+            toKennitala:cn.kennitala, toName:cn.name,
+            linkedCheckoutId:_coId,
+            boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
+            locationId:_locId, locationName:_locName,
+            date:todayISO(), timeOut:tout,
+            role:'crew', wxSnapshot:snap,
+          }).catch(function(e2){console.warn('crew confirmation:',cn,e2.message);});
+        })).catch(function(e3){console.warn('crew confirmations failed:',e3.message);});
+      }
+    }
+  } catch(e){
+    var errEl=document.getElementById('launchCheckErr');
+    if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}
+  }
+}
+
+// ══ RETURN / CHECK-IN FLOW ════════════════════════════════════════════════════
+function _wxSnapHtml(snap) {
+  if(!snap) return '<div class="text-muted text-sm">No data</div>';
+  var dir=snap.dir||snap.wDir||"", wv=snap.wv!=null?snap.wv:snap.waveH, tc=snap.tc!=null?snap.tc:snap.airT, feels=snap.feels!=null?snap.feels:snap.apparentT;
+  var fi={green:"🟢",yellow:"🟡",orange:"🟠",red:"🔴"}, rows=[];
+  if(snap.flag)           rows.push([fi[snap.flag]||"",snap.flag.toUpperCase()]);
+  if(snap.bft!=null){var wsStr=snap.ws!=null?(typeof snap.ws==='string'&&snap.ws.indexOf('-')!==-1?snap.ws.split('-').map(function(v){return Math.round(v);}).join('–')+'m/s ':snap.ws+'m/s '):'';rows.push(["💨",dir+" "+wsStr+"Force "+snap.bft+(snap.wg!=null?" (gusts "+snap.wg+"m/s)":"")]);}
+  if(wv!=null)            rows.push(["🌊",wv+"m"+(snap.waveDir?" "+snap.waveDir:"")]);
+  if(tc!=null)            rows.push(["🌡",tc+"°C"+(feels!=null?" / feels "+feels+"°C":"")]);
+  if(snap.sst!=null)      rows.push(["🌊","Sea "+snap.sst+"°C"]);
+  if(snap.pres!=null)     rows.push(["📊",Math.round(snap.pres)+"hPa"+(snap.presTrend?" "+snap.presTrend:"")]);
+  if(snap.cond&&snap.cond.desc) rows.push([snap.cond.icon||"",snap.cond.desc]);
+  if(!rows.length)        rows.push(["","No detail available"]);
+  return rows.map(r=>'<div class="flex-center gap-6 text-sm" style="padding:2px 0"><span style="width:16px;flex-shrink:0;text-align:center">'+r[0]+'</span><span style="color:var(--text)">'+esc(String(r[1]).trim())+'</span></div>').join('');
+}
+// Preferred wind unit for manual entry (non-bft → use directly; bft → use m/s)
+var _retWindUnit = (function(){ var p = getPref('windUnit','ms'); return p === 'bft' ? 'ms' : p; })();
+
+function _updateWxDisplay() {
+  var sel=document.querySelector('[name="wxChoice"]:checked'), choice=sel?sel.value:"checkout";
+  var panel=document.getElementById("wxDetailPanel"), snap=null;
+  if(choice==="checkout") snap=window._retCoSnap;
+  else if(choice==="now") snap=currentWx?wxSnapshot(currentWx):null;
+  else if(choice==="manual"){
+    var gn=id=>{var el=document.getElementById(id);return el&&el.value!==""?parseFloat(el.value):null;};
+    var gs=id=>{var el=document.getElementById(id);return el?el.value.trim():"";};
+    var rawWs=gn("manWs"),rawWg=gn("manWg");
+    snap={bft:gn("manBft"),dir:gs("manDir"),ws:rawWs!=null?+convertToMs(rawWs,_retWindUnit).toFixed(1):null,wg:rawWg!=null?+convertToMs(rawWg,_retWindUnit).toFixed(1):null,wv:gn("manWv"),waveDir:gs("manWaveDir"),tc:gn("manTc"),feels:gn("manFeels"),pres:gn("manPres"),sst:gn("manSst"),flag:null,cond:null};
+  }
+  if(panel) panel.innerHTML=_wxSnapHtml(snap);
+  var mf=document.getElementById("wxManualFields"); if(mf) mf.style.display=choice==="manual"?"grid":"none";
+}
+
+function renderReturnForm() {
+  if(!returnCo) return;
+  document.getElementById('returnModalTitle').textContent=s('member.checkInTitle')+' — '+(returnCo.boatName||'');
+  var coSnap=returnCo.wxSnapshot?(typeof returnCo.wxSnapshot==='string'?JSON.parse(returnCo.wxSnapshot):returnCo.wxSnapshot):null;
+  var nowSnap=currentWx?wxSnapshot(currentWx):null;
+  if(coSnap&&nowSnap){["waveDir","sst","feels","pres","presTrend","cond"].forEach(k=>{if(coSnap[k]==null&&nowSnap[k]!=null)coSnap[k]=nowSnap[k];});}
+  window._retCoSnap=coSnap; window._retTimeIn=null; window._retWxSnap=null;
+  function shortDesc(sn){if(!sn)return'No data';var d=sn.dir||sn.wDir||'',wsv=sn.ws,w='';if(wsv!=null){w=(typeof wsv==='string'&&wsv.indexOf('-')!==-1)?wsv.split('-').map(function(v){return Math.round(v);}).join('–')+'m/s ':wsv+'m/s ';}return(d+' '+w+'Force '+(sn.bft||'?')).trim();}
+  var def=coSnap?'checkout':nowSnap?'now':'manual';
+  var coR=coSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="checkout" '+(def==='checkout'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>At launch:</b> '+esc(shortDesc(coSnap))+'</span></label>':'';
+  var nowR=nowSnap?'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="now" '+(def==='now'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>Current:</b> '+esc(shortDesc(nowSnap))+'</span></label>':'';
+  var manR='<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"><input type="radio" name="wxChoice" value="manual" '+(def==='manual'?'checked':'')+' style="margin-top:2px;accent-color:var(--brass)" data-member-change="_updateWxDisplay"><span><b>Manual</b></span></label>';
+  var manF='<div id="wxManualFields" style="display:'+(def==='manual'?'grid':'none')+';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="field"><label>Force (0-12)</label><input type="number" id="manBft" min="0" max="12" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Direction</label><input type="text" id="manDir" placeholder="N/NE/SW" maxlength="4" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Wind '+windUnitLabel(_retWindUnit)+'</label><input type="number" id="manWs" min="0" max="200" step="0.5" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Gusts '+windUnitLabel(_retWindUnit)+'</label><input type="number" id="manWg" min="0" max="200" step="0.5" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Waves m</label><input type="number" id="manWv" min="0" max="15" step="0.1" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Wave dir</label><input type="text" id="manWaveDir" placeholder="N/SW" maxlength="4" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Air °C</label><input type="number" id="manTc" step="0.5" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Feels °C</label><input type="number" id="manFeels" step="0.5" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Pressure hPa</label><input type="number" id="manPres" min="900" max="1050" data-member-input="_updateWxDisplay"></div>'
+    +'<div class="field"><label>Sea °C</label><input type="number" id="manSst" step="0.5" data-member-input="_updateWxDisplay"></div>'
+    +'</div>';
+  document.getElementById('returnModalBody').innerHTML=
+    '<div class="field" style="margin-bottom:14px">'
+      +'<label class="detail-field-label" style="display:block">TIME IN</label>'
+      +'<input type="text" id="retTimeIn" value="'+fmtTimeNow()+'" maxlength="5" placeholder="HH:MM" style="width:80px" data-member-time-format>'
+    +'</div>'
+    +'<div class="mb-14">'
+      +'<div class="section-label mb-10">WEATHER RECORD</div>'
+      +'<div class="flex-col gap-8 mb-10">'+coR+nowR+manR+'</div>'
+      +manF
+      +'<div id="wxDetailPanel" class="callout-panel">'+_wxSnapHtml(coSnap||nowSnap)+'</div>'
+    +'</div>'
+    +'<div class="btn-row">'
+      +'<button class="btn btn-secondary" data-member-close="returnModal">Cancel</button>'
+      +'<button class="btn btn-primary" data-member-click="advanceToChecklist">Continue →</button>'
+    +'</div>';
+  setTimeout(()=>{
+    var wx=currentWx; if(!wx) return;
+    function sf(id,v){var el=document.getElementById(id);if(el&&v!=null&&v!=='')el.value=v;}
+    sf('manBft',wx.bft); sf('manDir',wx.wDir||wx.dir||'');
+    sf('manWs',  wx.ws!=null?convertWind(wx.ws,_retWindUnit):null);
+    sf('manWg',  wx.wg!=null?convertWind(wx.wg,_retWindUnit):null);
+    sf('manWv',  wx.waveH!=null?Math.round(wx.waveH*10)/10:null);
+    sf('manWaveDir',wx.waveDir||'');
+    sf('manTc',  wx.airT!=null?Math.round(wx.airT*10)/10:null);
+    sf('manFeels',wx.apparentT!=null?Math.round(wx.apparentT*10)/10:null);
+    sf('manPres', wx.pres!=null?Math.round(wx.pres):null);
+    sf('manSst',  wx.sst!=null?Math.round(wx.sst*10)/10:null);
+  },0);
+}
+
+function advanceToChecklist() {
+  var retEl=document.getElementById('retTimeIn');
+  window._retTimeIn=retEl&&/^[0-9]{2}:[0-9]{2}$/.test(retEl.value)?retEl.value:fmtTimeNow();
+  var sel=document.querySelector('[name="wxChoice"]:checked'), wxC=sel?sel.value:'checkout';
+  if(wxC==='checkout') window._retWxSnap=window._retCoSnap||null;
+  else if(wxC==='now') window._retWxSnap=currentWx?wxSnapshot(currentWx):null;
+  else {
+    var mn=id=>{var el=document.getElementById(id);return el&&el.value!==''?parseFloat(el.value):null;};
+    var ms=id=>{var el=document.getElementById(id);return el?el.value.trim():'';};
+    var rawWs2=mn('manWs'),rawWg2=mn('manWg');
+    window._retWxSnap={bft:mn('manBft'),dir:ms('manDir'),ws:rawWs2!=null?+convertToMs(rawWs2,_retWindUnit).toFixed(1):null,wg:rawWg2!=null?+convertToMs(rawWg2,_retWindUnit).toFixed(1):null,wv:mn('manWv'),waveDir:ms('manWaveDir'),tc:mn('manTc'),feels:mn('manFeels'),pres:mn('manPres'),sst:mn('manSst'),flag:null,cond:null};
+  }
+  renderLandingChecklist();
+}
+
+function renderLandingChecklist() {
+  if(!returnCo) return;
+  // Reset pending upload state each time this step is rendered
+  window._retPendingTrack=null; window._retPendingPhotos=[];
+  window._retHelmSelf=false; window._retCrewTrips=window._retCrewTrips||[];
+  document.getElementById('returnModalTitle').textContent=s('member.checkInTitle')+' — '+(returnCo.boatName||'');
+  var IS=getLang()==='IS';
+  var cat=(returnCo.boatCategory||'other').toLowerCase();
+  var isKeel=cat==='keelboat';
+  var cl=_launchChecklists[cat]||_launchChecklists.other||{};
+  var items=Array.isArray(cl.landing)?cl.landing.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)):[];
+  var checks=items.map(it=>
+    '<label class="check-label">'+
+    '<input type="checkbox" class="land-check accent-checkbox">'+
+    '<span>'+esc(_clItemLabel(it))+'</span></label>').join('');
+
+  // Parse crew names from checkout (rendered after DOM is built below)
+  if((returnCo.crew||1)>1 && !window._retCrewTripsFetched){
+    window._retCrewTripsFetched=true;
+    var parsed=parseJson(returnCo.crewNames,[]);
+    window._retCrewTrips=parsed.map(function(c){
+      return {id:'crew_'+(c.kennitala||c.name),memberName:c.name,kennitala:c.kennitala,guest:!!c.guest,student:!!c.student};
+    });
+  }
+
+  // Resolve home/departure port name for keelboats
+  var homePt='';
+  if(isKeel){
+    homePt=returnCo.departurePort||'';
+    if(!homePt){var _b=boats.find(function(x){return x.id===returnCo.boatId;});if(_b&&_b.defaultPortId){var _lp=locations.find(function(l){return l.id===_b.defaultPortId;});if(_lp)homePt=_lp.name;}}
+  }
+  var portOpts=isKeel?(locations||[]).filter(function(l){return l.type==='port';}).map(function(p){return'<option value="'+esc(p.name)+'">';}).join(''):'';
+
+  // GPS track upload block
+  var trackBlock=
+    '<div style="flex:1;min-width:0">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.gpsTrackLabel')+'</label>'+
+      '<input type="file" id="retTrackFile" accept=".gpx,.kml,.kmz" data-member-change-this="_handleRetTrack" style="font-size:11px;color:var(--text);width:100%">'+
+      '<div id="retTrackStatus" style="font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>'+
+    '</div>';
+
+  // Photo upload block
+  var photoBlock=
+    '<div style="flex:1;min-width:0">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.photosLabel')+'</label>'+
+      '<input type="file" id="retPhotoFiles" accept="image/*" multiple data-member-change-this="_handleRetPhotos" style="font-size:11px;color:var(--text);width:100%">'+
+      '<div id="retPhotoPreview" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>'+
+    '</div>';
+
+  // Distance block (inline-compact)
+  var distLabel=s('member.distanceLabel');
+  var distBlock=
+    '<div>'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+distLabel+'</label>'+
+      '<input type="number" id="retDistNm" min="0" step="0.1" placeholder="0.0" style="width:80px">'+
+    '</div>';
+
+  // Assemble rows depending on boat type
+  var uploadRow='<div class="field" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">'+trackBlock+photoBlock+'</div>';
+
+  var portDistRow='';
+  var distStandaloneRow='';
+  if(isKeel){
+    // Port + distance on same row
+    portDistRow=
+      '<div class="field" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<label style="display:block;font-size:9px;color:var(--brass-fg);letter-spacing:.8px;margin-bottom:6px">'+'⚓️ '+s('member.arrivalPortLabel')+'</label>'+
+          '<input type="text" list="retPortsList" id="retArrivalPort" placeholder="'+s('member.sameAsDeparture')+'" value="'+esc(homePt)+'" autocomplete="off" style="width:100%">'+
+          '<datalist id="retPortsList">'+portOpts+'</datalist>'+
+        '</div>'+
+        distBlock+
+      '</div>';
+  } else {
+    // Distance below uploads
+    distStandaloneRow='<div class="field" style="margin-bottom:10px">'+distBlock+'</div>';
+  }
+
+  document.getElementById('returnModalBody').innerHTML=
+    (items.length?'<div class="section-label mb-10">LANDING — '+_fmtCatLabel(cat)+'</div>'+checks:'')+
+    '<div id="landCheckErr" class="text-sm text-red" style="display:none;margin:6px 0">'+s('member.confirmAllItems')+'</div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0">'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--orange);border-color:var(--orange)55" data-member-click="openInlineReport" data-member-arg="damage"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg> '+s('member.reportDamage')+'</button>'+
+      '<button type="button" class="btn btn-secondary" style="flex:1;font-size:11px;color:var(--red);border-color:var(--red)55" data-member-click="openInlineReport" data-member-arg="incident"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> '+s('member.reportIncident')+'</button>'+
+    '</div>'+
+    '<div id="reportFlagNote" style="display:none;font-size:11px;padding:5px 8px;border-radius:4px;background:var(--surface);margin-bottom:8px"></div>'+
+    (((returnCo.crew||1)>1&&/^(keelboat|dinghy)$/.test((returnCo.boatCategory||'').toLowerCase()))?'<div id="helmSection" style="margin-bottom:14px">'+
+      '<div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px">'+s('member.helmLabel')+'</div>'+
+      '<div id="helmToggles">'+
+        '<label class="check-label">'+
+          '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-self="1" data-member-assign="_retHelmSelf">'+
+          '<span>'+esc(user.name||'')+' <span class="text-xs text-muted">'+s('member.youLabel')+'</span></span>'+
+        '</label>'+
+        '<div id="helmCrewToggles" style="color:var(--muted);font-size:11px;padding:4px 0">'+s('member.loadingCrew')+'</div>'+
+      '</div>'+
+    '</div>':'')+
+    portDistRow+uploadRow+distStandaloneRow+
+    '<div class="field" style="margin-bottom:14px">'+
+      '<label style="display:block;font-size:9px;color:var(--brass-fg);letter-spacing:.8px;margin-bottom:6px">'+s('member.skipperNotes')+'</label>'+
+      '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+s('member.notesVisibleAll')+'</div>'+
+      '<textarea id="retSkipperNote" rows="2" placeholder="'+s('member.notesPlaceholder')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+    '</div>'+
+    (((returnCo.crew||1)>1)?('<div class="field" style="margin-bottom:14px">'+
+      '<label style="display:block;font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">'+s('member.personalNotes')+'</label>'+
+      '<textarea id="retNotes" rows="2" placeholder="'+s('member.onlyVisibleYou')+'" style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea>'+
+    '</div>'):'')+
+    '<div class="btn-row">'+
+      '<button class="btn btn-secondary" data-member-click="renderReturnForm">&#8592; '+s('member.back')+'</button>'+
+      '<button class="btn btn-primary" id="retSubmitBtn" data-member-click="confirmCheckIn" data-member-arg="'+returnCo.id+'">&#10003; '+s('member.checkInBtn')+'</button>'+
+    '</div>';
+  // Render crew toggles now that the DOM is built
+  if(window._retCrewTrips && window._retCrewTrips.length) _renderHelmSection();
+}
+
+function _renderHelmSection(){
+  var el=document.getElementById('helmCrewToggles');
+  var IS=getLang()==='IS';
+  var entries=window._retCrewTrips||[];
+  var mems=window._launchMembers||[];
+  // Helper: determine if crew entry is a guest
+  function _isGuest(t){
+    if(t.guest) return true;
+    if(!t.kennitala) return true;
+    var mem=mems.find(function(m){return String(m.kennitala)===String(t.kennitala);});
+    return mem&&mem.role==='guest';
+  }
+  function _guestTag(t){
+    return _isGuest(t)?' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:4px">'+s('member.guestLabel')+'</span>':'';
+  }
+  if(el){
+    if(!entries.length){el.textContent=s('member.noNamedCrew');}
+    else{el.innerHTML=entries.map(function(t){
+      return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">'+
+        '<label class="check-label" style="flex:1;margin:0">'+
+          '<input type="checkbox" class="helm-toggle accent-checkbox" data-helm-kt="'+esc(t.kennitala||'')+'" data-helm-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'">'+
+          '<span>'+esc(t.memberName||'?')+_guestTag(t)+'</span>'+
+        '</label>'+
+        '<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--navy-l);white-space:nowrap;cursor:pointer">'+
+          '<input type="checkbox" class="student-toggle accent-checkbox" data-stu-kt="'+esc(t.kennitala||'')+'" data-stu-name="'+esc(t.memberName||'')+'" data-guest="'+(_isGuest(t)?'1':'')+'"'+(t.student?' checked':'')+'>'+
+          s('tc.student')+
+        '</label>'+
+      '</div>';
+    }).join('');}
+  }
+}
+
+function _handleRetTrack(input){
+  var file=input.files[0];
+  var statusEl=document.getElementById('retTrackStatus');
+  var IS=getLang()==='IS';
+  if(!file){window._retPendingTrack=null;statusEl.textContent='';return;}
+  statusEl.textContent=s('member.readingFile');statusEl.style.color='var(--muted)';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    window._retPendingTrack={fileName:file.name,fileData:e.target.result,mimeType:file.type||'application/octet-stream'};
+    statusEl.textContent=s('member.fileReady',{name:file.name});statusEl.style.color='var(--brass)';
+  };
+  reader.onerror=function(){statusEl.textContent=s('member.readError');statusEl.style.color='var(--red)';window._retPendingTrack=null;};
+  reader.readAsDataURL(file);
+}
+
+function _handleRetPhotos(input){
+  var files=Array.from(input.files);
+  window._retPendingPhotos=[];
+  var preview=document.getElementById('retPhotoPreview');
+  preview.innerHTML='';
+  files.forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      window._retPendingPhotos.push({fileName:file.name,fileData:e.target.result,mimeType:file.type||'image/jpeg'});
+      var img=document.createElement('img');
+      img.src=e.target.result;
+      img.style.cssText='width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--border)';
+      img.title=file.name;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Inline report forms ───────────────────────────────────────────────────────
+function openInlineReport(type) {
+  document.getElementById('returnModalTitle').textContent=type==='damage'?'Report Damage':'Report Incident';
+  var actions = type==='damage'
+    ? '<button class="btn btn-primary" data-member-click="submitInlineReport" data-member-arg="damage">Submit</button>'
+    : '<button class="btn btn-primary" data-member-click="submitInlineReport" data-member-arg="incident" data-member-arg2="closed">Save, close &amp; file</button>'
+      +'<button class="btn btn-secondary" data-member-click="submitInlineReport" data-member-arg="incident" data-member-arg2="review">Save for review</button>';
+  document.getElementById('returnModalBody').innerHTML=
+    (type==='damage'?_maintFormHtml():_incidentFormHtml())+
+    '<div id="irErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row"><button class="btn btn-secondary" data-member-click="renderLandingChecklist">&#8592; Back</button>'+actions+'</div>';
+  if(type==='damage'){setTimeout(()=>{_irSelectCat('boat');var bs=document.getElementById('irBoat');if(bs&&returnCo&&returnCo.boatId)bs.value=returnCo.boatId;},0);}
+}
+function _maintFormHtml() {
+  var catBtns=['boat','equipment','facility'].map(c=>'<button class="cat-btn" data-cat="'+c+'" data-member-click="_irSelectCat" data-member-arg="'+c+'"> '+(c==='boat'?'⛵':c==='equipment'?'🧰':'🏠')+' '+c+'</button>').join('');
+  var sevBtns=['low','medium','high','critical'].map(s=>'<button class="sev-btn" data-sev="'+s+'" data-member-click="_irSelectSev" data-member-arg="'+s+'">'+s.toUpperCase()+'</button>').join('');
+  var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  return '<div class="field"><label>Category</label><div class="cat-btns">'+catBtns+'</div></div>'
+    +'<div class="field hidden" id="irBoatField"><label>Boat</label>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<select id="irBoat" style="flex:1;min-width:0"><option value="">Select boat...</option>'+boatOpts+'</select>'
+        +'<button type="button" class="btn btn-secondary" data-member-click="scanBoatForIssue" data-member-arg="irBoat" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label><input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>'
+    +'<div class="field"><label>Part / area (optional)</label><input type="text" id="irPart" placeholder="e.g. rudder, mast, zipper..."></div>'
+    +'<div class="field"><label>Severity</label><div class="sev-btns">'+sevBtns+'</div></div>'
+    +'<div class="field"><label>Description</label><textarea id="irDesc" rows="3" placeholder="Describe the issue..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>';
+}
+function _irSelectCat(cat) {
+  window._irCat=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('selected',b.dataset.cat===cat));
+  var bf=document.getElementById('irBoatField'), itf=document.getElementById('irItemField');
+  if(bf) bf.classList.toggle('hidden',cat!=='boat');
+  if(itf) itf.classList.toggle('hidden',cat==='boat');
+  if(cat!=='boat'&&document.getElementById('irItemLabel'))document.getElementById('irItemLabel').textContent=cat==='equipment'?'Equipment item':'Location / area';
+}
+function _irSelectSev(sev){window._irSev=sev;document.querySelectorAll('.sev-btn').forEach(b=>b.classList.toggle('selected',b.dataset.sev===sev));}
+function _incidentFormHtml() {
+  var types=[["injury","🩹 Injury"],["capsize","⛵ Capsize"],["collision","💥 Collision"],["equipment","🔧 Equipment failure"],["medical","🏥 Medical"],["nearMiss","⚡️ Near miss"],["missing","🔍 Missing person"],["propertyDmg","🏗️ Property damage"],["stranding","⚓️ Ran aground"],["other","📌 Other"]];
+  var typeBoxes=types.map(tp=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><input type="checkbox" class="ir-type-box" value="'+tp[0]+'" style="accent-color:var(--brass)"><span>'+tp[1]+'</span></label>').join('');
+  var sevBtns=['low','medium','high','critical'].map(s=>'<button type="button" class="sev-btn" data-sev="'+s+'" data-member-click="_irSelectSev" data-member-arg="'+s+'">'+s.toUpperCase()+'</button>').join('');
+  var boatOpts=boats.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  var locOpts=(locations||[]).map(l=>'<option value="'+l.id+'">'+esc(l.name)+'</option>').join('');
+  var nowD=new Date(), pad=n=>String(n).padStart(2,'0');
+  var dStr=nowD.getFullYear()+'-'+pad(nowD.getMonth()+1)+'-'+pad(nowD.getDate());
+  var tStr=pad(nowD.getHours())+':'+pad(nowD.getMinutes());
+  var preBoat=(returnCo&&returnCo.boatId)||'';
+  return '<div class="field"><label>Type <span style="color:var(--red)">*</span> (select all that apply)</label><div class="ir-type-grid">'+typeBoxes+'</div></div>'
+    +'<div class="field"><label>Severity <span style="color:var(--red)">*</span></label><div class="sev-btns">'+sevBtns+'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="field"><label>Date <span style="color:var(--red)">*</span></label><input type="date" id="irDate" value="'+dStr+'"></div>'
+    +'<div class="field"><label>Time <span style="color:var(--red)">*</span></label><input type="time" id="irTime" value="'+tStr+'"></div>'
+    +'</div>'
+    +'<div class="field"><label>Location <span style="color:var(--red)">*</span></label><select id="irLocation"><option value="">— select —</option>'+locOpts+'</select></div>'
+    +'<div class="field"><label>Boat involved (optional)</label>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<select id="irIncBoat" style="flex:1;min-width:0"><option value="">None</option>'+boatOpts+'</select>'
+        +'<button type="button" class="btn btn-secondary" data-member-click="scanBoatForIssue" data-member-arg="irIncBoat" style="white-space:nowrap;font-size:10px;padding:6px 10px">'+s('qr.scanBtn')+'</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="field"><label>Description <span style="color:var(--red)">*</span></label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'
+    +'<div class="field"><label>People involved (optional)</label><input type="text" id="irPeople" placeholder="Names (not linked to members)..."></div>'
+    +'<div class="field"><label>Witnesses (optional)</label><input type="text" id="irWitnesses" placeholder="Names (not linked to members)..."></div>'
+    +'<div class="field"><label>Immediate action taken (optional)</label><input type="text" id="irAction" placeholder="e.g. First aid given, coastguard called..."></div>'
+    +'<div class="field"><label>Follow-up required (optional)</label><input type="text" id="irFollowUp" placeholder="Repair, investigation..."></div>'
+    +'<div class="field"><label>Hand-off contact / notes (optional)</label><input type="text" id="irHandoff" placeholder="e.g. Passed to duty officer..."></div>'
+    +'<script>setTimeout(function(){var b=document.getElementById("irIncBoat");if(b)b.value="'+esc(preBoat)+'";},0);<\/script>';
+}
+async function submitInlineReport(type, pathway) {
+  var errEl=document.getElementById('irErr'), desc=(document.getElementById('irDesc')||{}).value||'';
+  var co=returnCo||{};
+  try {
+    if(type==='damage'){
+      if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
+      var cat=window._irCat||'boat', sev=window._irSev||'medium';
+      var bid=cat==='boat'?((document.getElementById('irBoat')||{}).value||co.boatId||''):'';
+      var bnm=cat==='boat'?(boats.find(b=>b.id===bid)||{name:co.boatName||''}).name:'';
+      var item=cat!=='boat'?((document.getElementById('irItem')||{}).value||''):'';
+      await apiPost('saveMaintenance',{category:cat,boatId:bid,boatName:bnm,itemName:item,part:(document.getElementById('irPart')||{}).value||'',severity:sev,description:desc,markOos:false,reportedBy:user.name,source:'member-checkin'});
+    } else {
+      var types=Array.from(document.querySelectorAll('.ir-type-box:checked')).map(el=>el.value);
+      var sev2=window._irSev||'';
+      var locSel=document.getElementById('irLocation');
+      var locId=locSel?locSel.value:'';
+      var locName=(locations.find(l=>l.id===locId)||{}).name||'';
+      var dateV=(document.getElementById('irDate')||{}).value||'';
+      var timeV=(document.getElementById('irTime')||{}).value||'';
+      var missing=[];
+      if(!types.length) missing.push('type');
+      if(!sev2) missing.push('severity');
+      if(!locId) missing.push('location');
+      if(!timeV) missing.push('time');
+      if(!desc.trim()) missing.push('description');
+      if(missing.length){errEl.textContent='Required: '+missing.join(', ');errEl.style.display='block';return;}
+      var irBoat=document.getElementById('irIncBoat');
+      var irBoatId=irBoat?irBoat.value:'';
+      var irBoatName=irBoatId?(boats.find(b=>b.id===irBoatId)||{name:''}).name:'';
+      var typeLabelMap={injury:'🩹 Injury',capsize:'⛵ Capsize',collision:'💥 Collision',equipment:'🔧 Equipment failure',medical:'🏥 Medical',nearMiss:'⚡️ Near miss',missing:'🔍 Missing person',propertyDmg:'🏗️ Property damage',stranding:'⚓️ Ran aground',other:'📌 Other'};
+      var typeLabels=types.map(t=>typeLabelMap[t]||t).join(', ');
+      await apiPost('createIncident',{
+        types:JSON.stringify(types), typeLabels, severity:sev2,
+        date:dateV, time:timeV,
+        locationId:locId, locationName:locName,
+        boatId:irBoatId, boatName:irBoatName,
+        description:desc.trim(),
+        involved:(document.getElementById('irPeople')||{}).value||'',
+        witnesses:(document.getElementById('irWitnesses')||{}).value||'',
+        immediateAction:(document.getElementById('irAction')||{}).value||'',
+        followUp:(document.getElementById('irFollowUp')||{}).value||'',
+        handOffNotes:(document.getElementById('irHandoff')||{}).value||'',
+        filedBy:user.name, title:typeLabels,
+        status: pathway==='review' ? 'review' : 'closed',
+        resolved: pathway!=='review',
+        source:'member-checkin',
+      });
+    }
+    renderLandingChecklist();
+    setTimeout(()=>{var note=document.getElementById('reportFlagNote');if(note){note.textContent=type==='damage'?'✓ Damage report submitted.':'✓ Incident report submitted.';note.style.color='var(--green)';note.style.display='block';}},50);
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+}
+
+// ── Standalone report (from quick-action strip) ──────────────────────────────
+function openStandaloneReport() {
+  document.getElementById('reportModalTitle').textContent='Report Issue';
+  document.getElementById('reportModalBody').innerHTML=
+    _maintFormHtml()+
+    '<div id="srErr" class="msg msg-err" style="display:none;margin-bottom:8px"></div>'+
+    '<div class="btn-row"><button class="btn btn-primary" data-member-click="submitStandaloneReport">Submit</button></div>';
+  openModal('reportModal');
+  setTimeout(()=>_irSelectCat('boat'),0);
+}
+async function submitStandaloneReport() {
+  var errEl=document.getElementById('srErr'), desc=(document.getElementById('irDesc')||{}).value||'';
+  if(!desc.trim()){errEl.textContent='Description required.';errEl.style.display='block';return;}
+  var cat=window._irCat||'boat', sev=window._irSev||'medium';
+  var bid=cat==='boat'?((document.getElementById('irBoat')||{}).value||''):'';
+  var bnm=bid?(boats.find(b=>b.id===bid)||{name:''}).name:'';
+  var item=cat!=='boat'?((document.getElementById('irItem')||{}).value||''):'';
+  try {
+    await apiPost('saveMaintenance',{category:cat,boatId:bid,boatName:bnm,itemName:item,part:(document.getElementById('irPart')||{}).value||'',severity:sev,description:desc,markOos:false,reportedBy:user.name,source:'member-hub'});
+    closeModal('reportModal');
+    toast('✓ Issue reported');
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+}
+
+async function confirmCheckIn(coId) {
+  var boxes=document.querySelectorAll('.land-check');
+  if(boxes.length&&!Array.from(boxes).every(function(b){return b.checked;})){document.getElementById('landCheckErr').style.display='block';return;}
+  var timeIn=window._retTimeIn||fmtTimeNow(), tripSnap=window._retWxSnap||null;
+  var notes=(document.getElementById('retNotes')||{}).value||'';
+  var skipperNote=(document.getElementById('retSkipperNote')||{}).value||'';
+  var co=checkouts.find(function(c){return c.id===coId;}); if(!co) return;
+  var tout=sstr(co.checkedOutAt||co.timeOut).slice(0,5);
+  var h=(tout&&timeIn)?((new Date('2000-01-01T'+timeIn)-new Date('2000-01-01T'+tout))/3600000):0;
+  if(h<0) h+=24;
+  var today=todayISO();
+  var errEl=document.getElementById('landCheckErr');
+  var IS=getLang()==='IS';
+  var isKeel=(co.boatCategory||'').toLowerCase()==='keelboat';
+  var arrivalPort=isKeel?((document.getElementById('retArrivalPort')||{}).value||'').trim():'';
+  var manualDist=parseFloat((document.getElementById('retDistNm')||{}).value)||'';
+
+  // Disable submit while uploading
+  var submitBtn=document.getElementById('retSubmitBtn');
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=s('logbook.uploading');}
+
+  // Upload GPS track
+  var trackFileUrl='',trackSimplified='',trackSource='',distanceNm=manualDist;
+  if(window._retPendingTrack){
+    try{
+      var tr=await apiPost('uploadTripFile',{fileType:'track',fileName:window._retPendingTrack.fileName,fileData:window._retPendingTrack.fileData,mimeType:window._retPendingTrack.mimeType});
+      if(tr.ok){
+        trackFileUrl=tr.trackFileUrl||'';trackSimplified=tr.trackSimplified||'';trackSource=tr.trackSource||'';
+        if(!distanceNm&&tr.distanceNm){distanceNm=tr.distanceNm;var dEl=document.getElementById('retDistNm');if(dEl)dEl.value=tr.distanceNm;}
+      } else {showToast(s('member.gpsNoConfig'),'warn');}
+    }catch(e){showToast(s('member.gpsUploadFailed',{msg:e.message}),'warn');}
+  }
+
+  // Upload photos in parallel
+  var photoUrls=[];
+  await Promise.all((window._retPendingPhotos||[]).map(async function(ph){
+    try{
+      var pr=await apiPost('uploadTripFile',{fileType:'photo',fileName:ph.fileName,fileData:ph.fileData,mimeType:ph.mimeType});
+      if(pr.ok&&pr.photoUrl)photoUrls.push(pr.photoUrl);
+      else if(!pr.ok)showToast(s('member.photoNoConfig'),'warn');
+    }catch(e){showToast(s('member.photoUploadFailed',{msg:e.message}),'warn');}
+  }));
+
+  // Collect helm self toggle
+  var helmSelf=!!window._retHelmSelf;
+
+  try {
+    var _tripRes = (await Promise.all([
+      apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName}),
+      apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
+      date:today,boatId:co.boatId,boatName:co.boatName,boatCategory:co.boatCategory||'',
+      locationId:co.locationId||'',locationName:co.locationName||'',
+      timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
+      beaufort:tripSnap?tripSnap.bft:null,windDir:tripSnap?(tripSnap.dir||tripSnap.wDir||''):'',
+      wxSnapshot:tripSnap?JSON.stringify(tripSnap):null,notes,skipperNote,role:'skipper',linkedCheckoutId:coId,isLinked:true,
+      helm:helmSelf,
+      departurePort:co.departurePort||'',arrivalPort,
+      distanceNm,trackFileUrl,trackSimplified,trackSource,
+      photoUrls:photoUrls.length?JSON.stringify(photoUrls):'',
+      crewNames:co.crewNames||'',
+      }),
+    ]))[1];
+    var _skipperTripId = _tripRes?.id || '';
+    // Create helm confirmation requests for non-guest crew members
+    // Create helm + student confirmation requests for non-guest crew
+    var handshakeRequests=[];
+    document.querySelectorAll('.helm-toggle').forEach(function(cb){
+      if(!cb.checked || cb.dataset.helmSelf) return;
+      if(cb.dataset.guest) return; // guests don't need handshake
+      handshakeRequests.push(apiPost('createConfirmation',{
+        type:'helm',
+        fromKennitala:user.kennitala, fromName:user.name,
+        toKennitala:cb.dataset.helmKt||'',
+        toName:cb.dataset.helmName||'',
+        linkedCheckoutId:coId,
+        boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
+        date:today, helm:true,
+      }).catch(function(){}));
+    });
+    // Student toggles from UI (helm section) or fallback to checkout crewNames
+    var _stuToggles=document.querySelectorAll('.student-toggle');
+    if(_stuToggles.length){
+      _stuToggles.forEach(function(cb){
+        if(!cb.checked) return;
+        if(cb.dataset.guest) return;
+        handshakeRequests.push(apiPost('createConfirmation',{
+          type:'student',
+          fromKennitala:user.kennitala, fromName:user.name,
+          toKennitala:cb.dataset.stuKt||'',
+          toName:cb.dataset.stuName||'',
+          linkedCheckoutId:coId,
+          boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
+          date:today,
+        }).catch(function(){}));
+      });
+    } else {
+      // No helm section (non-keelboat/dinghy) — send student confirmations from checkout data
+      parseJson(co.crewNames,[]).forEach(function(cn){
+        if(!cn.student||!cn.kennitala||cn.guest) return;
+        handshakeRequests.push(apiPost('createConfirmation',{
+          type:'student',
+          fromKennitala:user.kennitala, fromName:user.name,
+          toKennitala:cn.kennitala, toName:cn.name||'',
+          linkedCheckoutId:coId,
+          boatId:co.boatId, boatName:co.boatName, boatCategory:co.boatCategory||'',
+          date:today,
+        }).catch(function(){}));
+      });
+    }
+    if(handshakeRequests.length) await Promise.all(handshakeRequests);
+    // Update crewNames with helm/student flags for all crew (not just guests)
+    // so the skipper's trip record always has the data for display
+    var _updatedCrewNames=parseJson(co.crewNames,[]);
+    var _crewNamesChanged=false;
+    document.querySelectorAll('.helm-toggle').forEach(function(cb){
+      if(!cb.checked||cb.dataset.helmSelf) return;
+      var cn=_updatedCrewNames.find(function(c){return c.name&&String(c.kennitala)===String(cb.dataset.helmKt);});
+      if(cn&&!cn.helm){cn.helm=true;_crewNamesChanged=true;}
+    });
+    document.querySelectorAll('.student-toggle').forEach(function(cb){
+      if(!cb.checked) return;
+      var cn=_updatedCrewNames.find(function(c){return c.name&&String(c.kennitala)===String(cb.dataset.stuKt);});
+      if(cn&&!cn.student){cn.student=true;_crewNamesChanged=true;}
+    });
+    if(_crewNamesChanged&&_skipperTripId){
+      apiPost('saveTrip',{id:_skipperTripId,crewNames:JSON.stringify(_updatedCrewNames)}).catch(function(){});
+    }
+    window._retCrewTrips=[]; window._retCrewTripsFetched=false;
+    checkouts=checkouts.filter(function(c){return c.id!==coId;});
+    closeModal('returnModal'); renderActiveCheckouts(); renderFleetByCat();
+    logbookLoaded=false; showToast(s('toast.checkedIn'));
+  } catch(e){
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='&#10003; '+s('member.checkInBtn');}
+    if(errEl){errEl.textContent=s('toast.error')+': '+e.message;errEl.style.display='block';}
+  }
+}
+
+// ══ MANUAL TRIP MODAL ════════════════════════════════════════════════════════
+function openManualTripModal() {
+  document.getElementById('rDate').value=todayISO();
+  document.getElementById('rTimeOut').value=''; document.getElementById('rTimeIn').value='';
+  document.getElementById('rNotes').value=''; document.getElementById('manualTripErr').style.display='none';
+  openModal('manualTripModal');
+}
+async function submitManualTrip() {
+  const err=document.getElementById('manualTripErr'),date=document.getElementById('rDate').value,bid=document.getElementById('rBoat').value,lid=document.getElementById('rLocation').value,tout=document.getElementById('rTimeOut').value,tin=document.getElementById('rTimeIn').value;
+  if(!date||!bid){err.textContent=s('lbl.date')+' + '+s('lbl.boat')+' required.';err.style.display='block';return;}
+  const boat=boats.find(b=>b.id===bid)||{},location=locations.find(l=>l.id===lid)||{};
+  const h=tout&&tin?((new Date('2000-01-01T'+tin).getTime()-new Date('2000-01-01T'+tout).getTime())/3600000):0;
+  try {
+    await apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,date,boatId:bid,boatName:boat.name||bid,locationId:lid,locationName:location.name||lid,timeOut:tout,timeIn:tin,hoursDecimal:h>0?h.toFixed(2):'',notes:document.getElementById('rNotes').value.trim(),role:'skipper'});
+    closeModal('manualTripModal'); logbookLoaded=false; showToast(s('toast.saved'));
+  } catch(e){err.textContent=s('toast.error')+': '+e.message;err.style.display='block';}
+}
+
+// ══ FORM SELECTS / UTILS ══════════════════════════════════════════════════════
+function populateFormSelects() {
+  const rBoat=document.getElementById('rBoat'),rLoc=document.getElementById('rLocation');
+  boats.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;rBoat.appendChild(o);});
+  locations.filter(l=>l.type!=='port').forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;rLoc.appendChild(o);});
+}
+function parseJson(v,fallback){if(!v)return fallback;try{return typeof v==='string'?JSON.parse(v):v;}catch(e){return fallback;}}
+
+// ══ STAFF STATUS + FLAG DETAIL (member page) ══════════════════════════════════════════════════
+
+function _renderMemberStaffStatus() {
+  const el = document.getElementById('memberStaffStatus');
+  if (!el) return;
+  const IS = getLang() === 'IS';
+  if (!_staffStatus) { el.innerHTML = ''; return; }
+  const onDuty = _staffStatus.onDuty;
+  const boat   = _staffStatus.supportBoat;
+  const dutyCol  = onDuty ? 'var(--blue)' : 'var(--orange)';
+  const boatCol  = boat   ? 'var(--blue)' : 'var(--orange)';
+  const dutyBg   = onDuty ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
+  const boatBg   = boat   ? 'color-mix(in srgb, var(--blue) 10%, transparent);border-color:color-mix(in srgb, var(--blue) 27%, transparent)' : 'color-mix(in srgb, var(--orange) 10%, transparent);border-color:color-mix(in srgb, var(--orange) 27%, transparent)';
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px">'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + dutyBg + ';color:' + dutyCol + '">'
+    + '🧑 ' + s('wx.staffOnDuty') + '</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid;font-size:11px;font-weight:500;background:' + boatBg + ';color:' + boatCol + '">'
+    + '⛵ ' + s('staff.supportBoat') + '</span>'
+    + '</div>';
+  document.getElementById('wxWidget')?._wxRefreshBadges?.();
+}
+
+// ══ VOLUNTEER NOTIFICATION BADGE ═════════════════════════════════════════════
+// Volunteer events now live on the dedicated /volunteer/ page. The member hub
+// just fetches signups so it can show an "unfilled roles" badge on the button.
+
+async function loadVolunteerSignups() {
+  const hasVolActType = (_volunteerActTypes || []).some(function(a) {
+    return a && (a.volunteer === true || a.volunteer === 'true') && (a.active !== false && a.active !== 'false');
+  });
+  if (!_volunteerEvents.length && !hasVolActType) {
+    renderVolunteerNotifBadge();
+    return;
+  }
+  try {
+    const res = await apiPost('getVolunteerSignups', {});
+    _volunteerSignups = res.signups || [];
+  } catch(e) { _volunteerSignups = []; }
+  renderVolunteerNotifBadge();
+}
+
+// Counts unfilled volunteer-role slots across upcoming events (saved + virtual)
+// and shows a notif badge on the Volunteer button if there are any.
+function renderVolunteerNotifBadge() {
+  const btn = document.getElementById('volunteerBtn');
+  if (!btn) return;
+  // Strip any previous badge before recounting
+  btn.querySelectorAll('.notif-badge').forEach(function(b) { b.remove(); });
+
+  const today = todayISO();
+  const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
+    ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
+    : [];
+  const merged = (typeof mergeVolunteerEvents === 'function')
+    ? mergeVolunteerEvents(_volunteerEvents, virtualEvents)
+    : _volunteerEvents.concat(virtualEvents);
+
+  let unfilled = 0;
+  merged.forEach(function(ev) {
+    // A multi-day event still counts as upcoming while any part of its span
+    // lies on or after today.
+    const _endIso = (ev.endDate && ev.endDate > (ev.date || '')) ? ev.endDate : (ev.date || '');
+    if (_endIso < today) return;
+    const roles = Array.isArray(ev.roles) ? ev.roles : [];
+    roles.forEach(function(role) {
+      const total = Number(role.slots) || 0;
+      if (!total) return;
+      const filled = _volunteerSignups.filter(function(su) {
+        return su.eventId === ev.id && su.roleId === role.id;
+      }).length;
+      if (filled < total) unfilled += (total - filled);
+    });
+  });
+
+  if (!unfilled) return;
+  const badge = document.createElement('span');
+  badge.className = 'notif-badge';
+  badge.textContent = unfilled > 99 ? '99+' : unfilled;
+  badge.title = unfilled + ' ' + s('volunteer.unfilledRoles');
+  btn.appendChild(badge);
+}
+
+// ══ CLUB CALENDARS (inline embed) ════════════════════════════════════════════
+function renderClubCalendars() {
+  var el = document.getElementById('clubCalendarList');
+  if (!el) return;
+  if (!_clubCalendars.length) {
+    el.innerHTML = '<div class="empty-note">' + (s('member.calEmpty') || '') + '</div>';
+    return;
+  }
+  el.innerHTML = _clubCalendars.map(function(c) {
+    var cid = encodeURIComponent(c.calendarId);
+    var src = 'https://calendar.google.com/calendar/embed'
+      + '?src=' + cid
+      + '&ctz=Atlantic/Reykjavik'
+      + '&mode=AGENDA'
+      + '&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0';
+    var openUrl = 'https://calendar.google.com/calendar/u/0/r?cid=' + cid;
+    return '<div style="margin-bottom:14px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'
+      +   '<span style="font-size:11px;font-weight:500;color:var(--text)">' + esc(c.name) + '</span>'
+      +   '<a href="' + openUrl + '" target="_blank" rel="noopener" style="font-size:11px;color:var(--brass-fg);text-decoration:none">' + esc(s('member.calOpen')) + ' \u2197</a>'
+      + '</div>'
+      + '<div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
+      +   '<iframe src="' + src + '" style="border:0;width:100%;height:380px;display:block" frameborder="0"></iframe>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+
+// ─── Named wrappers for inline handlers that referenced locals ─────────────
+function _renderLaunchFormFromState() { renderLaunchForm(launchBoat); }
+function _renderLaunchFormById(id) {
+  var b = (typeof boats !== 'undefined') ? boats.find(function (x) { return x.id === id; }) : null;
+  if (b) renderLaunchForm(b);
+}
+
+// ─── Delegated handlers for data-member-* attrs ─────────────────────────────
+// Replaces all inline onclick / onchange / oninput attributes so the page
+// loads under strict script-src.
+(function () {
+  if (typeof document === 'undefined' || document._memberListeners) return;
+  document._memberListeners = true;
+
+  function argsFrom(el) {
+    var a = [];
+    if ('memberArg'  in el.dataset) a.push(el.dataset.memberArg);
+    if ('memberArg2' in el.dataset) a.push(el.dataset.memberArg2);
+    return a;
+  }
+
+  document.addEventListener('click', function (e) {
+    // Click-outside-to-close
+    var closeSelf = e.target.closest('[data-member-close-self]');
+    if (closeSelf && e.target === closeSelf) {
+      closeModal(closeSelf.dataset.memberCloseSelf);
+      return;
+    }
+    // Close-button targeting a modal
+    var close = e.target.closest('[data-member-close]');
+    if (close) {
+      closeModal(close.dataset.memberClose);
+      return;
+    }
+    // Generic click dispatcher
+    var clk = e.target.closest('[data-member-click]');
+    if (clk) {
+      var fn = clk.dataset.memberClick;
+      if (typeof window[fn] === 'function') {
+        window[fn].apply(null, argsFrom(clk));
+      }
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    // Assignment onchange: data-member-assign="_retHelmSelf" → window._retHelmSelf = checkbox.checked
+    var a = e.target.closest('[data-member-assign]');
+    if (a) {
+      window[a.dataset.memberAssign] = a.checked;
+      return;
+    }
+    // change-with-this: data-member-change-this="_handleRetTrack" → fn(input)
+    var ct = e.target.closest('[data-member-change-this]');
+    if (ct && typeof window[ct.dataset.memberChangeThis] === 'function') {
+      window[ct.dataset.memberChangeThis](ct);
+      return;
+    }
+    // No-arg change
+    var c = e.target.closest('[data-member-change]');
+    if (c && typeof window[c.dataset.memberChange] === 'function') {
+      window[c.dataset.memberChange]();
+    }
+  });
+
+  document.addEventListener('input', function (e) {
+    // HH:MM auto-format — member variant slices at 2, caps at 4 chars
+    var fmt = e.target.closest('[data-member-time-format]');
+    if (fmt) {
+      var v = fmt.value.replace(/[^0-9]/g, '');
+      if (v.length >= 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
+      fmt.value = v;
+      return;
+    }
+    // No-arg input dispatcher
+    var el = e.target.closest('[data-member-input]');
+    if (el && typeof window[el.dataset.memberInput] === 'function') {
+      window[el.dataset.memberInput]();
+    }
+  });
+})();
