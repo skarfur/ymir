@@ -379,7 +379,7 @@ function gcalUpsertEvent_(calendarId, existingEventId, title, start, end, descri
   try {
     if (!calendarId) return existingEventId || '';
     var cal = CalendarApp.getCalendarById(calendarId);
-    if (!cal) { console.error('gcal: calendar not found ' + calendarId); return existingEventId || ''; }
+    if (!cal) { Logger.log('gcal: calendar not found ' + calendarId); return existingEventId || ''; }
     if (action === 'delete') {
       if (existingEventId) {
         var ev = cal.getEventById(existingEventId);
@@ -399,7 +399,7 @@ function gcalUpsertEvent_(calendarId, existingEventId, title, start, end, descri
     var created = cal.createEvent(title, start, end, { description: description || '' });
     return created.getId();
   } catch (e) {
-    console.error('gcalUpsertEvent_ failed: ' + e);
+    Logger.log('gcalUpsertEvent_ failed: ' + e);
     return existingEventId || '';
   }
 }
@@ -447,7 +447,7 @@ function syncSlotToCalendar_(slotId, action) {
     if (newId && newId !== (slot.gcalEventId || '')) {
       updateRow_('reservationSlots', 'id', slotId, { gcalEventId: newId });
     }
-  } catch (e) { console.error('syncSlotToCalendar_ failed: ' + e); }
+  } catch (e) { Logger.log('syncSlotToCalendar_ failed: ' + e); }
 }
 
 // Delete the calendar event for a slot that's about to be (or has been)
@@ -462,7 +462,7 @@ function deleteSlotCalendarEvent_(slotRow) {
     var cal = getCharterCalendarForBoat_(boat, cfgMap);
     if (!cal.calendarId) return; // no calendar configured → nothing to delete
     gcalUpsertEvent_(cal.calendarId, slotRow.gcalEventId, '', null, null, '', 'delete');
-  } catch (e) { console.error('deleteSlotCalendarEvent_ failed: ' + e); }
+  } catch (e) { Logger.log('deleteSlotCalendarEvent_ failed: ' + e); }
 }
 
 // Sync the activities array of a daily log entry to per-activity-type
@@ -514,7 +514,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
       if (!t || !t.calendarId) return;
       gcalUpsertEvent_(t.calendarId, a.gcalEventId, '', null, null, '', 'delete');
     });
-  } catch (e) { console.error('syncDailyLogActivities_ failed: ' + e); }
+  } catch (e) { Logger.log('syncDailyLogActivities_ failed: ' + e); }
 }
 
 // Returns true if [startTime, endTime) overlaps any existing slot on the same
