@@ -889,8 +889,8 @@ function populateActSubtypes() {
   const subs = typeObj && typeObj.subtypes
     ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
     : [];
-  if (!subs.length) { field.style.display = 'none'; grid.innerHTML = ''; return; }
-  field.style.display = '';
+  if (!subs.length) { field.classList.add('d-none'); grid.innerHTML = ''; return; }
+  field.classList.remove('d-none');
   grid.innerHTML = '';
   subs.forEach(function(st) {
     const btn = document.createElement('button');
