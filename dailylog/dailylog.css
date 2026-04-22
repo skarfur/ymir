@@ -1,0 +1,98 @@
+/* ── Date nav ── */
+.date-nav { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.date-nav button { background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:inherit; font-size:12px; padding:5px 12px; cursor:pointer; transition:border-color .2s,color .2s; }
+.date-nav button:hover { border-color:var(--brass); color:var(--brass-fg); }
+.date-big { font-size:13px; font-weight:400; color:var(--muted); letter-spacing:.5px; flex:1; text-align:center; }
+.date-hero { font-size:28px; font-weight:500; color:var(--text); text-align:center; margin:4px 0 12px; line-height:1.1; }
+.signoff-badge { display:inline-flex; align-items:center; gap:6px;
+  background:var(--green)18; border:1px solid var(--green)44; color:var(--green);
+  border-radius:var(--radius-sm); padding:4px 10px; font-size:11px; }
+.readonly-badge { display:inline-flex; align-items:center;
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+  border-radius:var(--radius-sm); padding:4px 10px; font-size:11px; }
+
+/* ── Section headings ── */
+.section-heading { font-size:9px; color:var(--muted); letter-spacing:1px;
+  margin:20px 0 8px; display:flex; align-items:center; justify-content:space-between; }
+
+/* ── Cards ── */
+.content-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:4px; box-shadow:var(--shadow-sm); }
+
+/* ── Checklists ── */
+.cl-progress-line { font-size:11px; color:var(--muted); margin-bottom:8px; }
+.cl-progress-line span { color:var(--brass-fg); font-weight:500; }
+.cl-bar-wrap { height:4px; background:var(--border); border-radius:2px; margin-bottom:12px; overflow:hidden; }
+.cl-bar      { height:100%; background:var(--brass); border-radius:2px; transition:width .3s; }
+.checklist-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.checklist-item:last-child { border-bottom:none; }
+.checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--brass); flex-shrink:0; margin-top:2px; cursor:pointer; }
+.item-text { font-size:13px; transition:opacity .15s; }
+.checklist-item.done .item-text { opacity:.35; text-decoration:line-through; }
+
+/* ── Activities ── */
+.activity-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.activity-row:last-child { border-bottom:none; }
+.activity-info { flex:1; }
+.activity-name { font-weight:500; }
+.activity-meta { color:var(--muted); font-size:11px; margin-top:3px; }
+.activity-note { color:var(--text); font-size:12px; margin-top:4px; opacity:.65; }
+.del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
+.del-btn:hover { color:var(--red); }
+
+/* ── Trips ── */
+.trip-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; }
+.trip-row:last-child { border-bottom:none; }
+.trip-row:hover { background:var(--card); margin:0 -16px; padding-left:16px; padding-right:16px; border-radius:4px; }
+.trip-boat { font-weight:500; flex:1; }
+.trip-meta { color:var(--muted); font-size:11px; margin-top:3px; }
+.trip-times { font-size:12px; color:var(--muted); text-align:right; flex-shrink:0; }
+
+/* ── Incident button ── */
+.incident-btn { display:flex; align-items:center; gap:12px; padding:12px 16px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  text-decoration:none; color:var(--text); transition:border-color .2s,box-shadow .2s; margin-bottom:4px; cursor:pointer; box-shadow:var(--shadow-sm); }
+.incident-btn:hover { border-color:var(--brass); box-shadow:var(--shadow-md); }
+.incident-icon { font-size:22px; flex-shrink:0; }
+.incident-label { font-size:13px; font-weight:500; }
+.incident-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* ── Weather log ── */
+.wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
+.wx-snap-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.wx-snap-time { color:var(--brass-fg); font-weight:500; font-size:14px; flex:1; }
+.wx-snap-flag { font-size:16px; }
+.wx-snap-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; }
+.wx-snap-label { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-bottom:2px; }
+.wx-snap-val { font-size:12px; color:var(--text); font-weight:500; }
+
+/* ── Tides (auto-filled widget) ── */
+
+/* ── Save bar ── */
+.save-bar { position:fixed; bottom:0; left:0; right:0; background:var(--card);
+  border-top:1px solid var(--border); padding:10px 16px; display:flex;
+  align-items:center; gap:10px; z-index:100; max-width:720px; margin:0 auto; }
+.save-ok  { color:var(--green); font-size:12px; flex:1; }
+.save-err { color:var(--red);   font-size:12px; flex:1; }
+
+/* ── Activity type buttons ── */
+.type-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.type-btn { padding:5px 12px; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); font-size:12px; font-family:inherit; color:var(--text);
+  cursor:pointer; transition:all .2s; }
+.type-btn.selected { background:var(--brass)22; border-color:var(--brass); color:var(--brass-fg); }
+
+/* ── Trip detail modal ── */
+.dl-drow { display:flex; gap:12px; padding:5px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.dl-drow:last-child { border-bottom:none; }
+.dl-dlbl { font-size:9px; color:var(--muted); letter-spacing:.8px; width:90px; flex-shrink:0; padding-top:2px; }
+.dl-dval { flex:1; color:var(--text); }
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .wx-snap-grid{grid-template-columns:1fr}
+  .save-bar{padding:8px 12px}
+  .dl-drow{flex-direction:column;gap:2px}
+  .dl-dlbl{width:auto;padding-top:0}
+  .incident-btn{padding:10px 12px}
+}

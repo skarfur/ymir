@@ -14,75 +14,7 @@
 <script src="../shared/dateutil.js"></script>
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/volunteer.js" defer></script>
-<style>
-/* ── Tab bar ── */
-.vp-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; }
-.vp-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-  font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
-  white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
-.vp-tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
-.vp-tab-btn:hover:not(.active) { color:var(--text); }
-
-/* ── Section headers ── */
-.vp-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-
-/* Shared volunteer card styles live in shared/style.css (.vp-card,
-   .vp-role, .vp-chip, .vp-btn, …). Page-local overrides below. */
-.vp-filter-btn { padding:4px 10px; font-size:9px; letter-spacing:.6px; text-transform:uppercase; }
-.vp-filter-btn.active { background:var(--brass); color:#000; border-color:var(--brass); }
-
-/* ── Calendar (month view) ── */
-.vp-cal { border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; background:var(--card); }
-.vp-cal-hdr { display:flex; align-items:center; justify-content:space-between; padding:10px 12px;
-  border-bottom:1px solid var(--border); background:var(--surface); gap:8px; flex-wrap:wrap; }
-.vp-cal-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:.5px; }
-.vp-cal-nav { display:flex; gap:6px; align-items:center; }
-.vp-cal-nav button { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-  color:var(--text); font-family:inherit; font-size:11px; padding:4px 10px; cursor:pointer;
-  transition:border-color .15s, color .15s; min-width:32px; }
-.vp-cal-nav button:hover { border-color:var(--brass); color:var(--brass-fg); }
-.vp-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
-.vp-cal-dow { font-size:8px; color:var(--muted); text-align:center; padding:6px 4px; letter-spacing:.6px;
-  background:var(--surface); border-bottom:1px solid var(--border); text-transform:uppercase; font-weight:500; }
-.vp-cal-day { min-height:78px; border-right:1px solid var(--border)44; border-bottom:1px solid var(--border)44;
-  padding:4px; position:relative; box-sizing:border-box; }
-.vp-cal-day:nth-child(7n) { border-right:none; }
-.vp-cal-day.other-month { background:var(--surface); opacity:.55; }
-.vp-cal-day.today .vp-cal-day-num { color:var(--brass-fg); font-weight:600; }
-.vp-cal-day-num { font-size:10px; color:var(--muted); margin-bottom:3px; }
-.vp-cal-ev { display:block; margin-top:2px; padding:2px 5px; border-radius:3px;
-  background:var(--brass)1f; border-left:2px solid var(--brass); font-size:9px; color:var(--text);
-  cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:background .15s; }
-.vp-cal-ev:hover { background:var(--brass)33; }
-.vp-cal-ev.full { background:var(--green)18; border-left-color:var(--green); }
-.vp-cal-ev.mine { background:var(--brass); border-left-width:3px; color:#0b1f38; font-weight:600; }
-.vp-cal-ev.mine:hover { background:var(--brass-l); }
-.vp-cal-ev-check { display:inline-block; margin-right:3px; font-weight:700; }
-/* Multi-day spans: middle days show a dashed border to hint at continuation */
-.vp-cal-ev-span { border-left-style:dashed; }
-.vp-cal-ev-span-start { border-left-style:solid; }
-.vp-cal-ev-span-end { opacity:.85; }
-.vp-cal-ev-more { display:block; margin-top:2px; font-size:9px; color:var(--muted); padding:1px 4px; cursor:pointer; }
-.vp-cal-ev-more:hover { color:var(--brass-fg); }
-/* Day cell dot for days where the user has at least one signup */
-.vp-cal-day.has-mine .vp-cal-day-num::after { content:''; display:inline-block; width:5px; height:5px;
-  border-radius:50%; background:var(--brass); margin-left:5px; vertical-align:middle; }
-
-/* ── Empty / placeholder notes ── */
-.vp-empty { font-size:11px; color:var(--muted); padding:14px; text-align:center;
-  border:1px dashed var(--border); border-radius:var(--radius-md); }
-
-/* ── Day-detail modal ── */
-.vp-day-list { display:flex; flex-direction:column; gap:10px; }
-
-/* ── Responsive ── */
-@media(max-width:600px){
-  .vp-cal-day { min-height:62px; padding:3px; }
-  .vp-cal-day-num { font-size:9px; }
-  .vp-cal-ev { font-size:8px; padding:1px 3px; }
-  .vp-role-right { align-items:stretch; }
-}
-</style>
+<link rel="stylesheet" href="volunteer.css">
 </head>
 <body>
 <header id="ym-header">
