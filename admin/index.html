@@ -21,132 +21,7 @@
   <script src="../shared/calendar.js"></script>
   <script src="../shared/boat-modal.js"></script>
   <script src="../shared/slot-modal.js"></script>
-  <style>
-    /* ── Tab bar ── */
-    .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
-    .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-      font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
-      margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
-    .tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
-    .tab-btn:hover:not(.active) { color:var(--text); }
-
-    /* ── Tab dropdown (mobile) ── */
-    .tab-select { display:none; width:100%; padding:10px 12px; margin-bottom:20px;
-      font-family:inherit; font-size:13px; color:var(--text); background:var(--surface);
-      border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; }
-
-    /* ── Collapsible section ── */
-    .col-section { margin-bottom:16px; }
-    .col-head { display:flex; align-items:center; justify-content:space-between;
-      padding:10px 14px; background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius-md); cursor:pointer; user-select:none; transition:border-color .2s,box-shadow .2s; box-shadow:var(--shadow-sm); }
-    .col-head:hover { border-color:var(--brass)55; }
-    .col-head.open { border-radius:var(--radius-md) var(--radius-md) 0 0; border-bottom-color:transparent; box-shadow:none; }
-    .col-title { font-size:11px; letter-spacing:.8px; color:var(--muted); display:flex; align-items:center; gap:10px; }
-    .col-title strong { color:var(--text); font-size:13px; letter-spacing:0; }
-    .col-toggle { font-size:11px; color:var(--muted); transition:transform .2s; }
-    .col-toggle.open { transform:rotate(180deg); }
-    .col-body { border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-md) var(--radius-md);
-      padding:14px 16px; background:var(--card); box-shadow:var(--shadow-sm); }
-
-    /* ── Member rows ── */
-    .member-row { display:flex; align-items:center; gap:10px; padding:9px 0;
-      border-bottom:1px solid var(--border)44; font-size:12px; }
-    .member-row:last-child { border-bottom:none; }
-    .member-name { font-weight:500; flex:1; color:var(--text); }
-    .member-kt   { color:var(--muted); font-size:11px; width:88px; flex-shrink:0; }
-
-    /* ── Boat cards ── */
-    .boat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
-    .boat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; box-shadow:var(--shadow-sm); }
-    .boat-card.oos { opacity:.55; }
-    .boat-card-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; }
-    .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
-
-    /* ── Generic row ── */
-    .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;
-      border-bottom:1px solid var(--border)44; font-size:12px; }
-    .list-row:last-child { border-bottom:none; }
-    .list-name { flex:1; color:var(--text); }
-
-    /* ── Checklist rows ── */
-    .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
-      border-bottom:1px solid var(--border)44; font-size:12px; }
-    .cl-row:last-child { border-bottom:none; }
-    .cl-phase { width:50px; font-size:10px; color:var(--brass-fg); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
-    .cl-sort-input { width: 42px !important; max-width: 42px; min-width: 42px; text-align:center; font-size:11px; padding: 2px 4px !important; border:1px solid var(--border);
-      border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0;
-      -moz-appearance:textfield; appearance:textfield; }
-    .cl-sort-input::-webkit-inner-spin-button,
-    .cl-sort-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-    .cl-sort-input:focus { border-color:var(--brass); outline:none; }
-    .cl-update-order { font-size:11px; margin-top:6px; }
-
-    /* ── Action buttons ── */
-    .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
-      font-size:11px; font-family:inherit; padding:3px 8px; border-radius:var(--radius-sm); transition:all .2s; }
-    .row-edit:hover { color:var(--brass-fg); border-color:var(--brass)55; }
-    .row-del  { background:none; border:none; color:var(--border); cursor:pointer;
-      font-size:16px; padding:2px 4px; line-height:1; transition:color .2s; }
-    .row-del:hover { color:var(--red); }
-
-    /* ── Search ── */
-    .search-bar { position:relative; }
-    .search-bar input { padding-left:30px; }
-    .search-bar::before { content:"⌕"; position:absolute; left:10px; top:50%;
-      transform:translateY(-50%); color:var(--muted); font-size:15px; pointer-events:none; }
-
-    /* ── Import ── */
-    .import-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; box-shadow:var(--shadow-sm); }
-    .upload-zone { border:2px dashed var(--border); border-radius:var(--radius-md); padding:28px;
-      text-align:center; cursor:pointer; transition:border-color .2s;
-      display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .upload-zone:hover { border-color:var(--brass); }
-    .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:16px; }
-    .col-hint-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; align-items:flex-start; }
-    .col-hint-field { color:var(--brass-fg); width:120px; flex-shrink:0; }
-    .col-hint-vals  { color:var(--muted); }
-    .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
-    .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
-    .chip-green  { background:color-mix(in srgb, var(--green) 15%, transparent);  color:var(--green);  border:1px solid color-mix(in srgb, var(--green) 30%, transparent); }
-    .chip-brass  { background:color-mix(in srgb, var(--brass) 15%, transparent);  color:var(--brass-fg);  border:1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
-    .chip-orange { background:color-mix(in srgb, var(--orange) 15%, transparent); color:var(--orange); border:1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
-    .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-    .chip-red    { background:color-mix(in srgb, var(--red) 15%, transparent);    color:var(--red);    border:1px solid color-mix(in srgb, var(--red) 30%, transparent); }
-    .import-list { max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); margin-top:6px; }
-    .import-row  { display:flex; gap:10px; padding:6px 12px; border-bottom:1px solid var(--border)33;
-      font-size:11px; align-items:center; }
-    .import-row:last-child { border-bottom:none; }
-    .import-row label { display:flex; align-items:center; gap:6px; cursor:pointer; }
-    .import-row input[type=checkbox] { accent-color:var(--brass); }
-    .import-ambig { background:#9b59b622; border:1px solid #9b59b644; border-radius:var(--radius-sm); padding:8px 12px;
-      font-size:11px; margin-bottom:6px; display:flex; gap:10px; align-items:center; }
-    .import-ambig-btns button { font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid var(--border);
-      background:var(--surface); color:var(--text); cursor:pointer; margin-left:4px; }
-    .import-ambig-btns button:hover { border-color:var(--brass); }
-    .import-ambig-btns button.selected { background:var(--brass); color:#000; border-color:var(--brass); }
-
-    .minor-badge { font-size:10px; background:color-mix(in srgb, var(--yellow) 15%, transparent); color:var(--yellow);
-      border:1px solid color-mix(in srgb, var(--yellow) 30%, transparent); border-radius:3px; padding:1px 5px; }
-    .oos-badge   { font-size:10px; background:var(--red)22; color:var(--red);
-      border:1px solid var(--red)44; border-radius:3px; padding:1px 5px; }
-
-    /* ── Responsive ── */
-    @media(max-width:600px){
-      #settingsTabBar{display:none}
-      .tab-select{display:block}
-      .tab-btn{padding:8px 10px;font-size:10px;letter-spacing:.5px}
-      .member-kt{width:auto}
-      .cl-phase{width:40px;font-size:9px}
-      .col-hint-field{width:auto}
-      .col-hint-row{flex-direction:column;gap:2px}
-      .boat-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-      .boat-card-actions{flex-wrap:wrap}
-      .import-ambig{flex-direction:column;gap:6px}
-      .col-body{padding:10px 12px}
-      .search-bar{min-width:0!important}
-    }
-  </style>
+  <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 <div class="page">
@@ -216,7 +91,7 @@
               <div class="text-sm text-muted mb-4">Admin/staff roles never overwritten.</div>
               <div class="import-summary" id="importSummary"></div>
               <div id="importLists"></div>
-              <div id="importError" class="text-red text-md mb-8 hidden" style="padding:8px;background:color-mix(in srgb, var(--red) 8%, transparent);border-radius:4px;border:1px solid color-mix(in srgb, var(--red) 27%, transparent)"></div>
+              <div id="importError" class="text-red text-md mb-8 hidden rounded-4" style="padding:8px;background:color-mix(in srgb, var(--red) 8%, transparent);border:1px solid color-mix(in srgb, var(--red) 27%, transparent)"></div>
               <div class="btn-row mt-14">
                 <button class="btn btn-secondary" data-admin-click="resetImport" data-s="admin.backToList"></button>
                 <button class="btn btn-primary" data-admin-click="confirmImport" id="confirmImportBtn" data-s="admin.confirmImport"></button>
@@ -229,7 +104,7 @@
               <div class="text-lg fw-500 text-green" id="importDoneMsg"></div>
               <div style="margin-top:18px">
                 <button class="btn btn-secondary" data-admin-click="resetImport">Import another</button>
-                <button class="btn btn-primary ml-auto" data-admin-click="showMemberSub" data-admin-arg="list" style="margin-left:8px">View members</button>
+                <button class="btn btn-primary ml-auto ml-8" data-admin-click="showMemberSub" data-admin-arg="list">View members</button>
               </div>
             </div>
           </div>
@@ -320,18 +195,18 @@
       </div>
 
       <!-- Launch / Landing checklists per category -->
-      <div class="section-divider" style="margin-top:8px">
+      <div class="section-divider mt-8">
         <div class="section-label mb-12">PRE-LAUNCH &amp; LANDING CHECKLISTS (per category)</div>
         <div class="flex-center gap-8 mb-8">
           <label class="text-sm text-muted">Category:</label>
           <select id="launchCLCatFilter" data-admin-change="renderLaunchCLSections"
-            style="font-size:11px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)">
+            class="text-xs bg-surface border-muted rounded-4" style="padding:3px 8px;color:var(--text)">
           </select>
         </div>
         <div id="launchCLCard">
-          <div class="section-label mb-6" style="font-size:9px">LAUNCH</div>
+          <div class="section-label mb-6 text-9">LAUNCH</div>
           <div id="launchCLLaunchList"></div>
-          <div class="section-label mb-6" style="font-size:9px;margin-top:12px">LANDING</div>
+          <div class="section-label mb-6 text-9 mt-12">LANDING</div>
           <div id="launchCLLandingList"></div>
         </div>
         <div style="padding:8px 0 4px">
@@ -385,10 +260,10 @@
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:8px 0 4px" class="hidden" id="certCatsAddWrap">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="newCatInputEN" placeholder="Name (EN)" style="flex:1;min-width:120px;font-size:12px">
-            <input type="text" id="newCatInputIS" placeholder="Nafn (IS)" style="flex:1;min-width:120px;font-size:12px">
-            <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" data-admin-click="addCertCategory">+ Add</button>
+          <div class="d-flex gap-8 items-center flex-wrap">
+            <input type="text" id="newCatInputEN" placeholder="Name (EN)" class="flex-1 text-md" style="min-width:120px">
+            <input type="text" id="newCatInputIS" placeholder="Nafn (IS)" class="flex-1 text-md" style="min-width:120px">
+            <button class="btn btn-primary text-xs" style="padding:5px 12px" data-admin-click="addCertCategory">+ Add</button>
           </div>
         </div>
       </div>
@@ -445,11 +320,11 @@
             </div>
             <div class="field mb-10">
               <label class="text-sm">Email recipients (comma-separated)</label>
-              <textarea id="alertEmailList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
+              <textarea id="alertEmailList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
             </div>
             <div class="field mb-14">
               <label class="text-sm">SMS recipients (comma-separated)</label>
-              <textarea id="alertSmsList" rows="2" class="text-sm" style="width:100%;resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
+              <textarea id="alertSmsList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
             </div>
           </div>
           <button class="btn btn-primary" data-admin-click="saveAlertConfig">Save alert settings</button>
@@ -462,14 +337,14 @@
     <div id="tab-flags" class="hidden">
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
-          <div class="col-title"><span data-s="admin.scoreThresholds"></span> <span style="font-size:10px;color:var(--muted);font-weight:normal">(<span data-s="admin.scoreThresholdsSub"></span>)</span></div>
+          <div class="col-title"><span data-s="admin.scoreThresholds"></span> <span class="text-10 text-muted" style="font-weight:normal">(<span data-s="admin.scoreThresholdsSub"></span>)</span></div>
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="flagThresholdsCard">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+          <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(4,1fr)">
             <div class="field"><label style="color:var(--yellow)">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" data-admin-input="updateFlagPreview"></div>
             <div class="field"><label style="color:var(--orange)">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label style="color:var(--red)">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label class="text-red">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" data-admin-input="updateFlagPreview"></div>
             <div class="field"><label style="color:#999">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" data-admin-input="updateFlagPreview"></div>
           </div>
         </div>
@@ -477,46 +352,46 @@
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.windScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWindCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.windScoringHint"></div>
-          <div id="fcWindBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" data-admin-click="fcAddWindBand" data-s="admin.addBand"></button>
+          <div class="text-xs text-muted mb-10" data-s="admin.windScoringHint"></div>
+          <div id="fcWindBands" class="d-flex flex-col gap-6"></div>
+          <button class="btn btn-secondary mt-8 text-xs" data-admin-click="fcAddWindBand" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.dirGustMods"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagDirCard">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field"><label data-s="admin.windDirMod"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.windDirModHint"></div></div>
-            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div style="font-size:10px;color:var(--muted);margin-top:3px" data-s="admin.gustMod2Hint"></div></div></div>
+          <div class="gap-12 mb-12" style="display:grid;grid-template-columns:1fr 1fr">
+            <div class="field"><label data-s="admin.windDirMod"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirModHint"></div></div>
+            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod2Hint"></div></div></div>
           </div>
           <div class="field"><label data-s="admin.windDirDirs"></label><input type="text" id="fcWindDirDirs" value="" placeholder="E,NE,SE" data-admin-input="updateFlagPreview"></div>
         </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.waveScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagWaveCard">
-          <div id="fcWaveBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" data-admin-click="fcAddWaveBand" data-s="admin.addBand"></button>
+          <div id="fcWaveBands" class="d-flex flex-col gap-6"></div>
+          <button class="btn btn-secondary mt-8 text-xs" data-admin-click="fcAddWaveBand" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.sstScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagSstCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.sstHint"></div>
-          <div id="fcSstBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" data-admin-click="fcAddSstBand" data-s="admin.addBand"></button>
+          <div class="text-xs text-muted mb-10" data-s="admin.sstHint"></div>
+          <div id="fcSstBands" class="d-flex flex-col gap-6"></div>
+          <button class="btn btn-secondary mt-8 text-xs" data-admin-click="fcAddSstBand" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.airTempScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagFeelsCard" data-note="uses apparent_temperature, falls back to temperature_2m">
-          <div id="fcFeelsBands" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-secondary" style="margin-top:8px;font-size:11px" data-admin-click="fcAddFeelsBand" data-s="admin.addBand"></button>
+          <div id="fcFeelsBands" class="d-flex flex-col gap-6"></div>
+          <button class="btn btn-secondary mt-8 text-xs" data-admin-click="fcAddFeelsBand" data-s="admin.addBand"></button>
         </div>
       </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.visScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagVisCard">
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+          <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(3,1fr)">
             <div class="field"><label data-s="admin.visGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
             <div class="field"><label data-s="admin.visReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
             <div class="field"><label data-s="admin.visPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
@@ -526,20 +401,20 @@
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.flagLabelsAdvice"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagAdviceCard">
-          <div id="fcFlagAdvice" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px"></div>
+          <div id="fcFlagAdvice" class="d-flex flex-col gap-12 mb-14"></div>
         </div>
       </div>
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section><div class="col-title" data-s="admin.livePreview"></div><span class="col-toggle open">▼</span></div>
         <div class="col-body" id="flagPreviewCard">
-          <div id="fcFlagPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+          <div id="fcFlagPreview" class="d-flex gap-8 flex-wrap mb-14"></div>
         </div>
       </div>
-      <div id="fcValidationError" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px">
+      <div id="fcValidationError" class="text-red text-xs mb-8 d-none"></div>
+      <div class="d-flex gap-8 items-center" style="margin-bottom:24px">
         <button class="btn btn-primary" data-admin-click="saveFlagConfig" data-s="admin.saveFlagSettings"></button>
         <button class="btn btn-secondary" data-admin-click="resetFlagConfig" data-s="admin.resetDefaults"></button>
-        <span id="fcSaveMsg" style="font-size:11px;margin-left:4px"></span>
+        <span id="fcSaveMsg" class="text-xs ml-4"></span>
       </div>
     </div><!-- /tab-flags -->
 
@@ -551,25 +426,25 @@
           <span class="col-toggle open">▼</span>
         </div>
         <div class="col-body" id="passportAdminCard">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="passport.csvHelp"></div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <input type="file" id="passportCsvFile" accept=".csv,text/csv" style="font-size:11px">
-            <button class="btn btn-primary" style="font-size:11px" data-admin-click="passportImportCsv" data-s="passport.importCsv">Import CSV</button>
-            <button class="btn btn-secondary" style="font-size:11px" data-admin-click="passportExportCsv" data-s="passport.exportCsv">Export CSV</button>
+          <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="passport.csvHelp"></div>
+          <div class="d-flex gap-8 mb-12 flex-wrap">
+            <input type="file" id="passportCsvFile" accept=".csv,text/csv" class="text-xs">
+            <button class="btn btn-primary text-xs" data-admin-click="passportImportCsv" data-s="passport.importCsv">Import CSV</button>
+            <button class="btn btn-secondary text-xs" data-admin-click="passportExportCsv" data-s="passport.exportCsv">Export CSV</button>
           </div>
-          <div id="passportAdminPreview" style="font-size:11px"></div>
+          <div id="passportAdminPreview" class="text-xs"></div>
         </div>
       </div>
     </div>
 
     <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
     <div id="tab-slotCal" class="hidden">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
-      <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
+      <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
+      <div class="border-muted rounded-6 mb-14" style="padding:12px">
+        <div class="text-9 text-muted mb-8" style="letter-spacing:1px">GOOGLE CALENDAR SYNC</div>
         <div class="grid2">
           <div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px">Rowing calendar</div>
+            <div class="text-xs fw-600 mb-4">Rowing calendar</div>
             <div class="field">
               <label>Calendar ID</label>
               <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
@@ -580,7 +455,7 @@
             </div>
           </div>
           <div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px">Keelboat calendar</div>
+            <div class="text-xs fw-600 mb-4">Keelboat calendar</div>
             <div class="field">
               <label>Calendar ID</label>
               <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
@@ -591,16 +466,16 @@
             </div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <div class="d-flex gap-8 items-center mt-8">
           <button class="btn btn-primary" data-admin-click="saveCharterCalendars">Save calendar settings</button>
-          <span id="charterCalSaveMsg" style="font-size:11px"></span>
+          <span id="charterCalSaveMsg" class="text-xs"></span>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">Ymir only adds, updates, or deletes events it created itself — other items on the calendar are never touched. Use a dedicated secondary calendar and share it with the people who need to see bookings.</div>
+        <div class="text-10 text-muted mt-6">Ymir only adds, updates, or deletes events it created itself — other items on the calendar are never touched. Use a dedicated secondary calendar and share it with the people who need to see bookings.</div>
       </div>
-      <div style="margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-          <select id="slotCatFilter" data-admin-change="loadSlotCalendar" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-          <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px">
+      <div class="mb-12">
+        <div class="d-flex items-center gap-10 mb-10 flex-wrap">
+          <select id="slotCatFilter" data-admin-change="loadSlotCalendar" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
+          <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px">
             <option value="" data-s="slot.allBoats">All boats</option>
           </select>
           <div class="slot-week-nav">
@@ -614,20 +489,20 @@
         </div>
       </div>
       <div id="slotCalGrid" style="overflow-x:auto"></div>
-      <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted);flex-wrap:wrap">
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+      <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
+        <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+        <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
       </div>
     </div>
 
     <!-- ══ CLUB CALENDARS ════════════════════════════════════════════════ -->
     <div id="tab-clubCal" class="hidden">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-s="admin.calDesc"></div>
+      <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.calDesc"></div>
       <div id="clubCalList"></div>
-      <button class="btn btn-secondary" style="margin-top:8px" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <button class="btn btn-secondary mt-8" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
+      <div class="d-flex gap-8 items-center mt-12">
         <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
-        <span id="clubCalSaveMsg" style="font-size:11px"></span>
+        <span id="clubCalSaveMsg" class="text-xs"></span>
       </div>
     </div>
 
@@ -635,7 +510,7 @@
 
     <!-- ══ TOP: PAYROLL (embedded) ═══════════════════════════════════════════ -->
     <div id="top-payroll" class="hidden">
-      <iframe id="payrollFrame" src="about:blank" style="width:100%;border:none;min-height:80vh"></iframe>
+      <iframe id="payrollFrame" src="about:blank" class="w-full border-none" style="min-height:80vh"></iframe>
     </div>
 
 <!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
@@ -662,22 +537,22 @@
         </select>
       </div>
     </div>
-    <div id="minorFields" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px" data-s="lbl.guardian"></div>
+    <div id="minorFields" class="rounded-6 mb-12" style="border:1px solid var(--border)44;padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="lbl.guardian"></div>
       <div class="field"><label data-s="admin.guardianName"></label><input type="text" id="mGuardianName"></div>
       <div class="grid2">
         <div class="field"><label data-s="admin.guardianKt"></label><input type="text" id="mGuardianKt" maxlength="10"></div>
         <div class="field"><label data-s="admin.guardianPhone"></label><input type="tel" id="mGuardianPhone"></div>
       </div>
     </div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="check-row mb-12">
       <input type="checkbox" id="mActive" checked> <label for="mActive" data-s="lbl.active"></label>
     </div>
     <!-- Password status & reset (existing members only) -->
-    <div id="mPwBox" class="hidden" style="border:1px solid var(--border)44;border-radius:6px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <div id="mPwBox" class="hidden rounded-6 mb-12 d-flex items-center justify-between gap-10" style="border:1px solid var(--border)44;padding:10px 12px">
       <div>
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px" data-s="admin.password"></div>
-        <div id="mPwStatus" style="font-size:12px"></div>
+        <div class="text-9 text-muted mb-4" style="letter-spacing:1px" data-s="admin.password"></div>
+        <div id="mPwStatus" class="text-md"></div>
       </div>
       <button type="button" class="btn btn-ghost" id="mResetPwBtn" data-admin-click="resetMemberPassword" data-s="admin.resetPassword"></button>
     </div>
@@ -702,10 +577,10 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="admin.emoji"></label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
-      <div class="field"><label data-s="admin.keyAutoSet"></label><input type="text" id="bcKey" placeholder="dinghy" style="color:var(--muted)"></div>
+      <div class="field"><label data-s="admin.keyAutoSet"></label><input type="text" id="bcKey" placeholder="dinghy" class="text-muted"></div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.keyHint"></div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="text-xs text-muted mb-10" data-s="admin.keyHint"></div>
+    <div class="check-row mb-12">
       <input type="checkbox" id="bcActive" checked> <label for="bcActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
@@ -733,11 +608,11 @@
         <option value="port" data-s="location.typePort">Port</option>
       </select>
     </div>
-    <div style="display:flex;gap:10px">
-      <div class="field" style="flex:1"><label data-s="location.lat"></label><input type="number" id="lLat" step="any" placeholder="e.g. 64.1466"></div>
-      <div class="field" style="flex:1"><label data-s="location.lng"></label><input type="number" id="lLng" step="any" placeholder="e.g. -21.9270"></div>
+    <div class="d-flex gap-10">
+      <div class="field flex-1"><label data-s="location.lat"></label><input type="number" id="lLat" step="any" placeholder="e.g. 64.1466"></div>
+      <div class="field flex-1"><label data-s="location.lng"></label><input type="number" id="lLng" step="any" placeholder="e.g. -21.9270"></div>
     </div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="check-row mb-12">
       <input type="checkbox" id="lActive" checked> <label for="lActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
@@ -767,7 +642,7 @@
     <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="clTextEN"></div>
     <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="clTextIS"></div>
     <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="clSort" value="1" min="1"></div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="check-row mb-12">
       <input type="checkbox" id="clActive" checked> <label for="clActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
@@ -813,24 +688,24 @@
       <div class="field"><label data-s="admin.actTypeEN"></label><input type="text" id="atName"></div>
       <div class="field"><label data-s="admin.actTypeIS"></label><input type="text" id="atNameIS"></div>
     </div>
-    <div class="check-row" style="margin-bottom:10px">
+    <div class="check-row mb-10">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
     </div>
-    <div class="check-row" style="margin-bottom:10px">
+    <div class="check-row mb-10">
       <input type="checkbox" id="atVolunteer" data-admin-change="toggleAtVolunteerSection"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
     </div>
-    <div id="atRolesSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <select id="atRolePresetPicker" data-admin-preset-change="addAtRoleFromPreset" style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></select>
-          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" data-admin-click="addAtRoleRow" data-s="btn.add"></button>
+    <div id="atRolesSection" class="hidden border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <div class="d-flex gap-6 items-center flex-wrap">
+          <select id="atRolePresetPicker" data-admin-preset-change="addAtRoleFromPreset" class="text-xs bg-surface border-muted rounded-4 font-inherit" style="padding:4px 8px;color:var(--text)"></select>
+          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addAtRoleRow" data-s="btn.add"></button>
         </div>
       </div>
       <div id="atRolesList"></div>
     </div>
-    <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">GOOGLE CALENDAR SYNC</div>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px">GOOGLE CALENDAR SYNC</div>
       <div class="field">
         <label>Calendar ID</label>
         <input type="text" id="atCalendarId" placeholder="e.g. abc123@group.calendar.google.com">
@@ -839,16 +714,16 @@
         <input type="checkbox" id="atCalendarSyncActive">
         <label for="atCalendarSyncActive">Push activities of this type to the calendar</label>
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">Events are only added/updated/deleted by Ymir — other items on the calendar are never touched.</div>
+      <div class="text-10 text-muted mt-4">Events are only added/updated/deleted by Ymir — other items on the calendar are never touched.</div>
     </div>
-    <div style="margin-top:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.subtypes"></label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" data-admin-click="addAtSubtypeRow" data-s="btn.add"></button>
+    <div class="mt-10">
+      <div class="d-flex items-center justify-between mb-6">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.subtypes"></label>
+        <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addAtSubtypeRow" data-s="btn.add"></button>
       </div>
       <div id="atSubtypesList"></div>
     </div>
-    <div class="btn-row" style="margin-top:14px">
+    <div class="btn-row mt-14">
       <button class="btn btn-secondary" data-admin-close="actTypeModal" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="atDeleteBtn" data-admin-click="deleteActType" data-s="btn.delete"></button>
       <button class="btn btn-primary" data-admin-click="saveActType" data-s="btn.save"></button>
@@ -871,24 +746,24 @@
       <label data-s="admin.volActType"></label>
       <select id="veActType" data-admin-change="onVeActTypeChange"><option value="" data-s="admin.volActTypeNone"></option></select>
     </div>
-    <div class="grid2" style="margin-top:2px">
+    <div class="grid2 mt-2">
       <div class="field"><label data-s="admin.volDate"></label><input type="date" id="veDate"></div>
       <div class="field"><label data-s="admin.volEndDate"></label><input type="date" id="veEndDate"></div>
     </div>
-    <div style="font-size:10px;color:var(--muted);margin:-4px 0 6px" data-s="admin.volEndDateHint"></div>
+    <div class="text-10 text-muted" style="margin:-4px 0 6px" data-s="admin.volEndDateHint"></div>
     <div class="grid2">
       <div class="field"><label data-s="admin.volStartTime"></label><input type="time" id="veStartTime"></div>
       <div class="field"><label data-s="admin.volEndTime"></label><input type="time" id="veEndTime"></div>
     </div>
-    <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin:10px 0">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px" data-s="admin.volLeader"></div>
-      <div class="field" style="position:relative;margin-bottom:6px">
+    <div class="border-muted rounded-6" style="padding:10px 12px;margin:10px 0">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.volLeader"></div>
+      <div class="field pos-relative mb-6">
         <label data-s="admin.volLeader"></label>
         <input type="text" id="veLeaderSearch" autocomplete="off" data-admin-input-val="searchVolLeader" placeholder="">
-        <div id="veLeaderSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:4px;z-index:10;max-height:160px;overflow-y:auto"></div>
+        <div id="veLeaderSuggestions" class="d-none bg-surface border-muted rounded-4" style="position:absolute;top:100%;left:0;right:0;z-index:10;max-height:160px;overflow-y:auto"></div>
         <input type="hidden" id="veLeaderMemberId">
       </div>
-      <div id="veLeaderChip" style="display:none;margin-bottom:6px"></div>
+      <div id="veLeaderChip" class="d-none mb-6"></div>
       <div class="grid2">
         <div class="field"><label data-s="admin.volLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
         <div></div>
@@ -898,20 +773,20 @@
       </div>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="admin.volNotes"></label><textarea id="veNotes" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px;resize:vertical"></textarea></div>
-      <div class="field"><label data-s="admin.volNotesIS"></label><textarea id="veNotesIS" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px;resize:vertical"></textarea></div>
+      <div class="field"><label data-s="admin.volNotes"></label><textarea id="veNotes" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
+      <div class="field"><label data-s="admin.volNotesIS"></label><textarea id="veNotesIS" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
     </div>
-    <div style="margin-top:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.volRoles"></label>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <select id="veRolePresetPicker" data-admin-preset-change="addVolRoleFromPreset" style="font-size:11px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></select>
-          <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" data-admin-click="addVolRoleRow" data-s="btn.add"></button>
+    <div class="mt-10">
+      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <div class="d-flex gap-6 items-center flex-wrap">
+          <select id="veRolePresetPicker" data-admin-preset-change="addVolRoleFromPreset" class="text-xs bg-surface border-muted rounded-4 font-inherit" style="padding:4px 8px;color:var(--text)"></select>
+          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addVolRoleRow" data-s="btn.add"></button>
         </div>
       </div>
       <div id="volRolesList"></div>
     </div>
-    <div class="btn-row" style="margin-top:14px">
+    <div class="btn-row mt-14">
       <button class="btn btn-secondary" data-admin-close="volEventModal" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="veDeleteBtn" data-admin-click="deleteVolEvent" data-s="btn.delete"></button>
       <button class="btn btn-primary" data-admin-click="saveVolEvent" data-s="btn.save"></button>
@@ -932,9 +807,9 @@
     </div>
     <div class="field">
       <label data-s="admin.keyAutoSet"></label>
-      <input type="text" id="ccKey" readonly style="color:var(--muted)">
+      <input type="text" id="ccKey" readonly class="text-muted">
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px" data-s="admin.certCatKeyHint"></div>
+    <div class="text-xs text-muted mb-10" data-s="admin.certCatKeyHint"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-admin-close="certCatModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary" data-admin-click="saveCertCat" data-s="btn.save"></button>
@@ -955,12 +830,12 @@
     </div>
     <div class="grid2">
       <div class="field">
-        <label><span data-s="admin.certDescEN"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-        <textarea id="cdDescEN" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+        <label><span data-s="admin.certDescEN"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="cdDescEN" rows="2" class="w-full text-base" style="resize:vertical"></textarea>
       </div>
       <div class="field">
-        <label><span data-s="admin.certDescIS"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
-        <textarea id="cdDescIS" rows="2" style="width:100%;resize:vertical;font-size:13px"></textarea>
+        <label><span data-s="admin.certDescIS"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <textarea id="cdDescIS" rows="2" class="w-full text-base" style="resize:vertical"></textarea>
       </div>
     </div>
     <div class="field" id="cdCategoryField">
@@ -970,42 +845,42 @@
       </select>
     </div>
     <div class="field">
-      <label><span data-s="admin.certIssuing"></span> <span style="color:var(--muted);font-weight:normal" data-s="admin.certDescOptional"></span></label>
+      <label><span data-s="admin.certIssuing"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
       <input type="text" id="cdIssuingAuthority">
     </div>
 
-    <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+    <div class="field d-flex items-center flex-wrap mb-4" style="gap:16px">
+      <label class="d-flex items-center gap-6 cursor-pointer">
         <input type="checkbox" id="cdClubEndorsement" data-admin-change="toggleCdEndorsement"> <span data-s="admin.certClubEndorsement"></span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px"><span data-s="admin.certCardColour"></span>
-        <input type="color" id="cdColor" style="width:36px;height:26px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-        <span style="font-size:10px;color:var(--muted)" data-s="admin.certAutoBlank"></span>
+      <label class="d-flex items-center gap-8"><span data-s="admin.certCardColour"></span>
+        <input type="color" id="cdColor" class="border-muted rounded-4 cursor-pointer" style="width:36px;height:26px;padding:2px">
+        <span class="text-10 text-muted" data-s="admin.certAutoBlank"></span>
       </label>
     </div>
 
-    <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+    <div class="field d-flex items-center flex-wrap mb-4" style="gap:16px">
+      <label class="d-flex items-center gap-6 cursor-pointer">
         <input type="checkbox" id="cdExpires"> <span data-s="admin.certExpires"></span>
       </label>
-      <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px">
+      <label class="text-md cursor-pointer d-flex items-center gap-6 mt-8">
         <input type="checkbox" id="cdHasIdNumber"> <span data-s="admin.certHasId"></span>
       </label>
     </div>
 
-    <div style="margin-top:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:10px;color:var(--muted);letter-spacing:.8px" data-s="admin.certSubcategories"></label>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" data-admin-click="addSubcatRow" data-s="btn.add"></button>
+    <div class="mt-14">
+      <div class="d-flex items-center justify-between mb-6">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.certSubcategories"></label>
+        <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addSubcatRow" data-s="btn.add"></button>
       </div>
       <div id="subcatRows"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px" data-s="admin.certSubcatHint">
+      <div class="text-xs text-muted mt-6" style="padding-top:6px" data-s="admin.certSubcatHint">
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between;align-items:center">
+    <div class="d-flex gap-8 justify-between items-center" style="margin-top:18px">
       <button class="btn btn-danger hidden" id="certDefDeleteBtn" data-admin-click="deleteCertDef" data-s="btn.delete"></button>
-      <div style="display:flex;gap:8px">
+      <div class="d-flex gap-8">
         <button class="btn btn-secondary" data-admin-close="certDefModal" data-s="btn.cancel"></button>
         <button class="btn btn-primary" id="saveCertDefBtn" data-admin-click="saveCertDef" data-s="btn.save"></button>
       </div>
@@ -1020,13 +895,13 @@
       <h3 id="qrBoatName" style="font-size:18px"></h3>
       <button class="modal-close-x" data-admin-close="qrModal">&times;</button>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:16px" id="qrCategory"></div>
-    <img id="qrImg" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--border)">
-    <div style="font-size:10px;color:var(--muted);margin-top:10px;word-break:break-all" id="qrUrl"></div>
-    <div style="font-size:10px;color:var(--border);margin-top:4px" id="qrBoatId"></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5" data-s="admin.qrScanHint">
+    <div class="text-xs text-muted mb-16" id="qrCategory"></div>
+    <img id="qrImg" src="" alt="QR code" class="rounded-8 border-muted" style="width:220px;height:220px">
+    <div class="text-10 text-muted mt-10" style="word-break:break-all" id="qrUrl"></div>
+    <div class="text-10 mt-4" style="color:var(--border)" id="qrBoatId"></div>
+    <div class="text-xs text-muted mt-12" style="line-height:1.5" data-s="admin.qrScanHint">
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
+    <div class="d-flex gap-8 mt-12">
       <button class="btn btn-secondary" data-admin-close="qrModal" data-s="btn.close"></button>
       <button class="btn btn-primary" data-admin-click="printQR">🖨 <span data-s="admin.printPdf"></span></button>
     </div>
@@ -1047,7 +922,7 @@
       <div class="field"><label data-s="passport.nameIS">Name (Icelandic)</label><input type="text" id="ppsNameIS"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppsId" readonly style="color:var(--muted)"></div>
+      <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppsId" readonly class="text-muted"></div>
       <div class="field"><label data-s="passport.requiredSigs">Required signatures</label><input type="number" id="ppsRequiredSigs" min="1" max="10" value="2"></div>
     </div>
     <div class="field"><label data-s="passport.promoteCertId">Promotes certificate</label><input type="text" id="ppsPromoteCertId" placeholder="rowing_division"></div>
@@ -1075,11 +950,11 @@
     </div>
     <div class="field">
       <label data-s="passport.itemDescEN">Description (English)</label>
-      <textarea id="ppiDescEN" rows="3" style="width:100%;font:inherit;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);resize:vertical"></textarea>
+      <textarea id="ppiDescEN" rows="3" class="w-full border-muted rounded-4 bg-surface" style="font:inherit;padding:6px;color:var(--text);resize:vertical"></textarea>
     </div>
     <div class="field">
       <label data-s="passport.itemDescIS">Description (Icelandic)</label>
-      <textarea id="ppiDescIS" rows="3" style="width:100%;font:inherit;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);resize:vertical"></textarea>
+      <textarea id="ppiDescIS" rows="3" class="w-full border-muted rounded-4 bg-surface" style="font:inherit;padding:6px;color:var(--text);resize:vertical"></textarea>
     </div>
     <div class="grid2">
       <div class="field">
@@ -1094,8 +969,8 @@
         <input type="number" id="ppiModule" min="0" step="1" placeholder="0">
       </div>
     </div>
-    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppiId" readonly style="color:var(--muted)"></div>
-    <div class="check-row" style="margin-bottom:12px">
+    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppiId" readonly class="text-muted"></div>
+    <div class="check-row mb-12">
       <input type="checkbox" id="ppiRetired"> <label for="ppiRetired" data-s="passport.retire">Retire</label>
     </div>
     <div class="btn-row">
@@ -1117,7 +992,7 @@
       <div class="field"><label data-s="passport.categoryNameEN">Category name (English)</label><input type="text" id="ppcNameEN"></div>
       <div class="field"><label data-s="passport.categoryNameIS">Category name (Icelandic)</label><input type="text" id="ppcNameIS"></div>
     </div>
-    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppcId" readonly style="color:var(--muted)"></div>
+    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppcId" readonly class="text-muted"></div>
     <div class="btn-row">
       <button class="btn btn-danger hidden" id="ppcDeleteBtn" data-admin-click="deletePassportCategory" data-s="passport.deleteCategory">Delete category</button>
       <button class="btn btn-secondary" data-admin-close="passportCategoryModal" data-s="btn.cancel">Cancel</button>

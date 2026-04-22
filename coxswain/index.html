@@ -16,105 +16,7 @@
 <script src="../shared/boats.js" defer></script>
 <script src="../shared/certs.js" defer></script>
 <script src="../shared/maintenance.js" defer></script>
-<style>
-/* ── Stats ── */
-.cx-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-.cx-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
-.cx-stat .sn { font-size:24px; color:var(--brass-fg); font-weight:500; }
-.cx-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
-
-/* ── Tab bar ── */
-.cx-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
-.cx-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
-  font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
-  white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
-.cx-tab-btn.active { color:var(--brass-fg); border-bottom-color:var(--brass); }
-.cx-tab-btn:hover:not(.active) { color:var(--text); }
-
-/* ── Section headers ── */
-.cx-section { margin-bottom:20px; }
-.cx-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-
-/* ── Cards ── */
-.cx-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
-
-/* ── Boats ── */
-.cx-boat { display:flex; justify-content:space-between; align-items:flex-start;
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:12px 14px; margin-bottom:8px; flex-wrap:wrap; gap:8px; box-shadow:var(--shadow-sm); }
-.cx-boat-name { font-size:13px; font-weight:500; color:var(--text); }
-.cx-boat-sub  { font-size:11px; color:var(--muted); margin-top:3px; }
-.cx-boat-actions { margin-left:auto; display:flex; gap:6px; }
-.cx-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
-  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
-.cx-boat-actions button:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
-
-/* ── Read-only banner ── */
-.cx-readonly { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:12px; text-align:center; }
-
-/* ── Crew board ── */
-.cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.cb-card { background:var(--card); border:3px solid var(--border); border-radius:var(--radius-md); padding:14px;
-  box-shadow:var(--shadow-sm); }
-.cb-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
-.cb-name { font-size:13px; font-weight:500; color:var(--text); }
-.cb-count { font-size:10px; color:var(--muted); }
-.cb-badge { font-size:8px; padding:2px 6px; border-radius:10px; font-weight:500; }
-.cb-badge--active { background:var(--green)22; color:var(--green); border:1px solid var(--green)44; }
-.cb-badge--forming { background:var(--brass)22; color:var(--brass-fg); border:1px solid var(--brass)44; }
-.cb-desc { font-size:11px; color:var(--muted); margin-bottom:8px; font-style:italic; }
-.cb-boats { display:flex; gap:8px; flex-wrap:wrap; }
-.cb-boat { min-width:70px; flex:1; }
-.cb-boat-label { font-size:9px; color:var(--muted); text-align:center; margin-bottom:3px; letter-spacing:.5px; }
-.cb-seat { display:flex; align-items:center; gap:4px; height:28px; border:1px solid var(--border);
-  font-size:11px; padding:0 8px; overflow:hidden; white-space:nowrap; }
-.cb-seat:first-of-type { border-radius:6px 6px 0 0; border-bottom:none; }
-.cb-seat:last-of-type { border-radius:0 0 6px 6px; }
-.cb-seat--filled { background:var(--surface); color:var(--text); cursor:pointer; }
-.cb-seat--you { background:var(--brass)18; color:var(--brass-fg); border-color:var(--brass)66; font-weight:500; cursor:pointer; }
-.cb-seat--open { background:transparent; color:var(--muted); border-style:dashed; cursor:pointer; transition:all .15s; }
-.cb-seat--open:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
-.cb-seat--expanded { height:auto; min-height:28px; white-space:normal; padding-top:4px; padding-bottom:4px; }
-.cb-seat--expanded .cb-seat-name { overflow:visible; text-overflow:clip; white-space:normal; word-break:break-word; line-height:1.2; }
-.cb-seat-role { font-size:8px; color:var(--muted); min-width:28px; opacity:.7; }
-.cb-seat-name { overflow:hidden; text-overflow:ellipsis; }
-.cb-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-.cb-needs { font-size:10px; color:var(--brass-fg); margin-top:6px; }
-.cb-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-
-/* ── Passport ── */
-.pp-cat { margin-bottom:14px; }
-.pp-cat-hdr { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
-.pp-cat-count { font-size:9px; color:var(--brass-fg); }
-.pp-item { display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:4px; font-size:11px; }
-.pp-item-signable { cursor:pointer; transition:border-color .2s; }
-.pp-item-signable:hover { border-color:var(--brass); }
-.pp-item-complete { border-left:3px solid var(--green); }
-.pp-item-icon { font-size:14px; color:var(--brass-fg); width:18px; text-align:center; flex-shrink:0; }
-.pp-item-complete .pp-item-icon { color:var(--green); }
-.pp-item-body { flex:1; min-width:0; }
-.pp-item-name { color:var(--text); font-weight:500; }
-.pp-item-desc { color:var(--muted); font-size:10px; margin-top:2px; }
-.pp-item-sigs { color:var(--muted); font-size:9px; margin-top:3px; font-style:italic; }
-.pp-item-count { font-size:10px; color:var(--muted); flex-shrink:0; }
-.pp-asmt { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; }
-.pp-asmt-practical { background:var(--brass)22; color:var(--brass-fg); border:1px solid var(--brass)44; }
-.pp-asmt-theory    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-.pp-mod { display:inline-block; font-size:8px; padding:1px 6px; border-radius:8px; margin-left:4px; vertical-align:middle; letter-spacing:.5px; text-transform:uppercase; font-weight:500; background:var(--surface); color:var(--brass-fg); border:1px solid var(--brass)44; }
-.pp-sortbtn-active { background:var(--brass) !important; color:var(--card) !important; border-color:var(--brass) !important; }
-.pp-mod-hdr { font-size:11px; color:var(--brass-fg); font-weight:700; letter-spacing:1px; text-transform:uppercase; margin:10px 0 4px; display:flex; align-items:center; gap:8px; }
-.pp-mod-hdr .pp-cat-count { color:var(--muted); font-weight:400; }
-.pp-subcat-hdr { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin:6px 0 4px 0; padding-left:8px; border-left:2px solid var(--border); }
-
-/* ── Responsive ── */
-@media(max-width:600px){
-  .cx-stats { grid-template-columns:1fr 1fr; }
-  .cx-stat .sn { font-size:20px; }
-  .cb-grid { grid-template-columns:1fr; }
-}
-</style>
+<link rel="stylesheet" href="coxswain.css">
 </head>
 <body>
 <header id="ym-header">
@@ -125,8 +27,8 @@
 <div class="page-content">
 
   <div class="mb-14">
-    <div style="font-size:16px;font-weight:500;color:var(--text)" id="cxTitle"></div>
-    <div class="text-sm text-muted" style="margin-top:2px" id="cxSubtitle"></div>
+    <div class="fw-500" style="font-size:16px;color:var(--text)" id="cxTitle"></div>
+    <div class="text-sm text-muted mt-2" id="cxSubtitle"></div>
   </div>
 
   <!-- Read-only banner for non-released rowers -->
@@ -159,19 +61,19 @@
       <div class="cx-section-hdr" data-s="cox.crewBoard">CREW BOARD</div>
       <div id="crewInviteList"></div>
       <div id="crewBoardList"><div class="empty-note" data-s="lbl.loading"></div></div>
-      <div style="margin-top:8px">
-        <button class="btn btn-primary" style="font-size:11px" data-cx-click="openCrewModal" data-s="cox.createCrew">+ Create Crew</button>
+      <div class="mt-8">
+        <button class="btn btn-primary text-xs" data-cx-click="openCrewModal" data-s="cox.createCrew">+ Create Crew</button>
       </div>
     </div>
 
     <!-- ══ SLOT RESERVATIONS ══ -->
-    <div class="cx-section" id="sectSlots" style="display:none">
+    <div class="cx-section d-none" id="sectSlots">
       <div class="cx-section-hdr" data-s="cox.slotReservations">SLOT RESERVATIONS</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
-        <select id="cxSlotBoat" data-cx-change="loadCxSlots" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
-        <label data-s="slot.filterCrew" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Crew</label>
-        <select id="cxSlotCrew" data-cx-change="renderCxSlots" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+      <div class="d-flex items-center gap-8 mb-10 flex-wrap">
+        <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Boat</label>
+        <select id="cxSlotBoat" data-cx-change="loadCxSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
+        <label data-s="slot.filterCrew" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Crew</label>
+        <select id="cxSlotCrew" data-cx-change="renderCxSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
         <div class="slot-week-nav">
           <button class="btn btn-secondary" data-cx-click="shiftCxWeek" data-cx-arg="-1">&larr;</button>
           <span id="cxWeekLabel" class="week-label"></span>
@@ -181,11 +83,11 @@
         </div>
       </div>
       <div id="cxSlotGrid" style="overflow-x:auto"></div>
-      <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted);flex-wrap:wrap">
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;box-shadow:inset 0 0 0 2px var(--bg)"></span> <span data-s="slot.legendYours">Yours</span></span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border:1px dashed var(--bg);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="cox.tentative">Tentative</span></span>
+      <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
+        <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+        <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;box-shadow:inset 0 0 0 2px var(--bg)"></span> <span data-s="slot.legendYours">Yours</span></span>
+        <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+        <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border:1px dashed var(--bg);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="cox.tentative">Tentative</span></span>
       </div>
     </div>
 
@@ -195,24 +97,24 @@
   <div id="cxTab-passport" class="hidden">
     <div class="cx-section" id="sectPassport">
       <div class="cx-section-hdr" data-s="passport.title">ROWING PASSPORT</div>
-      <div id="passportPicker" class="hidden" style="margin-bottom:10px;position:relative">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label style="font-size:10px;color:var(--muted);letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
-          <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" data-cx-input-val="ppSearchMember" style="font-size:11px;flex:1;min-width:160px">
-          <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px" data-cx-click="ppViewSelf" data-s="passport.viewSelf">My passport</button>
+      <div id="passportPicker" class="hidden mb-10 pos-relative">
+        <div class="d-flex gap-8 items-center flex-wrap">
+          <label class="text-10 text-muted" style="letter-spacing:.5px" data-s="passport.viewMember">VIEW MEMBER</label>
+          <input type="text" id="ppMemberSearch" autocomplete="off" placeholder="" data-cx-input-val="ppSearchMember" class="text-xs flex-1" style="min-width:160px">
+          <button class="btn btn-secondary text-10" style="padding:4px 10px" data-cx-click="ppViewSelf" data-s="passport.viewSelf">My passport</button>
         </div>
-        <div id="ppMemberSuggestions" class="suggest-drop hidden" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);border:1px solid var(--border);border-radius:6px;margin-top:2px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
-        <div id="ppCurrentTarget" style="font-size:10px;color:var(--brass-fg);margin-top:4px"></div>
+        <div id="ppMemberSuggestions" class="suggest-drop hidden border-muted rounded-6 mt-2" style="position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
+        <div id="ppCurrentTarget" class="text-10 text-brass mt-4"></div>
       </div>
-      <div id="passportProgressBar" style="height:6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px">
+      <div id="passportProgressBar" class="bg-surface border-muted overflow-hidden mb-10" style="height:6px;border-radius:3px">
         <div id="passportProgressFill" style="height:100%;width:0%;background:var(--brass);transition:width .3s"></div>
       </div>
-      <div id="passportProgressLabel" style="font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:10px"></div>
-      <div id="passportSignerBanner" class="hidden" style="font-size:10px;color:var(--brass-fg);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
-      <div id="passportSortBar" style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:9px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
-        <button class="btn btn-secondary" id="ppSortCatMod" style="font-size:10px;padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
-        <button class="btn btn-secondary" id="ppSortModCat" style="font-size:10px;padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
+      <div id="passportProgressLabel" class="text-10 text-muted mb-10" style="letter-spacing:.5px"></div>
+      <div id="passportSignerBanner" class="hidden text-10 text-brass bg-surface border-muted rounded-6 mb-10" style="padding:6px 10px" data-s="passport.signerMode">Sign-off mode — tap items to sign.</div>
+      <div id="passportSortBar" class="d-flex gap-6 items-center mb-10 flex-wrap">
+        <span class="text-9 text-muted" style="letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
+        <button class="btn btn-secondary text-10" id="ppSortCatMod" style="padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
+        <button class="btn btn-secondary text-10" id="ppSortModCat" style="padding:3px 8px" data-cx-click="ppSetSortMode" data-cx-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
       </div>
       <div id="passportCategories"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
@@ -229,14 +131,14 @@
     </div>
     <div class="field">
       <label data-s="slot.daysOfWeek">Days of week</label>
-      <div id="cxBbDays" style="display:flex;gap:6px;flex-wrap:wrap">
-        <label style="font-size:11px"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
-        <label style="font-size:11px"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
+      <div id="cxBbDays" class="d-flex gap-6 flex-wrap">
+        <label class="text-xs"><input type="checkbox" value="1"> <span data-s="day.mon">Mon</span></label>
+        <label class="text-xs"><input type="checkbox" value="2"> <span data-s="day.tue">Tue</span></label>
+        <label class="text-xs"><input type="checkbox" value="3"> <span data-s="day.wed">Wed</span></label>
+        <label class="text-xs"><input type="checkbox" value="4"> <span data-s="day.thu">Thu</span></label>
+        <label class="text-xs"><input type="checkbox" value="5"> <span data-s="day.fri">Fri</span></label>
+        <label class="text-xs"><input type="checkbox" value="6"> <span data-s="day.sat">Sat</span></label>
+        <label class="text-xs"><input type="checkbox" value="0"> <span data-s="day.sun">Sun</span></label>
       </div>
     </div>
     <div class="grid2">
@@ -247,7 +149,7 @@
       <div class="field"><label data-s="slot.fromDate">From date</label><input type="date" id="cxBbFromDate"></div>
       <div class="field"><label data-s="slot.toDate">To date</label><input type="date" id="cxBbToDate"></div>
     </div>
-    <div id="cxBbPreview" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+    <div id="cxBbPreview" class="text-10 text-muted mb-8"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-cx-click="previewCxBulkBook" data-s="slot.preview">Preview</button>
       <button class="btn btn-primary" data-cx-click="submitCxBulkBook" data-s="slot.bulkBook">Bulk Book</button>
@@ -264,39 +166,39 @@
     </div>
     <div class="field">
       <label data-s="cox.crewName">Crew name</label>
-      <input type="text" id="cmCrewName" placeholder="e.g., Thunderbolts" style="font-size:12px">
+      <input type="text" id="cmCrewName" placeholder="e.g., Thunderbolts" class="text-md">
     </div>
     <div class="field">
       <label data-s="cox.description">Description</label>
-      <input type="text" id="cmDescription" style="font-size:12px" data-placeholder-s="cox.descPlaceholder" placeholder="e.g., Mon & Wed 7am, casual pace">
+      <input type="text" id="cmDescription" class="text-md" data-placeholder-s="cox.descPlaceholder" placeholder="e.g., Mon & Wed 7am, casual pace">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field">
         <label data-s="cox.numBoats">Number of boats</label>
-        <select id="cmNumPairs" style="font-size:12px">
+        <select id="cmNumPairs" class="text-md">
           <option value="2">2</option>
           <option value="3">3</option>
         </select>
       </div>
       <div class="field">
         <label data-s="cox.visibility">Visibility</label>
-        <select id="cmVisibility" style="font-size:12px">
+        <select id="cmVisibility" class="text-md">
           <option value="open" data-s="cox.visOpen">Open — anyone can join</option>
           <option value="invite_only" data-s="cox.visInvite">Invite only</option>
         </select>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field">
         <label data-s="cox.boat">Boat</label>
-        <select id="cmMyPair" style="font-size:12px">
+        <select id="cmMyPair" class="text-md">
           <option value="0">Boat 1</option>
           <option value="1">Boat 2</option>
         </select>
       </div>
       <div class="field">
         <label data-s="cox.yourSeat">Your seat</label>
-        <select id="cmMySeat" style="font-size:12px">
+        <select id="cmMySeat" class="text-md">
           <option value="0" data-s="cox.seatBow">Bow</option>
           <option value="1" data-s="cox.seatStern">Stern</option>
         </select>
@@ -304,9 +206,9 @@
     </div>
     <div class="field">
       <label data-s="cox.crewColor">Color</label>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="color" id="cmColor" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;background:var(--surface);cursor:pointer">
-        <div id="cmColorPicker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+      <div class="d-flex items-center gap-8">
+        <input type="color" id="cmColor" class="border-muted rounded-6 bg-surface cursor-pointer" style="width:32px;height:32px;padding:2px">
+        <div id="cmColorPicker" class="d-flex flex-wrap" style="gap:5px"></div>
       </div>
     </div>
     <div class="btn-row">
@@ -325,16 +227,16 @@
     </div>
     <div class="field">
       <label data-s="cox.searchMember">Member</label>
-      <div style="position:relative">
+      <div class="pos-relative">
         <input type="text" id="ciMemberSearch" autocomplete="off" placeholder="" data-cx-input-val="searchCrewInvMember">
-        <div id="ciMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+        <div id="ciMemberSuggestions" class="suggest-drop pos-relative"></div>
         <input type="hidden" id="ciMemberKt">
-        <div id="ciMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+        <div id="ciMemberName" class="text-10 text-muted mt-3"></div>
       </div>
     </div>
     <div class="field">
       <label data-s="cox.pairAssignment">Pair</label>
-      <select id="ciPairId" style="font-size:12px"></select>
+      <select id="ciPairId" class="text-md"></select>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-cx-close="crewInvModal" data-s="btn.cancel"></button>

@@ -11,38 +11,7 @@
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js"></script>
   <script src="../shared/strings.js"></script>
-  <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
-    .login-box { width:100%; max-width:400px; }
-    .login-logo { text-align:center; margin-bottom:32px; }
-    .login-logo-img { width:210px; height:210px; margin:0 auto 12px; background:var(--brass); -webkit-mask:url(../shared/logo.svg) center/contain no-repeat; mask:url(../shared/logo.svg) center/contain no-repeat; }
-    .kt-input { text-align:center; font-size:22px; letter-spacing:4px; }
-    .pw-input { text-align:center; font-size:18px; letter-spacing:2px; margin-top:10px; }
-    .stay-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin:10px 0 0; justify-content:center; }
-    .stay-row input { margin:0; }
-    .lang-row { text-align:center; margin-top:16px; }
-    #roleScreen, #accountScreen, #forceChangeScreen { display:none; }
-    .role-greeting { color:var(--brass-fg); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; font-weight:500; }
-    /* Role/account buttons: mirror the staff page nav-card — brass-tinted wash + solid brass border. */
-    .role-btn {
-      width:100%; padding:16px 14px; margin-bottom:10px; border-radius:var(--radius-md);
-      border:1px solid var(--brass); background:var(--brass)12; cursor:pointer;
-      display:flex; align-items:center; gap:14px;
-      transition:background-color .15s, transform .15s, box-shadow .15s;
-      text-align:left; box-shadow:var(--shadow-sm);
-    }
-    .role-btn:hover { background:var(--brass)22; transform:translateY(-1px); box-shadow:var(--shadow-md); }
-    .role-btn .role-icon { width:24px; height:24px; flex-shrink:0; display:inline-flex; align-items:center; color:var(--brass-fg); }
-    .role-btn .role-icon svg { width:100%; height:100%; }
-    .role-btn .role-label { color:var(--brass-fg); font-size:15px; font-weight:600; letter-spacing:.3px; }
-    .role-btn .role-desc { color:var(--muted); font-size:11px; margin-top:2px; line-height:1.4; }
-    /* Ward picker keeps a distinct purple accent so guardians recognise it as a separate flow */
-    .role-btn.role-ward            { border-color:#9b59b6; background:#9b59b612; }
-    .role-btn.role-ward:hover      { background:#9b59b622; }
-    .role-btn.role-ward .role-label { color:#9b59b6; }
-    .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
-    .back-link:hover { color:var(--brass-fg); }
-  </style>
+  <link rel="stylesheet" href="login.css">
 </head>
 <body>
 <div class="login-box">
@@ -65,27 +34,27 @@
       <div class="stay-row">
         <label><input type="checkbox" id="stayLoggedIn"> <span id="stayLabel"></span></label>
       </div>
-      <div class="btn-row" style="margin-top:14px">
+      <div class="btn-row mt-14">
         <button class="btn btn-primary" id="loginBtn" data-login-click="doLogin">
           <span id="btnText"></span>
         </button>
       </div>
-      <div id="pwHint" class="msg" style="display:none;margin-top:8px;font-size:11px;color:var(--muted)"></div>
-      <div id="errMsg" class="msg msg-err" style="display:none"></div>
+      <div id="pwHint" class="msg d-none mt-8 text-xs text-muted"></div>
+      <div id="errMsg" class="msg msg-err d-none"></div>
     </div>
   </div>
 
   <div id="accountScreen">
     <div class="role-greeting" id="accountGreeting"></div>
     <div id="accountBtns"></div>
-    <div id="accountErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+    <div id="accountErr" class="msg msg-err d-none mt-8"></div>
     <span class="back-link" data-login-click="goBack" id="accountBackLink"></span>
   </div>
 
   <div id="forceChangeScreen">
     <div class="card">
       <div class="role-greeting" id="changeGreeting"></div>
-      <div class="settings-hint" id="changeHint" style="font-size:12px;color:var(--muted);margin-bottom:14px;text-align:center"></div>
+      <div class="settings-hint text-md text-muted mb-14" id="changeHint" style="text-align:center"></div>
       <div class="field">
         <label id="newPwLabel"></label>
         <input type="password" id="newPwInput" class="pw-input" autocomplete="new-password">
@@ -94,12 +63,12 @@
         <label id="confirmPwLabel"></label>
         <input type="password" id="confirmPwInput" class="pw-input" autocomplete="new-password">
       </div>
-      <div class="btn-row" style="margin-top:14px">
+      <div class="btn-row mt-14">
         <button class="btn btn-primary" id="changeBtn" data-login-click="submitForceChange">
           <span id="changeBtnText"></span>
         </button>
       </div>
-      <div id="changeErr" class="msg msg-err" style="display:none;margin-top:8px"></div>
+      <div id="changeErr" class="msg msg-err d-none mt-8"></div>
     </div>
     <span class="back-link" data-login-click="goBack" id="changeBackLink"></span>
   </div>

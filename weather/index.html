@@ -14,110 +14,7 @@
 <script src="../shared/ui.js"></script>
 <script src="../shared/weather.js"></script>
 <script src="../shared/tides.js"></script>
-<style>
-.page { max-width:700px; margin:0 auto; padding:20px 16px 56px; }
-
-/* ── Top bar ── */
-.top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
-.top-bar-left { display:flex; flex-direction:column; gap:3px; }
-.loc-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.loc-name { font-size:16px; color:var(--text); font-weight:500; }
-.loc-coords { font-size:10px; color:var(--muted); font-family:var(--font-mono); }
-.loc-default-badge { font-size:9px; padding:2px 6px; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--muted); letter-spacing:.5px; }
-.top-bar-right { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-
-/* ── Location picker ── */
-
-
-/* ── Flag banner ── */
-.flag-banner { border-radius:var(--radius-md); padding:14px 18px; margin-bottom:16px; border:1px solid; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--shadow-sm); }
-.flag-advice { font-size:14px; font-weight:500; }
-.flag-reasons { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
-.flag-chip { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; opacity:.85; }
-
-/* ── Wind hero ── */
-.wind-hero { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:12px; }
-.wind-cols { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
-.wind-data { flex:1; }
-.wind-speed-row { display:flex; align-items:center; gap:6px; line-height:1; }
-.dir-arrow { font-size:56px; color:var(--brass-fg); line-height:1; font-weight:700; }
-.wind-ms   { font-size:56px; font-weight:500; color:var(--brass-fg); line-height:1; }
-.wind-unit { font-size:18px; color:var(--muted); }
-.wind-sub  { font-size:16px; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:6px; }
-.wind-sub b    { color:var(--navy-l); }
-.wind-sub .sep { color:var(--border); }
-.wind-icon-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; gap:4px; min-width:72px; }
-.wind-cond-icon { font-size:52px; line-height:1; }
-.gust-row  { padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.gust-lbl  { font-size:10px; color:var(--muted); letter-spacing:.8px; margin-bottom:3px; }
-.gust-val  { font-size:18px; color:var(--navy-l); }
-
-/* ── Info grids ── */
-.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-.info-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
-.info-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
-.info-lbl  { font-size:10px; color:var(--muted); letter-spacing:1.2px; margin-bottom:8px; }
-.info-val  { font-size:24px; color:var(--navy-l); }
-.info-val .unit { font-size:14px; color:var(--muted); margin-left:3px; }
-.info-sub  { font-size:11px; color:var(--muted); margin-top:5px; }
-.rising   { color:var(--green)  !important; }
-.falling  { color:var(--orange) !important; }
-
-/* ── Charts ── */
-.section-lbl { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin:20px 0 10px; }
-.chart-card  { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:12px; }
-.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
-.chart-title-txt { font-size:10px; color:var(--muted); letter-spacing:1.2px; }
-.chart-legend { display:flex; gap:12px; flex-wrap:wrap; }
-.leg-item { font-size:10px; color:var(--muted); display:flex; align-items:center; gap:4px; }
-.leg-dot  { width:8px; height:8px; border-radius:50%; display:inline-block; }
-svg.chart { width:100%; overflow:visible; display:block; }
-
-/* ── Hourly strip ── */
-.hour-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; scroll-snap-type:x mandatory; }
-.hour-strip::-webkit-scrollbar { height:4px; }
-.hour-strip::-webkit-scrollbar-track { background:transparent; }
-.hour-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-.h-slot {
-  flex:0 0 72px; background:var(--card); border:1px solid var(--border);
-  border-radius:8px; padding:9px 6px; text-align:center;
-  scroll-snap-align:start;
-}
-.h-slot.now  { border-color:var(--brass); }
-.h-slot.past { opacity:.5; }
-.h-time  { font-size:10px; color:var(--muted); margin-bottom:6px; }
-.h-main  { display:flex; align-items:center; justify-content:center; gap:3px; line-height:1; margin-bottom:2px; }
-.h-dir   { font-size:18px; color:var(--brass-fg); font-weight:500; line-height:1; }
-.h-wind  { font-size:18px; color:var(--brass-fg); font-weight:500; line-height:1; }
-.h-unit  { font-size:9px; color:var(--muted); }
-.h-kt    { font-size:10px; color:var(--muted); line-height:1; }
-.h-gust  { font-size:10px; color:var(--muted); margin-top:1px; }
-.h-wave  { font-size:11px; color:var(--navy-l); margin-top:4px; display:flex; align-items:center; justify-content:center; gap:3px; line-height:1; }
-.h-wave svg { width:10px; height:10px; flex-shrink:0; }
-.h-pres  { font-size:10px; color:var(--muted); margin-top:3px; }
-.h-flag  { width:8px; height:8px; border-radius:50%; margin:6px auto 0; }
-
-/* ── Refresh icon button ── */
-.refresh-btn { padding:6px 10px; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; min-width:34px; }
-.refresh-btn .refresh-icon { display:inline-block; line-height:1; }
-
-.loading-msg { text-align:center; padding:48px 0; color:var(--muted); font-size:13px; }
-.error-msg   { text-align:center; padding:32px 0; color:var(--red); font-size:13px; }
-
-@media(max-width:600px){
-  .hourly-strip{gap:10px}
-  .wind-cols{gap:10px}
-  .wind-cond-icon{font-size:44px}
-  .wind-icon-col{min-width:60px}
-}
-@media(max-width:480px) {
-  .info-3 { grid-template-columns:1fr 1fr; }
-  .wind-ms, .dir-arrow { font-size:40px; }
-  .wind-cond-icon { font-size:36px; }
-  .wind-icon-col { min-width:52px; gap:2px; }
-  .wind-hero { padding:16px 14px; }
-}
-</style>
+<link rel="stylesheet" href="weather.css">
 </head>
 <body>
 <header id="ym-header">
@@ -137,7 +34,7 @@ svg.chart { width:100%; overflow:visible; display:block; }
     </div>
     <div class="top-bar-right">
       <button class="btn btn-secondary text-sm" id="geoBtn" style="padding:6px 12px"><span data-s="wx.useMyLocation">📍 My location</span></button>
-      <button class="btn btn-secondary text-sm" id="fossBtn" style="padding:6px 12px;display:none"><span data-s="wx.useFossvogur">⚓ Fossvogur</span></button>
+      <button class="btn btn-secondary text-sm d-none" id="fossBtn" style="padding:6px 12px"><span data-s="wx.useFossvogur">⚓ Fossvogur</span></button>
       <button class="btn btn-secondary text-sm refresh-btn" id="refreshBtn" aria-label="Refresh" title="Refresh"><span class="refresh-icon" id="refreshIcon">↻</span></button>
     </div>
   </div>

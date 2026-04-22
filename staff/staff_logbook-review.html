@@ -13,39 +13,7 @@
   <script src="../shared/boats.js"></script>
   <script src="../shared/strings.js"></script>
   <script src="../shared/certs.js" defer></script>
-  <style>
-    .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-    .filter-bar input, .filter-bar select { flex:1; min-width:140px; }
-    .trip-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
-    .trip-card.verified { border-left:3px solid var(--green); }
-    .trip-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
-    .trip-date { font-size:10px; color:var(--brass-fg); margin-bottom:3px; }
-    .trip-title { font-size:13px; font-weight:500; }
-    .trip-meta { font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; }
-    .trip-notes { font-size:11px; color:var(--muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border)44; line-height:1.5; }
-    .badge { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid; flex-shrink:0; }
-    .badge-verified { color:var(--moss); border-color:color-mix(in srgb, var(--moss) 33%, transparent); background:color-mix(in srgb, var(--moss) 8%, transparent); }
-    .badge-pending  { color:var(--muted); border-color:var(--border); background:var(--surface); }
-    .badge-linked   { color:var(--brass-fg); border-color:var(--brass)55; background:var(--brass)11; }
-    .verify-row { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border)44; flex-wrap:wrap; }
-    .verify-row input[type="text"] { flex:1; min-width:160px; }
-    .staff-comment { margin-top:8px; padding:8px 10px; background:var(--surface); border-radius:var(--radius-sm); font-size:11px; }
-    .staff-comment-label { font-size:9px; color:var(--muted); letter-spacing:1px; margin-bottom:3px; }
-    .stat-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
-    .stat-cell { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 10px; text-align:center; box-shadow:var(--shadow-sm); }
-    .stat-n { font-size:22px; color:var(--brass-fg); font-weight:500; }
-    .stat-l { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
-    .cert-row { display:flex; align-items:flex-start; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); gap:10px; }
-    .cert-row:last-child { border-bottom:none; }
-    .cert-name { font-size:13px; font-weight:500; color:var(--text); }
-    .cert-meta { font-size:11px; color:var(--muted); margin-top:2px; }
-    .cert-actions { display:flex; gap:6px; flex-shrink:0; }
-    .stat-strip + .stat-strip { margin-top:-8px; }
-    .cat-hour-row      { display:flex; align-items:center; gap:8px; margin-bottom:4px; font-size:11px; }
-    .cat-hour-bar-wrap { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
-    .cat-hour-bar      { height:100%; border-radius:3px; transition:width .3s; }
-    .cat-hour-val      { font-size:11px; color:var(--muted); min-width:24px; text-align:right; }
-  </style>
+  <link rel="stylesheet" href="staff_logbook-review.css">
 </head>
 <body>
 <header id="ym-header">
@@ -56,7 +24,7 @@
 <div class="page-content">
   <div class="mb-16">
     <div class="fw-500" style="font-size:16px" data-s="logrev.title"></div>
-    <div class="text-sm text-muted" data-s="logrev.subtitle" style="margin-top:2px"></div>
+    <div class="text-sm text-muted mt-2" data-s="logrev.subtitle"></div>
   </div>
 
   <!-- Stats row 1 -->
@@ -78,7 +46,7 @@
   <!-- Trips section header + show-all toggle -->
   <div class="flex-between mb-8">
     <div class="section-label" data-s="logrev.validationRequests"></div>
-    <label class="flex-center gap-6 text-sm text-muted" style="cursor:pointer">
+    <label class="flex-center gap-6 text-sm text-muted cursor-pointer">
       <input type="checkbox" id="showAllTrips" data-slr-change="applyFilters">
       <span data-s="logrev.showAll"></span>
     </label>
@@ -103,29 +71,29 @@
     <div class="section-label mb-14">CERTIFICATIONS</div>
 
     <!-- Mode toggle -->
-    <div class="mb-16" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;width:fit-content">
+    <div class="mb-16 d-flex border-muted overflow-hidden" style="gap:0;border-radius:var(--radius-sm);width:fit-content">
       <button id="certModeByMember" data-slr-click="setCertMode" data-slr-arg="member"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .2s;background:var(--brass);color:#fff">
+        class="text-md font-inherit border-none cursor-pointer" style="padding:7px 16px;transition:all .2s;background:var(--brass);color:#fff">
         By member
       </button>
       <button id="certModeByType" data-slr-click="setCertMode" data-slr-arg="type"
-        class="text-md" style="padding:7px 16px;font-family:inherit;border:none;cursor:pointer;transition:all .2s;background:var(--surface);color:var(--muted)">
+        class="text-md font-inherit border-none cursor-pointer bg-surface text-muted" style="padding:7px 16px;transition:all .2s">
         By credential
       </button>
     </div>
 
     <!-- ── MODE A: search by member ── -->
     <div id="certPanelModeA">
-      <div class="mb-14" style="position:relative">
+      <div class="mb-14 pos-relative">
         <input type="text" id="certMemberSearch"
-          class="text-md" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;padding:9px 12px"
+          class="text-md w-full bg-surface border-muted font-inherit" style="box-sizing:border-box;border-radius:var(--radius-sm);color:var(--text);padding:9px 12px"
           data-slr-input-val="searchCertMember">
         <div id="certMemberDrop"
-          style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:100;display:none;max-height:200px;overflow-y:auto;box-shadow:var(--shadow-md)">
+          class="bg-surface border-muted d-none" style="position:absolute;top:100%;left:0;right:0;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:100;max-height:200px;overflow-y:auto;box-shadow:var(--shadow-md)">
         </div>
       </div>
 
-      <div id="certMemberPanel" style="display:none">
+      <div id="certMemberPanel" class="d-none">
         <div class="flex-between mb-10">
           <div>
             <div class="text-lg fw-500" id="certPanelName"></div>
@@ -142,10 +110,10 @@
     </div>
 
     <!-- ── MODE B: filter by cert type ── -->
-    <div id="certPanelModeB" style="display:none">
+    <div id="certPanelModeB" class="d-none">
       <div class="flex-center flex-wrap gap-8 mb-12">
         <select id="certFilterType" data-slr-change="applyCertFilter"
-          class="flex-1 text-md" style="min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;padding:7px 10px">
+          class="flex-1 text-md bg-surface border-muted font-inherit" style="min-width:200px;border-radius:var(--radius-sm);color:var(--text);padding:7px 10px">
           <option value="">— Select credential —</option>
         </select>
       </div>
@@ -177,7 +145,7 @@
           <option value=""></option>
         </select>
       </div>
-      <div class="field" id="tcmSubcatField" style="display:none">
+      <div class="field d-none" id="tcmSubcatField">
         <label data-s="cert.level"></label>
         <select id="tcmSubcat"><option value=""></option></select>
       </div>
@@ -186,12 +154,12 @@
           <label data-s="logrev.assignedDate"></label>
           <input type="date" id="tcmAssignedAt">
         </div>
-        <div class="field" id="tcmExpiryField" style="display:none">
+        <div class="field d-none" id="tcmExpiryField">
           <label data-s="logrev.expires"></label>
           <input type="date" id="tcmExpiresAt">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:4px" data-slr-click="tcmAssign" id="tcmAssignBtn" data-s="logrev.assignBtn"></button>
+      <button class="btn btn-primary w-full mt-4" data-slr-click="tcmAssign" id="tcmAssignBtn" data-s="logrev.assignBtn"></button>
     </div>
 
     <div class="mt-8" style="text-align:right">

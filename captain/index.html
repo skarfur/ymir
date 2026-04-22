@@ -22,94 +22,7 @@
 <script src="../shared/boat-modal.js"></script>
 <script src="../shared/slot-modal.js"></script>
 <script src="../shared/logbook.js" defer></script>
-<style>
-/* ── Stats ── */
-.cq-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-.cq-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; box-shadow:var(--shadow-sm); }
-.cq-stat .sn { font-size:24px; color:var(--brass-fg); font-weight:500; }
-.cq-stat .sl { font-size:9px; color:var(--muted); margin-top:4px; letter-spacing:.5px; }
-
-/* ── Section headers ── */
-.cq-section { margin-bottom:20px; }
-.cq-section-hdr { font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-.cq-section-hdr .badge { font-size:9px; padding:2px 8px; border-radius:10px; font-weight:500; }
-
-/* ── Filter pills ── */
-.cq-pills { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-.cq-pill { padding:5px 12px; border-radius:16px; border:1px solid var(--border); background:var(--surface);
-  font-size:10px; font-family:inherit; color:var(--muted); cursor:pointer; transition:all .2s; }
-.cq-pill.active { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)11; }
-
-/* ── Compact filter bar ── */
-.cq-filter-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; margin-bottom:10px; align-items:center; }
-.cq-filter-bar select, .cq-filter-bar input[type="text"] { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-  color:var(--text); font-family:inherit; font-size:10px; padding:4px 8px; height:26px; outline:none;
-  transition:border-color .2s,box-shadow .2s; min-width:0; width:100%; box-sizing:border-box; }
-.cq-filter-bar select:focus, .cq-filter-bar input:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
-.cq-filter-search { display:flex; gap:6px; align-items:center; grid-column:1/-1; }
-.cq-filter-search input { flex:1; min-width:0; }
-.cq-filter-count { font-size:9px; color:var(--muted); white-space:nowrap; }
-
-/* ── Cards ── */
-.cq-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
-.cq-card-title { font-size:12px; font-weight:500; color:var(--text); }
-.cq-card-sub { font-size:11px; color:var(--muted); margin-top:3px; }
-.cq-card-meta { font-size:10px; color:var(--brass-fg); margin-top:2px; }
-.cq-card .conf-actions { display:flex; gap:6px; margin-top:8px; }
-.cq-card .conf-actions button { font-size:11px; font-family:inherit; padding:5px 12px; border-radius:var(--radius-sm); cursor:pointer; border:1px solid; }
-.cq-card .btn-confirm { background:var(--green)18; color:var(--green); border-color:var(--green)55; }
-.cq-card .btn-confirm:hover { background:var(--green)33; }
-.cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
-.cq-card .btn-reject:hover { background:var(--red)33; }
-
-/* ── Maintenance severity ── */
-.sev-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
-.sev-low      { background:var(--green); }
-.sev-medium   { background:var(--yellow); }
-.sev-high     { background:var(--orange); }
-.sev-critical { background:var(--red); }
-
-
-/* ── Show-more button ── */
-.cq-show-more { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:8px; font-size:10px; color:var(--muted); cursor:pointer; font-family:inherit; margin-top:4px; text-align:center; transition:border-color .2s,color .2s; }
-.cq-show-more:hover { border-color:var(--brass); color:var(--text); }
-
-/* .filter-bar styles moved to shared/style.css */
-
-/* ── Bio section ── */
-.cq-bio-area { width:100%; min-height:80px; background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius-md); color:var(--text); font-family:inherit; font-size:12px; padding:10px 12px;
-  resize:vertical; box-sizing:border-box; transition:border-color .2s,box-shadow .2s; outline:none; }
-.cq-bio-area:focus { border-color:var(--brass); box-shadow:var(--focus-ring); }
-.cq-headshot-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--brass); }
-.cq-headshot-placeholder { width:80px; height:80px; border-radius:50%; background:var(--surface);
-  border:2px dashed var(--border); display:flex; align-items:center; justify-content:center;
-  font-size:24px; color:var(--muted); }
-
-/* ── Boat cards ── */
-.cq-boat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); }
-.cq-boat-name { font-size:13px; font-weight:500; }
-.cq-boat-sub { font-size:11px; color:var(--muted); margin-top:2px; }
-.cq-boat-actions { margin-left:auto; display:flex; gap:6px; }
-.cq-boat-actions button { font-size:10px; font-family:inherit; padding:4px 10px; border-radius:var(--radius-sm);
-  cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:color .2s,border-color .2s,background .2s; }
-.cq-boat-actions button:hover { border-color:var(--brass); color:var(--brass-fg); background:var(--brass)08; }
-
-/* ── Responsive ── */
-/* Page-specific responsive; .filter-bar collapse is in shared/style.css */
-@media(max-width:600px){
-  .cq-stats { grid-template-columns:1fr 1fr; }
-  .cq-stat .sn { font-size:20px; }
-  .cq-filter-bar { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
-}
-@media(max-width:400px){
-  .cq-filter-bar { grid-template-columns:1fr 1fr; gap:4px; }
-  .cq-filter-bar select, .cq-filter-bar input[type="text"] { font-size:9px; padding:3px 6px; }
-}
-</style>
+<link rel="stylesheet" href="captain.css">
 </head>
 <body>
 <header id="ym-header">
@@ -120,8 +33,8 @@
 <div class="page-content">
 
   <div class="mb-14">
-    <div style="font-size:16px;font-weight:500;color:var(--text)" id="cqTitle"></div>
-    <div class="text-sm text-muted" style="margin-top:2px" id="cqSubtitle"></div>
+    <div class="fw-500" style="font-size:16px;color:var(--text)" id="cqTitle"></div>
+    <div class="text-sm text-muted mt-2" id="cqSubtitle"></div>
   </div>
 
   <!-- ══ YTD STATS ══ -->
@@ -134,9 +47,9 @@
   <!-- ══ MAINTENANCE ══ -->
   <div class="cq-section" id="sectMaint">
     <div class="cq-section-hdr" data-s="cq.maintTitle"></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <div class="d-flex gap-8 items-center flex-wrap mb-10">
       <div class="cq-pills" id="maintPills" style="margin-bottom:0"></div>
-      <select id="mfBoat" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:10px;padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="" data-s="cq.allBoats">All boats</option></select>
+      <select id="mfBoat" class="bg-surface border-muted rounded-6 font-inherit text-10" style="color:var(--text);padding:4px 8px;height:26px;outline:none;max-width:140px"><option value="" data-s="cq.allBoats">All boats</option></select>
     </div>
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
@@ -156,17 +69,17 @@
   <!-- ══ ASSIGN CREDENTIALS ══ -->
   <div class="cq-section" id="sectCredentials">
     <div class="cq-section-hdr" data-s="cq.assignCredTitle"></div>
-    <div style="margin-bottom:10px">
-      <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" data-cq-click="openMemberCertModal" data-s="cq.assignCred"></button>
+    <div class="mb-10">
+      <button class="btn btn-primary text-xs" style="padding:6px 14px" data-cq-click="openMemberCertModal" data-s="cq.assignCred"></button>
     </div>
   </div>
 
   <!-- ══ RESERVATIONS ══ -->
   <div class="cq-section" id="sectReservations">
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <label data-s="slot.filterBoat" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Boat</label>
-      <select id="cqResBoat" data-cq-change="loadCqSlots" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:11px;padding:4px 8px"></select>
+    <div class="d-flex items-center gap-8 mb-10 flex-wrap">
+      <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Boat</label>
+      <select id="cqResBoat" data-cq-change="loadCqSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
       <div class="slot-week-nav">
         <button class="btn btn-secondary" data-cq-click="shiftCqWeek" data-cq-arg="-1">&larr;</button>
         <span id="cqWeekLabel" class="week-label"></span>
@@ -175,16 +88,16 @@
         <button class="btn btn-primary" id="cqCreateSlotBtn" data-s="slot.createAndBook" data-s-attr="title" data-cq-click="openCreateSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
         <button class="btn btn-primary" data-s="slot.bulkBook" data-s-attr="title" data-cq-click="openBulkSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-        <label for="cqBookingColor" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
-        <input type="color" id="cqBookingColor" data-cq-change="saveCqBookingColor" style="width:36px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer">
+      <div class="d-flex items-center gap-6 ml-auto">
+        <label for="cqBookingColor" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
+        <input type="color" id="cqBookingColor" data-cq-change="saveCqBookingColor" class="border-muted rounded-4 bg-surface cursor-pointer" style="width:36px;height:26px">
       </div>
     </div>
     <div id="cqSlotGrid" style="overflow-x:auto"></div>
-    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--muted);flex-wrap:wrap">
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;box-shadow:inset 0 0 0 2px var(--bg)"></span> <span data-s="slot.legendYours">Yours</span></span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+    <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
+      <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+      <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--brass);border-radius:2px;margin-right:4px;vertical-align:middle;box-shadow:inset 0 0 0 2px var(--bg)"></span> <span data-s="slot.legendYours">Yours</span></span>
+      <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
     </div>
   </div>
 
@@ -224,18 +137,18 @@
   <div class="cq-section" id="sectBio">
     <div class="cq-section-hdr" data-s="cq.bioTitle"></div>
     <div class="cq-card">
-      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">
+      <div class="d-flex items-start mb-12" style="gap:16px">
         <div id="headshotWrap">
           <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
         </div>
-        <div style="flex:1">
-          <label style="font-size:9px;color:var(--muted);letter-spacing:.8px;display:block;margin-bottom:6px" data-s="cq.headshotLabel"></label>
-          <input type="file" id="headshotFile" accept="image/*" style="font-size:11px;color:var(--text);width:100%">
+        <div class="flex-1">
+          <label class="text-9 text-muted mb-6" style="letter-spacing:.8px;display:block" data-s="cq.headshotLabel"></label>
+          <input type="file" id="headshotFile" accept="image/*" class="text-xs w-full" style="color:var(--text)">
         </div>
       </div>
       <textarea class="cq-bio-area" id="bioText" maxlength="500"></textarea>
-      <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px">
-        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px" data-cq-click="saveBio" data-s="btn.save"></button>
+      <div class="d-flex items-center mt-8" style="justify-content:flex-end">
+        <button class="btn btn-primary text-xs" style="padding:6px 14px" data-cq-click="saveBio" data-s="btn.save"></button>
       </div>
     </div>
   </div>
@@ -271,14 +184,14 @@
     </div>
     <div class="field">
       <label data-s="cq.resMember">Member</label>
-      <div style="position:relative">
+      <div class="pos-relative">
         <input type="text" id="cqResMemberSearch" autocomplete="off" placeholder="" data-cq-input-val="searchCqResMember">
-        <div id="cqResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
+        <div id="cqResMemberSuggestions" class="suggest-drop pos-relative"></div>
         <input type="hidden" id="cqResMemberKt">
-        <div id="cqResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+        <div id="cqResMemberName" class="text-10 text-muted mt-3"></div>
       </div>
     </div>
-    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="grid2 gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field"><label data-s="cq.resStartDate">Start</label><input type="date" id="cqResStart"></div>
       <div class="field"><label data-s="cq.resEndDate">End</label><input type="date" id="cqResEnd"></div>
     </div>
