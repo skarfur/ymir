@@ -308,7 +308,9 @@ document.addEventListener('keydown', function (e) {
     _overlay = document.createElement('div');
     _overlay.id = 'ym-dialog';
     _overlay.className = 'modal-overlay hidden';
-    _overlay.style.zIndex = '300';
+    // Above .modal-overlay (2000) + full-screen viewers (2100) so confirm /
+    // alert / prompt can fire from inside another modal and still sit on top.
+    _overlay.style.zIndex = '2200';
     _overlay.addEventListener('click', function (e) {
       if (e.target === _overlay) dismiss();
     });

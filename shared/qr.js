@@ -63,7 +63,7 @@
     var overlay = document.createElement('div');
     overlay.className = 'qr-scan-overlay';
     overlay.style.cssText =
-      'position:fixed;inset:0;background:#000e;z-index:800;display:flex;' +
+      'position:fixed;inset:0;background:#000e;z-index:2100;display:flex;' +
       'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
       'font-family:inherit';
 
