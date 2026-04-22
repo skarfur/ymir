@@ -277,7 +277,7 @@ function certCardHTML(enriched) {
   const id = `cc-${esc(enriched.certId || enriched.title || 'c')}-${Date.now().toString(36)}`;
   return `<div class="ccard${enriched.expired ? ' ccard-expired' : ''}" id="${id}"
     style="--cc:${color}"
-    ${hasDetail ? `onclick="certCardToggle('${id}')" role="button" tabindex="0"` : ''}>
+    ${hasDetail ? `data-cert-toggle="${id}" role="button" tabindex="0"` : ''}>
     <div class="ccard-top">
       <div class="ccard-dot"></div>
       <div class="ccard-body">
@@ -343,6 +343,16 @@ window.certCardToggle = function(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle('ccard-open');
 };
+
+// Delegated click for [data-cert-toggle]="<id>" — replaces the inline
+// onclick in the card template so pages with strict CSP keep working.
+if (typeof document !== 'undefined' && !document._certsToggleListener) {
+  document._certsToggleListener = true;
+  document.addEventListener('click', function(e) {
+    const el = e.target.closest('[data-cert-toggle]');
+    if (el) window.certCardToggle(el.dataset.certToggle);
+  });
+}
 
 function certInjectStyles() {
   if (document.getElementById('ym-cert-styles')) return;

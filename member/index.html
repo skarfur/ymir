@@ -512,7 +512,7 @@ function renderActiveCheckouts() {
     return renderCheckoutCard(c, {
       isMe,
       staffView: false,
-      onReturn: isMe ? `openReturnModal('${c.id}')` : undefined
+      onReturn: isMe ? 'openReturnModal' : undefined
     });
   }).join('');
 }

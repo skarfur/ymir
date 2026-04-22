@@ -738,8 +738,8 @@ function renderCheckouts() {
   singles.forEach(c => {
     const inner = renderCheckoutCard(c, {
       staffView: true,
-      onCheckIn: "staffCheckIn('" + c.id + "')",
-      onDelete:  "staffDeleteCheckout('" + c.id + "','" + esc(c.boatName||'') + "')",
+      onCheckIn: "staffCheckIn",
+      onDelete:  "staffDeleteCheckout",
     });
     const wrapper = document.createElement('div');
     wrapper.innerHTML = inner.replace(
@@ -1027,6 +1027,10 @@ async function staffCheckIn(id) {
 }
 
 async function staffDeleteCheckout(id, boatName) {
+  if (boatName == null) {
+    const co = checkouts.find(c => c.id === id);
+    boatName = co && co.boatName || '';
+  }
   if (!await ymConfirm(`${s('staff.deleteCheckout')}: ${boatName||''}?`)) return;
   try {
     await apiPost('deleteCheckout', { id });

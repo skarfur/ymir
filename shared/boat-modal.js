@@ -25,15 +25,15 @@
 ;(function () {
   function boatModalHtml() {
     return `
-<div class="modal-overlay hidden" id="boatModal" onclick="if(event.target===this)closeModal('boatModal')">
+<div class="modal-overlay hidden" id="boatModal" data-bm-close-self>
   <div class="modal">
     <div class="modal-header">
       <h3 id="boatModalTitle" data-s="admin.boatModal.add"></h3>
-      <button class="modal-close-x" onclick="closeModal('boatModal')">&times;</button>
+      <button class="modal-close-x" data-bm-close="boatModal">&times;</button>
     </div>
     <div class="field"><label data-s="lbl.name"></label><input type="text" id="bName"></div>
     <div class="field"><label data-s="admin.boatCategory"></label>
-      <select id="bCategory" onchange="updateBoatModalFields()"></select>
+      <select id="bCategory" data-bm-change="updateBoatModalFields"></select>
     </div>
     <div class="field">
       <label data-s="boat.defaultPort">Default port</label>
@@ -55,7 +55,7 @@
     </div>
     <div class="field">
       <label data-s="boat.ownership">Ownership</label>
-      <select id="bOwnership" onchange="updateOwnershipFields()">
+      <select id="bOwnership" data-bm-change="updateOwnershipFields">
         <option value="club" data-s="admin.ownerClub"></option>
         <option value="private" data-s="admin.ownerPrivate"></option>
       </select>
@@ -63,7 +63,7 @@
     <div class="field hidden" id="bOwnerField">
       <label data-s="boat.owner">Owner</label>
       <div style="position:relative">
-        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="" oninput="searchBoatOwner(this.value)">
+        <input type="text" id="bOwnerSearch" autocomplete="off" placeholder="" data-bm-input="searchBoatOwner">
         <div id="bOwnerSuggestions" class="suggest-drop" style="position:relative"></div>
         <input type="hidden" id="bOwnerId">
         <div id="bOwnerName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
@@ -71,7 +71,7 @@
     </div>
     <div class="field">
       <label data-s="boat.accessMode">Access Mode</label>
-      <select id="bAccessMode" onchange="updateAccessFields()">
+      <select id="bAccessMode" data-bm-change="updateAccessFields">
         <option value="free" data-s="boat.accessFree"></option>
         <option value="controlled" data-s="boat.accessControlled"></option>
       </select>
@@ -85,14 +85,14 @@
         <label data-s="boat.allowlist">Allowed Members</label>
         <div id="bAllowlistChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
         <div style="position:relative">
-          <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" oninput="searchAllowlistMember(this.value)">
+          <input type="text" id="bAllowlistSearch" autocomplete="off" placeholder="" data-bm-input="searchAllowlistMember">
           <div id="bAllowlistSuggestions" class="suggest-drop" style="position:relative"></div>
         </div>
       </div>
     </div>
     <div id="bSlotSchedulingSection" class="hidden" style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <input type="checkbox" id="bSlotScheduling" onchange="updateSlotFields()">
+        <input type="checkbox" id="bSlotScheduling" data-bm-change="updateSlotFields">
         <label for="bSlotScheduling" style="font-size:11px" data-s="boat.slotScheduling">Enable session slot scheduling</label>
       </div>
       <div id="bSlotOptions" class="hidden">
@@ -110,7 +110,7 @@
         <div class="field">
           <label data-s="cq.resMember">Member</label>
           <div style="position:relative">
-            <input type="text" id="bResMemberSearch" autocomplete="off" placeholder="" oninput="searchResMember(this.value)">
+            <input type="text" id="bResMemberSearch" autocomplete="off" placeholder="" data-bm-input="searchResMember">
             <div id="bResMemberSuggestions" class="suggest-drop" style="position:relative"></div>
             <input type="hidden" id="bResMemberKt">
             <div id="bResMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
@@ -122,8 +122,8 @@
         </div>
         <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="bResNote"></div>
         <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" onclick="cancelResForm()" data-s="btn.cancel"></button>
-          <button class="btn btn-primary" style="font-size:11px" onclick="saveResFromModal()" data-s="btn.save"></button>
+          <button class="btn btn-secondary" style="font-size:11px" data-bm-click="cancelResForm" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" style="font-size:11px" data-bm-click="saveResFromModal" data-s="btn.save"></button>
         </div>
       </div>
       <div id="bReservationActions"></div>
@@ -138,9 +138,9 @@
       <input type="checkbox" id="bActive" checked> <label for="bActive" data-s="lbl.active"></label>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="closeModal('boatModal')" data-s="btn.cancel"></button>
-      <button class="btn btn-danger hidden" id="bDeleteBtn" onclick="deleteBoat()" data-s="btn.delete"></button>
-      <button class="btn btn-primary" onclick="saveBoat()" data-s="btn.save"></button>
+      <button class="btn btn-secondary" data-bm-close="boatModal" data-s="btn.cancel"></button>
+      <button class="btn btn-danger hidden" id="bDeleteBtn" data-bm-click="deleteBoat" data-s="btn.delete"></button>
+      <button class="btn btn-primary" data-bm-click="saveBoat" data-s="btn.save"></button>
     </div>
   </div>
 </div>`;
@@ -154,3 +154,25 @@
     if (typeof applyStrings === 'function') applyStrings(document.getElementById('boatModal'));
   };
 })();
+
+// Delegated handlers for data-bm-* attrs on the boat modal DOM
+// (replaces inline onclick/onchange/oninput in the template above).
+if (typeof document !== 'undefined' && !document._bmClickListener) {
+  document._bmClickListener = true;
+  document.addEventListener('click', function(e) {
+    var self = e.target.closest('[data-bm-close-self]');
+    if (self && e.target === self) { closeModal(self.id); return; }
+    var close = e.target.closest('[data-bm-close]');
+    if (close) { closeModal(close.dataset.bmClose); return; }
+    var clk = e.target.closest('[data-bm-click]');
+    if (clk && typeof window[clk.dataset.bmClick] === 'function') window[clk.dataset.bmClick]();
+  });
+  document.addEventListener('change', function(e) {
+    var el = e.target.closest('[data-bm-change]');
+    if (el && typeof window[el.dataset.bmChange] === 'function') window[el.dataset.bmChange]();
+  });
+  document.addEventListener('input', function(e) {
+    var el = e.target.closest('[data-bm-input]');
+    if (el && typeof window[el.dataset.bmInput] === 'function') window[el.dataset.bmInput](e.target.value);
+  });
+}
