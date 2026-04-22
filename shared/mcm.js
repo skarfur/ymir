@@ -27,17 +27,17 @@
     if (document.getElementById('memberCertModal')) return;
     var div = document.createElement('div');
     div.innerHTML = [
-      '<div class="modal-overlay hidden" id="memberCertModal" onclick="if(event.target===this)closeModal(\'memberCertModal\')">',
+      '<div class="modal-overlay hidden" id="memberCertModal" data-mcm-close-self>',
       '  <div class="modal" style="max-width:480px">',
       '    <div class="modal-header">',
       '      <h3 id="mcmTitle" data-s="cq.assignCred"></h3>',
-      '      <button class="modal-close-x" onclick="closeModal(\'memberCertModal\')">&times;</button>',
+      '      <button class="modal-close-x" data-mcm-close="memberCertModal">&times;</button>',
       '    </div>',
       '',
       '    <!-- Member search (hidden when pre-populated) -->',
       '    <div class="field" id="mcmSearchField">',
       '      <label data-s="cq.selectMember"></label>',
-      '      <input type="text" id="mcmMemberSearch" oninput="mcmFilterMembers()" autocomplete="off" placeholder="">',
+      '      <input type="text" id="mcmMemberSearch" data-mcm-input="mcmFilterMembers" autocomplete="off" placeholder="">',
       '      <div id="mcmMemberResults" style="max-height:120px;overflow-y:auto;margin-top:4px"></div>',
       '    </div>',
       '    <div id="mcmMemberName" style="margin-top:6px;margin-bottom:10px;font-size:12px;font-weight:500;color:var(--brass-fg);display:none"></div>',
@@ -54,7 +54,7 @@
       '      <!-- Category -->',
       '      <div class="field">',
       '        <label data-s="admin.certCategory"></label>',
-      '        <select id="mcmCategory" onchange="mcmOnCategoryChange()">',
+      '        <select id="mcmCategory" data-mcm-change="mcmOnCategoryChange">',
       '          <option value="" data-s="admin.certCategorySelect"></option>',
       '        </select>',
       '      </div>',
@@ -62,7 +62,7 @@
       '      <!-- Credential type -->',
       '      <div class="field">',
       '        <label data-s="lbl.type"></label>',
-      '        <select id="mcmCertType" onchange="mcmUpdateSubcats()">',
+      '        <select id="mcmCertType" data-mcm-change="mcmUpdateSubcats">',
       '          <option value="">Select\u2026</option>',
       '        </select>',
       '      </div>',
@@ -98,7 +98,7 @@
       '      <!-- Expiry toggle -->',
       '      <div class="field" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">',
       '        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">',
-      '          <input type="checkbox" id="mcmExpires" onchange="mcmToggleExpiry()"> <span data-s="admin.certExpires2"></span>',
+      '          <input type="checkbox" id="mcmExpires" data-mcm-change="mcmToggleExpiry"> <span data-s="admin.certExpires2"></span>',
       '        </label>',
       '      </div>',
       '      <div class="field" id="mcmExpiryDateField" style="display:none">',
@@ -113,13 +113,13 @@
       '      </div>',
       '',
       '      <div style="display:flex;gap:8px">',
-      '        <button class="btn btn-primary" style="flex:1" onclick="mcmAssign()" id="mcmAssignBtn" data-s="cert.assign"></button>',
-      '        <button class="btn btn-secondary hidden" id="mcmCancelEditBtn" onclick="mcmCancelEdit()" data-s="btn.cancel"></button>',
+      '        <button class="btn btn-primary" style="flex:1" data-mcm-click="mcmAssign" id="mcmAssignBtn" data-s="cert.assign"></button>',
+      '        <button class="btn btn-secondary hidden" id="mcmCancelEditBtn" data-mcm-click="mcmCancelEdit" data-s="btn.cancel"></button>',
       '      </div>',
       '    </div>',
       '',
       '    <div style="display:flex;gap:8px;margin-top:12px">',
-      '      <button class="btn btn-secondary" onclick="closeModal(\'memberCertModal\')" data-s="btn.close"></button>',
+      '      <button class="btn btn-secondary" data-mcm-close="memberCertModal" data-s="btn.close"></button>',
       '    </div>',
       '  </div>',
       '</div>',
@@ -199,7 +199,7 @@
       return (m.name || '').toLowerCase().includes(q) || String(m.kennitala || '').includes(q);
     }).slice(0, 8);
     el.innerHTML = matches.map(function(m) {
-      return '<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" onclick="mcmSelectMember(\'' + m.id + '\')">'
+      return '<div class="list-row" style="cursor:pointer;padding:6px 8px;font-size:12px" data-mcm-click="mcmSelectMember" data-mcm-arg1="' + m.id + '">'
         + '<div>' + esc(memberDisplayName(m, _members()) || '\u2014') + '</div>'
         + '<div style="font-size:10px;color:var(--muted);margin-left:8px">' + esc(m.kennitala || '') + '</div></div>';
     }).join('');
@@ -360,8 +360,8 @@
         + '<div>' + esc(label) + '</div>'
         + '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + meta + '</div>'
         + '</div>'
-        + '<button class="row-edit" onclick="mcmEditCert(' + i + ')" title="' + s('btn.edit') + '" style="font-size:10px;margin-right:4px">' + s('btn.edit') + '</button>'
-        + '<button class="row-del" onclick="mcmRemoveCert(\'' + esc(removeKey) + '\',\'' + (c.sub || '') + '\')" title="Remove">\u00d7</button>'
+        + '<button class="row-edit" data-mcm-click="mcmEditCert" data-mcm-arg1="' + i + '" title="' + s('btn.edit') + '" style="font-size:10px;margin-right:4px">' + s('btn.edit') + '</button>'
+        + '<button class="row-del" data-mcm-click="mcmRemoveCert" data-mcm-arg1="' + esc(removeKey) + '" data-mcm-arg2="' + (c.sub || '') + '" title="Remove">\u00d7</button>'
         + '</div>';
     }).join('');
   }
@@ -469,3 +469,27 @@
   };
 
 })();
+
+// Delegated handlers for data-mcm-* attrs on the member-cert modal DOM
+// (replaces inline onclick/onchange/oninput in the templates above).
+if (typeof document !== 'undefined' && !document._mcmClickListener) {
+  document._mcmClickListener = true;
+  document.addEventListener('click', function(e) {
+    var self = e.target.closest('[data-mcm-close-self]');
+    if (self && e.target === self) { closeModal(self.id); return; }
+    var close = e.target.closest('[data-mcm-close]');
+    if (close) { closeModal(close.dataset.mcmClose); return; }
+    var clk = e.target.closest('[data-mcm-click]');
+    if (clk && typeof window[clk.dataset.mcmClick] === 'function') {
+      window[clk.dataset.mcmClick](clk.dataset.mcmArg1, clk.dataset.mcmArg2);
+    }
+  });
+  document.addEventListener('input', function(e) {
+    var el = e.target.closest('[data-mcm-input]');
+    if (el && typeof window[el.dataset.mcmInput] === 'function') window[el.dataset.mcmInput]();
+  });
+  document.addEventListener('change', function(e) {
+    var el = e.target.closest('[data-mcm-change]');
+    if (el && typeof window[el.dataset.mcmChange] === 'function') window[el.dataset.mcmChange]();
+  });
+}
