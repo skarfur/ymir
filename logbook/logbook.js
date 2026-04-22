@@ -38,7 +38,17 @@ function bftLabel(b){
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
+let _statStripHTML=null;
 function renderStats(){
+  // Snapshot the full card set on first render, then restore before each
+  // subsequent render. Hidden cards are removed from the DOM (not just
+  // display:none'd) so :nth-child orphan rules in logbook.css see accurate
+  // sibling counts.
+  const strip=document.querySelector('.stat-strip');
+  if(strip){
+    if(_statStripHTML===null) _statStripHTML=strip.innerHTML;
+    else strip.innerHTML=_statStripHTML;
+  }
   const year=String(new Date().getFullYear());
   const season=myTrips.filter(t=>(t.date||'').startsWith(year));
   const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
@@ -109,40 +119,36 @@ function renderStats(){
   const stFavLocEl=document.getElementById('stFavLocation');
   const stPeakWindEl=document.getElementById('stPeakWind');
 
-  if(!isStatVisible('career',_statsVis)){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
-  if(!isStatVisible('hours',_statsVis)){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
-  if(!isStatVisible('ytd',_statsVis)){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
-  if(!isStatVisible('skipper',_statsVis)){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
-  if(!isStatVisible('distance',_statsVis)){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
-  if(!isStatVisible('longest',_statsVis)){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
-  if(!isStatVisible('avgWind',_statsVis)){stAvgWindEl.parentElement.style.display='none'}else{
+  if(!isStatVisible('career',_statsVis)){stTripsEl.parentElement.remove()}else{stTripsEl.textContent=myTrips.length}
+  if(!isStatVisible('hours',_statsVis)){stHoursEl.parentElement.remove()}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
+  if(!isStatVisible('ytd',_statsVis)){stSeasonEl.parentElement.remove()}else{stSeasonEl.textContent=season.length}
+  if(!isStatVisible('skipper',_statsVis)){stSkipperEl.parentElement.remove()}else{stSkipperEl.textContent=skipperTrips.length}
+  if(!isStatVisible('distance',_statsVis)){stDistanceEl.parentElement.remove()}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
+  if(!isStatVisible('longest',_statsVis)){stLongestEl.parentElement.remove()}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
+  if(!isStatVisible('avgWind',_statsVis)){stAvgWindEl.parentElement.remove()}else{
     if(!avgBft){stAvgWindEl.textContent='—'}
     else if(_windUnit==='bft'){stAvgWindEl.textContent='F '+avgBft.toFixed(1)}
     else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
   }
-  if(!isStatVisible('streak',_statsVis)){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'w':'—'}
-  if(!isStatVisible('boats',_statsVis)){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
-  if(!isStatVisible('crew',_statsVis)){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
-  if(!isStatVisible('heavy',_statsVis)){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
-  if(!isStatVisible('avgDuration',_statsVis)){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
-  if(!isStatVisible('locations',_statsVis)){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
-  if(!isStatVisible('verified',_statsVis)){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
-  if(!isStatVisible('helmHours',_statsVis)){stHelmHoursEl.parentElement.style.display='none'}else{stHelmHoursEl.textContent=helmHours?helmHours.toFixed(0)+'h':'—'}
-  if(!isStatVisible('student',_statsVis)){stStudentEl.parentElement.style.display='none'}else{stStudentEl.textContent=studentTrips}
-  if(!isStatVisible('favBoat',_statsVis)){stFavBoatEl.parentElement.style.display='none'}else{stFavBoatEl.textContent=favBoatName||'—';stFavBoatEl.title=favBoatName?favBoatName+' — '+favBoatH.toFixed(0)+'h':''}
-  if(!isStatVisible('favLocation',_statsVis)){stFavLocEl.parentElement.style.display='none'}else{stFavLocEl.textContent=favLocName||'—';stFavLocEl.title=favLocName?favLocName+' — '+favLocN+' trips':''}
-  if(!isStatVisible('peakWind',_statsVis)){stPeakWindEl.parentElement.style.display='none'}else{
+  if(!isStatVisible('streak',_statsVis)){stStreakEl.parentElement.remove()}else{stStreakEl.textContent=streak?streak+'w':'—'}
+  if(!isStatVisible('boats',_statsVis)){stBoatsEl.parentElement.remove()}else{stBoatsEl.textContent=uniqueBoats}
+  if(!isStatVisible('crew',_statsVis)){stCrewEl.parentElement.remove()}else{stCrewEl.textContent=crewTrips}
+  if(!isStatVisible('heavy',_statsVis)){stHeavyEl.parentElement.remove()}else{stHeavyEl.textContent=heavyWx}
+  if(!isStatVisible('avgDuration',_statsVis)){stAvgDurEl.parentElement.remove()}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
+  if(!isStatVisible('locations',_statsVis)){stLocsEl.parentElement.remove()}else{stLocsEl.textContent=uniqueLocs}
+  if(!isStatVisible('verified',_statsVis)){stVerifiedEl.parentElement.remove()}else{stVerifiedEl.textContent=verifiedTrips}
+  if(!isStatVisible('helmHours',_statsVis)){stHelmHoursEl.parentElement.remove()}else{stHelmHoursEl.textContent=helmHours?helmHours.toFixed(0)+'h':'—'}
+  if(!isStatVisible('student',_statsVis)){stStudentEl.parentElement.remove()}else{stStudentEl.textContent=studentTrips}
+  if(!isStatVisible('favBoat',_statsVis)){stFavBoatEl.parentElement.remove()}else{stFavBoatEl.textContent=favBoatName||'—';stFavBoatEl.title=favBoatName?favBoatName+' — '+favBoatH.toFixed(0)+'h':''}
+  if(!isStatVisible('favLocation',_statsVis)){stFavLocEl.parentElement.remove()}else{stFavLocEl.textContent=favLocName||'—';stFavLocEl.title=favLocName?favLocName+' — '+favLocN+' trips':''}
+  if(!isStatVisible('peakWind',_statsVis)){stPeakWindEl.parentElement.remove()}else{
     if(!peakBft){stPeakWindEl.textContent='—'}
     else if(_windUnit==='bft'){stPeakWindEl.textContent='F '+peakBft}
     else{stPeakWindEl.textContent=convertWind(peakBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
   }
 
-  // Adjust grid columns based on visible cards
-  const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
-  const visibleCards=visKeys.filter(k=>isStatVisible(k,_statsVis)).length;
-  const strip=document.querySelector('.stat-strip');
-  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)';strip.style.display='grid'}
-  else if(strip && visibleCards===0){strip.style.display='none'}
+  // Column count + orphan spans are fully CSS-driven (see logbook.css).
+  if(strip) strip.style.display=strip.children.length?'grid':'none';
 
   if(!isStatVisible('byCategory',_statsVis)){document.getElementById('catHours').style.display='none';return}
 
