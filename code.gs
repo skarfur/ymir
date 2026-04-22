@@ -128,6 +128,8 @@ const STAFF_ACTIONS_ = {
   resolveIncident:             true,
   addIncidentNote:             true,
   getVerificationRequests:     true,
+  saveFlagOverride:            true,   // staff-set weather flag override
+  saveStaffStatus:             true,   // staff on-duty / support-boat toggle
 };
 
 // Actions that mutate a specific member's own data. The caller's kennitala
@@ -1151,6 +1153,8 @@ function route_(action, b, caller) {
     case 'generateLaunamidlar': return generateLaunamidlar_(b);
     case 'getConfig': return getConfig_();
     case 'saveConfig': return saveConfig_(b);
+    case 'saveFlagOverride': return saveFlagOverride_(b);
+    case 'saveStaffStatus': return saveStaffStatus_(b);
     case 'saveCharterCalendars': return saveCharterCalendars_(b);
     case 'saveClubCalendars': return saveClubCalendars_(b);
     case 'saveActivityType': return saveActivityType_(b);
@@ -2574,6 +2578,30 @@ function saveConfig_(b) {
   if (b.allowBreaks !== undefined) { setConfigSheetValue_('allowBreaks', b.allowBreaks ? 'true' : 'false'); saved.allowBreaks = true; }
   cDel_('config');
   return okJ({ saved });
+}
+
+// Staff-accessible override save. saveConfig_ is admin-only, but the flag
+// override is designed for on-duty staff — persist just that field here so
+// the staff page can actually save (otherwise optimistic UI hides a 403 and
+// the override vanishes on the next config refresh).
+function saveFlagOverride_(b) {
+  if (!b.flagOverride || b.flagOverride.active === false) {
+    setConfigSheetValue_('flagOverride', '');
+  } else {
+    setConfigSheetValue_('flagOverride', JSON.stringify(b.flagOverride));
+  }
+  cDel_('config');
+  return okJ({ saved: { flagOverride: true } });
+}
+
+// Same rationale as saveFlagOverride_: the on-duty / support-boat toggle is
+// a staff control, so it needs its own staff-gated endpoint.
+function saveStaffStatus_(b) {
+  if (b.staffStatus !== undefined) {
+    setConfigSheetValue_('staffStatus', JSON.stringify(b.staffStatus));
+  }
+  cDel_('config');
+  return okJ({ saved: { staffStatus: true } });
 }
 
 function getFlagConfig_() {
