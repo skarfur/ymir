@@ -25,7 +25,10 @@ let _confirmations={incoming:[],outgoing:[]}, _confirmationsLoaded=false;
 
 async function loadConfirmations(){
   try{
-    const res=await apiGet('getConfirmations',{kennitala:user.kennitala});
+    const res=await (window._earlyConfirmations || apiGet('getConfirmations',{kennitala:user.kennitala}));
+    // One-shot: clear the prefetch handle so the next call (e.g. after a
+    // mutation invalidates the cache) refetches instead of reusing stale data.
+    window._earlyConfirmations = null;
     const incoming = res.incoming||[], outgoing = res.outgoing||[];
     // Auto-dismiss resolved confirmations server-side in background.
     // Exception: keep rejected outgoing crew_assigned visible — the skipper
@@ -269,4 +272,16 @@ async function dismissAllConf() {
     showToast(s('logbook.allDismissed'), 'success');
   } catch(e) { showToast(s('logbook.errGeneric',{msg:e.message}), 'err'); }
 }
+
+// Auto-load on page ready for portals that mount the confirmations UI.
+// Gated on the #confBadge element so captain/ — which loads this file for
+// its helpers but has its own confirmation UI — doesn't fire an unused call.
+(function () {
+  if (typeof document === 'undefined') return;
+  var start = function () {
+    if (document.getElementById('confBadge')) loadConfirmations();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
 
