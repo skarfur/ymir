@@ -98,26 +98,32 @@
   --bg:       #ffffff;
   --surface:  #ffffff;
   --card:     #ffffff;
-  --border:   #c8d6e5;
-  --border-l: #a0b4c8;
-  --text:     #1a2a3a;
-  --muted:    #5a7a96;
-  --faint:    #dce4ec;
-  /* Light-mode navy = canonical brand blue, so .btn-primary (which paints
-     itself with --navy) matches the logo + accent chrome. */
+  /* Single authored blue (canonical brand, rgb 22,50,116). Everything blue in
+     light mode derives from it: structural fills use the solid value, layered
+     chrome (borders, faints) uses hex-alpha append, button hover/press pick
+     up slightly lighter/darker shades via color-mix. */
   --navy:     #163274;
-  /* Gold reads muddy on white, so --accent maps to the canonical brand blue
-     in light mode. Value stays 6-hex so var(--accent)NN alpha-append
-     patterns remain valid. */
+  --navy-d:   color-mix(in srgb, #163274 85%, black);
+  --navy-l:   color-mix(in srgb, #163274 78%, white);
   --accent:    #163274;
   --accent-fg: #1e8e4e;
+  --blue:     #163274;
+  --border:   #16327433;
+  --border-l: #16327466;
+  --text:     #1a2a3a;
+  --muted:    #5a7a96;
+  --faint:    #16327412;
   --logo-color: #fff;
   --green:    #1e8e4e;
   --yellow:   #d4a80c;
   --orange:   #c46a1a;
   --red:      #c53030;
-  --blue:     #2070a8;
   --purple:   #7c5fcf;
+  /* Header adopts the brand blue too so the nav bar matches the body accent. */
+  --header-bg:     #163274;
+  --header-text:   #ffffff;
+  --header-muted:  #ffffffb3;
+  --header-border: #ffffff26;
   --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
   --shadow-md: 0 2px 8px rgba(0,0,0,.1);
   --shadow-lg: 0 8px 30px rgba(0,0,0,.15);
@@ -128,21 +134,27 @@
     --bg:       #ffffff;
     --surface:  #ffffff;
     --card:     #ffffff;
-    --border:   #c8d6e5;
-    --border-l: #a0b4c8;
-    --text:     #1a2a3a;
-    --muted:    #5a7a96;
-    --faint:    #dce4ec;
     --navy:     #163274;
+    --navy-d:   color-mix(in srgb, #163274 85%, black);
+    --navy-l:   color-mix(in srgb, #163274 78%, white);
     --accent:    #163274;
     --accent-fg: #1e8e4e;
+    --blue:     #163274;
+    --border:   #16327433;
+    --border-l: #16327466;
+    --text:     #1a2a3a;
+    --muted:    #5a7a96;
+    --faint:    #16327412;
     --logo-color: #fff;
     --green:    #1e8e4e;
     --yellow:   #d4a80c;
     --orange:   #c46a1a;
     --red:      #c53030;
-    --blue:     #2070a8;
     --purple:   #7c5fcf;
+    --header-bg:     #163274;
+    --header-text:   #ffffff;
+    --header-muted:  #ffffffb3;
+    --header-border: #ffffff26;
     --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
     --shadow-md: 0 2px 8px rgba(0,0,0,.1);
     --shadow-lg: 0 8px 30px rgba(0,0,0,.15);
@@ -1375,13 +1387,13 @@ textarea { min-height: 70px; }
 .vp-role-note { font-size:9px; color:var(--muted); font-style:italic; }
 .vp-role-note.full { color:var(--red); font-style:normal; font-weight:500; }
 
-/* ── LIGHT-MODE BRASS-TEXT OVERRIDES ──────────────────────────────────────────
-   In light mode --accent maps to blue (#2070a8). Dark-navy/black text on that
-   blue drops below WCAG AA, so flip text to white for every selector that
-   paints itself with `background: var(--accent)` plus a hardcoded dark color.
-   Selectors live across many per-page stylesheets but the accent-on-dark-text
-   pattern is identical, so one override block wins via the [data-theme]
-   specificity bump. */
+/* ── LIGHT-MODE ACCENT-BG TEXT OVERRIDE ───────────────────────────────────────
+   Selectors below paint themselves with `background: var(--accent)` or a
+   similar dark fill and hardcode a dark text color that works in dark mode
+   (black on gold) but fails WCAG AA in light mode (black on navy #163274).
+   One override block flips them to white in light themes. Base rules that
+   already use `color: var(--bg)` (theme-aware) don't need to be listed —
+   they flip automatically. */
 [data-theme="light"] .btn-primary,
 [data-theme="light"] .vp-btn.signed-up,
 [data-theme="light"] .cap-hm-btn.active,
