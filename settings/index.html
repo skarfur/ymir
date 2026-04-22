@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
@@ -13,6 +13,7 @@
 <script src="../shared/ui.js"></script>
 <script src="../shared/layout.js"></script>
 <script src="../shared/strings.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="settings.css">
 </head>
 <body>
@@ -97,6 +98,20 @@
       <label class="pill-toggle"><input type="checkbox" id="svStayLoggedIn"><span data-s="settings.stayLoggedIn"></span></label>
     </div>
     <div class="settings-hint mb-10" data-s="settings.stayLoggedInHint"></div>
+
+    <!-- Google link -->
+    <div id="googleLinkSection" class="settings-row flex-col gap-6 mt-12 d-none" style="align-items:stretch">
+      <label data-s="settings.googleAccount"></label>
+      <div id="googleLinkedRow" class="d-none d-flex items-center gap-8 flex-wrap">
+        <span class="text-sm" id="googleLinkedEmail"></span>
+        <button class="btn btn-ghost" type="button" id="googleUnlinkBtn" data-s="settings.googleUnlink"></button>
+      </div>
+      <div id="googleUnlinkedRow" class="d-none">
+        <div id="googleLinkBtn"></div>
+      </div>
+      <div class="settings-hint" data-s="settings.googleAccountHint"></div>
+      <div id="googleMsg" class="msg d-none mt-8 text-xs"></div>
+    </div>
 
     <!-- Password change -->
     <div class="settings-row flex-col gap-6 mt-12" style="align-items:stretch">

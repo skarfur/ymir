@@ -17,6 +17,7 @@ var SCHEMA_ = {
     'id','kennitala','name','role','email','phone','birthYear',
     'isMinor','guardianName','guardianKennitala','guardianPhone',
     'active','certifications','initials','preferences',
+    'googleEmail',
     'createdAt','updatedAt',
   ],
   daily_log: [
@@ -310,6 +311,44 @@ function migrateMemberLangIntoPreferences() {
   sheet.deleteColumn(langIdx + 1);
   cDel_('members');
   Logger.log('lang column migrated into preferences and removed');
+}
+
+// ── One-shot: auto-populate googleEmail for existing members whose email
+//    is provably a Google Account (personal Gmail or a Workspace domain
+//    whose MX points to Google). Safe to re-run; never overwrites an
+//    existing googleEmail value. Depends on resolveGoogleEmail_ in
+//    members.gs. Run from the Apps Script editor after setupSpreadsheet().
+function autoLinkGmailAddresses() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  var sheet = ss.getSheetByName('members');
+  if (!sheet) { Logger.log('members tab not found'); return; }
+  var lastCol = sheet.getLastColumn();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('no member rows'); return; }
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var emailIdx  = headers.indexOf('email');
+  var googleIdx = headers.indexOf('googleEmail');
+  if (emailIdx === -1) { Logger.log('email column missing'); return; }
+  if (googleIdx === -1) {
+    Logger.log('googleEmail column missing — run setupSpreadsheet() first');
+    return;
+  }
+  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var gmail = 0, workspace = 0;
+  for (var i = 0; i < data.length; i++) {
+    var existing = String(data[i][googleIdx] || '').trim();
+    if (existing) continue;
+    var email = String(data[i][emailIdx] || '').trim().toLowerCase();
+    if (!email) continue;
+    var resolved = resolveGoogleEmail_(email);
+    if (!resolved) continue;
+    sheet.getRange(i + 2, googleIdx + 1).setValue(resolved);
+    if (isGmailAddress_(email)) gmail++; else workspace++;
+  }
+  cDel_('members');
+  Logger.log('autoLinkGmailAddresses: ' + (gmail + workspace) +
+             ' rows linked (personal gmail: ' + gmail +
+             ', workspace: ' + workspace + ')');
 }
 
 // ── Focused helper: create reservation_slots, crews, crew_invites tabs ────
