@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com https://nominatim.openstreetmap.org https://unpkg.com; frame-src 'self' https://calendar.google.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ýmir — Logbook</title>
@@ -11,7 +11,6 @@
 <link rel="stylesheet" href="../shared/style.css">
 <link rel="stylesheet" href="../shared/tripcard.css">
 <script src="../shared/api.js"></script>
-<script>prefetch({Trips:['getTrips',{limit:500}],Config:['getConfig'],Members:['getMembers']});</script>
 <script src="../shared/ui.js"></script>
 <script src="../shared/strings.js"></script>
 <script src="../shared/trip-form.js"></script>
@@ -175,9 +174,9 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
     <div class="member-heatmap-header">
       <span class="member-heatmap-title">Heatmap</span>
       <div class="heatmap-toggle">
-        <button class="active" data-mode="trips" onclick="setHeatMode('trips')">Trips</button>
-        <button data-mode="time" onclick="setHeatMode('time')">Time</button>
-        <button data-mode="tracks" onclick="setHeatMode('tracks')">GPS tracks</button>
+        <button class="active" data-mode="trips" data-lb-click="setHeatMode" data-lb-arg="trips">Trips</button>
+        <button data-mode="time" data-lb-click="setHeatMode" data-lb-arg="time">Time</button>
+        <button data-mode="tracks" data-lb-click="setHeatMode" data-lb-arg="tracks">GPS tracks</button>
       </div>
     </div>
     <div id="memberHeatmap"></div>
@@ -185,9 +184,9 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 
   <!-- Share logbook -->
   <div id="shareBar" class="info-panel flex-center flex-wrap gap-10 mb-12" style="padding:10px 14px">
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" onclick="toggleSharePanel()" data-s="logbook.shareBtn"></button>
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" onclick="openLogModal()">+ Manually log a trip</button>
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0;position:relative" onclick="openConfirmationsModal()"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" data-lb-click="toggleSharePanel" data-s="logbook.shareBtn"></button>
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" data-lb-click="openLogModal">+ Manually log a trip</button>
+    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0;position:relative" data-lb-click="openConfirmationsModal"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
     <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
       <div id="shareCatChecks" class="flex-center flex-wrap gap-8 mb-8"></div>
       <div class="flex-center flex-wrap mb-8" style="gap:14px">
@@ -200,8 +199,8 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           <span data-s="logbook.shareTracks"></span>
         </label>
       </div>
-      <button class="btn-primary text-sm" style="width:auto;padding:7px 16px" onclick="generateAndCopyShareLink()" data-s="logbook.shareCopy"></button>
-      <button class="btn-secondary text-sm" style="width:auto;padding:7px 16px;margin-left:6px" onclick="exportLogbookCsv()" data-s="logbook.exportCsv"></button>
+      <button class="btn-primary text-sm" style="width:auto;padding:7px 16px" data-lb-click="generateAndCopyShareLink" data-s="logbook.shareCopy"></button>
+      <button class="btn-secondary text-sm" style="width:auto;padding:7px 16px;margin-left:6px" data-lb-click="exportLogbookCsv" data-s="logbook.exportCsv"></button>
     </div>
     <div id="shareActiveTokens" style="width:100%"></div>
   </div>
@@ -238,28 +237,28 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 </div>
 
 <!-- Lightbox overlay -->
-<div class="lightbox-overlay hidden" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-  <button class="lightbox-nav prev" onclick="event.stopPropagation();lightboxNav(-1)">&lsaquo;</button>
-  <button class="lightbox-nav next" onclick="event.stopPropagation();lightboxNav(1)">&rsaquo;</button>
-  <img class="lightbox-img" id="lightboxImg" onclick="event.stopPropagation()">
+<div class="lightbox-overlay hidden" id="lightbox" data-lb-click="closeLightbox">
+  <button class="lightbox-close" data-lb-click="closeLightbox">&times;</button>
+  <button class="lightbox-nav prev" data-lb-click="lightboxNav" data-lb-arg="-1">&lsaquo;</button>
+  <button class="lightbox-nav next" data-lb-click="lightboxNav" data-lb-arg="1">&rsaquo;</button>
+  <img class="lightbox-img" id="lightboxImg" data-lb-nobubble>
 </div>
 
 <!-- Full-screen map modal -->
 <div class="map-modal-overlay hidden" id="mapModal">
   <div class="map-modal-bar">
     <span id="mapModalTitle">GPS Track</span>
-    <button class="map-modal-close" onclick="closeMapModal()">&times;</button>
+    <button class="map-modal-close" data-lb-click="closeMapModal">&times;</button>
   </div>
   <div class="map-modal-body" id="mapModalBody"></div>
 </div>
 
 <!-- Confirmations modal -->
-<div class="modal-overlay hidden" id="confirmationsModal" onclick="if(event.target===this)closeConfModal()">
+<div class="modal-overlay hidden" id="confirmationsModal" data-lb-close-self="closeConfModal">
   <div class="modal-sheet" style="max-width:520px">
     <div class="modal-title">
       <span id="confirmationsTitle"></span>
-      <button class="modal-close" onclick="closeConfModal()">&#10005;</button>
+      <button class="modal-close" data-lb-click="closeConfModal">&#10005;</button>
     </div>
     <div class="section-label mb-8" style="letter-spacing:1.5px" data-s="member.incoming"></div>
     <div id="incomingConfirmations"><div class="empty-note" data-s="lbl.loading"></div></div>
@@ -269,51 +268,51 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
 </div>
 
 <!-- Log manually modal -->
-<div class="modal-overlay hidden" id="logModal" onclick="if(event.target===this)closeLogModal()">
+<div class="modal-overlay hidden" id="logModal" data-lb-close-self="closeLogModal">
   <div class="modal-sheet">
     <div class="modal-title">
       <span id="logModalTitle">Add a log entry</span>
-      <button class="modal-close" onclick="closeLogModal()">✕</button>
+      <button class="modal-close" data-lb-click="closeLogModal">✕</button>
     </div>
 
     <!-- Step 1: enter manually or join a recent trip -->
     <div id="logStep1">
       <p class="text-sm text-muted mb-12">Enter a trip manually, or join a recent club trip as crew. You can add notes, photos, and a GPS track to any log entry.</p>
-      <button class="btn-secondary" onclick="showManualForm()">Enter manually</button>
+      <button class="btn-secondary" data-lb-click="showManualForm">Enter manually</button>
 
       <div class="text-xs text-muted uppercase" style="margin:12px 0;text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
-      <button class="load-more" id="loadMoreTripsBtn" onclick="loadMoreTrips()" style="display:none">Load more…</button>
+      <button class="load-more" id="loadMoreTripsBtn" data-lb-click="loadMoreTrips" style="display:none">Load more…</button>
 
       <!-- Confirmation request form when a club trip is selected -->
       <div id="joinExtras" style="display:none;margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border-l);border-radius:8px">
         <div class="section-label mb-6" style="letter-spacing:.8px">Request to join this trip</div>
         <p class="text-sm text-muted mb-12">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
         <div id="jErr" class="text-sm text-red mb-8" style="display:none"></div>
-        <button class="btn-primary" id="jSubmitBtn" onclick="submitJoinTrip()">Request to join</button>
+        <button class="btn-primary" id="jSubmitBtn" data-lb-click="submitJoinTrip">Request to join</button>
       </div>
     </div>
 
     <!-- Step 2: manual entry form -->
     <div id="logStep2" style="display:none">
-      <button class="text-sm text-muted mb-12" onclick="showStep1()" style="background:none;border:none;cursor:pointer;padding:0">← Back</button>
+      <button class="text-sm text-muted mb-12" data-lb-click="showStep1" style="background:none;border:none;cursor:pointer;padding:0">← Back</button>
       <div class="form-row">
         <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="form-field"><label>Role</label>
-          <select id="mRole" onchange="onRoleChange()"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
+          <select id="mRole" data-lb-change="onRoleChange"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
         </div>
       </div>
       <!-- Skipper assignment: shown when role=crew -->
       <div class="form-field" id="mSkipperSection" style="display:none;position:relative">
         <label>Skipper</label>
         <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
-          oninput="searchManualMember(this,'mSkipperDrop')" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
+          data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" onblur="setTimeout(()=>document.getElementById('mSkipperDrop').style.display='none',200)">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
       <!-- Non-club trip toggle -->
       <div class="form-field" style="margin-bottom:8px">
         <label class="flex-center gap-6" style="cursor:pointer;font-size:11px">
-          <input type="checkbox" id="mNonClub" onchange="onNonClubToggle()" style="width:auto;accent-color:var(--brass)">
+          <input type="checkbox" id="mNonClub" data-lb-change="onNonClubToggle" style="width:auto;accent-color:var(--brass)">
           <span data-s="logbook.nonClubToggle">Non-club trip</span>
           <span class="text-muted" style="font-size:9px;font-weight:400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
         </label>
@@ -321,7 +320,7 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- Club boat + location (default) -->
       <div id="mClubRow" class="form-row">
         <div id="mBoatClub" class="form-field"><label>Boat</label>
-          <select id="mBoat" onchange="onBoatChange()"><option value="">Select boat…</option></select>
+          <select id="mBoat" data-lb-change="onBoatChange"><option value="">Select boat…</option></select>
         </div>
         <div id="mLocClub" class="form-field"><label>Location</label>
           <select id="mLocation"><option value="">Select location…</option></select>
@@ -363,16 +362,16 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <div id="mLocFree" class="form-field" style="display:none">
         <label data-s="lbl.location">Location</label>
         <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
-        <button type="button" class="text-xs text-brass" id="mLocGeoBtn" onclick="useMyLocation('mLocFreeInput','mLocGeoStatus')" style="background:none;border:none;padding:4px 0;cursor:pointer;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
+        <button type="button" class="text-xs text-brass" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="background:none;border:none;padding:4px 0;cursor:pointer;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
         <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:2px;display:none"></div>
       </div>
       <div class="form-row">
         <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
-          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+          data-lb-time-format></div>
         <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
-          oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+          data-lb-time-format></div>
       </div>
-      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" oninput="onCrewChange()"></div>
+      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
       <div id="mCrewSection" class="mb-12" style="display:none">
         <label class="check-label" style="margin-bottom:8px">
@@ -393,23 +392,23 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
           <div class="form-field">
             <label>Departure port</label>
             <input list="portsList" id="mDeparturePort" placeholder="e.g. Reykjavík" autocomplete="off"
-              oninput="watchPortInput('departure')">
+              data-lb-input="watchPortInput" data-lb-arg="departure">
           </div>
           <div class="form-field">
             <label>Arrival port</label>
             <input list="portsList" id="mArrivalPort" placeholder="Same as departure" autocomplete="off"
-              oninput="watchPortInput('arrival')">
+              data-lb-input="watchPortInput" data-lb-arg="arrival">
           </div>
         </div>
         <datalist id="portsList"></datalist>
         <div id="addPortHint" class="text-xs text-brass" style="display:none;cursor:pointer;margin-top:4px"
-          onclick="addNewPort()">+ Add "<span id="addPortName"></span>" to ports list</div>
+          data-lb-click="addNewPort">+ Add "<span id="addPortName"></span>" to ports list</div>
       </details>
 
       <!-- Weather -->
       <div class="flex-center gap-6" style="margin:12px 0 8px;justify-content:space-between">
         <div class="section-label">WEATHER (OPTIONAL)</div>
-        <button type="button" class="text-xs text-brass" id="mWxFetchBtn" onclick="fetchCurrentWeather()" style="background:none;border:none;padding:0;cursor:pointer">🌤 Use current weather</button>
+        <button type="button" class="text-xs text-brass" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="background:none;border:none;padding:0;cursor:pointer">🌤 Use current weather</button>
       </div>
       <div id="mWxFetchStatus" class="text-xs text-muted" style="display:none;margin-bottom:6px"></div>
       <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->
@@ -419,14 +418,14 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
       <!-- GPS Track upload -->
       <div class="form-field">
         <label>GPS Track — GPX / KML / KMZ <span class="text-muted" style="font-size:9px">optional</span></label>
-        <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" onchange="handleTrackFile(this)"
+        <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" data-lb-change-el="handleTrackFile"
           class="text-sm" style="color:var(--text)">
         <div id="mTrackStatus" class="text-sm text-muted" style="margin-top:4px"></div>
       </div>
       <!-- Photo upload -->
       <div class="form-field">
         <label>Photos <span class="text-muted" style="font-size:9px">optional</span></label>
-        <input type="file" id="mPhotoFiles" accept="image/*" multiple onchange="handlePhotoFiles(this)"
+        <input type="file" id="mPhotoFiles" accept="image/*" multiple data-lb-change-el="handlePhotoFiles"
           class="text-sm" style="color:var(--text)">
         <div id="mPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
         <div class="photo-meta-row" style="margin-top:6px">
@@ -443,367 +442,21 @@ details#portDetails:not([open]) #portSummaryLabel::after{content:' ▾';font-siz
         <textarea id="mNotes" rows="2" placeholder="Private notes…"></textarea>
       </div>
       <div id="mErr" class="text-sm text-red mb-8" style="display:none"></div>
-      <button class="btn-primary" id="mSubmitBtn" onclick="submitManual()">Save to logbook</button>
+      <button class="btn-primary" id="mSubmitBtn" data-lb-click="submitManual">Save to logbook</button>
     </div>
   </div>
 </div>
 
-<script>
-requireAuth();
-buildHeader('logbook');
-const user = getUser();
-const IS   = getLang() === 'IS';
-const _windUnit = getPref('windUnit', 'ms');
-const _statsVis = (getPrefs().statsVisibility) || {};
-
-let myTrips  = [];
-let allTrips = [];  // all trips (for crew name lookups across users)
-let allBoats = [], allLocs = [], allMembers = [];
-let allRecentTrips = [];
-let recentOffset   = 0;
-const RECENT_PAGE  = 10;
-
-// ── File upload state ─────────────────────────────────────────────────────────
-let _pendingTrack  = null;   // {fileName, fileData (base64), mimeType}
-let _pendingPhotos = [];     // [{fileName, fileData (base64), mimeType}]
-let _lastPortInput = null;   // which port input was last typed into
-let _selectedClubTrip = null;
-
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function parseDateParts(d){
-  if(!d) return{day:'—',mon:'',yr:''};
-  return{day:d.slice(8,10)||'—',mon:String(new Date(d+'T12:00:00').getMonth()+1).padStart(2,'0'),yr:d.slice(0,4)};
-}
-function bftLabel(b){
-  const n=parseInt(b);
-  if (!isNaN(n) && n>=0 && n<=12) return s('wx.bft'+n);
-  return s('wx.force')+' '+b;
-}
-
-// ── Stats ─────────────────────────────────────────────────────────────────────
-function renderStats(){
-  const year=String(new Date().getFullYear());
-  const season=myTrips.filter(t=>(t.date||'').startsWith(year));
-  const hours=myTrips.reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  const skipperTrips=myTrips.filter(t=>!t.role||t.role==='skipper');
-
-  // New stats calculations
-  const totalNm=myTrips.reduce((s,t)=>s+(parseFloat(t.distanceNm)||0),0);
-  const longestH=myTrips.reduce((m,t)=>Math.max(m,parseFloat(t.hoursDecimal)||0),0);
-  const bftTrips=myTrips.filter(t=>t.beaufort!==''&&t.beaufort!=null&&!isNaN(parseFloat(t.beaufort)));
-  const avgBft=bftTrips.length?bftTrips.reduce((s,t)=>s+parseFloat(t.beaufort),0)/bftTrips.length:0;
-  // Beaufort midpoint m/s lookup for unit conversion
-  const _bftMs=[0,0.8,2.4,4.4,6.7,9.4,12.3,15.5,18.9,22.6,26.5,30.6,34];
-  const avgBftMs=avgBft?_bftMs[Math.round(avgBft)]||avgBft*2.5:0;
-  // Streak: consecutive weeks with at least one trip (counting back from current week)
-  let streak=0;
-  if(myTrips.length){
-    const toISOWeek=d=>{const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);const w1=new Date(dt.getFullYear(),0,4);return dt.getFullYear()+'-W'+(1+Math.round(((dt-w1)/864e5-3+(w1.getDay()+6)%7)/7)).toString().padStart(2,'0')};
-    const weeks=new Set(myTrips.map(t=>t.date?toISOWeek(t.date):null).filter(Boolean));
-    const now=new Date();let d=new Date(now);
-    while(true){const wk=toISOWeek(d);if(!weeks.has(wk))break;streak++;d.setDate(d.getDate()-7)}
-  }
-  const uniqueBoats=new Set(myTrips.map(t=>t.boatId||t.boatName).filter(Boolean)).size;
-  const crewTrips=myTrips.filter(t=>t.role==='crew').length;
-  const heavyWx=myTrips.filter(t=>(parseInt(t.beaufort)||0)>=5).length;
-  const avgDur=myTrips.length?hours/myTrips.length:0;
-  const uniqueLocs=new Set(myTrips.map(t=>t.locationName||t.locationId).filter(Boolean)).size;
-  const verifiedTrips=myTrips.filter(t=>t.verified&&t.verified!=='false').length;
-  // Hours spent at the helm (includes crew-while-helming, the common use case)
-  const helmHours=myTrips.filter(t=>t.helm&&t.helm!=='false').reduce((s,t)=>s+(parseFloat(t.hoursDecimal)||0),0);
-  // Trips logged as a student
-  const studentTrips=myTrips.filter(t=>t.student&&t.student!=='false').length;
-  // Favorite boat: most hours aggregated by boatId (fall back to boatName)
-  const boatHours={},boatNames={};
-  myTrips.forEach(t=>{
-    const id=t.boatId||t.boatName;if(!id)return;
-    boatHours[id]=(boatHours[id]||0)+(parseFloat(t.hoursDecimal)||0);
-    if(!boatNames[id])boatNames[id]=(allBoats.find(b=>b.id===t.boatId)?.name)||t.boatName||id;
-  });
-  let favBoatName='',favBoatH=0;
-  Object.entries(boatHours).forEach(([id,h])=>{if(h>favBoatH){favBoatH=h;favBoatName=boatNames[id]}});
-  // Favorite location: most trips at a named location
-  const locCount={};
-  myTrips.forEach(t=>{const n=t.locationName||t.locationId;if(n)locCount[n]=(locCount[n]||0)+1});
-  let favLocName='',favLocN=0;
-  Object.entries(locCount).forEach(([n,c])=>{if(c>favLocN){favLocN=c;favLocName=n}});
-  // Peak wind: highest Beaufort recorded across logged trips
-  const peakBft=myTrips.reduce((m,t)=>{const b=parseInt(t.beaufort);return isNaN(b)?m:Math.max(m,b)},0);
-  const peakBftMs=peakBft?(_bftMs[peakBft]||peakBft*2.5):0;
-
-  // Apply stats visibility preferences
-  const stTripsEl=document.getElementById('stTrips');
-  const stHoursEl=document.getElementById('stHours');
-  const stSeasonEl=document.getElementById('stSeason');
-  const stSkipperEl=document.getElementById('stSkipper');
-  const stDistanceEl=document.getElementById('stDistance');
-  const stLongestEl=document.getElementById('stLongest');
-  const stAvgWindEl=document.getElementById('stAvgWind');
-  const stStreakEl=document.getElementById('stStreak');
-  const stBoatsEl=document.getElementById('stBoats');
-  const stCrewEl=document.getElementById('stCrew');
-  const stHeavyEl=document.getElementById('stHeavy');
-  const stAvgDurEl=document.getElementById('stAvgDuration');
-  const stLocsEl=document.getElementById('stLocations');
-  const stVerifiedEl=document.getElementById('stVerified');
-  const stHelmHoursEl=document.getElementById('stHelmHours');
-  const stStudentEl=document.getElementById('stStudent');
-  const stFavBoatEl=document.getElementById('stFavBoat');
-  const stFavLocEl=document.getElementById('stFavLocation');
-  const stPeakWindEl=document.getElementById('stPeakWind');
-
-  if(!isStatVisible('career',_statsVis)){stTripsEl.parentElement.style.display='none'}else{stTripsEl.textContent=myTrips.length}
-  if(!isStatVisible('hours',_statsVis)){stHoursEl.parentElement.style.display='none'}else{stHoursEl.textContent=hours.toFixed(0)+'h'}
-  if(!isStatVisible('ytd',_statsVis)){stSeasonEl.parentElement.style.display='none'}else{stSeasonEl.textContent=season.length}
-  if(!isStatVisible('skipper',_statsVis)){stSkipperEl.parentElement.style.display='none'}else{stSkipperEl.textContent=skipperTrips.length}
-  if(!isStatVisible('distance',_statsVis)){stDistanceEl.parentElement.style.display='none'}else{stDistanceEl.textContent=totalNm.toFixed(0)+' nm'}
-  if(!isStatVisible('longest',_statsVis)){stLongestEl.parentElement.style.display='none'}else{stLongestEl.textContent=longestH.toFixed(1)+'h'}
-  if(!isStatVisible('avgWind',_statsVis)){stAvgWindEl.parentElement.style.display='none'}else{
-    if(!avgBft){stAvgWindEl.textContent='—'}
-    else if(_windUnit==='bft'){stAvgWindEl.textContent='F '+avgBft.toFixed(1)}
-    else{stAvgWindEl.textContent=convertWind(avgBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
-  }
-  if(!isStatVisible('streak',_statsVis)){stStreakEl.parentElement.style.display='none'}else{stStreakEl.textContent=streak?streak+'w':'—'}
-  if(!isStatVisible('boats',_statsVis)){stBoatsEl.parentElement.style.display='none'}else{stBoatsEl.textContent=uniqueBoats}
-  if(!isStatVisible('crew',_statsVis)){stCrewEl.parentElement.style.display='none'}else{stCrewEl.textContent=crewTrips}
-  if(!isStatVisible('heavy',_statsVis)){stHeavyEl.parentElement.style.display='none'}else{stHeavyEl.textContent=heavyWx}
-  if(!isStatVisible('avgDuration',_statsVis)){stAvgDurEl.parentElement.style.display='none'}else{stAvgDurEl.textContent=avgDur?avgDur.toFixed(1)+'h':'—'}
-  if(!isStatVisible('locations',_statsVis)){stLocsEl.parentElement.style.display='none'}else{stLocsEl.textContent=uniqueLocs}
-  if(!isStatVisible('verified',_statsVis)){stVerifiedEl.parentElement.style.display='none'}else{stVerifiedEl.textContent=verifiedTrips}
-  if(!isStatVisible('helmHours',_statsVis)){stHelmHoursEl.parentElement.style.display='none'}else{stHelmHoursEl.textContent=helmHours?helmHours.toFixed(0)+'h':'—'}
-  if(!isStatVisible('student',_statsVis)){stStudentEl.parentElement.style.display='none'}else{stStudentEl.textContent=studentTrips}
-  if(!isStatVisible('favBoat',_statsVis)){stFavBoatEl.parentElement.style.display='none'}else{stFavBoatEl.textContent=favBoatName||'—';stFavBoatEl.title=favBoatName?favBoatName+' — '+favBoatH.toFixed(0)+'h':''}
-  if(!isStatVisible('favLocation',_statsVis)){stFavLocEl.parentElement.style.display='none'}else{stFavLocEl.textContent=favLocName||'—';stFavLocEl.title=favLocName?favLocName+' — '+favLocN+' trips':''}
-  if(!isStatVisible('peakWind',_statsVis)){stPeakWindEl.parentElement.style.display='none'}else{
-    if(!peakBft){stPeakWindEl.textContent='—'}
-    else if(_windUnit==='bft'){stPeakWindEl.textContent='F '+peakBft}
-    else{stPeakWindEl.textContent=convertWind(peakBftMs,_windUnit)+' '+windUnitLabel(_windUnit)}
-  }
-
-  // Adjust grid columns based on visible cards
-  const visKeys=['career','hours','ytd','skipper','distance','longest','avgWind','streak','boats','crew','heavy','avgDuration','locations','verified','helmHours','student','favBoat','favLocation','peakWind'];
-  const visibleCards=visKeys.filter(k=>isStatVisible(k,_statsVis)).length;
-  const strip=document.querySelector('.stat-strip');
-  if(strip && visibleCards>0){strip.style.gridTemplateColumns='repeat('+Math.min(visibleCards,4)+',1fr)';strip.style.display='grid'}
-  else if(strip && visibleCards===0){strip.style.display='none'}
-
-  if(!isStatVisible('byCategory',_statsVis)){document.getElementById('catHours').style.display='none';return}
-
-  const catH={};
-  myTrips.forEach(t=>{
-    const c=(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'Other';
-    catH[c]=(catH[c]||0)+(parseFloat(t.hoursDecimal)||0);
-  });
-  const entries=Object.entries(catH).sort(([,a],[,b])=>b-a);
-  if(entries.length>1){
-    const max=entries[0][1];
-    document.getElementById('catHoursList').innerHTML=entries.map(([cat,h])=>{
-      const col=BOAT_CAT_COLORS[(cat||'').toLowerCase()]||BOAT_CAT_COLORS.other;
-      const pct=max?Math.round(h/max*100):0;
-      return `<div class="cat-hour-row">
-        <span class="text-lg" style="width:20px;text-align:center">${boatEmoji(cat.toLowerCase())}</span>
-        <span style="min-width:80px;color:var(--text)">${esc(_boatCatLabel(cat))}</span>
-        <div class="cat-hour-bar-wrap"><div class="cat-hour-bar" style="width:${pct}%;background:${col.color}"></div></div>
-        <span class="cat-hour-val">${h.toFixed(0)}h</span>
-      </div>`;
-    }).join('');
-    document.getElementById('catHours').style.display='';
-  }
-}
-
-// ── Certs ─────────────────────────────────────────────────────────────────────
-async function renderCerts(){
-  const el=document.getElementById('certsList');
-  try{
-    const [mRes,cfgRes]=await Promise.all([apiGet('getMembers'),apiGet('getConfig')]);
-    const certDefs=certDefsFromConfig(cfgRes.certDefs||[]);
-    const certCategories=certCategoriesFromConfig(cfgRes.certCategories||[]);
-    const member=(mRes.members||[]).find(m=>String(m.kennitala)===String(user.kennitala))||{};
-    const certs=enrichMemberCerts(parseJson(member.certifications,[]),certDefs,certCategories);
-    if(!certs.length){el.innerHTML=`<div class="empty-note">${s('cert.noCerts')}</div>`;return;}
-    certInjectStyles();
-    const {credentials,endorsements}=groupCerts(certs);
-    let html=credentials.map(certCardHTML).join('');
-    if(endorsements.length){
-      html+=`<div class="ccard-endorsement-hdr">${s('cert.clubEndorsements')}</div>`;
-      html+=endorsements.map(certCardHTML).join('');
-    }
-    el.innerHTML=html;
-  }catch(e){
-    el.innerHTML=`<div class="empty-note text-red">${s('cert.loadError')}</div>`;
-  }
-}
-
-// ── Member heatmap ───────────────────────────────────────────────────────────
-let _hmMap = null, _hmHeatLayer = null, _hmMarkers = [], _hmTrackLines = [];
-let _hmMode = 'trips'; // 'trips' | 'time' | 'tracks'
-
-function buildLocStats() {
-  const stats = {}; // locationId → { count, hours }
-  myTrips.forEach(t => {
-    const lid = t.locationId || '';
-    if (!lid) return;
-    if (!stats[lid]) stats[lid] = { count: 0, hours: 0 };
-    stats[lid].count++;
-    stats[lid].hours += parseFloat(t.hoursDecimal) || 0;
-  });
-  const result = [];
-  Object.keys(stats).forEach(lid => {
-    const loc = allLocs.find(l => l.id === lid);
-    if (!loc || !loc.coordinates) return;
-    const parts = String(loc.coordinates).split(',');
-    if (parts.length < 2) return;
-    const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-    if (isNaN(lat) || isNaN(lng)) return;
-    result.push({ id: lid, name: loc.name || lid, lat, lng, tripCount: stats[lid].count, totalHours: Math.round(stats[lid].hours * 10) / 10 });
-  });
-  return result;
-}
-
-function getAllTrackPoints() {
-  const allPts = [];
-  myTrips.forEach(t => {
-    if (!t.trackSimplified) return;
-    try {
-      const pts = JSON.parse(t.trackSimplified);
-      if (Array.isArray(pts)) pts.forEach(p => {
-        if (typeof p.lat === 'number' && typeof p.lng === 'number') allPts.push(p);
-      });
-    } catch(e) {}
-  });
-  return allPts;
-}
-
-function getTrackLines() {
-  const lines = [];
-  myTrips.forEach(t => {
-    if (!t.trackSimplified) return;
-    try {
-      const pts = JSON.parse(t.trackSimplified);
-      if (Array.isArray(pts) && pts.length >= 2) {
-        lines.push(pts.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number'));
-      }
-    } catch(e) {}
-  });
-  return lines;
-}
-
-async function initMemberHeatmap() {
-  if (getPref('showHeatmap', true) === false) return;
-
-  const locData = buildLocStats();
-  const trackPts = getAllTrackPoints();
-  if (!locData.length && !trackPts.length) return;
-
-  document.getElementById('memberHeatmapWrap').style.display = '';
-
-  await loadLeaflet();
-  if (_hmMap) { _hmMap.remove(); _hmMap = null; }
-  _hmMap = L.map('memberHeatmap', { zoomControl: true, attributionControl: true, scrollWheelZoom: false, zoomSnap: 0.25, zoomDelta: 0.25 });
-  addSeaLayers(_hmMap);
-
-  renderHeatMode();
-}
-
-function clearHeatLayers() {
-  if (_hmHeatLayer) { _hmMap.removeLayer(_hmHeatLayer); _hmHeatLayer = null; }
-  _hmMarkers.forEach(m => _hmMap.removeLayer(m));
-  _hmMarkers = [];
-  _hmTrackLines.forEach(l => _hmMap.removeLayer(l));
-  _hmTrackLines = [];
-}
-
-function renderHeatMode() {
-  if (!_hmMap) return;
-  clearHeatLayers();
-
-  if (_hmMode === 'tracks') {
-    renderTrackMode();
-  } else {
-    renderLocationMode();
-  }
-}
-
-function renderLocationMode() {
-  const locData = buildLocStats();
-  if (!locData.length) {
-    _hmMap.setView([64.148, -21.965], 11.25);
-    return;
-  }
-
-  const isTime = _hmMode === 'time';
-  const maxVal = locData.reduce((m, l) => Math.max(m, isTime ? l.totalHours : l.tripCount), 1);
-
-  const heatData = locData.map(l => [l.lat, l.lng, (isTime ? l.totalHours : l.tripCount) / maxVal]);
-  _hmHeatLayer = L.heatLayer(heatData, {
-    radius: 30, blur: 20, maxZoom: 14, max: 1.0,
-    gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-  }).addTo(_hmMap);
-
-  locData.forEach(l => {
-    const intensity = (isTime ? l.totalHours : l.tripCount) / maxVal;
-    const radius = Math.max(6, Math.min(20, 6 + intensity * 14));
-    const valLabel = isTime
-      ? l.totalHours + 'h'
-      : l.tripCount + (l.tripCount === 1 ? ' trip' : ' trips');
-    const marker = L.circleMarker([l.lat, l.lng], {
-      radius, color: '#d4af37', fillColor: '#d4af37', fillOpacity: 0.3, weight: 1,
-    }).bindTooltip(
-      '<strong>' + esc(l.name) + '</strong><br>' + valLabel + ' &middot; ' + l.totalHours + 'h',
-      { className: 'map-tooltip' }
-    ).addTo(_hmMap);
-    _hmMarkers.push(marker);
-  });
-
-  const bounds = L.latLngBounds(locData.map(l => [l.lat, l.lng]));
-  _hmMap.fitBounds(bounds.pad(0.15), { maxZoom: 11 });
-}
-
-function renderTrackMode() {
-  const lines = getTrackLines();
-  if (!lines.length) {
-    _hmMap.setView([64.148, -21.965], 11.25);
-    return;
-  }
-
-  const allPts = [];
-  lines.forEach(pts => {
-    const latlngs = pts.map(p => [p.lat, p.lng]);
-    allPts.push(...latlngs);
-    const line = L.polyline(latlngs, { color: '#d4af37', weight: 2, opacity: 0.6 }).addTo(_hmMap);
-    _hmTrackLines.push(line);
-  });
-
-  // Add a subtle heat layer from track point density
-  if (allPts.length) {
-    _hmHeatLayer = L.heatLayer(allPts.map(p => [p[0], p[1], 0.5]), {
-      radius: 20, blur: 15, maxZoom: 14, max: 1.0,
-      gradient: { 0.2: '#1e3f6e', 0.4: '#2e86c1', 0.6: '#f1c40f', 0.8: '#e67e22', 1.0: '#e74c3c' }
-    }).addTo(_hmMap);
-  }
-
-  const bounds = L.latLngBounds(allPts);
-  _hmMap.fitBounds(bounds.pad(0.1), { maxZoom: 11 });
-}
-
-function setHeatMode(mode) {
-  _hmMode = mode;
-  document.querySelectorAll('.heatmap-toggle button').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-  renderHeatMode();
-}
-
-</script>
+<script src="logbook.js" defer></script>
 <script src="../shared/logbook.js" defer></script>
 
 
 <!-- Edit trip modal (skipper only) -->
-<div class="modal-overlay hidden" id="editTripModal" onclick="if(event.target===this)closeEditTrip()">
+<div class="modal-overlay hidden" id="editTripModal" data-lb-close-self="closeEditTrip">
   <div class="modal-sheet">
     <div class="modal-title">
       <span id="editTripTitle">Edit trip</span>
-      <button class="modal-close" onclick="closeEditTrip()">✕</button>
+      <button class="modal-close" data-lb-click="closeEditTrip">✕</button>
     </div>
     <input type="hidden" id="etId">
     <div class="form-row">
@@ -817,9 +470,9 @@ function setHeatMode(mode) {
     </div>
     <div class="form-row">
       <div class="form-field"><label>Departed</label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
-        oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+        data-lb-time-format></div>
       <div class="form-field"><label>Returned</label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
-        oninput="var v=this.value.replace(/[^0-9]/g,'');if(v.length>=2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"></div>
+        data-lb-time-format></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Crew aboard</label><input type="number" id="etCrew" min="1" value="1"></div>
@@ -837,42 +490,22 @@ function setHeatMode(mode) {
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
     <div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>
-    <button class="btn-primary" id="etSubmitBtn" onclick="submitEditTrip()">Save changes</button>
+    <button class="btn-primary" id="etSubmitBtn" data-lb-click="submitEditTrip">Save changes</button>
   </div>
 </div>
 
-<script>
-// Populate shared weather-field markup (from shared/trip-form.js) into both
-// modals. Runs inline right after the last <div id="*WxFields"> is parsed,
-// before shared/logbook.js (deferred) runs — so logbook.js's init can rely
-// on the fields already existing.
-(function () {
-  var mWx  = document.getElementById('mWxFields');
-  var etWx = document.getElementById('etWxFields');
-  if (mWx)  mWx.innerHTML  = tripFormWeatherFieldsHtml('m',  { verboseBft: true, includeFeelsLike: true, wrapExtraInDetails: true });
-  if (etWx) etWx.innerHTML = tripFormWeatherFieldsHtml('et', { extraStep: '0.1' });
-  // logModal's wind/gust inputs had inline handlers in the original markup;
-  // rewire via addEventListener now that the fields exist.
-  var mBft  = document.getElementById('mBft');
-  var mWind = document.getElementById('mWindMs');
-  var mGust = document.getElementById('mWindGust');
-  if (mBft)  mBft.addEventListener('change', function () { if (typeof onBftChange  === 'function') onBftChange();  });
-  if (mWind) mWind.addEventListener('input', function () { if (typeof onWindInput === 'function') onWindInput(); });
-  if (mGust) mGust.addEventListener('input', function () { if (typeof onGustInput === 'function') onGustInput(); });
-})();
-</script>
 
 <!-- Inline photo upload modal -->
-<div class="modal-overlay hidden" id="photoUploadModal" onclick="if(event.target===this)closePhotoUpload()">
+<div class="modal-overlay hidden" id="photoUploadModal" data-lb-close-self="closePhotoUpload">
   <div class="modal-sheet" style="max-width:480px">
     <div class="modal-title">
       <span id="photoUploadTitle">Add photos</span>
-      <button class="modal-close" onclick="closePhotoUpload()">✕</button>
+      <button class="modal-close" data-lb-click="closePhotoUpload">✕</button>
     </div>
     <input type="hidden" id="puTripId">
     <div class="form-field">
       <label>Photos</label>
-      <input type="file" id="puPhotoFiles" accept="image/*" multiple onchange="handleInlinePhotos(this)" class="text-sm" style="color:var(--text)">
+      <input type="file" id="puPhotoFiles" accept="image/*" multiple data-lb-change-el="handleInlinePhotos" class="text-sm" style="color:var(--text)">
       <div id="puPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
     </div>
     <div class="photo-meta-row mb-8">
@@ -881,7 +514,7 @@ function setHeatMode(mode) {
     </div>
     <div class="text-xs text-muted mb-12" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
     <div id="puErr" class="text-sm text-red mb-8" style="display:none"></div>
-    <button class="btn-primary" id="puSubmitBtn" onclick="submitInlinePhotos()">Upload photos</button>
+    <button class="btn-primary" id="puSubmitBtn" data-lb-click="submitInlinePhotos">Upload photos</button>
   </div>
 </div>
 
