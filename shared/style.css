@@ -334,6 +334,61 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--moss) 30%, transparent);
 }
 
+/* Native <select> dropdown caret — strip the platform arrow and paint our own
+   so selects look like the other themed inputs. The glyph color is the muted
+   blue-grey; the light-theme override further down swaps it for the lighter
+   muted tone. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%237a9bc2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='1,1.5 6,6.5 11,1.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+select::-ms-expand { display: none; }
+select:hover { border-color: var(--border-l); }
+[data-theme="light"] select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%235a7a96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='1,1.5 6,6.5 11,1.5'/></svg>");
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%235a7a96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='1,1.5 6,6.5 11,1.5'/></svg>");
+  }
+}
+
+/* Native "Choose file" button — match `.btn-secondary` so it reads as part
+   of the app rather than a raw platform control. */
+input[type=file] {
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+input[type=file]::file-selector-button,
+input[type=file]::-webkit-file-upload-button {
+  background: var(--faint);
+  color: var(--text);
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 10px 16px;
+  margin-right: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+input[type=file]::file-selector-button:hover,
+input[type=file]::-webkit-file-upload-button:hover {
+  background: var(--border);
+  color: var(--text);
+}
+input[type=file]:disabled { opacity: .45; cursor: not-allowed; }
+input[type=file]:disabled::file-selector-button,
+input[type=file]:disabled::-webkit-file-upload-button { cursor: not-allowed; }
+
 /* Inside modals, fields adopt the brass accent (matches modal headings + CTA). */
 .modal input:focus, .modal select:focus, .modal textarea:focus,
 .modal-sheet input:focus, .modal-sheet select:focus, .modal-sheet textarea:focus,
@@ -383,6 +438,11 @@ textarea { min-height: 70px; }
   transition: border-color .2s, box-shadow .2s;
   width: 100%;
   box-sizing: border-box;
+}
+.filter-bar select,
+.filter-select {
+  background-position: right 8px center;
+  padding-right: 26px;
 }
 .filter-bar select:focus,
 .filter-bar input:focus {
