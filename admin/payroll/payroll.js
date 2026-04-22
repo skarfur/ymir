@@ -78,7 +78,7 @@ function prEmpRowHTML(m,emp,act){
   h+='<span class="emp-name">'+_e(m.name)+'</span>';
   h+='<span class="emp-kt">'+_e(m.kennitala||'')+'</span>';
   h+='<span class="'+(act?'pr-badge-on':'pr-badge-off')+'" data-s="'+(act?'payroll.tabEmployees':'payroll.notEnabled')+'"></span>';
-  h+='<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px" data-pr-click="prToggleEdit" data-pr-arg="'+mid+'" data-s="btn.edit"></button>';
+  h+='<button class="btn btn-secondary btn-sm" data-pr-click="prToggleEdit" data-pr-arg="'+mid+'" data-s="btn.edit"></button>';
   h+='</div>';
   h+='<div id="empedit_'+mid+'" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px">';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
@@ -90,8 +90,8 @@ function prEmpRowHTML(m,emp,act){
   h+='<div class="field"><label data-s="payroll.titleField"></label><input id="prTitle_'+mid+'" type="text" value="'+_e(emp&&emp.title||'')+'"></div>';
   h+='</div>';
   h+='<div style="display:flex;gap:8px;margin-top:10px">';
-  h+='<button class="btn btn-primary" style="font-size:11px" data-pr-click="prSaveEmployee" data-pr-arg="'+mid+'" data-s="btn.save"></button>';
-  h+='<button class="btn btn-secondary" style="font-size:11px" data-pr-click="prToggleEdit" data-pr-arg="'+mid+'" data-s="btn.cancel"></button>';
+  h+='<button class="btn btn-primary btn-sm" data-pr-click="prSaveEmployee" data-pr-arg="'+mid+'" data-s="btn.save"></button>';
+  h+='<button class="btn btn-secondary btn-sm" data-pr-click="prToggleEdit" data-pr-arg="'+mid+'" data-s="btn.cancel"></button>';
   h+='<span id="prMsg_'+mid+'" style="font-size:11px;margin-left:4px"></span>';
   h+='</div></div>';
   return h;
@@ -309,7 +309,7 @@ function prRenderList(){
       var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<tr><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+srcLabel+'</td>'
-        +'<td style="text-align:right"><button class="btn btn-secondary" style="font-size:10px;padding:2px 7px"'
+        +'<td style="text-align:right"><button class="btn btn-secondary btn-sm"'
         +' data-pr-open-ds data-e="'+edata+'" data-s="btn.edit"></button></td></tr>';
     }).join('');
     return '<div><div class="ts-group-header" style="font-weight:600;font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between">'

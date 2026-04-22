@@ -55,8 +55,8 @@ function _ppRenderItemRow(p, cat, it, pi, ci, ii) {
       <div style="font-size:9px;color:var(--faint);margin-top:2px">${esc(it.id)}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="${ii}" data-s="passport.editItem">Edit</button>
-      <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="ppToggleRetire" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="${ii}">${retired ? esc(s('passport.unretire')) : esc(s('passport.retire'))}</button>
+      <button class="btn btn-secondary btn-sm" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="${ii}" data-s="passport.editItem">Edit</button>
+      <button class="btn btn-secondary btn-sm" data-admin-click="ppToggleRetire" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="${ii}">${retired ? esc(s('passport.unretire')) : esc(s('passport.retire'))}</button>
     </div>
   </div>`;
 }
@@ -84,7 +84,7 @@ function drawPassportEditor() {
   if (!def || !(def.passports || []).length) {
     card.innerHTML = `<div style="color:var(--muted);padding:12px 0">No passports configured. Import a CSV to get started.</div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        <button class="btn btn-primary" style="font-size:11px" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
+        <button class="btn btn-primary btn-sm" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
         <span id="ppDirtyMark" style="font-size:10px;color:var(--brass-fg)">${_passportDirty ? '● unsaved' : ''}</span>
       </div>`;
     applyStrings(card);
@@ -97,8 +97,8 @@ function drawPassportEditor() {
   // Sort-mode toggle (shared across all passports in the editor)
   html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
     <span style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase" data-s="passport.sortBy">Sort by</span>
-    <button class="btn ${isCatMod ? 'btn-primary' : 'btn-secondary'}" style="font-size:10px;padding:3px 10px" data-admin-click="ppSetSortMode" data-admin-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
-    <button class="btn ${!isCatMod ? 'btn-primary' : 'btn-secondary'}" style="font-size:10px;padding:3px 10px" data-admin-click="ppSetSortMode" data-admin-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
+    <button class="btn ${isCatMod ? 'btn-primary' : 'btn-secondary'} btn-sm" data-admin-click="ppSetSortMode" data-admin-arg="cat-mod" data-s="passport.sortCatMod">Category → Module</button>
+    <button class="btn ${!isCatMod ? 'btn-primary' : 'btn-secondary'} btn-sm" data-admin-click="ppSetSortMode" data-admin-arg="mod-cat" data-s="passport.sortModCat">Module → Category</button>
   </div>`;
 
   (def.passports || []).forEach((p, pi) => {
@@ -120,7 +120,7 @@ function drawPassportEditor() {
             ${s('passport.promotesTo', { cert: esc(promoteId) })} (${esc(p.fromSub || 'restricted')} → ${esc(p.toSub || 'released')})
           </div>
         </div>
-        <button class="btn btn-secondary" style="font-size:10px;padding:4px 10px;white-space:nowrap" data-admin-click="openPassportSettingsModal" data-admin-arg="${pi}" data-s="passport.editSettings">Edit passport settings</button>
+        <button class="btn btn-secondary btn-sm" style="white-space:nowrap" data-admin-click="openPassportSettingsModal" data-admin-arg="${pi}" data-s="passport.editSettings">Edit passport settings</button>
       </div>`;
 
     if (isCatMod) {
@@ -135,7 +135,7 @@ function drawPassportEditor() {
               <div style="font-weight:600;font-size:12px">${esc(catNameEN)}${catNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(catNameIS)}</span>` : ''}</div>
               <div style="font-size:9px;color:var(--muted)">${esc(cat.id)}</div>
             </div>
-            <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-s="passport.editCategory">Edit category</button>
+            <button class="btn btn-secondary btn-sm" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-s="passport.editCategory">Edit category</button>
           </div>`;
 
         const items = (cat.items || []).map((it, ii) => ({ it, ii }));
@@ -154,7 +154,7 @@ function drawPassportEditor() {
         }
 
         html += `<div style="margin-top:8px">
-          <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="null" data-s="passport.addItem">+ Add item</button>
+          <button class="btn btn-secondary btn-sm" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="null" data-s="passport.addItem">+ Add item</button>
         </div></div>`;
       });
     } else {
@@ -202,7 +202,7 @@ function drawPassportEditor() {
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:11px">${esc(catNameEN)}${catNameIS ? ` <span style="color:var(--muted);font-weight:400">/ ${esc(catNameIS)}</span>` : ''}</div>
               </div>
-              <button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-s="passport.editCategory">Edit category</button>
+              <button class="btn btn-secondary btn-sm" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-s="passport.editCategory">Edit category</button>
             </div>`;
           const entries = byCat[ci].slice().sort((a, b) =>
             String(a.it.name?.EN || '').localeCompare(String(b.it.name?.EN || '')));
@@ -222,19 +222,19 @@ function drawPassportEditor() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">`;
       (p.categories || []).forEach((cat, ci) => {
         const catNameEN = cat.name?.EN || cat.id;
-        html += `<button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="null">+ ${esc(catNameEN)}</button>`;
+        html += `<button class="btn btn-secondary btn-sm" data-admin-click="openPassportItemModal" data-admin-arg="${pi}" data-admin-arg2="${ci}" data-admin-arg3="null">+ ${esc(catNameEN)}</button>`;
       });
       html += `</div></div>`;
     }
 
     html += `<div style="margin-top:12px">
-      <button class="btn btn-secondary" style="font-size:10px;padding:3px 10px" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="null" data-s="passport.addCategory">+ Add category</button>
+      <button class="btn btn-secondary btn-sm" data-admin-click="openPassportCategoryModal" data-admin-arg="${pi}" data-admin-arg2="null" data-s="passport.addCategory">+ Add category</button>
     </div>`;
     html += '</div>';
   });
 
   html += `<div style="margin-top:14px;display:flex;gap:8px;align-items:center">
-    <button class="btn btn-primary" style="font-size:11px" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
+    <button class="btn btn-primary btn-sm" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
     <span id="ppDirtyMark" style="font-size:10px;color:var(--brass-fg)">${_passportDirty ? '● unsaved' : ''}</span>
   </div>`;
   card.innerHTML = html;

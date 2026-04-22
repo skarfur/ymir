@@ -434,6 +434,9 @@ textarea { min-height: 70px; }
 .btn-ghost:hover        { color: var(--navy); border-color: var(--navy); background: color-mix(in srgb, var(--navy) 8%, transparent); }
 .btn-ghost.danger:hover { color: var(--red);  border-color: var(--red);  background: color-mix(in srgb, var(--red) 8%, transparent); }
 
+/* Compact modifier — for section-level CTAs, slot-calendar nav, row actions, etc. */
+.btn-sm { padding: 6px 12px; font-size: 11px; min-height: 0; }
+
 .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; text-align: center; }
 
@@ -1112,7 +1115,6 @@ textarea { min-height: 70px; }
 
 /* ── Slot-calendar week navigation (captain/coxswain/admin) ── */
 .slot-week-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.slot-week-nav .btn { font-size: 11px; padding: 4px 10px; min-height: 0; }
 .slot-week-nav .week-label { font-size: 11px; min-width: 140px; text-align: center; }
 .slot-week-nav .btn .btn-icon { display: inline-block; width: 14px; height: 14px; vertical-align: middle; margin-right: 5px; }
 
@@ -1142,6 +1144,7 @@ textarea { min-height: 70px; }
   .btn { min-height: 44px; padding: 10px 16px; }
   .btn-row .btn { flex: 1 1 auto; min-width: 0; }
   .btn-ghost { min-height: 36px; }
+  .btn.btn-sm { min-height: 32px; padding: 6px 12px; }
 
   /* ── Forms — touch-friendly ── */
   input[type=text], input[type=number], input[type=email],

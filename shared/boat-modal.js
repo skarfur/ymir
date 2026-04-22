@@ -122,8 +122,8 @@
         </div>
         <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="bResNote"></div>
         <div class="btn-row">
-          <button class="btn btn-secondary" style="font-size:11px" data-bm-click="cancelResForm" data-s="btn.cancel"></button>
-          <button class="btn btn-primary" style="font-size:11px" data-bm-click="saveResFromModal" data-s="btn.save"></button>
+          <button class="btn btn-secondary btn-sm" data-bm-click="cancelResForm" data-s="btn.cancel"></button>
+          <button class="btn btn-primary btn-sm" data-bm-click="saveResFromModal" data-s="btn.save"></button>
         </div>
       </div>
       <div id="bReservationActions"></div>

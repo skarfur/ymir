@@ -303,7 +303,7 @@ function renderBoats() {
     return false;
   });
 
-  var addBtn = '<div style="margin-top:10px"><button class="btn btn-secondary" style="font-size:12px" data-cq-click="openBoatModal">+ ' + esc(s('admin.boatModal.add')) + '</button></div>';
+  var addBtn = '<div style="margin-top:10px"><button class="btn btn-secondary btn-sm" data-cq-click="openBoatModal">+ ' + esc(s('admin.boatModal.add')) + '</button></div>';
   if (!myBoats.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noBoats') + '</div>' + addBtn; return; }
   el.innerHTML = myBoats.map(b => {
     var isOos = boolVal(b.oos);
@@ -1036,7 +1036,7 @@ function renderReservationList(boat) {
   var actEl = document.getElementById('bReservationActions');
   if (!boat || !boat.reservations || !boat.reservations.length) {
     el.innerHTML = '';
-    actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" data-cq-click="showResForm">' + esc(s('boat.addReservation')) + '</button>';
+    actEl.innerHTML = '<button class="btn btn-secondary btn-sm" data-cq-click="showResForm">' + esc(s('boat.addReservation')) + '</button>';
     return;
   }
   el.innerHTML = boat.reservations.map(function(r) {
@@ -1046,7 +1046,7 @@ function renderReservationList(boat) {
       + '<button style="font-size:10px;background:none;border:none;color:var(--red);cursor:pointer" data-cq-click="removeBmResFromModal" data-cq-arg="'+esc(r.id)+'">&times;</button>'
       + '</div>';
   }).join('');
-  actEl.innerHTML = '<button class="btn btn-secondary" style="font-size:11px" data-cq-click="showResForm">' + esc(s('boat.addReservation')) + '</button>';
+  actEl.innerHTML = '<button class="btn btn-secondary btn-sm" data-cq-click="showResForm">' + esc(s('boat.addReservation')) + '</button>';
 }
 
 function showResForm() {

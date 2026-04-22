@@ -3,6 +3,19 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — unified compact button size
+
+- **`.btn-sm` modifier in `shared/style.css`** — one canonical compact size
+  (`padding: 6px 12px; font-size: 11px; min-height: 0;`) replaces ~40 ad-hoc
+  inline `style="padding:…;font-size:…"` overrides spread across captain,
+  staff, coxswain, admin, member, weather, incidents, and the shared boat /
+  slot / maintenance / payroll / boats modules. Mobile caps the touch target
+  at 32px (between `.btn`'s 44px and `.btn-ghost`'s 36px).
+- **Captain's slot-week-nav aligns with the rest** — removed the
+  `.slot-week-nav .btn` size rule; the strip now uses `.btn-sm` directly,
+  so "Assign cred", "+ Add boat", "← →", "New Booking" and "Bulk Book" all
+  share the same height/padding instead of drifting by 1–3px each.
+
 ## Unreleased — logbook bug fixes
 
 Surface-level fixes for the logbook portal after the inline-style → utility-class
