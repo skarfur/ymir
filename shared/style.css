@@ -103,6 +103,9 @@
   --text:     #1a2a3a;
   --muted:    #5a7a96;
   --faint:    #dce4ec;
+  /* Light-mode navy = canonical brand blue, so .btn-primary (which paints
+     itself with --navy) matches the logo + accent chrome. */
+  --navy:     #163274;
   /* Gold reads muddy on white, so --accent maps to the canonical brand blue
      in light mode. Value stays 6-hex so var(--accent)NN alpha-append
      patterns remain valid. */
@@ -130,6 +133,7 @@
     --text:     #1a2a3a;
     --muted:    #5a7a96;
     --faint:    #dce4ec;
+    --navy:     #163274;
     --accent:    #163274;
     --accent-fg: #1e8e4e;
     --logo-color: #fff;
