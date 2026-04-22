@@ -77,7 +77,7 @@
   <div class="cq-section" id="sectReservations">
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
     <div class="d-flex items-center gap-8 mb-10 flex-wrap">
-      <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px">Boat</label>
+      <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" for="cqResBoat">Boat</label>
       <select id="cqResBoat" data-cq-change="loadCqSlots" class="bg-surface border-muted rounded-6 font-inherit text-xs" style="color:var(--text);padding:4px 8px"></select>
       <div class="slot-week-nav">
         <button class="btn btn-secondary" data-cq-click="shiftCqWeek" data-cq-arg="-1">&larr;</button>
@@ -141,7 +141,7 @@
           <div class="cq-headshot-placeholder" id="headshotPlaceholder">+</div>
         </div>
         <div class="flex-1">
-          <label class="text-9 text-muted mb-6" style="letter-spacing:.8px;display:block" data-s="cq.headshotLabel"></label>
+          <label class="text-9 text-muted mb-6" style="letter-spacing:.8px;display:block" data-s="cq.headshotLabel" for="headshotFile"></label>
           <input type="file" id="headshotFile" accept="image/*" class="text-xs w-full" style="color:var(--text)">
         </div>
       </div>
@@ -164,7 +164,7 @@
       <button class="modal-close-x" data-cq-close="portModal">×</button>
     </div>
     <div class="field">
-      <label data-s="admin.homePort"></label>
+      <label data-s="admin.homePort" for="portSelect"></label>
       <select id="portSelect"></select>
     </div>
     <div class="btn-row">
@@ -182,7 +182,7 @@
       <button class="modal-close-x" data-cq-close="resModal">×</button>
     </div>
     <div class="field">
-      <label data-s="cq.resMember">Member</label>
+      <label data-s="cq.resMember" for="cqResStart">Member</label>
       <div class="pos-relative">
         <input type="text" id="cqResMemberSearch" autocomplete="off" placeholder="" data-cq-input-val="searchCqResMember">
         <div id="cqResMemberSuggestions" class="suggest-drop pos-relative"></div>
@@ -192,9 +192,9 @@
     </div>
     <div class="grid2 gap-8" style="display:grid;grid-template-columns:1fr 1fr">
       <div class="field"><label data-s="cq.resStartDate">Start</label><input type="date" id="cqResStart"></div>
-      <div class="field"><label data-s="cq.resEndDate">End</label><input type="date" id="cqResEnd"></div>
+      <div class="field"><label data-s="cq.resEndDate" for="cqResEnd">End</label><input type="date" id="cqResEnd"></div>
     </div>
-    <div class="field"><label data-s="cq.resNote">Note</label><input type="text" id="cqResNote"></div>
+    <div class="field"><label data-s="cq.resNote" for="cqResNote">Note</label><input type="text" id="cqResNote"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-cq-close="resModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary" data-cq-click="saveCqReservation" data-s="btn.save"></button>

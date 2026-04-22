@@ -79,16 +79,16 @@
       <h3 id="manualTripTitle"></h3>
       <button class="modal-close-x" data-member-close="manualTripModal">×</button>
     </div>
-    <div class="field"><label data-s="lbl.date"></label><input type="date" id="rDate"></div>
+    <div class="field"><label data-s="lbl.date" for="rDate"></label><input type="date" id="rDate"></div>
     <div class="grid2 gap-10">
-      <div class="field"><label data-s="lbl.boat"></label><select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
-      <div class="field"><label data-s="lbl.location"></label><select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
+      <div class="field"><label data-s="lbl.boat" for="rBoat"></label><select id="rBoat"><option value="" id="rBoatOpt"></option></select></div>
+      <div class="field"><label data-s="lbl.location" for="rLocation"></label><select id="rLocation"><option value="" id="rLocOpt"></option></select></div>
     </div>
     <div class="grid2 gap-10">
-      <div class="field"><label id="rDepartedLabel"></label><input type="text" id="rTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
-      <div class="field"><label id="rReturnedLabel"></label><input type="text" id="rTimeIn"  pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
+      <div class="field"><label id="rDepartedLabel" for="rTimeOut"></label><input type="text" id="rTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
+      <div class="field"><label id="rReturnedLabel" for="rTimeIn"></label><input type="text" id="rTimeIn"  pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:90px"></div>
     </div>
-    <div class="field"><label data-s="lbl.notes"></label><input type="text" id="rNotes"></div>
+    <div class="field"><label data-s="lbl.notes" for="rNotes"></label><input type="text" id="rNotes"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-member-close="manualTripModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   data-member-click="submitManualTrip"            id="manualTripSaveBtn"></button>

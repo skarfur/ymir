@@ -292,15 +292,15 @@
         <div class="col-body" id="alertsCard">
           <div class="grid2 mb-14">
             <div class="field">
-              <label data-s="admin.alertFirstMins"></label>
+              <label data-s="admin.alertFirstMins" for="alertFirstMins"></label>
               <input type="number" id="alertFirstMins" min="1" max="999" value="30">
             </div>
             <div class="field">
-              <label data-s="admin.alertRepeatMins"></label>
+              <label data-s="admin.alertRepeatMins" for="alertRepeatMins"></label>
               <input type="number" id="alertRepeatMins" min="1" max="999" value="15">
             </div>
             <div class="field">
-              <label data-s="admin.alertSnoozeMins"></label>
+              <label data-s="admin.alertSnoozeMins" for="alertSnoozeMins"></label>
               <input type="number" id="alertSnoozeMins" min="1" max="999" value="10">
             </div>
             <div class="field flex-center gap-8" style="padding-top:20px">
@@ -321,7 +321,7 @@
               <textarea id="alertEmailList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="person@club.is, other@club.is"></textarea>
             </div>
             <div class="field mb-14">
-              <label class="text-sm">SMS recipients (comma-separated)</label>
+              <label class="text-sm" for="alertSmsList">SMS recipients (comma-separated)</label>
               <textarea id="alertSmsList" rows="2" class="text-sm w-full" style="resize:vertical" placeholder="+3546001234, +3547001234"></textarea>
             </div>
           </div>
@@ -340,10 +340,10 @@
         </div>
         <div class="col-body" id="flagThresholdsCard">
           <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(4,1fr)">
-            <div class="field"><label style="color:var(--yellow)">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label style="color:var(--orange)">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label class="text-red">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label style="color:#999">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label style="color:var(--yellow)" for="fcThreshY">🟡 <span data-s="admin.yellowGte"></span></label><input type="number" id="fcThreshY" min="1" max="99" value="25" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label style="color:var(--orange)" for="fcThreshO">🟠 <span data-s="admin.orangeGte"></span></label><input type="number" id="fcThreshO" min="1" max="99" value="45" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label class="text-red" for="fcThreshR">🔴 <span data-s="admin.redGte"></span></label><input type="number" id="fcThreshR" min="1" max="99" value="65" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label style="color:#999" for="fcThreshB">⚫️ <span data-s="admin.closedGte"></span></label><input type="number" id="fcThreshB" min="1" max="120" value="80" data-admin-input="updateFlagPreview"></div>
           </div>
         </div>
       </div>
@@ -359,10 +359,10 @@
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.dirGustMods"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagDirCard">
           <div class="gap-12 mb-12" style="display:grid;grid-template-columns:1fr 1fr">
-            <div class="field"><label data-s="admin.windDirMod"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirModHint"></div></div>
-            <div class="field"><label data-s="admin.gustMod1"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod2Hint"></div></div></div>
+            <div class="field"><label data-s="admin.windDirMod" for="fcWindDirPts"></label><input type="number" id="fcWindDirPts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.windDirModHint"></div></div>
+            <div class="field"><label data-s="admin.gustMod1" for="fcGust1Pts"></label><input type="number" id="fcGust1Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod1Hint"></div></div><div class="field"><label data-s="admin.gustMod2" for="fcGust2Pts"></label><input type="number" id="fcGust2Pts" min="0" max="20" value="0" data-admin-input="updateFlagPreview"><div class="text-10 text-muted mt-3" data-s="admin.gustMod2Hint"></div></div></div>
           </div>
-          <div class="field"><label data-s="admin.windDirDirs"></label><input type="text" id="fcWindDirDirs" value="" placeholder="E,NE,SE" data-admin-input="updateFlagPreview"></div>
+          <div class="field"><label data-s="admin.windDirDirs" for="fcWindDirDirs"></label><input type="text" id="fcWindDirDirs" value="" placeholder="E,NE,SE" data-admin-input="updateFlagPreview"></div>
         </div>
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.waveScoring"></div><span class="col-toggle">▼</span></div>
@@ -390,9 +390,9 @@
         <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.visScoring"></div><span class="col-toggle">▼</span></div>
         <div class="col-body hidden" id="flagVisCard">
           <div class="gap-10 mb-12" style="display:grid;grid-template-columns:repeat(3,1fr)">
-            <div class="field"><label data-s="admin.visGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label data-s="admin.visReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
-            <div class="field"><label data-s="admin.visPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visGood" for="fcVisGood"></label><input type="number" id="fcVisGood" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visReduced" for="fcVisReduced"></label><input type="number" id="fcVisReduced" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
+            <div class="field"><label data-s="admin.visPoor" for="fcVisPoor"></label><input type="number" id="fcVisPoor" min="0" max="20" value="0" data-admin-input="updateFlagPreview"></div>
           </div>
         </div>
       </div>
@@ -444,7 +444,7 @@
           <div>
             <div class="text-xs fw-600 mb-4">Rowing calendar</div>
             <div class="field">
-              <label>Calendar ID</label>
+              <label for="charterRowingCalId">Calendar ID</label>
               <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
             </div>
             <div class="check-row">
@@ -522,12 +522,12 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="lbl.name"></label><input type="text" id="mName"></div>
-      <div class="field"><label data-s="admin.kennitala"></label><input type="text" id="mKennitala" maxlength="10"></div>
-      <div class="field"><label data-s="lbl.email"></label><input type="email" id="mEmail"></div>
-      <div class="field"><label data-s="lbl.phone"></label><input type="tel" id="mPhone"></div>
-      <div class="field"><label data-s="admin.initials"></label><input type="text" id="mInitials" maxlength="10" style="text-transform:uppercase"></div>
-      <div class="field"><label data-s="admin.dob"></label><input type="date" id="mDob"></div>
-      <div class="field"><label data-s="lbl.role"></label>
+      <div class="field"><label data-s="admin.kennitala" for="mKennitala"></label><input type="text" id="mKennitala" maxlength="10"></div>
+      <div class="field"><label data-s="lbl.email" for="mEmail"></label><input type="email" id="mEmail"></div>
+      <div class="field"><label data-s="lbl.phone" for="mPhone"></label><input type="tel" id="mPhone"></div>
+      <div class="field"><label data-s="admin.initials" for="mInitials"></label><input type="text" id="mInitials" maxlength="10" style="text-transform:uppercase"></div>
+      <div class="field"><label data-s="admin.dob" for="mDob"></label><input type="date" id="mDob"></div>
+      <div class="field"><label data-s="lbl.role" for="mRole"></label>
         <select id="mRole">
           <option value="member" data-s="lbl.member"></option>
           <option value="staff" data-s="lbl.staff"></option>
@@ -537,10 +537,10 @@
     </div>
     <div id="minorFields" class="rounded-6 mb-12" style="border:1px solid var(--border)44;padding:10px 12px">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="lbl.guardian"></div>
-      <div class="field"><label data-s="admin.guardianName"></label><input type="text" id="mGuardianName"></div>
+      <div class="field"><label data-s="admin.guardianName" for="mGuardianName"></label><input type="text" id="mGuardianName"></div>
       <div class="grid2">
-        <div class="field"><label data-s="admin.guardianKt"></label><input type="text" id="mGuardianKt" maxlength="10"></div>
-        <div class="field"><label data-s="admin.guardianPhone"></label><input type="tel" id="mGuardianPhone"></div>
+        <div class="field"><label data-s="admin.guardianKt" for="mGuardianKt"></label><input type="text" id="mGuardianKt" maxlength="10"></div>
+        <div class="field"><label data-s="admin.guardianPhone" for="mGuardianPhone"></label><input type="tel" id="mGuardianPhone"></div>
       </div>
     </div>
     <div class="check-row mb-12">
@@ -571,11 +571,11 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="bcLabelEN" placeholder="e.g. Dinghy"></div>
-      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
+      <div class="field"><label data-s="admin.nameIS" for="bcLabelIS"></label><input type="text" id="bcLabelIS" placeholder="e.g. Skíðbátur"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="admin.emoji"></label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
-      <div class="field"><label data-s="admin.keyAutoSet"></label><input type="text" id="bcKey" placeholder="dinghy" class="text-muted"></div>
+      <div class="field"><label data-s="admin.emoji" for="bcEmoji"></label><input type="text" id="bcEmoji" placeholder="⛵" maxlength="4"></div>
+      <div class="field"><label data-s="admin.keyAutoSet" for="bcKey"></label><input type="text" id="bcKey" placeholder="dinghy" class="text-muted"></div>
     </div>
     <div class="text-xs text-muted mb-10" data-s="admin.keyHint"></div>
     <div class="check-row mb-12">
@@ -600,15 +600,15 @@
     </div>
     <div class="field"><label data-s="lbl.name"></label><input type="text" id="lName"></div>
     <div class="field">
-      <label data-s="location.type">Type</label>
+      <label data-s="location.type" for="lType">Type</label>
       <select id="lType">
         <option value="location" data-s="location.typeLocation">Location</option>
         <option value="port" data-s="location.typePort">Port</option>
       </select>
     </div>
     <div class="d-flex gap-10">
-      <div class="field flex-1"><label data-s="location.lat"></label><input type="number" id="lLat" step="any" placeholder="e.g. 64.1466"></div>
-      <div class="field flex-1"><label data-s="location.lng"></label><input type="number" id="lLng" step="any" placeholder="e.g. -21.9270"></div>
+      <div class="field flex-1"><label data-s="location.lat" for="lLat"></label><input type="number" id="lLat" step="any" placeholder="e.g. 64.1466"></div>
+      <div class="field flex-1"><label data-s="location.lng" for="lLng"></label><input type="number" id="lLng" step="any" placeholder="e.g. -21.9270"></div>
     </div>
     <div class="check-row mb-12">
       <input type="checkbox" id="lActive" checked> <label for="lActive" data-s="lbl.active"></label>
@@ -637,9 +637,9 @@
         <option value="closing" data-s="admin.clPhaseClosing"></option>
       </select>
     </div>
-    <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="clTextEN"></div>
-    <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="clTextIS"></div>
-    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="clSort" value="1" min="1"></div>
+    <div class="field"><label data-s="admin.clTextEN" for="clTextEN"></label><input type="text" id="clTextEN"></div>
+    <div class="field"><label data-s="admin.clTextIS" for="clTextIS"></label><input type="text" id="clTextIS"></div>
+    <div class="field"><label data-s="lbl.sortOrder" for="clSort"></label><input type="number" id="clSort" value="1" min="1"></div>
     <div class="check-row mb-12">
       <input type="checkbox" id="clActive" checked> <label for="clActive" data-s="lbl.active"></label>
     </div>
@@ -661,12 +661,12 @@
     <div class="field"><label data-s="lbl.category"></label>
       <select id="lcCat"></select>
     </div>
-    <div class="field"><label data-s="admin.clPhase"></label>
+    <div class="field"><label data-s="admin.clPhase" for="lcPhase"></label>
       <select id="lcPhase"><option value="launch" data-s="admin.clLaunchPhase"></option><option value="landing" data-s="admin.clLandingPhase"></option></select>
     </div>
-    <div class="field"><label data-s="admin.clTextEN"></label><input type="text" id="lcText"></div>
-    <div class="field"><label data-s="admin.clTextIS"></label><input type="text" id="lcTextIS"></div>
-    <div class="field"><label data-s="lbl.sortOrder"></label><input type="number" id="lcSort" value="1" min="1"></div>
+    <div class="field"><label data-s="admin.clTextEN" for="lcText"></label><input type="text" id="lcText"></div>
+    <div class="field"><label data-s="admin.clTextIS" for="lcTextIS"></label><input type="text" id="lcTextIS"></div>
+    <div class="field"><label data-s="lbl.sortOrder" for="lcSort"></label><input type="number" id="lcSort" value="1" min="1"></div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-admin-close="launchCLModal" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden" id="lcDeleteBtn" data-admin-click="deleteLaunchCLItem" data-s="btn.delete"></button>
@@ -683,8 +683,8 @@
       <button class="modal-close-x" data-admin-close="actTypeModal">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="admin.actTypeEN"></label><input type="text" id="atName"></div>
-      <div class="field"><label data-s="admin.actTypeIS"></label><input type="text" id="atNameIS"></div>
+      <div class="field"><label data-s="admin.actTypeEN" for="atName"></label><input type="text" id="atName"></div>
+      <div class="field"><label data-s="admin.actTypeIS" for="atNameIS"></label><input type="text" id="atNameIS"></div>
     </div>
     <div class="check-row mb-10">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
@@ -738,32 +738,32 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="admin.volTitle"></label><input type="text" id="veTitle"></div>
-      <div class="field"><label data-s="admin.volTitleIS"></label><input type="text" id="veTitleIS"></div>
+      <div class="field"><label data-s="admin.volTitleIS" for="veTitleIS"></label><input type="text" id="veTitleIS"></div>
     </div>
     <div class="field">
-      <label data-s="admin.volActType"></label>
+      <label data-s="admin.volActType" for="veActType"></label>
       <select id="veActType" data-admin-change="onVeActTypeChange"><option value="" data-s="admin.volActTypeNone"></option></select>
     </div>
     <div class="grid2 mt-2">
-      <div class="field"><label data-s="admin.volDate"></label><input type="date" id="veDate"></div>
-      <div class="field"><label data-s="admin.volEndDate"></label><input type="date" id="veEndDate"></div>
+      <div class="field"><label data-s="admin.volDate" for="veDate"></label><input type="date" id="veDate"></div>
+      <div class="field"><label data-s="admin.volEndDate" for="veEndDate"></label><input type="date" id="veEndDate"></div>
     </div>
     <div class="text-10 text-muted" style="margin:-4px 0 6px" data-s="admin.volEndDateHint"></div>
     <div class="grid2">
-      <div class="field"><label data-s="admin.volStartTime"></label><input type="time" id="veStartTime"></div>
-      <div class="field"><label data-s="admin.volEndTime"></label><input type="time" id="veEndTime"></div>
+      <div class="field"><label data-s="admin.volStartTime" for="veStartTime"></label><input type="time" id="veStartTime"></div>
+      <div class="field"><label data-s="admin.volEndTime" for="veEndTime"></label><input type="time" id="veEndTime"></div>
     </div>
     <div class="border-muted rounded-6" style="padding:10px 12px;margin:10px 0">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.volLeader"></div>
       <div class="field pos-relative mb-6">
-        <label data-s="admin.volLeader"></label>
+        <label data-s="admin.volLeader" for="veLeaderSearch"></label>
         <input type="text" id="veLeaderSearch" autocomplete="off" data-admin-input-val="searchVolLeader" placeholder="">
         <div id="veLeaderSuggestions" class="d-none bg-surface border-muted rounded-4" style="position:absolute;top:100%;left:0;right:0;z-index:10;max-height:160px;overflow-y:auto"></div>
         <input type="hidden" id="veLeaderMemberId">
       </div>
       <div id="veLeaderChip" class="d-none mb-6"></div>
       <div class="grid2">
-        <div class="field"><label data-s="admin.volLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
+        <div class="field"><label data-s="admin.volLeaderPhone" for="veLeaderPhone"></label><input type="text" id="veLeaderPhone"></div>
         <div></div>
       </div>
       <div class="check-row">
@@ -772,11 +772,11 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="admin.volNotes"></label><textarea id="veNotes" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
-      <div class="field"><label data-s="admin.volNotesIS"></label><textarea id="veNotesIS" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
+      <div class="field"><label data-s="admin.volNotesIS" for="veNotesIS"></label><textarea id="veNotesIS" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
     </div>
     <div class="mt-10">
       <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
-        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles" for="ccLabelEN"></label>
         <div class="d-flex gap-6 items-center flex-wrap">
           <select id="veRolePresetPicker" data-admin-preset-change="addVolRoleFromPreset" class="text-xs bg-surface border-muted rounded-4 font-inherit" style="padding:4px 8px;color:var(--text)"></select>
           <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addVolRoleRow" data-s="btn.add"></button>
@@ -801,10 +801,10 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="ccLabelEN"></div>
-      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="ccLabelIS"></div>
+      <div class="field"><label data-s="admin.nameIS" for="ccLabelIS"></label><input type="text" id="ccLabelIS"></div>
     </div>
     <div class="field">
-      <label data-s="admin.keyAutoSet"></label>
+      <label data-s="admin.keyAutoSet" for="ccKey"></label>
       <input type="text" id="ccKey" readonly class="text-muted">
     </div>
     <div class="text-xs text-muted mb-10" data-s="admin.certCatKeyHint"></div>
@@ -823,27 +823,27 @@
       <button class="modal-close-x" data-admin-close="certDefModal">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="admin.nameEN"></label><input type="text" id="cdNameEN"></div>
-      <div class="field"><label data-s="admin.nameIS"></label><input type="text" id="cdNameIS"></div>
+      <div class="field"><label data-s="admin.nameEN" for="cdNameEN"></label><input type="text" id="cdNameEN"></div>
+      <div class="field"><label data-s="admin.nameIS" for="cdNameIS"></label><input type="text" id="cdNameIS"></div>
     </div>
     <div class="grid2">
       <div class="field">
-        <label><span data-s="admin.certDescEN"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <label for="cdDescEN"><span data-s="admin.certDescEN"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
         <textarea id="cdDescEN" rows="2" class="w-full text-base" style="resize:vertical"></textarea>
       </div>
       <div class="field">
-        <label><span data-s="admin.certDescIS"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
+        <label for="cdDescIS"><span data-s="admin.certDescIS"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
         <textarea id="cdDescIS" rows="2" class="w-full text-base" style="resize:vertical"></textarea>
       </div>
     </div>
     <div class="field" id="cdCategoryField">
-      <label data-s="admin.certDefCategory"></label>
+      <label data-s="admin.certDefCategory" for="cdCategory"></label>
       <select id="cdCategory">
         <option value="">None</option>
       </select>
     </div>
     <div class="field">
-      <label><span data-s="admin.certIssuing"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
+      <label for="cdIssuingAuthority"><span data-s="admin.certIssuing"></span> <span class="text-muted" style="font-weight:normal" data-s="admin.certDescOptional"></span></label>
       <input type="text" id="cdIssuingAuthority">
     </div>
 
@@ -851,7 +851,7 @@
       <label class="d-flex items-center gap-6 cursor-pointer">
         <input type="checkbox" id="cdClubEndorsement" data-admin-change="toggleCdEndorsement"> <span data-s="admin.certClubEndorsement"></span>
       </label>
-      <label class="d-flex items-center gap-8"><span data-s="admin.certCardColour"></span>
+      <label class="d-flex items-center gap-8" for="ppsNameEN"><span data-s="admin.certCardColour"></span>
         <input type="color" id="cdColor" class="border-muted rounded-4 cursor-pointer" style="width:36px;height:26px;padding:2px">
         <span class="text-10 text-muted" data-s="admin.certAutoBlank"></span>
       </label>
@@ -917,16 +917,16 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="passport.nameEN">Name (English)</label><input type="text" id="ppsNameEN"></div>
-      <div class="field"><label data-s="passport.nameIS">Name (Icelandic)</label><input type="text" id="ppsNameIS"></div>
+      <div class="field"><label data-s="passport.nameIS" for="ppsNameIS">Name (Icelandic)</label><input type="text" id="ppsNameIS"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppsId" readonly class="text-muted"></div>
-      <div class="field"><label data-s="passport.requiredSigs">Required signatures</label><input type="number" id="ppsRequiredSigs" min="1" max="10" value="2"></div>
+      <div class="field"><label data-s="passport.idReadOnly" for="ppsId">ID (read-only)</label><input type="text" id="ppsId" readonly class="text-muted"></div>
+      <div class="field"><label data-s="passport.requiredSigs" for="ppsRequiredSigs">Required signatures</label><input type="number" id="ppsRequiredSigs" min="1" max="10" value="2"></div>
     </div>
-    <div class="field"><label data-s="passport.promoteCertId">Promotes certificate</label><input type="text" id="ppsPromoteCertId" placeholder="rowing_division"></div>
+    <div class="field"><label data-s="passport.promoteCertId" for="ppsPromoteCertId">Promotes certificate</label><input type="text" id="ppsPromoteCertId" placeholder="rowing_division"></div>
     <div class="grid2">
-      <div class="field"><label data-s="passport.fromSub">From sub-category</label><input type="text" id="ppsFromSub" placeholder="restricted"></div>
-      <div class="field"><label data-s="passport.toSub">To sub-category</label><input type="text" id="ppsToSub" placeholder="released"></div>
+      <div class="field"><label data-s="passport.fromSub" for="ppsFromSub">From sub-category</label><input type="text" id="ppsFromSub" placeholder="restricted"></div>
+      <div class="field"><label data-s="passport.toSub" for="ppsToSub">To sub-category</label><input type="text" id="ppsToSub" placeholder="released"></div>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-admin-close="passportSettingsModal" data-s="btn.cancel">Cancel</button>
@@ -943,31 +943,31 @@
       <button class="modal-close-x" data-admin-close="passportItemModal">&times;</button>
     </div>
     <div class="grid2">
-      <div class="field"><label data-s="passport.itemNameEN">Item name (English)</label><input type="text" id="ppiNameEN"></div>
-      <div class="field"><label data-s="passport.itemNameIS">Item name (Icelandic)</label><input type="text" id="ppiNameIS"></div>
+      <div class="field"><label data-s="passport.itemNameEN" for="ppiNameEN">Item name (English)</label><input type="text" id="ppiNameEN"></div>
+      <div class="field"><label data-s="passport.itemNameIS" for="ppiNameIS">Item name (Icelandic)</label><input type="text" id="ppiNameIS"></div>
     </div>
     <div class="field">
-      <label data-s="passport.itemDescEN">Description (English)</label>
+      <label data-s="passport.itemDescEN" for="ppiDescEN">Description (English)</label>
       <textarea id="ppiDescEN" rows="3" class="w-full border-muted rounded-4 bg-surface" style="font:inherit;padding:6px;color:var(--text);resize:vertical"></textarea>
     </div>
     <div class="field">
-      <label data-s="passport.itemDescIS">Description (Icelandic)</label>
+      <label data-s="passport.itemDescIS" for="ppiDescIS">Description (Icelandic)</label>
       <textarea id="ppiDescIS" rows="3" class="w-full border-muted rounded-4 bg-surface" style="font:inherit;padding:6px;color:var(--text);resize:vertical"></textarea>
     </div>
     <div class="grid2">
       <div class="field">
-        <label data-s="passport.assessmentType">Assessment type</label>
+        <label data-s="passport.assessmentType" for="ppiAssessment">Assessment type</label>
         <select id="ppiAssessment">
           <option value="practical" data-s="passport.practical">Practical</option>
           <option value="theory" data-s="passport.theory">Theoretical</option>
         </select>
       </div>
       <div class="field">
-        <label data-s="passport.itemModule">Module (teaching order)</label>
+        <label data-s="passport.itemModule" for="ppiModule">Module (teaching order)</label>
         <input type="number" id="ppiModule" min="0" step="1" placeholder="0">
       </div>
     </div>
-    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppiId" readonly class="text-muted"></div>
+    <div class="field"><label data-s="passport.idReadOnly" for="ppiId">ID (read-only)</label><input type="text" id="ppiId" readonly class="text-muted"></div>
     <div class="check-row mb-12">
       <input type="checkbox" id="ppiRetired"> <label for="ppiRetired" data-s="passport.retire">Retire</label>
     </div>
@@ -988,9 +988,9 @@
     </div>
     <div class="grid2">
       <div class="field"><label data-s="passport.categoryNameEN">Category name (English)</label><input type="text" id="ppcNameEN"></div>
-      <div class="field"><label data-s="passport.categoryNameIS">Category name (Icelandic)</label><input type="text" id="ppcNameIS"></div>
+      <div class="field"><label data-s="passport.categoryNameIS" for="ppcNameIS">Category name (Icelandic)</label><input type="text" id="ppcNameIS"></div>
     </div>
-    <div class="field"><label data-s="passport.idReadOnly">ID (read-only)</label><input type="text" id="ppcId" readonly class="text-muted"></div>
+    <div class="field"><label data-s="passport.idReadOnly" for="ppcId">ID (read-only)</label><input type="text" id="ppcId" readonly class="text-muted"></div>
     <div class="btn-row">
       <button class="btn btn-danger hidden" id="ppcDeleteBtn" data-admin-click="deletePassportCategory" data-s="passport.deleteCategory">Delete category</button>
       <button class="btn btn-secondary" data-admin-close="passportCategoryModal" data-s="btn.cancel">Cancel</button>

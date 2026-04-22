@@ -138,22 +138,22 @@
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div class="section-label mb-10" data-s="logrev.assignCert"></div>
       <div class="field">
-        <label data-s="lbl.type"></label>
+        <label data-s="lbl.type" for="tcmCertType"></label>
         <select id="tcmCertType" data-slr-change="tcmCertTypeChanged">
           <option value=""></option>
         </select>
       </div>
       <div class="field d-none" id="tcmSubcatField">
-        <label data-s="cert.level"></label>
+        <label data-s="cert.level" for="tcmSubcat"></label>
         <select id="tcmSubcat"><option value=""></option></select>
       </div>
       <div class="grid2 gap-10">
         <div class="field">
-          <label data-s="logrev.assignedDate"></label>
+          <label data-s="logrev.assignedDate" for="tcmAssignedAt"></label>
           <input type="date" id="tcmAssignedAt">
         </div>
         <div class="field d-none" id="tcmExpiryField">
-          <label data-s="logrev.expires"></label>
+          <label data-s="logrev.expires" for="tcmExpiresAt"></label>
           <input type="date" id="tcmExpiresAt">
         </div>
       </div>

@@ -67,7 +67,7 @@
 
         <!-- Incident types -->
         <div class="field">
-          <label id="typeLabel"></label>
+          <label id="typeLabel" for="iDate"></label>
           <div class="type-grid" id="typeGrid"></div>
         </div>
 
@@ -80,17 +80,17 @@
         <!-- Date / time -->
         <div class="grid2">
           <div class="field"><label data-s="lbl.date"></label><input type="date" id="iDate"></div>
-          <div class="field"><label data-s="lbl.time"></label><input type="time" id="iTime"></div>
+          <div class="field"><label data-s="lbl.time" for="iTime"></label><input type="time" id="iTime"></div>
         </div>
 
         <!-- Location / boat -->
         <div class="grid2">
           <div class="field">
-            <label data-s="lbl.location"></label>
+            <label data-s="lbl.location" for="iLocation"></label>
             <select id="iLocation"><option value="" id="iLocNone"></option></select>
           </div>
           <div class="field">
-            <label id="boatLabel"></label>
+            <label id="boatLabel" for="iDesc"></label>
             <div class="d-flex gap-6 items-center">
               <select id="iBoat" class="flex-1" style="min-width:0"><option value="" id="iBoatNone"></option></select>
               <button type="button" class="btn btn-secondary text-nowrap text-10" id="iBoatScanBtn" data-inc-click="scanBoatForIncident" style="padding:6px 10px" data-s="qr.scanBtn"></button>
@@ -106,25 +106,25 @@
 
         <!-- Involved persons -->
         <div class="field">
-          <label data-s="incident.personsInvolved"></label>
+          <label data-s="incident.personsInvolved" for="iInvolved"></label>
           <textarea id="iInvolved" rows="2"></textarea>
         </div>
 
         <!-- Witnesses -->
         <div class="field">
-          <label data-s="incident.witnesses"></label>
+          <label data-s="incident.witnesses" for="iWitnesses"></label>
           <textarea id="iWitnesses" rows="2"></textarea>
         </div>
 
         <!-- Immediate action -->
         <div class="field">
-          <label data-s="incident.immediateAction"></label>
+          <label data-s="incident.immediateAction" for="iAction"></label>
           <textarea id="iAction" rows="3"></textarea>
         </div>
 
         <!-- Follow-up -->
         <div class="field">
-          <label data-s="incident.followUp"></label>
+          <label data-s="incident.followUp" for="iFollowUp"></label>
           <textarea id="iFollowUp" rows="2"></textarea>
         </div>
 
@@ -133,7 +133,7 @@
           <div class="section-label mb-10" data-s="incident.handoffSection"></div>
           <div class="grid2">
             <div class="field">
-              <label data-s="incident.handoffTo"></label>
+              <label data-s="incident.handoffTo" for="iHandOffTo"></label>
               <select id="iHandOffTo">
                 <option value="" id="iHandNone"></option>
                 <option value="emergency" id="iHandEmergency"></option>
@@ -146,12 +146,12 @@
               </select>
             </div>
             <div class="field">
-              <label data-s="incident.handoffName"></label>
+              <label data-s="incident.handoffName" for="iHandOffName"></label>
               <input type="text" id="iHandOffName">
             </div>
           </div>
           <div class="field">
-            <label data-s="incident.handoffNotes"></label>
+            <label data-s="incident.handoffNotes" for="iHandOffNotes"></label>
             <input type="text" id="iHandOffNotes">
           </div>
         </div>

@@ -1351,3 +1351,22 @@ textarea { min-height: 70px; }
 .overflow-hidden   { overflow: hidden; }
 .text-ellipsis     { text-overflow: ellipsis; }
 .icon-inline { width: 1em; height: 1em; vertical-align: -.125em; flex-shrink: 0; }
+
+/* ── Accessibility: skip link (injected by <ymir-header>) ─────────────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: 8px 14px;
+  background: var(--brass);
+  color: #fff;
+  font-weight: 500;
+  z-index: 10000;
+  border-radius: 0 0 6px 0;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid var(--brass-fg);
+  outline-offset: 2px;
+}

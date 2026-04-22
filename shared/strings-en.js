@@ -55,6 +55,7 @@ var _STRINGS_FLAT = {
   "toast.signedOff": "Signed off ✓",
   "toast.checkedIn": "Checked in ✓",
   "toast.sessionExpired": "Your session expired. Signing you out…",
+  "a11y.skip": "Skip to main content",
   "wx.wind": "WIND",
   "wx.gusts": "GUSTS",
   "wx.waves": "WAVES",

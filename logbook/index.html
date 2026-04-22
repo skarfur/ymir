@@ -125,7 +125,7 @@
   <button class="lightbox-close" data-lb-click="closeLightbox">&times;</button>
   <button class="lightbox-nav prev" data-lb-click="lightboxNav" data-lb-arg="-1">&lsaquo;</button>
   <button class="lightbox-nav next" data-lb-click="lightboxNav" data-lb-arg="1">&rsaquo;</button>
-  <img class="lightbox-img" id="lightboxImg" data-lb-nobubble>
+  <img class="lightbox-img" id="lightboxImg" alt="" data-lb-nobubble>
 </div>
 
 <!-- Full-screen map modal -->
@@ -181,14 +181,14 @@
     <div id="logStep2" class="d-none">
       <button class="text-sm text-muted mb-12 bg-none border-none cursor-pointer" data-lb-click="showStep1" style="padding:0">← Back</button>
       <div class="form-row">
-        <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
-        <div class="form-field"><label>Role</label>
+        <div class="form-field"><label for="mDate">Date</label><input type="date" id="mDate"></div>
+        <div class="form-field"><label for="mRole">Role</label>
           <select id="mRole" data-lb-change="onRoleChange"><option value="skipper">Skipper</option><option value="crew">Crew</option></select>
         </div>
       </div>
       <!-- Skipper assignment: shown when role=crew -->
       <div class="form-field d-none pos-relative" id="mSkipperSection">
-        <label>Skipper</label>
+        <label for="mSkipperName">Skipper</label>
         <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
           data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" data-lb-blur-hide="mSkipperDrop">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
@@ -203,20 +203,20 @@
       </div>
       <!-- Club boat + location (default) -->
       <div id="mClubRow" class="form-row">
-        <div id="mBoatClub" class="form-field"><label>Boat</label>
+        <div id="mBoatClub" class="form-field"><label for="mBoat">Boat</label>
           <select id="mBoat" data-lb-change="onBoatChange"><option value="">Select boat…</option></select>
         </div>
-        <div id="mLocClub" class="form-field"><label>Location</label>
+        <div id="mLocClub" class="form-field"><label for="mLocation">Location</label>
           <select id="mLocation"><option value="">Select location…</option></select>
         </div>
       </div>
       <!-- Non-club boat (hidden by default) -->
       <div id="mBoatFree" class="d-none">
         <div class="form-row">
-          <div class="form-field"><label data-s="logbook.boatNameLabel">Boat name</label>
+          <div class="form-field"><label data-s="logbook.boatNameLabel" for="mBoatFreeInput">Boat name</label>
             <input type="text" id="mBoatFreeInput" placeholder="e.g. Sunfish, RIB, etc." autocomplete="off">
           </div>
-          <div class="form-field"><label data-s="logbook.boatCategory">Category</label>
+          <div class="form-field"><label data-s="logbook.boatCategory" for="mBoatFreeCat">Category</label>
             <select id="mBoatFreeCat">
               <option value="dinghy">Dinghy</option><option value="keelboat">Keelboat</option>
               <option value="kayak">Kayak</option><option value="rowboat">Rowboat</option>
@@ -226,43 +226,43 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Model / make <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeModel">Model / make <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeModel" placeholder="e.g. Laser Pico" autocomplete="off">
           </div>
-          <div class="form-field"><label>Sail number <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeSail">Sail number <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeSail" placeholder="e.g. ISL 1234" autocomplete="off">
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Registration <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeReg">Registration <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeReg" placeholder="e.g. RE-001" autocomplete="off">
           </div>
-          <div class="form-field"><label>Length (m) <span class="text-muted text-9">optional</span></label>
+          <div class="form-field"><label for="mBoatFreeLen">Length (m) <span class="text-muted text-9">optional</span></label>
             <input type="number" id="mBoatFreeLen" min="0" step="0.1" placeholder="e.g. 6.5">
           </div>
         </div>
       </div>
       <!-- Non-club location (hidden by default) -->
       <div id="mLocFree" class="form-field d-none">
-        <label data-s="lbl.location">Location</label>
+        <label data-s="lbl.location" for="mLocFreeInput">Location</label>
         <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
         <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="padding:4px 0;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
         <div id="mLocGeoStatus" class="text-xs text-muted mt-2 d-none"></div>
       </div>
       <div class="form-row">
-        <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
+        <div class="form-field"><label for="mTimeOut">Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
           data-lb-time-format></div>
-        <div class="form-field"><label>Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
+        <div class="form-field"><label for="mTimeIn">Returned</label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
           data-lb-time-format></div>
       </div>
-      <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
+      <div class="form-field"><label for="mCrew">Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
       <div id="mCrewSection" class="mb-12 d-none">
         <label class="check-label mb-8">
           <input type="checkbox" id="mHelmSelf" class="accent-checkbox">
           <span class="text-xs">I was at the helm</span>
         </label>
-        <label class="text-9" style="letter-spacing:.8px">Crew members <span class="fw-400" style="opacity:.6">(search by name)</span></label>
+        <label class="text-9" style="letter-spacing:.8px" for="mDeparturePort">Crew members <span class="fw-400" style="opacity:.6">(search by name)</span></label>
         <div id="mCrewInputs"></div>
         <div class="text-xs text-muted mt-4">Named crew get this trip logged in their logbook automatically.</div>
       </div>
@@ -279,7 +279,7 @@
               data-lb-input="watchPortInput" data-lb-arg="departure">
           </div>
           <div class="form-field">
-            <label>Arrival port</label>
+            <label for="mArrivalPort">Arrival port</label>
             <input list="portsList" id="mArrivalPort" placeholder="Same as departure" autocomplete="off"
               data-lb-input="watchPortInput" data-lb-arg="arrival">
           </div>
@@ -297,18 +297,18 @@
       <div id="mWxFetchStatus" class="text-xs text-muted d-none mb-6"></div>
       <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->
       <div id="mWxFields"></div>
-      <div class="form-field"><label>Distance (nm) <span class="text-muted text-9">auto from GPS track</span></label>
+      <div class="form-field"><label for="mDistanceNm">Distance (nm) <span class="text-muted text-9">auto from GPS track</span></label>
         <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       <!-- GPS Track upload -->
       <div class="form-field">
-        <label>GPS Track — GPX / KML / KMZ <span class="text-muted text-9">optional</span></label>
+        <label for="mTrackFile">GPS Track — GPX / KML / KMZ <span class="text-muted text-9">optional</span></label>
         <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" data-lb-change-el="handleTrackFile"
           class="text-sm" style="color:var(--text)">
         <div id="mTrackStatus" class="text-sm text-muted mt-4"></div>
       </div>
       <!-- Photo upload -->
       <div class="form-field">
-        <label>Photos <span class="text-muted text-9">optional</span></label>
+        <label for="mPhotoFiles">Photos <span class="text-muted text-9">optional</span></label>
         <input type="file" id="mPhotoFiles" accept="image/*" multiple data-lb-change-el="handlePhotoFiles"
           class="text-sm" style="color:var(--text)">
         <div id="mPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
@@ -318,11 +318,11 @@
         </div>
       </div>
       <div class="form-field" id="mSkipperNoteWrap">
-        <label>Skipper's note <span class="text-muted text-9">visible to crew</span></label>
+        <label for="mSkipperNote">Skipper's note <span class="text-muted text-9">visible to crew</span></label>
         <textarea id="mSkipperNote" rows="2" placeholder="Notes for the crew…"></textarea>
       </div>
       <div class="form-field" id="mPersonalNoteWrap">
-        <label>Personal note <span class="text-muted text-9">only you</span></label>
+        <label for="mNotes">Personal note <span class="text-muted text-9">only you</span></label>
         <textarea id="mNotes" rows="2" placeholder="Private notes…"></textarea>
       </div>
       <div id="mErr" class="text-sm text-red mb-8 d-none"></div>
@@ -345,32 +345,32 @@
     </div>
     <input type="hidden" id="etId">
     <div class="form-row">
-      <div class="form-field"><label>Date</label><input type="date" id="etDate"></div>
-      <div class="form-field"><label>Boat</label>
+      <div class="form-field"><label for="etDate">Date</label><input type="date" id="etDate"></div>
+      <div class="form-field"><label for="etBoat">Boat</label>
         <select id="etBoat"><option value="">Select boat…</option></select>
       </div>
     </div>
-    <div class="form-field"><label>Location</label>
+    <div class="form-field"><label for="etLocation">Location</label>
       <select id="etLocation"><option value="">Select location…</option></select>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Departed</label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
+      <div class="form-field"><label for="etTimeOut">Departed</label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
         data-lb-time-format></div>
-      <div class="form-field"><label>Returned</label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
+      <div class="form-field"><label for="etTimeIn">Returned</label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
         data-lb-time-format></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Crew aboard</label><input type="number" id="etCrew" min="1" value="1"></div>
-      <div class="form-field"><label>Distance (nm)</label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>
+      <div class="form-field"><label for="etCrew">Crew aboard</label><input type="number" id="etCrew" min="1" value="1"></div>
+      <div class="form-field"><label for="etDistanceNm">Distance (nm)</label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Departure port</label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
-      <div class="form-field"><label>Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
+      <div class="form-field"><label for="etDeparturePort">Departure port</label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>
+      <div class="form-field"><label for="etArrivalPort">Arrival port</label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>
     </div>
     <div class="section-label" style="margin:12px 0 8px">WEATHER</div>
     <!-- Weather fields rendered by shared/trip-form.js. -->
     <div id="etWxFields"></div>
-    <div class="form-field mt-8"><label>Skipper's comments <span class="text-muted text-9">(visible to crew)</span></label>
+    <div class="form-field mt-8"><label for="etSkipperNote">Skipper's comments <span class="text-muted text-9">(visible to crew)</span></label>
 
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
@@ -389,7 +389,7 @@
     </div>
     <input type="hidden" id="puTripId">
     <div class="form-field">
-      <label>Photos</label>
+      <label for="puPhotoFiles">Photos</label>
       <input type="file" id="puPhotoFiles" accept="image/*" multiple data-lb-change-el="handleInlinePhotos" class="text-sm" style="color:var(--text)">
       <div id="puPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
     </div>
