@@ -619,6 +619,12 @@ function renderFleetStatus(containerId, boats, active, opts) {
 // Delegated click handler for [data-boat-action] elements. Replaces the
 // inline onclicks in the boat/checkout/fleet-section templates above so
 // strict-script-src CSP pages can use the shared renderer.
+//
+// Registered in the capture phase so that for button actions nested
+// inside a wrapping card that has its own onclick (e.g. staff's
+// openCoDetail on the checkout-card root), we can call stopPropagation
+// BEFORE the card's bubble-phase handler runs. Without this the card's
+// handler fires first — even with its own guard — which is racy.
 if (typeof document !== 'undefined' && !document._boatsClickListener) {
   document._boatsClickListener = true;
   document.addEventListener('click', function(e) {
@@ -627,6 +633,10 @@ if (typeof document !== 'undefined' && !document._boatsClickListener) {
     var action = el.dataset.boatAction;
     var fn = el.dataset.boatFn;
     if (!fn || typeof window[fn] !== 'function') return;
+    // Button-in-card actions must not bubble to a wrapping card click.
+    if (action === 'check-in' || action === 'delete' || action === 'return') {
+      e.stopPropagation();
+    }
     switch (action) {
       case 'click':
         if (window.boatRegistry && typeof window.boatRegistry.getBoat === 'function') {
@@ -645,5 +655,5 @@ if (typeof document !== 'undefined' && !document._boatsClickListener) {
         window[fn](el);
         break;
     }
-  });
+  }, true);
 }
