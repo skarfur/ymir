@@ -294,10 +294,13 @@ function loginWithGoogle_(b) {
   clearLoginAttempts_(m.kennitala);
   const session = createSession_(m.kennitala, m.role || 'member', stay, ua);
   const wards = bool_(m.isMinor) ? [] : findWardsOf_(m.kennitala);
+  // The temp-password-rotation prompt is only meaningful when the user actually
+  // authenticated with that password. A Google OAuth sign-in is its own trust
+  // path, so don't nag them about a password they never used.
   return okJ({
     member: publicMember_(m),
     wards: wards,
-    usingDefaultPassword: bool_(m.passwordIsTemp),
+    usingDefaultPassword: false,
     sessionToken: session.token,
     expiresAt: session.expiresAt,
     sessionId: session.id,
