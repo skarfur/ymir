@@ -552,7 +552,7 @@ function getLang()  { return localStorage.getItem("ymirLang") || "IS"; }
 function setLang(l) { localStorage.setItem("ymirLang", l); }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
-function getTheme()  { return localStorage.getItem("ymirTheme") || "dark"; }
+function getTheme()  { return localStorage.getItem("ymirTheme") || "light"; }
 function setTheme(t) {
   localStorage.setItem("ymirTheme", t);
   document.documentElement.setAttribute("data-theme", t);

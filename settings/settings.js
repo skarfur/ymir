@@ -366,7 +366,7 @@ async function saveSettings() {
   var initials = document.getElementById('sInitials').value.trim().toUpperCase() || _autoInitials;
   var lang     = getToggle('langToggle') || 'IS';
   var windUnit = document.getElementById('sWindUnit').value;
-  var theme    = getToggle('themeToggle') || 'dark';
+  var theme    = getToggle('themeToggle') || 'light';
 
   var statsVisibility = {
     career:     document.getElementById('svCareer').checked,

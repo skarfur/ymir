@@ -1,3 +1,6 @@
+// login/ doesn't load shared/ui.js, which is where every other page calls this.
+applyTheme();
+
 // Track the dynamic screen currently shown so we can re-render it when the
 // language changes without losing the user's place in the login flow.
 var _currentScreen = null;
@@ -117,16 +120,21 @@ apiGet('getConfig').catch(function() {});
       auto_select: false,
       cancel_on_tap_outside: true,
     });
-    google.accounts.id.renderButton(document.getElementById('googleBtn'), {
+    // Unhide first so getBoundingClientRect returns the real inner width —
+    // GSI's width param is a fixed pixel int (min 200, max 400), so match it
+    // to the card so the button lines up with the inputs below on any screen.
+    document.getElementById('googleBtnWrap').classList.remove('d-none');
+    var wrap = document.getElementById('googleBtn');
+    var avail = Math.round(wrap.getBoundingClientRect().width) || 320;
+    google.accounts.id.renderButton(wrap, {
       type: 'standard',
-      theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_black',
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'filled_black' : 'outline',
       size: 'large',
       text: 'signin_with',
       shape: 'rectangular',
       logo_alignment: 'center',
-      width: 320,
+      width: Math.max(200, Math.min(400, avail)),
     });
-    document.getElementById('googleBtnWrap').classList.remove('d-none');
     document.getElementById('googleDividerText').textContent = s('login.or');
     google.accounts.id.prompt();
   } catch (e) {
