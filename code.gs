@@ -1152,7 +1152,7 @@ function doGet(e) {
     }
     return failJ('Unauthorized', 401);
   } catch (err) {
-    console.error('doGet error:', err && err.stack || err);
+    Logger.log(['doGet error:', err && err.stack || err].join(" "));
     return failJ('Server error', 500);
   }
 }
@@ -1173,7 +1173,7 @@ function doPost(e) {
     if (!throttled.ok) return failJ('Too many requests', 429);
     return route_(action, b, caller);
   } catch (err) {
-    console.error('doPost error:', err && err.stack || err);
+    Logger.log(['doPost error:', err && err.stack || err].join(" "));
     return failJ('Server error', 500);
   }
 }

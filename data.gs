@@ -47,7 +47,9 @@ var data_ = (function () {
     if (filter && filter.active === true) rows = rows.filter(function (m) { return !bool_(m.inactive); });
     if (filter && filter.active === false) rows = rows.filter(function (m) { return bool_(m.inactive); });
     if (filter && filter.role) rows = rows.filter(function (m) { return m.role === filter.role; });
-    if (filter && filter.kennitala) rows = rows.filter(function (m) { return m.kennitala === filter.kennitala; });
+    // Sheets auto-type 10-digit kennitalas as numbers; wrap both sides so
+    // callers can pass either a number or a string without falling through.
+    if (filter && filter.kennitala) rows = rows.filter(function (m) { return String(m.kennitala) === String(filter.kennitala); });
     return rows;
   }
   function getMember(id)              { return _byField('members', 'id', id); }
@@ -58,7 +60,7 @@ var data_ = (function () {
   // ── Trips ────────────────────────────────────────────────────────────────
   function readTrips(filter) {
     var rows = readAll_('trips');
-    if (filter && filter.kennitala) rows = rows.filter(function (t) { return t.kennitala === filter.kennitala; });
+    if (filter && filter.kennitala) rows = rows.filter(function (t) { return String(t.kennitala) === String(filter.kennitala); });
     if (filter && filter.boatId)    rows = rows.filter(function (t) { return t.boatId === filter.boatId; });
     if (filter && filter.fromDate)  rows = rows.filter(function (t) { return (t.date || '') >= filter.fromDate; });
     if (filter && filter.toDate)    rows = rows.filter(function (t) { return (t.date || '') <= filter.toDate; });
@@ -74,7 +76,7 @@ var data_ = (function () {
     var rows = readAll_('checkouts');
     if (filter && filter.active === true)  rows = rows.filter(function (c) { return !c.checkedInAt; });
     if (filter && filter.active === false) rows = rows.filter(function (c) { return !!c.checkedInAt; });
-    if (filter && filter.kennitala)        rows = rows.filter(function (c) { return c.kennitala === filter.kennitala; });
+    if (filter && filter.kennitala)        rows = rows.filter(function (c) { return String(c.kennitala) === String(filter.kennitala); });
     if (filter && filter.boatId)           rows = rows.filter(function (c) { return c.boatId === filter.boatId; });
     return rows;
   }

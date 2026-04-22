@@ -3,19 +3,26 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDOdwZGy2gDt99PEENSk6D3xTC8KQHdOICRIDEFd0VDB1eCMmA1hJ3-iJJ1Q8PDuqh/exec";
 const BASE_URL   = "https://skarfur.github.io/ymir";
 
-// ── Service Worker Cleanup ──────────────────────────────────────────────────
-// Unregister any previously-installed service worker and purge its caches
-// so users always get fresh static assets.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(r) { r.unregister(); });
-  }).catch(function() {});
-  if (typeof caches !== 'undefined') {
-    caches.keys().then(function(names) {
-      names.forEach(function(n) { caches.delete(n); });
-    }).catch(function() {});
+// ── Service Worker Cleanup (one-shot per browser) ──────────────────────────
+// The app used to register a SW; it was removed long ago. This block
+// guarantees any stranded old SW + its caches get purged so users don't
+// see stale static assets. Once it's run successfully in a browser we
+// flip a localStorage flag and skip on every subsequent page load —
+// there's no point re-querying navigator.serviceWorker on every view.
+try {
+  if (!localStorage.getItem('ymirSwCleanupDone') && 'serviceWorker' in navigator) {
+    var _swCleanupDone = function () { try { localStorage.setItem('ymirSwCleanupDone', '1'); } catch (e) {} };
+    navigator.serviceWorker.getRegistrations()
+      .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+      .catch(function () {})
+      .finally(_swCleanupDone);
+    if (typeof caches !== 'undefined') {
+      caches.keys().then(function (names) {
+        names.forEach(function (n) { caches.delete(n); });
+      }).catch(function () {});
+    }
   }
-}
+} catch (e) {}
 
 async function apiGet(action, params) {
   params = params || {};

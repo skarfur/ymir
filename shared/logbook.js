@@ -13,6 +13,17 @@ var _tripListObserver = null;
 var _TRIP_BATCH = 40;
 var _tripFilter = null;  // shared/list-filter.js controller — built in buildFilters()
 
+// O(1) lookup indexes rebuilt whenever allBoats / allMembers reload. Avoids
+// the O(n·m) scans that used to happen when tripCard / stats / filters ran
+// _boat(t.boatId) inside per-trip loops (500 trips ×
+// 50 boats = 25,000 scans per render). Callers use _boat(id) / _member(kt).
+var _boatById = new Map();
+var _memberByKt = new Map();
+function _boat(id)   { return id == null ? null : (_boatById.get(String(id))     || null); }
+function _member(kt) { return kt == null ? null : (_memberByKt.get(String(kt))   || null); }
+function _rebuildBoatIndex()   { _boatById   = new Map(allBoats.map(b => [String(b.id), b])); }
+function _rebuildMemberIndex() { _memberByKt = new Map(allMembers.map(m => [String(m.kennitala), m])); }
+
 // Captain overrides this via its own applyFilter() shim, so we keep a stable name.
 function applyFilter(){ if (_tripFilter) _tripFilter.refresh(); }
 
@@ -57,7 +68,7 @@ function buildFilters(){
   const thisYear=String(new Date().getFullYear());
   if(years.includes(thisYear)) yrSel.value=thisYear;
 
-  const cats=[...new Set(myTrips.map(t=>(allBoats.find(b=>b.id===t.boatId)?.category)||t.boatCategory||'').filter(Boolean))].sort();
+  const cats=[...new Set(myTrips.map(t=>(_boat(t.boatId)?.category)||t.boatCategory||'').filter(Boolean))].sort();
   const cSel=document.getElementById('fCat');
   cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=boatEmoji(c.toLowerCase())+' '+c;cSel.appendChild(o);});
 
@@ -67,7 +78,7 @@ function buildFilters(){
     predicate: function(t, f) {
       if (f.yr && !(t.date || '').startsWith(f.yr)) return false;
       if (f.cat) {
-        const tCat = ((allBoats.find(b => b.id === t.boatId)?.category) || t.boatCategory || '').toLowerCase();
+        const tCat = ((_boat(t.boatId)?.category) || t.boatCategory || '').toLowerCase();
         if (tCat !== f.cat.toLowerCase()) return false;
       }
       if (f.role === 'skipper' && t.role === 'crew') return false;
@@ -75,7 +86,7 @@ function buildFilters(){
       if (f.role === 'helm'    && !(t.helm    && t.helm    !== 'false')) return false;
       if (f.role === 'student' && !(t.student && t.student !== 'false')) return false;
       if (f.role === 'guest') {
-        const _m = allMembers.find(m => String(m.kennitala) === String(t.kennitala));
+        const _m = _member(t.kennitala);
         if (!_m || _m.role !== 'guest') return false;
       }
       if (f.wind) {
@@ -383,7 +394,7 @@ function populatePortsDatalist(){
 
 function onBoatChange(){
   const boatId=document.getElementById('mBoat').value;
-  const boat=allBoats.find(b=>b.id===boatId);
+  const boat=_boat(boatId);
   const isKeelboat=(boat?.category||'').toLowerCase()==='keelboat';
   const pd=document.getElementById('portDetails');
   if(isKeelboat){
@@ -628,7 +639,7 @@ function renderClubTripsList(){
   var _gBadge = ' <span style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--brass)55;background:var(--brass)11;color:var(--brass-fg);margin-left:2px">'+s('tc.guest')+'</span>';
   var frag = document.createDocumentFragment();
   page.forEach(function(t) {
-    var _sm = t.kennitala ? allMembers.find(function(m){return String(m.kennitala)===String(t.kennitala);}) : null;
+    var _sm = t.kennitala ? _member(t.kennitala) : null;
     var _sg = (_sm && _sm.role==='guest') ? _gBadge : '';
     var card = document.createElement('div');
     card.className = 'trip-pick-card';
@@ -703,7 +714,7 @@ async function submitManual(){
   } else {
     boatId=document.getElementById('mBoat').value;
     boatName=document.getElementById('mBoat').selectedOptions[0]?.text||'';
-    const boat=allBoats.find(b=>b.id===boatId);
+    const boat=_boat(boatId);
     boatCategory=boat?.category||'';
     locId=document.getElementById('mLocation').value;
     locName=document.getElementById('mLocation').selectedOptions[0]?.text||'';
@@ -1132,7 +1143,7 @@ function toggleSharePanel(){
   else p.style.display='none';
 }
 function renderShareCatChecks(){
-  var cats=[...new Set(myTrips.map(function(t){return(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';}).filter(Boolean))].sort();
+  var cats=[...new Set(myTrips.map(function(t){return(_boat(t.boatId)?.category)||t.boatCategory||'';}).filter(Boolean))].sort();
   var el=document.getElementById('shareCatChecks');
   if(!cats.length){el.innerHTML='';return;}
   el.innerHTML=cats.map(function(c){
@@ -1185,7 +1196,7 @@ function exportLogbookCsv(){
     var cats=Array.from(catChecks).map(function(c){return c.value;});
     var rows=(myTrips||[]).filter(function(t){
       if(!cats.length) return true;
-      var c=(allBoats.find(function(b){return b.id===t.boatId;})?.category)||t.boatCategory||'';
+      var c=(_boat(t.boatId)?.category)||t.boatCategory||'';
       return cats.indexOf(c)!==-1;
     });
     if(!rows.length){ showToast(s('logbook.noTrips'),'err'); return; }
@@ -1263,6 +1274,8 @@ async function reload(){
     allBoats=boats.filter(b=>!b.oos&&b.oos!=='true');
     allLocs =locs;
     allMembers=(membersRes.members||[]).filter(m=>m.active!==false&&m.active!=='false');
+    _rebuildBoatIndex();
+    _rebuildMemberIndex();
     registerBoatCats(cfgRes.boatCategories||[]);
     renderStats();
     if (typeof initMemberHeatmap === 'function') initMemberHeatmap();
@@ -1613,7 +1626,7 @@ async function submitEditTrip() {
   errEl.style.display = 'none';
   const date = document.getElementById('etDate').value;
   const boatId = document.getElementById('etBoat').value;
-  const boat = allBoats.find(b => b.id === boatId);
+  const boat = _boat(boatId);
   const boatName = boat?.name || '';
   const boatCategory = boat?.category || '';
   const locId = document.getElementById('etLocation').value;

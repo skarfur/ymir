@@ -537,6 +537,19 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
 // ── 5.0 Public dashboard ────────────────────────────────────────────────────
 
 function publicDashboard_() {
+  // 60-second cache. The dashboard aggregates every trip + the config sheet
+  // and runs on every /?action=dashboard hit (plus the rate-limiter's budget
+  // of 60/min). Caching the rendered JSON takes it to at most one real
+  // computation per minute even under burst traffic. Bump the version
+  // suffix below (pubDash_v1 → v2) to force invalidation after shape
+  // changes.
+  var _cache = CacheService.getScriptCache();
+  var _cached = _cache.get('pubDash_v1');
+  if (_cached) {
+    return ContentService.createTextOutput(_cached)
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   var cfgMap = getConfigMap_();
   var boatCategories = [];
   try { boatCategories = JSON.parse(getConfigValue_('boatCategories', cfgMap) || '[]'); } catch(e) {}
@@ -749,7 +762,8 @@ function publicDashboard_() {
   var flagConfig = null;
   try { flagConfig = JSON.parse(getConfigValue_('flagConfig', cfgMap) || 'null'); } catch(e) {}
 
-  return okJ({
+  var _payload = {
+    success: true,
     ytd: { totalTrips: totalTrips, totalHours: Math.round(totalHours * 10) / 10, byCategory: byCategory },
     locations: locData,
     onWater: { boatCount: boatCount, peopleCount: peopleCount, boats: onWaterBoats },
@@ -758,7 +772,11 @@ function publicDashboard_() {
     boatCategories: boatCategories.map(function(c) { return { key: c.key, labelEN: c.labelEN || c.key, labelIS: c.labelIS || '', emoji: c.emoji || '' }; }),
     staffStatus: staffStatus,
     flagConfig: flagConfig,
-  });
+  };
+  var _json = JSON.stringify(_payload);
+  try { _cache.put('pubDash_v1', _json, 60); } catch(e) {}
+  return ContentService.createTextOutput(_json)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 
