@@ -70,8 +70,7 @@ function maintRenderCardCompact(r) {
   const part = esc(r.part||'');
   const fallback = (!subject && !part) ? esc(maintTitleFallback_(r)) : '';
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
-    style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s"
-    onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''">
+    style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s">
     <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden">
       <span style="flex-shrink:0">${catIcon}</span>
       ${subject ? `<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
@@ -162,7 +161,7 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-item" style="position:relative;padding-right:24px">
         <div style="font-size:11px;margin-bottom:3px"><span style="color:var(--text);font-weight:500">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${sstr(c.at).slice(0,16).replace('T',' ')}</span></div>
         ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
-        ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
+        ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" data-view-photo="${esc(c.photoUrl)}">` : ''}
         ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="${s('maint.deleteComment')}">&times;</button>` : ''}
       </div>`).join('');
 
@@ -206,7 +205,7 @@ function maintOpenDetail(r, currentUser) {
         ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>`  : ''}
       </div>
       ${r.description ? `<p style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.description)}</p>` : ''}
-      ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
+      ${r.photoUrl    ? `<img src="${esc(r.photoUrl)}" style="width:100%;border-radius:6px;margin-bottom:14px;cursor:pointer" data-view-photo="${esc(r.photoUrl)}">` : ''}
       ${materialsHtml}
       ${commentHtml ? `<div class="comment-thread">${commentHtml}</div>` : ''}
       ${!resolved ? `
@@ -394,7 +393,7 @@ function maintOpenDetail(r, currentUser) {
             }
             _mdCommentPhotoData = { fileName: file.name, fileData: data, mimeType: file.type||'image/jpeg' };
             if(previewEl) previewEl.innerHTML = '<img src="'+data+'" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border)">'
-              + '<button onclick="this.parentElement.innerHTML=\'\'" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);vertical-align:top">&times;</button>';
+              + '<button data-clear-parent style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);vertical-align:top">&times;</button>';
             previewEl.querySelector('button').addEventListener('click', function(){ _mdCommentPhotoData=null; photoInput.value=''; });
           };
           img.src = ev.target.result;
@@ -525,7 +524,7 @@ function maintRenderCard(r) {
     <div class="comment-item">
       <div style="font-size:11px;margin-bottom:2px"><span class="comment-by">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${sstr(c.at).slice(0,16).replace('T',' ')}</span></div>
       ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
-      ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" onclick="viewPhoto('${esc(c.photoUrl)}')">` : ''}
+      ${c.photoUrl ? `<img src="${esc(c.photoUrl)}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer" data-view-photo="${esc(c.photoUrl)}">` : ''}
     </div>`).join('');
 
   return `<div class="req-card ${sevClass}${resolved?' resolved':''}">
@@ -546,7 +545,7 @@ function maintRenderCard(r) {
       </div>
     </div>
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
-    ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" onclick="viewPhoto('${esc(r.photoUrl)}')">` : ''}
+    ${r.photoUrl    ? `<img class="req-photo" src="${esc(r.photoUrl)}" style="cursor:pointer" data-view-photo="${esc(r.photoUrl)}">` : ''}
     ${commentHtml   ? `<div class="comment-thread">${commentHtml}</div>` : ''}
     ${resolved ? `<div style="margin-top:8px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>` : ''}
   </div>`;
@@ -556,7 +555,7 @@ function maintRenderRow(m) {
   return `
     <div class="maint-row ${m._done ? "resolved" : ""}" id="mr-${m.id}">
       <input type="checkbox" ${m._done ? "checked" : ""}
-        onchange="maintResolveRow('${m.id}', this.checked)">
+        data-maint-resolve="${m.id}">
       <div class="maint-info">
         <div class="maint-boat">
           ${m.category==='boat' ? esc(m.boatName||m.boatId||'') : ''}${m.category==='boat' && m.part ? ' · ' : ''}${m.part ? esc(m.part) : ''}
@@ -632,4 +631,27 @@ async function maintResolveRow(id, checked) {
       ymAlert(s('logbook.errGeneric', { msg: e.message }));
     }
   }
+}
+
+// Delegated handlers for data-* attrs on rendered maintenance DOM
+// (replaces inline onclicks/onchange in the templates above).
+if (typeof document !== 'undefined' && !document._maintClickListener) {
+  document._maintClickListener = true;
+  document.addEventListener('click', function(e) {
+    const v = e.target.closest('[data-view-photo]');
+    if (v && typeof window.viewPhoto === 'function') {
+      window.viewPhoto(v.dataset.viewPhoto);
+      return;
+    }
+    const c = e.target.closest('[data-clear-parent]');
+    if (c && c.parentElement) {
+      c.parentElement.innerHTML = '';
+    }
+  });
+  document.addEventListener('change', function(e) {
+    const r = e.target.closest('[data-maint-resolve]');
+    if (r && typeof window.maintResolveRow === 'function') {
+      window.maintResolveRow(r.dataset.maintResolve, r.checked);
+    }
+  });
 }

@@ -1300,3 +1300,6 @@ textarea { min-height: 70px; }
     color: #ffffff;
   }
 }
+
+/* Replaces onmouseenter/onmouseleave inline handlers from shared/maintenance.js */
+.maint-card-compact:hover { background: var(--surface); }
