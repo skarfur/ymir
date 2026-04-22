@@ -409,8 +409,12 @@ async function reload(){
 
 // ── Edit trip (skipper only) ────────────────────────────────────────────────
 
-// Load confirmations after page init
-setTimeout(loadConfirmations,1500);
+// Load confirmations after page init. Wrap so the loadConfirmations
+// lookup is deferred until the callback fires — the function lives in
+// shared/logbook-confirm.js, which loads after this file.
+setTimeout(function () {
+  if (typeof loadConfirmations === 'function') loadConfirmations();
+}, 1500);
 
 
 // Delegated handlers for data-trip-* attrs on rendered logbook DOM
