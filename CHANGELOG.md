@@ -102,6 +102,14 @@ review's categories; see commit messages for per-change detail.
   on every `.js` / `.gs`, and (non-blocking for now) ESLint / Prettier.
 - `tools/check-syntax.js` parse-checks every `.js` and `.gs` file.
 
+**Debuggability**
+
+- `doGet` / `doPost` outer `catch` now include `err.message` in the
+  client response (`'Server error: ' + err.message` instead of the bare
+  `'Server error'`). The Apps Script `Logger.log` still carries the full
+  stack; this surfaces enough detail in the browser console that a
+  future regression doesn't need Apps Script log access to diagnose.
+
 ## v6
 
 Apps Script backend. Previously lived as a comment at the top of

@@ -1146,7 +1146,7 @@ function doGet(e) {
     return failJ('Unauthorized', 401);
   } catch (err) {
     Logger.log(['doGet error:', err && err.stack || err].join(" "));
-    return failJ('Server error', 500);
+    return failJ('Server error: ' + ((err && err.message) || 'unknown'), 500);
   }
 }
 
@@ -1167,7 +1167,7 @@ function doPost(e) {
     return route_(action, b, caller);
   } catch (err) {
     Logger.log(['doPost error:', err && err.stack || err].join(" "));
-    return failJ('Server error', 500);
+    return failJ('Server error: ' + ((err && err.message) || 'unknown'), 500);
   }
 }
 
