@@ -1350,3 +1350,4 @@ textarea { min-height: 70px; }
 .text-nowrap       { white-space: nowrap; }
 .overflow-hidden   { overflow: hidden; }
 .text-ellipsis     { text-overflow: ellipsis; }
+.icon-inline { width: 1em; height: 1em; vertical-align: -.125em; flex-shrink: 0; }
