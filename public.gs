@@ -537,12 +537,12 @@ function pubTripTableHtml_(trips, allTrips, boats, opts) {
 // ── 5.0 Public dashboard ────────────────────────────────────────────────────
 
 function publicDashboard_() {
-  // 60-second cache. The dashboard aggregates every trip + the config sheet
-  // and runs on every /?action=dashboard hit (plus the rate-limiter's budget
-  // of 60/min). Caching the rendered JSON takes it to at most one real
-  // computation per minute even under burst traffic. Bump the version
-  // suffix below (pubDash_v1 → v2) to force invalidation after shape
-  // changes.
+  // 15-second cache. The dashboard aggregates every trip + the config sheet
+  // and runs on every /?action=dashboard hit (rate-limit budget: 60/min).
+  // At 15s TTL, admin writes (staff status, flag override, new trips, etc.)
+  // propagate within 15s with zero per-write instrumentation — no
+  // cache-eviction calls to forget when adding new admin actions. Bump
+  // pubDash_v1 → v2 to force invalidation after shape changes.
   var _cache = CacheService.getScriptCache();
   var _cached = _cache.get('pubDash_v1');
   if (_cached) {
@@ -774,7 +774,7 @@ function publicDashboard_() {
     flagConfig: flagConfig,
   };
   var _json = JSON.stringify(_payload);
-  try { _cache.put('pubDash_v1', _json, 60); } catch(e) {}
+  try { _cache.put('pubDash_v1', _json, 15); } catch(e) {}
   return ContentService.createTextOutput(_json)
     .setMimeType(ContentService.MimeType.JSON);
 }
