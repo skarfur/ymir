@@ -5,34 +5,6 @@
 // binds to window and is visible from the other admin-tab modules.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function renderBoatCats() {
-  const card   = document.getElementById("boatCatsCard");
-  const locale = getLang() === 'IS' ? 'is' : 'en';
-  const active = _allBoatCats
-    .filter(c => c.active !== false && c.active !== 'false')
-    .sort((a, b) => {
-      const la = (getLang() === 'IS' && a.labelIS ? a.labelIS : a.labelEN) || '';
-      const lb = (getLang() === 'IS' && b.labelIS ? b.labelIS : b.labelEN) || '';
-      return la.localeCompare(lb, locale, { sensitivity: 'base' });
-    });
-  if (!active.length) { card.innerHTML = `<div class="empty-state">${s('admin.noCategories')}</div>`; return; }
-   card.innerHTML = active.map(c => {
-    const col = boatCatColors(c.key);
-    const swatch = `<span style="width:14px;height:14px;border-radius:3px;background:${col.color};border:1px solid ${col.border};display:inline-block;flex-shrink:0" aria-hidden="true"></span>`;
-    return `
-    <div class="list-row">
-      <span style="font-size:18px;width:28px;flex-shrink:0">${esc(c.emoji || '⛵')}</span>
-      ${swatch}
-      <span class="list-name">
-        <strong>${esc(c.labelEN)}</strong>
-        ${c.labelIS ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(c.labelIS)}</span>` : ''}
-        <span style="color:var(--border);font-size:10px;margin-left:8px">${esc(c.key)}</span>
-      </span>
-      <button class="row-edit" data-admin-click="openBoatCatModal" data-admin-arg="${c.key}">Edit</button>
-    </div>`;
-  }).join("");
-}
-
 function openBoatCatModal(key) {
   _bcEditingId = key || null;
   const c = key ? _allBoatCats.find(x => x.key === key) : null;
@@ -94,7 +66,6 @@ async function saveBoatCat() {
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
     closeModal("boatCatModal", true);
-    renderBoatCats();
     renderBoats();
     populateCategorySelects();
     toast(s("toast.saved"));
@@ -110,7 +81,6 @@ async function deleteBoatCat() {
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
     closeModal("boatCatModal", true);
-    renderBoatCats();
     renderBoats();
     populateCategorySelects();
     toast(s("toast.deleted"));
