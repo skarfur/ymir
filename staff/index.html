@@ -30,55 +30,55 @@
 <div class="page-content">
 
   <div class="mb-16">
-    <div style="font-size:16px;font-weight:500;color:var(--text)" data-s="staff.dashTitle">Staff Dashboard</div>
-    <div class="text-sm text-muted" style="margin-top:2px" id="userBadge"></div>
+    <div class="fw-500" style="font-size:16px;color:var(--text)" data-s="staff.dashTitle">Staff Dashboard</div>
+    <div class="text-sm text-muted mt-2" id="userBadge"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
-  <div class="wx-widget" style="margin-bottom:14px" id="wxWidget">
+  <div class="wx-widget mb-14" id="wxWidget">
     <div class="text-muted text-sm" style="padding:6px 0" data-s="lbl.loading"></div>
   </div>
 
   <!-- ══ STAFF STATUS ══ -->
 
     <!-- ══ TIDES ══ -->
-  <div id="tideWidget" style="margin-bottom:14px"></div>
+  <div id="tideWidget" class="mb-14"></div>
 
   <div id="staffStatusStrip" class="mb-12">
     <div class="section-label mb-8">DUTY STATUS</div>
     <div class="flex-center flex-wrap gap-8">
-      <button id="btnStaffOnDuty" data-staff-click="toggleStaffStatus" data-staff-arg="onDuty" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--orange);color:#fff;">No staff on duty</button>
-      <button id="btnSupportBoat" data-staff-click="toggleStaffStatus" data-staff-arg="supportBoat" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;transition:opacity .15s;background:var(--orange);color:#fff;">No support boat</button>
+      <button id="btnStaffOnDuty" data-staff-click="toggleStaffStatus" data-staff-arg="onDuty" class="items-center gap-6 border-none text-md fw-600 text-nowrap cursor-pointer font-inherit" style="display:inline-flex;padding:6px 14px;border-radius:20px;transition:opacity .15s;background:var(--orange);color:#fff">No staff on duty</button>
+      <button id="btnSupportBoat" data-staff-click="toggleStaffStatus" data-staff-arg="supportBoat" class="items-center gap-6 border-none text-md fw-600 text-nowrap cursor-pointer font-inherit" style="display:inline-flex;padding:6px 14px;border-radius:20px;transition:opacity .15s;background:var(--orange);color:#fff">No support boat</button>
       <span id="staffStatusUpdated" class="text-xs text-muted"></span>
     </div>
   </div>
 
   <!-- ══ WEATHER FLAG OVERRIDE ══════════════════════════════════════════════ -->
-  <div id="flagOverrideCard" class="mb-12" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+  <div id="flagOverrideCard" class="mb-12 border-muted" style="background:var(--card);border-radius:10px;padding:12px 14px">
     <div class="section-label mb-8" data-s="staff.flagOverrideLabel">WEATHER FLAG OVERRIDE</div>
-    <div id="foActiveRow" class="hidden" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
-      <span id="foActiveBadge" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid"></span>
-      <span id="foActiveNotes" style="font-size:12px;color:var(--text);flex:1;min-width:160px;white-space:pre-wrap"></span>
+    <div id="foActiveRow" class="hidden d-flex flex-wrap items-center gap-10">
+      <span id="foActiveBadge" class="items-center gap-6 text-md fw-500" style="display:inline-flex;padding:4px 10px;border-radius:20px;border:1px solid"></span>
+      <span id="foActiveNotes" class="text-md flex-1 text-pre-wrap" style="color:var(--text);min-width:160px"></span>
       <span id="foActiveMeta" class="text-xs text-muted"></span>
       <button class="btn btn-secondary text-sm" style="padding:4px 10px" data-staff-click="clearFlagOverride"><span data-s="staff.flagOverrideClear">Clear override</span></button>
     </div>
-    <div id="foInactiveRow" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+    <div id="foInactiveRow" class="d-flex flex-wrap items-center gap-10">
       <span class="text-xs text-muted" data-s="staff.flagOverrideHint">Using live scoring. Set an override to post a staff-picked flag + note until midnight.</span>
-      <button class="btn btn-secondary text-sm" style="padding:4px 10px;margin-left:auto" data-staff-click="toggleFlagOverrideForm" data-staff-arg="true"><span data-s="staff.flagOverrideSet">Set override</span></button>
+      <button class="btn btn-secondary text-sm ml-auto" style="padding:4px 10px" data-staff-click="toggleFlagOverrideForm" data-staff-arg="true"><span data-s="staff.flagOverrideSet">Set override</span></button>
     </div>
-    <div id="foForm" class="hidden" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+    <div id="foForm" class="hidden mt-10" style="border-top:1px solid var(--border);padding-top:10px">
       <div class="flex-center flex-wrap gap-6 mb-8" id="foFlagBtns"></div>
-      <label class="field" style="display:block;margin-bottom:6px">
+      <label class="field mb-6" style="display:block">
         <div class="text-xs text-muted mb-4" data-s="staff.flagOverrideNotes">Notes (shown to members)</div>
-        <textarea id="foNotes" rows="2" style="width:100%;font-family:inherit;font-size:13px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical" placeholder=""></textarea>
+        <textarea id="foNotes" rows="2" class="w-full font-inherit text-base border-muted rounded-6 bg-surface" style="padding:6px;color:var(--text);resize:vertical" placeholder=""></textarea>
       </label>
-      <label class="field" style="display:block;margin-bottom:8px">
+      <label class="field mb-8" style="display:block">
         <div class="text-xs text-muted mb-4" data-s="staff.flagOverrideNotesIS">Notes (Icelandic)</div>
-        <textarea id="foNotesIS" rows="2" style="width:100%;font-family:inherit;font-size:13px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical" placeholder=""></textarea>
+        <textarea id="foNotesIS" rows="2" class="w-full font-inherit text-base border-muted rounded-6 bg-surface" style="padding:6px;color:var(--text);resize:vertical" placeholder=""></textarea>
       </label>
       <div class="flex-center gap-8">
         <span class="text-xs text-muted" data-s="staff.flagOverrideMidnight">Auto-reverts to live data at midnight UTC.</span>
-        <button class="btn btn-secondary text-sm" style="padding:4px 10px;margin-left:auto" data-staff-click="toggleFlagOverrideForm" data-staff-arg="false"><span data-s="btn.cancel">Cancel</span></button>
+        <button class="btn btn-secondary text-sm ml-auto" style="padding:4px 10px" data-staff-click="toggleFlagOverrideForm" data-staff-arg="false"><span data-s="btn.cancel">Cancel</span></button>
         <button class="btn btn-primary text-sm" style="padding:4px 10px" data-staff-click="saveFlagOverride"><span data-s="staff.flagOverrideSave">Save override</span></button>
       </div>
     </div>
@@ -108,10 +108,10 @@
       <h4 id="newCheckoutLabel"></h4>
       <div class="field">
         <label id="memberLabel"></label>
-        <div style="position:relative">
+        <div class="pos-relative">
           <input type="text" id="coMember" autocomplete="off" data-staff-input="searchMember">
-          <div id="coMemberSuggestions" style="position:relative"></div>
-          <div id="coMemberName" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          <div id="coMemberSuggestions" class="pos-relative"></div>
+          <div id="coMemberName" class="text-10 text-muted mt-3"></div>
         </div>
       </div>
       <div class="inline-fields">
@@ -125,9 +125,9 @@
           <input type="text" id="coTimeOut" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>
         <div class="field">
           <label id="estReturnLabel"></label>
-          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="coReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="flex:1;min-width:80px" data-staff-time-format>
-            <div style="display:flex;gap:3px">
+          <div class="d-flex items-center flex-wrap" style="gap:5px">
+            <input type="text" id="coReturnBy" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" class="flex-1" style="min-width:80px" data-staff-time-format>
+            <div class="d-flex gap-3">
               <button type="button" class="ret-btn" data-staff-click="setCoReturnIn" data-staff-arg="60">+1h</button>
               <button type="button" class="ret-btn" data-staff-click="setCoReturnIn" data-staff-arg="90">+1.5h</button>
               <button type="button" class="ret-btn" data-staff-click="setCoReturnIn" data-staff-arg="120">+2h</button>
@@ -144,14 +144,14 @@
           <button class="crew-btn" data-staff-click="adjustCrew" data-staff-arg="1">+</button>
         </div>
       </div>
-      <div id="coCrewSection" style="margin-top:10px;display:none">
-        <label class="detail-field-label" style="display:block;margin-bottom:6px">Crew members <span style="font-weight:400;opacity:.6">(optional — search by name)</span></label>
+      <div id="coCrewSection" class="mt-10 d-none">
+        <label class="detail-field-label mb-6" style="display:block">Crew members <span class="fw-400" style="opacity:.6">(optional — search by name)</span></label>
         <div id="coCrewInputs"></div>
-        <div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted mt-4">Named crew get this trip logged in their logbook automatically.</div>
       </div>
       <!-- Departure port — shown for keelboats only -->
-      <div id="coPortRow" class="field" style="display:none">
-        <label style="color:var(--brass-fg)">⚓️ <span data-s="staff.departurePort"></span></label>
+      <div id="coPortRow" class="field d-none">
+        <label class="text-brass">⚓️ <span data-s="staff.departurePort"></span></label>
         <input type="text" list="coPortsList" id="coDeparturePort" autocomplete="off">
         <datalist id="coPortsList"></datalist>
       </div>
@@ -163,7 +163,7 @@
         <button class="btn btn-secondary" data-staff-click="toggleCheckoutForm" id="cancelCoBtn"></button>
         <button class="btn btn-primary" data-staff-click="submitCheckout" id="submitCoBtn"></button>
       </div>
-      <div id="coErr" class="msg msg-err mt-8" style="display:none"></div>
+      <div id="coErr" class="msg msg-err mt-8 d-none"></div>
     </div>
 
     <div id="activeCheckouts"><div class="empty-note" data-s="lbl.loading"></div></div>
@@ -182,11 +182,11 @@
       <span class="nc-label" data-s="staff.logbook"></span>
       <span class="nc-desc" data-s="staff.logbookDesc"></span>
     </a>
-    <a href="../incidents/" class="nav-card" id="incidentsNavCard" style="position:relative">
+    <a href="../incidents/" class="nav-card pos-relative" id="incidentsNavCard">
       <span class="nc-icon nc-icon--incidents" aria-hidden="true"></span>
       <span class="nc-label" data-s="staff.incidents"></span>
       <span class="nc-desc" data-s="staff.incidentsDesc"></span>
-      <span id="incidentsNavBadge" class="badge badge-orange hidden" style="position:absolute;top:8px;right:8px;font-size:10px"></span>
+      <span id="incidentsNavBadge" class="badge badge-orange hidden text-10" style="position:absolute;top:8px;right:8px"></span>
     </a>
     <a href="../maintenance/" class="nav-card">
       <span class="nc-icon nc-icon--maint" aria-hidden="true"></span>
@@ -207,7 +207,7 @@
   <div class="divider-label" data-s="staff.maintenance">OPEN MAINTENANCE</div>
   <div class="info-panel mb-16">
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)44">
+    <div class="mt-10" style="padding-top:10px;border-top:1px solid var(--border)44">
       <a href="../maintenance/" class="text-md text-brass" style="text-decoration:none" id="viewAllMaintLink"></a>
       
     </div>
@@ -248,11 +248,11 @@
       <div class="dl-drow" id="cdPhoneRow"><span class="dl-dlbl" data-s="lbl.phone"></span><span class="dl-dval" id="cdPhone"></span></div>
       <div class="dl-drow" id="cdGuardianRow"><span class="dl-dlbl" data-s="lbl.guardian"></span><span class="dl-dval" id="cdGuardian"></span></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" data-staff-click="doDetailCheckIn"
-        style="flex:1;min-width:120px" data-s="staff.checkIn"></button>
-      <button class="btn btn-secondary" data-staff-click="doDetailDelete"
-        style="flex:1;min-width:120px" data-s="btn.delete"></button>
+    <div class="d-flex gap-8 flex-wrap">
+      <button class="btn btn-primary flex-1" data-staff-click="doDetailCheckIn"
+        style="min-width:120px" data-s="staff.checkIn"></button>
+      <button class="btn btn-secondary flex-1" data-staff-click="doDetailDelete"
+        style="min-width:120px" data-s="btn.delete"></button>
     </div>
   </div>
 </div>
@@ -274,7 +274,7 @@
     </div>
 
     <!-- Location + Times -->
-    <div class="gm-row" style="margin-bottom:16px">
+    <div class="gm-row mb-16">
       <div class="gm-field">
         <label id="gmLocLabel">Location</label>
         <select id="gmLocation"><option value="">—</option></select>
@@ -284,7 +284,7 @@
         <select id="gmActivity"><option value="">— None —</option></select>
       </div>
     </div>
-    <div class="gm-row" style="margin-bottom:16px">
+    <div class="gm-row mb-16">
       <div class="gm-field">
         <label>Departure</label>
         <input type="text" id="gmTimeOut" placeholder="HH:MM" maxlength="5"
@@ -304,19 +304,19 @@
         <button class="gm-stepper-btn" data-staff-click="adjGroupCount" data-staff-arg="participants" data-staff-arg2="-1">−</button>
         <span class="gm-stepper-val" id="gmParticCount">0</span>
         <button class="gm-stepper-btn" data-staff-click="adjGroupCount" data-staff-arg="participants" data-staff-arg2="1">+</button>
-        <span style="font-size:11px;color:var(--muted);margin-left:6px" id="gmTotalNote"></span>
+        <span class="text-xs text-muted ml-6" id="gmTotalNote"></span>
       </div>
     </div>
 
     <!-- Staff on water -->
     <div class="gm-section">
-      <div class="gm-section-label" id="gmStaffLabel">Staff on water <span style="font-size:9px;color:var(--red)">*required</span></div>
+      <div class="gm-section-label" id="gmStaffLabel">Staff on water <span class="text-9 text-red">*required</span></div>
       <div id="gmStaffSection"></div>
-      <button data-staff-click="addGmStaffRow" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:4px">+ Add another</button>
+      <button data-staff-click="addGmStaffRow" class="bg-none border-none text-muted text-xs cursor-pointer mt-4">+ Add another</button>
     </div>
 
-    <div id="gmErr" style="color:var(--red);font-size:11px;margin-bottom:8px;display:none"></div>
-    <button class="btn btn-primary" style="width:100%" data-staff-click="submitGroupCheckout">⛵ Launch group</button>
+    <div id="gmErr" class="text-red text-xs mb-8 d-none"></div>
+    <button class="btn btn-primary w-full" data-staff-click="submitGroupCheckout">⛵ Launch group</button>
   </div>
 </div>
 
@@ -326,11 +326,11 @@
   <div class="dl-link-sheet">
     <div class="dl-link-title">Link to daily log activity?</div>
     <div class="dl-link-sub">This group checkout can be linked to an activity in today's log.</div>
-    <div id="dlLinkActList" style="margin-bottom:12px"></div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn btn-primary" data-staff-click="confirmDlLink" id="dlLinkConfirmBtn" style="width:100%">Link selected activity</button>
-      <button class="btn btn-secondary" data-staff-click="openDailyLogForNew" style="width:100%;font-size:11px">Create new log activity →</button>
-      <button data-staff-click="closeDlLinkModal" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px">Skip for now</button>
+    <div id="dlLinkActList" class="mb-12"></div>
+    <div class="d-flex flex-col gap-8">
+      <button class="btn btn-primary w-full" data-staff-click="confirmDlLink" id="dlLinkConfirmBtn">Link selected activity</button>
+      <button class="btn btn-secondary w-full text-xs" data-staff-click="openDailyLogForNew">Create new log activity →</button>
+      <button data-staff-click="closeDlLinkModal" class="bg-none border-none text-muted text-xs cursor-pointer" style="padding:4px">Skip for now</button>
     </div>
   </div>
 </div>

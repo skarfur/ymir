@@ -29,17 +29,17 @@
 <div class="page-content">
 
   <div class="mb-14">
-    <div style="font-size:16px;font-weight:500;color:var(--text)" id="welcomeName">Member Hub</div>
-    <div class="text-sm text-muted" style="margin-top:2px" id="welcomeSub"></div>
+    <div class="fw-500" style="font-size:16px;color:var(--text)" id="welcomeName">Member Hub</div>
+    <div class="text-sm text-muted mt-2" id="welcomeSub"></div>
   </div>
 
   <!-- ══ WEATHER WIDGET ══ -->
-  <div class="wx-widget" style="margin-bottom:14px" id="wxWidget">
+  <div class="wx-widget mb-14" id="wxWidget">
     <div class="text-muted text-sm" style="padding:6px 0" data-s="wx.loading"></div>
   </div>
 
   <!-- ══ TIDE WIDGET ══ -->
-  <div id="tideWidget" style="margin-bottom:14px"></div>
+  <div id="tideWidget" class="mb-14"></div>
 
     <!-- ══ QUICK ACTION STRIP ══ -->
   <div class="member-actions">
@@ -48,8 +48,8 @@
     <a class="act-btn act-btn--logbook" id="logbookBtn" href="../logbook/"    data-s="nav.logbook"></a>
     <a class="act-btn act-btn--sauma" id="saumaBtn" href="../saumaklubbur/" data-s="nav.saumaklubbur"></a>
     <a class="act-btn act-btn--volunteer" id="volunteerBtn" href="../volunteer/" data-s="nav.volunteer"></a>
-    <a class="act-btn act-btn--captain" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters" style="display:none"></a>
-    <a class="act-btn act-btn--coxswain" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat" style="display:none"></a>
+    <a class="act-btn act-btn--captain d-none" id="captainQBtn" href="../captain/" data-s="nav.captainQuarters"></a>
+    <a class="act-btn act-btn--coxswain d-none" id="coxswainBtn" href="../coxswain/" data-s="nav.coxswainSeat"></a>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
@@ -61,13 +61,13 @@
 
   <!-- ═══ FLEET ═══ -->
   <div id="tab-fleet" class="mt-16">
-    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.fleetAvail"></div>
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="member.fleetAvail"></div>
     <div id="fleetStatus"></div>
   </div>
 
   <!-- ═══ CLUB CALENDARS ═══ -->
   <div id="clubCalendarSection" class="mt-16">
-    <div class="section-label" style="letter-spacing:1.5px;margin-bottom:10px" data-s="member.calTitle"></div>
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="member.calTitle"></div>
     <div id="clubCalendarList"></div>
   </div>
 
@@ -94,7 +94,7 @@
       <button class="btn btn-secondary" data-member-close="manualTripModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary"   data-member-click="submitManualTrip"            id="manualTripSaveBtn"></button>
     </div>
-    <div id="manualTripErr" class="msg msg-err mt-8" style="display:none"></div>
+    <div id="manualTripErr" class="msg msg-err mt-8 d-none"></div>
   </div>
 </div>
 

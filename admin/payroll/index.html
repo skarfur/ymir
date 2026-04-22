@@ -15,9 +15,9 @@
 <div class="page">
   <header id="ym-header" class="pr-standalone-only"><div class="header-left"></div><div class="header-right"></div></header>
   <main>
-    <div class="pr-standalone-only" style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+    <div class="pr-standalone-only d-flex items-baseline gap-12" style="margin-bottom:20px">
       <h2 style="margin:0;font-size:18px" data-s="admin.tabPayroll"></h2>
-      <a href="../" style="font-size:11px;color:var(--muted);text-decoration:none">&#8592; Admin</a>
+      <a href="../" class="text-xs text-muted" style="text-decoration:none">&#8592; Admin</a>
     </div>
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="employees"  data-pr-click="prTab" data-pr-arg="employees"  data-s="payroll.tabEmployees"></button>
@@ -26,19 +26,19 @@
 
     <!-- EMPLOYEES -->
     <div id="pr-employees">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:var(--shadow-sm)">
-        <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+      <div class="d-flex items-center gap-10 bg-surface border-muted mb-14" style="padding:10px 14px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+        <label class="toggle-wrap d-flex items-center gap-8 cursor-pointer" style="margin:0">
           <input type="checkbox" id="cfgAllowBreaks" data-pr-change="cfgSaveAllowBreaks" style="width:16px;height:16px;accent-color:var(--brass)">
-          <span style="font-size:12px" data-s="payroll.allowBreaks"></span>
+          <span class="text-md" data-s="payroll.allowBreaks"></span>
         </label>
-        <span id="cfgAllowBreaksLbl" style="font-size:11px;color:var(--muted)"></span>
+        <span id="cfgAllowBreaksLbl" class="text-xs text-muted"></span>
       </div>
       <div id="prEmpList"><div class="empty-note" data-s="lbl.loading"></div></div>
     </div>
 
     <!-- TIME REPORTING -->
     <div id="pr-timesheets" class="hidden">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div class="d-flex gap-8 items-center mb-14 flex-wrap">
         <select id="prTsEmp" data-pr-change="prTsFilter" style="min-width:160px">
           <option value="" data-s="payroll.allStaff"></option>
         </select>
@@ -46,28 +46,28 @@
           <button id="btnCal" class="active" data-pr-click="prSetView" data-pr-arg="cal" data-s="payroll.calView"></button>
           <button id="btnList" data-pr-click="prSetView" data-pr-arg="list" data-s="payroll.listView"></button>
         </div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <span id="prTsTotal" class="ts-total" style="font-size:11px;color:var(--muted)"></span>
-          <button class="btn btn-secondary" style="font-size:11px" data-pr-click="prToggleExport" data-s="payroll.export"></button>
-          <button class="btn btn-primary" style="font-size:11px" data-pr-click="prOpenModal" data-s="payroll.addEntry"></button>
+        <div class="ml-auto d-flex gap-8 items-center">
+          <span id="prTsTotal" class="ts-total text-xs text-muted"></span>
+          <button class="btn btn-secondary text-xs" data-pr-click="prToggleExport" data-s="payroll.export"></button>
+          <button class="btn btn-primary text-xs" data-pr-click="prOpenModal" data-s="payroll.addEntry"></button>
         </div>
       </div>
       <!-- EXPORT PANEL -->
-      <div id="prExportPanel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
+      <div id="prExportPanel" class="hidden bg-surface border-muted mb-14" style="border-radius:var(--radius-md);padding:14px 16px;box-shadow:var(--shadow-sm)">
         <div class="sec-lbl" data-s="payroll.export"></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-          <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodFrom"></label>
-          <input id="prExpFrom" type="date" style="font-size:11px;padding:3px 6px;width:140px">
-          <label style="font-size:10px;color:var(--muted)" data-s="payroll.periodTo"></label>
-          <input id="prExpTo" type="date" style="font-size:11px;padding:3px 6px;width:140px">
-          <button class="btn btn-primary" style="font-size:11px" data-pr-click="prExportTimeData" data-s="payroll.export"></button>
-          <span id="prExpMsg" style="font-size:11px"></span>
+        <div class="d-flex gap-8 items-center flex-wrap mb-10">
+          <label class="text-10 text-muted" data-s="payroll.periodFrom"></label>
+          <input id="prExpFrom" type="date" class="text-xs" style="padding:3px 6px;width:140px">
+          <label class="text-10 text-muted" data-s="payroll.periodTo"></label>
+          <input id="prExpTo" type="date" class="text-xs" style="padding:3px 6px;width:140px">
+          <button class="btn btn-primary text-xs" data-pr-click="prExportTimeData" data-s="payroll.export"></button>
+          <span id="prExpMsg" class="text-xs"></span>
         </div>
-        <div style="margin-bottom:6px">
-          <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px" data-s="payroll.externalUrl"></label>
-          <input id="prExpUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" data-pr-input="prSaveExportUrl" style="width:100%;max-width:560px;font-size:11px;padding:5px 8px">
+        <div class="mb-6">
+          <label class="text-10 text-muted mb-4" style="display:block" data-s="payroll.externalUrl"></label>
+          <input id="prExpUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" data-pr-input="prSaveExportUrl" class="w-full text-xs" style="max-width:560px;padding:5px 8px">
         </div>
-        <div style="font-size:10px;color:var(--muted)" data-s="payroll.externalUrlHint"></div>
+        <div class="text-10 text-muted" data-s="payroll.externalUrlHint"></div>
       </div>
       <div id="prCalView">
         <div class="cal-nav">
@@ -97,24 +97,24 @@
 <!-- Entry modal -->
 <div id="prModal" class="modal-bg hidden" data-pr-close-self>
   <div class="modal-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div class="d-flex items-center justify-between mb-14">
       <h3 class="modal-title" id="prModalTitle" style="margin:0"></h3>
       <button class="modal-close-x" data-pr-close="prModal">&times;</button>
     </div>
     <div class="field"><label data-s="payroll.employee"></label>
-      <select id="meEmp" style="width:100%"></select></div>
+      <select id="meEmp" class="w-full"></select></div>
     <div class="field"><label data-s="payroll.clockInLabel"></label>
-      <input id="meIn" type="datetime-local" style="width:100%"></div>
+      <input id="meIn" type="datetime-local" class="w-full"></div>
     <div class="field"><label data-s="payroll.clockOutLabel"></label>
-      <input id="meOut" type="datetime-local" style="width:100%" data-pr-change="meCalcMins"></div>
-    <div class="field"><label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" style="font-weight:400;color:var(--muted)"></span></label>
-      <input id="meMins" type="number" min="0" style="width:100%"></div>
+      <input id="meOut" type="datetime-local" class="w-full" data-pr-change="meCalcMins"></div>
+    <div class="field"><label><span data-s="payroll.minsLabel"></span> — <span data-s="payroll.autoCalc" class="fw-400 text-muted"></span></label>
+      <input id="meMins" type="number" min="0" class="w-full"></div>
     <div class="field"><label data-s="payroll.noteOptional"></label>
-      <input id="meNote" type="text" style="width:100%" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
+      <input id="meNote" type="text" class="w-full" data-s-attr="placeholder" data-s="payroll.notePlaceholder"></div>
     <div id="meErr" class="modal-err"></div>
     <div class="modal-actions">
-      <button id="meDelBtn" class="btn-del" style="display:none" data-pr-click="meDelete" data-s="payroll.deleteEntry"></button>
-      <span style="margin-left:auto"></span>
+      <button id="meDelBtn" class="btn-del d-none" data-pr-click="meDelete" data-s="payroll.deleteEntry"></button>
+      <span class="ml-auto"></span>
       <button class="btn btn-secondary" data-pr-close="prModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary" data-pr-click="meSave" data-s="btn.save"></button>
     </div>

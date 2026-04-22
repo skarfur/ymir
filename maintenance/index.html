@@ -39,10 +39,10 @@
   </div>
 
   <!-- Pending sauma review alert -->
-  <div id="pendingReviewAlert" class="hidden" style="margin:10px 0;padding:10px 14px;border-radius:8px;background:var(--brass)11;border:1px solid var(--brass)66;color:var(--brass-fg);font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer" data-mt-click="showPendingReviews">
+  <div id="pendingReviewAlert" class="hidden rounded-8 text-brass text-base d-flex items-center gap-10 cursor-pointer" style="margin:10px 0;padding:10px 14px;background:var(--brass)11;border:1px solid var(--brass)66" data-mt-click="showPendingReviews">
     <span style="font-size:18px">⏳</span>
-    <span id="pendingReviewAlertText" style="flex:1"></span>
-    <span style="font-size:11px;opacity:.8">→</span>
+    <span id="pendingReviewAlertText" class="flex-1"></span>
+    <span class="text-xs" style="opacity:.8">→</span>
   </div>
 
   <!-- Filter bar -->
@@ -105,7 +105,7 @@
       <select id="newBoat"><option value="" data-s="maint.selectBoatPh"></option></select>
       <div id="oosField">
         <label class="mt-8" data-s="maint.markOosLabel"></label>
-        <div class="flex-center gap-8" style="margin-top:4px">
+        <div class="flex-center gap-8 mt-4">
           <input type="checkbox" id="newOos" class="accent-checkbox" style="accent-color:var(--red)">
           <span class="text-md text-muted" data-s="maint.markOosHint"></span>
         </div>

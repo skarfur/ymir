@@ -28,7 +28,7 @@
 <div class="page">
 
   <!-- Stats -->
-  <div class="stat-strip" style="display:none">
+  <div class="stat-strip d-none">
     <div class="stat-card"><div class="stat-val" id="stTrips">—</div><div class="stat-lbl">Trips</div></div>
     <div class="stat-card"><div class="stat-val" id="stHours">—</div><div class="stat-lbl">Hours</div></div>
     <div class="stat-card"><div class="stat-val" id="stSeason">—</div><div class="stat-lbl">This year</div></div>
@@ -49,13 +49,13 @@
     <div class="stat-card"><div class="stat-val" id="stLocations">—</div><div class="stat-lbl">Locations</div></div>
     <div class="stat-card"><div class="stat-val" id="stVerified">—</div><div class="stat-lbl">Verified</div></div>
   </div>
-  <div class="cat-hours" id="catHours" style="display:none">
+  <div class="cat-hours d-none" id="catHours">
     <div class="cat-hours-title">Hours by boat category</div>
     <div id="catHoursList"></div>
   </div>
 
   <!-- Member heatmap -->
-  <div class="member-heatmap" id="memberHeatmapWrap" style="display:none">
+  <div class="member-heatmap d-none" id="memberHeatmapWrap">
     <div class="member-heatmap-header">
       <span class="member-heatmap-title">Heatmap</span>
       <div class="heatmap-toggle">
@@ -69,10 +69,10 @@
 
   <!-- Share logbook -->
   <div id="shareBar" class="info-panel flex-center flex-wrap gap-10 mb-12" style="padding:10px 14px">
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" data-lb-click="toggleSharePanel" data-s="logbook.shareBtn"></button>
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0" data-lb-click="openLogModal">+ Manually log a trip</button>
-    <button class="btn-secondary text-sm" style="width:auto;padding:6px 14px;flex-shrink:0;position:relative" data-lb-click="openConfirmationsModal"><span data-s="member.pendingConfirmations"></span><span class="conf-badge" id="confBadge" style="display:none">0</span></button>
-    <div id="sharePanel" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+    <button class="btn-secondary text-sm flex-shrink-0" style="width:auto;padding:6px 14px" data-lb-click="toggleSharePanel" data-s="logbook.shareBtn"></button>
+    <button class="btn-secondary text-sm flex-shrink-0" style="width:auto;padding:6px 14px" data-lb-click="openLogModal">+ Manually log a trip</button>
+    <button class="btn-secondary text-sm flex-shrink-0 pos-relative" style="width:auto;padding:6px 14px" data-lb-click="openConfirmationsModal"><span data-s="member.pendingConfirmations"></span><span class="conf-badge d-none" id="confBadge">0</span></button>
+    <div id="sharePanel" class="d-none w-full mt-4" style="padding-top:8px;border-top:1px solid var(--border)">
       <div id="shareCatChecks" class="flex-center flex-wrap gap-8 mb-8"></div>
       <div class="flex-center flex-wrap mb-8" style="gap:14px">
         <label class="flex-center text-sm gap-4" style="text-transform:none;letter-spacing:0;margin:0">
@@ -85,9 +85,9 @@
         </label>
       </div>
       <button class="btn-primary text-sm" style="width:auto;padding:7px 16px" data-lb-click="generateAndCopyShareLink" data-s="logbook.shareCopy"></button>
-      <button class="btn-secondary text-sm" style="width:auto;padding:7px 16px;margin-left:6px" data-lb-click="exportLogbookCsv" data-s="logbook.exportCsv"></button>
+      <button class="btn-secondary text-sm ml-6" style="width:auto;padding:7px 16px" data-lb-click="exportLogbookCsv" data-s="logbook.exportCsv"></button>
     </div>
-    <div id="shareActiveTokens" style="width:100%"></div>
+    <div id="shareActiveTokens" class="w-full"></div>
   </div>
 
   <!-- Credentials -->
@@ -167,20 +167,20 @@
 
       <div class="text-xs text-muted uppercase" style="margin:12px 0;text-align:center;letter-spacing:.8px">— OR JOIN A RECENT CLUB TRIP —</div>
       <div id="recentTripsList"><div class="empty-note">Loading recent trips…</div></div>
-      <button class="load-more" id="loadMoreTripsBtn" data-lb-click="loadMoreTrips" style="display:none">Load more…</button>
+      <button class="load-more d-none" id="loadMoreTripsBtn" data-lb-click="loadMoreTrips">Load more…</button>
 
       <!-- Confirmation request form when a club trip is selected -->
-      <div id="joinExtras" style="display:none;margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border-l);border-radius:8px">
+      <div id="joinExtras" class="d-none mt-12 rounded-8" style="padding:14px;background:var(--card);border:1px solid var(--border-l)">
         <div class="section-label mb-6" style="letter-spacing:.8px">Request to join this trip</div>
         <p class="text-sm text-muted mb-12">The skipper must confirm your participation. You can add notes, photos, and GPS tracks to your logbook entry after confirmation.</p>
-        <div id="jErr" class="text-sm text-red mb-8" style="display:none"></div>
+        <div id="jErr" class="text-sm text-red mb-8 d-none"></div>
         <button class="btn-primary" id="jSubmitBtn" data-lb-click="submitJoinTrip">Request to join</button>
       </div>
     </div>
 
     <!-- Step 2: manual entry form -->
-    <div id="logStep2" style="display:none">
-      <button class="text-sm text-muted mb-12" data-lb-click="showStep1" style="background:none;border:none;cursor:pointer;padding:0">← Back</button>
+    <div id="logStep2" class="d-none">
+      <button class="text-sm text-muted mb-12 bg-none border-none cursor-pointer" data-lb-click="showStep1" style="padding:0">← Back</button>
       <div class="form-row">
         <div class="form-field"><label>Date</label><input type="date" id="mDate"></div>
         <div class="form-field"><label>Role</label>
@@ -188,18 +188,18 @@
         </div>
       </div>
       <!-- Skipper assignment: shown when role=crew -->
-      <div class="form-field" id="mSkipperSection" style="display:none;position:relative">
+      <div class="form-field d-none pos-relative" id="mSkipperSection">
         <label>Skipper</label>
         <input type="text" id="mSkipperName" autocomplete="off" data-s="logbook.searchByNamePh" data-s-attr="placeholder"
           data-lb-input-el="searchManualMember" data-lb-arg="mSkipperDrop" data-lb-blur-hide="mSkipperDrop">
         <div id="mSkipperDrop" class="manual-member-drop"></div>
       </div>
       <!-- Non-club trip toggle -->
-      <div class="form-field" style="margin-bottom:8px">
-        <label class="flex-center gap-6" style="cursor:pointer;font-size:11px">
+      <div class="form-field mb-8">
+        <label class="flex-center gap-6 cursor-pointer text-xs">
           <input type="checkbox" id="mNonClub" data-lb-change="onNonClubToggle" style="width:auto;accent-color:var(--brass)">
           <span data-s="logbook.nonClubToggle">Non-club trip</span>
-          <span class="text-muted" style="font-size:9px;font-weight:400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
+          <span class="text-muted text-9 fw-400" data-s="logbook.nonClubHint">— log a trip outside the club system</span>
         </label>
       </div>
       <!-- Club boat + location (default) -->
@@ -212,7 +212,7 @@
         </div>
       </div>
       <!-- Non-club boat (hidden by default) -->
-      <div id="mBoatFree" style="display:none">
+      <div id="mBoatFree" class="d-none">
         <div class="form-row">
           <div class="form-field"><label data-s="logbook.boatNameLabel">Boat name</label>
             <input type="text" id="mBoatFreeInput" placeholder="e.g. Sunfish, RIB, etc." autocomplete="off">
@@ -227,28 +227,28 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Model / make <span class="text-muted" style="font-size:9px">optional</span></label>
+          <div class="form-field"><label>Model / make <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeModel" placeholder="e.g. Laser Pico" autocomplete="off">
           </div>
-          <div class="form-field"><label>Sail number <span class="text-muted" style="font-size:9px">optional</span></label>
+          <div class="form-field"><label>Sail number <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeSail" placeholder="e.g. ISL 1234" autocomplete="off">
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Registration <span class="text-muted" style="font-size:9px">optional</span></label>
+          <div class="form-field"><label>Registration <span class="text-muted text-9">optional</span></label>
             <input type="text" id="mBoatFreeReg" placeholder="e.g. RE-001" autocomplete="off">
           </div>
-          <div class="form-field"><label>Length (m) <span class="text-muted" style="font-size:9px">optional</span></label>
+          <div class="form-field"><label>Length (m) <span class="text-muted text-9">optional</span></label>
             <input type="number" id="mBoatFreeLen" min="0" step="0.1" placeholder="e.g. 6.5">
           </div>
         </div>
       </div>
       <!-- Non-club location (hidden by default) -->
-      <div id="mLocFree" class="form-field" style="display:none">
+      <div id="mLocFree" class="form-field d-none">
         <label data-s="lbl.location">Location</label>
         <input type="text" id="mLocFreeInput" placeholder="e.g. Lake Thingvallavatn" autocomplete="off">
-        <button type="button" class="text-xs text-brass" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="background:none;border:none;padding:4px 0;cursor:pointer;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
-        <div id="mLocGeoStatus" class="text-xs text-muted" style="margin-top:2px;display:none"></div>
+        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mLocGeoBtn" data-lb-click="useMyLocation" data-lb-arg="mLocFreeInput" data-lb-arg2="mLocGeoStatus" style="padding:4px 0;display:block" data-s="logbook.useMyLocation">📍 Use my location</button>
+        <div id="mLocGeoStatus" class="text-xs text-muted mt-2 d-none"></div>
       </div>
       <div class="form-row">
         <div class="form-field"><label>Departed</label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
@@ -258,22 +258,22 @@
       </div>
       <div class="form-field"><label>Crew aboard (total incl. you)</label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
-      <div id="mCrewSection" class="mb-12" style="display:none">
-        <label class="check-label" style="margin-bottom:8px">
+      <div id="mCrewSection" class="mb-12 d-none">
+        <label class="check-label mb-8">
           <input type="checkbox" id="mHelmSelf" class="accent-checkbox">
-          <span style="font-size:11px">I was at the helm</span>
+          <span class="text-xs">I was at the helm</span>
         </label>
-        <label style="font-size:9px;letter-spacing:.8px">Crew members <span style="font-weight:400;opacity:.6">(search by name)</span></label>
+        <label class="text-9" style="letter-spacing:.8px">Crew members <span class="fw-400" style="opacity:.6">(search by name)</span></label>
         <div id="mCrewInputs"></div>
-        <div class="text-xs text-muted" style="margin-top:4px">Named crew get this trip logged in their logbook automatically.</div>
+        <div class="text-xs text-muted mt-4">Named crew get this trip logged in their logbook automatically.</div>
       </div>
 
       <!-- Port section: open/prominent for keelboats, collapsed for others -->
       <details id="portDetails" class="mb-12">
-        <summary id="portSummary" class="section-label flex-center gap-6 mb-8" style="cursor:pointer;list-style:none">
+        <summary id="portSummary" class="section-label flex-center gap-6 mb-8 cursor-pointer" style="list-style:none">
           <span>⚓️</span><span id="portSummaryLabel">PORTS — OPTIONAL</span>
         </summary>
-        <div class="form-row" style="margin-top:6px">
+        <div class="form-row mt-6">
           <div class="form-field">
             <label>Departure port</label>
             <input list="portsList" id="mDeparturePort" placeholder="e.g. Reykjavík" autocomplete="off"
@@ -286,47 +286,47 @@
           </div>
         </div>
         <datalist id="portsList"></datalist>
-        <div id="addPortHint" class="text-xs text-brass" style="display:none;cursor:pointer;margin-top:4px"
+        <div id="addPortHint" class="text-xs text-brass d-none cursor-pointer mt-4"
           data-lb-click="addNewPort">+ Add "<span id="addPortName"></span>" to ports list</div>
       </details>
 
       <!-- Weather -->
-      <div class="flex-center gap-6" style="margin:12px 0 8px;justify-content:space-between">
+      <div class="flex-center gap-6 justify-between" style="margin:12px 0 8px">
         <div class="section-label">WEATHER (OPTIONAL)</div>
-        <button type="button" class="text-xs text-brass" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="background:none;border:none;padding:0;cursor:pointer">🌤 Use current weather</button>
+        <button type="button" class="text-xs text-brass bg-none border-none cursor-pointer" id="mWxFetchBtn" data-lb-click="fetchCurrentWeather" style="padding:0">🌤 Use current weather</button>
       </div>
-      <div id="mWxFetchStatus" class="text-xs text-muted" style="display:none;margin-bottom:6px"></div>
+      <div id="mWxFetchStatus" class="text-xs text-muted d-none mb-6"></div>
       <!-- Weather fields rendered by shared/trip-form.js; handlers wired after inject. -->
       <div id="mWxFields"></div>
-      <div class="form-field"><label>Distance (nm) <span class="text-muted" style="font-size:9px">auto from GPS track</span></label>
+      <div class="form-field"><label>Distance (nm) <span class="text-muted text-9">auto from GPS track</span></label>
         <input type="number" id="mDistanceNm" min="0" step="0.1" placeholder="e.g. 12.5"></div>
       <!-- GPS Track upload -->
       <div class="form-field">
-        <label>GPS Track — GPX / KML / KMZ <span class="text-muted" style="font-size:9px">optional</span></label>
+        <label>GPS Track — GPX / KML / KMZ <span class="text-muted text-9">optional</span></label>
         <input type="file" id="mTrackFile" accept=".gpx,.kml,.kmz" data-lb-change-el="handleTrackFile"
           class="text-sm" style="color:var(--text)">
-        <div id="mTrackStatus" class="text-sm text-muted" style="margin-top:4px"></div>
+        <div id="mTrackStatus" class="text-sm text-muted mt-4"></div>
       </div>
       <!-- Photo upload -->
       <div class="form-field">
-        <label>Photos <span class="text-muted" style="font-size:9px">optional</span></label>
+        <label>Photos <span class="text-muted text-9">optional</span></label>
         <input type="file" id="mPhotoFiles" accept="image/*" multiple data-lb-change-el="handlePhotoFiles"
           class="text-sm" style="color:var(--text)">
-        <div id="mPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
-        <div class="photo-meta-row" style="margin-top:6px">
+        <div id="mPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
+        <div class="photo-meta-row mt-6">
           <label><input type="checkbox" id="mPhotoShared" checked> Share with crew</label>
           <label><input type="checkbox" id="mPhotoClubUse"> Club may use</label>
         </div>
       </div>
       <div class="form-field" id="mSkipperNoteWrap">
-        <label>Skipper's note <span class="text-muted" style="font-size:9px">visible to crew</span></label>
+        <label>Skipper's note <span class="text-muted text-9">visible to crew</span></label>
         <textarea id="mSkipperNote" rows="2" placeholder="Notes for the crew…"></textarea>
       </div>
       <div class="form-field" id="mPersonalNoteWrap">
-        <label>Personal note <span class="text-muted" style="font-size:9px">only you</span></label>
+        <label>Personal note <span class="text-muted text-9">only you</span></label>
         <textarea id="mNotes" rows="2" placeholder="Private notes…"></textarea>
       </div>
-      <div id="mErr" class="text-sm text-red mb-8" style="display:none"></div>
+      <div id="mErr" class="text-sm text-red mb-8 d-none"></div>
       <button class="btn-primary" id="mSubmitBtn" data-lb-click="submitManual">Save to logbook</button>
     </div>
   </div>
@@ -370,11 +370,11 @@
     <div class="section-label" style="margin:12px 0 8px">WEATHER</div>
     <!-- Weather fields rendered by shared/trip-form.js. -->
     <div id="etWxFields"></div>
-    <div class="form-field mt-8"><label>Skipper's comments <span class="text-muted" style="font-size:9px">(visible to crew)</span></label>
+    <div class="form-field mt-8"><label>Skipper's comments <span class="text-muted text-9">(visible to crew)</span></label>
 
       <textarea id="etSkipperNote" rows="2"></textarea>
     </div>
-    <div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>
+    <div id="etErr" class="text-sm text-red mb-8 d-none"></div>
     <button class="btn-primary" id="etSubmitBtn" data-lb-click="submitEditTrip">Save changes</button>
   </div>
 </div>
@@ -391,14 +391,14 @@
     <div class="form-field">
       <label>Photos</label>
       <input type="file" id="puPhotoFiles" accept="image/*" multiple data-lb-change-el="handleInlinePhotos" class="text-sm" style="color:var(--text)">
-      <div id="puPhotoPreview" class="flex-center flex-wrap gap-6" style="margin-top:6px"></div>
+      <div id="puPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>
     </div>
     <div class="photo-meta-row mb-8">
       <label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl">Share with crew</span></label>
       <label><input type="checkbox" id="puClubUse"> <span id="puClubLbl">Club may use</span></label>
     </div>
     <div class="text-xs text-muted mb-12" id="puHint">Shared photos are visible to other trip members. Club-use photos may be used for promotional purposes.</div>
-    <div id="puErr" class="text-sm text-red mb-8" style="display:none"></div>
+    <div id="puErr" class="text-sm text-red mb-8 d-none"></div>
     <button class="btn-primary" id="puSubmitBtn" data-lb-click="submitInlinePhotos">Upload photos</button>
   </div>
 </div>

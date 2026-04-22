@@ -84,7 +84,7 @@
     <div class="settings-section-title" data-s="settings.signIn"></div>
 
     <!-- Username style (display preference) -->
-    <div class="settings-row" style="margin-bottom:12px">
+    <div class="settings-row mb-12">
       <label data-s="settings.usernameStyle"></label>
       <div class="toggle-group" id="usernameStyleToggle">
         <button data-val="kt" data-s="settings.usernameStyle.kt"></button>
@@ -100,34 +100,34 @@
     <div class="settings-hint mb-10" data-s="settings.stayLoggedInHint"></div>
 
     <!-- Password change -->
-    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px">
+    <div class="settings-row flex-col gap-6 mt-12" style="align-items:stretch">
       <label data-s="settings.currentPassword"></label>
-      <input type="password" id="sCurrentPw" autocomplete="current-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+      <input type="password" id="sCurrentPw" autocomplete="current-password" class="w-full text-base" style="text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px">
     </div>
-    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px">
+    <div class="settings-row flex-col gap-6" style="align-items:stretch">
       <label data-s="settings.newPassword"></label>
-      <input type="password" id="sNewPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+      <input type="password" id="sNewPw" autocomplete="new-password" class="w-full text-base" style="text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px">
     </div>
-    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-bottom:6px">
+    <div class="settings-row flex-col gap-6 mb-6" style="align-items:stretch">
       <label data-s="settings.confirmPassword"></label>
-      <input type="password" id="sConfirmPw" autocomplete="new-password" style="width:100%;text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px;font-size:13px">
+      <input type="password" id="sConfirmPw" autocomplete="new-password" class="w-full text-base" style="text-align:left;letter-spacing:normal;text-transform:none;padding:8px 10px">
     </div>
     <div class="settings-row">
       <button class="btn btn-ghost" type="button" id="changePwBtn" data-s="settings.changePassword"></button>
     </div>
     <div class="settings-hint" data-s="settings.passwordHint"></div>
-    <div id="pwMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
+    <div id="pwMsg" class="msg d-none mt-8 text-xs"></div>
   </div>
 
   <!-- Sign-in activity -->
   <div class="settings-section">
     <div class="settings-section-title" data-s="settings.signInActivity"></div>
     <div class="settings-hint mb-10" style="margin-top:0" data-s="settings.signInActivityHint"></div>
-    <div id="sessionList" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div class="settings-row" style="margin-top:10px">
+    <div id="sessionList" class="d-flex flex-col gap-8"></div>
+    <div class="settings-row mt-10">
       <button class="btn btn-ghost" type="button" id="signOutAllBtn" data-s="settings.signOutEverywhereElse"></button>
     </div>
-    <div id="sessionMsg" class="msg" style="display:none;margin-top:8px;font-size:11px"></div>
+    <div id="sessionMsg" class="msg d-none mt-8 text-xs"></div>
   </div>
 
   <!-- Logbook page -->

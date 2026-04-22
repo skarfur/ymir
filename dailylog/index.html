@@ -28,13 +28,13 @@
   <!-- ══ DATE NAV ══ -->
   <div class="date-nav">
     <button id="prevBtn">◀</button>
-    <div style="flex:1;text-align:center">
+    <div class="flex-1" style="text-align:center">
       <div class="date-big" id="dateBig"></div>
       <div class="date-hero" id="dateHero"></div>
     </div>
     <button id="nextBtn">▶</button>
   </div>
-  <div class="flex-center mb-8"><button id="todayBtn" class="btn-ghost-sm" data-s="daily.today" style="font-size:11px"></button></div>
+  <div class="flex-center mb-8"><button id="todayBtn" class="btn-ghost-sm text-xs" data-s="daily.today"></button></div>
 
   <div class="flex-center flex-wrap gap-8 mb-16">
     <div class="signoff-badge hidden" id="signoffBadge"></div>
@@ -82,7 +82,7 @@
   <!-- ══ 6. STAFF NOTES ══ -->
   <div class="section-heading" data-s="daily.staffNotes"></div>
   <div class="content-card">
-    <textarea id="narrativeInput" rows="4" style="width:100%;resize:vertical"></textarea>
+    <textarea id="narrativeInput" rows="4" class="w-full" style="resize:vertical"></textarea>
   </div>
 
   <!-- ══ 7. INCIDENTS ══ -->
@@ -113,7 +113,7 @@
       <div class="type-btns" id="actTypeBtns"></div>
     </div>
     <!-- Subtype buttons -->
-    <div class="field" id="actSubtypeField" style="display:none">
+    <div class="field d-none" id="actSubtypeField">
       <div class="type-btns" id="actSubtypeBtns"></div>
     </div>
     <div class="field">
@@ -165,7 +165,7 @@
       <button class="modal-close-x" data-dl-close="groupLinkModal">&times;</button>
     </div>
     <div id="groupLinkPickerCards" class="mb-14"></div>
-    <div id="groupLinkEmpty" class="text-muted text-md mb-14" style="display:none">No active group checkouts today.</div>
+    <div id="groupLinkEmpty" class="text-muted text-md mb-14 d-none">No active group checkouts today.</div>
     <div class="btn-row">
       <button class="btn btn-secondary" data-dl-close="groupLinkModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary" data-dl-click="confirmGroupLink" data-s="daily.linkSelected"></button>
@@ -212,7 +212,7 @@
       <h3 id="idTitle"></h3>
       <button class="modal-close-x" data-dl-close="incidentDetailModal">×</button>
     </div>
-    <div id="idStatusRow" class="mb-10" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div id="idStatusRow" class="mb-10 d-flex gap-6 flex-wrap"></div>
     <div class="info-panel" id="idBody"></div>
     <div class="flex-center mt-14">
       <a id="idOpenFull" class="btn-ghost" href="#">→ <span data-s="incident.viewList"></span></a>
