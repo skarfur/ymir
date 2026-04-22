@@ -315,7 +315,7 @@ function linkGoogleAccount_(b, caller) {
   if (!caller) return failJ('Unauthorized', 401);
   const idToken = String((b && b.idToken) || '');
   const payload = verifyGoogleIdToken_(idToken);
-  if (!payload) return failJ('Invalid Google token', 401);
+  if (!payload) return failJ('Invalid Google token', 403);
   const email = payload.email;
 
   addColIfMissing_('members', 'googleEmail');
@@ -448,7 +448,7 @@ function setPassword_(b, caller) {
 
   const isAdminActing = caller && isAdmin_(caller) && caller.kennitala !== kt;
   if (!isAdminActing) {
-    if (!verifyPassword_(m, cur)) return failJ('Current password incorrect', 401);
+    if (!verifyPassword_(m, cur)) return failJ('Current password incorrect', 403);
   }
 
   addColIfMissing_('members', 'passwordHash');
