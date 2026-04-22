@@ -90,7 +90,6 @@
 .fct-arrow.open { transform:rotate(180deg); }
 .fleet-cat-body { display:none; padding:8px 0 4px; }
 .fleet-cat-body.open { display:block; }
-.fleet-cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:8px; }
 
 /* ── Recent checkouts ── */
 .recent-row { display:flex; align-items:center; gap:10px; padding:7px 0;
@@ -151,7 +150,7 @@
 .fsb-body { padding:6px 0 4px 0; }
 
 /* Compact boat cards in fleet status */
-.fleet-cat-grid { display:flex; flex-wrap:wrap; gap:6px; padding:4px 4px; }
+.fleet-cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px; padding:4px; }
 .bc-boat-card {
   border-radius:var(--radius-sm); padding:7px 10px; min-width:90px; border:1px solid transparent;
   font-size:12px; transition:all .2s;
