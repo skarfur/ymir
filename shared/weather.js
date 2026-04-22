@@ -624,7 +624,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       });
 
       const updTime = fmtTimeNow();
-      targetEl.className = `wx-widget flag-${flagKey}`;
+      targetEl.classList.remove('flag-green', 'flag-yellow', 'flag-orange', 'flag-red', 'flag-black');
+      targetEl.classList.add('wx-widget', `flag-${flagKey}`);
       targetEl.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${s('wx.birkConditions')}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
