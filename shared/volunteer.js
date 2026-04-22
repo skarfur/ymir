@@ -192,15 +192,15 @@
   //   members       — members array for live phone/consent lookup
   //   certDefs      — cert definitions (for endorsement labels)
   //   certDefName   — function(def) → localized name
-  //   onCardClick   — JS expression for card click (e.g. "openVolEventModal('id')")
-  //   onEditClick   — JS for the edit row button
-  //   onDeleteClick — JS for the delete row button
+  //   onCardClick   — name of a global fn taking (eventId) for card click
+  //   onEditClick   — name of a global fn taking (eventId) for edit button
+  //   onDeleteClick — name of a global fn taking (eventId) for delete button
   //
   // Member-only context:
   //   userKennitala — current user's kennitala (for isMine)
   //   myCerts       — member's cert array for allowed check
-  //   onSignup      — JS for sign-up button onclick
-  //   onWithdraw    — JS for withdraw button onclick
+  //   onSignup      — name of a global fn taking (eventId, roleId)
+  //   onWithdraw    — name of a global fn taking (signupId)
   function renderVolunteerCard(ev, ctx) {
     const esc  = ctx.esc;
     const s    = ctx.s;
@@ -223,8 +223,8 @@
       + (subtitle ? '<span class="vp-card-subtitle">· ' + esc(subtitle) + '</span>' : '')
       + (mode === 'admin'
           ? '<div class="vp-card-actions">'
-            + '<button class="row-edit" onclick="event.stopPropagation();' + (ctx.onEditClick || '') + '">Edit</button>'
-            + '<button class="row-del" onclick="event.stopPropagation();' + (ctx.onDeleteClick || '') + '">×</button>'
+            + '<button class="row-edit" data-vp-action="edit" data-vp-fn="' + (ctx.onEditClick || '') + '" data-vp-event="' + ev.id + '">Edit</button>'
+            + '<button class="row-del" data-vp-action="delete" data-vp-fn="' + (ctx.onDeleteClick || '') + '" data-vp-event="' + ev.id + '">×</button>'
             + '</div>'
           : '')
       + '</div>';
@@ -233,7 +233,7 @@
     const leaderHtml = ev.leaderName
       ? (function() {
           const phoneLink = (ev.leaderPhone && ev.showLeaderPhone)
-            ? ' · <a href="tel:' + esc(ev.leaderPhone) + '" onclick="event.stopPropagation()">' + esc(ev.leaderPhone) + '</a>'
+            ? ' · <a href="tel:' + esc(ev.leaderPhone) + '" data-vp-nobubble>' + esc(ev.leaderPhone) + '</a>'
             : '';
           return '<div class="vp-card-leader">'
             + '<span>' + s('volunteer.inCharge') + ':</span>'
@@ -250,7 +250,7 @@
 
     const cardClass = 'vp-card' + (mode === 'admin' ? ' admin' : '');
     const cardAttrs = mode === 'admin' && ctx.onCardClick
-      ? 'class="' + cardClass + '" onclick="' + ctx.onCardClick + '"'
+      ? 'class="' + cardClass + '" data-vp-action="card" data-vp-fn="' + ctx.onCardClick + '" data-vp-event="' + ev.id + '"'
       : 'class="' + cardClass + '"';
 
     return '<div ' + cardAttrs + '>'
@@ -302,7 +302,7 @@
           showPhone = prefs.sharePhoneVolunteer === true || prefs.sharePhoneVolunteer === 'true';
         }
         const phoneHtml = (showPhone && phone)
-          ? ' · <a href="tel:' + esc(phone) + '" onclick="event.stopPropagation()">' + esc(phone) + '</a>'
+          ? ' · <a href="tel:' + esc(phone) + '" data-vp-nobubble>' + esc(phone) + '</a>'
           : '';
         return '<span class="vp-chip">' + esc(su.name || '—') + phoneHtml + '</span>';
       } else {
@@ -320,16 +320,16 @@
       });
       const allowed = memberCanTakeRole(role, ctx.myCerts || []);
       if (mySignup) {
-        actionHtml = '<button class="vp-btn signed-up" onclick="event.stopPropagation();'
-          + (ctx.onWithdraw || '') + '(\'' + mySignup.id + '\')">'
+        actionHtml = '<button class="vp-btn signed-up" data-vp-action="withdraw" data-vp-fn="'
+          + (ctx.onWithdraw || '') + '" data-vp-signup="' + mySignup.id + '">'
           + s('member.volWithdraw') + '</button>';
       } else if (!allowed) {
         actionHtml = '<span class="vp-role-note">' + s('member.volNeedsEndorsement') + '</span>';
       } else if (isFull) {
         actionHtml = '<span class="vp-role-note full">' + s('member.volFull') + '</span>';
       } else {
-        actionHtml = '<button class="vp-btn" onclick="event.stopPropagation();'
-          + (ctx.onSignup || '') + '(\'' + ev.id + '\',\'' + role.id + '\')">'
+        actionHtml = '<button class="vp-btn" data-vp-action="signup" data-vp-fn="'
+          + (ctx.onSignup || '') + '" data-vp-event="' + ev.id + '" data-vp-role="' + role.id + '">'
           + s('member.volSignUp') + '</button>';
       }
     }
@@ -347,7 +347,7 @@
       } else {
         descHtml = '<div class="vp-role-desc" id="' + descId + '" style="display:none">' + esc(desc) + '</div>';
         headClass += ' clickable';
-        headClick = ' onclick="_volToggleRoleDesc(event,\'' + descId + '\')"';
+        headClick = ' data-vp-action="toggle-desc" data-vp-desc="' + descId + '"';
       }
     }
 
@@ -368,14 +368,45 @@
       + '</div>';
   }
 
-  // Toggles a hidden description panel. Exposed globally so the inline
-  // onclick attributes produced by renderVolunteerRole can find it
-  // regardless of which page it runs on.
+  // Toggles a hidden description panel. Invoked by the delegated click
+  // handler below when the user clicks a role head marked
+  // data-vp-action="toggle-desc".
   function _volToggleRoleDesc(e, descId) {
     if (e && e.stopPropagation) e.stopPropagation();
     const el = (typeof document !== 'undefined') ? document.getElementById(descId) : null;
     if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // Delegated click handler for card actions (replaces inline onclick=
+  // attrs in the render templates, which CSP blocks under strict
+  // script-src). Attached once per document; looks up the handler by
+  // function name on the global object.
+  const VP_CARD_ACTIONS = { signup:1, withdraw:1, edit:1, delete:1, card:1, 'toggle-desc':1 };
+  if (typeof document !== 'undefined' && !document._volCardListener) {
+    document._volCardListener = true;
+    document.addEventListener('click', function(e) {
+      // tel: links etc. shouldn't trigger card actions from above
+      if (e.target.closest('[data-vp-nobubble]')) return;
+      const el = e.target.closest('[data-vp-action]');
+      if (!el) return;
+      const action = el.dataset.vpAction;
+      if (!VP_CARD_ACTIONS[action]) return;
+      e.stopPropagation();
+      if (action === 'toggle-desc') {
+        _volToggleRoleDesc(e, el.dataset.vpDesc);
+        return;
+      }
+      const fn = el.dataset.vpFn;
+      if (!fn || typeof global[fn] !== 'function') return;
+      switch (action) {
+        case 'signup':   global[fn](el.dataset.vpEvent, el.dataset.vpRole); break;
+        case 'withdraw': global[fn](el.dataset.vpSignup); break;
+        case 'edit':
+        case 'delete':
+        case 'card':     global[fn](el.dataset.vpEvent); break;
+      }
+    });
   }
 
   global.expandVolunteerActivityTypes = expandVolunteerActivityTypes;
