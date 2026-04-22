@@ -470,7 +470,7 @@ function renderLaunchChecklist(boat) {
 function _addToLaunchOut(mins) {
   var base=document.getElementById('launchTimeOut').value||fmtTimeNow();
   var parts=base.split(':').map(Number);
-  var total=parts[0]*60+parts[1]+mins;
+  var total=parts[0]*60+parts[1]+Number(mins);
   document.getElementById('launchReturnBy').value=String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
 function adjLaunchCrew(d) {
