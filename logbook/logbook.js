@@ -246,7 +246,7 @@ async function initMemberHeatmap() {
   const trackPts = getAllTrackPoints();
   if (!locData.length && !trackPts.length) return;
 
-  document.getElementById('memberHeatmapWrap').style.display = '';
+  document.getElementById('memberHeatmapWrap').classList.remove('d-none');
 
   await loadLeaflet();
   if (_hmMap) { _hmMap.remove(); _hmMap = null; }
