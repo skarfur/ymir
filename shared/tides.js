@@ -296,7 +296,7 @@ function tideWidget(targetEl, { onData } = {}) {
 
     const disclaimer = IS
       ? 'Áætluð harmonískt spálíkan, ekki byggt á birtum gögnum. Vænta má fráviks upp á ±15–30 mín.'
-      : 'Estimated harmonic prediction model, not based on published data. Expect deviation of ±15–30 min';
+      : 'Estimated harmonic prediction model, not from published data. Expect deviation of ±15–30 min';
 
     // Chart
     const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 640, 120);
