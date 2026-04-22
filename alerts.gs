@@ -99,9 +99,9 @@ function setConfigSheetValue_(key, value) {
   if (lastRow >= 2) {
     const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(r => String(r[0]).trim());
     const idx = keys.indexOf(key);
-    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(_literalWrite_(value)); return; }
+    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(literalWrite_(value)); return; }
   }
-  sheet.appendRow([key, _literalWrite_(value)]);
+  sheet.appendRow([key, literalWrite_(value)]);
 }
 
 // ── Config-list CRUD helpers ──────────────────────────────────────────────────
@@ -188,7 +188,7 @@ function getOverdueAlerts_(b) {
   if (sheet.getLastRow() < 2) return okJ({ alerts: [], snoozeMins: cfg.snoozeMins });
   const lastCol = sheet.getLastColumn();
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const col = name => headers.indexOf(name);
+  const col = name => requiredCol_(headers, name);
   const now_ms = Date.now();
   const now_dt = new Date();
   const todayStr = Utilities.formatDate(now_dt, Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -264,7 +264,7 @@ function silenceAlert_(b) {
   const row = getCheckoutRow_(b.id);
   if (!row) throw new Error('Checkout not found: ' + b.id);
   row._sheet.getRange(row._sheetRow, row._col1('alertSilenced')).setValue(true);
-  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(_literalWrite_(b.silencedBy || ''));
+  row._sheet.getRange(row._sheetRow, row._col1('alertSilencedBy')).setValue(literalWrite_(b.silencedBy || ''));
   row._sheet.getRange(row._sheetRow, row._col1('alertSilencedAt')).setValue(now_());
   return okJ({ id: b.id });
 }
@@ -286,7 +286,7 @@ function getCheckoutRow_(id) {
   if (sheet.getLastRow() < 2) return null;
   const lastCol = sheet.getLastColumn();
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const col1 = name => headers.indexOf(name) + 1;
+  const col1 = name => requiredCol_(headers, name) + 1;
   const ids = sheet.getRange(2, col1('id'), sheet.getLastRow() - 1, 1).getValues().map(r => String(r[0]));
   const rowIdx = ids.indexOf(String(id));
   if (rowIdx === -1) return null;
@@ -342,7 +342,7 @@ function resolveFromEmail_(b) {
     const sheet = getSheet_('checkouts');
     const data  = sheet.getDataRange().getValues();
     const headers = data[0];
-    const col = h => headers.indexOf(h);
+    const col = h => requiredCol_(headers, h);
     const rowIdx = data.findIndex((r, i) => i > 0 && String(r[col('id')]) === String(id));
     if (rowIdx > 0) {
       // Silence the alert
@@ -380,7 +380,7 @@ function handleAlertAction_(b) {
     const sheet   = getSheet_('checkouts');
     const data    = sheet.getDataRange().getValues();
     const headers = data[0];
-    const col     = h => headers.indexOf(h);
+    const col     = h => requiredCol_(headers, h);
     const rowIdx  = data.findIndex((r, i) => i > 0 && String(r[col('id')]) === String(id));
     if (rowIdx < 1) return failJ('Checkout not found');
     const L = CLUB_LANG_;
@@ -528,7 +528,7 @@ function resolveAlert_(b) {
     const sheet  = getSheet_('checkouts');
     const data   = sheet.getDataRange().getValues();
     const headers = data[0];
-    const col    = h => headers.indexOf(h);
+    const col    = h => requiredCol_(headers, h);
     const rowIdx = data.findIndex((r, i) => i > 0 && String(r[col('id')]) === String(id));
     if (rowIdx < 1) return failJ('Checkout not found');
     // Silence the alert in all cases

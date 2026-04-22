@@ -1282,7 +1282,7 @@ function ensureVolunteerSignupsTab() {
 // runs on the backend so that events are persisted to config, not computed
 // lazily on the client.
 
-function _volExpandActType_(at, fromIso, toIso) {
+function volExpandActType_(at, fromIso, toIso) {
   if (!at || at.active === false || at.active === 'false') return [];
   var isVol = at.volunteer === true || at.volunteer === 'true';
   if (!isVol) return [];
@@ -1361,7 +1361,7 @@ function _volExpandActType_(at, fromIso, toIso) {
 // already exist (matched by id) are left untouched so individual admin edits
 // and soft-deletes are preserved. Returns { arr, added } where arr is the
 // updated array and added is the count of new events inserted.
-function _volMergeMaterialized_(arr, expanded) {
+function volMergeMaterialized_(arr, expanded) {
   var existing = {};
   (arr || []).forEach(function(e) { if (e && e.id) existing[e.id] = true; });
   var added = 0;
@@ -1384,11 +1384,11 @@ function materializeVolunteerEventsForAt_(at) {
   var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   // Honor subtype's own toDate; fallback to a far-future cap if absent.
   var toIso = '2099-12-31';
-  var expanded = _volExpandActType_(at, fromIso, toIso);
+  var expanded = volExpandActType_(at, fromIso, toIso);
   if (!expanded.length) return 0;
   var arr = [];
   try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
-  var merged = _volMergeMaterialized_(arr, expanded);
+  var merged = volMergeMaterialized_(arr, expanded);
   if (merged.added > 0) {
     setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
     cDel_('config');
@@ -1417,12 +1417,12 @@ function reconcileVolunteerEventsForAt_(at) {
   var arr = [];
   try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
   // Compute the set of event IDs the current config would produce. If the
-  // activity type is inactive or no longer volunteer-flagged, _volExpandActType_
+  // activity type is inactive or no longer volunteer-flagged, volExpandActType_
   // returns [] and the "wanted" set is empty — meaning everything materialized
   // for this type becomes prune-eligible.
   var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var toIso = '2099-12-31';
-  var expanded = _volExpandActType_(at, fromIso, toIso);
+  var expanded = volExpandActType_(at, fromIso, toIso);
   var wanted = {};
   expanded.forEach(function(e) { if (e && e.id) wanted[e.id] = true; });
   // Load signups once so we can tell which events are still referenced.
@@ -1455,7 +1455,7 @@ function reconcileVolunteerEventsForAt_(at) {
     }
   });
   // Merge in any newly-expanded events (existing IDs are left untouched).
-  var merged = _volMergeMaterialized_(next, expanded);
+  var merged = volMergeMaterialized_(next, expanded);
   result.added = merged.added;
   if (result.added > 0 || result.removed > 0 || result.softDeleted > 0) {
     setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
@@ -1481,10 +1481,10 @@ function syncVolunteerEvents_(b) {
     var wantedIds = {};
     var totalAdded = 0;
     actTypes.forEach(function(at) {
-      var expanded = _volExpandActType_(at, fromIso, '2099-12-31');
+      var expanded = volExpandActType_(at, fromIso, '2099-12-31');
       expanded.forEach(function(e) { if (e && e.id) wantedIds[e.id] = true; });
       if (!expanded.length) return;
-      var merged = _volMergeMaterialized_(arr, expanded);
+      var merged = volMergeMaterialized_(arr, expanded);
       arr = merged.arr;
       totalAdded += merged.added;
     });
