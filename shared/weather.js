@@ -631,7 +631,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           <div style="font-size:9px;color:var(--muted);letter-spacing:1.2px">${s('wx.birkConditions')}${c._obs_time ? ' · ' + c._obs_time.slice(11,16) + ' UTC' : ''}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             ${showRefreshBtn ? `<button data-wx-refresh="fresh" title="Refresh" style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻ ${updTime}</button>` : `<span style="font-size:10px;color:var(--muted)">↻ ${updTime}</span>`}
-            <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;border:1px solid var(--accent);border-radius:6px;padding:4px 10px;background:var(--accent)12">${s('wx.openForecast')}</a>
+            <a href="../weather/" style="font-size:11px;font-weight:600;color:var(--accent-fg);text-decoration:none;white-space:nowrap;border:1px solid var(--accent);border-radius:6px;padding:4px 10px;background:var(--accent)12">${s('wx.openForecast')}</a>
           </div>
         </div>
         <!-- 2-row grid, columns locked -->
@@ -639,8 +639,8 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.wind')}</div>
             <div style="display:flex;align-items:center;gap:3px;line-height:1">
-              <span style="font-size:32px;color:var(--accent);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
-              <span style="font-size:32px;color:var(--accent);font-weight:500;line-height:1">${Math.round(ws)}</span>
+              <span style="font-size:32px;color:var(--accent-fg);font-weight:500;line-height:1">${wxDirArrow(wd)}</span>
+              <span style="font-size:32px;color:var(--accent-fg);font-weight:500;line-height:1">${Math.round(ws)}</span>
               <span style="font-size:12px;color:var(--muted);margin-left:2px">m/s</span>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:5px">
@@ -652,7 +652,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
           </div>
           <div class="wx-cell">
             <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;margin-bottom:6px">${s('wx.airTemp')}</div>
-            <div style="font-size:28px;font-weight:500;color:var(--accent);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</div>
+            <div style="font-size:28px;font-weight:500;color:var(--accent-fg);line-height:1">${c.temperature_2m != null ? Math.round(c.temperature_2m)+'°' : ''}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${c.apparent_temperature != null && c.apparent_temperature !== c.temperature_2m ? s('wx.feelsLike', { t: Math.round(c.apparent_temperature) }) : ''}</div>
           </div>
           <div class="wx-cell">
@@ -722,7 +722,7 @@ function wxWidget(targetEl, { onData, showRefreshBtn = true, label, getStaffStat
       // Expose badge-only re-render so pages can call after toggling duty status
       targetEl._wxRefreshBadges = () => _renderSsBadges(targetEl.querySelector('.wx-status-badges'));
     } catch(e) {
-      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--accent)">try full page →</a>${showRefreshBtn ? ` <button data-wx-refresh="" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
+      targetEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">⚠️ Weather unavailable  —  <a href="../weather/" style="color:var(--accent-fg)">try full page →</a>${showRefreshBtn ? ` <button data-wx-refresh="" style="margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit">↻</button>` : ''}</div>`;
       targetEl._wxRefresh = refresh;
     }
   }

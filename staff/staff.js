@@ -371,7 +371,7 @@ function searchCoCrewMembers(inp, drop) {
     if (m.role === 'guest') {
       const badge = document.createElement('span');
       badge.textContent = s('lbl.guest');
-      badge.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent);flex-shrink:0';
+      badge.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid var(--accent)55;background:var(--accent)11;color:var(--accent-fg);flex-shrink:0';
       item.appendChild(badge);
     }
     item.addEventListener('mouseover', function(){ this.style.background = 'var(--card)'; });

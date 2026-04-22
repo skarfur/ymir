@@ -10,7 +10,7 @@ body { display:flex; align-items:center; justify-content:center; min-height:100v
     .stay-row input { margin:0; }
     .lang-row { text-align:center; margin-top:16px; }
     #roleScreen, #accountScreen, #forceChangeScreen { display:none; }
-    .role-greeting { color:var(--accent); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; font-weight:500; }
+    .role-greeting { color:var(--accent-fg); font-size:13px; margin-bottom:20px; text-align:center; letter-spacing:.5px; font-weight:500; }
     /* Role/account buttons: mirror the staff page nav-card — accent-tinted wash + solid accent border. */
     .role-btn {
       width:100%; padding:16px 14px; margin-bottom:10px; border-radius:var(--radius-md);
@@ -20,16 +20,16 @@ body { display:flex; align-items:center; justify-content:center; min-height:100v
       text-align:left; box-shadow:var(--shadow-sm);
     }
     .role-btn:hover { background:var(--accent)22; transform:translateY(-1px); box-shadow:var(--shadow-md); }
-    .role-btn .role-icon { width:24px; height:24px; flex-shrink:0; display:inline-flex; align-items:center; color:var(--accent); }
+    .role-btn .role-icon { width:24px; height:24px; flex-shrink:0; display:inline-flex; align-items:center; color:var(--accent-fg); }
     .role-btn .role-icon svg { width:100%; height:100%; }
-    .role-btn .role-label { color:var(--accent); font-size:15px; font-weight:600; letter-spacing:.3px; }
+    .role-btn .role-label { color:var(--accent-fg); font-size:15px; font-weight:600; letter-spacing:.3px; }
     .role-btn .role-desc { color:var(--muted); font-size:11px; margin-top:2px; line-height:1.4; }
     /* Ward picker keeps a distinct purple accent so guardians recognise it as a separate flow */
     .role-btn.role-ward            { border-color:#9b59b6; background:#9b59b612; }
     .role-btn.role-ward:hover      { background:#9b59b622; }
     .role-btn.role-ward .role-label { color:#9b59b6; }
     .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:12px; cursor:pointer; }
-    .back-link:hover { color:var(--accent); }
+    .back-link:hover { color:var(--accent-fg); }
     #googleBtn { display:flex; justify-content:center; }
     .login-or { display:flex; align-items:center; gap:10px; margin:14px 0 6px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
     .login-or::before, .login-or::after { content:""; flex:1; height:1px; background:var(--border); }

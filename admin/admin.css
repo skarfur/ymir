@@ -3,7 +3,7 @@
     .tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
       font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
       margin-bottom:-1px; transition:color .2s,border-color .2s; white-space:nowrap; }
-    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-btn.active { color:var(--accent-fg); border-bottom-color:var(--accent); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
     /* ── Tab dropdown (mobile) ── */
@@ -42,7 +42,7 @@
     .boat-card-badges > * { max-width:100%; }
     .boat-card-badge-controlled { font-size:8px; letter-spacing:.5px; padding:2px 6px; border-radius:10px;
       border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-      background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); }
+      background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent-fg); }
     .boat-card-actions { display:flex; gap:6px; margin-top:10px; }
 
     /* ── Generic row ── */
@@ -55,7 +55,7 @@
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .cl-row:last-child { border-bottom:none; }
-    .cl-phase { width:50px; font-size:10px; color:var(--accent); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
+    .cl-phase { width:50px; font-size:10px; color:var(--accent-fg); font-weight:bold; letter-spacing:.5px; flex-shrink:0; }
     .cl-sort-input { width: 42px !important; max-width: 42px; min-width: 42px; text-align:center; font-size:11px; padding: 2px 4px !important; border:1px solid var(--border);
       border-radius:4px; background:var(--surface); color:var(--text); font-family:inherit; flex-shrink:0;
       -moz-appearance:textfield; appearance:textfield; }
@@ -67,7 +67,7 @@
     /* ── Action buttons ── */
     .row-edit { background:none; border:1px solid transparent; color:var(--muted); cursor:pointer;
       font-size:11px; font-family:inherit; padding:3px 8px; border-radius:var(--radius-sm); transition:all .2s; }
-    .row-edit:hover { color:var(--accent); border-color:var(--accent)55; }
+    .row-edit:hover { color:var(--accent-fg); border-color:var(--accent)55; }
     .row-del  { background:none; border:none; color:var(--border); cursor:pointer;
       font-size:16px; padding:2px 4px; line-height:1; transition:color .2s; }
     .row-del:hover { color:var(--red); }
@@ -83,12 +83,12 @@
     /* .upload-zone is defined in shared/style.css. */
     .col-hint { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:16px; }
     .col-hint-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; align-items:flex-start; }
-    .col-hint-field { color:var(--accent); width:120px; flex-shrink:0; }
+    .col-hint-field { color:var(--accent-fg); width:120px; flex-shrink:0; }
     .col-hint-vals  { color:var(--muted); }
     .import-summary { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
     .import-chip { padding:5px 11px; border-radius:20px; font-size:11px; font-weight:500; }
     .chip-green  { background:color-mix(in srgb, var(--green) 15%, transparent);  color:var(--green);  border:1px solid color-mix(in srgb, var(--green) 30%, transparent); }
-    .chip-accent  { background:color-mix(in srgb, var(--accent) 15%, transparent);  color:var(--accent);  border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+    .chip-accent  { background:color-mix(in srgb, var(--accent) 15%, transparent);  color:var(--accent-fg);  border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
     .chip-orange { background:color-mix(in srgb, var(--orange) 15%, transparent); color:var(--orange); border:1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
     .chip-muted  { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
     .chip-red    { background:color-mix(in srgb, var(--red) 15%, transparent);    color:var(--red);    border:1px solid color-mix(in srgb, var(--red) 30%, transparent); }

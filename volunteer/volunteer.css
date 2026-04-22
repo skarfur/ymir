@@ -3,7 +3,7 @@
 .vp-tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
   font-family:inherit; font-size:11px; letter-spacing:.6px; padding:10px 16px; cursor:pointer;
   white-space:nowrap; transition:color .2s,border-color .2s; text-transform:uppercase; margin-bottom:-1px; }
-.vp-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+.vp-tab-btn.active { color:var(--accent-fg); border-bottom-color:var(--accent); }
 .vp-tab-btn:hover:not(.active) { color:var(--text); }
 
 /* ── Section headers ── */
@@ -23,7 +23,7 @@
 .vp-cal-nav button { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
   color:var(--text); font-family:inherit; font-size:11px; padding:4px 10px; cursor:pointer;
   transition:border-color .15s, color .15s; min-width:32px; }
-.vp-cal-nav button:hover { border-color:var(--accent); color:var(--accent); }
+.vp-cal-nav button:hover { border-color:var(--accent); color:var(--accent-fg); }
 .vp-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
 .vp-cal-dow { font-size:8px; color:var(--muted); text-align:center; padding:6px 4px; letter-spacing:.6px;
   background:var(--surface); border-bottom:1px solid var(--border); text-transform:uppercase; font-weight:500; }
@@ -31,7 +31,7 @@
   padding:4px; position:relative; box-sizing:border-box; }
 .vp-cal-day:nth-child(7n) { border-right:none; }
 .vp-cal-day.other-month { background:var(--surface); opacity:.55; }
-.vp-cal-day.today .vp-cal-day-num { color:var(--accent); font-weight:600; }
+.vp-cal-day.today .vp-cal-day-num { color:var(--accent-fg); font-weight:600; }
 .vp-cal-day-num { font-size:10px; color:var(--muted); margin-bottom:3px; }
 .vp-cal-ev { display:block; margin-top:2px; padding:2px 5px; border-radius:3px;
   background:var(--accent)1f; border-left:2px solid var(--accent); font-size:9px; color:var(--text);
@@ -46,7 +46,7 @@
 .vp-cal-ev-span-start { border-left-style:solid; }
 .vp-cal-ev-span-end { opacity:.85; }
 .vp-cal-ev-more { display:block; margin-top:2px; font-size:9px; color:var(--muted); padding:1px 4px; cursor:pointer; }
-.vp-cal-ev-more:hover { color:var(--accent); }
+.vp-cal-ev-more:hover { color:var(--accent-fg); }
 /* Day cell dot for days where the user has at least one signup */
 .vp-cal-day.has-mine .vp-cal-day-num::after { content:''; display:inline-block; width:5px; height:5px;
   border-radius:50%; background:var(--accent); margin-left:5px; vertical-align:middle; }

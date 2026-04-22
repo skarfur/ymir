@@ -39,7 +39,7 @@ function _ppRenderItemRow(p, cat, it, pi, ci, ii) {
   const assessmentColor = assessment === 'theory' ? 'var(--accent)' : 'var(--muted)';
   const moduleNum = Number(it.module || 0);
   const moduleBadge = moduleNum > 0
-    ? `<span style="font-size:9px;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.moduleShort'))} ${moduleNum}</span>`
+    ? `<span style="font-size:9px;color:var(--accent-fg);border:1px solid var(--accent);border-radius:3px;padding:1px 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.5px">${esc(s('passport.moduleShort'))} ${moduleNum}</span>`
     : '';
   return `<div style="border-top:1px solid var(--border);padding:8px 0;display:flex;align-items:flex-start;gap:8px;${retired ? 'opacity:.5' : ''}">
     <div style="flex:1;min-width:0">
@@ -85,7 +85,7 @@ function drawPassportEditor() {
     card.innerHTML = `<div style="color:var(--muted);padding:12px 0">No passports configured. Import a CSV to get started.</div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
         <button class="btn btn-primary btn-sm" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
-        <span id="ppDirtyMark" style="font-size:10px;color:var(--accent)">${_passportDirty ? '● unsaved' : ''}</span>
+        <span id="ppDirtyMark" style="font-size:10px;color:var(--accent-fg)">${_passportDirty ? '● unsaved' : ''}</span>
       </div>`;
     applyStrings(card);
     return;
@@ -184,7 +184,7 @@ function drawPassportEditor() {
           ? `${s('passport.moduleLabel')} ${modNum}`
           : s('passport.unassignedModule');
         html += `<div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface)">
-          <div style="font-weight:700;font-size:12px;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${esc(modLabel)} <span style="color:var(--muted);font-weight:400;font-size:10px">· ${bucket.length}</span></div>`;
+          <div style="font-weight:700;font-size:12px;color:var(--accent-fg);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${esc(modLabel)} <span style="color:var(--muted);font-weight:400;font-size:10px">· ${bucket.length}</span></div>`;
 
         // Sub-group by category (preserving the passport's category order)
         const byCat = {};
@@ -235,7 +235,7 @@ function drawPassportEditor() {
 
   html += `<div style="margin-top:14px;display:flex;gap:8px;align-items:center">
     <button class="btn btn-primary btn-sm" data-admin-click="ppSaveDef" data-s="passport.save">Save changes</button>
-    <span id="ppDirtyMark" style="font-size:10px;color:var(--accent)">${_passportDirty ? '● unsaved' : ''}</span>
+    <span id="ppDirtyMark" style="font-size:10px;color:var(--accent-fg)">${_passportDirty ? '● unsaved' : ''}</span>
   </div>`;
   card.innerHTML = html;
   applyStrings(card);

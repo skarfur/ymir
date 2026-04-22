@@ -12,10 +12,13 @@ mode (green instead of blue) so active tabs rendered with a blue underline and
 a green label. Renamed for clarity and merged the duplicate:
 
 - `--brass` → `--accent` (theme-aware primary accent; gold `#d9b441` dark,
-  canonical brand blue `#452682` light).
-- `--brass-fg` deleted; all 160 usages fold into `--accent`. In light mode
-  that means active-tab labels, stat numbers, role labels, etc. are now blue
-  instead of green, matching the underlines/borders on the same elements.
+  canonical brand blue `#452682` light). Used for borders, button
+  backgrounds, underlines — the *structural* accent.
+- `--brass-fg` → `--accent-fg` (theme-aware text/icon accent; gold `#d9b441`
+  dark, green `#1e8e4e` light). Used for `color:` on active-tab labels,
+  stat numbers, section labels, role labels, icon masks, etc. Keeping this
+  split preserves the club's green-on-white text in light mode while
+  keeping the brand blue as the chrome accent.
 - `--brass-tint-xs/sm/md` → `--accent-tint-xs/sm/md`.
 - `--brass-glow-sm/md` → `--accent-glow-sm/md`.
 - `--brass-d` (zero uses) and `--brass-l` (one use) deleted; the single
