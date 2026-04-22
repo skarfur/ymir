@@ -11,8 +11,8 @@
 //    saveLocation_, deleteLocation_ sheet-based handlers
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SHEET_ID_ = 'REDACTED';
-const API_TOKEN_ = 'REDACTED';
+const SHEET_ID_ = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+const API_TOKEN_ = PropertiesService.getScriptProperties().getProperty('API_TOKEN');
 
 const TABS_ = {
   members: 'members',
@@ -300,6 +300,29 @@ function okJ(data) { return jsonR_({ success: true, ...data }); }
 function failJ(msg, code) { return jsonR_({ success: false, error: msg, code: code || 400 }); }
 function jsonR_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 function htmlR_(html) { return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT); }
+
+// ── Public-endpoint rate limiter ────────────────────────────────────────────
+// Apps Script doesn't expose client IP, so limits are global per-bucket (or
+// per bucket+input, e.g. per licence_number). Backed by CacheService which
+// auto-expires entries. Not a defence against distributed scans, but a
+// meaningful speed-bump against a single attacker hitting the public routes.
+function publicRateLimit_(bucket, limit, windowSec) {
+  var cache = CacheService.getScriptCache();
+  var key = 'rl_' + bucket;
+  var count = parseInt(cache.get(key) || '0', 10);
+  if (count >= limit) return false;
+  // CacheService.put doesn't extend the window on re-puts, so on first hit
+  // we seed with ttl=windowSec and subsequent hits keep that window. Side
+  // effect: a flood of requests in a single window gets bucketed together,
+  // which is the intended behaviour.
+  cache.put(key, String(count + 1), windowSec);
+  return true;
+}
+
+function rateLimitedPage_(msg) {
+  return htmlR_(pubPageShell_('Too many requests',
+    '<div class="err-msg">' + (msg || 'Too many requests. Please wait a minute and try again.') + '</div>'));
+}
 function shareUid_() {
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var hex = Utilities.getUuid().replace(/-/g, '');
@@ -962,7 +985,30 @@ function findOne_(tabKey, field, value) {
   return readAll_(tabKey).find(r => String(r[field]).trim() === String(value).trim()) || null;
 }
 
+// Google Sheets cell cap is 50,000 chars; leave a safety margin so writes
+// don't silently truncate or hit API errors on edge cases.
+const VALIDATE_MAX_FIELD_LEN_ = 45000;
+
+// Guards insertRow_ / updateRow_ against bad input. Doesn't enforce per-tab
+// schemas (business logic owns required-field checks at the endpoint level)
+// — it only catches unknown tabs, non-object payloads, and oversized strings
+// before they reach the sheet.
+function validateRow_(tabKey, obj) {
+  if (!TABS_[tabKey]) throw new Error('validateRow_: unknown tabKey ' + tabKey);
+  if (!obj || typeof obj !== 'object') throw new Error('validateRow_: row must be an object');
+  for (var k in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    var v = obj[k];
+    if (typeof v === 'string' && v.length > VALIDATE_MAX_FIELD_LEN_) {
+      throw new Error('validateRow_: field "' + k + '" length ' + v.length
+                      + ' exceeds max ' + VALIDATE_MAX_FIELD_LEN_);
+    }
+  }
+  return true;
+}
+
 function insertRow_(tabKey, obj) {
+  validateRow_(tabKey, obj);
   const c = getSheetData_(tabKey);
   const row = c.headers.map(h => _literalWrite_(obj[h] !== undefined ? obj[h] : ''));
   c.sheet.appendRow(row);
@@ -995,6 +1041,7 @@ function ensureMaintCols_() {
 }
 
 function updateRow_(tabKey, keyField, keyValue, updates) {
+  validateRow_(tabKey, updates);
   const c = getSheetData_(tabKey);
   const sheet = c.sheet, headers = c.headers, values = c.values;
   const keyCol = headers.indexOf(keyField);
@@ -1056,10 +1103,30 @@ function doGet(e) {
     const b = e.parameter?.p ? JSON.parse(e.parameter.p) : (e.parameter || {});
     // Public query endpoints — no auth required.
     if (b.action === 'resolveFromEmail') return resolveFromEmail_(b);
-    if (b.action === 'lookup')  return publicLookup_(b);
-    if (b.action === 'captain') return publicCaptainRecord_(b);
-    if (b.action === 'boat')    return publicBoatRecord_(b);
-    if (b.action === 'dashboard') return publicDashboard_();
+    // Public routes: rate-limited so a single attacker can't enumerate
+    // licence numbers / member or boat IDs by hammering these endpoints.
+    if (b.action === 'lookup') {
+      // Per-licence throttle blocks guessing initials against a known licence.
+      var lic = String(b.licence_number || b.licenceNumber || '');
+      if (lic) {
+        var licKey = 'lookup_' + lic.replace(/[^\w-]/g, '_');
+        if (!publicRateLimit_(licKey, 10, 900)) return rateLimitedPage_();
+      }
+      return publicLookup_(b);
+    }
+    if (b.action === 'captain') {
+      if (!publicRateLimit_('captain', 120, 60)) return rateLimitedPage_();
+      return publicCaptainRecord_(b);
+    }
+    if (b.action === 'boat') {
+      if (!publicRateLimit_('boat', 120, 60)) return rateLimitedPage_();
+      return publicBoatRecord_(b);
+    }
+    if (b.action === 'dashboard') {
+      // Dashboard does heavy work (reads trips + config). Global throttle.
+      if (!publicRateLimit_('dashboard', 60, 60)) return rateLimitedPage_();
+      return publicDashboard_();
+    }
     if (b.share)                return publicShareRecord_(b);
     // Session-authenticated GETs, if any.
     const callerGet = _authCaller_(b);
