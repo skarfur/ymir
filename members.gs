@@ -757,7 +757,7 @@ function saveDailyLog_(b) {
       openingChecks: b.openingChecks !== undefined ? JSON.stringify(b.openingChecks) : ex.openingChecks,
       closingChecks: b.closingChecks !== undefined ? JSON.stringify(b.closingChecks) : ex.closingChecks,
       activities: b.activities !== undefined ? JSON.stringify(b.activities) : ex.activities,
-      weatherLog: b.weatherLog !== undefined ? b.weatherLog : ex.weatherLog,
+      weatherLog: b.weatherLog !== undefined ? JSON.stringify(b.weatherLog) : ex.weatherLog,
       narrative: b.narrative !== undefined ? b.narrative : ex.narrative,
       tideData: b.tideData !== undefined ? JSON.stringify(b.tideData) : ex.tideData,
       signedOffBy: b.signedOffBy || ex.signedOffBy || '',
@@ -768,10 +768,11 @@ function saveDailyLog_(b) {
   } else {
     insertRow_('dailyLog', {
       id: uid_(), date,
-      openingChecks: JSON.stringify(b.openingChecks || []),
-      closingChecks: JSON.stringify(b.closingChecks || []),
+      openingChecks: JSON.stringify(b.openingChecks || {}),
+      closingChecks: JSON.stringify(b.closingChecks || {}),
       activities: JSON.stringify(b.activities || []),
-      weatherLog: b.weatherLog || '', narrative: b.narrative || '',
+      weatherLog: JSON.stringify(b.weatherLog || []),
+      narrative: b.narrative || '',
       tideData: JSON.stringify(b.tideData || {}),
       signedOffBy: b.signedOffBy || '', signedOffAt: b.signedOffAt || '',
       updatedBy: b.updatedBy || '', createdAt: ts, updatedAt: ts,
