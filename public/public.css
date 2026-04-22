@@ -1,31 +1,5 @@
-:root {
-  --bg:      #0a1a33;
-  --surface: #11264a;
-  --card:    #15305a;
-  --border:  #23457a;
-  --border-l:#365f9e;
-  --text:    #dce7f5;
-  --muted:   #7a9bc2;
-  --navy:    #3a5ea8;
-  --navy-l:  #5b83cf;
-  --moss:    #4fa55e;
-  --brass:   #d9b441;
-  --brass-fg:#d9b441;
-  --green:   var(--moss);
-  --red:     #e74c3c;
-  --yellow:  #f1c40f;
-  --orange:  #e67e22;
-  --blue:    var(--navy);
-  --faint:   #1a3863;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'DM Mono', 'Courier New', monospace;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.22);
-  --shadow-md: 0 2px 10px rgba(0,0,0,.28);
-  --shadow-lg: 0 10px 32px rgba(0,0,0,.40);
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-}
+/* Theme tokens come from shared/style.css; <html data-theme="light"> selects light mode. */
+
 /* ── Tide chart (shared SVG classes) ───────────────────────────── */
 .c-brass  { fill: var(--brass);  stroke: var(--brass);  }
 .c-blue   { fill: var(--blue);   stroke: var(--blue);   }
