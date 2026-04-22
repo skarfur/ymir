@@ -14,14 +14,13 @@
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)}
 .badge-helm{color:var(--brass-fg);border-color:var(--brass)55;background:var(--brass)11}
-.trip-arrow{padding:10px 14px 10px 4px;display:flex;align-items:center;color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
+.trip-arrow{padding:14px 18px 14px 10px;display:flex;align-items:center;color:var(--muted);font-size:14px;transition:transform .2s,color .2s;flex-shrink:0}
+.trip-card:hover .trip-arrow,.trip-card.open .trip-arrow{color:var(--brass-fg)}
 .trip-card.open .trip-arrow{transform:rotate(180deg)}
 
 /* ── Expanded card ── */
 .trip-expand{display:none;padding:0 12px 0;position:relative}
 .trip-card.open .trip-expand{display:block}
-.trip-card-close{position:absolute;top:6px;right:6px;background:none;border:1px solid var(--border);color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;padding:0;line-height:1;transition:color .15s,border-color .15s}
-.trip-card-close:hover{color:var(--brass-fg);border-color:var(--brass)}
 .trip-expand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px 12px;font-size:11px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
 .trip-exp-row{display:flex;flex-direction:column;gap:1px;padding:4px 0}
 .trip-exp-lbl{font-size:9px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
@@ -37,9 +36,9 @@
 .exp-weather .trip-expand-grid{padding-top:4px}
 .exp-notes{background:var(--faint)}
 .exp-section-hdr{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;font-weight:500}
-.exp-section-hdr.expandable{cursor:pointer;display:flex;align-items:center;gap:4px}
+.exp-section-hdr.expandable{cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0}
 .exp-section-hdr.expandable:hover{color:var(--brass-fg)}
-.exp-section-hdr .exp-chevron{font-size:10px;transition:transform .2s;transform:rotate(0deg)}
+.exp-section-hdr .exp-chevron{font-size:13px;line-height:1;transition:transform .2s;transform:rotate(0deg)}
 .exp-section-hdr.expanded .exp-chevron{transform:rotate(180deg)}
 .exp-section-detail{display:none;margin-top:4px}
 .exp-section-detail.open{display:block}

@@ -128,8 +128,10 @@ const CLUB_PAGE = 10;
 const CLUB_TRIPS_TTL = 30000; // 30s cache
 
 // ── Trip card toggle (init maps on first expand) ─────────────────────────────
+// Clicking the card header toggles open/close — the little chevron at the
+// right of the header rotates to cue the state. No separate close-X button.
 function openTripCard(card) {
-  if (card.classList.contains('open')) return;
+  if (card.classList.contains('open')) { card.classList.remove('open'); return; }
   card.classList.add('open');
   // Defer so the expand section is visible before Leaflet measures it
   requestAnimationFrame(() => {
@@ -137,9 +139,6 @@ function openTripCard(card) {
       if (!_thumbMaps[el.id]) initSingleThumbMap(el);
     });
   });
-}
-function closeTripCard(card) {
-  card.classList.remove('open');
 }
 // Close open trip cards when clicking outside
 document.addEventListener('click', function(e) {
@@ -444,13 +443,20 @@ setTimeout(function () {
   };
 
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-trip-nobubble]')) { e.stopPropagation(); return; }
+    // Check for an actionable element first. `.trip-expand` carries
+    // `data-trip-nobubble` so stray clicks inside don't close the card, but
+    // that attribute also covers every nested action button + section header —
+    // so the nobubble guard has to run AFTER we've given data-trip-action a
+    // chance to match, otherwise "Edit trip", "Add GPS", "Request verification"
+    // and the collapsible weather / trip-details sections all silently die.
     var el = e.target.closest('[data-trip-action]');
-    if (!el) return;
+    if (!el) {
+      if (e.target.closest('[data-trip-nobubble]')) { e.stopPropagation(); }
+      return;
+    }
     var action = el.dataset.tripAction;
     e.stopPropagation();
     if (action === 'open-card')      { openTripCard(el.parentElement); return; }
-    if (action === 'close-card')     { closeTripCard(el.closest('.trip-card')); return; }
     if (action === 'toggle-section') { toggleSectionDetail(el); return; }
     var id = el.dataset.tripId;
     if (SINGLE[action] && typeof window[SINGLE[action]] === 'function') {
