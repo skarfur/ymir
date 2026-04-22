@@ -6,10 +6,11 @@
     .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
     .tab-btn:hover:not(.active) { color:var(--text); }
 
-    /* ── Tab dropdown (mobile) ── */
-    .tab-select { display:none; width:100%; padding:10px 12px; margin-bottom:20px;
-      font-family:inherit; font-size:13px; color:var(--text); background:var(--surface);
-      border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; }
+    /* ── Tab dropdown (mobile) ──
+       Only declares display + spacing. All other look-and-feel (border, bg,
+       chevron, padding, font) is inherited from the shared `select` rule so
+       the caret stays theme-aware and doesn't tile into a wave pattern. */
+    .tab-select { display:none; margin-bottom:20px; }
 
     /* ── Collapsible section ── */
     .col-section { margin-bottom:16px; }
