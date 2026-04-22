@@ -3,7 +3,33 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
-## Unreleased — security, CSP, and accessibility hardening
+## Unreleased — logbook bug fixes
+
+Surface-level fixes for the logbook portal after the inline-style → utility-class
+refactor (`c9c77e1`) silently broke JS toggles that read/write `style.display`
+on elements initialised with `class="d-none"`.
+
+- **Stats + share panel + manual-trip modal internals show again.** 17 elements
+  in `logbook/index.html` (`#stat-strip`, `#catHours`, `#confBadge`,
+  `#sharePanel`, `#loadMoreTripsBtn`, `#joinExtras`, `#jErr`, `#logStep2`,
+  `#mSkipperSection`, `#mBoatFree`, `#mLocFree`, `#mLocGeoStatus`,
+  `#mCrewSection`, `#addPortHint`, `#mWxFetchStatus`, `#mErr`, `#etErr`,
+  `#puErr`) switched back from `class="d-none"` to `style="display:none"`.
+  The refactor had swapped the inline style for the utility class but the
+  callers kept toggling via `.style.display = '' / 'none'`, which can't
+  override the class rule — so "Enter Manually", "Share your logbook", the
+  stats strip, and most inline error banners were stuck hidden.
+- **Modals no longer dock to the bottom of the viewport.** All four logbook
+  modals (`#confirmationsModal`, `#logModal`, `#editTripModal`,
+  `#photoUploadModal`) swapped `class="modal-sheet"` → `class="modal"` so
+  they center per the shared overlay rule instead of triggering the
+  `align-items: flex-end` `:has()` variant.
+- **Join-a-recent-club-trip card respects CSP.** `shared/logbook-form.js`
+  no longer does `card.setAttribute('onclick', …)` — replaced with
+  `data-lb-click` / `data-lb-arg` and `joinTripAsCrew(tripId)` now looks up
+  the card by its `data-lb-arg` attribute.
+
+## Earlier — security, CSP, and accessibility hardening
 
 Large cross-cutting pass started from an external code review. Grouped by the
 review's categories; see commit messages for per-change detail.

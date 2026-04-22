@@ -47,6 +47,10 @@ function showStep1(){
 function showManualForm(){
   document.getElementById('logStep1').style.display='none';
   document.getElementById('logStep2').style.display='';
+  // Scroll the modal sheet back to the top so the form header is in view
+  // (logStep1 may have scrolled while the user browsed recent trips).
+  const sheet=document.querySelector('#logModal .modal');
+  if(sheet) sheet.scrollTop=0;
   document.getElementById('mDate').value=todayISO();
   // Populate boats + locations
   const bSel=document.getElementById('mBoat');
@@ -521,7 +525,8 @@ function renderClubTripsList(){
     var _sg = (_sm && _sm.role==='guest') ? _gBadge : '';
     var card = document.createElement('div');
     card.className = 'trip-pick-card';
-    card.setAttribute('onclick', "joinTripAsCrew('"+esc(t.id)+"',this)");
+    card.dataset.lbClick = 'joinTripAsCrew';
+    card.dataset.lbArg = t.id;
     card.innerHTML =
       '<div class="tpc-boat">'+esc(t.boatName||'—')+' · '+esc(t.locationName||'—')+'</div>'
       +'<div class="tpc-sub">'+esc(t.date||'—')+' · '+esc(t.timeOut||'')+'–'+esc(t.timeIn||'')
@@ -539,7 +544,9 @@ function loadMoreTrips(){
   renderClubTripsList();
 }
 
-function joinTripAsCrew(tripId, el){
+function joinTripAsCrew(tripId){
+  const el=document.querySelector('.trip-pick-card[data-lb-arg="'+tripId+'"]');
+  if(!el) return;
   // Toggle deselect
   if(el.classList.contains('selected')){
     el.classList.remove('selected');
