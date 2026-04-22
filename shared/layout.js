@@ -92,9 +92,9 @@
         // replacing self with the canonical <header>. Avoids Shadow DOM
         // so global styles (style.css) still apply.
         var host = this;
-        if (host.id) { /* id migrates to the replacement */ }
         var hdr = document.createElement('header');
         hdr.id = 'ym-header';
+        if (host.className) hdr.className = host.className;
         var page = host.getAttribute('data-page') || '';
         hdr.innerHTML = '<div class="header-left"></div><div class="header-right"></div>';
         host.replaceWith(hdr);
