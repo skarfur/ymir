@@ -5,7 +5,7 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 // Google Identity Services OAuth 2.0 Client ID (public by design). Leave
 // empty to disable one-tap sign-in client-side; backend also refuses to
 // verify tokens unless the GOOGLE_CLIENT_ID script property is set.
-const GOOGLE_CLIENT_ID = "";
+const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
 // ── Service Worker Cleanup (one-shot per browser) ──────────────────────────
 // The app used to register a SW; it was removed long ago. This block
