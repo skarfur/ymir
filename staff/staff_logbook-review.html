@@ -27,16 +27,16 @@
 
   <!-- Stats row 1 -->
   <div class="stat-strip mb-8">
-    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l">YTD TRIPS</div></div>
-    <div class="stat-cell"><div class="stat-n text-brass" id="sRequested">—</div><div class="stat-l">AWAITING REVIEW</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l">VERIFIED</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sTotalTrips">—</div><div class="stat-l" data-s="slr.stat.ytdTrips"></div></div>
+    <div class="stat-cell"><div class="stat-n text-brass" id="sRequested">—</div><div class="stat-l" data-s="slr.stat.awaiting"></div></div>
+    <div class="stat-cell"><div class="stat-n" id="sVerified">—</div><div class="stat-l" data-s="slr.stat.verified"></div></div>
   </div>
   <!-- Stats row 2 -->
   <div class="stat-strip mb-16">
-    <div class="stat-cell"><div class="stat-n" id="sTotalPersons">—</div><div class="stat-l">PERSONS ON WATER</div></div>
-    <div class="stat-cell"><div class="stat-n" id="sUniquePersons">—</div><div class="stat-l">UNIQUE MEMBERS</div></div>
+    <div class="stat-cell"><div class="stat-n" id="sTotalPersons">—</div><div class="stat-l" data-s="slr.stat.peopleOut"></div></div>
+    <div class="stat-cell"><div class="stat-n" id="sUniquePersons">—</div><div class="stat-l" data-s="slr.stat.uniqueMem"></div></div>
     <div class="stat-cell" style="text-align:left;padding:8px 10px">
-      <div class="section-label mb-4">BY BOAT TYPE</div>
+      <div class="section-label mb-4" data-s="slr.stat.byBoatType"></div>
       <div id="sBoatCats" class="text-sm" style="line-height:1.8"></div>
     </div>
   </div>
@@ -66,7 +66,7 @@
 
   <!-- ══ CERTIFICATIONS ══════════════════════════════════════════════════════ -->
   <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px">
-    <div class="section-label mb-14">CERTIFICATIONS</div>
+    <div class="section-label mb-14" data-s="slr.stat.certs"></div>
 
     <!-- Mode toggle -->
     <div class="mb-16 d-flex border-muted overflow-hidden" style="gap:0;border-radius:var(--radius-sm);width:fit-content">
