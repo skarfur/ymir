@@ -430,7 +430,7 @@ function punchClockWidget(el, employeeId, opts) {
         + '<span style="min-width:60px;color:var(--muted);font-size:10px;text-transform:uppercase">' + label + '</span>'
         + '<span style="flex:1;font-variant-numeric:tabular-nums">' + fmtTime(e.timestamp) + '</span>'
         + '<span style="color:var(--muted)">' + (e.durationMinutes ? fmtDurationMins(+e.durationMinutes) : '') + '</span>'
-        + '<button onclick="pcEditEntry(\'' + e.id + '\',\'' + e.timestamp + '\',' + empId + ')" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px 6px;letter-spacing:.3px">' + t('payroll.editEntry') + '</button>'
+        + '<button data-pc-action="edit-entry" data-pc-id="' + e.id + '" data-pc-ts="' + e.timestamp + '" data-pc-emp="' + empId + '" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px 6px;letter-spacing:.3px">' + t('payroll.editEntry') + '</button>'
         + '</div>';
     }
 
@@ -440,11 +440,11 @@ function punchClockWidget(el, employeeId, opts) {
       rows += entryRow(e, label);
     });
 
-    var html = '<div class="pc-modal-bg" id="pcSummaryBg" onclick="if(event.target===this)this.remove()">'
+    var html = '<div class="pc-modal-bg" id="pcSummaryBg" data-pc-close-self>'
       + '<div class="pc-modal">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
       + '<div class="pc-modal-title" style="margin:0">' + t('payroll.shiftSummary') + '</div>'
-      + '<button class="modal-close-x" onclick="document.getElementById(\'pcSummaryBg\').remove()">&times;</button>'
+      + '<button class="modal-close-x" data-pc-close="pcSummaryBg">&times;</button>'
       + '</div>'
       + '<div class="pc-modal-sub">' + today + '</div>'
       + '<div style="margin-bottom:14px">'
@@ -453,7 +453,7 @@ function punchClockWidget(el, employeeId, opts) {
       + '</div>'
       + (rows ? '<div style="margin-bottom:16px">' + rows + '</div>' : '')
       + '<div id="pcEditArea"></div>'
-      + '<button class="btn btn-primary" style="width:100%" onclick="document.getElementById(\'pcSummaryBg\').remove()">' + t('payroll.confirmShift') + '</button>'
+      + '<button class="btn btn-primary" style="width:100%" data-pc-close="pcSummaryBg">' + t('payroll.confirmShift') + '</button>'
       + '</div></div>';
 
     var div = document.createElement('div');
@@ -471,8 +471,8 @@ function punchClockWidget(el, employeeId, opts) {
       + '<input type="datetime-local" id="pcEditTs" value="' + localDt + '">'
       + '<input type="text" id="pcEditNote" placeholder="Note (optional)">'
       + '<div style="display:flex;gap:6px">'
-      + '<button class="btn btn-primary" style="flex:1;font-size:11px" onclick="pcSaveEdit(\'' + id + '\',' + empId + ')">Save</button>'
-      + '<button class="btn btn-secondary" style="font-size:11px" onclick="document.getElementById(\'pcEditArea\').innerHTML=\'\'">Cancel</button>'
+      + '<button class="btn btn-primary" style="flex:1;font-size:11px" data-pc-action="save-edit" data-pc-id="' + id + '" data-pc-emp="' + empId + '">Save</button>'
+      + '<button class="btn btn-secondary" style="font-size:11px" data-pc-clear="pcEditArea">Cancel</button>'
       + '</div></div>';
   };
 
@@ -674,4 +674,37 @@ function renderPayslip(data) {
     + ' \u00b7 ' + esc(employer.employerAddress || '')
     + ' \u00b7 kt. ' + esc(employer.employerKt || '') + '</div>'
     + '</body></html>';
+}
+
+// Delegated handlers for data-pc-* attrs on rendered payroll-clock DOM
+// (replaces inline onclicks in the templates above).
+if (typeof document !== 'undefined' && !document._pcClickListener) {
+  document._pcClickListener = true;
+  document.addEventListener('click', function(e) {
+    // Click-outside-to-close (on the modal backdrop only)
+    var bg = e.target.closest('[data-pc-close-self]');
+    if (bg && e.target === bg) { bg.remove(); return; }
+
+    var close = e.target.closest('[data-pc-close]');
+    if (close) {
+      var targ = document.getElementById(close.dataset.pcClose);
+      if (targ) targ.remove();
+      return;
+    }
+
+    var clear = e.target.closest('[data-pc-clear]');
+    if (clear) {
+      var area = document.getElementById(clear.dataset.pcClear);
+      if (area) area.innerHTML = '';
+      return;
+    }
+
+    var act = e.target.closest('[data-pc-action]');
+    if (!act) return;
+    if (act.dataset.pcAction === 'edit-entry' && typeof window.pcEditEntry === 'function') {
+      window.pcEditEntry(act.dataset.pcId, act.dataset.pcTs, +act.dataset.pcEmp);
+    } else if (act.dataset.pcAction === 'save-edit' && typeof window.pcSaveEdit === 'function') {
+      window.pcSaveEdit(act.dataset.pcId, +act.dataset.pcEmp);
+    }
+  });
 }
