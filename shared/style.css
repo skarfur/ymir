@@ -1151,8 +1151,8 @@ textarea { min-height: 70px; }
   }
 
   /* ── Modals ── */
-  .modal-overlay { padding: 10px; align-items: flex-end; }
-  .modal { max-width: 100%; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 20px 16px; max-height: 90vh; }
+  .modal-overlay { padding: 10px; }
+  .modal { max-width: 100%; padding: 20px 16px; max-height: 90vh; }
 
   /* ── Tables — horizontal scroll ── */
   .tbl-wrap { margin: 0 -12px; padding: 0 12px; }

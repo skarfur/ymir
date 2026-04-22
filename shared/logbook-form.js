@@ -47,6 +47,10 @@ function showStep1(){
 function showManualForm(){
   document.getElementById('logStep1').style.display='none';
   document.getElementById('logStep2').style.display='';
+  // Scroll the modal sheet back to the top so the form header is in view
+  // (logStep1 may have scrolled while the user browsed recent trips).
+  const sheet=document.querySelector('#logModal .modal');
+  if(sheet) sheet.scrollTop=0;
   document.getElementById('mDate').value=todayISO();
   // Populate boats + locations
   const bSel=document.getElementById('mBoat');
