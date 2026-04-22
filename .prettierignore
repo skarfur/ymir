@@ -1,0 +1,4 @@
+node_modules/
+*.gs
+shared/strings-en.js
+shared/strings-is.js

@@ -1,0 +1,37 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Zero-dep checks first — catch most breakage before npm install.
+      - name: strings parity (EN vs IS)
+        run: node tools/check-strings.js
+
+      - name: syntax check (*.js, *.gs)
+        run: node tools/check-syntax.js
+
+      # ESLint requires install; keep it non-blocking for now via
+      # continue-on-error so a stray warning doesn't fail the whole run
+      # while we're still settling in on rules. Flip to required later.
+      - name: install deps
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: eslint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: prettier (check only, non-blocking)
+        run: npm run format
+        continue-on-error: true
