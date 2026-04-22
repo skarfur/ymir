@@ -250,6 +250,7 @@ function openCertDefModal(id) {
   document.getElementById("cdIssuingAuthority").value = d ? (d.issuingAuthority || "") : "";
   document.getElementById("cdClubEndorsement").checked = d ? !!d.clubEndorsement : false;
   document.getElementById("cdColor").value            = d?.color || "#b5890a";
+  if (typeof renderColorSwatches === 'function') renderColorSwatches('cdColor', 'cdColorSwatches');
   document.getElementById("cdHasIdNumber").checked     = d ? !!d.hasIdNumber : false;
   document.getElementById("cdExpires").checked        = d ? !!d.expires : false;
   document.getElementById("certDefDeleteBtn").classList.toggle("hidden", !d);

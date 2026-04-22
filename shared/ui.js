@@ -534,5 +534,71 @@ window.buildHeader = function (page) {
   right.appendChild(so);
 };
 
+// ── COLOR PALETTE + SWATCH HELPER ─────────────────────────────────────────────
+// 12-colour palette used by every "pick a colour" UI in the app (crew colour,
+// captain booking colour, boat-category colour, cert card colour, …). Three
+// brand anchors (navy, moss, brass) appear in the list so defaults favour the
+// brand; the remaining nine span the wheel at roughly even hue steps.
+window.YMIR_PALETTE = [
+  '#e74c3c', '#ff7675', '#e67e22', '#d9b441',
+  '#f1c40f', '#a3cb3e', '#4fa55e', '#1abc9c',
+  '#3498db', '#3a5ea8', '#8e44ad', '#a78bfa',
+];
+
+// Render a row of preset swatches next to a native <input type="color">.
+// Clicking a swatch writes to the input and fires `input`+`change` events so
+// any existing delegated handlers (data-admin-input, data-cq-change, …) run
+// untouched. Typing a custom colour into the native picker clears the
+// highlight — swatch-and-custom, always both.
+//
+//   <input type="color" id="myColor">
+//   <div id="myColorSwatches"></div>
+//   renderColorSwatches('myColor', 'myColorSwatches');
+//
+// opts.size   — swatch diameter in px (default 20)
+// opts.colors — override palette (defaults to YMIR_PALETTE)
+window.renderColorSwatches = function (inputId, containerId, opts) {
+  opts = opts || {};
+  var input     = document.getElementById(inputId);
+  var container = document.getElementById(containerId);
+  if (!input || !container) return;
+  var size   = opts.size || 20;
+  var colors = opts.colors || window.YMIR_PALETTE;
+
+  container.style.display  = 'flex';
+  container.style.flexWrap = 'wrap';
+  container.style.gap      = '5px';
+  container.innerHTML = colors.map(function (clr) {
+    return '<button type="button" data-color="' + clr + '" aria-label="' + clr + '"'
+         + ' style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;'
+         + 'background:' + clr + ';cursor:pointer;padding:0;'
+         + 'border:1px solid rgba(0,0,0,.15);outline:none;transition:outline .1s"></button>';
+  }).join('');
+
+  function highlight(active) {
+    var a = (active || '').toLowerCase();
+    container.querySelectorAll('button[data-color]').forEach(function (b) {
+      var match = b.getAttribute('data-color').toLowerCase() === a;
+      b.style.outline       = match ? '2px solid var(--text)' : 'none';
+      b.style.outlineOffset = match ? '2px' : '';
+    });
+  }
+
+  if (!container._ymSwatchBound) {
+    container._ymSwatchBound = true;
+    container.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-color]');
+      if (!btn) return;
+      var c = btn.getAttribute('data-color');
+      input.value = c;
+      highlight(c);
+      input.dispatchEvent(new Event('input',  { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    input.addEventListener('input', function () { highlight(input.value); });
+  }
+  highlight(input.value);
+};
+
 // ── APPLY THEME ON LOAD ────────────────────────────────────────────────────────
 if (typeof applyTheme === 'function') applyTheme();

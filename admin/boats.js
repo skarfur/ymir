@@ -21,6 +21,7 @@ function openBoatCatModal(key) {
   const color = /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor : boatCatDefaultColor(c ? c.key : 'other');
   document.getElementById("bcColor").value = color;
   updateBoatCatColorPreview();
+  if (typeof renderColorSwatches === 'function') renderColorSwatches('bcColor', 'bcColorSwatches');
   document.getElementById("bcDeleteBtn").classList.toggle("hidden", !c);
   openModal("boatCatModal");
 }

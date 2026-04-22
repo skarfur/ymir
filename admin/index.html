@@ -582,6 +582,7 @@
       <label for="bcColor" data-s="admin.boatCatModal.color"></label>
       <div class="d-flex items-center gap-6 flex-wrap">
         <input type="color" id="bcColor" value="#6b92b8" data-admin-input="updateBoatCatColorPreview">
+        <div id="bcColorSwatches"></div>
         <span id="bcColorPreview" aria-hidden="true"></span>
         <button type="button" class="btn btn-secondary btn-sm" data-admin-click="resetBoatCatColor" data-s="admin.boatCatModal.resetColor"></button>
       </div>
@@ -859,8 +860,9 @@
       <label class="d-flex items-center gap-6 cursor-pointer">
         <input type="checkbox" id="cdClubEndorsement" data-admin-change="toggleCdEndorsement"> <span data-s="admin.certClubEndorsement"></span>
       </label>
-      <label class="d-flex items-center gap-8" for="ppsNameEN"><span data-s="admin.certCardColour"></span>
+      <label class="d-flex items-center gap-8 flex-wrap" for="ppsNameEN"><span data-s="admin.certCardColour"></span>
         <input type="color" id="cdColor" class="border-muted rounded-4 cursor-pointer" style="width:36px;height:26px;padding:2px">
+        <div id="cdColorSwatches"></div>
         <span class="text-10 text-muted" data-s="admin.certAutoBlank"></span>
       </label>
     </div>
