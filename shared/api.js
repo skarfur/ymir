@@ -31,7 +31,7 @@ try {
 async function apiGet(action, params) {
   params = params || {};
   // Cache getConfig in sessionStorage for 60s — called on every page load
-  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000 };
+  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_';
@@ -101,7 +101,10 @@ var _INVALIDATES = {
   deleteTrip:              ['getTrips'],
   setHelm:                 ['getTrips'],
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
-  respondConfirmation:     ['getTrips', 'getNotifications'],
+  respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
+  createConfirmation:      ['getConfirmations', 'getNotifications'],
+  requestVerification:     ['getConfirmations', 'getNotifications'],
+  requestValidation:       ['getConfirmations', 'getNotifications'],
   // Maintenance — most also change notification counts (follower pings, etc.).
   saveMaintenance:         ['getMaintenance', 'getNotifications'],
   resolveMaintenance:      ['getMaintenance', 'getNotifications'],
@@ -116,8 +119,8 @@ var _INVALIDATES = {
   followProject:           ['getMaintenance', 'getNotifications'],
   unfollowProject:         ['getMaintenance', 'getNotifications'],
   // Notification-only.
-  dismissConfirmation:     ['getNotifications'],
-  dismissAllConfirmations: ['getNotifications'],
+  dismissConfirmation:     ['getNotifications', 'getConfirmations'],
+  dismissAllConfirmations: ['getNotifications', 'getConfirmations'],
   markProjectSeen:         ['getNotifications'],
   // Session-state changes. Settings page re-fetches its "signed in on…" list.
   signOut:                 ['listSessions'],

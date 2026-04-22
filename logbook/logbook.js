@@ -1,8 +1,14 @@
-prefetch({Trips:['getTrips',{limit:500}],Config:['getConfig'],Members:['getMembers']});
+const _u = getUser();
+prefetch({
+  Trips:['getTrips',{limit:500}],
+  Config:['getConfig'],
+  Members:['getMembers'],
+  Confirmations: _u ? ['getConfirmations', {kennitala: _u.kennitala}] : null,
+});
 
 requireAuth();
 buildHeader('logbook');
-const user = getUser();
+const user = _u;
 const IS   = getLang() === 'IS';
 const _windUnit = getPref('windUnit', 'ms');
 const _statsVis = (getPrefs().statsVisibility) || {};

@@ -3,6 +3,34 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — logbook confirmations load without the 1.5s lag
+
+The logbook page had a hard-coded 1500ms delay before the crew-confirmations
+badge would populate (and before confirmation badges would appear on trip
+cards). The `setTimeout(..., 1500)` in `shared/logbook.js` was a safety buffer
+meant to wait for `shared/logbook-confirm.js` to define `loadConfirmations` —
+but `defer` scripts execute in document order before `DOMContentLoaded`, so
+the buffer was always unnecessary. Worse, the `typeof loadConfirmations`
+guard would silently fail if the function weren't defined in time, masking
+any future load-order regression.
+
+- Removed the 1500ms timer. `loadConfirmations` is now auto-invoked from
+  `shared/logbook-confirm.js` itself on `DOMContentLoaded`, gated on the
+  presence of `#confBadge` so captain/ (which loads the file for its
+  helpers but has its own confirmation machinery) doesn't fire a stray
+  request.
+- Added `Confirmations` to the initial `prefetch()` in `logbook/logbook.js`
+  so the GET races with `getTrips`/`getConfig`/`getMembers` instead of
+  firing serially after init.
+- Added `getConfirmations` to the `_CACHEABLE` map in `shared/api.js`
+  (30s TTL, same as `getNotifications`) and wired cache invalidation for
+  every POST that mutates confirmation state: `respondConfirmation`,
+  `createConfirmation`, `requestVerification`, `requestValidation`,
+  `dismissConfirmation`, `dismissAllConfirmations`.
+
+Touches `shared/logbook.js`, `shared/logbook-confirm.js`, `shared/api.js`,
+`logbook/logbook.js`.
+
 ## Unreleased — admin boats tab polish
 
 Three small fixes to the admin → Boats sub-tab:
