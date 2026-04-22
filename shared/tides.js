@@ -313,7 +313,7 @@ function tideWidget(targetEl, { onData } = {}) {
           <button class="tide-nav-btn" data-dir="1" style="${navStyle}">▶</button>
         </div>
         ${svg}
-        <div style="text-align:right;margin-top:2px">
+        <div style="text-align:left;margin-top:2px">
           <span style="font-size:7px;color:var(--muted);opacity:.55">⚠️ ${disclaimer}</span>
         </div>
       </div>`;
