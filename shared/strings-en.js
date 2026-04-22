@@ -1602,7 +1602,7 @@ var _STRINGS_FLAT = {
   "lb.heatTrips": "Trips",
   "lb.heatTime": "Time",
   "lb.heatTracks": "GPS tracks",
-  "lb.addManualBtn": "+ Manually log a trip",
+  "lb.addManualBtn": "Manually log a trip",
   "lb.gpsTrack": "GPS Track",
   "lb.addEntryTitle": "Add a log entry",
   "lb.addEntryBlurb": "Enter a trip manually, or join a recent club trip as crew. You can add photos, GPS track, and notes after the trip.",
