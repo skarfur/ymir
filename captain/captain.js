@@ -420,7 +420,7 @@ function searchCqResMember(q) {
     }
     if (!hits.length) { drop.innerHTML=''; drop.style.display='none'; return; }
     drop.innerHTML = hits.map(m => '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectCqResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>').join('');
+      + 'data-cq-click="selectCqResMember" data-cq-arg="'+esc(m.kennitala)+'" data-cq-arg2="'+esc(memberDisplayName(m, _cqMembers))+'">' + esc(memberDisplayName(m, _cqMembers)) + '</div>').join('');
     drop.style.display = 'block';
   }, 150);
 }
@@ -912,7 +912,7 @@ function searchBoatOwner(q) {
   if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectBoatOwner(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+      + 'data-cq-click="selectBoatOwner" data-cq-arg="'+esc(m.kennitala)+'" data-cq-arg2="'+esc(memberDisplayName(m, _cqMembers))+'">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }
@@ -1065,7 +1065,7 @@ function searchResMember(q) {
   if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.innerHTML = hits.map(function(m) {
     return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
-      + 'onclick="selectResMember(\'' + esc(m.kennitala) + '\',\'' + esc(memberDisplayName(m, _cqMembers)) + '\')">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
+      + 'data-cq-click="selectResMember" data-cq-arg="'+esc(m.kennitala)+'" data-cq-arg2="'+esc(memberDisplayName(m, _cqMembers))+'">' + esc(memberDisplayName(m, _cqMembers)) + '</div>';
   }).join('');
   drop.style.display = 'block';
 }
