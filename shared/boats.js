@@ -320,7 +320,7 @@ function boatCatBadge(cat) {
   Appearance:
     ╔═════════════════════════════════════════╗
     ║  ⛵ Boat Name              [badge]       ║
-    ║  [cat-badge]  location if avail          ║
+    ║  location if avail                       ║
     ║  member · location · dep · est return    ║  → only if out/overdue
     ║  OOS reason                              ║  → only if oos
     ╚═════════════════════════════════════════╝
@@ -421,7 +421,6 @@ function renderBoatCard(boat, opts) {
        + `<div style="font-size:14px;font-weight:500;color:var(--text)">${emoji} ${name}</div>`
        + `<div style="display:flex;gap:4px;flex-shrink:0">${ownerBadge}${bdgHtml}</div>`
        + `</div>`
-       + boatCatBadge(cat)
        + locLine + infoLine + oosLine + ownerLine + charterLine
        + (opts.extraHtml||"")
        + `</div>`;
