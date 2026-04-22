@@ -68,11 +68,12 @@ const BULK_ACTIONS_ = {
 // (lookup, captain, boat, resolveFromEmail, shared records) are gated
 // separately inside doGet.
 const PUBLIC_ACTIONS_ = {
-  loginMember:   true,
-  dashboard:     true,
-  lookup:        true,
-  captain:       true,
-  boat:          true,
+  loginMember:     true,
+  loginWithGoogle: true,
+  dashboard:       true,
+  lookup:          true,
+  captain:         true,
+  boat:            true,
 };
 
 // Admin-only actions. Enforced before route_ dispatches.
@@ -1174,6 +1175,9 @@ function doPost(e) {
 function route_(action, b, caller) {
   switch (action) {
     case 'loginMember': return loginMember_(b);
+    case 'loginWithGoogle': return loginWithGoogle_(b);
+    case 'linkGoogleAccount': return linkGoogleAccount_(b, caller);
+    case 'unlinkGoogleAccount': return unlinkGoogleAccount_(b, caller);
     // Session management
     case 'signOut':     return signOut_(b, caller);
     case 'signOutAll':  return signOutAll_(b, caller);

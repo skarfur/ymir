@@ -17,6 +17,7 @@ var SCHEMA_ = {
     'id','kennitala','name','role','email','phone','birthYear',
     'isMinor','guardianName','guardianKennitala','guardianPhone',
     'active','certifications','initials','preferences',
+    'googleEmail',
     'createdAt','updatedAt',
   ],
   daily_log: [

@@ -14,6 +14,7 @@ function publicMember_(m) {
     preferences: m.preferences || '{}',
     bio: m.bio || '',
     headshotUrl: m.headshotUrl || '',
+    googleEmail: m.googleEmail || '',
   };
 }
 
@@ -145,6 +146,120 @@ function loginMember_(b) {
     expiresAt: session.expiresAt,
     sessionId: session.id,
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GOOGLE SIGN-IN
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Verify a Google ID token by calling Google's tokeninfo endpoint. Returns
+// the decoded payload on success, or null if the token is missing, expired,
+// issued for a different client, or fails any other check. We hit tokeninfo
+// instead of parsing the JWT locally because Apps Script has no ergonomic
+// JWKS verifier, and tokeninfo already validates the signature for us.
+function verifyGoogleIdToken_(idToken) {
+  const token = String(idToken || '').trim();
+  if (!token) return null;
+  const expectedAud = String(
+    PropertiesService.getScriptProperties().getProperty('GOOGLE_CLIENT_ID') || ''
+  ).trim();
+  if (!expectedAud) {
+    throw new Error('Google sign-in not configured (GOOGLE_CLIENT_ID missing)');
+  }
+  let payload = null;
+  try {
+    const resp = UrlFetchApp.fetch(
+      'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(token),
+      { muteHttpExceptions: true }
+    );
+    if (resp.getResponseCode() !== 200) return null;
+    payload = JSON.parse(resp.getContentText() || '{}');
+  } catch (e) {
+    return null;
+  }
+  if (!payload || typeof payload !== 'object') return null;
+  // aud must match our OAuth client.
+  if (String(payload.aud || '') !== expectedAud) return null;
+  // iss must be a Google issuer.
+  const iss = String(payload.iss || '');
+  if (iss !== 'accounts.google.com' && iss !== 'https://accounts.google.com') return null;
+  // exp is in seconds since epoch. Reject if missing or in the past.
+  const exp = parseInt(payload.exp, 10);
+  if (!exp || exp * 1000 < Date.now()) return null;
+  // Require a verified email.
+  if (!payload.email) return null;
+  const verified = String(payload.email_verified || '').toLowerCase();
+  if (verified !== 'true' && payload.email_verified !== true) return null;
+  payload.email = String(payload.email).trim().toLowerCase();
+  return payload;
+}
+
+// Public sign-in via a Google ID token. The frontend's GIS one-tap flow
+// posts the credential here; we verify it, look up a member by their
+// previously-linked googleEmail, and mint a session. Unlinked members are
+// rejected with a specific code so the UI can tell the user to sign in with
+// their password first and link from settings.
+function loginWithGoogle_(b) {
+  const idToken = String((b && b.idToken) || '');
+  const stay    = bool_(b && b.stayLoggedIn);
+  const ua      = String((b && b.userAgent) || '');
+  const payload = verifyGoogleIdToken_(idToken);
+  if (!payload) return failJ('Invalid Google token', 401);
+  const email = payload.email;
+
+  addColIfMissing_('members', 'googleEmail');
+  const m = findOne_('members', 'googleEmail', email);
+  if (!m) return failJ('Google account not linked', 404);
+  if (!bool_(m.active)) return failJ('Inactive account', 403);
+
+  clearLoginAttempts_(m.kennitala);
+  const session = createSession_(m.kennitala, m.role || 'member', stay, ua);
+  const wards = bool_(m.isMinor) ? [] : findWardsOf_(m.kennitala);
+  return okJ({
+    member: publicMember_(m),
+    wards: wards,
+    usingDefaultPassword: bool_(m.passwordIsTemp),
+    sessionToken: session.token,
+    expiresAt: session.expiresAt,
+    sessionId: session.id,
+  });
+}
+
+// Link a Google account to the caller's member record. Requires an
+// authenticated session (bootstraps the trust chain through the existing
+// password login), verifies the supplied ID token, and refuses to link an
+// email that's already attached to a different member.
+function linkGoogleAccount_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
+  const idToken = String((b && b.idToken) || '');
+  const payload = verifyGoogleIdToken_(idToken);
+  if (!payload) return failJ('Invalid Google token', 401);
+  const email = payload.email;
+
+  addColIfMissing_('members', 'googleEmail');
+  const existing = findOne_('members', 'googleEmail', email);
+  if (existing && String(existing.kennitala) !== caller.kennitala) {
+    return failJ('Google account already linked to another member', 409);
+  }
+  updateRow_('members', 'kennitala', caller.kennitala, {
+    googleEmail: email,
+    updatedAt: now_(),
+  });
+  cDel_('members');
+  return okJ({ linked: true, googleEmail: email });
+}
+
+// Remove the Google link from the caller's member record. Password login
+// keeps working either way; this is just the "disconnect" side of the link.
+function unlinkGoogleAccount_(b, caller) {
+  if (!caller) return failJ('Unauthorized', 401);
+  addColIfMissing_('members', 'googleEmail');
+  updateRow_('members', 'kennitala', caller.kennitala, {
+    googleEmail: '',
+    updatedAt: now_(),
+  });
+  cDel_('members');
+  return okJ({ unlinked: true });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
