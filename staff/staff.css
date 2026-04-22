@@ -193,8 +193,10 @@
 .gm-section{margin-bottom:16px}
 .gm-section-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
 .gm-boat-grid{display:flex;flex-wrap:wrap;gap:6px}
-.gm-boat-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--text);transition:all .2s;display:flex;align-items:center;gap:6px}
-.gm-boat-btn.selected{border-color:var(--accent);background:var(--accent)18;color:var(--text)}
+.gm-boat-btn{background:var(--gm-cat-bg,var(--surface));border:1px solid var(--gm-cat-border,var(--border));border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--text);transition:all .15s;display:inline-flex;align-items:center;gap:6px;position:relative}
+.gm-boat-btn:not(:disabled):hover{filter:brightness(1.08)}
+.gm-boat-btn.selected{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 28%, var(--gm-cat-bg, var(--surface)));box-shadow:inset 0 0 0 1px var(--accent),0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);font-weight:600;color:var(--text)}
+.gm-boat-btn.selected::before{content:'✓';color:var(--accent);font-weight:700;margin-right:-2px}
 .gm-boat-btn:disabled{opacity:.4;cursor:not-allowed}
 .gm-stepper{display:flex;align-items:center;gap:14px}
 .gm-stepper-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}

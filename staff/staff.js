@@ -316,7 +316,7 @@ function selectMember(kt, name) {
 }
 
 function adjustCrew(d) {
-  crewCount = Math.max(1, crewCount + d);
+  crewCount = Math.max(1, crewCount + Number(d));
   document.getElementById('crewNum').textContent = crewCount;
   renderCoCrewInputs();
 }
@@ -764,6 +764,9 @@ function openGroupModal() {
     btn.className = 'gm-boat-btn';
     btn.textContent = boatEmoji((b.category||'').toLowerCase()) + ' ' + (b.name || b.id);
     btn.dataset.id = b.id;
+    const catColors = boatCatColors((b.category||'').toLowerCase());
+    btn.style.setProperty('--gm-cat-bg', catColors.bg);
+    btn.style.setProperty('--gm-cat-border', catColors.border);
     if (boolVal(b.oos)) { btn.disabled = true; btn.style.opacity='.35'; btn.title = s('staff.oosTitle'); }
     else if (out) { btn.disabled = true; btn.style.opacity='.35'; btn.title = s('staff.alreadyOut'); }
     else btn.addEventListener('click', function() { toggleGmBoat(this); });
@@ -802,7 +805,7 @@ function toggleGmBoat(btn) {
 
 function adjGroupCount(type, d) {
   if (type === 'participants') {
-    _groupParticipants = Math.max(0, _groupParticipants + d);
+    _groupParticipants = Math.max(0, _groupParticipants + Number(d));
     document.getElementById('gmParticCount').textContent = _groupParticipants;
     updateGmTotalNote();
   }

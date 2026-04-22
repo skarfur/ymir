@@ -252,14 +252,15 @@ function renderLaunchPicker(preselectedBoatId) {
         s('qr.scanBtn')+
       '</button>'+
     '</div>'+
-    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>
-      `<div class="mb-12">
+    Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>{
+      const cc=boatCatColors(cat);
+      return `<div class="mb-12">
         <div class="section-label">${_fmtCatLabel(cat)}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left"
+        ${catBoats.map(b=>`<button class="btn btn-secondary mb-6" style="width:100%;text-align:left;background:${cc.bg};border:1px solid ${cc.border}"
           data-member-click="_renderLaunchFormById" data-member-arg="${b.id}">${boatEmoji(cat)} ${esc(b.name)}</button>`).join('')}
         </div>
-      </div>`).join('')+
+      </div>`;}).join('')+
     '<div class="mb-12">'+
       '<button class="btn btn-secondary mb-6" style="width:100%;text-align:left" data-member-click="renderNonClubLaunchForm">'+
         '🚣 '+s('member.nonClubBoat')+
@@ -474,7 +475,7 @@ function _addToLaunchOut(mins) {
   document.getElementById('launchReturnBy').value=String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
 function adjLaunchCrew(d) {
-  window._launchCrewCount=Math.max(1,Math.min(20,(window._launchCrewCount||1)+d));
+  window._launchCrewCount=Math.max(1,Math.min(20,(window._launchCrewCount||1)+Number(d)));
   document.getElementById('launchCrewNum').textContent=window._launchCrewCount;
   renderCrewInputs();
 }
