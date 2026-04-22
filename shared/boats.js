@@ -375,9 +375,9 @@ function renderBoatCard(boat, opts) {
   // Use registry-based onclick to avoid JSON-in-attribute encoding problems
   const boatId = _besc(boat.id || "");
   const clickAttr = opts.onClickAction
-    ? ` style="cursor:pointer" onclick="${opts.onClickAction}(boatRegistry.getBoat('${boatId}'))"`
-    : opts.onClick
-    ? ` style="cursor:pointer" onclick="${opts.onClick}"`
+    ? ` style="cursor:pointer" data-boat-action="click" data-boat-fn="${opts.onClickAction}" data-boat-id="${boatId}"`
+    : opts.onAvailClick
+    ? ` style="cursor:pointer" data-boat-action="avail" data-boat-fn="${opts.onAvailClick}" data-boat-id="${boatId}"`
     : "";
 
   // Extra badge for access mode / chartered / private boats
@@ -492,13 +492,13 @@ function renderCheckoutCard(co, opts) {
   let actionsHtml = "";
   if (staffView && (opts.onCheckIn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:10px">`
-                + (opts.onCheckIn ? `<button class="btn btn-primary" style="font-size:11px;flex:1" onclick="${opts.onCheckIn}">✓ ${_besc(s("fleet.checkIn"))}</button>` : "")
-                + (opts.onDelete  ? `<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" onclick="${opts.onDelete}">× ${_besc(s("fleet.delete"))}</button>` : "")
+                + (opts.onCheckIn ? `<button class="btn btn-primary" style="font-size:11px;flex:1" data-boat-action="check-in" data-boat-fn="${opts.onCheckIn}" data-co-id="${co.id}">✓ ${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onDelete  ? `<button class="btn btn-secondary" style="font-size:11px;padding:6px 12px;color:var(--muted)" data-boat-action="delete" data-boat-fn="${opts.onDelete}" data-co-id="${co.id}">× ${_besc(s("fleet.delete"))}</button>` : "")
                 + `</div>`;
   } else if (!staffView && isMe && (opts.onReturn || opts.onDelete)) {
     actionsHtml = `<div style="display:flex;gap:6px;margin-top:8px">`
-                + (opts.onReturn ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" onclick="${opts.onReturn}">${_besc(s("fleet.checkIn"))}</button>` : "")
-                + (opts.onDelete ? `<button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="${_besc(s("fleet.delete"))}" onclick="${opts.onDelete}">×</button>` : "")
+                + (opts.onReturn ? `<button class="btn btn-secondary" style="font-size:10px;padding:4px 9px" data-boat-action="return" data-boat-fn="${opts.onReturn}" data-co-id="${co.id}">${_besc(s("fleet.checkIn"))}</button>` : "")
+                + (opts.onDelete ? `<button class="btn-ghost" style="font-size:10px;padding:4px 6px;color:var(--muted)" title="${_besc(s("fleet.delete"))}" data-boat-action="delete" data-boat-fn="${opts.onDelete}" data-co-id="${co.id}">×</button>` : "")
                 + `</div>`;
   }
 
@@ -587,7 +587,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
       if (onClickAct) {
         clickOpts = { onClickAction: onClickAct };
       } else if (status === 'avail' && onAvail && (isStaffV || canAccessBoat(b, fleetUser))) {
-        clickOpts = { onClick: onAvail + "('${b.id}')".replace('${b.id}', _besc(b.id)) };
+        clickOpts = { onAvailClick: onAvail };
       }
       var tmp = document.createElement('div');
       tmp.innerHTML = renderBoatCard(b, Object.assign({ status: status, checkoutData: co, staffView: isStaffV, currentUser: fleetUser }, clickOpts));
@@ -597,7 +597,7 @@ function renderFleetStatus(containerId, boats, active, opts) {
     var block = document.createElement('div');
     block.className = 'fleet-status-block';
     block.innerHTML =
-      '<div class="fsb-header" onclick="' + toggleFn + '(this)" data-target="' + catId + '" style="border-left:3px solid ' + col.color + '">'
+      '<div class="fsb-header" data-boat-action="toggle-cat" data-boat-fn="' + toggleFn + '" data-target="' + catId + '" style="border-left:3px solid ' + col.color + '">'
       + '<span class="fsb-emoji">' + emoji + '</span>'
       + '<span class="fsb-label">' + _besc(_boatCatLabel(key)) + '</span>'
       + '<div class="fsb-bar-wrap"><div class="fsb-bar" style="width:' + pct + '%;background:' + col.color + '"></div></div>'
@@ -615,3 +615,35 @@ function renderFleetStatus(containerId, boats, active, opts) {
 }
 
 // (boolVal defined in shared/api.js)
+
+// Delegated click handler for [data-boat-action] elements. Replaces the
+// inline onclicks in the boat/checkout/fleet-section templates above so
+// strict-script-src CSP pages can use the shared renderer.
+if (typeof document !== 'undefined' && !document._boatsClickListener) {
+  document._boatsClickListener = true;
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-boat-action]');
+    if (!el) return;
+    var action = el.dataset.boatAction;
+    var fn = el.dataset.boatFn;
+    if (!fn || typeof window[fn] !== 'function') return;
+    switch (action) {
+      case 'click':
+        if (window.boatRegistry && typeof window.boatRegistry.getBoat === 'function') {
+          window[fn](window.boatRegistry.getBoat(el.dataset.boatId));
+        }
+        break;
+      case 'avail':
+        window[fn](el.dataset.boatId);
+        break;
+      case 'check-in':
+      case 'delete':
+      case 'return':
+        window[fn](el.dataset.coId);
+        break;
+      case 'toggle-cat':
+        window[fn](el);
+        break;
+    }
+  });
+}
