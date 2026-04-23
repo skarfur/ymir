@@ -379,6 +379,7 @@ var _STRINGS_FLAT = {
   "daily.readOnly": "Lesaðgangur",
   "daily.noActivities": "Engin starfsemi skráð enn.",
   "daily.noTrips": "Engar ferðir skráðar í dag.",
+  "daily.scheduled": "Áætlað",
   "daily.activityModal": "Bæta við starfsemi",
   "daily.actType": "Tegund",
   "daily.actNameLabel": "Nafn / lýsing",

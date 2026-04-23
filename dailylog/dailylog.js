@@ -184,9 +184,10 @@ function renderActivities() {
     const info = document.createElement('div'); info.className = 'activity-info';
     const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
     const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:color-mix(in srgb, var(--moss) 12%, transparent);border:1px solid color-mix(in srgb, var(--moss) 40%, transparent);color:var(--moss);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
+    const scheduledBadge = act.scheduled ? '<span style="font-size:9px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 40%, transparent);color:var(--navy);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">' + s('daily.scheduled') + '</span>' : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
       ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
-    info.innerHTML = `<div class="activity-name">${esc(act.name)}${ablerBadge}${linkedCount}</div>
+    info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}${ablerBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-nity-note">${esc(act.notes)}</div>` : ''}`;
     const del = document.createElement('button');
@@ -203,7 +204,8 @@ function renderActivitiesReadonly() {
     row.className = 'activity-row';
     const info = document.createElement('div'); info.className = 'activity-info';
     const meta = [act.type, act.start && act.end ? act.start+'–'+act.end : act.start, act.participants].filter(Boolean).join(' · ');
-    info.innerHTML = `<div class="activity-name">${esc(act.name)}</div>
+    const scheduledBadge = act.scheduled ? '<span style="font-size:9px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 40%, transparent);color:var(--navy);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">' + s('daily.scheduled') + '</span>' : '';
+    info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}</div>
       <div class="activity-meta">${esc(meta)}</div>
       ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
     row.appendChild(info);
@@ -505,10 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 7 — DATE NAVIGATION
 // ════════════════════════════════════════════════════════════════════════════
-function isToday() { return viewDate === TODAY; }
+function isToday()  { return viewDate === TODAY; }
+function isFuture() { return viewDate >  TODAY; }
 
 function updateDateNav() {
-  dom.nextBtn.disabled = isToday();
+  dom.nextBtn.disabled = false;
   dom.todayBtn.disabled = isToday();
   dom.mainWrap.classList.toggle('readonly', !isToday());
   const isEditable = isToday();
@@ -523,9 +526,7 @@ function updateDateNav() {
 function navigateDay(d) {
   const dt = new Date(viewDate + 'T12:00:00');
   dt.setDate(dt.getDate() + d);
-  const next = dt.toISOString().slice(0, 10);
-  if (next > TODAY) return;
-  viewDate = next;
+  viewDate = dt.toISOString().slice(0, 10);
   loadDay();
 }
 
@@ -724,8 +725,11 @@ async function loadDay() {
 
   if (isToday()) {
     await Promise.all([loadTodayLog(), loadTodayTrips()]);
+  } else if (isFuture()) {
+    await loadOtherLog();
+    tripsData = []; renderTrips();
   } else {
-    await Promise.all([loadPastLog(), loadPastTrips()]);
+    await Promise.all([loadOtherLog(), loadPastTrips()]);
   }
 }
 
@@ -737,7 +741,7 @@ async function loadTodayLog() {
       apiGet('getConfig'),
       loadIncidentsForDate(TODAY),
     ]);
-    applyLogData(logRes.log, cfgRes);
+    applyLogData(logRes, cfgRes);
     renderIncidentSection(incidents);
   } catch(e) {
     console.warn('loadTodayLog failed:', e.message);
@@ -751,17 +755,19 @@ async function loadTodayLog() {
   renderActTypeBtns();
 }
 
-async function loadPastLog() {
+// Loads a non-today day (past or future). No sheet row is written until the
+// user edits + saves, or the midnight trigger materializes it.
+async function loadOtherLog() {
   try {
     const [logRes, cfgRes, incidents] = await Promise.all([
       apiGet('getDailyLog', { date: viewDate }),
       apiGet('getConfig'),
-      loadIncidentsForDate(viewDate),
+      isFuture() ? Promise.resolve([]) : loadIncidentsForDate(viewDate),
     ]);
-    applyLogData(logRes.log, cfgRes);
+    applyLogData(logRes, cfgRes);
     renderIncidentSection(incidents);
   } catch(e) {
-    console.warn('loadPastLog failed:', e.message);
+    console.warn('loadOtherLog failed:', e.message);
     renderIncidentSection([]);
   }
   renderChecklistsReadonly();
@@ -793,7 +799,7 @@ async function loadIncidentsForDate(date) {
   } catch(e) { return []; }
 }
 
-function applyLogData(log, cfgRes) {
+function applyLogData(logRes, cfgRes) {
   const cfg = cfgRes || {};
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
   amItems       = cfg.dailyChecklist?.opening || DEFAULT_AM;
@@ -801,6 +807,9 @@ function applyLogData(log, cfgRes) {
   activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
+
+  const log = logRes && logRes.log ? logRes.log : null;
+  const scheduled = (logRes && Array.isArray(logRes.scheduledActivities)) ? logRes.scheduledActivities : [];
 
   if (log) {
     logId    = log.id;
@@ -815,6 +824,12 @@ function applyLogData(log, cfgRes) {
         ? ' at ' + fmtTime(log.signedOffAt) : '';
       dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
     }
+  } else {
+    // No sheet row yet — pre-populate from the bulk schedule so today's user
+    // sees the planned lessons/events, and forward-browsing shows what's coming.
+    // Nothing is written to the sheet until the user edits + saves (isToday)
+    // or the midnight trigger materializes the day.
+    activities = scheduled;
   }
 }
 

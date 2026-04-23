@@ -379,6 +379,7 @@ var _STRINGS_FLAT = {
   "daily.readOnly": "Read-only",
   "daily.noActivities": "No activities recorded yet.",
   "daily.noTrips": "No trips recorded today.",
+  "daily.scheduled": "Scheduled",
   "daily.activityModal": "Add Activity",
   "daily.actType": "Type",
   "daily.actNameLabel": "Name / description",
