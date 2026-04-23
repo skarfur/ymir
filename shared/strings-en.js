@@ -381,6 +381,7 @@ var _STRINGS_FLAT = {
   "daily.noActivities": "No activities recorded yet.",
   "daily.noTrips": "No trips recorded today.",
   "daily.scheduled": "Scheduled",
+  "daily.jumpTo": "Jump to:",
   "daily.activityModal": "Add Activity",
   "daily.actType": "Type",
   "daily.actNameLabel": "Name / description",

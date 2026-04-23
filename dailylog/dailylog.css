@@ -11,6 +11,9 @@
 .readonly-badge { display:inline-flex; align-items:center;
   background:var(--surface); border:1px solid var(--border); color:var(--muted);
   border-radius:var(--radius-sm); padding:4px 10px; font-size:11px; }
+.date-picker-sm { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:inherit; font-size:12px; padding:4px 8px; cursor:pointer; }
+.date-picker-sm:hover { border-color:var(--accent); }
 
 /* ── Section headings ── */
 .section-heading { font-size:9px; color:var(--muted); letter-spacing:1px;

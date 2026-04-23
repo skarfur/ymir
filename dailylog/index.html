@@ -33,7 +33,11 @@
     </div>
     <button id="nextBtn">▶</button>
   </div>
-  <div class="flex-center mb-8"><button id="todayBtn" class="btn-ghost-sm text-xs" data-s="daily.today"></button></div>
+  <div class="flex-center flex-wrap gap-8 mb-8">
+    <button id="todayBtn" class="btn-ghost-sm text-xs" data-s="daily.today"></button>
+    <label for="datePicker" class="text-xs text-muted" data-s="daily.jumpTo"></label>
+    <input type="date" id="datePicker" class="date-picker-sm">
+  </div>
 
   <div class="flex-center flex-wrap gap-8 mb-16">
     <div class="signoff-badge hidden" id="signoffBadge"></div>

@@ -9,10 +9,15 @@ function getIncidents_(b) {
   if (!c) cPut_('incidents', all);
   if (b.date) {
     // Filter by the actual event date (i.date), not the filing timestamp.
-    // Legacy rows without an event date fall back to filedAt/createdAt.
+    // Slice both sides to 10 chars so a Date-object cell that round-tripped
+    // through sanitizeCell_ (yyyy-MM-dd) matches cleanly, and also tolerates
+    // rows where the cell held extra trailing content. Legacy rows without
+    // an event date fall back to filedAt/createdAt.
+    const target = String(b.date).slice(0, 10);
     const incidents = all.filter(function(i) {
-      var ev = i.date || (i.filedAt || i.createdAt || '').slice(0, 10);
-      return ev === b.date;
+      var ev = String(i.date || '').slice(0, 10)
+            || String(i.filedAt || i.createdAt || '').slice(0, 10);
+      return ev === target;
     });
     return okJ({ incidents });
   }
