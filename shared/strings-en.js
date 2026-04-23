@@ -1379,7 +1379,6 @@ var _STRINGS_FLAT = {
   "staff.noSupportBoat": "No support boat on the water",
   "staff.updatedShort": "Upd.",
   "staff.flagOverrideLabel": "WEATHER FLAG OVERRIDE",
-  "staff.flagOverrideSet": "Set override",
   "staff.flagOverrideClear": "Clear override",
   "staff.flagOverrideNotes": "Public note (English)",
   "staff.flagOverrideNotesIS": "Public note (Icelandic)",

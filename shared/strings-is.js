@@ -1379,7 +1379,6 @@ var _STRINGS_FLAT = {
   "staff.noSupportBoat": "Enginn Gæslubátur á sjó",
   "staff.updatedShort": "Uppf.",
   "staff.flagOverrideLabel": "VEÐURFÁNA YFIRTAKA",
-  "staff.flagOverrideSet": "Setja yfirtöku",
   "staff.flagOverrideClear": "Hreinsa yfirtöku",
   "staff.flagOverrideNotes": "Skýring (birtist félögum)",
   "staff.flagOverrideNotesIS": "Skýring (á íslensku)",
