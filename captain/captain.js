@@ -647,6 +647,8 @@ function initCqReservations() {
     var prefs = {};
     try { prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {}); } catch (e) {}
     colorEl.value = prefs.bookingColor || '#2e7d32';
+    var trig = document.getElementById('cqBookingColorBtn');
+    if (trig) trig.style.background = colorEl.value;
     if (typeof renderColorSwatches === 'function') renderColorSwatches('cqBookingColor', 'cqBookingColorSwatches');
   }
   // Set week start
@@ -708,6 +710,8 @@ function _cqGetBookingColor() {
 
 async function saveCqBookingColor() {
   var color = document.getElementById('cqBookingColor').value;
+  var btn = document.getElementById('cqBookingColorBtn');
+  if (btn) btn.style.background = color;
   var prefs = {};
   try { prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences || '{}') : (user.preferences || {}); } catch (e) {}
   prefs.bookingColor = color;
@@ -717,6 +721,45 @@ async function saveCqBookingColor() {
     toast(s('toast.saved'));
   } catch(e) { toast(e.message || 'Error', 'err'); }
   renderCqSlots();
+}
+
+function toggleCqBookingColorPop() {
+  var pop = document.getElementById('cqBookingColorPop');
+  var btn = document.getElementById('cqBookingColorBtn');
+  if (!pop || !btn) return;
+  var opening = pop.classList.contains('hidden');
+  if (opening) {
+    pop.classList.remove('hidden');
+    btn.setAttribute('aria-expanded', 'true');
+    // Defer binding so the click that opened doesn't immediately close.
+    setTimeout(function () {
+      document.addEventListener('mousedown', _cqBookingColorOutside, true);
+      document.addEventListener('keydown', _cqBookingColorKey, true);
+    }, 0);
+  } else {
+    _cqBookingColorClose();
+  }
+}
+
+function _cqBookingColorClose() {
+  var pop = document.getElementById('cqBookingColorPop');
+  var btn = document.getElementById('cqBookingColorBtn');
+  if (pop) pop.classList.add('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('mousedown', _cqBookingColorOutside, true);
+  document.removeEventListener('keydown', _cqBookingColorKey, true);
+}
+
+function _cqBookingColorOutside(e) {
+  var pop = document.getElementById('cqBookingColorPop');
+  var btn = document.getElementById('cqBookingColorBtn');
+  if (!pop || !btn) return;
+  if (pop.contains(e.target) || btn.contains(e.target)) return;
+  _cqBookingColorClose();
+}
+
+function _cqBookingColorKey(e) {
+  if (e.key === 'Escape') { _cqBookingColorClose(); document.getElementById('cqBookingColorBtn')?.focus(); }
 }
 
 async function bookCqSlot(slotId) {

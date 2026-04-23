@@ -21,6 +21,7 @@ var _STRINGS_FLAT = {
   "lbl.off": "Off",
   "lbl.noData": "No data",
   "lbl.unknown": "Unknown",
+  "lbl.custom": "Custom",
   "lbl.name": "Name",
   "lbl.date": "Date",
   "lbl.time": "Time",
