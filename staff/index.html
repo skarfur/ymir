@@ -62,7 +62,6 @@
       <button class="btn btn-secondary btn-sm" data-staff-click="clearFlagOverride"><span data-s="staff.flagOverrideClear">Clear override</span></button>
     </div>
     <div id="foInactiveRow" class="d-flex flex-wrap items-center gap-10">
-      <span class="text-xs text-muted" data-s="staff.flagOverrideHint">Using live scoring. Set an override to post a staff-picked flag + note until midnight.</span>
       <button class="btn btn-secondary btn-sm ml-auto" data-staff-click="toggleFlagOverrideForm" data-staff-arg="true"><span data-s="staff.flagOverrideSet">Set override</span></button>
     </div>
     <div id="foForm" class="hidden mt-10" style="border-top:1px solid var(--border);padding-top:10px">
@@ -78,13 +77,13 @@
       <div class="flex-center gap-8">
         <span class="text-xs text-muted" data-s="staff.flagOverrideMidnight">Auto-reverts to live data at midnight UTC.</span>
         <button class="btn btn-secondary btn-sm ml-auto" data-staff-click="toggleFlagOverrideForm" data-staff-arg="false"><span data-s="btn.cancel">Cancel</span></button>
-        <button class="btn btn-primary btn-sm" data-staff-click="saveFlagOverride"><span data-s="staff.flagOverrideSave">Save override</span></button>
+        <button class="btn btn-primary btn-sm" data-staff-click="saveFlagOverride"><span data-s="btn.save">Save</span></button>
       </div>
     </div>
   </div>
 
   <!-- ══ ACTIVE CHECKOUTS ══ -->
-  <div class="divider-label" data-s="staff.activeCheckouts">ACTIVE CHECKOUTS</div>
+  <div class="section-label mt-16" data-s="staff.activeCheckouts">ACTIVE CHECKOUTS</div>
 
   <!-- Stats strip -->
   <div class="stat-row no-orphans-3 no-orphans-sm-2">
@@ -169,7 +168,7 @@
   </div>
 
   <!-- ══ TOOLS ══ -->
-  <div class="divider-label" data-s="staff.toolsLabel">TOOLS</div>
+  <div class="section-label mt-16" data-s="staff.toolsLabel">TOOLS</div>
   <div class="nav-grid">
     <a href="../dailylog/" class="nav-card">
       <span class="nc-icon nc-icon--dailylog" aria-hidden="true"></span>
@@ -195,7 +194,7 @@
   </div>
   
   <!-- ══ PUNCH CLOCK ══ -->
-  <div class="divider-label" data-s="payroll.section"></div>
+  <div class="section-label mt-16" data-s="payroll.section"></div>
   <div id="punchClockCard" class="info-panel mb-16">
     <div id="punchClockWidget">
       <div class="empty-note" data-s="lbl.loading"></div>
@@ -203,7 +202,7 @@
   </div>
 
   <!-- ══ OPEN MAINTENANCE ══ -->
-  <div class="divider-label" data-s="staff.maintenance">OPEN MAINTENANCE</div>
+  <div class="section-label mt-16" data-s="staff.maintenance">OPEN MAINTENANCE</div>
   <div class="info-panel mb-16">
     <div id="maintList"><div class="empty-note" data-s="lbl.loading"></div></div>
     <div class="mt-10" style="padding-top:10px;border-top:1px solid var(--border)44">
@@ -213,14 +212,14 @@
   </div>
 
   <!-- ══ FLEET STATUS ══ -->
-  <div class="divider-label flex-between">
+  <div class="section-label mt-16 flex-between">
     <span data-s="staff.fleet"></span>
-    
+
   </div>
 
   <!-- Fleet status (bars + expandable boat cards) -->
   <div id="fleetStatus"><div class="empty-note" data-s="lbl.loading"></div></div>
-  <div class="divider-label mt-16"><span data-s="staff.recentCheckins"></span></div>
+  <div class="section-label mt-16"><span data-s="staff.recentCheckins"></span></div>
     <div id="recentCheckins"><div class="empty-note" data-s="lbl.loading"></div></div>
   </div>
 
