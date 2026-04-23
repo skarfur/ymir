@@ -3,6 +3,18 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — clock-in no longer throws "unknown tabKey time_clock"
+
+`payroll.gs` was calling `insertRow_(TABS_.timeClock, …)` / `updateRow_(TABS_.timeClock, …)`.
+`TABS_.timeClock` evaluates to the sheet name `'time_clock'`, but `validateRow_`
+strictly requires the tab *key* (`'timeClock'`) and threw `validateRow_:
+unknown tabKey time_clock`. Other `TABS_.*` sites worked by coincidence because
+their key and value matched — `timeClock` is the only key that differs from its
+value. Switched the five `insertRow_`/`updateRow_` sites (clockIn/clockOut/
+breakStart/breakEnd/adminEditTime) to the string key `'timeClock'`. Read-only
+and direct-sheet sites (`readAll_`, `ss.getSheetByName`) still use
+`TABS_.timeClock` since they need (or tolerate) the sheet name.
+
 ## Unreleased — bulk-scheduled activities flow into the daily log
 
 Activities defined per-subtype as `bulkSchedule` entries in `activity_types`
