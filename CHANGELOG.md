@@ -3,6 +3,29 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — Lucide icons replace text/emoji in maintenance & admin modals
+
+Added a shared Lucide icon registry (`window.icon(name)` in `shared/ui.js`)
+seeded with `image-plus`, `message-square-plus`, and `trash-2` (MIT). Inline
+SVGs use `currentColor` + `.icon-inline`, so they inherit size and color from
+their container and stay CSP-safe under `script-src 'self'`.
+
+`shared/strings.js` `applyStrings()` now recognizes three extra declarative
+hooks on any element: `data-s-aria` (sets `aria-label`), `data-s-title` (sets
+`title`), and `data-icon="<name>"` (injects the registered SVG once). This is
+the icon-only counterpart to the existing `data-s` text setter — innerHTML is
+only touched by `data-icon`, so i18n and icon painting don't fight.
+
+Applied to: the camera-emoji photo attach in the maintenance comment form
+(→ `image-plus`), the maintenance comment Post button (→ `message-square-plus`,
+now icon-only), the per-comment delete ×, the maintenance request delete
+button, and eight admin modal Delete buttons (boat category, location,
+checklist item, launch-checklist item, activity type, volunteer event, cert
+definition, passport item). The trip card "Add photos" button keeps its text
+but drops the 📷 emoji and gets a proper Lucide icon prefix; `tc.addPhotos`
+in both strings files no longer contains the emoji.
+
+Added `.icon-btn` helper to `shared/style.css` for flex-centered icon buttons.
 ## Unreleased — clock-in no longer throws "unknown tabKey time_clock"
 
 `payroll.gs` was calling `insertRow_(TABS_.timeClock, …)` / `updateRow_(TABS_.timeClock, …)`.

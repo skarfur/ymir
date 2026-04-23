@@ -1156,7 +1156,7 @@ var _STRINGS_FLAT = {
   "tc.club": "Félag",
   "tc.editTrip": "✏️ Breyta ferð",
   "tc.addGps": "📍 Bæta við GPS",
-  "tc.addPhotos": "📷 Bæta við myndum",
+  "tc.addPhotos": "Bæta við myndum",
   "tc.boatDetails": "Upplýsingar um bát",
   "tc.tripDetails": "Upplýsingar um ferð",
   "tc.departed": "Brottfarartími",

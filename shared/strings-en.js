@@ -1156,7 +1156,7 @@ var _STRINGS_FLAT = {
   "tc.club": "Club",
   "tc.editTrip": "✏️ Edit trip",
   "tc.addGps": "📍 Add GPS",
-  "tc.addPhotos": "📷 Add photos",
+  "tc.addPhotos": "Add photos",
   "tc.boatDetails": "Boat Details",
   "tc.tripDetails": "Trip Details",
   "tc.departed": "Departed",
