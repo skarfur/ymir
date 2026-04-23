@@ -415,10 +415,11 @@ function renderBoatCard(boat, opts) {
   // Muted card style for restricted boats (controlled access without authorization)
   const isMuted = (!opts.staffView && controlled && !userCanAccess);
   const charteredMuted = isMuted ? "opacity:.55;pointer-events:none;" : "";
-  // OOS cards keep a muted left accent in the category color (opacity from .bc-oos)
-  const oosBorder = status === "oos" ? `border-left:3px solid ${boatCatColors(cat).color};` : "";
+  // Left accent always reflects the boat category; oos/restricted cards are
+  // muted via opacity (.bc-oos / charteredMuted) rather than a different color.
+  const catBorder = `border-left:3px solid ${boatCatColors(cat).color};`;
 
-  return `<div class="bc-card bc-${status}"${clickAttr} style="${charteredMuted}${oosBorder}">`
+  return `<div class="bc-card bc-${status}"${clickAttr} style="${charteredMuted}${catBorder}">`
        + `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">`
        + `<div style="font-size:14px;font-weight:500;color:var(--text)">${emoji} ${name}</div>`
        + `<div style="display:flex;gap:4px;flex-shrink:0">${ownerBadge}${bdgHtml}</div>`

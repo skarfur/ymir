@@ -86,7 +86,7 @@ function clockIn_(b) {
   if (lastIn && (!lastOut || lastIn.timestamp > lastOut.timestamp))
     return failJ('Already clocked in since ' + lastIn.timestamp);
   const now = new Date().toISOString();
-  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'in',
+  insertRow_('timeClock', { id:uid_(), employeeId:b.employeeId, type:'in',
     timestamp:now, source:b.source||'staff', originalTimestamp:'',
     note:b.note||'', periodKey:periodKey_(), durationMinutes:0 });
   cDel_('time_clock');
@@ -104,7 +104,7 @@ function clockOut_(b) {
     return failJ('Not clocked in');
   const now = new Date().toISOString();
   const dur = Math.round((new Date(now) - new Date(lastIn.timestamp)) / 60000);
-  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'out',
+  insertRow_('timeClock', { id:uid_(), employeeId:b.employeeId, type:'out',
     timestamp:now, source:b.source||'staff', originalTimestamp:'',
     note:b.note||'', periodKey:periodKey_(), durationMinutes:dur });
   cDel_('time_clock');
@@ -127,7 +127,7 @@ function breakStart_(b) {
   if (lastBrk && (!lastBrkE || lastBrk.timestamp > lastBrkE.timestamp))
     return failJ('Already on break');
   const now = new Date().toISOString();
-  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'break_start',
+  insertRow_('timeClock', { id:uid_(), employeeId:b.employeeId, type:'break_start',
     timestamp:now, source:'staff', originalTimestamp:'', note:b.note||'', periodKey:periodKey_(), durationMinutes:0 });
   cDel_('time_clock');
   return okJ({ type:'break_start', timestamp:now });
@@ -144,7 +144,7 @@ function breakEnd_(b) {
     return failJ('Not on break');
   const now = new Date().toISOString();
   const dur = Math.round((new Date(now) - new Date(lastBrk.timestamp)) / 60000);
-  insertRow_(TABS_.timeClock, { id:uid_(), employeeId:b.employeeId, type:'break_end',
+  insertRow_('timeClock', { id:uid_(), employeeId:b.employeeId, type:'break_end',
     timestamp:now, source:'staff', originalTimestamp:'', note:b.note||'', periodKey:periodKey_(), durationMinutes:dur });
   cDel_('time_clock');
   return okJ({ type:'break_end', timestamp:now, durationMinutes:dur });
@@ -161,7 +161,7 @@ function adminEditTime_(b) {
   if (!b.id || !b.timestamp) return failJ('id and timestamp required');
   const row = readAll_(TABS_.timeClock).find(function(r){ return r.id === b.id; });
   if (!row) return failJ('Entry not found');
-  updateRow_(TABS_.timeClock,'id',b.id,{
+  updateRow_('timeClock','id',b.id,{
     timestamp:b.timestamp, originalTimestamp:row.originalTimestamp||row.timestamp,
     note:b.note||row.note||'admin edit', source:'admin',
     durationMinutes:b.durationMinutes!==undefined?b.durationMinutes:row.durationMinutes,
