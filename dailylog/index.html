@@ -71,8 +71,16 @@
   </div>
 
   <!-- ══ 4. OPENING CHECKLIST ══ -->
-  <div class="section-heading" data-s="daily.openingChecklist"></div>
-  <div class="content-card" id="amCard"></div>
+  <div class="cl-section" id="amSection">
+    <div class="section-heading cl-heading" data-cl-toggle="am">
+      <span data-s="daily.openingChecklist"></span>
+      <span class="cl-heading-meta">
+        <span class="cl-progress-chip" id="amProgressChip"></span>
+        <span class="cl-chevron">▾</span>
+      </span>
+    </div>
+    <div class="content-card cl-body" id="amCard"></div>
+  </div>
 
   <!-- ══ 5. ACTIVITIES ══ -->
   <div class="section-heading">
@@ -95,8 +103,16 @@
   <div id="incidentContainer"></div>
 
   <!-- ══ 8. CLOSING CHECKLIST ══ -->
-  <div class="section-heading" data-s="daily.closingChecklist"></div>
-  <div class="content-card" id="pmCard"></div>
+  <div class="cl-section" id="pmSection">
+    <div class="section-heading cl-heading" data-cl-toggle="pm">
+      <span data-s="daily.closingChecklist"></span>
+      <span class="cl-heading-meta">
+        <span class="cl-progress-chip" id="pmProgressChip"></span>
+        <span class="cl-chevron">▾</span>
+      </span>
+    </div>
+    <div class="content-card cl-body" id="pmCard"></div>
+  </div>
 
   <!-- ══ SAVE BAR ══ -->
   <div class="save-bar">

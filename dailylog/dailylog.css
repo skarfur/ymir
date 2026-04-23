@@ -30,6 +30,16 @@
 /* ── Cards ── */
 .content-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:4px; box-shadow:var(--shadow-sm); }
 
+/* ── Collapsible checklist section ── */
+.cl-heading { cursor:pointer; user-select:none; }
+.cl-heading .cl-heading-meta { display:inline-flex; align-items:center; gap:8px; text-transform:none; letter-spacing:0; }
+.cl-chevron { font-size:12px; line-height:1; color:var(--muted); transition:transform .2s; transform:rotate(0deg); display:inline-block; }
+.cl-section.collapsed .cl-chevron { transform:rotate(-90deg); }
+.cl-section.collapsed .cl-body { display:none; }
+.cl-progress-chip { font-size:10px; color:var(--muted); padding:1px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface); }
+.cl-progress-chip:empty { display:none; }
+.cl-progress-chip.done { color:var(--green); border-color:color-mix(in srgb, var(--green) 44%, transparent); background:color-mix(in srgb, var(--green) 10%, transparent); }
+
 /* ── Checklists ── */
 .cl-progress-line { font-size:11px; color:var(--muted); margin-bottom:8px; }
 .cl-progress-line span { color:var(--accent-fg); font-weight:500; }
