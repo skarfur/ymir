@@ -42,11 +42,27 @@ window.s = function s(key, vars, lang) {
 };
 
 window.applyStrings = function applyStrings(root) {
-  (root || document).querySelectorAll('[data-s]').forEach(function(el) {
+  var scope = root || document;
+  scope.querySelectorAll('[data-s]').forEach(function(el) {
     var key  = el.dataset.s;
     var attr = el.dataset.sAttr;
     var val  = window.s(key);
     if (attr) el.setAttribute(attr, val);
     else      el.textContent = val;
   });
+  // Icon-only buttons: set aria-label/title without touching innerHTML.
+  scope.querySelectorAll('[data-s-aria]').forEach(function(el) {
+    el.setAttribute('aria-label', window.s(el.dataset.sAria));
+  });
+  scope.querySelectorAll('[data-s-title]').forEach(function(el) {
+    el.title = window.s(el.dataset.sTitle);
+  });
+  // Lucide icons: inject SVG into elements with data-icon="<name>" once.
+  if (typeof window.icon === 'function') {
+    scope.querySelectorAll('[data-icon]').forEach(function(el) {
+      if (el.dataset.iconApplied) return;
+      var svg = window.icon(el.dataset.icon);
+      if (svg) { el.innerHTML = svg; el.dataset.iconApplied = '1'; }
+    });
+  }
 };

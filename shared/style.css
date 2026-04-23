@@ -1527,6 +1527,10 @@ textarea { min-height: 70px; }
 .text-ellipsis     { text-overflow: ellipsis; }
 .icon-inline { width: 1em; height: 1em; vertical-align: -.125em; flex-shrink: 0; }
 
+/* Icon-only button: sized against its SVG child, centered, no extra padding. */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.icon-btn > .icon-inline { width: 1.1em; height: 1.1em; vertical-align: middle; }
+
 /* ── Accessibility: skip link (injected by <ymir-header>) ─────────────────── */
 .skip-link {
   position: absolute;
