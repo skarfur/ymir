@@ -10,34 +10,7 @@ function esc(s) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// SECTION 2 — DEFAULT FALLBACK DATA
-// ════════════════════════════════════════════════════════════════════════════
-const DEFAULT_AM = [
-  { id:'am1', textEN:'Check all boats for damage',    textIS:'Athuga alla báta vegna skemmda' },
-  { id:'am2', textEN:'Inspect safety equipment',      textIS:'Skoða öryggisbúnað' },
-  { id:'am3', textEN:'Confirm weather conditions',    textIS:'Staðfesta veðurlag' },
-  { id:'am4', textEN:'Open clubhouse and facilities', textIS:'Opna klúbbhús og aðstöðu' },
-  { id:'am5', textEN:'Check radio / communication',   textIS:'Athuga útvarps- og samskiptabúnað' },
-  { id:'am6', textEN:'Brief duty staff on conditions',textIS:'Kynna starfsfólki aðstæður' },
-];
-const DEFAULT_PM = [
-  { id:'pm1', textEN:'All boats returned and secured',textIS:'Allir bátar komnir og tryggðir' },
-  { id:'pm2', textEN:'Damage reports filed if needed',textIS:'Skemmdarskýrslur lagðar ef þarf' },
-  { id:'pm3', textEN:'Safety equipment stowed',       textIS:'Öryggisbúnaður geymdur' },
-  { id:'pm4', textEN:'Facilities locked and secured', textIS:'Aðstaða læst og tryggð' },
-  { id:'pm5', textEN:'Log completed and signed off',  textIS:'Skráning lokið og undirrituð' },
-];
-const DEFAULT_TYPES = [
-  { id:'t1', name:'Lesson',     nameIS:'Kennsla' },
-  { id:'t2', name:'Race',       nameIS:'Keppni' },
-  { id:'t3', name:'Club event', nameIS:'Félagsviðburður' },
-  { id:'t4', name:'Training',   nameIS:'Þjálfun' },
-  { id:'t5', name:'Maintenance',nameIS:'Viðhald' },
-  { id:'t6', name:'Other',      nameIS:'Annað' },
-];
-
-// ════════════════════════════════════════════════════════════════════════════
-// SECTION 3 — STATE
+// SECTION 2 — STATE
 // ════════════════════════════════════════════════════════════════════════════
 let viewDate  = TODAY;
 let logId     = null;
@@ -46,13 +19,18 @@ let wxData    = null;
 let wxLog     = [];
 let amChecks  = {};
 let pmChecks  = {};
-let amItems   = DEFAULT_AM;
-let pmItems   = DEFAULT_PM;
+let amItems   = [];
+let pmItems   = [];
 let activities    = [];
-let activityTypes = DEFAULT_TYPES;
+let activityTypes = [];
 let tripsData     = [];
 let tideData      = {};
 let _selectedActType = null;
+// Collapse state for the morning/evening checklists. Morning defaults
+// expanded on today, collapsed otherwise; evening starts collapsed and pops
+// open automatically when the morning list is fully ticked.
+let amOpen = true;
+let pmOpen = false;
 
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 4 — DOM REFS
@@ -73,6 +51,10 @@ const dom = domRefs({
   wxLogCount:        'wxLogCount',
   tripsCard:         'tripsCard',
   tripsCount:        'tripsCount',
+  amSection:         'amSection',
+  pmSection:         'pmSection',
+  amProgressChip:    'amProgressChip',
+  pmProgressChip:    'pmProgressChip',
   amCard:            'amCard',
   pmCard:            'pmCard',
   activitiesCard:    'activitiesCard',
@@ -129,11 +111,48 @@ function renderTrips() {
 function renderChecklists() {
   renderCL(dom.amCard, amItems, amChecks, 'am');
   renderCL(dom.pmCard, pmItems, pmChecks, 'pm');
+  applyChecklistOpenState();
 }
 
 function renderChecklistsReadonly() {
   renderCLReadonly(dom.amCard, amItems, amChecks);
   renderCLReadonly(dom.pmCard, pmItems, pmChecks);
+  applyChecklistOpenState();
+}
+
+function clCountsFor(prefix) {
+  const items = prefix === 'am' ? amItems : pmItems;
+  const state = prefix === 'am' ? amChecks : pmChecks;
+  const done  = items.filter(i => state[i.id]).length;
+  return { done, total: items.length };
+}
+
+function applyChecklistOpenState() {
+  if (dom.amSection) dom.amSection.classList.toggle('collapsed', !amOpen);
+  if (dom.pmSection) dom.pmSection.classList.toggle('collapsed', !pmOpen);
+  updateChecklistChips();
+}
+
+function updateChecklistChips() {
+  ['am','pm'].forEach(p => {
+    const chip = p === 'am' ? dom.amProgressChip : dom.pmProgressChip;
+    if (!chip) return;
+    const c = clCountsFor(p);
+    chip.textContent = c.total ? (c.done + ' / ' + c.total) : '';
+    chip.classList.toggle('done', c.total > 0 && c.done === c.total);
+  });
+}
+
+function toggleChecklist(prefix) {
+  if (prefix === 'am') {
+    amOpen = !amOpen;
+    // When collapsing morning, surface the evening list so the user has
+    // somewhere to go next — but don't auto-open if they're just glancing.
+    if (!amOpen) pmOpen = true;
+  } else {
+    pmOpen = !pmOpen;
+  }
+  applyChecklistOpenState();
 }
 
 function renderCL(card, items, state, prefix) {
@@ -408,11 +427,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tdReturnLabel').textContent = s('staff.coDetail.return');
   document.getElementById('tdInLabel').textContent     = 'IN';
 
-  // Checklist toggle
+  // Checklist item toggle
   document.addEventListener('click', e => {
     const item = e.target.closest('[data-toggle]');
     if (!item) return;
     toggleCL(item.dataset.prefix, item.dataset.itemId);
+  });
+
+  // Checklist section collapse/expand (clicking the heading)
+  document.addEventListener('click', e => {
+    const h = e.target.closest('[data-cl-toggle]');
+    if (!h) return;
+    toggleChecklist(h.dataset.clToggle);
   });
 
   dom.activitiesList.addEventListener('click', e => {
@@ -560,6 +586,13 @@ function toggleCL(prefix, id) {
     if (cb) cb.checked = !!state[id];
   }
   updateCLProgress(_p === 'am' ? dom.amCard : dom.pmCard, items, state);
+  updateChecklistChips();
+  // Morning complete → nudge: collapse AM and auto-open PM so the user has
+  // somewhere to go next. User can still re-expand manually at any time.
+  if (_p === 'am' && items.length && items.every(i => state[i.id]) && amOpen) {
+    amOpen = false; pmOpen = true;
+    applyChecklistOpenState();
+  }
   markDirty();
 }
 
@@ -711,7 +744,11 @@ async function loadDay() {
   logId = null; dirty = false;
   wxLog = []; amChecks = {}; pmChecks = {};
   activities = []; tripsData = []; tideData = {};
-  amItems = DEFAULT_AM; pmItems = DEFAULT_PM;
+  amItems = []; pmItems = [];
+  // Morning expanded only on today; evening always starts collapsed.
+  amOpen = isToday();
+  pmOpen = false;
+  applyChecklistOpenState();
 
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
@@ -742,7 +779,9 @@ async function loadDay() {
 }
 
 async function loadTodayLog() {
-  renderChecklists(); renderActivities(); renderWxLog(); renderActTypeBtns(); renderIncidentSection([]);
+  // Don't pre-render checklists/activity-type buttons before config arrives —
+  // the spinner from loadDay() stays until real data replaces it.
+  renderActivities(); renderWxLog(); renderIncidentSection([]);
   try {
     const [logRes, cfgRes, incidents] = await Promise.all([
       apiGet('getDailyLog', { date: TODAY }),
@@ -810,9 +849,9 @@ async function loadIncidentsForDate(date) {
 function applyLogData(logRes, cfgRes) {
   const cfg = cfgRes || {};
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
-  amItems       = cfg.dailyChecklist?.opening || DEFAULT_AM;
-  pmItems       = cfg.dailyChecklist?.closing  || DEFAULT_PM;
-  activityTypes = cfg.activityTypes       || DEFAULT_TYPES;
+  amItems       = cfg.dailyChecklist?.opening || [];
+  pmItems       = cfg.dailyChecklist?.closing || [];
+  activityTypes = cfg.activityTypes || [];
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
 
