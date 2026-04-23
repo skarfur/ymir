@@ -64,6 +64,7 @@ const dom = domRefs({
   prevBtn:           'prevBtn',
   nextBtn:           'nextBtn',
   todayBtn:          'todayBtn',
+  datePicker:        'datePicker',
   signoffBadge:      'signoffBadge',
   readonlyBadge:     'readonlyBadge',
   logWxBtn:          'logWxBtn',
@@ -452,6 +453,12 @@ document.addEventListener('DOMContentLoaded', () => {
   dom.prevBtn.addEventListener('click',  () => debouncedNav(-1));
   dom.nextBtn.addEventListener('click',  () => debouncedNav(1));
   dom.todayBtn.addEventListener('click', () => navigateToToday());
+  dom.datePicker.addEventListener('change', () => {
+    const v = dom.datePicker.value;
+    if (!v) return;
+    viewDate = v;
+    loadDay();
+  });
 
   dom.addActivityBtn.addEventListener('click', openActivityModal);
   document.getElementById('actCancelBtn').addEventListener('click', closeActivityModal);
@@ -709,6 +716,7 @@ async function loadDay() {
   const d = new Date(viewDate + 'T12:00:00');
   dom.dateBig.textContent = d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { weekday:'long' }).toUpperCase();
   dom.dateHero.textContent = String(d.getDate()).padStart(2,'0') + ' ' + d.toLocaleDateString(L === 'IS' ? 'is-IS' : 'en-GB', { month:'long' }) + ' ' + d.getFullYear();
+  if (dom.datePicker) dom.datePicker.value = viewDate;
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
