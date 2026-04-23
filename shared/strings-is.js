@@ -21,6 +21,7 @@ var _STRINGS_FLAT = {
   "lbl.off": "Slökkt",
   "lbl.noData": "Engin gögn",
   "lbl.unknown": "Óþekkt",
+  "lbl.custom": "Sérsniðið",
   "lbl.name": "Nafn",
   "lbl.date": "Dagsetning",
   "lbl.time": "Tími",
