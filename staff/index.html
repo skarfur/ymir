@@ -54,15 +54,15 @@
 
   <!-- ══ WEATHER FLAG OVERRIDE ══════════════════════════════════════════════ -->
   <div id="flagOverrideCard" class="mb-12 border-muted" style="background:var(--card);border-radius:10px;padding:12px 14px">
-    <div class="section-label mb-8" data-s="staff.flagOverrideLabel">WEATHER FLAG OVERRIDE</div>
+    <button type="button" id="foToggle" class="section-label mb-8 d-flex items-center gap-6 cursor-pointer w-full" data-staff-click="toggleFlagOverrideForm" aria-expanded="false" aria-controls="foForm" style="background:none;border:0;color:var(--muted);font:inherit;text-align:left;padding:0;letter-spacing:.8px;text-transform:uppercase;font-size:10px">
+      <span data-s="staff.flagOverrideLabel">WEATHER FLAG OVERRIDE</span>
+      <span id="foCaret" aria-hidden="true">▸</span>
+    </button>
     <div id="foActiveRow" class="hidden d-flex flex-wrap items-center gap-10">
       <span id="foActiveBadge" class="items-center gap-6 text-md fw-500" style="display:inline-flex;padding:4px 10px;border-radius:20px;border:1px solid"></span>
       <span id="foActiveNotes" class="text-md flex-1 text-pre-wrap" style="color:var(--text);min-width:160px"></span>
       <span id="foActiveMeta" class="text-xs text-muted"></span>
       <button class="btn btn-secondary btn-sm" data-staff-click="clearFlagOverride"><span data-s="staff.flagOverrideClear">Clear override</span></button>
-    </div>
-    <div id="foInactiveRow" class="d-flex flex-wrap items-center gap-10">
-      <button class="btn btn-secondary btn-sm ml-auto" data-staff-click="toggleFlagOverrideForm" data-staff-arg="true"><span data-s="staff.flagOverrideSet">Set override</span></button>
     </div>
     <div id="foForm" class="hidden mt-10" style="border-top:1px solid var(--border);padding-top:10px">
       <div class="flex-center flex-wrap gap-6 mb-8" id="foFlagBtns"></div>
