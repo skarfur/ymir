@@ -604,14 +604,8 @@ function matchSubtypeFromEvent_(ev, subtypes) {
 function syncVolunteerEventToCalendar_(eventId) {
   try {
     if (!eventId) return;
-    var events = [];
-    try { events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch (e) { return; }
-    var idx = -1;
-    for (var i = 0; i < events.length; i++) {
-      if (events[i] && events[i].id === eventId) { idx = i; break; }
-    }
-    if (idx < 0) return;
-    var ev = events[idx];
+    var ev = sched_getById_(eventId);
+    if (!ev || ev.kind !== 'volunteer') return;
     var cfgMap = getConfigMap_();
     var types = [];
     try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
@@ -623,13 +617,11 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (!at || !at.calendarId) return;
     var enabled = at.calendarSyncActive === true || at.calendarSyncActive === 'true';
     if (!enabled) return;
-    // Soft-deleted / inactive events lose their calendar entry.
-    if (ev.active === false || ev.active === 'false') {
+    // Cancelled/orphaned events lose their calendar entry.
+    if (ev.status === 'cancelled' || ev.status === 'orphaned') {
       if (ev.gcalEventId) {
         gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
-        ev.gcalEventId = '';
-        events[idx] = ev;
-        setConfigSheetValue_('volunteer_events', JSON.stringify(events));
+        sched_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
       return;
@@ -649,9 +641,7 @@ function syncVolunteerEventToCalendar_(eventId) {
       + (roleLines ? ('\n\nRoles:\n' + roleLines) : '');
     var newId = gcalUpsertEvent_(at.calendarId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
     if (newId && newId !== (ev.gcalEventId || '')) {
-      ev.gcalEventId = newId;
-      events[idx] = ev;
-      setConfigSheetValue_('volunteer_events', JSON.stringify(events));
+      sched_upsert_({ id: ev.id, gcalEventId: newId });
       cDel_('config');
     }
   } catch (e) { Logger.log('syncVolunteerEventToCalendar_ failed: ' + e); }

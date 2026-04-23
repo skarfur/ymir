@@ -27,6 +27,7 @@ const TABS_ = {
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
   volunteerSignups: 'volunteer_signups',
+  scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
 };

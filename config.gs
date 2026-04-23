@@ -64,7 +64,7 @@ function getConfig_() {
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
   var volunteerEvents = [];
-  try { volunteerEvents = JSON.parse(getConfigValue_('volunteer_events', cfgMap) || '[]'); } catch (e) {}
+  try { volunteerEvents = listVolunteerEventDtos_(); } catch (e) { volunteerEvents = []; }
   var clubCalendars = [];
   try {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
@@ -272,42 +272,39 @@ function deleteActivityType_(id) {
     arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     // Cascade: remove volunteer events linked to this activity type and any
-    // signups attached to them. Materialized events (sourceActivityTypeId ===
-    // id) are always removed. Manually-created events that also reference this
-    // type via activityTypeId are removed too, since from the admin's point of
-    // view they belonged to the type being deleted.
+    // signups attached to them. Both bulk-materialized and manually-created
+    // events are removed — from the admin's POV, everything that referenced
+    // the type goes away.
     var removedEvents = 0;
     var removedSignups = 0;
     try {
-      var events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-      var toRemove = events.filter(function(e) {
-        if (!e) return false;
-        return (e.sourceActivityTypeId && String(e.sourceActivityTypeId) === String(id))
-            || (e.activityTypeId       && String(e.activityTypeId)       === String(id));
+      var linked = sched_listVolunteerEvents_().filter(function (ev) {
+        if (!ev) return false;
+        return (ev.sourceActivityTypeId && String(ev.sourceActivityTypeId) === String(id))
+            || (ev.activityTypeId       && String(ev.activityTypeId)       === String(id));
       });
-      if (toRemove.length) {
+      if (linked.length) {
         var removedIds = {};
-        toRemove.forEach(function(e) { if (e.id) removedIds[e.id] = true; });
-        // Tear down GCal twins before the config row is gone — the helper
-        // needs the parent activity type, which is still present at this point.
-        toRemove.forEach(function(e) {
-          try { deleteVolunteerEventCalendarEvent_(e); } catch (err) {}
+        linked.forEach(function (ev) { if (ev.id) removedIds[ev.id] = true; });
+        // Tear down GCal twins BEFORE deleting the activity type row — the
+        // GCal helper looks up the parent type to find the calendar.
+        linked.forEach(function (ev) {
+          try { deleteVolunteerEventCalendarEvent_(ev); } catch (err) {}
         });
-        var kept = events.filter(function(e) { return !(e && e.id && removedIds[e.id]); });
-        setConfigSheetValue_('volunteer_events', JSON.stringify(kept));
-        removedEvents = toRemove.length;
-        // Cascade signups for each removed event (mirrors deleteVolunteerEvent_).
+        linked.forEach(function (ev) {
+          try { sched_hardDelete_(ev.id); removedEvents++; } catch (err) {}
+        });
         try {
           ensureVolunteerSignupsTab_();
           var signups = readAll_('volunteerSignups') || [];
-          signups.forEach(function(s) {
+          signups.forEach(function (s) {
             if (s && s.eventId && removedIds[s.eventId]) {
-              try { deleteRow_('volunteerSignups', 'id', s.id); removedSignups++; } catch(e) {}
+              try { deleteRow_('volunteerSignups', 'id', s.id); removedSignups++; } catch (e) {}
             }
           });
-        } catch(e) { /* signups tab may not exist yet */ }
+        } catch (e) { /* signups tab may not exist yet */ }
       }
-    } catch(e) { /* volunteer_events may not exist yet */ }
+    } catch (e) { Logger.log('deleteActivityType_ cascade failed: ' + e); }
     cDel_('config');
     return okJ({ deleted: true, removedEvents: removedEvents, removedSignups: removedSignups });
   } catch(e) { return failJ('deleteActivityType failed: ' + e.message); }
