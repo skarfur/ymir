@@ -3,18 +3,6 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
-## Unreleased — `.btn-primary` hover darkens instead of lightens
-
-`.btn-primary:hover` now uses `--navy-d` (darker) instead of `--navy-l`
-(lighter). In light mode the rest state is already the brand blue
-(`--navy` = `#163274` = header blue), and every other primary-style
-action button (`#groupCheckOutBtn`, etc.) already darkens on hover —
-so the outlier lightening introduced a bonus blue shade whenever you
-hovered a primary button. With every light-mode action button now
-staying inside the dark-brand-blue family at rest and on hover,
-interactions no longer flash an extra pastel blue that competes with
-the header and the `.act-btn` borders (also `--accent` = `#163274`).
-
 ## Unreleased — no-orphan utility for CSS grids
 
 Shared utility classes `.no-orphans-<N>` / `.no-orphans-sm-2` in

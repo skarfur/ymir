@@ -528,7 +528,7 @@ textarea { min-height: 70px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .btn-primary  { background: var(--navy);   color: #ffffff; }
-.btn-primary:hover:not(:disabled)  { background: var(--navy-d); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-1px); }
+.btn-primary:hover:not(:disabled)  { background: var(--navy-l); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-1px); }
 
 .btn-secondary { background: var(--faint);  color: var(--text); }
 .btn-secondary:hover:not(:disabled) { background: var(--border); box-shadow: var(--shadow-sm); }
