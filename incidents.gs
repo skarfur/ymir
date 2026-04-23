@@ -8,7 +8,12 @@ function getIncidents_(b) {
   const all = c || readAll_('incidents');
   if (!c) cPut_('incidents', all);
   if (b.date) {
-    const incidents = all.filter(function(i) { return (i.filedAt || i.createdAt || '').slice(0, 10) === b.date; });
+    // Filter by the actual event date (i.date), not the filing timestamp.
+    // Legacy rows without an event date fall back to filedAt/createdAt.
+    const incidents = all.filter(function(i) {
+      var ev = i.date || (i.filedAt || i.createdAt || '').slice(0, 10);
+      return ev === b.date;
+    });
     return okJ({ incidents });
   }
   return okJ({ incidents: all });

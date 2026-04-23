@@ -134,11 +134,11 @@
 .fsb-arrow { font-size:11px;color:var(--muted); }
 .fsb-body { padding:4px 0; }
 .fleet-cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px; padding:4px; }
+/* Left border is set inline by renderBoatCard() to the category color;
+   status is expressed through badges + opacity, not border color. */
 .bc-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-size:12px; }
-.bc-avail { border-left:3px solid var(--moss);cursor:pointer; }
+.bc-avail { cursor:pointer; }
 .bc-avail:hover { background:var(--faint); }
-.bc-out { border-left:3px solid var(--accent); }
-.bc-overdue { border-left:3px solid var(--red); }
 .bc-oos { opacity:.5; }
 
 /* ── Pending confirmations ── */

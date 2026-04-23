@@ -26,6 +26,65 @@ but drops the 📷 emoji and gets a proper Lucide icon prefix; `tc.addPhotos`
 in both strings files no longer contains the emoji.
 
 Added `.icon-btn` helper to `shared/style.css` for flex-centered icon buttons.
+## Unreleased — clock-in no longer throws "unknown tabKey time_clock"
+
+`payroll.gs` was calling `insertRow_(TABS_.timeClock, …)` / `updateRow_(TABS_.timeClock, …)`.
+`TABS_.timeClock` evaluates to the sheet name `'time_clock'`, but `validateRow_`
+strictly requires the tab *key* (`'timeClock'`) and threw `validateRow_:
+unknown tabKey time_clock`. Other `TABS_.*` sites worked by coincidence because
+their key and value matched — `timeClock` is the only key that differs from its
+value. Switched the five `insertRow_`/`updateRow_` sites (clockIn/clockOut/
+breakStart/breakEnd/adminEditTime) to the string key `'timeClock'`. Read-only
+and direct-sheet sites (`readAll_`, `ss.getSheetByName`) still use
+`TABS_.timeClock` since they need (or tolerate) the sheet name.
+
+## Unreleased — bulk-scheduled activities flow into the daily log
+
+Activities defined per-subtype as `bulkSchedule` entries in `activity_types`
+config now surface automatically on the daily log for any matching date,
+without writing to the `dailyLog` sheet until the day is actually saved by
+staff or frozen by the midnight trigger.
+
+- Added `projectActivitiesForDate_(dateISO)` in `config.gs`: expands each
+  active subtype's `bulkSchedule` (fromDate/toDate/daysOfWeek/startTime/
+  endTime) into activity items of the same shape `dailyLog.activities`
+  stores. Each projected item carries `scheduled: true`.
+- `getDailyLog_` in `members.gs` returns `{ log, date, scheduledActivities }`.
+  The frontend uses `scheduledActivities` when no sheet row exists yet —
+  today pre-populates with the projection (user can edit/delete before
+  saving); future days render read-only so users can browse ahead.
+- Removed the forward-date guard in `dailylog/dailylog.js` so the `▶` button
+  no longer dead-ends at today. `isFuture()` added; future days skip the
+  trips + incidents fetch and show the projected activities.
+- New `materializeYesterday_` + `setupDailyLogMidnightTrigger()` installer
+  in `members.gs`. Time-driven trigger runs at local midnight, inserts a
+  `dailyLog` row for the day that just ended (if none exists) with the
+  projected activities snapshotted in. This prevents subsequent bulk-schedule
+  edits from silently rewriting historical days. Run
+  `setupDailyLogMidnightTrigger()` once from the Apps Script editor.
+- "Scheduled" badge (`daily.scheduled` string) on pre-populated activities
+  in both editable + read-only views so users can tell projected items apart
+  from manually-added ones.
+
+## Unreleased — incidents filter by event date, not filing time
+
+`getIncidents_({ date })` in `incidents.gs` was bucketing incidents by
+`filedAt`/`createdAt` — the *filing* timestamp — so an incident that
+happened Monday but was filed Tuesday would appear on the wrong day of the
+daily log. Now filters on `i.date` (the user-entered event date) with a
+fallback to `filedAt`/`createdAt` for legacy rows that predate the split.
+
+## Unreleased — trip cards condensed to 2-column + boat-category tint
+
+`shared/tripcard.js` collapsed card is now a 2-col label/value grid:
+boat/crew · out/in · location/duration. Status badges (skipper/crew,
+verified, student, non-club, pending) moved to a compact row below the
+grid. All data is preserved; the expanded card is unchanged.
+
+Boat-category color now tints the whole card, not just the left border.
+`--tc-cat` / `--tc-cat-bg` CSS custom properties are set inline from
+`boatCatColors()` and drive the card background, the date column, and the
+expanded boat/logistics sections via `color-mix()` at 5–10% alpha.
 
 Second pass added `qr-code` and `wind` to the registry. The camera emoji in
 `qr.scanBtn` ("📷 Scan QR" / "📷 Skanna QR") and the camera emoji in

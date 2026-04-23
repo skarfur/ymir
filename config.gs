@@ -75,6 +75,51 @@ function getConfig_() {
   return okJ(config);
 }
 
+// ── Bulk-schedule projection ──────────────────────────────────────────────────
+// Expand per-subtype bulkSchedule blobs (fromDate/toDate/daysOfWeek/startTime/
+// endTime) into activity items for a given local date. Used by getDailyLog_ to
+// pre-populate today's/future days' activities without writing to the sheet
+// until the row is actually saved or materialized at midnight.
+//
+// Each returned item mirrors the shape stored under dailyLog.activities so the
+// frontend can treat scheduled + user-added activities uniformly:
+//   { id, activityTypeId, subtypeId, subtypeName, type, name,
+//     start, end, participants, notes, scheduled: true }
+function projectActivitiesForDate_(dateISO) {
+  if (!dateISO) return [];
+  var types = [];
+  try { types = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  if (!Array.isArray(types) || !types.length) return [];
+  var dow = String(new Date(dateISO + 'T12:00:00').getDay()); // '0'..'6'
+  var out = [];
+  types.forEach(function(at) {
+    if (!at || at.active === false) return;
+    var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
+    subs.forEach(function(st) {
+      if (!st || !st.bulkSchedule) return;
+      var bs = st.bulkSchedule;
+      if (bs.fromDate && dateISO < bs.fromDate) return;
+      if (bs.toDate   && dateISO > bs.toDate)   return;
+      var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+      if (!days.length || days.indexOf(dow) === -1) return;
+      out.push({
+        id:             'sched-' + at.id + '-' + st.id + '-' + dateISO,
+        activityTypeId: at.id,
+        subtypeId:      st.id,
+        subtypeName:    st.name || '',
+        type:           at.name || '',
+        name:           st.name || at.name || '',
+        start:          bs.startTime || st.defaultStart || '',
+        end:            bs.endTime   || st.defaultEnd   || '',
+        participants:   '',
+        notes:          '',
+        scheduled:      true,
+      });
+    });
+  });
+  return out;
+}
+
 function saveConfig_(b) {
   let saved = {};
 

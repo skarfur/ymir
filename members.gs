@@ -739,7 +739,13 @@ function getDailyLog_(date) {
   // anywhere else. nowLocalDate_() matches the format saveDailyLog_ writes.
   const d = date || nowLocalDate_();
   const log = findOne_('dailyLog', 'date', d);
-  return okJ({ log: log || null, date: d });
+  // Projected activities from bulk schedules (see projectActivitiesForDate_
+  // in config.gs). The frontend uses these when no row exists yet — browsing
+  // forward past today doesn't materialize a sheet row until the day is
+  // either saved by staff or materialized by the midnight trigger below.
+  var scheduledActivities = [];
+  try { scheduledActivities = projectActivitiesForDate_(d); } catch (e) {}
+  return okJ({ log: log || null, date: d, scheduledActivities: scheduledActivities });
 }
 
 function saveDailyLog_(b) {
@@ -779,6 +785,42 @@ function saveDailyLog_(b) {
     });
     return okJ({ date, created: true });
   }
+}
+
+// ── Midnight materialization ─────────────────────────────────────────────────
+// Time-driven trigger: at local midnight, insert a dailyLog row for the day
+// that just ended if none exists. Snapshots the bulk-scheduled activities so
+// subsequent edits to a bulk schedule don't silently rewrite historical days.
+// No-op when a row already exists (manually saved or signed off).
+//
+// Install once from the Apps Script editor:
+//   setupDailyLogMidnightTrigger()
+function materializeYesterday_() {
+  var d = new Date();
+  d.setDate(d.getDate() - 1);
+  var dateISO = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  if (findOne_('dailyLog', 'date', dateISO)) return; // already there
+  var scheduled = [];
+  try { scheduled = projectActivitiesForDate_(dateISO); } catch (e) { scheduled = []; }
+  if (!scheduled.length) return; // nothing to freeze
+  var ts = now_();
+  insertRow_('dailyLog', {
+    id: uid_(), date: dateISO,
+    openingChecks: '{}', closingChecks: '{}',
+    activities: JSON.stringify(scheduled),
+    weatherLog: '[]', narrative: '',
+    tideData: '{}',
+    signedOffBy: '', signedOffAt: '',
+    updatedBy: 'auto:midnight', createdAt: ts, updatedAt: ts,
+  });
+}
+
+function setupDailyLogMidnightTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'materializeYesterday_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('materializeYesterday_').timeBased().atHour(0).everyDays(1).create();
+  Logger.log('Daily-log midnight materializer registered.');
 }
 
 
