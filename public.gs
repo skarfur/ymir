@@ -1166,6 +1166,15 @@ function saveVolunteerEvent_(b) {
     var _endIso   = b.endDate || '';
     if (_endIso && _startIso && _endIso < _startIso) { var _swap = _endIso; _endIso = _startIso; _startIso = _swap; }
     if (_endIso && _endIso === _startIso) _endIso = '';
+    // Preserve any existing gcalEventId so the upsert path can reuse it.
+    var prevGcalId = '';
+    if (b.id) {
+      try {
+        var prev = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]')
+          .find(function (e) { return e && e.id === b.id; });
+        if (prev && prev.gcalEventId) prevGcalId = prev.gcalEventId;
+      } catch (e) {}
+    }
     const res = saveConfigListItem_('volunteer_events', {
       id: b.id || '',
       activityTypeId: b.activityTypeId || '',
@@ -1181,16 +1190,29 @@ function saveVolunteerEvent_(b) {
       showLeaderPhone: b.showLeaderPhone === true || b.showLeaderPhone === 'true',
       notes: b.notes || '',
       notesIS: b.notesIS || '',
+      gcalEventId: prevGcalId,
       roles,
       active: b.active !== false,
     });
+    // Push to Google Calendar (upsert) if the activity type has sync enabled.
+    // Fails silently on outage — see syncVolunteerEventToCalendar_.
+    try { syncVolunteerEventToCalendar_(res.id); } catch (e) {}
     return okJ({ id: res.id, item: res.item });
   } catch(e) { return failJ('saveVolunteerEvent failed: ' + e.message); }
 }
 
 function deleteVolunteerEvent_(b) {
   try {
+    // Capture the event row before we delete it so we can tear down its
+    // calendar counterpart. deleteConfigListItem_ removes it from config; the
+    // signups cascade below deletes sheet rows.
+    var evRow = null;
+    try {
+      evRow = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]')
+        .find(function (e) { return e && e.id === b.id; }) || null;
+    } catch (e) {}
     deleteConfigListItem_('volunteer_events', b.id);
+    try { if (evRow) deleteVolunteerEventCalendarEvent_(evRow); } catch (e) {}
     // Cascade: remove all signups for this event.
     try {
       const signups = readAll_('volunteerSignups');
@@ -1462,12 +1484,17 @@ function reconcileVolunteerEventsForAt_(at) {
     if (wanted[ev.id]) { next.push(ev); return; }
     // Not wanted anymore. Preserve if signups exist, otherwise drop.
     if (signupByEvent[ev.id]) {
+      // Tear down the GCal twin even though the row is preserved for history —
+      // it's been soft-deleted from the admin surface.
+      try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
       ev.active = false;
       ev.orphaned = true;
       ev.updatedAt = ts;
+      if (ev.gcalEventId) ev.gcalEventId = '';
       next.push(ev);
       result.softDeleted++;
     } else {
+      try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
       result.removed++;
       // (dropped — not pushed onto next)
     }
@@ -1518,7 +1545,8 @@ function syncVolunteerEvents_(b) {
       if ((ev.date || '') < fromIso) return true;
       // Keep events the current config still wants.
       if (wantedIds[ev.id]) return true;
-      // Stale — drop it.
+      // Stale — drop it (and tear down the GCal twin if any).
+      try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
       pruned++;
       return false;
     });

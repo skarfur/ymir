@@ -75,11 +75,15 @@ function getConfig_() {
   return okJ(config);
 }
 
-// ── Bulk-schedule projection ──────────────────────────────────────────────────
-// Expand per-subtype bulkSchedule blobs (fromDate/toDate/daysOfWeek/startTime/
-// endTime) into activity items for a given local date. Used by getDailyLog_ to
+// ── Schedule projection ──────────────────────────────────────────────────────
+// Produce activity items for a given local date. Used by getDailyLog_ to
 // pre-populate today's/future days' activities without writing to the sheet
 // until the row is actually saved or materialized at midnight.
+//
+// Each activity type picks its own schedule source:
+//   - 'bulk' (default, legacy): expand per-subtype bulkSchedule blobs.
+//   - 'calendar': read events from the activity type's Google Calendar for
+//     the date. The read is cached briefly in projectActivitiesFromCalendar_.
 //
 // Each returned item mirrors the shape stored under dailyLog.activities so the
 // frontend can treat scheduled + user-added activities uniformly:
@@ -94,6 +98,14 @@ function projectActivitiesForDate_(dateISO) {
   var out = [];
   types.forEach(function(at) {
     if (!at || at.active === false) return;
+    var source = String(at.scheduleSource || 'bulk');
+    if (source === 'calendar') {
+      try {
+        var fromCal = projectActivitiesFromCalendar_(at, dateISO);
+        if (fromCal && fromCal.length) Array.prototype.push.apply(out, fromCal);
+      } catch (e) { /* fall through silently — never block daily-log render */ }
+      return;
+    }
     var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
     subs.forEach(function(st) {
       if (!st || !st.bulkSchedule) return;
@@ -224,6 +236,11 @@ function saveActivityType_(b) {
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
     const isVol = b.volunteer === true || b.volunteer === 'true';
+    // Schedule source: 'bulk' (per-subtype bulkSchedule) or 'calendar' (read
+    // from Google Calendar). Anything unrecognized falls back to 'bulk' so
+    // legacy rows keep working.
+    var scheduleSource = String(b.scheduleSource || 'bulk');
+    if (scheduleSource !== 'calendar') scheduleSource = 'bulk';
     const res = saveConfigListItem_('activity_types', {
       id: b.id || '',
       name: b.name,
@@ -231,6 +248,7 @@ function saveActivityType_(b) {
       active: b.active !== false,
       calendarId: b.calendarId || '',
       calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
+      scheduleSource: scheduleSource,
       volunteer: isVol,
       roles: isVol ? roles : [],
       subtypes,
@@ -270,6 +288,11 @@ function deleteActivityType_(id) {
       if (toRemove.length) {
         var removedIds = {};
         toRemove.forEach(function(e) { if (e.id) removedIds[e.id] = true; });
+        // Tear down GCal twins before the config row is gone — the helper
+        // needs the parent activity type, which is still present at this point.
+        toRemove.forEach(function(e) {
+          try { deleteVolunteerEventCalendarEvent_(e); } catch (err) {}
+        });
         var kept = events.filter(function(e) { return !(e && e.id && removedIds[e.id]); });
         setConfigSheetValue_('volunteer_events', JSON.stringify(kept));
         removedEvents = toRemove.length;

@@ -3,6 +3,40 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activity types can read their schedule from Google Calendar, volunteer events write back
+
+Activity types now pick a `scheduleSource`: `bulk` (the existing per-subtype
+bulk-schedule editor) or `calendar` (reads from the activity type's Google
+Calendar for each date). In calendar mode, `projectActivitiesForDate_` calls
+the new `projectActivitiesFromCalendar_` helper (`checkouts.gs`) — it reads
+events for the requested day via `CalendarApp.getCalendarById().getEvents()`,
+caches the result in `CacheService.getScriptCache()` for 5 minutes, and maps
+each event to the same scheduled-activity shape the daily log already knows
+how to render. Subtype matching is best-effort by title substring (EN or IS),
+so subtype names still carry through when they appear in the calendar event
+title. Bulk-schedule authoring is preserved unchanged for types that stay on
+`scheduleSource: 'bulk'` (the default, also used for legacy rows).
+
+Admins author the new setting in the activity-type modal via a radio-button
+block (`admin/index.html`, wired in `admin/act-types.js`). Switching a type
+to calendar mode fades the subtype/bulk-schedule section so nobody edits it
+expecting it to do something. The existing `calendarId` + `calendarSyncActive`
+fields double as the read source — one calendar does both jobs.
+
+Volunteer events now round-trip to Google Calendar. `saveVolunteerEvent_` and
+`deleteVolunteerEvent_` (`public.gs`) call the new
+`syncVolunteerEventToCalendar_` / `deleteVolunteerEventCalendarEvent_` helpers
+(`checkouts.gs`) — mirroring the existing daily-log-activity writer. The
+reconcile, prune, and cascade paths (`reconcileVolunteerEventsForAt_`,
+`syncVolunteerEvents_`, `deleteActivityType_`) tear down the GCal twin when a
+materialized event is pruned or soft-deleted, so the calendar never drifts
+out of sync with the admin view. `gcalEventId` is persisted on the event row
+in config and preserved across edits, so upserts stay idempotent.
+
+New strings: `admin.scheduleSource*` (5 keys × 2 languages).
+
+⚠️ Backend files changed: `config.gs`, `checkouts.gs`, `public.gs`.
+
 ## Unreleased — Lucide icons replace text/emoji in maintenance & admin modals
 
 Added a shared Lucide icon registry (`window.icon(name)` in `shared/ui.js`)

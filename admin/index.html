@@ -723,7 +723,19 @@
       </div>
       <div class="text-10 text-muted mt-4" data-s="admin.eventsOnlyOurs"></div>
     </div>
-    <div class="mt-10">
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.scheduleSourceHdr"></div>
+      <div class="check-row mb-6">
+        <input type="radio" name="atScheduleSource" id="atSchedSrcBulk" value="bulk" checked data-admin-change="updateAtScheduleSource">
+        <label for="atSchedSrcBulk" data-s="admin.scheduleSourceBulk"></label>
+      </div>
+      <div class="check-row">
+        <input type="radio" name="atScheduleSource" id="atSchedSrcCalendar" value="calendar" data-admin-change="updateAtScheduleSource">
+        <label for="atSchedSrcCalendar" data-s="admin.scheduleSourceCalendar"></label>
+      </div>
+      <div class="text-10 text-muted mt-4" data-s="admin.scheduleSourceHint"></div>
+    </div>
+    <div id="atSubtypesSection" class="mt-10">
       <div class="d-flex items-center justify-between mb-6">
         <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.subtypes"></label>
         <button class="btn btn-secondary btn-sm" data-admin-click="addAtSubtypeRow" data-s="btn.add"></button>
