@@ -3,6 +3,40 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — fix 2×16-minute time drift from Sheets auto-converting "HH:MM" strings
+
+Observed: a scheduled event created today appeared 32 minutes later than
+entered. Root cause: `setValue("09:00")` hands Sheets a string that looks
+like a time literal, and Sheets silently stores it as a Date anchored to
+the 1899-12-30 epoch **in the sheet's timezone**. `sanitizeCell_` then
+formatted that Date using the **script's** timezone, and for the
+Atlantic/Reykjavik LMT-era historical date the two timezones' tzdata
+tables disagreed by ~16 minutes. Any round-trip (read → frontend → write)
+compounded the drift, landing at exactly 2×16 = 32 minutes.
+
+Two fixes:
+
+1. **Write side** (`literalWrite_` in `code.gs`) — prepend a literal
+   apostrophe to any string matching `HH:MM` or `YYYY-MM-DD` so Sheets
+   stores the cell as plain text and never auto-converts to a Date. The
+   apostrophe is invisible in the rendered cell and stripped by
+   `getValue()`. Existing protection for formula chars (`=+-@`) and line
+   breaks is preserved.
+2. **Read side** (`sanitizeCell_` in `code.gs`) — for Date cells whose
+   UTC ISO starts with `1899-12-2x/3x` (Sheets' time-only epoch), format
+   using the spreadsheet's timezone (`ss.getSpreadsheetTimeZone()`,
+   cached per request) instead of the script's timezone. The sheet TZ is
+   what Sheets used to anchor the value, so reading with the same TZ
+   round-trips cleanly regardless of which engine's tzdata the script
+   process uses.
+
+Together, these close the drift class:
+- New writes store text → zero TZ involvement on the round-trip.
+- Pre-existing Date-valued cells format consistently against the same TZ
+  that wrote them.
+
+⚠️ Backend file changed: `code.gs`.
+
 ## Unreleased — admin tabs consolidate into one Scheduling tab + client ScheduledEvent normalizer
 
 Three admin tabs — Activity Types, Volunteers, and (Club) Calendars — merge
