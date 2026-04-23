@@ -98,6 +98,10 @@ async function loadAll() {
   apiPost('getVolunteerSignups', {}).then(res => {
     volunteerSignups = (res && res.signups) || [];
     renderVolunteerEvents();
+    // Refresh the upcoming-events card so signup counts show up after load.
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
   }).catch(e => { console.warn('getVolunteerSignups failed:', e.message); });
 
   // ── Assign data ───────────────────────────────────────────────────────────
@@ -173,6 +177,9 @@ function showTopTab(top) {
 
 // ── Settings sub-tab switching ─────────────────────────────────────────────────
 function showTab(tab) {
+  // Legacy tab aliases — three tabs collapsed into one Scheduling tab.
+  // Keep old bookmarks working.
+  if (tab === 'actTypes' || tab === 'volunteers' || tab === 'clubCal') tab = 'scheduling';
   document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
@@ -184,7 +191,7 @@ function showTab(tab) {
 
   if (tab === 'certs') renderCertDefs();
   if (tab === 'slotCal') initSlotCalendar();
-  if (tab === 'volunteers') renderVolunteerEvents();
+  if (tab === 'scheduling') renderSchedulingTab();
   if (tab === 'passport') renderPassportAdmin();
 
   const url = new URL(window.location.href);

@@ -3,6 +3,38 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — admin tabs consolidate into one Scheduling tab + client ScheduledEvent normalizer
+
+Three admin tabs — Activity Types, Volunteers, and (Club) Calendars — merge
+into a single **Scheduling** tab with four col-sections: Upcoming events,
+Activity types, Volunteer events, Calendars. Reservation slots keep their
+own tab (per-boat; different domain). URL aliases (`?tab=actTypes`,
+`?tab=volunteers`, `?tab=clubCal`) redirect to `?tab=scheduling` so
+bookmarks keep working.
+
+The new **Upcoming events** card is the payoff: a 30-day merged timeline of
+volunteer events + bulk-scheduled activity projections, sorted by date and
+time, with kind + source badges. Built client-side from data already loaded
+in the admin page — no extra API calls. Activity types that read their
+schedule from Google Calendar are surfaced as a hint beneath the list
+(per-date projection needs the backend).
+
+**New files**:
+- `shared/scheduled-event.js` — `toScheduledEvent(raw, {kind, source, signupCount})`,
+  `buildUpcomingEvents({actTypes, volunteerEvents, volunteerSignups, fromIso, toIso})`,
+  `calendarSourcedActivityTypes(actTypes)`. The shape matches the backend's
+  `scheduling.gs` domain object so front- and backend stay aligned.
+- `admin/scheduling.js` — owns `renderSchedulingTab()` (called from
+  `showTab('scheduling')`) and `renderUpcomingEvents()`. Existing renderers
+  in `act-types.js` / `volunteers.js` / `calendars.js` are unchanged and
+  continue to own their own col-sections; the scheduling module just
+  composes them.
+
+Plus minor CSS in `admin.css` for the timeline look (tabular time column,
+kind/source badges, per-day group headers), a documentation update in
+`CLAUDE.md`, and 11 new strings × 2 languages (all `admin.sched*` /
+`admin.tabScheduling`).
+
 ## Unreleased — unified `scheduled_events` table replaces two split storage locations
 
 Volunteer events and daily-log activities now share a single sheet,

@@ -126,3 +126,26 @@
       .col-body{padding:10px 12px}
       .search-bar{min-width:0!important}
     }
+
+    /* ── Scheduling: unified upcoming-events timeline ── */
+    .sched-day{margin-bottom:14px}
+    .sched-day-hdr{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--muted);
+      padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px;text-transform:uppercase}
+    .sched-row{display:flex;align-items:center;gap:8px;padding:6px 4px;
+      border-bottom:1px solid color-mix(in srgb, var(--border) 50%, transparent);flex-wrap:wrap;font-size:12px}
+    .sched-row:last-child{border-bottom:none}
+    .sched-row:hover{background:color-mix(in srgb, var(--surface) 70%, transparent)}
+    .sched-time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11px;min-width:80px}
+    .sched-title{flex:1;color:var(--text)}
+    .sched-badge{font-size:9px;letter-spacing:.5px;padding:1px 5px;border-radius:3px;text-transform:uppercase}
+    .sched-kind-vol{background:color-mix(in srgb, var(--accent-fg) 18%, transparent);color:var(--accent-fg)}
+    .sched-kind-act{background:color-mix(in srgb, var(--muted) 18%, transparent);color:var(--muted)}
+    .sched-src-bulk{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted);font-weight:500}
+    .sched-src-calendar{background:color-mix(in srgb, var(--brass) 18%, transparent);color:var(--brass)}
+    .sched-src-manual{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted)}
+    .sched-src-daily-log{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted)}
+    .sched-signup{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .sched-link{font-size:10px;color:var(--brass);text-decoration:none;margin-left:6px}
+    .sched-link:hover{text-decoration:underline}
+    .sched-hint{margin-top:10px;padding:8px 10px;border-radius:4px;
+      background:color-mix(in srgb, var(--muted) 8%, transparent);color:var(--muted);font-size:11px;line-height:1.5}

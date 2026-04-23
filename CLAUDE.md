@@ -19,6 +19,7 @@
 - `public.gs` — server-rendered public endpoints, volunteer events
 - `_setup.gs` — idempotent schema migrations
 - `passport.gs` — rowing passport
+- `scheduling.gs` — unified `scheduled_events` CRUD (volunteer events + daily-log activities share one sheet via the `kind` discriminator)
 
 ## Backend Changes (any `.gs` file)
 
@@ -122,7 +123,9 @@ Each portal also includes `<ymir-header></ymir-header>` from `shared/layout.js` 
 
 ### Admin is split into per-sub-tab modules
 
-`admin/admin.js` is the router/core (~420 lines). Every sub-tab has its own file: `admin/members.js`, `admin/boats.js`, `admin/locations.js`, `admin/checklists.js`, `admin/act-types.js`, `admin/volunteers.js`, `admin/certs.js`, `admin/alerts.js`, `admin/flags.js`, `admin/import.js`, `admin/calendars.js`, `admin/passport.js`. When adding or editing an admin feature, work in the matching file — don't grow `admin.js` core. All are loaded as separate `<script>` tags in `admin/index.html`; order is documentary (defer guarantees correctness).
+`admin/admin.js` is the router/core (~420 lines). Every sub-tab has its own file: `admin/members.js`, `admin/boats.js`, `admin/locations.js`, `admin/checklists.js`, `admin/act-types.js`, `admin/volunteers.js`, `admin/scheduling.js`, `admin/certs.js`, `admin/alerts.js`, `admin/flags.js`, `admin/import.js`, `admin/calendars.js`, `admin/passport.js`. When adding or editing an admin feature, work in the matching file — don't grow `admin.js` core. All are loaded as separate `<script>` tags in `admin/index.html`; order is documentary (defer guarantees correctness).
+
+The **Scheduling** tab is the visible consolidation of activity types, volunteer events, and club calendars: one tab, four col-sections (Upcoming events, Activity types, Volunteer events, Calendars). `admin/scheduling.js` owns the new "Upcoming events" timeline; the other sections delegate to existing renderers (`renderActTypes` in `act-types.js`, `renderVolunteerEvents` in `volunteers.js`, `loadClubCalendars` in `calendars.js`). Underneath, both volunteer events and daily-log activities live in one sheet (`scheduled_events`, backed by `scheduling.gs`). Client code normalizes across the two API shapes via `shared/scheduled-event.js`.
 
 ### Logbook shared module is split similarly
 

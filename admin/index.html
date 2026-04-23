@@ -18,6 +18,7 @@
   <script src="../shared/certs.js" defer></script>
   <script src="../shared/volunteer.js" defer></script>
   <script src="../shared/volunteer-role-presets.js" defer></script>
+  <script src="../shared/scheduled-event.js" defer></script>
   <script src="../shared/mcm.js" defer></script>
   <script src="../shared/calendar.js"></script>
   <script src="../shared/boat-modal.js"></script>
@@ -118,28 +119,24 @@
         <button class="tab-btn active" data-tab="boats"      data-admin-click="showTab" data-admin-arg="boats"      data-s="admin.tabBoats"></button>
         <button class="tab-btn"        data-tab="locations"  data-admin-click="showTab" data-admin-arg="locations"  data-s="admin.tabLocations"></button>
         <button class="tab-btn"        data-tab="checklists" data-admin-click="showTab" data-admin-arg="checklists" data-s="admin.tabChecklists"></button>
-        <button class="tab-btn"        data-tab="actTypes"   data-admin-click="showTab" data-admin-arg="actTypes"   data-s="admin.tabActTypes"></button>
+        <button class="tab-btn"        data-tab="scheduling" data-admin-click="showTab" data-admin-arg="scheduling" data-s="admin.tabScheduling"></button>
         <button class="tab-btn"        data-tab="certs"      data-admin-click="showTab" data-admin-arg="certs"      data-s="admin.tabCerts"></button>
         <button class="tab-btn"        data-tab="flags"      data-admin-click="showTab" data-admin-arg="flags"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     data-admin-click="showTab" data-admin-arg="alerts"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    data-admin-click="showTab" data-admin-arg="slotCal"    data-s="admin.tabReservations"></button>
-        <button class="tab-btn"        data-tab="volunteers" data-admin-click="showTab" data-admin-arg="volunteers" data-s="admin.tabVolunteers"></button>
         <button class="tab-btn"        data-tab="passport"   data-admin-click="showTab" data-admin-arg="passport"   data-s="passport.adminTitle">Rowing Passport</button>
-        <button class="tab-btn"        data-tab="clubCal"    data-admin-click="showTab" data-admin-arg="clubCal"    data-s="admin.tabCalendars"></button>
       </div>
       <!-- Settings tab dropdown (mobile) -->
       <select class="tab-select" id="settingsTabSelect" data-admin-change-val="showTab">
         <option value="boats"      data-s="admin.tabBoats"></option>
         <option value="locations"  data-s="admin.tabLocations"></option>
         <option value="checklists" data-s="admin.tabChecklists"></option>
-        <option value="actTypes"   data-s="admin.tabActTypes"></option>
+        <option value="scheduling" data-s="admin.tabScheduling"></option>
         <option value="certs"      data-s="admin.tabCerts"></option>
         <option value="flags"      data-s="admin.tabFlags"></option>
         <option value="alerts"     data-s="admin.tabAlerts"></option>
         <option value="slotCal"    data-s="admin.tabReservations"></option>
-        <option value="volunteers" data-s="admin.tabVolunteers"></option>
         <option value="passport"   data-s="passport.adminTitle"></option>
-        <option value="clubCal"    data-s="admin.tabCalendars"></option>
       </select>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -214,33 +211,60 @@
     </div>
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
-    <div id="tab-actTypes" class="hidden">
+    <div id="tab-scheduling" class="hidden">
+      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities -->
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.actTypesTitle"></div>
+          <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
           <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body" id="actTypesCard">
+        <div class="col-body" id="schedUpcomingCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+      </div>
+
+      <!-- Activity types (templates) -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.actTypesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="actTypesCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:8px 0 4px">
           <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
         </div>
       </div>
-    </div>
 
-    <!-- ══ VOLUNTEERS ════════════════════════════════════════════════════════ -->
-    <div id="tab-volunteers" class="hidden">
+      <!-- Volunteer events (concrete signups) -->
       <div class="col-section">
-        <div class="col-head open" data-admin-toggle-section>
+        <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.volEventsTitle"></div>
-          <span class="col-toggle open">▼</span>
+          <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body" id="volEventsCard">
+        <div class="col-body hidden" id="volEventsCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:8px 0 4px">
           <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addVolEvent"></button>
+        </div>
+      </div>
+
+      <!-- Club calendars (GCal link registry) -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.tabCalendars"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden">
+          <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.calDesc"></div>
+          <div id="clubCalList"></div>
+          <button class="btn btn-secondary mt-8" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
+          <div class="d-flex gap-8 items-center mt-12">
+            <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
+            <span id="clubCalSaveMsg" class="text-xs"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -490,17 +514,6 @@
       <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
         <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
         <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
-      </div>
-    </div>
-
-    <!-- ══ CLUB CALENDARS ════════════════════════════════════════════════ -->
-    <div id="tab-clubCal" class="hidden">
-      <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.calDesc"></div>
-      <div id="clubCalList"></div>
-      <button class="btn btn-secondary mt-8" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
-      <div class="d-flex gap-8 items-center mt-12">
-        <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
-        <span id="clubCalSaveMsg" class="text-xs"></span>
       </div>
     </div>
 
@@ -1032,6 +1045,7 @@
 <script src="checklists.js" defer></script>
 <script src="act-types.js" defer></script>
 <script src="volunteers.js" defer></script>
+<script src="scheduling.js" defer></script>
 <script src="certs.js" defer></script>
 <script src="alerts.js" defer></script>
 <script src="flags.js" defer></script>
