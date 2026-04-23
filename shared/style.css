@@ -771,19 +771,19 @@ textarea { min-height: 70px; }
 
 /* ── BOAT CARDS (shared/boats.js) ─────────────────────────────────────────────── */
 
-/* Fleet card — available / out / oos */
+/* Fleet card — available / out / oos.
+   Left border is set inline by renderBoatCard() to the category color.
+   Status is expressed through badges + opacity, not border color. */
 .bc-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--moss);
   border-radius: var(--radius-md);
   padding: 12px 14px;
   transition: border-color .2s, box-shadow .2s;
   box-shadow: var(--shadow-sm);
 }
-.bc-card.bc-avail   { }
-.bc-card.bc-out     { border-left: 3px solid var(--accent); }
-.bc-card.bc-overdue { border-left: 3px solid var(--red); }
+.bc-card.bc-avail   { cursor: pointer; }
+.bc-card.bc-avail:hover { background: var(--faint); }
 .bc-card.bc-oos     { opacity: .55; }
 
 /* Checkout card — active checkouts */
