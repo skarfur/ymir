@@ -141,6 +141,25 @@ var SCHEMA_ = {
   volunteer_signups: [
     'id','eventId','roleId','kennitala','name','signedUpAt',
   ],
+  // Unified scheduled-events table. Replaces the `activities` JSON column in
+  // daily_log and the config key `volunteer_events`. See migrateToScheduledEvents_
+  // for the one-shot migration that populates this from the old locations.
+  //   kind   ∈ 'volunteer' | 'activity'
+  //   status ∈ 'upcoming' | 'completed' | 'cancelled' | 'orphaned'
+  //   source ∈ 'bulk' | 'calendar' | 'manual' | 'daily-log'
+  scheduled_events: [
+    'id','kind','status','source',
+    'date','endDate','startTime','endTime',
+    'activityTypeId','subtypeId','subtypeName',
+    'title','titleIS','notes','notesIS',
+    'participants',
+    'leaderMemberId','leaderName','leaderPhone','showLeaderPhone',
+    'roles',
+    'sourceActivityTypeId','sourceSubtypeId',
+    'gcalEventId',
+    'dailyLogDate',
+    'createdAt','updatedAt','updatedBy',
+  ],
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -360,5 +379,142 @@ function addReservationAndCrewTabs() {
   Logger.log('crews tab ready');
   ensureTab_(ss, 'crew_invites', SCHEMA_.crew_invites);
   Logger.log('crew_invites tab ready');
+}
+
+// ── Scheduled-events migration ───────────────────────────────────────────────
+// One-shot: move volunteer events out of config and activity rows out of the
+// daily_log JSON blob into a unified `scheduled_events` sheet. Idempotent —
+// skips any row whose `id` already exists in the target.
+//
+// This is the migration referenced in CHANGELOG "Unreleased — unified
+// scheduled_events table". Run from the Apps Script editor once the new code
+// is deployed:
+//     migrateToScheduledEvents()
+//
+// After this runs, the old data sources (config key 'volunteer_events' and the
+// daily_log.activities column) are no longer read by any code path, but remain
+// populated so a `git revert` of the cutover can roll back without data loss.
+function migrateToScheduledEvents() {
+  var ss = SpreadsheetApp.openById(SHEET_ID_);
+  ensureTab_(ss, 'scheduled_events', SCHEMA_.scheduled_events);
+
+  var todayIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var existing = readAll_('scheduledEvents') || [];
+  var seen = {};
+  existing.forEach(function (r) { if (r && r.id) seen[r.id] = true; });
+
+  var added = { volunteer: 0, activity: 0 };
+  var skipped = 0;
+
+  // 1) Volunteer events from config key 'volunteer_events'.
+  var volRaw = '';
+  try { volRaw = getConfigSheetValue_('volunteer_events') || '[]'; } catch (e) { volRaw = '[]'; }
+  var volEvents = [];
+  try { volEvents = JSON.parse(volRaw) || []; } catch (e) { volEvents = []; }
+  volEvents.forEach(function (ev) {
+    if (!ev || !ev.id) { skipped++; return; }
+    if (seen[ev.id]) { skipped++; return; }
+    insertRow_('scheduledEvents', _volEventToScheduledRow_(ev, todayIso));
+    seen[ev.id] = true;
+    added.volunteer++;
+  });
+
+  // 2) Daily-log activities from each dailyLog row's `activities` JSON blob.
+  var logs = [];
+  try { logs = readAll_('dailyLog') || []; } catch (e) { logs = []; }
+  logs.forEach(function (log) {
+    if (!log || !log.date) return;
+    var acts = [];
+    try { acts = JSON.parse(log.activities || '[]') || []; } catch (e) { acts = []; }
+    if (!Array.isArray(acts)) return;
+    acts.forEach(function (a) {
+      if (!a || !a.id) { skipped++; return; }
+      if (seen[a.id]) { skipped++; return; }
+      insertRow_('scheduledEvents', _activityToScheduledRow_(a, log.date, todayIso));
+      seen[a.id] = true;
+      added.activity++;
+    });
+  });
+
+  Logger.log('migrateToScheduledEvents: added ' + added.volunteer + ' volunteer + '
+    + added.activity + ' activity rows (skipped ' + skipped + ')');
+  return { addedVolunteer: added.volunteer, addedActivity: added.activity, skipped: skipped };
+}
+
+function _volEventToScheduledRow_(ev, todayIso) {
+  var active = ev.active !== false && ev.active !== 'false';
+  var orphaned = ev.orphaned === true || ev.orphaned === 'true';
+  var status = !active ? (orphaned ? 'orphaned' : 'cancelled')
+             : ((ev.date || '') < todayIso ? 'completed' : 'upcoming');
+  var source = ev.sourceActivityTypeId ? 'bulk' : 'manual';
+  return {
+    id:                    ev.id || '',
+    kind:                  'volunteer',
+    status:                status,
+    source:                source,
+    date:                  ev.date || '',
+    endDate:               ev.endDate || '',
+    startTime:             ev.startTime || '',
+    endTime:               ev.endTime || '',
+    activityTypeId:        ev.activityTypeId || ev.sourceActivityTypeId || '',
+    subtypeId:             ev.sourceSubtypeId || '',
+    subtypeName:           ev.subtitle || '',
+    title:                 ev.title || '',
+    titleIS:               ev.titleIS || '',
+    notes:                 ev.notes || '',
+    notesIS:               ev.notesIS || '',
+    participants:          '',
+    leaderMemberId:        ev.leaderMemberId || '',
+    leaderName:            ev.leaderName || '',
+    leaderPhone:           ev.leaderPhone || '',
+    showLeaderPhone:       ev.showLeaderPhone === true || ev.showLeaderPhone === 'true',
+    roles:                 JSON.stringify(Array.isArray(ev.roles) ? ev.roles : []),
+    sourceActivityTypeId:  ev.sourceActivityTypeId || '',
+    sourceSubtypeId:       ev.sourceSubtypeId || '',
+    gcalEventId:           ev.gcalEventId || '',
+    dailyLogDate:          '',
+    createdAt:             ev.createdAt || '',
+    updatedAt:             ev.updatedAt || '',
+    updatedBy:             '',
+  };
+}
+
+function _activityToScheduledRow_(a, logDateIso, todayIso) {
+  var source = 'daily-log';
+  if (a.scheduled === true || a.scheduled === 'true') {
+    if (String(a.id || '').indexOf('gcal-')  === 0) source = 'calendar';
+    else if (String(a.id || '').indexOf('sched-') === 0) source = 'bulk';
+  }
+  var status = (logDateIso || '') < todayIso ? 'completed' : 'upcoming';
+  return {
+    id:                    a.id || '',
+    kind:                  'activity',
+    status:                status,
+    source:                source,
+    date:                  logDateIso || '',
+    endDate:               '',
+    startTime:             a.start || a.startTime || '',
+    endTime:               a.end   || a.endTime   || '',
+    activityTypeId:        a.activityTypeId || '',
+    subtypeId:             a.subtypeId || '',
+    subtypeName:           a.subtypeName || '',
+    title:                 a.name || a.title || '',
+    titleIS:               a.titleIS || '',
+    notes:                 a.notes || '',
+    notesIS:               '',
+    participants:          a.participants || '',
+    leaderMemberId:        '',
+    leaderName:            '',
+    leaderPhone:           '',
+    showLeaderPhone:       false,
+    roles:                 '[]',
+    sourceActivityTypeId:  '',
+    sourceSubtypeId:       '',
+    gcalEventId:           a.gcalEventId || '',
+    dailyLogDate:          logDateIso || '',
+    createdAt:             '',
+    updatedAt:             '',
+    updatedBy:             '',
+  };
 }
 

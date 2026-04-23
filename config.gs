@@ -64,7 +64,7 @@ function getConfig_() {
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
   var volunteerEvents = [];
-  try { volunteerEvents = JSON.parse(getConfigValue_('volunteer_events', cfgMap) || '[]'); } catch (e) {}
+  try { volunteerEvents = listVolunteerEventDtos_(); } catch (e) { volunteerEvents = []; }
   var clubCalendars = [];
   try {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
@@ -75,11 +75,15 @@ function getConfig_() {
   return okJ(config);
 }
 
-// ── Bulk-schedule projection ──────────────────────────────────────────────────
-// Expand per-subtype bulkSchedule blobs (fromDate/toDate/daysOfWeek/startTime/
-// endTime) into activity items for a given local date. Used by getDailyLog_ to
+// ── Schedule projection ──────────────────────────────────────────────────────
+// Produce activity items for a given local date. Used by getDailyLog_ to
 // pre-populate today's/future days' activities without writing to the sheet
 // until the row is actually saved or materialized at midnight.
+//
+// Each activity type picks its own schedule source:
+//   - 'bulk' (default, legacy): expand per-subtype bulkSchedule blobs.
+//   - 'calendar': read events from the activity type's Google Calendar for
+//     the date. The read is cached briefly in projectActivitiesFromCalendar_.
 //
 // Each returned item mirrors the shape stored under dailyLog.activities so the
 // frontend can treat scheduled + user-added activities uniformly:
@@ -94,6 +98,14 @@ function projectActivitiesForDate_(dateISO) {
   var out = [];
   types.forEach(function(at) {
     if (!at || at.active === false) return;
+    var source = String(at.scheduleSource || 'bulk');
+    if (source === 'calendar') {
+      try {
+        var fromCal = projectActivitiesFromCalendar_(at, dateISO);
+        if (fromCal && fromCal.length) Array.prototype.push.apply(out, fromCal);
+      } catch (e) { /* fall through silently — never block daily-log render */ }
+      return;
+    }
     var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
     subs.forEach(function(st) {
       if (!st || !st.bulkSchedule) return;
@@ -224,6 +236,11 @@ function saveActivityType_(b) {
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
     const isVol = b.volunteer === true || b.volunteer === 'true';
+    // Schedule source: 'bulk' (per-subtype bulkSchedule) or 'calendar' (read
+    // from Google Calendar). Anything unrecognized falls back to 'bulk' so
+    // legacy rows keep working.
+    var scheduleSource = String(b.scheduleSource || 'bulk');
+    if (scheduleSource !== 'calendar') scheduleSource = 'bulk';
     const res = saveConfigListItem_('activity_types', {
       id: b.id || '',
       name: b.name,
@@ -231,6 +248,7 @@ function saveActivityType_(b) {
       active: b.active !== false,
       calendarId: b.calendarId || '',
       calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
+      scheduleSource: scheduleSource,
       volunteer: isVol,
       roles: isVol ? roles : [],
       subtypes,
@@ -254,37 +272,39 @@ function deleteActivityType_(id) {
     arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
     // Cascade: remove volunteer events linked to this activity type and any
-    // signups attached to them. Materialized events (sourceActivityTypeId ===
-    // id) are always removed. Manually-created events that also reference this
-    // type via activityTypeId are removed too, since from the admin's point of
-    // view they belonged to the type being deleted.
+    // signups attached to them. Both bulk-materialized and manually-created
+    // events are removed — from the admin's POV, everything that referenced
+    // the type goes away.
     var removedEvents = 0;
     var removedSignups = 0;
     try {
-      var events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-      var toRemove = events.filter(function(e) {
-        if (!e) return false;
-        return (e.sourceActivityTypeId && String(e.sourceActivityTypeId) === String(id))
-            || (e.activityTypeId       && String(e.activityTypeId)       === String(id));
+      var linked = sched_listVolunteerEvents_().filter(function (ev) {
+        if (!ev) return false;
+        return (ev.sourceActivityTypeId && String(ev.sourceActivityTypeId) === String(id))
+            || (ev.activityTypeId       && String(ev.activityTypeId)       === String(id));
       });
-      if (toRemove.length) {
+      if (linked.length) {
         var removedIds = {};
-        toRemove.forEach(function(e) { if (e.id) removedIds[e.id] = true; });
-        var kept = events.filter(function(e) { return !(e && e.id && removedIds[e.id]); });
-        setConfigSheetValue_('volunteer_events', JSON.stringify(kept));
-        removedEvents = toRemove.length;
-        // Cascade signups for each removed event (mirrors deleteVolunteerEvent_).
+        linked.forEach(function (ev) { if (ev.id) removedIds[ev.id] = true; });
+        // Tear down GCal twins BEFORE deleting the activity type row — the
+        // GCal helper looks up the parent type to find the calendar.
+        linked.forEach(function (ev) {
+          try { deleteVolunteerEventCalendarEvent_(ev); } catch (err) {}
+        });
+        linked.forEach(function (ev) {
+          try { sched_hardDelete_(ev.id); removedEvents++; } catch (err) {}
+        });
         try {
           ensureVolunteerSignupsTab_();
           var signups = readAll_('volunteerSignups') || [];
-          signups.forEach(function(s) {
+          signups.forEach(function (s) {
             if (s && s.eventId && removedIds[s.eventId]) {
-              try { deleteRow_('volunteerSignups', 'id', s.id); removedSignups++; } catch(e) {}
+              try { deleteRow_('volunteerSignups', 'id', s.id); removedSignups++; } catch (e) {}
             }
           });
-        } catch(e) { /* signups tab may not exist yet */ }
+        } catch (e) { /* signups tab may not exist yet */ }
       }
-    } catch(e) { /* volunteer_events may not exist yet */ }
+    } catch (e) { Logger.log('deleteActivityType_ cascade failed: ' + e); }
     cDel_('config');
     return okJ({ deleted: true, removedEvents: removedEvents, removedSignups: removedSignups });
   } catch(e) { return failJ('deleteActivityType failed: ' + e.message); }

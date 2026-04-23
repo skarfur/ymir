@@ -739,30 +739,67 @@ function getDailyLog_(date) {
   // anywhere else. nowLocalDate_() matches the format saveDailyLog_ writes.
   const d = date || nowLocalDate_();
   const log = findOne_('dailyLog', 'date', d);
-  // Projected activities from bulk schedules (see projectActivitiesForDate_
-  // in config.gs). The frontend uses these when no row exists yet — browsing
-  // forward past today doesn't materialize a sheet row until the day is
-  // either saved by staff or materialized by the midnight trigger below.
+  // Concrete activity rows for this date from scheduled_events. Populated
+  // into the dailyLog DTO's `activities` field (as a JSON string) so the
+  // frontend contract is preserved — see dailylog.js `applyLogData`.
+  var activityRows = [];
+  try {
+    activityRows = sched_listActivitiesForDate_(d).map(_schedActivityToLogShape_);
+  } catch (e) { activityRows = []; }
+  // Projected activities from activity-type templates (bulk schedule or
+  // linked Google Calendar) that haven't been materialized yet. See
+  // projectActivitiesForDate_ in config.gs. Excludes any projection whose
+  // id already exists as a concrete row.
   var scheduledActivities = [];
-  try { scheduledActivities = projectActivitiesForDate_(d); } catch (e) {}
-  return okJ({ log: log || null, date: d, scheduledActivities: scheduledActivities });
+  try {
+    var materialized = {};
+    activityRows.forEach(function (a) { if (a && a.id) materialized[a.id] = true; });
+    scheduledActivities = (projectActivitiesForDate_(d) || [])
+      .filter(function (a) { return a && a.id && !materialized[a.id]; });
+  } catch (e) { scheduledActivities = []; }
+  var logDto = log ? Object.assign({}, log, { activities: JSON.stringify(activityRows) }) : null;
+  return okJ({ log: logDto, date: d, scheduledActivities: scheduledActivities });
+}
+
+// Convert a scheduled_events row (kind='activity') into the daily-log activity
+// shape the frontend already knows how to render.
+function _schedActivityToLogShape_(a) {
+  return {
+    id:             a.id,
+    activityTypeId: a.activityTypeId || '',
+    subtypeId:      a.subtypeId || '',
+    subtypeName:    a.subtypeName || '',
+    type:           a.title || '',
+    name:           a.title || '',
+    start:          a.startTime || '',
+    end:            a.endTime || '',
+    participants:   a.participants || '',
+    notes:          a.notes || '',
+    gcalEventId:    a.gcalEventId || '',
+  };
 }
 
 function saveDailyLog_(b) {
   const ts = now_(), date = b.date || ts.slice(0, 10);
   const ex = findOne_('dailyLog', 'date', date);
-  // Sync activities to their activity-type calendars. Mutates b.activities
-  // in place so the stored JSON captures freshly-assigned gcalEventId values.
+  // Persist activities into scheduled_events (kind='activity'). Each activity
+  // gets its own row keyed by id; sync to activity-type calendars happens
+  // inside syncDailyLogActivities_.
   if (b.activities !== undefined) {
-    var oldActs = [];
-    if (ex && ex.activities) { try { oldActs = JSON.parse(ex.activities); } catch (e) {} }
-    syncDailyLogActivities_(date, oldActs, b.activities);
+    var oldRows = sched_listActivitiesForDate_(date);
+    persistDailyLogActivities_(date, oldRows, b.activities || [], b.updatedBy || '');
   }
+  // The `activities` column on dailyLog is now unread (authoritative source is
+  // scheduled_events). We still write an empty JSON array to the column so the
+  // sheet row shape stays clean, but the frontend gets activities from the
+  // new table via getDailyLog_.
   if (ex) {
+    // Note: `activities` column is intentionally omitted from the update —
+    // authoritative activities live in scheduled_events now, and leaving the
+    // legacy column untouched preserves pre-cutover data as a rollback safety.
     updateRow_('dailyLog', 'date', date, {
       openingChecks: b.openingChecks !== undefined ? JSON.stringify(b.openingChecks) : ex.openingChecks,
       closingChecks: b.closingChecks !== undefined ? JSON.stringify(b.closingChecks) : ex.closingChecks,
-      activities: b.activities !== undefined ? JSON.stringify(b.activities) : ex.activities,
       weatherLog: b.weatherLog !== undefined ? JSON.stringify(b.weatherLog) : ex.weatherLog,
       narrative: b.narrative !== undefined ? b.narrative : ex.narrative,
       tideData: b.tideData !== undefined ? JSON.stringify(b.tideData) : ex.tideData,
@@ -776,7 +813,7 @@ function saveDailyLog_(b) {
       id: uid_(), date,
       openingChecks: JSON.stringify(b.openingChecks || {}),
       closingChecks: JSON.stringify(b.closingChecks || {}),
-      activities: JSON.stringify(b.activities || []),
+      activities: '[]',
       weatherLog: JSON.stringify(b.weatherLog || []),
       narrative: b.narrative || '',
       tideData: JSON.stringify(b.tideData || {}),
@@ -785,6 +822,62 @@ function saveDailyLog_(b) {
     });
     return okJ({ date, created: true });
   }
+}
+
+// Upsert each activity from the frontend's saved daily log into scheduled_events
+// as kind='activity' rows. Deletes rows whose id vanished from the new list.
+// Handles per-activity GCal sync via syncDailyLogActivities_ before writing so
+// that the assigned gcalEventId is persisted on the row.
+function persistDailyLogActivities_(dateISO, oldRows, newActs, updatedBy) {
+  // Run GCal sync over the shape the frontend sent (plain daily-log activity
+  // objects) so the existing writer populates gcalEventId on each row.
+  // newActs is mutated in place.
+  try {
+    var oldForGcal = (oldRows || []).map(function (r) {
+      return { id: r.id, activityTypeId: r.activityTypeId, gcalEventId: r.gcalEventId };
+    });
+    syncDailyLogActivities_(dateISO, oldForGcal, newActs);
+  } catch (e) { Logger.log('persistDailyLogActivities_ gcal sync failed: ' + e); }
+  var nextIds = {};
+  var todayIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var status = dateISO < todayIso ? 'completed' : 'upcoming';
+  (newActs || []).forEach(function (a) {
+    if (!a || !a.id) return;
+    nextIds[a.id] = true;
+    sched_upsert_({
+      id:             a.id,
+      kind:           'activity',
+      status:         status,
+      source:         _inferActivitySource_(a),
+      date:           dateISO,
+      startTime:      a.start || a.startTime || '',
+      endTime:        a.end   || a.endTime   || '',
+      activityTypeId: a.activityTypeId || '',
+      subtypeId:      a.subtypeId || '',
+      subtypeName:    a.subtypeName || '',
+      title:          a.name || a.type || '',
+      titleIS:        '',
+      notes:          a.notes || '',
+      notesIS:        '',
+      participants:   a.participants || '',
+      gcalEventId:    a.gcalEventId || '',
+      dailyLogDate:   dateISO,
+      updatedBy:      updatedBy || '',
+    });
+  });
+  // Drop rows whose id is no longer in the saved set.
+  (oldRows || []).forEach(function (old) {
+    if (!old || !old.id) return;
+    if (nextIds[old.id]) return;
+    sched_hardDelete_(old.id);
+  });
+}
+
+function _inferActivitySource_(a) {
+  var id = String(a && a.id || '');
+  if (id.indexOf('gcal-')  === 0) return 'calendar';
+  if (id.indexOf('sched-') === 0) return 'bulk';
+  return 'daily-log';
 }
 
 // ── Midnight materialization ─────────────────────────────────────────────────
@@ -799,20 +892,29 @@ function materializeYesterday_() {
   var d = new Date();
   d.setDate(d.getDate() - 1);
   var dateISO = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  if (findOne_('dailyLog', 'date', dateISO)) return; // already there
+  // Freeze each projected activity into scheduled_events so the day is
+  // captured even if nobody opened the daily log. Idempotent — sched_upsert_
+  // is keyed by id. Checklist metadata still lives on the dailyLog row; if
+  // the row is missing, create an empty one so the daily-log page has a
+  // shell to render against.
   var scheduled = [];
   try { scheduled = projectActivitiesForDate_(dateISO); } catch (e) { scheduled = []; }
-  if (!scheduled.length) return; // nothing to freeze
-  var ts = now_();
-  insertRow_('dailyLog', {
-    id: uid_(), date: dateISO,
-    openingChecks: '{}', closingChecks: '{}',
-    activities: JSON.stringify(scheduled),
-    weatherLog: '[]', narrative: '',
-    tideData: '{}',
-    signedOffBy: '', signedOffAt: '',
-    updatedBy: 'auto:midnight', createdAt: ts, updatedAt: ts,
-  });
+  if (!scheduled.length && findOne_('dailyLog', 'date', dateISO)) return;
+  if (scheduled.length) {
+    persistDailyLogActivities_(dateISO, sched_listActivitiesForDate_(dateISO), scheduled, 'auto:midnight');
+  }
+  if (!findOne_('dailyLog', 'date', dateISO)) {
+    var ts = now_();
+    insertRow_('dailyLog', {
+      id: uid_(), date: dateISO,
+      openingChecks: '{}', closingChecks: '{}',
+      activities: '[]',
+      weatherLog: '[]', narrative: '',
+      tideData: '{}',
+      signedOffBy: '', signedOffAt: '',
+      updatedBy: 'auto:midnight', createdAt: ts, updatedAt: ts,
+    });
+  }
 }
 
 function setupDailyLogMidnightTrigger() {

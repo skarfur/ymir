@@ -3,6 +3,124 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — admin tabs consolidate into one Scheduling tab + client ScheduledEvent normalizer
+
+Three admin tabs — Activity Types, Volunteers, and (Club) Calendars — merge
+into a single **Scheduling** tab with four col-sections: Upcoming events,
+Activity types, Volunteer events, Calendars. Reservation slots keep their
+own tab (per-boat; different domain). URL aliases (`?tab=actTypes`,
+`?tab=volunteers`, `?tab=clubCal`) redirect to `?tab=scheduling` so
+bookmarks keep working.
+
+The new **Upcoming events** card is the payoff: a 30-day merged timeline of
+volunteer events + bulk-scheduled activity projections, sorted by date and
+time, with kind + source badges. Built client-side from data already loaded
+in the admin page — no extra API calls. Activity types that read their
+schedule from Google Calendar are surfaced as a hint beneath the list
+(per-date projection needs the backend).
+
+**New files**:
+- `shared/scheduled-event.js` — `toScheduledEvent(raw, {kind, source, signupCount})`,
+  `buildUpcomingEvents({actTypes, volunteerEvents, volunteerSignups, fromIso, toIso})`,
+  `calendarSourcedActivityTypes(actTypes)`. The shape matches the backend's
+  `scheduling.gs` domain object so front- and backend stay aligned.
+- `admin/scheduling.js` — owns `renderSchedulingTab()` (called from
+  `showTab('scheduling')`) and `renderUpcomingEvents()`. Existing renderers
+  in `act-types.js` / `volunteers.js` / `calendars.js` are unchanged and
+  continue to own their own col-sections; the scheduling module just
+  composes them.
+
+Plus minor CSS in `admin.css` for the timeline look (tabular time column,
+kind/source badges, per-day group headers), a documentation update in
+`CLAUDE.md`, and 11 new strings × 2 languages (all `admin.sched*` /
+`admin.tabScheduling`).
+
+## Unreleased — unified `scheduled_events` table replaces two split storage locations
+
+Volunteer events and daily-log activities now share a single sheet,
+`scheduled_events`, with a `kind` discriminator (`'volunteer'` vs `'activity'`)
+and a `status` column (`'upcoming' | 'completed' | 'cancelled' | 'orphaned'`).
+Replaces:
+
+- the `activities` JSON column on `daily_log` rows (for daily-log activities), and
+- the `volunteer_events` JSON value in `config` (for volunteer events).
+
+Every scheduled event is now one sheet row, keyed by id. Signups in
+`volunteer_signups` already reference that id via `eventId`, so no cascade
+rewrite was needed — ids are preserved across the migration.
+
+**Migration**: one-shot, idempotent, lives in `_setup.gs` as
+`migrateToScheduledEvents()`. It reads the legacy locations, inserts each row
+into `scheduled_events`, and skips ids that already exist. Run it from the
+Apps Script editor once per environment after deploying the new code. The
+legacy columns/keys are left populated (but no longer read) so a `git revert`
+of this cutover rolls back cleanly.
+
+**New module**: `scheduling.gs` owns the read/write primitives
+(`sched_getById_`, `sched_listVolunteerEvents_`, `sched_listActivitiesForDate_`,
+`sched_upsert_`, `sched_cancel_`, `sched_hardDelete_`). Every site that used
+to touch either storage location now goes through these helpers, so the
+sheet is a genuine single source of truth.
+
+**Call sites rewritten** (backend only):
+
+- `public.gs` — `saveVolunteerEvent_`, `deleteVolunteerEvent_`,
+  `volunteerSignup_` (virtual-event materialization),
+  `materializeVolunteerEventsForAt_`, `reconcileVolunteerEventsForAt_`,
+  `syncVolunteerEvents_`. `volMergeMaterialized_` deleted — replaced by
+  idempotent upsert.
+- `members.gs` — `getDailyLog_` (reads from `scheduled_events`, packs into
+  the existing `log.activities` JSON for frontend compat), `saveDailyLog_`
+  (splits per-activity rows via new `persistDailyLogActivities_` helper),
+  `materializeYesterday_` (freezes projections into rows).
+- `checkouts.gs` — `syncVolunteerEventToCalendar_` reads/writes through
+  `sched_*` helpers instead of config.
+- `config.gs` — `getConfig_` synthesizes the legacy `volunteerEvents` DTO
+  via `listVolunteerEventDtos_` (in `public.gs`) so the frontend contract is
+  preserved. `deleteActivityType_` cascade drops rows from `scheduled_events`.
+
+**Frontend**: zero changes in this commit. `getConfig().volunteerEvents` and
+`getDailyLog().log.activities` preserve their pre-cutover shapes. Admin tab
+consolidation + client-side `ScheduledEvent` normalizer land in a follow-up.
+
+⚠️ Backend files changed: `_setup.gs`, `code.gs` (SCHEMA_/TABS_), new
+`scheduling.gs`, `config.gs`, `members.gs`, `public.gs`, `checkouts.gs`.
+Redeploy Apps Script, then run `migrateToScheduledEvents()` from the editor.
+
+## Unreleased — activity types can read their schedule from Google Calendar, volunteer events write back
+
+Activity types now pick a `scheduleSource`: `bulk` (the existing per-subtype
+bulk-schedule editor) or `calendar` (reads from the activity type's Google
+Calendar for each date). In calendar mode, `projectActivitiesForDate_` calls
+the new `projectActivitiesFromCalendar_` helper (`checkouts.gs`) — it reads
+events for the requested day via `CalendarApp.getCalendarById().getEvents()`,
+caches the result in `CacheService.getScriptCache()` for 5 minutes, and maps
+each event to the same scheduled-activity shape the daily log already knows
+how to render. Subtype matching is best-effort by title substring (EN or IS),
+so subtype names still carry through when they appear in the calendar event
+title. Bulk-schedule authoring is preserved unchanged for types that stay on
+`scheduleSource: 'bulk'` (the default, also used for legacy rows).
+
+Admins author the new setting in the activity-type modal via a radio-button
+block (`admin/index.html`, wired in `admin/act-types.js`). Switching a type
+to calendar mode fades the subtype/bulk-schedule section so nobody edits it
+expecting it to do something. The existing `calendarId` + `calendarSyncActive`
+fields double as the read source — one calendar does both jobs.
+
+Volunteer events now round-trip to Google Calendar. `saveVolunteerEvent_` and
+`deleteVolunteerEvent_` (`public.gs`) call the new
+`syncVolunteerEventToCalendar_` / `deleteVolunteerEventCalendarEvent_` helpers
+(`checkouts.gs`) — mirroring the existing daily-log-activity writer. The
+reconcile, prune, and cascade paths (`reconcileVolunteerEventsForAt_`,
+`syncVolunteerEvents_`, `deleteActivityType_`) tear down the GCal twin when a
+materialized event is pruned or soft-deleted, so the calendar never drifts
+out of sync with the admin view. `gcalEventId` is persisted on the event row
+in config and preserved across edits, so upserts stay idempotent.
+
+New strings: `admin.scheduleSource*` (5 keys × 2 languages).
+
+⚠️ Backend files changed: `config.gs`, `checkouts.gs`, `public.gs`.
+
 ## Unreleased — Lucide icons replace text/emoji in maintenance & admin modals
 
 Added a shared Lucide icon registry (`window.icon(name)` in `shared/ui.js`)

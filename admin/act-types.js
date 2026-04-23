@@ -44,6 +44,11 @@ function openActTypeModal(id) {
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
   document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
+  // Schedule source: default 'bulk' for legacy rows and new types.
+  var schedSrc = (a && a.scheduleSource === 'calendar') ? 'calendar' : 'bulk';
+  document.getElementById("atSchedSrcBulk").checked     = schedSrc === 'bulk';
+  document.getElementById("atSchedSrcCalendar").checked = schedSrc === 'calendar';
+  updateAtScheduleSource();
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
   window._atSubtypes = a && a.subtypes ? JSON.parse(JSON.stringify(
     Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, [])
@@ -67,6 +72,7 @@ async function saveActType() {
   const name = document.getElementById("atName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
   const isVol = document.getElementById("atVolunteer").checked;
+  const schedSrc = document.getElementById("atSchedSrcCalendar").checked ? 'calendar' : 'bulk';
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
@@ -74,6 +80,7 @@ async function saveActType() {
     volunteer: isVol,
     calendarId: document.getElementById("atCalendarId").value.trim(),
     calendarSyncActive: document.getElementById("atCalendarSyncActive").checked,
+    scheduleSource: schedSrc,
     subtypes: JSON.stringify(window._atSubtypes || []),
     roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
     bulkSchedule: null,
@@ -211,6 +218,18 @@ function renderAtSubtypes() {
       </div>
     </div>`;
   }).join("");
+}
+
+// Keeps the subtype/bulk section visible only when the admin picked the bulk
+// schedule source. Under 'calendar', subtypes are still used (for title-based
+// matching and volunteer-event templates) but per-subtype bulkSchedule blocks
+// become irrelevant — fade the whole section to avoid mixed-authoring confusion.
+function updateAtScheduleSource() {
+  var isCal = !!document.getElementById("atSchedSrcCalendar") && document.getElementById("atSchedSrcCalendar").checked;
+  var section = document.getElementById("atSubtypesSection");
+  if (!section) return;
+  section.style.opacity = isCal ? '0.45' : '';
+  section.title = isCal ? (typeof s === 'function' ? s('admin.scheduleSourceCalendarBulkNote') : '') : '';
 }
 
 function ensureAtStBs(i) {

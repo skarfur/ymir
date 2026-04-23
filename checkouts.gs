@@ -517,6 +517,156 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
   } catch (e) { Logger.log('syncDailyLogActivities_ failed: ' + e); }
 }
 
+// ── Calendar-sourced scheduling ──────────────────────────────────────────────
+// When an activity type sets scheduleSource='calendar' and points at a calendarId,
+// daily-log projections for that type come from Google Calendar instead of the
+// per-subtype bulk schedule. Results are cached briefly (CacheService) to avoid
+// hammering the Calendar API on every getDailyLog.
+//
+// Subtype matching is best-effort: we look for a subtype whose name (EN or IS)
+// appears as a substring of the event title. Unmatched events still project —
+// they just won't have a subtypeId/subtypeName.
+function projectActivitiesFromCalendar_(at, dateISO) {
+  if (!at || !at.calendarId || !dateISO) return [];
+  var cacheKey = 'gcal_sched_' + at.calendarId + '_' + dateISO;
+  var cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) {}
+  if (cache) {
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      try { return JSON.parse(cached); } catch (e) {}
+    }
+  }
+  var out = [];
+  try {
+    var cal = CalendarApp.getCalendarById(at.calendarId);
+    if (!cal) return [];
+    var start = new Date(dateISO + 'T00:00:00');
+    var end   = new Date(dateISO + 'T23:59:59');
+    var events = cal.getEvents(start, end) || [];
+    var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
+    events.forEach(function (ev) {
+      try {
+        if (ev.isAllDayEvent && ev.isAllDayEvent()) return; // skip all-day blockers
+        var st = matchSubtypeFromEvent_(ev, subs);
+        var s = ev.getStartTime();
+        var e = ev.getEndTime();
+        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        var fmt = function (d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+        // Stable id: hash the GCal event id into the sched- namespace so the
+        // frontend treats the row like any other scheduled activity.
+        var rawId = String(ev.getId() || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+        out.push({
+          id:             'gcal-' + at.id + '-' + rawId + '-' + dateISO,
+          activityTypeId: at.id,
+          subtypeId:      st ? (st.id || '') : '',
+          subtypeName:    st ? (st.name || '') : '',
+          type:           at.name || '',
+          name:           ev.getTitle() || (st && st.name) || at.name || '',
+          start:          fmt(s),
+          end:            fmt(e),
+          participants:   '',
+          notes:          ev.getDescription ? (ev.getDescription() || '') : '',
+          scheduled:      true,
+          gcalEventId:    ev.getId(),
+        });
+      } catch (e) { /* skip bad event */ }
+    });
+    if (cache) {
+      try { cache.put(cacheKey, JSON.stringify(out), 300); } catch (e) {}
+    }
+  } catch (e) {
+    Logger.log('projectActivitiesFromCalendar_ failed: ' + e);
+  }
+  return out;
+}
+
+function matchSubtypeFromEvent_(ev, subtypes) {
+  if (!ev || !Array.isArray(subtypes) || !subtypes.length) return null;
+  var title = String((ev.getTitle && ev.getTitle()) || '').toLowerCase();
+  if (!title) return null;
+  for (var i = 0; i < subtypes.length; i++) {
+    var st = subtypes[i];
+    if (!st) continue;
+    var en = String(st.name   || '').toLowerCase();
+    var is = String(st.nameIS || '').toLowerCase();
+    if (en && title.indexOf(en) !== -1) return st;
+    if (is && title.indexOf(is) !== -1) return st;
+  }
+  return null;
+}
+
+// ── Volunteer event → Google Calendar sync ───────────────────────────────────
+// Mirrors syncDailyLogActivities_ but operates on a single volunteer event row
+// in config key 'volunteer_events'. Persists the assigned gcalEventId back to
+// config so subsequent upserts are idempotent. Never throws — fails silently
+// so volunteer signup/save flows aren't blocked on a calendar outage.
+function syncVolunteerEventToCalendar_(eventId) {
+  try {
+    if (!eventId) return;
+    var ev = sched_getById_(eventId);
+    if (!ev || ev.kind !== 'volunteer') return;
+    var cfgMap = getConfigMap_();
+    var types = [];
+    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    var atId = ev.activityTypeId || ev.sourceActivityTypeId || '';
+    var at = null;
+    for (var j = 0; j < types.length; j++) {
+      if (types[j] && types[j].id === atId) { at = types[j]; break; }
+    }
+    if (!at || !at.calendarId) return;
+    var enabled = at.calendarSyncActive === true || at.calendarSyncActive === 'true';
+    if (!enabled) return;
+    // Cancelled/orphaned events lose their calendar entry.
+    if (ev.status === 'cancelled' || ev.status === 'orphaned') {
+      if (ev.gcalEventId) {
+        gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
+        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        cDel_('config');
+      }
+      return;
+    }
+    var start = gcalParseDateTime_(ev.date, ev.startTime || '00:00');
+    var end   = gcalParseDateTime_(ev.endDate || ev.date, ev.endTime || ev.startTime || '00:00');
+    if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
+    var typeLabel = at.nameIS || at.name || '';
+    var titleBase = ev.title || typeLabel;
+    var title = titleBase + (typeLabel && titleBase !== typeLabel ? ' (' + typeLabel + ')' : '');
+    var roleLines = (Array.isArray(ev.roles) ? ev.roles : []).map(function (r) {
+      return '• ' + (r.name || '') + (r.slots ? (' (' + r.slots + ')') : '');
+    }).join('\n');
+    var desc = 'volunteer-event:' + ev.id
+      + (ev.leaderName ? ('\nLeader: ' + ev.leaderName) : '')
+      + (ev.notes ? ('\n' + ev.notes) : '')
+      + (roleLines ? ('\n\nRoles:\n' + roleLines) : '');
+    var newId = gcalUpsertEvent_(at.calendarId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
+    if (newId && newId !== (ev.gcalEventId || '')) {
+      sched_upsert_({ id: ev.id, gcalEventId: newId });
+      cDel_('config');
+    }
+  } catch (e) { Logger.log('syncVolunteerEventToCalendar_ failed: ' + e); }
+}
+
+// Delete the calendar event for a volunteer event that's about to be (or has
+// been) removed. Takes the event row itself because it may already be gone
+// from config. Looks up the parent activity type's calendarId to find the
+// right calendar.
+function deleteVolunteerEventCalendarEvent_(evRow) {
+  try {
+    if (!evRow || !evRow.gcalEventId) return;
+    var atId = evRow.activityTypeId || evRow.sourceActivityTypeId || '';
+    if (!atId) return;
+    var types = [];
+    try { types = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch (e) {}
+    var at = null;
+    for (var i = 0; i < types.length; i++) {
+      if (types[i] && types[i].id === atId) { at = types[i]; break; }
+    }
+    if (!at || !at.calendarId) return;
+    gcalUpsertEvent_(at.calendarId, evRow.gcalEventId, '', null, null, '', 'delete');
+  } catch (e) { Logger.log('deleteVolunteerEventCalendarEvent_ failed: ' + e); }
+}
+
 // Returns true if [startTime, endTime) overlaps any existing slot on the same
 // boat/date (excluding a specific slotId if provided). Times are "HH:MM" — pure
 // string comparison is safe because the format is zero-padded.
