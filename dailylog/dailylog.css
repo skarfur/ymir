@@ -11,9 +11,17 @@
 .readonly-badge { display:inline-flex; align-items:center;
   background:var(--surface); border:1px solid var(--border); color:var(--muted);
   border-radius:var(--radius-sm); padding:4px 10px; font-size:11px; }
-.date-picker-sm { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-  color:var(--text); font-family:inherit; font-size:12px; padding:4px 8px; cursor:pointer; }
-.date-picker-sm:hover { border-color:var(--accent); }
+/* Compact date-picker: the invisible <input type=date> sits on top of a
+   calendar icon so a click anywhere on the wrapper opens the browser's
+   native date popover — anchored to the icon, no JS needed. */
+.date-icon-wrap { position:relative; display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:26px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--muted); background:var(--surface); cursor:pointer; transition:color .2s, border-color .2s; }
+.date-icon-wrap:hover, .date-icon-wrap:focus-within { color:var(--accent-fg); border-color:var(--accent); }
+.date-icon-wrap > svg { pointer-events:none; }
+.date-icon-wrap > input[type=date] { position:absolute; inset:0; opacity:0; cursor:pointer;
+  width:100%; height:100%; border:0; padding:0; margin:0; background:transparent; color:transparent; }
+.date-icon-wrap > input[type=date]::-webkit-calendar-picker-indicator { opacity:0; }
 
 /* ── Section headings ── */
 .section-heading { font-size:9px; color:var(--muted); letter-spacing:1px;
