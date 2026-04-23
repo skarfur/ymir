@@ -127,7 +127,7 @@ function renderBoats() {
           ${(b.registrationNo || b.typeModel) ? `<div class="boat-card-meta">${[b.registrationNo, b.typeModel].filter(Boolean).map(esc).join(' · ')}</div>` : ""}
           <div class="boat-card-actions">
             <button class="row-edit flex-1" data-admin-click="openBoatModal" data-admin-arg="${b.id}">Edit</button>
-            <button class="row-edit" data-admin-click="showBoatQR" data-admin-arg="${b.id}" title="Show QR code">🔳</button>
+            <button class="row-edit icon-btn" data-admin-click="showBoatQR" data-admin-arg="${b.id}" title="Show QR code" aria-label="Show QR code">${icon('qr-code')}</button>
             <button class="row-del"  data-admin-click="deleteBoat" data-admin-arg="${b.id}" title="Delete">×</button>
           </div>
         </div>`).join("");

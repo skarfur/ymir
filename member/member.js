@@ -228,8 +228,8 @@ function renderLaunchPicker(preselectedBoatId) {
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
       '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
-        '<button class="btn btn-secondary" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
-          s('qr.scanBtn')+
+        '<button class="btn btn-secondary icon-btn" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
+          icon('qr-code')+' '+s('qr.scanBtn')+
         '</button>'+
       '</div>'+
       '<div class="mb-12">'+
@@ -248,8 +248,8 @@ function renderLaunchPicker(preselectedBoatId) {
   avail.forEach(b=>{const cat=(b.category||'other').toLowerCase();if(!grouped[cat])grouped[cat]=[];grouped[cat].push(b);});
   document.getElementById('launchModalBody').innerHTML=
     '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
-      '<button class="btn btn-secondary" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
-        s('qr.scanBtn')+
+      '<button class="btn btn-secondary icon-btn" style="grid-column:2;text-align:center" data-member-click="scanBoatQR">'+
+        icon('qr-code')+' '+s('qr.scanBtn')+
       '</button>'+
     '</div>'+
     Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).map(([cat,catBoats])=>{
@@ -964,7 +964,7 @@ function _maintFormHtml() {
     +'<div class="field hidden" id="irBoatField"><label>Boat</label>'
       +'<div style="display:flex;gap:6px;align-items:center">'
         +'<select id="irBoat" style="flex:1;min-width:0"><option value="">Select boat...</option>'+boatOpts+'</select>'
-        +'<button type="button" class="btn btn-secondary btn-sm" data-member-click="scanBoatForIssue" data-member-arg="irBoat" style="white-space:nowrap">'+s('qr.scanBtn')+'</button>'
+        +'<button type="button" class="btn btn-secondary btn-sm icon-btn" data-member-click="scanBoatForIssue" data-member-arg="irBoat" style="white-space:nowrap">'+icon('qr-code')+' '+s('qr.scanBtn')+'</button>'
       +'</div>'
     +'</div>'
     +'<div class="field hidden" id="irItemField"><label id="irItemLabel">Item</label><input type="text" id="irItem" placeholder="e.g. Wetsuit #3"></div>'
@@ -1001,7 +1001,7 @@ function _incidentFormHtml() {
     +'<div class="field"><label>Boat involved (optional)</label>'
       +'<div style="display:flex;gap:6px;align-items:center">'
         +'<select id="irIncBoat" style="flex:1;min-width:0"><option value="">None</option>'+boatOpts+'</select>'
-        +'<button type="button" class="btn btn-secondary btn-sm" data-member-click="scanBoatForIssue" data-member-arg="irIncBoat" style="white-space:nowrap">'+s('qr.scanBtn')+'</button>'
+        +'<button type="button" class="btn btn-secondary btn-sm icon-btn" data-member-click="scanBoatForIssue" data-member-arg="irIncBoat" style="white-space:nowrap">'+icon('qr-code')+' '+s('qr.scanBtn')+'</button>'
       +'</div>'
     +'</div>'
     +'<div class="field"><label>Description <span style="color:var(--red)">*</span></label><textarea id="irDesc" rows="3" placeholder="Describe what happened..." style="width:100%;resize:none;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;box-sizing:border-box"></textarea></div>'

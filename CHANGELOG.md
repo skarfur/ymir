@@ -27,6 +27,18 @@ in both strings files no longer contains the emoji.
 
 Added `.icon-btn` helper to `shared/style.css` for flex-centered icon buttons.
 
+Second pass added `qr-code` and `wind` to the registry. The camera emoji in
+`qr.scanBtn` ("📷 Scan QR" / "📷 Skanna QR") and the camera emoji in
+`daily.wxLogBtn` ("📸 Log snapshot" / "📸 Taka veðurmynd") are gone from
+both strings files; render sites in `member/member.js` (launch picker ×2,
+issue-report boat picker, incident-report boat picker) now prepend
+`icon('qr-code')` programmatically. The two static HTML buttons
+(`incidents/index.html` boat scan, `dailylog/index.html` weather snapshot)
+switch to a two-span pattern — `<span data-icon="name">` + `<span data-s="key">`
+— so the icon and the translated text don't trample each other during
+`applyStrings()`. The 🔳 emoji on the admin boat-list QR-reveal button is
+replaced with a proper `qr-code` icon.
+
 ## Unreleased — no-orphan utility for CSS grids
 
 Shared utility classes `.no-orphans-<N>` / `.no-orphans-sm-2` in
