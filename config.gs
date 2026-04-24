@@ -75,20 +75,15 @@ function getConfig_() {
   return okJ(config);
 }
 
-// ── Bulk-schedule projection ──────────────────────────────────────────────────
-// Expand each activity class's bulkSchedule blob into activity items for a
-// given local date. Used by getDailyLog_ to pre-populate today's/future days'
-// activities without writing to the sheet until the row is actually saved or
-// materialized at midnight.
 // ── Schedule projection ──────────────────────────────────────────────────────
 // Produce activity items for a given local date. Used by getDailyLog_ to
 // pre-populate today's/future days' activities without writing to the sheet
 // until the row is actually saved or materialized at midnight.
 //
-// Each activity type picks its own schedule source:
-//   - 'bulk' (default, legacy): expand per-subtype bulkSchedule blobs.
-//   - 'calendar': read events from the activity type's Google Calendar for
-//     the date. The read is cached briefly in projectActivitiesFromCalendar_.
+// Each activity class picks its own schedule source:
+//   - 'bulk' (default, legacy): expand the class's own bulkSchedule blob.
+//   - 'calendar': read events from the class's Google Calendar for the date.
+//     The read is cached briefly in projectActivitiesFromCalendar_.
 //
 // Each returned item mirrors the shape stored under dailyLog.activities so the
 // frontend can treat scheduled + user-added activities uniformly:
@@ -103,6 +98,15 @@ function projectActivitiesForDate_(dateISO) {
   var out = [];
   classes.forEach(function(cls) {
     if (!cls || cls.active === false) return;
+    // Calendar-sourced classes delegate to the gcal projection helper.
+    if (String(cls.scheduleSource || 'bulk') === 'calendar') {
+      try {
+        var fromCal = projectActivitiesFromCalendar_(cls, dateISO);
+        if (fromCal && fromCal.length) Array.prototype.push.apply(out, fromCal);
+      } catch (e) { /* fall through silently — never block daily-log render */ }
+      return;
+    }
+    // Bulk-scheduled classes expand the class's own bulkSchedule blob.
     if (!cls.bulkSchedule) return;
     var bs = cls.bulkSchedule;
     if (bs.fromDate && dateISO < bs.fromDate) return;
@@ -119,37 +123,6 @@ function projectActivitiesForDate_(dateISO) {
       participants:   '',
       notes:          '',
       scheduled:      true,
-  types.forEach(function(at) {
-    if (!at || at.active === false) return;
-    var source = String(at.scheduleSource || 'bulk');
-    if (source === 'calendar') {
-      try {
-        var fromCal = projectActivitiesFromCalendar_(at, dateISO);
-        if (fromCal && fromCal.length) Array.prototype.push.apply(out, fromCal);
-      } catch (e) { /* fall through silently — never block daily-log render */ }
-      return;
-    }
-    var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
-    subs.forEach(function(st) {
-      if (!st || !st.bulkSchedule) return;
-      var bs = st.bulkSchedule;
-      if (bs.fromDate && dateISO < bs.fromDate) return;
-      if (bs.toDate   && dateISO > bs.toDate)   return;
-      var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
-      if (!days.length || days.indexOf(dow) === -1) return;
-      out.push({
-        id:             'sched-' + at.id + '-' + st.id + '-' + dateISO,
-        activityTypeId: at.id,
-        subtypeId:      st.id,
-        subtypeName:    st.name || '',
-        type:           at.name || '',
-        name:           st.name || at.name || '',
-        start:          bs.startTime || st.defaultStart || '',
-        end:            bs.endTime   || st.defaultEnd   || '',
-        participants:   '',
-        notes:          '',
-        scheduled:      true,
-      });
     });
   });
   return out;

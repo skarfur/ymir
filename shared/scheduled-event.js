@@ -113,33 +113,29 @@
     var toIso           = opts.toIso   || _addDaysIso(fromIso, 30);
     var out = [];
 
-    // 1) Bulk-scheduled activity projections (per day × per active, bulk-sourced type × subtype).
+    // 1) Bulk-scheduled activity projections (per day × per active, bulk-sourced class).
     _eachDay(fromIso, toIso, function (iso, dow) {
-      actTypes.forEach(function (at) {
-        if (!at || at.active === false || at.active === 'false') return;
-        if (String(at.scheduleSource || 'bulk') !== 'bulk') return;
-        var subs = _parse(at.subtypes, []);
-        subs.forEach(function (st) {
-          if (!st || !st.bulkSchedule) return;
-          var bs = st.bulkSchedule;
-          if (bs.fromDate && iso < bs.fromDate) return;
-          if (bs.toDate   && iso > bs.toDate)   return;
-          var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(Number) : [];
-          if (!days.length || days.indexOf(dow) === -1) return;
-          var raw = {
-            id:             'sched-' + at.id + '-' + (st.id || 'st') + '-' + iso,
-            activityTypeId: at.id,
-            subtypeId:      st.id || '',
-            subtypeName:    st.name || '',
-            date:           iso,
-            startTime:      bs.startTime || st.defaultStart || '',
-            endTime:        bs.endTime   || st.defaultEnd   || '',
-            name:           st.name || at.name || '',
-            title:          st.name || at.name || '',
-            titleIS:        st.nameIS || at.nameIS || '',
-          };
-          out.push(toScheduledEvent(raw, { kind: 'activity', source: 'bulk' }));
-        });
+      actTypes.forEach(function (cls) {
+        if (!cls || cls.active === false || cls.active === 'false') return;
+        if (String(cls.scheduleSource || 'bulk') !== 'bulk') return;
+        if (!cls.bulkSchedule) return;
+        var bs = cls.bulkSchedule;
+        if (bs.fromDate && iso < bs.fromDate) return;
+        if (bs.toDate   && iso > bs.toDate)   return;
+        var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(Number) : [];
+        if (!days.length || days.indexOf(dow) === -1) return;
+        var raw = {
+          id:             'sched-' + cls.id + '-' + iso,
+          activityTypeId: cls.id,
+          classTag:       cls.classTag || '',
+          date:           iso,
+          startTime:      bs.startTime || cls.defaultStart || '',
+          endTime:        bs.endTime   || cls.defaultEnd   || '',
+          name:           cls.name || '',
+          title:          cls.name || '',
+          titleIS:        cls.nameIS || '',
+        };
+        out.push(toScheduledEvent(raw, { kind: 'activity', source: 'bulk' }));
       });
     });
 
