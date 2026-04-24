@@ -203,10 +203,14 @@
       var isMine  = self.opts.isMine ? self.opts.isMine(sl) : false;
       var isBooked = !!sl.bookedByKennitala;
       var isTentative = sl.tentative === 'true' || sl.tentative === true;
+      // Virtual slots are projected from an activity class's reservedBoatIds.
+      // They're a "hold" for the club activity — not bookable.
+      var isVirtual = !!sl.virtual && !!sl.sourceActivityClassId;
 
       var block = document.createElement('div');
       var cls = 'sc-slot';
-      if (isMine) cls += ' sc-slot--mine';
+      if (isVirtual) cls += ' sc-slot--held';
+      else if (isMine) cls += ' sc-slot--mine';
       else if (isBooked) cls += ' sc-slot--booked';
       else cls += ' sc-slot--open';
       if (isTentative) cls += ' sc-slot--tentative';
@@ -230,7 +234,11 @@
       var span = endRow - startRow;
       var timeLabel = sl.startTime + '\u2013' + sl.endTime;
       var sub = '';
-      if (isBooked) {
+      if (isVirtual) {
+        var L = (typeof getLang === 'function') ? getLang() : 'EN';
+        var clsName = (L === 'IS' && sl.sourceClassNameIS) ? sl.sourceClassNameIS : (sl.sourceClassName || '');
+        sub = '<span class="sc-slot-who sc-slot-who--held">' + esc(clsName) + '</span>';
+      } else if (isBooked) {
         var whoStyle = fgColor ? ' style="color:' + fgColor + '"' : '';
         var whoCls = 'sc-slot-who' + (isMine ? ' sc-slot-who--mine' : '');
         // Crew bookings always show the crew name — "YOURS" alone is ambiguous
@@ -249,7 +257,14 @@
         block.innerHTML = '<span class="sc-slot-time"' + timeStyle + '>' + timeLabel + '</span>' + sub;
       }
 
-      if (isMine && self.opts.onUnbook) {
+      if (isVirtual) {
+        // Tooltip so the rower/captain knows what the hold is for; click is a
+        // no-op (no book/unbook path) — the book button is gone, cursor is
+        // not-allowed so the state reads as blocked-for-a-reason.
+        var _vTag = sl.sourceClassTag ? ' [' + sl.sourceClassTag + ']' : '';
+        block.title = s('slot.heldFor').replace('{name}', (sl.sourceClassName || '') + _vTag);
+        block.style.cursor = 'not-allowed';
+      } else if (isMine && self.opts.onUnbook) {
         block.addEventListener('click', function() { self.opts.onUnbook(sl.id); });
       } else if (!isBooked && self.opts.onBook) {
         block.addEventListener('click', function() { self.opts.onBook(sl.id); });

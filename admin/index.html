@@ -697,7 +697,7 @@
   </div>
 </div>
 
-<!-- Activity type modal -->
+<!-- Activity class modal (flat: each row IS the activity; classTag groups them) -->
 <div class="modal-overlay hidden" id="actTypeModal" data-admin-close-self>
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
@@ -707,6 +707,11 @@
     <div class="grid2">
       <div class="field"><label data-s="admin.actTypeEN" for="atName"></label><input type="text" id="atName"></div>
       <div class="field"><label data-s="admin.actTypeIS" for="atNameIS"></label><input type="text" id="atNameIS"></div>
+    </div>
+    <div class="field">
+      <label data-s="admin.classTag" for="atClassTag"></label>
+      <input type="text" id="atClassTag" list="atClassTagOptions" placeholder="e.g. Lesson, Race, Training">
+      <datalist id="atClassTagOptions"></datalist>
     </div>
     <div class="check-row mb-10">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>
@@ -725,7 +730,29 @@
       <div id="atRolesList"></div>
     </div>
     <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
-      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.defaultTimes"></div>
+      <div class="grid2">
+        <div class="field"><label data-s="admin.defaultStart" for="atDefaultStart"></label><input type="text" id="atDefaultStart" placeholder="HH:MM" maxlength="5"></div>
+        <div class="field"><label data-s="admin.defaultEnd"   for="atDefaultEnd"  ></label><input type="text" id="atDefaultEnd"   placeholder="HH:MM" maxlength="5"></div>
+      </div>
+    </div>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.bulkSchedule"></div>
+      <div class="grid2">
+        <div class="field"><label data-s="slot.fromDate" for="atBsFromDate"></label><input type="date" id="atBsFromDate"></div>
+        <div class="field"><label data-s="slot.toDate"   for="atBsToDate"  ></label><input type="date" id="atBsToDate"></div>
+      </div>
+      <div id="atDayBtns" class="d-flex gap-6 flex-wrap mt-6"></div>
+    </div>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="d-flex items-center justify-between mb-6">
+        <div class="text-9 text-muted" style="letter-spacing:1px" data-s="admin.reservedBoats"></div>
+        <div class="text-10 text-muted" data-s="admin.reservedBoatsHint"></div>
+      </div>
+      <div id="atBoatPicker" class="d-flex gap-6 flex-wrap"></div>
+    </div>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+     https://github.com/skarfur/ymir/pull/734/conflict?name=admin%252Findex.html&ancestor_oid=9608ca82547e1b9c7218d668bb41df37453a5c63&base_oid=89a0e640123ce225f6662601d445c61a3fcf1f86&head_oid=96604788d94aea37faa838885f3a47633ccae291 <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
       <div class="field">
         <label data-s="admin.calendarId"></label>
         <input type="text" id="atCalendarId" placeholder="e.g. abc123@group.calendar.google.com">

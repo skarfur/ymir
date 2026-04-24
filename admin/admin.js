@@ -277,22 +277,8 @@ function _setAtRoleField(idx, field, value) {
 function _setVolRoleField(idx, field, value) {
   _setArrField('_volRoles', idx, field, value, field === 'slots');
 }
-function _setAtSubtypeField(idx, field, value) {
-  _setArrField('_atSubtypes', idx, field, value, false);
-}
-function _setAtStBsField(idx, field, value) {
-  if (typeof ensureAtStBs !== 'function') return;
-  ensureAtStBs(idx)[field] = value;
-}
-function _removeAtRole(idx)    { window._atRoles.splice(+idx, 1);    renderAtRoles();    }
-function _removeAtSubtype(idx) { window._atSubtypes.splice(+idx, 1); renderAtSubtypes(); }
-function _removeVolRole(idx)   { window._volRoles.splice(+idx, 1);   renderVolRoles();   }
-function _timeFormatSubtype(el, idx, field) {
-  var v = el.value.replace(/[^0-9]/g, '');
-  if (v.length >= 3) v = v.slice(0, 2) + ':' + v.slice(2);
-  el.value = v;
-  _setAtSubtypeField(idx, field, v);
-}
+function _removeAtRole(idx)  { window._atRoles.splice(+idx, 1); renderAtRoles(); }
+function _removeVolRole(idx) { window._volRoles.splice(+idx, 1); renderVolRoles(); }
 function _showElement(id)       { var e = document.getElementById(id); if (e) e.classList.remove('hidden'); }
 function _removeElementById(id) { var e = document.getElementById(id); if (e) e.remove(); }
 
@@ -367,18 +353,6 @@ function _removeElementById(id) { var e = document.getElementById(id); if (e) e.
     if (ar) { _setAtRoleField(ar.dataset.adminIdx, ar.dataset.adminSetAtRole, ar.value); return; }
     var vr = e.target.closest('[data-admin-set-vol-role]');
     if (vr) { _setVolRoleField(vr.dataset.adminIdx, vr.dataset.adminSetVolRole, vr.value); return; }
-    var st = e.target.closest('[data-admin-set-at-subtype]');
-    if (st) { _setAtSubtypeField(st.dataset.adminIdx, st.dataset.adminSetAtSubtype, st.value); return; }
-    var sb = e.target.closest('[data-admin-set-at-stbs]');
-    if (sb) { _setAtStBsField(sb.dataset.adminIdx, sb.dataset.adminSetAtStbs, sb.value); return; }
-
-    // Day-toggle checkbox
-    var dt = e.target.closest('[data-admin-toggle-atstbs-day]');
-    if (dt && typeof toggleAtStBsDay === 'function') {
-      toggleAtStBsDay(+dt.dataset.adminIdx, +dt.dataset.adminDayv, dt.checked);
-      return;
-    }
-
     // change-check (checkbox → fn(checked))
     var cc = e.target.closest('[data-admin-change-check]');
     if (cc && typeof window[cc.dataset.adminChangeCheck] === 'function') {
@@ -408,13 +382,6 @@ function _removeElementById(id) { var e = document.getElementById(id); if (e) e.
   });
 
   document.addEventListener('input', function (e) {
-    // Time-format + subtype assignment
-    var tf = e.target.closest('[data-admin-time-format-subtype]');
-    if (tf) {
-      _timeFormatSubtype(tf, tf.dataset.adminIdx, tf.dataset.adminTimeFormatSubtype);
-      return;
-    }
-
     // input-val (fn(value))
     var iv = e.target.closest('[data-admin-input-val]');
     if (iv && typeof window[iv.dataset.adminInputVal] === 'function') {

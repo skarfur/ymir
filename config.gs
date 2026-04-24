@@ -75,6 +75,11 @@ function getConfig_() {
   return okJ(config);
 }
 
+// ── Bulk-schedule projection ──────────────────────────────────────────────────
+// Expand each activity class's bulkSchedule blob into activity items for a
+// given local date. Used by getDailyLog_ to pre-populate today's/future days'
+// activities without writing to the sheet until the row is actually saved or
+// materialized at midnight.
 // ── Schedule projection ──────────────────────────────────────────────────────
 // Produce activity items for a given local date. Used by getDailyLog_ to
 // pre-populate today's/future days' activities without writing to the sheet
@@ -87,15 +92,33 @@ function getConfig_() {
 //
 // Each returned item mirrors the shape stored under dailyLog.activities so the
 // frontend can treat scheduled + user-added activities uniformly:
-//   { id, activityTypeId, subtypeId, subtypeName, type, name,
-//     start, end, participants, notes, scheduled: true }
+//   { id, activityTypeId, classTag, name, start, end,
+//     participants, notes, scheduled: true }
 function projectActivitiesForDate_(dateISO) {
   if (!dateISO) return [];
-  var types = [];
-  try { types = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
-  if (!Array.isArray(types) || !types.length) return [];
+  var classes = [];
+  try { classes = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  if (!Array.isArray(classes) || !classes.length) return [];
   var dow = String(new Date(dateISO + 'T12:00:00').getDay()); // '0'..'6'
   var out = [];
+  classes.forEach(function(cls) {
+    if (!cls || cls.active === false) return;
+    if (!cls.bulkSchedule) return;
+    var bs = cls.bulkSchedule;
+    if (bs.fromDate && dateISO < bs.fromDate) return;
+    if (bs.toDate   && dateISO > bs.toDate)   return;
+    var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+    if (!days.length || days.indexOf(dow) === -1) return;
+    out.push({
+      id:             'sched-' + cls.id + '-' + dateISO,
+      activityTypeId: cls.id,
+      classTag:       cls.classTag || '',
+      name:           cls.name || '',
+      start:          bs.startTime || cls.defaultStart || '',
+      end:            bs.endTime   || cls.defaultEnd   || '',
+      participants:   '',
+      notes:          '',
+      scheduled:      true,
   types.forEach(function(at) {
     if (!at || at.active === false) return;
     var source = String(at.scheduleSource || 'bulk');
@@ -230,12 +253,29 @@ function getFlagConfig_() {
 
 function saveActivityType_(b) {
   try {
-    // Parse JSON-string payloads defensively (frontend may send arrays or strings).
-    let subtypes = [];
-    try { subtypes = b.subtypes ? (Array.isArray(b.subtypes) ? b.subtypes : JSON.parse(b.subtypes)) : []; } catch(e) { subtypes = []; }
+    // Flat activity-class shape. Each row in `activity_types` is now a
+    // self-contained activity (no nested subtypes). The old "type" concept
+    // collapses into the optional free-form `classTag` for grouping/filtering.
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
+    let bulkSchedule = null;
+    try {
+      bulkSchedule = b.bulkSchedule
+        ? (typeof b.bulkSchedule === 'string' ? JSON.parse(b.bulkSchedule) : b.bulkSchedule)
+        : null;
+    } catch(e) { bulkSchedule = null; }
+    if (bulkSchedule && typeof bulkSchedule === 'object') {
+      if (!Array.isArray(bulkSchedule.daysOfWeek)) bulkSchedule.daysOfWeek = [];
+      bulkSchedule.daysOfWeek = bulkSchedule.daysOfWeek.map(String);
+    }
     const isVol = b.volunteer === true || b.volunteer === 'true';
+    let reservedBoatIds = [];
+    try {
+      var rb = b.reservedBoatIds
+        ? (Array.isArray(b.reservedBoatIds) ? b.reservedBoatIds : JSON.parse(b.reservedBoatIds))
+        : [];
+      reservedBoatIds = (rb || []).map(String).filter(Boolean);
+    } catch (e) { reservedBoatIds = []; }
     // Schedule source: 'bulk' (per-subtype bulkSchedule) or 'calendar' (read
     // from Google Calendar). Anything unrecognized falls back to 'bulk' so
     // legacy rows keep working.
@@ -246,22 +286,19 @@ function saveActivityType_(b) {
       name: b.name,
       nameIS: b.nameIS || '',
       active: b.active !== false,
+      classTag: b.classTag || '',
       calendarId: b.calendarId || '',
       calendarSyncActive: b.calendarSyncActive === true || b.calendarSyncActive === 'true',
       scheduleSource: scheduleSource,
       volunteer: isVol,
       roles: isVol ? roles : [],
-      subtypes,
+      defaultStart: b.defaultStart || '',
+      defaultEnd:   b.defaultEnd   || '',
+      bulkSchedule: bulkSchedule || null,
+      reservedBoatIds: reservedBoatIds,
     });
-    // Drop any legacy top-level schedule left on existing rows. Bulk schedules
-    // now live per-subtype (migrated in-line during merge).
-    if (res.item && res.item.bulkSchedule !== undefined) {
-      const arr = readConfigList_('activity_types');
-      const idx = arr.findIndex(a => a && a.id === res.id);
-      if (idx >= 0) { delete arr[idx].bulkSchedule; setConfigSheetValue_('activity_types', JSON.stringify(arr)); cDel_('config'); }
-    }
-    // Volunteer event materialization runs in the background via syncVolunteerEvents_
-    // when the admin Volunteer tab renders, to avoid execution timeouts here.
+    // Volunteer event materialization runs in the background via
+    // syncVolunteerEvents_ when the admin Volunteer tab renders.
     return okJ({ id: res.id, item: res.item });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
