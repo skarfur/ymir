@@ -25,7 +25,7 @@ function renderActTypes() {
   card.innerHTML = active.map(a => {
     const roles = Array.isArray(a.roles) ? a.roles : tryParse_(a.roles, []);
     const isVol = bool(a.volunteer);
-    const tag = a.classTag || '';
+    const tag = classTagLabel(a);
     const sched = a.bulkSchedule
       ? (Array.isArray(a.bulkSchedule.daysOfWeek) && a.bulkSchedule.daysOfWeek.length
           ? a.bulkSchedule.daysOfWeek.length + ' ' + s('admin.daysPerWeek')
@@ -53,7 +53,11 @@ function openActTypeModal(id) {
   document.getElementById("actTypeModalTitle").textContent = a ? s('admin.actTypeModal.edit') : s('admin.actTypeModal.add');
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
-  document.getElementById("atClassTag").value = a ? (a.classTag || "") : "";
+  document.getElementById("atClassTag").value   = a ? (a.classTag   || "") : "";
+  document.getElementById("atClassTagIS").value = a ? (a.classTagIS || "") : "";
+  populateClassTagPresets();
+  var presetSel = document.getElementById("atClassTagPreset");
+  if (presetSel) presetSel.value = '';
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
@@ -74,7 +78,7 @@ function openActTypeModal(id) {
   window._atReservedBoatIds = a && Array.isArray(a.reservedBoatIds)
     ? a.reservedBoatIds.slice().map(String) : [];
   // Refresh datalist of existing class tags so the input autocompletes
-  refreshClassTagOptions();
+  populateClassTagPresets();
   renderAtDayBtns();
   renderAtBoatPicker();
   // Schedule source: default 'bulk' for legacy rows and new types.
@@ -107,7 +111,8 @@ async function saveActType() {
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
-    classTag: document.getElementById("atClassTag").value.trim(),
+    classTag:   document.getElementById("atClassTag").value.trim(),
+    classTagIS: document.getElementById("atClassTagIS").value.trim(),
     active:   document.getElementById("atActive").checked,
     volunteer: isVol,
     calendarId: document.getElementById("atCalendarId").value.trim(),
@@ -142,28 +147,53 @@ async function saveActType() {
   }
 }
 
-// Stable preset tag values, always available in the dropdown. Admins can
-// still type a custom value (the field is text + datalist), but these cover
-// the typical sailing-club taxonomy and keep tags consistent across classes.
+// Stable preset tag values with their Icelandic translations. The value is
+// the canonical English key (used for grouping/filtering across languages
+// and as the storage value for `classTag`). The `labelIS` is auto-filled
+// into `classTagIS` when an admin picks a preset; it can still be edited.
 var CLASS_TAG_PRESETS = [
-  'Lesson', 'Race', 'Training', 'Club event',
-  'Maintenance', 'Meeting', 'Social', 'Other',
+  { value: 'Lesson',      labelIS: 'Kennsla' },
+  { value: 'Race',        labelIS: 'Keppni' },
+  { value: 'Training',    labelIS: 'Þjálfun' },
+  { value: 'Club event',  labelIS: 'Félagsviðburður' },
+  { value: 'Maintenance', labelIS: 'Viðhald' },
+  { value: 'Meeting',     labelIS: 'Fundur' },
+  { value: 'Social',      labelIS: 'Samvera' },
+  { value: 'Other',       labelIS: 'Annað' },
 ];
 
-function refreshClassTagOptions() {
-  var dl = document.getElementById('atClassTagOptions');
-  if (!dl) return;
-  var seen = {};
-  var tags = CLASS_TAG_PRESETS.slice();
-  // Include any legacy/custom tags already in use so they show up in the
-  // dropdown too — avoids losing unusual values an admin added freehand.
-  (actTypes || []).forEach(function(a) {
-    if (a && a.classTag) tags.push(a.classTag);
-  });
-  var out = tags.filter(function(t) {
-    if (!t || seen[t]) return false; seen[t] = true; return true;
-  }).sort();
-  dl.innerHTML = out.map(function(t) { return '<option value="' + esc(t) + '">'; }).join('');
+function populateClassTagPresets() {
+  var sel = document.getElementById('atClassTagPreset');
+  if (!sel) return;
+  // First option is the placeholder (kept across renders); rebuild the rest.
+  var head = '<option value="" data-s="admin.classTagPickPreset"></option>';
+  sel.innerHTML = head + CLASS_TAG_PRESETS.map(function(p) {
+    return '<option value="' + esc(p.value) + '">' + esc(p.value) + ' / ' + esc(p.labelIS) + '</option>';
+  }).join('');
+  if (window.applyStrings) window.applyStrings(sel);
+}
+
+// Picking a preset fills both EN and IS inputs, then resets the select to its
+// placeholder so the admin can edit either field freely without the dropdown
+// looking like it still "owns" the value.
+function onAtClassTagPresetPick(value) {
+  if (!value) return;
+  var preset = CLASS_TAG_PRESETS.find(function(p) { return p.value === value; });
+  if (!preset) return;
+  var en = document.getElementById('atClassTag');
+  var is = document.getElementById('atClassTagIS');
+  if (en) en.value = preset.value;
+  if (is) is.value = preset.labelIS;
+  var sel = document.getElementById('atClassTagPreset');
+  if (sel) sel.value = '';
+}
+
+// Pick the right tag label for the current language with cross-fallback.
+function classTagLabel(cls) {
+  if (!cls) return '';
+  var L = (typeof getLang === 'function') ? getLang() : 'EN';
+  if (L === 'IS') return cls.classTagIS || cls.classTag || '';
+  return cls.classTag || cls.classTagIS || '';
 }
 
 function renderAtDayBtns() {
