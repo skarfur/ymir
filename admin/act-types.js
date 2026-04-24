@@ -53,11 +53,13 @@ function openActTypeModal(id) {
   document.getElementById("actTypeModalTitle").textContent = a ? s('admin.actTypeModal.edit') : s('admin.actTypeModal.add');
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
-  document.getElementById("atClassTag").value   = a ? (a.classTag   || "") : "";
-  document.getElementById("atClassTagIS").value = a ? (a.classTagIS || "") : "";
+  var atTag   = a ? (a.classTag   || "") : "";
+  var atTagIS = a ? (a.classTagIS || "") : "";
+  document.getElementById("atClassTag").value   = atTag;
+  document.getElementById("atClassTagIS").value = atTagIS;
   populateClassTagPresets();
   var presetSel = document.getElementById("atClassTagPreset");
-  if (presetSel) presetSel.value = '';
+  if (presetSel) presetSel.value = _matchClassTagPreset(atTag, atTagIS);
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
@@ -173,9 +175,9 @@ function populateClassTagPresets() {
   if (window.applyStrings) window.applyStrings(sel);
 }
 
-// Picking a preset fills both EN and IS inputs, then resets the select to its
-// placeholder so the admin can edit either field freely without the dropdown
-// looking like it still "owns" the value.
+// Picking a preset fills both EN and IS inputs. The select keeps the picked
+// value so the dropdown reads as the primary category picker — the EN/IS
+// inputs below are framed as a custom override.
 function onAtClassTagPresetPick(value) {
   if (!value) return;
   var preset = CLASS_TAG_PRESETS.find(function(p) { return p.value === value; });
@@ -184,8 +186,21 @@ function onAtClassTagPresetPick(value) {
   var is = document.getElementById('atClassTagIS');
   if (en) en.value = preset.value;
   if (is) is.value = preset.labelIS;
-  var sel = document.getElementById('atClassTagPreset');
-  if (sel) sel.value = '';
+}
+
+// Match the stored class tag back to a preset (if it matches both EN and IS
+// labels) so the dropdown reflects what's saved on reopen. Custom-typed tags
+// leave the dropdown at its placeholder.
+function _matchClassTagPreset(en, is) {
+  if (!en && !is) return '';
+  for (var i = 0; i < CLASS_TAG_PRESETS.length; i++) {
+    var p = CLASS_TAG_PRESETS[i];
+    if ((en === p.value || en === '') && (is === p.labelIS || is === '')) {
+      // Treat as "this preset" if neither field disagrees with it.
+      if (en === p.value || is === p.labelIS) return p.value;
+    }
+  }
+  return '';
 }
 
 // Pick the right tag label for the current language with cross-fallback.
