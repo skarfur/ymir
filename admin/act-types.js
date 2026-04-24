@@ -75,6 +75,11 @@ function openActTypeModal(id) {
   refreshClassTagOptions();
   renderAtDayBtns();
   renderAtBoatPicker();
+  // Schedule source: default 'bulk' for legacy rows and new types.
+  var schedSrc = (a && a.scheduleSource === 'calendar') ? 'calendar' : 'bulk';
+  document.getElementById("atSchedSrcBulk").checked     = schedSrc === 'bulk';
+  document.getElementById("atSchedSrcCalendar").checked = schedSrc === 'calendar';
+  updateAtScheduleSource();
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
   // Load volunteer roles
   window._atRoles = a && a.roles ? JSON.parse(JSON.stringify(
@@ -96,6 +101,7 @@ async function saveActType() {
   // Empty schedule (no fromDate/toDate AND no days) is normalized to null so
   // projection skips this class cleanly.
   var hasSchedule = (bs.fromDate || bs.toDate || (Array.isArray(bs.daysOfWeek) && bs.daysOfWeek.length));
+  const schedSrc = document.getElementById("atSchedSrcCalendar").checked ? 'calendar' : 'bulk';
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
@@ -108,6 +114,8 @@ async function saveActType() {
     defaultEnd:   document.getElementById("atDefaultEnd").value.trim(),
     bulkSchedule: hasSchedule ? JSON.stringify(bs) : null,
     reservedBoatIds: JSON.stringify(window._atReservedBoatIds || []),
+    scheduleSource: schedSrc,
+    subtypes: JSON.stringify(window._atSubtypes || []),
     roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
   };
   await saveEntity({
@@ -269,6 +277,96 @@ async function deleteActType(id) {
 function tryParse_(v, fallback) { try { return JSON.parse(v); } catch(e) { return fallback; } }
 
 // ── Activity class: volunteer roles ───────────────────────────────────────────
+function renderAtSubtypes() {
+  const list = document.getElementById("atSubtypesList");
+  if (!list) return;
+  if (!window._atSubtypes.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + s('admin.noSubtypes') + '</div>';
+    return;
+  }
+  const dayLabels = [
+    { v:'1', k:'day.mon', d:'Mon' }, { v:'2', k:'day.tue', d:'Tue' },
+    { v:'3', k:'day.wed', d:'Wed' }, { v:'4', k:'day.thu', d:'Thu' },
+    { v:'5', k:'day.fri', d:'Fri' }, { v:'6', k:'day.sat', d:'Sat' },
+    { v:'0', k:'day.sun', d:'Sun' },
+  ];
+  list.innerHTML = window._atSubtypes.map((st, i) => {
+    const bs = st.bulkSchedule || {};
+    const bsDays = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+    const daysHtml = dayLabels.map(d =>
+      `<label style="font-size:11px"><input type="checkbox" value="${d.v}" ${bsDays.indexOf(d.v)!==-1?'checked':''}
+        data-admin-toggle-atstbs-day data-admin-idx="${i}" data-admin-dayv="${d.v}"> <span data-s="${d.k}">${d.d}</span></label>`
+    ).join('');
+    return `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">NAME (EN)</label>
+          <input type="text" value="${esc(st.name||"")}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            data-admin-set-at-subtype="name" data-admin-idx="${i}"></div>
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">NAME (IS)</label>
+          <input type="text" value="${esc(st.nameIS||"")}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            data-admin-set-at-subtype="nameIS" data-admin-idx="${i}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT START</label>
+          <input type="text" value="${esc(st.defaultStart||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            data-admin-time-format-subtype="defaultStart" data-admin-idx="${i}"></div>
+        <div><label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:2px">DEFAULT END</label>
+          <input type="text" value="${esc(st.defaultEnd||"")}" placeholder="HH:MM" maxlength="5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 7px"
+            data-admin-time-format-subtype="defaultEnd" data-admin-idx="${i}"></div>
+        <button data-admin-click="_removeAtSubtype" data-admin-arg="${i}" title="Remove" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        <label style="font-size:9px;color:var(--muted);letter-spacing:.6px;display:block;margin-bottom:4px" data-s="admin.bulkSchedule">BULK SCHEDULE</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.fromDate">From date</label>
+            <input type="date" value="${esc(bs.fromDate||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              data-admin-set-at-stbs="fromDate" data-admin-idx="${i}"></div>
+          <div><label style="font-size:9px;color:var(--muted)" data-s="slot.toDate">To date</label>
+            <input type="date" value="${esc(bs.toDate||'')}" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;padding:5px 7px"
+              data-admin-set-at-stbs="toDate" data-admin-idx="${i}"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${daysHtml}</div>
+        ${(st.defaultStart || st.defaultEnd) ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + s('admin.bulkUsesDefaultTimes') + ': ' + esc(st.defaultStart || '?') + '–' + esc(st.defaultEnd || '?') + '</div>' : '<div style="font-size:10px;color:var(--muted);margin-top:4px;font-style:italic">' + s('admin.bulkSetDefaultTimes') + '</div>'}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// Keeps the subtype/bulk section visible only when the admin picked the bulk
+// schedule source. Under 'calendar', subtypes are still used (for title-based
+// matching and volunteer-event templates) but per-subtype bulkSchedule blocks
+// become irrelevant — fade the whole section to avoid mixed-authoring confusion.
+function updateAtScheduleSource() {
+  var isCal = !!document.getElementById("atSchedSrcCalendar") && document.getElementById("atSchedSrcCalendar").checked;
+  var section = document.getElementById("atSubtypesSection");
+  if (!section) return;
+  section.style.opacity = isCal ? '0.45' : '';
+  section.title = isCal ? (typeof s === 'function' ? s('admin.scheduleSourceCalendarBulkNote') : '') : '';
+}
+
+function ensureAtStBs(i) {
+  if (!window._atSubtypes[i].bulkSchedule) {
+    window._atSubtypes[i].bulkSchedule = { fromDate:'', toDate:'', daysOfWeek:[], startTime:'', endTime:'' };
+  }
+  return window._atSubtypes[i].bulkSchedule;
+}
+
+function toggleAtStBsDay(i, day, checked) {
+  var bs = ensureAtStBs(i);
+  if (!Array.isArray(bs.daysOfWeek)) bs.daysOfWeek = [];
+  var idx = bs.daysOfWeek.indexOf(day);
+  if (checked && idx === -1) bs.daysOfWeek.push(day);
+  else if (!checked && idx !== -1) bs.daysOfWeek.splice(idx, 1);
+}
+
+function addAtSubtypeRow() {
+  if (!window._atSubtypes) window._atSubtypes = [];
+  window._atSubtypes.push({ id: "st-"+Date.now(), name: "", nameIS: "", defaultStart: "", defaultEnd: "" });
+  renderAtSubtypes();
+}
+
+// ── Activity type: volunteer roles ────────────────────────────────────────────
 
 function toggleAtVolunteerSection() {
   var show = document.getElementById("atVolunteer").checked;

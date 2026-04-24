@@ -175,7 +175,7 @@ function maintOpenDetail(r, currentUser) {
         <div style="font-size:11px;margin-bottom:3px"><span style="color:var(--text);font-weight:500">${esc(c.by||'')}</span> <span style="color:var(--muted)">· ${sstr(c.at).slice(0,16).replace('T',' ')}</span></div>
         ${c.text ? `<div style="font-size:13px;margin-bottom:3px">${esc(c.text)}</div>` : ''}
         ${c.photoUrl ? `<img alt="Photo" src="${esc(driveImageUrl(c.photoUrl))}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer" data-view-photo="${esc(driveImageUrl(c.photoUrl))}">` : ''}
-        ${!resolved ? `<button data-cidx="${idx}" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="${s('maint.deleteComment')}">&times;</button>` : ''}
+        ${!resolved ? `<button data-cidx="${idx}" class="icon-btn" style="position:absolute;top:0;right:0;color:var(--muted);padding:0 2px" title="${s('maint.deleteComment')}" aria-label="${s('maint.deleteComment')}">${icon('trash-2')}</button>` : ''}
       </div>`).join('');
 
     // Materials list for saumaklúbbur projects
@@ -225,16 +225,16 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-add" style="margin-top:12px">
         <div style="display:flex;gap:6px;align-items:center">
           <input id="mdCommentInput" type="text" placeholder="${s('maint.addCommentPh')}" style="flex:1">
-          <label style="cursor:pointer;font-size:16px;padding:4px;color:var(--muted);flex-shrink:0" title="${s('maint.attachPhoto')}">📷
+          <label style="cursor:pointer;padding:4px;color:var(--muted);flex-shrink:0;display:inline-flex;align-items:center" title="${s('maint.attachPhoto')}" aria-label="${s('maint.attachPhoto')}">${icon('image-plus')}
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
-          <button id="mdCommentBtn" class="btn btn-secondary btn-sm">${s('maint.postBtn')}</button>
+          <button id="mdCommentBtn" class="btn btn-secondary btn-sm icon-btn" title="${s('maint.postBtn')}" aria-label="${s('maint.postBtn')}">${icon('message-square-plus')}</button>
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
       ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--accent)11;border:1px solid var(--accent)44;font-size:12px;color:var(--accent-fg)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary btn-sm" style="margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
       <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <button id="mdDeleteBtn" class="btn btn-secondary btn-sm" style="color:var(--red)">${s('maint.deleteBtn')}</button>
+        <button id="mdDeleteBtn" class="btn btn-secondary btn-sm icon-btn" style="color:var(--red)" title="${s('maint.deleteBtn')}" aria-label="${s('maint.deleteBtn')}">${icon('trash-2')}</button>
         ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary btn-sm">${s('btn.edit')}</button>` : ''}
         ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary btn-sm" style="margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
         <button id="mdResolveBtn" class="btn btn-primary btn-sm"${isSauma && boolVal(r.approved) ? '' : ' style="margin-left:auto"'}>${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
@@ -422,7 +422,7 @@ function maintOpenDetail(r, currentUser) {
       if(!text && !_mdCommentPhotoData) return;
       const by = getBy();
       const btn = document.getElementById('mdCommentBtn');
-      if(btn) { btn.disabled=true; btn.textContent=s('maint.postingBtn'); }
+      if(btn) { btn.disabled=true; btn.setAttribute('aria-label', s('maint.postingBtn')); btn.title = s('maint.postingBtn'); }
       try {
         let photoUrl = '';
         if (_mdCommentPhotoData) {
@@ -437,7 +437,7 @@ function maintOpenDetail(r, currentUser) {
         _mdCommentPhotoData = null;
         if(input) input.value='';
         renderAndWire();
-      } finally { if(btn){btn.disabled=false;btn.textContent=s('maint.postBtn');} }
+      } finally { if(btn){btn.disabled=false; btn.setAttribute('aria-label', s('maint.postBtn')); btn.title = s('maint.postBtn');} }
     };
     document.getElementById('mdCommentBtn')?.addEventListener('click',postComment);
     document.getElementById('mdCommentInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')postComment();});

@@ -3,6 +3,193 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — fix 2×16-minute time drift from Sheets auto-converting "HH:MM" strings
+
+Observed: a scheduled event created today appeared 32 minutes later than
+entered. Root cause: `setValue("09:00")` hands Sheets a string that looks
+like a time literal, and Sheets silently stores it as a Date anchored to
+the 1899-12-30 epoch **in the sheet's timezone**. `sanitizeCell_` then
+formatted that Date using the **script's** timezone, and for the
+Atlantic/Reykjavik LMT-era historical date the two timezones' tzdata
+tables disagreed by ~16 minutes. Any round-trip (read → frontend → write)
+compounded the drift, landing at exactly 2×16 = 32 minutes.
+
+Two fixes:
+
+1. **Write side** (`literalWrite_` in `code.gs`) — prepend a literal
+   apostrophe to any string matching `HH:MM` or `YYYY-MM-DD` so Sheets
+   stores the cell as plain text and never auto-converts to a Date. The
+   apostrophe is invisible in the rendered cell and stripped by
+   `getValue()`. Existing protection for formula chars (`=+-@`) and line
+   breaks is preserved.
+2. **Read side** (`sanitizeCell_` in `code.gs`) — for Date cells whose
+   UTC ISO starts with `1899-12-2x/3x` (Sheets' time-only epoch), format
+   using the spreadsheet's timezone (`ss.getSpreadsheetTimeZone()`,
+   cached per request) instead of the script's timezone. The sheet TZ is
+   what Sheets used to anchor the value, so reading with the same TZ
+   round-trips cleanly regardless of which engine's tzdata the script
+   process uses.
+
+Together, these close the drift class:
+- New writes store text → zero TZ involvement on the round-trip.
+- Pre-existing Date-valued cells format consistently against the same TZ
+  that wrote them.
+
+⚠️ Backend file changed: `code.gs`.
+
+## Unreleased — admin tabs consolidate into one Scheduling tab + client ScheduledEvent normalizer
+
+Three admin tabs — Activity Types, Volunteers, and (Club) Calendars — merge
+into a single **Scheduling** tab with four col-sections: Upcoming events,
+Activity types, Volunteer events, Calendars. Reservation slots keep their
+own tab (per-boat; different domain). URL aliases (`?tab=actTypes`,
+`?tab=volunteers`, `?tab=clubCal`) redirect to `?tab=scheduling` so
+bookmarks keep working.
+
+The new **Upcoming events** card is the payoff: a 30-day merged timeline of
+volunteer events + bulk-scheduled activity projections, sorted by date and
+time, with kind + source badges. Built client-side from data already loaded
+in the admin page — no extra API calls. Activity types that read their
+schedule from Google Calendar are surfaced as a hint beneath the list
+(per-date projection needs the backend).
+
+**New files**:
+- `shared/scheduled-event.js` — `toScheduledEvent(raw, {kind, source, signupCount})`,
+  `buildUpcomingEvents({actTypes, volunteerEvents, volunteerSignups, fromIso, toIso})`,
+  `calendarSourcedActivityTypes(actTypes)`. The shape matches the backend's
+  `scheduling.gs` domain object so front- and backend stay aligned.
+- `admin/scheduling.js` — owns `renderSchedulingTab()` (called from
+  `showTab('scheduling')`) and `renderUpcomingEvents()`. Existing renderers
+  in `act-types.js` / `volunteers.js` / `calendars.js` are unchanged and
+  continue to own their own col-sections; the scheduling module just
+  composes them.
+
+Plus minor CSS in `admin.css` for the timeline look (tabular time column,
+kind/source badges, per-day group headers), a documentation update in
+`CLAUDE.md`, and 11 new strings × 2 languages (all `admin.sched*` /
+`admin.tabScheduling`).
+
+## Unreleased — unified `scheduled_events` table replaces two split storage locations
+
+Volunteer events and daily-log activities now share a single sheet,
+`scheduled_events`, with a `kind` discriminator (`'volunteer'` vs `'activity'`)
+and a `status` column (`'upcoming' | 'completed' | 'cancelled' | 'orphaned'`).
+Replaces:
+
+- the `activities` JSON column on `daily_log` rows (for daily-log activities), and
+- the `volunteer_events` JSON value in `config` (for volunteer events).
+
+Every scheduled event is now one sheet row, keyed by id. Signups in
+`volunteer_signups` already reference that id via `eventId`, so no cascade
+rewrite was needed — ids are preserved across the migration.
+
+**Migration**: one-shot, idempotent, lives in `_setup.gs` as
+`migrateToScheduledEvents()`. It reads the legacy locations, inserts each row
+into `scheduled_events`, and skips ids that already exist. Run it from the
+Apps Script editor once per environment after deploying the new code. The
+legacy columns/keys are left populated (but no longer read) so a `git revert`
+of this cutover rolls back cleanly.
+
+**New module**: `scheduling.gs` owns the read/write primitives
+(`sched_getById_`, `sched_listVolunteerEvents_`, `sched_listActivitiesForDate_`,
+`sched_upsert_`, `sched_cancel_`, `sched_hardDelete_`). Every site that used
+to touch either storage location now goes through these helpers, so the
+sheet is a genuine single source of truth.
+
+**Call sites rewritten** (backend only):
+
+- `public.gs` — `saveVolunteerEvent_`, `deleteVolunteerEvent_`,
+  `volunteerSignup_` (virtual-event materialization),
+  `materializeVolunteerEventsForAt_`, `reconcileVolunteerEventsForAt_`,
+  `syncVolunteerEvents_`. `volMergeMaterialized_` deleted — replaced by
+  idempotent upsert.
+- `members.gs` — `getDailyLog_` (reads from `scheduled_events`, packs into
+  the existing `log.activities` JSON for frontend compat), `saveDailyLog_`
+  (splits per-activity rows via new `persistDailyLogActivities_` helper),
+  `materializeYesterday_` (freezes projections into rows).
+- `checkouts.gs` — `syncVolunteerEventToCalendar_` reads/writes through
+  `sched_*` helpers instead of config.
+- `config.gs` — `getConfig_` synthesizes the legacy `volunteerEvents` DTO
+  via `listVolunteerEventDtos_` (in `public.gs`) so the frontend contract is
+  preserved. `deleteActivityType_` cascade drops rows from `scheduled_events`.
+
+**Frontend**: zero changes in this commit. `getConfig().volunteerEvents` and
+`getDailyLog().log.activities` preserve their pre-cutover shapes. Admin tab
+consolidation + client-side `ScheduledEvent` normalizer land in a follow-up.
+
+⚠️ Backend files changed: `_setup.gs`, `code.gs` (SCHEMA_/TABS_), new
+`scheduling.gs`, `config.gs`, `members.gs`, `public.gs`, `checkouts.gs`.
+Redeploy Apps Script, then run `migrateToScheduledEvents()` from the editor.
+
+## Unreleased — activity types can read their schedule from Google Calendar, volunteer events write back
+
+Activity types now pick a `scheduleSource`: `bulk` (the existing per-subtype
+bulk-schedule editor) or `calendar` (reads from the activity type's Google
+Calendar for each date). In calendar mode, `projectActivitiesForDate_` calls
+the new `projectActivitiesFromCalendar_` helper (`checkouts.gs`) — it reads
+events for the requested day via `CalendarApp.getCalendarById().getEvents()`,
+caches the result in `CacheService.getScriptCache()` for 5 minutes, and maps
+each event to the same scheduled-activity shape the daily log already knows
+how to render. Subtype matching is best-effort by title substring (EN or IS),
+so subtype names still carry through when they appear in the calendar event
+title. Bulk-schedule authoring is preserved unchanged for types that stay on
+`scheduleSource: 'bulk'` (the default, also used for legacy rows).
+
+Admins author the new setting in the activity-type modal via a radio-button
+block (`admin/index.html`, wired in `admin/act-types.js`). Switching a type
+to calendar mode fades the subtype/bulk-schedule section so nobody edits it
+expecting it to do something. The existing `calendarId` + `calendarSyncActive`
+fields double as the read source — one calendar does both jobs.
+
+Volunteer events now round-trip to Google Calendar. `saveVolunteerEvent_` and
+`deleteVolunteerEvent_` (`public.gs`) call the new
+`syncVolunteerEventToCalendar_` / `deleteVolunteerEventCalendarEvent_` helpers
+(`checkouts.gs`) — mirroring the existing daily-log-activity writer. The
+reconcile, prune, and cascade paths (`reconcileVolunteerEventsForAt_`,
+`syncVolunteerEvents_`, `deleteActivityType_`) tear down the GCal twin when a
+materialized event is pruned or soft-deleted, so the calendar never drifts
+out of sync with the admin view. `gcalEventId` is persisted on the event row
+in config and preserved across edits, so upserts stay idempotent.
+
+New strings: `admin.scheduleSource*` (5 keys × 2 languages).
+
+⚠️ Backend files changed: `config.gs`, `checkouts.gs`, `public.gs`.
+
+## Unreleased — Lucide icons replace text/emoji in maintenance & admin modals
+
+Added a shared Lucide icon registry (`window.icon(name)` in `shared/ui.js`)
+seeded with `image-plus`, `message-square-plus`, and `trash-2` (MIT). Inline
+SVGs use `currentColor` + `.icon-inline`, so they inherit size and color from
+their container and stay CSP-safe under `script-src 'self'`.
+
+`shared/strings.js` `applyStrings()` now recognizes three extra declarative
+hooks on any element: `data-s-aria` (sets `aria-label`), `data-s-title` (sets
+`title`), and `data-icon="<name>"` (injects the registered SVG once). This is
+the icon-only counterpart to the existing `data-s` text setter — innerHTML is
+only touched by `data-icon`, so i18n and icon painting don't fight.
+
+Applied to: the camera-emoji photo attach in the maintenance comment form
+(→ `image-plus`), the maintenance comment Post button (→ `message-square-plus`,
+now icon-only), the per-comment delete ×, the maintenance request delete
+button, and eight admin modal Delete buttons (boat category, location,
+checklist item, launch-checklist item, activity type, volunteer event, cert
+definition, passport item). The trip card "Add photos" button keeps its text
+but drops the 📷 emoji and gets a proper Lucide icon prefix; `tc.addPhotos`
+in both strings files no longer contains the emoji.
+
+Added `.icon-btn` helper to `shared/style.css` for flex-centered icon buttons.
+## Unreleased — clock-in no longer throws "unknown tabKey time_clock"
+
+`payroll.gs` was calling `insertRow_(TABS_.timeClock, …)` / `updateRow_(TABS_.timeClock, …)`.
+`TABS_.timeClock` evaluates to the sheet name `'time_clock'`, but `validateRow_`
+strictly requires the tab *key* (`'timeClock'`) and threw `validateRow_:
+unknown tabKey time_clock`. Other `TABS_.*` sites worked by coincidence because
+their key and value matched — `timeClock` is the only key that differs from its
+value. Switched the five `insertRow_`/`updateRow_` sites (clockIn/clockOut/
+breakStart/breakEnd/adminEditTime) to the string key `'timeClock'`. Read-only
+and direct-sheet sites (`readAll_`, `ss.getSheetByName`) still use
+`TABS_.timeClock` since they need (or tolerate) the sheet name.
+
 ## Unreleased — bulk-scheduled activities flow into the daily log
 
 Activities defined per-subtype as `bulkSchedule` entries in `activity_types`
@@ -50,6 +237,18 @@ Boat-category color now tints the whole card, not just the left border.
 `--tc-cat` / `--tc-cat-bg` CSS custom properties are set inline from
 `boatCatColors()` and drive the card background, the date column, and the
 expanded boat/logistics sections via `color-mix()` at 5–10% alpha.
+
+Second pass added `qr-code` and `wind` to the registry. The camera emoji in
+`qr.scanBtn` ("📷 Scan QR" / "📷 Skanna QR") and the camera emoji in
+`daily.wxLogBtn` ("📸 Log snapshot" / "📸 Taka veðurmynd") are gone from
+both strings files; render sites in `member/member.js` (launch picker ×2,
+issue-report boat picker, incident-report boat picker) now prepend
+`icon('qr-code')` programmatically. The two static HTML buttons
+(`incidents/index.html` boat scan, `dailylog/index.html` weather snapshot)
+switch to a two-span pattern — `<span data-icon="name">` + `<span data-s="key">`
+— so the icon and the translated text don't trample each other during
+`applyStrings()`. The 🔳 emoji on the admin boat-list QR-reveal button is
+replaced with a proper `qr-code` icon.
 
 ## Unreleased — no-orphan utility for CSS grids
 

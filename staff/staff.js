@@ -1068,15 +1068,13 @@ let _flagOverride = null;  // { active, flagKey, notes, notesIS, setAt, setByNam
 let _foDraftFlag = 'yellow';
 
 function renderFlagOverrideCard() {
-  const activeRow   = document.getElementById('foActiveRow');
-  const inactiveRow = document.getElementById('foInactiveRow');
-  const form        = document.getElementById('foForm');
+  const activeRow = document.getElementById('foActiveRow');
+  const form      = document.getElementById('foForm');
   const ov = _flagOverride;
-  if (ov && ov.active) {
+  const formOpen = form && !form.classList.contains('hidden');
+  if (ov && ov.active && !formOpen) {
     activeRow.classList.remove('hidden');
     activeRow.style.display = 'flex';
-    inactiveRow.style.display = 'none';
-    form.classList.add('hidden');
     const flag = (typeof SCORE_CONFIG !== 'undefined' && SCORE_CONFIG.flags[ov.flagKey]) || { icon:'⚑', color:'var(--text)', border:'var(--border)', bg:'var(--surface)', advice:ov.flagKey };
     const IS  = (typeof getLang === 'function' && getLang() === 'IS');
     const badge = document.getElementById('foActiveBadge');
@@ -1092,7 +1090,6 @@ function renderFlagOverrideCard() {
   } else {
     activeRow.classList.add('hidden');
     activeRow.style.display = 'none';
-    inactiveRow.style.display = 'flex';
   }
 }
 
@@ -1111,8 +1108,11 @@ function renderFoFlagBtns() {
 function pickFoFlag(key) { _foDraftFlag = key; renderFoFlagBtns(); }
 
 function toggleFlagOverrideForm(show) {
-  const form = document.getElementById('foForm');
-  if (show) {
+  const form   = document.getElementById('foForm');
+  const toggle = document.getElementById('foToggle');
+  const caret  = document.getElementById('foCaret');
+  const wantShow = (typeof show === 'boolean') ? show : form.classList.contains('hidden');
+  if (wantShow) {
     _foDraftFlag = (_flagOverride?.flagKey) || 'yellow';
     document.getElementById('foNotes').value   = _flagOverride?.notes   || '';
     document.getElementById('foNotesIS').value = _flagOverride?.notesIS || '';
@@ -1121,6 +1121,9 @@ function toggleFlagOverrideForm(show) {
   } else {
     form.classList.add('hidden');
   }
+  if (toggle) toggle.setAttribute('aria-expanded', String(wantShow));
+  if (caret)  caret.textContent = wantShow ? '▾' : '▸';
+  renderFlagOverrideCard();
 }
 
 async function saveFlagOverride() {
@@ -1137,7 +1140,7 @@ async function saveFlagOverride() {
   const prev = _flagOverride;
   _flagOverride = ov;
   wxLoadFlagOverride(ov);
-  renderFlagOverrideCard();
+  toggleFlagOverrideForm(false);
   document.getElementById('wxWidget')?._wxRefresh?.();
   try { await apiPost('saveFlagOverride', { flagOverride: ov }); }
   catch(e) {

@@ -71,7 +71,6 @@
 
   <!-- ══ ASSIGN CREDENTIALS ══ -->
   <div class="cq-section" id="sectCredentials">
-    <div class="cq-section-hdr" data-s="cq.assignCredTitle"></div>
     <div class="mb-10">
       <button class="btn btn-primary btn-sm" data-cq-click="openMemberCertModal" data-s="cq.assignCred"></button>
     </div>
@@ -80,9 +79,22 @@
   <!-- ══ RESERVATIONS ══ -->
   <div class="cq-section" id="sectReservations">
     <div class="cq-section-hdr" data-s="cq.reservationsTitle">RESERVATIONS</div>
-    <div class="d-flex items-center gap-8 mb-10 flex-wrap">
+    <div class="d-flex items-center gap-8 mb-8 flex-wrap">
       <label data-s="slot.filterBoat" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" for="cqResBoat">Boat</label>
       <select id="cqResBoat" data-cq-change="loadCqSlots" class="filter-select"></select>
+      <div class="d-flex items-center gap-6 ml-auto pos-relative">
+        <label class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
+        <button type="button" id="cqBookingColorBtn" data-cq-click="toggleCqBookingColorPop" aria-haspopup="dialog" aria-expanded="false" class="border-muted rounded-4 cursor-pointer" style="width:36px;height:26px;padding:0;border:1px solid var(--border);background:#2e7d32"></button>
+        <div id="cqBookingColorPop" class="hidden" style="position:absolute;top:calc(100% + 6px);right:0;z-index:500;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;box-shadow:var(--shadow-md);min-width:200px">
+          <div class="d-flex items-center gap-8 mb-8">
+            <input type="color" id="cqBookingColor" data-cq-change="saveCqBookingColor" class="border-muted rounded-4 bg-surface cursor-pointer" style="width:36px;height:26px;padding:2px">
+            <span class="text-10 text-muted" data-s="lbl.custom">Custom</span>
+          </div>
+          <div id="cqBookingColorSwatches"></div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex items-center gap-8 mb-10 flex-wrap">
       <div class="slot-week-nav">
         <button class="btn btn-secondary btn-sm" data-cq-click="shiftCqWeek" data-cq-arg="-1">&larr;</button>
         <span id="cqWeekLabel" class="week-label"></span>
@@ -90,11 +102,6 @@
         <button class="btn btn-secondary btn-sm" data-cq-click="cqWeekToday" data-s="slot.today">Today</button>
         <button class="btn btn-primary btn-sm" id="cqCreateSlotBtn" data-s="slot.createAndBook" data-s-attr="title" data-cq-click="openCreateSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.createAndBook">+ New Booking</span></button>
         <button class="btn btn-primary btn-sm" data-s="slot.bulkBook" data-s-attr="title" data-cq-click="openBulkSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.bulkBook">Bulk Book</span></button>
-      </div>
-      <div class="d-flex items-center gap-6 ml-auto flex-wrap">
-        <label for="cqBookingColor" class="text-10 text-muted" style="text-transform:uppercase;letter-spacing:.5px" data-s="cq.bookingColor">My booking color</label>
-        <input type="color" id="cqBookingColor" data-cq-change="saveCqBookingColor" class="border-muted rounded-4 bg-surface cursor-pointer" style="width:36px;height:26px">
-        <div id="cqBookingColorSwatches"></div>
       </div>
     </div>
     <div id="cqSlotGrid" style="overflow-x:auto"></div>

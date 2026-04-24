@@ -771,19 +771,19 @@ textarea { min-height: 70px; }
 
 /* ── BOAT CARDS (shared/boats.js) ─────────────────────────────────────────────── */
 
-/* Fleet card — available / out / oos */
+/* Fleet card — available / out / oos.
+   Left border is set inline by renderBoatCard() to the category color.
+   Status is expressed through badges + opacity, not border color. */
 .bc-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--moss);
   border-radius: var(--radius-md);
   padding: 12px 14px;
   transition: border-color .2s, box-shadow .2s;
   box-shadow: var(--shadow-sm);
 }
-.bc-card.bc-avail   { }
-.bc-card.bc-out     { border-left: 3px solid var(--accent); }
-.bc-card.bc-overdue { border-left: 3px solid var(--red); }
+.bc-card.bc-avail   { cursor: pointer; }
+.bc-card.bc-avail:hover { background: var(--faint); }
 .bc-card.bc-oos     { opacity: .55; }
 
 /* Checkout card — active checkouts */
@@ -1551,6 +1551,10 @@ textarea { min-height: 70px; }
 .overflow-hidden   { overflow: hidden; }
 .text-ellipsis     { text-overflow: ellipsis; }
 .icon-inline { width: 1em; height: 1em; vertical-align: -.125em; flex-shrink: 0; }
+
+/* Icon-only button: sized against its SVG child, centered, no extra padding. */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.icon-btn > .icon-inline { width: 1.1em; height: 1.1em; vertical-align: middle; }
 
 /* ── Accessibility: skip link (injected by <ymir-header>) ─────────────────── */
 .skip-link {

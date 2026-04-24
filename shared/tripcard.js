@@ -366,7 +366,7 @@ function tripCard(t){
   const actionsRow = isOwner ? `<div class="trip-actions trip-exp-full">
     ${canEditTrip ? `<button class="trip-action-btn primary" data-trip-action="edit-trip" data-trip-id="${esc(t.id)}">${s('tc.editTrip')}</button>` : ''}
     ${!t.trackFileUrl ? `<button class="trip-action-btn" data-trip-action="upload-track" data-trip-id="${esc(t.id)}">${s('tc.addGps')}</button>` : ''}
-    <button class="trip-action-btn" data-trip-action="upload-photos" data-trip-id="${esc(t.id)}">${s('tc.addPhotos')}</button>
+    <button class="trip-action-btn" data-trip-action="upload-photos" data-trip-id="${esc(t.id)}">${icon('image-plus')} ${s('tc.addPhotos')}</button>
     ${(!isVer && !t.validationRequested && !_confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) ? `<button class="trip-action-btn" data-trip-action="request-validate" data-trip-id="${esc(t.id)}">${s('tc.requestVerification')}</button>` : ''}
   </div>` : '';
   const hasWeather = !!(eWs||eDir||eGust||eCond||eAir||eFeel||eSst||eWv||ePres||eFlag);

@@ -27,6 +27,7 @@ const TABS_ = {
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
   volunteerSignups: 'volunteer_signups',
+  scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
 };
@@ -294,12 +295,24 @@ function bool_(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1
 // would interpret as a formula (=, +, -, @) or a line-breaking control
 // (CR/LF/TAB). The apostrophe itself is not rendered to the user; it just
 // forces Sheets to treat the cell as text. Non-strings pass through.
+//
+// Also applies to HH:MM time-literal strings ("09:00", "23:45") and ISO
+// date strings ("2026-04-23"). Sheets would otherwise auto-parse those into
+// Date values anchored to the 1899-12-30 epoch, and a round-trip through
+// `sanitizeCell_` may then drift by the delta between the sheet's timezone
+// and the script's timezone for that historical date (Atlantic/Reykjavik's
+// pre-1908 LMT offset has bitten us here — observed as 16-minute drift per
+// round-trip). Forcing text storage sidesteps the auto-conversion entirely.
+//
 // Named distinctly from the read-side `sanitizeCell_(col, val)` normalizer.
+var TIME_LITERAL_RE_ = /^(?:[01]?\d|2[0-3]):[0-5]\d$/;
+var DATE_LITERAL_RE_ = /^\d{4}-\d{2}-\d{2}$/;
 function literalWrite_(v) {
   if (typeof v !== 'string' || v === '') return v;
   var c = v.charCodeAt(0);
   if (c === 0x3D || c === 0x2B || c === 0x2D || c === 0x40 ||
       c === 0x0D || c === 0x0A || c === 0x09) return "'" + v;
+  if (TIME_LITERAL_RE_.test(v) || DATE_LITERAL_RE_.test(v)) return "'" + v;
   return v;
 }
 function okJ(data) { return jsonR_({ success: true, ...data }); }
@@ -932,11 +945,18 @@ function sanitizeCell_(col, val) {
     // UTC slicing drifts by the zone offset — including historical
     // sub-hour offsets (e.g. Atlantic/Reykjavik LMT for 1899-dated
     // time-only cells), which surfaces as mis-displayed HH:MM values.
-    const tz = Session.getScriptTimeZone();
+    //
+    // For 1899-epoch time-only cells we format using the *sheet's*
+    // timezone (not the script's). Sheets anchored the value at
+    // 1899-12-30 using whatever its own timezone was, and any TZ-data
+    // disagreement with the script's TZ at that historical instant (the
+    // classic 2×16-minute Reykjavik LMT drift bug) shows up if we mix
+    // the two. Use the same TZ that wrote the value to read it back.
     const iso = val.toISOString();
     if (iso.startsWith('1899-12-3') || iso.startsWith('1899-12-2')) {
-      return Utilities.formatDate(val, tz, 'HH:mm');
+      return Utilities.formatDate(val, getSheetTz_(), 'HH:mm');
     }
+    const tz = Session.getScriptTimeZone();
     return TIME_COLS_.has(col)
       ? Utilities.formatDate(val, tz, 'HH:mm')
       : Utilities.formatDate(val, tz, 'yyyy-MM-dd');
@@ -945,6 +965,18 @@ function sanitizeCell_(col, val) {
     return String(val);
   }
   return val;
+}
+
+// Per-request cached lookup of the spreadsheet's timezone. Cleared by
+// clearSheetCache_ at entry points (doGet/doPost/triggers). Called from
+// sanitizeCell_ on every 1899-epoch cell read; caching avoids hammering
+// SpreadsheetApp.openById on a hot path.
+var _sheetTz_ = null;
+function getSheetTz_() {
+  if (_sheetTz_) return _sheetTz_;
+  try { _sheetTz_ = ss_().getSpreadsheetTimeZone(); }
+  catch (e) { _sheetTz_ = Session.getScriptTimeZone(); }
+  return _sheetTz_;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -956,7 +988,7 @@ function sanitizeCell_(col, val) {
 // ─────────────────────────────────────────────────────────────────────────────
 var _sheetCache_ = {}; // tabKey -> { sheet, headers, values, sanitized }
 
-function clearSheetCache_() { _sheetCache_ = {}; }
+function clearSheetCache_() { _sheetCache_ = {}; _sheetTz_ = null; }
 function invalidateSheetCache_(tabKey) { delete _sheetCache_[tabKey]; }
 
 function getSheetData_(tabKey) {

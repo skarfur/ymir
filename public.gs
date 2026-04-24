@@ -1155,6 +1155,9 @@ function publicShareRecord_(b) {
 
 
 // ── VOLUNTEERS ──────────────────────────────────────────────────────────────
+// Volunteer events live in the scheduled_events sheet (kind='volunteer'). See
+// scheduling.gs for the read/write primitives. Signups keep their own sheet
+// (volunteer_signups) and reference scheduled_events.id via `eventId`.
 
 function saveVolunteerEvent_(b) {
   try {
@@ -1166,31 +1169,46 @@ function saveVolunteerEvent_(b) {
     var _endIso   = b.endDate || '';
     if (_endIso && _startIso && _endIso < _startIso) { var _swap = _endIso; _endIso = _startIso; _startIso = _swap; }
     if (_endIso && _endIso === _startIso) _endIso = '';
-    const res = saveConfigListItem_('volunteer_events', {
-      id: b.id || '',
-      activityTypeId: b.activityTypeId || '',
-      title: b.title || '',
-      titleIS: b.titleIS || '',
-      date: _startIso,
-      endDate: _endIso,
-      startTime: b.startTime || '',
-      endTime: b.endTime || '',
-      leaderMemberId: b.leaderMemberId || b.leaderId || '',
-      leaderName: b.leaderName || '',
-      leaderPhone: b.leaderPhone || '',
-      showLeaderPhone: b.showLeaderPhone === true || b.showLeaderPhone === 'true',
-      notes: b.notes || '',
-      notesIS: b.notesIS || '',
-      roles,
-      active: b.active !== false,
+    // Preserve gcalEventId, createdAt, source when updating an existing row.
+    var prev = b.id ? sched_getById_(b.id) : null;
+    var todayIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var saved = sched_upsert_({
+      id:                    b.id || '',
+      kind:                  'volunteer',
+      status:                (_startIso && _startIso < todayIso) ? 'completed' : 'upcoming',
+      source:                prev ? (prev.source || 'manual') : 'manual',
+      activityTypeId:        b.activityTypeId || '',
+      date:                  _startIso,
+      endDate:               _endIso,
+      startTime:             b.startTime || '',
+      endTime:               b.endTime || '',
+      title:                 b.title || '',
+      titleIS:               b.titleIS || '',
+      notes:                 b.notes || '',
+      notesIS:               b.notesIS || '',
+      leaderMemberId:        b.leaderMemberId || b.leaderId || '',
+      leaderName:            b.leaderName || '',
+      leaderPhone:           b.leaderPhone || '',
+      showLeaderPhone:       b.showLeaderPhone === true || b.showLeaderPhone === 'true',
+      roles:                 roles,
+      gcalEventId:           prev ? prev.gcalEventId : '',
+      createdAt:             prev ? prev.createdAt : '',
     });
-    return okJ({ id: res.id, item: res.item });
+    // Push to Google Calendar (upsert) if the activity type has sync enabled.
+    // Fails silently on outage — see syncVolunteerEventToCalendar_.
+    try { syncVolunteerEventToCalendar_(saved.id); } catch (e) {}
+    cDel_('config');
+    return okJ({ id: saved.id, item: _schedToVolDto_(saved) });
   } catch(e) { return failJ('saveVolunteerEvent failed: ' + e.message); }
 }
 
 function deleteVolunteerEvent_(b) {
   try {
-    deleteConfigListItem_('volunteer_events', b.id);
+    var prev = b.id ? sched_getById_(b.id) : null;
+    if (prev) {
+      try { deleteVolunteerEventCalendarEvent_(prev); } catch (e) {}
+      sched_hardDelete_(b.id);
+    }
     // Cascade: remove all signups for this event.
     try {
       const signups = readAll_('volunteerSignups');
@@ -1198,6 +1216,7 @@ function deleteVolunteerEvent_(b) {
         deleteRow_('volunteerSignups', 'id', s.id);
       });
     } catch(e) { /* tab may not exist yet */ }
+    cDel_('config');
     return okJ({ deleted: true });
   } catch(e) { return failJ('deleteVolunteerEvent failed: ' + e.message); }
 }
@@ -1220,40 +1239,29 @@ function volunteerSignup_(b) {
     if (existing.find(s => s.eventId === b.eventId && s.roleId === b.roleId && s.kennitala === b.kennitala)) {
       return failJ('Already signed up for this role');
     }
-    // Check slot capacity
-    let events = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]');
-    let evt = events.find(e => e.id === b.eventId);
-    // If not found and a virtualEvent payload was provided, materialize it
-    // into volunteer_events so future signups and lookups work.
+    // Find the event. If not materialized yet and a virtualEvent payload was
+    // provided (id starts with 'vae-'), materialize into scheduled_events now
+    // so future signups + lookups work.
+    var evt = sched_getById_(b.eventId);
     if (!evt && b.virtualEvent && String(b.eventId).indexOf('vae-') === 0) {
       const ve = b.virtualEvent;
-      evt = {
-        id: ve.id,
-        activityTypeId: ve.activityTypeId || ve.sourceActivityTypeId || '',
-        sourceActivityTypeId: ve.sourceActivityTypeId || '',
-        sourceSubtypeId: ve.sourceSubtypeId || '',
-        title: ve.title || '',
-        titleIS: ve.titleIS || '',
-        subtitle: ve.subtitle || '',
-        subtitleIS: ve.subtitleIS || '',
-        date: ve.date || '',
-        endDate: ve.endDate || '',
-        startTime: ve.startTime || '',
-        endTime: ve.endTime || '',
-        leaderMemberId: '',
-        leaderName: '',
-        leaderPhone: '',
-        showLeaderPhone: false,
-        notes: '',
-        notesIS: '',
-        roles: Array.isArray(ve.roles) ? ve.roles : [],
-        active: true,
-        createdAt: now_(),
-        updatedAt: now_(),
-        materialized: true,
-      };
-      events.push(evt);
-      setConfigSheetValue_('volunteer_events', JSON.stringify(events));
+      evt = sched_upsert_({
+        id:                    ve.id,
+        kind:                  'volunteer',
+        status:                'upcoming',
+        source:                'bulk',
+        activityTypeId:        ve.activityTypeId || ve.sourceActivityTypeId || '',
+        sourceActivityTypeId:  ve.sourceActivityTypeId || '',
+        sourceSubtypeId:       ve.sourceSubtypeId || '',
+        title:                 ve.title || '',
+        titleIS:               ve.titleIS || '',
+        subtypeName:           ve.subtitle || '',
+        date:                  ve.date || '',
+        endDate:               ve.endDate || '',
+        startTime:             ve.startTime || '',
+        endTime:               ve.endTime || '',
+        roles:                 Array.isArray(ve.roles) ? ve.roles : [],
+      });
       cDel_('config');
     }
     if (!evt) return failJ('Event not found');
@@ -1282,6 +1290,62 @@ function volunteerWithdraw_(b) {
   } catch(e) { return failJ('volunteerWithdraw failed: ' + e.message); }
 }
 
+// Shape a scheduled_events row into the legacy volunteer-event DTO the
+// frontend expects. Preserves the old field names (subtitle, active) so the
+// admin + member volunteer pages keep working without changes.
+function _schedToVolDto_(ev) {
+  if (!ev) return null;
+  // Look up subtype name(s) from the parent activity type so `subtitle` stays
+  // populated even when the sched row only stored subtypeId.
+  var subtitle = ev.subtypeName || '';
+  var subtitleIS = '';
+  if (ev.activityTypeId && ev.sourceSubtypeId) {
+    try {
+      var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+      var at = types.find(function (t) { return t && t.id === ev.activityTypeId; });
+      if (at && Array.isArray(at.subtypes)) {
+        var st = at.subtypes.find(function (s) { return s && s.id === ev.sourceSubtypeId; });
+        if (st) { subtitle = subtitle || st.name || ''; subtitleIS = st.nameIS || ''; }
+      }
+    } catch (e) {}
+  }
+  return {
+    id:                    ev.id,
+    activityTypeId:        ev.activityTypeId,
+    sourceActivityTypeId:  ev.sourceActivityTypeId,
+    sourceSubtypeId:       ev.sourceSubtypeId,
+    title:                 ev.title,
+    titleIS:               ev.titleIS,
+    subtitle:              subtitle,
+    subtitleIS:            subtitleIS,
+    date:                  ev.date,
+    endDate:               ev.endDate,
+    startTime:             ev.startTime,
+    endTime:               ev.endTime,
+    leaderMemberId:        ev.leaderMemberId,
+    leaderName:            ev.leaderName,
+    leaderPhone:           ev.leaderPhone,
+    showLeaderPhone:       ev.showLeaderPhone,
+    notes:                 ev.notes,
+    notesIS:               ev.notesIS,
+    roles:                 ev.roles,
+    gcalEventId:           ev.gcalEventId,
+    active:                ev.status !== 'cancelled',
+    orphaned:              ev.status === 'orphaned',
+    materialized:          !!ev.sourceActivityTypeId,
+    createdAt:             ev.createdAt,
+    updatedAt:             ev.updatedAt,
+  };
+}
+
+// List volunteer events in DTO shape for getConfig_ to return. Excludes
+// cancelled rows so the admin view doesn't show stale entries; orphaned rows
+// (soft-deleted but kept for signup history) are included with active=false.
+function listVolunteerEventDtos_() {
+  var rows = sched_listVolunteerEvents_();
+  return rows.map(_schedToVolDto_);
+}
+
 function ensureVolunteerSignupsTab_() {
   const ss = SpreadsheetApp.openById(SHEET_ID_);
   ensureTab_(ss, 'volunteer_signups', SCHEMA_.volunteer_signups);
@@ -1295,10 +1359,10 @@ function ensureVolunteerSignupsTab() {
 // ── Materialize bulk-scheduled volunteer events ─────────────────────────────
 // When an activity type is flagged as volunteer and its subtypes define a
 // bulkSchedule, each occurrence should exist as a concrete row in
-// volunteer_events so admins can view/edit/delete it individually. This
+// scheduled_events so admins can view/edit/delete it individually. This
 // mirrors the logic in shared/volunteer.js (expandVolunteerActivityTypes) but
-// runs on the backend so that events are persisted to config, not computed
-// lazily on the client.
+// runs on the backend so that events are persisted, not computed lazily on
+// the client.
 
 function volExpandActType_(cls, fromIso, toIso) {
   if (!cls || cls.active === false || cls.active === 'false') return [];
@@ -1370,28 +1434,9 @@ function volExpandActType_(cls, fromIso, toIso) {
   return out;
 }
 
-// Merge expanded events into the existing volunteer_events array. Events that
-// already exist (matched by id) are left untouched so individual admin edits
-// and soft-deletes are preserved. Returns { arr, added } where arr is the
-// updated array and added is the count of new events inserted.
-function volMergeMaterialized_(arr, expanded) {
-  var existing = {};
-  (arr || []).forEach(function(e) { if (e && e.id) existing[e.id] = true; });
-  var added = 0;
-  var ts = now_();
-  expanded.forEach(function(e) {
-    if (existing[e.id]) return;
-    e.createdAt = ts;
-    e.updatedAt = ts;
-    arr.push(e);
-    added++;
-  });
-  return { arr: arr, added: added };
-}
-
 // Materialize all bulk-scheduled volunteer events for a single activity type
-// into volunteer_events. Safe to call repeatedly — existing events are kept.
-// Returns the count of events added.
+// into scheduled_events. Safe to call repeatedly — sched_upsert_ is idempotent
+// by id. Returns the count of events added (skips those already present).
 function materializeVolunteerEventsForAt_(at) {
   if (!at) return 0;
   var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -1399,26 +1444,27 @@ function materializeVolunteerEventsForAt_(at) {
   var toIso = '2099-12-31';
   var expanded = volExpandActType_(at, fromIso, toIso);
   if (!expanded.length) return 0;
-  var arr = [];
-  try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
-  var merged = volMergeMaterialized_(arr, expanded);
-  if (merged.added > 0) {
-    setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
-    cDel_('config');
-  }
-  return merged.added;
+  var existing = {};
+  sched_listVolunteerEvents_().forEach(function (e) { if (e && e.id) existing[e.id] = true; });
+  var added = 0;
+  expanded.forEach(function (e) {
+    if (existing[e.id]) return;
+    sched_upsert_(_volExpandedToDomain_(e));
+    added++;
+  });
+  if (added) cDel_('config');
+  return added;
 }
 
-// Reconcile materialized volunteer events for a single activity type. This is
-// the single source of truth called from saveActivityType_. It both:
+// Reconcile materialized volunteer events for a single activity type. Called
+// from saveActivityType_. It both:
 //   1. Adds any occurrences that the current activity type config would produce
 //      but aren't yet present (materialize-new behavior).
 //   2. Prunes materialized events (sourceActivityTypeId === at.id) that would
 //      NOT be produced by the current config — i.e. the bulk schedule shrank,
 //      a subtype was removed, days-of-week changed, or the volunteer flag was
-//      turned off. Events with existing signups are soft-deleted (active=false,
-//      orphaned=true) so history is preserved; events with no signups are
-//      removed outright.
+//      turned off. Events with existing signups are kept with status='orphaned'
+//      (so signup history survives); events with no signups are hard-deleted.
 //
 // Manually-created events (no sourceActivityTypeId) are never touched here
 // even if their activityTypeId happens to match — those are admin-owned rows.
@@ -1427,102 +1473,85 @@ function materializeVolunteerEventsForAt_(at) {
 function reconcileVolunteerEventsForAt_(at) {
   var result = { added: 0, removed: 0, softDeleted: 0 };
   if (!at || !at.id) return result;
-  var arr = [];
-  try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
-  // Compute the set of event IDs the current config would produce. If the
-  // activity type is inactive or no longer volunteer-flagged, volExpandActType_
-  // returns [] and the "wanted" set is empty — meaning everything materialized
-  // for this type becomes prune-eligible.
   var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var toIso = '2099-12-31';
   var expanded = volExpandActType_(at, fromIso, toIso);
   var wanted = {};
-  expanded.forEach(function(e) { if (e && e.id) wanted[e.id] = true; });
-  // Load signups once so we can tell which events are still referenced.
-  var signups = [];
-  try { ensureVolunteerSignupsTab_(); signups = readAll_('volunteerSignups') || []; } catch(e) { signups = []; }
-  var signupByEvent = {};
-  signups.forEach(function(s) {
-    if (!s || !s.eventId) return;
-    if (!signupByEvent[s.eventId]) signupByEvent[s.eventId] = 0;
-    signupByEvent[s.eventId]++;
-  });
-  var ts = now_();
-  var next = [];
-  arr.forEach(function(ev) {
+  expanded.forEach(function (e) { if (e && e.id) wanted[e.id] = true; });
+  var signupCounts = sched_signupCountsByEvent_();
+  // Walk current sched_events rows that belong to this activity type and
+  // aren't in the wanted set; drop or orphan them.
+  sched_listVolunteerEvents_().forEach(function (ev) {
     if (!ev) return;
-    var belongs = ev.sourceActivityTypeId && String(ev.sourceActivityTypeId) === String(at.id);
-    if (!belongs) { next.push(ev); return; }
-    // Belongs to this activity type — check whether current config still wants it.
-    if (wanted[ev.id]) { next.push(ev); return; }
-    // Not wanted anymore. Preserve if signups exist, otherwise drop.
-    if (signupByEvent[ev.id]) {
-      ev.active = false;
-      ev.orphaned = true;
-      ev.updatedAt = ts;
-      next.push(ev);
+    if (String(ev.sourceActivityTypeId || '') !== String(at.id)) return;
+    if (wanted[ev.id]) return;
+    if (signupCounts[ev.id]) {
+      try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
+      sched_upsert_({ id: ev.id, status: 'orphaned', gcalEventId: '' });
       result.softDeleted++;
     } else {
+      try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
+      sched_hardDelete_(ev.id);
       result.removed++;
-      // (dropped — not pushed onto next)
     }
   });
-  // Merge in any newly-expanded events (existing IDs are left untouched).
-  var merged = volMergeMaterialized_(next, expanded);
-  result.added = merged.added;
-  if (result.added > 0 || result.removed > 0 || result.softDeleted > 0) {
-    setConfigSheetValue_('volunteer_events', JSON.stringify(merged.arr));
-    cDel_('config');
-  }
+  // Insert any newly-wanted events that aren't already present.
+  var already = {};
+  sched_listVolunteerEvents_().forEach(function (e) { if (e && e.id) already[e.id] = true; });
+  expanded.forEach(function (e) {
+    if (already[e.id]) return;
+    sched_upsert_(_volExpandedToDomain_(e));
+    result.added++;
+  });
+  if (result.added || result.removed || result.softDeleted) cDel_('config');
   return result;
 }
 
-// Materialize for all active, volunteer-flagged activity types. Intended for
 // Materialize bulk-scheduled volunteer events for all active, volunteer-flagged
-// activity types. Reads activity_types and volunteer_events once, expands all
-// schedules, merges new events, prunes stale ones, writes once. No signups
-// sheet access — kept lightweight so it can run as a background call from the
-// admin page.
+// activity types. Reconciles both directions (adds new occurrences, prunes
+// stale ones whose source schedule no longer wants them).
 function syncVolunteerEvents_(b) {
   try {
     var actTypes = [];
     try { actTypes = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch(e) { actTypes = []; }
-    var arr = [];
-    try { arr = JSON.parse(getConfigSheetValue_('volunteer_events') || '[]'); } catch(e) { arr = []; }
-    var fromIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    // Build the full set of wanted event IDs from current activity type config.
-    var wantedIds = {};
-    var totalAdded = 0;
-    actTypes.forEach(function(at) {
-      var expanded = volExpandActType_(at, fromIso, '2099-12-31');
-      expanded.forEach(function(e) { if (e && e.id) wantedIds[e.id] = true; });
-      if (!expanded.length) return;
-      var merged = volMergeMaterialized_(arr, expanded);
-      arr = merged.arr;
-      totalAdded += merged.added;
+    var totalAdded = 0, totalPruned = 0, totalSoft = 0;
+    actTypes.forEach(function (at) {
+      var r = reconcileVolunteerEventsForAt_(at);
+      totalAdded  += r.added;
+      totalPruned += r.removed;
+      totalSoft   += r.softDeleted;
     });
-    // Prune stale materialized events: future events with a sourceActivityTypeId
-    // whose ID is no longer in the wanted set (schedule changed, subtype removed,
-    // volunteer flag toggled off, activity type deleted, etc.).
-    var pruned = 0;
-    arr = arr.filter(function(ev) {
-      if (!ev) return false;
-      // Keep manually-created events (no sourceActivityTypeId) untouched.
-      if (!ev.sourceActivityTypeId) return true;
-      // Keep past events (don't rewrite history).
-      if ((ev.date || '') < fromIso) return true;
-      // Keep events the current config still wants.
-      if (wantedIds[ev.id]) return true;
-      // Stale — drop it.
-      pruned++;
-      return false;
-    });
-    var changed = totalAdded > 0 || pruned > 0;
-    if (changed) {
-      setConfigSheetValue_('volunteer_events', JSON.stringify(arr));
-      cDel_('config');
-    }
-    return okJ({ added: totalAdded, pruned: pruned, total: arr.length });
+    var total = sched_listVolunteerEvents_().length;
+    return okJ({ added: totalAdded, pruned: totalPruned, softDeleted: totalSoft, total: total });
   } catch(e) { return failJ('syncVolunteerEvents failed: ' + e.message); }
+}
+
+// Map the object shape produced by volExpandActType_ (legacy DTO shape) onto
+// the domain shape accepted by sched_upsert_. Preserves the deterministic id
+// and all per-occurrence metadata.
+function _volExpandedToDomain_(e) {
+  return {
+    id:                    e.id,
+    kind:                  'volunteer',
+    status:                'upcoming',
+    source:                'bulk',
+    date:                  e.date,
+    endDate:               '',
+    startTime:             e.startTime,
+    endTime:               e.endTime,
+    activityTypeId:        e.activityTypeId,
+    sourceActivityTypeId:  e.sourceActivityTypeId,
+    sourceSubtypeId:       e.sourceSubtypeId,
+    subtypeName:           e.subtitle || '',
+    title:                 e.title,
+    titleIS:               e.titleIS,
+    leaderMemberId:        '',
+    leaderName:            '',
+    leaderPhone:           '',
+    showLeaderPhone:       false,
+    notes:                 '',
+    notesIS:               '',
+    roles:                 Array.isArray(e.roles) ? e.roles : [],
+  };
 }
 
