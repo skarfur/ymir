@@ -180,7 +180,10 @@ function renderActivities() {
     const info = document.createElement('div'); info.className = 'activity-info';
     const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
     const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:color-mix(in srgb, var(--moss) 12%, transparent);border:1px solid color-mix(in srgb, var(--moss) 40%, transparent);color:var(--moss);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
-    const scheduledBadge = act.scheduled ? '<span style="font-size:9px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 40%, transparent);color:var(--navy);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">' + s('daily.scheduled') + '</span>' : '';
+    // Scheduled-from-template badge intentionally suppressed for now — the
+    // `act.scheduled` flag is still set by the projection so the data is
+    // there, just not surfaced. Bring back by restoring the badge below.
+    const scheduledBadge = '';
     const editedBadge = act.editedBy ? (() => {
       const when = act.editedAt ? (fmtDate(act.editedAt) + ' ' + fmtTime(act.editedAt)) : '';
       const tip = s('daily.editedByTip', { name: act.editedBy, when: when });
