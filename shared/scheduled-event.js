@@ -52,6 +52,8 @@
       activityTypeId:    raw.activityTypeId || raw.sourceActivityTypeId || '',
       subtypeId:         raw.subtypeId || raw.sourceSubtypeId || '',
       subtypeName:       raw.subtypeName || raw.subtitle || '',
+      classTag:          raw.classTag   || '',
+      classTagIS:        raw.classTagIS || '',
       title:             raw.title || raw.name || raw.type || '',
       titleIS:           raw.titleIS || raw.subtitleIS || '',
       notes:             raw.notes || '',
@@ -127,7 +129,8 @@
         var raw = {
           id:             'sched-' + cls.id + '-' + iso,
           activityTypeId: cls.id,
-          classTag:       cls.classTag || '',
+          classTag:       cls.classTag   || '',
+          classTagIS:     cls.classTagIS || '',
           date:           iso,
           startTime:      bs.startTime || cls.defaultStart || '',
           endTime:        bs.endTime   || cls.defaultEnd   || '',

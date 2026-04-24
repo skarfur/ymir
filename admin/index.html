@@ -709,9 +709,14 @@
       <div class="field"><label data-s="admin.actTypeIS" for="atNameIS"></label><input type="text" id="atNameIS"></div>
     </div>
     <div class="field">
-      <label data-s="admin.classTag" for="atClassTag"></label>
-      <input type="text" id="atClassTag" list="atClassTagOptions" placeholder="e.g. Lesson, Race, Training">
-      <datalist id="atClassTagOptions"></datalist>
+      <label data-s="admin.classTag" for="atClassTagPreset"></label>
+      <select id="atClassTagPreset" data-admin-change="onAtClassTagPresetPick" class="filter-select">
+        <option value="" data-s="admin.classTagPickPreset"></option>
+      </select>
+    </div>
+    <div class="grid2">
+      <div class="field"><label data-s="admin.classTagEN" for="atClassTag"  ></label><input type="text" id="atClassTag"  ></div>
+      <div class="field"><label data-s="admin.classTagIS" for="atClassTagIS"></label><input type="text" id="atClassTagIS"></div>
     </div>
     <div class="check-row mb-10">
       <input type="checkbox" id="atActive" checked> <label for="atActive" data-s="lbl.active"></label>

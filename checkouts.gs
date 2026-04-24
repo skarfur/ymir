@@ -554,6 +554,26 @@ function deleteSlotCalendarEvent_(slotRow) {
 
 // Sync the activities array of a daily log entry to per-activity-type
 // calendars. Mutates newActs in place to store gcalEventId on each synced item.
+// Preset class-tag values carry an Icelandic translation so GCal exports
+// (which Icelandic members consume natively) render in IS even when the
+// admin who saved the class authored it in English. Custom tags fall through.
+var CLASS_TAG_LABELS_IS_ = {
+  'Lesson':      'Kennsla',
+  'Race':        'Keppni',
+  'Training':    'Þjálfun',
+  'Club event':  'Félagsviðburður',
+  'Maintenance': 'Viðhald',
+  'Meeting':     'Fundur',
+  'Social':      'Samvera',
+  'Other':       'Annað',
+};
+function classTagLabelIS_(cls) {
+  if (!cls) return '';
+  if (cls.classTagIS) return cls.classTagIS;
+  if (CLASS_TAG_LABELS_IS_[cls.classTag]) return CLASS_TAG_LABELS_IS_[cls.classTag];
+  return cls.classTag || '';
+}
+
 function syncDailyLogActivities_(date, oldActs, newActs) {
   try {
     var cfgMap = getConfigMap_();
@@ -576,7 +596,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
       var end = gcalParseDateTime_(date, a.end || a.start || '00:00');
       if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
       var classLabel = t.nameIS || t.name || '';
-      var tagLabel   = t.classTag || '';
+      var tagLabel   = classTagLabelIS_(t);
       var baseName   = a.name || classLabel;
       var title = baseName + (tagLabel ? (' [' + tagLabel + ']') : '');
       var desc = 'activity:' + a.id
@@ -634,7 +654,8 @@ function projectActivitiesFromCalendar_(cls, dateISO) {
         out.push({
           id:             'gcal-' + cls.id + '-' + rawId + '-' + dateISO,
           activityTypeId: cls.id,
-          classTag:       cls.classTag || '',
+          classTag:       cls.classTag   || '',
+          classTagIS:     cls.classTagIS || '',
           name:           ev.getTitle() || cls.name || '',
           start:          fmt(s),
           end:            fmt(e),

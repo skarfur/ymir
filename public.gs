@@ -1295,19 +1295,24 @@ function volunteerWithdraw_(b) {
 // admin + member volunteer pages keep working without changes.
 function _schedToVolDto_(ev) {
   if (!ev) return null;
-  // Subtitle comes from the class's classTag (new model). Legacy rows that
-  // predate the flatten may still carry subtypeName on the sched row — keep
-  // that as a fallback so pre-existing data still renders sensibly.
+  // Subtitle comes from the class's bilingual classTag/classTagIS pair.
+  // Each language picks its own with cross-fallback when one is empty so
+  // unilingual tags still render in either UI. Legacy rows pre-flatten may
+  // still carry subtypeName — kept as a final fallback.
   var subtitle = '';
   var subtitleIS = '';
   if (ev.activityTypeId) {
     try {
       var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
       var cls = types.find(function (t) { return t && t.id === ev.activityTypeId; });
-      if (cls && cls.classTag) { subtitle = String(cls.classTag); subtitleIS = String(cls.classTag); }
+      if (cls) {
+        subtitle   = String(cls.classTag   || cls.classTagIS || '');
+        subtitleIS = String(cls.classTagIS || cls.classTag   || '');
+      }
     } catch (e) {}
   }
-  if (!subtitle) subtitle = ev.subtypeName || '';
+  if (!subtitle)   subtitle   = ev.subtypeName || '';
+  if (!subtitleIS) subtitleIS = subtitle || '';
   return {
     id:                    ev.id,
     activityTypeId:        ev.activityTypeId,
