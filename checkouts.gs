@@ -598,17 +598,14 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
 }
 
 // ── Calendar-sourced scheduling ──────────────────────────────────────────────
-// When an activity type sets scheduleSource='calendar' and points at a calendarId,
-// daily-log projections for that type come from Google Calendar instead of the
-// per-subtype bulk schedule. Results are cached briefly (CacheService) to avoid
-// hammering the Calendar API on every getDailyLog.
-//
-// Subtype matching is best-effort: we look for a subtype whose name (EN or IS)
-// appears as a substring of the event title. Unmatched events still project —
-// they just won't have a subtypeId/subtypeName.
-function projectActivitiesFromCalendar_(at, dateISO) {
-  if (!at || !at.calendarId || !dateISO) return [];
-  var cacheKey = 'gcal_sched_' + at.calendarId + '_' + dateISO;
+// When an activity class sets scheduleSource='calendar' and points at a
+// calendarId, daily-log projections for that class come from Google Calendar
+// instead of the class's bulkSchedule. Each calendar event becomes a
+// scheduled activity named after the event title. Results are cached briefly
+// (CacheService) to avoid hammering the Calendar API on every getDailyLog.
+function projectActivitiesFromCalendar_(cls, dateISO) {
+  if (!cls || !cls.calendarId || !dateISO) return [];
+  var cacheKey = 'gcal_sched_' + cls.calendarId + '_' + dateISO;
   var cache = null;
   try { cache = CacheService.getScriptCache(); } catch (e) {}
   if (cache) {
@@ -619,16 +616,14 @@ function projectActivitiesFromCalendar_(at, dateISO) {
   }
   var out = [];
   try {
-    var cal = CalendarApp.getCalendarById(at.calendarId);
+    var cal = CalendarApp.getCalendarById(cls.calendarId);
     if (!cal) return [];
     var start = new Date(dateISO + 'T00:00:00');
     var end   = new Date(dateISO + 'T23:59:59');
     var events = cal.getEvents(start, end) || [];
-    var subs = Array.isArray(at.subtypes) ? at.subtypes : [];
     events.forEach(function (ev) {
       try {
         if (ev.isAllDayEvent && ev.isAllDayEvent()) return; // skip all-day blockers
-        var st = matchSubtypeFromEvent_(ev, subs);
         var s = ev.getStartTime();
         var e = ev.getEndTime();
         var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -637,12 +632,10 @@ function projectActivitiesFromCalendar_(at, dateISO) {
         // frontend treats the row like any other scheduled activity.
         var rawId = String(ev.getId() || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
         out.push({
-          id:             'gcal-' + at.id + '-' + rawId + '-' + dateISO,
-          activityTypeId: at.id,
-          subtypeId:      st ? (st.id || '') : '',
-          subtypeName:    st ? (st.name || '') : '',
-          type:           at.name || '',
-          name:           ev.getTitle() || (st && st.name) || at.name || '',
+          id:             'gcal-' + cls.id + '-' + rawId + '-' + dateISO,
+          activityTypeId: cls.id,
+          classTag:       cls.classTag || '',
+          name:           ev.getTitle() || cls.name || '',
           start:          fmt(s),
           end:            fmt(e),
           participants:   '',
@@ -659,21 +652,6 @@ function projectActivitiesFromCalendar_(at, dateISO) {
     Logger.log('projectActivitiesFromCalendar_ failed: ' + e);
   }
   return out;
-}
-
-function matchSubtypeFromEvent_(ev, subtypes) {
-  if (!ev || !Array.isArray(subtypes) || !subtypes.length) return null;
-  var title = String((ev.getTitle && ev.getTitle()) || '').toLowerCase();
-  if (!title) return null;
-  for (var i = 0; i < subtypes.length; i++) {
-    var st = subtypes[i];
-    if (!st) continue;
-    var en = String(st.name   || '').toLowerCase();
-    var is = String(st.nameIS || '').toLowerCase();
-    if (en && title.indexOf(en) !== -1) return st;
-    if (is && title.indexOf(is) !== -1) return st;
-  }
-  return null;
 }
 
 // ── Volunteer event → Google Calendar sync ───────────────────────────────────

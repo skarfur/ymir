@@ -1295,20 +1295,19 @@ function volunteerWithdraw_(b) {
 // admin + member volunteer pages keep working without changes.
 function _schedToVolDto_(ev) {
   if (!ev) return null;
-  // Look up subtype name(s) from the parent activity type so `subtitle` stays
-  // populated even when the sched row only stored subtypeId.
-  var subtitle = ev.subtypeName || '';
+  // Subtitle comes from the class's classTag (new model). Legacy rows that
+  // predate the flatten may still carry subtypeName on the sched row — keep
+  // that as a fallback so pre-existing data still renders sensibly.
+  var subtitle = '';
   var subtitleIS = '';
-  if (ev.activityTypeId && ev.sourceSubtypeId) {
+  if (ev.activityTypeId) {
     try {
       var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
-      var at = types.find(function (t) { return t && t.id === ev.activityTypeId; });
-      if (at && Array.isArray(at.subtypes)) {
-        var st = at.subtypes.find(function (s) { return s && s.id === ev.sourceSubtypeId; });
-        if (st) { subtitle = subtitle || st.name || ''; subtitleIS = st.nameIS || ''; }
-      }
+      var cls = types.find(function (t) { return t && t.id === ev.activityTypeId; });
+      if (cls && cls.classTag) { subtitle = String(cls.classTag); subtitleIS = String(cls.classTag); }
     } catch (e) {}
   }
+  if (!subtitle) subtitle = ev.subtypeName || '';
   return {
     id:                    ev.id,
     activityTypeId:        ev.activityTypeId,
