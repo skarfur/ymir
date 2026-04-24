@@ -323,7 +323,7 @@ function openIncidentDetail(id) {
   openModal('incidentDetailModal');
 }
 
-// ── Activity type buttons ─────────────────────────────────────────────────────
+// ── Activity-class buttons ────────────────────────────────────────────────────
 function renderActTypeBtns() {
   dom.actTypeBtns.replaceChildren();
   activityTypes.forEach(t => {
@@ -331,11 +331,20 @@ function renderActTypeBtns() {
     btn.className = 'type-btn' + (t.id === _selectedActType ? ' selected' : '');
     btn.dataset.typeId = t.id;
     const label = L === 'IS' && t.nameIS ? t.nameIS : t.name;
-    btn.textContent = label;
+    const tag = t.classTag ? '\n[' + t.classTag + ']' : '';
+    btn.textContent = label + tag;
+    btn.style.whiteSpace = 'pre';
     btn.addEventListener('click', function() {
       _selectedActType = t.id;
       renderActTypeBtns();
-      populateActSubtypes();
+      // When the user picks a class, prefill name + default times if those
+      // fields are still untouched (so re-picking doesn't clobber edits).
+      const cls = activityTypes.find(x => x.id === t.id);
+      if (cls) {
+        if (!dom.actName.value)  dom.actName.value  = L==='IS' && cls.nameIS ? cls.nameIS : (cls.name || '');
+        if (!dom.actStart.value && cls.defaultStart) dom.actStart.value = cls.defaultStart;
+        if (!dom.actEnd.value   && cls.defaultEnd)   dom.actEnd.value   = cls.defaultEnd;
+      }
     });
     dom.actTypeBtns.appendChild(btn);
   });
@@ -592,20 +601,13 @@ function openActivityModal(id) {
   const existing = id ? activities.find(a => a.id === id) : null;
   _selectedActType = existing ? (existing.activityTypeId || null) : (activityTypes[0]?.id || null);
   _linkedGroupCheckoutIds = existing && Array.isArray(existing.linkedGroupCheckoutIds) ? existing.linkedGroupCheckoutIds.slice() : [];
-  _selectedSubtype = existing ? (existing.subtypeId || null) : null;
   renderActTypeBtns();
-  populateActSubtypes();
-  // Mark the matching subtype button as selected on edit
-  if (_selectedSubtype) {
-    const grid = document.getElementById('actSubtypeBtns');
-    if (grid) {
-      const btn = grid.querySelector(`[data-subtype-id="${_selectedSubtype}"]`);
-      if (btn) btn.classList.add('selected');
-    }
-  }
-  dom.actName.value  = existing ? (existing.name  || '') : '';
-  dom.actStart.value = existing ? (existing.start || '') : '';
-  dom.actEnd.value   = existing ? (existing.end   || '') : '';
+  // Prefill name + default times from the picked class on a fresh add; on edit
+  // we keep the existing instance values verbatim.
+  const cls = activityTypes.find(t => t.id === _selectedActType);
+  dom.actName.value  = existing ? (existing.name  || '') : (cls ? (L==='IS' && cls.nameIS ? cls.nameIS : cls.name) || '' : '');
+  dom.actStart.value = existing ? (existing.start || '') : (cls ? cls.defaultStart || '' : '');
+  dom.actEnd.value   = existing ? (existing.end   || '') : (cls ? cls.defaultEnd   || '' : '');
   dom.actParticipants.value = existing ? (existing.participants || '') : '';
   dom.actNotes.value        = existing ? (existing.notes        || '') : '';
   document.getElementById('actAbler').checked = !!(existing && existing.ablerRegistered);
@@ -619,16 +621,12 @@ function closeActivityModal() { _editingActivityId = null; closeModal('activityM
 
 function saveActivity(keepOpen) {
   const name = dom.actName.value.trim();
-  const typeObj = activityTypes.find(t => t.id === _selectedActType);
-  if (!name)    { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
-  if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
-  const selSubtype = _selectedSubtype || '';
-  const subtypeObj = selSubtype ? (Array.isArray(typeObj.subtypes)?typeObj.subtypes:JSON.parse(typeObj.subtypes||'[]')).find(st => st.id === selSubtype) : null;
+  const cls = activityTypes.find(t => t.id === _selectedActType);
+  if (!name) { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
+  if (!cls)  { showToast(s('daily.actType') + ' required.', 'warn'); return; }
   const fields = {
-    activityTypeId:        typeObj.id,
-    subtypeId:             selSubtype || '',
-    subtypeName:           subtypeObj ? (L==='IS'&&subtypeObj.nameIS?subtypeObj.nameIS:subtypeObj.name) : '',
-    type:                  L === 'IS' && typeObj.nameIS ? typeObj.nameIS : typeObj.name,
+    activityTypeId:        cls.id,
+    classTag:              cls.classTag || '',
     name,
     start:                 dom.actStart.value || '',
     end:                   dom.actEnd.value   || '',
@@ -655,7 +653,6 @@ function saveActivity(keepOpen) {
   saveDraft(); // persist the add/edit immediately — audit stamps land with it
   if (keepOpen && !_editingActivityId) {
     // Reset form fields for next entry but keep modal open
-    _selectedSubtype = null;
     dom.actName.value = '';
     dom.actStart.value = '';
     dom.actEnd.value = '';
@@ -664,7 +661,6 @@ function saveActivity(keepOpen) {
     document.getElementById('actAbler').checked = false;
     _linkedGroupCheckoutIds = [];
     renderGroupLinkCards();
-    populateActSubtypes();
     showToast(s('toast.saved'));
   } else {
     closeActivityModal();
@@ -957,51 +953,7 @@ async function doSave(signOff) {
 
 // ── Activity subtype + group link helpers ────────────────────────────────────
 let _linkedGroupCheckoutIds = [];
-let _selectedSubtype = null;
 let _groupLinkPickerSelected = new Set();
-
-function populateActSubtypes() {
-  const typeObj = activityTypes.find(t => t.id === _selectedActType);
-  const grid    = document.getElementById('actSubtypeBtns');
-  const field   = document.getElementById('actSubtypeField');
-  if (!grid || !field) return;
-  const subs = typeObj && typeObj.subtypes
-    ? (Array.isArray(typeObj.subtypes) ? typeObj.subtypes : JSON.parse(typeObj.subtypes || '[]'))
-    : [];
-  if (!subs.length) { field.classList.add('d-none'); grid.innerHTML = ''; return; }
-  field.classList.remove('d-none');
-  grid.innerHTML = '';
-  subs.forEach(function(st) {
-    const btn = document.createElement('button');
-    btn.className = 'type-btn';
-    btn.dataset.subtypeId = st.id;
-    const label = L==='IS' && st.nameIS ? st.nameIS : st.name;
-    const times = st.defaultStart ? '\n' + st.defaultStart + (st.defaultEnd ? '\u2013'+st.defaultEnd : '') : '';
-    btn.textContent = label + times;
-    btn.style.whiteSpace = 'pre';
-    btn.addEventListener('click', function() {
-      // Toggle selection
-      const already = btn.classList.contains('selected');
-      grid.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-      if (!already) {
-        btn.classList.add('selected');
-        _selectedSubtype = st.id;
-        applyActSubtype(st);
-      } else {
-        _selectedSubtype = null;
-      }
-    });
-    grid.appendChild(btn);
-  });
-}
-
-function applyActSubtype(st) {
-  if (!st) return;
-  // Pre-fill name only if empty
-  if (!dom.actName.value) dom.actName.value = L==='IS'&&st.nameIS ? st.nameIS : st.name;
-  if (st.defaultStart) dom.actStart.value = st.defaultStart;
-  if (st.defaultEnd)   dom.actEnd.value   = st.defaultEnd;
-}
 
 function renderGroupLinkCards() {
   const wrap = document.getElementById('actGroupLinkCards');

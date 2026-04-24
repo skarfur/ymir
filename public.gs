@@ -1300,78 +1300,73 @@ function ensureVolunteerSignupsTab() {
 // runs on the backend so that events are persisted to config, not computed
 // lazily on the client.
 
-function volExpandActType_(at, fromIso, toIso) {
-  if (!at || at.active === false || at.active === 'false') return [];
-  var isVol = at.volunteer === true || at.volunteer === 'true';
+function volExpandActType_(cls, fromIso, toIso) {
+  if (!cls || cls.active === false || cls.active === 'false') return [];
+  var isVol = cls.volunteer === true || cls.volunteer === 'true';
   if (!isVol) return [];
   var roles = [];
-  try { roles = at.roles ? (Array.isArray(at.roles) ? at.roles : JSON.parse(at.roles)) : []; } catch(e) { roles = []; }
+  try { roles = cls.roles ? (Array.isArray(cls.roles) ? cls.roles : JSON.parse(cls.roles)) : []; } catch(e) { roles = []; }
   if (!roles.length) return [];
-  var subs = [];
-  try { subs = at.subtypes ? (Array.isArray(at.subtypes) ? at.subtypes : JSON.parse(at.subtypes)) : []; } catch(e) { subs = []; }
+  if (!cls.bulkSchedule) return [];
+  var bs = cls.bulkSchedule;
+  var fd = bs.fromDate || '';
+  var td = bs.toDate   || '';
+  if (!fd || !td) return [];
+  var startT = cls.defaultStart || '';
+  var endT   = cls.defaultEnd   || '';
+  if (!startT || !endT) return [];
+  var days = Array.isArray(bs.daysOfWeek)
+    ? bs.daysOfWeek.map(function(n) { return parseInt(n, 10); })
+    : [];
+  if (!days.length) return [];
+  var effFrom = fd > fromIso ? fd : fromIso;
+  var effTo   = td < toIso   ? td : toIso;
+  if (effFrom > effTo) return [];
   var out = [];
-  subs.forEach(function(st) {
-    if (!st || !st.bulkSchedule) return;
-    var bs = st.bulkSchedule;
-    var fd = bs.fromDate || '';
-    var td = bs.toDate   || '';
-    if (!fd || !td) return;
-    var startT = st.defaultStart || '';
-    var endT   = st.defaultEnd   || '';
-    if (!startT || !endT) return;
-    var days = Array.isArray(bs.daysOfWeek)
-      ? bs.daysOfWeek.map(function(n) { return parseInt(n, 10); })
-      : [];
-    if (!days.length) return;
-    var effFrom = fd > fromIso ? fd : fromIso;
-    var effTo   = td < toIso   ? td : toIso;
-    if (effFrom > effTo) return;
-    // Iterate day by day using a local-time Date anchor (avoids UTC drift).
-    var a = new Date(effFrom + 'T00:00:00');
-    var b = new Date(effTo   + 'T00:00:00');
-    for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
-      var y = d.getFullYear();
-      var mo = d.getMonth() + 1;
-      var da = d.getDate();
-      var iso = y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da;
-      var dow = d.getDay();
-      if (days.indexOf(dow) === -1) continue;
-      var id = 'vae-' + at.id + '-' + (st.id || 'st') + '-' + iso.replace(/-/g, '');
-      out.push({
-        id: id,
-        sourceActivityTypeId: at.id,
-        sourceSubtypeId: st.id || '',
-        activityTypeId: at.id,
-        title: at.name || '',
-        titleIS: at.nameIS || '',
-        subtitle: st.name || '',
-        subtitleIS: st.nameIS || '',
-        date: iso,
-        startTime: startT,
-        endTime: endT,
-        leaderMemberId: '',
-        leaderName: '',
-        leaderPhone: '',
-        showLeaderPhone: false,
-        notes: '',
-        notesIS: '',
-        roles: roles.map(function(r) {
-          return {
-            id: (r.id || 'r') + '-' + iso.replace(/-/g, ''),
-            baseRoleId: r.id || '',
-            name: r.name || '',
-            nameIS: r.nameIS || '',
-            description: r.description || '',
-            descriptionIS: r.descriptionIS || '',
-            slots: r.slots || 1,
-            requiredEndorsement: r.requiredEndorsement || '',
-          };
-        }),
-        active: true,
-        materialized: true,
-      });
-    }
-  });
+  // Iterate day by day using a local-time Date anchor (avoids UTC drift).
+  var a = new Date(effFrom + 'T00:00:00');
+  var b = new Date(effTo   + 'T00:00:00');
+  for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+    var y = d.getFullYear();
+    var mo = d.getMonth() + 1;
+    var da = d.getDate();
+    var iso = y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da;
+    var dow = d.getDay();
+    if (days.indexOf(dow) === -1) continue;
+    var id = 'vae-' + cls.id + '-' + iso.replace(/-/g, '');
+    out.push({
+      id: id,
+      sourceActivityTypeId: cls.id,
+      activityTypeId: cls.id,
+      title: cls.name || '',
+      titleIS: cls.nameIS || '',
+      subtitle: cls.classTag || '',
+      subtitleIS: cls.classTag || '',
+      date: iso,
+      startTime: startT,
+      endTime: endT,
+      leaderMemberId: '',
+      leaderName: '',
+      leaderPhone: '',
+      showLeaderPhone: false,
+      notes: '',
+      notesIS: '',
+      roles: roles.map(function(r) {
+        return {
+          id: (r.id || 'r') + '-' + iso.replace(/-/g, ''),
+          baseRoleId: r.id || '',
+          name: r.name || '',
+          nameIS: r.nameIS || '',
+          description: r.description || '',
+          descriptionIS: r.descriptionIS || '',
+          slots: r.slots || 1,
+          requiredEndorsement: r.requiredEndorsement || '',
+        };
+      }),
+      active: true,
+      materialized: true,
+    });
+  }
   return out;
 }
 

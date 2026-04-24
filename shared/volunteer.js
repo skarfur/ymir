@@ -38,15 +38,13 @@
     }
   }
 
-  // Expand all active, volunteer-flagged activity types into virtual volunteer
-  // events within [rangeFrom, rangeTo]. Subtypes without a bulk schedule are
-  // skipped. Subtypes with bulk schedules that lack default times are also
-  // skipped (times come from subtype defaults now).
+  // Expand all active, volunteer-flagged activity classes into virtual
+  // volunteer events within [rangeFrom, rangeTo]. Classes without a bulk
+  // schedule or without default times are skipped.
   //
-  //   actTypes : array from config
+  //   actTypes : flat-class array from config (cfg.activityTypes)
   //   rangeFrom: ISO date (default: today)
   //   rangeTo  : ISO date (default: today + 90 days)
-  //   locale   : 'IS' or 'EN' (unused here; consumer handles localization)
   //
   // Returns an array of virtual event objects.
   function expandVolunteerActivityTypes(actTypes, rangeFrom, rangeTo) {
@@ -58,69 +56,65 @@
       rangeTo = until.toISOString().slice(0, 10);
     }
     var out = [];
-    actTypes.forEach(function(at) {
-      if (!at || at.active === false || at.active === 'false') return;
-      var isVol = at.volunteer === true || at.volunteer === 'true';
+    actTypes.forEach(function(cls) {
+      if (!cls || cls.active === false || cls.active === 'false') return;
+      var isVol = cls.volunteer === true || cls.volunteer === 'true';
       if (!isVol) return;
-      var roles = _parse(at.roles, []);
+      var roles = _parse(cls.roles, []);
       if (!roles.length) return;
-      var subs = _parse(at.subtypes, []);
-      subs.forEach(function(st) {
-        if (!st || !st.bulkSchedule) return;
-        var bs = st.bulkSchedule;
-        var fd = bs.fromDate || '';
-        var td = bs.toDate   || '';
-        if (!fd || !td) return;
-        var startT = st.defaultStart || '';
-        var endT   = st.defaultEnd   || '';
-        if (!startT || !endT) return;
-        var days = Array.isArray(bs.daysOfWeek)
-          ? bs.daysOfWeek.map(function(n) { return parseInt(n, 10); })
-          : [];
-        if (!days.length) return;
-        // Intersect the subtype's own range with the requested range
-        var effFrom = fd > fromIso ? fd : fromIso;
-        var effTo   = td < rangeTo ? td : rangeTo;
-        if (effFrom > effTo) return;
-        _eachDay(effFrom, effTo, function(iso, dow) {
-          if (days.indexOf(dow) === -1) return;
-          var id = 'vae-' + at.id + '-' + (st.id || 'st') + '-' + iso.replace(/-/g, '');
-          out.push({
-            id: id,
-            virtual: true,
-            sourceActivityTypeId: at.id,
-            sourceSubtypeId: st.id || '',
-            title: at.name || '',
-            titleIS: at.nameIS || '',
-            subtitle: st.name || '',
-            subtitleIS: st.nameIS || '',
-            activityTypeId: at.id,
-            date: iso,
-            startTime: startT,
-            endTime: endT,
-            leaderName: '',
-            leaderPhone: '',
-            showLeaderPhone: false,
-            notes: '',
-            notesIS: '',
-            // Each virtual instance gets its own role ids so signups don't
-            // collide across days for the same activity type.
-            roles: roles.map(function(r) {
-              return {
-                id: (r.id || 'r') + '-' + iso.replace(/-/g, ''),
-                baseRoleId: r.id || '',
-                name: r.name || '',
-                nameIS: r.nameIS || '',
-                description: r.description || '',
-                descriptionIS: r.descriptionIS || '',
-                slots: r.slots || 1,
-                requiredEndorsement: r.requiredEndorsement || '',
-              };
-            }),
+      if (!cls.bulkSchedule) return;
+      var bs = cls.bulkSchedule;
+      var fd = bs.fromDate || '';
+      var td = bs.toDate   || '';
+      if (!fd || !td) return;
+      var startT = cls.defaultStart || '';
+      var endT   = cls.defaultEnd   || '';
+      if (!startT || !endT) return;
+      var days = Array.isArray(bs.daysOfWeek)
+        ? bs.daysOfWeek.map(function(n) { return parseInt(n, 10); })
+        : [];
+      if (!days.length) return;
+      // Intersect the class's own range with the requested range
+      var effFrom = fd > fromIso ? fd : fromIso;
+      var effTo   = td < rangeTo ? td : rangeTo;
+      if (effFrom > effTo) return;
+      _eachDay(effFrom, effTo, function(iso, dow) {
+        if (days.indexOf(dow) === -1) return;
+        var id = 'vae-' + cls.id + '-' + iso.replace(/-/g, '');
+        out.push({
+          id: id,
+          virtual: true,
+          sourceActivityTypeId: cls.id,
+          title: cls.name || '',
+          titleIS: cls.nameIS || '',
+          subtitle: cls.classTag || '',
+          subtitleIS: cls.classTag || '',
+          activityTypeId: cls.id,
+          date: iso,
+          startTime: startT,
+          endTime: endT,
+          leaderName: '',
+          leaderPhone: '',
+          showLeaderPhone: false,
+          notes: '',
+          notesIS: '',
+          // Each virtual instance gets its own role ids so signups don't
+          // collide across days for the same activity class.
+          roles: roles.map(function(r) {
+            return {
+              id: (r.id || 'r') + '-' + iso.replace(/-/g, ''),
+              baseRoleId: r.id || '',
+              name: r.name || '',
+              nameIS: r.nameIS || '',
+              description: r.description || '',
+              descriptionIS: r.descriptionIS || '',
+              slots: r.slots || 1,
+              requiredEndorsement: r.requiredEndorsement || '',
+            };
+          }),
             active: true,
           });
         });
-      });
     });
     return out;
   }

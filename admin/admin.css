@@ -53,6 +53,15 @@
     .list-row-clickable { cursor:pointer; transition:background-color .12s; }
     .list-row-clickable:hover { background:color-mix(in srgb, var(--accent) 6%, transparent); }
     .list-name { flex:1; color:var(--text); }
+    .class-tag-chip { display:inline-block; font-size:9px; letter-spacing:.5px; text-transform:uppercase;
+      padding:1px 7px; border-radius:8px; border:1px solid var(--border);
+      background:color-mix(in srgb, var(--muted) 12%, transparent); color:var(--muted); }
+    .day-pill { background:var(--surface); border:1px solid var(--border); color:var(--muted);
+      border-radius:14px; padding:3px 10px; font-size:10px; cursor:pointer;
+      font-family:inherit; transition:background-color .12s, color .12s, border-color .12s; }
+    .day-pill:hover { color:var(--text); border-color:var(--accent)44; }
+    .day-pill.on { background:color-mix(in srgb, var(--accent) 14%, transparent);
+      color:var(--accent-fg); border-color:var(--accent); }
 
     /* ── Checklist rows ── */
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;

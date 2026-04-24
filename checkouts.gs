@@ -488,18 +488,11 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
       var start = gcalParseDateTime_(date, a.start || '00:00');
       var end = gcalParseDateTime_(date, a.end || a.start || '00:00');
       if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
-      var typeLabel = t.nameIS || t.name || '';
-      var subLabel = '';
-      if (a.subtypeId) {
-        var subs = Array.isArray(t.subtypes) ? t.subtypes : [];
-        var st = subs.find(function (x) { return x && x.id === a.subtypeId; });
-        if (st) subLabel = st.nameIS || st.name || '';
-      }
-      if (!subLabel) subLabel = a.subtypeName || '';
-      var baseName = a.name || typeLabel;
-      var title = baseName + (typeLabel ? (' (' + typeLabel + ')') : '');
+      var classLabel = t.nameIS || t.name || '';
+      var tagLabel   = t.classTag || '';
+      var baseName   = a.name || classLabel;
+      var title = baseName + (tagLabel ? (' [' + tagLabel + ']') : '');
       var desc = 'activity:' + a.id
-        + (subLabel ? ('\n' + subLabel) : '')
         + (a.participants ? ('\nparticipants: ' + a.participants) : '')
         + (a.notes ? ('\n' + a.notes) : '');
       var newId = gcalUpsertEvent_(t.calendarId, prevId, title, start, end, desc, 'upsert');
