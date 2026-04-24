@@ -142,14 +142,28 @@ async function saveActType() {
   }
 }
 
+// Stable preset tag values, always available in the dropdown. Admins can
+// still type a custom value (the field is text + datalist), but these cover
+// the typical sailing-club taxonomy and keep tags consistent across classes.
+var CLASS_TAG_PRESETS = [
+  'Lesson', 'Race', 'Training', 'Club event',
+  'Maintenance', 'Meeting', 'Social', 'Other',
+];
+
 function refreshClassTagOptions() {
   var dl = document.getElementById('atClassTagOptions');
   if (!dl) return;
   var seen = {};
-  var tags = (actTypes || []).map(function(a) { return (a && a.classTag) || ''; })
-    .filter(function(t) { if (!t || seen[t]) return false; seen[t] = true; return true; })
-    .sort();
-  dl.innerHTML = tags.map(function(t) { return '<option value="' + esc(t) + '">'; }).join('');
+  var tags = CLASS_TAG_PRESETS.slice();
+  // Include any legacy/custom tags already in use so they show up in the
+  // dropdown too — avoids losing unusual values an admin added freehand.
+  (actTypes || []).forEach(function(a) {
+    if (a && a.classTag) tags.push(a.classTag);
+  });
+  var out = tags.filter(function(t) {
+    if (!t || seen[t]) return false; seen[t] = true; return true;
+  }).sort();
+  dl.innerHTML = out.map(function(t) { return '<option value="' + esc(t) + '">'; }).join('');
 }
 
 function renderAtDayBtns() {
@@ -175,6 +189,10 @@ function renderAtBoatPicker() {
   var wrap = document.getElementById('atBoatPicker');
   if (!wrap) return;
   var sel = new Set((window._atReservedBoatIds || []).map(String));
+  // Count badge on the <summary> so admins see the selection at a glance
+  // without expanding the (default-collapsed) section.
+  var countEl = document.getElementById('atBoatCount');
+  if (countEl) countEl.textContent = sel.size ? ' (' + sel.size + ')' : '';
   var list = (typeof boats !== 'undefined' && Array.isArray(boats)) ? boats : [];
   if (!list.length) {
     wrap.innerHTML = '<div class="text-10 text-muted" data-s="admin.noBoatsConfigured"></div>';

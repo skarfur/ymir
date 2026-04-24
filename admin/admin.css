@@ -73,6 +73,13 @@
     .boat-chip.on { background:color-mix(in srgb, var(--accent) 14%, transparent);
       color:var(--accent-fg); border-color:var(--accent); }
 
+    /* Collapsible <details> sections in admin modals (reserved boats etc.) */
+    details > summary { cursor:pointer; list-style:none; }
+    details > summary::-webkit-details-marker { display:none; }
+    details > summary::before { content:"\25B8"; color:var(--muted); margin-right:6px;
+      display:inline-block; transition:transform .15s; }
+    details[open] > summary::before { transform:rotate(90deg); }
+
     /* ── Checklist rows ── */
     .cl-row { display:flex; align-items:center; gap:8px; padding:7px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
