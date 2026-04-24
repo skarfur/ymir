@@ -54,6 +54,9 @@
 /* ── Activities ── */
 .activity-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
 .activity-row:last-child { border-bottom:none; }
+.activity-row-edit { cursor:pointer; border-radius:4px; margin:0 -6px; padding-left:6px; padding-right:6px; transition:background-color .12s; }
+.activity-row-edit:hover { background:color-mix(in srgb, var(--accent) 6%, transparent); }
+.activity-edited-badge { font-size:9px; background:color-mix(in srgb, var(--muted) 15%, transparent); border:1px solid color-mix(in srgb, var(--muted) 40%, transparent); color:var(--muted); border-radius:10px; padding:1px 7px; margin-left:6px; letter-spacing:.3px; }
 .activity-info { flex:1; }
 .activity-name { font-weight:500; }
 .activity-meta { color:var(--muted); font-size:11px; margin-top:3px; }

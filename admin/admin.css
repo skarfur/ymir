@@ -50,6 +50,8 @@
     .list-row { display:flex; align-items:center; gap:10px; padding:9px 0;
       border-bottom:1px solid var(--border)44; font-size:12px; }
     .list-row:last-child { border-bottom:none; }
+    .list-row-clickable { cursor:pointer; transition:background-color .12s; }
+    .list-row-clickable:hover { background:color-mix(in srgb, var(--accent) 6%, transparent); }
     .list-name { flex:1; color:var(--text); }
 
     /* ── Checklist rows ── */

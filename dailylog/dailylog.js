@@ -114,12 +114,6 @@ function renderChecklists() {
   applyChecklistOpenState();
 }
 
-function renderChecklistsReadonly() {
-  renderCLReadonly(dom.amCard, amItems, amChecks);
-  renderCLReadonly(dom.pmCard, pmItems, pmChecks);
-  applyChecklistOpenState();
-}
-
 function clCountsFor(prefix) {
   const items = prefix === 'am' ? amItems : pmItems;
   const state = prefix === 'am' ? amChecks : pmChecks;
@@ -176,59 +170,30 @@ function renderCL(card, items, state, prefix) {
   });
 }
 
-function renderCLReadonly(card, items, state) {
-  const done = items.filter(i => state[i.id]).length;
-  const pct  = items.length ? Math.round(done / items.length * 100) : 0;
-  card.innerHTML = '';
-  const prog = document.createElement('div');
-  prog.className = 'cl-progress-line';
-  prog.innerHTML = `<span>${done}</span> / ${items.length} complete`;
-  const barWrap = document.createElement('div'); barWrap.className = 'cl-bar-wrap';
-  const bar = document.createElement('div'); bar.className = 'cl-bar'; bar.style.width = pct + '%';
-  barWrap.appendChild(bar); card.appendChild(prog); card.appendChild(barWrap);
-  items.forEach(it => {
-    const row = document.createElement('label');
-    row.className = 'checklist-item' + (state[it.id] ? ' done' : '');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!state[it.id]; cb.disabled = true;
-    const txt = document.createElement('span'); txt.className = 'item-text';
-    txt.textContent = L === 'IS' && it.textIS ? it.textIS : it.textEN;
-    row.appendChild(cb); row.appendChild(txt); card.appendChild(row);
-  });
-}
 
 function renderActivities() {
   dom.activitiesEmpty.style.display = activities.length ? 'none' : '';
   replaceWithFragment(dom.activitiesList, activities, act => {
     const row = document.createElement('div');
-    row.className = 'activity-row';
+    row.className = 'activity-row activity-row-edit';
+    row.dataset.editActivity = act.id;
     const info = document.createElement('div'); info.className = 'activity-info';
     const meta = [act.type, act.subtypeName||'', act.start && act.end ? act.start+'\u2013'+act.end : act.start, act.participants].filter(Boolean).join(' \u00b7 ');
     const ablerBadge  = act.ablerRegistered ? '<span style="font-size:9px;background:color-mix(in srgb, var(--moss) 12%, transparent);border:1px solid color-mix(in srgb, var(--moss) 40%, transparent);color:var(--moss);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">Abler ✓</span>' : '';
     const scheduledBadge = act.scheduled ? '<span style="font-size:9px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 40%, transparent);color:var(--navy);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">' + s('daily.scheduled') + '</span>' : '';
+    const editedBadge = act.editedBy ? (() => {
+      const when = act.editedAt ? (fmtDate(act.editedAt) + ' ' + fmtTime(act.editedAt)) : '';
+      const tip = s('daily.editedByTip', { name: act.editedBy, when: when });
+      return '<span class="activity-edited-badge" title="' + esc(tip) + '">' + s('daily.edited') + '</span>';
+    })() : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
       ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
-    info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}${ablerBadge}${linkedCount}</div>
+    info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}${ablerBadge}${editedBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
-      ${act.notes ? `<div class="activity-nity-note">${esc(act.notes)}</div>` : ''}`;
+      ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
     const del = document.createElement('button');
     del.className = 'del-btn'; del.dataset.deleteActivity = act.id; del.innerHTML = '&times;';
     row.appendChild(info); row.appendChild(del);
-    return row;
-  });
-}
-
-function renderActivitiesReadonly() {
-  dom.activitiesEmpty.style.display = activities.length ? 'none' : '';
-  replaceWithFragment(dom.activitiesList, activities, act => {
-    const row = document.createElement('div');
-    row.className = 'activity-row';
-    const info = document.createElement('div'); info.className = 'activity-info';
-    const meta = [act.type, act.start && act.end ? act.start+'–'+act.end : act.start, act.participants].filter(Boolean).join(' · ');
-    const scheduledBadge = act.scheduled ? '<span style="font-size:9px;background:color-mix(in srgb, var(--navy) 10%, transparent);border:1px solid color-mix(in srgb, var(--navy) 40%, transparent);color:var(--navy);border-radius:10px;padding:1px 7px;margin-left:6px;letter-spacing:.3px">' + s('daily.scheduled') + '</span>' : '';
-    info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}</div>
-      <div class="activity-meta">${esc(meta)}</div>
-      ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
-    row.appendChild(info);
     return row;
   });
 }
@@ -442,9 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   dom.activitiesList.addEventListener('click', e => {
-    const btn = e.target.closest('[data-delete-activity]');
-    if (!btn) return;
-    deleteActivity(btn.dataset.deleteActivity);
+    const del = e.target.closest('[data-delete-activity]');
+    if (del) { deleteActivity(del.dataset.deleteActivity); return; }
+    const row = e.target.closest('[data-edit-activity]');
+    if (row) openActivityModal(row.dataset.editActivity);
   });
 
   dom.wxLogList.addEventListener('click', e => {
@@ -491,7 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('actSaveBtn').addEventListener('click',   function() { saveActivity(false); });
   document.getElementById('actSaveAddBtn').addEventListener('click', function() { saveActivity(true); });
 
-  dom.signOffBtn.addEventListener('click',   signOffDay);
+  dom.signOffBtn.addEventListener('click', () => {
+    // Today: full sign-off (marks signedOffBy/signedOffAt). Past/future: save
+    // as an amendment — the row already has a signOffBy stamp (either staff
+    // or the midnight trigger), and updatedBy/updatedAt distinguishes the edit.
+    if (isToday()) signOffDay();
+    else doSave(false);
+  });
   dom.narrativeInput.addEventListener('input', markDirty);
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
 
@@ -546,14 +518,15 @@ function isFuture() { return viewDate >  TODAY; }
 function updateDateNav() {
   dom.nextBtn.disabled = false;
   dom.todayBtn.disabled = isToday();
-  dom.mainWrap.classList.toggle('readonly', !isToday());
-  const isEditable = isToday();
-  dom.signOffBtn.style.display   = isEditable ? '' : 'none';
+  // Past/future days are amendable, not read-only — weather logging is the
+  // only today-exclusive action (snapshot reflects real-time wx).
+  dom.mainWrap.classList.remove('readonly');
+  dom.readonlyBadge.classList.add('hidden');
+  dom.signOffBtn.style.display = '';
+  dom.signOffBtn.textContent   = isToday() ? s('btn.signOff') : s('daily.saveAmendments');
   dom.logWxBtn.parentElement.style.display = 'block';
-  dom.logWxBtn.style.display   = isEditable ? '' : 'none';
-  dom.logWxDesc.style.display  = isEditable ? '' : 'none';
-  if (!isEditable) dom.readonlyBadge.classList.remove('hidden');
-  else             dom.readonlyBadge.classList.add('hidden');
+  dom.logWxBtn.style.display   = isToday() ? '' : 'none';
+  dom.logWxDesc.style.display  = isToday() ? '' : 'none';
 }
 
 function navigateDay(d) {
@@ -572,7 +545,8 @@ function navigateToToday() {
 // SECTION 8 — CHECKLIST TOGGLE
 // ════════════════════════════════════════════════════════════════════════════
 function toggleCL(prefix, id) {
-  if (!isToday()) return;
+  // Past/future days are amendable too — edits get audited via the
+  // dailyLog row's updatedBy/updatedAt on save.
   // normalise new phase names (opening/closing) to internal am/pm keys
   const _p    = (prefix === 'opening') ? 'am' : (prefix === 'closing') ? 'pm' : prefix;
   const state = _p === 'am' ?
@@ -611,22 +585,37 @@ function deleteActivity(id) {
   markDirty();
 }
 
-function openActivityModal() {
-  _selectedActType = activityTypes[0]?.id || null;
-  _linkedGroupCheckoutIds = [];
-  _selectedSubtype = null;
+let _editingActivityId = null;
+
+function openActivityModal(id) {
+  _editingActivityId = id || null;
+  const existing = id ? activities.find(a => a.id === id) : null;
+  _selectedActType = existing ? (existing.activityTypeId || null) : (activityTypes[0]?.id || null);
+  _linkedGroupCheckoutIds = existing && Array.isArray(existing.linkedGroupCheckoutIds) ? existing.linkedGroupCheckoutIds.slice() : [];
+  _selectedSubtype = existing ? (existing.subtypeId || null) : null;
   renderActTypeBtns();
   populateActSubtypes();
-  dom.actName.value = '';
-  dom.actStart.value = '';
-  dom.actEnd.value = '';
-  dom.actParticipants.value = '';
-  dom.actNotes.value = '';
-  document.getElementById('actAbler').checked = false;
+  // Mark the matching subtype button as selected on edit
+  if (_selectedSubtype) {
+    const grid = document.getElementById('actSubtypeBtns');
+    if (grid) {
+      const btn = grid.querySelector(`[data-subtype-id="${_selectedSubtype}"]`);
+      if (btn) btn.classList.add('selected');
+    }
+  }
+  dom.actName.value  = existing ? (existing.name  || '') : '';
+  dom.actStart.value = existing ? (existing.start || '') : '';
+  dom.actEnd.value   = existing ? (existing.end   || '') : '';
+  dom.actParticipants.value = existing ? (existing.participants || '') : '';
+  dom.actNotes.value        = existing ? (existing.notes        || '') : '';
+  document.getElementById('actAbler').checked = !!(existing && existing.ablerRegistered);
+  // The "save + add another" button doesn't make sense when editing a single row
+  const saAdd = document.getElementById('actSaveAddBtn');
+  if (saAdd) saAdd.style.display = _editingActivityId ? 'none' : '';
   renderGroupLinkCards();
   openModal('activityModal');
 }
-function closeActivityModal() { closeModal('activityModal'); }
+function closeActivityModal() { _editingActivityId = null; closeModal('activityModal'); }
 
 function saveActivity(keepOpen) {
   const name = dom.actName.value.trim();
@@ -635,8 +624,7 @@ function saveActivity(keepOpen) {
   if (!typeObj) { showToast(s('daily.actType') + ' required.', 'warn'); return; }
   const selSubtype = _selectedSubtype || '';
   const subtypeObj = selSubtype ? (Array.isArray(typeObj.subtypes)?typeObj.subtypes:JSON.parse(typeObj.subtypes||'[]')).find(st => st.id === selSubtype) : null;
-  activities.push({
-    id:                    'act-' + Date.now(),
+  const fields = {
     activityTypeId:        typeObj.id,
     subtypeId:             selSubtype || '',
     subtypeName:           subtypeObj ? (L==='IS'&&subtypeObj.nameIS?subtypeObj.nameIS:subtypeObj.name) : '',
@@ -648,11 +636,24 @@ function saveActivity(keepOpen) {
     notes:                 dom.actNotes.value.trim(),
     ablerRegistered:       document.getElementById('actAbler').checked,
     linkedGroupCheckoutIds: _linkedGroupCheckoutIds.slice(),
-  });
+  };
+  if (_editingActivityId) {
+    const idx = activities.findIndex(a => a.id === _editingActivityId);
+    if (idx >= 0) {
+      // Preserve id + scheduled-origin flag, replace the editable fields, and
+      // stamp the audit pair. Keep it simple: just who/when, no diff log.
+      activities[idx] = Object.assign({}, activities[idx], fields, {
+        editedBy: user.name || '',
+        editedAt: new Date().toISOString(),
+      });
+    }
+  } else {
+    activities.push(Object.assign({ id: 'act-' + Date.now() }, fields));
+  }
   renderActivities();
   markDirty();
-  saveDraft(); // auto-save when activity added
-  if (keepOpen) {
+  saveDraft(); // persist the add/edit immediately — audit stamps land with it
+  if (keepOpen && !_editingActivityId) {
     // Reset form fields for next entry but keep modal open
     _selectedSubtype = null;
     dom.actName.value = '';
@@ -817,8 +818,8 @@ async function loadOtherLog() {
     console.warn('loadOtherLog failed:', e.message);
     renderIncidentSection([]);
   }
-  renderChecklistsReadonly();
-  renderActivitiesReadonly();
+  renderChecklists();
+  renderActivities();
   renderWxLog();
 }
 
@@ -869,7 +870,17 @@ function applyLogData(logRes, cfgRes) {
       dom.signoffBadge.classList.remove('hidden');
       const at = log.signedOffAt
         ? ' at ' + fmtTime(log.signedOffAt) : '';
-      dom.signoffBadge.textContent = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
+      let txt = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
+      // Amendment annotation: if the row was updated after sign-off by
+      // someone other than the signer, surface who/when.
+      if (log.updatedAt && log.signedOffAt && log.updatedAt > log.signedOffAt
+          && log.updatedBy && log.updatedBy !== log.signedOffBy) {
+        txt += ' · ' + s('daily.amendedBy', {
+          name: log.updatedBy,
+          when: fmtDate(log.updatedAt) + ' ' + fmtTime(log.updatedAt),
+        });
+      }
+      dom.signoffBadge.textContent = txt;
     }
   } else {
     // No sheet row yet — pre-populate from the bulk schedule so today's user
@@ -885,7 +896,7 @@ function applyLogData(logRes, cfgRes) {
 // ════════════════════════════════════════════════════════════════════════════
 function markDirty() { dirty = true; }
 
-async function saveDraft()  { if (!isToday()) return; await doSave(false); }
+async function saveDraft()  { await doSave(false); }
 async function signOffDay() {
   if (!isToday()) return;
   const done = pmItems.filter(i => pmChecks[i.id]).length;
@@ -904,6 +915,7 @@ async function doSave(signOff) {
   dom.saveMsg.textContent = '';
 
   try {
+    const nowIso = new Date().toISOString();
     const payload = {
       date:          viewDate,
       openingChecks: amChecks,
@@ -913,6 +925,11 @@ async function doSave(signOff) {
       tideData:      tideData,
       narrative:     dom.narrativeInput.value.trim(),
       signOff,
+      // Audit stamps: always record who saved + when. On explicit sign-off
+      // (today only), stamp signedOffBy/At too — the backend preserves these
+      // on subsequent saves so amendments don't overwrite the original.
+      updatedBy:     user.name || '',
+      ...(signOff ? { signedOffBy: user.name || '', signedOffAt: nowIso } : {}),
       ...(logId ? { id: logId } : {}),
     };
     const res = await apiPost('saveDailyLog', payload);
