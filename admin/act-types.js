@@ -20,12 +20,11 @@ function renderActTypes() {
     const subs = Array.isArray(a.subtypes) ? a.subtypes : tryParse_(a.subtypes, []);
     const roles = Array.isArray(a.roles) ? a.roles : tryParse_(a.roles, []);
     const isVol = bool(a.volunteer);
-    return `<div class="list-row" style="flex-direction:column;align-items:stretch;gap:2px">
+    return `<div class="list-row list-row-clickable" style="flex-direction:column;align-items:stretch;gap:2px" data-admin-click="openActTypeModal" data-admin-arg="${a.id}">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="list-name">${esc(a.name)}${a.nameIS
           ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(a.nameIS)}</span>` : ""}${isVol
           ? `<span style="color:var(--accent-fg);font-size:9px;margin-left:8px;letter-spacing:.5px">${s('admin.volunteerType').toUpperCase()}</span>` : ""}</span>
-        <button class="row-edit" data-admin-click="openActTypeModal" data-admin-arg="${a.id}">Edit</button>
         <button class="row-del"  data-admin-click="deleteActType" data-admin-arg="${a.id}">×</button>
       </div>
       ${subs.map(st=>`<div style="font-size:10px;color:var(--muted);padding:1px 0 1px 12px">→ ${esc(st.name)}${st.defaultStart?' · '+esc(st.defaultStart)+(st.defaultEnd?'–'+esc(st.defaultEnd):''):''}</div>`).join('')}
