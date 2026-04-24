@@ -3,6 +3,19 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — collapse trip cards back to a single-row summary
+
+The 2-column grid added in `860555b` (boat/crew, departed/returned,
+location/duration) made collapsed cards heavy enough to defeat the
+purpose of collapsing. Reverted to the single boat headline + badges
+row: date, boat, duration, wind, and role/verification/student/
+non-club/pending badges. Times, location, crew count, distance, and
+ports already live in the expanded card.
+
+Dropped now-unused CSS (`.trip-grid`, `.trip-cell`, `.trip-lbl`,
+`.trip-val`, `.trip-badges`, `.trip-port`) and promoted the previously
+legacy `.trip-boat` / `.trip-meta` back to primary.
+
 ## Unreleased — fix 2×16-minute time drift from Sheets auto-converting "HH:MM" strings
 
 Observed: a scheduled event created today appeared 32 minutes later than

@@ -374,14 +374,6 @@ function tripCard(t){
   const hasDetailWx = !!(eDir||eGust||eAir||eFeel||eSst||eWv||ePres||eFlag);
 
 
-  // Helm initials for the collapsed "crew" cell
-  const helmInitials = helmPlainNames.length ? (()=>{
-    const _ini = n => n.split(/\s+/).filter(t=>t&&t!==t.toLowerCase()).map(t=>t.replace(/-/g,'').charAt(0)).join('').toUpperCase();
-    const _memberIni = h => { const m = allMembers.find(x=>x.kennitala&&String(x.kennitala)===h.kt); return (m&&m.initials)?m.initials:_ini(h.name); };
-    return helmPlainNames.map(h => h.kt===String(user.kennitala) ? s('tc.me') : _memberIni(h))
-      .sort((a,b)=> a===s('tc.me') ? -1 : b===s('tc.me') ? 1 : a.localeCompare(b,'is'))
-      .map(n=>esc(n)).join(', ');
-  })() : '';
   const hasPendingBadge = !isVer && isSki && (pendingCrewConfs.length||pendingHelmConfs.length||pendingStudentConfs.length||pendingCrewIn.length||pendingHelmIn.length||pendingStudentIn.length);
   const hasVerifyPending = (t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer;
   const isStudent = (t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
@@ -394,40 +386,17 @@ function tripCard(t){
         <div class="trip-date-yr">${esc(p.yr)}</div>
       </div>
       <div class="trip-body">
-        <div class="trip-grid">
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('lbl.boat')}</span>
-            <span class="trip-val trip-boat">${esc(t.boatName||'—')}</span>
-          </div>
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('lbl.crew')}</span>
-            <span class="trip-val">${aboardCount}${helmInitials?` · <span class="text-accent">⎈ ${helmInitials}</span>`:''}</span>
-          </div>
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('tc.departed')}</span>
-            <span class="trip-val">${_timeOut?esc(_timeOut):'—'}</span>
-          </div>
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('tc.returned')}</span>
-            <span class="trip-val">${_timeIn?esc(_timeIn):'—'}</span>
-          </div>
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('lbl.location')}</span>
-            <span class="trip-val">${esc(_locationName||'—')}</span>
-          </div>
-          <div class="trip-cell">
-            <span class="trip-lbl">${s('tc.duration')}</span>
-            <span class="trip-val">${esc(dur)}${_distNm?` · ${esc(_distNm)} nm`:''}${windLine?` · <span class="trip-wind">${windLine}</span>`:''}</span>
-          </div>
-        </div>
-        <div class="trip-badges">
+        <div class="trip-boat">${esc(t.boatName||'—')}</div>
+        <div class="trip-meta">
           <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
+          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).filter(t=>t&&t!==t.toLowerCase()).map(t=>t.replace(/-/g,'').charAt(0)).join('').toUpperCase();const _memberIni=h=>{const m=allMembers.find(x=>x.kennitala&&String(x.kennitala)===h.kt);return (m&&m.initials)?m.initials:_ini(h.name);};return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_memberIni(h)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
           ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
           ${isStudent?`<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 8%, transparent);border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);color:var(--navy-l)">${s('tc.student')}</span>`:''}
           ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border)">${s('tc.nonClub')}</span>`:''}
           ${hasPendingBadge?'<span class="trip-badge" style="background:var(--yellow)11;border:1px solid var(--yellow)55;color:var(--yellow)">⏳ '+s('tc.pending')+'</span>':''}
           ${hasVerifyPending?'<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 12%, transparent);border:1px solid var(--navy-l);color:var(--navy-l)">⏳ '+s('tc.verificationPending')+'</span>':''}
-          ${isKeelboat&&portLine?'<span class="trip-port">'+portLine+'</span>':''}
+          <span>${esc(dur)}</span>
+          ${windLine?'<span class="trip-wind">'+windLine+'</span>':''}
         </div>
       </div>
       <div class="trip-arrow">▾</div>
