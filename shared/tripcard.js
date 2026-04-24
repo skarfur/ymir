@@ -388,13 +388,15 @@ function tripCard(t){
       <div class="trip-body">
         <div class="trip-headline">
           <span class="trip-boat">${esc(t.boatName||'—')}</span>
-          <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
-          ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).filter(t=>t&&t!==t.toLowerCase()).map(t=>t.replace(/-/g,'').charAt(0)).join('').toUpperCase();const _memberIni=h=>{const m=allMembers.find(x=>x.kennitala&&String(x.kennitala)===h.kt);return (m&&m.initials)?m.initials:_ini(h.name);};return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_memberIni(h)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
-          ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
-          ${isStudent?`<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 8%, transparent);border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);color:var(--navy-l)">${s('tc.student')}</span>`:''}
-          ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border)">${s('tc.nonClub')}</span>`:''}
-          ${hasPendingBadge?'<span class="trip-badge" style="background:var(--yellow)11;border:1px solid var(--yellow)55;color:var(--yellow)">⏳ '+s('tc.pending')+'</span>':''}
-          ${hasVerifyPending?'<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 12%, transparent);border:1px solid var(--navy-l);color:var(--navy-l)">⏳ '+s('tc.verificationPending')+'</span>':''}
+          <span class="trip-badges-r">
+            ${t.nonClub&&t.nonClub!=='false'?`<span class="trip-badge" style="background:var(--surface);border:1px solid var(--border)">${s('tc.nonClub')}</span>`:''}
+            ${isStudent?`<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 8%, transparent);border:1px solid color-mix(in srgb, var(--navy-l) 33%, transparent);color:var(--navy-l)">${s('tc.student')}</span>`:''}
+            ${hasPendingBadge?'<span class="trip-badge" style="background:var(--yellow)11;border:1px solid var(--yellow)55;color:var(--yellow)">⏳ '+s('tc.pending')+'</span>':''}
+            ${hasVerifyPending?'<span class="trip-badge" style="background:color-mix(in srgb, var(--navy-l) 12%, transparent);border:1px solid var(--navy-l);color:var(--navy-l)">⏳ '+s('tc.verificationPending')+'</span>':''}
+            ${helmPlainNames.length?`<span class="trip-badge badge-helm">⎈ ${(()=>{const _ini=n=>n.split(/\s+/).filter(t=>t&&t!==t.toLowerCase()).map(t=>t.replace(/-/g,'').charAt(0)).join('').toUpperCase();const _memberIni=h=>{const m=allMembers.find(x=>x.kennitala&&String(x.kennitala)===h.kt);return (m&&m.initials)?m.initials:_ini(h.name);};return helmPlainNames.map(h=>h.kt===String(user.kennitala)?s('tc.me'):_memberIni(h)).sort((a,b)=>a===s('tc.me')?-1:b===s('tc.me')?1:a.localeCompare(b,'is')).map(n=>esc(n)).join(', ')})()}</span>`:''}
+            ${isVer?'<span class="trip-badge badge-verified">✓</span>':''}
+            <span class="trip-badge ${isSki?'badge-skipper':'badge-crew'}">${isSki?s('tc.skipper'):s('tc.crew')}</span>
+          </span>
         </div>
         <div class="trip-meta">
           <span>${esc(dur)}</span>
