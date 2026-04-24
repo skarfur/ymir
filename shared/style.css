@@ -1225,6 +1225,31 @@ textarea { min-height: 70px; }
   border-style: dashed;
 }
 
+/* Virtual "held" slots from an activity class with reservedBoatIds. Not
+   bookable — shows the class name and uses a muted, striped background
+   so it reads as distinct from both free and booked slots. */
+.sc-slot--held {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--navy) 18%, transparent),
+    color-mix(in srgb, var(--navy) 18%, transparent) 6px,
+    color-mix(in srgb, var(--navy) 28%, transparent) 6px,
+    color-mix(in srgb, var(--navy) 28%, transparent) 12px
+  );
+  border: 1px dashed color-mix(in srgb, var(--navy) 55%, transparent);
+  color: var(--text);
+  cursor: not-allowed;
+}
+.sc-slot--held .sc-slot-time { color: var(--text); opacity: .85; }
+.sc-slot-who--held {
+  color: var(--navy-l, var(--text));
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  opacity: .9;
+}
+
 .sc-slot-time {
   font-weight: 500;
   color: var(--text);

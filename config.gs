@@ -229,6 +229,13 @@ function saveActivityType_(b) {
       bulkSchedule.daysOfWeek = bulkSchedule.daysOfWeek.map(String);
     }
     const isVol = b.volunteer === true || b.volunteer === 'true';
+    let reservedBoatIds = [];
+    try {
+      var rb = b.reservedBoatIds
+        ? (Array.isArray(b.reservedBoatIds) ? b.reservedBoatIds : JSON.parse(b.reservedBoatIds))
+        : [];
+      reservedBoatIds = (rb || []).map(String).filter(Boolean);
+    } catch (e) { reservedBoatIds = []; }
     const res = saveConfigListItem_('activity_types', {
       id: b.id || '',
       name: b.name,
@@ -242,6 +249,7 @@ function saveActivityType_(b) {
       defaultStart: b.defaultStart || '',
       defaultEnd:   b.defaultEnd   || '',
       bulkSchedule: bulkSchedule || null,
+      reservedBoatIds: reservedBoatIds,
     });
     // Volunteer event materialization runs in the background via
     // syncVolunteerEvents_ when the admin Volunteer tab renders.

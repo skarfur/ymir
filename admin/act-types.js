@@ -67,9 +67,14 @@ function openActTypeModal(id) {
   if (!Array.isArray(window._atBulkSchedule.daysOfWeek)) window._atBulkSchedule.daysOfWeek = [];
   document.getElementById("atBsFromDate").value = window._atBulkSchedule.fromDate || '';
   document.getElementById("atBsToDate").value   = window._atBulkSchedule.toDate   || '';
+  // Reserved boats: each class can hold N boats for the duration of each
+  // occurrence. Empty = no resource reservation (classroom, land work, etc.).
+  window._atReservedBoatIds = a && Array.isArray(a.reservedBoatIds)
+    ? a.reservedBoatIds.slice().map(String) : [];
   // Refresh datalist of existing class tags so the input autocompletes
   refreshClassTagOptions();
   renderAtDayBtns();
+  renderAtBoatPicker();
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
   // Load volunteer roles
   window._atRoles = a && a.roles ? JSON.parse(JSON.stringify(
@@ -102,6 +107,7 @@ async function saveActType() {
     defaultStart: document.getElementById("atDefaultStart").value.trim(),
     defaultEnd:   document.getElementById("atDefaultEnd").value.trim(),
     bulkSchedule: hasSchedule ? JSON.stringify(bs) : null,
+    reservedBoatIds: JSON.stringify(window._atReservedBoatIds || []),
     roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
   };
   await saveEntity({
@@ -154,6 +160,44 @@ function renderAtDayBtns() {
       + '<span data-s="' + d.k + '">' + d.v + '</span></button>';
   }).join('');
   if (window.applyStrings) window.applyStrings(wrap);
+}
+
+function renderAtBoatPicker() {
+  var wrap = document.getElementById('atBoatPicker');
+  if (!wrap) return;
+  var sel = new Set((window._atReservedBoatIds || []).map(String));
+  var list = (typeof boats !== 'undefined' && Array.isArray(boats)) ? boats : [];
+  if (!list.length) {
+    wrap.innerHTML = '<div class="text-10 text-muted" data-s="admin.noBoatsConfigured"></div>';
+    if (window.applyStrings) window.applyStrings(wrap);
+    return;
+  }
+  // Group chips by category so admins pick from a readable list
+  var byCat = {};
+  list.forEach(function(bt) {
+    if (!bt || bt.active === false) return;
+    var cat = bt.category || 'other';
+    (byCat[cat] = byCat[cat] || []).push(bt);
+  });
+  var cats = Object.keys(byCat).sort();
+  wrap.innerHTML = cats.map(function(cat) {
+    var chips = byCat[cat].map(function(bt) {
+      var on = sel.has(String(bt.id));
+      return '<button type="button" class="boat-chip' + (on ? ' on' : '') + '"'
+        + ' data-admin-click="toggleAtReservedBoat" data-admin-arg="' + esc(bt.id) + '">'
+        + esc(bt.name || bt.id) + '</button>';
+    }).join('');
+    return '<div class="boat-chip-group"><div class="boat-chip-cat">' + esc(cat) + '</div>' + chips + '</div>';
+  }).join('');
+}
+
+function toggleAtReservedBoat(boatId) {
+  if (!window._atReservedBoatIds) window._atReservedBoatIds = [];
+  var id = String(boatId);
+  var idx = window._atReservedBoatIds.indexOf(id);
+  if (idx === -1) window._atReservedBoatIds.push(id);
+  else window._atReservedBoatIds.splice(idx, 1);
+  renderAtBoatPicker();
 }
 
 function toggleAtDay(dayVal) {

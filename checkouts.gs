@@ -335,7 +335,94 @@ function getSlots_(b) {
     if (b.toDate && s.date > b.toDate) continue;
     result.push(s);
   }
+  // Merge in virtual slots projected from activity classes that reserve boats.
+  // Virtuals aren't persisted — they're computed on read so changing a class
+  // schedule doesn't rewrite old rows (past days were materialized by the
+  // midnight trigger, future days are projected).
+  if (b.fromDate && b.toDate) {
+    var virt = projectSlotsForRange_(b.fromDate, b.toDate);
+    for (var j = 0; j < virt.length; j++) {
+      var vs = virt[j];
+      if (b.boatId && vs.boatId !== b.boatId) continue;
+      if (catBoatSet && !catBoatSet[vs.boatId]) continue;
+      result.push(vs);
+    }
+  }
   return okJ({ slots: result });
+}
+
+// Expand each active class's bulkSchedule × reservedBoatIds into virtual
+// reservationSlot rows across a date range. Used by getSlots_ to block out
+// captain-bookable windows without persisting anything. Callers receive each
+// virtual with `virtual: true` and `sourceActivityClassId` set so the UI can
+// distinguish them from real bookings and refuse to book over them.
+function projectSlotsForDate_(dateISO, classes) {
+  if (!dateISO) return [];
+  var arr = classes;
+  if (!arr) {
+    try { arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  }
+  if (!Array.isArray(arr) || !arr.length) return [];
+  var dow = String(new Date(dateISO + 'T12:00:00').getDay());
+  var out = [];
+  arr.forEach(function(cls) {
+    if (!cls || cls.active === false) return;
+    if (!cls.bulkSchedule) return;
+    var boats = Array.isArray(cls.reservedBoatIds) ? cls.reservedBoatIds : [];
+    if (!boats.length) return;
+    var bs = cls.bulkSchedule;
+    if (bs.fromDate && dateISO < bs.fromDate) return;
+    if (bs.toDate   && dateISO > bs.toDate)   return;
+    var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
+    if (!days.length || days.indexOf(dow) === -1) return;
+    var startT = bs.startTime || cls.defaultStart || '';
+    var endT   = bs.endTime   || cls.defaultEnd   || '';
+    if (!startT || !endT) return;
+    boats.forEach(function(boatId) {
+      out.push({
+        id: 'vslot-' + cls.id + '-' + boatId + '-' + dateISO,
+        boatId: String(boatId),
+        date: dateISO,
+        startTime: startT,
+        endTime: endT,
+        recurrenceGroupId: '',
+        gcalEventId: '',
+        note: '',
+        createdAt: '',
+        bookedByKennitala: '',
+        bookedByName: '',
+        bookedByCrewId: '',
+        bookingColor: '',
+        tentative: '',
+        virtual: true,
+        sourceActivityClassId: cls.id,
+        sourceClassName:   cls.name   || '',
+        sourceClassNameIS: cls.nameIS || '',
+        sourceClassTag:    cls.classTag || '',
+      });
+    });
+  });
+  return out;
+}
+
+function projectSlotsForRange_(fromISO, toISO) {
+  if (!fromISO || !toISO) return [];
+  var classes = [];
+  try { classes = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  if (!Array.isArray(classes) || !classes.length) return [];
+  var out = [];
+  var d = new Date(fromISO + 'T00:00:00');
+  var end = new Date(toISO + 'T00:00:00');
+  // Cap at a reasonable horizon so an accidental huge range doesn't runaway.
+  var MAX_DAYS = 400;
+  var count = 0;
+  for (; d <= end && count < MAX_DAYS; d.setDate(d.getDate() + 1), count++) {
+    var y = d.getFullYear(), mo = d.getMonth() + 1, da = d.getDate();
+    var iso = y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da;
+    var day = projectSlotsForDate_(iso, classes);
+    for (var i = 0; i < day.length; i++) out.push(day[i]);
+  }
+  return out;
 }
 
 // ── Google Calendar sync helpers ─────────────────────────────────────────
@@ -606,6 +693,12 @@ function deleteRecurrenceGroup_(b) {
 
 function bookSlot_(b) {
   if (!b.slotId) return failJ('slotId required');
+  // Virtual slots (vslot-*) are projected from an activity class's reserved
+  // boats + schedule. They're a "hold" for the club activity, not a bookable
+  // row — reject with a clear message so the captain knows why.
+  if (String(b.slotId).indexOf('vslot-') === 0) {
+    return failJ('This slot is held for a club activity and cannot be booked');
+  }
   var slot = findOne_('reservationSlots', 'id', b.slotId);
   if (!slot) return failJ('Slot not found');
   if (slot.bookedByKennitala) return failJ('Slot already booked');
@@ -658,6 +751,9 @@ function bookSlot_(b) {
 
 function unbookSlot_(b) {
   if (!b.slotId) return failJ('slotId required');
+  if (String(b.slotId).indexOf('vslot-') === 0) {
+    return failJ('Virtual class slot — nothing to unbook');
+  }
   var slot = findOne_('reservationSlots', 'id', b.slotId);
   if (!slot) return failJ('Slot not found');
   if (!slot.bookedByKennitala) return failJ('Slot is not booked');
