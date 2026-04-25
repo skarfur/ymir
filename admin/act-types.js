@@ -334,6 +334,12 @@ async function deleteActType(id) {
       toast(s("toast.deleted"), "ok");
     }
     renderActTypes();
+    // The Scheduling timeline reads off the same actTypes array; refresh it
+    // here so projected occurrences from the deleted class drop out of the
+    // upcoming-events list immediately rather than after a full page reload.
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
     closeModal("actTypeModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
