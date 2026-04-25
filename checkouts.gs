@@ -318,6 +318,10 @@ function removeReservation_(b) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getSlots_(b) {
+  // Defensively ensure the sourceActivityClassId column exists — it's added
+  // when a captain books a virtual class-slot for the first time, but can be
+  // missing on fresh deploys where no booking has happened yet.
+  addColIfMissing_('reservationSlots', 'sourceActivityClassId');
   var all = readAll_('reservationSlots');
   var catBoatSet = null;
   if (b.category) {
@@ -326,9 +330,17 @@ function getSlots_(b) {
     catBoatSet = {};
     boats.forEach(function(bt) { if (bt.category === b.category) catBoatSet[bt.id] = true; });
   }
+  // Build the set of virtual ids that have already been materialized so the
+  // projection doesn't double-count them. A real row carrying
+  // sourceActivityClassId IS a class-slot booking — its virtual counterpart
+  // must drop out of the merge.
+  var materialized = {};
   var result = [];
   for (var i = 0; i < all.length; i++) {
     var s = all[i];
+    if (s.sourceActivityClassId) {
+      materialized['vslot-' + s.sourceActivityClassId + '-' + s.boatId + '-' + s.date] = true;
+    }
     if (b.boatId && s.boatId !== b.boatId) continue;
     if (catBoatSet && !catBoatSet[s.boatId]) continue;
     if (b.fromDate && s.date < b.fromDate) continue;
@@ -337,12 +349,14 @@ function getSlots_(b) {
   }
   // Merge in virtual slots projected from activity classes that reserve boats.
   // Virtuals aren't persisted — they're computed on read so changing a class
-  // schedule doesn't rewrite old rows (past days were materialized by the
-  // midnight trigger, future days are projected).
+  // schedule doesn't rewrite old rows. Any virtual whose materialization
+  // already exists in the real table is suppressed (the real one carries the
+  // current booking state).
   if (b.fromDate && b.toDate) {
     var virt = projectSlotsForRange_(b.fromDate, b.toDate);
     for (var j = 0; j < virt.length; j++) {
       var vs = virt[j];
+      if (materialized[vs.id]) continue;
       if (b.boatId && vs.boatId !== b.boatId) continue;
       if (catBoatSet && !catBoatSet[vs.boatId]) continue;
       result.push(vs);
@@ -843,10 +857,36 @@ function deleteRecurrenceGroup_(b) {
 function bookSlot_(b) {
   if (!b.slotId) return failJ('slotId required');
   // Virtual slots (vslot-*) are projected from an activity class's reserved
-  // boats + schedule. They're a "hold" for the club activity, not a bookable
-  // row — reject with a clear message so the captain knows why.
+  // boats + schedule. The captain/crew booking IS what fills the activity:
+  // materialize a real reservationSlots row carrying sourceActivityClassId
+  // so the projection stops emitting the virtual on subsequent reads, then
+  // fall through to the normal book flow against the new id.
   if (String(b.slotId).indexOf('vslot-') === 0) {
-    return failJ('This slot is held for a club activity and cannot be booked');
+    var dateISO = String(b.slotId).slice(-10);
+    var projected = projectSlotsForDate_(dateISO);
+    var virt = null;
+    for (var pi = 0; pi < projected.length; pi++) {
+      if (projected[pi].id === b.slotId) { virt = projected[pi]; break; }
+    }
+    if (!virt) return failJ('Virtual slot no longer scheduled');
+    addColIfMissing_('reservationSlots', 'sourceActivityClassId');
+    var newId = uid_();
+    insertRow_('reservationSlots', {
+      id:                    newId,
+      boatId:                virt.boatId,
+      date:                  virt.date,
+      startTime:             virt.startTime,
+      endTime:               virt.endTime,
+      recurrenceGroupId:     '',
+      bookedByKennitala:     '',
+      bookedByName:          '',
+      bookedByCrewId:        '',
+      bookingColor:          '',
+      note:                  '',
+      createdAt:             now_(),
+      sourceActivityClassId: virt.sourceActivityClassId,
+    });
+    b.slotId = newId;
   }
   var slot = findOne_('reservationSlots', 'id', b.slotId);
   if (!slot) return failJ('Slot not found');
@@ -920,6 +960,14 @@ function unbookSlot_(b) {
   var member = kt ? findOne_('members', 'kennitala', kt) : null;
   var isStaff = member && (member.role === 'staff' || member.role === 'admin');
   if (!isBooker && !isCrewMember && !isStaff) return failJ('Only the booker, a crew member, or staff can cancel');
+  // Class-slot bookings (materialized from a virtual): delete the row so the
+  // projection takes back over and the virtual reappears for the next
+  // captain/crew. Regular slots just clear the booker fields.
+  if (slot.sourceActivityClassId) {
+    syncSlotToCalendar_(b.slotId, 'delete');
+    deleteRow_('reservationSlots', 'id', b.slotId);
+    return okJ({ unbooked: true, dematerialized: true });
+  }
   updateRow_('reservationSlots', 'id', b.slotId, { bookedByKennitala: '', bookedByName: '', bookedByCrewId: '', bookingColor: '' });
   syncSlotToCalendar_(b.slotId, 'upsert');
   return okJ({ unbooked: true });
