@@ -64,8 +64,8 @@ function openActTypeModal(id) {
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
   document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
-  document.getElementById("atDefaultStart").value = a ? _coerceHHMM(a.defaultStart) : "";
-  document.getElementById("atDefaultEnd").value   = a ? _coerceHHMM(a.defaultEnd)   : "";
+  document.getElementById("atDefaultStart").value = a ? coerceHHMM(a.defaultStart) : "";
+  document.getElementById("atDefaultEnd").value   = a ? coerceHHMM(a.defaultEnd)   : "";
   // Bulk schedule (flat — lives on the class itself now)
   var bs = a && a.bulkSchedule
     ? (typeof a.bulkSchedule === 'string' ? tryParse_(a.bulkSchedule, null) : a.bulkSchedule)
@@ -345,30 +345,6 @@ async function deleteActType(id) {
 }
 
 function tryParse_(v, fallback) { try { return JSON.parse(v); } catch(e) { return fallback; } }
-
-// Coerce legacy time values into HH:MM so <input type=time> accepts them.
-// Handles "1700" / "0900" / "9:00" / "0900" / "17.00" / Sheets serial fractions.
-// Returns '' for unrecognized input so the field stays empty rather than
-// showing junk.
-function _coerceHHMM(v) {
-  if (v == null || v === '') return '';
-  if (typeof v === 'number') {
-    var frac = v - Math.floor(v);
-    if (frac < 0) frac += 1;
-    var totalMin = Math.round(frac * 1440);
-    if (totalMin === 1440) totalMin = 0;
-    var h = Math.floor(totalMin / 60), m = totalMin % 60;
-    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
-  }
-  var s = String(v).trim().replace(/\./g, ':');
-  if (/^\d{1,2}:\d{2}$/.test(s)) {
-    var p = s.split(':');
-    return (p[0].length === 1 ? '0' + p[0] : p[0]) + ':' + p[1];
-  }
-  if (/^\d{4}$/.test(s))   return s.slice(0, 2) + ':' + s.slice(2);
-  if (/^\d{3}$/.test(s))   return '0' + s.charAt(0) + ':' + s.slice(1);
-  return '';
-}
 
 // Fade the bulk-schedule fields when the admin picks 'calendar' as the source,
 // since they become irrelevant (projection reads from GCal, not bulkSchedule).

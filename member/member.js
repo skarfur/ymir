@@ -314,9 +314,9 @@ function renderNonClubLaunchForm() {
     '<div id="launchLocGeoStatus" class="text-xs text-muted" style="margin-top:4px;display:none"></div></div>'+
     '<div class="grid2 mb-12 gap-10">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
-      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<input type="time" id="launchTimeOut" value="'+fmtTimeNow()+'"></div>'+
       '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
-      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
+      '<input type="time" id="launchReturnBy">'+
       '<div class="flex-center gap-4" style="margin-top:5px">'+
         '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
         '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
@@ -364,9 +364,9 @@ function renderLaunchForm(boat) {
       '<datalist id="launchPortsList">'+portOpts+'</datalist></div>':'')+
     '<div class="grid2 mb-12 gap-10">'+
       '<div class="field"><label>'+s('staff.coForm.departure')+'</label>'+
-      '<input type="text" id="launchTimeOut" value="'+fmtTimeNow()+'" pattern="[0-9]{2}:[0-9]{2}" placeholder="HH:MM" maxlength="5" style="width:80px"></div>'+
+      '<input type="time" id="launchTimeOut" value="'+fmtTimeNow()+'"></div>'+
       '<div class="field"><label>'+s('staff.coForm.estReturn')+'</label>'+
-      '<input type="text" id="launchReturnBy" placeholder="HH:MM" maxlength="5" style="width:80px" data-member-time-format>'+
+      '<input type="time" id="launchReturnBy">'+
       '<div class="flex-center gap-4" style="margin-top:5px">'+
         '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="60">+1h</button>'+
         '<button type="button" class="btn btn-secondary btn-sm" data-member-click="_addToLaunchOut" data-member-arg="90">+1.5h</button>'+
@@ -692,7 +692,7 @@ function renderReturnForm() {
   document.getElementById('returnModalBody').innerHTML=
     '<div class="field" style="margin-bottom:14px">'
       +'<label class="detail-field-label" style="display:block">TIME IN</label>'
-      +'<input type="text" id="retTimeIn" value="'+fmtTimeNow()+'" maxlength="5" placeholder="HH:MM" style="width:80px" data-member-time-format>'
+      +'<input type="time" id="retTimeIn" value="'+fmtTimeNow()+'">'
     +'</div>'
     +'<div class="mb-14">'
       +'<div class="section-label mb-10">WEATHER RECORD</div>'
@@ -1434,14 +1434,6 @@ function _renderLaunchFormById(id) {
   });
 
   document.addEventListener('input', function (e) {
-    // HH:MM auto-format — member variant slices at 2, caps at 4 chars
-    var fmt = e.target.closest('[data-member-time-format]');
-    if (fmt) {
-      var v = fmt.value.replace(/[^0-9]/g, '');
-      if (v.length >= 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
-      fmt.value = v;
-      return;
-    }
     // No-arg input dispatcher
     var el = e.target.closest('[data-member-input]');
     if (el && typeof window[el.dataset.memberInput] === 'function') {

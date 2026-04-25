@@ -1255,14 +1255,6 @@ function doDetailDelete() {
   });
 
   document.addEventListener('input', function (e) {
-    // HH:MM time-input auto-formatter
-    var fmt = e.target.closest('[data-staff-time-format]');
-    if (fmt) {
-      var v = fmt.value.replace(/[^0-9]/g, '');
-      if (v.length >= 3) v = v.slice(0, 2) + ':' + v.slice(2);
-      fmt.value = v;
-      return;
-    }
     // Generic input dispatcher (value passed through)
     var el = e.target.closest('[data-staff-input]');
     if (el && typeof window[el.dataset.staffInput] === 'function') {

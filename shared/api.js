@@ -767,6 +767,31 @@ function fmtTimeNow() {
 }
 function fmtDateNow() { return window.toLocalISODate(); }
 
+// Coerce legacy time values into canonical HH:MM so <input type="time"> accepts
+// them on load. Handles "1700" / "0900" / "9:00" / "17.00" plus Sheets serial
+// fractions (0.7083 → 17:00). Returns '' for unrecognized input so the field
+// stays empty rather than showing junk. Used everywhere a stored time value
+// might predate the type="time" rollout.
+function coerceHHMM(v) {
+  if (v == null || v === '') return '';
+  if (typeof v === 'number') {
+    var frac = v - Math.floor(v);
+    if (frac < 0) frac += 1;
+    var totalMin = Math.round(frac * 1440);
+    if (totalMin === 1440) totalMin = 0;
+    var h = Math.floor(totalMin / 60), m = totalMin % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  var s = String(v).trim().replace(/\./g, ':');
+  if (/^\d{1,2}:\d{2}$/.test(s)) {
+    var p = s.split(':');
+    return (p[0].length === 1 ? '0' + p[0] : p[0]) + ':' + p[1];
+  }
+  if (/^\d{4}$/.test(s)) return s.slice(0, 2) + ':' + s.slice(2);
+  if (/^\d{3}$/.test(s)) return '0' + s.charAt(0) + ':' + s.slice(1);
+  return '';
+}
+
 // Shared primitives - single source of truth
 window.boolVal = function(v) {
   return v === true || v === "TRUE" || v === "true" || v === 1 || v === "1";
