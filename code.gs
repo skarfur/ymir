@@ -961,6 +961,20 @@ function sanitizeCell_(col, val) {
       ? Utilities.formatDate(val, tz, 'HH:mm')
       : Utilities.formatDate(val, tz, 'yyyy-MM-dd');
   }
+  // Sheets occasionally hands a TIME_COL back as a number (serial fraction
+  // of day) instead of a Date — happens when the cell was written without
+  // literalWrite_'s leading apostrophe and Sheets auto-converted "16:00"
+  // into a numeric time. Without this branch the next clause stringifies
+  // the float ("0.6666666666666666") and the frontend sees a number-shaped
+  // string in a time field. Convert the fraction back to HH:mm.
+  if (val != null && typeof val === 'number' && TIME_COLS_.has(col)) {
+    var frac = val - Math.floor(val);
+    if (frac < 0) frac += 1;
+    var totalMin = Math.round(frac * 1440);
+    if (totalMin === 1440) totalMin = 0;
+    var h = Math.floor(totalMin / 60), m = totalMin % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
   if (val != null && typeof val === 'number' && STRING_COL_RE_.test(col)) {
     return String(val);
   }
