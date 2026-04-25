@@ -220,7 +220,14 @@ async function deleteVolEvent(id) {
     await apiPost("deleteVolunteerEvent", { id: _id });
     volunteerEvents = volunteerEvents.filter(a => a.id !== _id);
     renderVolunteerEvents();
+    // Inline delete from the Scheduling timeline triggers this without the
+    // edit modal being open. closeModal is a no-op when the modal is hidden,
+    // and renderUpcomingEvents needs to re-run so the deleted row drops
+    // out of the timeline immediately.
     closeModal("volEventModal", true);
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }
 

@@ -83,11 +83,19 @@ function _upcomingRowHtml(ev, L) {
   var linkOut = ev.kind === 'activity'
     ? ' <a href="../dailylog/?date=' + esc(ev.date) + '" class="sched-link">' + s('admin.schedOpenDailyLog') + '</a>'
     : '';
+  // Inline delete for volunteer events so admins don't have to open the
+  // editor just to remove one. The button has its own data-admin-click so the
+  // delegated dispatcher resolves it before the row's openVolEventModal —
+  // closest() walks up from the click target and the button wins.
+  var deleteBtn = ev.kind === 'volunteer'
+    ? ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
+      + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>'
+    : '';
   return '<div class="sched-row"' + openAttr + '>'
     + '<span class="sched-time">' + esc(time) + '</span>'
     + ' ' + kindBadge
     + ' <span class="sched-title">' + esc(title) + subtitle + '</span>'
-    + signups + linkOut
+    + signups + linkOut + deleteBtn
     + '</div>';
 }
 
