@@ -250,10 +250,8 @@
         <div id="mLocGeoStatus" class="text-xs text-muted mt-2" style="display:none"></div>
       </div>
       <div class="form-row">
-        <div class="form-field"><label for="mTimeOut" data-s="lb.departed"></label><input type="text" id="mTimeOut" placeholder="HH:MM" maxlength="5"
-          data-lb-time-format></div>
-        <div class="form-field"><label for="mTimeIn" data-s="lb.returned"></label><input type="text" id="mTimeIn" placeholder="HH:MM" maxlength="5"
-          data-lb-time-format></div>
+        <div class="form-field"><label for="mTimeOut" data-s="lb.departed"></label><input type="time" id="mTimeOut"></div>
+        <div class="form-field"><label for="mTimeIn"  data-s="lb.returned"></label><input type="time" id="mTimeIn" ></div>
       </div>
       <div class="form-field"><label for="mCrew" data-s="lb.crewAboardTotal"></label><input type="number" id="mCrew" min="1" value="1" data-lb-input="onCrewChange"></div>
       <!-- Crew member inputs: shown when crew > 1 -->
@@ -358,10 +356,8 @@
       <select id="etLocation"><option value="" data-s="lb.selectLocation"></option></select>
     </div>
     <div class="form-row">
-      <div class="form-field"><label for="etTimeOut" data-s="lb.departed"></label><input type="text" id="etTimeOut" placeholder="HH:MM" maxlength="5"
-        data-lb-time-format></div>
-      <div class="form-field"><label for="etTimeIn" data-s="lb.returned"></label><input type="text" id="etTimeIn" placeholder="HH:MM" maxlength="5"
-        data-lb-time-format></div>
+      <div class="form-field"><label for="etTimeOut" data-s="lb.departed"></label><input type="time" id="etTimeOut"></div>
+      <div class="form-field"><label for="etTimeIn"  data-s="lb.returned"></label><input type="time" id="etTimeIn" ></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label for="etCrew" data-s="lb.crewAboard"></label><input type="number" id="etCrew" min="1" value="1"></div>

@@ -64,8 +64,8 @@ function openActTypeModal(id) {
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
   document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
   document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
-  document.getElementById("atDefaultStart").value = a ? (a.defaultStart || "") : "";
-  document.getElementById("atDefaultEnd").value   = a ? (a.defaultEnd   || "") : "";
+  document.getElementById("atDefaultStart").value = a ? coerceHHMM(a.defaultStart) : "";
+  document.getElementById("atDefaultEnd").value   = a ? coerceHHMM(a.defaultEnd)   : "";
   // Bulk schedule (flat — lives on the class itself now)
   var bs = a && a.bulkSchedule
     ? (typeof a.bulkSchedule === 'string' ? tryParse_(a.bulkSchedule, null) : a.bulkSchedule)
@@ -334,6 +334,12 @@ async function deleteActType(id) {
       toast(s("toast.deleted"), "ok");
     }
     renderActTypes();
+    // The Scheduling timeline reads off the same actTypes array; refresh it
+    // here so projected occurrences from the deleted class drop out of the
+    // upcoming-events list immediately rather than after a full page reload.
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
     closeModal("actTypeModal", true);
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }

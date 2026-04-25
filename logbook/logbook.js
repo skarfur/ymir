@@ -396,13 +396,6 @@ function setHeatMode(mode) {
     if (c && typeof window[c.dataset.lbChange] === 'function') window[c.dataset.lbChange]();
   });
   document.addEventListener('input', function (e) {
-    var tf = e.target.closest('[data-lb-time-format]');
-    if (tf) {
-      var v = tf.value.replace(/[^0-9]/g, '');
-      if (v.length >= 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
-      tf.value = v;
-      return;
-    }
     var ie = e.target.closest('[data-lb-input-el]');
     if (ie && typeof window[ie.dataset.lbInputEl] === 'function') { window[ie.dataset.lbInputEl](ie, ie.dataset.lbArg); return; }
     var i = e.target.closest('[data-lb-input]');

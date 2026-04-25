@@ -15,8 +15,10 @@ function openEditTrip(tripId) {
   }
   document.getElementById('etId').value = t.id;
   document.getElementById('etDate').value = t.date || '';
-  document.getElementById('etTimeOut').value = t.timeOut || '';
-  document.getElementById('etTimeIn').value = t.timeIn || '';
+  // Legacy logbook rows may have timeOut/timeIn stored as "1700" or as Sheets
+  // serial-time numbers; coerce to HH:MM so <input type=time> accepts them.
+  document.getElementById('etTimeOut').value = coerceHHMM(t.timeOut);
+  document.getElementById('etTimeIn').value  = coerceHHMM(t.timeIn);
   document.getElementById('etCrew').value = t.crew || 1;
   document.getElementById('etDistanceNm').value = t.distanceNm || '';
   document.getElementById('etDeparturePort').value = t.departurePort || '';
