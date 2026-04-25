@@ -64,8 +64,9 @@ function _upcomingRowHtml(ev, L) {
   var kindBadge = ev.kind === 'volunteer'
     ? '<span class="sched-badge sched-kind-vol">' + s('admin.schedKindVolunteer') + '</span>'
     : '<span class="sched-badge sched-kind-act">' + s('admin.schedKindActivity') + '</span>';
-  var sourceBadge = '<span class="sched-badge sched-src-' + esc(ev.source) + '">'
-    + s('admin.schedSource_' + ev.source) + '</span>';
+  // Source badge ("Schedule"/"Calendar"/"Manual"/"Daily log") is intentionally
+  // suppressed for now — duplicates the kind cue and reads as noise. The
+  // ev.source field is still set in the data, just not surfaced.
   var time = _formatTimeRange(ev);
   var title = (L === 'IS' && ev.titleIS) ? ev.titleIS : (ev.title || '');
   var subtitle = ev.subtypeName ? ' — ' + esc(ev.subtypeName) : '';
@@ -84,7 +85,7 @@ function _upcomingRowHtml(ev, L) {
     : '';
   return '<div class="sched-row"' + openAttr + '>'
     + '<span class="sched-time">' + esc(time) + '</span>'
-    + ' ' + kindBadge + ' ' + sourceBadge
+    + ' ' + kindBadge
     + ' <span class="sched-title">' + esc(title) + subtitle + '</span>'
     + signups + linkOut
     + '</div>';
