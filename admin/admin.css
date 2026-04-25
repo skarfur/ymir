@@ -175,5 +175,8 @@
     .sched-signup{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
     .sched-link{font-size:10px;color:var(--brass);text-decoration:none;margin-left:6px}
     .sched-link:hover{text-decoration:underline}
+    .sched-del{background:none;border:none;color:var(--border);cursor:pointer;
+      font-size:16px;padding:0 4px;line-height:1;margin-left:4px;transition:color .15s}
+    .sched-del:hover{color:var(--red)}
     .sched-hint{margin-top:10px;padding:8px 10px;border-radius:4px;
       background:color-mix(in srgb, var(--muted) 8%, transparent);color:var(--muted);font-size:11px;line-height:1.5}
