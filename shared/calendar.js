@@ -258,12 +258,16 @@
       }
 
       if (isVirtual) {
-        // Tooltip so the rower/captain knows what the hold is for; click is a
-        // no-op (no book/unbook path) — the book button is gone, cursor is
-        // not-allowed so the state reads as blocked-for-a-reason.
+        // Class slot — the hold is from an activity that reserves this boat.
+        // Clicking books the captain/crew INTO the activity: backend
+        // materializes a real reservationSlots row carrying
+        // sourceActivityClassId, then proceeds with the normal booking flow
+        // so this slot becomes their own.
         var _vTag = sl.sourceClassTag ? ' [' + sl.sourceClassTag + ']' : '';
         block.title = s('slot.heldFor').replace('{name}', (sl.sourceClassName || '') + _vTag);
-        block.style.cursor = 'not-allowed';
+        if (self.opts.onBook) {
+          block.addEventListener('click', function() { self.opts.onBook(sl.id); });
+        }
       } else if (isMine && self.opts.onUnbook) {
         block.addEventListener('click', function() { self.opts.onUnbook(sl.id); });
       } else if (!isBooked && self.opts.onBook) {

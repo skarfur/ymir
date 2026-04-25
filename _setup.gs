@@ -91,6 +91,12 @@ var SCHEMA_ = {
     'id','boatId','date','startTime','endTime',
     'recurrenceGroupId','bookedByKennitala','bookedByName','bookedByCrewId',
     'bookingColor','note','createdAt',
+    // Set when a row was materialized from a virtual class-slot (i.e. a
+    // captain/crew booked into a slot that came from an activity class's
+    // reservedBoatIds projection). Lets getSlots_ suppress the matching
+    // virtual on subsequent reads, and unbookSlot_ delete the row entirely
+    // so the projection takes back over.
+    'sourceActivityClassId',
   ],
   crews: [
     'id','name','pairs','status','createdAt','updatedAt',
