@@ -77,6 +77,7 @@ var _INVALIDATES = {
   deactivateMembers:       ['getConfig', 'getMembers'],
   saveActivityType:        ['getConfig', 'getMembers'],
   deleteActivityType:      ['getConfig', 'getMembers'],
+  cancelClassOccurrence:   ['getConfig', 'getDailyLog'],
   saveChecklistItem:       ['getConfig', 'getMembers'],
   deleteChecklistItem:     ['getConfig', 'getMembers'],
   saveCertDef:             ['getConfig', 'getMembers'],

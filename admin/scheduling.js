@@ -28,6 +28,7 @@ function renderUpcomingEvents() {
           actTypes: actTypes || [],
           volunteerEvents: volunteerEvents || [],
           volunteerSignups: (typeof volunteerSignups !== 'undefined' ? volunteerSignups : []),
+          cancelledActivityOccurrences: (typeof cancelledActivityOccurrences !== 'undefined' ? cancelledActivityOccurrences : []),
           fromIso: fromIso,
           toIso: toIso,
         })
@@ -83,20 +84,63 @@ function _upcomingRowHtml(ev, L) {
   var linkOut = ev.kind === 'activity'
     ? ' <a href="../dailylog/?date=' + esc(ev.date) + '" class="sched-link">' + s('admin.schedOpenDailyLog') + '</a>'
     : '';
-  // Inline delete for volunteer events so admins don't have to open the
-  // editor just to remove one. The button has its own data-admin-click so the
-  // delegated dispatcher resolves it before the row's openVolEventModal —
-  // closest() walks up from the click target and the button wins.
-  var deleteBtn = ev.kind === 'volunteer'
-    ? ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
-      + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>'
-    : '';
+  // Inline cancel/delete for any kind. Volunteer events delete the row
+  // outright (deleteVolEvent → deleteVolunteerEvent). Activity occurrences
+  // cancel just the one date (cancelClassOccurrence writes a tombstone +
+  // PATCHes the master GCal event's instance) — the parent class survives.
+  var deleteBtn = '';
+  if (ev.kind === 'volunteer') {
+    deleteBtn = ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
+      + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>';
+  } else if (ev.kind === 'activity' && ev.activityTypeId && ev.date) {
+    deleteBtn = ' <button type="button" class="sched-del" data-admin-click="cancelClassOccurrence"'
+      + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
+      + ' data-admin-arg2="' + esc(ev.date) + '"'
+      + ' data-s-aria="admin.cancelOccurrence" data-s-title="admin.cancelOccurrence" aria-label="Cancel">×</button>';
+  }
   return '<div class="sched-row"' + openAttr + '>'
     + '<span class="sched-time">' + esc(time) + '</span>'
     + ' ' + kindBadge
     + ' <span class="sched-title">' + esc(title) + subtitle + '</span>'
     + signups + linkOut + deleteBtn
     + '</div>';
+}
+
+// Cancel one occurrence of a recurring activity class on a given date.
+// Confirms first (irreversible from the user's POV — they'd have to re-add
+// the date back if they change their mind), then POSTs to the backend which
+// writes a scheduled_events tombstone AND PATCHes the GCal master event's
+// instance to status='cancelled'. The Scheduling timeline refreshes so the
+// row drops out without a full page reload.
+async function cancelClassOccurrence(classId, dateISO) {
+  if (!classId || !dateISO) return;
+  // Find the class for the confirm message — fall back to the id if the
+  // local actTypes array hasn't loaded yet.
+  var cls = (actTypes || []).find(function(a) { return a && a.id === classId; });
+  var L = getLang();
+  var name = cls
+    ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId))
+    : classId;
+  var msg = s('admin.confirmCancelOccurrence')
+    .replace('{name}', name)
+    .replace('{date}', dateISO);
+  if (!await ymConfirm(msg)) return;
+  try {
+    await apiPost('cancelClassOccurrence', { classId: classId, date: dateISO });
+    // Locally append the tombstone id so the next render skips this date —
+    // saves a getConfig round-trip. The next page load will pick it up from
+    // cfgRes.cancelledActivityOccurrences anyway.
+    var tombstoneId = 'sched-' + classId + '-' + dateISO;
+    if (cancelledActivityOccurrences.indexOf(tombstoneId) === -1) {
+      cancelledActivityOccurrences.push(tombstoneId);
+    }
+    toast(s('toast.saved'), 'ok');
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
+  } catch (e) {
+    toast(s('toast.error') + ': ' + (e.message || e), 'err');
+  }
 }
 
 function _calSourcedHintHtml(types) {

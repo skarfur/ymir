@@ -5,6 +5,7 @@ const user = requireAuth(isAdmin);
 
 let members = [], boats = [], locations = [], clItems = [], actTypes = [], volunteerEvents = [];
 let volunteerSignups = [];
+let cancelledActivityOccurrences = [];
 let _allBoats = [], _allLocations = [];
 let editingId = null, importResult = null;
 let certCategories = [];
@@ -107,6 +108,7 @@ async function loadAll() {
   // ── Assign data ───────────────────────────────────────────────────────────
   actTypes        = cfgRes.activityTypes || [];
   volunteerEvents = cfgRes.volunteerEvents || [];
+  cancelledActivityOccurrences = cfgRes.cancelledActivityOccurrences || [];
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || []),
                      ...(cfgRes.dailyChecklist?.closing  || []) ];
   certDefs       = certDefsFromConfig(cfgRes.certDefs || []);

@@ -1550,6 +1550,8 @@ var _STRINGS_FLAT = {
   "admin.volNotesIS": "Athugasemdir (IS)",
   "admin.noVolEvents": "Engir sjálfboðaviðburðir.",
   "admin.confirmDeleteVolEvent": "Eyða þessum sjálfboðaviðburði?",
+  "admin.cancelOccurrence": "Aflýsa þessu skipti",
+  "admin.confirmCancelOccurrence": "Aflýsa „{name}“ þann {date}? Dagatöl félagsmanna verða uppfærð.",
   "admin.volSignups": "skráningar",
   "admin.noRoles": "Engin hlutverk skilgreind.",
   "admin.roleEndorsement": "Nauðsynleg réttindi",

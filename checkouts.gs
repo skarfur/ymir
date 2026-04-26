@@ -473,6 +473,146 @@ function gcalParseDateTime_(dateStr, timeStr) {
   return d;
 }
 
+// ── Class recurring-event lifecycle (master + per-occurrence exceptions) ────
+// One Google Calendar recurring event per active activity class; the class
+// stores its `gcalSeriesEventId`. Members see the standing schedule as a
+// single recurring entry on their phones. Per-occurrence cancellations and
+// overrides are GCal exception PATCHes paired with local `scheduled_events`
+// tombstone/override rows so the daily log + the calendar stay in sync.
+
+function syncClassRecurringEvent_(cls) {
+  if (!cls) return '';
+  var calId  = cls.calendarId || '';
+  var syncOn = cls.calendarSyncActive === true || cls.calendarSyncActive === 'true';
+  var bs     = cls.bulkSchedule || null;
+  var days   = (bs && Array.isArray(bs.daysOfWeek))
+    ? bs.daysOfWeek.map(Number).filter(function(n){ return n >= 0 && n <= 6; })
+    : [];
+  var startT = (bs && bs.startTime) || cls.defaultStart || '';
+  var endT   = (bs && bs.endTime)   || cls.defaultEnd   || '';
+  var fromDate = (bs && bs.fromDate) || '';
+  var toDate   = (bs && bs.toDate)   || '';
+  var active   = cls.active !== false && cls.active !== 'false';
+  var canSync  = active && calId && syncOn && bs && days.length && startT && endT && fromDate;
+  if (!canSync) {
+    // Tear down any master event the class no longer warrants — deactivated,
+    // schedule cleared, calendar sync turned off, or required fields missing.
+    if (cls.gcalSeriesEventId && calId) {
+      try { Calendar.Events.remove(calId, cls.gcalSeriesEventId); } catch (e) {}
+    }
+    return '';
+  }
+  var firstDate = _firstClassOccurrenceDate_(fromDate, days);
+  if (!firstDate) return '';
+  var resource = {
+    summary:     cls.nameIS || cls.name || 'Activity',
+    description: cls.classTag ? '[' + cls.classTag + ']' : '',
+    start: { dateTime: firstDate + 'T' + startT + ':00', timeZone: getSheetTz_() },
+    end:   { dateTime: firstDate + 'T' + endT   + ':00', timeZone: getSheetTz_() },
+    recurrence: [_buildClassRRule_(days, toDate)],
+  };
+  try {
+    if (cls.gcalSeriesEventId) {
+      var updated = Calendar.Events.update(resource, calId, cls.gcalSeriesEventId);
+      return updated.id;
+    }
+    var created = Calendar.Events.insert(resource, calId);
+    return created.id;
+  } catch (e) {
+    Logger.log('syncClassRecurringEvent_ failed: ' + e);
+    return cls.gcalSeriesEventId || '';
+  }
+}
+
+// Find the first day on/after fromDateISO whose weekday is in dowList.
+// fromDateISO is a YYYY-MM-DD string; dowList is JS getDay() values
+// (0=Sun..6=Sat). Returns ISO YYYY-MM-DD or '' if none in the next 7 days.
+function _firstClassOccurrenceDate_(fromDateISO, dowList) {
+  if (!fromDateISO || !dowList.length) return '';
+  var d = new Date(fromDateISO + 'T12:00:00');
+  for (var i = 0; i < 7; i++) {
+    if (dowList.indexOf(d.getDay()) !== -1) {
+      var y = d.getFullYear(), mo = d.getMonth() + 1, da = d.getDate();
+      return y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da;
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return '';
+}
+
+function _buildClassRRule_(dowList, toDateISO) {
+  var byDay = ['SU','MO','TU','WE','TH','FR','SA'];
+  var days = dowList.map(function(n){ return byDay[n]; }).join(',');
+  var rule = 'RRULE:FREQ=WEEKLY;BYDAY=' + days;
+  if (toDateISO) {
+    rule += ';UNTIL=' + toDateISO.replace(/-/g, '') + 'T235959Z';
+  }
+  return rule;
+}
+
+// Cancel one occurrence of a class on a given date. Writes a local tombstone
+// row so the projection skips that date AND PATCHes the GCal master's
+// instance to status='cancelled' so members' calendars reflect it. Both
+// sides need the record to stay in sync — pure-GCal cancellation would leave
+// the daily log still showing the activity.
+function cancelClassOccurrence_(b) {
+  if (!b || !b.classId || !b.date) return failJ('classId and date required');
+  var classId = String(b.classId);
+  var dateISO = String(b.date).slice(0, 10);
+  var cls = _activityClassById_(classId);
+  // 1. Local tombstone — projection's `sched-{classId}-{date}` virtual is
+  //    suppressed by getSlots/projectActivitiesForDate when a real row with
+  //    the same id exists. A status=cancelled row carries the suppression
+  //    plus history.
+  sched_upsert_({
+    id:                   'sched-' + classId + '-' + dateISO,
+    kind:                 'activity',
+    status:               'cancelled',
+    sourceActivityTypeId: classId,
+    activityTypeId:       classId,
+    date:                 dateISO,
+    title:                cls ? (cls.name   || '') : '',
+    titleIS:              cls ? (cls.nameIS || '') : '',
+    updatedBy:            b.updatedBy || '',
+  });
+  // 2. GCal exception — PATCH the matching instance.
+  if (cls && cls.calendarId && cls.gcalSeriesEventId) {
+    try {
+      var startTime = (cls.bulkSchedule && cls.bulkSchedule.startTime)
+                   || cls.defaultStart || '00:00';
+      _patchGcalInstanceStatus_(cls.calendarId, cls.gcalSeriesEventId,
+                                dateISO, startTime, 'cancelled');
+    } catch (e) { Logger.log('cancelClassOccurrence_ gcal: ' + e); }
+  }
+  cDel_('config');
+  return okJ({ cancelled: true });
+}
+
+function _patchGcalInstanceStatus_(calId, seriesId, dateISO, startTime, newStatus) {
+  // Search for the instance whose start lands within ±1h of the expected
+  // start. The window covers DST transitions and any local-vs-script TZ
+  // skew without falsely matching neighbouring occurrences (the recurring
+  // pattern is at least 24h apart).
+  var startMs = new Date(dateISO + 'T' + startTime + ':00').getTime();
+  var window = 60 * 60 * 1000;
+  var resp = Calendar.Events.instances(calId, seriesId, {
+    timeMin: new Date(startMs - window).toISOString(),
+    timeMax: new Date(startMs + window).toISOString(),
+  });
+  if (!resp || !resp.items || !resp.items.length) return;
+  var instance = resp.items[0];
+  instance.status = newStatus;
+  Calendar.Events.update(instance, calId, instance.id);
+}
+
+function _activityClassById_(id) {
+  try {
+    var arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]');
+    return arr.find(function(c) { return c && c.id === id; }) || null;
+  } catch (e) { return null; }
+}
+
+// ── Single-event GCal upsert helper ──────────────────────────────────────────
 // Create/update/delete a single calendar event. Only touches events whose id
 // was created by this codebase — never scans by title/time. Returns the
 // resulting eventId (empty string on delete, unchanged on skip/failure).

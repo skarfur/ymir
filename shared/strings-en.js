@@ -1550,6 +1550,8 @@ var _STRINGS_FLAT = {
   "admin.volNotesIS": "Notes (IS)",
   "admin.noVolEvents": "No volunteer events.",
   "admin.confirmDeleteVolEvent": "Delete this volunteer event?",
+  "admin.cancelOccurrence": "Cancel this occurrence",
+  "admin.confirmCancelOccurrence": "Cancel \"{name}\" on {date}? Members’ calendars will be updated.",
   "admin.volSignups": "signups",
   "admin.noRoles": "No roles defined.",
   "admin.roleEndorsement": "Required endorsement",
