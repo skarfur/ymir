@@ -589,20 +589,102 @@ function cancelClassOccurrence_(b) {
 }
 
 function _patchGcalInstanceStatus_(calId, seriesId, dateISO, startTime, newStatus) {
-  // Search for the instance whose start lands within ±1h of the expected
-  // start. The window covers DST transitions and any local-vs-script TZ
-  // skew without falsely matching neighbouring occurrences (the recurring
-  // pattern is at least 24h apart).
-  var startMs = new Date(dateISO + 'T' + startTime + ':00').getTime();
+  var instance = _findGcalInstance_(calId, seriesId, dateISO, startTime);
+  if (!instance) return;
+  instance.status = newStatus;
+  Calendar.Events.update(instance, calId, instance.id);
+}
+
+function _patchGcalInstanceTime_(calId, seriesId, dateISO, oldStart, newStart, newEnd) {
+  var instance = _findGcalInstance_(calId, seriesId, dateISO, oldStart);
+  if (!instance) return;
+  instance.start = { dateTime: dateISO + 'T' + newStart + ':00', timeZone: getSheetTz_() };
+  instance.end   = { dateTime: dateISO + 'T' + newEnd   + ':00', timeZone: getSheetTz_() };
+  // If the instance was previously cancelled (e.g., overriding a restore-
+  // and-shift in one step), make sure it's confirmed too.
+  instance.status = 'confirmed';
+  Calendar.Events.update(instance, calId, instance.id);
+}
+
+// Search for the instance whose start lands within ±1h of the expected start.
+// The window covers DST transitions and any local-vs-script TZ skew without
+// falsely matching neighbouring occurrences (the recurring pattern is at
+// least 24h apart). Returns null if no instance is found.
+function _findGcalInstance_(calId, seriesId, dateISO, startTime) {
+  var startMs = new Date(dateISO + 'T' + (startTime || '00:00') + ':00').getTime();
   var window = 60 * 60 * 1000;
   var resp = Calendar.Events.instances(calId, seriesId, {
     timeMin: new Date(startMs - window).toISOString(),
     timeMax: new Date(startMs + window).toISOString(),
+    showDeleted: true,
   });
-  if (!resp || !resp.items || !resp.items.length) return;
-  var instance = resp.items[0];
-  instance.status = newStatus;
-  Calendar.Events.update(instance, calId, instance.id);
+  if (!resp || !resp.items || !resp.items.length) return null;
+  return resp.items[0];
+}
+
+// Reschedule one occurrence to new times. Writes a status='upcoming' override
+// row (same id as the projection's virtual, so it's preferred on read) and
+// PATCHes the GCal master instance. If the date previously had a cancelled
+// tombstone, the upsert flips status back to 'upcoming' and the GCal patch
+// flips the instance back to 'confirmed' — so override doubles as restore.
+function overrideClassOccurrence_(b) {
+  if (!b || !b.classId || !b.date) return failJ('classId and date required');
+  if (!b.startTime || !b.endTime) return failJ('startTime and endTime required');
+  var classId = String(b.classId);
+  var dateISO = String(b.date).slice(0, 10);
+  var newStart = String(b.startTime).slice(0, 5);
+  var newEnd   = String(b.endTime).slice(0, 5);
+  if (newEnd <= newStart) return failJ('endTime must be after startTime');
+  var cls = _activityClassById_(classId);
+  sched_upsert_({
+    id:                   'sched-' + classId + '-' + dateISO,
+    kind:                 'activity',
+    status:               'upcoming',
+    sourceActivityTypeId: classId,
+    activityTypeId:       classId,
+    date:                 dateISO,
+    startTime:            newStart,
+    endTime:              newEnd,
+    title:                cls ? (cls.name   || '') : '',
+    titleIS:              cls ? (cls.nameIS || '') : '',
+    updatedBy:            b.updatedBy || '',
+  });
+  if (cls && cls.calendarId && cls.gcalSeriesEventId) {
+    try {
+      var origStart = (cls.bulkSchedule && cls.bulkSchedule.startTime)
+                   || cls.defaultStart || '00:00';
+      _patchGcalInstanceTime_(cls.calendarId, cls.gcalSeriesEventId,
+                              dateISO, origStart, newStart, newEnd);
+    } catch (e) { Logger.log('overrideClassOccurrence_ gcal: ' + e); }
+  }
+  cDel_('config');
+  return okJ({ overridden: true });
+}
+
+// Undo a previous cancellation: drop the local tombstone so the projection
+// re-emits the virtual, and flip the GCal instance back to 'confirmed'.
+function restoreClassOccurrence_(b) {
+  if (!b || !b.classId || !b.date) return failJ('classId and date required');
+  var classId = String(b.classId);
+  var dateISO = String(b.date).slice(0, 10);
+  var tombId  = 'sched-' + classId + '-' + dateISO;
+  // Only act if the row is actually a cancelled tombstone — don't blow away
+  // an override row that happens to share the deterministic id.
+  var existing = sched_getById_(tombId);
+  if (existing && existing.status === 'cancelled') {
+    sched_hardDelete_(tombId);
+  }
+  var cls = _activityClassById_(classId);
+  if (cls && cls.calendarId && cls.gcalSeriesEventId) {
+    try {
+      var startTime = (cls.bulkSchedule && cls.bulkSchedule.startTime)
+                   || cls.defaultStart || '00:00';
+      _patchGcalInstanceStatus_(cls.calendarId, cls.gcalSeriesEventId,
+                                dateISO, startTime, 'confirmed');
+    } catch (e) { Logger.log('restoreClassOccurrence_ gcal: ' + e); }
+  }
+  cDel_('config');
+  return okJ({ restored: true });
 }
 
 function _activityClassById_(id) {
@@ -746,6 +828,19 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
       if (!t || !t.calendarId) { if (prevId) a.gcalEventId = prevId; return; }
       var enabled = t.calendarSyncActive === true || t.calendarSyncActive === 'true';
       if (!enabled) { if (prevId) a.gcalEventId = prevId; return; }
+      // If the class has a recurring master event AND this activity's id
+      // matches the projection's deterministic shape, the master already
+      // covers this occurrence on the calendar — overrides PATCH the
+      // master's instance, not a separate per-row event. Skip the
+      // standalone sync to avoid duplicate calendar entries.
+      if (t.gcalSeriesEventId && String(a.id || '').indexOf('sched-' + t.id + '-') === 0) {
+        if (prevId) {
+          // Clean up any orphan standalone event from the pre-master era.
+          gcalUpsertEvent_(t.calendarId, prevId, '', null, null, '', 'delete');
+          a.gcalEventId = '';
+        }
+        return;
+      }
       var start = gcalParseDateTime_(date, a.start || '00:00');
       var end = gcalParseDateTime_(date, a.end || a.start || '00:00');
       if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -850,6 +945,21 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (!at || !at.calendarId) return;
     var enabled = at.calendarSyncActive === true || at.calendarSyncActive === 'true';
     if (!enabled) return;
+    // If the parent class carries a recurring master event AND this volunteer
+    // event is a bulk-projected occurrence (deterministic vae- id), the
+    // master already covers it — skip the standalone sync to avoid double
+    // entries. Manually-created volunteer events (no vae- prefix) still get
+    // their own calendar entry as before.
+    var bulkProjected = at.gcalSeriesEventId
+      && String(ev.id || '').indexOf('vae-' + at.id + '-') === 0;
+    if (bulkProjected) {
+      if (ev.gcalEventId) {
+        gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
+        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        cDel_('config');
+      }
+      return;
+    }
     // Cancelled/orphaned events lose their calendar entry.
     if (ev.status === 'cancelled' || ev.status === 'orphaned') {
       if (ev.gcalEventId) {

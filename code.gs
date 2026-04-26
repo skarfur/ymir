@@ -90,7 +90,9 @@ const ADMIN_ACTIONS_ = {
   saveClubCalendars:    true,
   saveActivityType:     true,
   deleteActivityType:   true,
-  cancelClassOccurrence: true,
+  cancelClassOccurrence:   true,
+  overrideClassOccurrence: true,
+  restoreClassOccurrence:  true,
   saveChecklistItem:    true,
   deleteChecklistItem:  true,
   saveCertDef:          true,
@@ -1277,7 +1279,9 @@ function route_(action, b, caller) {
     case 'saveClubCalendars': return saveClubCalendars_(b);
     case 'saveActivityType': return saveActivityType_(b);
     case 'deleteActivityType': return deleteActivityType_(b.id);
-    case 'cancelClassOccurrence': return cancelClassOccurrence_(b);
+    case 'cancelClassOccurrence':   return cancelClassOccurrence_(b);
+    case 'overrideClassOccurrence': return overrideClassOccurrence_(b);
+    case 'restoreClassOccurrence':  return restoreClassOccurrence_(b);
     case 'saveChecklistItem': return saveChecklistItem_(b);
     case 'deleteChecklistItem': return deleteChecklistItem_(b.id);
     case 'saveCertDef': return saveCertDef_(b);
