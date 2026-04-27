@@ -10,29 +10,39 @@ let _veEditingId = null;
 let _volSyncDone = false;
 let _volShowPast = false;
 
+// Kick the background materialization of bulk-scheduled volunteer events
+// without rendering anything. Called from renderSchedulingTab so the
+// timeline can pick up newly-persisted rows on the next refresh. Idempotent.
+function syncVolunteerEventsBackground() {
+  if (_volSyncDone) return;
+  _volSyncDone = true;
+  (async function () {
+    try {
+      const res = await apiPost('syncVolunteerEvents', {});
+      if (res && res.added > 0) {
+        try {
+          const cfg = await apiGet('getConfig');
+          volunteerEvents = cfg.volunteerEvents || [];
+          if (typeof renderUpcomingEvents === 'function') renderUpcomingEvents();
+        } catch (e) {}
+      }
+    } catch (e) { /* non-fatal */ }
+  })();
+}
+
 function renderVolunteerEvents() {
   const card = document.getElementById("volEventsCard");
-  // One-time backfill: ensure any bulk-scheduled events defined on activity
-  // types are materialized into config.volunteer_events. This is a no-op
-  // once events have been materialized. Runs in the background and triggers
-  // a re-render when it finishes.
-  if (!_volSyncDone) {
-    _volSyncDone = true;
-    (async function() {
-      try {
-        const res = await apiPost('syncVolunteerEvents', {});
-        if (res && res.added > 0) {
-          // apiPost invalidates the getConfig cache; re-fetch to pick up
-          // newly materialized events.
-          try {
-            const cfg = await apiGet('getConfig');
-            volunteerEvents = cfg.volunteerEvents || [];
-            renderVolunteerEvents();
-          } catch(e) {}
-        }
-      } catch(e) { /* non-fatal — keep showing what we have */ }
-    })();
+  // The standalone Volunteer events col-section has been folded into the
+  // unified Upcoming events timeline. If the card is gone, fall back to
+  // refreshing the timeline so callers that re-render after a save still
+  // see updated state.
+  if (!card) {
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
+    return;
   }
+  syncVolunteerEventsBackground();
   const L = getLang();
   const today = new Date().toISOString().slice(0, 10);
   // Defense-in-depth: hide materialized events whose source activity type is
@@ -362,6 +372,23 @@ function onVeActTypeChange() {
   if (newRoles.length) {
     window._volRoles = newRoles;
     renderVolRoles();
+  }
+  // Inherit leader from the picked type only when the leader fields are still
+  // empty — preserves any in-progress per-instance override the admin typed.
+  var at = atId ? actTypes.find(function (a) { return a.id === atId; }) : null;
+  if (!at) return;
+  var leaderIdEl = document.getElementById("veLeaderMemberId");
+  var leaderSearchEl = document.getElementById("veLeaderSearch");
+  var leaderPhoneEl = document.getElementById("veLeaderPhone");
+  var showPhoneEl = document.getElementById("veShowPhone");
+  if (!leaderIdEl.value && !(leaderSearchEl.value || '').trim()) {
+    leaderPhoneEl.value = at.leaderPhone || '';
+    showPhoneEl.checked = !!(at.showLeaderPhone === true || at.showLeaderPhone === 'true');
+    if (at.leaderMemberId) {
+      var leaderM = members.find(function (m) { return m.id === at.leaderMemberId || m.kennitala === at.leaderMemberId; });
+      if (leaderM) { showVolLeaderChip(leaderM); leaderIdEl.value = leaderM.id || leaderM.kennitala; return; }
+    }
+    if (at.leaderName) leaderSearchEl.value = at.leaderName;
   }
 }
 

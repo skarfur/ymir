@@ -89,6 +89,23 @@ function openActTypeModal(id) {
   document.getElementById("atSchedSrcCalendar").checked = schedSrc === 'calendar';
   updateAtScheduleSource();
   document.getElementById("atDeleteBtn").classList.toggle("hidden", !a);
+  // Leader: chip if a member is linked, otherwise prefill the search box
+  // with the free-text name (legacy/external leaders kept the name only).
+  document.getElementById("atLeaderMemberId").value = a ? (a.leaderMemberId || '') : '';
+  document.getElementById("atLeaderPhone").value    = a ? (a.leaderPhone    || '') : '';
+  document.getElementById("atShowPhone").checked    = a ? (a.showLeaderPhone === true || a.showLeaderPhone === 'true') : false;
+  var atLeaderM = a && a.leaderMemberId
+    ? members.find(function (m) { return m.id === a.leaderMemberId || m.kennitala === a.leaderMemberId; })
+    : null;
+  if (!atLeaderM && a && a.leaderName) {
+    atLeaderM = members.find(function (m) { return (m.name || '') === a.leaderName; });
+  }
+  if (atLeaderM) {
+    showAtLeaderChip(atLeaderM);
+  } else {
+    clearAtLeaderChip();
+    document.getElementById("atLeaderSearch").value = a ? (a.leaderName || '') : '';
+  }
   // Load volunteer roles
   window._atRoles = a && a.roles ? JSON.parse(JSON.stringify(
     Array.isArray(a.roles) ? a.roles : tryParse_(a.roles, [])
@@ -101,6 +118,17 @@ function openActTypeModal(id) {
 async function saveActType() {
   const name = document.getElementById("atName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
+  // Leader is required on every activity type — instances inherit it at
+  // materialization time. Accept either a linked member or a free-text name.
+  var atLeaderMemberId = document.getElementById("atLeaderMemberId").value.trim();
+  var atLeaderM = atLeaderMemberId
+    ? members.find(function (m) { return m.id === atLeaderMemberId || m.kennitala === atLeaderMemberId; })
+    : null;
+  var atLeaderName = atLeaderM ? atLeaderM.name : document.getElementById("atLeaderSearch").value.trim();
+  if (!atLeaderMemberId && !atLeaderName) {
+    toast(s("admin.actLeaderRequired"), "err");
+    return;
+  }
   const isVol = document.getElementById("atVolunteer").checked;
   // Pull current bulk-schedule edits back from the form before save
   var bs = window._atBulkSchedule || { fromDate:'', toDate:'', daysOfWeek:[], startTime:'', endTime:'' };
@@ -125,6 +153,10 @@ async function saveActType() {
     reservedBoatIds: JSON.stringify(window._atReservedBoatIds || []),
     scheduleSource: schedSrc,
     roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
+    leaderMemberId: atLeaderMemberId,
+    leaderName: atLeaderName,
+    leaderPhone: document.getElementById("atLeaderPhone").value.trim(),
+    showLeaderPhone: document.getElementById("atShowPhone").checked,
   };
   await saveEntity({
     apiAction: "saveActivityType",
@@ -359,6 +391,54 @@ function updateAtScheduleSource() {
       var el = document.getElementById(id);
       if (el) el.style.opacity = isCal ? '0.45' : '';
     });
+}
+
+// ── Activity class: leader autocomplete ──────────────────────────────────────
+// Mirrors the volunteer-event leader picker (admin/volunteers.js). Members
+// search hits the same `members` array; chip + clear behave identically.
+
+function searchAtLeader(q) {
+  var drop = document.getElementById("atLeaderSuggestions");
+  if (!q || q.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  var ql = q.toLowerCase();
+  var hits = members.filter(function (m) { return bool(m.active) && (m.name || '').toLowerCase().includes(ql); }).slice(0, 8);
+  if (!hits.length) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.innerHTML = hits.map(function (m) {
+    return '<div class="suggest-item" style="padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"'
+      + ' data-admin-click="selectAtLeader" data-admin-arg="' + esc(m.id || m.kennitala) + '">' + esc(memberDisplayName(m, members))
+      + (m.phone ? '<span style="color:var(--muted);margin-left:8px;font-size:10px">' + esc(m.phone) + '</span>' : '') + '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectAtLeader(id) {
+  var m = members.find(function (x) { return x.id === id || x.kennitala === id; });
+  if (!m) return;
+  document.getElementById("atLeaderMemberId").value = m.id || m.kennitala;
+  document.getElementById("atLeaderPhone").value    = m.phone || '';
+  document.getElementById("atLeaderSuggestions").innerHTML = '';
+  document.getElementById("atLeaderSuggestions").style.display = 'none';
+  showAtLeaderChip(m);
+}
+
+function showAtLeaderChip(m) {
+  var chip = document.getElementById("atLeaderChip");
+  var search = document.getElementById("atLeaderSearch");
+  chip.innerHTML = '<span style="font-size:11px;padding:4px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;gap:6px">'
+    + esc(memberDisplayName(m, members))
+    + '<span style="cursor:pointer;color:var(--red);font-size:13px" data-admin-click="clearAtLeaderChip">&times;</span></span>';
+  chip.style.display = 'block';
+  search.style.display = 'none';
+}
+
+function clearAtLeaderChip() {
+  document.getElementById("atLeaderChip").style.display = 'none';
+  document.getElementById("atLeaderChip").innerHTML = '';
+  document.getElementById("atLeaderMemberId").value = '';
+  document.getElementById("atLeaderPhone").value = '';
+  var search = document.getElementById("atLeaderSearch");
+  search.value = '';
+  search.style.display = '';
 }
 
 // ── Activity class: volunteer roles ───────────────────────────────────────────
