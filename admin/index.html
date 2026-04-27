@@ -579,18 +579,12 @@
         <div class="field"><label data-s="admin.handbook.role.parent" for="hbRoleParent"></label>
           <select id="hbRoleParent"></select>
         </div>
-        <div class="grid2 gap-10">
-          <div class="field"><label data-s="admin.handbook.role.name" for="hbRoleName"></label><input type="text" id="hbRoleName"></div>
-          <div class="field"><label data-s="admin.handbook.role.kennitala" for="hbRoleKt"></label>
-            <select id="hbRoleKt" data-admin-change="hbRoleMemberPicked">
-              <option value="" data-s="admin.handbook.role.kennitalaNone"></option>
-            </select>
-          </div>
-        </div>
-        <div class="grid2 gap-10">
-          <div class="field"><label data-s="admin.handbook.role.phone" for="hbRolePhone"></label><input type="tel" id="hbRolePhone"></div>
-          <div class="field"><label data-s="admin.handbook.role.email" for="hbRoleEmail"></label><input type="email" id="hbRoleEmail"></div>
-        </div>
+        <fieldset class="hb-members-fieldset">
+          <legend data-s="admin.handbook.role.membersHdr"></legend>
+          <div class="text-xs text-muted mb-8" data-s="admin.handbook.role.membersHint"></div>
+          <div id="hbRoleMembersList"></div>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin-click="addHbRoleMember" data-s="admin.handbook.role.addMember"></button>
+        </fieldset>
         <div class="field"><label data-s="admin.handbook.role.notes" for="hbRoleNotes"></label><textarea id="hbRoleNotes" rows="2" style="resize:vertical;width:100%"></textarea></div>
         <div class="field"><label data-s="admin.handbook.role.notesIS" for="hbRoleNotesIS"></label><textarea id="hbRoleNotesIS" rows="2" style="resize:vertical;width:100%"></textarea></div>
         <div class="grid2 gap-10">

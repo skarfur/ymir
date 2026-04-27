@@ -170,6 +170,7 @@ var SCHEMA_ = {
   handbook_roles: [
     'id','parentId','title','titleIS','name','kennitala',
     'phone','email','notes','notesIS','color','boatCategoryKey',
+    'members',
     'sortOrder','active','createdAt','updatedAt',
   ],
   handbook_docs: [

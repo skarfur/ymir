@@ -21,9 +21,16 @@ Content:
   updating a member updates their handbook entry automatically. No
   blanket auto-pull of all staff — admins curate exactly which people
   appear here.
-- **Org chart** — hierarchical role entries with name / phone / email /
-  notes. Rendered as a real visual tree (boxes + connector lines) using
-  pure CSS (`hb-orgchart`), not a nested-card list. Each role can have
+- **Org chart** — hierarchical category nodes (Stjórn, deildir,
+  sub-roles). Each node holds a `members` JSON array of
+  `{ kennitala, label, labelIS, representsRoleId }`. Names, phones
+  and emails are always pulled from the linked member record at read
+  time — no free-text name field. Members render *inside* their
+  parent box rather than as separate child nodes; a member can
+  optionally `represent` another role (e.g. a board member who
+  represents Kjölbátadeild), which surfaces as a small chip colored
+  by the represented role's accent. Rendered as a real visual tree
+  (boxes + connector lines) using pure CSS (`hb-orgchart`). Each role can have
   an optional `color` (top-border accent), an optional `kennitala`
   link to a member record (read endpoint hydrates missing name / phone
   / email from that member), and an optional `boatCategoryKey` link to

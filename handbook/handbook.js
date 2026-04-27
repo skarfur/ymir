@@ -133,11 +133,13 @@ function renderOrgChart() {
   function visible(r) {
     if (visCache[r.id] !== undefined) return visCache[r.id];
     const childMatches = r.children.some(visible);
+    const memberMatch = (r.members || []).some(m =>
+      _matchesFilter(m.name) || _matchesFilter(_t(m, 'label')) ||
+      _matchesFilter(m.phone) || _matchesFilter(m.email)
+    );
     const self = _matchesFilter(_t(r, 'title')) ||
-                 _matchesFilter(r.name) ||
-                 _matchesFilter(r.phone) ||
-                 _matchesFilter(r.email) ||
-                 _matchesFilter(_t(r, 'notes'));
+                 _matchesFilter(_t(r, 'notes')) ||
+                 memberMatch;
     return (visCache[r.id] = self || childMatches);
   }
 
@@ -147,38 +149,58 @@ function renderOrgChart() {
   if (!visibleRoots.length) { wrap.classList.add('hidden'); target.innerHTML = ''; return; }
   wrap.classList.remove('hidden');
   target.innerHTML = `<div class="hb-orgchart-row hb-orgchart-roots">${
-    visibleRoots.map(r => _renderOrgNode(r, visible)).join('')
+    visibleRoots.map(r => _renderOrgNode(r, visible, byId)).join('')
   }</div>`;
 }
 
-function _renderOrgNode(r, visiblePred) {
+function _renderOrgNode(r, visiblePred, byId) {
   const visibleChildren = (r.children || []).filter(visiblePred);
   const title = esc(_t(r, 'title'));
-  const name  = esc(r.name || '');
-  const phone = r.phone ? `<a href="tel:${esc(r.phone)}" class="hb-link">${esc(r.phone)}</a>` : '';
-  const email = r.email ? `<a href="mailto:${esc(r.email)}" class="hb-link">${esc(r.email)}</a>` : '';
   const notes = esc(_t(r, 'notes'));
-  const contactRow = (phone || email)
-    ? `<div class="hb-orgnode-contact">${phone}${phone && email ? ' · ' : ''}${email}</div>`
-    : '';
   const notesRow = notes ? `<div class="hb-orgnode-notes">${notes}</div>` : '';
-  // Set --hb-accent on the wrap so it cascades to descendant sub-roles
-  // (CSS custom properties inherit). Children with their own color override.
+  // --hb-accent on the wrap cascades to descendant sub-roles via CSS
+  // custom-property inheritance; children with their own color override.
   const accent = r.color ? ` style="--hb-accent:${esc(r.color)}"` : '';
   const hasChildren = visibleChildren.length > 0;
+  const membersHtml = _renderOrgNodeMembers(r.members || [], byId);
   return `
     <div class="hb-orgnode-wrap"${accent}>
       <div class="hb-orgnode${hasChildren ? ' hb-orgnode--has-children' : ''}">
         <div class="hb-orgnode-title">${title}</div>
-        ${name ? `<div class="hb-orgnode-name">${name}</div>` : ''}
-        ${contactRow}
+        ${membersHtml}
         ${notesRow}
       </div>
       ${hasChildren ? `
         <div class="hb-orgchart-row">
-          ${visibleChildren.map(c => _renderOrgNode(c, visiblePred)).join('')}
+          ${visibleChildren.map(c => _renderOrgNode(c, visiblePred, byId)).join('')}
         </div>` : ''}
     </div>`;
+}
+
+function _renderOrgNodeMembers(members, byId) {
+  if (!members.length) return '';
+  return `<ul class="hb-member-list">${
+    members.map(m => {
+      const name  = esc(m.name || '');
+      const label = esc(_t(m, 'label'));
+      const phone = m.phone ? `<a href="tel:${esc(m.phone)}" class="hb-link">${esc(m.phone)}</a>` : '';
+      const email = m.email ? `<a href="mailto:${esc(m.email)}" class="hb-link">${esc(m.email)}</a>` : '';
+      const repRole = m.representsRoleId && byId[m.representsRoleId];
+      const chip = repRole
+        ? `<span class="hb-represents-chip" style="--hb-chip:${esc(repRole.color || 'var(--brass)')}">${esc(_t(repRole, 'title'))}</span>`
+        : '';
+      const contact = (phone || email)
+        ? `<span class="hb-member-contact">${phone}${phone && email ? ' · ' : ''}${email}</span>`
+        : '';
+      return `
+        <li class="hb-member-item">
+          <span class="hb-member-name">${name || '—'}</span>
+          ${label ? `<span class="hb-member-label">${label}</span>` : ''}
+          ${chip}
+          ${contact}
+        </li>`;
+    }).join('')
+  }</ul>`;
 }
 
 function renderRulesSection() {

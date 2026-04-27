@@ -261,7 +261,10 @@ function renderHandbookRolesList() {
   card.innerHTML = rows.map(r => {
     const parent = r.parentId && byId[r.parentId] ? _hbT(byId[r.parentId], 'title') : '';
     const sub = parent ? `<span class="text-xs text-muted"> ↳ ${esc(parent)}</span>` : '';
-    const who = r.name ? ` — <span class="text-muted">${esc(r.name)}</span>` : '';
+    const memberCount = (r.members || []).length;
+    const who = memberCount
+      ? ` <span class="text-xs text-muted">(${memberCount})</span>`
+      : '';
     return `
       <div class="list-row">
         <span class="list-name">${esc(_hbT(r, 'title'))}${who}${sub}</span>
@@ -278,9 +281,6 @@ function openHandbookRoleModal(id) {
     : s('admin.handbook.role.modalAdd');
   document.getElementById('hbRoleTitle').value   = row ? (row.title || '')   : '';
   document.getElementById('hbRoleTitleIS').value = row ? (row.titleIS || '') : '';
-  document.getElementById('hbRoleName').value    = row ? (row.name || '')    : '';
-  document.getElementById('hbRolePhone').value   = row ? (row.phone || '')   : '';
-  document.getElementById('hbRoleEmail').value   = row ? (row.email || '')   : '';
   document.getElementById('hbRoleNotes').value   = row ? (row.notes || '')   : '';
   document.getElementById('hbRoleNotesIS').value = row ? (row.notesIS || '') : '';
   document.getElementById('hbRoleColor').value   = (row && row.color) ? row.color : '#d4af37';
@@ -289,24 +289,7 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleColor').dataset.userSet = (row && row.color) ? '1' : '';
   document.getElementById('hbRoleSort').value    = row ? (row.sortOrder || 0): 0;
 
-  // Member dropdown — pick one to link, leave blank for category roles
-  // (Stjórn, deildir) that aren't tied to a single person.
-  const memSel = document.getElementById('hbRoleKt');
-  const memOpts = ['<option value="">' + esc(s('admin.handbook.role.kennitalaNone')) + '</option>'];
-  if (typeof members !== 'undefined' && Array.isArray(members)) {
-    members
-      .filter(m => bool(m.active))
-      .slice()
-      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
-      .forEach(m => {
-        const sel2 = (row && String(row.kennitala) === String(m.kennitala)) ? ' selected' : '';
-        memOpts.push(`<option value="${esc(m.kennitala)}"${sel2}>${esc(m.name || m.kennitala)}</option>`);
-      });
-  }
-  memSel.innerHTML = memOpts.join('');
-
-  // Title datalist — seeded sub-roles plus any titles already in use, so
-  // admins can keep terminology consistent without typing from scratch.
+  // Title datalist — seeded sub-roles plus any titles already in use.
   const titlesEN = new Set(['Courses', 'Members', 'Social activities', 'Competition']);
   const titlesIS = new Set(['Námskeið', 'Iðkendur', 'Félagsstarf', 'Keppnisstarf']);
   _hbAdmin.roles.forEach(r => {
@@ -318,8 +301,20 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleTitleListIS').innerHTML =
     [...titlesIS].sort().map(t => `<option value="${esc(t)}">`).join('');
 
-  // Refresh placeholders for name/phone/email from the linked member.
-  hbRoleMemberPicked();
+  // Members section: hydrated members from the row's JSON, plus the legacy
+  // single-kennitala fallback so pre-multi-member rows edit cleanly.
+  _hbRoleMembers = (row && Array.isArray(row.members) && row.members.length)
+    ? row.members.map(m => ({
+        kennitala:        m.kennitala || '',
+        label:            m.label || '',
+        labelIS:          m.labelIS || '',
+        representsRoleId: m.representsRoleId || '',
+      }))
+    : [];
+  if (!_hbRoleMembers.length && row && (row.kennitala || row.name)) {
+    _hbRoleMembers = [{ kennitala: row.kennitala || '', label: '', labelIS: '', representsRoleId: '' }];
+  }
+  renderHbRoleMembers();
 
   const catSel = document.getElementById('hbRoleBoatCat');
   const catOpts = ['<option value="">' + esc(s('admin.handbook.role.boatCatNone')) + '</option>'];
@@ -355,20 +350,28 @@ async function saveHandbookRole() {
   const title   = document.getElementById('hbRoleTitle').value.trim();
   const titleIS = document.getElementById('hbRoleTitleIS').value.trim();
   if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
+  // Walk the DOM rows so we capture in-flight typing without depending on
+  // change events having fired before the click.
+  const memberRows = Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row'));
+  const membersArr = memberRows
+    .map(row => ({
+      kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
+      label:            row.querySelector('[data-field="label"]').value.trim(),
+      labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
+      representsRoleId: row.querySelector('[data-field="representsRoleId"]').value,
+    }))
+    .filter(a => a.kennitala || a.label || a.labelIS);
   return _hbSave('saveHandbookRole', {
     id:              _hbAdmin.editingRoleId || undefined,
     parentId:        document.getElementById('hbRoleParent').value || '',
     title:           title,
     titleIS:         titleIS,
-    name:            document.getElementById('hbRoleName').value.trim(),
-    kennitala:       document.getElementById('hbRoleKt').value.trim(),
-    phone:           document.getElementById('hbRolePhone').value.trim(),
-    email:           document.getElementById('hbRoleEmail').value.trim(),
     notes:           document.getElementById('hbRoleNotes').value,
     notesIS:         document.getElementById('hbRoleNotesIS').value,
     color:           document.getElementById('hbRoleColor').dataset.userSet
                        ? document.getElementById('hbRoleColor').value : '',
     boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
+    members:         JSON.stringify(membersArr),
     sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
   }, 'roles', 'hbRoleModal', renderHandbookRolesList);
 }
@@ -378,14 +381,82 @@ async function deleteHandbookRole() {
     'hbRoleModal', renderHandbookRolesList);
 }
 
-function hbRoleMemberPicked() {
-  const kt = document.getElementById('hbRoleKt').value;
-  const m = (typeof members !== 'undefined' && Array.isArray(members))
-    ? members.find(x => String(x.kennitala) === String(kt))
-    : null;
-  document.getElementById('hbRoleName').placeholder  = m ? (m.name || '')  : '';
-  document.getElementById('hbRolePhone').placeholder = m ? (m.phone || '') : '';
-  document.getElementById('hbRoleEmail').placeholder = m ? (m.email || '') : '';
+// ── Role members editor (multi-member fieldset) ─────────────────────────────
+
+let _hbRoleMembers = [];
+
+function renderHbRoleMembers() {
+  const list = document.getElementById('hbRoleMembersList');
+  if (!list) return;
+  if (!_hbRoleMembers.length) {
+    list.innerHTML = `<div class="empty-note text-xs">${esc(s('admin.handbook.role.noMembers'))}</div>`;
+    return;
+  }
+  const memberOpts = _hbMemberOptions();
+  const repOpts    = _hbRepresentsOptions();
+  list.innerHTML = _hbRoleMembers.map((m, i) => `
+    <div class="hb-member-row">
+      <select data-field="kennitala">
+        <option value="">${esc(s('admin.handbook.role.kennitalaNone'))}</option>
+        ${memberOpts.map(o =>
+          `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
+        ).join('')}
+      </select>
+      <input type="text" data-field="label"
+             placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
+      <input type="text" data-field="labelIS"
+             placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
+      <select data-field="representsRoleId">
+        <option value="">${esc(s('admin.handbook.role.representsNone'))}</option>
+        ${repOpts.map(o =>
+          `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
+        ).join('')}
+      </select>
+      <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
+    </div>`).join('');
+}
+
+function _hbMemberOptions() {
+  if (typeof members === 'undefined' || !Array.isArray(members)) return [];
+  return members
+    .filter(m => bool(m.active))
+    .slice()
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+    .map(m => ({ kt: String(m.kennitala || ''), label: m.name || m.kennitala }));
+}
+
+// Roles to choose from for "represents". Excludes the role being edited so
+// admins can't link a role to itself.
+function _hbRepresentsOptions() {
+  const editingId = _hbAdmin.editingRoleId;
+  return _hbAdmin.roles
+    .filter(r => r.id !== editingId)
+    .slice()
+    .sort((a, b) => String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title')))
+    .map(r => ({ id: r.id, label: _hbT(r, 'title') }));
+}
+
+function addHbRoleMember() {
+  _hbRoleMembers = _hbReadMembersFromDOM();
+  _hbRoleMembers.push({ kennitala: '', label: '', labelIS: '', representsRoleId: '' });
+  renderHbRoleMembers();
+}
+
+function removeHbRoleMember(idx) {
+  // Capture the user's current edits before re-rendering (otherwise typing
+  // in a row above the deleted one would be lost).
+  _hbRoleMembers = _hbReadMembersFromDOM();
+  _hbRoleMembers.splice(Number(idx), 1);
+  renderHbRoleMembers();
+}
+
+function _hbReadMembersFromDOM() {
+  return Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row')).map(row => ({
+    kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
+    label:            row.querySelector('[data-field="label"]').value.trim(),
+    labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
+    representsRoleId: row.querySelector('[data-field="representsRoleId"]').value,
+  }));
 }
 
 function hbRoleColorPicked() {
