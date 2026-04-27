@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     'certCatModal', 'certDefModal', 'recurSlotModal', 'slotModal',
     'passportSettingsModal', 'passportItemModal', 'passportCategoryModal',
     'memberCertModal',
-    'hbInfoModal', 'hbRoleModal', 'hbDocModal',
+    'hbInfoModal', 'hbRoleModal', 'hbDocModal', 'hbContactModal',
   ].forEach(id => { if (typeof guardUnsavedChanges === 'function') guardUnsavedChanges(id); });
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);

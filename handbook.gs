@@ -8,51 +8,80 @@
 // staff contact list pulled from the members sheet. Editable from the admin
 // portal.
 //
-// Three sheets back this:
-//   handbook_roles  — org-chart entries with optional parentId for hierarchy
-//                     and optional kennitala link to a member record. When
-//                     kennitala is set, the read endpoint hydrates missing
-//                     name / phone / email from the member's record so the
-//                     handbook stays in sync without duplicate data entry.
-//                     `color` is an optional hex string for the box accent.
-//   handbook_docs   — PDF / URL entries grouped by category. driveFileId is
-//                     set when the file was uploaded through the admin UI so
-//                     deletes can also trash the Drive file.
-//   handbook_info   — bilingual text sections, distinguished by `kind`:
-//                     'contacts' (emergency / external numbers),
-//                     'rules'    (rules / best practices),
-//                     other       (legacy / free-form).
+// Four sheets back this:
+//   handbook_roles    — org-chart entries with optional parentId for hierarchy
+//                       and optional kennitala link to a member record. When
+//                       kennitala is set, the read endpoint hydrates missing
+//                       name / phone / email from the member's record so the
+//                       handbook stays in sync without duplicate data entry.
+//                       `color` is an optional hex string for the box accent.
+//   handbook_contacts — manually curated people in the contact-numbers
+//                       section. Each row has an optional `memberId`
+//                       (kennitala) link plus a free-text `label` /
+//                       `labelIS` (e.g. "Emergency contact",
+//                       "Maintenance lead"). Member-linked rows hydrate
+//                       missing name / phone / email from the member's
+//                       record at read time.
+//   handbook_docs     — PDF / URL entries grouped by category. driveFileId
+//                       is set when the file was uploaded through the admin
+//                       UI so deletes can also trash the Drive file.
+//   handbook_info     — bilingual text sections, distinguished by `kind`:
+//                       'contacts' (free-text emergency / external numbers),
+//                       'rules'    (rules / best practices),
+//                       other      (legacy / free-form).
 //
 // Soft-deletes via `active=false` so audit history survives.
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 function getHandbook_() {
-  const rolesRaw = (data_.readAll('handbookRoles') || []).filter(_handbookActive_);
-  const docs     = (data_.readAll('handbookDocs')  || []).filter(_handbookActive_);
-  const info     = (data_.readAll('handbookInfo')  || []).filter(_handbookActive_);
+  const rolesRaw    = (data_.readAll('handbookRoles')    || []).filter(_handbookActive_);
+  const contactsRaw = (data_.readAll('handbookContacts') || []).filter(_handbookActive_);
+  const docs        = (data_.readAll('handbookDocs')     || []).filter(_handbookActive_);
+  const info        = (data_.readAll('handbookInfo')     || []).filter(_handbookActive_);
+
+  const memberByKt   = _handbookMemberMap_();
+  const catColorMap  = _handbookBoatCatColorMap_();
 
   // Hydrate roles: when a role has a kennitala link, pull missing name /
   // phone / email from the member record. The role's own values still win
   // when they're set, so admins can override (e.g. publish a club extension
-  // rather than the member's mobile).
-  const memberByKt = _handbookMemberMap_();
+  // rather than the member's mobile). Color resolution falls back to the
+  // linked boat category's color so the deildir stay in sync with the
+  // rest of the app — explicit `color` still wins.
   const roles = rolesRaw.map(function (r) {
     const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
-    if (!m) return r;
-    return Object.assign({}, r, {
-      name:  r.name  || m.name  || '',
-      phone: r.phone || m.phone || '',
-      email: r.email || m.email || '',
-      _linkedMemberRole: m.role || '',
+    const out = m
+      ? Object.assign({}, r, {
+          name:  r.name  || m.name  || '',
+          phone: r.phone || m.phone || '',
+          email: r.email || m.email || '',
+          _linkedMemberRole: m.role || '',
+        })
+      : Object.assign({}, r);
+    if (!out.color && out.boatCategoryKey && catColorMap[out.boatCategoryKey]) {
+      out.color = catColorMap[out.boatCategoryKey];
+    }
+    return out;
+  });
+
+  // Hydrate contacts the same way; the row's own override wins. memberId
+  // here holds a kennitala (matches the column name on the role rows).
+  const contacts = contactsRaw.map(function (c) {
+    const m = c.memberId ? memberByKt[String(c.memberId).trim()] : null;
+    if (!m) return c;
+    return Object.assign({}, c, {
+      name:  c.name  || m.name  || '',
+      phone: c.phone || m.phone || '',
+      email: c.email || m.email || '',
     });
   });
 
   return okJ({
-    roles: roles.sort(_byOrder_),
-    docs:  docs.sort(_byOrder_),
-    info:  info.sort(_byOrder_),
-    staff: _handbookStaffContacts_(),
+    roles:    roles.sort(_byOrder_),
+    contacts: contacts.sort(_byOrder_),
+    docs:     docs.sort(_byOrder_),
+    info:     info.sort(_byOrder_),
   });
 }
 
@@ -61,6 +90,21 @@ function _byOrder_(a, b) {
   var ao = Number(a.sortOrder || 0), bo = Number(b.sortOrder || 0);
   if (ao !== bo) return ao - bo;
   return String(a.title || '').localeCompare(String(b.title || ''));
+}
+
+function _handbookBoatCatColorMap_() {
+  const out = {};
+  try {
+    const cfg = getConfigMap_();
+    const raw = getConfigValue_('boatCategories', cfg);
+    const list = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(list)) {
+      list.forEach(function (c) {
+        if (c && c.key && c.color) out[String(c.key)] = String(c.color);
+      });
+    }
+  } catch (e) {}
+  return out;
 }
 
 function _handbookMemberMap_() {
@@ -73,32 +117,41 @@ function _handbookMemberMap_() {
   return map;
 }
 
-// Returns a safe-to-publish list of staff/admin members for the auto-populated
-// contacts section. Only id, name, role, phone, email — never password hashes
-// or anything sensitive.
-function _handbookStaffContacts_() {
-  try {
-    return (readAll_('members') || [])
-      .filter(function (m) {
-        if (!m) return false;
-        if (!bool_(m.active)) return false;
-        const role = String(m.role || '').toLowerCase();
-        return role === 'staff' || role === 'admin' || role === 'manager';
-      })
-      .map(function (m) {
-        return {
-          id:        m.id || '',
-          name:      m.name || '',
-          role:      m.role || '',
-          phone:     m.phone || '',
-          email:     m.email || '',
-          kennitala: m.kennitala || '',
-        };
-      })
-      .sort(function (a, b) {
-        return String(a.name || '').localeCompare(String(b.name || ''));
-      });
-  } catch (e) { return []; }
+// ── Contacts (member-linked phone book) ─────────────────────────────────────
+// `memberId` holds a kennitala (mirrors the column name used on roles).
+// Free-text label per entry — bilingual EN + IS. The read endpoint hydrates
+// missing name / phone / email from the linked member record.
+
+function saveHandbookContact_(b) {
+  if (!b.label && !b.labelIS) return failJ('label required');
+  const id = b.id || ('contact_' + uid_());
+  const existing = findOne_('handbookContacts', 'id', id);
+  const row = {
+    id:         id,
+    memberId:   b.memberId || '',
+    label:      b.label || '',
+    labelIS:    b.labelIS || '',
+    name:       b.name || '',
+    phone:      b.phone || '',
+    email:      b.email || '',
+    notes:      b.notes || '',
+    notesIS:    b.notesIS || '',
+    sortOrder:  Number(b.sortOrder || 0),
+    active:     b.active === false ? false : true,
+    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
+    updatedAt:  now_(),
+  };
+  if (existing) updateRow_('handbookContacts', 'id', id, row);
+  else          insertRow_('handbookContacts', row);
+  return okJ({ id: id, saved: true });
+}
+
+function deleteHandbookContact_(b) {
+  if (!b.id) return failJ('id required');
+  const existing = findOne_('handbookContacts', 'id', b.id);
+  if (!existing) return failJ('Contact not found', 404);
+  updateRow_('handbookContacts', 'id', b.id, { active: false, updatedAt: now_() });
+  return okJ({ ok: true });
 }
 
 // ── Roles (org chart) ────────────────────────────────────────────────────────
@@ -108,21 +161,22 @@ function saveHandbookRole_(b) {
   const id = b.id || ('role_' + uid_());
   const existing = findOne_('handbookRoles', 'id', id);
   const row = {
-    id:         id,
-    parentId:   b.parentId || '',
-    title:      b.title || '',
-    titleIS:    b.titleIS || '',
-    name:       b.name || '',
-    kennitala:  b.kennitala || '',
-    phone:      b.phone || '',
-    email:      b.email || '',
-    notes:      b.notes || '',
-    notesIS:    b.notesIS || '',
-    color:      b.color || '',
-    sortOrder:  Number(b.sortOrder || 0),
-    active:     b.active === false ? false : true,
-    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:  now_(),
+    id:              id,
+    parentId:        b.parentId || '',
+    title:           b.title || '',
+    titleIS:         b.titleIS || '',
+    name:            b.name || '',
+    kennitala:       b.kennitala || '',
+    phone:           b.phone || '',
+    email:           b.email || '',
+    notes:           b.notes || '',
+    notesIS:         b.notesIS || '',
+    color:           b.color || '',
+    boatCategoryKey: b.boatCategoryKey || '',
+    sortOrder:       Number(b.sortOrder || 0),
+    active:          b.active === false ? false : true,
+    createdAt:       existing ? (existing.createdAt || now_()) : now_(),
+    updatedAt:       now_(),
   };
   if (existing) updateRow_('handbookRoles', 'id', id, row);
   else          insertRow_('handbookRoles', row);
@@ -154,18 +208,19 @@ function seedHandbookOrgChart_() {
     const key = String(seed.titleIS || seed.title).toLowerCase();
     if (have[key]) return have[key];
     const row = Object.assign({
-      id:        'role_' + uid_(),
-      parentId:  '',
-      name:      '',
-      kennitala: '',
-      phone:     '',
-      email:     '',
-      notes:     '',
-      notesIS:   '',
-      color:     '',
-      active:    true,
-      createdAt: now_(),
-      updatedAt: now_(),
+      id:              'role_' + uid_(),
+      parentId:        '',
+      name:            '',
+      kennitala:       '',
+      phone:           '',
+      email:           '',
+      notes:           '',
+      notesIS:         '',
+      color:           '',
+      boatCategoryKey: '',
+      active:          true,
+      createdAt:       now_(),
+      updatedAt:       now_(),
     }, seed);
     insertRow_('handbookRoles', row);
     have[key] = row;
@@ -176,14 +231,18 @@ function seedHandbookOrgChart_() {
     title:     'Board',
     titleIS:   'Stjórn',
     sortOrder: 0,
+    // Stjórn isn't a boat category, so it carries an explicit color.
     color:     '#d4af37',
   });
+  // Each deild links to a boat-category key from config; the read endpoint
+  // resolves the deild's color from that category at request time so the
+  // chart stays in sync if an admin retunes a category color elsewhere.
   const deildir = [
-    { title: 'Keelboat division',  titleIS: 'Kjölbátadeild',  color: '#5b9bd5' },
-    { title: 'Dinghy division',    titleIS: 'Kænudeild',      color: '#a3cb3e' },
-    { title: 'Rowing division',    titleIS: 'Róðrardeild',    color: '#d9b441' },
-    { title: 'Kayak division',     titleIS: 'Kajakadeild',    color: '#9b59b6' },
-    { title: 'Wingfoiling division', titleIS: 'Bævængjudeild', color: '#e67e22' },
+    { title: 'Keelboat division',    titleIS: 'Kjölbátadeild',  boatCategoryKey: 'keelboat' },
+    { title: 'Dinghy division',      titleIS: 'Kænudeild',      boatCategoryKey: 'dinghy' },
+    { title: 'Rowing division',      titleIS: 'Róðrardeild',    boatCategoryKey: 'rowing-shell' },
+    { title: 'Kayak division',       titleIS: 'Kajakadeild',    boatCategoryKey: 'kayak' },
+    { title: 'Wingfoiling division', titleIS: 'Bævængjudeild',  boatCategoryKey: 'wingfoil' },
   ];
   let added = 0;
   deildir.forEach(function (d, i) {

@@ -30,9 +30,10 @@ const TABS_ = {
   scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
-  handbookRoles: 'handbook_roles',
-  handbookDocs:  'handbook_docs',
-  handbookInfo:  'handbook_info',
+  handbookRoles:    'handbook_roles',
+  handbookDocs:     'handbook_docs',
+  handbookInfo:     'handbook_info',
+  handbookContacts: 'handbook_contacts',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -116,9 +117,11 @@ const ADMIN_ACTIONS_ = {
   saveHandbookDoc:     true,
   deleteHandbookDoc:   true,
   uploadHandbookDoc:   true,
-  saveHandbookInfo:    true,
-  deleteHandbookInfo:  true,
-  seedHandbookOrgChart:true,
+  saveHandbookInfo:     true,
+  deleteHandbookInfo:   true,
+  saveHandbookContact:  true,
+  deleteHandbookContact:true,
+  seedHandbookOrgChart: true,
 };
 
 // Staff-or-admin actions. Intentionally narrow: many actions like
@@ -1358,9 +1361,11 @@ function route_(action, b, caller) {
     case 'saveHandbookDoc':     return saveHandbookDoc_(b);
     case 'deleteHandbookDoc':   return deleteHandbookDoc_(b);
     case 'uploadHandbookDoc':   return uploadHandbookDoc_(b);
-    case 'saveHandbookInfo':    return saveHandbookInfo_(b);
-    case 'deleteHandbookInfo':  return deleteHandbookInfo_(b);
-    case 'seedHandbookOrgChart':return seedHandbookOrgChart_();
+    case 'saveHandbookInfo':     return saveHandbookInfo_(b);
+    case 'deleteHandbookInfo':   return deleteHandbookInfo_(b);
+    case 'saveHandbookContact':  return saveHandbookContact_(b);
+    case 'deleteHandbookContact':return deleteHandbookContact_(b);
+    case 'seedHandbookOrgChart': return seedHandbookOrgChart_();
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
