@@ -41,6 +41,16 @@ window.s = function s(key, vars, lang) {
   return str;
 };
 
+// Read a bilingual field from a row: prefer the active-language variant,
+// fall back to the other one when the preferred is blank. Convention:
+// English lives in `key`, Icelandic in `key + 'IS'`.
+window.localizedField = function localizedField(row, key) {
+  if (!row) return '';
+  var lang = (localStorage.getItem('ymirLang') || 'IS').toUpperCase();
+  if (lang === 'IS') return row[key + 'IS'] || row[key] || '';
+  return row[key] || row[key + 'IS'] || '';
+};
+
 window.applyStrings = function applyStrings(root) {
   var scope = root || document;
   scope.querySelectorAll('[data-s]').forEach(function(el) {

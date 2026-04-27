@@ -1,30 +1,17 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// admin/handbook.js — Handbook tab (info sections, org chart, documents)
-// ═══════════════════════════════════════════════════════════════════════════════
-// Mirrors the locations.js / certs.js pattern: render functions read from a
-// module-local state object, mutations call apiPost and re-render. All entries
-// are soft-deleted (active=false) on the backend.
+// Handbook admin: contacts (people + free text), rules, org chart, docs.
 
 var _hbAdmin = {
-  info: [],
-  roles: [],
-  docs: [],
-  contacts: [],
-  editingInfoId:    null,
-  editingRoleId:    null,
-  editingDocId:     null,
-  editingContactId: null,
+  info: [], roles: [], docs: [], contacts: [],
+  editingInfoId: null, editingRoleId: null, editingDocId: null, editingContactId: null,
 };
 
 async function loadHandbookAdmin(force) {
-  if (_hbAdmin._loaded && !force) return;
   try {
     const res = await apiGet('getHandbook', force ? { _fresh: 1 } : {});
     _hbAdmin.info     = res.info     || [];
     _hbAdmin.roles    = res.roles    || [];
     _hbAdmin.docs     = res.docs     || [];
     _hbAdmin.contacts = res.contacts || [];
-    _hbAdmin._loaded = true;
   } catch (e) {
     console.warn('loadHandbookAdmin failed:', e.message);
   }
@@ -38,24 +25,59 @@ async function renderHandbookAdmin() {
   renderHandbookDocsList();
 }
 
-function _hbLocalized(row, key) {
-  return getLang() === 'IS'
-    ? (row[key + 'IS'] || row[key] || '')
-    : (row[key] || row[key + 'IS'] || '');
+const _hbT = (row, key) => localizedField(row, key);
+
+function _hbBySort(a, b) {
+  return (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
+    String(a.title || a.label || '').localeCompare(String(b.title || b.label || ''));
 }
 
-// ── Info sections ────────────────────────────────────────────────────────────
+function _hbAdminMemberName(kt) {
+  if (typeof members === 'undefined' || !members) return '';
+  const m = members.find(x => String(x.kennitala) === String(kt));
+  return m ? (m.name || '') : '';
+}
+
+// Generic save: posts the payload, splices the result into the local array,
+// closes the modal, re-renders, toasts. `render` may be a single fn or array.
+async function _hbSave(action, payload, listKey, modalId, render) {
+  try {
+    const res = await apiPost(action, payload);
+    payload.id = payload.id || res.id;
+    payload.active = true;
+    const arr = _hbAdmin[listKey];
+    const idx = arr.findIndex(x => x.id === payload.id);
+    if (idx >= 0) arr[idx] = { ...arr[idx], ...payload };
+    else          arr.push(payload);
+    closeModal(modalId, true);
+    [].concat(render).forEach(fn => fn());
+    toast(s('toast.saved'));
+  } catch (e) { toast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+}
+
+async function _hbDelete(action, listKey, editingKey, modalId, render) {
+  const id = _hbAdmin[editingKey];
+  if (!id) return;
+  if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
+  try {
+    await apiPost(action, { id: id });
+    _hbAdmin[listKey] = _hbAdmin[listKey].filter(x => x.id !== id);
+    closeModal(modalId, true);
+    [].concat(render).forEach(fn => fn());
+    toast(s('toast.deleted'));
+  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+// ── Contacts col-section: people + free-text ────────────────────────────────
 
 function _hbInfoRowHtml(it) {
   return `
     <div class="list-row">
-      <span class="list-name">${esc(_hbLocalized(it, 'title'))}</span>
+      <span class="list-name">${esc(_hbT(it, 'title'))}</span>
       <button class="row-edit" data-admin-click="openHandbookInfoModal" data-admin-arg="${it.id}">${s('btn.edit')}</button>
     </div>`;
 }
 
-// Contacts col-section in admin = (member-linked contacts) + (free-text
-// entries with kind='contacts'). Two distinct lists, two add buttons.
 function renderHandbookContactsAdmin() {
   const card = document.getElementById('hbAdminContactsCard');
   if (!card) return;
@@ -66,7 +88,7 @@ function renderHandbookContactsAdmin() {
   if (ppl.length) {
     html += `<div class="text-xs text-muted mb-4" style="text-transform:uppercase;letter-spacing:1px">${esc(s('admin.handbookContactsPeople'))}</div>`;
     html += ppl.map(c => {
-      const lbl  = _hbLocalized(c, 'label');
+      const lbl  = _hbT(c, 'label');
       const name = c.name || (c.memberId ? _hbAdminMemberName(c.memberId) : '');
       return `
         <div class="list-row">
@@ -82,9 +104,7 @@ function renderHandbookContactsAdmin() {
   card.innerHTML = html || `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
 }
 
-// Rules col-section in admin = free-text entries with kind='rules'. Legacy
-// rows without a kind also surface here so existing content keeps editing
-// cleanly after the schema migration.
+// Legacy rows without a kind also surface here so pre-migration content edits.
 function renderHandbookRulesAdmin() {
   const card = document.getElementById('hbAdminRulesCard');
   if (!card) return;
@@ -97,29 +117,16 @@ function renderHandbookRulesAdmin() {
     : `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
 }
 
-function _hbBySort(a, b) {
-  return (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
-    String(a.title || a.label || '').localeCompare(String(b.title || b.label || ''));
-}
-
-function _hbAdminMemberName(kt) {
-  if (typeof members === 'undefined' || !members) return '';
-  const m = members.find(x => String(x.kennitala) === String(kt));
-  return m ? (m.name || '') : '';
-}
-
 function openHandbookInfoModal(id, kindHint) {
   _hbAdmin.editingInfoId = id || null;
   const row = id ? _hbAdmin.info.find(x => x.id === id) : null;
   document.getElementById('hbInfoModalTitle').textContent = row
     ? s('admin.handbook.info.modalEdit')
     : s('admin.handbook.info.modalAdd');
-  // Default new entries to the kind hint (passed by the section's add
-  // button) and fall back to 'contacts' since the user opened the modal
-  // from somewhere — legacy rows without a kind map to 'rules'.
-  const kind = row
-    ? (row.kind === 'contacts' ? 'contacts' : 'rules')
-    : (kindHint === 'rules' ? 'rules' : 'contacts');
+  let kind;
+  if (row)            kind = row.kind === 'contacts' ? 'contacts' : 'rules';
+  else if (kindHint)  kind = kindHint;
+  else                kind = 'contacts';
   document.getElementById('hbInfoKind').value      = kind;
   document.getElementById('hbInfoTitle').value     = row ? (row.title || '')     : '';
   document.getElementById('hbInfoTitleIS').value   = row ? (row.titleIS || '')   : '';
@@ -135,43 +142,23 @@ async function saveHandbookInfo() {
   const title   = document.getElementById('hbInfoTitle').value.trim();
   const titleIS = document.getElementById('hbInfoTitleIS').value.trim();
   if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
-  const payload = {
+  return _hbSave('saveHandbookInfo', {
     id:        _hbAdmin.editingInfoId || undefined,
-    kind:      document.getElementById('hbInfoKind').value || 'rules',
+    kind:      document.getElementById('hbInfoKind').value,
     title:     title,
     titleIS:   titleIS,
     content:   document.getElementById('hbInfoContent').value,
     contentIS: document.getElementById('hbInfoContentIS').value,
     sortOrder: Number(document.getElementById('hbInfoSort').value) || 0,
-  };
-  try {
-    const res = await apiPost('saveHandbookInfo', payload);
-    payload.id = payload.id || res.id;
-    payload.active = true;
-    const idx = _hbAdmin.info.findIndex(x => x.id === payload.id);
-    if (idx >= 0) _hbAdmin.info[idx] = { ..._hbAdmin.info[idx], ...payload };
-    else          _hbAdmin.info.push(payload);
-    closeModal('hbInfoModal', true);
-    renderHandbookContactsAdmin();
-    renderHandbookRulesAdmin();
-    toast(s('toast.saved'));
-  } catch (e) { toast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+  }, 'info', 'hbInfoModal', [renderHandbookContactsAdmin, renderHandbookRulesAdmin]);
 }
 
 async function deleteHandbookInfo() {
-  if (!_hbAdmin.editingInfoId) return;
-  if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
-  try {
-    await apiPost('deleteHandbookInfo', { id: _hbAdmin.editingInfoId });
-    _hbAdmin.info = _hbAdmin.info.filter(x => x.id !== _hbAdmin.editingInfoId);
-    closeModal('hbInfoModal', true);
-    renderHandbookContactsAdmin();
-    renderHandbookRulesAdmin();
-    toast(s('toast.deleted'));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+  return _hbDelete('deleteHandbookInfo', 'info', 'editingInfoId', 'hbInfoModal',
+    [renderHandbookContactsAdmin, renderHandbookRulesAdmin]);
 }
 
-// ── Contacts (member-linked phone book) ─────────────────────────────────────
+// ── Member-linked contacts ──────────────────────────────────────────────────
 
 function openHandbookContactModal(id) {
   _hbAdmin.editingContactId = id || null;
@@ -180,8 +167,6 @@ function openHandbookContactModal(id) {
     ? s('admin.handbook.contact.modalEdit')
     : s('admin.handbook.contact.modalAdd');
 
-  // Member dropdown — sorted by name. Falls back gracefully if the global
-  // members array hasn't been populated yet.
   const sel = document.getElementById('hbContactMember');
   const opts = ['<option value="">' + esc(s('admin.handbook.contact.memberNone')) + '</option>'];
   if (typeof members !== 'undefined' && Array.isArray(members)) {
@@ -205,8 +190,6 @@ function openHandbookContactModal(id) {
   document.getElementById('hbContactNotesIS').value   = row ? (row.notesIS || '')   : '';
   document.getElementById('hbContactSort').value      = row ? (row.sortOrder || 0)  : 0;
 
-  // Datalist autocomplete: previously-used labels make consistency easy
-  // without forcing a hard preset list.
   const usedEN = {}, usedIS = {};
   (_hbAdmin.contacts || []).forEach(c => {
     if (c.label) usedEN[c.label] = true;
@@ -217,8 +200,8 @@ function openHandbookContactModal(id) {
   document.getElementById('hbContactLabelListIS').innerHTML =
     Object.keys(usedIS).sort().map(l => `<option value="${esc(l)}">`).join('');
 
-  // Default the placeholders to the linked member's data so the admin
-  // sees what'll show up if they don't override.
+  // Surface the linked member's values as placeholders so the admin sees what
+  // will render on the public page if they don't override.
   hbContactMemberPicked();
 
   document.getElementById('hbContactDeleteBtn').classList.toggle('hidden', !row);
@@ -226,10 +209,6 @@ function openHandbookContactModal(id) {
   openModal('hbContactModal');
 }
 
-// Fired when the member dropdown changes — refresh the placeholder text
-// in name/phone/email so the admin can see what'll be shown if they don't
-// override. The actual save still sends the override (or empty) and the
-// read endpoint hydrates missing fields from the member record.
 function hbContactMemberPicked() {
   const kt = document.getElementById('hbContactMember').value;
   const m = (typeof members !== 'undefined' && Array.isArray(members))
@@ -244,7 +223,7 @@ async function saveHandbookContact() {
   const label   = document.getElementById('hbContactLabel').value.trim();
   const labelIS = document.getElementById('hbContactLabelIS').value.trim();
   if (!label && !labelIS) { toast(s('admin.handbookLabelRequired'), 'err'); return; }
-  const payload = {
+  return _hbSave('saveHandbookContact', {
     id:        _hbAdmin.editingContactId || undefined,
     memberId:  document.getElementById('hbContactMember').value || '',
     label:     label,
@@ -255,33 +234,15 @@ async function saveHandbookContact() {
     notes:     document.getElementById('hbContactNotes').value,
     notesIS:   document.getElementById('hbContactNotesIS').value,
     sortOrder: Number(document.getElementById('hbContactSort').value) || 0,
-  };
-  try {
-    const res = await apiPost('saveHandbookContact', payload);
-    payload.id = payload.id || res.id;
-    payload.active = true;
-    const idx = _hbAdmin.contacts.findIndex(x => x.id === payload.id);
-    if (idx >= 0) _hbAdmin.contacts[idx] = { ..._hbAdmin.contacts[idx], ...payload };
-    else          _hbAdmin.contacts.push(payload);
-    closeModal('hbContactModal', true);
-    renderHandbookContactsAdmin();
-    toast(s('toast.saved'));
-  } catch (e) { toast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+  }, 'contacts', 'hbContactModal', renderHandbookContactsAdmin);
 }
 
 async function deleteHandbookContact() {
-  if (!_hbAdmin.editingContactId) return;
-  if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
-  try {
-    await apiPost('deleteHandbookContact', { id: _hbAdmin.editingContactId });
-    _hbAdmin.contacts = _hbAdmin.contacts.filter(x => x.id !== _hbAdmin.editingContactId);
-    closeModal('hbContactModal', true);
-    renderHandbookContactsAdmin();
-    toast(s('toast.deleted'));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+  return _hbDelete('deleteHandbookContact', 'contacts', 'editingContactId',
+    'hbContactModal', renderHandbookContactsAdmin);
 }
 
-// ── Roles (org chart) ────────────────────────────────────────────────────────
+// ── Roles (org chart) ───────────────────────────────────────────────────────
 
 function renderHandbookRolesList() {
   const card = document.getElementById('hbAdminRolesCard');
@@ -290,22 +251,20 @@ function renderHandbookRolesList() {
     card.innerHTML = `<div class="empty-state">${s('admin.handbookEmptyRoles')}</div>`;
     return;
   }
-  // Render as a flat sorted list with parent indent indicator. The read-side
-  // /handbook/ portal renders the actual nested tree; admin only needs to
-  // identify each row.
+  // Flat list (the read portal handles the tree).
   const byId = {};
   _hbAdmin.roles.forEach(r => { byId[r.id] = r; });
-  const rows = _hbAdmin.roles.slice().sort((a, b) => {
-    return (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
-      String(_hbLocalized(a, 'title')).localeCompare(_hbLocalized(b, 'title'));
-  });
+  const rows = _hbAdmin.roles.slice().sort((a, b) =>
+    (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
+    String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title'))
+  );
   card.innerHTML = rows.map(r => {
-    const parent = r.parentId && byId[r.parentId] ? _hbLocalized(byId[r.parentId], 'title') : '';
+    const parent = r.parentId && byId[r.parentId] ? _hbT(byId[r.parentId], 'title') : '';
     const sub = parent ? `<span class="text-xs text-muted"> ↳ ${esc(parent)}</span>` : '';
     const who = r.name ? ` — <span class="text-muted">${esc(r.name)}</span>` : '';
     return `
       <div class="list-row">
-        <span class="list-name">${esc(_hbLocalized(r, 'title'))}${who}${sub}</span>
+        <span class="list-name">${esc(_hbT(r, 'title'))}${who}${sub}</span>
         <button class="row-edit" data-admin-click="openHandbookRoleModal" data-admin-arg="${r.id}">${s('btn.edit')}</button>
       </div>`;
   }).join('');
@@ -326,14 +285,11 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleNotes').value   = row ? (row.notes || '')   : '';
   document.getElementById('hbRoleNotesIS').value = row ? (row.notesIS || '') : '';
   document.getElementById('hbRoleColor').value   = (row && row.color) ? row.color : '#d4af37';
-  // Track whether the admin actually picked / kept a color so we can save
-  // an empty string when they want the default rather than a hex value.
+  // userSet flag distinguishes "admin picked this color" from "default
+  // shown in the swatch but not chosen" so save can persist '' for default.
   document.getElementById('hbRoleColor').dataset.userSet = (row && row.color) ? '1' : '';
   document.getElementById('hbRoleSort').value    = row ? (row.sortOrder || 0): 0;
 
-  // Boat-category dropdown — uses the global boatCats array loaded by
-  // admin.js. The selected key, if any, lets the read endpoint resolve
-  // this role's color from the matching boat category at request time.
   const catSel = document.getElementById('hbRoleBoatCat');
   const catOpts = ['<option value="">' + esc(s('admin.handbook.role.boatCatNone')) + '</option>'];
   if (typeof boatCats !== 'undefined' && Array.isArray(boatCats)) {
@@ -347,15 +303,15 @@ function openHandbookRoleModal(id) {
   }
   catSel.innerHTML = catOpts.join('');
 
-  // Populate parent dropdown — exclude self to avoid loops.
+  // Exclude self from parent options to avoid loops.
   const sel = document.getElementById('hbRoleParent');
   const opts = ['<option value="">' + esc(s('admin.handbook.role.parentNone')) + '</option>'];
   _hbAdmin.roles
     .filter(r => !id || r.id !== id)
-    .sort((a, b) => String(_hbLocalized(a, 'title')).localeCompare(_hbLocalized(b, 'title')))
+    .sort((a, b) => String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title')))
     .forEach(r => {
       const sel2 = (row && row.parentId === r.id) ? ' selected' : '';
-      opts.push(`<option value="${esc(r.id)}"${sel2}>${esc(_hbLocalized(r, 'title'))}</option>`);
+      opts.push(`<option value="${esc(r.id)}"${sel2}>${esc(_hbT(r, 'title'))}</option>`);
     });
   sel.innerHTML = opts.join('');
 
@@ -368,48 +324,52 @@ async function saveHandbookRole() {
   const title   = document.getElementById('hbRoleTitle').value.trim();
   const titleIS = document.getElementById('hbRoleTitleIS').value.trim();
   if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
-  const payload = {
-    id:        _hbAdmin.editingRoleId || undefined,
-    parentId:  document.getElementById('hbRoleParent').value || '',
-    title:     title,
-    titleIS:   titleIS,
-    name:      document.getElementById('hbRoleName').value.trim(),
-    kennitala: document.getElementById('hbRoleKt').value.trim(),
-    phone:     document.getElementById('hbRolePhone').value.trim(),
-    email:     document.getElementById('hbRoleEmail').value.trim(),
+  return _hbSave('saveHandbookRole', {
+    id:              _hbAdmin.editingRoleId || undefined,
+    parentId:        document.getElementById('hbRoleParent').value || '',
+    title:           title,
+    titleIS:         titleIS,
+    name:            document.getElementById('hbRoleName').value.trim(),
+    kennitala:       document.getElementById('hbRoleKt').value.trim(),
+    phone:           document.getElementById('hbRolePhone').value.trim(),
+    email:           document.getElementById('hbRoleEmail').value.trim(),
     notes:           document.getElementById('hbRoleNotes').value,
     notesIS:         document.getElementById('hbRoleNotesIS').value,
     color:           document.getElementById('hbRoleColor').dataset.userSet
                        ? document.getElementById('hbRoleColor').value : '',
     boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
     sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
-  };
-  try {
-    const res = await apiPost('saveHandbookRole', payload);
-    payload.id = payload.id || res.id;
-    payload.active = true;
-    const idx = _hbAdmin.roles.findIndex(x => x.id === payload.id);
-    if (idx >= 0) _hbAdmin.roles[idx] = { ..._hbAdmin.roles[idx], ...payload };
-    else          _hbAdmin.roles.push(payload);
-    closeModal('hbRoleModal', true);
-    renderHandbookRolesList();
-    toast(s('toast.saved'));
-  } catch (e) { toast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+  }, 'roles', 'hbRoleModal', renderHandbookRolesList);
 }
 
 async function deleteHandbookRole() {
-  if (!_hbAdmin.editingRoleId) return;
-  if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
+  return _hbDelete('deleteHandbookRole', 'roles', 'editingRoleId',
+    'hbRoleModal', renderHandbookRolesList);
+}
+
+function hbRoleColorPicked() {
+  document.getElementById('hbRoleColor').dataset.userSet = '1';
+}
+
+function clearHandbookRoleColor() {
+  // Empty userSet flag tells save to persist '' so the read-side falls back
+  // to the boat-category color (or --brass if none).
+  const el = document.getElementById('hbRoleColor');
+  el.value = '#d4af37';
+  el.dataset.userSet = '';
+}
+
+async function seedHandbookOrgChart() {
+  if (!await ymConfirm(s('admin.handbookSeedConfirm'))) return;
   try {
-    await apiPost('deleteHandbookRole', { id: _hbAdmin.editingRoleId });
-    _hbAdmin.roles = _hbAdmin.roles.filter(x => x.id !== _hbAdmin.editingRoleId);
-    closeModal('hbRoleModal', true);
+    const res = await apiPost('seedHandbookOrgChart', {});
+    await loadHandbookAdmin(true);
     renderHandbookRolesList();
-    toast(s('toast.deleted'));
+    toast(s('toast.saved') + (res.added ? ' (+' + res.added + ')' : ''));
   } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
 }
 
-// ── Documents ────────────────────────────────────────────────────────────────
+// ── Documents ───────────────────────────────────────────────────────────────
 
 function renderHandbookDocsList() {
   const card = document.getElementById('hbAdminDocsCard');
@@ -418,16 +378,13 @@ function renderHandbookDocsList() {
     card.innerHTML = `<div class="empty-state">${s('admin.handbookEmptyDocs')}</div>`;
     return;
   }
-  card.innerHTML = _hbAdmin.docs.slice().sort((a, b) => {
-    return (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
-      String(_hbLocalized(a, 'title')).localeCompare(_hbLocalized(b, 'title'));
-  }).map(d => {
-    const cat = _hbLocalized(d, 'category');
+  card.innerHTML = _hbAdmin.docs.slice().sort(_hbBySort).map(d => {
+    const cat = _hbT(d, 'category');
     const catSpan = cat ? `<span class="text-xs text-muted"> · ${esc(cat)}</span>` : '';
     const icon = d.driveFileId ? '📄' : '🔗';
     return `
       <div class="list-row">
-        <span class="list-name">${icon} ${esc(_hbLocalized(d, 'title'))}${catSpan}</span>
+        <span class="list-name">${icon} ${esc(_hbT(d, 'title'))}${catSpan}</span>
         <button class="row-edit" data-admin-click="openHandbookDocModal" data-admin-arg="${d.id}">${s('btn.edit')}</button>
       </div>`;
   }).join('');
@@ -451,8 +408,6 @@ function openHandbookDocModal(id) {
   document.getElementById('hbDocFile').value       = '';
   document.getElementById('hbDocUploadStatus').textContent = '';
 
-  // Populate category datalist with distinct existing categories so the admin
-  // can reuse them.
   const seen = {};
   const cats = [];
   _hbAdmin.docs.forEach(d => {
@@ -501,7 +456,7 @@ async function saveHandbookDoc() {
   const url   = document.getElementById('hbDocUrl').value.trim();
   if (!title) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
   if (!url)   { toast('URL required', 'err'); return; }
-  const payload = {
+  return _hbSave('saveHandbookDoc', {
     id:          _hbAdmin.editingDocId || undefined,
     title:       title,
     titleIS:     document.getElementById('hbDocTitleIS').value.trim(),
@@ -512,56 +467,10 @@ async function saveHandbookDoc() {
     notes:       document.getElementById('hbDocNotes').value,
     notesIS:     document.getElementById('hbDocNotesIS').value,
     sortOrder:   Number(document.getElementById('hbDocSort').value) || 0,
-  };
-  try {
-    const res = await apiPost('saveHandbookDoc', payload);
-    payload.id = payload.id || res.id;
-    payload.active = true;
-    const idx = _hbAdmin.docs.findIndex(x => x.id === payload.id);
-    if (idx >= 0) _hbAdmin.docs[idx] = { ..._hbAdmin.docs[idx], ...payload };
-    else          _hbAdmin.docs.push(payload);
-    closeModal('hbDocModal', true);
-    renderHandbookDocsList();
-    toast(s('toast.saved'));
-  } catch (e) { toast(s('toast.saveFailed') + ': ' + e.message, 'err'); }
+  }, 'docs', 'hbDocModal', renderHandbookDocsList);
 }
 
 async function deleteHandbookDoc() {
-  if (!_hbAdmin.editingDocId) return;
-  if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
-  try {
-    await apiPost('deleteHandbookDoc', { id: _hbAdmin.editingDocId });
-    _hbAdmin.docs = _hbAdmin.docs.filter(x => x.id !== _hbAdmin.editingDocId);
-    closeModal('hbDocModal', true);
-    renderHandbookDocsList();
-    toast(s('toast.deleted'));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
-}
-
-// ── Role color helpers ──────────────────────────────────────────────────────
-
-function hbRoleColorPicked() {
-  // Native color picker emits 'input' as the user drags the swatch; flag
-  // that we should persist whatever they chose rather than ''-meaning-default.
-  document.getElementById('hbRoleColor').dataset.userSet = '1';
-}
-
-function clearHandbookRoleColor() {
-  // Reset to the brand default and mark the field as not-user-set so save
-  // sends an empty color (the read-side then falls back to --brass).
-  const el = document.getElementById('hbRoleColor');
-  el.value = '#d4af37';
-  el.dataset.userSet = '';
-}
-
-// ── Seed defaults ───────────────────────────────────────────────────────────
-
-async function seedHandbookOrgChart() {
-  if (!await ymConfirm(s('admin.handbookSeedConfirm'))) return;
-  try {
-    const res = await apiPost('seedHandbookOrgChart', {});
-    await loadHandbookAdmin(true);
-    renderHandbookRolesList();
-    toast(s('toast.saved') + (res.added ? ' (+' + res.added + ')' : ''));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+  return _hbDelete('deleteHandbookDoc', 'docs', 'editingDocId',
+    'hbDocModal', renderHandbookDocsList);
 }

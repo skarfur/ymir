@@ -70,13 +70,8 @@
 .hb-sep { color: var(--muted); }
 
 /* ── Org chart (visual tree) ────────────────────────────────────────────── */
-/* Each node is a vertical stack of (its own box) + (its children row,
-   side-by-side). Connectors are drawn with pseudo-elements per child:
-   each child has a half/full horizontal bar above it (clipped at the
-   ends so first/last children don't overhang) plus a vertical drop. */
 .hb-orgchart {
-  /* Allow horizontal scroll on narrow screens rather than wrapping the
-     tree, which would corrupt the connector lines. */
+  /* Horizontal scroll on narrow screens — wrapping would break connectors. */
   overflow-x: auto;
   padding: 14px 4px 4px;
 }
@@ -136,8 +131,6 @@
   line-height: 1.4;
 }
 
-/* Vertical drop below a node that has children — joins the bar that
-   spans its children row. */
 .hb-orgnode--has-children::after {
   content: '';
   position: absolute;
@@ -149,7 +142,6 @@
   z-index: 0;
 }
 
-/* Add space above each non-root children-row so the connectors fit. */
 .hb-orgnode-wrap > .hb-orgchart-row { margin-top: 20px; }
 
 /* Per-child connectors: a horizontal bar above + a vertical drop into
