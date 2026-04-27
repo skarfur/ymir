@@ -169,7 +169,7 @@ var SCHEMA_ = {
   // Handbook (members- and staff-facing reference). See handbook.gs.
   handbook_roles: [
     'id','parentId','title','titleIS','name','kennitala',
-    'phone','email','notes','notesIS',
+    'phone','email','notes','notesIS','color',
     'sortOrder','active','createdAt','updatedAt',
   ],
   handbook_docs: [
@@ -178,7 +178,7 @@ var SCHEMA_ = {
     'sortOrder','active','createdAt','updatedAt',
   ],
   handbook_info: [
-    'id','title','titleIS','content','contentIS',
+    'id','kind','title','titleIS','content','contentIS',
     'sortOrder','active','createdAt','updatedAt',
   ],
 };

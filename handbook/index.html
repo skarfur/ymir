@@ -29,19 +29,26 @@
     <input type="text" id="hbSearch" data-hb-input="filterHandbook">
   </div>
 
-  <!-- ══ INFO SECTIONS (emergency numbers, opening hours, harbor info, …) ══ -->
-  <div id="hbInfoSection" class="mt-16 hidden">
-    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.infoHdr"></div>
-    <div id="hbInfoList"></div>
+  <!-- ══ 1. IMPORTANT CONTACT NUMBERS ══ -->
+  <div id="hbContactsSection" class="mt-16 hidden">
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.contactsHdr"></div>
+    <div id="hbContactsList"></div>
+    <div id="hbStaffList" class="mt-12"></div>
   </div>
 
-  <!-- ══ ORG CHART ══ -->
+  <!-- ══ 2. ORG CHART ══ -->
   <div id="hbRolesSection" class="mt-16 hidden">
     <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.rolesHdr"></div>
-    <div id="hbRolesTree"></div>
+    <div id="hbOrgChart" class="hb-orgchart"></div>
   </div>
 
-  <!-- ══ DOCUMENTS ══ -->
+  <!-- ══ 3. RULES / BEST PRACTICES ══ -->
+  <div id="hbRulesSection" class="mt-16 hidden">
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.rulesHdr"></div>
+    <div id="hbRulesList"></div>
+  </div>
+
+  <!-- ══ 4. DOCUMENTS ══ -->
   <div id="hbDocsSection" class="mt-16 hidden">
     <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.docsHdr"></div>
     <div id="hbDocsList"></div>

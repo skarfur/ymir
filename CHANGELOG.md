@@ -5,39 +5,55 @@ Commit hashes reference the `main` branch.
 
 ## Unreleased — Handbook portal (`/handbook/`)
 
-New members- and staff-facing reference page at `/handbook/`. Three kinds of
-content, all admin-managed from the new **Settings → Handbook** sub-tab:
+New members- and staff-facing reference page at `/handbook/`, four
+sections in fixed order — **Important contact numbers**, **Org chart**,
+**Rules & best practices**, **Documents** — all admin-managed from
+the new **Settings → Handbook** sub-tab.
 
-- **Info sections** — bilingual rich-text blocks for emergency numbers,
-  opening hours, harbor info, club rules, etc. Plain-text content with
-  auto-linkified URLs and paragraph preservation.
-- **Who's who (org chart)** — hierarchical role entries with name, phone,
-  email and notes. `parentId` lets roles nest; the read view renders the
-  tree, admin lists rows flat with parent annotation.
+Content:
+- **Contact numbers** — bilingual entries for emergency / external
+  numbers. Below the manual entries the read view auto-appends the
+  active club staff list (members with `role` ∈ {staff, admin, manager})
+  pulled directly from the `members` sheet so no duplicate data entry
+  is needed. Backend strips to a safe subset (id, name, role, phone,
+  email, kennitala) before returning.
+- **Org chart** — hierarchical role entries with name / phone / email /
+  notes. Rendered as a real visual tree (boxes + connector lines) using
+  pure CSS (`hb-orgchart`), not a nested-card list. Each role can have
+  an optional `color` (top-border accent) and an optional `kennitala`
+  link to a member record; when set, the read endpoint hydrates missing
+  name / phone / email from that member so the chart stays in sync.
+- **Rules & best practices** — bilingual text blocks. Plain-text content
+  with auto-linkified URLs and paragraph preservation.
 - **Documents** — PDFs and external URLs grouped by category. Admin can
   upload PDFs (or any common doc/image type) directly through the UI;
   uploads land in a dedicated Drive folder via new script property
-  `DRIVE_FOLDER_ID_HANDBOOK_DOCS`. Deleting a doc trashes its Drive file.
+  `DRIVE_FOLDER_ID_HANDBOOK_DOCS`. Deleting a doc trashes its Drive
+  file.
 
-Backend:
-- New file `handbook.gs` with read (`getHandbook`) and admin-only write
-  routes (`saveHandbookRole/Doc/Info`, `deleteHandbook…`,
-  `uploadHandbookDoc`).
-- Three new sheets: `handbook_roles`, `handbook_docs`, `handbook_info`
-  (added to `_setup.gs` SCHEMA_; `setupSpreadsheet()` will create them).
+Backend (`handbook.gs`):
+- One read (`getHandbook`) returns `{ roles, docs, info, staff }`.
+- Six admin-only writes plus `seedHandbookOrgChart` — a one-shot helper
+  that adds Stjórn + 5 deildir (Kjölbátadeild, Kænudeild, Róðrardeild,
+  Kajakadeild, Bævængjudeild) when missing. Idempotent; never overwrites
+  existing entries.
+- Three new sheets: `handbook_roles` (with `color` and `parentId`),
+  `handbook_docs`, `handbook_info` (with `kind` discriminator —
+  `'contacts' | 'rules' | 'info'`). Added to `_setup.gs` SCHEMA_;
+  `setupSpreadsheet()` will create them and add columns to existing
+  installs.
 - All write actions gated by `ADMIN_ACTIONS_`. Soft-delete via
   `active=false` so audit history survives.
 
 Frontend:
 - Nav links from the member portal (quick-action strip) and staff portal
-  (tools nav-card grid). `nav.handbook` / `handbook.*` strings added in
+  (tools nav-card grid). New `nav.handbook` / `handbook.*` strings in
   EN + IS.
-- `getHandbook` cached for 120s in `shared/api.js`; all six write actions
+- `getHandbook` cached 120s in `shared/api.js`; all seven write actions
   invalidate the cached read.
-- New admin sub-module `admin/handbook.js` follows the
-  `locations.js` / `certs.js` pattern (module-local state, render
-  functions, modal-driven CRUD, delegated event listeners via
-  `data-admin-click`).
+- New admin sub-module `admin/handbook.js` with `kind` selector for
+  info entries, color picker for role boxes, and a "Seed default org
+  chart" button that calls the backend seed helper.
 
 ## Unreleased — collapse trip cards back to a single-row summary
 
