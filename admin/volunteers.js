@@ -173,11 +173,13 @@ function openVolEventModal(id) {
   document.getElementById("veNotes").value = ev ? (ev.notes || '') : '';
   document.getElementById("veNotesIS").value = ev ? (ev.notesIS || '') : '';
   document.getElementById("veDeleteBtn").classList.toggle("hidden", !ev);
-  // Populate activity type select (only volunteer-flagged types)
+  // Populate activity type select (all active templates — signup roles +
+  // reserved boats are now opt-in per occurrence regardless of the parent
+  // template's volunteer flag).
   const sel = document.getElementById("veActType");
   const L = getLang();
   sel.innerHTML = '<option value="">' + s('admin.volActTypeNone') + '</option>'
-    + actTypes.filter(a => bool(a.volunteer) && bool(a.active)).map(a => {
+    + actTypes.filter(a => bool(a.active)).map(a => {
       const label = (L === 'IS' && a.nameIS ? a.nameIS : a.name) || a.name;
       return '<option value="' + a.id + '"' + (ev && ev.activityTypeId === a.id ? ' selected' : '') + '>' + esc(label) + '</option>';
     }).join('');
@@ -187,7 +189,15 @@ function openVolEventModal(id) {
   } else {
     window._volRoles = loadRolesFromActType(sel.value);
   }
+  // Reserved boats — same inheritance pattern. Existing events keep their own
+  // override; new events default to whatever the picked activity type has.
+  if (ev && Array.isArray(ev.reservedBoatIds)) {
+    window._veReservedBoatIds = ev.reservedBoatIds.slice().map(String);
+  } else {
+    window._veReservedBoatIds = loadReservedBoatsFromActType(sel.value);
+  }
   renderVolRoles();
+  renderVeBoatPicker();
   openModal("volEventModal");
 }
 
@@ -212,6 +222,7 @@ async function saveVolEvent() {
     notes: document.getElementById("veNotes").value.trim(),
     notesIS: document.getElementById("veNotesIS").value.trim(),
     roles: JSON.stringify(window._volRoles || []),
+    reservedBoatIds: JSON.stringify(window._veReservedBoatIds || []),
     active: true,
   };
   await saveEntity({
@@ -366,12 +377,70 @@ function loadRolesFromActType(atId) {
   });
 }
 
+function loadReservedBoatsFromActType(atId) {
+  if (!atId) return [];
+  var at = actTypes.find(function (a) { return a.id === atId; });
+  if (!at || !Array.isArray(at.reservedBoatIds)) return [];
+  return at.reservedBoatIds.slice().map(String).filter(Boolean);
+}
+
+// Render the reserved-boats picker inside the scheduled-event modal. Same
+// chip-by-category layout as the activity-type modal (renderAtBoatPicker)
+// so the two surfaces feel identical when authoring resources.
+function renderVeBoatPicker() {
+  var wrap = document.getElementById('veBoatPicker');
+  if (!wrap) return;
+  var sel = new Set((window._veReservedBoatIds || []).map(String));
+  var countEl = document.getElementById('veBoatCount');
+  if (countEl) countEl.textContent = sel.size ? ' (' + sel.size + ')' : '';
+  var list = (typeof boats !== 'undefined' && Array.isArray(boats)) ? boats : [];
+  if (!list.length) {
+    wrap.innerHTML = '<div class="text-10 text-muted" data-s="admin.noBoatsConfigured"></div>';
+    if (window.applyStrings) window.applyStrings(wrap);
+    return;
+  }
+  var byCat = {};
+  list.forEach(function (bt) {
+    if (!bt || bt.active === false) return;
+    var cat = bt.category || 'other';
+    (byCat[cat] = byCat[cat] || []).push(bt);
+  });
+  var cats = Object.keys(byCat).sort();
+  wrap.innerHTML = cats.map(function (cat) {
+    var chips = byCat[cat].map(function (bt) {
+      var on = sel.has(String(bt.id));
+      return '<button type="button" class="boat-chip' + (on ? ' on' : '') + '"'
+        + ' data-admin-click="toggleVeReservedBoat" data-admin-arg="' + esc(bt.id) + '">'
+        + esc(bt.name || bt.id) + '</button>';
+    }).join('');
+    return '<div class="boat-chip-group"><div class="boat-chip-cat">' + esc(cat) + '</div>' + chips + '</div>';
+  }).join('');
+}
+
+function toggleVeReservedBoat(boatId) {
+  if (!window._veReservedBoatIds) window._veReservedBoatIds = [];
+  var id = String(boatId);
+  var idx = window._veReservedBoatIds.indexOf(id);
+  if (idx === -1) window._veReservedBoatIds.push(id);
+  else window._veReservedBoatIds.splice(idx, 1);
+  renderVeBoatPicker();
+}
+
 function onVeActTypeChange() {
   var atId = document.getElementById("veActType").value;
   var newRoles = loadRolesFromActType(atId);
   if (newRoles.length) {
     window._volRoles = newRoles;
     renderVolRoles();
+  }
+  // Inherit reserved boats only when the picker is currently empty so per-
+  // instance overrides aren't blown away by re-picking a type.
+  if (!Array.isArray(window._veReservedBoatIds) || !window._veReservedBoatIds.length) {
+    var newBoats = loadReservedBoatsFromActType(atId);
+    if (newBoats.length) {
+      window._veReservedBoatIds = newBoats;
+      renderVeBoatPicker();
+    }
   }
   // Inherit leader from the picked type only when the leader fields are still
   // empty — preserves any in-progress per-instance override the admin typed.

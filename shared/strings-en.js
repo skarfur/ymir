@@ -1533,7 +1533,7 @@ var _STRINGS_FLAT = {
   "admin.actLeaderPhone": "Phone number",
   "admin.actShowPhone": "Show phone on event card",
   "admin.actLeaderRequired": "Person in charge is required.",
-  "admin.volEventModal.add": "Add Volunteer Event",
+  "admin.volEventModal.add": "Add Event",
   "admin.volEventModal.edit": "Edit Event",
   "admin.volTitle": "Title (EN)",
   "admin.volTitleIS": "Title (IS)",

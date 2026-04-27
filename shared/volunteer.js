@@ -97,6 +97,7 @@
           leaderName: cls.leaderName || '',
           leaderPhone: cls.leaderPhone || '',
           showLeaderPhone: cls.showLeaderPhone === true || cls.showLeaderPhone === 'true',
+          reservedBoatIds: Array.isArray(cls.reservedBoatIds) ? cls.reservedBoatIds.map(String).filter(Boolean) : [],
           notes: '',
           notesIS: '',
           // Each virtual instance gets its own role ids so signups don't

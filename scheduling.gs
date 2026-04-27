@@ -27,6 +27,8 @@ function sched_parseRow_(row) {
   if (!row) return null;
   var roles = [];
   try { roles = row.roles ? JSON.parse(row.roles) : []; } catch (e) { roles = []; }
+  var reservedBoatIds = [];
+  try { reservedBoatIds = row.reservedBoatIds ? JSON.parse(row.reservedBoatIds) : []; } catch (e) { reservedBoatIds = []; }
   return {
     id:                    row.id || '',
     kind:                  row.kind || '',
@@ -49,6 +51,7 @@ function sched_parseRow_(row) {
     leaderPhone:           row.leaderPhone || '',
     showLeaderPhone:       row.showLeaderPhone === true || row.showLeaderPhone === 'true',
     roles:                 Array.isArray(roles) ? roles : [],
+    reservedBoatIds:       Array.isArray(reservedBoatIds) ? reservedBoatIds.map(String) : [],
     sourceActivityTypeId:  row.sourceActivityTypeId || '',
     sourceSubtypeId:       row.sourceSubtypeId || '',
     gcalEventId:           row.gcalEventId || '',
@@ -85,6 +88,7 @@ function sched_rowShape_(ev) {
   if (ev.leaderPhone !== undefined)           out.leaderPhone = ev.leaderPhone;
   if (ev.showLeaderPhone !== undefined)       out.showLeaderPhone = !!ev.showLeaderPhone;
   if (ev.roles !== undefined)                 out.roles = JSON.stringify(Array.isArray(ev.roles) ? ev.roles : []);
+  if (ev.reservedBoatIds !== undefined)       out.reservedBoatIds = JSON.stringify(Array.isArray(ev.reservedBoatIds) ? ev.reservedBoatIds.map(String).filter(Boolean) : []);
   if (ev.sourceActivityTypeId !== undefined)  out.sourceActivityTypeId = ev.sourceActivityTypeId;
   if (ev.sourceSubtypeId !== undefined)       out.sourceSubtypeId = ev.sourceSubtypeId;
   if (ev.gcalEventId !== undefined)           out.gcalEventId = ev.gcalEventId;
@@ -108,6 +112,7 @@ var SCHEDULED_EVENTS_COLS_ = [
   'participants',
   'leaderMemberId','leaderName','leaderPhone','showLeaderPhone',
   'roles',
+  'reservedBoatIds',
   'sourceActivityTypeId','sourceSubtypeId',
   'gcalEventId',
   'dailyLogDate',

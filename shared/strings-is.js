@@ -1533,7 +1533,7 @@ var _STRINGS_FLAT = {
   "admin.actLeaderPhone": "Símanúmer",
   "admin.actShowPhone": "Sýna símanúmer á viðburðakorti",
   "admin.actLeaderRequired": "Ábyrgðaraðili er nauðsynlegur.",
-  "admin.volEventModal.add": "Bæta við sjálfboðaviðburði",
+  "admin.volEventModal.add": "Bæta við viðburði",
   "admin.volEventModal.edit": "Breyta viðburði",
   "admin.volTitle": "Titill (EN)",
   "admin.volTitleIS": "Titill (IS)",
