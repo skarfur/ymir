@@ -754,6 +754,17 @@ function getDailyLog_(date) {
   try {
     var materialized = {};
     activityRows.forEach(function (a) { if (a && a.id) materialized[a.id] = true; });
+    // Cancelled tombstones aren't returned by sched_listActivitiesForDate_
+    // (it filters status !== 'cancelled'), but they still need to suppress
+    // their matching projection virtual. Union the cancelled ids in.
+    try {
+      (readAll_('scheduledEvents') || []).forEach(function (r) {
+        if (r && r.kind === 'activity' && r.date === d
+            && r.status === 'cancelled' && r.id) {
+          materialized[r.id] = true;
+        }
+      });
+    } catch (e) {}
     scheduledActivities = (projectActivitiesForDate_(d) || [])
       .filter(function (a) { return a && a.id && !materialized[a.id]; });
   } catch (e) { scheduledActivities = []; }

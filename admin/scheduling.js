@@ -28,6 +28,7 @@ function renderUpcomingEvents() {
           actTypes: actTypes || [],
           volunteerEvents: volunteerEvents || [],
           volunteerSignups: (typeof volunteerSignups !== 'undefined' ? volunteerSignups : []),
+          cancelledActivityOccurrences: (typeof cancelledActivityOccurrences !== 'undefined' ? cancelledActivityOccurrences : []),
           fromIso: fromIso,
           toIso: toIso,
         })
@@ -57,7 +58,45 @@ function renderUpcomingEvents() {
       + '</div>';
   }).join('');
 
-  card.innerHTML = html + _calSourcedHintHtml(calOnlyTypes);
+  card.innerHTML = html + _calSourcedHintHtml(calOnlyTypes) + _cancelledSectionHtml();
+}
+
+// Render a small foldable list of cancelled activity-class occurrences with
+// a restore button on each. Built from `cancelledActivityOccurrences` (list
+// of `sched-{classId}-{date}` ids returned by getConfig).
+function _cancelledSectionHtml() {
+  var ids = (typeof cancelledActivityOccurrences !== 'undefined' ? cancelledActivityOccurrences : []) || [];
+  if (!ids.length) return '';
+  var L = getLang();
+  // Parse ids; suppress past dates (no point restoring a date that's gone).
+  var todayIso = new Date().toISOString().slice(0, 10);
+  var rows = ids.map(function (id) {
+    // id format: sched-{classId}-{YYYY-MM-DD} — date is the last 10 chars.
+    var s = String(id);
+    if (s.indexOf('sched-') !== 0) return null;
+    var dateISO = s.slice(-10);
+    var classId = s.slice('sched-'.length, s.length - 11);
+    if (!classId || dateISO < todayIso) return null;
+    var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
+    var name = cls ? ((L === 'IS' && cls.nameIS) ? cls.nameIS : (cls.name || classId)) : classId;
+    return { id: id, classId: classId, dateISO: dateISO, name: name };
+  }).filter(Boolean).sort(function (a, b) { return a.dateISO.localeCompare(b.dateISO); });
+  if (!rows.length) return '';
+  return '<details class="sched-cancelled mt-12"><summary class="sched-cancelled-hdr">'
+    + '<span>' + esc(s('admin.cancelledOccurrences')) + ' (' + rows.length + ')</span>'
+    + '</summary>'
+    + rows.map(function (r) {
+        return '<div class="sched-row sched-row-cancelled">'
+          + '<span class="sched-time">' + esc(_formatDayLabel(r.dateISO)) + '</span>'
+          + ' <span class="sched-title">' + esc(r.name) + '</span>'
+          + ' <button type="button" class="sched-restore"'
+          + ' data-admin-click="restoreClassOccurrence"'
+          + ' data-admin-arg="'  + esc(r.classId)  + '"'
+          + ' data-admin-arg2="' + esc(r.dateISO) + '"'
+          + ' data-s="admin.restoreOccurrence"></button>'
+          + '</div>';
+      }).join('')
+    + '</details>';
 }
 
 function _upcomingRowHtml(ev, L) {
@@ -83,20 +122,141 @@ function _upcomingRowHtml(ev, L) {
   var linkOut = ev.kind === 'activity'
     ? ' <a href="../dailylog/?date=' + esc(ev.date) + '" class="sched-link">' + s('admin.schedOpenDailyLog') + '</a>'
     : '';
-  // Inline delete for volunteer events so admins don't have to open the
-  // editor just to remove one. The button has its own data-admin-click so the
-  // delegated dispatcher resolves it before the row's openVolEventModal —
-  // closest() walks up from the click target and the button wins.
-  var deleteBtn = ev.kind === 'volunteer'
-    ? ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
-      + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>'
-    : '';
+  // Inline cancel/delete for any kind. Volunteer events delete the row
+  // outright (deleteVolEvent → deleteVolunteerEvent). Activity occurrences
+  // cancel just the one date (cancelClassOccurrence writes a tombstone +
+  // PATCHes the master GCal event's instance) — the parent class survives.
+  var deleteBtn = '';
+  if (ev.kind === 'volunteer') {
+    deleteBtn = ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
+      + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>';
+  } else if (ev.kind === 'activity' && ev.activityTypeId && ev.date) {
+    // Two inline actions on activity rows: ✎ to reschedule that single
+    // occurrence (writes a status='upcoming' override + PATCHes the master
+    // instance), × to cancel (writes a status='cancelled' tombstone +
+    // PATCHes the master instance to status='cancelled').
+    deleteBtn = ' <button type="button" class="sched-edit" data-admin-click="openRescheduleModal"'
+      + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
+      + ' data-admin-arg2="' + esc(ev.date) + '"'
+      + ' data-admin-arg3="' + esc((ev.startTime || '') + '|' + (ev.endTime || '')) + '"'
+      + ' data-s-aria="admin.rescheduleOccurrence" data-s-title="admin.rescheduleOccurrence" aria-label="Reschedule">✎</button>'
+      + ' <button type="button" class="sched-del" data-admin-click="cancelClassOccurrence"'
+      + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
+      + ' data-admin-arg2="' + esc(ev.date) + '"'
+      + ' data-s-aria="admin.cancelOccurrence" data-s-title="admin.cancelOccurrence" aria-label="Cancel">×</button>';
+  }
   return '<div class="sched-row"' + openAttr + '>'
     + '<span class="sched-time">' + esc(time) + '</span>'
     + ' ' + kindBadge
     + ' <span class="sched-title">' + esc(title) + subtitle + '</span>'
     + signups + linkOut + deleteBtn
     + '</div>';
+}
+
+// Cancel one occurrence of a recurring activity class on a given date.
+// Confirms first (irreversible from the user's POV — they'd have to re-add
+// the date back if they change their mind), then POSTs to the backend which
+// writes a scheduled_events tombstone AND PATCHes the GCal master event's
+// instance to status='cancelled'. The Scheduling timeline refreshes so the
+// row drops out without a full page reload.
+async function cancelClassOccurrence(classId, dateISO) {
+  if (!classId || !dateISO) return;
+  // Find the class for the confirm message — fall back to the id if the
+  // local actTypes array hasn't loaded yet.
+  var cls = (actTypes || []).find(function(a) { return a && a.id === classId; });
+  var L = getLang();
+  var name = cls
+    ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId))
+    : classId;
+  var msg = s('admin.confirmCancelOccurrence')
+    .replace('{name}', name)
+    .replace('{date}', dateISO);
+  if (!await ymConfirm(msg)) return;
+  try {
+    await apiPost('cancelClassOccurrence', { classId: classId, date: dateISO });
+    // Locally append the tombstone id so the next render skips this date —
+    // saves a getConfig round-trip. The next page load will pick it up from
+    // cfgRes.cancelledActivityOccurrences anyway.
+    var tombstoneId = 'sched-' + classId + '-' + dateISO;
+    if (cancelledActivityOccurrences.indexOf(tombstoneId) === -1) {
+      cancelledActivityOccurrences.push(tombstoneId);
+    }
+    toast(s('toast.saved'), 'ok');
+    if (typeof renderUpcomingEvents === 'function') {
+      try { renderUpcomingEvents(); } catch (e) {}
+    }
+  } catch (e) {
+    toast(s('toast.error') + ': ' + (e.message || e), 'err');
+  }
+}
+
+// Open the reschedule modal for one occurrence. The third arg packs the
+// current start|end times as a single string so the dispatcher (which only
+// passes 1–3 string args) doesn't need a custom encoding.
+var _rsContext = null;
+function openRescheduleModal(classId, dateISO, timesPacked) {
+  if (!classId || !dateISO) return;
+  var times = String(timesPacked || '').split('|');
+  var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
+  var L = getLang();
+  var name = cls
+    ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId))
+    : classId;
+  _rsContext = { classId: classId, dateISO: dateISO };
+  document.getElementById('rsClassName').textContent = name;
+  document.getElementById('rsDate').textContent = ' · ' + dateISO;
+  document.getElementById('rsStartTime').value = (times[0] || '').slice(0, 5);
+  document.getElementById('rsEndTime').value   = (times[1] || '').slice(0, 5);
+  openModal('rescheduleModal');
+}
+
+async function saveReschedule() {
+  if (!_rsContext) return;
+  var startTime = document.getElementById('rsStartTime').value;
+  var endTime   = document.getElementById('rsEndTime').value;
+  if (!startTime || !endTime) { toast(s('admin.timesRequired'), 'err'); return; }
+  if (endTime <= startTime)   { toast(s('admin.endAfterStart'), 'err'); return; }
+  try {
+    await apiPost('overrideClassOccurrence', {
+      classId:   _rsContext.classId,
+      date:      _rsContext.dateISO,
+      startTime: startTime,
+      endTime:   endTime,
+    });
+    closeModal('rescheduleModal', true);
+    toast(s('toast.saved'), 'ok');
+    // Force a fresh getConfig pull next render so the override reflects.
+    apiGet('getConfig', { _fresh: true }).then(function (cfg) {
+      cancelledActivityOccurrences = cfg.cancelledActivityOccurrences || cancelledActivityOccurrences;
+      renderUpcomingEvents();
+    }).catch(function () { renderUpcomingEvents(); });
+  } catch (e) {
+    toast(s('toast.error') + ': ' + (e.message || e), 'err');
+  }
+}
+
+// Restore a cancelled occurrence: drop the local tombstone + PATCH the GCal
+// instance back to status='confirmed'. Confirms first since restoring a
+// cancellation is a deliberate action.
+async function restoreClassOccurrence(classId, dateISO) {
+  if (!classId || !dateISO) return;
+  var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
+  var L = getLang();
+  var name = cls ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId)) : classId;
+  var msg = s('admin.confirmRestoreOccurrence')
+    .replace('{name}', name).replace('{date}', dateISO);
+  if (!await ymConfirm(msg)) return;
+  try {
+    await apiPost('restoreClassOccurrence', { classId: classId, date: dateISO });
+    var tombstoneId = 'sched-' + classId + '-' + dateISO;
+    cancelledActivityOccurrences = cancelledActivityOccurrences.filter(function (id) {
+      return id !== tombstoneId;
+    });
+    toast(s('toast.saved'), 'ok');
+    if (typeof renderUpcomingEvents === 'function') renderUpcomingEvents();
+  } catch (e) {
+    toast(s('toast.error') + ': ' + (e.message || e), 'err');
+  }
 }
 
 function _calSourcedHintHtml(types) {

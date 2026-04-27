@@ -113,6 +113,10 @@
     var signupCounts    = _countSignups(opts.volunteerSignups);
     var fromIso         = opts.fromIso || new Date().toISOString().slice(0, 10);
     var toIso           = opts.toIso   || _addDaysIso(fromIso, 30);
+    // Cancelled tombstones (sched_events rows with kind=activity status=cancelled).
+    // Passed through getConfig as a list of ids; build a Set for O(1) lookup
+    // so the projection skips matching dates.
+    var cancelled = new Set(Array.isArray(opts.cancelledActivityOccurrences) ? opts.cancelledActivityOccurrences : []);
     var out = [];
 
     // 1) Bulk-scheduled activity projections (per day × per active, bulk-sourced class).
@@ -126,8 +130,10 @@
         if (bs.toDate   && iso > bs.toDate)   return;
         var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(Number) : [];
         if (!days.length || days.indexOf(dow) === -1) return;
+        var rawId = 'sched-' + cls.id + '-' + iso;
+        if (cancelled.has(rawId)) return;
         var raw = {
-          id:             'sched-' + cls.id + '-' + iso,
+          id:             rawId,
           activityTypeId: cls.id,
           classTag:       cls.classTag   || '',
           classTagIS:     cls.classTagIS || '',

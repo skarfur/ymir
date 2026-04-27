@@ -70,7 +70,20 @@ function getConfig_() {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
   } catch (e) {}
-  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars };
+  // Cancelled activity-class occurrences (tombstone rows in scheduled_events
+  // with kind='activity' status='cancelled'). The admin Scheduling timeline
+  // and any client-side projector use this to suppress matching virtuals
+  // (`sched-{classId}-{date}`) without the projection itself touching the
+  // sheet on every render.
+  var cancelledActivityOccurrences = [];
+  try {
+    (readAll_('scheduledEvents') || []).forEach(function (r) {
+      if (r && r.kind === 'activity' && r.status === 'cancelled' && r.id) {
+        cancelledActivityOccurrences.push(String(r.id));
+      }
+    });
+  } catch (e) {}
+  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
   cPut_('config', config);
   return okJ(config);
 }
@@ -271,9 +284,19 @@ function saveActivityType_(b) {
       defaultEnd:   b.defaultEnd   || '',
       bulkSchedule: bulkSchedule || null,
       reservedBoatIds: reservedBoatIds,
+      gcalSeriesEventId: b.gcalSeriesEventId || '',
     });
-    // Volunteer event materialization runs in the background via
-    // syncVolunteerEvents_ when the admin Volunteer tab renders.
+    // Master GCal recurring event lifecycle. syncClassRecurringEvent_ creates
+    // the series the first time, updates it when the schedule/title changes,
+    // or removes it when the class is deactivated / sync is turned off /
+    // schedule is cleared. The returned id is persisted back so subsequent
+    // saves point at the same series.
+    var gcalId = '';
+    try { gcalId = syncClassRecurringEvent_(res.item); } catch (e) { Logger.log('class gcal sync: ' + e); }
+    if (gcalId !== (res.item.gcalSeriesEventId || '')) {
+      saveConfigListItem_('activity_types', { id: res.id, gcalSeriesEventId: gcalId || '' });
+      res.item.gcalSeriesEventId = gcalId;
+    }
     return okJ({ id: res.id, item: res.item });
   } catch(e) { return failJ('saveActivityType failed: ' + e.message); }
 }
@@ -281,8 +304,14 @@ function saveActivityType_(b) {
 function deleteActivityType_(id) {
   try {
     let arr = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+    var deletedCls = arr.find(function(a) { return a && a.id === id; }) || null;
     arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_types', JSON.stringify(arr));
+    // Master GCal recurring event tear-down. Per-instance exceptions stored
+    // as scheduled_events rows are pruned by the cascade below.
+    if (deletedCls && deletedCls.calendarId && deletedCls.gcalSeriesEventId) {
+      try { Calendar.Events.remove(deletedCls.calendarId, deletedCls.gcalSeriesEventId); } catch (e) {}
+    }
     // Cascade: remove volunteer events linked to this activity type and any
     // signups attached to them. Both bulk-materialized and manually-created
     // events are removed — from the admin's POV, everything that referenced
