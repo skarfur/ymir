@@ -31,7 +31,7 @@ try {
 async function apiGet(action, params) {
   params = params || {};
   // Cache getConfig in sessionStorage for 60s — called on every page load
-  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000 };
+  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000, getHandbook: 120000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_';
@@ -133,6 +133,13 @@ var _INVALIDATES = {
   linkGoogleAccount:        ['getMembers'],
   unlinkGoogleAccount:      ['getMembers'],
   adminResetMemberPassword:['listSessions'],
+  // Handbook (admin-managed). Members + staff read via getHandbook.
+  saveHandbookRole:    ['getHandbook'],
+  deleteHandbookRole:  ['getHandbook'],
+  saveHandbookDoc:     ['getHandbook'],
+  deleteHandbookDoc:   ['getHandbook'],
+  saveHandbookInfo:    ['getHandbook'],
+  deleteHandbookInfo:  ['getHandbook'],
   // Crews + invites.
   createCrew:              ['getCrews', 'getCrewInvites'],
   disbandCrew:             ['getCrews', 'getCrewInvites'],

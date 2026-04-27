@@ -20,6 +20,7 @@
 - `_setup.gs` — idempotent schema migrations
 - `passport.gs` — rowing passport
 - `scheduling.gs` — unified `scheduled_events` CRUD (volunteer events + daily-log activities share one sheet via the `kind` discriminator)
+- `handbook.gs` — handbook entries (org-chart roles, doc links, info sections)
 
 ## Backend Changes (any `.gs` file)
 
@@ -50,6 +51,7 @@ The app supports Icelandic (`IS`) and English (`EN`). All user-facing strings mu
 - `/maintenance/`, `/saumaklubbur/` — Maintenance and materials
 - `/weather/` — Weather and tides widget
 - `/settings/`, `/public/` — User settings and public record lookup
+- `/handbook/` — Read-only handbook for members + staff (org chart, docs, info)
 
 ## Caching
 
@@ -107,7 +109,7 @@ The backend reads secrets and config from `PropertiesService.getScriptProperties
 - `SHEET_ID` — the Google Sheets document ID the backend reads/writes
 - `API_TOKEN` — the shared token the frontend sends on every authenticated call
 
-Additional optional keys used by various flows: `BOOTSTRAP_KENNITALA`, `BOOTSTRAP_PRESET_PASSWORD`, `DRIVE_FOLDER_ID_PHOTOS`, `DRIVE_FOLDER_ID_MAINT_PHOTOS`. Set these in Apps Script → Project Settings → Script Properties before deploying a fresh environment.
+Additional optional keys used by various flows: `BOOTSTRAP_KENNITALA`, `BOOTSTRAP_PRESET_PASSWORD`, `DRIVE_FOLDER_ID_PHOTOS`, `DRIVE_FOLDER_ID_MAINT_PHOTOS`, `DRIVE_FOLDER_ID_HANDBOOK_DOCS`. Set these in Apps Script → Project Settings → Script Properties before deploying a fresh environment.
 
 ## Portal file layout
 

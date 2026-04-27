@@ -1,0 +1,115 @@
+/* ── Handbook portal (read-only view for members + staff) ─────────────────── */
+
+/* Info cards (emergency numbers, opening hours, …) */
+.hb-info-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.hb-info-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.hb-info-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.hb-info-body p { margin: 0 0 8px; }
+.hb-info-body p:last-child { margin-bottom: 0; }
+.hb-info-body a { color: var(--accent); text-decoration: none; }
+.hb-info-body a:hover { text-decoration: underline; }
+
+/* Org chart (nested cards) */
+.hb-role-node {
+  margin-bottom: 8px;
+}
+.hb-role-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+}
+.hb-role-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.hb-role-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.hb-role-contact {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.hb-role-notes {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.hb-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.hb-link:hover { text-decoration: underline; }
+.hb-role-children {
+  margin-left: 18px;
+  margin-top: 6px;
+  padding-left: 10px;
+  border-left: 1px dashed var(--border);
+}
+
+/* Docs list */
+.hb-doc-group {
+  margin-bottom: 14px;
+}
+.hb-doc-cat {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.hb-doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.hb-doc-list li {
+  padding: 8px 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: 4px;
+}
+.hb-doc-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+}
+.hb-doc-link:hover .hb-doc-title { color: var(--accent); }
+.hb-doc-icon { font-size: 16px; }
+.hb-doc-notes {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  margin-left: 24px;
+  line-height: 1.4;
+}

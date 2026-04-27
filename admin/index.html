@@ -125,6 +125,7 @@
         <button class="tab-btn"        data-tab="alerts"     data-admin-click="showTab" data-admin-arg="alerts"     data-s="admin.tabAlerts"></button>
         <button class="tab-btn"        data-tab="slotCal"    data-admin-click="showTab" data-admin-arg="slotCal"    data-s="admin.tabReservations"></button>
         <button class="tab-btn"        data-tab="passport"   data-admin-click="showTab" data-admin-arg="passport"   data-s="passport.adminTitle">Rowing Passport</button>
+        <button class="tab-btn"        data-tab="handbook"   data-admin-click="showTab" data-admin-arg="handbook"   data-s="admin.tabHandbook"></button>
       </div>
       <!-- Settings tab dropdown (mobile) -->
       <select class="tab-select" id="settingsTabSelect" data-admin-change-val="showTab">
@@ -137,6 +138,7 @@
         <option value="alerts"     data-s="admin.tabAlerts"></option>
         <option value="slotCal"    data-s="admin.tabReservations"></option>
         <option value="passport"   data-s="passport.adminTitle"></option>
+        <option value="handbook"   data-s="admin.tabHandbook"></option>
       </select>
 
     <!-- ══ BOATS ════════════════════════════════════════════════════════════ -->
@@ -439,6 +441,137 @@
         <span id="fcSaveMsg" class="text-xs ml-4"></span>
       </div>
     </div><!-- /tab-flags -->
+
+    <!-- ══ HANDBOOK ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-handbook" class="hidden">
+      <!-- Info sections -->
+      <div class="col-section">
+        <div class="col-head open" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.handbookInfoTitle"></div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="hbAdminInfoCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openHandbookInfoModal" data-s="admin.handbookAddInfo"></button>
+        </div>
+      </div>
+
+      <!-- Roles (org chart) -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.handbookRolesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="hbAdminRolesCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openHandbookRoleModal" data-s="admin.handbookAddRole"></button>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.handbookDocsTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="hbAdminDocsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openHandbookDocModal" data-s="admin.handbookAddDoc"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HANDBOOK MODALS ════════════════════════════════════════════════════ -->
+    <div class="modal-overlay hidden" id="hbInfoModal" data-admin-close-self>
+      <div class="modal" style="max-width:600px;max-height:92vh;overflow-y:auto">
+        <div class="modal-header">
+          <h3 id="hbInfoModalTitle"></h3>
+          <button class="modal-close-x" data-admin-close="hbInfoModal">×</button>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.info.title" for="hbInfoTitle"></label><input type="text" id="hbInfoTitle"></div>
+          <div class="field"><label data-s="admin.handbook.info.titleIS" for="hbInfoTitleIS"></label><input type="text" id="hbInfoTitleIS"></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.info.content" for="hbInfoContent"></label><textarea id="hbInfoContent" rows="6" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.info.contentIS" for="hbInfoContentIS"></label><textarea id="hbInfoContentIS" rows="6" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.info.sortOrder" for="hbInfoSort"></label><input type="number" id="hbInfoSort" value="0" style="width:90px"></div>
+        <div class="btn-row">
+          <button class="btn btn-danger hidden" id="hbInfoDeleteBtn" data-admin-click="deleteHandbookInfo" data-s="btn.delete"></button>
+          <button class="btn btn-secondary" data-admin-close="hbInfoModal" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" data-admin-click="saveHandbookInfo" data-s="btn.save"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="hbRoleModal" data-admin-close-self>
+      <div class="modal" style="max-width:600px;max-height:92vh;overflow-y:auto">
+        <div class="modal-header">
+          <h3 id="hbRoleModalTitle"></h3>
+          <button class="modal-close-x" data-admin-close="hbRoleModal">×</button>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.role.title" for="hbRoleTitle"></label><input type="text" id="hbRoleTitle"></div>
+          <div class="field"><label data-s="admin.handbook.role.titleIS" for="hbRoleTitleIS"></label><input type="text" id="hbRoleTitleIS"></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.role.parent" for="hbRoleParent"></label>
+          <select id="hbRoleParent"></select>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.role.name" for="hbRoleName"></label><input type="text" id="hbRoleName"></div>
+          <div class="field"><label data-s="admin.handbook.role.kennitala" for="hbRoleKt"></label><input type="text" id="hbRoleKt"></div>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.role.phone" for="hbRolePhone"></label><input type="tel" id="hbRolePhone"></div>
+          <div class="field"><label data-s="admin.handbook.role.email" for="hbRoleEmail"></label><input type="email" id="hbRoleEmail"></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.role.notes" for="hbRoleNotes"></label><textarea id="hbRoleNotes" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.role.notesIS" for="hbRoleNotesIS"></label><textarea id="hbRoleNotesIS" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.role.sortOrder" for="hbRoleSort"></label><input type="number" id="hbRoleSort" value="0" style="width:90px"></div>
+        <div class="btn-row">
+          <button class="btn btn-danger hidden" id="hbRoleDeleteBtn" data-admin-click="deleteHandbookRole" data-s="btn.delete"></button>
+          <button class="btn btn-secondary" data-admin-close="hbRoleModal" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" data-admin-click="saveHandbookRole" data-s="btn.save"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="hbDocModal" data-admin-close-self>
+      <div class="modal" style="max-width:600px;max-height:92vh;overflow-y:auto">
+        <div class="modal-header">
+          <h3 id="hbDocModalTitle"></h3>
+          <button class="modal-close-x" data-admin-close="hbDocModal">×</button>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.doc.title" for="hbDocTitle"></label><input type="text" id="hbDocTitle"></div>
+          <div class="field"><label data-s="admin.handbook.doc.titleIS" for="hbDocTitleIS"></label><input type="text" id="hbDocTitleIS"></div>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.doc.category" for="hbDocCat"></label><input type="text" id="hbDocCat" list="hbDocCatList"><datalist id="hbDocCatList"></datalist></div>
+          <div class="field"><label data-s="admin.handbook.doc.categoryIS" for="hbDocCatIS"></label><input type="text" id="hbDocCatIS"></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.doc.url" for="hbDocUrl"></label><input type="url" id="hbDocUrl" placeholder="https://…"></div>
+        <div class="field">
+          <label for="hbDocFile" data-s="admin.handbook.doc.upload"></label>
+          <input type="file" id="hbDocFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png" data-admin-change-el="handleHandbookDocUpload">
+          <div id="hbDocUploadStatus" class="text-xs text-muted mt-3"></div>
+        </div>
+        <input type="hidden" id="hbDocDriveFileId">
+        <div class="field"><label data-s="admin.handbook.doc.notes" for="hbDocNotes"></label><textarea id="hbDocNotes" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.doc.notesIS" for="hbDocNotesIS"></label><textarea id="hbDocNotesIS" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.doc.sortOrder" for="hbDocSort"></label><input type="number" id="hbDocSort" value="0" style="width:90px"></div>
+        <div class="btn-row">
+          <button class="btn btn-danger hidden" id="hbDocDeleteBtn" data-admin-click="deleteHandbookDoc" data-s="btn.delete"></button>
+          <button class="btn btn-secondary" data-admin-close="hbDocModal" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" data-admin-click="saveHandbookDoc" data-s="btn.save"></button>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ ROWING PASSPORT ═════════════════════════════════════════════════ -->
     <div id="tab-passport" class="hidden">
@@ -1105,6 +1238,7 @@
 <script src="import.js" defer></script>
 <script src="calendars.js" defer></script>
 <script src="passport.js" defer></script>
+<script src="handbook.js" defer></script>
 <script src="admin.js" defer></script>
 </body>
 </html>

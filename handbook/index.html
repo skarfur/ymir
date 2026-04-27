@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
+  <title>Ýmir — Handbook</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/api.js"></script>
+  <script src="../shared/ui.js"></script>
+  <script src="../shared/layout.js"></script>
+  <script src="../shared/strings.js"></script>
+  <link rel="stylesheet" href="handbook.css">
+</head>
+<body>
+<ymir-header></ymir-header>
+
+<div class="page-content">
+
+  <div class="mb-14">
+    <div class="fw-500" style="font-size:16px;color:var(--text)" data-s="handbook.title"></div>
+    <div class="text-sm text-muted mt-2" data-s="handbook.subtitle"></div>
+  </div>
+
+  <div class="search-bar mb-14">
+    <input type="text" id="hbSearch" data-hb-input="filterHandbook">
+  </div>
+
+  <!-- ══ INFO SECTIONS (emergency numbers, opening hours, harbor info, …) ══ -->
+  <div id="hbInfoSection" class="mt-16 hidden">
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.infoHdr"></div>
+    <div id="hbInfoList"></div>
+  </div>
+
+  <!-- ══ ORG CHART ══ -->
+  <div id="hbRolesSection" class="mt-16 hidden">
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.rolesHdr"></div>
+    <div id="hbRolesTree"></div>
+  </div>
+
+  <!-- ══ DOCUMENTS ══ -->
+  <div id="hbDocsSection" class="mt-16 hidden">
+    <div class="section-label mb-10" style="letter-spacing:1.5px" data-s="handbook.docsHdr"></div>
+    <div id="hbDocsList"></div>
+  </div>
+
+  <!-- ══ EMPTY STATE ══ -->
+  <div id="hbEmpty" class="mt-16 hidden">
+    <div class="empty-note" data-s="handbook.empty"></div>
+  </div>
+
+  <!-- ══ LOADING STATE ══ -->
+  <div id="hbLoading" class="mt-16">
+    <div class="loading-state"><span class="spinner"></span></div>
+  </div>
+
+</div>
+
+<script src="handbook.js" defer></script>
+</body>
+</html>

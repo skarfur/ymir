@@ -3,6 +3,42 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — Handbook portal (`/handbook/`)
+
+New members- and staff-facing reference page at `/handbook/`. Three kinds of
+content, all admin-managed from the new **Settings → Handbook** sub-tab:
+
+- **Info sections** — bilingual rich-text blocks for emergency numbers,
+  opening hours, harbor info, club rules, etc. Plain-text content with
+  auto-linkified URLs and paragraph preservation.
+- **Who's who (org chart)** — hierarchical role entries with name, phone,
+  email and notes. `parentId` lets roles nest; the read view renders the
+  tree, admin lists rows flat with parent annotation.
+- **Documents** — PDFs and external URLs grouped by category. Admin can
+  upload PDFs (or any common doc/image type) directly through the UI;
+  uploads land in a dedicated Drive folder via new script property
+  `DRIVE_FOLDER_ID_HANDBOOK_DOCS`. Deleting a doc trashes its Drive file.
+
+Backend:
+- New file `handbook.gs` with read (`getHandbook`) and admin-only write
+  routes (`saveHandbookRole/Doc/Info`, `deleteHandbook…`,
+  `uploadHandbookDoc`).
+- Three new sheets: `handbook_roles`, `handbook_docs`, `handbook_info`
+  (added to `_setup.gs` SCHEMA_; `setupSpreadsheet()` will create them).
+- All write actions gated by `ADMIN_ACTIONS_`. Soft-delete via
+  `active=false` so audit history survives.
+
+Frontend:
+- Nav links from the member portal (quick-action strip) and staff portal
+  (tools nav-card grid). `nav.handbook` / `handbook.*` strings added in
+  EN + IS.
+- `getHandbook` cached for 120s in `shared/api.js`; all six write actions
+  invalidate the cached read.
+- New admin sub-module `admin/handbook.js` follows the
+  `locations.js` / `certs.js` pattern (module-local state, render
+  functions, modal-driven CRUD, delegated event listeners via
+  `data-admin-click`).
+
 ## Unreleased — collapse trip cards back to a single-row summary
 
 The 2-column grid added in `860555b` (boat/crew, departed/returned,
