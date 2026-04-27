@@ -103,12 +103,11 @@ function _cancelledSectionHtml() {
 }
 
 function _upcomingRowHtml(ev, L) {
-  var kindBadge = ev.kind === 'volunteer'
-    ? '<span class="sched-badge sched-kind-vol">' + s('admin.schedKindVolunteer') + '</span>'
-    : '<span class="sched-badge sched-kind-act">' + s('admin.schedKindActivity') + '</span>';
-  // Source badge ("Schedule"/"Calendar"/"Manual"/"Daily log") is intentionally
-  // suppressed for now — duplicates the kind cue and reads as noise. The
-  // ev.source field is still set in the data, just not surfaced.
+  // Kind badges are intentionally absent: every row is just an "event" now.
+  // The signup chip (when present) signals volunteer-flavored rows; the
+  // "Open daily log" link signals daily-log rows. Source ("Schedule" /
+  // "Calendar" / etc.) is also suppressed — the data is still there for
+  // future surfacing.
   var time = _formatTimeRange(ev);
   var title = (L === 'IS' && ev.titleIS) ? ev.titleIS : (ev.title || '');
   var subtitle = ev.subtypeName ? ' — ' + esc(ev.subtypeName) : '';
@@ -150,7 +149,6 @@ function _upcomingRowHtml(ev, L) {
   }
   return '<div class="sched-row"' + openAttr + '>'
     + '<span class="sched-time">' + esc(time) + '</span>'
-    + ' ' + kindBadge
     + ' <span class="sched-title">' + esc(title) + subtitle + '</span>'
     + signups + linkOut + deleteBtn
     + '</div>';
