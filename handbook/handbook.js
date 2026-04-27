@@ -1,7 +1,6 @@
 prefetch({Handbook:['getHandbook']});
 
-const user = requireAuth();
-const L    = getLang();
+requireAuth();
 
 let _hb = { roles: [], docs: [], info: [], contacts: [] };
 let _hbFilter = '';
@@ -27,10 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderHandbook();
 });
 
-function _localized(row, key) {
-  if (L === 'IS') return row[key + 'IS'] || row[key] || '';
-  return row[key] || row[key + 'IS'] || '';
-}
+const _t = (row, key) => localizedField(row, key);
 
 function _matchesFilter(text) {
   if (!_hbFilter) return true;
@@ -56,9 +52,7 @@ function renderHandbook() {
   document.getElementById('hbEmpty').classList.toggle('hidden', anyVisible);
 }
 
-// Plain text → safe HTML. Linkifies URLs, escapes everything else, preserves
-// paragraph breaks. Intentionally narrow so admins can paste raw text without
-// fearing malformed HTML on the read side.
+// Plain text → safe HTML: escape, linkify URLs, preserve paragraph breaks.
 function _renderContent(text) {
   if (!text) return '';
   const escaped = esc(String(text));
@@ -69,25 +63,18 @@ function _renderContent(text) {
   return linked.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
 
-// ── 1. Contacts (member-linked + free-text entries) ─────────────────────────
-
 function renderContactsSection() {
-  // People: manually curated member-linked contacts.
-  const people = (_hb.contacts || []).filter(c => {
-    return _matchesFilter(_localized(c, 'label')) ||
-           _matchesFilter(c.name)  ||
-           _matchesFilter(c.phone) ||
-           _matchesFilter(c.email) ||
-           _matchesFilter(_localized(c, 'notes'));
-  });
+  const people = (_hb.contacts || []).filter(c =>
+    _matchesFilter(_t(c, 'label')) ||
+    _matchesFilter(c.name)  ||
+    _matchesFilter(c.phone) ||
+    _matchesFilter(c.email) ||
+    _matchesFilter(_t(c, 'notes'))
+  );
 
-  // Text entries: handbook_info rows where kind === 'contacts'. For things
-  // that aren't tied to a specific person — emergency hotlines, harbor
-  // master, coast guard, etc.
-  const text = _hb.info.filter(it => (it.kind || 'info') === 'contacts').filter(it => {
-    return _matchesFilter(_localized(it, 'title')) ||
-           _matchesFilter(_localized(it, 'content'));
-  });
+  const text = _hb.info
+    .filter(it => (it.kind || 'info') === 'contacts')
+    .filter(it => _matchesFilter(_t(it, 'title')) || _matchesFilter(_t(it, 'content')));
 
   const wrap     = document.getElementById('hbContactsSection');
   const peopleEl = document.getElementById('hbContactsPeople');
@@ -104,11 +91,11 @@ function renderContactsSection() {
   peopleEl.innerHTML = people.length ? `
     <div class="hb-contact-grid">
       ${people.map(c => {
-        const label = esc(_localized(c, 'label'));
+        const label = esc(_t(c, 'label'));
         const name  = esc(c.name || '');
         const phone = c.phone ? `<a href="tel:${esc(c.phone)}" class="hb-link">${esc(c.phone)}</a>` : '';
         const email = c.email ? `<a href="mailto:${esc(c.email)}" class="hb-link">${esc(c.email)}</a>` : '';
-        const notes = esc(_localized(c, 'notes'));
+        const notes = esc(_t(c, 'notes'));
         return `
           <div class="hb-contact-card">
             ${label ? `<div class="hb-contact-label">${label}</div>` : ''}
@@ -123,13 +110,11 @@ function renderContactsSection() {
 
   textEl.innerHTML = text.length ? text.map(it => `
     <div class="hb-info-card">
-      <div class="hb-info-title">${esc(_localized(it, 'title'))}</div>
-      <div class="hb-info-body">${_renderContent(_localized(it, 'content'))}</div>
+      <div class="hb-info-title">${esc(_t(it, 'title'))}</div>
+      <div class="hb-info-body">${_renderContent(_t(it, 'content'))}</div>
     </div>
   `).join('') : '';
 }
-
-// ── 2. Org chart (visual tree) ───────────────────────────────────────────────
 
 function renderOrgChart() {
   const byId = {};
@@ -140,18 +125,20 @@ function renderOrgChart() {
     else roots.push(r);
   });
   const sorter = (a, b) => (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
-                           String(_localized(a, 'title')).localeCompare(_localized(b, 'title'));
+                           String(_t(a, 'title')).localeCompare(_t(b, 'title'));
   roots.sort(sorter);
   Object.values(byId).forEach(r => r.children.sort(sorter));
 
+  const visCache = {};
   function visible(r) {
+    if (visCache[r.id] !== undefined) return visCache[r.id];
     const childMatches = r.children.some(visible);
-    const self = _matchesFilter(_localized(r, 'title')) ||
+    const self = _matchesFilter(_t(r, 'title')) ||
                  _matchesFilter(r.name) ||
                  _matchesFilter(r.phone) ||
                  _matchesFilter(r.email) ||
-                 _matchesFilter(_localized(r, 'notes'));
-    return self || childMatches;
+                 _matchesFilter(_t(r, 'notes'));
+    return (visCache[r.id] = self || childMatches);
   }
 
   const visibleRoots = roots.filter(visible);
@@ -166,11 +153,11 @@ function renderOrgChart() {
 
 function _renderOrgNode(r, visiblePred) {
   const visibleChildren = (r.children || []).filter(visiblePred);
-  const title = esc(_localized(r, 'title'));
+  const title = esc(_t(r, 'title'));
   const name  = esc(r.name || '');
   const phone = r.phone ? `<a href="tel:${esc(r.phone)}" class="hb-link">${esc(r.phone)}</a>` : '';
   const email = r.email ? `<a href="mailto:${esc(r.email)}" class="hb-link">${esc(r.email)}</a>` : '';
-  const notes = esc(_localized(r, 'notes'));
+  const notes = esc(_t(r, 'notes'));
   const contactRow = (phone || email)
     ? `<div class="hb-orgnode-contact">${phone}${phone && email ? ' · ' : ''}${email}</div>`
     : '';
@@ -192,42 +179,33 @@ function _renderOrgNode(r, visiblePred) {
     </div>`;
 }
 
-// ── 3. Rules / best practices ────────────────────────────────────────────────
-
 function renderRulesSection() {
-  // 'rules' kind explicitly, plus legacy entries with no kind set so existing
-  // content keeps showing up after the schema migration.
+  // Includes legacy rows where `kind` is unset so pre-migration content
+  // still renders here.
   const list = _hb.info
     .filter(it => {
       const k = it.kind || 'info';
       return k === 'rules' || k === 'info';
     })
-    .filter(it => {
-      const title = _localized(it, 'title');
-      const body  = _localized(it, 'content');
-      return _matchesFilter(title) || _matchesFilter(body);
-    });
+    .filter(it => _matchesFilter(_t(it, 'title')) || _matchesFilter(_t(it, 'content')));
   const wrap = document.getElementById('hbRulesSection');
   const target = document.getElementById('hbRulesList');
   if (!list.length) { wrap.classList.add('hidden'); target.innerHTML = ''; return; }
   wrap.classList.remove('hidden');
   target.innerHTML = list.map(it => `
     <div class="hb-info-card">
-      <div class="hb-info-title">${esc(_localized(it, 'title'))}</div>
-      <div class="hb-info-body">${_renderContent(_localized(it, 'content'))}</div>
+      <div class="hb-info-title">${esc(_t(it, 'title'))}</div>
+      <div class="hb-info-body">${_renderContent(_t(it, 'content'))}</div>
     </div>
   `).join('');
 }
 
-// ── 4. Docs (PDFs + URLs) ────────────────────────────────────────────────────
-
 function renderDocsList() {
-  const list = _hb.docs.filter(d => {
-    const title = _localized(d, 'title');
-    const cat   = _localized(d, 'category');
-    const notes = _localized(d, 'notes');
-    return _matchesFilter(title) || _matchesFilter(cat) || _matchesFilter(notes);
-  });
+  const list = _hb.docs.filter(d =>
+    _matchesFilter(_t(d, 'title')) ||
+    _matchesFilter(_t(d, 'category')) ||
+    _matchesFilter(_t(d, 'notes'))
+  );
   const wrap = document.getElementById('hbDocsSection');
   const target = document.getElementById('hbDocsList');
   if (!list.length) { wrap.classList.add('hidden'); target.innerHTML = ''; return; }
@@ -235,7 +213,7 @@ function renderDocsList() {
 
   const groups = {};
   list.forEach(d => {
-    const cat = _localized(d, 'category') || s('handbook.docCatOther');
+    const cat = _t(d, 'category') || s('handbook.docCatOther');
     (groups[cat] = groups[cat] || []).push(d);
   });
   const catNames = Object.keys(groups).sort();
@@ -247,9 +225,9 @@ function renderDocsList() {
           <li>
             <a class="hb-doc-link" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">
               <span class="hb-doc-icon" aria-hidden="true">${d.driveFileId ? '📄' : '🔗'}</span>
-              <span class="hb-doc-title">${esc(_localized(d, 'title'))}</span>
+              <span class="hb-doc-title">${esc(_t(d, 'title'))}</span>
             </a>
-            ${_localized(d, 'notes') ? `<div class="hb-doc-notes">${esc(_localized(d, 'notes'))}</div>` : ''}
+            ${_t(d, 'notes') ? `<div class="hb-doc-notes">${esc(_t(d, 'notes'))}</div>` : ''}
           </li>
         `).join('')}
       </ul>
@@ -257,9 +235,8 @@ function renderDocsList() {
   `).join('');
 }
 
-// ── Delegated event listeners ────────────────────────────────────────────────
 (function () {
-  if (typeof document === 'undefined' || document._hbListeners) return;
+  if (document._hbListeners) return;
   document._hbListeners = true;
   document.addEventListener('input', function (e) {
     var i = e.target.closest('[data-hb-input]');

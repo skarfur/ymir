@@ -1,72 +1,30 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// HANDBOOK / HANDBÓK
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Members- and staff-facing reference: a visual org chart with contact data,
-// quick links to PDFs (hosted on Drive), free-form bilingual info sections
-// for emergency contacts and rules/best practices, plus an auto-populated
-// staff contact list pulled from the members sheet. Editable from the admin
-// portal.
-//
-// Four sheets back this:
-//   handbook_roles    — org-chart entries with optional parentId for hierarchy
-//                       and optional kennitala link to a member record. When
-//                       kennitala is set, the read endpoint hydrates missing
-//                       name / phone / email from the member's record so the
-//                       handbook stays in sync without duplicate data entry.
-//                       `color` is an optional hex string for the box accent.
-//   handbook_contacts — manually curated people in the contact-numbers
-//                       section. Each row has an optional `memberId`
-//                       (kennitala) link plus a free-text `label` /
-//                       `labelIS` (e.g. "Emergency contact",
-//                       "Maintenance lead"). Member-linked rows hydrate
-//                       missing name / phone / email from the member's
-//                       record at read time.
-//   handbook_docs     — PDF / URL entries grouped by category. driveFileId
-//                       is set when the file was uploaded through the admin
-//                       UI so deletes can also trash the Drive file.
-//   handbook_info     — bilingual text sections, distinguished by `kind`:
-//                       'contacts' (free-text emergency / external numbers),
-//                       'rules'    (rules / best practices),
-//                       other      (legacy / free-form).
-//
-// Soft-deletes via `active=false` so audit history survives.
-
-// ── Reads ────────────────────────────────────────────────────────────────────
+// Handbook: org chart, contacts, docs, rules. Read endpoint hydrates
+// kennitala-linked rows from members and resolves deild colors from boat
+// categories so the chart stays in sync with the rest of the app.
 
 function getHandbook_() {
-  const rolesRaw    = (data_.readAll('handbookRoles')    || []).filter(_handbookActive_);
-  const contactsRaw = (data_.readAll('handbookContacts') || []).filter(_handbookActive_);
-  const docs        = (data_.readAll('handbookDocs')     || []).filter(_handbookActive_);
-  const info        = (data_.readAll('handbookInfo')     || []).filter(_handbookActive_);
+  const rolesRaw    = (data_.readAll('handbookRoles')    || []).filter(_hbActive_);
+  const contactsRaw = (data_.readAll('handbookContacts') || []).filter(_hbActive_);
+  const docs        = (data_.readAll('handbookDocs')     || []).filter(_hbActive_);
+  const info        = (data_.readAll('handbookInfo')     || []).filter(_hbActive_);
 
-  const memberByKt   = _handbookMemberMap_();
-  const catColorMap  = _handbookBoatCatColorMap_();
+  const memberByKt = getMemberMap_();
+  const needsCatMap = rolesRaw.some(function (r) { return r.boatCategoryKey && !r.color; });
+  const catColorMap = needsCatMap ? _hbBoatCatColorMap_() : {};
 
-  // Hydrate roles: when a role has a kennitala link, pull missing name /
-  // phone / email from the member record. The role's own values still win
-  // when they're set, so admins can override (e.g. publish a club extension
-  // rather than the member's mobile). Color resolution falls back to the
-  // linked boat category's color so the deildir stay in sync with the
-  // rest of the app — explicit `color` still wins.
   const roles = rolesRaw.map(function (r) {
     const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
-    const out = m
-      ? Object.assign({}, r, {
-          name:  r.name  || m.name  || '',
-          phone: r.phone || m.phone || '',
-          email: r.email || m.email || '',
-          _linkedMemberRole: m.role || '',
-        })
-      : Object.assign({}, r);
+    const out = m ? Object.assign({}, r, {
+      name:  r.name  || m.name  || '',
+      phone: r.phone || m.phone || '',
+      email: r.email || m.email || '',
+    }) : Object.assign({}, r);
     if (!out.color && out.boatCategoryKey && catColorMap[out.boatCategoryKey]) {
       out.color = catColorMap[out.boatCategoryKey];
     }
     return out;
   });
 
-  // Hydrate contacts the same way; the row's own override wins. memberId
-  // here holds a kennitala (matches the column name on the role rows).
   const contacts = contactsRaw.map(function (c) {
     const m = c.memberId ? memberByKt[String(c.memberId).trim()] : null;
     if (!m) return c;
@@ -78,25 +36,25 @@ function getHandbook_() {
   });
 
   return okJ({
-    roles:    roles.sort(_byOrder_),
-    contacts: contacts.sort(_byOrder_),
-    docs:     docs.sort(_byOrder_),
-    info:     info.sort(_byOrder_),
+    roles:    roles.sort(_hbByOrder_),
+    contacts: contacts.sort(_hbByOrder_),
+    docs:     docs.sort(_hbByOrder_),
+    info:     info.sort(_hbByOrder_),
   });
 }
 
-function _handbookActive_(r) { return r && r.active !== false && r.active !== 'false'; }
-function _byOrder_(a, b) {
+function _hbActive_(r) { return r && bool_(r.active); }
+
+function _hbByOrder_(a, b) {
   var ao = Number(a.sortOrder || 0), bo = Number(b.sortOrder || 0);
   if (ao !== bo) return ao - bo;
   return String(a.title || '').localeCompare(String(b.title || ''));
 }
 
-function _handbookBoatCatColorMap_() {
+function _hbBoatCatColorMap_() {
   const out = {};
   try {
-    const cfg = getConfigMap_();
-    const raw = getConfigValue_('boatCategories', cfg);
+    const raw = getConfigValue_('boatCategories', getConfigMap_());
     const list = raw ? JSON.parse(raw) : [];
     if (Array.isArray(list)) {
       list.forEach(function (c) {
@@ -107,27 +65,35 @@ function _handbookBoatCatColorMap_() {
   return out;
 }
 
-function _handbookMemberMap_() {
-  const map = {};
-  try {
-    (readAll_('members') || []).forEach(function (m) {
-      if (m && m.kennitala) map[String(m.kennitala).trim()] = m;
-    });
-  } catch (e) {}
-  return map;
+// ── Generic upsert / soft-delete helpers ─────────────────────────────────────
+
+function _hbUpsert_(tabKey, idPrefix, b, fields) {
+  const id = b.id || (idPrefix + uid_());
+  const existing = findOne_(tabKey, 'id', id);
+  const row = Object.assign({ id: id }, fields, {
+    active:    b.active === false ? false : true,
+    createdAt: existing ? (existing.createdAt || now_()) : now_(),
+    updatedAt: now_(),
+  });
+  if (existing) updateRow_(tabKey, 'id', id, row);
+  else          insertRow_(tabKey, row);
+  return { id: id, existing: existing };
 }
 
-// ── Contacts (member-linked phone book) ─────────────────────────────────────
-// `memberId` holds a kennitala (mirrors the column name used on roles).
-// Free-text label per entry — bilingual EN + IS. The read endpoint hydrates
-// missing name / phone / email from the linked member record.
+function _hbSoftDelete_(tabKey, id, notFoundMsg) {
+  if (!id) return { error: failJ('id required') };
+  const existing = findOne_(tabKey, 'id', id);
+  if (!existing) return { error: failJ(notFoundMsg, 404) };
+  updateRow_(tabKey, 'id', id, { active: false, updatedAt: now_() });
+  return { existing: existing };
+}
+
+// ── Contacts (member-linked phone book) ──────────────────────────────────────
+// `memberId` holds a kennitala (mirrors the column name on roles).
 
 function saveHandbookContact_(b) {
   if (!b.label && !b.labelIS) return failJ('label required');
-  const id = b.id || ('contact_' + uid_());
-  const existing = findOne_('handbookContacts', 'id', id);
-  const row = {
-    id:         id,
+  const r = _hbUpsert_('handbookContacts', 'contact_', b, {
     memberId:   b.memberId || '',
     label:      b.label || '',
     labelIS:    b.labelIS || '',
@@ -137,31 +103,20 @@ function saveHandbookContact_(b) {
     notes:      b.notes || '',
     notesIS:    b.notesIS || '',
     sortOrder:  Number(b.sortOrder || 0),
-    active:     b.active === false ? false : true,
-    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:  now_(),
-  };
-  if (existing) updateRow_('handbookContacts', 'id', id, row);
-  else          insertRow_('handbookContacts', row);
-  return okJ({ id: id, saved: true });
+  });
+  return okJ({ id: r.id, saved: true });
 }
 
 function deleteHandbookContact_(b) {
-  if (!b.id) return failJ('id required');
-  const existing = findOne_('handbookContacts', 'id', b.id);
-  if (!existing) return failJ('Contact not found', 404);
-  updateRow_('handbookContacts', 'id', b.id, { active: false, updatedAt: now_() });
-  return okJ({ ok: true });
+  const r = _hbSoftDelete_('handbookContacts', b.id, 'Contact not found');
+  return r.error || okJ({ ok: true });
 }
 
 // ── Roles (org chart) ────────────────────────────────────────────────────────
 
 function saveHandbookRole_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  const id = b.id || ('role_' + uid_());
-  const existing = findOne_('handbookRoles', 'id', id);
-  const row = {
-    id:              id,
+  const r = _hbUpsert_('handbookRoles', 'role_', b, {
     parentId:        b.parentId || '',
     title:           b.title || '',
     titleIS:         b.titleIS || '',
@@ -174,31 +129,18 @@ function saveHandbookRole_(b) {
     color:           b.color || '',
     boatCategoryKey: b.boatCategoryKey || '',
     sortOrder:       Number(b.sortOrder || 0),
-    active:          b.active === false ? false : true,
-    createdAt:       existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:       now_(),
-  };
-  if (existing) updateRow_('handbookRoles', 'id', id, row);
-  else          insertRow_('handbookRoles', row);
-  return okJ({ id: id, saved: true });
+  });
+  return okJ({ id: r.id, saved: true });
 }
 
 function deleteHandbookRole_(b) {
-  if (!b.id) return failJ('id required');
-  const existing = findOne_('handbookRoles', 'id', b.id);
-  if (!existing) return failJ('Role not found', 404);
-  // Soft-delete so any sub-roles can be re-parented later if the admin
-  // changes their mind. Children keep their parentId pointing at this row.
-  updateRow_('handbookRoles', 'id', b.id, { active: false, updatedAt: now_() });
-  return okJ({ ok: true });
+  // Soft-delete leaves children's parentId intact so the admin can re-parent.
+  const r = _hbSoftDelete_('handbookRoles', b.id, 'Role not found');
+  return r.error || okJ({ ok: true });
 }
 
-// One-shot scaffolding: seed a Stjórn root + the five deildir if the chart
-// is empty (or if the named entries are missing). Idempotent — never
-// overwrites existing entries, and silently skips deildir whose title
-// already appears.
 function seedHandbookOrgChart_() {
-  const existing = (readAll_('handbookRoles') || []).filter(_handbookActive_);
+  const existing = (readAll_('handbookRoles') || []).filter(_hbActive_);
   const have = {};
   existing.forEach(function (r) {
     have[String(r.titleIS || r.title).toLowerCase()] = r;
@@ -227,16 +169,11 @@ function seedHandbookOrgChart_() {
     return row;
   }
 
+  // Stjórn isn't a boat category, so it carries an explicit color; deildir
+  // resolve theirs from the linked boatCategoryKey at read time.
   const stjorn = ensure({
-    title:     'Board',
-    titleIS:   'Stjórn',
-    sortOrder: 0,
-    // Stjórn isn't a boat category, so it carries an explicit color.
-    color:     '#d4af37',
+    title: 'Board', titleIS: 'Stjórn', sortOrder: 0, color: '#d4af37',
   });
-  // Each deild links to a boat-category key from config; the read endpoint
-  // resolves the deild's color from that category at request time so the
-  // chart stays in sync if an admin retunes a category color elsewhere.
   const deildir = [
     { title: 'Keelboat division',    titleIS: 'Kjölbátadeild',  boatCategoryKey: 'keelboat' },
     { title: 'Dinghy division',      titleIS: 'Kænudeild',      boatCategoryKey: 'dinghy' },
@@ -258,10 +195,7 @@ function seedHandbookOrgChart_() {
 function saveHandbookDoc_(b) {
   if (!b.title) return failJ('title required');
   if (!b.url)   return failJ('url required');
-  const id = b.id || ('doc_' + uid_());
-  const existing = findOne_('handbookDocs', 'id', id);
-  const row = {
-    id:          id,
+  const r = _hbUpsert_('handbookDocs', 'doc_', b, {
     category:    b.category || '',
     categoryIS:  b.categoryIS || '',
     title:       b.title || '',
@@ -271,40 +205,30 @@ function saveHandbookDoc_(b) {
     notes:       b.notes || '',
     notesIS:     b.notesIS || '',
     sortOrder:   Number(b.sortOrder || 0),
-    active:      b.active === false ? false : true,
-    createdAt:   existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:   now_(),
-  };
-  if (existing) updateRow_('handbookDocs', 'id', id, row);
-  else          insertRow_('handbookDocs', row);
-  return okJ({ id: id, saved: true });
+  });
+  return okJ({ id: r.id, saved: true });
 }
 
 function deleteHandbookDoc_(b) {
-  if (!b.id) return failJ('id required');
-  const existing = findOne_('handbookDocs', 'id', b.id);
-  if (!existing) return failJ('Doc not found', 404);
-  // Trash the Drive file if we own it. Plain external URLs (driveFileId
-  // unset) are left alone.
+  const r = _hbSoftDelete_('handbookDocs', b.id, 'Doc not found');
+  if (r.error) return r.error;
+  // Trash the Drive file if we own it; plain external URLs are left alone.
+  const existing = r.existing;
   if (existing.driveFileId) {
-    try { DriveApp.getFileById(existing.driveFileId).setTrashed(true); }
-    catch (e) { /* file may already be gone */ }
+    try { DriveApp.getFileById(existing.driveFileId).setTrashed(true); } catch (e) {}
   } else if (existing.url) {
-    // Best effort: if the URL points at a Drive file we can extract the id.
     try {
       var m = String(existing.url).match(/\/d\/([a-zA-Z0-9_-]+)/);
       if (m) DriveApp.getFileById(m[1]).setTrashed(true);
     } catch (e) {}
   }
-  updateRow_('handbookDocs', 'id', b.id, { active: false, updatedAt: now_() });
   return okJ({ ok: true });
 }
 
 // Script Property required: DRIVE_FOLDER_ID_HANDBOOK_DOCS
 function uploadHandbookDoc_(b) {
   if (!b.fileData) return failJ('fileData required');
-  const props = PropertiesService.getScriptProperties();
-  const folderId = props.getProperty('DRIVE_FOLDER_ID_HANDBOOK_DOCS');
+  const folderId = PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID_HANDBOOK_DOCS');
   if (!folderId) return okJ({ ok: false, error: 'Drive folder not configured' });
 
   try {
@@ -321,10 +245,9 @@ function uploadHandbookDoc_(b) {
       jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
       txt: 'text/plain',
     };
-    const mime     = b.mimeType || mimeMap[ext] || 'application/octet-stream';
-    const blob     = Utilities.newBlob(bytes, mime, safeName);
-    const folder   = DriveApp.getFolderById(folderId);
-    const file     = folder.createFile(blob);
+    const mime  = b.mimeType || mimeMap[ext] || 'application/octet-stream';
+    const blob  = Utilities.newBlob(bytes, mime, safeName);
+    const file  = DriveApp.getFolderById(folderId).createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return okJ({ ok: true, url: file.getUrl(), driveFileId: file.getId(), fileName: safeName });
   } catch (e) {
@@ -336,34 +259,22 @@ function uploadHandbookDoc_(b) {
 
 function saveHandbookInfo_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  const id = b.id || ('info_' + uid_());
-  const existing = findOne_('handbookInfo', 'id', id);
-  // 'contacts' = important phone numbers (emergency, external orgs, …),
-  // 'rules'    = rules / best practices, anything else falls into the
-  // legacy bucket and renders below the named sections.
+  // 'info' is the legacy fallback bucket so old rows without an explicit
+  // kind still round-trip through the editor; admin UI only writes
+  // 'contacts' or 'rules'.
   const allowedKinds = { contacts: 1, rules: 1, info: 1 };
-  const kind = allowedKinds[b.kind] ? b.kind : 'info';
-  const row = {
-    id:         id,
-    kind:       kind,
+  const r = _hbUpsert_('handbookInfo', 'info_', b, {
+    kind:       allowedKinds[b.kind] ? b.kind : 'info',
     title:      b.title || '',
     titleIS:    b.titleIS || '',
     content:    b.content || '',
     contentIS:  b.contentIS || '',
     sortOrder:  Number(b.sortOrder || 0),
-    active:     b.active === false ? false : true,
-    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:  now_(),
-  };
-  if (existing) updateRow_('handbookInfo', 'id', id, row);
-  else          insertRow_('handbookInfo', row);
-  return okJ({ id: id, saved: true });
+  });
+  return okJ({ id: r.id, saved: true });
 }
 
 function deleteHandbookInfo_(b) {
-  if (!b.id) return failJ('id required');
-  const existing = findOne_('handbookInfo', 'id', b.id);
-  if (!existing) return failJ('Info section not found', 404);
-  updateRow_('handbookInfo', 'id', b.id, { active: false, updatedAt: now_() });
-  return okJ({ ok: true });
+  const r = _hbSoftDelete_('handbookInfo', b.id, 'Info section not found');
+  return r.error || okJ({ ok: true });
 }
