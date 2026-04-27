@@ -108,15 +108,17 @@
   /* `--hb-accent` cascades from each .hb-orgnode-wrap that sets it (deildir
      do, via inline style). Sub-roles without their own color inherit. */
   --hb-accent: var(--brass);
-  /* Horizontal scroll on narrow screens — wrapping would break connectors. */
-  overflow-x: auto;
   padding: 14px 4px 4px;
+  /* No horizontal scroll: rows wrap when there isn't room. Connectors above
+     wrapped items become harmless stubs (cheaper than re-architecting them). */
 }
 .hb-orgchart-row {
   display: flex;
   justify-content: center;
   align-items: flex-start;
   gap: 18px;
+  flex-wrap: wrap;
+  row-gap: 26px;
 }
 /* Top-level row needs no incoming connectors. */
 .hb-orgchart-roots > .hb-orgnode-wrap::before,
@@ -127,7 +129,8 @@
   flex-direction: column;
   align-items: center;
   position: relative;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .hb-orgnode {
@@ -137,7 +140,7 @@
   border-radius: var(--radius-md, 8px);
   padding: 10px 14px;
   min-width: 150px;
-  max-width: 220px;
+  max-width: 240px;
   text-align: center;
   box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
   position: relative;
@@ -148,6 +151,13 @@
   font-size: 13px;
   color: var(--text);
   letter-spacing: 0.3px;
+}
+
+/* Board-level node sits "above" its divisions and is wider so each member
+   row can carry a colored stripe pointing at the division they represent. */
+.hb-orgnode--board {
+  min-width: 240px;
+  max-width: 480px;
 }
 
 /* Member list inside an org-chart node */
@@ -182,6 +192,23 @@
   font-size: 11px;
   color: var(--muted);
 }
+
+/* Board-member rows: each gets a left stripe colored to the division they
+   represent (or a neutral stripe if they're general board with no division).
+   This makes the dual-role nature of the board visible in the layout itself
+   instead of relying on a small "represents" chip. */
+.hb-member-list--board { margin-top: 10px; }
+.hb-member-item--board {
+  --hb-rep: color-mix(in srgb, var(--border) 70%, transparent);
+  padding: 6px 8px 6px 10px;
+  margin-top: 4px;
+  border-top: 0;
+  border-left: 4px solid var(--hb-rep);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--hb-rep) 10%, transparent);
+}
+.hb-member-item--board:first-child { margin-top: 0; }
+.hb-member-item--board.hb-member-item--has-rep .hb-member-name { color: var(--text); }
 
 /* "Represents" chip — small badge colored by the represented role's accent. */
 .hb-represents-chip {
@@ -253,11 +280,17 @@
   background: var(--border);
 }
 
-/* On very narrow screens, fall back to a stacked vertical list so the
-   chart stays readable instead of trying to render side-by-side. */
+/* On narrow screens, shrink nodes and let the board node use the full
+   available width. Connectors between siblings become per-card stubs once
+   wrapping kicks in — acceptable; no horizontal scrolling either way. */
 @media (max-width: 600px) {
-  .hb-orgchart-row { flex-wrap: wrap; }
-  .hb-orgnode { min-width: 120px; }
+  .hb-orgchart-row { gap: 12px; row-gap: 24px; }
+  .hb-orgnode { min-width: 130px; max-width: 100%; padding: 8px 10px; }
+  .hb-orgnode--board { min-width: 0; max-width: 100%; width: 100%; }
+  /* Hide the per-sibling horizontal connector bar once wrapping is the norm:
+     it no longer carries useful information, and the parent's vertical drop
+     plus each child's stub stays. */
+  .hb-orgchart-row > .hb-orgnode-wrap::before { display: none; }
 }
 
 /* Docs list */

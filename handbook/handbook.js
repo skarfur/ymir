@@ -211,11 +211,11 @@ function renderOrgChart() {
   if (!visibleRoots.length) { wrap.classList.add('hidden'); target.innerHTML = ''; return; }
   wrap.classList.remove('hidden');
   target.innerHTML = `<div class="hb-orgchart-row hb-orgchart-roots">${
-    visibleRoots.map(r => _renderOrgNode(r, visible, byId)).join('')
+    visibleRoots.map(r => _renderOrgNode(r, visible, byId, 1)).join('')
   }</div>`;
 }
 
-function _renderOrgNode(r, visiblePred, byId) {
+function _renderOrgNode(r, visiblePred, byId, level) {
   const visibleChildren = (r.children || []).filter(visiblePred);
   const title = esc(_t(r, 'title'));
   const notes = esc(_t(r, 'notes'));
@@ -224,38 +224,51 @@ function _renderOrgNode(r, visiblePred, byId) {
   // custom-property inheritance; children with their own color override.
   const accent = r.color ? ` style="--hb-accent:${esc(r.color)}"` : '';
   const hasChildren = visibleChildren.length > 0;
-  const membersHtml = _renderOrgNodeMembers(r.members || [], byId);
+  // Board-level (root with children): stripe each member by their represented
+  // division so the link to the cards below is visually obvious.
+  const isBoardLike = level === 1 && hasChildren;
+  const membersHtml = _renderOrgNodeMembers(r.members || [], byId, isBoardLike);
+  const nodeCls = ['hb-orgnode'];
+  if (hasChildren) nodeCls.push('hb-orgnode--has-children');
+  if (isBoardLike) nodeCls.push('hb-orgnode--board');
   return `
     <div class="hb-orgnode-wrap"${accent}>
-      <div class="hb-orgnode${hasChildren ? ' hb-orgnode--has-children' : ''}">
+      <div class="${nodeCls.join(' ')}">
         <div class="hb-orgnode-title">${title}</div>
         ${membersHtml}
         ${notesRow}
       </div>
       ${hasChildren ? `
         <div class="hb-orgchart-row">
-          ${visibleChildren.map(c => _renderOrgNode(c, visiblePred, byId)).join('')}
+          ${visibleChildren.map(c => _renderOrgNode(c, visiblePred, byId, level + 1)).join('')}
         </div>` : ''}
     </div>`;
 }
 
-function _renderOrgNodeMembers(members, byId) {
+function _renderOrgNodeMembers(members, byId, isBoardLike) {
   if (!members.length) return '';
-  return `<ul class="hb-member-list">${
+  return `<ul class="hb-member-list${isBoardLike ? ' hb-member-list--board' : ''}">${
     members.map(m => {
       const name  = esc(m.name || '');
       const label = esc(_t(m, 'label'));
       const phone = m.phone ? `<a href="tel:${esc(m.phone)}" class="hb-link">${esc(m.phone)}</a>` : '';
       const email = m.email ? `<a href="mailto:${esc(m.email)}" class="hb-link">${esc(m.email)}</a>` : '';
       const repRole = m.representsRoleId && byId[m.representsRoleId];
+      const repColor = repRole ? (repRole.color || 'var(--brass)') : '';
       const chip = repRole
-        ? `<span class="hb-represents-chip" style="--hb-chip:${esc(repRole.color || 'var(--brass)')}">${esc(_t(repRole, 'title'))}</span>`
+        ? `<span class="hb-represents-chip" style="--hb-chip:${esc(repColor)}">${esc(_t(repRole, 'title'))}</span>`
         : '';
       const contact = (phone || email)
         ? `<span class="hb-member-contact">${phone}${phone && email ? ' · ' : ''}${email}</span>`
         : '';
+      const itemCls = ['hb-member-item'];
+      if (isBoardLike)        itemCls.push('hb-member-item--board');
+      if (isBoardLike && repColor) itemCls.push('hb-member-item--has-rep');
+      const itemStyle = (isBoardLike && repColor)
+        ? ` style="--hb-rep:${esc(repColor)}"`
+        : '';
       return `
-        <li class="hb-member-item">
+        <li class="${itemCls.join(' ')}"${itemStyle}>
           <span class="hb-member-name">${name || '—'}</span>
           ${label ? `<span class="hb-member-label">${label}</span>` : ''}
           ${chip}

@@ -207,6 +207,10 @@
   align-items: center;
   margin-bottom: 6px;
 }
+/* Level 3+ roles can't represent anything — drop the column entirely. */
+.hb-member-row--no-rep {
+  grid-template-columns: 1.6fr 1fr 1fr auto;
+}
 .hb-member-row select,
 .hb-member-row input { min-width: 0; }
 .hb-member-row .row-del {
@@ -222,6 +226,8 @@
   .hb-member-row { grid-template-columns: 1fr 1fr auto; }
   .hb-member-row > [data-field="labelIS"],
   .hb-member-row > [data-field="representsRoleId"] { grid-column: 1 / -2; }
+  .hb-member-row--no-rep { grid-template-columns: 1fr 1fr auto; }
+  .hb-member-row--no-rep > [data-field="labelIS"] { grid-column: 1 / -2; }
 }
 
 /* ── Handbook rules editor toolbar ───────────────────────────────────────── */
