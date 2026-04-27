@@ -483,7 +483,7 @@ window.buildHeader = function (page) {
   // classify current page
   const STAFF_SUBPAGES  = ['dailylog', 'maintenance', 'logbook-review', 'incidents'];
   const ADMIN_SUBPAGES  = ['payroll'];
-  const MEMBER_SUBPAGES = ['settings', 'logbook', 'weather', 'saumaklubbur', 'captain', 'coxswain', 'volunteer'];
+  const MEMBER_SUBPAGES = ['settings', 'logbook', 'weather', 'saumaklubbur', 'captain', 'coxswain', 'volunteer', 'handbook'];
   const isStaffSub  = STAFF_SUBPAGES.includes(page);
   const isAdminSub  = ADMIN_SUBPAGES.includes(page);
   const isMemberSub = MEMBER_SUBPAGES.includes(page);

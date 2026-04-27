@@ -30,6 +30,9 @@ const TABS_ = {
   scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
+  handbookRoles: 'handbook_roles',
+  handbookDocs:  'handbook_docs',
+  handbookInfo:  'handbook_info',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -107,6 +110,14 @@ const ADMIN_ACTIONS_ = {
   saveRowingPassportDef:   true,
   importRowingPassportCsv: true,
   adminResetMemberPassword: true,
+  // Handbook (admin-managed reference content).
+  saveHandbookRole:    true,
+  deleteHandbookRole:  true,
+  saveHandbookDoc:     true,
+  deleteHandbookDoc:   true,
+  uploadHandbookDoc:   true,
+  saveHandbookInfo:    true,
+  deleteHandbookInfo:  true,
 };
 
 // Staff-or-admin actions. Intentionally narrow: many actions like
@@ -1339,6 +1350,15 @@ function route_(action, b, caller) {
     case 'importRowingPassportCsv': return importRowingPassportCsv_(b);
     case 'saveCaptainBio': return saveCaptainBio_(b);
     case 'uploadHeadshot': return uploadHeadshot_(b);
+    // ── HANDBOOK ──────────────────────────────────────────────────────────────
+    case 'getHandbook':         return getHandbook_();
+    case 'saveHandbookRole':    return saveHandbookRole_(b);
+    case 'deleteHandbookRole':  return deleteHandbookRole_(b);
+    case 'saveHandbookDoc':     return saveHandbookDoc_(b);
+    case 'deleteHandbookDoc':   return deleteHandbookDoc_(b);
+    case 'uploadHandbookDoc':   return uploadHandbookDoc_(b);
+    case 'saveHandbookInfo':    return saveHandbookInfo_(b);
+    case 'deleteHandbookInfo':  return deleteHandbookInfo_(b);
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);

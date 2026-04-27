@@ -166,6 +166,21 @@ var SCHEMA_ = {
     'dailyLogDate',
     'createdAt','updatedAt','updatedBy',
   ],
+  // Handbook (members- and staff-facing reference). See handbook.gs.
+  handbook_roles: [
+    'id','parentId','title','titleIS','name','kennitala',
+    'phone','email','notes','notesIS',
+    'sortOrder','active','createdAt','updatedAt',
+  ],
+  handbook_docs: [
+    'id','category','categoryIS','title','titleIS',
+    'url','driveFileId','notes','notesIS',
+    'sortOrder','active','createdAt','updatedAt',
+  ],
+  handbook_info: [
+    'id','title','titleIS','content','contentIS',
+    'sortOrder','active','createdAt','updatedAt',
+  ],
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

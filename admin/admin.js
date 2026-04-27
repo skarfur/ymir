@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     'certCatModal', 'certDefModal', 'recurSlotModal', 'slotModal',
     'passportSettingsModal', 'passportItemModal', 'passportCategoryModal',
     'memberCertModal',
+    'hbInfoModal', 'hbRoleModal', 'hbDocModal',
   ].forEach(id => { if (typeof guardUnsavedChanges === 'function') guardUnsavedChanges(id); });
   loadAll().then(() => {
     const p = new URLSearchParams(window.location.search);
@@ -195,6 +196,7 @@ function showTab(tab) {
   if (tab === 'slotCal') initSlotCalendar();
   if (tab === 'scheduling') renderSchedulingTab();
   if (tab === 'passport') renderPassportAdmin();
+  if (tab === 'handbook') renderHandbookAdmin();
 
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
