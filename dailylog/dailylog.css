@@ -60,7 +60,9 @@
 .activity-info { flex:1; }
 .activity-name { font-weight:500; }
 .activity-meta { color:var(--muted); font-size:11px; margin-top:3px; }
-.activity-note { color:var(--text); font-size:12px; margin-top:4px; opacity:.65; }
+.activity-note { color:var(--text); font-size:12px; margin-top:4px; }
+.activity-note-brief { opacity:.55; font-style:italic; }
+.activity-note-record { white-space:pre-wrap; border-left:2px solid color-mix(in srgb, var(--brass) 50%, transparent); padding-left:8px; }
 .del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
 .del-btn:hover { color:var(--red); }
 

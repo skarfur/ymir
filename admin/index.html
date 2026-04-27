@@ -1070,6 +1070,16 @@
       <div class="field"><label data-s="admin.volNotes"></label><textarea id="veNotes" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
       <div class="field"><label data-s="admin.volNotesIS" for="veNotesIS"></label><textarea id="veNotesIS" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-xs" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea></div>
     </div>
+    <details class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <summary class="d-flex items-center justify-between" style="cursor:pointer;list-style:none">
+        <span class="text-9 text-muted" style="letter-spacing:1px">
+          <span data-s="admin.reservedBoats"></span>
+          <span id="veBoatCount" class="text-muted" style="letter-spacing:0;text-transform:none"></span>
+        </span>
+        <span class="text-10 text-muted" data-s="admin.reservedBoatsHint" style="text-transform:none;letter-spacing:0"></span>
+      </summary>
+      <div id="veBoatPicker" class="d-flex gap-6 flex-wrap mt-8"></div>
+    </details>
     <div class="mt-10">
       <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
         <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles" for="ccLabelEN"></label>

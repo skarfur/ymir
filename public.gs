@@ -1163,6 +1163,13 @@ function saveVolunteerEvent_(b) {
   try {
     let roles = [];
     try { roles = b.roles ? (Array.isArray(b.roles) ? b.roles : JSON.parse(b.roles)) : []; } catch(e) { roles = []; }
+    let reservedBoatIds = [];
+    try {
+      var rb = b.reservedBoatIds
+        ? (Array.isArray(b.reservedBoatIds) ? b.reservedBoatIds : JSON.parse(b.reservedBoatIds))
+        : [];
+      reservedBoatIds = (rb || []).map(String).filter(Boolean);
+    } catch (e) { reservedBoatIds = []; }
     // Normalize endDate: treat blank/same-as-start as single-day (stored as '').
     // If set and earlier than start, swap so start ≤ end.
     var _startIso = b.date || '';
@@ -1191,6 +1198,7 @@ function saveVolunteerEvent_(b) {
       leaderPhone:           b.leaderPhone || '',
       showLeaderPhone:       b.showLeaderPhone === true || b.showLeaderPhone === 'true',
       roles:                 roles,
+      reservedBoatIds:       reservedBoatIds,
       gcalEventId:           prev ? prev.gcalEventId : '',
       createdAt:             prev ? prev.createdAt : '',
     });
@@ -1333,6 +1341,7 @@ function _schedToVolDto_(ev) {
     notes:                 ev.notes,
     notesIS:               ev.notesIS,
     roles:                 ev.roles,
+    reservedBoatIds:       ev.reservedBoatIds || [],
     gcalEventId:           ev.gcalEventId,
     active:                ev.status !== 'cancelled',
     orphaned:              ev.status === 'orphaned',
@@ -1417,6 +1426,7 @@ function volExpandActType_(cls, fromIso, toIso) {
       leaderName: cls.leaderName || '',
       leaderPhone: cls.leaderPhone || '',
       showLeaderPhone: cls.showLeaderPhone === true || cls.showLeaderPhone === 'true',
+      reservedBoatIds: Array.isArray(cls.reservedBoatIds) ? cls.reservedBoatIds.map(String).filter(Boolean) : [],
       notes: '',
       notesIS: '',
       roles: roles.map(function(r) {
@@ -1553,6 +1563,7 @@ function _volExpandedToDomain_(e) {
     leaderName:            e.leaderName || '',
     leaderPhone:           e.leaderPhone || '',
     showLeaderPhone:       e.showLeaderPhone === true || e.showLeaderPhone === 'true',
+    reservedBoatIds:       Array.isArray(e.reservedBoatIds) ? e.reservedBoatIds.map(String).filter(Boolean) : [],
     notes:                 '',
     notesIS:               '',
     roles:                 Array.isArray(e.roles) ? e.roles : [],

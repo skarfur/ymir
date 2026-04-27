@@ -166,12 +166,6 @@
     .sched-time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11px;min-width:80px}
     .sched-title{flex:1;color:var(--text)}
     .sched-badge{font-size:9px;letter-spacing:.5px;padding:1px 5px;border-radius:3px;text-transform:uppercase}
-    .sched-kind-vol{background:color-mix(in srgb, var(--accent-fg) 18%, transparent);color:var(--accent-fg)}
-    .sched-kind-act{background:color-mix(in srgb, var(--muted) 18%, transparent);color:var(--muted)}
-    .sched-src-bulk{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted);font-weight:500}
-    .sched-src-calendar{background:color-mix(in srgb, var(--brass) 18%, transparent);color:var(--brass)}
-    .sched-src-manual{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted)}
-    .sched-src-daily-log{background:color-mix(in srgb, var(--muted) 10%, transparent);color:var(--muted)}
     .sched-signup{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
     .sched-link{font-size:10px;color:var(--brass);text-decoration:none;margin-left:6px}
     .sched-link:hover{text-decoration:underline}
