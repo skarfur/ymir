@@ -1862,4 +1862,13 @@ var _STRINGS_FLAT = {
   "admin.handbook.info.sortOrder":"Röðun",
   "admin.handbook.info.modalAdd": "Bæta við færslu",
   "admin.handbook.info.modalEdit":"Breyta færslu",
+
+  "admin.handbook.rules.hint":       "Einn frjáls texti fyrir allan klúbbinn. Markdown-snið styðjast (notaðu tækjastikuna eða skrifaðu hreint markdown).",
+  "admin.handbook.rules.contentEN":  "Texti (EN)",
+  "admin.handbook.rules.contentIS":  "Texti (IS)",
+  "admin.handbook.rules.saved":      "Vistað.",
+  "admin.handbook.rules.tb.boldPh":  "feitletraður texti",
+  "admin.handbook.rules.tb.italicPh":"skáletraður texti",
+  "admin.handbook.rules.tb.linkPh":  "tengill texti",
+  "admin.handbook.rules.tb.codePh":  "kóði",
 };

@@ -104,17 +104,108 @@ function renderHandbookContactsAdmin() {
   card.innerHTML = html || `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
 }
 
-// Legacy rows without a kind also surface here so pre-migration content edits.
+// Rules is now a single free-text body (markdown) with EN + IS textareas.
+// Loads the canonical 'rules_main' row, falling back to the first existing
+// 'rules' (or legacy 'info') row so pre-existing content surfaces for editing.
 function renderHandbookRulesAdmin() {
-  const card = document.getElementById('hbAdminRulesCard');
-  if (!card) return;
-  const list = (_hbAdmin.info || []).filter(it => {
+  const en = document.getElementById('hbRulesContent');
+  const is = document.getElementById('hbRulesContentIS');
+  if (!en || !is) return;
+  const rows = (_hbAdmin.info || []).filter(it => {
     const k = it.kind || 'info';
     return k === 'rules' || k === 'info';
-  }).sort(_hbBySort);
-  card.innerHTML = list.length
-    ? list.map(_hbInfoRowHtml).join('')
-    : `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
+  });
+  const main = rows.find(r => r.id === 'rules_main') || rows[0] || null;
+  // Populate from cache only on first mount; avoid clobbering in-progress
+  // edits if a sibling save (contacts modal etc.) re-runs this renderer.
+  if (en.dataset.mounted !== '1') {
+    en.value = main ? (main.content   || '') : '';
+    is.value = main ? (main.contentIS || '') : '';
+    en.dataset.mounted = '1';
+    is.dataset.mounted = '1';
+  }
+  const status = document.getElementById('hbRulesStatus');
+  if (status) status.textContent = '';
+}
+
+async function saveHandbookRulesBody() {
+  const en = document.getElementById('hbRulesContent');
+  const is = document.getElementById('hbRulesContentIS');
+  const status = document.getElementById('hbRulesStatus');
+  try {
+    const payload = {
+      id:        'rules_main',
+      kind:      'rules',
+      title:     'Rules',
+      titleIS:   'Reglur',
+      content:   en.value,
+      contentIS: is.value,
+      sortOrder: 0,
+    };
+    const res = await apiPost('saveHandbookInfo', payload);
+    payload.active = true;
+    payload.id = payload.id || res.id;
+    const arr = _hbAdmin.info;
+    const idx = arr.findIndex(x => x.id === payload.id);
+    if (idx >= 0) arr[idx] = { ...arr[idx], ...payload };
+    else          arr.push(payload);
+    if (status) status.textContent = s('admin.handbook.rules.saved');
+    toast(s('toast.saved'));
+  } catch (e) {
+    toast(s('toast.saveFailed') + ': ' + e.message, 'err');
+  }
+}
+
+// Wraps the current selection in `before`/`after`, or inserts `placeholder`
+// inside the wrappers if there's no selection. For line-prefix tools (lists,
+// headings) pass `before` only with a trailing space; the insertion happens
+// at the start of the current line.
+function hbRulesFormat(targetId, kind) {
+  const ta = document.getElementById(targetId);
+  if (!ta) return;
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const value = ta.value;
+  const sel   = value.slice(start, end);
+
+  const wrap = (before, after, placeholder) => {
+    const inner = sel || placeholder || '';
+    const next  = value.slice(0, start) + before + inner + after + value.slice(end);
+    ta.value = next;
+    const cStart = start + before.length;
+    const cEnd   = cStart + inner.length;
+    ta.setSelectionRange(cStart, cEnd);
+  };
+
+  const linePrefix = (prefix) => {
+    // Find the start of the current line.
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    // Apply prefix to every line in the selection (or just the current line).
+    const block = value.slice(lineStart, end);
+    const prefixed = block.split('\n').map(l => prefix + l).join('\n');
+    ta.value = value.slice(0, lineStart) + prefixed + value.slice(end);
+    ta.setSelectionRange(lineStart, lineStart + prefixed.length);
+  };
+
+  switch (kind) {
+    case 'bold':    wrap('**', '**', s('admin.handbook.rules.tb.boldPh'));     break;
+    case 'italic':  wrap('*',  '*',  s('admin.handbook.rules.tb.italicPh'));   break;
+    case 'h2':      linePrefix('## ');                                          break;
+    case 'h3':      linePrefix('### ');                                         break;
+    case 'ul':      linePrefix('- ');                                           break;
+    case 'ol':      linePrefix('1. ');                                          break;
+    case 'link': {
+      const url = sel && /^https?:\/\//.test(sel) ? sel : 'https://';
+      const text = sel && !/^https?:\/\//.test(sel) ? sel : s('admin.handbook.rules.tb.linkPh');
+      const next = value.slice(0, start) + '[' + text + '](' + url + ')' + value.slice(end);
+      ta.value = next;
+      const cStart = start + 1;
+      ta.setSelectionRange(cStart, cStart + text.length);
+      break;
+    }
+    case 'code':    wrap('`', '`', s('admin.handbook.rules.tb.codePh'));        break;
+  }
+  ta.focus();
 }
 
 function openHandbookInfoModal(id, kindHint) {
