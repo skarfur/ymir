@@ -8,35 +8,44 @@
 // staff contact list pulled from the members sheet. Editable from the admin
 // portal.
 //
-// Three sheets back this:
-//   handbook_roles  — org-chart entries with optional parentId for hierarchy
-//                     and optional kennitala link to a member record. When
-//                     kennitala is set, the read endpoint hydrates missing
-//                     name / phone / email from the member's record so the
-//                     handbook stays in sync without duplicate data entry.
-//                     `color` is an optional hex string for the box accent.
-//   handbook_docs   — PDF / URL entries grouped by category. driveFileId is
-//                     set when the file was uploaded through the admin UI so
-//                     deletes can also trash the Drive file.
-//   handbook_info   — bilingual text sections, distinguished by `kind`:
-//                     'contacts' (emergency / external numbers),
-//                     'rules'    (rules / best practices),
-//                     other       (legacy / free-form).
+// Four sheets back this:
+//   handbook_roles    — org-chart entries with optional parentId for hierarchy
+//                       and optional kennitala link to a member record. When
+//                       kennitala is set, the read endpoint hydrates missing
+//                       name / phone / email from the member's record so the
+//                       handbook stays in sync without duplicate data entry.
+//                       `color` is an optional hex string for the box accent.
+//   handbook_contacts — manually curated people in the contact-numbers
+//                       section. Each row has an optional `memberId`
+//                       (kennitala) link plus a free-text `label` /
+//                       `labelIS` (e.g. "Emergency contact",
+//                       "Maintenance lead"). Member-linked rows hydrate
+//                       missing name / phone / email from the member's
+//                       record at read time.
+//   handbook_docs     — PDF / URL entries grouped by category. driveFileId
+//                       is set when the file was uploaded through the admin
+//                       UI so deletes can also trash the Drive file.
+//   handbook_info     — bilingual text sections, distinguished by `kind`:
+//                       'contacts' (free-text emergency / external numbers),
+//                       'rules'    (rules / best practices),
+//                       other      (legacy / free-form).
 //
 // Soft-deletes via `active=false` so audit history survives.
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 function getHandbook_() {
-  const rolesRaw = (data_.readAll('handbookRoles') || []).filter(_handbookActive_);
-  const docs     = (data_.readAll('handbookDocs')  || []).filter(_handbookActive_);
-  const info     = (data_.readAll('handbookInfo')  || []).filter(_handbookActive_);
+  const rolesRaw    = (data_.readAll('handbookRoles')    || []).filter(_handbookActive_);
+  const contactsRaw = (data_.readAll('handbookContacts') || []).filter(_handbookActive_);
+  const docs        = (data_.readAll('handbookDocs')     || []).filter(_handbookActive_);
+  const info        = (data_.readAll('handbookInfo')     || []).filter(_handbookActive_);
+
+  const memberByKt = _handbookMemberMap_();
 
   // Hydrate roles: when a role has a kennitala link, pull missing name /
   // phone / email from the member record. The role's own values still win
   // when they're set, so admins can override (e.g. publish a club extension
   // rather than the member's mobile).
-  const memberByKt = _handbookMemberMap_();
   const roles = rolesRaw.map(function (r) {
     const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
     if (!m) return r;
@@ -48,11 +57,23 @@ function getHandbook_() {
     });
   });
 
+  // Hydrate contacts the same way; the row's own override wins. memberId
+  // here holds a kennitala (matches the column name on the role rows).
+  const contacts = contactsRaw.map(function (c) {
+    const m = c.memberId ? memberByKt[String(c.memberId).trim()] : null;
+    if (!m) return c;
+    return Object.assign({}, c, {
+      name:  c.name  || m.name  || '',
+      phone: c.phone || m.phone || '',
+      email: c.email || m.email || '',
+    });
+  });
+
   return okJ({
-    roles: roles.sort(_byOrder_),
-    docs:  docs.sort(_byOrder_),
-    info:  info.sort(_byOrder_),
-    staff: _handbookStaffContacts_(),
+    roles:    roles.sort(_byOrder_),
+    contacts: contacts.sort(_byOrder_),
+    docs:     docs.sort(_byOrder_),
+    info:     info.sort(_byOrder_),
   });
 }
 
@@ -73,32 +94,41 @@ function _handbookMemberMap_() {
   return map;
 }
 
-// Returns a safe-to-publish list of staff/admin members for the auto-populated
-// contacts section. Only id, name, role, phone, email — never password hashes
-// or anything sensitive.
-function _handbookStaffContacts_() {
-  try {
-    return (readAll_('members') || [])
-      .filter(function (m) {
-        if (!m) return false;
-        if (!bool_(m.active)) return false;
-        const role = String(m.role || '').toLowerCase();
-        return role === 'staff' || role === 'admin' || role === 'manager';
-      })
-      .map(function (m) {
-        return {
-          id:        m.id || '',
-          name:      m.name || '',
-          role:      m.role || '',
-          phone:     m.phone || '',
-          email:     m.email || '',
-          kennitala: m.kennitala || '',
-        };
-      })
-      .sort(function (a, b) {
-        return String(a.name || '').localeCompare(String(b.name || ''));
-      });
-  } catch (e) { return []; }
+// ── Contacts (member-linked phone book) ─────────────────────────────────────
+// `memberId` holds a kennitala (mirrors the column name used on roles).
+// Free-text label per entry — bilingual EN + IS. The read endpoint hydrates
+// missing name / phone / email from the linked member record.
+
+function saveHandbookContact_(b) {
+  if (!b.label && !b.labelIS) return failJ('label required');
+  const id = b.id || ('contact_' + uid_());
+  const existing = findOne_('handbookContacts', 'id', id);
+  const row = {
+    id:         id,
+    memberId:   b.memberId || '',
+    label:      b.label || '',
+    labelIS:    b.labelIS || '',
+    name:       b.name || '',
+    phone:      b.phone || '',
+    email:      b.email || '',
+    notes:      b.notes || '',
+    notesIS:    b.notesIS || '',
+    sortOrder:  Number(b.sortOrder || 0),
+    active:     b.active === false ? false : true,
+    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
+    updatedAt:  now_(),
+  };
+  if (existing) updateRow_('handbookContacts', 'id', id, row);
+  else          insertRow_('handbookContacts', row);
+  return okJ({ id: id, saved: true });
+}
+
+function deleteHandbookContact_(b) {
+  if (!b.id) return failJ('id required');
+  const existing = findOne_('handbookContacts', 'id', b.id);
+  if (!existing) return failJ('Contact not found', 404);
+  updateRow_('handbookContacts', 'id', b.id, { active: false, updatedAt: now_() });
+  return okJ({ ok: true });
 }
 
 // ── Roles (org chart) ────────────────────────────────────────────────────────

@@ -181,6 +181,10 @@ var SCHEMA_ = {
     'id','kind','title','titleIS','content','contentIS',
     'sortOrder','active','createdAt','updatedAt',
   ],
+  handbook_contacts: [
+    'id','memberId','label','labelIS','name','phone','email',
+    'notes','notesIS','sortOrder','active','createdAt','updatedAt',
+  ],
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

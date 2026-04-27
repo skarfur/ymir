@@ -444,17 +444,32 @@
 
     <!-- ══ HANDBOOK ═══════════════════════════════════════════════════════════ -->
     <div id="tab-handbook" class="hidden">
-      <!-- Info sections -->
+      <!-- Contact-numbers section: free-text entries + member-linked rows -->
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.handbookInfoTitle"></div>
+          <div class="col-title" data-s="admin.handbookContactsTitle"></div>
           <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body" id="hbAdminInfoCard">
+        <div class="col-body" id="hbAdminContactsCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px" class="d-flex flex-wrap gap-8">
+          <button class="btn btn-primary" data-admin-click="openHandbookContactModal" data-s="admin.handbookAddContact"></button>
+          <button class="btn btn-secondary" data-admin-click="openHandbookInfoModal" data-s="admin.handbookAddTextEntry"></button>
+        </div>
+      </div>
+
+      <!-- Rules section -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.handbookRulesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="hbAdminRulesCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
         <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openHandbookInfoModal" data-s="admin.handbookAddInfo"></button>
+          <button class="btn btn-primary" data-admin-click="openHandbookInfoModal" data-admin-arg="" data-admin-arg2="rules" data-s="admin.handbookAddRule"></button>
         </div>
       </div>
 
@@ -489,6 +504,40 @@
     </div>
 
     <!-- ══ HANDBOOK MODALS ════════════════════════════════════════════════════ -->
+    <div class="modal-overlay hidden" id="hbContactModal" data-admin-close-self>
+      <div class="modal" style="max-width:600px;max-height:92vh;overflow-y:auto">
+        <div class="modal-header">
+          <h3 id="hbContactModalTitle"></h3>
+          <button class="modal-close-x" data-admin-close="hbContactModal">×</button>
+        </div>
+        <div class="field">
+          <label data-s="admin.handbook.contact.member" for="hbContactMember"></label>
+          <select id="hbContactMember" data-admin-change="hbContactMemberPicked">
+            <option value="" data-s="admin.handbook.contact.memberNone"></option>
+          </select>
+          <div class="text-xs text-muted mt-3" data-s="admin.handbook.contact.memberHint"></div>
+        </div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.contact.label" for="hbContactLabel"></label><input type="text" id="hbContactLabel" list="hbContactLabelList"><datalist id="hbContactLabelList"></datalist></div>
+          <div class="field"><label data-s="admin.handbook.contact.labelIS" for="hbContactLabelIS"></label><input type="text" id="hbContactLabelIS" list="hbContactLabelListIS"><datalist id="hbContactLabelListIS"></datalist></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.contact.name" for="hbContactName"></label><input type="text" id="hbContactName" placeholder=""></div>
+        <div class="grid2 gap-10">
+          <div class="field"><label data-s="admin.handbook.contact.phone" for="hbContactPhone"></label><input type="tel" id="hbContactPhone"></div>
+          <div class="field"><label data-s="admin.handbook.contact.email" for="hbContactEmail"></label><input type="email" id="hbContactEmail"></div>
+        </div>
+        <div class="text-xs text-muted mb-8" data-s="admin.handbook.contact.overrideHint"></div>
+        <div class="field"><label data-s="admin.handbook.contact.notes" for="hbContactNotes"></label><textarea id="hbContactNotes" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.contact.notesIS" for="hbContactNotesIS"></label><textarea id="hbContactNotesIS" rows="2" style="resize:vertical;width:100%"></textarea></div>
+        <div class="field"><label data-s="admin.handbook.contact.sortOrder" for="hbContactSort"></label><input type="number" id="hbContactSort" value="0" style="width:90px"></div>
+        <div class="btn-row">
+          <button class="btn btn-danger hidden" id="hbContactDeleteBtn" data-admin-click="deleteHandbookContact" data-s="btn.delete"></button>
+          <button class="btn btn-secondary" data-admin-close="hbContactModal" data-s="btn.cancel"></button>
+          <button class="btn btn-primary" data-admin-click="saveHandbookContact" data-s="btn.save"></button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-overlay hidden" id="hbInfoModal" data-admin-close-self>
       <div class="modal" style="max-width:600px;max-height:92vh;overflow-y:auto">
         <div class="modal-header">

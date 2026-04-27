@@ -3,7 +3,7 @@ prefetch({Handbook:['getHandbook']});
 const user = requireAuth();
 const L    = getLang();
 
-let _hb = { roles: [], docs: [], info: [], staff: [] };
+let _hb = { roles: [], docs: [], info: [], contacts: [] };
 let _hbFilter = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const res = await (window._earlyHandbook || apiGet('getHandbook'));
-    _hb.roles = res.roles || [];
-    _hb.docs  = res.docs  || [];
-    _hb.info  = res.info  || [];
-    _hb.staff = res.staff || [];
+    _hb.roles    = res.roles    || [];
+    _hb.docs     = res.docs     || [];
+    _hb.info     = res.info     || [];
+    _hb.contacts = res.contacts || [];
   } catch (e) {
     document.getElementById('hbLoading').innerHTML =
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
@@ -69,60 +69,64 @@ function _renderContent(text) {
   return linked.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
 
-// ── 1. Contacts (manual entries + auto-populated staff) ──────────────────────
+// ── 1. Contacts (member-linked + free-text entries) ─────────────────────────
 
 function renderContactsSection() {
-  // Manual contacts: handbook_info rows where kind === 'contacts'.
-  const contactInfo = _hb.info.filter(it => (it.kind || 'info') === 'contacts');
-  const filtered = contactInfo.filter(it => {
-    const title = _localized(it, 'title');
-    const body  = _localized(it, 'content');
-    return _matchesFilter(title) || _matchesFilter(body);
+  // People: manually curated member-linked contacts.
+  const people = (_hb.contacts || []).filter(c => {
+    return _matchesFilter(_localized(c, 'label')) ||
+           _matchesFilter(c.name)  ||
+           _matchesFilter(c.phone) ||
+           _matchesFilter(c.email) ||
+           _matchesFilter(_localized(c, 'notes'));
   });
 
-  // Staff: filter by name/phone/email so the search bar prunes the auto-list too.
-  const staff = (_hb.staff || []).filter(p => {
-    return _matchesFilter(p.name) || _matchesFilter(p.phone) || _matchesFilter(p.email);
+  // Text entries: handbook_info rows where kind === 'contacts'. For things
+  // that aren't tied to a specific person — emergency hotlines, harbor
+  // master, coast guard, etc.
+  const text = _hb.info.filter(it => (it.kind || 'info') === 'contacts').filter(it => {
+    return _matchesFilter(_localized(it, 'title')) ||
+           _matchesFilter(_localized(it, 'content'));
   });
 
-  const wrap = document.getElementById('hbContactsSection');
-  const numList = document.getElementById('hbContactsList');
-  const staffList = document.getElementById('hbStaffList');
+  const wrap     = document.getElementById('hbContactsSection');
+  const peopleEl = document.getElementById('hbContactsPeople');
+  const textEl   = document.getElementById('hbContactsText');
 
-  if (!filtered.length && !staff.length) {
+  if (!people.length && !text.length) {
     wrap.classList.add('hidden');
-    numList.innerHTML = '';
-    staffList.innerHTML = '';
+    peopleEl.innerHTML = '';
+    textEl.innerHTML = '';
     return;
   }
   wrap.classList.remove('hidden');
 
-  numList.innerHTML = filtered.map(it => `
+  peopleEl.innerHTML = people.length ? `
+    <div class="hb-contact-grid">
+      ${people.map(c => {
+        const label = esc(_localized(c, 'label'));
+        const name  = esc(c.name || '');
+        const phone = c.phone ? `<a href="tel:${esc(c.phone)}" class="hb-link">${esc(c.phone)}</a>` : '';
+        const email = c.email ? `<a href="mailto:${esc(c.email)}" class="hb-link">${esc(c.email)}</a>` : '';
+        const notes = esc(_localized(c, 'notes'));
+        return `
+          <div class="hb-contact-card">
+            ${label ? `<div class="hb-contact-label">${label}</div>` : ''}
+            ${name ? `<div class="hb-contact-name">${name}</div>` : ''}
+            <div class="hb-contact-meta">
+              ${phone}${phone && email ? '<span class="hb-sep"> · </span>' : ''}${email}
+            </div>
+            ${notes ? `<div class="hb-contact-notes">${notes}</div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
+  textEl.innerHTML = text.length ? text.map(it => `
     <div class="hb-info-card">
       <div class="hb-info-title">${esc(_localized(it, 'title'))}</div>
       <div class="hb-info-body">${_renderContent(_localized(it, 'content'))}</div>
     </div>
-  `).join('');
-
-  if (staff.length) {
-    staffList.innerHTML = `
-      <div class="hb-staff-hdr text-xs text-muted">${esc(s('handbook.staffAuto'))}</div>
-      <div class="hb-staff-grid">
-        ${staff.map(p => `
-          <div class="hb-staff-card">
-            <div class="hb-staff-name">${esc(p.name || '')}</div>
-            <div class="hb-staff-role">${esc(p.role || '')}</div>
-            <div class="hb-staff-contact">
-              ${p.phone ? `<a href="tel:${esc(p.phone)}" class="hb-link">${esc(p.phone)}</a>` : ''}
-              ${p.phone && p.email ? '<span class="hb-sep"> · </span>' : ''}
-              ${p.email ? `<a href="mailto:${esc(p.email)}" class="hb-link">${esc(p.email)}</a>` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>`;
-  } else {
-    staffList.innerHTML = '';
-  }
+  `).join('') : '';
 }
 
 // ── 2. Org chart (visual tree) ───────────────────────────────────────────────

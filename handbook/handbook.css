@@ -30,38 +30,42 @@
 }
 .hb-link:hover { text-decoration: underline; }
 
-/* ── Auto-populated staff contacts ──────────────────────────────────────── */
-.hb-staff-hdr {
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-.hb-staff-grid {
+/* ── Member-linked contact cards (people in the contacts section) ──────── */
+.hb-contact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 8px;
+  margin-bottom: 8px;
 }
-.hb-staff-card {
+.hb-contact-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 6px);
-  padding: 8px 10px;
+  padding: 10px 12px;
 }
-.hb-staff-name {
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--text);
-}
-.hb-staff-role {
+.hb-contact-label {
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+  font-weight: 600;
 }
-.hb-staff-contact {
+.hb-contact-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+}
+.hb-contact-meta {
   font-size: 13px;
   color: var(--text);
+  margin-top: 2px;
+}
+.hb-contact-notes {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.4;
 }
 .hb-sep { color: var(--muted); }
 
