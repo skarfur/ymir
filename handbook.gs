@@ -141,6 +141,11 @@ function deleteHandbookContact_(b) {
 
 function saveHandbookRole_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
+  // Lazy-add the members column so a fresh deploy doesn't silently drop
+  // the field when admins haven't re-run setupSpreadsheet() yet.
+  addColIfMissing_('handbookRoles', 'members');
+  addColIfMissing_('handbookRoles', 'boatCategoryKey');
+  addColIfMissing_('handbookRoles', 'color');
   // Normalize members: drop blank rows, keep only the persisted fields so
   // hydrated name/phone/email don't round-trip back into the sheet.
   let membersJson = '';
@@ -323,6 +328,7 @@ function uploadHandbookDoc_(b) {
 
 function saveHandbookInfo_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
+  addColIfMissing_('handbookInfo', 'kind');
   // 'info' is the legacy fallback bucket so old rows without an explicit
   // kind still round-trip through the editor; admin UI only writes
   // 'contacts' or 'rules'.

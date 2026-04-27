@@ -261,7 +261,7 @@ function renderHandbookRolesList() {
   card.innerHTML = rows.map(r => {
     const parent = r.parentId && byId[r.parentId] ? _hbT(byId[r.parentId], 'title') : '';
     const sub = parent ? `<span class="text-xs text-muted"> ↳ ${esc(parent)}</span>` : '';
-    const memberCount = (r.members || []).length;
+    const memberCount = Array.isArray(r.members) ? r.members.length : 0;
     const who = memberCount
       ? ` <span class="text-xs text-muted">(${memberCount})</span>`
       : '';
@@ -301,10 +301,15 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleTitleListIS').innerHTML =
     [...titlesIS].sort().map(t => `<option value="${esc(t)}">`).join('');
 
-  // Members section: hydrated members from the row's JSON, plus the legacy
-  // single-kennitala fallback so pre-multi-member rows edit cleanly.
-  _hbRoleMembers = (row && Array.isArray(row.members) && row.members.length)
-    ? row.members.map(m => ({
+  // Members: hydrated array from getHandbook, or a JSON string if a
+  // previous save left one in local state, or the legacy single-kennitala
+  // fallback so pre-multi-member rows edit cleanly.
+  let rowMembers = row ? row.members : null;
+  if (typeof rowMembers === 'string') {
+    try { rowMembers = JSON.parse(rowMembers); } catch (e) { rowMembers = []; }
+  }
+  _hbRoleMembers = Array.isArray(rowMembers) && rowMembers.length
+    ? rowMembers.map(m => ({
         kennitala:        m.kennitala || '',
         label:            m.label || '',
         labelIS:          m.labelIS || '',
@@ -347,21 +352,13 @@ function openHandbookRoleModal(id) {
 }
 
 async function saveHandbookRole() {
-  const title   = document.getElementById('hbRoleTitle').value.trim();
-  const titleIS = document.getElementById('hbRoleTitleIS').value.trim();
-  if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
-  // Walk the DOM rows so we capture in-flight typing without depending on
-  // change events having fired before the click.
-  const memberRows = Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row'));
-  const membersArr = memberRows
-    .map(row => ({
-      kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
-      label:            row.querySelector('[data-field="label"]').value.trim(),
-      labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
-      representsRoleId: row.querySelector('[data-field="representsRoleId"]').value,
-    }))
-    .filter(a => a.kennitala || a.label || a.labelIS);
-  return _hbSave('saveHandbookRole', {
+  let membersArr;
+  try {
+    const title   = document.getElementById('hbRoleTitle').value.trim();
+    const titleIS = document.getElementById('hbRoleTitleIS').value.trim();
+    if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
+    membersArr = _hbReadMembersFromDOM().filter(a => a.kennitala || a.label || a.labelIS);
+    return await _hbSave('saveHandbookRole', {
     id:              _hbAdmin.editingRoleId || undefined,
     parentId:        document.getElementById('hbRoleParent').value || '',
     title:           title,
@@ -371,14 +368,23 @@ async function saveHandbookRole() {
     color:           document.getElementById('hbRoleColor').dataset.userSet
                        ? document.getElementById('hbRoleColor').value : '',
     boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
-    members:         JSON.stringify(membersArr),
+    members:         membersArr,
     sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
-  }, 'roles', 'hbRoleModal', renderHandbookRolesList);
+    }, 'roles', 'hbRoleModal', renderHandbookRolesList);
+  } catch (e) {
+    console.error('saveHandbookRole:', e);
+    toast(s('toast.saveFailed') + ': ' + (e && e.message || e), 'err');
+  }
 }
 
 async function deleteHandbookRole() {
-  return _hbDelete('deleteHandbookRole', 'roles', 'editingRoleId',
-    'hbRoleModal', renderHandbookRolesList);
+  try {
+    return await _hbDelete('deleteHandbookRole', 'roles', 'editingRoleId',
+      'hbRoleModal', renderHandbookRolesList);
+  } catch (e) {
+    console.error('deleteHandbookRole:', e);
+    toast(s('toast.error') + ': ' + (e && e.message || e), 'err');
+  }
 }
 
 // ── Role members editor (multi-member fieldset) ─────────────────────────────
