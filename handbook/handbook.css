@@ -1,6 +1,6 @@
 /* ── Handbook portal (read-only view for members + staff) ─────────────────── */
 
-/* Info cards (emergency numbers, opening hours, …) */
+/* Info / rules cards */
 .hb-info-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -24,52 +24,171 @@
 .hb-info-body a { color: var(--accent); text-decoration: none; }
 .hb-info-body a:hover { text-decoration: underline; }
 
-/* Org chart (nested cards) */
-.hb-role-node {
-  margin-bottom: 8px;
-}
-.hb-role-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--brass);
-  border-radius: var(--radius-md, 8px);
-  padding: 10px 12px;
-}
-.hb-role-title {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
-}
-.hb-role-name {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.hb-role-contact {
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-.hb-role-notes {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
-  line-height: 1.4;
-}
 .hb-link {
   color: var(--accent);
   text-decoration: none;
 }
 .hb-link:hover { text-decoration: underline; }
-.hb-role-children {
-  margin-left: 18px;
-  margin-top: 6px;
-  padding-left: 10px;
-  border-left: 1px dashed var(--border);
+
+/* ── Auto-populated staff contacts ──────────────────────────────────────── */
+.hb-staff-hdr {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.hb-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.hb-staff-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px 10px;
+}
+.hb-staff-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+}
+.hb-staff-role {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.hb-staff-contact {
+  font-size: 13px;
+  color: var(--text);
+}
+.hb-sep { color: var(--muted); }
+
+/* ── Org chart (visual tree) ────────────────────────────────────────────── */
+/* Each node is a vertical stack of (its own box) + (its children row,
+   side-by-side). Connectors are drawn with pseudo-elements per child:
+   each child has a half/full horizontal bar above it (clipped at the
+   ends so first/last children don't overhang) plus a vertical drop. */
+.hb-orgchart {
+  /* Allow horizontal scroll on narrow screens rather than wrapping the
+     tree, which would corrupt the connector lines. */
+  overflow-x: auto;
+  padding: 14px 4px 4px;
+}
+.hb-orgchart-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 18px;
+}
+/* Top-level row needs no incoming connectors. */
+.hb-orgchart-roots > .hb-orgnode-wrap::before,
+.hb-orgchart-roots > .hb-orgnode-wrap::after { display: none; }
+
+.hb-orgnode-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hb-orgnode {
+  --hb-accent: var(--brass);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--hb-accent);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 14px;
+  min-width: 150px;
+  max-width: 220px;
+  text-align: center;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  position: relative;
+  z-index: 1;
+}
+.hb-orgnode-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.hb-orgnode-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 4px;
+}
+.hb-orgnode-contact {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.hb-orgnode-notes {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Vertical drop below a node that has children — joins the bar that
+   spans its children row. */
+.hb-orgnode--has-children::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 1px;
+  height: 10px;
+  background: var(--border);
+  z-index: 0;
+}
+
+/* Add space above each non-root children-row so the connectors fit. */
+.hb-orgnode-wrap > .hb-orgchart-row { margin-top: 20px; }
+
+/* Per-child connectors: a horizontal bar above + a vertical drop into
+   the box. Default is a full-width bar so a row of N children appears
+   continuously connected (overlapping bars all share the same color).
+   First and last children clip their bar to the inside half so the
+   line doesn't overhang the row. Only-child draws no bar — only the
+   vertical drop from the parent suffices. */
+.hb-orgchart-row > .hb-orgnode-wrap::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+}
+.hb-orgchart-row > .hb-orgnode-wrap:first-child::before {
+  left: 50%;
+  width: 50%;
+}
+.hb-orgchart-row > .hb-orgnode-wrap:last-child::before {
+  left: 0;
+  width: 50%;
+}
+.hb-orgchart-row > .hb-orgnode-wrap:first-child:last-child::before {
+  display: none;
+}
+.hb-orgchart-row > .hb-orgnode-wrap::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 1px;
+  height: 10px;
+  background: var(--border);
+}
+
+/* On very narrow screens, fall back to a stacked vertical list so the
+   chart stays readable instead of trying to render side-by-side. */
+@media (max-width: 600px) {
+  .hb-orgchart-row { flex-wrap: wrap; }
+  .hb-orgnode { min-width: 120px; }
 }
 
 /* Docs list */

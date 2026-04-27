@@ -2,30 +2,57 @@
 // HANDBOOK / HANDBÓK
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// Members- and staff-facing reference: org chart with contact data, quick links
-// to PDFs (hosted on Drive), and free-form info sections (emergency numbers,
-// opening hours, harbor info, club rules, …). Editable from the admin portal.
+// Members- and staff-facing reference: a visual org chart with contact data,
+// quick links to PDFs (hosted on Drive), free-form bilingual info sections
+// for emergency contacts and rules/best practices, plus an auto-populated
+// staff contact list pulled from the members sheet. Editable from the admin
+// portal.
 //
 // Three sheets back this:
 //   handbook_roles  — org-chart entries with optional parentId for hierarchy
-//                     and optional kennitala link to a member record.
-//   handbook_docs   — PDF / URL entries grouped by category. driveFileId is set
-//                     when the file was uploaded through the admin UI so
+//                     and optional kennitala link to a member record. When
+//                     kennitala is set, the read endpoint hydrates missing
+//                     name / phone / email from the member's record so the
+//                     handbook stays in sync without duplicate data entry.
+//                     `color` is an optional hex string for the box accent.
+//   handbook_docs   — PDF / URL entries grouped by category. driveFileId is
+//                     set when the file was uploaded through the admin UI so
 //                     deletes can also trash the Drive file.
-//   handbook_info   — free-form bilingual text sections (rich text or plain).
+//   handbook_info   — bilingual text sections, distinguished by `kind`:
+//                     'contacts' (emergency / external numbers),
+//                     'rules'    (rules / best practices),
+//                     other       (legacy / free-form).
 //
 // Soft-deletes via `active=false` so audit history survives.
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 function getHandbook_() {
-  const roles = (data_.readAll('handbookRoles') || []).filter(_handbookActive_);
-  const docs  = (data_.readAll('handbookDocs')  || []).filter(_handbookActive_);
-  const info  = (data_.readAll('handbookInfo')  || []).filter(_handbookActive_);
+  const rolesRaw = (data_.readAll('handbookRoles') || []).filter(_handbookActive_);
+  const docs     = (data_.readAll('handbookDocs')  || []).filter(_handbookActive_);
+  const info     = (data_.readAll('handbookInfo')  || []).filter(_handbookActive_);
+
+  // Hydrate roles: when a role has a kennitala link, pull missing name /
+  // phone / email from the member record. The role's own values still win
+  // when they're set, so admins can override (e.g. publish a club extension
+  // rather than the member's mobile).
+  const memberByKt = _handbookMemberMap_();
+  const roles = rolesRaw.map(function (r) {
+    const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
+    if (!m) return r;
+    return Object.assign({}, r, {
+      name:  r.name  || m.name  || '',
+      phone: r.phone || m.phone || '',
+      email: r.email || m.email || '',
+      _linkedMemberRole: m.role || '',
+    });
+  });
+
   return okJ({
     roles: roles.sort(_byOrder_),
     docs:  docs.sort(_byOrder_),
     info:  info.sort(_byOrder_),
+    staff: _handbookStaffContacts_(),
   });
 }
 
@@ -36,10 +63,48 @@ function _byOrder_(a, b) {
   return String(a.title || '').localeCompare(String(b.title || ''));
 }
 
+function _handbookMemberMap_() {
+  const map = {};
+  try {
+    (readAll_('members') || []).forEach(function (m) {
+      if (m && m.kennitala) map[String(m.kennitala).trim()] = m;
+    });
+  } catch (e) {}
+  return map;
+}
+
+// Returns a safe-to-publish list of staff/admin members for the auto-populated
+// contacts section. Only id, name, role, phone, email — never password hashes
+// or anything sensitive.
+function _handbookStaffContacts_() {
+  try {
+    return (readAll_('members') || [])
+      .filter(function (m) {
+        if (!m) return false;
+        if (!bool_(m.active)) return false;
+        const role = String(m.role || '').toLowerCase();
+        return role === 'staff' || role === 'admin' || role === 'manager';
+      })
+      .map(function (m) {
+        return {
+          id:        m.id || '',
+          name:      m.name || '',
+          role:      m.role || '',
+          phone:     m.phone || '',
+          email:     m.email || '',
+          kennitala: m.kennitala || '',
+        };
+      })
+      .sort(function (a, b) {
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
+  } catch (e) { return []; }
+}
+
 // ── Roles (org chart) ────────────────────────────────────────────────────────
 
 function saveHandbookRole_(b) {
-  if (!b.title) return failJ('title required');
+  if (!b.title && !b.titleIS) return failJ('title required');
   const id = b.id || ('role_' + uid_());
   const existing = findOne_('handbookRoles', 'id', id);
   const row = {
@@ -53,6 +118,7 @@ function saveHandbookRole_(b) {
     email:      b.email || '',
     notes:      b.notes || '',
     notesIS:    b.notesIS || '',
+    color:      b.color || '',
     sortOrder:  Number(b.sortOrder || 0),
     active:     b.active === false ? false : true,
     createdAt:  existing ? (existing.createdAt || now_()) : now_(),
@@ -71,6 +137,61 @@ function deleteHandbookRole_(b) {
   // changes their mind. Children keep their parentId pointing at this row.
   updateRow_('handbookRoles', 'id', b.id, { active: false, updatedAt: now_() });
   return okJ({ ok: true });
+}
+
+// One-shot scaffolding: seed a Stjórn root + the five deildir if the chart
+// is empty (or if the named entries are missing). Idempotent — never
+// overwrites existing entries, and silently skips deildir whose title
+// already appears.
+function seedHandbookOrgChart_() {
+  const existing = (readAll_('handbookRoles') || []).filter(_handbookActive_);
+  const have = {};
+  existing.forEach(function (r) {
+    have[String(r.titleIS || r.title).toLowerCase()] = r;
+  });
+
+  function ensure(seed) {
+    const key = String(seed.titleIS || seed.title).toLowerCase();
+    if (have[key]) return have[key];
+    const row = Object.assign({
+      id:        'role_' + uid_(),
+      parentId:  '',
+      name:      '',
+      kennitala: '',
+      phone:     '',
+      email:     '',
+      notes:     '',
+      notesIS:   '',
+      color:     '',
+      active:    true,
+      createdAt: now_(),
+      updatedAt: now_(),
+    }, seed);
+    insertRow_('handbookRoles', row);
+    have[key] = row;
+    return row;
+  }
+
+  const stjorn = ensure({
+    title:     'Board',
+    titleIS:   'Stjórn',
+    sortOrder: 0,
+    color:     '#d4af37',
+  });
+  const deildir = [
+    { title: 'Keelboat division',  titleIS: 'Kjölbátadeild',  color: '#5b9bd5' },
+    { title: 'Dinghy division',    titleIS: 'Kænudeild',      color: '#a3cb3e' },
+    { title: 'Rowing division',    titleIS: 'Róðrardeild',    color: '#d9b441' },
+    { title: 'Kayak division',     titleIS: 'Kajakadeild',    color: '#9b59b6' },
+    { title: 'Wingfoiling division', titleIS: 'Bævængjudeild', color: '#e67e22' },
+  ];
+  let added = 0;
+  deildir.forEach(function (d, i) {
+    const before = have[String(d.titleIS).toLowerCase()];
+    ensure(Object.assign({ parentId: stjorn.id, sortOrder: i + 1 }, d));
+    if (!before) added++;
+  });
+  return okJ({ ok: true, added: added });
 }
 
 // ── Docs (PDFs + URLs) ───────────────────────────────────────────────────────
@@ -158,8 +279,14 @@ function saveHandbookInfo_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
   const id = b.id || ('info_' + uid_());
   const existing = findOne_('handbookInfo', 'id', id);
+  // 'contacts' = important phone numbers (emergency, external orgs, …),
+  // 'rules'    = rules / best practices, anything else falls into the
+  // legacy bucket and renders below the named sections.
+  const allowedKinds = { contacts: 1, rules: 1, info: 1 };
+  const kind = allowedKinds[b.kind] ? b.kind : 'info';
   const row = {
     id:         id,
+    kind:       kind,
     title:      b.title || '',
     titleIS:    b.titleIS || '',
     content:    b.content || '',

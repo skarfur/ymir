@@ -49,12 +49,30 @@ function renderHandbookInfoList() {
     card.innerHTML = `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
     return;
   }
-  card.innerHTML = _hbAdmin.info.map(it => `
-    <div class="list-row">
-      <span class="list-name">${esc(_hbLocalized(it, 'title'))}</span>
-      <button class="row-edit" data-admin-click="openHandbookInfoModal" data-admin-arg="${it.id}">${s('btn.edit')}</button>
-    </div>
-  `).join('');
+  // Group by kind so admin sees Contacts and Rules separately, matching the
+  // member-facing layout. Legacy entries with no `kind` set fall under Rules.
+  const groups = { contacts: [], rules: [] };
+  _hbAdmin.info.forEach(it => {
+    const k = it.kind === 'contacts' ? 'contacts' : 'rules';
+    groups[k].push(it);
+  });
+  function rowHtml(it) {
+    return `
+      <div class="list-row">
+        <span class="list-name">${esc(_hbLocalized(it, 'title'))}</span>
+        <button class="row-edit" data-admin-click="openHandbookInfoModal" data-admin-arg="${it.id}">${s('btn.edit')}</button>
+      </div>`;
+  }
+  function groupHtml(label, rows) {
+    if (!rows.length) return '';
+    return `
+      <div class="text-xs text-muted mt-8 mb-4" style="text-transform:uppercase;letter-spacing:1px">${esc(label)}</div>
+      ${rows.map(rowHtml).join('')}`;
+  }
+  card.innerHTML = (
+    groupHtml(s('admin.handbook.info.kind.contacts'), groups.contacts) +
+    groupHtml(s('admin.handbook.info.kind.rules'),    groups.rules)
+  ) || `<div class="empty-state">${s('admin.handbookEmptyInfo')}</div>`;
 }
 
 function openHandbookInfoModal(id) {
@@ -63,6 +81,10 @@ function openHandbookInfoModal(id) {
   document.getElementById('hbInfoModalTitle').textContent = row
     ? s('admin.handbook.info.modalEdit')
     : s('admin.handbook.info.modalAdd');
+  // Default new entries to 'rules' since that's the more common case;
+  // legacy rows without a kind also map to 'rules' here so they edit cleanly.
+  const kind = row ? (row.kind === 'contacts' ? 'contacts' : 'rules') : 'rules';
+  document.getElementById('hbInfoKind').value      = kind;
   document.getElementById('hbInfoTitle').value     = row ? (row.title || '')     : '';
   document.getElementById('hbInfoTitleIS').value   = row ? (row.titleIS || '')   : '';
   document.getElementById('hbInfoContent').value   = row ? (row.content || '')   : '';
@@ -79,6 +101,7 @@ async function saveHandbookInfo() {
   if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
   const payload = {
     id:        _hbAdmin.editingInfoId || undefined,
+    kind:      document.getElementById('hbInfoKind').value || 'rules',
     title:     title,
     titleIS:   titleIS,
     content:   document.getElementById('hbInfoContent').value,
@@ -154,6 +177,10 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleEmail').value   = row ? (row.email || '')   : '';
   document.getElementById('hbRoleNotes').value   = row ? (row.notes || '')   : '';
   document.getElementById('hbRoleNotesIS').value = row ? (row.notesIS || '') : '';
+  document.getElementById('hbRoleColor').value   = (row && row.color) ? row.color : '#d4af37';
+  // Track whether the admin actually picked / kept a color so we can save
+  // an empty string when they want the default rather than a hex value.
+  document.getElementById('hbRoleColor').dataset.userSet = (row && row.color) ? '1' : '';
   document.getElementById('hbRoleSort').value    = row ? (row.sortOrder || 0): 0;
 
   // Populate parent dropdown — exclude self to avoid loops.
@@ -188,6 +215,8 @@ async function saveHandbookRole() {
     email:     document.getElementById('hbRoleEmail').value.trim(),
     notes:     document.getElementById('hbRoleNotes').value,
     notesIS:   document.getElementById('hbRoleNotesIS').value,
+    color:     document.getElementById('hbRoleColor').dataset.userSet
+                 ? document.getElementById('hbRoleColor').value : '',
     sortOrder: Number(document.getElementById('hbRoleSort').value) || 0,
   };
   try {
@@ -341,5 +370,33 @@ async function deleteHandbookDoc() {
     closeModal('hbDocModal', true);
     renderHandbookDocsList();
     toast(s('toast.deleted'));
+  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+// ── Role color helpers ──────────────────────────────────────────────────────
+
+function hbRoleColorPicked() {
+  // Native color picker emits 'input' as the user drags the swatch; flag
+  // that we should persist whatever they chose rather than ''-meaning-default.
+  document.getElementById('hbRoleColor').dataset.userSet = '1';
+}
+
+function clearHandbookRoleColor() {
+  // Reset to the brand default and mark the field as not-user-set so save
+  // sends an empty color (the read-side then falls back to --brass).
+  const el = document.getElementById('hbRoleColor');
+  el.value = '#d4af37';
+  el.dataset.userSet = '';
+}
+
+// ── Seed defaults ───────────────────────────────────────────────────────────
+
+async function seedHandbookOrgChart() {
+  if (!await ymConfirm(s('admin.handbookSeedConfirm'))) return;
+  try {
+    const res = await apiPost('seedHandbookOrgChart', {});
+    await loadHandbookAdmin(true);
+    renderHandbookRolesList();
+    toast(s('toast.saved') + (res.added ? ' (+' + res.added + ')' : ''));
   } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
 }
