@@ -520,8 +520,15 @@ function renderHbRoleMembers() {
              placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
       ${repCell}
       <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
-    </div>`;
-  }).join('');
+    </div>`).join('');
+  // Set each select's value explicitly after render. Same pattern as
+  // openHandbookContactModal — relying on inline `selected` inside a parent
+  // innerHTML can leave the dropdown showing the first concrete option.
+  list.querySelectorAll('.hb-member-row').forEach((row, i) => {
+    const m = _hbRoleMembers[i];
+    row.querySelector('[data-field="kennitala"]').value        = m.kennitala || '';
+    row.querySelector('[data-field="representsRoleId"]').value = m.representsRoleId || '';
+  });
 }
 
 function _hbMemberOptions() {
