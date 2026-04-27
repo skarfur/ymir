@@ -13,15 +13,11 @@ function getHandbook_() {
   const catColorMap = needsCatMap ? _hbBoatCatColorMap_() : {};
 
   const roles = rolesRaw.map(function (r) {
-    const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
-    const out = m ? Object.assign({}, r, {
-      name:  r.name  || m.name  || '',
-      phone: r.phone || m.phone || '',
-      email: r.email || m.email || '',
-    }) : Object.assign({}, r);
+    const out = Object.assign({}, r);
     if (!out.color && out.boatCategoryKey && catColorMap[out.boatCategoryKey]) {
       out.color = catColorMap[out.boatCategoryKey];
     }
+    out.members = _hbHydrateMembers_(r, memberByKt);
     return out;
   });
 
@@ -49,6 +45,35 @@ function _hbByOrder_(a, b) {
   var ao = Number(a.sortOrder || 0), bo = Number(b.sortOrder || 0);
   if (ao !== bo) return ao - bo;
   return String(a.title || '').localeCompare(String(b.title || ''));
+}
+
+// Parse a role's `members` JSON array and hydrate name/phone/email from
+// each linked member. Falls back to a single legacy entry if `members` is
+// empty but the row has the older single-kennitala columns set, so any
+// pre-multi-member rows keep displaying.
+function _hbHydrateMembers_(r, memberByKt) {
+  let arr = [];
+  try { arr = r.members ? JSON.parse(r.members) : []; } catch (e) { arr = []; }
+  if (!Array.isArray(arr) || !arr.length) {
+    if (r.kennitala || r.name) {
+      arr = [{ kennitala: r.kennitala || '', label: '', labelIS: '' }];
+    } else {
+      return [];
+    }
+  }
+  return arr.map(function (a, i) {
+    const m = a.kennitala ? memberByKt[String(a.kennitala).trim()] : null;
+    return {
+      kennitala:        a.kennitala || '',
+      label:            a.label || '',
+      labelIS:          a.labelIS || '',
+      representsRoleId: a.representsRoleId || '',
+      sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
+      name:  m ? (m.name  || '') : (a.kennitala ? '' : (r.name  || '')),
+      phone: m ? (m.phone || '') : (r.phone || ''),
+      email: m ? (m.email || '') : (r.email || ''),
+    };
+  }).sort(function (a, b) { return a.sortOrder - b.sortOrder; });
 }
 
 function _hbBoatCatColorMap_() {
@@ -116,6 +141,27 @@ function deleteHandbookContact_(b) {
 
 function saveHandbookRole_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
+  // Normalize members: drop blank rows, keep only the persisted fields so
+  // hydrated name/phone/email don't round-trip back into the sheet.
+  let membersJson = '';
+  if (b.members != null) {
+    let arr = [];
+    try { arr = typeof b.members === 'string' ? JSON.parse(b.members) : b.members; } catch (e) {}
+    if (Array.isArray(arr)) {
+      arr = arr
+        .filter(function (a) { return a && (a.kennitala || a.label || a.labelIS); })
+        .map(function (a, i) {
+          return {
+            kennitala:        String(a.kennitala || '').trim(),
+            label:            a.label || '',
+            labelIS:          a.labelIS || '',
+            representsRoleId: a.representsRoleId || '',
+            sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
+          };
+        });
+      membersJson = JSON.stringify(arr);
+    }
+  }
   const r = _hbUpsert_('handbookRoles', 'role_', b, {
     parentId:        b.parentId || '',
     title:           b.title || '',
@@ -128,6 +174,7 @@ function saveHandbookRole_(b) {
     notesIS:         b.notesIS || '',
     color:           b.color || '',
     boatCategoryKey: b.boatCategoryKey || '',
+    members:         membersJson,
     sortOrder:       Number(b.sortOrder || 0),
   });
   return okJ({ id: r.id, saved: true });
