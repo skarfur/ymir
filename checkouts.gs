@@ -901,17 +901,21 @@ function projectActivitiesFromCalendar_(cls, dateISO) {
         // frontend treats the row like any other scheduled activity.
         var rawId = String(ev.getId() || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
         out.push({
-          id:             'gcal-' + cls.id + '-' + rawId + '-' + dateISO,
-          activityTypeId: cls.id,
-          classTag:       cls.classTag   || '',
-          classTagIS:     cls.classTagIS || '',
-          name:           ev.getTitle() || cls.name || '',
-          start:          fmt(s),
-          end:            fmt(e),
-          participants:   '',
-          notes:          ev.getDescription ? (ev.getDescription() || '') : '',
-          scheduled:      true,
-          gcalEventId:    ev.getId(),
+          id:              'gcal-' + cls.id + '-' + rawId + '-' + dateISO,
+          activityTypeId:  cls.id,
+          classTag:        cls.classTag   || '',
+          classTagIS:      cls.classTagIS || '',
+          name:            ev.getTitle() || cls.name || '',
+          start:           fmt(s),
+          end:             fmt(e),
+          participants:    '',
+          notes:           ev.getDescription ? (ev.getDescription() || '') : '',
+          leaderMemberId:  cls.leaderMemberId || '',
+          leaderName:      cls.leaderName || '',
+          leaderPhone:     cls.leaderPhone || '',
+          showLeaderPhone: cls.showLeaderPhone === true || cls.showLeaderPhone === 'true',
+          scheduled:       true,
+          gcalEventId:     ev.getId(),
         });
       } catch (e) { /* skip bad event */ }
     });

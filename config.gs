@@ -127,16 +127,20 @@ function projectActivitiesForDate_(dateISO) {
     var days = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.map(String) : [];
     if (!days.length || days.indexOf(dow) === -1) return;
     out.push({
-      id:             'sched-' + cls.id + '-' + dateISO,
-      activityTypeId: cls.id,
-      classTag:       cls.classTag   || '',
-      classTagIS:     cls.classTagIS || '',
-      name:           cls.name || '',
-      start:          bs.startTime || cls.defaultStart || '',
-      end:            bs.endTime   || cls.defaultEnd   || '',
-      participants:   '',
-      notes:          '',
-      scheduled:      true,
+      id:              'sched-' + cls.id + '-' + dateISO,
+      activityTypeId:  cls.id,
+      classTag:        cls.classTag   || '',
+      classTagIS:      cls.classTagIS || '',
+      name:            cls.name || '',
+      start:           bs.startTime || cls.defaultStart || '',
+      end:             bs.endTime   || cls.defaultEnd   || '',
+      participants:    '',
+      notes:           '',
+      leaderMemberId:  cls.leaderMemberId || '',
+      leaderName:      cls.leaderName || '',
+      leaderPhone:     cls.leaderPhone || '',
+      showLeaderPhone: cls.showLeaderPhone === true || cls.showLeaderPhone === 'true',
+      scheduled:       true,
     });
   });
   return out;
@@ -268,6 +272,17 @@ function saveActivityType_(b) {
     // legacy rows keep working.
     var scheduleSource = String(b.scheduleSource || 'bulk');
     if (scheduleSource !== 'calendar') scheduleSource = 'bulk';
+    // Leader is now mandatory on every activity type — instances inherit it
+    // at materialization time. leaderMemberId is the canonical key; leaderName
+    // is the display fallback for free-text leaders or members whose names
+    // change after the type was authored.
+    var leaderMemberId  = String(b.leaderMemberId || '').trim();
+    var leaderName      = String(b.leaderName || '').trim();
+    var leaderPhone     = String(b.leaderPhone || '').trim();
+    var showLeaderPhone = b.showLeaderPhone === true || b.showLeaderPhone === 'true';
+    if (!leaderMemberId && !leaderName) {
+      return failJ('saveActivityType failed: leader is required');
+    }
     const res = saveConfigListItem_('activity_types', {
       id: b.id || '',
       name: b.name,
@@ -280,6 +295,10 @@ function saveActivityType_(b) {
       scheduleSource: scheduleSource,
       volunteer: isVol,
       roles: isVol ? roles : [],
+      leaderMemberId: leaderMemberId,
+      leaderName: leaderName,
+      leaderPhone: leaderPhone,
+      showLeaderPhone: showLeaderPhone,
       defaultStart: b.defaultStart || '',
       defaultEnd:   b.defaultEnd   || '',
       bulkSchedule: bulkSchedule || null,
