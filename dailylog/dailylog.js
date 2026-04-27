@@ -340,13 +340,20 @@ function renderActTypeBtns() {
     btn.addEventListener('click', function() {
       _selectedActType = t.id;
       renderActTypeBtns();
-      // When the user picks a class, prefill name + default times if those
-      // fields are still untouched (so re-picking doesn't clobber edits).
+      // When the user picks a class, prefill name + default times + leader
+      // if those fields are still untouched (so re-picking doesn't clobber
+      // edits the user already made).
       const cls = activityTypes.find(x => x.id === t.id);
       if (cls) {
         if (!dom.actName.value)  dom.actName.value  = L==='IS' && cls.nameIS ? cls.nameIS : (cls.name || '');
         if (!dom.actStart.value && cls.defaultStart) dom.actStart.value = cls.defaultStart;
         if (!dom.actEnd.value   && cls.defaultEnd)   dom.actEnd.value   = cls.defaultEnd;
+        var leaderEl = document.getElementById('actLeader');
+        var leaderIdEl = document.getElementById('actLeaderMemberId');
+        if (leaderEl && !leaderEl.value && cls.leaderName) {
+          leaderEl.value = cls.leaderName;
+          if (leaderIdEl) leaderIdEl.value = cls.leaderMemberId || '';
+        }
       }
     });
     dom.actTypeBtns.appendChild(btn);
@@ -612,6 +619,14 @@ function openActivityModal(id) {
   dom.actStart.value = existing ? (existing.start || '') : (cls ? cls.defaultStart || '' : '');
   dom.actEnd.value   = existing ? (existing.end   || '') : (cls ? cls.defaultEnd   || '' : '');
   dom.actParticipants.value = existing ? (existing.participants || '') : '';
+  // Leader: existing instance wins; otherwise inherit from the picked type so
+  // the leader follows the class by default (admin-set on the type).
+  document.getElementById('actLeader').value = existing
+    ? (existing.leaderName || '')
+    : (cls ? (cls.leaderName || '') : '');
+  document.getElementById('actLeaderMemberId').value = existing
+    ? (existing.leaderMemberId || '')
+    : (cls ? (cls.leaderMemberId || '') : '');
   dom.actNotes.value        = existing ? (existing.notes        || '') : '';
   document.getElementById('actAbler').checked = !!(existing && existing.ablerRegistered);
   // The "save + add another" button doesn't make sense when editing a single row
@@ -627,6 +642,8 @@ function saveActivity(keepOpen) {
   const cls = activityTypes.find(t => t.id === _selectedActType);
   if (!name) { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
   if (!cls)  { showToast(s('daily.actType') + ' required.', 'warn'); return; }
+  const leaderName = document.getElementById('actLeader').value.trim();
+  if (!leaderName) { showToast(s('daily.actLeaderRequired'), 'warn'); return; }
   const fields = {
     activityTypeId:        cls.id,
     classTag:              cls.classTag || '',
@@ -634,6 +651,8 @@ function saveActivity(keepOpen) {
     start:                 dom.actStart.value || '',
     end:                   dom.actEnd.value   || '',
     participants:          dom.actParticipants.value || '',
+    leaderName,
+    leaderMemberId:        document.getElementById('actLeaderMemberId').value || '',
     notes:                 dom.actNotes.value.trim(),
     ablerRegistered:       document.getElementById('actAbler').checked,
     linkedGroupCheckoutIds: _linkedGroupCheckoutIds.slice(),
@@ -660,6 +679,8 @@ function saveActivity(keepOpen) {
     dom.actStart.value = '';
     dom.actEnd.value = '';
     dom.actParticipants.value = '';
+    document.getElementById('actLeader').value = '';
+    document.getElementById('actLeaderMemberId').value = '';
     dom.actNotes.value = '';
     document.getElementById('actAbler').checked = false;
     _linkedGroupCheckoutIds = [];

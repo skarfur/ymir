@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // admin/scheduling.js — Consolidated Scheduling admin tab
-// Hosts four col-sections:
-//   1. Upcoming events — unified ScheduledEvent timeline (next 30 days)
+// Hosts three col-sections:
+//   1. Upcoming events — unified ScheduledEvent timeline (next 30 days),
+//                        with "+ Add event" for one-offs
 //   2. Activity types  — existing renderer (actTypesCard)
-//   3. Volunteer events — existing renderer (volEventsCard)
-//   4. Calendars       — existing club-calendar form (clubCalList)
+//   3. Calendars       — existing club-calendar form (clubCalList)
 // The per-feature renderers live in their original files (act-types.js,
 // volunteers.js, calendars.js) — this module only owns the new unified view
 // and the `renderSchedulingTab` router hook called from admin.js:showTab.
@@ -13,7 +13,10 @@
 function renderSchedulingTab() {
   try { renderUpcomingEvents(); }    catch (e) { console.warn('renderUpcomingEvents:', e && e.message); }
   try { renderActTypes(); }          catch (e) { console.warn('renderActTypes:', e && e.message); }
-  try { renderVolunteerEvents(); }   catch (e) { console.warn('renderVolunteerEvents:', e && e.message); }
+  // Volunteer events no longer have their own col-section — they appear in the
+  // Upcoming events timeline. Still kick the materialization sync so virtual
+  // events from bulk schedules get persisted before the timeline render.
+  try { syncVolunteerEventsBackground(); } catch (e) { console.warn('syncVolunteerEventsBackground:', e && e.message); }
 }
 
 function renderUpcomingEvents() {
