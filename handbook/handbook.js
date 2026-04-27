@@ -63,6 +63,68 @@ function _renderContent(text) {
   return linked.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
 
+// Markdown → safe HTML. Escape first, then transform a small subset:
+// headings (#, ##, ###), **bold**, *italic*, `code`, [text](url),
+// bullet (- ) and numbered (1. ) lists, blank-line paragraph breaks.
+// Bare URLs are linkified. Single newlines inside a paragraph become <br>.
+function _renderMarkdown(text) {
+  if (!text) return '';
+  const inline = (s) => {
+    let out = esc(String(s));
+    out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    out = out.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+      '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+    out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+    out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    out = out.replace(/(^|[\s(])\*([^\s*][^*]*?)\*(?=[\s).,!?;:]|$)/g, '$1<em>$2</em>');
+    out = out.replace(/(^|[\s(])_([^\s_][^_]*?)_(?=[\s).,!?;:]|$)/g, '$1<em>$2</em>');
+    return out;
+  };
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  const html = [];
+  let para = [];
+  let list = null; // {tag:'ul'|'ol', items:[]}
+  const flushPara = () => {
+    if (para.length) {
+      html.push('<p>' + para.map(inline).join('<br>') + '</p>');
+      para = [];
+    }
+  };
+  const flushList = () => {
+    if (list) {
+      html.push(`<${list.tag}>` + list.items.map(li => `<li>${inline(li)}</li>`).join('') + `</${list.tag}>`);
+      list = null;
+    }
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    if (!ln.trim()) { flushPara(); flushList(); continue; }
+    let m;
+    if ((m = ln.match(/^(#{1,3})\s+(.+)$/))) {
+      flushPara(); flushList();
+      html.push(`<h${m[1].length + 2}>${inline(m[2])}</h${m[1].length + 2}>`);
+      continue;
+    }
+    if ((m = ln.match(/^\s*[-*]\s+(.+)$/))) {
+      flushPara();
+      if (!list || list.tag !== 'ul') { flushList(); list = { tag: 'ul', items: [] }; }
+      list.items.push(m[1]);
+      continue;
+    }
+    if ((m = ln.match(/^\s*\d+\.\s+(.+)$/))) {
+      flushPara();
+      if (!list || list.tag !== 'ol') { flushList(); list = { tag: 'ol', items: [] }; }
+      list.items.push(m[1]);
+      continue;
+    }
+    flushList();
+    para.push(ln);
+  }
+  flushPara(); flushList();
+  return html.join('');
+}
+
 function renderContactsSection() {
   const people = (_hb.contacts || []).filter(c =>
     _matchesFilter(_t(c, 'label')) ||
@@ -204,24 +266,21 @@ function _renderOrgNodeMembers(members, byId) {
 }
 
 function renderRulesSection() {
-  // Includes legacy rows where `kind` is unset so pre-migration content
-  // still renders here.
-  const list = _hb.info
-    .filter(it => {
-      const k = it.kind || 'info';
-      return k === 'rules' || k === 'info';
-    })
-    .filter(it => _matchesFilter(_t(it, 'title')) || _matchesFilter(_t(it, 'content')));
+  // Single free-form body. Prefer the canonical `rules_main` row; fall back
+  // to the first 'rules' or legacy 'info' row so pre-migration content still
+  // renders until an admin edits it.
+  const rulesRows = _hb.info.filter(it => (it.kind || 'info') === 'rules' || (it.kind || 'info') === 'info');
+  const main = rulesRows.find(it => it.id === 'rules_main') || rulesRows[0];
+  const body = main ? _t(main, 'content') : '';
   const wrap = document.getElementById('hbRulesSection');
   const target = document.getElementById('hbRulesList');
-  if (!list.length) { wrap.classList.add('hidden'); target.innerHTML = ''; return; }
+  if (!body || !_matchesFilter(body)) {
+    wrap.classList.add('hidden');
+    target.innerHTML = '';
+    return;
+  }
   wrap.classList.remove('hidden');
-  target.innerHTML = list.map(it => `
-    <div class="hb-info-card">
-      <div class="hb-info-title">${esc(_t(it, 'title'))}</div>
-      <div class="hb-info-body">${_renderContent(_t(it, 'content'))}</div>
-    </div>
-  `).join('');
+  target.innerHTML = `<div class="hb-rules-body">${_renderMarkdown(body)}</div>`;
 }
 
 function renderDocsList() {

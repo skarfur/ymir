@@ -450,17 +450,48 @@
         </div>
       </div>
 
-      <!-- Rules section -->
+      <!-- Rules section: single free-text body (markdown) with a small toolbar -->
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.handbookRulesTitle"></div>
           <span class="col-toggle">▼</span>
         </div>
         <div class="col-body hidden" id="hbAdminRulesCard">
-          <div class="loading-state"><span class="spinner"></span></div>
+          <div class="text-xs text-muted mb-8" data-s="admin.handbook.rules.hint"></div>
+          <div class="grid2 gap-10">
+            <div class="field">
+              <label data-s="admin.handbook.rules.contentEN" for="hbRulesContent"></label>
+              <div class="hb-rules-toolbar">
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="bold"   title="Bold"><b>B</b></button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="italic" title="Italic"><i>I</i></button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="h2"     title="Heading">H2</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="h3"     title="Subheading">H3</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="ul"     title="Bullet list">•</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="ol"     title="Numbered list">1.</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="link"   title="Link">🔗</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContent" data-admin-arg2="code"   title="Code"><code>&lt;/&gt;</code></button>
+              </div>
+              <textarea id="hbRulesContent" rows="10" class="w-full" style="resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea>
+            </div>
+            <div class="field">
+              <label data-s="admin.handbook.rules.contentIS" for="hbRulesContentIS"></label>
+              <div class="hb-rules-toolbar">
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="bold"   title="Bold"><b>B</b></button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="italic" title="Italic"><i>I</i></button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="h2"     title="Heading">H2</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="h3"     title="Subheading">H3</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="ul"     title="Bullet list">•</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="ol"     title="Numbered list">1.</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="link"   title="Link">🔗</button>
+                <button type="button" class="btn-toolbar" data-admin-click="hbRulesFormat" data-admin-arg="hbRulesContentIS" data-admin-arg2="code"   title="Code"><code>&lt;/&gt;</code></button>
+              </div>
+              <textarea id="hbRulesContentIS" rows="10" class="w-full" style="resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea>
+            </div>
+          </div>
         </div>
-        <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openHandbookInfoModal" data-admin-arg="" data-admin-arg2="rules" data-s="admin.handbookAddRule"></button>
+        <div style="padding:8px 0 4px" class="d-flex flex-wrap gap-8 items-center">
+          <button class="btn btn-primary" data-admin-click="saveHandbookRulesBody" data-s="btn.save"></button>
+          <span id="hbRulesStatus" class="text-xs text-muted"></span>
         </div>
       </div>
 

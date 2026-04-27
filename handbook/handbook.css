@@ -24,6 +24,40 @@
 .hb-info-body a { color: var(--accent); text-decoration: none; }
 .hb-info-body a:hover { text-decoration: underline; }
 
+/* Rules / best-practices: single free-form body with markdown formatting */
+.hb-rules-body {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.hb-rules-body h3,
+.hb-rules-body h4,
+.hb-rules-body h5 {
+  margin: 14px 0 6px;
+  color: var(--text);
+}
+.hb-rules-body h3:first-child,
+.hb-rules-body h4:first-child,
+.hb-rules-body h5:first-child { margin-top: 0; }
+.hb-rules-body p { margin: 0 0 10px; }
+.hb-rules-body p:last-child { margin-bottom: 0; }
+.hb-rules-body ul,
+.hb-rules-body ol { margin: 0 0 10px; padding-left: 22px; }
+.hb-rules-body li { margin-bottom: 4px; }
+.hb-rules-body code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 12.5px;
+}
+.hb-rules-body a { color: var(--accent); text-decoration: none; }
+.hb-rules-body a:hover { text-decoration: underline; }
+
 .hb-link {
   color: var(--accent);
   text-decoration: none;

@@ -48,8 +48,14 @@ Content:
   ready for admins to assign people. The seed dedupes by
   `(titleIS|parentId)` so the same sub-role title can coexist under
   every deild and re-running the seed adds only what's missing.
-- **Rules & best practices** — bilingual text blocks. Plain-text content
-  with auto-linkified URLs and paragraph preservation.
+- **Rules & best practices** — single bilingual free-text body (one EN +
+  one IS markdown blob) rather than per-rule cards. Admin edits both
+  textareas inline with a small format toolbar (bold, italic, headings,
+  lists, link, code); rendered as formatted HTML on the read side using
+  a minimal markdown subset. Stored as a single canonical
+  `handbook_info` row with `id='rules_main'`, `kind='rules'`. Pre-existing
+  per-rule rows still surface (first one wins as fallback) until an
+  admin saves once.
 - **Documents** — PDFs and external URLs grouped by category. Admin can
   upload PDFs (or any common doc/image type) directly through the UI;
   uploads land in a dedicated Drive folder via new script property

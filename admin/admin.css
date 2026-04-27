@@ -223,3 +223,32 @@
   .hb-member-row > [data-field="labelIS"],
   .hb-member-row > [data-field="representsRoleId"] { grid-column: 1 / -2; }
 }
+
+/* ── Handbook rules editor toolbar ───────────────────────────────────────── */
+.hb-rules-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 6px;
+}
+.hb-rules-toolbar .btn-toolbar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  cursor: pointer;
+  min-width: 28px;
+}
+.hb-rules-toolbar .btn-toolbar:hover {
+  background: color-mix(in srgb, var(--brass) 10%, var(--surface));
+  border-color: var(--brass);
+}
+.hb-rules-toolbar .btn-toolbar code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 11px;
+}
