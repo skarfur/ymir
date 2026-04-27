@@ -573,15 +573,19 @@
           <button class="modal-close-x" data-admin-close="hbRoleModal">×</button>
         </div>
         <div class="grid2 gap-10">
-          <div class="field"><label data-s="admin.handbook.role.title" for="hbRoleTitle"></label><input type="text" id="hbRoleTitle"></div>
-          <div class="field"><label data-s="admin.handbook.role.titleIS" for="hbRoleTitleIS"></label><input type="text" id="hbRoleTitleIS"></div>
+          <div class="field"><label data-s="admin.handbook.role.title" for="hbRoleTitle"></label><input type="text" id="hbRoleTitle" list="hbRoleTitleList"><datalist id="hbRoleTitleList"></datalist></div>
+          <div class="field"><label data-s="admin.handbook.role.titleIS" for="hbRoleTitleIS"></label><input type="text" id="hbRoleTitleIS" list="hbRoleTitleListIS"><datalist id="hbRoleTitleListIS"></datalist></div>
         </div>
         <div class="field"><label data-s="admin.handbook.role.parent" for="hbRoleParent"></label>
           <select id="hbRoleParent"></select>
         </div>
         <div class="grid2 gap-10">
           <div class="field"><label data-s="admin.handbook.role.name" for="hbRoleName"></label><input type="text" id="hbRoleName"></div>
-          <div class="field"><label data-s="admin.handbook.role.kennitala" for="hbRoleKt"></label><input type="text" id="hbRoleKt"></div>
+          <div class="field"><label data-s="admin.handbook.role.kennitala" for="hbRoleKt"></label>
+            <select id="hbRoleKt" data-admin-change="hbRoleMemberPicked">
+              <option value="" data-s="admin.handbook.role.kennitalaNone"></option>
+            </select>
+          </div>
         </div>
         <div class="grid2 gap-10">
           <div class="field"><label data-s="admin.handbook.role.phone" for="hbRolePhone"></label><input type="tel" id="hbRolePhone"></div>

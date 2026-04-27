@@ -279,7 +279,6 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleTitle').value   = row ? (row.title || '')   : '';
   document.getElementById('hbRoleTitleIS').value = row ? (row.titleIS || '') : '';
   document.getElementById('hbRoleName').value    = row ? (row.name || '')    : '';
-  document.getElementById('hbRoleKt').value      = row ? (row.kennitala || ''): '';
   document.getElementById('hbRolePhone').value   = row ? (row.phone || '')   : '';
   document.getElementById('hbRoleEmail').value   = row ? (row.email || '')   : '';
   document.getElementById('hbRoleNotes').value   = row ? (row.notes || '')   : '';
@@ -289,6 +288,38 @@ function openHandbookRoleModal(id) {
   // shown in the swatch but not chosen" so save can persist '' for default.
   document.getElementById('hbRoleColor').dataset.userSet = (row && row.color) ? '1' : '';
   document.getElementById('hbRoleSort').value    = row ? (row.sortOrder || 0): 0;
+
+  // Member dropdown — pick one to link, leave blank for category roles
+  // (Stjórn, deildir) that aren't tied to a single person.
+  const memSel = document.getElementById('hbRoleKt');
+  const memOpts = ['<option value="">' + esc(s('admin.handbook.role.kennitalaNone')) + '</option>'];
+  if (typeof members !== 'undefined' && Array.isArray(members)) {
+    members
+      .filter(m => bool(m.active))
+      .slice()
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+      .forEach(m => {
+        const sel2 = (row && String(row.kennitala) === String(m.kennitala)) ? ' selected' : '';
+        memOpts.push(`<option value="${esc(m.kennitala)}"${sel2}>${esc(m.name || m.kennitala)}</option>`);
+      });
+  }
+  memSel.innerHTML = memOpts.join('');
+
+  // Title datalist — seeded sub-roles plus any titles already in use, so
+  // admins can keep terminology consistent without typing from scratch.
+  const titlesEN = new Set(['Courses', 'Members', 'Social activities', 'Competition']);
+  const titlesIS = new Set(['Námskeið', 'Iðkendur', 'Félagsstarf', 'Keppnisstarf']);
+  _hbAdmin.roles.forEach(r => {
+    if (r.title)   titlesEN.add(r.title);
+    if (r.titleIS) titlesIS.add(r.titleIS);
+  });
+  document.getElementById('hbRoleTitleList').innerHTML =
+    [...titlesEN].sort().map(t => `<option value="${esc(t)}">`).join('');
+  document.getElementById('hbRoleTitleListIS').innerHTML =
+    [...titlesIS].sort().map(t => `<option value="${esc(t)}">`).join('');
+
+  // Refresh placeholders for name/phone/email from the linked member.
+  hbRoleMemberPicked();
 
   const catSel = document.getElementById('hbRoleBoatCat');
   const catOpts = ['<option value="">' + esc(s('admin.handbook.role.boatCatNone')) + '</option>'];
@@ -345,6 +376,16 @@ async function saveHandbookRole() {
 async function deleteHandbookRole() {
   return _hbDelete('deleteHandbookRole', 'roles', 'editingRoleId',
     'hbRoleModal', renderHandbookRolesList);
+}
+
+function hbRoleMemberPicked() {
+  const kt = document.getElementById('hbRoleKt').value;
+  const m = (typeof members !== 'undefined' && Array.isArray(members))
+    ? members.find(x => String(x.kennitala) === String(kt))
+    : null;
+  document.getElementById('hbRoleName').placeholder  = m ? (m.name || '')  : '';
+  document.getElementById('hbRolePhone').placeholder = m ? (m.phone || '') : '';
+  document.getElementById('hbRoleEmail').placeholder = m ? (m.email || '') : '';
 }
 
 function hbRoleColorPicked() {
