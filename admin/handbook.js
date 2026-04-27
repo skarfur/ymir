@@ -485,10 +485,15 @@ function renderHbRoleMembers() {
   }
   const memberOpts = _hbMemberOptions();
   const repOpts    = _hbRepresentsOptions();
-  list.innerHTML = _hbRoleMembers.map((m, i) => `
+  list.innerHTML = _hbRoleMembers.map((m, i) => {
+    // Without an explicit `selected` on the placeholder, an unmatched value
+    // makes the browser fall back to the first concrete option.
+    const ktMatch  = !!m.kennitala && memberOpts.some(o => o.kt === m.kennitala);
+    const repMatch = !!m.representsRoleId && repOpts.some(o => o.id === m.representsRoleId);
+    return `
     <div class="hb-member-row">
       <select data-field="kennitala">
-        <option value="">${esc(s('admin.handbook.role.kennitalaNone'))}</option>
+        <option value=""${ktMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.kennitalaNone'))}</option>
         ${memberOpts.map(o =>
           `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
         ).join('')}
@@ -498,13 +503,14 @@ function renderHbRoleMembers() {
       <input type="text" data-field="labelIS"
              placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
       <select data-field="representsRoleId">
-        <option value="">${esc(s('admin.handbook.role.representsNone'))}</option>
+        <option value=""${repMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.representsNone'))}</option>
         ${repOpts.map(o =>
           `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
         ).join('')}
       </select>
       <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function _hbMemberOptions() {
