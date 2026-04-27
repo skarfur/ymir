@@ -158,7 +158,13 @@
     </div>
     <div class="field">
       <label data-s="daily.actNotes" for="actNotes"></label>
-      <input type="text" id="actNotes">
+      <textarea id="actNotes" rows="2" class="w-full bg-surface border-muted rounded-4 font-inherit text-md" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea>
+      <div class="text-xs text-muted mt-2" data-s="daily.actNotesHint"></div>
+    </div>
+    <div class="field">
+      <label data-s="daily.actRunNotes" for="actRunNotes"></label>
+      <textarea id="actRunNotes" rows="3" class="w-full bg-surface border-muted rounded-4 font-inherit text-md" style="box-sizing:border-box;color:var(--text);padding:5px 7px;resize:vertical"></textarea>
+      <div class="text-xs text-muted mt-2" data-s="daily.actRunNotesHint"></div>
     </div>
     <!-- Abler checkbox -->
     <div class="check-row mb-10 mt-8">

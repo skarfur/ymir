@@ -45,6 +45,7 @@ function sched_parseRow_(row) {
     titleIS:               row.titleIS || '',
     notes:                 row.notes || '',
     notesIS:               row.notesIS || '',
+    runNotes:              row.runNotes || '',
     participants:          row.participants || '',
     leaderMemberId:        row.leaderMemberId || '',
     leaderName:            row.leaderName || '',
@@ -82,6 +83,7 @@ function sched_rowShape_(ev) {
   if (ev.titleIS !== undefined)               out.titleIS = ev.titleIS;
   if (ev.notes !== undefined)                 out.notes = ev.notes;
   if (ev.notesIS !== undefined)               out.notesIS = ev.notesIS;
+  if (ev.runNotes !== undefined)              out.runNotes = ev.runNotes;
   if (ev.participants !== undefined)          out.participants = ev.participants;
   if (ev.leaderMemberId !== undefined)        out.leaderMemberId = ev.leaderMemberId;
   if (ev.leaderName !== undefined)            out.leaderName = ev.leaderName;
@@ -108,7 +110,7 @@ var SCHEDULED_EVENTS_COLS_ = [
   'id','kind','status','source',
   'date','endDate','startTime','endTime',
   'activityTypeId','subtypeId','subtypeName',
-  'title','titleIS','notes','notesIS',
+  'title','titleIS','notes','notesIS','runNotes',
   'participants',
   'leaderMemberId','leaderName','leaderPhone','showLeaderPhone',
   'roles',

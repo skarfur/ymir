@@ -191,9 +191,19 @@ function renderActivities() {
     })() : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
       ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
+    // Two distinct notes surfaces, matching the bifurcation in the activity
+    // modal: `notes` is the pre-execution brief (intent / context, often
+    // inherited from the template) shown muted; `runNotes` is the
+    // post-execution record authored in the daily log, shown prominently.
+    const briefHtml = act.notes
+      ? `<div class="activity-note activity-note-brief">${esc(act.notes)}</div>`
+      : '';
+    const recordHtml = act.runNotes
+      ? `<div class="activity-note activity-note-record">${esc(act.runNotes)}</div>`
+      : '';
     info.innerHTML = `<div class="activity-name">${esc(act.name)}${scheduledBadge}${ablerBadge}${editedBadge}${linkedCount}</div>
       <div class="activity-meta">${esc(meta)}</div>
-      ${act.notes ? `<div class="activity-note">${esc(act.notes)}</div>` : ''}`;
+      ${briefHtml}${recordHtml}`;
     const del = document.createElement('button');
     del.className = 'del-btn'; del.dataset.deleteActivity = act.id; del.innerHTML = '&times;';
     row.appendChild(info); row.appendChild(del);
@@ -627,7 +637,12 @@ function openActivityModal(id) {
   document.getElementById('actLeaderMemberId').value = existing
     ? (existing.leaderMemberId || '')
     : (cls ? (cls.leaderMemberId || '') : '');
-  dom.actNotes.value        = existing ? (existing.notes        || '') : '';
+  // Pre-execution notes: stay verbatim on edit; on a fresh add, inherit any
+  // intent the admin authored on the parent template so staff can see
+  // context. The post-execution `runNotes` only ever comes from the user
+  // filling the daily log — never from the template.
+  dom.actNotes.value    = existing ? (existing.notes    || '') : (cls ? (L === 'IS' && cls.notesIS ? cls.notesIS : (cls.notes || '')) : '');
+  document.getElementById('actRunNotes').value = existing ? (existing.runNotes || '') : '';
   document.getElementById('actAbler').checked = !!(existing && existing.ablerRegistered);
   // The "save + add another" button doesn't make sense when editing a single row
   const saAdd = document.getElementById('actSaveAddBtn');
@@ -654,6 +669,7 @@ function saveActivity(keepOpen) {
     leaderName,
     leaderMemberId:        document.getElementById('actLeaderMemberId').value || '',
     notes:                 dom.actNotes.value.trim(),
+    runNotes:              document.getElementById('actRunNotes').value.trim(),
     ablerRegistered:       document.getElementById('actAbler').checked,
     linkedGroupCheckoutIds: _linkedGroupCheckoutIds.slice(),
   };
@@ -682,6 +698,7 @@ function saveActivity(keepOpen) {
     document.getElementById('actLeader').value = '';
     document.getElementById('actLeaderMemberId').value = '';
     dom.actNotes.value = '';
+    document.getElementById('actRunNotes').value = '';
     document.getElementById('actAbler').checked = false;
     _linkedGroupCheckoutIds = [];
     renderGroupLinkCards();
