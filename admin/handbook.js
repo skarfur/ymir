@@ -331,6 +331,22 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleColor').dataset.userSet = (row && row.color) ? '1' : '';
   document.getElementById('hbRoleSort').value    = row ? (row.sortOrder || 0): 0;
 
+  // Boat-category dropdown — uses the global boatCats array loaded by
+  // admin.js. The selected key, if any, lets the read endpoint resolve
+  // this role's color from the matching boat category at request time.
+  const catSel = document.getElementById('hbRoleBoatCat');
+  const catOpts = ['<option value="">' + esc(s('admin.handbook.role.boatCatNone')) + '</option>'];
+  if (typeof boatCats !== 'undefined' && Array.isArray(boatCats)) {
+    boatCats.slice().sort((a, b) =>
+      String(a.labelEN || a.key || '').localeCompare(String(b.labelEN || b.key || ''))
+    ).forEach(c => {
+      const sel2 = (row && row.boatCategoryKey === c.key) ? ' selected' : '';
+      const lbl  = (getLang() === 'IS' ? (c.labelIS || c.labelEN) : (c.labelEN || c.labelIS)) || c.key;
+      catOpts.push(`<option value="${esc(c.key)}"${sel2}>${esc((c.emoji || '') + ' ' + lbl).trim()}</option>`);
+    });
+  }
+  catSel.innerHTML = catOpts.join('');
+
   // Populate parent dropdown — exclude self to avoid loops.
   const sel = document.getElementById('hbRoleParent');
   const opts = ['<option value="">' + esc(s('admin.handbook.role.parentNone')) + '</option>'];
@@ -361,11 +377,12 @@ async function saveHandbookRole() {
     kennitala: document.getElementById('hbRoleKt').value.trim(),
     phone:     document.getElementById('hbRolePhone').value.trim(),
     email:     document.getElementById('hbRoleEmail').value.trim(),
-    notes:     document.getElementById('hbRoleNotes').value,
-    notesIS:   document.getElementById('hbRoleNotesIS').value,
-    color:     document.getElementById('hbRoleColor').dataset.userSet
-                 ? document.getElementById('hbRoleColor').value : '',
-    sortOrder: Number(document.getElementById('hbRoleSort').value) || 0,
+    notes:           document.getElementById('hbRoleNotes').value,
+    notesIS:         document.getElementById('hbRoleNotesIS').value,
+    color:           document.getElementById('hbRoleColor').dataset.userSet
+                       ? document.getElementById('hbRoleColor').value : '',
+    boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
+    sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
   };
   try {
     const res = await apiPost('saveHandbookRole', payload);

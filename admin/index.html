@@ -590,11 +590,16 @@
         <div class="field"><label data-s="admin.handbook.role.notes" for="hbRoleNotes"></label><textarea id="hbRoleNotes" rows="2" style="resize:vertical;width:100%"></textarea></div>
         <div class="field"><label data-s="admin.handbook.role.notesIS" for="hbRoleNotesIS"></label><textarea id="hbRoleNotesIS" rows="2" style="resize:vertical;width:100%"></textarea></div>
         <div class="grid2 gap-10">
-          <div class="field"><label data-s="admin.handbook.role.color" for="hbRoleColor"></label>
-            <div class="d-flex items-center gap-8"><input type="color" id="hbRoleColor" value="#d4af37" data-admin-input="hbRoleColorPicked" style="width:54px;height:32px;padding:0">
-              <button type="button" class="btn-ghost text-xs" data-admin-click="clearHandbookRoleColor" data-s="admin.handbook.role.colorClear"></button></div>
+          <div class="field"><label data-s="admin.handbook.role.boatCat" for="hbRoleBoatCat"></label>
+            <select id="hbRoleBoatCat"></select>
+            <div class="text-xs text-muted mt-3" data-s="admin.handbook.role.boatCatHint"></div>
           </div>
           <div class="field"><label data-s="admin.handbook.role.sortOrder" for="hbRoleSort"></label><input type="number" id="hbRoleSort" value="0" style="width:90px"></div>
+        </div>
+        <div class="field"><label data-s="admin.handbook.role.color" for="hbRoleColor"></label>
+          <div class="d-flex items-center gap-8"><input type="color" id="hbRoleColor" value="#d4af37" data-admin-input="hbRoleColorPicked" style="width:54px;height:32px;padding:0">
+            <button type="button" class="btn-ghost text-xs" data-admin-click="clearHandbookRoleColor" data-s="admin.handbook.role.colorClear"></button>
+            <span class="text-xs text-muted" data-s="admin.handbook.role.colorOverride"></span></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-danger hidden" id="hbRoleDeleteBtn" data-admin-click="deleteHandbookRole" data-s="btn.delete"></button>

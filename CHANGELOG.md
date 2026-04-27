@@ -24,9 +24,16 @@ Content:
 - **Org chart** — hierarchical role entries with name / phone / email /
   notes. Rendered as a real visual tree (boxes + connector lines) using
   pure CSS (`hb-orgchart`), not a nested-card list. Each role can have
-  an optional `color` (top-border accent) and an optional `kennitala`
-  link to a member record; when set, the read endpoint hydrates missing
-  name / phone / email from that member so the chart stays in sync.
+  an optional `color` (top-border accent), an optional `kennitala`
+  link to a member record (read endpoint hydrates missing name / phone
+  / email from that member), and an optional `boatCategoryKey` link to
+  a boat category from config — the read endpoint resolves the deild's
+  color from the matching category at request time so the chart stays
+  in sync if a category color is retuned elsewhere. Explicit `color`
+  wins over the category fallback. Default seed maps the five deildir
+  to their boat categories (Kjölbátadeild → keelboat, Kænudeild →
+  dinghy, Róðrardeild → rowing-shell, Kajakadeild → kayak,
+  Bævængjudeild → wingfoil).
 - **Rules & best practices** — bilingual text blocks. Plain-text content
   with auto-linkified URLs and paragraph preservation.
 - **Documents** — PDFs and external URLs grouped by category. Admin can

@@ -40,21 +40,29 @@ function getHandbook_() {
   const docs        = (data_.readAll('handbookDocs')     || []).filter(_handbookActive_);
   const info        = (data_.readAll('handbookInfo')     || []).filter(_handbookActive_);
 
-  const memberByKt = _handbookMemberMap_();
+  const memberByKt   = _handbookMemberMap_();
+  const catColorMap  = _handbookBoatCatColorMap_();
 
   // Hydrate roles: when a role has a kennitala link, pull missing name /
   // phone / email from the member record. The role's own values still win
   // when they're set, so admins can override (e.g. publish a club extension
-  // rather than the member's mobile).
+  // rather than the member's mobile). Color resolution falls back to the
+  // linked boat category's color so the deildir stay in sync with the
+  // rest of the app — explicit `color` still wins.
   const roles = rolesRaw.map(function (r) {
     const m = r.kennitala ? memberByKt[String(r.kennitala).trim()] : null;
-    if (!m) return r;
-    return Object.assign({}, r, {
-      name:  r.name  || m.name  || '',
-      phone: r.phone || m.phone || '',
-      email: r.email || m.email || '',
-      _linkedMemberRole: m.role || '',
-    });
+    const out = m
+      ? Object.assign({}, r, {
+          name:  r.name  || m.name  || '',
+          phone: r.phone || m.phone || '',
+          email: r.email || m.email || '',
+          _linkedMemberRole: m.role || '',
+        })
+      : Object.assign({}, r);
+    if (!out.color && out.boatCategoryKey && catColorMap[out.boatCategoryKey]) {
+      out.color = catColorMap[out.boatCategoryKey];
+    }
+    return out;
   });
 
   // Hydrate contacts the same way; the row's own override wins. memberId
@@ -82,6 +90,21 @@ function _byOrder_(a, b) {
   var ao = Number(a.sortOrder || 0), bo = Number(b.sortOrder || 0);
   if (ao !== bo) return ao - bo;
   return String(a.title || '').localeCompare(String(b.title || ''));
+}
+
+function _handbookBoatCatColorMap_() {
+  const out = {};
+  try {
+    const cfg = getConfigMap_();
+    const raw = getConfigValue_('boatCategories', cfg);
+    const list = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(list)) {
+      list.forEach(function (c) {
+        if (c && c.key && c.color) out[String(c.key)] = String(c.color);
+      });
+    }
+  } catch (e) {}
+  return out;
 }
 
 function _handbookMemberMap_() {
@@ -138,21 +161,22 @@ function saveHandbookRole_(b) {
   const id = b.id || ('role_' + uid_());
   const existing = findOne_('handbookRoles', 'id', id);
   const row = {
-    id:         id,
-    parentId:   b.parentId || '',
-    title:      b.title || '',
-    titleIS:    b.titleIS || '',
-    name:       b.name || '',
-    kennitala:  b.kennitala || '',
-    phone:      b.phone || '',
-    email:      b.email || '',
-    notes:      b.notes || '',
-    notesIS:    b.notesIS || '',
-    color:      b.color || '',
-    sortOrder:  Number(b.sortOrder || 0),
-    active:     b.active === false ? false : true,
-    createdAt:  existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt:  now_(),
+    id:              id,
+    parentId:        b.parentId || '',
+    title:           b.title || '',
+    titleIS:         b.titleIS || '',
+    name:            b.name || '',
+    kennitala:       b.kennitala || '',
+    phone:           b.phone || '',
+    email:           b.email || '',
+    notes:           b.notes || '',
+    notesIS:         b.notesIS || '',
+    color:           b.color || '',
+    boatCategoryKey: b.boatCategoryKey || '',
+    sortOrder:       Number(b.sortOrder || 0),
+    active:          b.active === false ? false : true,
+    createdAt:       existing ? (existing.createdAt || now_()) : now_(),
+    updatedAt:       now_(),
   };
   if (existing) updateRow_('handbookRoles', 'id', id, row);
   else          insertRow_('handbookRoles', row);
@@ -184,18 +208,19 @@ function seedHandbookOrgChart_() {
     const key = String(seed.titleIS || seed.title).toLowerCase();
     if (have[key]) return have[key];
     const row = Object.assign({
-      id:        'role_' + uid_(),
-      parentId:  '',
-      name:      '',
-      kennitala: '',
-      phone:     '',
-      email:     '',
-      notes:     '',
-      notesIS:   '',
-      color:     '',
-      active:    true,
-      createdAt: now_(),
-      updatedAt: now_(),
+      id:              'role_' + uid_(),
+      parentId:        '',
+      name:            '',
+      kennitala:       '',
+      phone:           '',
+      email:           '',
+      notes:           '',
+      notesIS:         '',
+      color:           '',
+      boatCategoryKey: '',
+      active:          true,
+      createdAt:       now_(),
+      updatedAt:       now_(),
     }, seed);
     insertRow_('handbookRoles', row);
     have[key] = row;
@@ -206,14 +231,18 @@ function seedHandbookOrgChart_() {
     title:     'Board',
     titleIS:   'Stjórn',
     sortOrder: 0,
+    // Stjórn isn't a boat category, so it carries an explicit color.
     color:     '#d4af37',
   });
+  // Each deild links to a boat-category key from config; the read endpoint
+  // resolves the deild's color from that category at request time so the
+  // chart stays in sync if an admin retunes a category color elsewhere.
   const deildir = [
-    { title: 'Keelboat division',  titleIS: 'Kjölbátadeild',  color: '#5b9bd5' },
-    { title: 'Dinghy division',    titleIS: 'Kænudeild',      color: '#a3cb3e' },
-    { title: 'Rowing division',    titleIS: 'Róðrardeild',    color: '#d9b441' },
-    { title: 'Kayak division',     titleIS: 'Kajakadeild',    color: '#9b59b6' },
-    { title: 'Wingfoiling division', titleIS: 'Bævængjudeild', color: '#e67e22' },
+    { title: 'Keelboat division',    titleIS: 'Kjölbátadeild',  boatCategoryKey: 'keelboat' },
+    { title: 'Dinghy division',      titleIS: 'Kænudeild',      boatCategoryKey: 'dinghy' },
+    { title: 'Rowing division',      titleIS: 'Róðrardeild',    boatCategoryKey: 'rowing-shell' },
+    { title: 'Kayak division',       titleIS: 'Kajakadeild',    boatCategoryKey: 'kayak' },
+    { title: 'Wingfoiling division', titleIS: 'Bævængjudeild',  boatCategoryKey: 'wingfoil' },
   ];
   let added = 0;
   deildir.forEach(function (d, i) {
