@@ -141,13 +141,16 @@ function deleteHandbookRole_(b) {
 
 function seedHandbookOrgChart_() {
   const existing = (readAll_('handbookRoles') || []).filter(_hbActive_);
+  // Dedupe key includes parentId so the same titleIS can coexist under
+  // different parents (e.g. "Námskeið" appears under every deild).
   const have = {};
   existing.forEach(function (r) {
-    have[String(r.titleIS || r.title).toLowerCase()] = r;
+    have[_hbSeedKey_(r)] = r;
   });
 
+  let added = 0;
   function ensure(seed) {
-    const key = String(seed.titleIS || seed.title).toLowerCase();
+    const key = _hbSeedKey_(seed);
     if (have[key]) return have[key];
     const row = Object.assign({
       id:              'role_' + uid_(),
@@ -166,6 +169,7 @@ function seedHandbookOrgChart_() {
     }, seed);
     insertRow_('handbookRoles', row);
     have[key] = row;
+    added++;
     return row;
   }
 
@@ -174,20 +178,33 @@ function seedHandbookOrgChart_() {
   const stjorn = ensure({
     title: 'Board', titleIS: 'Stjórn', sortOrder: 0, color: '#d4af37',
   });
-  const deildir = [
+  const deildSeeds = [
     { title: 'Keelboat division',    titleIS: 'Kjölbátadeild',  boatCategoryKey: 'keelboat' },
     { title: 'Dinghy division',      titleIS: 'Kænudeild',      boatCategoryKey: 'dinghy' },
     { title: 'Rowing division',      titleIS: 'Róðrardeild',    boatCategoryKey: 'rowing-shell' },
     { title: 'Kayak division',       titleIS: 'Kajakadeild',    boatCategoryKey: 'kayak' },
     { title: 'Wingfoiling division', titleIS: 'Bævængjudeild',  boatCategoryKey: 'wingfoil' },
   ];
-  let added = 0;
-  deildir.forEach(function (d, i) {
-    const before = have[String(d.titleIS).toLowerCase()];
-    ensure(Object.assign({ parentId: stjorn.id, sortOrder: i + 1 }, d));
-    if (!before) added++;
+  // Each deild has the same four areas of responsibility. Sub-roles are seeded
+  // empty (no kennitala) so admins can assign people; deild color cascades
+  // visually via CSS so sub-roles don't need their own color.
+  const subroles = [
+    { title: 'Courses',           titleIS: 'Námskeið',     sortOrder: 1 },
+    { title: 'Members',           titleIS: 'Iðkendur',     sortOrder: 2 },
+    { title: 'Social activities', titleIS: 'Félagsstarf',  sortOrder: 3 },
+    { title: 'Competition',       titleIS: 'Keppnisstarf', sortOrder: 4 },
+  ];
+  deildSeeds.forEach(function (d, i) {
+    const deild = ensure(Object.assign({ parentId: stjorn.id, sortOrder: i + 1 }, d));
+    subroles.forEach(function (sr) {
+      ensure(Object.assign({ parentId: deild.id }, sr));
+    });
   });
   return okJ({ ok: true, added: added });
+}
+
+function _hbSeedKey_(r) {
+  return String(r.titleIS || r.title || '').toLowerCase() + '|' + (r.parentId || '');
 }
 
 // ── Docs (PDFs + URLs) ───────────────────────────────────────────────────────

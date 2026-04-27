@@ -162,11 +162,13 @@ function _renderOrgNode(r, visiblePred) {
     ? `<div class="hb-orgnode-contact">${phone}${phone && email ? ' · ' : ''}${email}</div>`
     : '';
   const notesRow = notes ? `<div class="hb-orgnode-notes">${notes}</div>` : '';
+  // Set --hb-accent on the wrap so it cascades to descendant sub-roles
+  // (CSS custom properties inherit). Children with their own color override.
   const accent = r.color ? ` style="--hb-accent:${esc(r.color)}"` : '';
   const hasChildren = visibleChildren.length > 0;
   return `
-    <div class="hb-orgnode-wrap">
-      <div class="hb-orgnode${hasChildren ? ' hb-orgnode--has-children' : ''}"${accent}>
+    <div class="hb-orgnode-wrap"${accent}>
+      <div class="hb-orgnode${hasChildren ? ' hb-orgnode--has-children' : ''}">
         <div class="hb-orgnode-title">${title}</div>
         ${name ? `<div class="hb-orgnode-name">${name}</div>` : ''}
         ${contactRow}

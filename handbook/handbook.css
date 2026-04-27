@@ -71,6 +71,9 @@
 
 /* ── Org chart (visual tree) ────────────────────────────────────────────── */
 .hb-orgchart {
+  /* `--hb-accent` cascades from each .hb-orgnode-wrap that sets it (deildir
+     do, via inline style). Sub-roles without their own color inherit. */
+  --hb-accent: var(--brass);
   /* Horizontal scroll on narrow screens — wrapping would break connectors. */
   overflow-x: auto;
   padding: 14px 4px 4px;
@@ -94,7 +97,6 @@
 }
 
 .hb-orgnode {
-  --hb-accent: var(--brass);
   background: var(--card);
   border: 1px solid var(--border);
   border-top: 3px solid var(--hb-accent);

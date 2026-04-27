@@ -30,10 +30,17 @@ Content:
   a boat category from config — the read endpoint resolves the deild's
   color from the matching category at request time so the chart stays
   in sync if a category color is retuned elsewhere. Explicit `color`
-  wins over the category fallback. Default seed maps the five deildir
-  to their boat categories (Kjölbátadeild → keelboat, Kænudeild →
-  dinghy, Róðrardeild → rowing-shell, Kajakadeild → kayak,
-  Bævængjudeild → wingfoil).
+  wins over the category fallback; `--hb-accent` cascades from each
+  deild's wrap to its sub-roles via CSS custom-property inheritance,
+  so sub-roles automatically inherit the deild color without storing
+  their own. Default seed maps the five deildir to their boat
+  categories (Kjölbátadeild → keelboat, Kænudeild → dinghy,
+  Róðrardeild → rowing-shell, Kajakadeild → kayak, Bævængjudeild →
+  wingfoil) and adds the four standard areas of responsibility under
+  each deild — Námskeið / Iðkendur / Félagsstarf / Keppnisstarf —
+  ready for admins to assign people. The seed dedupes by
+  `(titleIS|parentId)` so the same sub-role title can coexist under
+  every deild and re-running the seed adds only what's missing.
 - **Rules & best practices** — bilingual text blocks. Plain-text content
   with auto-linkified URLs and paragraph preservation.
 - **Documents** — PDFs and external URLs grouped by category. Admin can
