@@ -212,7 +212,9 @@
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-scheduling" class="hidden">
-      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities -->
+      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities.
+           "+ Add event" creates a one-off (no parent activity type required); per-type instances
+           appear here automatically once a type's bulk schedule has been authored. -->
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
           <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
@@ -220,6 +222,9 @@
         </div>
         <div class="col-body" id="schedUpcomingCard">
           <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
         </div>
       </div>
 
@@ -234,20 +239,6 @@
         </div>
         <div style="padding:8px 0 4px">
           <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
-        </div>
-      </div>
-
-      <!-- Volunteer events (concrete signups) -->
-      <div class="col-section">
-        <div class="col-head" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.volEventsTitle"></div>
-          <span class="col-toggle">▼</span>
-        </div>
-        <div class="col-body hidden" id="volEventsCard">
-          <div class="loading-state"><span class="spinner"></span></div>
-        </div>
-        <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addVolEvent"></button>
         </div>
       </div>
 
@@ -723,6 +714,23 @@
     </div>
     <div class="check-row mb-10">
       <input type="checkbox" id="atVolunteer" data-admin-change="toggleAtVolunteerSection"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
+    </div>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.actLeaderHdr"></div>
+      <div class="field pos-relative mb-6">
+        <label data-s="admin.actLeader" for="atLeaderSearch"></label>
+        <input type="text" id="atLeaderSearch" autocomplete="off" data-admin-input-val="searchAtLeader">
+        <div id="atLeaderSuggestions" class="d-none bg-surface border-muted rounded-4" style="position:absolute;top:100%;left:0;right:0;z-index:10;max-height:160px;overflow-y:auto"></div>
+        <input type="hidden" id="atLeaderMemberId">
+      </div>
+      <div id="atLeaderChip" class="d-none mb-6"></div>
+      <div class="grid2">
+        <div class="field"><label data-s="admin.actLeaderPhone" for="atLeaderPhone"></label><input type="text" id="atLeaderPhone"></div>
+        <div></div>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="atShowPhone"> <label for="atShowPhone" data-s="admin.actShowPhone"></label>
+      </div>
     </div>
     <div id="atRolesSection" class="hidden border-muted rounded-6 mb-10" style="padding:10px 12px">
       <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">

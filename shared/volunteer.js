@@ -93,9 +93,10 @@
           date: iso,
           startTime: startT,
           endTime: endT,
-          leaderName: '',
-          leaderPhone: '',
-          showLeaderPhone: false,
+          leaderMemberId: cls.leaderMemberId || '',
+          leaderName: cls.leaderName || '',
+          leaderPhone: cls.leaderPhone || '',
+          showLeaderPhone: cls.showLeaderPhone === true || cls.showLeaderPhone === 'true',
           notes: '',
           notesIS: '',
           // Each virtual instance gets its own role ids so signups don't
