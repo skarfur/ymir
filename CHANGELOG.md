@@ -3,6 +3,55 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — drop one-shot migration / seed helpers and dead modules
+
+Sweep of legacy code that's already done its job. Every removed function was
+either a one-time data migration that's been run on every environment, an
+ad-hoc column/tab adder that's been folded into `setupSpreadsheet()` via
+`SCHEMA_`, or an unreferenced module.
+
+Backend (`.gs`):
+- `_setup.gs` — removed `addRecentTripColumns`, `addPhotoMetaColumn`,
+  `addHandshakeColumns`, `addPreferencesColumn`, `addReservationAndCrewTabs`
+  (all redundant with `setupSpreadsheet()`); `migrateMemberLangIntoPreferences`
+  (lang column already gone from `SCHEMA_`); `autoLinkGmailAddresses`
+  (one-shot Google-email backfill, completed); `migrateToScheduledEvents` and
+  the two private row-shape helpers (`_volEventToScheduledRow_` /
+  `_activityToScheduledRow_`).
+- `passport.gs` — removed `migrateRowingDivisionToSubcats` (legacy
+  `released_rower` cert migration; runtime compat in `shared/api.js` still
+  reads old cert shapes) and `ensurePassportSignoffsTab` (covered by
+  `setupSpreadsheet()`).
+- `handbook.gs` — removed `seedHandbookOrgChart_`,
+  `migrateHandbookOrgChartToAreas_`, and `_hbSeedKey_` (only used by the seed
+  helper). The org chart is admin-edited day-to-day; the default-seed and
+  level-3-collapse migrations have run.
+- `code.gs` — dropped the two `ADMIN_ACTIONS_` entries and `route_` cases
+  for `seedHandbookOrgChart` / `migrateHandbookOrgChartToAreas`.
+- `scheduling.gs` — header comment no longer points at the deleted migration.
+
+Frontend:
+- `admin/index.html` — removed the "Seed default org chart" and "Migrate
+  sub-roles → areas" buttons under Settings → Handbook → Org chart.
+- `admin/handbook.js` — removed the matching `seedHandbookOrgChart()` and
+  `migrateHandbookOrgChart()` handlers.
+- `shared/api.js` — dropped both actions from the `_INVALIDATES` map.
+- `shared/strings-en.js` / `shared/strings-is.js` — dropped 5 keys
+  (`admin.handbookSeedDefaults`, `admin.handbookSeedConfirm`,
+  `admin.handbookMigrateAreas`, `admin.handbookMigrateAreasConfirm`,
+  `admin.handbookMigrateAreasNoop`).
+
+Dead module:
+- `shared/alerts.js` — never referenced from any portal HTML or JS;
+  `startAlertPoller` / `stopAlertPoller` had no call sites. The active
+  client-side poller lives in `admin/alerts.js`.
+
+Net: 11 files touched, 869 lines removed, 3 added.
+
+⚠️ Backend files changed: `_setup.gs`, `code.gs`, `handbook.gs`, `passport.gs`,
+`scheduling.gs`. No data migrations needed; the schema and existing data
+are untouched. Redeploy Apps Script.
+
 ## Unreleased — trip-card fixes: student badge scope, captain-page actions, verify-pending persistence
 
 Three independent bugs surfaced on the same trip card:
