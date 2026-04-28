@@ -145,20 +145,22 @@ function _upcomingRowHtml(ev, L) {
     // Two inline actions on activity rows: ✎ to edit, × to cancel that
     // single occurrence (cancelClassOccurrence writes a status='cancelled'
     // tombstone + PATCHes the master GCal instance).
-    //   - Consolidated rows (paired volunteer event) open the full volunteer
-    //     event modal — same target as the signup chip — which lets the user
-    //     edit title/times/leader/roles for the occurrence.
-    //   - Activity-only rows fall back to the times-only reschedule modal
-    //     (writes a status='upcoming' override + PATCHes the master).
+    //   - Consolidated rows (paired volunteer event) open the volunteer event
+    //     modal (per-occurrence: edits the virtual or saved event for that
+    //     date).
+    //   - Activity-only rows open the activity-class modal (class-level: edits
+    //     the recurring class itself). There is no per-occurrence editor for
+    //     non-volunteer activities — `overrideClassOccurrence_` exists on the
+    //     backend for times-only one-shot rescheduling, but we don't surface
+    //     it here. If a "this only / this and following" picker is needed,
+    //     it's a separate feature.
     var editBtn = ev.linkedVolunteerEvent
       ? ' <button type="button" class="sched-edit" data-admin-click="openVolEventModal"'
         + ' data-admin-arg="' + esc(ev.linkedVolunteerEvent.id) + '"'
         + ' data-s-aria="btn.edit" data-s-title="btn.edit" aria-label="Edit">✎</button>'
-      : ' <button type="button" class="sched-edit" data-admin-click="openRescheduleModal"'
-        + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
-        + ' data-admin-arg2="' + esc(ev.date) + '"'
-        + ' data-admin-arg3="' + esc((ev.startTime || '') + '|' + (ev.endTime || '')) + '"'
-        + ' data-s-aria="admin.rescheduleOccurrence" data-s-title="admin.rescheduleOccurrence" aria-label="Reschedule">✎</button>';
+      : ' <button type="button" class="sched-edit" data-admin-click="openActTypeModal"'
+        + ' data-admin-arg="' + esc(ev.activityTypeId) + '"'
+        + ' data-s-aria="btn.edit" data-s-title="btn.edit" aria-label="Edit">✎</button>';
     deleteBtn = editBtn
       + ' <button type="button" class="sched-del" data-admin-click="cancelClassOccurrence"'
       + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
@@ -204,51 +206,6 @@ async function cancelClassOccurrence(classId, dateISO) {
     if (typeof renderUpcomingEvents === 'function') {
       try { renderUpcomingEvents(); } catch (e) {}
     }
-  } catch (e) {
-    toast(s('toast.error') + ': ' + (e.message || e), 'err');
-  }
-}
-
-// Open the reschedule modal for one occurrence. The third arg packs the
-// current start|end times as a single string so the dispatcher (which only
-// passes 1–3 string args) doesn't need a custom encoding.
-var _rsContext = null;
-function openRescheduleModal(classId, dateISO, timesPacked) {
-  if (!classId || !dateISO) return;
-  var times = String(timesPacked || '').split('|');
-  var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
-  var L = getLang();
-  var name = cls
-    ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId))
-    : classId;
-  _rsContext = { classId: classId, dateISO: dateISO };
-  document.getElementById('rsClassName').textContent = name;
-  document.getElementById('rsDate').textContent = ' · ' + dateISO;
-  document.getElementById('rsStartTime').value = (times[0] || '').slice(0, 5);
-  document.getElementById('rsEndTime').value   = (times[1] || '').slice(0, 5);
-  openModal('rescheduleModal');
-}
-
-async function saveReschedule() {
-  if (!_rsContext) return;
-  var startTime = document.getElementById('rsStartTime').value;
-  var endTime   = document.getElementById('rsEndTime').value;
-  if (!startTime || !endTime) { toast(s('admin.timesRequired'), 'err'); return; }
-  if (endTime <= startTime)   { toast(s('admin.endAfterStart'), 'err'); return; }
-  try {
-    await apiPost('overrideClassOccurrence', {
-      classId:   _rsContext.classId,
-      date:      _rsContext.dateISO,
-      startTime: startTime,
-      endTime:   endTime,
-    });
-    closeModal('rescheduleModal', true);
-    toast(s('toast.saved'), 'ok');
-    // Force a fresh getConfig pull next render so the override reflects.
-    apiGet('getConfig', { _fresh: true }).then(function (cfg) {
-      cancelledActivityOccurrences = cfg.cancelledActivityOccurrences || cancelledActivityOccurrences;
-      renderUpcomingEvents();
-    }).catch(function () { renderUpcomingEvents(); });
   } catch (e) {
     toast(s('toast.error') + ': ' + (e.message || e), 'err');
   }
