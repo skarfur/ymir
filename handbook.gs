@@ -516,42 +516,65 @@ function _hbAutoMigrateSheetsToConfig_() {
   ];
   var ss = null;
   var migrated = { roles: 0, docs: 0, contacts: 0 };
+  var notes    = { roles: '', docs: '', contacts: '' };
   targets.forEach(function (t) {
-    // Already migrated? Skip.
-    if (readConfigList_(t.key).length) return;
-    if (!ss) ss = ss_();
-    const sheet = ss.getSheetByName(t.tab);
-    if (!sheet || sheet.getLastRow() < 2) return;
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-    const data    = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
-    const items = data.map(function (r) {
-      var obj = {};
-      headers.forEach(function (h, i) {
-        var v = r[i];
-        if (h === 'active')         obj.active    = bool_(v);
-        else if (h === 'sortOrder') obj.sortOrder = Number(v || 0);
-        else                        obj[h]        = v == null ? '' : String(v);
-      });
-      // Roles store members/areas as JSON-stringified cells in the legacy
-      // schema; lift them up into native arrays for the new shape.
-      if (t.type === 'roles') {
-        obj.members = _hbCoerceArray_(obj.members);
-        obj.areas   = _hbCoerceArray_(obj.areas);
+    try {
+      // Already migrated? Skip.
+      if (readConfigList_(t.key).length) {
+        notes[t.type] = 'skip:already-populated';
+        return;
       }
-      return obj;
-    }).filter(function (obj) { return obj.id; });
-    if (items.length) {
-      setConfigSheetValue_(t.key, JSON.stringify(items));
-      migrated[t.type] = items.length;
+      if (!ss) ss = ss_();
+      const sheet = ss.getSheetByName(t.tab);
+      if (!sheet) {
+        notes[t.type] = 'skip:no-tab';
+        return;
+      }
+      if (sheet.getLastRow() < 2) {
+        notes[t.type] = 'skip:no-rows';
+        return;
+      }
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+      const data    = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+      const items = data.map(function (r) {
+        var obj = {};
+        headers.forEach(function (h, i) {
+          var v = r[i];
+          if (h === 'active')         obj.active    = bool_(v);
+          else if (h === 'sortOrder') obj.sortOrder = Number(v || 0);
+          else                        obj[h]        = v == null ? '' : String(v);
+        });
+        // Roles store members/areas as JSON-stringified cells in the legacy
+        // schema; lift them up into native arrays for the new shape.
+        if (t.type === 'roles') {
+          obj.members = _hbCoerceArray_(obj.members);
+          obj.areas   = _hbCoerceArray_(obj.areas);
+        }
+        return obj;
+      }).filter(function (obj) { return obj.id; });
+      if (items.length) {
+        setConfigSheetValue_(t.key, JSON.stringify(items));
+        // Force a flush before the next target reads the config sheet.
+        // Apps Script otherwise batches writes, so the next iteration's
+        // readConfigList_ check could see stale state.
+        SpreadsheetApp.flush();
+        migrated[t.type] = items.length;
+        notes[t.type]    = 'migrated';
+      } else {
+        notes[t.type] = 'skip:no-id-rows';
+      }
+    } catch (err) {
+      notes[t.type] = 'error:' + (err && err.message ? err.message : String(err));
     }
   });
   if (migrated.roles || migrated.docs || migrated.contacts) {
     cDel_('config');
-    Logger.log('handbook auto-migrate: ' + JSON.stringify(migrated));
   }
-  return migrated;
+  Logger.log('handbook auto-migrate: counts=' + JSON.stringify(migrated) + ' notes=' + JSON.stringify(notes));
+  return { counts: migrated, notes: notes };
 }
 
 function migrateHandbookSheetsToConfig_() {
-  return okJ({ ok: true, migrated: _hbAutoMigrateSheetsToConfig_() });
+  var result = _hbAutoMigrateSheetsToConfig_();
+  return okJ({ ok: true, migrated: result.counts, notes: result.notes });
 }
