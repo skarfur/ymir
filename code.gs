@@ -30,10 +30,9 @@ const TABS_ = {
   scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
-  handbookRoles:    'handbook_roles',
-  handbookDocs:     'handbook_docs',
-  handbookInfo:     'handbook_info',
-  handbookContacts: 'handbook_contacts',
+  // All four handbook sections (roles/docs/contacts/info) now live as JSON
+  // arrays under the config keys 'handbookRoles' / 'handbookDocs' /
+  // 'handbookContacts' / 'handbookInfo'. No dedicated handbook tabs anymore.
 };
 
 const CLUB_LANG_ = 'IS';

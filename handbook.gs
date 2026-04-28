@@ -1,12 +1,35 @@
-// Handbook: org chart, contacts, docs, rules. Read endpoint hydrates
-// kennitala-linked rows from members and resolves deild colors from boat
-// categories so the chart stays in sync with the rest of the app.
+// Handbook: org chart, contacts, docs, rules.
+//
+// Storage:
+//   - roles    → JSON array under config key 'handbookRoles'
+//   - docs     → JSON array under config key 'handbookDocs'
+//   - contacts → JSON array under config key 'handbookContacts'
+//   - info     → JSON array under config key 'handbookInfo'
+//
+// All four live alongside boats/locations/activity_types in the config sheet.
+// getHandbook_ stays a dedicated endpoint (separate from getConfig) so
+// non-handbook pages don't pay the bytes.
+//
+// Cell-size note: Sheets caps cells at 50,000 chars. Long-form info content
+// (rules, harbor briefings) could plausibly approach that if a club
+// accumulates many bilingual sections. If you hit it, split per-section into
+// `handbookInfo_<id>` keys instead of one mega-blob.
 
 function getHandbook_() {
-  const rolesRaw    = (data_.readAll('handbookRoles')    || []).filter(_hbActive_);
-  const contactsRaw = (data_.readAll('handbookContacts') || []).filter(_hbActive_);
-  const docs        = (data_.readAll('handbookDocs')     || []).filter(_hbActive_);
-  const info        = (data_.readAll('handbookInfo')     || []).filter(_hbActive_);
+  // One-shot migration from the legacy per-handbook tabs. Runs at most once
+  // per config key — only triggers when the config key is empty AND the old
+  // sheet still has data. Idempotent on re-entry.
+  var migration = null;
+  try { migration = _hbAutoMigrateSheetsToConfig_(); }
+  catch (e) {
+    Logger.log('handbook auto-migrate: ' + e);
+    migration = { counts: { roles: 0, docs: 0, contacts: 0, info: 0 }, notes: { error: String(e) } };
+  }
+
+  const rolesRaw    = readConfigList_('handbookRoles').filter(_hbActive_);
+  const contactsRaw = readConfigList_('handbookContacts').filter(_hbActive_);
+  const docs        = readConfigList_('handbookDocs').filter(_hbActive_);
+  const info        = readConfigList_('handbookInfo').filter(_hbActive_);
 
   const memberByKt = getMemberMap_();
   const needsCatMap = rolesRaw.some(function (r) { return r.boatCategoryKey && !r.color; });
@@ -37,6 +60,12 @@ function getHandbook_() {
     contacts: contacts.sort(_hbByOrder_),
     docs:     docs.sort(_hbByOrder_),
     info:     info.sort(_hbByOrder_),
+    // Surface auto-migration breadcrumbs in the response so admins can see
+    // *why* a target was skipped without digging into the Apps Script log.
+    // Stays in the response (it's tiny — a 3-key counts object plus a 3-key
+    // notes object) and naturally settles to "skip:already-populated" once
+    // migration has run.
+    _migration: migration,
   });
 }
 
@@ -48,14 +77,21 @@ function _hbByOrder_(a, b) {
   return String(a.title || '').localeCompare(String(b.title || ''));
 }
 
-// Parse a role's `members` JSON array and hydrate name/phone/email from
-// each linked member. Falls back to a single legacy entry if `members` is
-// empty but the row has the older single-kennitala columns set, so any
-// pre-multi-member rows keep displaying.
+// Coerce a raw `members` field — either a JSON string (legacy sheet rows) or
+// an array (new config-list shape) — into a plain array.
+function _hbCoerceArray_(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw) return [];
+  try { var p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (e) { return []; }
+}
+
+// Parse a role's `members` array and hydrate name/phone/email from each
+// linked member. Falls back to a single legacy entry if `members` is empty
+// but the row has the older single-kennitala columns set, so any pre-multi-
+// member rows keep displaying.
 function _hbHydrateMembers_(r, memberByKt) {
-  let arr = [];
-  try { arr = r.members ? JSON.parse(r.members) : []; } catch (e) { arr = []; }
-  if (!Array.isArray(arr) || !arr.length) {
+  var arr = _hbCoerceArray_(r.members);
+  if (!arr.length) {
     if (r.kennitala || r.name) {
       arr = [{ kennitala: r.kennitala || '', label: '', labelIS: '' }];
     } else {
@@ -81,12 +117,10 @@ function _hbHydrateMembers_(r, memberByKt) {
 }
 
 // Each division row stores its own list of areas (sub-units like Námskeið /
-// Iðkendur / Félagsstarf / Keppnisstarf) as JSON. Areas are per-division so
-// a club can override the default taxonomy where needed.
+// Iðkendur / Félagsstarf / Keppnisstarf). Areas are per-division so a club
+// can override the default taxonomy where needed.
 function _hbParseAreas_(r) {
-  let arr = [];
-  try { arr = r.areas ? JSON.parse(r.areas) : []; } catch (e) { arr = []; }
-  if (!Array.isArray(arr)) return [];
+  var arr = _hbCoerceArray_(r.areas);
   return arr
     .filter(function (a) { return a && a.id; })
     .map(function (a, i) {
@@ -114,35 +148,13 @@ function _hbBoatCatColorMap_() {
   return out;
 }
 
-// ── Generic upsert / soft-delete helpers ─────────────────────────────────────
-
-function _hbUpsert_(tabKey, idPrefix, b, fields) {
-  const id = b.id || (idPrefix + uid_());
-  const existing = findOne_(tabKey, 'id', id);
-  const row = Object.assign({ id: id }, fields, {
-    active:    b.active === false ? false : true,
-    createdAt: existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt: now_(),
-  });
-  if (existing) updateRow_(tabKey, 'id', id, row);
-  else          insertRow_(tabKey, row);
-  return { id: id, existing: existing };
-}
-
-function _hbSoftDelete_(tabKey, id, notFoundMsg) {
-  if (!id) return { error: failJ('id required') };
-  const existing = findOne_(tabKey, 'id', id);
-  if (!existing) return { error: failJ(notFoundMsg, 404) };
-  updateRow_(tabKey, 'id', id, { active: false, updatedAt: now_() });
-  return { existing: existing };
-}
-
 // ── Contacts (member-linked phone book) ──────────────────────────────────────
 // `memberId` holds a kennitala (mirrors the column name on roles).
 
 function saveHandbookContact_(b) {
   if (!b.label && !b.labelIS) return failJ('label required');
-  const r = _hbUpsert_('handbookContacts', 'contact_', b, {
+  const res = saveConfigListItem_('handbookContacts', {
+    id:         b.id || '',
     memberId:   b.memberId || '',
     label:      b.label || '',
     labelIS:    b.labelIS || '',
@@ -152,68 +164,58 @@ function saveHandbookContact_(b) {
     notes:      b.notes || '',
     notesIS:    b.notesIS || '',
     sortOrder:  Number(b.sortOrder || 0),
+    active:     b.active === false ? false : true,
   });
-  return okJ({ id: r.id, saved: true });
+  return okJ({ id: res.id, saved: true });
 }
 
 function deleteHandbookContact_(b) {
-  const r = _hbSoftDelete_('handbookContacts', b.id, 'Contact not found');
-  return r.error || okJ({ ok: true });
+  if (!b.id) return failJ('id required');
+  const res = deleteConfigListItem_('handbookContacts', b.id, { soft: true });
+  if (!res.deactivated) return failJ('Contact not found', 404);
+  return okJ({ ok: true });
 }
 
 // ── Roles (org chart) ────────────────────────────────────────────────────────
 
 function saveHandbookRole_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  // Lazy-add columns so a fresh deploy doesn't silently drop new fields
-  // when admins haven't re-run setupSpreadsheet() yet.
-  addColIfMissing_('handbookRoles', 'members');
-  addColIfMissing_('handbookRoles', 'areas');
-  addColIfMissing_('handbookRoles', 'boatCategoryKey');
-  addColIfMissing_('handbookRoles', 'color');
   // Normalize members: drop blank rows, keep only the persisted fields so
-  // hydrated name/phone/email don't round-trip back into the sheet.
-  let membersJson = '';
+  // hydrated name/phone/email don't round-trip back into storage.
+  var members = [];
   if (b.members != null) {
-    let arr = [];
-    try { arr = typeof b.members === 'string' ? JSON.parse(b.members) : b.members; } catch (e) {}
-    if (Array.isArray(arr)) {
-      arr = arr
-        .filter(function (a) { return a && (a.kennitala || a.label || a.labelIS); })
-        .map(function (a, i) {
-          return {
-            kennitala:        String(a.kennitala || '').trim(),
-            label:            a.label || '',
-            labelIS:          a.labelIS || '',
-            representsRoleId: a.representsRoleId || '',
-            areaId:           a.areaId || '',
-            sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
-          };
-        });
-      membersJson = JSON.stringify(arr);
-    }
+    var arr = typeof b.members === 'string' ? _hbCoerceArray_(b.members) : (Array.isArray(b.members) ? b.members : []);
+    members = arr
+      .filter(function (a) { return a && (a.kennitala || a.label || a.labelIS); })
+      .map(function (a, i) {
+        return {
+          kennitala:        String(a.kennitala || '').trim(),
+          label:            a.label || '',
+          labelIS:          a.labelIS || '',
+          representsRoleId: a.representsRoleId || '',
+          areaId:           a.areaId || '',
+          sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
+        };
+      });
   }
   // Areas (per-division sub-units). Drop blank entries; allocate ids for
   // anything sent without one so member.areaId can resolve.
-  let areasJson = '';
+  var areas = [];
   if (b.areas != null) {
-    let arr = [];
-    try { arr = typeof b.areas === 'string' ? JSON.parse(b.areas) : b.areas; } catch (e) {}
-    if (Array.isArray(arr)) {
-      arr = arr
-        .filter(function (a) { return a && (a.label || a.labelIS); })
-        .map(function (a, i) {
-          return {
-            id:        a.id || ('area_' + uid_()),
-            label:     a.label || '',
-            labelIS:   a.labelIS || '',
-            sortOrder: a.sortOrder == null ? i : Number(a.sortOrder),
-          };
-        });
-      areasJson = JSON.stringify(arr);
-    }
+    var aarr = typeof b.areas === 'string' ? _hbCoerceArray_(b.areas) : (Array.isArray(b.areas) ? b.areas : []);
+    areas = aarr
+      .filter(function (a) { return a && (a.label || a.labelIS); })
+      .map(function (a, i) {
+        return {
+          id:        a.id || ('area_' + uid_()),
+          label:     a.label || '',
+          labelIS:   a.labelIS || '',
+          sortOrder: a.sortOrder == null ? i : Number(a.sortOrder),
+        };
+      });
   }
-  const r = _hbUpsert_('handbookRoles', 'role_', b, {
+  const res = saveConfigListItem_('handbookRoles', {
+    id:              b.id || '',
     parentId:        b.parentId || '',
     title:           b.title || '',
     titleIS:         b.titleIS || '',
@@ -225,37 +227,44 @@ function saveHandbookRole_(b) {
     notesIS:         b.notesIS || '',
     color:           b.color || '',
     boatCategoryKey: b.boatCategoryKey || '',
-    members:         membersJson,
-    areas:           areasJson,
+    members:         members,
+    areas:           areas,
     sortOrder:       Number(b.sortOrder || 0),
+    active:          b.active === false ? false : true,
   });
-  return okJ({ id: r.id, saved: true });
+  return okJ({ id: res.id, saved: true });
 }
 
 function deleteHandbookRole_(b) {
+  if (!b.id) return failJ('id required');
   // Soft-delete leaves children's parentId intact so the admin can re-parent.
-  const r = _hbSoftDelete_('handbookRoles', b.id, 'Role not found');
-  return r.error || okJ({ ok: true });
+  const res = deleteConfigListItem_('handbookRoles', b.id, { soft: true });
+  if (!res.deactivated) return failJ('Role not found', 404);
+  return okJ({ ok: true });
 }
 
-// Bulk-update sortOrder on a set of role rows. Used by the admin reorder
-// arrows: only the sortOrder column is touched, so the heavier members/areas
-// JSON columns stay untouched even if they aren't in the payload.
+// Bulk-update sortOrder on a set of roles. Used by the admin reorder arrows:
+// only sortOrder changes, members/areas stay untouched.
 function reorderHandbookRoles_(b) {
   let items = b.items;
   if (typeof items === 'string') {
     try { items = JSON.parse(items); } catch (e) { items = []; }
   }
   if (!Array.isArray(items)) return failJ('items required');
+  const arr = readConfigList_('handbookRoles');
   let updated = 0;
   items.forEach(function (it) {
     if (!it || !it.id) return;
-    const ok = updateRow_('handbookRoles', 'id', it.id, {
-      sortOrder: Number(it.sortOrder || 0),
-      updatedAt: now_(),
-    });
-    if (ok) updated++;
+    const idx = arr.findIndex(function (x) { return x && x.id === it.id; });
+    if (idx < 0) return;
+    arr[idx].sortOrder = Number(it.sortOrder || 0);
+    arr[idx].updatedAt = now_();
+    updated++;
   });
+  if (updated) {
+    setConfigSheetValue_('handbookRoles', JSON.stringify(arr));
+    cDel_('config');
+  }
   return okJ({ updated: updated });
 }
 
@@ -264,7 +273,8 @@ function reorderHandbookRoles_(b) {
 function saveHandbookDoc_(b) {
   if (!b.title) return failJ('title required');
   if (!b.url)   return failJ('url required');
-  const r = _hbUpsert_('handbookDocs', 'doc_', b, {
+  const res = saveConfigListItem_('handbookDocs', {
+    id:          b.id || '',
     category:    b.category || '',
     categoryIS:  b.categoryIS || '',
     title:       b.title || '',
@@ -274,15 +284,17 @@ function saveHandbookDoc_(b) {
     notes:       b.notes || '',
     notesIS:     b.notesIS || '',
     sortOrder:   Number(b.sortOrder || 0),
+    active:      b.active === false ? false : true,
   });
-  return okJ({ id: r.id, saved: true });
+  return okJ({ id: res.id, saved: true });
 }
 
 function deleteHandbookDoc_(b) {
-  const r = _hbSoftDelete_('handbookDocs', b.id, 'Doc not found');
-  if (r.error) return r.error;
+  if (!b.id) return failJ('id required');
+  const arr = readConfigList_('handbookDocs');
+  const existing = arr.find(function (x) { return x && x.id === b.id; });
+  if (!existing) return failJ('Doc not found', 404);
   // Trash the Drive file if we own it; plain external URLs are left alone.
-  const existing = r.existing;
   if (existing.driveFileId) {
     try { DriveApp.getFileById(existing.driveFileId).setTrashed(true); } catch (e) {}
   } else if (existing.url) {
@@ -291,6 +303,7 @@ function deleteHandbookDoc_(b) {
       if (m) DriveApp.getFileById(m[1]).setTrashed(true);
     } catch (e) {}
   }
+  deleteConfigListItem_('handbookDocs', b.id, { soft: true });
   return okJ({ ok: true });
 }
 
@@ -328,23 +341,105 @@ function uploadHandbookDoc_(b) {
 
 function saveHandbookInfo_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  addColIfMissing_('handbookInfo', 'kind');
   // 'info' is the legacy fallback bucket so old rows without an explicit
   // kind still round-trip through the editor; admin UI only writes
   // 'contacts' or 'rules'.
   const allowedKinds = { contacts: 1, rules: 1, info: 1 };
-  const r = _hbUpsert_('handbookInfo', 'info_', b, {
-    kind:       allowedKinds[b.kind] ? b.kind : 'info',
-    title:      b.title || '',
-    titleIS:    b.titleIS || '',
-    content:    b.content || '',
-    contentIS:  b.contentIS || '',
-    sortOrder:  Number(b.sortOrder || 0),
+  const res = saveConfigListItem_('handbookInfo', {
+    id:        b.id || '',
+    kind:      allowedKinds[b.kind] ? b.kind : 'info',
+    title:     b.title || '',
+    titleIS:   b.titleIS || '',
+    content:   b.content || '',
+    contentIS: b.contentIS || '',
+    sortOrder: Number(b.sortOrder || 0),
+    active:    b.active === false ? false : true,
   });
-  return okJ({ id: r.id, saved: true });
+  return okJ({ id: res.id, saved: true });
 }
 
 function deleteHandbookInfo_(b) {
-  const r = _hbSoftDelete_('handbookInfo', b.id, 'Info section not found');
-  return r.error || okJ({ ok: true });
+  if (!b.id) return failJ('id required');
+  const res = deleteConfigListItem_('handbookInfo', b.id, { soft: true });
+  if (!res.deactivated) return failJ('Info section not found', 404);
+  return okJ({ ok: true });
+}
+
+// ── One-shot migration: legacy per-handbook tabs → config keys ───────────────
+// Reads the old `handbook_roles`, `handbook_docs`, `handbook_contacts` tabs
+// (if they still exist) and copies their rows into the corresponding config
+// keys. Idempotent: skips any key that's already populated.
+//
+// Called automatically from getHandbook_ on first read, but also exposed as
+// `migrateHandbookSheetsToConfig` for manual invocation from the admin UI.
+function _hbAutoMigrateSheetsToConfig_() {
+  const targets = [
+    { tab: 'handbook_roles',    key: 'handbookRoles',    type: 'roles'    },
+    { tab: 'handbook_docs',     key: 'handbookDocs',     type: 'docs'     },
+    { tab: 'handbook_contacts', key: 'handbookContacts', type: 'contacts' },
+    { tab: 'handbook_info',     key: 'handbookInfo',     type: 'info'     },
+  ];
+  var ss = null;
+  var migrated = { roles: 0, docs: 0, contacts: 0, info: 0 };
+  var notes    = { roles: '', docs: '', contacts: '', info: '' };
+  targets.forEach(function (t) {
+    try {
+      // Already migrated? Skip.
+      if (readConfigList_(t.key).length) {
+        notes[t.type] = 'skip:already-populated';
+        return;
+      }
+      if (!ss) ss = ss_();
+      const sheet = ss.getSheetByName(t.tab);
+      if (!sheet) {
+        notes[t.type] = 'skip:no-tab';
+        return;
+      }
+      if (sheet.getLastRow() < 2) {
+        notes[t.type] = 'skip:no-rows';
+        return;
+      }
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+      const data    = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+      const items = data.map(function (r) {
+        var obj = {};
+        headers.forEach(function (h, i) {
+          var v = r[i];
+          if (h === 'active')         obj.active    = bool_(v);
+          else if (h === 'sortOrder') obj.sortOrder = Number(v || 0);
+          else                        obj[h]        = v == null ? '' : String(v);
+        });
+        // Roles store members/areas as JSON-stringified cells in the legacy
+        // schema; lift them up into native arrays for the new shape.
+        if (t.type === 'roles') {
+          obj.members = _hbCoerceArray_(obj.members);
+          obj.areas   = _hbCoerceArray_(obj.areas);
+        }
+        return obj;
+      }).filter(function (obj) { return obj.id; });
+      if (items.length) {
+        setConfigSheetValue_(t.key, JSON.stringify(items));
+        // Force a flush before the next target reads the config sheet.
+        // Apps Script otherwise batches writes, so the next iteration's
+        // readConfigList_ check could see stale state.
+        SpreadsheetApp.flush();
+        migrated[t.type] = items.length;
+        notes[t.type]    = 'migrated';
+      } else {
+        notes[t.type] = 'skip:no-id-rows';
+      }
+    } catch (err) {
+      notes[t.type] = 'error:' + (err && err.message ? err.message : String(err));
+    }
+  });
+  if (migrated.roles || migrated.docs || migrated.contacts || migrated.info) {
+    cDel_('config');
+  }
+  Logger.log('handbook auto-migrate: counts=' + JSON.stringify(migrated) + ' notes=' + JSON.stringify(notes));
+  return { counts: migrated, notes: notes };
+}
+
+function migrateHandbookSheetsToConfig_() {
+  var result = _hbAutoMigrateSheetsToConfig_();
+  return okJ({ ok: true, migrated: result.counts, notes: result.notes });
 }

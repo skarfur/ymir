@@ -177,55 +177,32 @@ function renderValidation() {
   var el = document.getElementById('validationList');
   if (!_verificationRequests.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noValidation') + '</div>'; return; }
   el.innerHTML = _verificationRequests.map(r => {
-    return '<div class="cq-card" id="vr-' + esc(r.id) + '">'
-      + '<div class="cq-card-title">' + esc(r.fromName || '') + '</div>'
-      + '<div class="cq-card-sub">' + esc(r.boatName || '') + ' · ' + esc(r.date || '')
-        + (r.timeOut || r.timeIn ? ' · ' + esc(r.timeOut || '') + '–' + esc(r.timeIn || '') : '')
-      + '</div>'
-      + '<div class="cq-card-meta">' + esc((r.hoursDecimal || 0) + ' ' + s('cq.hrs')) + (r.distanceNm ? ' · ' + esc(r.distanceNm) + ' ' + s('cq.nm') : '') + '</div>'
-      + '<div class="cq-details" id="vd-' + esc(r.id) + '" hidden>' + _verifyDetailRows(r) + '</div>'
-      + '<button type="button" class="cq-details-toggle" aria-expanded="false" aria-controls="vd-' + esc(r.id) + '"'
-        + ' data-cq-click="toggleVerifyDetails" data-cq-arg="' + esc(r.id) + '">'
-        + '<span class="cq-details-label">' + s('cq.showDetails') + '</span>'
-        + '<span class="cq-details-chev" aria-hidden="true">▾</span>'
-      + '</button>'
-      + '<div class="conf-actions">'
-        + '<button class="btn-confirm" data-cq-click="respondValidation" data-cq-arg="'+esc(r.id)+'" data-cq-arg2="confirmed">' + s('btn.confirm') + '</button>'
-        + '<button class="btn-reject" data-cq-click="rejectValidation" data-cq-arg="'+esc(r.id)+'">' + s('cq.reject') + '</button>'
+    // Reuse the canonical trip card. Fall back to the request payload when
+    // the trip can't be found locally (e.g. outside the limit window).
+    var trip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
+    return '<div class="cq-validation" id="vr-' + esc(r.id) + '">'
+      + tripCard(trip)
+      + '<div class="cq-validation-actions">'
+        + '<button class="btn btn-primary btn-sm" data-cq-click="respondValidation" data-cq-arg="' + esc(r.id) + '" data-cq-arg2="confirmed">✓ ' + s('btn.confirm') + '</button>'
+        + '<button class="btn btn-secondary btn-sm" data-cq-click="rejectValidation" data-cq-arg="' + esc(r.id) + '">✗ ' + s('cq.reject') + '</button>'
       + '</div>'
     + '</div>';
   }).join('');
 }
 
-function _verifyDetailRows(r) {
-  var rows = [];
-  function push(label, val) {
-    if (val === undefined || val === null || val === '' || val === false || val === 'false') return;
-    rows.push('<div class="cd-row"><span class="cd-k">' + esc(label) + '</span><span class="cd-v">' + val + '</span></div>');
-  }
-  if (r.locationName) push(s('cq.detailLocation'), esc(r.locationName));
-  if (r.role)         push(s('cq.detailRole'), esc(r.role));
-  if (r.helm === true || r.helm === 'true') push(s('cq.detailHelm'), '✓');
-  if (r.crew)         push(s('logrev.detailCrew') || 'Crew', esc(r.crew));
-  if (r.beaufort || r.windDir) {
-    var wx = [r.beaufort ? 'Force ' + esc(r.beaufort) : '', esc(r.windDir || '')].filter(Boolean).join(' ');
-    push(s('cq.detailWind'), wx);
-  }
-  if (r.skipperNote)  push(s('cq.detailNotes'), esc(r.skipperNote));
-  if (r.linkedCheckoutId) push(s('cq.detailLinkedCheckout'), '<code class="cd-mono">' + esc(r.linkedCheckoutId) + '</code>');
-  if (r.createdAt)    push(s('logrev.detailCreated') || 'Logged', esc(String(r.createdAt).slice(0, 16).replace('T', ' ')));
-  return rows.join('') || '<div class="text-muted text-xs">—</div>';
-}
-
-function toggleVerifyDetails(id) {
-  var panel = document.getElementById('vd-' + id);
-  var btn   = document.querySelector('[aria-controls="vd-' + id + '"]');
-  if (!panel || !btn) return;
-  var open = panel.hasAttribute('hidden');
-  if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
-  btn.setAttribute('aria-expanded', String(open));
-  var lbl = btn.querySelector('.cq-details-label');
-  if (lbl) lbl.textContent = s(open ? 'cq.hideDetails' : 'cq.showDetails');
+// Shape a verification-request row to look like a trip so tripCard() can
+// render it when the underlying trip isn't in the local _allTrips window.
+function _verifyReqAsTrip(r) {
+  return {
+    id: r.tripId, kennitala: r.fromKennitala, memberName: r.fromName,
+    date: r.date, timeOut: r.timeOut, timeIn: r.timeIn,
+    hoursDecimal: r.hoursDecimal, boatId: r.boatId, boatName: r.boatName,
+    boatCategory: r.boatCategory, locationId: r.locationId, locationName: r.locationName,
+    crew: r.crew, role: r.role, helm: r.helm,
+    beaufort: r.beaufort, windDir: r.windDir, wxSnapshot: r.wxSnapshot,
+    skipperNote: r.skipperNote, linkedCheckoutId: r.linkedCheckoutId,
+    verified: false, validationRequested: true,
+  };
 }
 
 async function respondValidation(id, response) {

@@ -52,6 +52,32 @@ Net: 11 files touched, 869 lines removed, 3 added.
 `scheduling.gs`. No data migrations needed; the schema and existing data
 are untouched. Redeploy Apps Script.
 
+## Unreleased — Handbook storage: all four sections move to config
+
+All four handbook tables (`handbook_roles`, `handbook_docs`,
+`handbook_contacts`, `handbook_info`) collapse into JSON arrays under
+config keys `handbookRoles` / `handbookDocs` / `handbookContacts` /
+`handbookInfo` — same pattern as `boats`, `locations`, `activity_types`,
+etc. Save/delete now go through the existing `saveConfigListItem_` /
+`deleteConfigListItem_` helpers; no handbook-specific sheets remain.
+
+`getHandbook` stays a separate endpoint (storage ≠ delivery): every page
+calls `getConfig`, but only the handbook page needs handbook content.
+
+Cell-size note: Sheets caps cells at 50,000 chars. Long-form info
+content (rules, harbor briefings) could plausibly approach that if a
+club accumulates many bilingual sections. If that ever happens, split
+per-section into `handbookInfo_<id>` keys instead of one mega-blob.
+
+Migration: `getHandbook_` auto-runs a one-shot copy from the legacy
+sheets to the new config keys on first read after deploy. It's
+idempotent (skips keys that already have data) and also exposed
+manually as the `migrateHandbookSheetsToConfig` action, which returns a
+per-target `{counts, notes}` payload so admins can see *why* a target
+was skipped (`skip:no-tab` / `skip:no-rows` / `skip:already-populated`
+/ `error:…`). After it runs, the old `handbook_roles` /
+`handbook_docs` / `handbook_contacts` / `handbook_info` tabs sit
+unused and can be deleted from the spreadsheet.
 ## Unreleased — trip-card fixes: student badge scope, captain-page actions, verify-pending persistence
 
 Three independent bugs surfaced on the same trip card:
