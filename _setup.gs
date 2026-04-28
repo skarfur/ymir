@@ -167,24 +167,14 @@ var SCHEMA_ = {
     'createdAt','updatedAt','updatedBy',
   ],
   // Handbook (members- and staff-facing reference). See handbook.gs.
-  handbook_roles: [
-    'id','parentId','title','titleIS','name','kennitala',
-    'phone','email','notes','notesIS','color','boatCategoryKey',
-    'members','areas',
-    'sortOrder','active','createdAt','updatedAt',
-  ],
-  handbook_docs: [
-    'id','category','categoryIS','title','titleIS',
-    'url','driveFileId','notes','notesIS',
-    'sortOrder','active','createdAt','updatedAt',
-  ],
+  // Roles, docs, and contacts now live as JSON arrays under config keys
+  // 'handbookRoles' / 'handbookDocs' / 'handbookContacts' (seeded below).
+  // Only `info` keeps a dedicated tab — its content cells can hold long-form
+  // rich text that risks the 50,000-char per-cell limit when packed into a
+  // JSON blob.
   handbook_info: [
     'id','kind','title','titleIS','content','contentIS',
     'sortOrder','active','createdAt','updatedAt',
-  ],
-  handbook_contacts: [
-    'id','memberId','label','labelIS','name','phone','email',
-    'notes','notesIS','sortOrder','active','createdAt','updatedAt',
   ],
 };
 
@@ -228,7 +218,7 @@ function setupSpreadsheet() {
   var cfgKeys = cfgSheet.getLastRow() >= 2
     ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
     : [];
-  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist'];
+  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist','handbookRoles','handbookDocs','handbookContacts'];
   defaultCfgKeys.forEach(function(k) {
     if (!cfgKeys.includes(k)) {
       cfgSheet.appendRow([k, '']);
