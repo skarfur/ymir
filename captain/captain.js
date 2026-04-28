@@ -177,25 +177,80 @@ function renderValidation() {
   var el = document.getElementById('validationList');
   if (!_verificationRequests.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noValidation') + '</div>'; return; }
   el.innerHTML = _verificationRequests.map(r => {
-    return '<div class="cq-card">'
+    return '<div class="cq-card" id="vr-' + esc(r.id) + '">'
       + '<div class="cq-card-title">' + esc(r.fromName || '') + '</div>'
-      + '<div class="cq-card-sub">' + esc(r.boatName || '') + ' · ' + esc(r.date || '') + '</div>'
-      + '<div class="cq-card-meta">' + esc((r.hoursDecimal || 0) + ' ' + s('cq.hrs')) + (r.distanceNm ? ' · ' + r.distanceNm + ' ' + s('cq.nm') : '') + '</div>'
+      + '<div class="cq-card-sub">' + esc(r.boatName || '') + ' · ' + esc(r.date || '')
+        + (r.timeOut || r.timeIn ? ' · ' + esc(r.timeOut || '') + '–' + esc(r.timeIn || '') : '')
+      + '</div>'
+      + '<div class="cq-card-meta">' + esc((r.hoursDecimal || 0) + ' ' + s('cq.hrs')) + (r.distanceNm ? ' · ' + esc(r.distanceNm) + ' ' + s('cq.nm') : '') + '</div>'
+      + '<div class="cq-details" id="vd-' + esc(r.id) + '" hidden>' + _verifyDetailRows(r) + '</div>'
+      + '<button type="button" class="cq-details-toggle" aria-expanded="false" aria-controls="vd-' + esc(r.id) + '"'
+        + ' data-cq-click="toggleVerifyDetails" data-cq-arg="' + esc(r.id) + '">'
+        + '<span class="cq-details-label">' + s('cq.showDetails') + '</span>'
+        + '<span class="cq-details-chev" aria-hidden="true">▾</span>'
+      + '</button>'
       + '<div class="conf-actions">'
         + '<button class="btn-confirm" data-cq-click="respondValidation" data-cq-arg="'+esc(r.id)+'" data-cq-arg2="confirmed">' + s('btn.confirm') + '</button>'
-        + '<button class="btn-reject" data-cq-click="respondValidation" data-cq-arg="'+esc(r.id)+'" data-cq-arg2="rejected">' + s('btn.cancel') + '</button>'
+        + '<button class="btn-reject" data-cq-click="rejectValidation" data-cq-arg="'+esc(r.id)+'">' + s('cq.reject') + '</button>'
       + '</div>'
     + '</div>';
   }).join('');
 }
 
-async function respondValidation(id, status) {
+function _verifyDetailRows(r) {
+  var rows = [];
+  function push(label, val) {
+    if (val === undefined || val === null || val === '' || val === false || val === 'false') return;
+    rows.push('<div class="cd-row"><span class="cd-k">' + esc(label) + '</span><span class="cd-v">' + val + '</span></div>');
+  }
+  if (r.locationName) push(s('cq.detailLocation'), esc(r.locationName));
+  if (r.role)         push(s('cq.detailRole'), esc(r.role));
+  if (r.helm === true || r.helm === 'true') push(s('cq.detailHelm'), '✓');
+  if (r.crew)         push(s('logrev.detailCrew') || 'Crew', esc(r.crew));
+  if (r.beaufort || r.windDir) {
+    var wx = [r.beaufort ? 'Force ' + esc(r.beaufort) : '', esc(r.windDir || '')].filter(Boolean).join(' ');
+    push(s('cq.detailWind'), wx);
+  }
+  if (r.skipperNote)  push(s('cq.detailNotes'), esc(r.skipperNote));
+  if (r.linkedCheckoutId) push(s('cq.detailLinkedCheckout'), '<code class="cd-mono">' + esc(r.linkedCheckoutId) + '</code>');
+  if (r.createdAt)    push(s('logrev.detailCreated') || 'Logged', esc(String(r.createdAt).slice(0, 16).replace('T', ' ')));
+  return rows.join('') || '<div class="text-muted text-xs">—</div>';
+}
+
+function toggleVerifyDetails(id) {
+  var panel = document.getElementById('vd-' + id);
+  var btn   = document.querySelector('[aria-controls="vd-' + id + '"]');
+  if (!panel || !btn) return;
+  var open = panel.hasAttribute('hidden');
+  if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+  btn.setAttribute('aria-expanded', String(open));
+  var lbl = btn.querySelector('.cq-details-label');
+  if (lbl) lbl.textContent = s(open ? 'cq.hideDetails' : 'cq.showDetails');
+}
+
+async function respondValidation(id, response) {
   // Optimistic UI — remove card immediately
   var prev = _verificationRequests.slice();
   _verificationRequests = _verificationRequests.filter(r => r.id !== id);
   renderValidation();
   try {
-    await apiPost('respondConfirmation', { id, status, responderName: user.name });
+    await apiPost('respondConfirmation', { id, response, responderName: user.name });
+    showToast(s('toast.saved'), 'ok');
+  } catch (e) {
+    _verificationRequests = prev;
+    renderValidation();
+    showToast(e.message, 'err');
+  }
+}
+
+async function rejectValidation(id) {
+  var rejectComment = await ymPrompt(s('cq.rejectReason'));
+  if (rejectComment === null) return;  // cancelled
+  var prev = _verificationRequests.slice();
+  _verificationRequests = _verificationRequests.filter(r => r.id !== id);
+  renderValidation();
+  try {
+    await apiPost('respondConfirmation', { id, response: 'rejected', rejectComment: rejectComment || '', responderName: user.name });
     showToast(s('toast.saved'), 'ok');
   } catch (e) {
     _verificationRequests = prev;

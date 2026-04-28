@@ -171,6 +171,12 @@ function renderTrips() {
     const isVer    = t.verified && t.verified !== 'false';
     const isLinked = t.isLinked === true || t.isLinked === 'true';
     const hasVerifyReq = verifyTripIds.has(t.id);
+    // Single status badge: VERIFIED > VERIFICATION REQUEST > PENDING REVIEW
+    const statusBadge = isVer
+      ? `<span class="badge badge-verified">✓ ${s('logrev.verified')}</span>`
+      : hasVerifyReq
+        ? `<span class="badge badge-verify-request">${s('logrev.verifyRequest')}</span>`
+        : `<span class="badge badge-pending">${s('logrev.pending')}</span>`;
     return `<div class="trip-card${isVer ? ' verified' : ''}" id="tc-${esc(t.id)}">
       <div class="trip-head">
         <div>
@@ -185,11 +191,8 @@ function renderTrips() {
           </div>
         </div>
         <div class="flex-col gap-4" style="align-items:flex-end">
-          <span class="badge ${isVer ? 'badge-verified' : 'badge-pending'}">
-            ${isVer ? ('✓ ' + s('logrev.verified')) : s('logrev.pending')}
-          </span>
+          ${statusBadge}
           ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
-          ${hasVerifyReq && !isVer ? `<span class="badge" style="color:var(--navy-l);border-color:color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent)">${s('logrev.verifyRequest')}</span>` : ''}
         </div>
       </div>
       ${t.skipperNote ? `<div class="trip-notes text-accent">📋 ${esc(t.skipperNote)}</div>` : ''}
@@ -200,6 +203,13 @@ function renderTrips() {
           <div>${esc(t.staffComment)}</div>
           ${t.verifiedBy ? `<div class="text-muted text-xs" style="margin-top:3px">— ${esc(t.verifiedBy)}</div>` : ''}
         </div>` : ''}
+      <div class="trip-details" id="td-${esc(t.id)}" hidden>${_tripDetailRows(t)}</div>
+      <button type="button" class="trip-details-toggle" aria-expanded="false"
+              aria-controls="td-${esc(t.id)}"
+              data-slr-click="toggleTripDetails" data-slr-arg="${esc(t.id)}">
+        <span class="trip-details-label">${s('logrev.showDetails')}</span>
+        <span class="trip-details-chev" aria-hidden="true">▾</span>
+      </button>
       <div class="verify-row" id="vrow-${esc(t.id)}">
         <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
                value="${esc(t.staffComment || '')}" class="text-md">
@@ -211,6 +221,43 @@ function renderTrips() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Build the expanded detail block — every field worth showing the reviewer.
+function _tripDetailRows(t) {
+  const rows = [];
+  const push = (label, val) => {
+    if (val === undefined || val === null || val === '' || val === false || val === 'false') return;
+    rows.push(`<div class="td-row"><span class="td-k">${esc(label)}</span><span class="td-v">${val}</span></div>`);
+  };
+  if (t.role)            push(s('logrev.detailRole'), esc(t.role));
+  if (t.crewNames)       push(s('logrev.detailCrew'), esc(t.crewNames));
+  if (t.helm === true || t.helm === 'true')       push(s('logrev.detailHelm'), '✓');
+  if (t.student === true || t.student === 'true') push(s('logrev.detailStudent'), '✓');
+  if (t.distanceNm)      push(s('logrev.detailDistance'), esc(t.distanceNm) + ' nm');
+  if (t.departurePort)   push(s('logrev.detailDeparture'), esc(t.departurePort));
+  if (t.arrivalPort)     push(s('logrev.detailArrival'), esc(t.arrivalPort));
+  if (t.beaufort || t.windDir) {
+    const wx = [t.beaufort ? 'Force ' + esc(t.beaufort) : '', esc(t.windDir || '')].filter(Boolean).join(' ');
+    push(s('logrev.detailWeather'), wx);
+  }
+  if (t.linkedTripId)     push(s('logrev.detailLinkedTrip'), `<code class="td-mono">${esc(t.linkedTripId)}</code>`);
+  if (t.linkedCheckoutId) push(s('logrev.detailLinkedCheckout'), `<code class="td-mono">${esc(t.linkedCheckoutId)}</code>`);
+  if (t.nonClub === true || t.nonClub === 'true') push(s('logrev.detailNonClub'), '✓');
+  if (t.createdAt)        push(s('logrev.detailCreated'), esc(String(t.createdAt).slice(0, 16).replace('T', ' ')));
+  if (t.verifiedAt)       push(s('logrev.detailVerifiedAt'), esc(String(t.verifiedAt).slice(0, 16).replace('T', ' ')) + (t.verifiedBy ? ' · ' + esc(t.verifiedBy) : ''));
+  return rows.join('') || `<div class="td-empty text-muted text-xs">—</div>`;
+}
+
+function toggleTripDetails(id) {
+  const panel = document.getElementById('td-' + id);
+  const btn   = document.querySelector(`[aria-controls="td-${id}"]`);
+  if (!panel || !btn) return;
+  const open = panel.hasAttribute('hidden');
+  if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+  btn.setAttribute('aria-expanded', String(open));
+  const lbl = btn.querySelector('.trip-details-label');
+  if (lbl) lbl.textContent = s(open ? 'logrev.hideDetails' : 'logrev.showDetails');
 }
 
 // ── Verify / Unverify ─────────────────────────────────────────────────────────
