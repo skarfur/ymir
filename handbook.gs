@@ -4,14 +4,16 @@
 //   - roles    → JSON array under config key 'handbookRoles'
 //   - docs     → JSON array under config key 'handbookDocs'
 //   - contacts → JSON array under config key 'handbookContacts'
-//   - info     → its own sheet ('handbook_info'), because bilingual rich-text
-//                content can blow the 50,000-char per-cell limit when packed
-//                into one JSON blob.
+//   - info     → JSON array under config key 'handbookInfo'
 //
-// The first three pieces are tiny taxonomies that fit naturally alongside
-// boats/locations/activity_types in the config sheet. getHandbook_ stays a
-// dedicated endpoint (separate from getConfig) so non-handbook pages don't
-// pay the bytes.
+// All four live alongside boats/locations/activity_types in the config sheet.
+// getHandbook_ stays a dedicated endpoint (separate from getConfig) so
+// non-handbook pages don't pay the bytes.
+//
+// Cell-size note: Sheets caps cells at 50,000 chars. Long-form info content
+// (rules, harbor briefings) could plausibly approach that if a club
+// accumulates many bilingual sections. If you hit it, split per-section into
+// `handbookInfo_<id>` keys instead of one mega-blob.
 
 function getHandbook_() {
   // One-shot migration from the legacy per-handbook tabs. Runs at most once
@@ -21,13 +23,13 @@ function getHandbook_() {
   try { migration = _hbAutoMigrateSheetsToConfig_(); }
   catch (e) {
     Logger.log('handbook auto-migrate: ' + e);
-    migration = { counts: { roles: 0, docs: 0, contacts: 0 }, notes: { error: String(e) } };
+    migration = { counts: { roles: 0, docs: 0, contacts: 0, info: 0 }, notes: { error: String(e) } };
   }
 
   const rolesRaw    = readConfigList_('handbookRoles').filter(_hbActive_);
   const contactsRaw = readConfigList_('handbookContacts').filter(_hbActive_);
   const docs        = readConfigList_('handbookDocs').filter(_hbActive_);
-  const info        = (data_.readAll('handbookInfo') || []).filter(_hbActive_);
+  const info        = readConfigList_('handbookInfo').filter(_hbActive_);
 
   const memberByKt = getMemberMap_();
   const needsCatMap = rolesRaw.some(function (r) { return r.boatCategoryKey && !r.color; });
@@ -474,21 +476,15 @@ function uploadHandbookDoc_(b) {
 }
 
 // ── Info (free-form bilingual text sections) ─────────────────────────────────
-// Stays on its own sheet because the bilingual `content`/`contentIS` columns
-// can hold long-form rich text; packing many of them into one config cell
-// risks the 50,000-char per-cell limit.
 
 function saveHandbookInfo_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  addColIfMissing_('handbookInfo', 'kind');
   // 'info' is the legacy fallback bucket so old rows without an explicit
   // kind still round-trip through the editor; admin UI only writes
   // 'contacts' or 'rules'.
   const allowedKinds = { contacts: 1, rules: 1, info: 1 };
-  const id = b.id || ('info_' + uid_());
-  const existing = findOne_('handbookInfo', 'id', id);
-  const row = {
-    id:        id,
+  const res = saveConfigListItem_('handbookInfo', {
+    id:        b.id || '',
     kind:      allowedKinds[b.kind] ? b.kind : 'info',
     title:     b.title || '',
     titleIS:   b.titleIS || '',
@@ -496,19 +492,14 @@ function saveHandbookInfo_(b) {
     contentIS: b.contentIS || '',
     sortOrder: Number(b.sortOrder || 0),
     active:    b.active === false ? false : true,
-    createdAt: existing ? (existing.createdAt || now_()) : now_(),
-    updatedAt: now_(),
-  };
-  if (existing) updateRow_('handbookInfo', 'id', id, row);
-  else          insertRow_('handbookInfo', row);
-  return okJ({ id: id, saved: true });
+  });
+  return okJ({ id: res.id, saved: true });
 }
 
 function deleteHandbookInfo_(b) {
   if (!b.id) return failJ('id required');
-  const existing = findOne_('handbookInfo', 'id', b.id);
-  if (!existing) return failJ('Info section not found', 404);
-  updateRow_('handbookInfo', 'id', b.id, { active: false, updatedAt: now_() });
+  const res = deleteConfigListItem_('handbookInfo', b.id, { soft: true });
+  if (!res.deactivated) return failJ('Info section not found', 404);
   return okJ({ ok: true });
 }
 
@@ -524,10 +515,11 @@ function _hbAutoMigrateSheetsToConfig_() {
     { tab: 'handbook_roles',    key: 'handbookRoles',    type: 'roles'    },
     { tab: 'handbook_docs',     key: 'handbookDocs',     type: 'docs'     },
     { tab: 'handbook_contacts', key: 'handbookContacts', type: 'contacts' },
+    { tab: 'handbook_info',     key: 'handbookInfo',     type: 'info'     },
   ];
   var ss = null;
-  var migrated = { roles: 0, docs: 0, contacts: 0 };
-  var notes    = { roles: '', docs: '', contacts: '' };
+  var migrated = { roles: 0, docs: 0, contacts: 0, info: 0 };
+  var notes    = { roles: '', docs: '', contacts: '', info: '' };
   targets.forEach(function (t) {
     try {
       // Already migrated? Skip.
@@ -578,7 +570,7 @@ function _hbAutoMigrateSheetsToConfig_() {
       notes[t.type] = 'error:' + (err && err.message ? err.message : String(err));
     }
   });
-  if (migrated.roles || migrated.docs || migrated.contacts) {
+  if (migrated.roles || migrated.docs || migrated.contacts || migrated.info) {
     cDel_('config');
   }
   Logger.log('handbook auto-migrate: counts=' + JSON.stringify(migrated) + ' notes=' + JSON.stringify(notes));
