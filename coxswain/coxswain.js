@@ -271,8 +271,11 @@ function renderCrewCard(c) {
 
   var descHtml = c.description ? '<div class="cb-desc">' + esc(c.description) + '</div>' : '';
 
+  var colorDot = '<span class="cb-color-dot" style="background:' + esc(crewColor) + '" title="' + esc(s('cox.crewColor')) + '" aria-label="' + esc(s('cox.crewColor')) + '"></span>';
+
   return '<div class="cb-card" style="border-color:' + esc(crewColor) + '">'
     + '<div class="cb-header">'
+      + colorDot
       + '<span class="cb-name">' + esc(c.name) + '</span> ' + badge
       + ' <span class="cb-count">' + filledSeats + '/' + totalSeats + '</span>'
     + '</div>'
