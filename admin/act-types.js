@@ -325,7 +325,10 @@ function toggleAtDay(dayVal) {
 }
 
 async function deleteActType(id) {
-  const _id = id || editingId;
+  // Treat only missing args (modal Delete button) as "fall back to editingId".
+  // An empty string means the row has no id (orphan from the earlier
+  // saveConfigListItem_ bug) and we still want the backend filter to remove it.
+  const _id = (id == null) ? editingId : id;
   if (!await ymConfirm(s("admin.confirmDeleteActType"))) return;
   // Count linked volunteer events and signups so we can warn the admin
   // before cascading through real signup data.
