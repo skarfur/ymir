@@ -157,9 +157,6 @@ var _INVALIDATES = {
   deleteHandbookInfo:   ['getHandbook'],
   saveHandbookContact:  ['getHandbook'],
   deleteHandbookContact:['getHandbook'],
-  seedHandbookOrgChart: ['getHandbook'],
-  migrateHandbookOrgChartToAreas: ['getHandbook'],
-  migrateHandbookSheetsToConfig:  ['getHandbook', 'getConfig'],
   // Crews + invites.
   createCrew:              ['getCrews', 'getCrewInvites'],
   disbandCrew:             ['getCrews', 'getCrewInvites'],

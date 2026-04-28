@@ -1,9 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCHEDULING  —  single source of truth for scheduled events (volunteer + activity)
 // ═══════════════════════════════════════════════════════════════════════════════
-// Replaces the two legacy storage locations: the `activities` JSON column in
-// daily_log, and the `volunteer_events` JSON value in config. Every row in
-// scheduled_events carries a `kind` discriminator:
+// Every row in scheduled_events carries a `kind` discriminator:
 //
 //   kind='volunteer' — signup-tracked events with roles/leader. The volunteer
 //                      portal + admin volunteer view read these.
@@ -14,9 +12,6 @@
 // read time — see `projectActivitiesForDate_` in config.gs — but any row that's
 // been materialized (admin saved, midnight freezer ran, signup persisted, etc.)
 // lives here as a sheet row, so GCal sync + edits operate on stable IDs.
-//
-// One-shot migration from the old locations lives in _setup.gs
-// (`migrateToScheduledEvents`). Run it once per environment after deploying.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── Row ↔ domain conversion ──────────────────────────────────────────────────

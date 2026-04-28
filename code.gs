@@ -121,9 +121,6 @@ const ADMIN_ACTIONS_ = {
   deleteHandbookInfo:   true,
   saveHandbookContact:  true,
   deleteHandbookContact:true,
-  seedHandbookOrgChart: true,
-  migrateHandbookOrgChartToAreas: true,
-  migrateHandbookSheetsToConfig: true,
 };
 
 // Staff-or-admin actions. Intentionally narrow: many actions like
@@ -1368,9 +1365,6 @@ function route_(action, b, caller) {
     case 'deleteHandbookInfo':   return deleteHandbookInfo_(b);
     case 'saveHandbookContact':  return saveHandbookContact_(b);
     case 'deleteHandbookContact':return deleteHandbookContact_(b);
-    case 'seedHandbookOrgChart': return seedHandbookOrgChart_();
-    case 'migrateHandbookOrgChartToAreas': return migrateHandbookOrgChartToAreas_();
-    case 'migrateHandbookSheetsToConfig':  return migrateHandbookSheetsToConfig_();
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);

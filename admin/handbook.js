@@ -791,33 +791,6 @@ function clearHandbookRoleColor() {
   el.dataset.userSet = '';
 }
 
-async function seedHandbookOrgChart() {
-  if (!await ymConfirm(s('admin.handbookSeedConfirm'))) return;
-  try {
-    const res = await apiPost('seedHandbookOrgChart', {});
-    await loadHandbookAdmin(true);
-    renderHandbookRolesList();
-    toast(s('toast.saved') + (res.added ? ' (+' + res.added + ')' : ''));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
-}
-
-// One-shot migration to the per-division `areas` model. Safe to re-run —
-// once every level-3 sub-role has been collapsed up to its parent, the
-// backend reports "nothing to migrate". Triggered from the Org-chart admin
-// card by the "Migrate sub-roles → areas" button.
-async function migrateHandbookOrgChart() {
-  if (!await ymConfirm(s('admin.handbookMigrateAreasConfirm'))) return;
-  try {
-    const res = await apiPost('migrateHandbookOrgChartToAreas', {});
-    await loadHandbookAdmin(true);
-    renderHandbookRolesList();
-    const n = res.migrated || 0;
-    toast(n > 0
-      ? s('toast.saved') + ' (' + n + ')'
-      : s('admin.handbookMigrateAreasNoop'));
-  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
-}
-
 // ── Documents ───────────────────────────────────────────────────────────────
 
 function renderHandbookDocsList() {
