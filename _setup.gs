@@ -167,15 +167,9 @@ var SCHEMA_ = {
     'createdAt','updatedAt','updatedBy',
   ],
   // Handbook (members- and staff-facing reference). See handbook.gs.
-  // Roles, docs, and contacts now live as JSON arrays under config keys
-  // 'handbookRoles' / 'handbookDocs' / 'handbookContacts' (seeded below).
-  // Only `info` keeps a dedicated tab — its content cells can hold long-form
-  // rich text that risks the 50,000-char per-cell limit when packed into a
-  // JSON blob.
-  handbook_info: [
-    'id','kind','title','titleIS','content','contentIS',
-    'sortOrder','active','createdAt','updatedAt',
-  ],
+  // All four sections (roles, docs, contacts, info) now live as JSON arrays
+  // under config keys 'handbookRoles' / 'handbookDocs' / 'handbookContacts' /
+  // 'handbookInfo' (seeded below).
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -218,7 +212,7 @@ function setupSpreadsheet() {
   var cfgKeys = cfgSheet.getLastRow() >= 2
     ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
     : [];
-  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist','handbookRoles','handbookDocs','handbookContacts'];
+  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist','handbookRoles','handbookDocs','handbookContacts','handbookInfo'];
   defaultCfgKeys.forEach(function(k) {
     if (!cfgKeys.includes(k)) {
       cfgSheet.appendRow([k, '']);

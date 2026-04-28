@@ -30,11 +30,9 @@ const TABS_ = {
   scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
-  // Handbook roles/docs/contacts now live as JSON arrays under the config
-  // keys 'handbookRoles' / 'handbookDocs' / 'handbookContacts'. Only `info`
-  // keeps a dedicated tab — its content cells can hold long-form rich text
-  // that risks the 50,000-char per-cell limit when packed into a JSON blob.
-  handbookInfo:     'handbook_info',
+  // All four handbook sections (roles/docs/contacts/info) now live as JSON
+  // arrays under the config keys 'handbookRoles' / 'handbookDocs' /
+  // 'handbookContacts' / 'handbookInfo'. No dedicated handbook tabs anymore.
 };
 
 const CLUB_LANG_ = 'IS';
