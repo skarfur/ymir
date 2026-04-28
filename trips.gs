@@ -412,7 +412,16 @@ function applyRejectionCleanup_(row, ts) {
     return;
   }
 
-  // crew_join / verify rejection: nothing to roll back.
+  if (type === 'verify') {
+    // Staff rejected a verification request — clear the trip-level flag so
+    // the "verification pending" badge stops appearing.
+    if (row.tripId) {
+      updateRow_('trips', 'id', row.tripId, { validationRequested: false, updatedAt: ts });
+    }
+    return;
+  }
+
+  // crew_join rejection: nothing to roll back.
 }
 
 // Shared helper used by crew_assigned rejection cleanup: remove a crew member
@@ -525,6 +534,11 @@ function requestVerification_(b) {
     rejectComment: '',
     createdAt: ts, respondedAt: '',
   });
+  // Mirror onto the trip row so the "verification pending" badge survives a
+  // refresh even when the confirmations list isn't loaded (e.g. captain
+  // portal). Cleared by applyRejectionCleanup_ on reject; superseded by
+  // verified=true on confirm.
+  updateRow_('trips', 'id', b.tripId, { validationRequested: true, updatedAt: ts });
   return okJ({ id: id, created: true, requested: true });
 }
 

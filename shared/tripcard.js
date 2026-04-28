@@ -376,7 +376,10 @@ function tripCard(t){
 
   const hasPendingBadge = !isVer && isSki && (pendingCrewConfs.length||pendingHelmConfs.length||pendingStudentConfs.length||pendingCrewIn.length||pendingHelmIn.length||pendingStudentIn.length);
   const hasVerifyPending = (t.validationRequested || _confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) && !isVer;
-  const isStudent = (t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId)));
+  // Only show STUDENT badge when the *current viewer* was the student on this
+  // trip — t.student is per-row, but on a fleet-wide view (captain portal)
+  // the row may belong to another member, so guard with isOwner.
+  const isStudent = isOwner && ((t.student && t.student!=='false') || _confirmations.incoming.some(c=>c.type==='student'&&c.status==='confirmed'&&String(c.toKennitala)===String(user.kennitala)&&(c.tripId===t.id||(t.linkedCheckoutId&&c.linkedCheckoutId===t.linkedCheckoutId))));
 
   return `<div class="trip-card" style="--tc-cat:${catCol.color};--tc-cat-bg:${catCol.bg};border-left:3px solid var(--tc-cat)">
     <div class="trip-card-main" data-trip-action="open-card">

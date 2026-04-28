@@ -3,6 +3,11 @@
 // Extracted from shared/logbook.js. All functions stay global via the existing
 // non-module script pattern. Callers (captain/index.html, logbook/index.html)
 // must include this file alongside shared/logbook.js.
+//
+// The two modals (#editTripModal, #photoUploadModal) and their delegated
+// data-lb-* click listener are auto-injected at script load if missing — so
+// host portals don't need to hand-copy the markup. The logbook portal already
+// ships its own copy in HTML; the inject is idempotent so it's a no-op there.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function openEditTrip(tripId) {
@@ -270,3 +275,137 @@ async function submitInlinePhotos() {
   }
   btn.disabled = false; btn.textContent = s('logbook.uploadPhotos');
 }
+
+// ── Modal HTML + delegated lb-* listener (auto-injected) ────────────────────
+;(function () {
+  if (typeof document === 'undefined') return;
+
+  function editModalHtml() {
+    return ''
+      + '<div class="modal-overlay hidden" id="editTripModal" data-lb-close-self="closeEditTrip">'
+      +   '<div class="modal modal--md">'
+      +     '<div class="modal-title">'
+      +       '<span id="editTripTitle" data-s="lb.editTrip"></span>'
+      +       '<button class="modal-close" data-lb-click="closeEditTrip">&#10005;</button>'
+      +     '</div>'
+      +     '<input type="hidden" id="etId">'
+      +     '<div class="form-row">'
+      +       '<div class="form-field"><label for="etDate" data-s="lbl.date"></label><input type="date" id="etDate"></div>'
+      +       '<div class="form-field"><label for="etBoat" data-s="lbl.boat"></label>'
+      +         '<select id="etBoat"><option value="" data-s="lb.selectBoat"></option></select>'
+      +       '</div>'
+      +     '</div>'
+      +     '<div class="form-field"><label for="etLocation" data-s="lbl.location"></label>'
+      +       '<select id="etLocation"><option value="" data-s="lb.selectLocation"></option></select>'
+      +     '</div>'
+      +     '<div class="form-row">'
+      +       '<div class="form-field"><label for="etTimeOut" data-s="lb.departed"></label><input type="time" id="etTimeOut"></div>'
+      +       '<div class="form-field"><label for="etTimeIn"  data-s="lb.returned"></label><input type="time" id="etTimeIn" ></div>'
+      +     '</div>'
+      +     '<div class="form-row">'
+      +       '<div class="form-field"><label for="etCrew" data-s="lb.crewAboard"></label><input type="number" id="etCrew" min="1" value="1"></div>'
+      +       '<div class="form-field"><label for="etDistanceNm" data-s="lb.distanceNm"></label><input type="number" id="etDistanceNm" min="0" step="0.1"></div>'
+      +     '</div>'
+      +     '<div class="form-row">'
+      +       '<div class="form-field"><label for="etDeparturePort" data-s="lb.departurePort"></label><input list="portsList" id="etDeparturePort" autocomplete="off"></div>'
+      +       '<div class="form-field"><label for="etArrivalPort" data-s="lb.arrivalPort"></label><input list="portsList" id="etArrivalPort" autocomplete="off"></div>'
+      +     '</div>'
+      +     '<div class="section-label" style="margin:12px 0 8px" data-s="lb.weatherHdr"></div>'
+      +     '<div id="etWxFields"></div>'
+      +     '<div class="form-field mt-8"><label for="etSkipperNote">Skipper\'s comments <span class="text-muted text-9" data-s="lb.parenVisibleToCrew"></span></label>'
+      +       '<textarea id="etSkipperNote" rows="2"></textarea>'
+      +     '</div>'
+      +     '<div id="etErr" class="text-sm text-red mb-8" style="display:none"></div>'
+      +     '<button class="btn-primary" id="etSubmitBtn" data-lb-click="submitEditTrip"><span data-s="lb.saveChanges"></span></button>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  function photoModalHtml() {
+    return ''
+      + '<div class="modal-overlay hidden" id="photoUploadModal" data-lb-close-self="closePhotoUpload">'
+      +   '<div class="modal modal--md">'
+      +     '<div class="modal-title">'
+      +       '<span id="photoUploadTitle" data-s="lb.addPhotos"></span>'
+      +       '<button class="modal-close" data-lb-click="closePhotoUpload">&#10005;</button>'
+      +     '</div>'
+      +     '<input type="hidden" id="puTripId">'
+      +     '<div class="form-field">'
+      +       '<label for="puPhotoFiles" data-s="lb.photosLabel"></label>'
+      +       '<input type="file" id="puPhotoFiles" accept="image/*" multiple data-lb-change-el="handleInlinePhotos" class="text-sm">'
+      +       '<div id="puPhotoPreview" class="flex-center flex-wrap gap-6 mt-6"></div>'
+      +     '</div>'
+      +     '<div class="photo-meta-row mb-8">'
+      +       '<label><input type="checkbox" id="puShared" checked> <span id="puSharedLbl" data-s="lb.shareWithCrew"></span></label>'
+      +       '<label><input type="checkbox" id="puClubUse"> <span id="puClubLbl" data-s="lb.clubMayUse"></span></label>'
+      +     '</div>'
+      +     '<div class="text-xs text-muted mb-12" id="puHint" data-s="lb.photosBlurb"></div>'
+      +     '<div id="puErr" class="text-sm text-red mb-8" style="display:none"></div>'
+      +     '<button class="btn-primary" id="puSubmitBtn" data-lb-click="submitInlinePhotos"><span data-s="lb.uploadPhotos"></span></button>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  function injectIfMissing() {
+    if (!document.getElementById('editTripModal')) {
+      var w = document.createElement('div');
+      w.innerHTML = editModalHtml();
+      document.body.appendChild(w.firstElementChild);
+    }
+    if (!document.getElementById('photoUploadModal')) {
+      var w2 = document.createElement('div');
+      w2.innerHTML = photoModalHtml();
+      document.body.appendChild(w2.firstElementChild);
+    }
+    // Populate the weather sub-fields once the container exists.
+    var etWx = document.getElementById('etWxFields');
+    if (etWx && !etWx.firstElementChild && typeof tripFormWeatherFieldsHtml === 'function') {
+      etWx.innerHTML = tripFormWeatherFieldsHtml('et', { extraStep: '0.1' });
+    }
+    if (typeof applyStrings === 'function') applyStrings();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectIfMissing, { once: true });
+  } else {
+    injectIfMissing();
+  }
+
+  // Delegated data-lb-* listener — same vocabulary as the logbook portal's
+  // local listener. Guarded so the two don't double-fire when both load.
+  if (!document._lbListeners) {
+    document._lbListeners = true;
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('[data-lb-nobubble]')) { e.stopPropagation(); return; }
+      var cs = e.target.closest('[data-lb-close-self]');
+      if (cs && e.target === cs) { window[cs.dataset.lbCloseSelf](); return; }
+      var c = e.target.closest('[data-lb-click]');
+      if (c && typeof window[c.dataset.lbClick] === 'function') {
+        var a = [c.dataset.lbArg, c.dataset.lbArg2].filter(function (v) { return v != null; });
+        window[c.dataset.lbClick].apply(null, a);
+      }
+    });
+    document.addEventListener('change', function (e) {
+      var ce = e.target.closest('[data-lb-change-el]');
+      if (ce && typeof window[ce.dataset.lbChangeEl] === 'function') { window[ce.dataset.lbChangeEl](ce); return; }
+      var c = e.target.closest('[data-lb-change]');
+      if (c && typeof window[c.dataset.lbChange] === 'function') window[c.dataset.lbChange]();
+    });
+    document.addEventListener('input', function (e) {
+      var ie = e.target.closest('[data-lb-input-el]');
+      if (ie && typeof window[ie.dataset.lbInputEl] === 'function') { window[ie.dataset.lbInputEl](ie, ie.dataset.lbArg); return; }
+      var i = e.target.closest('[data-lb-input]');
+      if (i && typeof window[i.dataset.lbInput] === 'function') window[i.dataset.lbInput](i.dataset.lbArg);
+    });
+    document.addEventListener('focusout', function (e) {
+      var bh = e.target.closest('[data-lb-blur-hide]');
+      if (bh) {
+        var id = bh.dataset.lbBlurHide;
+        setTimeout(function () {
+          var el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        }, 200);
+      }
+    });
+  }
+})();

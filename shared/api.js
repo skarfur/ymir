@@ -120,8 +120,8 @@ var _INVALIDATES = {
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],
-  requestVerification:     ['getConfirmations', 'getNotifications'],
-  requestValidation:       ['getConfirmations', 'getNotifications'],
+  requestVerification:     ['getConfirmations', 'getNotifications', 'getTrips'],
+  requestValidation:       ['getConfirmations', 'getNotifications', 'getTrips'],
   // Maintenance — most also change notification counts (follower pings, etc.).
   saveMaintenance:         ['getMaintenance', 'getNotifications'],
   resolveMaintenance:      ['getMaintenance', 'getNotifications'],
