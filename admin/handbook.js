@@ -494,41 +494,50 @@ function renderHbRoleMembers() {
   // Level 3+ roles can't represent anything below them, so the column is
   // hidden entirely. The CSS variant collapses the grid to four columns.
   const showRep    = repOpts.length > 0;
-  list.innerHTML = _hbRoleMembers.map((m, i) => {
-    // Without an explicit `selected` on the placeholder, an unmatched value
-    // makes the browser fall back to the first concrete option.
-    const ktMatch  = !!m.kennitala && memberOpts.some(o => o.kt === m.kennitala);
-    const repMatch = !!m.representsRoleId && repOpts.some(o => o.id === m.representsRoleId);
-    const repCell  = showRep ? `
-      <select data-field="representsRoleId">
-        <option value=""${repMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.representsNone'))}</option>
-        ${repOpts.map(o =>
-          `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
-        ).join('')}
-      </select>` : '';
-    return `
-    <div class="hb-member-row${showRep ? '' : ' hb-member-row--no-rep'}">
-      <select data-field="kennitala">
-        <option value=""${ktMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.kennitalaNone'))}</option>
-        ${memberOpts.map(o =>
-          `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
-        ).join('')}
-      </select>
-      <input type="text" data-field="label"
-             placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
-      <input type="text" data-field="labelIS"
-             placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
-      ${repCell}
-      <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
-    </div>`).join('');
+  list.innerHTML = _hbRoleMembers.map((m, i) => _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep)).join('');
   // Set each select's value explicitly after render. Same pattern as
   // openHandbookContactModal — relying on inline `selected` inside a parent
   // innerHTML can leave the dropdown showing the first concrete option.
   list.querySelectorAll('.hb-member-row').forEach((row, i) => {
     const m = _hbRoleMembers[i];
-    row.querySelector('[data-field="kennitala"]').value        = m.kennitala || '';
-    row.querySelector('[data-field="representsRoleId"]').value = m.representsRoleId || '';
+    row.querySelector('[data-field="kennitala"]').value = m.kennitala || '';
+    const repEl = row.querySelector('[data-field="representsRoleId"]');
+    if (repEl) repEl.value = m.representsRoleId || '';
   });
+}
+
+function _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep) {
+  // Without an explicit `selected` on the placeholder, an unmatched value
+  // makes the browser fall back to the first concrete option.
+  const ktMatch  = !!m.kennitala && memberOpts.some(o => o.kt === m.kennitala);
+  const ktOpts = memberOpts.map(o =>
+    `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
+  ).join('');
+  const rowCls = 'hb-member-row' + (showRep ? '' : ' hb-member-row--no-rep');
+  return `
+    <div class="${rowCls}">
+      <select data-field="kennitala">
+        <option value=""${ktMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.kennitalaNone'))}</option>
+        ${ktOpts}
+      </select>
+      <input type="text" data-field="label"
+             placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
+      <input type="text" data-field="labelIS"
+             placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
+      ${showRep ? _hbRepresentsCellHtml(m, repOpts) : ''}
+      <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
+    </div>`;
+}
+
+function _hbRepresentsCellHtml(m, repOpts) {
+  const repMatch = !!m.representsRoleId && repOpts.some(o => o.id === m.representsRoleId);
+  const opts = repOpts.map(o =>
+    `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
+  ).join('');
+  return `<select data-field="representsRoleId">
+    <option value=""${repMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.representsNone'))}</option>
+    ${opts}
+  </select>`;
 }
 
 function _hbMemberOptions() {
