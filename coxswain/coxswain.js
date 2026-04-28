@@ -507,8 +507,8 @@ function initCxSlots() {
   });
   var sect = document.getElementById('sectSlots');
   // Show section if there are slot-scheduled boats (no longer requires active crews)
-  if (!_cxSlotBoats.length) { sect.style.display = 'none'; return; }
-  sect.style.display = '';
+  sect.classList.toggle('d-none', !_cxSlotBoats.length);
+  if (!_cxSlotBoats.length) return;
   // Populate boat filter
   var boatSel = document.getElementById('cxSlotBoat');
   boatSel.innerHTML = '';
