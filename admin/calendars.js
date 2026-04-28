@@ -124,6 +124,20 @@ async function loadSlotCalendar() {
   boatSel.innerHTML = '<option value="">' + s('slot.allBoats') + '</option>';
   catBoats.forEach(function(b) { boatSel.innerHTML += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>'; });
   renderSlotCalendar();
+  // Warm adjacent weeks so prev/next navigation hits the cache.
+  _adminPrefetchAdjacentSlots(cat);
+}
+
+function _adminPrefetchAdjacentSlots(cat) {
+  [-7, 7].forEach(function(offset) {
+    var ws = new Date(_slotWeekStart); ws.setDate(ws.getDate() + offset);
+    var we = new Date(ws); we.setDate(we.getDate() + 6);
+    apiGet("getSlots", {
+      category: cat,
+      fromDate: ws.toISOString().slice(0, 10),
+      toDate: we.toISOString().slice(0, 10),
+    }).catch(function() {});
+  });
 }
 
 var _adminCalendars = {};

@@ -30,36 +30,50 @@ try {
 
 async function apiGet(action, params) {
   params = params || {};
-  // Cache getConfig in sessionStorage for 60s — called on every page load
-  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000, getHandbook: 600000 };
+  // Cache key now includes a serialized params suffix so the same action with
+  // different params (e.g. getSlots for adjacent weeks) doesn't clobber the
+  // single-entry cache. apiPost invalidates by prefix scan so all entries
+  // for an action drop together.
+  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000, getHandbook: 600000, getSlots: 60000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
-      var _ck = 'ymir_' + action + '_';
+      var _ck = 'ymir_' + action + '_' + JSON.stringify(params);
       var _cs = sessionStorage.getItem(_ck);
       if (_cs) { var _cp = JSON.parse(_cs); if (Date.now() - _cp.ts < _CACHEABLE[action]) return _cp.data; }
       // In-flight dedup: if an identical request is already running (cache
       // miss during page init often fires several parallel apiGet calls for
-      // the same action), reuse the pending promise instead of kicking off
-      // a second network round-trip. Key includes params so requests that
-      // differ by ID aren't collapsed.
-      var _dk = _ck + JSON.stringify(params);
-      if (apiGet._inflight[_dk]) return apiGet._inflight[_dk];
+      // the same action+params), reuse the pending promise instead of kicking
+      // off a second network round-trip.
+      if (apiGet._inflight[_ck]) return apiGet._inflight[_ck];
       var _p = (async function () {
         try {
           var data = await _call(action, params);
           sessionStorage.setItem(_ck, JSON.stringify({ ts: Date.now(), data: data }));
           return data;
         } finally {
-          delete apiGet._inflight[_dk];
+          delete apiGet._inflight[_ck];
         }
       })();
-      apiGet._inflight[_dk] = _p;
+      apiGet._inflight[_ck] = _p;
       return _p;
     } catch(e) { /* fall through */ }
   }
   return _call(action, params);
 }
 apiGet._inflight = {};
+
+// Drop every sessionStorage cache entry for the given action (any params).
+// Used by apiPost's invalidation pass — entries are keyed by `ymir_<action>_<paramsJSON>`
+// so a prefix scan removes all of them.
+function _invalidateApiCache(action) {
+  var prefix = 'ymir_' + action + '_';
+  try {
+    for (var i = sessionStorage.length - 1; i >= 0; i--) {
+      var k = sessionStorage.key(i);
+      if (k && k.indexOf(prefix) === 0) sessionStorage.removeItem(k);
+    }
+  } catch(e) {}
+}
 // Which cache entries each write-action invalidates. Single source of truth.
 // Keys are apiPost action names; values are the getXxx reads whose cached
 // sessionStorage copy should be dropped after the POST so the next call
@@ -149,21 +163,27 @@ var _INVALIDATES = {
   disbandCrew:             ['getCrews', 'getCrewInvites'],
   inviteToCrew:            ['getCrews', 'getCrewInvites'],
   respondCrewInvite:       ['getCrews', 'getCrewInvites', 'getNotifications'],
-  bookSlot:                ['getCrews', 'getCrewInvites'],
-  unbookSlot:              ['getCrews', 'getCrewInvites'],
-  bulkBookSlots:           ['getCrews', 'getCrewInvites'],
+  // Slot writes drop the per-week getSlots cache so navigation reflects
+  // bookings immediately. Activity-type writes also drop it because the
+  // virtual-slot projection reads from activity_types.
+  bookSlot:                ['getCrews', 'getCrewInvites', 'getSlots'],
+  unbookSlot:              ['getCrews', 'getCrewInvites', 'getSlots'],
+  bulkBookSlots:           ['getCrews', 'getCrewInvites', 'getSlots'],
+  saveSlot:                ['getSlots'],
+  deleteSlot:              ['getSlots'],
+  saveRecurringSlots:      ['getSlots'],
+  deleteRecurrenceGroup:   ['getSlots'],
 };
+
+// saveActivityType / deleteActivityType already invalidate getConfig; also
+// drop getSlots since virtual slots are projected from activity_types.
+_INVALIDATES.saveActivityType   = _INVALIDATES.saveActivityType.concat(['getSlots']);
+_INVALIDATES.deleteActivityType = _INVALIDATES.deleteActivityType.concat(['getSlots']);
 
 async function apiPost(action, payload) {
   payload = payload || {};
   var invalidates = _INVALIDATES[action];
-  if (invalidates) {
-    try {
-      invalidates.forEach(function (k) {
-        sessionStorage.removeItem('ymir_' + k + '_');
-      });
-    } catch(e) {}
-  }
+  if (invalidates) invalidates.forEach(_invalidateApiCache);
   return _call(action, payload);
 }
 
