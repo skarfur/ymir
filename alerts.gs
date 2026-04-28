@@ -132,7 +132,9 @@ function saveConfigListItem_(key, patch) {
     item = Object.assign(arr[idx], patch, { updatedAt: ts });
     arr[idx] = item;
   } else {
-    item = Object.assign({ id: (patch && patch.id) || uid_() }, patch || {}, { createdAt: ts, updatedAt: ts });
+    // id last so an empty-string `patch.id` can't clobber the freshly-minted uid.
+    var newId = (patch && patch.id) || uid_();
+    item = Object.assign({}, patch || {}, { id: newId, createdAt: ts, updatedAt: ts });
     arr.push(item);
     created = true;
   }

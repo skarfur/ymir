@@ -136,8 +136,16 @@ async function saveActType() {
   bs.toDate   = document.getElementById("atBsToDate").value   || '';
   // Empty schedule (no fromDate/toDate AND no days) is normalized to null so
   // projection skips this class cleanly.
-  var hasSchedule = (bs.fromDate || bs.toDate || (Array.isArray(bs.daysOfWeek) && bs.daysOfWeek.length));
+  var dayCount = Array.isArray(bs.daysOfWeek) ? bs.daysOfWeek.length : 0;
+  var hasSchedule = (bs.fromDate || bs.toDate || dayCount);
   const schedSrc = document.getElementById("atSchedSrcCalendar").checked ? 'calendar' : 'bulk';
+  // Bulk-schedule guard: a half-filled schedule (date range without days, or
+  // days without a range) silently emits zero virtual slots from the
+  // projector. Block it at save so the admin sees the missing piece.
+  if (schedSrc === 'bulk' && hasSchedule && (!bs.fromDate || !bs.toDate || !dayCount)) {
+    toast(s("slot.selectDays"), "err");
+    return;
+  }
   const payload = {
     id: editingId, name,
     nameIS:   document.getElementById("atNameIS").value.trim(),
