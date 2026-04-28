@@ -1,10 +1,21 @@
 .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
     .filter-bar input, .filter-bar select { flex:1; min-width:140px; }
     /* Wrap the shared tripCard with the staff verify row so the two visually fuse. */
-    .slr-trip { margin-bottom:10px; }
-    .slr-trip .trip-card { margin-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
-    .slr-trip.is-verified .trip-card { border-left-color:var(--green); }
-    .slr-verify-row { display:flex; flex-direction:column; gap:4px; padding:10px 14px; background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface)); border:1px solid var(--border); border-top:0; border-bottom-left-radius:var(--radius-md); border-bottom-right-radius:var(--radius-md); }
+    .slr-trip {
+      margin-bottom:12px;
+      border:1px solid var(--border);
+      border-radius:var(--radius-md);
+      overflow:hidden;
+      box-shadow:var(--shadow-sm);
+    }
+    .slr-trip .trip-card {
+      margin-bottom:0;
+      border:0;
+      border-radius:0;
+      box-shadow:none;
+    }
+    .slr-trip.is-verified { border-left:3px solid var(--green); }
+    .slr-verify-row { display:flex; flex-direction:column; gap:4px; padding:10px 14px; background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface)); border-top:1px solid var(--border); }
     .slr-reviewer { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .slr-reviewer input[type="text"] { min-width:160px; }
     .slr-verified-by { padding-left:2px; }
