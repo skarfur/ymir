@@ -1,9 +1,13 @@
 const user = requireAuth(isStaff);
 const L = getLang();
 
-let allTrips    = [];
+// Globals consumed by shared/tripcard.js — must be `var` so tripCard()
+// references resolve through the same window slot we mutate at load time.
+var allTrips = [], allBoats = [], allMembers = [], allLocs = [];
+var _confirmations = { incoming: [], outgoing: [] };
+var _windUnit = (typeof getPref === 'function') ? getPref('windUnit', 'ms') : 'ms';
+
 let filtered    = [];
-let _allMembers = [];   // single source of truth for member list
 let _certDefs   = [];   // single source of truth for cert definitions
 let _certCats   = [];   // cert categories, used for bilingual label resolution
 let _verifyReqs = [];   // pending 'verify' handshakes
@@ -11,6 +15,17 @@ let _dataLoaded = false;
 
 // Currently selected member in the cert panel
 let _certMember = null;   // { id, name, kennitala }
+
+// Helpers required by shared/tripcard.js (each portal that uses tripCard
+// provides its own — keep in sync with captain.js / logbook/logbook.js).
+function parseDateParts(d) {
+  if (!d) return { day: '—', mon: '', yr: '' };
+  return { day: d.slice(8, 10) || '—', mon: String(new Date(d + 'T12:00:00').getMonth() + 1).padStart(2, '0'), yr: d.slice(0, 4) };
+}
+function bftLabel(b) {
+  var n = parseInt(b);
+  return ['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Severe gale'][n] || 'Force ' + b;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   buildHeader('logbook-review');
@@ -42,11 +57,14 @@ async function init() {
       apiGet('getVerificationRequests'),
     ]);
 
-    _allMembers = membersRes.members || [];
+    allMembers  = membersRes.members || [];
+    allBoats    = (cfgRes.boats || []).filter(b => !b.oos && b.oos !== 'true');
+    allLocs     = cfgRes.locations || [];
     _certDefs   = certDefsFromConfig(cfgRes.certDefs || []);
     _certCats   = certCategoriesFromConfig(cfgRes.certCategories || []);
     _verifyReqs = verifyRes.requests || [];
     _dataLoaded = true;
+    if (typeof registerBoatCats === 'function') registerBoatCats(cfgRes.boatCategories || []);
 
     // Populate cert-type dropdown once
     populateCertFilterType();
@@ -64,10 +82,10 @@ async function init() {
   }
 }
 
-// Resolve memberName from _allMembers if the trip doesn't have it
+// Resolve memberName from allMembers if the trip doesn't have it
 function _enrichTripMember(t) {
   if (t.memberName) return t;
-  const m = _allMembers.find(x =>
+  const m = allMembers.find(x =>
     (t.memberKennitala && x.kennitala === t.memberKennitala) ||
     (t.memberId       && x.id        === t.memberId)
   );
@@ -168,96 +186,28 @@ function renderTrips() {
   }
   const verifyTripIds = new Set(_verifyReqs.map(r => r.tripId).filter(Boolean));
   el.innerHTML = filtered.map(t => {
-    const isVer    = t.verified && t.verified !== 'false';
-    const isLinked = t.isLinked === true || t.isLinked === 'true';
-    const hasVerifyReq = verifyTripIds.has(t.id);
-    // Single status badge: VERIFIED > VERIFICATION REQUEST > PENDING REVIEW
-    const statusBadge = isVer
-      ? `<span class="badge badge-verified">✓ ${s('logrev.verified')}</span>`
-      : hasVerifyReq
-        ? `<span class="badge badge-verify-request">${s('logrev.verifyRequest')}</span>`
-        : `<span class="badge badge-pending">${s('logrev.pending')}</span>`;
-    return `<div class="trip-card${isVer ? ' verified' : ''}" id="tc-${esc(t.id)}">
-      <div class="trip-head">
-        <div>
-          <div class="trip-date">${esc(t.date || '—')} · <span style="color:var(--text)">${esc(t.memberName || '—')}</span></div>
-          <div class="trip-title">${esc(t.boatName || '—')} · ${esc(t.locationName || '—')}</div>
-          <div class="trip-meta">
-            <span>${esc(t.timeOut || '')}–${esc(t.timeIn || '')}</span>
-            <span>${(parseFloat(t.hoursDecimal) || 0).toFixed(1)}h</span>
-            <span>👥 ${esc(t.crew || 1)}</span>
-            ${t.beaufort ? `<span>💨 Force ${esc(t.beaufort)}</span>` : ''}
-            ${t.windDir  ? `<span>${esc(t.windDir)}</span>` : ''}
-          </div>
+    const isVer = t.verified && t.verified !== 'false';
+    // Surface the verification-request handshake on the card itself by setting
+    // the same flag that the shared trip card already understands.
+    const tripView = verifyTripIds.has(t.id) && !isVer
+      ? Object.assign({}, t, { validationRequested: true })
+      : t;
+    return `<div class="slr-trip${isVer ? ' is-verified' : ''}">
+      ${tripCard(tripView)}
+      <div class="slr-verify-row" id="vrow-${esc(t.id)}">
+        <div class="slr-reviewer">
+          <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
+                 value="${esc(t.staffComment || '')}" class="text-md flex-1">
+          ${isVer
+            ? `<button class="btn btn-secondary btn-sm" data-slr-click="unverifyTrip" data-slr-arg="${esc(t.id)}">✗ ${s('logrev.unverify')}</button>`
+            : `<button class="btn btn-primary btn-sm" data-slr-click="verifyTrip" data-slr-arg="${esc(t.id)}">✓ ${s('logrev.verify')}</button>`}
         </div>
-        <div class="flex-col gap-4" style="align-items:flex-end">
-          ${statusBadge}
-          ${isLinked ? `<span class="badge badge-linked">LINKED</span>` : ''}
-        </div>
-      </div>
-      ${t.skipperNote ? `<div class="trip-notes text-accent">📋 ${esc(t.skipperNote)}</div>` : ''}
-      ${t.notes ? `<div class="trip-notes">📝 ${esc(t.notes)}</div>` : ''}
-      ${t.staffComment && isVer ? `
-        <div class="staff-comment">
-          <div class="staff-comment-label">${s('incident.staffNotes').toUpperCase()}</div>
-          <div>${esc(t.staffComment)}</div>
-          ${t.verifiedBy ? `<div class="text-muted text-xs" style="margin-top:3px">— ${esc(t.verifiedBy)}</div>` : ''}
-        </div>` : ''}
-      <div class="trip-details" id="td-${esc(t.id)}" hidden>${_tripDetailRows(t)}</div>
-      <button type="button" class="trip-details-toggle" aria-expanded="false"
-              aria-controls="td-${esc(t.id)}"
-              data-slr-click="toggleTripDetails" data-slr-arg="${esc(t.id)}">
-        <span class="trip-details-label">${s('logrev.showDetails')}</span>
-        <span class="trip-details-chev" aria-hidden="true">▾</span>
-      </button>
-      <div class="verify-row" id="vrow-${esc(t.id)}">
-        <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
-               value="${esc(t.staffComment || '')}" class="text-md">
-        ${isVer
-          ? `<button class="btn btn-secondary btn-sm" style="flex-shrink:0"
-               data-slr-click="unverifyTrip" data-slr-arg="${esc(t.id)}">✗ ${s('logrev.unverify')}</button>`
-          : `<button class="btn btn-primary btn-sm" style="flex-shrink:0"
-               data-slr-click="verifyTrip" data-slr-arg="${esc(t.id)}">✓ ${s('logrev.verify')}</button>`}
+        ${t.staffComment && isVer && t.verifiedBy
+          ? `<div class="slr-verified-by text-xs text-muted">— ${esc(t.verifiedBy)}</div>`
+          : ''}
       </div>
     </div>`;
   }).join('');
-}
-
-// Build the expanded detail block — every field worth showing the reviewer.
-function _tripDetailRows(t) {
-  const rows = [];
-  const push = (label, val) => {
-    if (val === undefined || val === null || val === '' || val === false || val === 'false') return;
-    rows.push(`<div class="td-row"><span class="td-k">${esc(label)}</span><span class="td-v">${val}</span></div>`);
-  };
-  if (t.role)            push(s('logrev.detailRole'), esc(t.role));
-  if (t.crewNames)       push(s('logrev.detailCrew'), esc(t.crewNames));
-  if (t.helm === true || t.helm === 'true')       push(s('logrev.detailHelm'), '✓');
-  if (t.student === true || t.student === 'true') push(s('logrev.detailStudent'), '✓');
-  if (t.distanceNm)      push(s('logrev.detailDistance'), esc(t.distanceNm) + ' nm');
-  if (t.departurePort)   push(s('logrev.detailDeparture'), esc(t.departurePort));
-  if (t.arrivalPort)     push(s('logrev.detailArrival'), esc(t.arrivalPort));
-  if (t.beaufort || t.windDir) {
-    const wx = [t.beaufort ? 'Force ' + esc(t.beaufort) : '', esc(t.windDir || '')].filter(Boolean).join(' ');
-    push(s('logrev.detailWeather'), wx);
-  }
-  if (t.linkedTripId)     push(s('logrev.detailLinkedTrip'), `<code class="td-mono">${esc(t.linkedTripId)}</code>`);
-  if (t.linkedCheckoutId) push(s('logrev.detailLinkedCheckout'), `<code class="td-mono">${esc(t.linkedCheckoutId)}</code>`);
-  if (t.nonClub === true || t.nonClub === 'true') push(s('logrev.detailNonClub'), '✓');
-  if (t.createdAt)        push(s('logrev.detailCreated'), esc(String(t.createdAt).slice(0, 16).replace('T', ' ')));
-  if (t.verifiedAt)       push(s('logrev.detailVerifiedAt'), esc(String(t.verifiedAt).slice(0, 16).replace('T', ' ')) + (t.verifiedBy ? ' · ' + esc(t.verifiedBy) : ''));
-  return rows.join('') || `<div class="td-empty text-muted text-xs">—</div>`;
-}
-
-function toggleTripDetails(id) {
-  const panel = document.getElementById('td-' + id);
-  const btn   = document.querySelector(`[aria-controls="td-${id}"]`);
-  if (!panel || !btn) return;
-  const open = panel.hasAttribute('hidden');
-  if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
-  btn.setAttribute('aria-expanded', String(open));
-  const lbl = btn.querySelector('.trip-details-label');
-  if (lbl) lbl.textContent = s(open ? 'logrev.hideDetails' : 'logrev.showDetails');
 }
 
 // ── Verify / Unverify ─────────────────────────────────────────────────────────
@@ -304,7 +254,7 @@ function searchCertMember(q) {
   const drop = document.getElementById('certMemberDrop');
   if (!q || q.length < 2) { drop.style.display = 'none'; drop.innerHTML = ''; return; }
 
-  const matches = _allMembers
+  const matches = allMembers
     .filter(m => m.name && m.name.toLowerCase().includes(q.toLowerCase()))
     .slice(0, 8);
 
@@ -342,7 +292,7 @@ function renderCertPanelList() {
   const el = document.getElementById('certPanelList');
   if (!_certMember) return;
 
-  const m     = _allMembers.find(x => x.id === _certMember.id);
+  const m     = allMembers.find(x => x.id === _certMember.id);
   const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs, _certCats) : [];
 
   if (!certs.length) {
@@ -383,7 +333,7 @@ function openCertAssignModal(certId, subcatKey) {
     s('cert.assign') + ' — ' + _certMember.name;
 
   // Show current certs
-  const m     = _allMembers.find(x => x.id === _certMember.id);
+  const m     = allMembers.find(x => x.id === _certMember.id);
   const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs, _certCats) : [];
   document.getElementById('tcmCurrentList').innerHTML = certs.length
     ? certs.map(certBadgeHTML).join('')
@@ -451,7 +401,7 @@ async function tcmAssign() {
 
   if (!_certMember) { showToast(s('logrev.noMemberSelected'), 'err'); return; }
 
-  const m = _allMembers.find(x => x.id === _certMember.id);
+  const m = allMembers.find(x => x.id === _certMember.id);
   if (!m) { showToast(s('logrev.memberNotFound'), 'err'); return; }
 
   const newCert = {
@@ -473,8 +423,8 @@ async function tcmAssign() {
     await apiPost('saveMemberCert', { memberId: _certMember.id, certifications: updated });
 
     // Update local copy
-    const idx = _allMembers.findIndex(x => x.id === _certMember.id);
-    if (idx >= 0) _allMembers[idx] = { ..._allMembers[idx], certifications: JSON.stringify(updated) };
+    const idx = allMembers.findIndex(x => x.id === _certMember.id);
+    if (idx >= 0) allMembers[idx] = { ...allMembers[idx], certifications: JSON.stringify(updated) };
 
     // Refresh current-certs display inside modal
     document.getElementById('tcmCurrentList').innerHTML =
@@ -498,7 +448,7 @@ async function deleteCert(certId, subcatKey) {
   if (!_certMember) return;
   if (!await ymConfirm('Remove this credential?')) return;
 
-  const m = _allMembers.find(x => x.id === _certMember.id);
+  const m = allMembers.find(x => x.id === _certMember.id);
   if (!m) return;
 
   let certs = _parseJson(m.certifications, []);
@@ -506,8 +456,8 @@ async function deleteCert(certId, subcatKey) {
 
   try {
     await apiPost('saveMemberCert', { memberId: _certMember.id, certifications: certs });
-    const idx = _allMembers.findIndex(x => x.id === _certMember.id);
-    if (idx >= 0) _allMembers[idx] = { ..._allMembers[idx], certifications: JSON.stringify(certs) };
+    const idx = allMembers.findIndex(x => x.id === _certMember.id);
+    if (idx >= 0) allMembers[idx] = { ...allMembers[idx], certifications: JSON.stringify(certs) };
     renderCertPanelList();
     showToast(s('logrev.credentialRemoved'));
   } catch (e) {
@@ -558,7 +508,7 @@ function applyCertFilter() {
   if (!val) { el.innerHTML = ''; return; }
   const [certId, sub] = val.split('|');
   const def = _certDefs.find(d => d.id === certId);
-  const matches = (_allMembers || []).filter(m => {
+  const matches = (allMembers || []).filter(m => {
     const certs = _parseJson(m.certifications, []);
     return certs.some(c => c.certId === certId && (sub ? c.sub === sub : true));
   });
@@ -578,6 +528,39 @@ function applyCertFilter() {
       </div>`;
     }).join('');
 }
+
+// Minimal trip-card delegation — staff doesn't load shared/logbook.js, so we
+// reimplement the open-card / toggle-section toggles locally. Keeps tripCard's
+// own data-trip-action surface working without pulling in the full module.
+(function () {
+  if (typeof document === 'undefined' || document._slrTripListener) return;
+  document._slrTripListener = true;
+  document.addEventListener('click', function (e) {
+    // Don't collapse a trip card when interacting with its inner controls.
+    if (e.target.closest('[data-trip-nobubble]') && !e.target.closest('[data-trip-action]')) {
+      e.stopPropagation();
+      return;
+    }
+    var el = e.target.closest('[data-trip-action]');
+    if (!el) {
+      // Click outside any trip-card collapses any open ones (matches logbook.js behavior).
+      if (!e.target.closest('.trip-card')) {
+        document.querySelectorAll('.trip-card.open').forEach(function (c) { c.classList.remove('open'); });
+      }
+      return;
+    }
+    var action = el.dataset.tripAction;
+    if (action === 'open-card') {
+      e.stopPropagation();
+      el.parentElement.classList.toggle('open');
+    } else if (action === 'toggle-section') {
+      e.stopPropagation();
+      var detail = el.parentElement.querySelector('.exp-section-detail');
+      if (detail) detail.classList.toggle('open');
+      el.classList.toggle('expanded');
+    }
+  });
+})();
 
 (function () {
   if (typeof document === 'undefined' || document._slrListeners) return;

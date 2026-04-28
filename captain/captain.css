@@ -30,15 +30,10 @@
 .cq-card .btn-confirm:hover { background:var(--green)33; }
 .cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
 .cq-card .btn-reject:hover { background:var(--red)33; }
-.cq-details { margin-top:8px; padding:8px 10px; background:var(--surface); border-radius:var(--radius-sm); border:1px solid var(--border)55; display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:11px; }
-.cq-details .cd-row { display:contents; }
-.cq-details .cd-k { color:var(--muted); letter-spacing:.5px; text-transform:uppercase; font-size:9px; align-self:center; }
-.cq-details .cd-v { color:var(--text); word-break:break-word; }
-.cq-details .cd-mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:10px; color:var(--muted); }
-.cq-details-toggle { width:100%; margin-top:6px; padding:5px 10px; background:transparent; border:1px dashed var(--border); border-radius:var(--radius-sm); color:var(--muted); font:inherit; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:color .2s,border-color .2s; }
-.cq-details-toggle:hover { color:var(--accent-fg); border-color:var(--accent)55; }
-.cq-details-toggle[aria-expanded="true"] .cq-details-chev { transform:rotate(180deg); }
-.cq-details-chev { display:inline-block; transition:transform .2s; font-size:10px; }
+/* Validation list wraps a shared tripCard with the confirm/reject row */
+.cq-validation { margin-bottom:10px; }
+.cq-validation .trip-card { margin-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.cq-validation-actions { padding:8px 14px; background:var(--card); border:1px solid var(--border); border-top:0; border-bottom-left-radius:var(--radius-md); border-bottom-right-radius:var(--radius-md); }
 
 /* ── Maintenance severity ── */
 .sev-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
