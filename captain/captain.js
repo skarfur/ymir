@@ -263,13 +263,13 @@ function renderCrew() {
   }).join('');
 }
 
-async function respondCrew(id, status) {
+async function respondCrew(id, response) {
   // Optimistic UI — update card immediately
   var prev = _crewConfirmations.slice();
-  _crewConfirmations = _crewConfirmations.map(c => c.id === id ? Object.assign({}, c, { status }) : c);
+  _crewConfirmations = _crewConfirmations.map(c => c.id === id ? Object.assign({}, c, { status: response }) : c);
   renderCrew();
   try {
-    await apiPost('respondConfirmation', { id, status, responderName: user.name });
+    await apiPost('respondConfirmation', { id, response, responderName: user.name });
     showToast(s('toast.saved'), 'ok');
   } catch (e) {
     _crewConfirmations = prev;
