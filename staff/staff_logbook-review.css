@@ -4,13 +4,16 @@
     .slr-trip {
       margin-bottom:12px;
       border:1px solid var(--border);
+      border-left:3px solid var(--tc-cat, var(--border));
       border-radius:var(--radius-md);
       overflow:hidden;
       box-shadow:var(--shadow-sm);
     }
+    /* The inner trip-card sets border-left inline (style attribute) so we need
+       !important to suppress it — the wrapper draws the colored stripe instead. */
     .slr-trip .trip-card {
       margin-bottom:0;
-      border:0;
+      border:0 !important;
       border-radius:0;
       box-shadow:none;
     }
