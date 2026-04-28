@@ -180,9 +180,9 @@ function showTopTab(top) {
 
 // ── Settings sub-tab switching ─────────────────────────────────────────────────
 function showTab(tab) {
-  // Legacy tab aliases — three tabs collapsed into one Scheduling tab.
-  // Keep old bookmarks working.
-  if (tab === 'actTypes' || tab === 'volunteers' || tab === 'clubCal') tab = 'scheduling';
+  // Legacy tab aliases — old standalone tabs now live as col-sections inside
+  // Scheduling. Keep old bookmarks (?tab=slotCal etc.) working.
+  if (tab === 'actTypes' || tab === 'volunteers' || tab === 'clubCal' || tab === 'slotCal') tab = 'scheduling';
   document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
@@ -193,8 +193,7 @@ function showTab(tab) {
   if (el) el.classList.remove('hidden');
 
   if (tab === 'certs') renderCertDefs();
-  if (tab === 'slotCal') initSlotCalendar();
-  if (tab === 'scheduling') renderSchedulingTab();
+  if (tab === 'scheduling') { renderSchedulingTab(); initSlotCalendar(); }
   if (tab === 'passport') renderPassportAdmin();
   if (tab === 'handbook') renderHandbookAdmin();
 

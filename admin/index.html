@@ -123,7 +123,6 @@
         <button class="tab-btn"        data-tab="certs"      data-admin-click="showTab" data-admin-arg="certs"      data-s="admin.tabCerts"></button>
         <button class="tab-btn"        data-tab="flags"      data-admin-click="showTab" data-admin-arg="flags"      data-s="admin.tabFlags"></button>
         <button class="tab-btn"        data-tab="alerts"     data-admin-click="showTab" data-admin-arg="alerts"     data-s="admin.tabAlerts"></button>
-        <button class="tab-btn"        data-tab="slotCal"    data-admin-click="showTab" data-admin-arg="slotCal"    data-s="admin.tabReservations"></button>
         <button class="tab-btn"        data-tab="passport"   data-admin-click="showTab" data-admin-arg="passport"   data-s="passport.adminTitle">Rowing Passport</button>
         <button class="tab-btn"        data-tab="handbook"   data-admin-click="showTab" data-admin-arg="handbook"   data-s="admin.tabHandbook"></button>
       </div>
@@ -136,7 +135,6 @@
         <option value="certs"      data-s="admin.tabCerts"></option>
         <option value="flags"      data-s="admin.tabFlags"></option>
         <option value="alerts"     data-s="admin.tabAlerts"></option>
-        <option value="slotCal"    data-s="admin.tabReservations"></option>
         <option value="passport"   data-s="passport.adminTitle"></option>
         <option value="handbook"   data-s="admin.tabHandbook"></option>
       </select>
@@ -258,6 +256,81 @@
             <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
             <span id="clubCalSaveMsg" class="text-xs"></span>
           </div>
+        </div>
+      </div>
+
+      <!-- Reservation slots — slots projected from activity-type schedules,
+           plus any manually-created singles or recurring overrides. -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.tabReservations"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden">
+          <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc"></div>
+          <div class="d-flex items-center gap-10 mb-10 flex-wrap">
+            <select id="slotCatFilter" data-admin-change="loadSlotCalendar" class="filter-select"></select>
+            <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" class="filter-select">
+              <option value="" data-s="slot.allBoats">All boats</option>
+            </select>
+            <div class="slot-week-nav">
+              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="-1">&larr;</button>
+              <span id="slotWeekLabel" class="week-label"></span>
+              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="1">&rarr;</button>
+              <button class="btn btn-secondary" data-admin-click="slotWeekToday" data-s="slot.today">Today</button>
+            </div>
+          </div>
+          <div id="slotCalGrid" style="overflow-x:auto"></div>
+          <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
+            <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+            <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+          </div>
+          <details class="mt-12">
+            <summary class="text-xs text-muted cursor-pointer" data-s="admin.manualSlotAdd">Add slot manually</summary>
+            <div class="d-flex gap-8 mt-8 flex-wrap">
+              <button class="btn btn-secondary" data-s="slot.addSingle" data-s-attr="title" data-admin-click="openNewSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addSingle">+ Single</span></button>
+              <button class="btn btn-secondary" data-s="slot.addRecurring" data-s-attr="title" data-admin-click="openRecurringSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Reservation calendar sync — Ymir mirrors bookings to these GCals. -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.gcalSyncHdr"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden">
+          <div class="grid2">
+            <div>
+              <div class="text-xs fw-600 mb-4" data-s="admin.rowingCal"></div>
+              <div class="field">
+                <label for="charterRowingCalId" data-s="admin.calendarId"></label>
+                <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
+              </div>
+              <div class="check-row">
+                <input type="checkbox" id="charterRowingCalActive">
+                <label for="charterRowingCalActive" data-s="admin.syncRowing"></label>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs fw-600 mb-4" data-s="admin.keelboatCal"></div>
+              <div class="field">
+                <label for="charterKeelboatCalId" data-s="admin.calendarId"></label>
+                <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
+              </div>
+              <div class="check-row">
+                <input type="checkbox" id="charterKeelboatCalActive">
+                <label for="charterKeelboatCalActive" data-s="admin.syncKeelboat"></label>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-8 items-center mt-8">
+            <button class="btn btn-primary" data-admin-click="saveCharterCalendars" data-s="admin.saveCalSettings"></button>
+            <span id="charterCalSaveMsg" class="text-xs"></span>
+          </div>
+          <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
         </div>
       </div>
     </div>
@@ -673,64 +746,6 @@
           </div>
           <div id="passportAdminPreview" class="text-xs"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- ══ RESERVATION SLOT CALENDAR ════════════════════════════════════════ -->
-    <div id="tab-slotCal" class="hidden">
-      <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc">Charter slots are recurring, bookable time windows that captains can reserve for rowing teams or private charters. Create a recurring pattern to make slots available on selected days, then captains can book them from their page.</div>
-      <div class="border-muted rounded-6 mb-14" style="padding:12px">
-        <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
-        <div class="grid2">
-          <div>
-            <div class="text-xs fw-600 mb-4" data-s="admin.rowingCal"></div>
-            <div class="field">
-              <label for="charterRowingCalId" data-s="admin.calendarId"></label>
-              <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
-            </div>
-            <div class="check-row">
-              <input type="checkbox" id="charterRowingCalActive">
-              <label for="charterRowingCalActive" data-s="admin.syncRowing"></label>
-            </div>
-          </div>
-          <div>
-            <div class="text-xs fw-600 mb-4" data-s="admin.keelboatCal"></div>
-            <div class="field">
-              <label data-s="admin.calendarId"></label>
-              <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
-            </div>
-            <div class="check-row">
-              <input type="checkbox" id="charterKeelboatCalActive">
-              <label for="charterKeelboatCalActive" data-s="admin.syncKeelboat"></label>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex gap-8 items-center mt-8">
-          <button class="btn btn-primary" data-admin-click="saveCharterCalendars" data-s="admin.saveCalSettings"></button>
-          <span id="charterCalSaveMsg" class="text-xs"></span>
-        </div>
-        <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
-      </div>
-      <div class="mb-12">
-        <div class="d-flex items-center gap-10 mb-10 flex-wrap">
-          <select id="slotCatFilter" data-admin-change="loadSlotCalendar" class="filter-select"></select>
-          <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" class="filter-select">
-            <option value="" data-s="slot.allBoats">All boats</option>
-          </select>
-          <div class="slot-week-nav">
-            <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="-1">&larr;</button>
-            <span id="slotWeekLabel" class="week-label"></span>
-            <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="1">&rarr;</button>
-            <button class="btn btn-secondary" data-admin-click="slotWeekToday" data-s="slot.today">Today</button>
-            <button class="btn btn-primary" data-s="slot.addSingle" data-s-attr="title" data-admin-click="openNewSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addSingle">+ Single</span></button>
-            <button class="btn btn-primary" data-s="slot.addRecurring" data-s-attr="title" data-admin-click="openRecurringSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
-          </div>
-        </div>
-      </div>
-      <div id="slotCalGrid" style="overflow-x:auto"></div>
-      <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
-        <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-        <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
       </div>
     </div>
 
