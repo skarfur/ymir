@@ -18,6 +18,7 @@ function getHandbook_() {
       out.color = catColorMap[out.boatCategoryKey];
     }
     out.members = _hbHydrateMembers_(r, memberByKt);
+    out.areas   = _hbParseAreas_(r);
     return out;
   });
 
@@ -68,12 +69,35 @@ function _hbHydrateMembers_(r, memberByKt) {
       label:            a.label || '',
       labelIS:          a.labelIS || '',
       representsRoleId: a.representsRoleId || '',
+      // areaId pins a division-member to one of the parent role's `areas`
+      // entries; '' (default) means "lead" / division-level.
+      areaId:           a.areaId || '',
       sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
       name:  m ? (m.name  || '') : (a.kennitala ? '' : (r.name  || '')),
       phone: m ? (m.phone || '') : (r.phone || ''),
       email: m ? (m.email || '') : (r.email || ''),
     };
   }).sort(function (a, b) { return a.sortOrder - b.sortOrder; });
+}
+
+// Each division row stores its own list of areas (sub-units like Námskeið /
+// Iðkendur / Félagsstarf / Keppnisstarf) as JSON. Areas are per-division so
+// a club can override the default taxonomy where needed.
+function _hbParseAreas_(r) {
+  let arr = [];
+  try { arr = r.areas ? JSON.parse(r.areas) : []; } catch (e) { arr = []; }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter(function (a) { return a && a.id; })
+    .map(function (a, i) {
+      return {
+        id:        String(a.id),
+        label:     a.label || '',
+        labelIS:   a.labelIS || '',
+        sortOrder: a.sortOrder == null ? i : Number(a.sortOrder),
+      };
+    })
+    .sort(function (a, b) { return a.sortOrder - b.sortOrder; });
 }
 
 function _hbBoatCatColorMap_() {
@@ -141,9 +165,10 @@ function deleteHandbookContact_(b) {
 
 function saveHandbookRole_(b) {
   if (!b.title && !b.titleIS) return failJ('title required');
-  // Lazy-add the members column so a fresh deploy doesn't silently drop
-  // the field when admins haven't re-run setupSpreadsheet() yet.
+  // Lazy-add columns so a fresh deploy doesn't silently drop new fields
+  // when admins haven't re-run setupSpreadsheet() yet.
   addColIfMissing_('handbookRoles', 'members');
+  addColIfMissing_('handbookRoles', 'areas');
   addColIfMissing_('handbookRoles', 'boatCategoryKey');
   addColIfMissing_('handbookRoles', 'color');
   // Normalize members: drop blank rows, keep only the persisted fields so
@@ -161,10 +186,31 @@ function saveHandbookRole_(b) {
             label:            a.label || '',
             labelIS:          a.labelIS || '',
             representsRoleId: a.representsRoleId || '',
+            areaId:           a.areaId || '',
             sortOrder:        a.sortOrder == null ? i : Number(a.sortOrder),
           };
         });
       membersJson = JSON.stringify(arr);
+    }
+  }
+  // Areas (per-division sub-units). Drop blank entries; allocate ids for
+  // anything sent without one so member.areaId can resolve.
+  let areasJson = '';
+  if (b.areas != null) {
+    let arr = [];
+    try { arr = typeof b.areas === 'string' ? JSON.parse(b.areas) : b.areas; } catch (e) {}
+    if (Array.isArray(arr)) {
+      arr = arr
+        .filter(function (a) { return a && (a.label || a.labelIS); })
+        .map(function (a, i) {
+          return {
+            id:        a.id || ('area_' + uid_()),
+            label:     a.label || '',
+            labelIS:   a.labelIS || '',
+            sortOrder: a.sortOrder == null ? i : Number(a.sortOrder),
+          };
+        });
+      areasJson = JSON.stringify(arr);
     }
   }
   const r = _hbUpsert_('handbookRoles', 'role_', b, {
@@ -180,6 +226,7 @@ function saveHandbookRole_(b) {
     color:           b.color || '',
     boatCategoryKey: b.boatCategoryKey || '',
     members:         membersJson,
+    areas:           areasJson,
     sortOrder:       Number(b.sortOrder || 0),
   });
   return okJ({ id: r.id, saved: true });
@@ -192,9 +239,10 @@ function deleteHandbookRole_(b) {
 }
 
 function seedHandbookOrgChart_() {
+  addColIfMissing_('handbookRoles', 'areas');
   const existing = (readAll_('handbookRoles') || []).filter(_hbActive_);
-  // Dedupe key includes parentId so the same titleIS can coexist under
-  // different parents (e.g. "Námskeið" appears under every deild).
+  // Dedupe key includes parentId so duplicate titles under different parents
+  // are tolerated (legacy data may still have them pre-migration).
   const have = {};
   existing.forEach(function (r) {
     have[_hbSeedKey_(r)] = r;
@@ -215,6 +263,8 @@ function seedHandbookOrgChart_() {
       notesIS:         '',
       color:           '',
       boatCategoryKey: '',
+      members:         '',
+      areas:           '',
       active:          true,
       createdAt:       now_(),
       updatedAt:       now_(),
@@ -224,6 +274,15 @@ function seedHandbookOrgChart_() {
     added++;
     return row;
   }
+
+  // Each division ships with the same four areas of responsibility by default;
+  // admins can rename/add/remove per division afterwards.
+  const defaultAreas = JSON.stringify([
+    { id: 'area_courses',     label: 'Courses',           labelIS: 'Námskeið',     sortOrder: 1 },
+    { id: 'area_participants',label: 'Members',           labelIS: 'Iðkendur',     sortOrder: 2 },
+    { id: 'area_social',      label: 'Social activities', labelIS: 'Félagsstarf',  sortOrder: 3 },
+    { id: 'area_competition', label: 'Competition',       labelIS: 'Keppnisstarf', sortOrder: 4 },
+  ]);
 
   // Stjórn isn't a boat category, so it carries an explicit color; deildir
   // resolve theirs from the linked boatCategoryKey at read time.
@@ -237,26 +296,105 @@ function seedHandbookOrgChart_() {
     { title: 'Kayak division',       titleIS: 'Kajakadeild',    boatCategoryKey: 'kayak' },
     { title: 'Wingfoiling division', titleIS: 'Bævængjudeild',  boatCategoryKey: 'wingfoil' },
   ];
-  // Each deild has the same four areas of responsibility. Sub-roles are seeded
-  // empty (no kennitala) so admins can assign people; deild color cascades
-  // visually via CSS so sub-roles don't need their own color.
-  const subroles = [
-    { title: 'Courses',           titleIS: 'Námskeið',     sortOrder: 1 },
-    { title: 'Members',           titleIS: 'Iðkendur',     sortOrder: 2 },
-    { title: 'Social activities', titleIS: 'Félagsstarf',  sortOrder: 3 },
-    { title: 'Competition',       titleIS: 'Keppnisstarf', sortOrder: 4 },
-  ];
   deildSeeds.forEach(function (d, i) {
-    const deild = ensure(Object.assign({ parentId: stjorn.id, sortOrder: i + 1 }, d));
-    subroles.forEach(function (sr) {
-      ensure(Object.assign({ parentId: deild.id }, sr));
-    });
+    ensure(Object.assign({ parentId: stjorn.id, sortOrder: i + 1, areas: defaultAreas }, d));
   });
   return okJ({ ok: true, added: added });
 }
 
 function _hbSeedKey_(r) {
   return String(r.titleIS || r.title || '').toLowerCase() + '|' + (r.parentId || '');
+}
+
+// One-shot migration: collapse level-3 sub-role rows into per-division `areas`
+// + member.areaId. Idempotent — re-running on already-migrated data is a no-op
+// (no level-3 rows left to collapse). Triggered manually via the admin UI or
+// from the Apps Script editor.
+function migrateHandbookOrgChartToAreas_() {
+  addColIfMissing_('handbookRoles', 'areas');
+  const all = (readAll_('handbookRoles') || []).filter(_hbActive_);
+  const byId = {};
+  all.forEach(function (r) { byId[r.id] = r; });
+
+  // Identify level-3 rows: parent has a parent. Roots have no parent (level
+  // 1); divisions have a root parent (level 2); anything deeper is a sub-role.
+  const subRoles = all.filter(function (r) {
+    const p = r.parentId ? byId[r.parentId] : null;
+    return !!(p && p.parentId);
+  });
+  if (!subRoles.length) return okJ({ ok: true, migrated: 0, note: 'nothing to migrate' });
+
+  // Group sub-roles by their parent (the division).
+  const byParent = {};
+  subRoles.forEach(function (sr) {
+    (byParent[sr.parentId] = byParent[sr.parentId] || []).push(sr);
+  });
+
+  let migrated = 0;
+  Object.keys(byParent).forEach(function (parentId) {
+    const parent = byId[parentId];
+    if (!parent) return;
+    const subs = byParent[parentId].slice().sort(function (a, b) {
+      return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+    });
+
+    // Build the parent's area list, reusing each sub-role's id so any
+    // existing member.representsRoleId pointers resolve to an areaId.
+    let existingAreas = [];
+    try { existingAreas = parent.areas ? JSON.parse(parent.areas) : []; } catch (e) {}
+    if (!Array.isArray(existingAreas)) existingAreas = [];
+    const haveArea = {};
+    existingAreas.forEach(function (a) { if (a && a.id) haveArea[a.id] = true; });
+
+    subs.forEach(function (sr, i) {
+      if (!haveArea[sr.id]) {
+        existingAreas.push({
+          id:        sr.id,
+          label:     sr.title   || '',
+          labelIS:   sr.titleIS || '',
+          sortOrder: Number(sr.sortOrder || (i + 1)),
+        });
+        haveArea[sr.id] = true;
+      }
+    });
+
+    // Move sub-role members up to the parent, tagging each with areaId.
+    let parentMembers = [];
+    try { parentMembers = parent.members ? JSON.parse(parent.members) : []; } catch (e) {}
+    if (!Array.isArray(parentMembers)) parentMembers = [];
+
+    subs.forEach(function (sr) {
+      let srMembers = [];
+      try { srMembers = sr.members ? JSON.parse(sr.members) : []; } catch (e) {}
+      if (!Array.isArray(srMembers)) return;
+      srMembers.forEach(function (m) {
+        parentMembers.push(Object.assign({}, m, { areaId: sr.id }));
+      });
+    });
+
+    // Convert any level-2 representsRoleId references into areaId now that
+    // the represented sub-role is an area on the same row.
+    parentMembers.forEach(function (m) {
+      if (m.representsRoleId && haveArea[m.representsRoleId]) {
+        if (!m.areaId) m.areaId = m.representsRoleId;
+        m.representsRoleId = '';
+      }
+    });
+
+    updateRow_('handbookRoles', 'id', parent.id, {
+      areas:     JSON.stringify(existingAreas),
+      members:   JSON.stringify(parentMembers),
+      updatedAt: now_(),
+    });
+
+    // Soft-delete the level-3 rows.
+    subs.forEach(function (sr) {
+      updateRow_('handbookRoles', 'id', sr.id, { active: false, updatedAt: now_() });
+      migrated++;
+    });
+  });
+
+  return okJ({ ok: true, migrated: migrated });
 }
 
 // ── Docs (PDFs + URLs) ───────────────────────────────────────────────────────

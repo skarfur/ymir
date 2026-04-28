@@ -143,6 +143,7 @@ var _INVALIDATES = {
   saveHandbookContact:  ['getHandbook'],
   deleteHandbookContact:['getHandbook'],
   seedHandbookOrgChart: ['getHandbook'],
+  migrateHandbookOrgChartToAreas: ['getHandbook'],
   // Crews + invites.
   createCrew:              ['getCrews', 'getCrewInvites'],
   disbandCrew:             ['getCrews', 'getCrewInvites'],

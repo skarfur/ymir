@@ -392,8 +392,8 @@ function openHandbookRoleModal(id) {
   document.getElementById('hbRoleTitleListIS').innerHTML =
     [...titlesIS].sort().map(t => `<option value="${esc(t)}">`).join('');
 
-  // Members: hydrated array from getHandbook, or a JSON string if a
-  // previous save left one in local state, or the legacy single-kennitala
+  // Members + areas: hydrated arrays from getHandbook, or JSON strings if a
+  // previous save left them in local state, or the legacy single-kennitala
   // fallback so pre-multi-member rows edit cleanly.
   let rowMembers = row ? row.members : null;
   if (typeof rowMembers === 'string') {
@@ -405,12 +405,26 @@ function openHandbookRoleModal(id) {
         label:            m.label || '',
         labelIS:          m.labelIS || '',
         representsRoleId: m.representsRoleId || '',
+        areaId:           m.areaId || '',
       }))
     : [];
   if (!_hbRoleMembers.length && row && (row.kennitala || row.name)) {
-    _hbRoleMembers = [{ kennitala: row.kennitala || '', label: '', labelIS: '', representsRoleId: '' }];
+    _hbRoleMembers = [{ kennitala: row.kennitala || '', label: '', labelIS: '', representsRoleId: '', areaId: '' }];
   }
-  renderHbRoleMembers();
+
+  let rowAreas = row ? row.areas : null;
+  if (typeof rowAreas === 'string') {
+    try { rowAreas = JSON.parse(rowAreas); } catch (e) { rowAreas = []; }
+  }
+  _hbRoleAreas = Array.isArray(rowAreas)
+    ? rowAreas.map(a => ({
+        id:      a.id || ('area_' + Math.random().toString(36).slice(2, 10)),
+        label:   a.label || '',
+        labelIS: a.labelIS || '',
+      }))
+    : [];
+
+  renderHbRoleEditor();
 
   const catSel = document.getElementById('hbRoleBoatCat');
   const catOpts = ['<option value="">' + esc(s('admin.handbook.role.boatCatNone')) + '</option>'];
@@ -443,24 +457,25 @@ function openHandbookRoleModal(id) {
 }
 
 async function saveHandbookRole() {
-  let membersArr;
   try {
     const title   = document.getElementById('hbRoleTitle').value.trim();
     const titleIS = document.getElementById('hbRoleTitleIS').value.trim();
     if (!title && !titleIS) { toast(s('admin.nameRequired') || 'Title required', 'err'); return; }
-    membersArr = _hbReadMembersFromDOM().filter(a => a.kennitala || a.label || a.labelIS);
+    const membersArr = _hbReadMembersFromDOM().filter(a => a.kennitala || a.label || a.labelIS);
+    const areasArr   = _hbReadAreasFromDOM().filter(a => a.label || a.labelIS);
     return await _hbSave('saveHandbookRole', {
-    id:              _hbAdmin.editingRoleId || undefined,
-    parentId:        document.getElementById('hbRoleParent').value || '',
-    title:           title,
-    titleIS:         titleIS,
-    notes:           document.getElementById('hbRoleNotes').value,
-    notesIS:         document.getElementById('hbRoleNotesIS').value,
-    color:           document.getElementById('hbRoleColor').dataset.userSet
-                       ? document.getElementById('hbRoleColor').value : '',
-    boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
-    members:         membersArr,
-    sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
+      id:              _hbAdmin.editingRoleId || undefined,
+      parentId:        document.getElementById('hbRoleParent').value || '',
+      title:           title,
+      titleIS:         titleIS,
+      notes:           document.getElementById('hbRoleNotes').value,
+      notesIS:         document.getElementById('hbRoleNotesIS').value,
+      color:           document.getElementById('hbRoleColor').dataset.userSet
+                         ? document.getElementById('hbRoleColor').value : '',
+      boatCategoryKey: document.getElementById('hbRoleBoatCat').value || '',
+      members:         membersArr,
+      areas:           areasArr,
+      sortOrder:       Number(document.getElementById('hbRoleSort').value) || 0,
     }, 'roles', 'hbRoleModal', renderHandbookRolesList);
   } catch (e) {
     console.error('saveHandbookRole:', e);
@@ -478,76 +493,20 @@ async function deleteHandbookRole() {
   }
 }
 
-// ── Role members editor (multi-member fieldset) ─────────────────────────────
+// ── Role editor (lead members + per-area sub-units) ─────────────────────────
+//
+// Level 1 (board):    flat member list with a "represents division" column.
+// Level 2 (division): "Lead" section + one section per area in role.areas.
+//                     Areas are editable inline (label EN/IS, add/remove).
+//                     Each member's section determines their areaId.
+// Level 3+ (legacy):  flat member list, no represents, no areas.
+//
+// Internal state kept flat: every member carries its own areaId. DOM rows
+// live inside an ancestor with `data-area-id="..."` so reading from DOM
+// preserves the membership.
 
 let _hbRoleMembers = [];
-
-function renderHbRoleMembers() {
-  const list = document.getElementById('hbRoleMembersList');
-  if (!list) return;
-  if (!_hbRoleMembers.length) {
-    list.innerHTML = `<div class="empty-note text-xs">${esc(s('admin.handbook.role.noMembers'))}</div>`;
-    return;
-  }
-  const memberOpts = _hbMemberOptions();
-  const repOpts    = _hbRepresentsOptions();
-  // Level 3+ roles can't represent anything below them, so the column is
-  // hidden entirely. The CSS variant collapses the grid to four columns.
-  const showRep    = repOpts.length > 0;
-  list.innerHTML = _hbRoleMembers.map((m, i) => _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep)).join('');
-  // Set each select's value explicitly after render. Same pattern as
-  // openHandbookContactModal — relying on inline `selected` inside a parent
-  // innerHTML can leave the dropdown showing the first concrete option.
-  list.querySelectorAll('.hb-member-row').forEach((row, i) => {
-    const m = _hbRoleMembers[i];
-    row.querySelector('[data-field="kennitala"]').value = m.kennitala || '';
-    const repEl = row.querySelector('[data-field="representsRoleId"]');
-    if (repEl) repEl.value = m.representsRoleId || '';
-  });
-}
-
-function _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep) {
-  // Without an explicit `selected` on the placeholder, an unmatched value
-  // makes the browser fall back to the first concrete option.
-  const ktMatch  = !!m.kennitala && memberOpts.some(o => o.kt === m.kennitala);
-  const ktOpts = memberOpts.map(o =>
-    `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
-  ).join('');
-  const rowCls = 'hb-member-row' + (showRep ? '' : ' hb-member-row--no-rep');
-  return `
-    <div class="${rowCls}">
-      <select data-field="kennitala">
-        <option value=""${ktMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.kennitalaNone'))}</option>
-        ${ktOpts}
-      </select>
-      <input type="text" data-field="label"
-             placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
-      <input type="text" data-field="labelIS"
-             placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
-      ${showRep ? _hbRepresentsCellHtml(m, repOpts) : ''}
-      <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
-    </div>`;
-}
-
-function _hbRepresentsCellHtml(m, repOpts) {
-  const repMatch = !!m.representsRoleId && repOpts.some(o => o.id === m.representsRoleId);
-  const opts = repOpts.map(o =>
-    `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
-  ).join('');
-  return `<select data-field="representsRoleId">
-    <option value=""${repMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.representsNone'))}</option>
-    ${opts}
-  </select>`;
-}
-
-function _hbMemberOptions() {
-  if (typeof members === 'undefined' || !Array.isArray(members)) return [];
-  return members
-    .filter(m => bool(m.active))
-    .slice()
-    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
-    .map(m => ({ kt: String(m.kennitala || ''), label: m.name || m.kennitala }));
-}
+let _hbRoleAreas   = [];
 
 // Determine the depth of the role being edited (1 = root/board, 2 = under
 // root/division, 3+ = under division). Reads the parent dropdown so this
@@ -561,67 +520,195 @@ function _hbEditingLevel() {
   return parent.parentId ? 3 : 2;
 }
 
-// Roles to choose from for "represents". Scope depends on level:
-//   • Level 1 (board)     → any level-2 role (a division)
-//   • Level 2 (division)  → only level-3 children of self (sub-roles in same division)
-//   • Level 3+            → no represents option (returns empty; column is hidden)
-// Always excludes the role being edited so a role can't represent itself.
-function _hbRepresentsOptions() {
-  const editingId = _hbAdmin.editingRoleId;
-  const level     = _hbEditingLevel();
-  const sortMap   = (r) => ({ id: r.id, label: _hbT(r, 'title') });
-  const byTitle   = (a, b) => String(a.label).localeCompare(String(b.label));
-
-  if (level === 1) {
-    const rootIds = new Set(_hbAdmin.roles.filter(r => !r.parentId).map(r => r.id));
-    return _hbAdmin.roles
-      .filter(r => r.id !== editingId && r.parentId && rootIds.has(r.parentId))
-      .map(sortMap)
-      .sort(byTitle);
-  }
-  if (level === 2) {
-    if (!editingId) return []; // new level-2 role has no children yet
-    return _hbAdmin.roles
-      .filter(r => r.id !== editingId && r.parentId === editingId)
-      .map(sortMap)
-      .sort(byTitle);
-  }
-  return [];
+function _hbMemberOptions() {
+  if (typeof members === 'undefined' || !Array.isArray(members)) return [];
+  return members
+    .filter(m => bool(m.active))
+    .slice()
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+    .map(m => ({ kt: String(m.kennitala || ''), label: m.name || m.kennitala }));
 }
 
-// Re-render the members fieldset when the parent dropdown changes — the
-// "represents" column scope depends on the editing role's level, which is
-// derived from the chosen parent.
+// "Represents" only applies to board members (level 1) → represented = a
+// division (level-2 role). Level 2 uses areaId; level 3+ has no equivalent.
+function _hbRepresentsOptions() {
+  if (_hbEditingLevel() !== 1) return [];
+  const editingId = _hbAdmin.editingRoleId;
+  const rootIds = new Set(_hbAdmin.roles.filter(r => !r.parentId).map(r => r.id));
+  return _hbAdmin.roles
+    .filter(r => r.id !== editingId && r.parentId && rootIds.has(r.parentId))
+    .map(r => ({ id: r.id, label: _hbT(r, 'title') }))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)));
+}
+
+function renderHbRoleEditor() {
+  const root = document.getElementById('hbRoleEditor');
+  if (!root) return;
+  const level      = _hbEditingLevel();
+  const memberOpts = _hbMemberOptions();
+  const repOpts    = _hbRepresentsOptions();
+  const showRep    = repOpts.length > 0;
+
+  if (level === 2) {
+    const leadHtml = _hbAreaSectionHtml('', s('admin.handbook.role.leadHdr'), null, memberOpts, false, repOpts);
+    const areasHtml = _hbRoleAreas.map(a =>
+      _hbAreaSectionHtml(a.id, '', a, memberOpts, true, repOpts)
+    ).join('');
+    root.innerHTML = `
+      ${leadHtml}
+      <fieldset class="hb-areas-fieldset">
+        <legend>${esc(s('admin.handbook.role.areasHdr'))}</legend>
+        <div class="text-xs text-muted mb-8">${esc(s('admin.handbook.role.areasHint'))}</div>
+        <div id="hbRoleAreasList">${areasHtml}</div>
+        <button type="button" class="btn btn-secondary btn-sm" data-admin-click="addHbRoleArea">${esc(s('admin.handbook.role.addArea'))}</button>
+      </fieldset>`;
+  } else {
+    root.innerHTML = _hbAreaSectionHtml('', s('admin.handbook.role.membersHdr'), null, memberOpts, false, repOpts);
+  }
+  _hbApplyMemberSelectValues();
+}
+
+// One section: a fieldset containing a header + member rows + "Add person"
+// button. Used for Lead (areaId=''), each area (editable header), and the
+// flat editor at level 1/3+ (static header, no areas).
+function _hbAreaSectionHtml(areaId, staticTitle, area, memberOpts, editableHeader, repOpts) {
+  const showRep = !editableHeader && repOpts.length > 0; // only at level 1 (no areas)
+  const rows = _hbRoleMembers
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => (m.areaId || '') === areaId);
+  const rowsHtml = rows
+    .map(({ m, i }) => _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep))
+    .join('') ||
+    `<div class="empty-note text-xs">${esc(s('admin.handbook.role.noMembers'))}</div>`;
+  const head = editableHeader
+    ? `<div class="hb-area-head">
+         <input type="text" data-area-field="label"   placeholder="${esc(s('admin.handbook.role.areaLabelPh'))}"   value="${esc(area.label || '')}">
+         <input type="text" data-area-field="labelIS" placeholder="${esc(s('admin.handbook.role.areaLabelISPh'))}" value="${esc(area.labelIS || '')}">
+         <button type="button" class="row-del" data-admin-click="removeHbRoleArea" data-admin-arg="${esc(area.id)}" aria-label="${esc(s('btn.delete'))}">×</button>
+       </div>`
+    : `<legend>${esc(staticTitle)}</legend>`;
+  return `
+    <fieldset class="hb-members-fieldset hb-area-block" data-area-id="${esc(areaId)}">
+      ${head}
+      <div class="hb-area-members">${rowsHtml}</div>
+      <button type="button" class="btn btn-secondary btn-sm" data-admin-click="addHbRoleAreaMember" data-admin-arg="${esc(areaId)}">${esc(s('admin.handbook.role.addMember'))}</button>
+    </fieldset>`;
+}
+
+function _hbMemberRowHtml(m, i, memberOpts, repOpts, showRep) {
+  const ktOpts = memberOpts.map(o =>
+    `<option value="${esc(o.kt)}">${esc(o.label)}</option>`
+  ).join('');
+  const rowCls = 'hb-member-row' + (showRep ? '' : ' hb-member-row--no-rep');
+  return `
+    <div class="${rowCls}" data-row-idx="${i}">
+      <select data-field="kennitala">
+        <option value="">${esc(s('admin.handbook.role.kennitalaNone'))}</option>
+        ${ktOpts}
+      </select>
+      <input type="text" data-field="label"
+             placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
+      <input type="text" data-field="labelIS"
+             placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
+      ${showRep ? _hbRepresentsCellHtml(repOpts) : ''}
+      <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
+    </div>`;
+}
+
+function _hbRepresentsCellHtml(repOpts) {
+  const opts = repOpts.map(o =>
+    `<option value="${esc(o.id)}">${esc(o.label)}</option>`
+  ).join('');
+  return `<select data-field="representsRoleId">
+    <option value="">${esc(s('admin.handbook.role.representsNone'))}</option>
+    ${opts}
+  </select>`;
+}
+
+// Set each select's value explicitly after render. Same pattern as
+// openHandbookContactModal — relying on inline `selected` inside a parent
+// innerHTML can leave the dropdown showing the first concrete option.
+function _hbApplyMemberSelectValues() {
+  document.querySelectorAll('#hbRoleEditor .hb-member-row').forEach(row => {
+    const idx = Number(row.dataset.rowIdx);
+    const m = _hbRoleMembers[idx];
+    if (!m) return;
+    row.querySelector('[data-field="kennitala"]').value = m.kennitala || '';
+    const repEl = row.querySelector('[data-field="representsRoleId"]');
+    if (repEl) repEl.value = m.representsRoleId || '';
+  });
+}
+
+// Re-render the editor when the parent dropdown changes: the level (and
+// therefore the editor layout) depends on which parent the admin picked.
 function hbRoleParentChanged() {
   _hbRoleMembers = _hbReadMembersFromDOM();
-  renderHbRoleMembers();
+  _hbRoleAreas   = _hbReadAreasFromDOM();
+  renderHbRoleEditor();
 }
 
-function addHbRoleMember() {
+function addHbRoleAreaMember(areaId) {
   _hbRoleMembers = _hbReadMembersFromDOM();
-  _hbRoleMembers.push({ kennitala: '', label: '', labelIS: '', representsRoleId: '' });
-  renderHbRoleMembers();
+  _hbRoleAreas   = _hbReadAreasFromDOM();
+  _hbRoleMembers.push({ kennitala: '', label: '', labelIS: '', representsRoleId: '', areaId: areaId || '' });
+  renderHbRoleEditor();
 }
 
 function removeHbRoleMember(idx) {
-  // Capture the user's current edits before re-rendering (otherwise typing
-  // in a row above the deleted one would be lost).
   _hbRoleMembers = _hbReadMembersFromDOM();
+  _hbRoleAreas   = _hbReadAreasFromDOM();
   _hbRoleMembers.splice(Number(idx), 1);
-  renderHbRoleMembers();
+  renderHbRoleEditor();
+}
+
+function addHbRoleArea() {
+  _hbRoleMembers = _hbReadMembersFromDOM();
+  _hbRoleAreas   = _hbReadAreasFromDOM();
+  _hbRoleAreas.push({
+    id: 'area_' + Math.random().toString(36).slice(2, 10),
+    label: '',
+    labelIS: '',
+  });
+  renderHbRoleEditor();
+}
+
+function removeHbRoleArea(areaId) {
+  _hbRoleMembers = _hbReadMembersFromDOM();
+  _hbRoleAreas   = _hbReadAreasFromDOM();
+  // Move members from the removed area back to "Lead" (areaId='') so they
+  // aren't silently dropped if the admin re-creates the area later.
+  _hbRoleMembers.forEach(m => { if (m.areaId === areaId) m.areaId = ''; });
+  _hbRoleAreas = _hbRoleAreas.filter(a => a.id !== areaId);
+  renderHbRoleEditor();
 }
 
 function _hbReadMembersFromDOM() {
-  return Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row')).map(row => {
-    // Represents column is omitted at level 3+, so guard the lookup.
+  const rows = Array.from(document.querySelectorAll('#hbRoleEditor .hb-member-row'));
+  // Sort by data-row-idx (assigned at render time) so the returned order
+  // matches the original _hbRoleMembers order. DOM order is lead-first then
+  // area-by-area, which differs from the flat array — without this sort a
+  // splice-by-index after read would target the wrong member.
+  rows.sort((a, b) => Number(a.dataset.rowIdx || 0) - Number(b.dataset.rowIdx || 0));
+  return rows.map(row => {
+    const block = row.closest('[data-area-id]');
+    const areaId = block ? block.dataset.areaId : '';
     const repEl = row.querySelector('[data-field="representsRoleId"]');
     return {
       kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
       label:            row.querySelector('[data-field="label"]').value.trim(),
       labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
       representsRoleId: repEl ? repEl.value : '',
+      areaId:           areaId || '',
     };
   });
+}
+
+function _hbReadAreasFromDOM() {
+  return Array.from(document.querySelectorAll('#hbRoleAreasList .hb-area-block')).map(block => ({
+    id:      block.dataset.areaId || ('area_' + Math.random().toString(36).slice(2, 10)),
+    label:   (block.querySelector('[data-area-field="label"]')   || { value: '' }).value.trim(),
+    labelIS: (block.querySelector('[data-area-field="labelIS"]') || { value: '' }).value.trim(),
+  }));
 }
 
 function hbRoleColorPicked() {
@@ -643,6 +730,23 @@ async function seedHandbookOrgChart() {
     await loadHandbookAdmin(true);
     renderHandbookRolesList();
     toast(s('toast.saved') + (res.added ? ' (+' + res.added + ')' : ''));
+  } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
+}
+
+// One-shot migration to the per-division `areas` model. Safe to re-run —
+// once every level-3 sub-role has been collapsed up to its parent, the
+// backend reports "nothing to migrate". Triggered from the Org-chart admin
+// card by the "Migrate sub-roles → areas" button.
+async function migrateHandbookOrgChart() {
+  if (!await ymConfirm(s('admin.handbookMigrateAreasConfirm'))) return;
+  try {
+    const res = await apiPost('migrateHandbookOrgChartToAreas', {});
+    await loadHandbookAdmin(true);
+    renderHandbookRolesList();
+    const n = res.migrated || 0;
+    toast(n > 0
+      ? s('toast.saved') + ' (' + n + ')'
+      : s('admin.handbookMigrateAreasNoop'));
   } catch (e) { toast(s('toast.error') + ': ' + e.message, 'err'); }
 }
 
