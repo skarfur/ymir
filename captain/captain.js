@@ -674,6 +674,21 @@ async function loadCqSlots() {
     _cqSlots = res.slots || [];
   } catch(e) { _cqSlots = []; }
   renderCqSlots();
+  // Warm adjacent weeks so prev/next navigation hits the cache instead of
+  // round-tripping. Fire-and-forget; failures are silently ignored.
+  _cqPrefetchAdjacent(boatId);
+}
+
+function _cqPrefetchAdjacent(boatId) {
+  [-7, 7].forEach(function(offset) {
+    var ws = new Date(_cqWeekStart); ws.setDate(ws.getDate() + offset);
+    var we = new Date(ws); we.setDate(we.getDate() + 6);
+    apiGet('getSlots', {
+      boatId: boatId,
+      fromDate: ws.toISOString().slice(0, 10),
+      toDate: we.toISOString().slice(0, 10),
+    }).catch(function() {});
+  });
 }
 
 var _cqCalendar = null;

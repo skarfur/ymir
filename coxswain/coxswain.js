@@ -547,6 +547,20 @@ async function loadCxSlots() {
     _cxSlots = res.slots || [];
   } catch(e) { _cxSlots = []; }
   renderCxSlots();
+  // Warm adjacent weeks so prev/next navigation hits the cache.
+  _cxPrefetchAdjacent(boatId);
+}
+
+function _cxPrefetchAdjacent(boatId) {
+  [-7, 7].forEach(function(offset) {
+    var ws = new Date(_cxWeekStart); ws.setDate(ws.getDate() + offset);
+    var we = new Date(ws); we.setDate(we.getDate() + 6);
+    apiGet('getSlots', {
+      boatId: boatId,
+      fromDate: ws.toISOString().slice(0, 10),
+      toDate: we.toISOString().slice(0, 10),
+    }).catch(function() {});
+  });
 }
 
 var _cxCalendar = null;
