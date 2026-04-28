@@ -772,7 +772,15 @@ async function bookCqSlot(slotId) {
     renderCqSlots();
   }
   try {
-    await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name, bookingColor: bookingColor });
+    var res = await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name, bookingColor: bookingColor });
+    // Booking a virtual class-slot materializes a real reservationSlots row
+    // on the backend; capture the new id (and drop the `virtual` flag) so a
+    // subsequent unbook in the same session targets the materialized row
+    // instead of being rejected as "virtual class slot — nothing to unbook".
+    if (slot && res && res.slotId && res.slotId !== slotId) {
+      slot.id = res.slotId;
+      slot.virtual = false;
+    }
     toast(s('slot.booked'));
   } catch(e) {
     toast(e.message || 'Error', 'err');
@@ -787,6 +795,17 @@ async function unbookCqSlot(slotId) {
   if (slot) {
     slot.bookedByKennitala = '';
     slot.bookedByName = '';
+    slot.bookedByCrewId = '';
+    slot.bookingColor = '';
+    // Class-slot bookings are dematerialized on the backend (the row is
+    // deleted so the projection re-emits the virtual). Mirror that locally:
+    // restore the virtual flag + vslot-* id so the renderer paints the held
+    // pattern instead of plain "open", and a follow-up click books cleanly
+    // against the projected id.
+    if (slot.sourceActivityClassId) {
+      slot.virtual = true;
+      slot.id = 'vslot-' + slot.sourceActivityClassId + '-' + slot.boatId + '-' + slot.date;
+    }
     renderCqSlots();
   }
   try {
