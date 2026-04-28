@@ -418,6 +418,7 @@ input[type=file]:disabled::-webkit-file-upload-button { cursor: not-allowed; }
 .field--compact input, .field--compact select, .field--compact textarea {
   padding: 9px 10px; font-size: 13px;
 }
+.field--compact select { padding-right: 34px; }
 
 textarea { min-height: 70px; }
 
@@ -441,7 +442,7 @@ textarea { min-height: 70px; }
 }
 .filter-bar select,
 .filter-bar input {
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -475,7 +476,7 @@ textarea { min-height: 70px; }
 .filter-select {
   width: auto;
   height: 30px;
-  padding: 5px 9px;
+  padding: 5px 26px 5px 9px;
   font-size: 11px;
 }
 
