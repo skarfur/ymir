@@ -17,7 +17,12 @@ function getHandbook_() {
   // One-shot migration from the legacy per-handbook tabs. Runs at most once
   // per config key — only triggers when the config key is empty AND the old
   // sheet still has data. Idempotent on re-entry.
-  try { _hbAutoMigrateSheetsToConfig_(); } catch (e) { Logger.log('handbook auto-migrate: ' + e); }
+  var migration = null;
+  try { migration = _hbAutoMigrateSheetsToConfig_(); }
+  catch (e) {
+    Logger.log('handbook auto-migrate: ' + e);
+    migration = { counts: { roles: 0, docs: 0, contacts: 0 }, notes: { error: String(e) } };
+  }
 
   const rolesRaw    = readConfigList_('handbookRoles').filter(_hbActive_);
   const contactsRaw = readConfigList_('handbookContacts').filter(_hbActive_);
@@ -53,6 +58,12 @@ function getHandbook_() {
     contacts: contacts.sort(_hbByOrder_),
     docs:     docs.sort(_hbByOrder_),
     info:     info.sort(_hbByOrder_),
+    // Surface auto-migration breadcrumbs in the response so admins can see
+    // *why* a target was skipped without digging into the Apps Script log.
+    // Stays in the response (it's tiny — a 3-key counts object plus a 3-key
+    // notes object) and naturally settles to "skip:already-populated" once
+    // migration has run.
+    _migration: migration,
   });
 }
 
