@@ -144,10 +144,25 @@ function _volRowHtml(ev, L) {
 
 function openVolEventModal(id) {
   _veEditingId = id || null;
-  // Search saved events first, then the merged list (which includes virtual events).
-  const ev = id
-    ? (volunteerEvents.find(x => x.id === id) || (window._volMergedEvents || []).find(x => x.id === id))
-    : null;
+  // Search saved events first, then the merged list (which includes virtual
+  // events). On the Scheduling tab the standalone volunteer card no longer
+  // exists, so renderVolunteerEvents short-circuits and _volMergedEvents stays
+  // unset — fall back to expanding virtuals from actTypes so clicking a
+  // template-projected occurrence in Upcoming events opens the editor with
+  // the existing data instead of an empty Add form.
+  let ev = null;
+  if (id) {
+    ev = volunteerEvents.find(x => x.id === id)
+      || (window._volMergedEvents || []).find(x => x.id === id)
+      || null;
+    if (!ev && typeof expandVolunteerActivityTypes === 'function') {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const horizonIso = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        .toISOString().slice(0, 10);
+      const virt = expandVolunteerActivityTypes(actTypes || [], todayIso, horizonIso);
+      ev = virt.find(x => x.id === id) || null;
+    }
+  }
   document.getElementById("volEventModalTitle").textContent = ev ? s('admin.volEventModal.edit') : s('admin.volEventModal.add');
   document.getElementById("veTitle").value = ev ? (ev.title || '') : '';
   document.getElementById("veTitleIS").value = ev ? (ev.titleIS || '') : '';
