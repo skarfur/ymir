@@ -110,6 +110,8 @@ function renderHandbookContactsAdmin() {
 function renderHandbookRulesAdmin() {
   const en = document.getElementById('hbRulesContent');
   const is = document.getElementById('hbRulesContentIS');
+  const titleEn = document.getElementById('hbRulesTitle');
+  const titleIs = document.getElementById('hbRulesTitleIS');
   if (!en || !is) return;
   const rows = (_hbAdmin.info || []).filter(it => {
     const k = it.kind || 'info';
@@ -121,6 +123,10 @@ function renderHandbookRulesAdmin() {
   if (en.dataset.mounted !== '1') {
     en.value = main ? (main.content   || '') : '';
     is.value = main ? (main.contentIS || '') : '';
+    if (titleEn) titleEn.value = main ? (main.title   || '') : '';
+    if (titleIs) titleIs.value = main ? (main.titleIS || '') : '';
+    if (titleEn) titleEn.placeholder = s('handbook.rulesHdr');
+    if (titleIs) titleIs.placeholder = s('handbook.rulesHdr');
     en.dataset.mounted = '1';
     is.dataset.mounted = '1';
   }
@@ -131,13 +137,17 @@ function renderHandbookRulesAdmin() {
 async function saveHandbookRulesBody() {
   const en = document.getElementById('hbRulesContent');
   const is = document.getElementById('hbRulesContentIS');
+  const titleEn = document.getElementById('hbRulesTitle');
+  const titleIs = document.getElementById('hbRulesTitleIS');
   const status = document.getElementById('hbRulesStatus');
   try {
+    const titleVal   = (titleEn && titleEn.value.trim()) || 'Rules';
+    const titleISVal = (titleIs && titleIs.value.trim()) || 'Reglur';
     const payload = {
       id:        'rules_main',
       kind:      'rules',
-      title:     'Rules',
-      titleIS:   'Reglur',
+      title:     titleVal,
+      titleIS:   titleISVal,
       content:   en.value,
       contentIS: is.value,
       sortOrder: 0,
@@ -342,26 +352,84 @@ function renderHandbookRolesList() {
     card.innerHTML = `<div class="empty-state">${s('admin.handbookEmptyRoles')}</div>`;
     return;
   }
-  // Flat list (the read portal handles the tree).
-  const byId = {};
-  _hbAdmin.roles.forEach(r => { byId[r.id] = r; });
-  const rows = _hbAdmin.roles.slice().sort((a, b) =>
+  // Group by parent so the ↑/↓ arrows operate on siblings only. Top-level
+  // roots first, then each root's children indented under it, recursively.
+  const sortFn = (a, b) =>
     (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
-    String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title'))
-  );
-  card.innerHTML = rows.map(r => {
-    const parent = r.parentId && byId[r.parentId] ? _hbT(byId[r.parentId], 'title') : '';
-    const sub = parent ? `<span class="text-xs text-muted"> ↳ ${esc(parent)}</span>` : '';
+    String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title'));
+  const childrenByParent = {};
+  _hbAdmin.roles.forEach(r => {
+    const k = r.parentId || '';
+    (childrenByParent[k] = childrenByParent[k] || []).push(r);
+  });
+  Object.keys(childrenByParent).forEach(k => childrenByParent[k].sort(sortFn));
+
+  const renderRow = (r, isFirst, isLast, depth) => {
     const memberCount = Array.isArray(r.members) ? r.members.length : 0;
-    const who = memberCount
-      ? ` <span class="text-xs text-muted">(${memberCount})</span>`
-      : '';
+    const who = memberCount ? ` <span class="text-xs text-muted">(${memberCount})</span>` : '';
+    const indent = depth ? ` style="padding-left:${depth * 16}px"` : '';
+    const upDis   = isFirst ? ' disabled' : '';
+    const downDis = isLast  ? ' disabled' : '';
     return `
-      <div class="list-row">
-        <span class="list-name">${esc(_hbT(r, 'title'))}${who}${sub}</span>
+      <div class="list-row"${indent}>
+        <span class="list-name">${esc(_hbT(r, 'title'))}${who}</span>
+        <button class="row-edit" data-admin-click="moveHbRole" data-admin-arg="${r.id}" data-admin-arg2="-1" title="${esc(s('admin.handbook.role.moveUp'))}" aria-label="${esc(s('admin.handbook.role.moveUp'))}"${upDis}>↑</button>
+        <button class="row-edit" data-admin-click="moveHbRole" data-admin-arg="${r.id}" data-admin-arg2="1"  title="${esc(s('admin.handbook.role.moveDown'))}" aria-label="${esc(s('admin.handbook.role.moveDown'))}"${downDis}>↓</button>
         <button class="row-edit" data-admin-click="openHandbookRoleModal" data-admin-arg="${r.id}">${s('btn.edit')}</button>
       </div>`;
-  }).join('');
+  };
+
+  const renderGroup = (parentId, depth) => {
+    const sibs = childrenByParent[parentId] || [];
+    return sibs.map((r, i) => {
+      const row = renderRow(r, i === 0, i === sibs.length - 1, depth);
+      const sub = childrenByParent[r.id] ? renderGroup(r.id, depth + 1) : '';
+      return row + sub;
+    }).join('');
+  };
+
+  card.innerHTML = renderGroup('', 0);
+}
+
+// Swap a role with its previous (dir=-1) or next (dir=+1) sibling. Re-numbers
+// the affected sibling group with stride-10 sortOrder values and POSTs only
+// the rows whose value actually changed. The full sort is recomputed locally
+// so the optimistic re-render matches the server result.
+async function moveHbRole(id, dir) {
+  const d = Number(dir);
+  if (d !== -1 && d !== 1) return;
+  const row = _hbAdmin.roles.find(r => r.id === id);
+  if (!row) return;
+  const parentId = row.parentId || '';
+  const sortFn = (a, b) =>
+    (Number(a.sortOrder || 0) - Number(b.sortOrder || 0)) ||
+    String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title'));
+  const sibs = _hbAdmin.roles.filter(r => (r.parentId || '') === parentId).sort(sortFn);
+  const i = sibs.findIndex(r => r.id === id);
+  if (i < 0) return;
+  const j = i + d;
+  if (j < 0 || j >= sibs.length) return;
+
+  const reordered = sibs.slice();
+  [reordered[i], reordered[j]] = [reordered[j], reordered[i]];
+
+  const items = [];
+  reordered.forEach((r, idx) => {
+    const next = (idx + 1) * 10;
+    if (Number(r.sortOrder || 0) !== next) {
+      r.sortOrder = next;
+      items.push({ id: r.id, sortOrder: next });
+    }
+  });
+  if (!items.length) return;
+  renderHandbookRolesList(); // optimistic
+  try {
+    await apiPost('reorderHandbookRoles', { items: items });
+  } catch (e) {
+    toast(s('toast.saveFailed') + ': ' + e.message, 'err');
+    await loadHandbookAdmin(true);
+    renderHandbookRolesList();
+  }
 }
 
 function openHandbookRoleModal(id) {
