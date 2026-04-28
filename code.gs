@@ -114,6 +114,7 @@ const ADMIN_ACTIONS_ = {
   // Handbook (admin-managed reference content).
   saveHandbookRole:    true,
   deleteHandbookRole:  true,
+  reorderHandbookRoles:true,
   saveHandbookDoc:     true,
   deleteHandbookDoc:   true,
   uploadHandbookDoc:   true,
@@ -1359,6 +1360,7 @@ function route_(action, b, caller) {
     case 'getHandbook':         return getHandbook_();
     case 'saveHandbookRole':    return saveHandbookRole_(b);
     case 'deleteHandbookRole':  return deleteHandbookRole_(b);
+    case 'reorderHandbookRoles':return reorderHandbookRoles_(b);
     case 'saveHandbookDoc':     return saveHandbookDoc_(b);
     case 'deleteHandbookDoc':   return deleteHandbookDoc_(b);
     case 'uploadHandbookDoc':   return uploadHandbookDoc_(b);

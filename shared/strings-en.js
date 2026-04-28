@@ -1822,6 +1822,8 @@ var _STRINGS_FLAT = {
   "admin.handbook.role.titleIS":  "Heiti einingar (IS)",
   "admin.handbook.role.parent":   "Reports to (parent node)",
   "admin.handbook.role.parentNone":"— none (top-level) —",
+  "admin.handbook.role.moveUp":   "Move up",
+  "admin.handbook.role.moveDown": "Move down",
   "admin.handbook.role.kennitalaNone":"— none —",
   "admin.handbook.role.membersHdr":"People in this node",
   "admin.handbook.role.membersHint":"People in this node. Each picks a member from the directory; phone and email are pulled from the member record. The title field captures their specific responsibility (Chair, Coordinator, etc.).",

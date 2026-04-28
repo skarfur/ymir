@@ -238,6 +238,27 @@ function deleteHandbookRole_(b) {
   return r.error || okJ({ ok: true });
 }
 
+// Bulk-update sortOrder on a set of role rows. Used by the admin reorder
+// arrows: only the sortOrder column is touched, so the heavier members/areas
+// JSON columns stay untouched even if they aren't in the payload.
+function reorderHandbookRoles_(b) {
+  let items = b.items;
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items); } catch (e) { items = []; }
+  }
+  if (!Array.isArray(items)) return failJ('items required');
+  let updated = 0;
+  items.forEach(function (it) {
+    if (!it || !it.id) return;
+    const ok = updateRow_('handbookRoles', 'id', it.id, {
+      sortOrder: Number(it.sortOrder || 0),
+      updatedAt: now_(),
+    });
+    if (ok) updated++;
+  });
+  return okJ({ updated: updated });
+}
+
 function seedHandbookOrgChart_() {
   addColIfMissing_('handbookRoles', 'areas');
   const existing = (readAll_('handbookRoles') || []).filter(_hbActive_);

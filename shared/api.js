@@ -150,6 +150,7 @@ var _INVALIDATES = {
   // Handbook (admin-managed). Members + staff read via getHandbook.
   saveHandbookRole:    ['getHandbook'],
   deleteHandbookRole:  ['getHandbook'],
+  reorderHandbookRoles:['getHandbook'],
   saveHandbookDoc:     ['getHandbook'],
   deleteHandbookDoc:   ['getHandbook'],
   saveHandbookInfo:     ['getHandbook'],

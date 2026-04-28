@@ -1822,6 +1822,8 @@ var _STRINGS_FLAT = {
   "admin.handbook.role.titleIS":  "Heiti einingar (IS)",
   "admin.handbook.role.parent":   "Heyrir undir (yfireining)",
   "admin.handbook.role.parentNone":"— ekkert (efsta lag) —",
+  "admin.handbook.role.moveUp":   "Færa upp",
+  "admin.handbook.role.moveDown": "Færa niður",
   "admin.handbook.role.kennitalaNone":"— ekkert —",
   "admin.handbook.role.membersHdr":"Fólk í þessari einingu",
   "admin.handbook.role.membersHint":"Fólk sem gegnir þessari einingu. Hver færsla velur félagsmann úr skrá; sími og netfang eru sótt úr félagaskrá. Hlutverk-reiturinn lýsir tilteknum starfa þeirra (formaður, koordinator o.s.frv.).",
