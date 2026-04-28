@@ -1054,27 +1054,6 @@
      times only; the date is fixed (admin picks the row from the timeline).
      Save calls overrideClassOccurrence which writes a status='upcoming'
      scheduled_events row + PATCHes the GCal master's instance. -->
-<div class="modal-overlay hidden" id="rescheduleModal" data-admin-close-self>
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3 data-s="admin.rescheduleOccurrence"></h3>
-      <button class="modal-close-x" data-admin-close="rescheduleModal">&times;</button>
-    </div>
-    <div class="text-md mb-10">
-      <span id="rsClassName" class="fw-500"></span>
-      <span class="text-muted" id="rsDate"></span>
-    </div>
-    <div class="grid2">
-      <div class="field"><label data-s="admin.defaultStart" for="rsStartTime"></label><input type="time" id="rsStartTime"></div>
-      <div class="field"><label data-s="admin.defaultEnd"   for="rsEndTime"  ></label><input type="time" id="rsEndTime"  ></div>
-    </div>
-    <div class="btn-row mt-14">
-      <button class="btn btn-secondary" data-admin-close="rescheduleModal" data-s="btn.cancel"></button>
-      <button class="btn btn-primary"   data-admin-click="saveReschedule" data-s="btn.save"></button>
-    </div>
-  </div>
-</div>
-
 <!-- Volunteer event modal -->
 <div class="modal-overlay hidden" id="volEventModal" data-admin-close-self>
   <div class="modal" style="max-width:560px;max-height:92vh;overflow-y:auto">

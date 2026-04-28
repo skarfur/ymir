@@ -24,6 +24,35 @@ idempotent (skips keys that already have data) and also exposed
 manually as the `migrateHandbookSheetsToConfig` action. After it runs,
 the old `handbook_roles` / `handbook_docs` / `handbook_contacts` tabs
 sit unused and can be deleted from the spreadsheet.
+## Unreleased — trip-card fixes: student badge scope, captain-page actions, verify-pending persistence
+
+Three independent bugs surfaced on the same trip card:
+
+- **Student badge in collapsed view leaked across users.** `tripCard()`
+  flagged `isStudent` from `t.student` alone, which is correct on the
+  member's own logbook (one row per user) but wrong on the captain
+  portal (`myTrips` is fleet-wide, so `t` may belong to another
+  member). Now gated by `isOwner` so the collapsed-view STUDENT badge
+  reflects "I was the student on this trip", not "a student was
+  aboard". The expanded crew list still labels each individual
+  student.
+- **Captain trip cards: "Edit trip" / "Add photos" silently no-op'd.**
+  `openModal('editTripModal')` returns silently when the element is
+  missing, and the two modals + their `data-lb-*` delegated listener
+  only existed in `/logbook/index.html`. `shared/logbook-edit.js` now
+  injects both modals (idempotent — the logbook portal still ships
+  its own copy) and registers the `data-lb-*` listener with the same
+  `document._lbListeners` guard so nothing double-fires. Captain
+  portal also now loads `shared/trip-form.js` so the injected
+  weather-fields container has a generator.
+- **"Verification pending" badge disappeared after refresh.**
+  `requestVerification_` only created the handshake row; it never set
+  `validationRequested` on the trip itself, so after reload the badge
+  depended on `_confirmations.outgoing`, which the captain portal
+  doesn't load (no `#confBadge`). Backend now mirrors the flag onto
+  the trip on request, clears it on `applyRejectionCleanup_` for
+  `verify`, and `requestVerification` / `requestValidation` invalidate
+  `getTrips` in addition to `getConfirmations`.
 
 ## Unreleased — Handbook portal (`/handbook/`)
 
