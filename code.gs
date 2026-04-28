@@ -30,10 +30,11 @@ const TABS_ = {
   scheduledEvents: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
-  handbookRoles:    'handbook_roles',
-  handbookDocs:     'handbook_docs',
+  // Handbook roles/docs/contacts now live as JSON arrays under the config
+  // keys 'handbookRoles' / 'handbookDocs' / 'handbookContacts'. Only `info`
+  // keeps a dedicated tab — its content cells can hold long-form rich text
+  // that risks the 50,000-char per-cell limit when packed into a JSON blob.
   handbookInfo:     'handbook_info',
-  handbookContacts: 'handbook_contacts',
 };
 
 const CLUB_LANG_ = 'IS';
@@ -124,6 +125,7 @@ const ADMIN_ACTIONS_ = {
   deleteHandbookContact:true,
   seedHandbookOrgChart: true,
   migrateHandbookOrgChartToAreas: true,
+  migrateHandbookSheetsToConfig: true,
 };
 
 // Staff-or-admin actions. Intentionally narrow: many actions like
@@ -1370,6 +1372,7 @@ function route_(action, b, caller) {
     case 'deleteHandbookContact':return deleteHandbookContact_(b);
     case 'seedHandbookOrgChart': return seedHandbookOrgChart_();
     case 'migrateHandbookOrgChartToAreas': return migrateHandbookOrgChartToAreas_();
+    case 'migrateHandbookSheetsToConfig':  return migrateHandbookSheetsToConfig_();
     case 'getTrips': return getTrips_(b.kennitala, parseInt(b.limit) || 100, b);
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);

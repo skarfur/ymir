@@ -3,6 +3,27 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — Handbook storage: roles/docs/contacts move to config
+
+Three of the four handbook tables (`handbook_roles`, `handbook_docs`,
+`handbook_contacts`) collapse into JSON arrays under config keys
+`handbookRoles` / `handbookDocs` / `handbookContacts` — same pattern as
+`boats`, `locations`, `activity_types`, etc. Save/delete now go through
+the existing `saveConfigListItem_` / `deleteConfigListItem_` helpers.
+
+`handbook_info` keeps its own sheet: bilingual rich-text content can run
+long, and packing many sections into one cell risks the 50,000-char
+per-cell limit.
+
+`getHandbook` stays a separate endpoint (storage ≠ delivery): every page
+calls `getConfig`, but only the handbook page needs handbook content.
+
+Migration: `getHandbook_` auto-runs a one-shot copy from the legacy
+sheets to the new config keys on first read after deploy. It's
+idempotent (skips keys that already have data) and also exposed
+manually as the `migrateHandbookSheetsToConfig` action. After it runs,
+the old `handbook_roles` / `handbook_docs` / `handbook_contacts` tabs
+sit unused and can be deleted from the spreadsheet.
 ## Unreleased — trip-card fixes: student badge scope, captain-page actions, verify-pending persistence
 
 Three independent bugs surfaced on the same trip card:
