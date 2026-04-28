@@ -782,6 +782,9 @@ async function bookCqSlot(slotId) {
       slot.virtual = false;
     }
     toast(s('slot.booked'));
+    // Reconcile with backend truth — cheap defensive refresh in case the
+    // optimistic update missed a field (e.g. tentative flag for forming crews).
+    loadCqSlots();
   } catch(e) {
     toast(e.message || 'Error', 'err');
     loadCqSlots();
@@ -811,6 +814,10 @@ async function unbookCqSlot(slotId) {
   try {
     await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
     toast(s('slot.unbooked'));
+    // Reconcile with backend truth — guarantees the rendered state matches
+    // even if the optimistic update missed something (e.g. dematerialized
+    // class slot needs the freshly-projected vslot back).
+    loadCqSlots();
   } catch(e) {
     if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCqSlots(); }
     toast(e.message || 'Error', 'err');
