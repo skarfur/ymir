@@ -1873,7 +1873,9 @@ var _STRINGS_FLAT = {
   "admin.handbook.info.modalAdd": "Bæta við færslu",
   "admin.handbook.info.modalEdit":"Breyta færslu",
 
-  "admin.handbook.rules.hint":       "Einn frjáls texti fyrir allan klúbbinn. Markdown-snið styðjast (notaðu tækjastikuna eða skrifaðu hreint markdown).",
+  "admin.handbook.rules.hint":       "Einn frjáls texti fyrir allan klúbbinn. Markdown-snið styðjast (notaðu tækjastikuna eða skrifaðu hreint markdown). Titill kaflans birtist sem fyrirsögn á handbókarsíðunni; skildu eftir auðan reit til að nota sjálfgefið heiti.",
+  "admin.handbook.rules.titleEN":    "Titill kafla (EN)",
+  "admin.handbook.rules.titleIS":    "Titill kafla (IS)",
   "admin.handbook.rules.contentEN":  "Texti (EN)",
   "admin.handbook.rules.contentIS":  "Texti (IS)",
   "admin.handbook.rules.saved":      "Vistað.",

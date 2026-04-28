@@ -40,8 +40,8 @@ function filterHandbook() {
 
 function renderHandbook() {
   renderContactsSection();
-  renderOrgChart();
   renderRulesSection();
+  renderOrgChart();
   renderDocsList();
 
   const anyVisible =
@@ -260,6 +260,11 @@ function _renderOrgNode(r, visiblePred, byId, level) {
 // Legacy children (pre-migration level-3 sub-role rows) get folded in as
 // virtual sections at the bottom so their members stay visible until an
 // admin runs the one-shot areas migration.
+//
+// Layout matches level-1 (board): each member row is a colored stripe + chip
+// rather than an uppercase header above plain rows. Stripe shades step down
+// from the division accent so neighboring areas read distinctly while still
+// belonging to the same hue family.
 function _renderDivisionBody(r, legacyChildren) {
   const members = r.members || [];
   const areas = (r.areas || []).slice();
@@ -272,30 +277,52 @@ function _renderDivisionBody(r, legacyChildren) {
     buckets[a].push(m);
   });
 
-  const sections = [];
+  const groups = [];
   if (buckets[''].length) {
-    sections.push(_renderDivisionSection('', buckets['']));
+    groups.push({ chipText: '', members: buckets[''] });
   }
   areas.forEach(a => {
     if (!buckets[a.id].length) return; // hide empty areas in the public view
-    sections.push(_renderDivisionSection(_t(a, 'label'), buckets[a.id]));
+    groups.push({ chipText: _t(a, 'label'), members: buckets[a.id] });
   });
   (legacyChildren || []).forEach(c => {
     const cm = c.members || [];
     if (!cm.length) return;
-    sections.push(_renderDivisionSection(_t(c, 'title'), cm));
+    groups.push({ chipText: _t(c, 'title'), members: cm });
   });
-  return sections.join('');
+
+  const shades = ['100%', '70%', '52%', '38%', '28%', '20%'];
+  return groups.map((g, i) => {
+    const shade = shades[Math.min(i, shades.length - 1)];
+    return _renderDivisionMembers(g.members, shade, g.chipText);
+  }).join('');
 }
 
-function _renderDivisionSection(headingText, members) {
-  const header = headingText
-    ? `<div class="hb-orgsection-hdr">${esc(headingText)}</div>`
-    : '';
-  return `<div class="hb-orgsection">
-    ${header}
-    ${_renderOrgNodeMembers(members, null, false)}
-  </div>`;
+function _renderDivisionMembers(members, shade, chipText) {
+  if (!members.length) return '';
+  const stripe = `color-mix(in srgb, var(--hb-accent) ${shade}, transparent)`;
+  const stripeStyle = ` style="--hb-rep:${stripe}"`;
+  return `<ul class="hb-member-list hb-member-list--board hb-member-list--division">${
+    members.map(m => {
+      const name  = esc(m.name || '');
+      const label = esc(_t(m, 'label'));
+      const phone = m.phone ? `<a href="tel:${esc(m.phone)}" class="hb-link">${esc(m.phone)}</a>` : '';
+      const email = m.email ? `<a href="mailto:${esc(m.email)}" class="hb-link">${esc(m.email)}</a>` : '';
+      const chip = chipText
+        ? `<span class="hb-represents-chip" style="--hb-chip:var(--hb-accent)">${esc(chipText)}</span>`
+        : '';
+      const contact = (phone || email)
+        ? `<span class="hb-member-contact">${phone}${phone && email ? ' · ' : ''}${email}</span>`
+        : '';
+      return `
+        <li class="hb-member-item hb-member-item--board hb-member-item--has-rep"${stripeStyle}>
+          <span class="hb-member-name">${name || '—'}</span>
+          ${label ? `<span class="hb-member-label">${label}</span>` : ''}
+          ${chip}
+          ${contact}
+        </li>`;
+    }).join('')
+  }</ul>`;
 }
 
 function _renderOrgNodeMembers(members, byId, isBoardLike) {
@@ -338,14 +365,17 @@ function renderRulesSection() {
   const rulesRows = _hb.info.filter(it => (it.kind || 'info') === 'rules' || (it.kind || 'info') === 'info');
   const main = rulesRows.find(it => it.id === 'rules_main') || rulesRows[0];
   const body = main ? _t(main, 'content') : '';
+  const customTitle = main ? _t(main, 'title') : '';
   const wrap = document.getElementById('hbRulesSection');
   const target = document.getElementById('hbRulesList');
+  const hdr = document.getElementById('hbRulesHdr');
   if (!body || !_matchesFilter(body)) {
     wrap.classList.add('hidden');
     target.innerHTML = '';
     return;
   }
   wrap.classList.remove('hidden');
+  if (hdr) hdr.textContent = customTitle || s('handbook.rulesHdr');
   target.innerHTML = `<div class="hb-rules-body">${_renderMarkdown(body)}</div>`;
 }
 

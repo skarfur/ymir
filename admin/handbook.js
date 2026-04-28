@@ -110,6 +110,8 @@ function renderHandbookContactsAdmin() {
 function renderHandbookRulesAdmin() {
   const en = document.getElementById('hbRulesContent');
   const is = document.getElementById('hbRulesContentIS');
+  const titleEn = document.getElementById('hbRulesTitle');
+  const titleIs = document.getElementById('hbRulesTitleIS');
   if (!en || !is) return;
   const rows = (_hbAdmin.info || []).filter(it => {
     const k = it.kind || 'info';
@@ -121,6 +123,10 @@ function renderHandbookRulesAdmin() {
   if (en.dataset.mounted !== '1') {
     en.value = main ? (main.content   || '') : '';
     is.value = main ? (main.contentIS || '') : '';
+    if (titleEn) titleEn.value = main ? (main.title   || '') : '';
+    if (titleIs) titleIs.value = main ? (main.titleIS || '') : '';
+    if (titleEn) titleEn.placeholder = s('handbook.rulesHdr');
+    if (titleIs) titleIs.placeholder = s('handbook.rulesHdr');
     en.dataset.mounted = '1';
     is.dataset.mounted = '1';
   }
@@ -131,13 +137,17 @@ function renderHandbookRulesAdmin() {
 async function saveHandbookRulesBody() {
   const en = document.getElementById('hbRulesContent');
   const is = document.getElementById('hbRulesContentIS');
+  const titleEn = document.getElementById('hbRulesTitle');
+  const titleIs = document.getElementById('hbRulesTitleIS');
   const status = document.getElementById('hbRulesStatus');
   try {
+    const titleVal   = (titleEn && titleEn.value.trim()) || 'Rules';
+    const titleISVal = (titleIs && titleIs.value.trim()) || 'Reglur';
     const payload = {
       id:        'rules_main',
       kind:      'rules',
-      title:     'Rules',
-      titleIS:   'Reglur',
+      title:     titleVal,
+      titleIS:   titleISVal,
       content:   en.value,
       contentIS: is.value,
       sortOrder: 0,

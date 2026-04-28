@@ -1873,7 +1873,9 @@ var _STRINGS_FLAT = {
   "admin.handbook.info.modalAdd": "Add entry",
   "admin.handbook.info.modalEdit":"Edit entry",
 
-  "admin.handbook.rules.hint":       "One free-form body for the whole club. Markdown formatting supported (use the toolbar or write plain markdown).",
+  "admin.handbook.rules.hint":       "One free-form body for the whole club. Markdown formatting supported (use the toolbar or write plain markdown). The section title appears as the heading on the public handbook page; leave blank to fall back to the default.",
+  "admin.handbook.rules.titleEN":    "Section title (EN)",
+  "admin.handbook.rules.titleIS":    "Section title (IS)",
   "admin.handbook.rules.contentEN":  "Body (EN)",
   "admin.handbook.rules.contentIS":  "Body (IS)",
   "admin.handbook.rules.saved":      "Saved.",
