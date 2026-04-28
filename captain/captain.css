@@ -36,7 +36,8 @@
 .cq-validation-actions {
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 14px;
-  background:var(--faint);
+  /* Mirror .trip-card's body so the footer reads as the same surface */
+  background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface));
   border:1px solid var(--border); border-top:0;
   border-bottom-left-radius:var(--radius-md); border-bottom-right-radius:var(--radius-md);
 }
