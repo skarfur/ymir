@@ -207,9 +207,49 @@
   align-items: center;
   margin-bottom: 6px;
 }
-/* Level 3+ roles can't represent anything — drop the column entirely. */
+/* Level 2+ roles drop the represents column — areaId replaces it. */
 .hb-member-row--no-rep {
   grid-template-columns: 1.6fr 1fr 1fr auto;
+}
+
+/* Areas editor (level-2 division modal): each area is a fieldset with an
+   editable header (label EN/IS + delete button) instead of a static legend. */
+.hb-areas-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin: 6px 0 10px;
+}
+.hb-areas-fieldset legend {
+  padding: 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.hb-area-block {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.hb-area-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+  margin: -2px 0 8px;
+}
+.hb-area-head input { min-width: 0; }
+.hb-area-head .row-del {
+  background: transparent;
+  border: 0;
+  font-size: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 6px;
+}
+.hb-area-head .row-del:hover { color: var(--red); }
+@media (max-width: 720px) {
+  .hb-area-head { grid-template-columns: 1fr auto; }
+  .hb-area-head > [data-area-field="labelIS"] { grid-column: 1 / -2; }
 }
 .hb-member-row select,
 .hb-member-row input { min-width: 0; }

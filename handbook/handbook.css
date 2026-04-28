@@ -160,6 +160,38 @@
   max-width: 480px;
 }
 
+/* Division nodes carry their sub-units (areas) inline as labeled sections,
+   so they're a touch wider than a generic node to keep section headers and
+   member rows readable. */
+.hb-orgnode--division {
+  min-width: 220px;
+  max-width: 320px;
+}
+
+/* Internal section inside a division node: optional uppercase header (the
+   area name) followed by the member list. The first section omits a top
+   border so it sits flush against the division title. */
+.hb-orgsection {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.hb-orgsection:first-of-type {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+.hb-orgsection-hdr {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: left;
+  margin-bottom: 2px;
+}
+.hb-orgsection .hb-member-list { margin-top: 2px; }
+
 /* Member list inside an org-chart node */
 .hb-member-list {
   list-style: none;

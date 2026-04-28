@@ -199,9 +199,10 @@ function renderOrgChart() {
       _matchesFilter(m.name) || _matchesFilter(_t(m, 'label')) ||
       _matchesFilter(m.phone) || _matchesFilter(m.email)
     );
+    const areaMatch = (r.areas || []).some(a => _matchesFilter(_t(a, 'label')));
     const self = _matchesFilter(_t(r, 'title')) ||
                  _matchesFilter(_t(r, 'notes')) ||
-                 memberMatch;
+                 memberMatch || areaMatch;
     return (visCache[r.id] = self || childMatches);
   }
 
@@ -216,21 +217,29 @@ function renderOrgChart() {
 }
 
 function _renderOrgNode(r, visiblePred, byId, level) {
-  const visibleChildren = (r.children || []).filter(visiblePred);
+  // Post-migration the chart is two-deep: Board (level 1) and Divisions
+  // (level 2). Divisions handle their sub-units internally via `areas`, so
+  // we never recurse past level 2 — any legacy level-3 children are treated
+  // as orphan rows by the public renderer until migrated.
+  const visibleChildren = (level < 2 ? (r.children || []) : []).filter(visiblePred);
   const title = esc(_t(r, 'title'));
   const notes = esc(_t(r, 'notes'));
   const notesRow = notes ? `<div class="hb-orgnode-notes">${notes}</div>` : '';
-  // --hb-accent on the wrap cascades to descendant sub-roles via CSS
+  // --hb-accent on the wrap cascades to descendant divisions via CSS
   // custom-property inheritance; children with their own color override.
   const accent = r.color ? ` style="--hb-accent:${esc(r.color)}"` : '';
   const hasChildren = visibleChildren.length > 0;
   // Board-level (root with children): stripe each member by their represented
   // division so the link to the cards below is visually obvious.
-  const isBoardLike = level === 1 && hasChildren;
-  const membersHtml = _renderOrgNodeMembers(r.members || [], byId, isBoardLike);
+  const isBoardLike   = level === 1 && hasChildren;
+  const isDivision    = level === 2;
+  const membersHtml = isDivision
+    ? _renderDivisionBody(r, (r.children || []))
+    : _renderOrgNodeMembers(r.members || [], byId, isBoardLike);
   const nodeCls = ['hb-orgnode'];
-  if (hasChildren) nodeCls.push('hb-orgnode--has-children');
-  if (isBoardLike) nodeCls.push('hb-orgnode--board');
+  if (hasChildren)  nodeCls.push('hb-orgnode--has-children');
+  if (isBoardLike)  nodeCls.push('hb-orgnode--board');
+  if (isDivision)   nodeCls.push('hb-orgnode--division');
   return `
     <div class="hb-orgnode-wrap"${accent}>
       <div class="${nodeCls.join(' ')}">
@@ -245,6 +254,50 @@ function _renderOrgNode(r, visiblePred, byId, level) {
     </div>`;
 }
 
+// Division body: "Lead" group (members with no areaId) followed by one
+// section per area in `r.areas`. Members whose areaId no longer matches an
+// existing area fall back to Lead so admins notice + can re-tag them.
+// Legacy children (pre-migration level-3 sub-role rows) get folded in as
+// virtual sections at the bottom so their members stay visible until an
+// admin runs the one-shot areas migration.
+function _renderDivisionBody(r, legacyChildren) {
+  const members = r.members || [];
+  const areas = (r.areas || []).slice();
+  const validAreaIds = new Set(areas.map(a => a.id));
+
+  const buckets = { '': [] };
+  areas.forEach(a => { buckets[a.id] = []; });
+  members.forEach(m => {
+    const a = m.areaId && validAreaIds.has(m.areaId) ? m.areaId : '';
+    buckets[a].push(m);
+  });
+
+  const sections = [];
+  if (buckets[''].length) {
+    sections.push(_renderDivisionSection('', buckets['']));
+  }
+  areas.forEach(a => {
+    if (!buckets[a.id].length) return; // hide empty areas in the public view
+    sections.push(_renderDivisionSection(_t(a, 'label'), buckets[a.id]));
+  });
+  (legacyChildren || []).forEach(c => {
+    const cm = c.members || [];
+    if (!cm.length) return;
+    sections.push(_renderDivisionSection(_t(c, 'title'), cm));
+  });
+  return sections.join('');
+}
+
+function _renderDivisionSection(headingText, members) {
+  const header = headingText
+    ? `<div class="hb-orgsection-hdr">${esc(headingText)}</div>`
+    : '';
+  return `<div class="hb-orgsection">
+    ${header}
+    ${_renderOrgNodeMembers(members, null, false)}
+  </div>`;
+}
+
 function _renderOrgNodeMembers(members, byId, isBoardLike) {
   if (!members.length) return '';
   return `<ul class="hb-member-list${isBoardLike ? ' hb-member-list--board' : ''}">${
@@ -253,7 +306,7 @@ function _renderOrgNodeMembers(members, byId, isBoardLike) {
       const label = esc(_t(m, 'label'));
       const phone = m.phone ? `<a href="tel:${esc(m.phone)}" class="hb-link">${esc(m.phone)}</a>` : '';
       const email = m.email ? `<a href="mailto:${esc(m.email)}" class="hb-link">${esc(m.email)}</a>` : '';
-      const repRole = m.representsRoleId && byId[m.representsRoleId];
+      const repRole = m.representsRoleId && byId && byId[m.representsRoleId];
       const repColor = repRole ? (repRole.color || 'var(--brass)') : '';
       const chip = repRole
         ? `<span class="hb-represents-chip" style="--hb-chip:${esc(repColor)}">${esc(_t(repRole, 'title'))}</span>`
