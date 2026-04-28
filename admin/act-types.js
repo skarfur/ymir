@@ -157,10 +157,15 @@ async function saveActType() {
     calendarSyncActive: document.getElementById("atCalendarSyncActive").checked,
     defaultStart: document.getElementById("atDefaultStart").value.trim(),
     defaultEnd:   document.getElementById("atDefaultEnd").value.trim(),
-    bulkSchedule: hasSchedule ? JSON.stringify(bs) : null,
-    reservedBoatIds: JSON.stringify(window._atReservedBoatIds || []),
+    // Send nested fields as native object/array. _call JSON-stringifies the
+    // whole payload once, and the backend accepts both shapes — but saveEntity
+    // stuffs `payload` straight into the in-memory list after a successful
+    // save, so a stringified bulkSchedule here breaks renderActTypes'
+    // "X days/week" label until the next page load.
+    bulkSchedule: hasSchedule ? bs : null,
+    reservedBoatIds: (window._atReservedBoatIds || []).slice(),
     scheduleSource: schedSrc,
-    roles: isVol ? JSON.stringify(window._atRoles || []) : JSON.stringify([]),
+    roles: isVol ? (window._atRoles || []).slice() : [],
     leaderMemberId: atLeaderMemberId,
     leaderName: atLeaderName,
     leaderPhone: document.getElementById("atLeaderPhone").value.trim(),
