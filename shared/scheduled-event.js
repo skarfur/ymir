@@ -171,7 +171,33 @@
         || (a.startTime || '').localeCompare(b.startTime || '')
         || (a.title || '').localeCompare(b.title || '');
     });
-    return out;
+
+    // Pair each volunteer event with its matching activity row (same class +
+    // date) so the timeline shows one row per occurrence. The volunteer side
+    // contributes its signup chip + modal target via `linkedVolunteerEvent`;
+    // the activity side keeps its daily-log link and reschedule/cancel
+    // buttons. Volunteer events without a matching activity (manual one-offs,
+    // or activity-class cancelled but signups remain) still render alone.
+    var volByKey = {};
+    out.forEach(function (ev) {
+      if (ev.kind !== 'volunteer' || !ev.activityTypeId) return;
+      var key = ev.activityTypeId + '|' + ev.date;
+      if (!volByKey[key]) volByKey[key] = ev;
+    });
+    var consumed = {};
+    out.forEach(function (ev) {
+      if (ev.kind !== 'activity' || !ev.activityTypeId) return;
+      var key = ev.activityTypeId + '|' + ev.date;
+      var vol = volByKey[key];
+      if (!vol || consumed[vol.id]) return;
+      ev.linkedVolunteerEvent = vol;
+      ev.signupCount = vol.signupCount;
+      ev.capacity    = vol.capacity;
+      consumed[vol.id] = true;
+    });
+    return out.filter(function (ev) {
+      return !(ev.kind === 'volunteer' && consumed[ev.id]);
+    });
   }
 
   function calendarSourcedActivityTypes(actTypes) {

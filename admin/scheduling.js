@@ -112,12 +112,21 @@ function _upcomingRowHtml(ev, L) {
   var title = (L === 'IS' && ev.titleIS) ? ev.titleIS : (ev.title || '');
   var subtitle = ev.subtypeName ? ' — ' + esc(ev.subtypeName) : '';
   var signups = '';
-  if (ev.kind === 'volunteer' && ev.capacity) {
-    signups = ' <span class="sched-signup">' + ev.signupCount + '/' + ev.capacity + '</span>';
+  if (ev.capacity) {
+    // Consolidated activity rows carry the volunteer side via
+    // linkedVolunteerEvent — make the chip the click target for the modal so
+    // the row's daily-log link and reschedule/cancel buttons aren't shadowed
+    // by a whole-row click.
+    var volId = ev.linkedVolunteerEvent ? ev.linkedVolunteerEvent.id
+              : (ev.kind === 'volunteer' ? ev.id : '');
+    var chipClick = volId
+      ? ' data-admin-click="openVolEventModal" data-admin-arg="' + esc(volId) + '" style="cursor:pointer"'
+      : '';
+    signups = ' <span class="sched-signup"' + chipClick + '>' + ev.signupCount + '/' + ev.capacity + '</span>';
   }
-  var editAction = ev.kind === 'volunteer' ? 'openVolEventModal' : '';
-  // Activities are authored in the daily log, not in a modal — link to it
-  // with a date-carrying href rather than a JS action.
+  // Standalone volunteer rows stay whole-row-clickable. Activity rows (paired
+  // or not) leave the whole-row click off — they have multiple child actions.
+  var editAction = (ev.kind === 'volunteer') ? 'openVolEventModal' : '';
   var openAttr = editAction
     ? (' data-admin-click="' + editAction + '" data-admin-arg="' + esc(ev.id) + '" style="cursor:pointer"')
     : '';
