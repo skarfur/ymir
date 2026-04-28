@@ -31,13 +31,13 @@
 .cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
 .cq-card .btn-reject:hover { background:var(--red)33; }
 /* Validation list wraps a shared tripCard with the confirm/reject row */
-.cq-validation { margin-bottom:12px; }
+.cq-validation { margin-bottom:14px; }
 .cq-validation .trip-card { margin-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
 .cq-validation-actions {
-  display:flex; gap:8px; justify-content:flex-end;
+  display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 14px;
-  background:var(--card);
-  border:1px solid var(--border); border-top:1px solid var(--border)55;
+  background:var(--faint);
+  border:1px solid var(--border); border-top:0;
   border-bottom-left-radius:var(--radius-md); border-bottom-right-radius:var(--radius-md);
 }
 .cq-validation-actions .btn { min-width:96px; }
