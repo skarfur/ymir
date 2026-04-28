@@ -192,7 +192,11 @@ function renderTrips() {
     const tripView = verifyTripIds.has(t.id) && !isVer
       ? Object.assign({}, t, { validationRequested: true })
       : t;
-    return `<div class="slr-trip${isVer ? ' is-verified' : ''}">
+    // Mirror trip-card boat-category tint on the wrapper so the verify row
+    // reads as the same surface (matches tripCard's --tc-cat formula).
+    const cat = (allBoats.find(b => b.id === t.boatId)?.category) || t.boatCategory || '';
+    const catCol = boatCatColors(cat);
+    return `<div class="slr-trip${isVer ? ' is-verified' : ''}" style="--tc-cat:${catCol.color}">
       ${tripCard(tripView)}
       <div class="slr-verify-row" id="vrow-${esc(t.id)}">
         <div class="slr-reviewer">

@@ -180,7 +180,11 @@ function renderValidation() {
     // Reuse the canonical trip card. Fall back to the request payload when
     // the trip can't be found locally (e.g. outside the limit window).
     var trip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
-    return '<div class="cq-validation" id="vr-' + esc(r.id) + '">'
+    // Match the trip-card's boat-category tint on the wrapper so the action
+    // row reads as the same surface (no seam between card and footer).
+    var cat = (allBoats.find(b => b.id === trip.boatId)?.category) || trip.boatCategory || '';
+    var catCol = boatCatColors(cat);
+    return '<div class="cq-validation" id="vr-' + esc(r.id) + '" style="--tc-cat:' + catCol.color + '">'
       + tripCard(trip)
       + '<div class="cq-validation-actions">'
         + '<button class="btn btn-primary btn-sm" data-cq-click="respondValidation" data-cq-arg="' + esc(r.id) + '" data-cq-arg2="confirmed">✓ ' + s('btn.confirm') + '</button>'

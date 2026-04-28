@@ -1158,18 +1158,18 @@ textarea { min-height: 70px; }
 .sc-day-name { display: block; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; line-height: 1; }
 .sc-day-num  { display: block; font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2; }
 
-/* Time labels (left column) */
+/* Time labels (left column) — sit just below their hour gridline rather
+   than straddling it, so the digits don't get bisected by the axis line. */
 .sc-time-lbl {
   grid-column: 1;
   font-size: 9px;
   color: var(--muted);
   text-align: right;
-  padding: 0 6px;
+  padding: 3px 6px 0;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
   border-right: 1px solid var(--border);
-  transform: translateY(-5px);
   user-select: none;
 }
 
