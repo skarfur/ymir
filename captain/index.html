@@ -23,6 +23,11 @@
 <script src="../shared/boat-modal.js"></script>
 <script src="../shared/slot-modal.js"></script>
 <script src="../shared/tripcard.js" defer></script>
+<!-- captain.js must run before shared/logbook.js so its top-level
+     `window._logbookSkipInit = true` is set before logbook.js's auto-init IIFE
+     reads the flag — otherwise the IIFE proceeds, calls renderCerts() (which
+     only exists in /logbook), and the failure briefly flashes as a toast. -->
+<script src="captain.js" defer></script>
 <script src="../shared/logbook.js" defer></script>
 <script src="../shared/logbook-form.js" defer></script>
 <script src="../shared/logbook-share.js" defer></script>
@@ -216,6 +221,5 @@
 
 <!-- Boat modal — markup injected by shared/boat-modal.js (injectBoatModalHtml()). -->
 
-<script src="captain.js" defer></script>
 </body>
 </html>
