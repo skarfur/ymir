@@ -30,16 +30,28 @@
 .cq-card .btn-confirm:hover { background:var(--green)33; }
 .cq-card .btn-reject { background:var(--red)18; color:var(--red); border-color:var(--red)55; }
 .cq-card .btn-reject:hover { background:var(--red)33; }
-/* Validation list wraps a shared tripCard with the confirm/reject row */
-.cq-validation { margin-bottom:14px; }
-.cq-validation .trip-card { margin-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+/* Validation list — the wrapper IS the card. The trip-card inside renders
+   without its own outer border/shadow/radius; the wrapper provides those so
+   trip-card body + footer share one continuous surface (no seam). */
+.cq-validation {
+  margin-bottom:14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+}
+.cq-validation .trip-card {
+  margin-bottom:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
 .cq-validation-actions {
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 14px;
   /* Mirror .trip-card's body so the footer reads as the same surface */
   background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface));
-  border:1px solid var(--border); border-top:0;
-  border-bottom-left-radius:var(--radius-md); border-bottom-right-radius:var(--radius-md);
+  border-top:1px solid var(--border);
 }
 .cq-validation-actions .btn { min-width:96px; }
 
