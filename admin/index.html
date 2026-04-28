@@ -966,6 +966,16 @@
     <div class="check-row mb-10">
       <input type="checkbox" id="atVolunteer" data-admin-change="toggleAtVolunteerSection"> <label for="atVolunteer" data-s="admin.volunteerType"></label>
     </div>
+    <div id="atRolesSection" class="hidden border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles"></label>
+        <div class="d-flex gap-6 items-center flex-wrap">
+          <select id="atRolePresetPicker" data-admin-preset-change="addAtRoleFromPreset" class="filter-select"></select>
+          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addAtRoleRow" data-s="btn.add"></button>
+        </div>
+      </div>
+      <div id="atRolesList"></div>
+    </div>
     <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.actLeaderHdr"></div>
       <div class="field pos-relative mb-6">
@@ -982,16 +992,6 @@
       <div class="check-row">
         <input type="checkbox" id="atShowPhone"> <label for="atShowPhone" data-s="admin.actShowPhone"></label>
       </div>
-    </div>
-    <div id="atRolesSection" class="hidden border-muted rounded-6 mb-10" style="padding:10px 12px">
-      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
-        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles"></label>
-        <div class="d-flex gap-6 items-center flex-wrap">
-          <select id="atRolePresetPicker" data-admin-preset-change="addAtRoleFromPreset" class="filter-select"></select>
-          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addAtRoleRow" data-s="btn.add"></button>
-        </div>
-      </div>
-      <div id="atRolesList"></div>
     </div>
     <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.defaultTimes"></div>
@@ -1099,6 +1099,16 @@
       <div class="field"><label data-s="admin.volStartTime" for="veStartTime"></label><input type="time" id="veStartTime"></div>
       <div class="field"><label data-s="admin.volEndTime" for="veEndTime"></label><input type="time" id="veEndTime"></div>
     </div>
+    <div class="mt-10">
+      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
+        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles" for="ccLabelEN"></label>
+        <div class="d-flex gap-6 items-center flex-wrap">
+          <select id="veRolePresetPicker" data-admin-preset-change="addVolRoleFromPreset" class="filter-select"></select>
+          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addVolRoleRow" data-s="btn.add"></button>
+        </div>
+      </div>
+      <div id="volRolesList"></div>
+    </div>
     <div class="border-muted rounded-6" style="padding:10px 12px;margin:10px 0">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.volLeader"></div>
       <div class="field pos-relative mb-6">
@@ -1130,16 +1140,6 @@
       </summary>
       <div id="veBoatPicker" class="d-flex gap-6 flex-wrap mt-8"></div>
     </details>
-    <div class="mt-10">
-      <div class="d-flex items-center justify-between mb-6 gap-8 flex-wrap">
-        <label class="text-10 text-muted" style="letter-spacing:.8px" data-s="admin.volRoles" for="ccLabelEN"></label>
-        <div class="d-flex gap-6 items-center flex-wrap">
-          <select id="veRolePresetPicker" data-admin-preset-change="addVolRoleFromPreset" class="filter-select"></select>
-          <button class="btn btn-secondary text-xs" style="padding:4px 10px" data-admin-click="addVolRoleRow" data-s="btn.add"></button>
-        </div>
-      </div>
-      <div id="volRolesList"></div>
-    </div>
     <div class="btn-row mt-14">
       <button class="btn btn-secondary" data-admin-close="volEventModal" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden icon-btn" id="veDeleteBtn" data-admin-click="deleteVolEvent" data-icon="trash-2" data-s-aria="btn.delete" data-s-title="btn.delete"></button>

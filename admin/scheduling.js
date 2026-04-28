@@ -142,15 +142,24 @@ function _upcomingRowHtml(ev, L) {
     deleteBtn = ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
       + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>';
   } else if (ev.kind === 'activity' && ev.activityTypeId && ev.date) {
-    // Two inline actions on activity rows: ✎ to reschedule that single
-    // occurrence (writes a status='upcoming' override + PATCHes the master
-    // instance), × to cancel (writes a status='cancelled' tombstone +
-    // PATCHes the master instance to status='cancelled').
-    deleteBtn = ' <button type="button" class="sched-edit" data-admin-click="openRescheduleModal"'
-      + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
-      + ' data-admin-arg2="' + esc(ev.date) + '"'
-      + ' data-admin-arg3="' + esc((ev.startTime || '') + '|' + (ev.endTime || '')) + '"'
-      + ' data-s-aria="admin.rescheduleOccurrence" data-s-title="admin.rescheduleOccurrence" aria-label="Reschedule">✎</button>'
+    // Two inline actions on activity rows: ✎ to edit, × to cancel that
+    // single occurrence (cancelClassOccurrence writes a status='cancelled'
+    // tombstone + PATCHes the master GCal instance).
+    //   - Consolidated rows (paired volunteer event) open the full volunteer
+    //     event modal — same target as the signup chip — which lets the user
+    //     edit title/times/leader/roles for the occurrence.
+    //   - Activity-only rows fall back to the times-only reschedule modal
+    //     (writes a status='upcoming' override + PATCHes the master).
+    var editBtn = ev.linkedVolunteerEvent
+      ? ' <button type="button" class="sched-edit" data-admin-click="openVolEventModal"'
+        + ' data-admin-arg="' + esc(ev.linkedVolunteerEvent.id) + '"'
+        + ' data-s-aria="btn.edit" data-s-title="btn.edit" aria-label="Edit">✎</button>'
+      : ' <button type="button" class="sched-edit" data-admin-click="openRescheduleModal"'
+        + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
+        + ' data-admin-arg2="' + esc(ev.date) + '"'
+        + ' data-admin-arg3="' + esc((ev.startTime || '') + '|' + (ev.endTime || '')) + '"'
+        + ' data-s-aria="admin.rescheduleOccurrence" data-s-title="admin.rescheduleOccurrence" aria-label="Reschedule">✎</button>';
+    deleteBtn = editBtn
       + ' <button type="button" class="sched-del" data-admin-click="cancelClassOccurrence"'
       + ' data-admin-arg="'  + esc(ev.activityTypeId) + '"'
       + ' data-admin-arg2="' + esc(ev.date) + '"'
