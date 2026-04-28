@@ -491,18 +491,34 @@ function renderHbRoleMembers() {
   }
   const memberOpts = _hbMemberOptions();
   const repOpts    = _hbRepresentsOptions();
-  const ktOptsHtml = `<option value="">${esc(s('admin.handbook.role.kennitalaNone'))}</option>` +
-    memberOpts.map(o => `<option value="${esc(o.kt)}">${esc(o.label)}</option>`).join('');
-  const repOptsHtml = `<option value="">${esc(s('admin.handbook.role.representsNone'))}</option>` +
-    repOpts.map(o => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('');
-  list.innerHTML = _hbRoleMembers.map((m, i) => `
-    <div class="hb-member-row">
-      <select data-field="kennitala">${ktOptsHtml}</select>
+  // Level 3+ roles can't represent anything below them, so the column is
+  // hidden entirely. The CSS variant collapses the grid to four columns.
+  const showRep    = repOpts.length > 0;
+  list.innerHTML = _hbRoleMembers.map((m, i) => {
+    // Without an explicit `selected` on the placeholder, an unmatched value
+    // makes the browser fall back to the first concrete option.
+    const ktMatch  = !!m.kennitala && memberOpts.some(o => o.kt === m.kennitala);
+    const repMatch = !!m.representsRoleId && repOpts.some(o => o.id === m.representsRoleId);
+    const repCell  = showRep ? `
+      <select data-field="representsRoleId">
+        <option value=""${repMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.representsNone'))}</option>
+        ${repOpts.map(o =>
+          `<option value="${esc(o.id)}"${o.id === m.representsRoleId ? ' selected' : ''}>${esc(o.label)}</option>`
+        ).join('')}
+      </select>` : '';
+    return `
+    <div class="hb-member-row${showRep ? '' : ' hb-member-row--no-rep'}">
+      <select data-field="kennitala">
+        <option value=""${ktMatch ? '' : ' selected'}>${esc(s('admin.handbook.role.kennitalaNone'))}</option>
+        ${memberOpts.map(o =>
+          `<option value="${esc(o.kt)}"${o.kt === m.kennitala ? ' selected' : ''}>${esc(o.label)}</option>`
+        ).join('')}
+      </select>
       <input type="text" data-field="label"
              placeholder="${esc(s('admin.handbook.role.memberLabelPh'))}" value="${esc(m.label || '')}">
       <input type="text" data-field="labelIS"
              placeholder="${esc(s('admin.handbook.role.memberLabelISPh'))}" value="${esc(m.labelIS || '')}">
-      <select data-field="representsRoleId">${repOptsHtml}</select>
+      ${repCell}
       <button type="button" class="row-del" data-admin-click="removeHbRoleMember" data-admin-arg="${i}" aria-label="${esc(s('btn.delete'))}">×</button>
     </div>`).join('');
   // Set each select's value explicitly after render. Same pattern as
@@ -524,15 +540,52 @@ function _hbMemberOptions() {
     .map(m => ({ kt: String(m.kennitala || ''), label: m.name || m.kennitala }));
 }
 
-// Roles to choose from for "represents". Excludes the role being edited so
-// admins can't link a role to itself.
+// Determine the depth of the role being edited (1 = root/board, 2 = under
+// root/division, 3+ = under division). Reads the parent dropdown so this
+// updates live as the admin changes the parent.
+function _hbEditingLevel() {
+  const sel = document.getElementById('hbRoleParent');
+  const parentId = sel ? sel.value : '';
+  if (!parentId) return 1;
+  const parent = _hbAdmin.roles.find(r => r.id === parentId);
+  if (!parent) return 1;
+  return parent.parentId ? 3 : 2;
+}
+
+// Roles to choose from for "represents". Scope depends on level:
+//   • Level 1 (board)     → any level-2 role (a division)
+//   • Level 2 (division)  → only level-3 children of self (sub-roles in same division)
+//   • Level 3+            → no represents option (returns empty; column is hidden)
+// Always excludes the role being edited so a role can't represent itself.
 function _hbRepresentsOptions() {
   const editingId = _hbAdmin.editingRoleId;
-  return _hbAdmin.roles
-    .filter(r => r.id !== editingId)
-    .slice()
-    .sort((a, b) => String(_hbT(a, 'title')).localeCompare(_hbT(b, 'title')))
-    .map(r => ({ id: r.id, label: _hbT(r, 'title') }));
+  const level     = _hbEditingLevel();
+  const sortMap   = (r) => ({ id: r.id, label: _hbT(r, 'title') });
+  const byTitle   = (a, b) => String(a.label).localeCompare(String(b.label));
+
+  if (level === 1) {
+    const rootIds = new Set(_hbAdmin.roles.filter(r => !r.parentId).map(r => r.id));
+    return _hbAdmin.roles
+      .filter(r => r.id !== editingId && r.parentId && rootIds.has(r.parentId))
+      .map(sortMap)
+      .sort(byTitle);
+  }
+  if (level === 2) {
+    if (!editingId) return []; // new level-2 role has no children yet
+    return _hbAdmin.roles
+      .filter(r => r.id !== editingId && r.parentId === editingId)
+      .map(sortMap)
+      .sort(byTitle);
+  }
+  return [];
+}
+
+// Re-render the members fieldset when the parent dropdown changes — the
+// "represents" column scope depends on the editing role's level, which is
+// derived from the chosen parent.
+function hbRoleParentChanged() {
+  _hbRoleMembers = _hbReadMembersFromDOM();
+  renderHbRoleMembers();
 }
 
 function addHbRoleMember() {
@@ -550,12 +603,16 @@ function removeHbRoleMember(idx) {
 }
 
 function _hbReadMembersFromDOM() {
-  return Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row')).map(row => ({
-    kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
-    label:            row.querySelector('[data-field="label"]').value.trim(),
-    labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
-    representsRoleId: row.querySelector('[data-field="representsRoleId"]').value,
-  }));
+  return Array.from(document.querySelectorAll('#hbRoleMembersList .hb-member-row')).map(row => {
+    // Represents column is omitted at level 3+, so guard the lookup.
+    const repEl = row.querySelector('[data-field="representsRoleId"]');
+    return {
+      kennitala:        row.querySelector('[data-field="kennitala"]').value.trim(),
+      label:            row.querySelector('[data-field="label"]').value.trim(),
+      labelIS:          row.querySelector('[data-field="labelIS"]').value.trim(),
+      representsRoleId: repEl ? repEl.value : '',
+    };
+  });
 }
 
 function hbRoleColorPicked() {
