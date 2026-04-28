@@ -182,9 +182,9 @@ function renderValidation() {
     var trip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
     return '<div class="cq-validation" id="vr-' + esc(r.id) + '">'
       + tripCard(trip)
-      + '<div class="conf-actions cq-validation-actions">'
-        + '<button class="btn-confirm" data-cq-click="respondValidation" data-cq-arg="' + esc(r.id) + '" data-cq-arg2="confirmed">' + s('btn.confirm') + '</button>'
-        + '<button class="btn-reject" data-cq-click="rejectValidation" data-cq-arg="' + esc(r.id) + '">' + s('cq.reject') + '</button>'
+      + '<div class="cq-validation-actions">'
+        + '<button class="btn btn-primary btn-sm" data-cq-click="respondValidation" data-cq-arg="' + esc(r.id) + '" data-cq-arg2="confirmed">✓ ' + s('btn.confirm') + '</button>'
+        + '<button class="btn btn-secondary btn-sm" data-cq-click="rejectValidation" data-cq-arg="' + esc(r.id) + '">✗ ' + s('cq.reject') + '</button>'
       + '</div>'
     + '</div>';
   }).join('');
