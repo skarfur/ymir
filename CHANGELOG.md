@@ -3,21 +3,25 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
-## Unreleased — split weather out of alerts.gs
+## Unreleased — split weather and share-tokens out of alerts.gs
 
 `alerts.gs` was a three-domain grab-bag (weather, overdue alerts, share
-tokens). The weather code grew during the Vedur.is migration and is now
-domain-distinct from the alert pipeline, so it gets its own file. Pure move
-— no behaviour changes.
+tokens). The weather code grew during the Vedur.is migration and the
+share-token CRUD is fully self-contained, so each gets its own file.
+Pure moves — no behaviour changes. The misplaced config primitives still
+in `alerts.gs` are deferred to a future `config.gs` cleanup.
 
 Backend (`.gs`):
 - `weather.gs` (new) — `getWeather_`, `_vedurCompassToDeg_`, `_VEDUR_DIR_DEG_`
   moved verbatim from `alerts.gs`. Apps Script concatenates all `.gs` files
   into one global namespace, so `code.gs`'s `case 'getWeather':` dispatch
   resolves the same.
-- `alerts.gs` — weather section removed; file is now overdue alerts +
-  share tokens (and the misplaced config primitives, which will move out
-  alongside the next `config.gs` cleanup).
+- `share.gs` (new) — `getShareTokens_`, `createShareToken_`,
+  `revokeShareToken_`, `deleteShareToken_` moved verbatim. `shareUid_`
+  stays in `code.gs` as an id primitive; the public-read render side
+  stays in `public.gs`.
+- `alerts.gs` — weather and share sections removed; file is now overdue
+  alerts only (plus the misplaced config primitives noted above).
 - `shared/weather.js` — comment reference updated to `weather.gs`.
 
 ## Unreleased — speed up cold member-portal load
