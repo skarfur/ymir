@@ -476,8 +476,17 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   }
 
   // ── 1. BIRK current observations  —  via backend proxy (skipped for non-club locations) ──
+  // The proxy fetches Vedur.is server-side (CORS-blocked from browsers). On
+  // a cold Apps Script container this round-trip can stretch to 20s+, so we
+  // race against a 5s timeout: if BIRK isn't back, the widget renders with
+  // Open-Meteo's `current` data and the eventual response still warms the
+  // sessionStorage cache for the next refresh tick.
+  const BIRK_TIMEOUT_MS = 5000;
   const birkPromise = useBirk
-    ? apiGet('getWeather', fresh ? { _fresh: true } : {})
+    ? Promise.race([
+        apiGet('getWeather', fresh ? { _fresh: true } : {}).catch(() => null),
+        new Promise(resolve => setTimeout(() => resolve(null), BIRK_TIMEOUT_MS)),
+      ])
     : Promise.resolve(null);
 
   // ── 2. Open-Meteo hourly + current  —  chart data + fills nulls left by BIRK ──────────
@@ -517,10 +526,10 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
     birkPromise, hourlyPromise, marinePromise,
   ]);
 
-  // ── Map BIRK METAR into the wx.current shape the rest of the code expects
-  // aviationweather.gov JSON fields:
+  // ── Map BIRK obs into the wx.current shape the rest of the code expects
+  // Backend fields (originally aviationweather METAR, now Vedur 1477):
   //   wdir (degrees), wspd (knots), wgst (knots or null), temp (°C),
-  //   slp (hPa sea-level pressure), altim (inches Hg  —  NOT used)
+  //   slp (hPa sea-level pressure — null at Vedur, backfilled below).
   const obs   = birkRes?.obs ?? {};
   const wdDeg = (obs.wdir != null && obs.wdir !== 'VRB') ? Number(obs.wdir) : null;
   const ws    = obs.wspd  != null ? Number(obs.wspd)  * 0.514444 : 0;  // knots → m/s
@@ -528,9 +537,14 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   const temp  = obs.temp  != null ? Number(obs.temp)  : null;           // already °C
   const pres  = obs.slp   != null ? Number(obs.slp)   : null;           // hPa sea-level
 
+  // useBirk asked for BIRK data; useBirkEffective also requires that the
+  // BIRK call actually returned something (timeout / failure / empty obs
+  // all flip us to the Open-Meteo render branch instead of rendering a card
+  // full of zeros).
   const atmCurEarly = hourlyData?.current;
+  const useBirkEffective = useBirk && birkRes && birkRes.obs;
   const wx = {
-    current: useBirk ? {
+    current: useBirkEffective ? {
       wind_speed_10m:      ws,
       wind_direction_10m:  wdDeg,
       wind_gusts_10m:      wg,
@@ -539,7 +553,7 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
       weather_code:        null,    // no weather code from BIRK
       surface_pressure:    pres,
       visibility:          null,    // filled from Open-Meteo below
-      _source: 'BIRK',
+      _source: obs._source || 'BIRK',
       _obs_time: obs.reportTime || obs.obsTime || null,
     } : {
       wind_speed_10m:       atmCurEarly?.wind_speed_10m      ?? 0,

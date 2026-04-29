@@ -9,7 +9,27 @@ First-load on the member portal was dominated by three things: weather/tides
 firing at the top of init and competing with `getConfig` / `getActiveCheckouts`
 for backend latency, an extra sequential `getNotifications` round-trip after
 content paint, and a full `scheduled_events` sheet read on every getConfig
-cache miss. This pass takes a swing at all three.
+cache miss. This pass takes a swing at all three. A second pass also addresses
+the weather widget itself, which used to hang for 20-25s on cold Apps Script
+containers waiting for the BIRK observation proxy.
+
+Weather:
+- `alerts.gs` — `getWeather_` now proxies Vedur.is (Icelandic Met Office)
+  station 1477 (Reykjavíkurflugvöllur / BIRK) instead of NOAA aviationweather.
+  Both APIs are CORS-blocked from browsers so we still proxy server-side, but
+  Vedur is the authoritative Iceland source and updates more frequently than
+  METAR. The XML response is parsed with `XmlService` and reshaped into the
+  legacy `{obs:{wdir,wspd,wgst,temp,slp,reportTime}}` envelope so the
+  frontend doesn't need to know the source changed. Wind direction comes
+  from Vedur as a 16-point compass label and is converted to degrees.
+- `shared/weather.js` — `wxFetch` now races the `apiGet('getWeather')` call
+  against a 5s timeout. On a cold Apps Script container the proxy round-trip
+  used to push the entire widget render past 20s; with the timeout it falls
+  through to Open-Meteo's `current` data and the eventual BIRK response still
+  warms the sessionStorage cache for the next refresh tick. Also fixes a
+  latent bug: when `useBirk: true` but the proxy returned null, the old code
+  rendered a card full of zeros — the new `useBirkEffective` flag flips to
+  the Open-Meteo render branch instead.
 
 Backend (`.gs`):
 - `config.gs` — getConfig's `scheduled_events` projection now has its own
