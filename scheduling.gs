@@ -183,6 +183,7 @@ function sched_upsert_(ev) {
     if (payload.roles  === undefined) payload.roles  = '[]';
     insertRow_('scheduledEvents', payload);
   }
+  cDel_('sched_events_for_config');
   return sched_getById_(id);
 }
 
@@ -197,6 +198,7 @@ function sched_cancel_(id, updatedBy) {
     updatedAt: now_(),
     updatedBy: updatedBy || '',
   });
+  cDel_('sched_events_for_config');
   return true;
 }
 
@@ -205,7 +207,9 @@ function sched_cancel_(id, updatedBy) {
 // daily-log ties, use sched_cancel_ instead.
 function sched_hardDelete_(id) {
   if (!id) return false;
-  return deleteRow_('scheduledEvents', 'id', id);
+  var ok = deleteRow_('scheduledEvents', 'id', id);
+  if (ok) cDel_('sched_events_for_config');
+  return ok;
 }
 
 // ── Batch helpers used by signup flows ───────────────────────────────────────

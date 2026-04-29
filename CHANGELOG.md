@@ -3,6 +3,41 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — speed up cold member-portal load
+
+First-load on the member portal was dominated by three things: weather/tides
+firing at the top of init and competing with `getConfig` / `getActiveCheckouts`
+for backend latency, an extra sequential `getNotifications` round-trip after
+content paint, and a full `scheduled_events` sheet read on every getConfig
+cache miss. This pass takes a swing at all three.
+
+Backend (`.gs`):
+- `config.gs` — getConfig's `scheduled_events` projection now has its own
+  CacheService entry (`sched_events_for_config`, 5 min TTL). The whole-config
+  cache is still 60s; the projection survives many config rebuilds so plain
+  config writes (flagConfig, staffStatus, etc.) don't pay for a fresh
+  scheduled_events sheet read. The cache stores parsed rows, not DTOs, so
+  activity_types changes are picked up immediately without invalidation.
+- `scheduling.gs` — `sched_upsert_` / `sched_cancel_` / `sched_hardDelete_`
+  invalidate the new projection cache on every write.
+- `public.gs` — `_schedToVolDto_` now accepts an optional `classMap` so the
+  in-getConfig conversion can pass the already-loaded `activity_types`. Was
+  an N+1: each volunteer event re-read the whole config sheet to look up its
+  class's `classTag`. Single-row callers (e.g. `saveVolunteerEvent`) keep
+  the legacy fallback and still work.
+- `code.gs` — `cPut_` accepts an optional `ttlSec` (default 60).
+
+Frontend:
+- `member/member.js` — weather + tide widgets used to start at the top of
+  init, racing the `getConfig` / `getActiveCheckouts` `Promise.all` for
+  network and CPU. They're now started in a `requestIdleCallback` after the
+  visible content paints. Cuts ~300-500ms of FCP delay on cold loads.
+- `member/member.js` — `getNotifications` is folded into the top-of-file
+  `prefetch` batch alongside `getConfig` / `getActiveCheckouts` so all three
+  fire in parallel; the post-render fetch reuses the cached promise via
+  `window._earlyNotifications`. Removes one sequential round-trip on cold
+  loads.
+
 ## Unreleased — drop one-shot migration / seed helpers and dead modules
 
 Sweep of legacy code that's already done its job. Every removed function was

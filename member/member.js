@@ -1,4 +1,13 @@
-prefetch({Config:['getConfig'],Checkouts:['getActiveCheckouts']});
+// Notifications need the kennitala in the params, so look up the cached user
+// (sessionStorage, no network) before firing the prefetch. requireAuth() runs
+// a few lines down and redirects if the user is missing — until then we just
+// skip the notifications prefetch and the post-render fallback path picks it up.
+var _u = (typeof getUser === 'function') ? getUser() : null;
+prefetch({
+  Config:        ['getConfig'],
+  Checkouts:     ['getActiveCheckouts'],
+  Notifications: _u && _u.kennitala ? ['getNotifications', { kennitala: _u.kennitala }] : null,
+});
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
@@ -34,15 +43,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('rReturnedLabel').textContent    = s('member.returned');
   document.getElementById('rNotes').placeholder            = s('lbl.optional');
 
-  wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
-  tideWidget(document.getElementById('tideWidget')).start();
+  // Weather + tide widgets used to fire here at the top of init and competed
+  // with getConfig/getActiveCheckouts for backend latency on cold loads.
+  // They now start in an idle callback after the visible content paints —
+  // see the requestIdleCallback at the end of this handler.
 
   try {
     const [coRes, cfgRes] = await Promise.all([
       window._earlyCheckouts || apiGet('getActiveCheckouts'),
       window._earlyConfig || apiGet('getConfig'),
     ]);
-    if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); document.getElementById('wxWidget')?._wxRefresh?.(); }
+    if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); }
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -84,11 +95,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
   }
 
-  // Fetch notification counts (non-blocking)
-  apiGet('getNotifications', { kennitala: user.kennitala }).then(function(res) {
+  // Notification badges — prefetched at the top of the file when possible,
+  // fall back to a fresh apiGet if the cached user wasn't ready in time.
+  (window._earlyNotifications || apiGet('getNotifications', { kennitala: user.kennitala })).then(function(res) {
     if (!res || !res.counts) return;
     renderNotifBadges(res.counts);
   }).catch(function() {});
+
+  // Start weather + tide widgets after the visible content (active checkouts,
+  // fleet, calendars) has rendered. requestIdleCallback yields to layout/paint
+  // first; the timeout cap is a safety net for browsers that never go idle.
+  var _startWeatherWidgets = function () {
+    wxWidget(document.getElementById('wxWidget'), { getStaffStatus: () => _staffStatus, onData: snap => { currentWx = snap; window._memberWxSnap = snap; } }).start();
+    tideWidget(document.getElementById('tideWidget')).start();
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(_startWeatherWidgets, { timeout: 1500 });
+  else setTimeout(_startWeatherWidgets, 0);
 
   warmContainer();
 });

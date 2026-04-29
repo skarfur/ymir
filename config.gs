@@ -2,6 +2,37 @@
 // CONFIG  —  getConfig bundles everything; boats + locations stored as JSON rows
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Cached projection of scheduled_events into the two slices getConfig_ needs:
+// volunteer rows (for the volunteerEvents DTO list) and cancelled-activity ids
+// (for the daily-log virtual-suppression list). The 60s getConfig cache covers
+// the hot path; this cache survives many config rebuilds (5min TTL) so plain
+// config writes — flagConfig, staffStatus, etc. — don't pay for a fresh
+// scheduled_events sheet read. Invalidated by sched_upsert_ / sched_cancel_ /
+// sched_hardDelete_ so any actual scheduled-events write rebuilds it.
+//
+// We cache parsed rows, not DTOs, so changes to activity_types (which feed the
+// volunteer-event subtitle) don't need to clear this cache — getConfig_
+// rebuilds DTOs on the fly from the in-scope cfgMap.
+function _scheduledEventsForConfig_() {
+  var cached = cGet_('sched_events_for_config');
+  if (cached) return cached;
+  var volunteerRows = [];
+  var cancelledActivityIds = [];
+  try {
+    (readAll_('scheduledEvents') || []).forEach(function (r) {
+      if (!r) return;
+      if (r.kind === 'volunteer' && r.status !== 'cancelled') {
+        volunteerRows.push(sched_parseRow_(r));
+      } else if (r.kind === 'activity' && r.status === 'cancelled' && r.id) {
+        cancelledActivityIds.push(String(r.id));
+      }
+    });
+  } catch (e) {}
+  var out = { volunteerRows: volunteerRows, cancelledActivityIds: cancelledActivityIds };
+  cPut_('sched_events_for_config', out, 300);
+  return out;
+}
+
 function getConfig_() {
   const c = cGet_('config'); if (c) return okJ(c);
   // Read the config sheet ONCE and look up all keys from the in-memory map
@@ -64,22 +95,21 @@ function getConfig_() {
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
   // Single pass over scheduled_events: derive volunteerEvents (DTO shape) +
-  // cancelled-activity tombstones from one sheet read. The tombstones let the
-  // admin Scheduling timeline and client-side projector suppress matching
-  // virtuals (`sched-{classId}-{date}`) without re-touching the sheet.
+  // cancelled-activity tombstones. The parsed-row projection is cached
+  // (see _scheduledEventsForConfig_) so plain config writes don't pay for a
+  // fresh sheet read; DTO conversion happens here using the in-scope
+  // activityTypes so subtitle changes are picked up immediately.
+  var classMap = {};
+  (activityTypes || []).forEach(function (t) {
+    if (t && t.id) classMap[t.id] = { classTag: t.classTag || '', classTagIS: t.classTagIS || '' };
+  });
+  var schedProj = _scheduledEventsForConfig_();
   var volunteerEvents = [];
-  var cancelledActivityOccurrences = [];
-  try {
-    (readAll_('scheduledEvents') || []).forEach(function (r) {
-      if (!r) return;
-      if (r.kind === 'volunteer' && r.status !== 'cancelled') {
-        var dto = _schedToVolDto_(sched_parseRow_(r));
-        if (dto) volunteerEvents.push(dto);
-      } else if (r.kind === 'activity' && r.status === 'cancelled' && r.id) {
-        cancelledActivityOccurrences.push(String(r.id));
-      }
-    });
-  } catch (e) {}
+  (schedProj.volunteerRows || []).forEach(function (ev) {
+    var dto = _schedToVolDto_(ev, classMap);
+    if (dto) volunteerEvents.push(dto);
+  });
+  var cancelledActivityOccurrences = (schedProj.cancelledActivityIds || []).slice();
   var clubCalendars = [];
   try {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
