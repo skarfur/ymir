@@ -319,10 +319,10 @@ function tripCard(t){
       <div class="track-map-thumb" id="tmap-${esc(t.id)}" data-trip-action="open-map" data-trip-id="${esc(t.id)}" data-track="${JSON.stringify(trackPoints).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
         <div class="track-map-expand-hint">${s('tc.clickToExpand')}</div>
       </div>
-      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-accent" style="margin-top:4px;display:inline-block" data-trip-nobubble>⬇ ${s('tc.downloadFile')}</a>`:''}
+      ${t.trackFileUrl?`<a href="${esc(t.trackFileUrl)}" target="_blank" class="text-xs text-accent" style="margin-top:4px;display:inline-block" data-trip-nobubble>${icon('download')} ${s('tc.downloadFile')}</a>`:''}
     </span></div>`;
   } else if (t.trackFileUrl) {
-    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-accent" data-trip-nobubble>📍 ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
+    trackRow = `<div class="trip-exp-row trip-exp-full"><span class="trip-exp-lbl">${s('tc.gpsTrack')}</span><span class="trip-exp-val"><a href="${esc(t.trackFileUrl)}" target="_blank" class="text-accent" data-trip-nobubble>${icon('map-pin')} ${s('tc.viewTrack')}</a>${t.trackSource?' · '+esc(t.trackSource):''}${trackDeleteBtn}</span></div>`;
   }
 
   // Skipper note (visible to crew) — always show for skipper with edit, show for crew if present
@@ -364,8 +364,8 @@ function tripCard(t){
   // Action buttons: edit (skipper+owner only), add GPS/photos (owner)
   const canEditTrip = isSki && isOwner;
   const actionsRow = isOwner ? `<div class="trip-actions trip-exp-full">
-    ${canEditTrip ? `<button class="trip-action-btn primary" data-trip-action="edit-trip" data-trip-id="${esc(t.id)}">${s('tc.editTrip')}</button>` : ''}
-    ${!t.trackFileUrl ? `<button class="trip-action-btn" data-trip-action="upload-track" data-trip-id="${esc(t.id)}">${s('tc.addGps')}</button>` : ''}
+    ${canEditTrip ? `<button class="trip-action-btn primary" data-trip-action="edit-trip" data-trip-id="${esc(t.id)}">${icon('pencil')} ${s('tc.editTrip')}</button>` : ''}
+    ${!t.trackFileUrl ? `<button class="trip-action-btn" data-trip-action="upload-track" data-trip-id="${esc(t.id)}">${icon('map-pin')} ${s('tc.addGps')}</button>` : ''}
     <button class="trip-action-btn" data-trip-action="upload-photos" data-trip-id="${esc(t.id)}">${icon('image-plus')} ${s('tc.addPhotos')}</button>
     ${(!isVer && !t.validationRequested && !_confirmations.outgoing.some(c=>c.type==='verify'&&c.status==='pending'&&c.tripId===t.id)) ? `<button class="trip-action-btn" data-trip-action="request-validate" data-trip-id="${esc(t.id)}">${s('tc.requestVerification')}</button>` : ''}
   </div>` : '';

@@ -190,7 +190,8 @@ function renderValidation() {
       prefix: 'cq',
       wrapperId: 'vr-' + r.id,
       commentId: 'vrcomment-' + r.id,
-      commentPlaceholder: s('cq.rejectReason'),
+      commentValue: trip.staffComment || '',
+      commentPlaceholder: s('cq.verifyComment'),
       buttons: [
         { kind:'primary',   label:'✓ ' + s('btn.confirm'), action:'respondValidation', args:[r.id, 'confirmed'] },
         { kind:'secondary', label:'✗ ' + s('cq.reject'),   action:'rejectValidation', args:[r.id] },
@@ -215,12 +216,14 @@ function _verifyReqAsTrip(r) {
 }
 
 async function respondValidation(id, response) {
+  var commentEl = document.getElementById('vrcomment-' + id);
+  var staffComment = (commentEl && commentEl.value || '').trim();
   // Optimistic UI — remove card immediately
   var prev = _verificationRequests.slice();
   _verificationRequests = _verificationRequests.filter(r => r.id !== id);
   renderValidation();
   try {
-    await apiPost('respondConfirmation', { id, response, responderName: user.name });
+    await apiPost('respondConfirmation', { id, response, staffComment, responderName: user.name });
     showToast(s('toast.saved'), 'ok');
   } catch (e) {
     _verificationRequests = prev;
@@ -231,12 +234,12 @@ async function respondValidation(id, response) {
 
 async function rejectValidation(id) {
   var commentEl = document.getElementById('vrcomment-' + id);
-  var rejectComment = (commentEl && commentEl.value || '').trim();
+  var staffComment = (commentEl && commentEl.value || '').trim();
   var prev = _verificationRequests.slice();
   _verificationRequests = _verificationRequests.filter(r => r.id !== id);
   renderValidation();
   try {
-    await apiPost('respondConfirmation', { id, response: 'rejected', rejectComment, responderName: user.name });
+    await apiPost('respondConfirmation', { id, response: 'rejected', staffComment, rejectComment: staffComment, responderName: user.name });
     showToast(s('toast.saved'), 'ok');
   } catch (e) {
     _verificationRequests = prev;
