@@ -165,6 +165,11 @@ function respondConfirmation_(b) {
   // On reject — undo any speculative state recorded by the skipper
   if (b.response === 'rejected') {
     applyRejectionCleanup_(row, ts);
+    // For verify rejections, also persist any reviewer comment to the trip
+    // itself so it surfaces on the trip card alongside the comment box.
+    if (row.type === 'verify' && row.tripId && b.staffComment) {
+      updateRow_('trips', 'id', row.tripId, { staffComment: b.staffComment, updatedAt: ts });
+    }
     return okJ({ updated: true, status: b.response });
   }
 
@@ -273,12 +278,16 @@ function respondConfirmation_(b) {
       }
     }
     if (type === 'verify') {
-      // Staff confirmed a verification request — mark trip as verified
+      // Staff confirmed a verification request — mark trip as verified.
+      // Persist any reviewer comment to the trip so it shows on the trip card
+      // (the comment box is used for both confirm and reject paths).
       var verifyTripId = row.tripId;
       if (verifyTripId) {
-        updateRow_('trips', 'id', verifyTripId, {
+        var verifyUpdates = {
           verified: true, verifiedBy: b.responderName || row.toName || '', verifiedAt: ts, updatedAt: ts
-        });
+        };
+        if (b.staffComment) verifyUpdates.staffComment = b.staffComment;
+        updateRow_('trips', 'id', verifyTripId, verifyUpdates);
       }
     }
 
