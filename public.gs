@@ -1301,7 +1301,13 @@ function volunteerWithdraw_(b) {
 // Shape a scheduled_events row into the legacy volunteer-event DTO the
 // frontend expects. Preserves the old field names (subtitle, active) so the
 // admin + member volunteer pages keep working without changes.
-function _schedToVolDto_(ev) {
+//
+// classMap is an optional `{ id -> { classTag, classTagIS } }` lookup. When
+// provided (e.g. from getConfig_'s already-loaded activityTypes), we skip the
+// per-call config-sheet read for the subtitle — was an N+1 across volunteer
+// events. Single-row callers (e.g. saveVolunteerEvent) can omit it and still
+// get the legacy fallback.
+function _schedToVolDto_(ev, classMap) {
   if (!ev) return null;
   // Subtitle comes from the class's bilingual classTag/classTagIS pair.
   // Each language picks its own with cross-fallback when one is empty so
@@ -1310,14 +1316,20 @@ function _schedToVolDto_(ev) {
   var subtitle = '';
   var subtitleIS = '';
   if (ev.activityTypeId) {
-    try {
-      var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
-      var cls = types.find(function (t) { return t && t.id === ev.activityTypeId; });
-      if (cls) {
-        subtitle   = String(cls.classTag   || cls.classTagIS || '');
-        subtitleIS = String(cls.classTagIS || cls.classTag   || '');
-      }
-    } catch (e) {}
+    var cls = classMap && classMap[ev.activityTypeId];
+    if (cls) {
+      subtitle   = String(cls.classTag   || cls.classTagIS || '');
+      subtitleIS = String(cls.classTagIS || cls.classTag   || '');
+    } else {
+      try {
+        var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+        var found = types.find(function (t) { return t && t.id === ev.activityTypeId; });
+        if (found) {
+          subtitle   = String(found.classTag   || found.classTagIS || '');
+          subtitleIS = String(found.classTagIS || found.classTag   || '');
+        }
+      } catch (e) {}
+    }
   }
   if (!subtitle)   subtitle   = ev.subtypeName || '';
   if (!subtitleIS) subtitleIS = subtitle || '';

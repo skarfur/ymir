@@ -1155,7 +1155,7 @@ function deleteRow_(tabKey, keyField, keyValue) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function cGet_(k) { try { const v = CacheService.getScriptCache().get(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
-function cPut_(k, v) { try { CacheService.getScriptCache().put(k, JSON.stringify(v), 60); } catch (e) { } }
+function cPut_(k, v, ttlSec) { try { CacheService.getScriptCache().put(k, JSON.stringify(v), ttlSec || 60); } catch (e) { } }
 function cDel_(k) { try { CacheService.getScriptCache().remove(k); } catch (e) { } }
 
 
