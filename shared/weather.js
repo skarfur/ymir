@@ -170,7 +170,11 @@ function wxMsToBft(ms) {
 }
 function wxMsToKt(ms)   { return Math.round(ms * 1.944); }
 function wxDirLabel(d)  { if (d == null) return ''; return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]; }
-function wxDirArrow(d)  { if (d == null) return ''; return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(d/45)%8]; }
+// CSS-rotated ↓ (= "wind from N blows S") so the arrow points the actual
+// observed bearing rather than snapping to one of 8 cardinals. d=0 leaves ↓
+// alone; d=90 rotates 90° clockwise to point west (wind from E); etc.
+// inline-block is required — transform: rotate doesn't apply to inline spans.
+function wxDirArrow(d)  { if (d == null) return ''; return `<span style="display:inline-block;transform:rotate(${Math.round(d)}deg)">↓</span>`; }
 function wxBftDesc(b)   { const n = Math.max(0, Math.min(12, b|0)); return s('wx.bft'+n) || ''; }
 function wxCondIcon(c)  {
   if (c === 0) return '☀️'; if (c === 1) return '🌤'; if (c === 2) return '⛅️'; if (c === 3) return '☁️';
