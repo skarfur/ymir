@@ -135,9 +135,21 @@ function openLaunchCLModal(cat, phase, id) {
   if (id && _launchCLs[curCat]?.[curPhase]) {
     item = _launchCLs[curCat][curPhase].find(x => x.id === id);
   }
+  // Pre-check every category that already has this id under the same phase, so an
+  // edit propagates across all of them. New items just pre-check the active filter.
+  const checkedCats = new Set();
+  if (id) {
+    Object.keys(_launchCLs).forEach(k => {
+      if ((_launchCLs[k]?.[curPhase] || []).some(x => x.id === id)) checkedCats.add(k);
+    });
+  } else {
+    checkedCats.add(curCat);
+  }
   populateCategorySelects();
+  document.querySelectorAll('#lcCats input.lc-cat-cb').forEach(cb => {
+    cb.checked = checkedCats.has(cb.value);
+  });
   document.getElementById("launchCLModalTitle").textContent = item ? s('admin.lcModal.edit') : s('admin.lcModal.add');
-  document.getElementById("lcCat").value    = curCat;
   document.getElementById("lcPhase").value  = curPhase;
   document.getElementById("lcText").value   = item ? (item.text   || "") : "";
   document.getElementById("lcTextIS").value = item ? (item.textIS || "") : "";
@@ -147,20 +159,35 @@ function openLaunchCLModal(cat, phase, id) {
 }
 
 async function saveLaunchCLItem() {
-  const cat    = document.getElementById("lcCat").value;
   const phase  = document.getElementById("lcPhase").value;
   const text   = document.getElementById("lcText").value.trim();
   const textIS = document.getElementById("lcTextIS").value.trim();
   const sort   = parseInt(document.getElementById("lcSort").value) || 99;
+  const checkedCats = Array.from(document.querySelectorAll('#lcCats input.lc-cat-cb:checked'))
+    .map(cb => cb.value);
   if (!text) { toast(s("admin.textENRequired"), "err"); return; }
-  if (!_launchCLs[cat])        _launchCLs[cat] = { launch:[], landing:[] };
-  if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
+  if (!checkedCats.length) { toast(s("admin.selectAtLeastOneCategory"), "err"); return; }
 
-  const id   = _lcEditingId || ("lc_" + Date.now().toString(36));
-  const list = _launchCLs[cat][phase];
-  const idx  = list.findIndex(x => x.id === id);
-  const item = { id, text, textIS, sort };
-  if (idx >= 0) list[idx] = item; else list.push(item);
+  const id      = _lcEditingId || ("lc_" + Date.now().toString(36));
+  const checked = new Set(checkedCats);
+
+  // Upsert into every checked category under the same id; remove from any
+  // category that previously held this id but is no longer checked.
+  checked.forEach(cat => {
+    if (!_launchCLs[cat])        _launchCLs[cat] = { launch:[], landing:[] };
+    if (!_launchCLs[cat][phase]) _launchCLs[cat][phase] = [];
+    const list = _launchCLs[cat][phase];
+    const idx  = list.findIndex(x => x.id === id);
+    const item = { id, text, textIS, sort };
+    if (idx >= 0) list[idx] = item; else list.push(item);
+  });
+  if (_lcEditingId) {
+    Object.keys(_launchCLs).forEach(cat => {
+      if (checked.has(cat)) return;
+      const list = _launchCLs[cat]?.[phase];
+      if (list) _launchCLs[cat][phase] = list.filter(x => x.id !== id);
+    });
+  }
 
   try {
     await apiPost("saveConfig", { launchChecklists: _launchCLs });
@@ -189,14 +216,21 @@ async function updateLaunchCLOrder(cat, phase) {
 }
 
 async function deleteLaunchCLItem(cat, phase, id) {
-  // Can be called directly from row button (args supplied) or from modal delete btn
-  if (!cat) {
-    cat   = document.getElementById("lcCat").value;
+  // Row button (× on a specific category's list) → remove from just that bucket.
+  // Modal delete (no args) → remove from every category that shares the id under
+  // the current phase, since the modal represents the item across all of them.
+  const fromModal = !cat;
+  if (fromModal) {
     phase = document.getElementById("lcPhase").value;
     id    = _lcEditingId;
   }
   if (!await ymConfirm(s("admin.confirmDeleteItem"))) return;
-  if (_launchCLs[cat]?.[phase]) {
+  if (fromModal) {
+    Object.keys(_launchCLs).forEach(k => {
+      const list = _launchCLs[k]?.[phase];
+      if (list) _launchCLs[k][phase] = list.filter(x => x.id !== id);
+    });
+  } else if (_launchCLs[cat]?.[phase]) {
     _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(x => x.id !== id);
   }
   try {
