@@ -63,25 +63,27 @@ function getConfig_() {
     const rpRaw = getConfigValue_('rowingPassport', cfgMap);
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
+  // Single pass over scheduled_events: derive volunteerEvents (DTO shape) +
+  // cancelled-activity tombstones from one sheet read. The tombstones let the
+  // admin Scheduling timeline and client-side projector suppress matching
+  // virtuals (`sched-{classId}-{date}`) without re-touching the sheet.
   var volunteerEvents = [];
-  try { volunteerEvents = listVolunteerEventDtos_(); } catch (e) { volunteerEvents = []; }
+  var cancelledActivityOccurrences = [];
+  try {
+    (readAll_('scheduledEvents') || []).forEach(function (r) {
+      if (!r) return;
+      if (r.kind === 'volunteer' && r.status !== 'cancelled') {
+        var dto = _schedToVolDto_(sched_parseRow_(r));
+        if (dto) volunteerEvents.push(dto);
+      } else if (r.kind === 'activity' && r.status === 'cancelled' && r.id) {
+        cancelledActivityOccurrences.push(String(r.id));
+      }
+    });
+  } catch (e) {}
   var clubCalendars = [];
   try {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
-  } catch (e) {}
-  // Cancelled activity-class occurrences (tombstone rows in scheduled_events
-  // with kind='activity' status='cancelled'). The admin Scheduling timeline
-  // and any client-side projector use this to suppress matching virtuals
-  // (`sched-{classId}-{date}`) without the projection itself touching the
-  // sheet on every render.
-  var cancelledActivityOccurrences = [];
-  try {
-    (readAll_('scheduledEvents') || []).forEach(function (r) {
-      if (r && r.kind === 'activity' && r.status === 'cancelled' && r.id) {
-        cancelledActivityOccurrences.push(String(r.id));
-      }
-    });
   } catch (e) {}
   var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
   cPut_('config', config);

@@ -1351,14 +1351,6 @@ function _schedToVolDto_(ev) {
   };
 }
 
-// List volunteer events in DTO shape for getConfig_ to return. Excludes
-// cancelled rows so the admin view doesn't show stale entries; orphaned rows
-// (soft-deleted but kept for signup history) are included with active=false.
-function listVolunteerEventDtos_() {
-  var rows = sched_listVolunteerEvents_();
-  return rows.map(_schedToVolDto_);
-}
-
 function ensureVolunteerSignupsTab_() {
   const ss = SpreadsheetApp.openById(SHEET_ID_);
   ensureTab_(ss, 'volunteer_signups', SCHEMA_.volunteer_signups);

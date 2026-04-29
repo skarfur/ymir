@@ -16,16 +16,6 @@
 // `handbookInfo_<id>` keys instead of one mega-blob.
 
 function getHandbook_() {
-  // One-shot migration from the legacy per-handbook tabs. Runs at most once
-  // per config key — only triggers when the config key is empty AND the old
-  // sheet still has data. Idempotent on re-entry.
-  var migration = null;
-  try { migration = _hbAutoMigrateSheetsToConfig_(); }
-  catch (e) {
-    Logger.log('handbook auto-migrate: ' + e);
-    migration = { counts: { roles: 0, docs: 0, contacts: 0, info: 0 }, notes: { error: String(e) } };
-  }
-
   const rolesRaw    = readConfigList_('handbookRoles').filter(_hbActive_);
   const contactsRaw = readConfigList_('handbookContacts').filter(_hbActive_);
   const docs        = readConfigList_('handbookDocs').filter(_hbActive_);
@@ -60,12 +50,6 @@ function getHandbook_() {
     contacts: contacts.sort(_hbByOrder_),
     docs:     docs.sort(_hbByOrder_),
     info:     info.sort(_hbByOrder_),
-    // Surface auto-migration breadcrumbs in the response so admins can see
-    // *why* a target was skipped without digging into the Apps Script log.
-    // Stays in the response (it's tiny — a 3-key counts object plus a 3-key
-    // notes object) and naturally settles to "skip:already-populated" once
-    // migration has run.
-    _migration: migration,
   });
 }
 
@@ -365,81 +349,3 @@ function deleteHandbookInfo_(b) {
   return okJ({ ok: true });
 }
 
-// ── One-shot migration: legacy per-handbook tabs → config keys ───────────────
-// Reads the old `handbook_roles`, `handbook_docs`, `handbook_contacts` tabs
-// (if they still exist) and copies their rows into the corresponding config
-// keys. Idempotent: skips any key that's already populated.
-//
-// Called automatically from getHandbook_ on first read, but also exposed as
-// `migrateHandbookSheetsToConfig` for manual invocation from the admin UI.
-function _hbAutoMigrateSheetsToConfig_() {
-  const targets = [
-    { tab: 'handbook_roles',    key: 'handbookRoles',    type: 'roles'    },
-    { tab: 'handbook_docs',     key: 'handbookDocs',     type: 'docs'     },
-    { tab: 'handbook_contacts', key: 'handbookContacts', type: 'contacts' },
-    { tab: 'handbook_info',     key: 'handbookInfo',     type: 'info'     },
-  ];
-  var ss = null;
-  var migrated = { roles: 0, docs: 0, contacts: 0, info: 0 };
-  var notes    = { roles: '', docs: '', contacts: '', info: '' };
-  targets.forEach(function (t) {
-    try {
-      // Already migrated? Skip.
-      if (readConfigList_(t.key).length) {
-        notes[t.type] = 'skip:already-populated';
-        return;
-      }
-      if (!ss) ss = ss_();
-      const sheet = ss.getSheetByName(t.tab);
-      if (!sheet) {
-        notes[t.type] = 'skip:no-tab';
-        return;
-      }
-      if (sheet.getLastRow() < 2) {
-        notes[t.type] = 'skip:no-rows';
-        return;
-      }
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-      const data    = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
-      const items = data.map(function (r) {
-        var obj = {};
-        headers.forEach(function (h, i) {
-          var v = r[i];
-          if (h === 'active')         obj.active    = bool_(v);
-          else if (h === 'sortOrder') obj.sortOrder = Number(v || 0);
-          else                        obj[h]        = v == null ? '' : String(v);
-        });
-        // Roles store members/areas as JSON-stringified cells in the legacy
-        // schema; lift them up into native arrays for the new shape.
-        if (t.type === 'roles') {
-          obj.members = _hbCoerceArray_(obj.members);
-          obj.areas   = _hbCoerceArray_(obj.areas);
-        }
-        return obj;
-      }).filter(function (obj) { return obj.id; });
-      if (items.length) {
-        setConfigSheetValue_(t.key, JSON.stringify(items));
-        // Force a flush before the next target reads the config sheet.
-        // Apps Script otherwise batches writes, so the next iteration's
-        // readConfigList_ check could see stale state.
-        SpreadsheetApp.flush();
-        migrated[t.type] = items.length;
-        notes[t.type]    = 'migrated';
-      } else {
-        notes[t.type] = 'skip:no-id-rows';
-      }
-    } catch (err) {
-      notes[t.type] = 'error:' + (err && err.message ? err.message : String(err));
-    }
-  });
-  if (migrated.roles || migrated.docs || migrated.contacts || migrated.info) {
-    cDel_('config');
-  }
-  Logger.log('handbook auto-migrate: counts=' + JSON.stringify(migrated) + ' notes=' + JSON.stringify(notes));
-  return { counts: migrated, notes: notes };
-}
-
-function migrateHandbookSheetsToConfig_() {
-  var result = _hbAutoMigrateSheetsToConfig_();
-  return okJ({ ok: true, migrated: result.counts, notes: result.notes });
-}
