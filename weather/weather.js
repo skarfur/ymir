@@ -65,7 +65,7 @@ async function fetchAll() {
   rBtn.setAttribute('aria-label', rLabel);
   rBtn.setAttribute('title', rLabel);
   rBtn.disabled = true;
-  rIcon.textContent = '⏳';
+  rIcon.innerHTML = icon('hourglass');
   document.getElementById('mainContent').innerHTML = '<div class="loading-msg">⚓️ ' + s('wx.fetching') + '</div>';
   document.getElementById('updatedAt').textContent = s('wx.updating');
   try {

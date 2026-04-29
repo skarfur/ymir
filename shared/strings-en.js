@@ -1449,7 +1449,7 @@ var _STRINGS_FLAT = {
   "wx.failed": "Failed",
   "wx.refresh": "Refresh",
   "wx.pressureUnavail": "Pressure data unavailable",
-  "wx.useMyLocation": "📍 My location",
+  "wx.useMyLocation": "My location",
   "wx.useFossvogur": "⚓ Fossvogur",
   "wx.locating": "Locating…",
   "wx.geoUnavailable": "Geolocation not available",

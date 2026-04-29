@@ -1449,7 +1449,7 @@ var _STRINGS_FLAT = {
   "wx.failed": "Mistókst",
   "wx.refresh": "Endurhlaða",
   "wx.pressureUnavail": "Þrýstingsgögn ekki tiltæk",
-  "wx.useMyLocation": "📍 Mín staðsetning",
+  "wx.useMyLocation": "Mín staðsetning",
   "wx.useFossvogur": "⚓ Fossvogur",
   "wx.locating": "Staðset…",
   "wx.geoUnavailable": "Staðsetning ekki tiltæk",
