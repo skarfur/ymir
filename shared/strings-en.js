@@ -521,7 +521,7 @@ var _STRINGS_FLAT = {
   "maint.filterOpen": "Open",
   "maint.filterResolved": "Resolved",
   "maint.filterMaintenance": "Maintenance",
-  "maint.filterSauma": "🧵 Saumaklúbbur",
+  "maint.filterSauma": "Saumaklúbbur",
   "maint.filterCatBoat": "Boats",
   "maint.filterCatEquipment": "Equipment",
   "maint.filterCatFacility": "Facility",
