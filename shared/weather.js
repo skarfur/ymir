@@ -527,15 +527,15 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   ]);
 
   // ── Map BIRK obs into the wx.current shape the rest of the code expects
-  // Backend fields (originally aviationweather METAR, now Vedur 1477):
-  //   wdir (degrees), wspd (knots), wgst (knots or null), temp (°C),
-  //   slp (hPa sea-level pressure — null at Vedur, backfilled below).
+  // Backend (`getWeather_` in alerts.gs) returns m/s for wspd/wgst, degrees
+  // for wdir, °C for temp, hPa for slp (null at Vedur). All match the site's
+  // internal canonical units so values pass straight through.
   const obs   = birkRes?.obs ?? {};
   const wdDeg = (obs.wdir != null && obs.wdir !== 'VRB') ? Number(obs.wdir) : null;
-  const ws    = obs.wspd  != null ? Number(obs.wspd)  * 0.514444 : 0;  // knots → m/s
-  const wg    = obs.wgst != null  ? Number(obs.wgst) * 0.514444 : ws;  // knots → m/s, fallback to wspd
-  const temp  = obs.temp  != null ? Number(obs.temp)  : null;           // already °C
-  const pres  = obs.slp   != null ? Number(obs.slp)   : null;           // hPa sea-level
+  const ws    = obs.wspd  != null ? Number(obs.wspd) : 0;
+  const wg    = obs.wgst != null  ? Number(obs.wgst) : ws;  // fall back to wspd when no gust
+  const temp  = obs.temp  != null ? Number(obs.temp) : null;
+  const pres  = obs.slp   != null ? Number(obs.slp)  : null;
 
   // useBirk asked for BIRK data; useBirkEffective also requires that the
   // BIRK call actually returned something (timeout / failure / empty obs

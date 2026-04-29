@@ -54,13 +54,15 @@ function getWeather_() {
     var T  = _txt('T');   // temperature °C
     var time = _txt('time');
 
-    // Frontend expects METAR-style units: wspd/wgst in knots, wdir in degrees.
-    // m/s × 1.94384 = knots; the frontend converts back to m/s for display.
-    var KN = 1.94384;
+    // The frontend's internal unit is m/s (Open-Meteo is fetched with
+    // wind_speed_unit=ms, wxMsToBft / chart / flag-scoring all assume m/s),
+    // and Vedur reports m/s natively, so wspd/wgst pass straight through.
+    // wdir is degrees because the compact-widget arrow uses Math.round(d/45)
+    // and the chart consumes Open-Meteo hourly degrees the same way.
     var obs = {
       wdir:       _vedurCompassToDeg_(D),
-      wspd:       F  != null ? Number(F)  * KN : null,
-      wgst:       FG != null ? Number(FG) * KN : null,
+      wspd:       F  != null ? Number(F)  : null,
+      wgst:       FG != null ? Number(FG) : null,
       temp:       T  != null ? Number(T)  : null,
       slp:        null,                                // Vedur 1477 has no pressure
       // Vedur reports time as 'YYYY-MM-DD HH:MM:SS' in UTC (Iceland is UTC
