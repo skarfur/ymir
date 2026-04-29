@@ -622,7 +622,7 @@ function buildFilters() {
   var catInitial = cSel.value;
   _cqTripFilter = createListFilter({
     source:  function() { return myTrips; },
-    filters: { yr: yrInitial, cat: catInitial, boatName: '', captain: '', member: '', wind: '' },
+    filters: { yr: yrInitial, cat: catInitial, boatName: '', captain: '', member: '', wind: '', verified: '' },
     predicate: function(t, f) {
       if (f.yr && !(t.date || '').startsWith(f.yr)) return false;
       if (f.cat) {
@@ -638,6 +638,11 @@ function buildFilters() {
         if (f.wind === 'lte4' && b >  4) return false;
         if (['calm','light','moderate','strong'].includes(f.wind) && bftGroup(b) !== f.wind) return false;
       }
+      if (f.verified) {
+        var v = t.verified && t.verified !== 'false';
+        if (f.verified === 'yes' && !v) return false;
+        if (f.verified === 'no'  &&  v) return false;
+      }
       if (f.search) {
         var hay = [t.boatName, t.memberName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
         if (!hay.includes(f.search.toLowerCase().trim())) return false;
@@ -652,11 +657,24 @@ function buildFilters() {
         ? filtered.map(tripCard).join('')
         : '<div class="empty-note">' + s('cq.noTripsMatch') + '</div>';
       document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+      if (typeof _fsRenderChips === 'function') _fsRenderChips();
     },
   }).autoWire({
     fields: { fYear: 'yr', fCat: 'cat', fBoatName: 'boatName', fCaptain: 'captain', fMember: 'member', fWind: 'wind' },
     search: 'fText',
   });
+
+  if (typeof _fsRegister === 'function') {
+    _fsRegister(_cqTripFilter, [
+      { key: 'yr',       elId: 'fYear',     kind: 'select' },
+      { key: 'cat',      elId: 'fCat',      kind: 'select' },
+      { key: 'boatName', elId: 'fBoatName', kind: 'select' },
+      { key: 'captain',  elId: 'fCaptain',  kind: 'select' },
+      { key: 'member',   elId: 'fMember',   kind: 'select' },
+      { key: 'wind',     elId: 'fWind',     kind: 'select' },
+      { key: 'verified',                    kind: 'pill'   },
+    ]);
+  }
 }
 
 // Kept as a thin shim so existing callers (init, post-save refreshes) keep working.
