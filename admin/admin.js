@@ -256,9 +256,19 @@ function populateCategorySelects() {
     if (boatCats.find(c => c.key === prev)) lcFilter.value = prev;
   }
 
-  // Launch CL modal category select
-  const lcCat = document.getElementById("lcCat");
-  if (lcCat) lcCat.innerHTML = opts;
+  // Launch CL modal: multi-category checkbox list (preserves existing checked state)
+  const lcCats = document.getElementById("lcCats");
+  if (lcCats) {
+    const prev = new Set(
+      Array.from(lcCats.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+    );
+    lcCats.innerHTML = sorted.map(c => {
+      const label = (L === 'IS' && c.labelIS ? c.labelIS : c.labelEN) || c.key;
+      return `<label><input type="checkbox" class="lc-cat-cb" value="${esc(c.key)}"${
+        prev.has(c.key) ? ' checked' : ''
+      }> <span>${esc(c.emoji || '')} ${esc(label)}</span></label>`;
+    }).join('');
+  }
 }
 
 // ══ MEMBERS ══════════════════════════════════════════════════════════════════
