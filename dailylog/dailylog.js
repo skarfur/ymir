@@ -15,6 +15,12 @@ function esc(s) {
 let viewDate  = TODAY;
 let logId     = null;
 let dirty     = false;
+// Tracks whether the loaded day was signed off when fetched. Drives the
+// "edit as an amendment?" confirm prompt so the user knows they're amending
+// a finalized log rather than editing a draft.
+let logSignedOff   = false;
+let logSignedOffBy = '';
+let logSignedOffAt = '';
 let wxData    = null;
 let wxLog     = [];
 let amChecks  = {};
@@ -435,11 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleChecklist(h.dataset.clToggle);
   });
 
-  dom.activitiesList.addEventListener('click', e => {
+  dom.activitiesList.addEventListener('click', async e => {
     const del = e.target.closest('[data-delete-activity]');
-    if (del) { deleteActivity(del.dataset.deleteActivity); return; }
+    if (del) {
+      if (!await confirmEditEntry()) return;
+      deleteActivity(del.dataset.deleteActivity);
+      return;
+    }
     const row = e.target.closest('[data-edit-activity]');
-    if (row) openActivityModal(row.dataset.editActivity);
+    if (!row) return;
+    if (!await confirmEditEntry()) return;
+    openActivityModal(row.dataset.editActivity);
   });
 
   dom.wxLogList.addEventListener('click', e => {
@@ -471,12 +483,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let t; return function(...a) { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
   }
   const debouncedNav = debounce(navigateDay, 300);
-  dom.prevBtn.addEventListener('click',  () => debouncedNav(-1));
-  dom.nextBtn.addEventListener('click',  () => debouncedNav(1));
-  dom.todayBtn.addEventListener('click', () => navigateToToday());
-  dom.datePicker.addEventListener('change', () => {
+  dom.prevBtn.addEventListener('click',  async () => { if (await confirmDiscardDirty()) debouncedNav(-1); });
+  dom.nextBtn.addEventListener('click',  async () => { if (await confirmDiscardDirty()) debouncedNav(1); });
+  dom.todayBtn.addEventListener('click', async () => { if (await confirmDiscardDirty()) navigateToToday(); });
+  dom.datePicker.addEventListener('change', async () => {
     const v = dom.datePicker.value;
     if (!v) return;
+    if (!await confirmDiscardDirty()) {
+      // Roll the picker back to the still-loaded day so it doesn't appear
+      // to "stick" on the rejected date.
+      dom.datePicker.value = viewDate;
+      return;
+    }
     viewDate = v;
     loadDay();
   });
@@ -486,12 +504,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('actSaveBtn').addEventListener('click',   function() { saveActivity(false); });
   document.getElementById('actSaveAddBtn').addEventListener('click', function() { saveActivity(true); });
 
-  dom.signOffBtn.addEventListener('click', () => {
+  dom.signOffBtn.addEventListener('click', async () => {
     // Today: full sign-off (marks signedOffBy/signedOffAt). Past/future: save
     // as an amendment — the row already has a signOffBy stamp (either staff
     // or the midnight trigger), and updatedBy/updatedAt distinguishes the edit.
-    if (isToday()) signOffDay();
-    else doSave(false);
+    if (isToday()) { signOffDay(); return; }
+    const msg = s('daily.confirmAmendmentSave', { date: viewDate });
+    if (!await ymConfirm(msg)) return;
+    doSave(false);
   });
   dom.narrativeInput.addEventListener('input', markDirty);
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
@@ -780,6 +800,7 @@ function sjson(v, fallback) {
 
 async function loadDay() {
   logId = null; dirty = false;
+  logSignedOff = false; logSignedOffBy = ''; logSignedOffAt = '';
   wxLog = []; amChecks = {}; pmChecks = {};
   activities = []; tripsData = []; tideData = {};
   amItems = []; pmItems = [];
@@ -898,6 +919,9 @@ function applyLogData(logRes, cfgRes) {
 
   if (log) {
     logId    = log.id;
+    logSignedOff   = !!log.signedOffBy;
+    logSignedOffBy = log.signedOffBy || '';
+    logSignedOffAt = log.signedOffAt || '';
     amChecks = sjson(log.openingChecks, {});
     pmChecks = sjson(log.closingChecks, {});
     activities = sjson(log.activities, []);
@@ -932,6 +956,32 @@ function applyLogData(logRes, cfgRes) {
 // SECTION 10 — SAVE / SIGN OFF
 // ════════════════════════════════════════════════════════════════════════════
 function markDirty() { dirty = true; }
+
+// Confirm before opening an entry for edit. Only prompts when the day's log
+// has been signed off — for live (un-signed) days, edits flow through the
+// usual draft cycle and don't need extra friction.
+async function confirmEditEntry() {
+  if (!logSignedOff) return true;
+  const when = logSignedOffAt
+    ? (fmtDate(logSignedOffAt) + ' ' + fmtTime(logSignedOffAt))
+    : '';
+  return await ymConfirm(s('daily.confirmEditEntry', { name: logSignedOffBy, when: when }));
+}
+
+// Confirm before discarding unsaved local edits (date nav, today button,
+// jump-to picker). beforeunload covers browser-level navigation.
+async function confirmDiscardDirty() {
+  if (!dirty) return true;
+  return await ymConfirm(s('daily.unsavedConfirm'));
+}
+
+window.addEventListener('beforeunload', function (e) {
+  if (!dirty) return;
+  e.preventDefault();
+  // Modern browsers ignore the string but require returnValue to be set.
+  e.returnValue = '';
+  return '';
+});
 
 async function saveDraft()  { await doSave(false); }
 async function signOffDay() {
