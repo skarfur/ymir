@@ -13,11 +13,16 @@
 // Convert a 16-point compass label (e.g. 'NNE', 'WSW') to degrees. Vedur
 // reports wind direction as a label, not a heading; the frontend wants
 // degrees so wxDirArrow / wxDirLabel can rotate the arrow correctly.
+//
+// Half-step bearings are rounded to integers at the source — display sites
+// already Math.round, but keeping the canonical value an integer makes the
+// invariant structural and ensures no future caller can render a `.5°` that
+// would look calculated rather than observed.
 var _VEDUR_DIR_DEG_ = {
-  N:    0,   NNE:  22.5, NE:   45,   ENE:  67.5,
-  E:   90,   ESE: 112.5, SE:  135,   SSE: 157.5,
-  S:  180,   SSW: 202.5, SW:  225,   WSW: 247.5,
-  W:  270,   WNW: 292.5, NW:  315,   NNW: 337.5,
+  N:    0,   NNE:  23,  NE:   45,   ENE:  68,
+  E:   90,   ESE: 113,  SE:  135,   SSE: 158,
+  S:  180,   SSW: 203,  SW:  225,   WSW: 248,
+  W:  270,   WNW: 293,  NW:  315,   NNW: 338,
 };
 function _vedurCompassToDeg_(label) {
   if (!label) return null;
