@@ -458,3 +458,39 @@ function bftGroup(b){
   if(n<=6) return 'moderate';
   return 'strong';
 }
+
+// ── Verify / validation card ─────────────────────────────────────────────────
+// Wraps tripCard() with a comment input + 1-N action buttons. Both the staff
+// review page and the captain validation page render with this; the
+// per-portal data-*-click prefix and button set are passed in.
+//
+// opts: {
+//   trip,                   // trip-shaped object passed to tripCard()
+//   prefix,                 // 'slr' | 'cq' (drives data-{prefix}-click etc.)
+//   wrapperId,              // id on the outer wrapper
+//   isVerified,             // adds .is-verified for green stripe
+//   commentId,              // id on the <input>
+//   commentValue,           // initial input value
+//   commentPlaceholder,     // <input placeholder>
+//   buttons: [{ kind:'primary'|'secondary'|'danger', label, action, args:[a1,a2?] }],
+//   footer,                 // optional html appended after the action row
+// }
+function verifyCard(opts) {
+  const t = opts.trip;
+  const cat = (allBoats.find(b => b.id === t.boatId)?.category) || t.boatCategory || '';
+  const catCol = boatCatColors(cat);
+  const verCls = opts.isVerified ? ' is-verified' : '';
+  const btnsHtml = (opts.buttons || []).map(b => {
+    const a1 = b.args && b.args[0] != null ? ` data-${opts.prefix}-arg="${esc(b.args[0])}"` : '';
+    const a2 = b.args && b.args[1] != null ? ` data-${opts.prefix}-arg2="${esc(b.args[1])}"` : '';
+    return `<button class="btn btn-${b.kind} btn-sm" data-${opts.prefix}-click="${esc(b.action)}"${a1}${a2}>${b.label}</button>`;
+  }).join('');
+  const inputHtml = opts.commentId
+    ? `<input type="text" id="${esc(opts.commentId)}" placeholder="${esc(opts.commentPlaceholder || '')}" value="${esc(opts.commentValue || '')}" class="text-md flex-1">`
+    : '';
+  return `<div class="verify-wrap${verCls}" id="${esc(opts.wrapperId)}" style="--tc-cat:${catCol.color}">
+    ${tripCard(t)}
+    <div class="verify-actions">${inputHtml}${btnsHtml}</div>
+    ${opts.footer || ''}
+  </div>`;
+}

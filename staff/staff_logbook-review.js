@@ -192,25 +192,21 @@ function renderTrips() {
     const tripView = verifyTripIds.has(t.id) && !isVer
       ? Object.assign({}, t, { validationRequested: true })
       : t;
-    // Mirror trip-card boat-category tint on the wrapper so the verify row
-    // reads as the same surface (matches tripCard's --tc-cat formula).
-    const cat = (allBoats.find(b => b.id === t.boatId)?.category) || t.boatCategory || '';
-    const catCol = boatCatColors(cat);
-    return `<div class="slr-trip${isVer ? ' is-verified' : ''}" style="--tc-cat:${catCol.color}">
-      ${tripCard(tripView)}
-      <div class="slr-verify-row" id="vrow-${esc(t.id)}">
-        <div class="slr-reviewer">
-          <input type="text" id="comment-${esc(t.id)}" placeholder="${s('logrev.staffComment')}"
-                 value="${esc(t.staffComment || '')}" class="text-md flex-1">
-          ${isVer
-            ? `<button class="btn btn-secondary btn-sm" data-slr-click="unverifyTrip" data-slr-arg="${esc(t.id)}">✗ ${s('logrev.unverify')}</button>`
-            : `<button class="btn btn-primary btn-sm" data-slr-click="verifyTrip" data-slr-arg="${esc(t.id)}">✓ ${s('logrev.verify')}</button>`}
-        </div>
-        ${t.staffComment && isVer && t.verifiedBy
-          ? `<div class="slr-verified-by text-xs text-muted">— ${esc(t.verifiedBy)}</div>`
-          : ''}
-      </div>
-    </div>`;
+    return verifyCard({
+      trip: tripView,
+      prefix: 'slr',
+      wrapperId: 'vrow-' + t.id,
+      isVerified: isVer,
+      commentId: 'comment-' + t.id,
+      commentValue: t.staffComment || '',
+      commentPlaceholder: s('logrev.staffComment'),
+      buttons: [isVer
+        ? { kind:'secondary', label:'✗ ' + s('logrev.unverify'), action:'unverifyTrip', args:[t.id] }
+        : { kind:'primary',   label:'✓ ' + s('logrev.verify'),   action:'verifyTrip',   args:[t.id] }],
+      footer: (t.staffComment && isVer && t.verifiedBy)
+        ? `<div class="slr-verified-by text-xs text-muted">— ${esc(t.verifiedBy)}</div>`
+        : '',
+    });
   }).join('');
 }
 
