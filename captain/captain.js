@@ -179,7 +179,12 @@ function renderValidation() {
   el.innerHTML = _verificationRequests.map(r => {
     // Reuse the canonical trip card. Fall back to the request payload when
     // the trip can't be found locally (e.g. outside the limit window).
-    var trip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
+    var rawTrip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
+    // Surface the ⏳ VERIFICATION PENDING badge — these cards exist because of
+    // a pending verify handshake, but the local trip row may not have the flag
+    // set yet. Match the staff review page's approach.
+    var isVer = rawTrip.verified && rawTrip.verified !== 'false';
+    var trip = isVer ? rawTrip : Object.assign({}, rawTrip, { validationRequested: true });
     return verifyCard({
       trip: trip,
       prefix: 'cq',
