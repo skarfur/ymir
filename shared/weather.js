@@ -527,7 +527,7 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   ]);
 
   // ── Map BIRK obs into the wx.current shape the rest of the code expects
-  // Backend (`getWeather_` in alerts.gs) returns m/s for wspd/wgst, degrees
+  // Backend (`getWeather_` in weather.gs) returns m/s for wspd/wgst, degrees
   // for wdir, °C for temp, hPa for slp (null at Vedur). All match the site's
   // internal canonical units so values pass straight through.
   const obs   = birkRes?.obs ?? {};
