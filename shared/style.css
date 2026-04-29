@@ -471,6 +471,95 @@ textarea { min-height: 70px; }
 @media (max-width: 600px) { .filter-bar { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 400px) { .filter-bar { grid-template-columns: 1fr; } }
 
+/* ── FILTER SHEET ──────────────────────────────────────────────────────────────
+   Search-led filter bar with a slide-down panel of secondary controls. Top row
+   is a search input plus a "Filters" toggle that shows the count of active
+   non-search filters; below the row is a strip of removable chips for any
+   filter that's currently set; clicking the toggle expands `.filter-sheet-body`
+   in-flow (no overlay, just height/opacity animation). Used by logbook and
+   captain trip lists. */
+.filter-sheet { margin-bottom: 12px; }
+.filter-sheet-top {
+  display: flex; gap: 6px; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 4px 4px 4px 10px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.filter-sheet-top:focus-within { border-color: var(--accent); box-shadow: var(--focus-ring); }
+.filter-sheet-top .fs-icon {
+  width: 14px; height: 14px; flex-shrink: 0; color: var(--muted);
+  pointer-events: none;
+}
+.filter-sheet-top input {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+  color: var(--text); font-family: inherit; font-size: 12px; padding: 6px 0; height: 28px;
+}
+.filter-sheet-top .fs-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  border-radius: var(--radius-sm); padding: 4px 10px;
+  font-family: inherit; font-size: 11px; cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+}
+.filter-sheet-top .fs-toggle:hover { border-color: var(--accent); color: var(--accent-fg); }
+.filter-sheet-top .fs-toggle.has-active { border-color: var(--accent); color: var(--accent-fg); }
+.filter-sheet-top .fs-toggle.open { background: var(--accent); color: #0b1f38; border-color: var(--accent); }
+.filter-sheet-top .fs-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 5px; border-radius: 8px;
+  background: var(--accent); color: #0b1f38; font-size: 9px; font-weight: 600;
+}
+.filter-sheet-top .fs-toggle.open .fs-count { background: #0b1f38; color: var(--accent); }
+
+.filter-sheet-chips {
+  display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+  margin-top: 6px; min-height: 0;
+}
+.filter-sheet-chips .fs-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 12px; padding: 2px 4px 2px 9px; font-size: 10px;
+  cursor: pointer; transition: border-color .2s, color .2s;
+}
+.filter-sheet-chips .fs-chip:hover { border-color: var(--accent); color: var(--accent-fg); }
+.filter-sheet-chips .fs-chip .fs-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%; color: var(--muted);
+  font-size: 12px; line-height: 1;
+}
+.filter-sheet-chips .fs-chip:hover .fs-x { color: var(--accent-fg); }
+.filter-sheet-chips .fs-clear {
+  background: none; border: none; color: var(--muted); font-family: inherit;
+  font-size: 10px; padding: 2px 4px; cursor: pointer; text-decoration: underline;
+}
+.filter-sheet-chips .fs-clear:hover { color: var(--accent-fg); }
+.filter-sheet-chips .filter-count { margin-left: auto; }
+
+.filter-sheet-body {
+  overflow: hidden; max-height: 0;
+  transition: max-height .25s ease, margin-top .25s ease, opacity .2s;
+  opacity: 0;
+}
+.filter-sheet-body.open { max-height: 400px; margin-top: 8px; opacity: 1; }
+.filter-sheet-body .fs-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  padding: 10px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.filter-sheet-body .fs-grid select {
+  background-color: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: inherit; font-size: 11px; padding: 5px 26px 5px 9px;
+  height: 30px; outline: none; width: 100%; box-sizing: border-box;
+  transition: border-color .2s, box-shadow .2s;
+}
+.filter-sheet-body .fs-grid select:focus { border-color: var(--accent); box-shadow: var(--focus-ring); }
+.filter-sheet-body .fs-grid select.has-value { border-color: var(--accent); color: var(--accent-fg); }
+.filter-sheet-body .fs-pill-row { grid-column: 1/-1; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.filter-sheet-body .fs-pill-row .filter-label { margin: 0 4px 0 0; }
+@media (max-width: 600px) { .filter-sheet-body .fs-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 400px) { .filter-sheet-body .fs-grid { grid-template-columns: 1fr; } }
+
 /* Compact standalone select — matches `.filter-bar select` metrics but sits in
    any flex/inline toolbar (admin slot calendar, etc.) without the grid parent. */
 .filter-select {

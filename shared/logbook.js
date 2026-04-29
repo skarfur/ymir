@@ -27,6 +27,163 @@ function _rebuildMemberIndex() { _memberByKt = new Map(allMembers.map(m => [Stri
 // Captain overrides this via its own applyFilter() shim, so we keep a stable name.
 function applyFilter(){ if (_tripFilter) _tripFilter.refresh(); }
 
+// ── Filter sheet (slide-down) ─────────────────────────────────────────────────
+// Each portal's buildFilters() registers its controller + field config here so
+// the shared toggle / chip / pill helpers can drive both pages without each
+// duplicating the wiring. Fields: [{ key, elId?, kind:'select'|'pill'|'search' }].
+var _fsCtl = null;
+var _fsFields = [];
+
+function _fsRegister(controller, fields) {
+  _fsCtl = controller;
+  _fsFields = fields || [];
+  _fsRenderChips();
+  _fsSyncPills();
+}
+
+function toggleFilterSheet() {
+  var body = document.getElementById('fsBody');
+  var btn  = document.getElementById('fsToggle');
+  if (!body || !btn) return;
+  var open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function setFilterPill(key, val) {
+  if (!_fsCtl) return;
+  document.querySelectorAll('[data-fs-pill="' + key + '"]').forEach(function (p) {
+    p.classList.toggle('active', p.dataset.fsVal === val);
+  });
+  _fsCtl.setFilter(key, val);
+}
+
+function _fsSyncPills() {
+  if (!_fsCtl) return;
+  var st = _fsCtl.getState();
+  document.querySelectorAll('[data-fs-pill]').forEach(function (p) {
+    var k = p.dataset.fsPill;
+    p.classList.toggle('active', String(st[k] || '') === p.dataset.fsVal);
+  });
+}
+
+function _fsLabelForField(f, val) {
+  if (f.kind === 'select') {
+    var el = document.getElementById(f.elId);
+    if (!el) return val;
+    var opt = el.querySelector('option[value="' + (window.CSS && CSS.escape ? CSS.escape(val) : val) + '"]');
+    return opt ? (opt.textContent || val) : val;
+  }
+  if (f.kind === 'pill') {
+    var pill = document.querySelector('[data-fs-pill="' + f.key + '"][data-fs-val="' + val + '"]');
+    return pill ? (pill.textContent || val).trim() : val;
+  }
+  return val;
+}
+
+function _fsRenderChips() {
+  var el = document.getElementById('fsChips');
+  if (!el) return;
+  var countEl = document.getElementById('filterCount');
+  // Clear previous chips while preserving the count node.
+  Array.prototype.slice.call(el.querySelectorAll('.fs-chip,.fs-clear')).forEach(function (c) { c.remove(); });
+  var active = 0;
+  if (_fsCtl) {
+    var st = _fsCtl.getState();
+    _fsFields.forEach(function (f) {
+      var v = st[f.key];
+      if (!v) return;
+      active++;
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'fs-chip';
+      chip.dataset.fsClear = f.key;
+      chip.innerHTML = '<span>' + esc(_fsLabelForField(f, v)) + '</span><span class="fs-x" aria-hidden="true">×</span>';
+      el.insertBefore(chip, countEl);
+    });
+    if (st.search) {
+      active++;
+      var sChip = document.createElement('button');
+      sChip.type = 'button';
+      sChip.className = 'fs-chip';
+      sChip.dataset.fsClear = '__search';
+      sChip.innerHTML = '<span>"' + esc(st.search) + '"</span><span class="fs-x" aria-hidden="true">×</span>';
+      el.insertBefore(sChip, countEl);
+    }
+    if (active > 1) {
+      var clr = document.createElement('button');
+      clr.type = 'button';
+      clr.className = 'fs-clear';
+      clr.dataset.fsClearAll = '1';
+      clr.textContent = s('logbook.clearAll');
+      el.insertBefore(clr, countEl);
+    }
+  }
+  // Toggle button accent + count badge
+  var tg = document.getElementById('fsToggle');
+  var ct = document.getElementById('fsCount');
+  if (tg) tg.classList.toggle('has-active', active > 0);
+  if (ct) {
+    if (active > 0) { ct.textContent = String(active); ct.style.display = ''; }
+    else { ct.style.display = 'none'; }
+  }
+}
+
+function _fsClearChip(key) {
+  if (!_fsCtl) return;
+  if (key === '__search') {
+    var inp = document.getElementById('fText');
+    if (inp) { inp.value = ''; }
+    _fsCtl.setSearch('');
+    // setSearch is debounced; the listFilter's render will refresh chips
+    // shortly. Render once now too so the chip disappears immediately.
+    setTimeout(_fsRenderChips, 0);
+    return;
+  }
+  var f = _fsFields.find(function (x) { return x.key === key; });
+  if (!f) return;
+  if (f.kind === 'pill') {
+    setFilterPill(key, '');
+  } else if (f.elId) {
+    var sel = document.getElementById(f.elId);
+    if (sel) sel.value = '';
+    _fsCtl.setFilter(key, '');
+  }
+}
+
+function _fsClearAll() {
+  if (!_fsCtl) return;
+  var patch = {};
+  _fsFields.forEach(function (f) {
+    patch[f.key] = '';
+    if (f.kind === 'pill') {
+      document.querySelectorAll('[data-fs-pill="' + f.key + '"]').forEach(function (p) {
+        p.classList.toggle('active', p.dataset.fsVal === '');
+      });
+    } else if (f.elId) {
+      var sel = document.getElementById(f.elId);
+      if (sel) sel.value = '';
+    }
+  });
+  patch.search = '';
+  var inp = document.getElementById('fText');
+  if (inp) inp.value = '';
+  _fsCtl.setFilters(patch);
+}
+
+// Document-level click delegation for chip clears (lives at document so it
+// covers both portals; guarded so it stays idempotent).
+(function () {
+  if (typeof document === 'undefined' || document._fsListeners) return;
+  document._fsListeners = true;
+  document.addEventListener('click', function (e) {
+    var ca = e.target.closest('[data-fs-clear-all]');
+    if (ca) { _fsClearAll(); return; }
+    var c = e.target.closest('[data-fs-clear]');
+    if (c) { _fsClearChip(c.dataset.fsClear); return; }
+  });
+})();
+
 function _renderTripBatch(el) {
   var end = Math.min(_renderedCount + _TRIP_BATCH, _filteredTrips.length);
   var frag = document.createDocumentFragment();
@@ -74,7 +231,7 @@ function buildFilters(){
 
   _tripFilter = createListFilter({
     source:  function() { return myTrips; },
-    filters: { yr: yrSel.value, cat: '', role: '', wind: '' },
+    filters: { yr: yrSel.value, cat: '', role: '', wind: '', verified: '' },
     predicate: function(t, f) {
       if (f.yr && !(t.date || '').startsWith(f.yr)) return false;
       if (f.cat) {
@@ -94,6 +251,11 @@ function buildFilters(){
         if (f.wind === 'gt4'  && b <= 4) return false;
         if (f.wind === 'lte4' && b >  4) return false;
         if (['calm','light','moderate','strong'].includes(f.wind) && bftGroup(b) !== f.wind) return false;
+      }
+      if (f.verified) {
+        const v = t.verified && t.verified !== 'false';
+        if (f.verified === 'yes' && !v) return false;
+        if (f.verified === 'no'  &&  v) return false;
       }
       if (f.search) {
         const hay = [t.boatName, t.locationName, t.date, t.beaufort, t.windDir, t.notes, t.skipperNote, t.boatCategory].join(' ').toLowerCase();
@@ -115,11 +277,20 @@ function buildFilters(){
         _setupTripScrollObserver(el);
       }
       document.getElementById('filterCount').textContent = filtered.length + ' / ' + myTrips.length;
+      _fsRenderChips();
     },
   }).autoWire({
     fields: { fYear: 'yr', fCat: 'cat', fRole: 'role', fWind: 'wind' },
     search: 'fText',
   });
+
+  _fsRegister(_tripFilter, [
+    { key: 'yr',       elId: 'fYear', kind: 'select' },
+    { key: 'cat',      elId: 'fCat',  kind: 'select' },
+    { key: 'role',     elId: 'fRole', kind: 'select' },
+    { key: 'wind',     elId: 'fWind', kind: 'select' },
+    { key: 'verified',                kind: 'pill'   },
+  ]);
 }
 
 // ── Log manually modal ────────────────────────────────────────────────────────
