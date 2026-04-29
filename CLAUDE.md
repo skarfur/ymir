@@ -16,7 +16,8 @@
 - `checkouts.gs` — checkouts, reservation slots, crews
 - `trips.gs` — trips, handshake confirmations, file uploads (GPS tracks + photos)
 - `weather.gs` — Vedur.is observations proxy (`getWeather_`)
-- `alerts.gs` — overdue alerts (config, dispatch, response handling), share tokens
+- `alerts.gs` — overdue alerts (config, dispatch, response handling)
+- `share.gs` — share-token CRUD (authenticated; public-read side lives in `public.gs`)
 - `public.gs` — server-rendered public endpoints, volunteer events
 - `_setup.gs` — idempotent schema migrations
 - `passport.gs` — rowing passport
