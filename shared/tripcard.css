@@ -96,3 +96,14 @@
   .photo-thumb{width:48px;height:48px}
   .photo-thumb-link{width:48px;height:48px}
 }
+
+/* ── Verify wrapper (shared by staff review + captain validation) ── */
+/* Wrapper IS the card: border + radius + shadow live here so the inner
+   .trip-card body and the action row read as one continuous surface. The
+   inner trip-card sets border-left inline; !important overrides it so the
+   wrapper alone draws the boat-category stripe. */
+.verify-wrap{margin-bottom:12px;border:1px solid var(--border);border-left:3px solid var(--tc-cat,var(--border));border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm)}
+.verify-wrap.is-verified{border-left:3px solid var(--green)}
+.verify-wrap .trip-card{margin-bottom:0;border:0 !important;border-radius:0;box-shadow:none}
+.verify-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface));border-top:1px solid var(--border)}
+.verify-actions input[type="text"]{min-width:160px}

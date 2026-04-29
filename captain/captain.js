@@ -180,17 +180,17 @@ function renderValidation() {
     // Reuse the canonical trip card. Fall back to the request payload when
     // the trip can't be found locally (e.g. outside the limit window).
     var trip = _allTrips.find(t => t.id === r.tripId) || _verifyReqAsTrip(r);
-    // Match the trip-card's boat-category tint on the wrapper so the action
-    // row reads as the same surface (no seam between card and footer).
-    var cat = (allBoats.find(b => b.id === trip.boatId)?.category) || trip.boatCategory || '';
-    var catCol = boatCatColors(cat);
-    return '<div class="cq-validation" id="vr-' + esc(r.id) + '" style="--tc-cat:' + catCol.color + '">'
-      + tripCard(trip)
-      + '<div class="cq-validation-actions">'
-        + '<button class="btn btn-primary btn-sm" data-cq-click="respondValidation" data-cq-arg="' + esc(r.id) + '" data-cq-arg2="confirmed">✓ ' + s('btn.confirm') + '</button>'
-        + '<button class="btn btn-secondary btn-sm" data-cq-click="rejectValidation" data-cq-arg="' + esc(r.id) + '">✗ ' + s('cq.reject') + '</button>'
-      + '</div>'
-    + '</div>';
+    return verifyCard({
+      trip: trip,
+      prefix: 'cq',
+      wrapperId: 'vr-' + r.id,
+      commentId: 'vrcomment-' + r.id,
+      commentPlaceholder: s('cq.rejectReason'),
+      buttons: [
+        { kind:'primary',   label:'✓ ' + s('btn.confirm'), action:'respondValidation', args:[r.id, 'confirmed'] },
+        { kind:'secondary', label:'✗ ' + s('cq.reject'),   action:'rejectValidation', args:[r.id] },
+      ],
+    });
   }).join('');
 }
 
@@ -225,13 +225,13 @@ async function respondValidation(id, response) {
 }
 
 async function rejectValidation(id) {
-  var rejectComment = await ymPrompt(s('cq.rejectReason'));
-  if (rejectComment === null) return;  // cancelled
+  var commentEl = document.getElementById('vrcomment-' + id);
+  var rejectComment = (commentEl && commentEl.value || '').trim();
   var prev = _verificationRequests.slice();
   _verificationRequests = _verificationRequests.filter(r => r.id !== id);
   renderValidation();
   try {
-    await apiPost('respondConfirmation', { id, response: 'rejected', rejectComment: rejectComment || '', responderName: user.name });
+    await apiPost('respondConfirmation', { id, response: 'rejected', rejectComment, responderName: user.name });
     showToast(s('toast.saved'), 'ok');
   } catch (e) {
     _verificationRequests = prev;
