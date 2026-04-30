@@ -511,7 +511,7 @@ var _STRINGS_FLAT = {
   "sauma.verkstjoriLabel": "Verkstjóri:",
   "sauma.loadFailed": "Gat ekki hlaðið: {msg}",
   "maint.pageTitle": "Viðhald",
-  "maint.newBtn": "+ Ný viðhaldsbeiðni",
+  "maint.newBtn": "Ný viðhaldsbeiðni",
   "maint.newSaumaBtn": "Nýtt saumaklúbbsverkefni",
   "maint.newTitle": "Ný viðhaldsbeiðni",
   "maint.statOpen": "OPNAR",
