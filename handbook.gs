@@ -291,6 +291,27 @@ function deleteHandbookDoc_(b) {
   return okJ({ ok: true });
 }
 
+// Drive Advanced Service version-agnostic Files.get. Apps Script ships both
+// v2 and v3; the project picks one when the service is enabled.
+//   v3 only returns `shortcutDetails` if you list it in `fields`, and uses
+//       `name` / `webViewLink` / `supportsAllDrives`.
+//   v2 returns the full resource by default and uses `title` / `alternateLink`
+//       / `supportsTeamDrives`. Asking for v3 field names against v2 errors
+//       with "Invalid field selection".
+// Try v3 first; if Drive rejects the call (likely a v2 service rejecting v3
+// field names or `supportsAllDrives`), retry with v2-flavoured params.
+function _hbDriveGet_(fileId) {
+  try {
+    return Drive.Files.get(fileId, {
+      fields: 'id,shortcutDetails,name,webViewLink',
+      supportsAllDrives: true,
+    });
+  } catch (eV3) {
+    try { return Drive.Files.get(fileId, { supportsTeamDrives: true }); }
+    catch (eV2) { return Drive.Files.get(fileId); }
+  }
+}
+
 // Reconcile the configured Drive folder into the `handbookDocs` config list.
 // For each file not yet tracked by `driveFileId`, append a new entry with
 // `title = file name (sans extension)`. Shortcuts are resolved to their target
@@ -342,14 +363,20 @@ function syncHandbookDocs_() {
         continue;
       }
       try {
-        const meta = Drive.Files.get(id, { fields: 'shortcutDetails,name' });
-        const tid  = meta && meta.shortcutDetails && meta.shortcutDetails.targetId;
-        if (!tid) { shortcutsUnresolved++; skipped_reasons.push(name + ' (shortcut target missing)'); continue; }
+        const meta = _hbDriveGet_(id);
+        const tid = meta && meta.shortcutDetails && meta.shortcutDetails.targetId;
+        if (!tid) {
+          shortcutsUnresolved++;
+          skipped_reasons.push(name + ' (no shortcutDetails on response)');
+          continue;
+        }
         targetId = tid;
-        const target = Drive.Files.get(tid, { fields: 'name,webViewLink' });
+        const target = _hbDriveGet_(tid);
         if (target) {
-          if (target.webViewLink) url = target.webViewLink;
-          if (target.name) title = target.name;
+          const tUrl  = target.webViewLink || target.alternateLink;
+          const tName = target.name || target.title;
+          if (tUrl)  url   = tUrl;
+          if (tName) title = tName;
         }
       } catch (e) {
         shortcutsUnresolved++;
