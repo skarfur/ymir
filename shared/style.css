@@ -1054,18 +1054,21 @@ textarea { min-height: 70px; }
    comment-row buttons across the .btn-ghost-sm / .btn-primary mix so they
    line up vertically regardless of which classes a given button uses. */
 .req-actions > button,
-.req-actions > label,
-.comment-add button,
-.comment-add label {
+.req-actions > label {
   min-height: 32px;
   padding: 6px 12px;
   box-sizing: border-box;
 }
 .req-actions > button.icon-btn,
-.req-actions > label.icon-btn,
-.comment-add button.icon-btn,
-.comment-add label.icon-btn {
+.req-actions > label.icon-btn {
   padding: 6px 10px;
+}
+/* Comment-row buttons match the input's height for a unified bar look. */
+.comment-add button,
+.comment-add label {
+  align-self: stretch;
+  padding: 6px 10px;
+  box-sizing: border-box;
 }
 
 /* Dashed add button */
