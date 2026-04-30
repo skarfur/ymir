@@ -72,12 +72,15 @@ function populateBoatSelect() {
 function renderStats() {
   const open     = allRequests.filter(r => !boolVal(r.resolved));
   const critical = open.filter(r => r.severity === "critical");
-  const oos      = open.filter(r => boolVal(r.markOos) && r.category === "boat");
+  const oosBoatIds = new Set(
+    open.filter(r => boolVal(r.markOos) && r.category === "boat" && r.boatId)
+        .map(r => r.boatId)
+  );
   const pending  = allRequests.filter(r => boolVal(r.saumaklubbur) && !boolVal(r.approved) && !boolVal(r.resolved));
   const resolved = allRequests.filter(r => boolVal(r.resolved));
   document.getElementById("statOpen").textContent     = open.length;
   document.getElementById("statCritical").textContent = critical.length;
-  document.getElementById("statOos").textContent      = oos.length;
+  document.getElementById("statOos").textContent      = oosBoatIds.size;
   document.getElementById("statPending").textContent  = pending.length;
   document.getElementById("statResolved").textContent = resolved.length;
 
