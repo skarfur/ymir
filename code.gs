@@ -117,6 +117,7 @@ const ADMIN_ACTIONS_ = {
   saveHandbookDoc:     true,
   deleteHandbookDoc:   true,
   uploadHandbookDoc:   true,
+  syncHandbookDocs:    true,
   saveHandbookInfo:     true,
   deleteHandbookInfo:   true,
   saveHandbookContact:  true,
@@ -1363,6 +1364,7 @@ function route_(action, b, caller) {
     case 'saveHandbookDoc':     return saveHandbookDoc_(b);
     case 'deleteHandbookDoc':   return deleteHandbookDoc_(b);
     case 'uploadHandbookDoc':   return uploadHandbookDoc_(b);
+    case 'syncHandbookDocs':    return syncHandbookDocs_();
     case 'saveHandbookInfo':     return saveHandbookInfo_(b);
     case 'deleteHandbookInfo':   return deleteHandbookInfo_(b);
     case 'saveHandbookContact':  return saveHandbookContact_(b);

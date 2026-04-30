@@ -601,9 +601,12 @@
         <div class="col-body hidden" id="hbAdminDocsCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
-        <div style="padding:8px 0 4px">
+        <div class="flex-center gap-6" style="padding:8px 0 4px">
           <button class="btn btn-primary" data-admin-click="openHandbookDocModal" data-s="admin.handbookAddDoc"></button>
+          <button class="btn btn-secondary" data-admin-click="syncHandbookDocs" data-s="admin.handbookSyncDocs"></button>
+          <span class="text-xs text-muted" id="hbDocsSyncStatus"></span>
         </div>
+        <div class="text-xs text-muted mt-3" data-s="admin.handbookSyncDocsHint"></div>
       </div>
     </div>
 

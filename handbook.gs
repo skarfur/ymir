@@ -291,6 +291,103 @@ function deleteHandbookDoc_(b) {
   return okJ({ ok: true });
 }
 
+// Reconcile the configured Drive folder into the `handbookDocs` config list.
+// For each file not yet tracked by `driveFileId`, append a new entry with
+// `title = file name (sans extension)`. Shortcuts are resolved to their target
+// via the Drive Advanced Service (if enabled) so the stored URL points at the
+// real file, not the shortcut. Existing rows are never touched — admins keep
+// any title / category overrides they've set.
+//
+// Requires the Drive Advanced Service to be enabled in the Apps Script project
+// for shortcut resolution. Without it, shortcuts are skipped and reported back.
+function syncHandbookDocs_() {
+  const folderId = PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID_HANDBOOK_DOCS');
+  if (!folderId) return failJ('Drive folder not configured');
+  let folder;
+  try { folder = DriveApp.getFolderById(folderId); }
+  catch (e) { return failJ('Drive folder not accessible: ' + e.message); }
+
+  const existing = readConfigList_('handbookDocs');
+  const trackedIds = {};
+  existing.forEach(function (d) {
+    if (d && d.driveFileId) trackedIds[String(d.driveFileId)] = true;
+  });
+
+  // Highest current sortOrder so newly added rows append cleanly to the end.
+  let maxSort = 0;
+  existing.forEach(function (d) {
+    var n = Number(d && d.sortOrder || 0);
+    if (n > maxSort) maxSort = n;
+  });
+
+  const driveAvailable = (typeof Drive !== 'undefined' && Drive && Drive.Files);
+  let added = 0, skipped = 0, shortcutsUnresolved = 0;
+  const skipped_reasons = [];
+
+  const files = folder.getFiles();
+  while (files.hasNext()) {
+    const f = files.next();
+    const id   = f.getId();
+    const mime = f.getMimeType();
+    const name = f.getName();
+
+    let targetId = id;
+    let url      = f.getUrl();
+    let title    = name;
+
+    if (mime === 'application/vnd.google-apps.shortcut') {
+      if (!driveAvailable) {
+        shortcutsUnresolved++;
+        skipped_reasons.push(name + ' (shortcut — enable Drive Advanced Service)');
+        continue;
+      }
+      try {
+        const meta = Drive.Files.get(id, { fields: 'shortcutDetails,name' });
+        const tid  = meta && meta.shortcutDetails && meta.shortcutDetails.targetId;
+        if (!tid) { shortcutsUnresolved++; skipped_reasons.push(name + ' (shortcut target missing)'); continue; }
+        targetId = tid;
+        const target = Drive.Files.get(tid, { fields: 'name,webViewLink' });
+        if (target) {
+          if (target.webViewLink) url = target.webViewLink;
+          if (target.name) title = target.name;
+        }
+      } catch (e) {
+        shortcutsUnresolved++;
+        skipped_reasons.push(name + ' (shortcut: ' + e.message + ')');
+        continue;
+      }
+    }
+
+    if (trackedIds[String(targetId)]) { skipped++; continue; }
+
+    const cleanTitle = String(title || name).replace(/\.[^.]+$/, '') || 'Untitled';
+    maxSort += 10;
+    saveConfigListItem_('handbookDocs', {
+      id:          '',
+      category:    '',
+      categoryIS:  '',
+      title:       cleanTitle,
+      titleIS:     '',
+      url:         url,
+      driveFileId: targetId,
+      notes:       '',
+      notesIS:     '',
+      sortOrder:   maxSort,
+      active:      true,
+    });
+    trackedIds[String(targetId)] = true;
+    added++;
+  }
+
+  return okJ({
+    ok: true,
+    added: added,
+    skipped: skipped,
+    shortcutsUnresolved: shortcutsUnresolved,
+    notes: skipped_reasons,
+  });
+}
+
 // Script Property required: DRIVE_FOLDER_ID_HANDBOOK_DOCS
 function uploadHandbookDoc_(b) {
   if (!b.fileData) return failJ('fileData required');

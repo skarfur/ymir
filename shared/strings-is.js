@@ -1875,6 +1875,13 @@ var _STRINGS_FLAT = {
   "admin.handbook.doc.sortOrder": "Röðun",
   "admin.handbook.doc.modalAdd":  "Bæta við skjali",
   "admin.handbook.doc.modalEdit": "Breyta skjali",
+  "admin.handbookSyncDocs":       "Samstilla við Drive",
+  "admin.handbookSyncDocsHint":   "Sækir nýjar skrár (eða flýtileiðir) sem hafa verið settar í Drive-möppuna fyrir handbókarskjöl. Skjöl sem þegar eru skráð halda titli og flokki.",
+  "admin.handbook.doc.syncing":          "Samstilli…",
+  "admin.handbook.doc.syncDone":         "Engar nýjar skrár.",
+  "admin.handbook.doc.syncAdded":        "Bætt við:",
+  "admin.handbook.doc.syncSkipped":      "Þegar skráð:",
+  "admin.handbook.doc.syncShortcutWarn": "Flýtileiðir óleystar:",
 
   "admin.handbook.info.kind":     "Kafli",
   "admin.handbook.info.kind.contacts": "Símanúmer",
