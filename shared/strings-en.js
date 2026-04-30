@@ -1875,6 +1875,13 @@ var _STRINGS_FLAT = {
   "admin.handbook.doc.sortOrder": "Sort order",
   "admin.handbook.doc.modalAdd":  "Add document",
   "admin.handbook.doc.modalEdit": "Edit document",
+  "admin.handbookSyncDocs":       "Sync from Drive",
+  "admin.handbookSyncDocsHint":   "Pulls in any new files (or shortcuts) dropped into the handbook docs Drive folder. Existing rows keep their title and category.",
+  "admin.handbook.doc.syncing":          "Syncing…",
+  "admin.handbook.doc.syncDone":         "No new files.",
+  "admin.handbook.doc.syncAdded":        "Added:",
+  "admin.handbook.doc.syncSkipped":      "Already tracked:",
+  "admin.handbook.doc.syncShortcutWarn": "Shortcuts unresolved:",
 
   "admin.handbook.info.kind":     "Section",
   "admin.handbook.info.kind.contacts": "Contact numbers",

@@ -896,3 +896,27 @@ async function deleteHandbookDoc() {
   return _hbDelete('deleteHandbookDoc', 'docs', 'editingDocId',
     'hbDocModal', renderHandbookDocsList);
 }
+
+// Pull any new files from the configured Drive folder into the docs list.
+// Backend resolves shortcuts to their target file (Drive Advanced Service
+// must be enabled in the Apps Script project for that to work). Existing
+// rows are left alone so admin overrides survive re-syncs.
+async function syncHandbookDocs() {
+  const status = document.getElementById('hbDocsSyncStatus');
+  if (status) status.textContent = s('admin.handbook.doc.syncing');
+  try {
+    const res = await apiPost('syncHandbookDocs', {});
+    if (!res.ok) throw new Error(res.error || 'sync failed');
+    await loadHandbookAdmin(true);
+    renderHandbookDocsList();
+    const parts = [];
+    if (res.added)               parts.push(s('admin.handbook.doc.syncAdded')   + ' ' + res.added);
+    if (res.skipped)             parts.push(s('admin.handbook.doc.syncSkipped') + ' ' + res.skipped);
+    if (res.shortcutsUnresolved) parts.push(s('admin.handbook.doc.syncShortcutWarn') + ' ' + res.shortcutsUnresolved);
+    if (status) status.textContent = parts.join(' · ') || s('admin.handbook.doc.syncDone');
+    toast(s('toast.saved'));
+  } catch (e) {
+    if (status) status.textContent = s('toast.error') + ': ' + e.message;
+    toast(s('toast.error') + ': ' + e.message, 'err');
+  }
+}

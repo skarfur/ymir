@@ -154,6 +154,7 @@ var _INVALIDATES = {
   reorderHandbookRoles:['getHandbook'],
   saveHandbookDoc:     ['getHandbook'],
   deleteHandbookDoc:   ['getHandbook'],
+  syncHandbookDocs:    ['getHandbook'],
   saveHandbookInfo:     ['getHandbook'],
   deleteHandbookInfo:   ['getHandbook'],
   saveHandbookContact:  ['getHandbook'],
