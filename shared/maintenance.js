@@ -93,7 +93,7 @@ function maintRenderCardCompact(r) {
     style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s">
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden">
       <span style="flex-shrink:0;color:var(--accent-fg);display:inline-flex">${catSvg}</span>
-      ${subject ? `<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
+      ${subject ? `<span style="font-weight:600;font-size:13px;color:var(--accent-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
       ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
       ${fallback ? `<span style="font-weight:600;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fallback}</span>` : ''}
     </div>
