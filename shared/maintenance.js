@@ -225,7 +225,7 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-add" style="margin-top:12px">
         <div style="display:flex;gap:6px;align-items:center">
           <input id="mdCommentInput" type="text" placeholder="${s('maint.addCommentPh')}" style="flex:1">
-          <label style="cursor:pointer;padding:4px;color:var(--muted);flex-shrink:0;display:inline-flex;align-items:center" title="${s('maint.attachPhoto')}" aria-label="${s('maint.attachPhoto')}">${icon('image-plus')}
+          <label class="btn btn-secondary btn-sm icon-btn" style="cursor:pointer" title="${s('maint.attachPhoto')}" aria-label="${s('maint.attachPhoto')}">${icon('image-plus')}
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
           <button id="mdCommentBtn" class="btn btn-secondary btn-sm icon-btn" title="${s('maint.postBtn')}" aria-label="${s('maint.postBtn')}">${icon('message-square-plus')}</button>
