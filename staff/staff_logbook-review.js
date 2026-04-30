@@ -39,13 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filterOptPending').textContent  = s('logrev.filterPending');
   document.getElementById('filterOptVerified').textContent = s('logrev.filterVerified');
   document.getElementById('certMemberSearch').placeholder  = s('logrev.certSearchPlaceholder');
-  document.getElementById('tcmAssignBtn').textContent      = s('logrev.assignBtn');
-
-  // Pre-fill today in assigned-date
-  document.getElementById('tcmAssignedAt').value = todayISO();
 
   init();
 });
+
+// ── Shared mcm.js wiring (cert modal — same component admin/captain use) ──────
+window.mcmGetMembers        = function () { return allMembers; };
+window.mcmGetCertDefs       = function () { return _certDefs; };
+window.mcmGetCertCategories = function () { return _certCats; };
+window.mcmOnUpdate          = function () { renderCertPanelList(); applyCertFilter(); };
 
 // ── Init: load trips + members + certDefs in one pass ────────────────────────
 async function init() {
@@ -90,17 +92,6 @@ function _enrichTripMember(t) {
     (t.memberId       && x.id        === t.memberId)
   );
   return m ? { ...t, memberName: m.name } : t;
-}
-
-function _buildCertTypeSelect() {
-  const sel = document.getElementById('tcmCertType');
-  sel.innerHTML = `<option value="">${s('lbl.selectDots')}</option>`;
-  _certDefs.forEach(d => {
-    const o = document.createElement('option');
-    o.value       = d.id;
-    o.textContent = certDefName(d);
-    sel.appendChild(o);
-  });
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -282,8 +273,8 @@ function selectCertMember(m) {
   document.getElementById('certPanelName').textContent = m.name;
   document.getElementById('certPanelMeta').textContent =
     [m.kennitala, m.email].filter(Boolean).join(' · ');
-  document.getElementById('certMemberPanel').style.display = '';
-  document.getElementById('certMemberEmpty').style.display = 'none';
+  document.getElementById('certMemberPanel').classList.remove('d-none');
+  document.getElementById('certMemberEmpty').classList.add('d-none');
 
   renderCertPanelList();
 }
@@ -300,169 +291,17 @@ function renderCertPanelList() {
     return;
   }
 
-  el.innerHTML = certs.map(c => {
-    const expiry = c.expiresAt
-      ? (new Date(c.expiresAt) < new Date()
-          ? `<span class="text-red">Expired ${esc(c.expiresAt)}</span>`
-          : `Expires ${esc(c.expiresAt)}`)
-      : 'Does not expire';
-    const defLabel = c.def ? certDefName(c.def) : (c.certId || '');
-    const label = c.subcat
-      ? `${esc(defLabel)} — ${esc(certSubcatLabel(c.subcat))}`
-      : esc(defLabel);
-    return `<div class="cert-row">
-      <div>
-        <div class="cert-name">${label}</div>
-        <div class="cert-meta">${expiry}${c.assignedAt ? ' · Issued ' + esc(c.assignedAt) : ''}</div>
-      </div>
-      <div class="cert-actions">
-        <button class="btn btn-secondary btn-sm"
-          data-slr-click="editCert" data-slr-arg="${esc(c.certId)}" data-slr-arg2="${esc(c.sub||'')}">Edit</button>
-        <button class="btn btn-secondary btn-sm text-red"
-          data-slr-click="deleteCert" data-slr-arg="${esc(c.certId)}" data-slr-arg2="${esc(c.sub||'')}">✕</button>
-      </div>
-    </div>`;
-  }).join('');
+  el.innerHTML = certs.map(certBadgeHTML).join('');
 }
 
-// ── Cert assignment modal ─────────────────────────────────────────────────────
-function openCertAssignModal(certId, subcatKey) {
+// Open the shared credential modal (same component used by admin/captain).
+function openCertAssignModal() {
   if (!_certMember) return;
-
-  document.getElementById('tcmTitle').textContent =
-    s('cert.assign') + ' — ' + _certMember.name;
-
-  // Show current certs
-  const m     = allMembers.find(x => x.id === _certMember.id);
-  const certs = m ? enrichMemberCerts(_parseJson(m.certifications, []), _certDefs, _certCats) : [];
-  document.getElementById('tcmCurrentList').innerHTML = certs.length
-    ? certs.map(certBadgeHTML).join('')
-    : `<div class="text-muted text-sm" style="font-style:italic">${s('cert.noCerts')}</div>`;
-
-  // Reset / pre-fill form
-  document.getElementById('tcmAssignedAt').value     = todayISO();
-  document.getElementById('tcmExpiresAt').value      = '';
-  document.getElementById('tcmSubcatField').style.display = 'none';
-  document.getElementById('tcmExpiryField').style.display = 'none';
-
-  if (certId) {
-    document.getElementById('tcmCertType').value = certId;
-    tcmCertTypeChanged();
-    if (subcatKey) {
-      // wait one tick for subcat select to render
-      setTimeout(() => {
-        document.getElementById('tcmSubcat').value = subcatKey;
-      }, 50);
-    }
-  } else {
-    document.getElementById('tcmCertType').value = '';
+  if (typeof window.openMemberCertModal !== 'function') {
+    showToast(s('toast.error'), 'err');
+    return;
   }
-
-  openModal('tripCertModal');
-}
-
-function editCert(certId, subcatKey) {
-  openCertAssignModal(certId, subcatKey);
-}
-
-function tcmCertTypeChanged() {
-  const def    = _certDefs.find(d => d.id === document.getElementById('tcmCertType').value);
-  const sField = document.getElementById('tcmSubcatField');
-  const eField = document.getElementById('tcmExpiryField');
-
-  if (def?.subcats?.length) {
-    const sSel = document.getElementById('tcmSubcat');
-    sSel.innerHTML = `<option value="">${s('lbl.selectDots')}</option>`;
-    def.subcats.forEach(sc => {
-      const o = document.createElement('option');
-      o.value = sc.key; o.textContent = sc.label;
-      sSel.appendChild(o);
-    });
-    sField.style.display = '';
-  } else {
-    sField.style.display = 'none';
-  }
-
-  if (def?.expires) {
-    eField.style.display = '';
-  } else {
-    document.getElementById('tcmExpiresAt').value = '';
-    eField.style.display = 'none';
-  }
-}
-
-async function tcmAssign() {
-  const certId = document.getElementById('tcmCertType').value;
-  if (!certId) { showToast(s('lbl.type') + ' required.', 'err'); return; }
-
-  const def = _certDefs.find(d => d.id === certId);
-  const sub = def?.subcats?.length ? document.getElementById('tcmSubcat').value : null;
-  if (def?.subcats?.length && !sub) { showToast(s('cert.level') + ' required.', 'err'); return; }
-
-  if (!_certMember) { showToast(s('logrev.noMemberSelected'), 'err'); return; }
-
-  const m = allMembers.find(x => x.id === _certMember.id);
-  if (!m) { showToast(s('logrev.memberNotFound'), 'err'); return; }
-
-  const newCert = {
-    certId,
-    sub:        sub || null,
-    assignedBy: user.name,
-    assignedAt: document.getElementById('tcmAssignedAt').value || todayISO(),
-    expiresAt:  document.getElementById('tcmExpiresAt').value  || null,
-  };
-
-  // Apply rank rule (removes lower-ranked subcats of same cert), then
-  // remove exact duplicate before appending
-  let existing = _parseJson(m.certifications, []);
-  existing = applyRankRule(existing, newCert, _certDefs);
-  existing = existing.filter(c => !(c.certId === certId && (c.sub || null) === (sub || null)));
-  const updated = [...existing, newCert];
-
-  try {
-    await apiPost('saveMemberCert', { memberId: _certMember.id, certifications: updated });
-
-    // Update local copy
-    const idx = allMembers.findIndex(x => x.id === _certMember.id);
-    if (idx >= 0) allMembers[idx] = { ...allMembers[idx], certifications: JSON.stringify(updated) };
-
-    // Refresh current-certs display inside modal
-    document.getElementById('tcmCurrentList').innerHTML =
-      enrichMemberCerts(updated, _certDefs, _certCats).map(certBadgeHTML).join('');
-
-    // Reset form
-    document.getElementById('tcmCertType').value         = '';
-    document.getElementById('tcmSubcatField').style.display = 'none';
-    document.getElementById('tcmExpiryField').style.display = 'none';
-
-    showToast('✓ ' + s('cert.assign') + ': ' + m.name);
-
-    // Refresh cert panel list too
-    renderCertPanelList();
-  } catch (e) {
-    showToast(s('toast.error') + ': ' + e.message, 'err');
-  }
-}
-
-async function deleteCert(certId, subcatKey) {
-  if (!_certMember) return;
-  if (!await ymConfirm('Remove this credential?')) return;
-
-  const m = allMembers.find(x => x.id === _certMember.id);
-  if (!m) return;
-
-  let certs = _parseJson(m.certifications, []);
-  certs = certs.filter(c => !(c.certId === certId && (c.sub || '') === (subcatKey || '')));
-
-  try {
-    await apiPost('saveMemberCert', { memberId: _certMember.id, certifications: certs });
-    const idx = allMembers.findIndex(x => x.id === _certMember.id);
-    if (idx >= 0) allMembers[idx] = { ...allMembers[idx], certifications: JSON.stringify(certs) };
-    renderCertPanelList();
-    showToast(s('logrev.credentialRemoved'));
-  } catch (e) {
-    showToast(s('toast.error') + ': ' + e.message, 'err');
-  }
+  window.openMemberCertModal(_certMember.id);
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -494,8 +333,8 @@ function _parseJson(v, fallback) {
 
 function setCertMode(mode) {
   const isMember = mode === 'member';
-  document.getElementById('certPanelModeA').style.display  = isMember ? '' : 'none';
-  document.getElementById('certPanelModeB').style.display  = isMember ? 'none' : '';
+  document.getElementById('certPanelModeA').classList.toggle('d-none', !isMember);
+  document.getElementById('certPanelModeB').classList.toggle('d-none', isMember);
   document.getElementById('certModeByMember').style.background = isMember ? 'var(--accent)' : 'var(--surface)';
   document.getElementById('certModeByMember').style.color      = isMember ? '#fff' : 'var(--muted)';
   document.getElementById('certModeByType').style.background   = isMember ? 'var(--surface)' : 'var(--accent)';
@@ -566,10 +405,6 @@ function applyCertFilter() {
   if (typeof document === 'undefined' || document._slrListeners) return;
   document._slrListeners = true;
   document.addEventListener('click', function (e) {
-    var cs = e.target.closest('[data-slr-close-self]');
-    if (cs && e.target === cs) { closeModal('tripCertModal'); return; }
-    var cl = e.target.closest('[data-slr-close]');
-    if (cl) { closeModal(cl.dataset.slrClose); return; }
     var c = e.target.closest('[data-slr-click]');
     if (c && typeof window[c.dataset.slrClick] === 'function') {
       var a = [c.dataset.slrArg, c.dataset.slrArg2].filter(function (v) { return v != null; });
