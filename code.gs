@@ -142,6 +142,7 @@ const STAFF_ACTIONS_ = {
   getVerificationRequests:     true,
   saveFlagOverride:            true,   // staff-set weather flag override
   saveStaffStatus:             true,   // staff on-duty / support-boat toggle
+  reassignMaintenance:         true,   // flip a request between maint and saumaklúbbur
 };
 
 // Actions that mutate a specific member's own data. The caller's kennitala
@@ -1263,6 +1264,7 @@ function route_(action, b, caller) {
     case 'adoptSaumaklubbur':       return adoptSaumaklubbur_(b);
     case 'approveSaumaklubbur':     return approveSaumaklubbur_(b);
     case 'holdSaumaklubbur':        return holdSaumaklubbur_(b);
+    case 'reassignMaintenance':     return reassignMaintenance_(b);
     case 'toggleMaterial':          return toggleMaterial_(b);
     case 'addMaterial':             return addMaterial_(b);
     case 'removeMaterial':          return removeMaterial_(b);

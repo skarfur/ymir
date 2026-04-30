@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     _maintFilter.refresh();  // predicate + render in one shot
   } catch(e) {
     document.getElementById("reqList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>${esc(s('maint.loadFailed',{msg:e.message}))}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">${icon('triangle-alert')}</div><p>${esc(s('maint.loadFailed',{msg:e.message}))}</p></div>`;
   }
 
   // Wire filter pill clicks via delegation
@@ -187,7 +187,7 @@ function updateFilterUI() {
 function renderMaintList(items) {
   const el = document.getElementById("reqList");
   if (!items.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🔧</div><p>${s('maint.noFilterMatch')}</p></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">${icon('wrench')}</div><p>${s('maint.noFilterMatch')}</p></div>`;
     return;
   }
   const sevOrder = { critical:0, high:1, medium:2, low:3 };

@@ -1047,6 +1047,8 @@ textarea { min-height: 70px; }
   transition: color .2s, border-color .2s, background .2s;
 }
 .btn-ghost-sm:hover { color:var(--accent-fg); border-color: var(--accent); background: var(--accent)08; }
+.btn-ghost-sm.danger        { color: var(--red); }
+.btn-ghost-sm.danger:hover  { color: var(--red); border-color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
 
 /* Dashed add button */
 .btn-dashed {

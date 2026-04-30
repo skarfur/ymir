@@ -22,7 +22,7 @@
 
 <div class="page-wrap">
 
-  <div class="page-title" data-s="sauma.pageTitle">🧵 Saumaklúbbur</div>
+  <div class="page-title"><span class="text-accent" data-icon="spool"></span> <span data-s="sauma.pageTitle">Saumaklúbbur</span></div>
   <div class="page-subtitle" data-s="sauma.pageSubtitle">Community maintenance projects</div>
 
   <button class="btn btn-primary mb-16 w-full" data-sk-click="openSuggestModal" data-s="sauma.suggestBtn">+ New sewing circle project</button>
@@ -60,16 +60,16 @@
 <div class="modal-overlay hidden" id="suggestModal" data-sk-close-self>
   <div class="modal modal--md">
     <div class="modal-header">
-      <h3 data-s="sauma.suggestTitle">🧵 New sewing circle project</h3>
+      <h3><span class="text-accent" data-icon="spool"></span> <span data-s="sauma.suggestTitle">New saumaklúbbur project</span></h3>
       <button class="modal-close-x" data-sk-click="closeSuggestModal">&times;</button>
     </div>
 
     <div class="field field--compact">
       <label data-s="maint.category" for="suggestBoat"></label>
       <div class="cat-btns">
-        <button class="cat-btn" data-cat="boat"      data-sk-click="selectCat" data-sk-arg="boat" data-s="sauma.catBoat"></button>
-        <button class="cat-btn" data-cat="equipment" data-sk-click="selectCat" data-sk-arg="equipment" data-s="sauma.catEquipment"></button>
-        <button class="cat-btn" data-cat="facility"  data-sk-click="selectCat" data-sk-arg="facility" data-s="sauma.catFacility"></button>
+        <button class="cat-btn" data-cat="boat"      data-sk-click="selectCat" data-sk-arg="boat"><span data-icon="sailboat"></span> <span data-s="sauma.catBoat"></span></button>
+        <button class="cat-btn" data-cat="equipment" data-sk-click="selectCat" data-sk-arg="equipment"><span data-icon="life-buoy"></span> <span data-s="sauma.catEquipment"></span></button>
+        <button class="cat-btn" data-cat="facility"  data-sk-click="selectCat" data-sk-arg="facility"><span data-icon="warehouse"></span> <span data-s="sauma.catFacility"></span></button>
       </div>
     </div>
 

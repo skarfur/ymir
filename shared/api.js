@@ -130,6 +130,7 @@ var _INVALIDATES = {
   adoptSaumaklubbur:       ['getMaintenance', 'getNotifications'],
   approveSaumaklubbur:     ['getMaintenance', 'getNotifications'],
   holdSaumaklubbur:        ['getMaintenance', 'getNotifications'],
+  reassignMaintenance:     ['getMaintenance', 'getNotifications'],
   toggleMaterial:          ['getMaintenance', 'getNotifications'],
   addMaterial:             ['getMaintenance', 'getNotifications'],
   removeMaterial:          ['getMaintenance', 'getNotifications'],
