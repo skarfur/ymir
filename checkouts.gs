@@ -38,7 +38,8 @@ function saveCheckout_(b) {
         if (!isStaffRole) {
           var hasAccess = false;
           // Owner check
-          if (checkBoat.ownership === 'private' && String(checkBoat.ownerId || checkBoat.ownerKennitala || '') === checkKt) hasAccess = true;
+          var isOwner = checkBoat.ownership === 'private' && String(checkBoat.ownerId || checkBoat.ownerKennitala || '') === checkKt;
+          if (isOwner) hasAccess = true;
           // Cert gate check (unified helper — honours expiry, rank, structured + legacy shapes)
           if (!hasAccess && checkMember) {
             var _coDefs = getCertDefsFromMap_(cfgMap);
@@ -55,8 +56,9 @@ function saveCheckout_(b) {
             var today = nowLocalDate_();
             hasAccess = checkBoat.reservations.some(function(r) { return String(r.memberKennitala) === checkKt && today >= r.startDate && today <= r.endDate; });
           }
-          // Slot-based scheduling check
-          if (!hasAccess && checkBoat.slotSchedulingEnabled) {
+          // Slot-based scheduling check — also feeds the slot-only override below.
+          var hasActiveSlotNow = false;
+          if (checkBoat.slotSchedulingEnabled) {
             var todayStr = nowLocalDate_();
             var nowTime = nowLocalTime_();
             try {
@@ -64,7 +66,7 @@ function saveCheckout_(b) {
                 return s.boatId === checkBoat.id && s.date === todayStr && s.startTime <= nowTime && s.endTime > nowTime && s.bookedByKennitala;
               });
               // Check if user booked a slot directly or via crew
-              hasAccess = slots.some(function(s) {
+              hasActiveSlotNow = slots.some(function(s) {
                 if (String(s.bookedByKennitala) === checkKt) return true;
                 if (s.bookedByCrewId) {
                   var crew = findOne_('crews', 'id', s.bookedByCrewId);
@@ -76,9 +78,12 @@ function saveCheckout_(b) {
                 return false;
               });
             } catch (e) { /* don't block on slot check errors */ }
+            if (hasActiveSlotNow) hasAccess = true;
           }
-          // If slot scheduling is enabled and boat is NOT available outside slots, enforce strictly
-          if (!hasAccess && checkBoat.slotSchedulingEnabled && !checkBoat.availableOutsideSlots) {
+          // Slot-only override: cert gates and allowlists qualify a member to
+          // BOOK a slot, but don't bypass the slot-only restriction itself.
+          // Owner exempt (set above); staff exempt above.
+          if (!isOwner && checkBoat.slotSchedulingEnabled && !checkBoat.availableOutsideSlots && !hasActiveSlotNow) {
             return failJ('Access denied: this boat requires a booked reservation slot');
           }
           if (!hasAccess) return failJ('Access denied: this boat requires authorization');
