@@ -158,18 +158,15 @@ function renderMaint() {
   items.sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
 
   if (!items.length) { el.innerHTML = '<div class="empty-note">' + s('cq.noMaint') + '</div>'; return; }
-  el.innerHTML = items.slice(0, 50).map(m => {
-    var sev = m.severity || 'low';
-    var resolved = m.resolved || boolVal(m.resolved);
-    return '<div class="cq-card">'
-      + '<div class="cq-card-title"><span class="sev-dot sev-' + esc(sev) + '"></span>' + esc(m.boatName || m.itemName || 'Unknown') + '</div>'
-      + '<div class="cq-card-sub">' + esc(sstr(m.description)).slice(0, 120) + '</div>'
-      + '<div class="cq-card-meta">' + esc(sev.toUpperCase()) + ' · '
-        + (resolved ? '<span style="color:var(--green)">RESOLVED</span>' : '<span style="color:var(--yellow)">OPEN</span>')
-        + ' · ' + esc(sstr(m.createdAt).slice(0, 10))
-      + '</div>'
-    + '</div>';
-  }).join('');
+  var rendered = items.slice(0, 50);
+  el.innerHTML = rendered.map(m => maintRenderCardCompact(m)).join('');
+  el.querySelectorAll('.maint-card-compact').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      const r  = rendered.find(x => x.id === id);
+      if (r) maintOpenDetail(r, (typeof user !== 'undefined' && user) ? user.name : null);
+    });
+  });
 }
 
 // ══ VALIDATION REQUESTS ══════════════════════════════════════════════════════
