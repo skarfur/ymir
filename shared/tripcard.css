@@ -19,7 +19,7 @@
 .badge-verified{color:var(--accent-fg);border-color:var(--accent)55;background:var(--accent)11}
 .badge-verify-pending{color:var(--navy-l);border-color:color-mix(in srgb, var(--navy-l) 55%, transparent);background:color-mix(in srgb, var(--navy-l) 11%, transparent)}
 .badge-verified,.badge-verify-pending{display:inline-flex;align-items:center;justify-content:center}
-.badge-verified .icon-inline,.badge-verify-pending .icon-inline{width:12px;height:12px;vertical-align:middle}
+.badge-verified .icon-inline,.badge-verify-pending .icon-inline{width:11px;height:11px;vertical-align:middle}
 .badge-helm{color:var(--accent-fg);border-color:var(--accent)55;background:var(--accent)11}
 .trip-arrow{padding:14px 18px 14px 10px;display:flex;align-items:center;color:var(--muted);font-size:28px;transition:transform .2s,color .2s;flex-shrink:0}
 .trip-card:hover .trip-arrow,.trip-card.open .trip-arrow{color:var(--accent-fg)}
