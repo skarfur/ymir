@@ -163,14 +163,14 @@ function renderMaint() {
     el.innerHTML = '<div class="empty-note">' + s('cox.noMaint') + '</div>';
     return;
   }
-  el.innerHTML = items.map(m => {
-    var sevClass = 'sev-' + (m.severity || 'low');
-    return '<div class="cx-card">'
-      + '<div style="font-size:12px;font-weight:500;color:var(--text)"><span class="sev-dot ' + sevClass + '"></span>' + esc(m.boatName || '') + '</div>'
-      + '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + esc(m.description || m.title || '') + '</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(m.reportedBy || '') + ' · ' + fmtDate(m.createdAt) + '</div>'
-      + '</div>';
-  }).join('');
+  el.innerHTML = items.map(m => maintRenderCardCompact(m)).join('');
+  el.querySelectorAll('.maint-card-compact').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      const r  = items.find(x => x.id === id);
+      if (r) maintOpenDetail(r, (typeof user !== 'undefined' && user) ? user.name : null);
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
