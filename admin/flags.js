@@ -10,6 +10,28 @@ function _fcBandRow(cId,idx,fields,removeFn){
 }
 function _fcReadBands(cId,keys){var rows=[],idx=0;while(document.getElementById(cId+'_'+keys[0]+'_'+idx)!==null){var row={};keys.forEach(function(k){var el=document.getElementById(cId+'_'+k+'_'+idx);row[k]=el?parseFloat(el.value):0;});rows.push(row);idx++;}return rows;}
 var _fcWindBands=[],_fcWaveBands=[],_fcSstBands=[],_fcFeelsBands=[];
+var _fcCurrentWx=null;
+async function _fcLoadCurrentWx(){
+  if(typeof wxFetch!=='function'||typeof WX_DEFAULT==='undefined')return;
+  try{
+    var res=await wxFetch(WX_DEFAULT.lat,WX_DEFAULT.lon);
+    var c=res&&res.wx&&res.wx.current?res.wx.current:null;
+    var mc=res&&res.marine&&res.marine.current?res.marine.current:null;
+    if(!c)return;
+    _fcCurrentWx={
+      ws:c.wind_speed_10m||0,
+      wDir:c.wind_direction_10m!=null?wxDirLabel(c.wind_direction_10m):'',
+      waveH:mc&&mc.wave_height!=null?mc.wave_height:0,
+      airT:c.temperature_2m,
+      sst:mc?mc.sea_surface_temperature:null,
+      wg:c.wind_gusts_10m!=null?c.wind_gusts_10m:(c.wind_speed_10m||0),
+      visKey:wxVisKey(c.visibility),
+      source:c._source||null,
+      obsTime:c._obs_time||null,
+    };
+    updateFlagPreview();
+  }catch(e){}
+}
 function fcRenderWindBands(){var el=document.getElementById('fcWindBands');if(!el)return;el.innerHTML=_fcWindBands.map(function(b,i){return _fcBandRow('fcWind',i,[{key:'maxBft',label:'Max Force',val:b.maxBft,min:0},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWindBand');}).join('');}
 function fcRenderWaveBands(){var el=document.getElementById('fcWaveBands');if(!el)return;el.innerHTML=_fcWaveBands.map(function(b,i){return _fcBandRow('fcWave',i,[{key:'maxM',label:'Max m',val:b.maxM,min:0,step:0.1},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveWaveBand');}).join('');}
 function fcRenderSstBands(){var el=document.getElementById('fcSstBands');if(!el)return;el.innerHTML=_fcSstBands.map(function(b,i){return _fcBandRow('fcSst',i,[{key:'minC',label:'Min °C',val:b.minC},{key:'pts',label:'Points',val:b.pts,min:0}],'fcRemoveSstBand');}).join('');}
@@ -37,6 +59,7 @@ function loadFlagConfigPanel(c){
   _fcSstBands=(c.sst||sc.sst).map(function(b){return{minC:b.minC,pts:b.pts};});
   _fcFeelsBands=(c.feelsLike||sc.feelsLike).map(function(b){return{minC:b.minC,pts:b.pts};});
   fcRenderWindBands();fcRenderWaveBands();fcRenderSstBands();fcRenderFeelsBands();
+  _fcLoadCurrentWx();
   var wdm=c.windDirModifier||sc.windDirModifier||{dirs:[],pts:0};
   document.getElementById('fcWindDirPts').value=wdm.pts!=null?wdm.pts:0;
   document.getElementById('fcGust1Pts').value=(c.gustModifier1Pts??sc.gustModifier1Pts)??0;
@@ -65,12 +88,14 @@ function updateFlagPreview(){
   if(typeof wxScoreFlag!=='function'||typeof wxLoadFlagConfig!=='function'){
     preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Preview requires weather.js — check script imports.</div>';return;
   }
-  var examples=[{label:'Force 2, calm',ws:1.6,wDir:'SW',waveH:0,airT:12,sst:10,wg:2},{label:'Force 4, 0.6m, 8°C',ws:5.5,wDir:'SW',waveH:0.6,airT:8,sst:7,wg:7},{label:'Force 5 NE, 1m, 4°C',ws:8.0,wDir:'NE',waveH:1.0,airT:4,sst:5,wg:11},{label:'Force 7 E, 1.8m, -2°C',ws:13.9,wDir:'E',waveH:1.8,airT:-2,sst:3,wg:17},{label:'Force 8, 2.2m, -5°C',ws:17.2,wDir:'NW',waveH:2.2,airT:-5,sst:2,wg:21}];
-  // Deep-clone SCORE_CONFIG, apply form values, render, then restore
+  if(!_fcCurrentWx){
+    preview.innerHTML='<div style="font-size:11px;color:var(--muted)">Loading current conditions…</div>';return;
+  }
+  var wx=_fcCurrentWx;
+  // Deep-clone SCORE_CONFIG, apply form values, score, then restore
   var snap=JSON.parse(JSON.stringify(SCORE_CONFIG));
   try{
     var cfg=getFlagFormValues();
-    // Apply temporarily without persisting
     Object.assign(SCORE_CONFIG.thresholds,cfg.thresholds);
     SCORE_CONFIG.wind=cfg.wind;SCORE_CONFIG.waves=cfg.waves;
     SCORE_CONFIG.sst=cfg.sst;SCORE_CONFIG.feelsLike=cfg.feelsLike;
@@ -79,14 +104,20 @@ function updateFlagPreview(){
     SCORE_CONFIG.gustModifier1Pts=cfg.gustModifier1Pts;
     SCORE_CONFIG.gustModifier2Pts=cfg.gustModifier2Pts;
   }catch(e){}
-  preview.innerHTML=examples.map(function(ex){
-    var r=wxScoreFlag(ex.ws,ex.wDir,ex.waveH,ex.airT,ex.sst,ex.wg,'good');
-    var fk=r.flagKey,fl=SCORE_CONFIG.flags[fk];
-    return '<div style="flex:1;min-width:150px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:8px 10px;color:'+fl.color+'">'
-      +'<div style="font-size:12px;font-weight:500">'+fl.icon+' · <b>'+r.score+'</b> pts</div>'
-      +'<div style="font-size:10px;opacity:.8;margin-top:3px">'+esc(ex.label)+'</div></div>';
-  }).join('');
-  // Restore
+  var r=wxScoreFlag(wx.ws,wx.wDir,wx.waveH,wx.airT,wx.sst,wx.wg,wx.visKey);
+  var fl=SCORE_CONFIG.flags[r.flagKey];
+  var sub='Wind '+(Math.round(wx.ws*10)/10)+' m/s '+(wx.wDir||'')
+    +' · gust '+Math.round(wx.wg)
+    +' · waves '+(wx.waveH!=null?wx.waveH.toFixed(1)+'m':'–')
+    +' · air '+(wx.airT!=null?Math.round(wx.airT)+'°C':'–')
+    +' · sst '+(wx.sst!=null?wx.sst.toFixed(1)+'°C':'–')
+    +' · vis '+wx.visKey;
+  var srcLabel=(wx.source||'')+(wx.obsTime?' · '+String(wx.obsTime).slice(11,16)+' UTC':'');
+  preview.innerHTML='<div style="flex:1;min-width:200px;background:'+fl.bg+';border:1px solid '+fl.border+';border-radius:8px;padding:10px 12px;color:'+fl.color+'">'
+    +'<div style="font-size:13px;font-weight:500">'+fl.icon+' · <b>'+r.score+'</b> pts · current conditions</div>'
+    +'<div style="font-size:10px;opacity:.85;margin-top:4px">'+esc(sub)+'</div>'
+    +(srcLabel?'<div style="font-size:9px;opacity:.6;margin-top:2px;letter-spacing:.5px">'+esc(srcLabel)+'</div>':'')
+    +'</div>';
   Object.assign(SCORE_CONFIG.thresholds,snap.thresholds);
   SCORE_CONFIG.wind=snap.wind;SCORE_CONFIG.waves=snap.waves;
   SCORE_CONFIG.sst=snap.sst;SCORE_CONFIG.feelsLike=snap.feelsLike;
