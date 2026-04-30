@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderList();
   } catch(e) {
     document.getElementById("projectList").innerHTML =
-      `<div class="empty-wrap"><div class="empty-icon">⚠️</div><p>${esc(s('sauma.loadFailed',{msg:e.message}))}</p></div>`;
+      `<div class="empty-wrap"><div class="empty-icon">${icon('triangle-alert')}</div><p>${esc(s('sauma.loadFailed',{msg:e.message}))}</p></div>`;
   }
 
   warmContainer();
@@ -105,7 +105,7 @@ function renderList() {
   const el = document.getElementById("projectList");
   if (!items.length) {
     const key = currentFilter === "my" ? "sauma.emptyMy" : "sauma.emptyDefault";
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🧵</div><p data-s="${key}">No projects match this filter.</p></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">${icon('spool')}</div><p data-s="${key}">No projects match this filter.</p></div>`;
     applyStrings();
     return;
   }
@@ -139,7 +139,7 @@ function renderList() {
 function renderProjectCard(r) {
   const resolved  = boolVal(r.resolved);
   const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '⚙️';
+  const catSvg    = icon('spool');
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
     : '';
@@ -154,15 +154,15 @@ function renderProjectCard(r) {
     <div class="req-header">
       <div class="flex-1" style="min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
+          <span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:4px">${catSvg}</span>${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span class="text-muted text-md" style="font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
-          ${boolVal(r.onHold) && !resolved ? `<span class="badge badge-yellow">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
+          ${boolVal(r.onHold) && !resolved ? `<span class="badge badge-yellow" style="display:inline-flex;align-items:center;gap:3px">${icon('pause')} ${s('maint.onHoldBadge')}</span>` : ''}
           ${r.verkstjori
             ? `<span class="verk-tag">${s('sauma.verkstjoriLabel')} ${esc(r.verkstjori)}</span>`
             : `<span class="text-sm text-muted" style="font-style:italic">${s('sauma.needsVerkstjori')}</span>`}
-          ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
+          ${materials.length ? `<span style="display:inline-flex;align-items:center;gap:3px">${icon('package')} ${matDone}/${materials.length}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>` : ''}
         </div>
@@ -171,8 +171,8 @@ function renderProjectCard(r) {
     ${r.description ? `<div class="req-desc">${esc(r.description)}</div>` : ''}
     ${r.photoUrl ? `<img class="req-photo" src="${esc(driveImageUrl(r.photoUrl))}" data-sk-view-photo="${esc(driveImageUrl(r.photoUrl))}">` : ''}
     <div class="flex-center gap-8 mt-8 text-sm text-muted">
-      ${following ? '<span style="color:var(--accent-fg)" title="' + s('sauma.unfollow') + '">★</span>' : ''}
-      <span>💬 ${commentCount}</span>
+      ${following ? '<span style="color:var(--accent-fg);display:inline-flex" title="' + s('sauma.unfollow') + '">' + icon('star') + '</span>' : ''}
+      <span style="display:inline-flex;align-items:center;gap:3px">${icon('message-circle')} ${commentCount}</span>
       ${lastComment ? `<span>· ${esc(lastComment.by||'')} · ${sstr(lastComment.at).slice(0,16).replace('T',' ')}</span>` : ''}
     </div>
     ${!boolVal(r.approved) && !resolved ? `<div class="mt-8 text-sm text-accent" style="font-style:italic">${s('sauma.pendingReview')}</div>` : ''}
@@ -243,7 +243,7 @@ function renderBoard() {
 function renderKanbanCard(r) {
   const sevClass = 'sev-' + (r.severity || 'low');
   const onHold   = boolVal(r.onHold) && !boolVal(r.resolved);
-  const catIcon  = CAT_ICON[r.category] || '⚙️';
+  const catSvg   = icon('spool');
   const subject  = r.category === 'boat'
     ? esc(r.boatName || r.boatId || '')
     : '';
@@ -252,14 +252,14 @@ function renderKanbanCard(r) {
   const matDone   = materials.filter(m => m.purchased).length;
 
   return `<div class="kanban-card ${sevClass}${onHold ? ' on-hold' : ''}" data-id="${esc(r.id || '')}">
-    <div class="kc-title">${catIcon} ${subject ? subject + (r.part ? ' · ' + esc(r.part) : '') : (r.part ? esc(r.part) : esc(maintTitleFallback_(r)))}</div>
+    <div class="kc-title"><span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:3px">${catSvg}</span>${subject ? subject + (r.part ? ' · ' + esc(r.part) : '') : (r.part ? esc(r.part) : esc(maintTitleFallback_(r)))}</div>
     <div class="kc-meta">
       <span class="badge ${SEV_BADGE[r.severity] || 'badge-green'}" style="font-size:9px;padding:1px 5px">${r.severity || 'low'}</span>
-      ${onHold ? `<span class="badge badge-yellow" style="font-size:9px;padding:1px 5px">⏸</span>` : ''}
+      ${onHold ? `<span class="badge badge-yellow" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center">${icon('pause')}</span>` : ''}
       ${r.verkstjori ? `<span class="verk-tag" style="font-size:10px">${esc(r.verkstjori)}</span>` : ''}
-      ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
-      ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
-      ${_isFollowing(r) ? '<span style="color:var(--accent-fg)">★</span>' : ''}
+      ${materials.length ? `<span style="display:inline-flex;align-items:center;gap:3px">${icon('package')} ${matDone}/${materials.length}</span>` : ''}
+      ${comments.length ? `<span style="display:inline-flex;align-items:center;gap:3px">${icon('message-circle')} ${comments.length}</span>` : ''}
+      ${_isFollowing(r) ? '<span style="color:var(--accent-fg);display:inline-flex">' + icon('star') + '</span>' : ''}
     </div>
   </div>`;
 }
@@ -430,7 +430,7 @@ async function submitSuggestion() {
     const rRes = await apiGet("getMaintenance");
     allProjects = (rRes.requests || []).filter(r => boolVal(r.saumaklubbur));
     renderList();
-    toast("✓ " + s(wasEditing ? "maint.updated" : "sauma.submitted"));
+    toast(s(wasEditing ? "maint.updated" : "sauma.submitted"));
   } catch(e) {
     showSuggestErr(s('logbook.errGeneric',{msg:e.message}));
   } finally {

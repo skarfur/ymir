@@ -39,9 +39,9 @@
 
   <!-- Pending sauma review alert -->
   <div id="pendingReviewAlert" class="hidden rounded-8 text-accent text-base d-flex items-center gap-10 cursor-pointer" style="margin:10px 0;padding:10px 14px;background:var(--accent)11;border:1px solid var(--accent)66" data-mt-click="showPendingReviews">
-    <span style="font-size:18px">⏳</span>
+    <span class="d-flex" data-icon="hourglass"></span>
     <span id="pendingReviewAlertText" class="flex-1"></span>
-    <span class="text-xs" style="opacity:.8">→</span>
+    <span class="d-flex" style="opacity:.8" data-icon="arrow-right"></span>
   </div>
 
   <!-- Filter bar -->
@@ -93,9 +93,9 @@
     <div class="field field--compact">
       <label data-s="maint.category" for="newBoat"></label>
       <div class="cat-btns">
-        <button class="cat-btn" data-cat="boat"      data-mt-click="selectCat" data-mt-arg="boat" data-s="maint.catBoat"></button>
-        <button class="cat-btn" data-cat="equipment" data-mt-click="selectCat" data-mt-arg="equipment" data-s="maint.catEquipment"></button>
-        <button class="cat-btn" data-cat="facility"  data-mt-click="selectCat" data-mt-arg="facility" data-s="maint.catFacility"></button>
+        <button class="cat-btn" data-cat="boat"      data-mt-click="selectCat" data-mt-arg="boat"><span data-icon="sailboat"></span> <span data-s="maint.catBoat"></span></button>
+        <button class="cat-btn" data-cat="equipment" data-mt-click="selectCat" data-mt-arg="equipment"><span data-icon="life-buoy"></span> <span data-s="maint.catEquipment"></span></button>
+        <button class="cat-btn" data-cat="facility"  data-mt-click="selectCat" data-mt-arg="facility"><span data-icon="warehouse"></span> <span data-s="maint.catFacility"></span></button>
       </div>
     </div>
 

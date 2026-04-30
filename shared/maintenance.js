@@ -7,7 +7,7 @@
    Exports (globals):
      SEV_BADGE          — severity → badge CSS class map
      SEV_HINTS          — severity → human description map
-     CAT_ICON           — category → emoji map
+     CAT_ICON           — category → Lucide icon name map
      maintRenderCard()  — render a full maintenance card (staff view)
      maintRenderRow()   — render a compact maintenance row (dailylog view)
      maintResolveRow()  — resolve a dailylog checkbox row in-place
@@ -29,7 +29,16 @@ const SEV_HINTS = {
   get critical() { return s('maint.sevHint.critical'); },
 };
 
-const CAT_ICON = { boat: "⛵", equipment: "🔧", facility: "🏗️" };
+const CAT_ICON = { boat: 'sailboat', equipment: 'wrench', facility: 'warehouse' };
+
+// Sauma projects override the category icon with the spool — one consistent
+// "this is a sewing-circle project" mark across both portals.
+function maintCatIconSvg_(r) {
+  if (boolVal(r && r.saumaklubbur)) return icon('spool');
+  const name = CAT_ICON[r && r.category];
+  return name ? icon(name) : '';
+}
+window.maintCatIconSvg_ = maintCatIconSvg_;
 
 // ── Title fallback ─ used when a card has no boat/part to show ───────────────
 // Returns a truncated description (word boundary) or the "untitled" string, so
@@ -74,23 +83,20 @@ if (typeof window.viewPhoto === 'undefined') {
 function maintRenderCardCompact(r) {
   const SEV_CSS   = {low:'var(--green)',medium:'var(--yellow)',high:'var(--orange)',critical:'var(--red)'};
   const borderCol = SEV_CSS[r.severity] || 'var(--green)';
-  const catIcon   = CAT_ICON[r.category] || '⚙️';
+  const catSvg    = maintCatIconSvg_(r);
   const oosTag    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved)
     ? '<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">'+s('maint.oosTag')+'</span>' : '';
-  const saumaTag = boolVal(r.saumaklubbur)
-    ? '<span style="font-size:10px;background:var(--accent)22;color:var(--accent-fg);border:1px solid var(--accent)44;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0">🧵</span>' : '';
   const subject = r.category==='boat' ? esc(r.boatName||r.boatId||'') : '';
   const part = esc(r.part||'');
   const fallback = (!subject && !part) ? esc(maintTitleFallback_(r)) : '';
   return `<div class="maint-card maint-card-compact" data-id="${esc(r.id||'')}"
     style="display:flex;align-items:center;gap:8px;padding:9px 12px 9px 14px;border:1px solid var(--border);border-left:4px solid ${borderCol};border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s">
-    <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden">
-      <span style="flex-shrink:0">${catIcon}</span>
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden">
+      <span style="flex-shrink:0;color:var(--accent-fg);display:inline-flex">${catSvg}</span>
       ${subject ? `<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
       ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
       ${fallback ? `<span style="font-weight:600;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fallback}</span>` : ''}
     </div>
-    ${saumaTag}
     ${oosTag}
   </div>`;
 }
@@ -140,22 +146,32 @@ function maintOpenDetail(r, currentUser) {
   }
 
   function renderAndWire() {
-    const catIcon  = CAT_ICON[r.category] || '⚙️';
+    const catSvg   = maintCatIconSvg_(r);
     const isOos    = boolVal(r.markOos) && r.category==='boat' && !boolVal(r.resolved);
     const resolved = boolVal(r.resolved);
     const isSauma  = boolVal(r.saumaklubbur);
     const isOnHold = isSauma && boolVal(r.onHold) && !resolved;
+    // Reassign-between-flows is staff-only and only offered in the maintenance
+    // portal (where maintOpenEdit is registered). The saumaklubbur portal
+    // shares this modal but is member-facing.
+    const _u = typeof getUser === 'function' ? getUser() : null;
+    const showReassign = !resolved
+      && _u && (_u.role === 'staff' || _u.role === 'admin')
+      && typeof window.maintOpenEdit === 'function';
     const comments = parseJson(r.comments, []);
     const materials = parseJson(r.materials, []);
     const _mKt = window._maintUser?.kennitala ? String(window._maintUser.kennitala) : '';
     const followers = parseJson(r.followers, []);
     const isFollowing = _mKt && followers.some(function(f) { return String(f.kt||f) === _mKt; });
     const subjectLabel = r.category==='boat'
-      ? esc(r.boatName||r.boatId||'')
+      ? (r.boatName||r.boatId||'')
       : '';
+    const titleText = subjectLabel
+      ? subjectLabel + (r.part ? ' · '+r.part : '')
+      : (r.part || maintTitleFallback_(r));
 
-    document.getElementById('maintDetailTitle').textContent =
-      catIcon+' '+(subjectLabel ? subjectLabel+(r.part ? ' · '+r.part : '') : (r.part || maintTitleFallback_(r)));
+    document.getElementById('maintDetailTitle').innerHTML =
+      `<span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:6px">${catSvg}</span>${esc(titleText)}`;
 
     // Severity dropdown — saumaklúbbur only gets low/medium/high
     const allSevs = isSauma ? ['low','medium','high'] : ['low','medium','high','critical'];
@@ -207,11 +223,10 @@ function maintOpenDetail(r, currentUser) {
         ${oosBtn}
       </div>
       ${isSauma ? `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="badge" style="background:var(--accent)22;color:var(--accent-fg);border:1px solid var(--accent)44">🧵 ${s('maint.saumaBadge')}</span>
-        ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44">⏸ ${s('maint.onHoldBadge')}</span>` : ''}
+        ${isOnHold ? `<span class="badge" style="background:var(--yellow)22;color:var(--yellow);border:1px solid var(--yellow)44;display:inline-flex;align-items:center;gap:4px">${icon('pause')} ${s('maint.onHoldBadge')}</span>` : ''}
         ${r.verkstjori ? `<span style="font-size:12px;color:var(--muted)">${s('maint.verkstjoriPrefix')} <strong style="color:var(--text)">${esc(r.verkstjori)}</strong></span>` : `<span style="font-size:12px;color:var(--muted);font-style:italic">${s('maint.noVerkstjori')}</span>`}
-        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn btn-secondary btn-sm">${s('maint.adoptProject')}</button>` : ''}
-        ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn btn-secondary btn-sm">${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</button>` : ''}
+        ${!r.verkstjori && !resolved ? `<button id="mdAdoptBtn" class="btn-ghost-sm">${s('maint.adoptProject')}</button>` : ''}
+        ${_mKt && !resolved ? `<button id="mdFollowBtn" class="btn-ghost-sm icon-btn">${icon('star')}<span>${isFollowing ? s('sauma.unfollow') : s('sauma.follow')}</span></button>` : ''}
       </div>` : ''}
       <div class="req-meta" style="margin-bottom:12px;font-size:12px;color:var(--muted)">
         ${r.reportedBy ? `<span>${s('maint.reportedByLabel')} <span style="color:var(--text);font-weight:500">${esc(r.reportedBy)}</span></span>` : ''}
@@ -225,18 +240,19 @@ function maintOpenDetail(r, currentUser) {
       <div class="comment-add" style="margin-top:12px">
         <div style="display:flex;gap:6px;align-items:center">
           <input id="mdCommentInput" type="text" placeholder="${s('maint.addCommentPh')}" style="flex:1">
-          <label style="cursor:pointer;padding:4px;color:var(--muted);flex-shrink:0;display:inline-flex;align-items:center" title="${s('maint.attachPhoto')}" aria-label="${s('maint.attachPhoto')}">${icon('image-plus')}
+          <label class="btn-ghost-sm icon-btn" style="cursor:pointer;padding:6px 10px" title="${s('maint.attachPhoto')}" aria-label="${s('maint.attachPhoto')}">${icon('image-plus')}
             <input id="mdCommentPhoto" type="file" accept="image/*" style="display:none">
           </label>
-          <button id="mdCommentBtn" class="btn btn-secondary btn-sm icon-btn" title="${s('maint.postBtn')}" aria-label="${s('maint.postBtn')}">${icon('message-square-plus')}</button>
+          <button id="mdCommentBtn" class="btn-ghost-sm icon-btn" style="padding:6px 10px" title="${s('maint.postBtn')}" aria-label="${s('maint.postBtn')}">${icon('message-square-plus')}</button>
         </div>
         <div id="mdCommentPhotoPreview" style="margin-top:6px"></div>
       </div>
-      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--accent)11;border:1px solid var(--accent)44;font-size:12px;color:var(--accent-fg)">⏳ ${s('maint.pendingReview')}<button id="mdApproveBtn" class="btn btn-primary btn-sm" style="margin-left:12px">${s('maint.approveBtn')}</button></div>` : ''}
-      <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <button id="mdDeleteBtn" class="btn btn-secondary btn-sm icon-btn" style="color:var(--red)" title="${s('maint.deleteBtn')}" aria-label="${s('maint.deleteBtn')}">${icon('trash-2')}</button>
-        ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn btn-secondary btn-sm">${s('btn.edit')}</button>` : ''}
-        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn btn-secondary btn-sm" style="margin-left:auto">${isOnHold ? '▶ '+s('maint.resumeBtn') : '⏸ '+s('maint.putOnHold')}</button>` : ''}
+      ${isSauma && !boolVal(r.approved) ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:var(--accent)11;border:1px solid var(--accent)44;font-size:12px;color:var(--accent-fg);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${icon('hourglass')}<span>${s('maint.pendingReview')}</span><button id="mdApproveBtn" class="btn btn-primary btn-sm" style="margin-left:auto">${s('maint.approveBtn')}</button></div>` : ''}
+      <div class="req-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="mdDeleteBtn" class="btn-ghost-sm danger icon-btn" style="padding:6px 10px" title="${s('maint.deleteBtn')}" aria-label="${s('maint.deleteBtn')}">${icon('trash-2')}</button>
+        ${typeof window.maintOpenEdit === 'function' ? `<button id="mdEditBtn" class="btn-ghost-sm">${s('btn.edit')}</button>` : ''}
+        ${showReassign ? `<button id="mdReassignBtn" class="btn-ghost-sm icon-btn">${icon('spool')}<span>${isSauma ? s('maint.reassignToMaint') : s('maint.reassignToSauma')}</span></button>` : ''}
+        ${isSauma && boolVal(r.approved) ? `<button id="mdHoldBtn" class="btn-ghost-sm icon-btn" style="margin-left:auto">${isOnHold ? icon('play')+'<span>'+s('maint.resumeBtn')+'</span>' : icon('pause')+'<span>'+s('maint.putOnHold')+'</span>'}</button>` : ''}
         <button id="mdResolveBtn" class="btn btn-primary btn-sm"${isSauma && boolVal(r.approved) ? '' : ' style="margin-left:auto"'}>${isSauma ? s('maint.markCompleted') : s('maint.markResolved2')}</button>
       </div>`
       : `<div style="margin-top:10px;font-size:11px;color:var(--muted)">${s(isSauma ? 'maint.completedBy' : 'maint.resolvedBy', { date: sstr(r.resolvedAt).slice(0,10), by: esc(r.resolvedBy||'') })}</div>`}
@@ -288,6 +304,31 @@ function maintOpenDetail(r, currentUser) {
         r.onHold=newHold; renderAndWire();
         if(typeof renderList==='function') renderList();
         if(typeof renderMaintenance==='function') renderMaintenance();
+      });
+    });
+
+    // Reassign between maintenance and saumaklúbbur (staff only)
+    document.getElementById('mdReassignBtn')?.addEventListener('click', () => {
+      const toSauma = !isSauma;
+      const msg = toSauma ? s('maint.reassignToSaumaConfirm') : s('maint.reassignToMaintConfirm');
+      doConfirm(msg, async () => {
+        await apiPost('reassignMaintenance', { id: r.id, toSauma });
+        r.saumaklubbur = toSauma;
+        if (toSauma) {
+          r.approved = true;
+          r.onHold   = false;
+          r.markOos  = false;
+        } else {
+          r.approved = false;
+          r.onHold   = false;
+        }
+        if (typeof toast === 'function') {
+          toast(s(toSauma ? 'maint.reassignedToSauma' : 'maint.reassignedToMaint'));
+        }
+        renderAndWire();
+        if (typeof renderList === 'function') renderList();
+        if (typeof renderStats === 'function') renderStats();
+        if (typeof renderMaintenance === 'function') renderMaintenance();
       });
     });
 
@@ -522,13 +563,12 @@ function maintRenderCard(r) {
   const resolved  = boolVal(r.resolved);
   const isSauma   = boolVal(r.saumaklubbur);
   const sevClass  = 'sev-' + (r.severity||'low');
-  const catIcon   = CAT_ICON[r.category] || '⚙️';
+  const catSvg    = maintCatIconSvg_(r);
   const isOos     = boolVal(r.markOos) && r.category==='boat' && !resolved;
   const subjectLabel = r.category==='boat'
     ? esc(r.boatName||r.boatId||'')
     : '';
   const oosTag = isOos ? '<span class="oos-badge">'+s('maint.oosTag')+'</span>' : '';
-  const saumaBadge = isSauma ? '<span style="font-size:10px;background:var(--accent)22;color:var(--accent-fg);border:1px solid var(--accent)44;padding:1px 6px;border-radius:3px">🧵</span>' : '';
 
   const comments = parseJson(r.comments, []);
   const materials = isSauma ? parseJson(r.materials, []) : [];
@@ -544,16 +584,16 @@ function maintRenderCard(r) {
     <div class="req-header">
       <div style="flex:1;min-width:0">
         <div class="req-title">
-          ${catIcon} ${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
-          ${oosTag} ${saumaBadge}
+          <span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:4px">${catSvg}</span>${subjectLabel ? subjectLabel : ''}${subjectLabel && r.part ? `<span style="color:var(--muted);font-size:12px;font-weight:400"> · ${esc(r.part)}</span>` : ''}${!subjectLabel && r.part ? esc(r.part) : ''}${!subjectLabel && !r.part ? esc(maintTitleFallback_(r)) : ''}
+          ${oosTag}
         </div>
         <div class="req-meta">
           <span class="badge ${SEV_BADGE[r.severity]||'badge-green'}">${r.severity||'low'}</span>
           ${isSauma && r.verkstjori ? `<span style="color:var(--accent-fg)">${s('maint.verkstjoriPrefix')} ${esc(r.verkstjori)}</span>` : ''}
           ${r.reportedBy ? `<span>${esc(r.reportedBy)}</span>` : ''}
           ${r.createdAt  ? `<span>${sstr(r.createdAt).slice(0,10)}</span>` : ''}
-          ${materials.length ? `<span>📦 ${matDone}/${materials.length}</span>` : ''}
-          ${comments.length ? `<span>💬 ${comments.length}</span>` : ''}
+          ${materials.length ? `<span style="display:inline-flex;align-items:center;gap:3px">${icon('package')} ${matDone}/${materials.length}</span>` : ''}
+          ${comments.length ? `<span style="display:inline-flex;align-items:center;gap:3px">${icon('message-circle')} ${comments.length}</span>` : ''}
         </div>
       </div>
     </div>

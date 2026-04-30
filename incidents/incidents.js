@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('fileReviewBtn').textContent  = s('incident.saveForReview');
   document.getElementById('addReviewerNoteBtn').textContent = s('incident.addReviewerNote');
   document.getElementById('reviewerNoteInput').placeholder  = s('incident.addReviewerNote') + '…';
-  document.getElementById('backBtn2').textContent       = '← ' + s('incident.viewList');
+  document.getElementById('backBtn2').innerHTML         = icon('arrow-left') + ' ' + esc(s('incident.viewList'));
 
   // Placeholder text
   document.getElementById('iDesc').placeholder       = s('lbl.description') + '…';
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('iHandPolice').textContent     = 'Police';
   document.getElementById('iHandGuardian').textContent   = s('incident.handoff.guardian');
   document.getElementById('iHandSelf').textContent       = s('incident.handoff.self');
-  document.getElementById('iHandOther').textContent      = s('incident.type.other').replace('📌 ','');
+  document.getElementById('iHandOther').textContent      = s('incident.type.other');
 
   // Location/boat selects
   document.getElementById('iLocNone').textContent  = '— ' + s('lbl.selectDots').replace('…','') + ' —';

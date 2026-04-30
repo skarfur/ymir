@@ -175,6 +175,33 @@ function holdSaumaklubbur_(b) {
   return okJ({ onHold: onHold });
 }
 
+// Staff-only: flip an existing request between maintenance and saumaklúbbur.
+// Sauma-only fields (verkstjori, materials) are preserved across the flip so
+// reassigning a project back doesn't lose accumulated work.
+function reassignMaintenance_(b) {
+  if (!b.id) return failJ('id required');
+  const ex = findOne_('maintenance', 'id', b.id);
+  if (!ex) return failJ('Request not found', 404);
+  ensureMaintCols_();
+  const toSauma = bool_(b.toSauma);
+  const updates = { saumaklubbur: toSauma, updatedAt: now_() };
+  if (toSauma) {
+    // Maintenance → saumaklúbbur. Staff is initiating, so the project is
+    // pre-approved; clear OOS since sauma projects don't take boats out.
+    updates.approved = true;
+    updates.onHold   = false;
+    updates.markOos  = false;
+  } else {
+    // Saumaklúbbur → maintenance. Reset the sauma state-machine flags;
+    // verkstjori and materials are intentionally preserved on the row.
+    updates.approved = false;
+    updates.onHold   = false;
+  }
+  updateRow_('maintenance', 'id', b.id, updates);
+  cDel_('maintenance');
+  return okJ({ reassigned: true, toSauma: toSauma });
+}
+
 function followProject_(b) {
   if (!b.id) return failJ('id required');
   if (!b.kennitala) return failJ('kennitala required');

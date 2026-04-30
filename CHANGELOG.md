@@ -3,6 +3,56 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — emoji → icons across maintenance, saumaklúbbur, incidents
+
+Replaced ad-hoc emoji glyphs across the maintenance, saumaklúbbur, and
+incidents flows with stroke-style Lucide icons from the existing `icon()`
+registry. Saumaklúbbur project cards now lead with a single spool icon
+(overrides the boat/equipment/facility category icon used on plain
+maintenance requests) so a sauma project reads as a sauma project at a
+glance, in either portal. Incident type labels lost their emoji entirely
+— the visual cuteness was at odds with the seriousness of an incident.
+
+Frontend:
+- `shared/ui.js` — added `sailboat`, `wrench`, `warehouse`, `life-buoy`,
+  `spool`, `package`, `message-circle`, `check`, `star`, `pause`, `play`,
+  `triangle-alert`, `arrow-left`, `arrow-right` to the Lucide registry.
+- `shared/style.css` — added `.btn-ghost-sm.danger` (parallel to the
+  existing `.btn-ghost.danger`) so icon-only delete buttons can use the
+  small ghost variant with the right hover treatment.
+- `shared/maintenance.js` — `CAT_ICON` is now a name-map; new
+  `maintCatIconSvg_(r)` returns the spool SVG when `r.saumaklubbur` and
+  the matching category icon otherwise. Detail-modal title moves from
+  `textContent` to a (safely escaped) `innerHTML` composition. Modal's
+  secondary action buttons (delete, edit, hold/resume, photo, comment)
+  switched to `btn-ghost-sm` so they pick up the green-on-navy hover and
+  no longer look like a wall of grey pills next to the navy primary CTA.
+  Redundant `🧵` mini-pill and labelled sauma badge removed (the leading
+  spool icon already conveys "this is a sauma project").
+- Maintenance/saumaklúbbur portal cat-buttons restructured from
+  `<button data-s="…">` to `<button><span data-icon><span data-s></button>`
+  so the icon and the i18n text can co-exist without one clobbering the
+  other through `applyStrings`.
+- Incidents — back-arrow uses `icon('arrow-left')`; the ad-hoc
+  `replace('📌 ', '')` in `incidents.js` is gone now that the strings
+  themselves carry no emoji prefix.
+- Strings — emoji prefixes/suffixes stripped from every `incident.*`,
+  `maint.*`, and `sauma.*` key in both `strings-en.js` and `strings-is.js`.
+
+Reassign request between flows (staff-only):
+- `maintenance.gs` — new `reassignMaintenance_({id, toSauma})` flips the
+  `saumaklubbur` flag on an existing row. Maint→sauma sets `approved=true`
+  (staff initiator = pre-approved) and clears `markOos`. Sauma→maint
+  resets `approved`/`onHold` but **preserves** `verkstjori` and
+  `materials` on the row so re-promoting later doesn't lose work.
+- `code.gs` — gated as `STAFF_ACTIONS_['reassignMaintenance']`.
+- `shared/maintenance.js` — modal renders a "Move to saumaklúbbur" /
+  "Move to maintenance" button only when (a) the caller is staff/admin
+  and (b) the modal is mounted in the maintenance portal (detected via
+  the presence of `window.maintOpenEdit`, which only the maintenance
+  portal sets). Member-facing saumaklúbbur portal does not see it.
+- `shared/api.js` — added `reassignMaintenance` to the `_INVALIDATES` map.
+
 ## Unreleased — split weather and share-tokens out of alerts.gs
 
 `alerts.gs` was a three-domain grab-bag (weather, overdue alerts, share
