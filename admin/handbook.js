@@ -913,7 +913,17 @@ async function syncHandbookDocs() {
     if (res.added)               parts.push(s('admin.handbook.doc.syncAdded')   + ' ' + res.added);
     if (res.skipped)             parts.push(s('admin.handbook.doc.syncSkipped') + ' ' + res.skipped);
     if (res.shortcutsUnresolved) parts.push(s('admin.handbook.doc.syncShortcutWarn') + ' ' + res.shortcutsUnresolved);
-    if (status) status.textContent = parts.join(' · ') || s('admin.handbook.doc.syncDone');
+    if (status) {
+      status.textContent = parts.join(' · ') || s('admin.handbook.doc.syncDone');
+      // Surface per-file reasons (target missing, sharing denied, v2/v3 field
+      // mismatch, etc.) so an admin can see why a shortcut didn't resolve.
+      if (Array.isArray(res.notes) && res.notes.length) {
+        status.title = res.notes.join('\n');
+        console.warn('syncHandbookDocs notes:', res.notes);
+      } else {
+        status.title = '';
+      }
+    }
     toast(s('toast.saved'));
   } catch (e) {
     if (status) status.textContent = s('toast.error') + ': ' + e.message;
