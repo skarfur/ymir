@@ -94,8 +94,8 @@ function maintRenderCardCompact(r) {
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden">
       <span style="flex-shrink:0;color:var(--accent-fg);display:inline-flex">${catSvg}</span>
       ${subject ? `<span style="font-weight:600;font-size:13px;color:var(--accent-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subject}</span>` : ''}
-      ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
-      ${fallback ? `<span style="font-weight:600;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fallback}</span>` : ''}
+      ${part ? `<span style="${subject?'font-size:12px;color:var(--muted);':'font-weight:600;font-size:13px;color:var(--accent-fg);'}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${part}</span>` : ''}
+      ${fallback ? `<span style="font-weight:600;font-size:13px;color:var(--accent-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fallback}</span>` : ''}
     </div>
     ${oosTag}
   </div>`;
@@ -171,7 +171,7 @@ function maintOpenDetail(r, currentUser) {
       : (r.part || maintTitleFallback_(r));
 
     document.getElementById('maintDetailTitle').innerHTML =
-      `<span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:6px">${catSvg}</span>${esc(titleText)}`;
+      `<span style="color:var(--accent-fg);display:inline-flex;vertical-align:-2px;margin-right:6px">${catSvg}</span><span style="color:var(--accent-fg)">${esc(titleText)}</span>`;
 
     // Severity dropdown — saumaklúbbur only gets low/medium/high
     const allSevs = isSauma ? ['low','medium','high'] : ['low','medium','high','critical'];
