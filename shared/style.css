@@ -1050,6 +1050,24 @@ textarea { min-height: 70px; }
 .btn-ghost-sm.danger        { color: var(--red); }
 .btn-ghost-sm.danger:hover  { color: var(--red); border-color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
 
+/* Maintenance detail modal — unify the height of the action-row and the
+   comment-row buttons across the .btn-ghost-sm / .btn-primary mix so they
+   line up vertically regardless of which classes a given button uses. */
+.req-actions > button,
+.req-actions > label,
+.comment-add button,
+.comment-add label {
+  min-height: 32px;
+  padding: 6px 12px;
+  box-sizing: border-box;
+}
+.req-actions > button.icon-btn,
+.req-actions > label.icon-btn,
+.comment-add button.icon-btn,
+.comment-add label.icon-btn {
+  padding: 6px 10px;
+}
+
 /* Dashed add button */
 .btn-dashed {
   background: none;
