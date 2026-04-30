@@ -17,9 +17,9 @@
 .badge-skipper{color:var(--accent-fg);border-color:var(--accent)55;background:var(--accent)11}
 .badge-crew{color:var(--muted);border-color:var(--border);background:var(--surface)}
 .badge-verified{color:var(--moss);border-color:color-mix(in srgb, var(--moss) 33%, transparent);background:color-mix(in srgb, var(--moss) 8%, transparent)}
-.badge-verify-pending{color:var(--navy-l);border-color:var(--navy-l);background:color-mix(in srgb, var(--navy-l) 12%, transparent)}
-.badge-verified,.badge-verify-pending{display:inline-flex;align-items:center;justify-content:center;padding:2px 4px}
-.badge-verified .icon-inline,.badge-verify-pending .icon-inline{width:14px;height:14px;vertical-align:middle}
+.badge-verify-pending{color:var(--navy-l);border-color:color-mix(in srgb, var(--navy-l) 33%, transparent);background:color-mix(in srgb, var(--navy-l) 8%, transparent)}
+.badge-verified,.badge-verify-pending{display:inline-flex;align-items:center;justify-content:center}
+.badge-verified .icon-inline,.badge-verify-pending .icon-inline{width:12px;height:12px;vertical-align:middle}
 .badge-helm{color:var(--accent-fg);border-color:var(--accent)55;background:var(--accent)11}
 .trip-arrow{padding:14px 18px 14px 10px;display:flex;align-items:center;color:var(--muted);font-size:28px;transition:transform .2s,color .2s;flex-shrink:0}
 .trip-card:hover .trip-arrow,.trip-card.open .trip-arrow{color:var(--accent-fg)}
