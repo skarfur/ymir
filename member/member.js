@@ -12,7 +12,7 @@ prefetch({
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
-let boats=[], locations=[], checkouts=[];
+let boats=[], locations=[], checkouts=[], _slots=[];
 let _volunteerEvents=[], _volunteerSignups=[], _volunteerActTypes=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
@@ -49,10 +49,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // see the requestIdleCallback at the end of this handler.
 
   try {
-    const [coRes, cfgRes] = await Promise.all([
+    const _today = todayISO();
+    const [coRes, cfgRes, slotsRes] = await Promise.all([
       window._earlyCheckouts || apiGet('getActiveCheckouts'),
       window._earlyConfig || apiGet('getConfig'),
+      apiGet('getSlots', { fromDate: _today, toDate: _today }),
     ]);
+    _slots = slotsRes.slots || [];
+    if (cfgRes.certDefs && typeof registerCertDefsForBoats === 'function') {
+      registerCertDefsForBoats(cfgRes.certDefs);
+    }
     if (cfgRes.flagConfig && typeof wxLoadFlagConfig === 'function') { wxLoadFlagConfig(cfgRes.flagConfig); }
     checkouts = coRes.checkouts || [];
     boats     = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
@@ -158,6 +164,10 @@ function handleBoatQrScan(boatId) {
     showToast(s('qr.boatOos'), 'warn');
     return;
   }
+  if (!canAccessBoat(boat, user, { slots: _slots })) {
+    showToast(s('fleet.badgeRestricted'), 'warn');
+    return;
+  }
   launchBoatById(boatId);
 }
 
@@ -246,7 +256,11 @@ function openReturnModal(coId) {
 // Step 1 — boat picker
 function renderLaunchPicker(preselectedBoatId) {
   const active=checkouts.filter(c=>c.status==='out');
-  const avail=boats.filter(b=>!active.find(c=>c.boatId===b.id)&&!boolVal(b.oos));
+  const avail=boats.filter(b=>
+    !active.find(c=>c.boatId===b.id) &&
+    !boolVal(b.oos) &&
+    canAccessBoat(b, user, { slots: _slots })
+  );
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=
       '<div class="mb-12" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
