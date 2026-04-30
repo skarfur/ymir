@@ -286,6 +286,14 @@ function canAccessBoat(boat, user, opts) {
   if (isStaff(user)) return true;
   // Private boat owner always has access
   if (boat.ownership === 'private' && String(boat.ownerId || boat.ownerKennitala || '') === String(user.kennitala)) return true;
+  // Slot-only boats (slot scheduling on, not available outside slots): an
+  // active slot booking is the sole non-staff/non-owner path. Cert gates and
+  // allowlists qualify a member to book, but don't bypass the slot itself.
+  // Only enforce when slot data is provided — display contexts that don't
+  // load slots fall through to the permissive checks below.
+  if (isSlotScheduled(boat) && !isAvailableOutsideSlots(boat) && opts && opts.slots) {
+    return hasActiveSlot(boat, user.kennitala, opts.slots);
+  }
   // Check cert gate via unified helper (honours expiry + rank + new structured shape)
   var gate = normalizeAccessGate(boat, opts && opts.certDefs);
   if (gate) {
