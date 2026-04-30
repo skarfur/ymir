@@ -511,7 +511,7 @@ var _STRINGS_FLAT = {
   "sauma.verkstjoriLabel": "Verkstjóri:",
   "sauma.loadFailed": "Failed to load: {msg}",
   "maint.pageTitle": "🔧 Maintenance",
-  "maint.newBtn": "+ New maintenance request",
+  "maint.newBtn": "New maintenance request",
   "maint.newSaumaBtn": "New saumaklúbbur project",
   "maint.newTitle": "🔧 New Maintenance Request",
   "maint.statOpen": "OPEN",
