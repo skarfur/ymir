@@ -154,6 +154,7 @@ function saveHandbookContact_(b) {
     sortOrder:  Number(b.sortOrder || 0),
     active:     b.active === false ? false : true,
   });
+  cDel_('handbook');
   return okJ({ id: res.id, saved: true });
 }
 
@@ -161,6 +162,7 @@ function deleteHandbookContact_(b) {
   if (!b.id) return failJ('id required');
   const res = deleteConfigListItem_('handbookContacts', b.id, { soft: true });
   if (!res.deactivated) return failJ('Contact not found', 404);
+  cDel_('handbook');
   return okJ({ ok: true });
 }
 
@@ -220,6 +222,7 @@ function saveHandbookRole_(b) {
     sortOrder:       Number(b.sortOrder || 0),
     active:          b.active === false ? false : true,
   });
+  cDel_('handbook');
   return okJ({ id: res.id, saved: true });
 }
 
@@ -228,6 +231,7 @@ function deleteHandbookRole_(b) {
   // Soft-delete leaves children's parentId intact so the admin can re-parent.
   const res = deleteConfigListItem_('handbookRoles', b.id, { soft: true });
   if (!res.deactivated) return failJ('Role not found', 404);
+  cDel_('handbook');
   return okJ({ ok: true });
 }
 
@@ -275,6 +279,7 @@ function saveHandbookDoc_(b) {
     sortOrder:   Number(b.sortOrder || 0),
     active:      b.active === false ? false : true,
   });
+  cDel_('handbook');
   return okJ({ id: res.id, saved: true });
 }
 
@@ -293,6 +298,7 @@ function deleteHandbookDoc_(b) {
     } catch (e) {}
   }
   deleteConfigListItem_('handbookDocs', b.id, { soft: true });
+  cDel_('handbook');
   return okJ({ ok: true });
 }
 
@@ -411,6 +417,7 @@ function syncHandbookDocs_() {
     added++;
   }
 
+  if (added) cDel_('handbook');
   return okJ({
     ok: true,
     added: added,
@@ -468,6 +475,7 @@ function saveHandbookInfo_(b) {
     sortOrder: Number(b.sortOrder || 0),
     active:    b.active === false ? false : true,
   });
+  cDel_('handbook');
   return okJ({ id: res.id, saved: true });
 }
 
@@ -475,6 +483,7 @@ function deleteHandbookInfo_(b) {
   if (!b.id) return failJ('id required');
   const res = deleteConfigListItem_('handbookInfo', b.id, { soft: true });
   if (!res.deactivated) return failJ('Info section not found', 404);
+  cDel_('handbook');
   return okJ({ ok: true });
 }
 
