@@ -124,9 +124,6 @@ function saveConfigListItem_(key, patch) {
   }
   setConfigSheetValue_(key, JSON.stringify(arr));
   cDel_('config');
-  // Handbook tabs read this same store via getHandbook_, which keeps its
-  // own derived cache. Drop it here so handbook* writes invalidate both.
-  if (String(key).indexOf('handbook') === 0) cDel_('handbook');
   return { id: item.id, item: item, created: created, updated: !created };
 }
 
@@ -146,7 +143,6 @@ function deleteConfigListItem_(key, id, opts) {
   }
   setConfigSheetValue_(key, JSON.stringify(arr));
   cDel_('config');
-  if (String(key).indexOf('handbook') === 0) cDel_('handbook');
   return soft ? { deactivated: true } : { deleted: true };
 }
 

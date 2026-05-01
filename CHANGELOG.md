@@ -15,12 +15,11 @@ in the app (joins handbookRoles + members + boat-cat colours +
 contacts + docs + info), and the existing frontend cache is 10 min,
 so a 60 s backend cache catches almost all cold-container reads.
 
-Invalidation is centralised: `saveConfigListItem_` /
-`deleteConfigListItem_` in `alerts.gs` now drop the `handbook` cache
-when their key starts with `handbook` (covers 7 of the 10 handbook
-writers via the helper). The remaining direct writer
-(`reorderHandbookRoles_` in `handbook.gs`) gets an explicit
-`cDel_('handbook')`.
+Each handbook writer drops the cache itself with an explicit
+`cDel_('handbook')` call before its `okJ` return — no cross-domain
+coupling in the generic `saveConfigListItem_` / `deleteConfigListItem_`
+helpers (which still live in `alerts.gs` for legacy reasons but
+shouldn't grow handbook-specific knowledge).
 
 `trips.gs` — `saveTripTrack_` honours an optional `b.compressed === 'gzip'`
 flag and `Utilities.ungzip()`s the bytes before parsing. Backwards
