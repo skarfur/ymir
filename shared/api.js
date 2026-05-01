@@ -990,3 +990,52 @@ function warmContainer() {
 
   resetIdleTimer();
 }
+
+// ── File upload helper ───────────────────────────────────────────────────────
+// Reads `file` and returns the upload-ready payload object expected by the
+// `uploadTripFile` / similar Apps Script endpoints:
+//   { fileName, fileData, mimeType[, compressed: 'gzip'] }
+//
+// GPX/KML are XML and shrink ~60-70% under gzip — the browser's
+// CompressionStream gives us that for free, no library required. KMZ is
+// already a zip; re-gzipping a zip gains nothing, so we leave it raw.
+// Photos and everything else fall back to the legacy data-URL form so
+// the backend keeps working untouched. If CompressionStream isn't
+// available (very old browsers) we transparently skip the optimisation.
+//
+// Backend contract: when `compressed: 'gzip'` is present, fileData is
+// raw base64 of gzipped bytes (no `data:` prefix); the handler must
+// `Utilities.ungzip()` before consuming.
+function readFileForUpload(file) {
+  function asDataUrl() {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload  = function (e) { resolve({ fileName: file.name, fileData: e.target.result, mimeType: file.type || 'application/octet-stream' }); };
+      r.onerror = function ()  { reject(new Error('Read error')); };
+      r.readAsDataURL(file);
+    });
+  }
+  var ext = (file.name.split('.').pop() || '').toLowerCase();
+  if ((ext !== 'gpx' && ext !== 'kml') ||
+      typeof CompressionStream === 'undefined' ||
+      typeof file.stream !== 'function') {
+    return asDataUrl();
+  }
+  try {
+    var gz = file.stream().pipeThrough(new CompressionStream('gzip'));
+    return new Response(gz).arrayBuffer().then(function (buf) {
+      var bytes = new Uint8Array(buf), bin = '', CHUNK = 0x8000;
+      for (var i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+      }
+      return {
+        fileName:   file.name,
+        fileData:   btoa(bin),
+        mimeType:   file.type || 'application/octet-stream',
+        compressed: 'gzip',
+      };
+    }).catch(asDataUrl);
+  } catch (e) {
+    return asDataUrl();
+  }
+}

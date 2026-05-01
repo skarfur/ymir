@@ -16,6 +16,8 @@
 // `handbookInfo_<id>` keys instead of one mega-blob.
 
 function getHandbook_() {
+  const cached = cGet_('handbook');
+  if (cached) return okJ(cached);
   const rolesRaw    = readConfigList_('handbookRoles').filter(_hbActive_);
   const contactsRaw = readConfigList_('handbookContacts').filter(_hbActive_);
   const docs        = readConfigList_('handbookDocs').filter(_hbActive_);
@@ -45,12 +47,14 @@ function getHandbook_() {
     });
   });
 
-  return okJ({
+  const out = {
     roles:    roles.sort(_hbByOrder_),
     contacts: contacts.sort(_hbByOrder_),
     docs:     docs.sort(_hbByOrder_),
     info:     info.sort(_hbByOrder_),
-  });
+  };
+  cPut_('handbook', out);
+  return okJ(out);
 }
 
 function _hbActive_(r) { return r && bool_(r.active); }
@@ -248,6 +252,7 @@ function reorderHandbookRoles_(b) {
   if (updated) {
     setConfigSheetValue_('handbookRoles', JSON.stringify(arr));
     cDel_('config');
+    cDel_('handbook');
   }
   return okJ({ updated: updated });
 }

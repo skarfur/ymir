@@ -671,6 +671,18 @@ function saveTripTrack_(b) {
     let contentBytes = Utilities.base64Decode(b.fileData.replace(/^data:[^;]+;base64,/, ''));
     let parseFormat  = ext;
 
+    // Frontend may gzip GPX/KML before base64-encoding to cut upload size
+    // ~60-70% (XML compresses well; KMZ is already zipped, photos JPEG).
+    // The flag tells us to ungzip first; without it we treat the bytes raw
+    // for backwards compatibility with un-upgraded clients.
+    if (b.compressed === 'gzip') {
+      try {
+        contentBytes = Utilities.ungzip(Utilities.newBlob(contentBytes, 'application/x-gzip')).getBytes();
+      } catch (e) {
+        return failJ('Failed to decompress upload: ' + e.message);
+      }
+    }
+
     // KMZ = zipped KML — decompress and extract .kml entry
     if (ext === 'kmz') {
       const blobs = Utilities.unzip(Utilities.newBlob(contentBytes, 'application/zip', safeName));

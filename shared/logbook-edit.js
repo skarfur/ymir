@@ -172,13 +172,9 @@ function inlineUploadTrack(tripId) {
     if (!file) return;
     showToast(s('logbook.uploadingTrack'));
     try {
-      const fileData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Read error'));
-        reader.readAsDataURL(file);
-      });
-      const res = await apiPost('uploadTripFile', { fileType: 'track', fileName: file.name, fileData, mimeType: file.type });
+      // readFileForUpload gzips GPX/KML transparently before base64-encoding.
+      const info = await readFileForUpload(file);
+      const res = await apiPost('uploadTripFile', { fileType: 'track', fileName: info.fileName, fileData: info.fileData, mimeType: info.mimeType, compressed: info.compressed });
       if (!res.ok) { showToast(s('logbook.uploadFailed'), 'err'); return; }
       // Save track to trip
       const updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
