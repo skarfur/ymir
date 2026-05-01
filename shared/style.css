@@ -1535,7 +1535,8 @@ textarea { min-height: 70px; }
    .vp-card which enables click-to-edit plus hover affordance.
    ───────────────────────────────────────────────────────────────────────── */
 .vp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-  box-shadow:var(--shadow-sm); padding:10px 12px; margin-bottom:8px; }
+  box-shadow:var(--shadow-sm); padding:10px 12px; margin-bottom:8px;
+  content-visibility:auto; contain-intrinsic-size:auto 80px; }
 .vp-card.admin { cursor:pointer; transition:border-color .2s; }
 .vp-card.admin:hover { border-color:var(--accent)55; }
 

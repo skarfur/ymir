@@ -1,7 +1,11 @@
 /* ── Trip card (shared between logbook & captain) ── */
 /* --tc-cat / --tc-cat-bg are set inline from boatCatColors() so the card and
    its expanded sections tint with the boat category. */
-.trip-card{background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface));border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm)}
+/* content-visibility:auto skips layout/paint while the card is off-screen.
+   The intrinsic-size hint (~76px closed, larger when open) keeps the
+   scrollbar steady; the browser re-uses the real measured height once an
+   off-screen card has rendered once. Big win on logbooks with 100+ cards. */
+.trip-card{background:color-mix(in srgb, var(--tc-cat, transparent) 5%, var(--surface));border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm);content-visibility:auto;contain-intrinsic-size:auto 76px}
 .trip-card:hover{border-color:var(--moss-l)}
 .trip-card-main{display:grid;grid-template-columns:52px 1fr auto;align-items:stretch;cursor:pointer}
 .trip-date-col{background:color-mix(in srgb, var(--tc-cat, transparent) 10%, var(--card));border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;text-align:center}
