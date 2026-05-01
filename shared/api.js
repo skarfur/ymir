@@ -108,6 +108,22 @@ function _refreshInBackground(ck, action, params) {
   p.catch(function () {});
 }
 
+// Public: seed the cache for an action+params with a server-supplied payload
+// so the next apiGet/apiPost is a hit. Used by the login response piggyback
+// (loginMember bundles a getConfig snapshot to skip the post-redirect round
+// trip), and available to any flow that already has fresh data in hand —
+// websocket push, server-rendered hydration, etc. Same key shape as apiGet
+// so _invalidateApiCache drops it on the next write.
+function seedApiCache(action, params, data) {
+  if (!action || data == null) return;
+  try {
+    var ck = 'ymir_' + action + '_' + JSON.stringify(params || {});
+    var entry = { ts: Date.now(), data: data };
+    apiGet._memCache[ck] = entry;
+    try { sessionStorage.setItem(ck, JSON.stringify(entry)); } catch (e) {}
+  } catch (e) {}
+}
+
 // Drop every cached entry (memory + sessionStorage) for the given action.
 // Called by apiPost after a write so the next read sees fresh data. Both
 // tiers use the same `ymir_<action>_<paramsJSON>` key shape.

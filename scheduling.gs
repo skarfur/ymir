@@ -184,6 +184,11 @@ function sched_upsert_(ev) {
     insertRow_('scheduledEvents', payload);
   }
   cDel_('sched_events_for_config');
+  // The outer 'config' cache embeds the volunteerEvents projection
+  // (cancelled-activity tombstones too), so a scheduled-events write must
+  // drop it too — otherwise getConfig_ short-circuits on its own cache
+  // before ever consulting the freshly-cleared sub-cache.
+  cDel_('config');
   return sched_getById_(id);
 }
 
@@ -199,6 +204,7 @@ function sched_cancel_(id, updatedBy) {
     updatedBy: updatedBy || '',
   });
   cDel_('sched_events_for_config');
+  cDel_('config');
   return true;
 }
 
@@ -208,7 +214,10 @@ function sched_cancel_(id, updatedBy) {
 function sched_hardDelete_(id) {
   if (!id) return false;
   var ok = deleteRow_('scheduledEvents', 'id', id);
-  if (ok) cDel_('sched_events_for_config');
+  if (ok) {
+    cDel_('sched_events_for_config');
+    cDel_('config');
+  }
   return ok;
 }
 
