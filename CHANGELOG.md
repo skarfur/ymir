@@ -3,6 +3,25 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — apiGet memory tier + content-visibility on long card lists
+
+Two more low-risk frontend speedups.
+
+- `shared/api.js` — added an in-process memory tier on top of the existing
+  sessionStorage cache. Every cache hit was previously doing
+  `JSON.parse(sessionStorage.getItem(_ck))` against the full payload
+  (tens of KB for `getMembers` / `getTrips`); now warm hits return the
+  already-parsed object directly. sessionStorage stays as the cross-tab
+  / back-button persistence layer; `_invalidateApiCache` clears both
+  tiers via the same prefix scan. `_fresh` bypass and inflight dedup
+  unchanged.
+- `shared/tripcard.css` — `content-visibility:auto` plus an intrinsic-size
+  hint on `.trip-card`. Off-screen trip cards skip layout/paint until they
+  scroll into view, which is the whole logbook's hot path on clubs with
+  long histories.
+- `shared/style.css` — same treatment on `.vp-card` (volunteer + scheduled
+  events). Smaller list, same idea.
+
 ## Unreleased — frontend cold-load tuning
 
 Three low-risk changes to shave latency off every cold page load.

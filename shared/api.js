@@ -38,8 +38,21 @@ async function apiGet(action, params) {
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_' + JSON.stringify(params);
+      var _now = Date.now();
+      // Memory tier: skip sessionStorage + JSON.parse on warm hits. Same
+      // TTL as sessionStorage; populated on every miss-then-fetch and on
+      // sessionStorage-hit promotions so subsequent reads in this tab go
+      // straight to the parsed object.
+      var _mc = apiGet._memCache[_ck];
+      if (_mc && _now - _mc.ts < _CACHEABLE[action]) return _mc.data;
       var _cs = sessionStorage.getItem(_ck);
-      if (_cs) { var _cp = JSON.parse(_cs); if (Date.now() - _cp.ts < _CACHEABLE[action]) return _cp.data; }
+      if (_cs) {
+        var _cp = JSON.parse(_cs);
+        if (_now - _cp.ts < _CACHEABLE[action]) {
+          apiGet._memCache[_ck] = _cp; // promote so the next hit skips parse
+          return _cp.data;
+        }
+      }
       // In-flight dedup: if an identical request is already running (cache
       // miss during page init often fires several parallel apiGet calls for
       // the same action+params), reuse the pending promise instead of kicking
@@ -48,7 +61,9 @@ async function apiGet(action, params) {
       var _p = (async function () {
         try {
           var data = await _call(action, params);
-          sessionStorage.setItem(_ck, JSON.stringify({ ts: Date.now(), data: data }));
+          var entry = { ts: Date.now(), data: data };
+          apiGet._memCache[_ck] = entry;
+          try { sessionStorage.setItem(_ck, JSON.stringify(entry)); } catch(e) {}
           return data;
         } finally {
           delete apiGet._inflight[_ck];
@@ -61,10 +76,11 @@ async function apiGet(action, params) {
   return _call(action, params);
 }
 apiGet._inflight = {};
+apiGet._memCache = {};
 
-// Drop every sessionStorage cache entry for the given action (any params).
-// Used by apiPost's invalidation pass — entries are keyed by `ymir_<action>_<paramsJSON>`
-// so a prefix scan removes all of them.
+// Drop every cached entry (memory + sessionStorage) for the given action.
+// Called by apiPost after a write so the next read sees fresh data. Both
+// tiers use the same `ymir_<action>_<paramsJSON>` key shape.
 function _invalidateApiCache(action) {
   var prefix = 'ymir_' + action + '_';
   try {
@@ -73,6 +89,12 @@ function _invalidateApiCache(action) {
       if (k && k.indexOf(prefix) === 0) sessionStorage.removeItem(k);
     }
   } catch(e) {}
+  if (apiGet._memCache) {
+    var keys = Object.keys(apiGet._memCache);
+    for (var j = 0; j < keys.length; j++) {
+      if (keys[j].indexOf(prefix) === 0) delete apiGet._memCache[keys[j]];
+    }
+  }
 }
 // Which cache entries each write-action invalidates. Single source of truth.
 // Keys are apiPost action names; values are the getXxx reads whose cached
