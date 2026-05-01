@@ -3,6 +3,41 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — promote getConfig/getHandbook to localStorage with cross-tab invalidation
+
+Frontend-only change. Profiling on a real session showed `getConfig` is
+~152 KB uncompressed (~43 KB gzipped) and `getHandbook` is similar —
+both global, admin-only-write, and read by every portal. Persisting
+them in sessionStorage forced a 152 KB fetch on every fresh tab and
+every browser restart, even though the underlying data was unchanged.
+
+`shared/api.js` now has a `_PERSIST_TIER` map opting `getConfig` and
+`getHandbook` into localStorage instead of sessionStorage. The cache
+read/write paths flow through new `_readCacheEntry`, `_writeCacheEntry`,
+and `_storageFor(action)` helpers; reads check both storages
+(sessionStorage first, then localStorage) so existing entries from
+either tier resolve transparently. Writes go to the action's correct
+tier only.
+
+Cross-tab invalidation is wired through a single `window.storage`
+listener — when one tab's `apiPost` calls `_invalidateApiCache` (which
+now drops both storages), localStorage `removeItem` fires `storage`
+events in sibling tabs, which clear their matching `_memCache` entry.
+Same-tab invalidation continues to flow through `_invalidateApiCache`
+directly (`storage` events never fire in the originating tab).
+
+Fixed two adjacent pre-existing bugs surfaced by the audit:
+- `warmContainer`'s background re-warm wrote to the bare-prefix key
+  `ymir_getConfig_`, which never matched `apiGet`'s params-suffixed
+  lookup `ymir_getConfig_{}`. The warm primed the server-side
+  CacheService (good) but never populated the client cache (silent
+  no-op). Now uses `seedApiCache` so the warm lands under the
+  canonical key in the right tier.
+- `switchBackToGuardian` purged caches via direct `sessionStorage.
+  removeItem('ymir_getTrips_')` etc. — same key-shape mismatch, also
+  silent no-ops. Now uses `_invalidateApiCache(action)` which prefix-
+  scans both storages.
+
 ## Unreleased — login getConfig piggyback + scheduled-events config-cache fix
 
 ⚠️ **Backend changes (.gs files) — won't take effect until pushed to
