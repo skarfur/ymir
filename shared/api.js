@@ -66,30 +66,51 @@ async function apiGet(action, params) {
 apiGet._inflight = {};
 apiGet._memCache = {};
 
-// Look up a cache entry — memory tier first, then sessionStorage with
-// promotion on hit. Returns the raw `{ts, data}` envelope, or null. Callers
-// decide what to do with the age.
+// Look up a cache entry — memory tier first, then sessionStorage, then
+// localStorage (for actions promoted via _PERSIST_TIER). Returns the raw
+// `{ts, data}` envelope, or null. Callers decide what to do with the age.
+// Reading both storages (rather than the action's "correct" tier) is cheap
+// and forgiving: it tolerates pre-existing entries from before a tier flip
+// and never serves a wrong-tier hit because the data shape is identical.
 function _readCacheEntry(ck) {
   var mc = apiGet._memCache[ck];
   if (mc) return mc;
   try {
-    var cs = sessionStorage.getItem(ck);
-    if (!cs) return null;
-    var parsed = JSON.parse(cs);
+    var s = sessionStorage.getItem(ck) || localStorage.getItem(ck);
+    if (!s) return null;
+    var parsed = JSON.parse(s);
     apiGet._memCache[ck] = parsed; // promote so the next hit skips parse
     return parsed;
   } catch(e) { return null; }
 }
 
-// Single source of truth for "fetch, cache both tiers, clear inflight". Used
-// by both the blocking miss path and the SWR background refresh.
+// Reads that are global, large, and rarely changed get promoted from
+// sessionStorage to localStorage so they survive tab closure + browser
+// restart. Cross-tab invalidation flows through the `storage` listener at
+// the bottom; same-tab invalidation flows through _invalidateApiCache,
+// which drops both tiers regardless of where the entry actually lives.
+//   getConfig:  ~150 KB uncompressed, admin-only writes, every portal needs it
+//   getHandbook: similarly large, similarly stable
+var _PERSIST_TIER = { getConfig: 'local', getHandbook: 'local' };
+
+function _storageFor(action) {
+  return _PERSIST_TIER[action] === 'local' ? localStorage : sessionStorage;
+}
+
+// Single source of truth for "stash this entry under both tiers correctly".
+// Called by the fetch path, SWR background refresh, and seedApiCache.
+function _writeCacheEntry(ck, action, entry) {
+  apiGet._memCache[ck] = entry;
+  try { _storageFor(action).setItem(ck, JSON.stringify(entry)); } catch(e) {}
+}
+
+// Single source of truth for "fetch, cache, clear inflight". Used by both
+// the blocking miss path and the SWR background refresh.
 function _fetchAndCache(ck, action, params) {
   return (async function () {
     try {
       var data = await _call(action, params);
-      var entry = { ts: Date.now(), data: data };
-      apiGet._memCache[ck] = entry;
-      try { sessionStorage.setItem(ck, JSON.stringify(entry)); } catch(e) {}
+      _writeCacheEntry(ck, action, { ts: Date.now(), data: data });
       return data;
     } finally {
       delete apiGet._inflight[ck];
@@ -118,23 +139,27 @@ function seedApiCache(action, params, data) {
   if (!action || data == null) return;
   try {
     var ck = 'ymir_' + action + '_' + JSON.stringify(params || {});
-    var entry = { ts: Date.now(), data: data };
-    apiGet._memCache[ck] = entry;
-    try { sessionStorage.setItem(ck, JSON.stringify(entry)); } catch (e) {}
+    _writeCacheEntry(ck, action, { ts: Date.now(), data: data });
   } catch (e) {}
 }
 
-// Drop every cached entry (memory + sessionStorage) for the given action.
-// Called by apiPost after a write so the next read sees fresh data. Both
-// tiers use the same `ymir_<action>_<paramsJSON>` key shape.
+// Drop every cached entry (memory + sessionStorage + localStorage) for the
+// given action. Called by apiPost after a write so the next read sees fresh
+// data. All three tiers share the `ymir_<action>_<paramsJSON>` key shape.
+// localStorage removals fire `storage` events in sibling tabs, which the
+// listener at the bottom of this file uses for cross-tab cache eviction.
 function _invalidateApiCache(action) {
   var prefix = 'ymir_' + action + '_';
-  try {
-    for (var i = sessionStorage.length - 1; i >= 0; i--) {
-      var k = sessionStorage.key(i);
-      if (k && k.indexOf(prefix) === 0) sessionStorage.removeItem(k);
-    }
-  } catch(e) {}
+  var stores = [sessionStorage, localStorage];
+  for (var s = 0; s < stores.length; s++) {
+    try {
+      var store = stores[s];
+      for (var i = store.length - 1; i >= 0; i--) {
+        var k = store.key(i);
+        if (k && k.indexOf(prefix) === 0) store.removeItem(k);
+      }
+    } catch(e) {}
+  }
   if (apiGet._memCache) {
     var keys = Object.keys(apiGet._memCache);
     for (var j = 0; j < keys.length; j++) {
@@ -142,6 +167,21 @@ function _invalidateApiCache(action) {
     }
   }
 }
+
+// Cross-tab invalidation. The `storage` event fires in OTHER tabs whenever
+// a localStorage key changes (writes and removes both); it never fires in
+// the tab that made the change, so same-tab invalidation continues to flow
+// through _invalidateApiCache directly. We just drop our matching in-memory
+// entry — the next read falls through to localStorage and picks up the
+// sibling tab's fresh value (or a network call if it was a removal).
+try {
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('storage', function (e) {
+      if (!e || !e.key || e.key.indexOf('ymir_') !== 0) return;
+      delete apiGet._memCache[e.key];
+    });
+  }
+} catch (e) {}
 // Which cache entries each write-action invalidates. Single source of truth.
 // Keys are apiPost action names; values are the getXxx reads whose cached
 // copy should be dropped after the POST so the next call picks up fresh
@@ -776,12 +816,12 @@ async function switchBackToGuardian() {
     if (!data || !data.member) throw new Error('guardian not found');
     setUser(data.member);
     // Purge any cached per-user data so the guardian's view is not stale.
-    try {
-      sessionStorage.removeItem('ymir_getTrips_');
-      sessionStorage.removeItem('ymir_getCrews_');
-      sessionStorage.removeItem('ymir_getCrewBoard_');
-      sessionStorage.removeItem('ymir_getCrewInvites_');
-    } catch(e) {}
+    // Direct removeItem calls miss apiGet's params-suffixed keys; route
+    // through the canonical helper so prefix-scan picks up every variant.
+    _invalidateApiCache('getTrips');
+    _invalidateApiCache('getCrews');
+    _invalidateApiCache('getCrewBoard');
+    _invalidateApiCache('getCrewInvites');
     // Non-member guardians land on the guardian page (they have no member
     // hub); member-guardians keep going to the member hub as before.
     window.location.href = BASE_URL +
@@ -1079,10 +1119,14 @@ function warmContainer() {
     var now = Date.now();
     if (now - lastWarm < 60000) return;
     lastWarm = now;
+    // Route through seedApiCache so the warmed result lands under the
+    // canonical params-suffixed key (`ymir_getConfig_{}`) and in the right
+    // storage tier (localStorage for getConfig). The bare-prefix
+    // `ymir_getConfig_` write this used to do never matched apiGet's lookup
+    // shape, so the warm only primed the server-side CacheService — never
+    // the client cache.
     _call('getConfig', {}).then(function(r) {
-      try {
-        sessionStorage.setItem('ymir_getConfig_', JSON.stringify({ ts: Date.now(), data: r }));
-      } catch(e) {}
+      seedApiCache('getConfig', {}, r);
     }).catch(function() {});
   }
 
