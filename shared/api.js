@@ -802,6 +802,17 @@ function fmtTimeNow() {
 }
 function fmtDateNow() { return window.toLocalISODate(); }
 
+// Overdue check that handles overnight checkouts (e.g. out 21:00, return 03:00):
+// when retBy is earlier than tout, return is the next day — only overdue once the wall
+// clock has rolled past midnight (now < tout) and past retBy. All args are "HH:MM" strings.
+function isCheckoutOverdue(retBy, tout, nowStr) {
+  if (!retBy) return false;
+  nowStr = nowStr || fmtTimeNow();
+  if (!tout) return retBy < nowStr;
+  if (retBy < tout) return nowStr < tout && nowStr > retBy;
+  return nowStr > retBy;
+}
+
 // Coerce legacy time values into canonical HH:MM so <input type="time"> accepts
 // them on load. Handles "1700" / "0900" / "9:00" / "17.00" plus Sheets serial
 // fractions (0.7083 → 17:00). Returns '' for unrecognized input so the field
