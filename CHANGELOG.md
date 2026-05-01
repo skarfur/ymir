@@ -3,6 +3,30 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — login getConfig piggyback + scheduled-events config-cache fix
+
+⚠️ **Backend changes (.gs files) — won't take effect until pushed to
+Apps Script.**
+
+Two follow-ups to the request-batching / stale-while-revalidate work:
+
+**Login piggyback.** `loginMember_` and `loginWithGoogle_` now embed a
+server-rendered `getConfig` snapshot (`config: _loginConfigPiggyback_()`)
+in their response. The login client (`login/login.js`) seeds it into
+the shared API cache via the new `seedApiCache(action, params, data)`
+helper in `shared/api.js`, so the destination portal's first
+`apiGet('getConfig')` is an instant cache hit instead of paying a full
+Apps Script round-trip during the post-login redirect. Free
+server-side after the first warm `CacheService` hit.
+
+**Scheduled-events cache invalidation.** `sched_upsert_`, `sched_cancel_`,
+and `sched_hardDelete_` in `scheduling.gs` were dropping only the
+`'sched_events_for_config'` sub-cache, but `getConfig_` short-circuits
+on its own `'config'` cache before ever consulting the sub-cache — so
+volunteer-event saves (and class-occurrence cancel/override/restore
+which all flow through these helpers) could serve up to 60s of stale
+config to the next reader. Each writer now also calls `cDel_('config')`.
+
 ## Unreleased — request batching + stale-while-revalidate
 
 ⚠️ **Backend changes (.gs files) — won't take effect until pushed to

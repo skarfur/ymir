@@ -107,6 +107,17 @@ function validateMember_(kennitala, caller) {
 // member's initials (case-insensitive). Issues a session token on success
 // and enforces a 5-per-15-min rate limit per kennitala.
 // Response shape: { member, wards, usingDefaultPassword, sessionToken, expiresAt }
+// Bundle a server-rendered getConfig snapshot into the login response so the
+// destination portal's first apiGet('getConfig') is a cache hit on the client
+// (saves one full Apps Script round-trip during the post-login redirect).
+// Wraps the existing CacheService-backed getConfig_ so this is essentially
+// free server-side after the first warm hit. Returns null on any failure —
+// the client just falls back to its normal prefetch path.
+function _loginConfigPiggyback_() {
+  try { return JSON.parse(getConfig_().getContent()); }
+  catch (e) { return null; }
+}
+
 function loginMember_(b) {
   const username = String((b && b.username) || '').trim();
   const password = String((b && b.password) || '');
@@ -145,6 +156,7 @@ function loginMember_(b) {
     sessionToken: session.token,
     expiresAt: session.expiresAt,
     sessionId: session.id,
+    config: _loginConfigPiggyback_(),
   });
 }
 
@@ -304,6 +316,7 @@ function loginWithGoogle_(b) {
     sessionToken: session.token,
     expiresAt: session.expiresAt,
     sessionId: session.id,
+    config: _loginConfigPiggyback_(),
   });
 }
 

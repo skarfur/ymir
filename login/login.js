@@ -161,6 +161,9 @@ async function handleGoogleCredential(resp) {
     if (data.sessionToken) {
       setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
     }
+    // Login response carries an embedded getConfig snapshot — seed the cache
+    // so the destination portal's first apiGet('getConfig') is an instant hit.
+    if (data.config) seedApiCache('getConfig', {}, data.config);
     user.usingDefaultPassword = !!data.usingDefaultPassword;
     if (data.usingDefaultPassword) {
       // Rare path: a Google-linked member whose password was admin-reset.
@@ -244,6 +247,9 @@ async function doLogin() {
     if (data.sessionToken) {
       setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
     }
+    // Login response carries an embedded getConfig snapshot — seed the cache
+    // so the destination portal's first apiGet('getConfig') is an instant hit.
+    if (data.config) seedApiCache('getConfig', {}, data.config);
 
     // Flag the user record so downstream pages can nag about the default
     // password until it's been changed.
