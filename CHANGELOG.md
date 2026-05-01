@@ -3,6 +3,26 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — opt-in cache for read-shaped POSTs
+
+`shared/api.js` — new `_POST_CACHEABLE` map lets `apiPost` actions
+that are pure reads share the same memory + sessionStorage cache
+as `apiGet`. Same key shape (`ymir_<action>_<paramsJSON>`) so
+`_invalidateApiCache`'s prefix scan drops both kinds together, and
+the existing `prefetch({ <Name>: { post: '<action>' } })` form now
+populates the cache transparently.
+
+Two actions opted in:
+- `getVolunteerSignups` (30 s TTL) — admin/members/volunteer pages
+  all reach for it on init; previously each tab/refresh re-fetched.
+- `getShareTokens` (60 s TTL) — logbook share-management view.
+
+Matching `_INVALIDATES` updates so the cache stays correct under
+writes:
+- `volunteerSignup`, `volunteerWithdraw`, `deleteVolunteerEvent`
+  now drop `getVolunteerSignups`.
+- `createShareToken`, `revokeShareToken` now drop `getShareTokens`.
+
 ## Unreleased — fix dark-mode flash on page navigation
 
 The earlier `defer` change pushed `applyTheme()` (called at the bottom
