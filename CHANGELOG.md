@@ -3,6 +3,30 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — "Load older trips" pagination in the logbook
+
+`getTrips_` already supported `offset` + `limit` and returned `total`,
+but no caller used it — the logbook portal fetched the most recent 500
+trips and silently discarded older ones for active clubs past that
+threshold.
+
+`shared/logbook.js` now tracks `_tripsTotal` from the initial
+`getTrips` response. When the user has scrolled through every locally-
+filtered trip and the server still has older ones, the trip-list
+renderer emits a "Showing X of Y trips" hint plus a "Load older
+trips" button at the bottom of the list. Clicking fires
+`apiGet('getTrips', { limit: 500, offset: allTrips.length })`,
+appends to `allTrips`, recomputes `myTrips`, and re-runs the filter
+so any newly loaded trips that match slot in.
+
+Captain portal is unaffected — it uses `_logbookSkipInit = true` and
+manages its own getTrips flow; the button only renders inside the
+shared logbook init path.
+
+Three new bilingual strings (`logbook.loadOlder`, `logbook.loadingOlder`,
+`logbook.loadedOf`) and a small `.trip-list-footer` block in
+`shared/tripcard.css` for the centred-button layout.
+
 ## Unreleased — relocate config-sheet helpers to config.gs
 
 ⚠️ **Backend changes (.gs files) — won't take effect until pushed to
