@@ -3,6 +3,33 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — relocate config-sheet helpers to config.gs
+
+⚠️ **Backend changes (.gs files) — won't take effect until pushed to
+Apps Script.**
+
+`alerts.gs` had grown to host a pile of generic config-sheet helpers
+(`getConfigMap_`, `getConfigValue_`, `getConfigSheetValue_`,
+`setConfigSheetValue_`, `readConfigList_`, `saveConfigListItem_`,
+`deleteConfigListItem_`) plus per-section parsers
+(`getFlagConfigFromMap_`, `getCertDefsFromMap_`,
+`getCertCategoriesFromMap_`) — all unrelated to alerts. They lived
+there because that's where the alerts feature first introduced them,
+not because they belonged.
+
+Moved all 10 to the top of `config.gs`, grouped in three sections:
+sheet primitives, config-list CRUD, per-section parsers. `alerts.gs`
+keeps only `getAlertConfig_` / `getAlertConfigFromMap_` (genuinely
+alert-specific) and the `requireField_` / `requireMember_` validators
+(generic but only defined here, never imported, leaving for separate
+dead-code cleanup).
+
+Pure relocation — function bodies untouched, no behaviour change.
+The Apps Script global namespace is flat across all `.gs` files so
+every existing call site keeps working.
+
+Also updated `CLAUDE.md`'s file-layout note for `config.gs`.
+
 ## Unreleased — backend handbook caching + gzipped GPX uploads
 
 ⚠️ **Backend changes (.gs files) — won't take effect until you push to

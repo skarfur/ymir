@@ -11,7 +11,7 @@
 - `members.gs` — member CRUD, sessions API, preferences, daily log
 - `maintenance.gs` — maintenance projects
 - `payroll.gs` — punch clock, pay periods, launamiðar XML
-- `config.gs` — config bundle + certifications
+- `config.gs` — config-sheet primitives (`getConfigMap_`, `getConfigSheetValue_`, `setConfigSheetValue_`), config-list CRUD (`saveConfigListItem_`, `deleteConfigListItem_`, `readConfigList_`), per-section parsers (`getCertDefsFromMap_`, `getFlagConfigFromMap_`, …), `getConfig_` bundle + certifications
 - `incidents.gs` — incident reports
 - `checkouts.gs` — checkouts, reservation slots, crews
 - `trips.gs` — trips, handshake confirmations, file uploads (GPS tracks + photos)

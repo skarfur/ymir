@@ -16,22 +16,6 @@ function getAlertConfig_() {
   } catch (e) { return defaults; }
 }
 
-// Read the entire config sheet once and return a key→value map
-function getConfigMap_() {
-  let sheet;
-  try { sheet = getSheet_('config'); } catch (e) { return {}; }
-  if (sheet.getLastRow() < 2) return {};
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
-  const map = {};
-  data.forEach(r => { map[String(r[0]).trim()] = String(r[1]).trim(); });
-  return map;
-}
-
-function getConfigValue_(key, map) {
-  const v = map[key];
-  return v !== undefined ? v : null;
-}
-
 function getAlertConfigFromMap_(cfgMap) {
   const raw = getConfigValue_('overdueAlerts', cfgMap);
   const defaults = {
@@ -44,106 +28,6 @@ function getAlertConfigFromMap_(cfgMap) {
     const p = JSON.parse(raw);
     return { ...defaults, ...p, channels: { ...defaults.channels, ...(p.channels || {}) } };
   } catch (e) { return defaults; }
-}
-
-function getFlagConfigFromMap_(cfgMap) {
-  const raw = getConfigValue_('flagConfig', cfgMap);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch (e) { return null; }
-}
-
-function getCertDefsFromMap_(cfgMap) {
-  const raw = getConfigValue_('certDefs', cfgMap);
-  if (!raw) return [];
-  try { return normalizeCertDefsRaw_(JSON.parse(raw)); } catch (e) { return []; }
-}
-
-function getCertCategoriesFromMap_(cfgMap) {
-  const raw = getConfigValue_('certCategories', cfgMap);
-  if (!raw) return [];
-  try { return normalizeCertCategoriesRaw_(JSON.parse(raw)); } catch (e) { return []; }
-}
-
-function getConfigSheetValue_(key) {
-  let sheet;
-  try { sheet = getSheet_('config'); } catch (e) { return null; }
-  if (sheet.getLastRow() < 2) return null;
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
-  const row = data.find(r => String(r[0]).trim() === key);
-  return row ? String(row[1]).trim() : null;
-}
-
-function setConfigSheetValue_(key, value) {
-  let sheet;
-  try { sheet = getSheet_('config'); } catch (e) {
-    sheet = ss_().insertSheet('config');
-    sheet.getRange(1, 1, 1, 2).setValues([['key', 'value']]);
-  }
-  const lastRow = sheet.getLastRow();
-  if (lastRow >= 2) {
-    const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(r => String(r[0]).trim());
-    const idx = keys.indexOf(key);
-    if (idx !== -1) { sheet.getRange(idx + 2, 2).setValue(literalWrite_(value)); return; }
-  }
-  sheet.appendRow([key, literalWrite_(value)]);
-}
-
-// ── Config-list CRUD helpers ──────────────────────────────────────────────────
-// Many admin entities (activity types, cert defs, boat categories, locations,
-// volunteer events, etc.) are stored as JSON arrays under a single config key.
-// These helpers collapse the save/delete boilerplate: parse → find-by-id →
-// merge-or-push → stringify → cache-clear.
-//
-//   saveConfigListItem_('activity_types', { id, ...fields })
-//     → inserts if id empty/missing; merges into existing row otherwise.
-//       Returns { id, item, created|updated: true }.
-//
-//   deleteConfigListItem_('activity_types', id, { soft: true })
-//     → hard-removes by default. With { soft: true } sets active=false instead.
-//       Returns { deleted: true } (or { deactivated: true } for soft delete).
-function readConfigList_(key) {
-  try { return JSON.parse(getConfigSheetValue_(key) || '[]') || []; }
-  catch (e) { return []; }
-}
-
-function saveConfigListItem_(key, patch) {
-  if (!key) throw new Error('saveConfigListItem_: key required');
-  const arr = readConfigList_(key);
-  const ts  = now_();
-  const idx = patch && patch.id ? arr.findIndex(x => x && x.id === patch.id) : -1;
-  let item, created = false;
-  if (idx >= 0) {
-    item = Object.assign(arr[idx], patch, { updatedAt: ts });
-    arr[idx] = item;
-  } else {
-    // id last so an empty-string `patch.id` can't clobber the freshly-minted uid.
-    var newId = (patch && patch.id) || uid_();
-    item = Object.assign({}, patch || {}, { id: newId, createdAt: ts, updatedAt: ts });
-    arr.push(item);
-    created = true;
-  }
-  setConfigSheetValue_(key, JSON.stringify(arr));
-  cDel_('config');
-  return { id: item.id, item: item, created: created, updated: !created };
-}
-
-function deleteConfigListItem_(key, id, opts) {
-  if (!key || !id) throw new Error('deleteConfigListItem_: key and id required');
-  const soft = !!(opts && opts.soft);
-  let arr = readConfigList_(key);
-  if (soft) {
-    const idx = arr.findIndex(x => x && x.id === id);
-    if (idx < 0) return { deleted: false };
-    arr[idx].active = false;
-    arr[idx].updatedAt = now_();
-  } else {
-    const before = arr.length;
-    arr = arr.filter(x => !x || x.id !== id);
-    if (arr.length === before) return { deleted: false };
-  }
-  setConfigSheetValue_(key, JSON.stringify(arr));
-  cDel_('config');
-  return soft ? { deactivated: true } : { deleted: true };
 }
 
 // ── Validation helpers ────────────────────────────────────────────────────────
