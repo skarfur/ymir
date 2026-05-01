@@ -12,7 +12,7 @@ prefetch({
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
-let boats=[], locations=[], checkouts=[], _slots=[];
+let boats=[], locations=[], checkouts=[], _slots=[], _crews=[];
 let _volunteerEvents=[], _volunteerSignups=[], _volunteerActTypes=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
@@ -50,12 +50,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const _today = todayISO();
-    const [coRes, cfgRes, slotsRes] = await Promise.all([
+    const [coRes, cfgRes, slotsRes, crewsRes] = await Promise.all([
       window._earlyCheckouts || apiGet('getActiveCheckouts'),
       window._earlyConfig || apiGet('getConfig'),
       apiGet('getSlots', { fromDate: _today, toDate: _today }),
+      apiGet('getCrews', { kennitala: user.kennitala }),
     ]);
     _slots = slotsRes.slots || [];
+    _crews = crewsRes.crews || [];
     if (cfgRes.certDefs && typeof registerCertDefsForBoats === 'function') {
       registerCertDefsForBoats(cfgRes.certDefs);
     }
@@ -164,7 +166,7 @@ function handleBoatQrScan(boatId) {
     showToast(s('qr.boatOos'), 'warn');
     return;
   }
-  if (!canAccessBoat(boat, user, { slots: _slots })) {
+  if (!canAccessBoat(boat, user, { slots: _slots, crews: _crews })) {
     showToast(s('fleet.badgeRestricted'), 'warn');
     return;
   }
@@ -259,7 +261,7 @@ function renderLaunchPicker(preselectedBoatId) {
   const avail=boats.filter(b=>
     !active.find(c=>c.boatId===b.id) &&
     !boolVal(b.oos) &&
-    canAccessBoat(b, user, { slots: _slots })
+    canAccessBoat(b, user, { slots: _slots, crews: _crews })
   );
   if(!avail.length){
     document.getElementById('launchModalBody').innerHTML=

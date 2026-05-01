@@ -260,18 +260,31 @@ function isAvailableOutsideSlots(boat) {
 /**
  * Check if user has a booked slot right now for this boat.
  * Requires _allSlots to be loaded (via loadSlots()).
+ * If `crews` is provided, also matches slots whose bookedByCrewId belongs to
+ * a crew the user is a member of.
  */
-function hasActiveSlot(boat, kennitala, slots) {
+function hasActiveSlot(boat, kennitala, slots, crews) {
   if (!boat || !slots || !slots.length) return false;
   var today = todayISO();
   var now = new Date();
   var nowTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  var kt = String(kennitala);
+  var userCrewIds = {};
+  if (Array.isArray(crews)) {
+    for (var ci = 0; ci < crews.length; ci++) {
+      var c = crews[ci];
+      if (!c || !c.id) continue;
+      var pairs = typeof c.pairs === 'string' ? parseJson(c.pairs, []) : (c.pairs || []);
+      var onCrew = pairs.some(function(p) { return (p.members || []).some(function(m) { return m && String(m.kennitala) === kt; }); });
+      if (onCrew) userCrewIds[c.id] = true;
+    }
+  }
   return slots.some(function(s) {
     if (s.boatId !== boat.id || s.date !== today) return false;
     if (s.startTime > nowTime || s.endTime <= nowTime) return false;
     if (!s.bookedByKennitala) return false;
-    if (String(s.bookedByKennitala) === String(kennitala)) return true;
-    // Crew member check handled by caller with crew data
+    if (String(s.bookedByKennitala) === kt) return true;
+    if (s.bookedByCrewId && userCrewIds[s.bookedByCrewId]) return true;
     return false;
   });
 }
@@ -292,7 +305,7 @@ function canAccessBoat(boat, user, opts) {
   // Only enforce when slot data is provided — display contexts that don't
   // load slots fall through to the permissive checks below.
   if (isSlotScheduled(boat) && !isAvailableOutsideSlots(boat) && opts && opts.slots) {
-    return hasActiveSlot(boat, user.kennitala, opts.slots);
+    return hasActiveSlot(boat, user.kennitala, opts.slots, opts.crews);
   }
   // Check cert gate via unified helper (honours expiry + rank + new structured shape)
   var gate = normalizeAccessGate(boat, opts && opts.certDefs);
@@ -306,7 +319,7 @@ function canAccessBoat(boat, user, opts) {
   if (hasActiveReservation(boat, user.kennitala)) return true;
   // Check active slot booking
   if (isSlotScheduled(boat) && opts && opts.slots) {
-    if (hasActiveSlot(boat, user.kennitala, opts.slots)) return true;
+    if (hasActiveSlot(boat, user.kennitala, opts.slots, opts.crews)) return true;
   }
   return false;
 }
