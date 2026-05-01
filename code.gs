@@ -1397,8 +1397,71 @@ function route_(action, b, caller) {
     case 'createShareToken':  return createShareToken_(b);
     case 'revokeShareToken':  return revokeShareToken_(b);
     case 'deleteShareToken':  return deleteShareToken_(b);
+    // ── BATCH ─────────────────────────────────────────────────────────────────
+    case 'batch':             return batch_(b, caller);
     default: return failJ('Unknown action: ' + action, 404);
   }
+}
+
+// Multiplex N sub-requests into one HTTP round-trip. Each sub-request runs
+// through the same gating doPost applies (authorize_ + checkMutationRate_) so
+// a batched call has identical permissions to N separate calls. Sub-requests
+// share the per-request sheet cache (clearSheetCache_ ran once at the top of
+// doPost), so multiple reads against the same sheet collapse to one read.
+//
+// Wire shape:
+//   request:  { action: 'batch', requests: [{action, params}, ...] }
+//   response: { success: true, results: [<sub-response>, ...] }
+// Each <sub-response> is the exact JSON the action would have returned on its
+// own (success:true with data, or success:false with error+code). Errors in
+// one sub-request never short-circuit the rest.
+function batch_(b, caller) {
+  var requests = b && b.requests;
+  if (!Array.isArray(requests)) return failJ('requests must be an array', 400);
+  if (requests.length === 0) return okJ({ results: [] });
+  if (requests.length > 25) return failJ('Too many batched requests (max 25)', 400);
+  var results = [];
+  for (var i = 0; i < requests.length; i++) {
+    var req = requests[i] || {};
+    var subAction = req.action;
+    var subParams = req.params || {};
+    if (!subAction) {
+      results.push({ success: false, error: 'Missing action', code: 400 });
+      continue;
+    }
+    if (subAction === 'batch') {
+      results.push({ success: false, error: 'Nested batch not allowed', code: 400 });
+      continue;
+    }
+    // PUBLIC_ACTIONS (login, dashboard) explicitly run without a session;
+    // batching them here would either grant unintended auth or strip the
+    // outer caller's identity. Keep them on the direct path.
+    if (PUBLIC_ACTIONS_[subAction]) {
+      results.push({ success: false, error: 'Public action not batchable: ' + subAction, code: 400 });
+      continue;
+    }
+    var subB = {};
+    Object.keys(subParams).forEach(function (k) { subB[k] = subParams[k]; });
+    subB.action = subAction;
+    var denied = authorize_(subAction, caller, subB);
+    if (denied) {
+      try { results.push(JSON.parse(denied.getContent())); }
+      catch (e) { results.push({ success: false, error: 'Forbidden', code: 403 }); }
+      continue;
+    }
+    var throttled = checkMutationRate_(caller, subAction);
+    if (!throttled.ok) {
+      results.push({ success: false, error: 'Too many requests', code: 429 });
+      continue;
+    }
+    try {
+      var out = route_(subAction, subB, caller);
+      results.push(JSON.parse(out.getContent()));
+    } catch (err) {
+      results.push({ success: false, error: 'Server error: ' + ((err && err.message) || 'unknown'), code: 500 });
+    }
+  }
+  return okJ({ results: results });
 }
 
 

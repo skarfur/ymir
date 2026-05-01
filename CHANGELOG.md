@@ -3,6 +3,51 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — request batching + stale-while-revalidate
+
+⚠️ **Backend changes (.gs files) — won't take effect until pushed to
+Apps Script.**
+
+Apps Script web-app calls have a fat fixed cost per request (HTTPS
+handshake, 302 redirect to the user-content host, V8 spin-up, sheet
+warmup) that dominates handler runtime. Several portals fan out 4–6
+parallel `apiGet` calls on init (member: 4, captain: 6, coxswain: 6),
+each paying that overhead independently.
+
+**Multiplexing.** Added a `batch` action to `route_` in `code.gs` plus
+a `batch_` helper that takes `requests: [{action, params}, ...]` and
+runs each through the same `authorize_` + `checkMutationRate_` gating
+`doPost` applies to top-level calls. Sub-results come back as a
+`results: [<sub-response>, ...]` array — each entry the exact JSON the
+action would have returned standalone, so one sub-failure can't
+short-circuit the rest. Capped at 25 sub-requests per batch. Public
+actions (login, public dashboard) are explicitly refused — they run
+without a session caller, which would either grant unintended auth or
+strip the outer caller's identity.
+
+`shared/api.js` `_call` now enqueues into a microtask-flushed batch
+queue. `Promise.all([apiGet(a), apiGet(b), …])` automatically coalesces
+into one HTTP round-trip; a solo call falls through to `_callDirect`
+with zero overhead. Public actions and the `batch` envelope itself
+bypass the queue. Side benefit: the per-request `clearSheetCache_()` at
+the top of `doPost` runs once per batch, so multiple sub-reads against
+the same sheet share its row cache for free.
+
+**Stale-while-revalidate.** Cacheable `apiGet` / `apiPost` reads now
+return cached data instantly for ages in `[TTL, 2*TTL)` and kick off a
+background refresh, instead of blocking the UI on a network round-trip
+the moment an entry expires. Beyond `2*TTL` the call still blocks (so
+a long-idle tab doesn't paint truly stale data). The cache lookup
+itself moved into a small `_readCacheEntry` helper shared between
+`apiGet` and `apiPost` — and `_fetchAndCache` is now the single source
+of truth for "fetch, write both tiers, clear inflight," reused by the
+blocking miss path and the SWR background refresher.
+
+Net effect: page loads after a brief idle paint immediately from
+cache; first-load fan-out collapses to one round-trip; existing
+caching, invalidation (`_INVALIDATES`), and inflight-dedup behaviour
+all preserved.
+
 ## Unreleased — relocate config-sheet helpers to config.gs
 
 ⚠️ **Backend changes (.gs files) — won't take effect until pushed to

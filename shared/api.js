@@ -38,37 +38,25 @@ async function apiGet(action, params) {
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_' + JSON.stringify(params);
-      var _now = Date.now();
-      // Memory tier: skip sessionStorage + JSON.parse on warm hits. Same
-      // TTL as sessionStorage; populated on every miss-then-fetch and on
-      // sessionStorage-hit promotions so subsequent reads in this tab go
-      // straight to the parsed object.
-      var _mc = apiGet._memCache[_ck];
-      if (_mc && _now - _mc.ts < _CACHEABLE[action]) return _mc.data;
-      var _cs = sessionStorage.getItem(_ck);
-      if (_cs) {
-        var _cp = JSON.parse(_cs);
-        if (_now - _cp.ts < _CACHEABLE[action]) {
-          apiGet._memCache[_ck] = _cp; // promote so the next hit skips parse
-          return _cp.data;
+      var _ttl = _CACHEABLE[action];
+      var _hit = _readCacheEntry(_ck);
+      if (_hit) {
+        var _age = Date.now() - _hit.ts;
+        // Fresh: serve cached, no network call.
+        if (_age < _ttl) return _hit.data;
+        // Stale-while-revalidate: serve cached up to one extra TTL window
+        // (i.e. total servable age = 2*TTL) and kick off a background refresh.
+        // Bounds staleness while letting the user paint instantly on most
+        // navigations after a brief idle.
+        if (_age < _ttl * 2) {
+          _refreshInBackground(_ck, action, params);
+          return _hit.data;
         }
       }
-      // In-flight dedup: if an identical request is already running (cache
-      // miss during page init often fires several parallel apiGet calls for
-      // the same action+params), reuse the pending promise instead of kicking
-      // off a second network round-trip.
+      // Hard miss (or beyond stale window): block on the fetch, dedup
+      // concurrent identical requests via the inflight map.
       if (apiGet._inflight[_ck]) return apiGet._inflight[_ck];
-      var _p = (async function () {
-        try {
-          var data = await _call(action, params);
-          var entry = { ts: Date.now(), data: data };
-          apiGet._memCache[_ck] = entry;
-          try { sessionStorage.setItem(_ck, JSON.stringify(entry)); } catch(e) {}
-          return data;
-        } finally {
-          delete apiGet._inflight[_ck];
-        }
-      })();
+      var _p = _fetchAndCache(_ck, action, params);
       apiGet._inflight[_ck] = _p;
       return _p;
     } catch(e) { /* fall through */ }
@@ -77,6 +65,48 @@ async function apiGet(action, params) {
 }
 apiGet._inflight = {};
 apiGet._memCache = {};
+
+// Look up a cache entry — memory tier first, then sessionStorage with
+// promotion on hit. Returns the raw `{ts, data}` envelope, or null. Callers
+// decide what to do with the age.
+function _readCacheEntry(ck) {
+  var mc = apiGet._memCache[ck];
+  if (mc) return mc;
+  try {
+    var cs = sessionStorage.getItem(ck);
+    if (!cs) return null;
+    var parsed = JSON.parse(cs);
+    apiGet._memCache[ck] = parsed; // promote so the next hit skips parse
+    return parsed;
+  } catch(e) { return null; }
+}
+
+// Single source of truth for "fetch, cache both tiers, clear inflight". Used
+// by both the blocking miss path and the SWR background refresh.
+function _fetchAndCache(ck, action, params) {
+  return (async function () {
+    try {
+      var data = await _call(action, params);
+      var entry = { ts: Date.now(), data: data };
+      apiGet._memCache[ck] = entry;
+      try { sessionStorage.setItem(ck, JSON.stringify(entry)); } catch(e) {}
+      return data;
+    } finally {
+      delete apiGet._inflight[ck];
+    }
+  })();
+}
+
+// SWR helper — kicks off a refresh without blocking the caller. Dedup against
+// the inflight map (a foreground miss already in flight covers us). Errors are
+// swallowed: the user already has stale data; failing the refresh shouldn't
+// surface as an unhandled rejection.
+function _refreshInBackground(ck, action, params) {
+  if (apiGet._inflight[ck]) return;
+  var p = _fetchAndCache(ck, action, params);
+  apiGet._inflight[ck] = p;
+  p.catch(function () {});
+}
 
 // Drop every cached entry (memory + sessionStorage) for the given action.
 // Called by apiPost after a write so the next read sees fresh data. Both
@@ -247,29 +277,18 @@ async function apiPost(action, payload) {
   if (_POST_CACHEABLE[action] && !payload._fresh) {
     try {
       var _ck = 'ymir_' + action + '_' + JSON.stringify(payload);
-      var _now = Date.now();
-      var _mc = apiGet._memCache[_ck];
-      if (_mc && _now - _mc.ts < _POST_CACHEABLE[action]) return _mc.data;
-      var _cs = sessionStorage.getItem(_ck);
-      if (_cs) {
-        var _cp = JSON.parse(_cs);
-        if (_now - _cp.ts < _POST_CACHEABLE[action]) {
-          apiGet._memCache[_ck] = _cp;
-          return _cp.data;
+      var _ttl = _POST_CACHEABLE[action];
+      var _hit = _readCacheEntry(_ck);
+      if (_hit) {
+        var _age = Date.now() - _hit.ts;
+        if (_age < _ttl) return _hit.data;
+        if (_age < _ttl * 2) {
+          _refreshInBackground(_ck, action, payload);
+          return _hit.data;
         }
       }
       if (apiGet._inflight[_ck]) return apiGet._inflight[_ck];
-      var _p = (async function () {
-        try {
-          var data = await _call(action, payload);
-          var entry = { ts: Date.now(), data: data };
-          apiGet._memCache[_ck] = entry;
-          try { sessionStorage.setItem(_ck, JSON.stringify(entry)); } catch(e) {}
-          return data;
-        } finally {
-          delete apiGet._inflight[_ck];
-        }
-      })();
+      var _p = _fetchAndCache(_ck, action, payload);
       apiGet._inflight[_ck] = _p;
       return _p;
     } catch(e) { /* fall through to plain _call */ }
@@ -306,14 +325,94 @@ function prefetch(calls) {
   });
 }
 
-async function _call(action, payload) {
+// Public actions are exempt from session auth; loginMember is where we
+// obtain the token in the first place. For everything else, attach the
+// caller's session token so the backend can identify them.
+var _PUBLIC_ACTIONS = { loginMember: 1, loginWithGoogle: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
+
+// ── Request batching ─────────────────────────────────────────────────────────
+// Apps Script web-app calls have a fat fixed cost per request (HTTPS handshake,
+// 302 redirect to the user-content host, V8 spin-up, sheet warmup) that
+// dominates handler runtime. When a page fires N apiGet/apiPost calls in the
+// same tick (member init = 4, captain = 6, coxswain = 6), we coalesce them
+// into one HTTP round-trip via the backend `batch` action.
+//
+// Bypass list — these go straight to _callDirect:
+//   * PUBLIC_ACTIONS — login, public dashboard, etc. The backend `batch`
+//     handler refuses these (they have no session caller).
+//   * 'batch' itself — would recurse.
+//
+// Flush timing: a microtask runs at end of the current sync tick, so
+// Promise.all([apiGet(a), apiGet(b)]) enqueues both before the flush. A
+// solo call falls through to _callDirect with no extra hop.
+var _batchQueue = [];
+var _batchScheduled = false;
+
+function _call(action, payload) {
+  if (_PUBLIC_ACTIONS[action] || action === 'batch') {
+    return _callDirect(action, payload);
+  }
+  return new Promise(function (resolve, reject) {
+    _batchQueue.push({ action: action, payload: payload || {}, resolve: resolve, reject: reject });
+    if (!_batchScheduled) {
+      _batchScheduled = true;
+      Promise.resolve().then(_flushBatch);
+    }
+  });
+}
+
+function _flushBatch() {
+  _batchScheduled = false;
+  var queue = _batchQueue;
+  _batchQueue = [];
+  if (queue.length === 0) return;
+  // Solo call: skip the batch wrapper entirely so single-shot apiPosts pay
+  // no overhead.
+  if (queue.length === 1) {
+    var one = queue[0];
+    _callDirect(one.action, one.payload).then(one.resolve, one.reject);
+    return;
+  }
+  // Backend caps at 25; chunk anything larger into separate batch calls.
+  var BATCH_LIMIT = 25;
+  if (queue.length > BATCH_LIMIT) {
+    for (var i = 0; i < queue.length; i += BATCH_LIMIT) {
+      _dispatchBatch(queue.slice(i, i + BATCH_LIMIT));
+    }
+    return;
+  }
+  _dispatchBatch(queue);
+}
+
+function _dispatchBatch(queue) {
+  var requests = queue.map(function (e) { return { action: e.action, params: e.payload }; });
+  _callDirect('batch', { requests: requests }).then(function (data) {
+    var results = (data && data.results) || [];
+    queue.forEach(function (e, i) {
+      var r = results[i];
+      if (!r) {
+        e.reject(new Error(e.action + ': missing batch result'));
+        return;
+      }
+      if (r.success === false) {
+        var err = new Error(r.error || (e.action + ' failed'));
+        err.code = r.code;
+        e.reject(err);
+        return;
+      }
+      e.resolve(r);
+    });
+  }, function (err) {
+    // Whole-batch failure (network, 401, server error): reject every queued
+    // caller so awaits don't hang forever.
+    queue.forEach(function (e) { e.reject(err); });
+  });
+}
+
+async function _callDirect(action, payload) {
   payload = payload || {};
-  // Public actions are exempt from session auth; loginMember is where we
-  // obtain the token in the first place. For everything else, attach the
-  // caller's session token so the backend can identify them.
-  var PUBLIC_ACTIONS = { loginMember: 1, loginWithGoogle: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
   var envelope = { action: action };
-  if (!PUBLIC_ACTIONS[action]) {
+  if (!_PUBLIC_ACTIONS[action]) {
     var t = _getSessionToken();
     if (t) envelope.sessionToken = t;
   }
@@ -349,7 +448,7 @@ async function _call(action, payload) {
       // landing here shouldn't trigger an auth-redirect dance).
       var onLoginPage = (typeof window !== 'undefined' && window.location &&
         window.location.pathname.indexOf('/login/') >= 0);
-      if (data.code === 401 && !PUBLIC_ACTIONS[action] && !onLoginPage) {
+      if (data.code === 401 && !_PUBLIC_ACTIONS[action] && !onLoginPage) {
         _handleUnauthorized();
       }
       var err = new Error(data.error || action + " failed");
