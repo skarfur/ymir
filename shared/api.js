@@ -98,43 +98,74 @@ function _invalidateApiCache(action) {
 }
 // Which cache entries each write-action invalidates. Single source of truth.
 // Keys are apiPost action names; values are the getXxx reads whose cached
-// sessionStorage copy should be dropped after the POST so the next call
-// picks up fresh data. An action absent from this table evicts nothing.
+// copy should be dropped after the POST so the next call picks up fresh
+// data. An action absent from this table evicts nothing.
+//
+// Rule: only list a getXxx here if the write actually changes data the
+// getXxx response embeds. Over-invalidation forces a needless re-fetch on
+// the user's next action; under-invalidation shows stale data. Each entry
+// below was checked against its backend handler (which sheets/keys it
+// writes) and the corresponding read (which fields it returns).
+//
+// Reference notes for the audit trail:
+//   getConfig — config sheet only (boats, locations, certDefs, certCats,
+//     activity_types, dailyChecklist, flagConfig/Override, staffStatus,
+//     rowingPassport, clubCalendars) PLUS scheduled_events projection
+//     (volunteerEvents, cancelledActivityOccurrences). Independent of
+//     the members sheet entirely.
+//   getMembers — members sheet only.
 var _INVALIDATES = {
-  // Config + members: any edit to config or any member record refreshes both.
-  saveConfig:              ['getConfig', 'getMembers'],
-  saveMembers:             ['getConfig', 'getMembers'],
-  saveMember:              ['getConfig', 'getMembers'],
-  deleteMember:            ['getConfig', 'getMembers'],
-  saveMemberCert:          ['getConfig', 'getMembers'],
-  savePreferences:         ['getConfig', 'getMembers'],
-  setPassword:             ['getConfig', 'getMembers', 'listSessions'],
-  importMembers:           ['getConfig', 'getMembers'],
-  deactivateMembers:       ['getConfig', 'getMembers'],
-  saveActivityType:        ['getConfig', 'getMembers'],
-  deleteActivityType:      ['getConfig', 'getMembers'],
-  cancelClassOccurrence:   ['getConfig', 'getDailyLog'],
-  overrideClassOccurrence: ['getConfig', 'getDailyLog'],
-  restoreClassOccurrence:  ['getConfig', 'getDailyLog'],
-  saveChecklistItem:       ['getConfig', 'getMembers'],
-  deleteChecklistItem:     ['getConfig', 'getMembers'],
-  saveCertDef:             ['getConfig', 'getMembers'],
-  deleteCertDef:           ['getConfig', 'getMembers'],
-  saveCertCategories:      ['getConfig', 'getMembers'],
-  saveBoatAccess:          ['getConfig', 'getMembers'],
-  saveBoatOos:             ['getConfig', 'getMembers'],
-  saveReservation:         ['getConfig', 'getMembers'],
-  removeReservation:       ['getConfig', 'getMembers'],
-  saveVolunteerEvent:      ['getConfig', 'getMembers'],
-  deleteVolunteerEvent:    ['getConfig', 'getMembers'],
-  volunteerSignup:         ['getConfig', 'getMembers'],
-  volunteerWithdraw:       ['getConfig', 'getMembers'],
-  syncVolunteerEvents:     ['getConfig', 'getMembers'],
-  // Staff hub writes (landed on main after this file was refactored).
-  saveFlagOverride:        ['getConfig', 'getMembers'],
-  saveStaffStatus:         ['getConfig', 'getMembers'],
-  saveRowingPassportDef:   ['getConfig', 'getMembers'],
-  importRowingPassportCsv: ['getConfig', 'getMembers'],
+  // Config writes — config-sheet only; member rows untouched.
+  saveConfig:              ['getConfig'],
+  saveActivityType:        ['getConfig', 'getSlots'],
+  deleteActivityType:      ['getConfig', 'getSlots'],
+  saveChecklistItem:       ['getConfig'],
+  deleteChecklistItem:     ['getConfig'],
+  saveCertDef:             ['getConfig'],
+  deleteCertDef:           ['getConfig'],
+  saveCertCategories:      ['getConfig'],
+  saveBoatAccess:          ['getConfig'],
+  saveBoatOos:             ['getConfig'],
+  saveReservation:         ['getConfig'],
+  removeReservation:       ['getConfig'],
+  saveFlagOverride:        ['getConfig'],
+  saveStaffStatus:         ['getConfig'],
+  saveRowingPassportDef:   ['getConfig'],
+  importRowingPassportCsv: ['getConfig'],
+  // Class-occurrence writes touch scheduled_events (which feeds getConfig's
+  // volunteerEvents + cancelledActivityOccurrences) and the activity-class
+  // virtual-slot projection. getDailyLog isn't cached — listed only for
+  // semantic intent (no-op today).
+  cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog'],
+  overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog'],
+  restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog'],
+  // Volunteer events live in scheduled_events (read by getConfig).
+  saveVolunteerEvent:      ['getConfig'],
+  deleteVolunteerEvent:    ['getConfig'],
+  syncVolunteerEvents:     ['getConfig'],
+  // Volunteer signups write to a separate sheet that no cached read embeds
+  // (signups are fetched via apiPost('getVolunteerSignups'), uncached).
+  // volunteerSignup_ keeps getConfig because the first signup against a
+  // virtual recurring event materializes a scheduled_events row, which
+  // feeds getConfig.volunteerEvents. volunteerWithdraw_ touches no cached
+  // read at all and is intentionally absent.
+  volunteerSignup:         ['getConfig'],
+
+  // Member-row writes — members sheet only.
+  saveMember:              ['getMembers'],
+  deleteMember:            ['getMembers'],
+  saveMemberCert:          ['getMembers'],
+  savePreferences:         ['getMembers'],
+  importMembers:           ['getMembers'],
+  deactivateMembers:       ['getMembers'],
+  // Password set / admin reset both flip the hashed-password fields that
+  // feed getMembers' `hasPassword` flag, plus revoke sessions.
+  setPassword:             ['getMembers', 'listSessions'],
+  adminResetMemberPassword:['getMembers', 'listSessions'],
+  // Google link state lives on the member record.
+  linkGoogleAccount:       ['getMembers'],
+  unlinkGoogleAccount:     ['getMembers'],
+
   // Trips.
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
@@ -165,11 +196,6 @@ var _INVALIDATES = {
   // Session-state changes. Settings page re-fetches its "signed in on…" list.
   signOut:                 ['listSessions'],
   signOutAll:              ['listSessions'],
-  // Google link state lives on the member record; refresh the member list
-  // (admin views) and the current user after a link/unlink.
-  linkGoogleAccount:        ['getMembers'],
-  unlinkGoogleAccount:      ['getMembers'],
-  adminResetMemberPassword:['listSessions'],
   // Handbook (admin-managed). Members + staff read via getHandbook.
   saveHandbookRole:    ['getHandbook'],
   deleteHandbookRole:  ['getHandbook'],
@@ -187,8 +213,9 @@ var _INVALIDATES = {
   inviteToCrew:            ['getCrews', 'getCrewInvites'],
   respondCrewInvite:       ['getCrews', 'getCrewInvites', 'getNotifications'],
   // Slot writes drop the per-week getSlots cache so navigation reflects
-  // bookings immediately. Activity-type writes also drop it because the
-  // virtual-slot projection reads from activity_types.
+  // bookings immediately. bookSlot/unbookSlot also touch crew membership
+  // (slot.bookedBy mirrors into the crew record), so getCrews / getCrewInvites
+  // drop too.
   bookSlot:                ['getCrews', 'getCrewInvites', 'getSlots'],
   unbookSlot:              ['getCrews', 'getCrewInvites', 'getSlots'],
   bulkBookSlots:           ['getCrews', 'getCrewInvites', 'getSlots'],
@@ -197,11 +224,6 @@ var _INVALIDATES = {
   saveRecurringSlots:      ['getSlots'],
   deleteRecurrenceGroup:   ['getSlots'],
 };
-
-// saveActivityType / deleteActivityType already invalidate getConfig; also
-// drop getSlots since virtual slots are projected from activity_types.
-_INVALIDATES.saveActivityType   = _INVALIDATES.saveActivityType.concat(['getSlots']);
-_INVALIDATES.deleteActivityType = _INVALIDATES.deleteActivityType.concat(['getSlots']);
 
 async function apiPost(action, payload) {
   payload = payload || {};
