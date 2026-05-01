@@ -3,6 +3,45 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — `_INVALIDATES` audit
+
+Pruned the cache-invalidation map in `shared/api.js`. Each entry was
+verified against the backend handler it pairs with — over-invalidation
+(forces a needless re-fetch on the user's next action) and the few
+under-invalidation gaps were corrected at the same time.
+
+Removed (over-invalidation, no backend write touches the listed read):
+- `saveConfig`, `saveActivityType`, `deleteActivityType`,
+  `saveChecklistItem`, `deleteChecklistItem`, `saveCertDef`,
+  `deleteCertDef`, `saveCertCategories`, `saveBoatAccess`, `saveBoatOos`,
+  `saveReservation`, `removeReservation`, `saveVolunteerEvent`,
+  `deleteVolunteerEvent`, `syncVolunteerEvents`, `saveFlagOverride`,
+  `saveStaffStatus`, `saveRowingPassportDef`, `importRowingPassportCsv`
+  no longer drop `getMembers` — they only mutate the config sheet.
+- `saveMember`, `deleteMember`, `saveMemberCert`, `savePreferences`,
+  `setPassword`, `importMembers`, `deactivateMembers` no longer drop
+  `getConfig` — they only mutate the members sheet, and `getConfig`
+  is independent of member rows.
+- `saveMembers` (the plural form, no backend handler exists),
+  `volunteerWithdraw` (only deletes from the uncached volunteerSignups
+  sheet) — entries removed entirely.
+
+Added (under-invalidation correctness fixes):
+- `adminResetMemberPassword` now invalidates `getMembers` — it flips
+  `passwordIsTemp` which feeds the `hasPassword` flag returned by
+  `getMembers_`. Without this, the admin UI showed the pre-reset state
+  for up to 30 s after a password reset.
+- `cancelClassOccurrence`, `overrideClassOccurrence`,
+  `restoreClassOccurrence` now invalidate `getSlots` — the virtual-slot
+  projection reads scheduled_events, so a cancelled / overridden
+  occurrence could otherwise linger in the per-week slot cache for up
+  to 60 s.
+
+Comment block at the top of `_INVALIDATES` documents the audit rule
+("only list a getXxx if the write actually changes data the getXxx
+response embeds") and the per-read sheet-dependence reference so the
+next person editing the map can sanity-check their additions.
+
 ## Unreleased — apiGet memory tier + content-visibility on long card lists
 
 Two more low-risk frontend speedups.
