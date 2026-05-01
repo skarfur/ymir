@@ -13,6 +13,13 @@ var _tripListObserver = null;
 var _TRIP_BATCH = 40;
 var _tripFilter = null;  // shared/list-filter.js controller — built in buildFilters()
 
+// Server-side pagination. allTrips holds whatever's been fetched so far; the
+// "Load older" button at the bottom of the trip list pulls the next page when
+// allTrips.length < _tripsTotal. Captain portal manages its own getTrips
+// flow (window._logbookSkipInit = true) so the button is logbook-portal-only.
+var _tripsTotal = 0;
+var _loadingOlder = false;
+
 // O(1) lookup indexes rebuilt whenever allBoats / allMembers reload. Avoids
 // the O(n·m) scans that used to happen when tripCard / stats / filters ran
 // _boat(t.boatId) inside per-trip loops (500 trips ×
@@ -192,17 +199,36 @@ function _renderTripBatch(el) {
     wrapper.innerHTML = tripCard(_filteredTrips[i]);
     while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
   }
-  // Remove old sentinel before appending new batch
+  // Remove old sentinel + load-older footer before appending new batch
   var oldSentinel = el.querySelector('.trip-scroll-sentinel');
   if (oldSentinel) oldSentinel.remove();
+  var oldFooter = el.querySelector('.trip-list-footer');
+  if (oldFooter) oldFooter.remove();
   el.appendChild(frag);
   _renderedCount = end;
-  // Add sentinel if more items remain
+  // Add sentinel if more items remain in the local filtered list
   if (_renderedCount < _filteredTrips.length) {
     var sentinel = document.createElement('div');
     sentinel.className = 'trip-scroll-sentinel';
     sentinel.style.height = '1px';
     el.appendChild(sentinel);
+  } else if (typeof _tripsTotal === 'number' && allTrips.length < _tripsTotal) {
+    // All locally-filtered trips rendered, but the server has more older
+    // trips waiting. Show a "Load older" footer with progress.
+    var footer = document.createElement('div');
+    footer.className = 'trip-list-footer';
+    var hint = document.createElement('div');
+    hint.className = 'trip-list-footer-hint';
+    hint.textContent = s('logbook.loadedOf', { loaded: allTrips.length, total: _tripsTotal });
+    var btn = document.createElement('button');
+    btn.id = 'loadOlderBtn';
+    btn.type = 'button';
+    btn.className = 'btn btn-secondary';
+    btn.textContent = s('logbook.loadOlder');
+    btn.setAttribute('data-lb-click', 'loadOlderTrips');
+    footer.appendChild(hint);
+    footer.appendChild(btn);
+    el.appendChild(footer);
   }
 }
 
@@ -530,6 +556,7 @@ async function reload(){
   try{
     const res=await apiGet('getTrips',{limit:500});
     allTrips=res.trips||[];
+    _tripsTotal = res.total || allTrips.length;
     myTrips=allTrips
       .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -539,6 +566,34 @@ async function reload(){
   }catch(e){
     document.getElementById('tripList').innerHTML=
       '<div class="empty-note text-red">'+s('logbook.loadFailed',{msg:esc(e.message)})+'</div>';
+  }
+}
+
+// Fetch the next page of older trips when the user clicks the bottom button.
+// Appends to allTrips; recomputes myTrips; triggers a re-filter so any newly
+// loaded trips that match the current filter slot in.
+async function loadOlderTrips(){
+  if (_loadingOlder || allTrips.length >= _tripsTotal) return;
+  _loadingOlder = true;
+  var btn = document.getElementById('loadOlderBtn');
+  if (btn) { btn.disabled = true; btn.textContent = s('logbook.loadingOlder'); }
+  try {
+    const res = await apiGet('getTrips', { limit: 500, offset: allTrips.length });
+    const next = res.trips || [];
+    if (next.length) {
+      allTrips = allTrips.concat(next);
+      _tripsTotal = res.total || allTrips.length;
+      myTrips = allTrips
+        .filter(t => t.kennitala === user.kennitala)
+        .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      buildFilters();
+      applyFilter();
+    }
+  } catch (e) {
+    showToast(s('logbook.loadFailed2', { msg: e.message }), 'err');
+    if (btn) { btn.disabled = false; btn.textContent = s('logbook.loadOlder'); }
+  } finally {
+    _loadingOlder = false;
   }
 }
 
@@ -552,6 +607,7 @@ async function reload(){
       window._earlyMembers || apiGet('getMembers'),
     ]);
     allTrips=tripsRes.trips||[];
+    _tripsTotal = tripsRes.total || allTrips.length;
     myTrips=allTrips
       .filter(t=>t.kennitala===user.kennitala)
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
