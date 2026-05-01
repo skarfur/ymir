@@ -155,7 +155,8 @@ function renderStats() {
   const active  = checkouts.filter(c => c.status === 'out');
   const overdue = active.filter(c => {
     if (!c.expectedReturn) return false;
-    return c.expectedReturn < fmtTimeNow();
+    const tout = sstr(c.checkedOutAt || c.timeOut).slice(0, 5);
+    return isCheckoutOverdue(c.expectedReturn, tout);
   });
   const people  = active.reduce((n, c) => n + (parseInt(c.crew) || 1), 0);
   // Count total boats: group checkouts may have multiple boats
@@ -918,7 +919,8 @@ async function staffGroupCheckIn(id) {
 function renderGroupCard(c) {
   const now = new Date().toTimeString().slice(0, 5);
   const retBy = c.expectedReturn || c.returnBy || '';
-  const overdue = retBy && retBy < now;
+  const tout       = sstr(c.checkedOutAt || c.timeOut).slice(0, 5);
+  const overdue = isCheckoutOverdue(retBy, tout, now);
   let boatArr;
   try { boatArr = c.boatNames ? (typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames) : [c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
   let staffArr;
@@ -927,7 +929,6 @@ function renderGroupCard(c) {
   const partic     = parseInt(c.participants) || 0;
   const total      = partic + staffArr.length;
   const boatCount  = boatArr.length;
-  const tout       = sstr(c.checkedOutAt || c.timeOut).slice(0, 5);
   const actName    = c.activityTypeName || '';
 
   // Left column pills: activity → first staff → boats → total

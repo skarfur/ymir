@@ -485,8 +485,8 @@ function renderCheckoutCard(co, opts) {
   const emoji     = boatEmoji(cat);
   const now       = new Date().toTimeString().slice(0,5);
   const retBy     = co.expectedReturn||co.returnBy||"";
-  const overdue   = co.isOverdue === true || co.isOverdue === 'true' || (retBy && retBy < now);
   const tout      = sstr(co.checkedOutAt||co.timeOut).slice(0,5);
+  const overdue   = co.isOverdue === true || co.isOverdue === 'true' || isCheckoutOverdue(retBy, tout, now);
 
   // Top badge (member view only — staff don't need it, they see all)
   let topBadge = "";

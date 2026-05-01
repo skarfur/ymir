@@ -205,13 +205,25 @@ function getOverdueAlerts_(b) {
     if (retByStr.length === 4 && !retByStr.includes(':')) retByStr = retByStr.slice(0,2) + ':' + retByStr.slice(2);
     const [retH, retM] = retByStr.split(':').map(Number);
     if (isNaN(retH) || isNaN(retM)) return;
-    // Build expected return as a full Date using today as base
-    // (no reliable date stored in sheet for active checkouts)
-    const retDt = new Date(todayStr + 'T' + String(retH).padStart(2,'0') + ':' + String(retM).padStart(2,'0') + ':00');
-    // If retBy < checkedOutAt time (overnight), return is the following day
+    // Build expected return relative to the actual checkout date (createdAt is a full ISO
+    // timestamp set on insert). Anchoring on today breaks once the wall clock crosses midnight
+    // for an overnight checkout — the alert would never fire.
+    const createdRaw = row[col('createdAt')];
+    const createdDt  = createdRaw instanceof Date ? createdRaw
+                     : (createdRaw ? new Date(createdRaw) : null);
+    const baseDateStr = (createdDt && !isNaN(createdDt.getTime()))
+      ? Utilities.formatDate(createdDt, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+      : todayStr;
+    const retDt = new Date(baseDateStr + 'T' + String(retH).padStart(2,'0') + ':' + String(retM).padStart(2,'0') + ':00');
+    // If retBy < checkedOutAt time (overnight), return is the day after the checkout
     const coAtVal  = row[col('checkedOutAt')];
-    const coH      = coAtVal instanceof Date ? coAtVal.getHours() : parseInt((String(coAtVal||'').split(':')[0]||'0'), 10);
-    if (!isNaN(coH) && retH < coH) retDt.setDate(retDt.getDate() + 1);
+    const coH      = coAtVal instanceof Date ? coAtVal.getHours()
+                   : parseInt((String(coAtVal||'').split(':')[0]||'0'), 10);
+    const coM      = coAtVal instanceof Date ? coAtVal.getMinutes()
+                   : parseInt((String(coAtVal||'').split(':')[1]||'0'), 10);
+    if (!isNaN(coH) && (retH * 60 + retM) < ((coH || 0) * 60 + (coM || 0))) {
+      retDt.setDate(retDt.getDate() + 1);
+    }
     const overdueMin = Math.round((now_ms - retDt.getTime()) / 60000);
     if (overdueMin < cfg.firstAlertMins) return;
     let snoozedUntil = null;
