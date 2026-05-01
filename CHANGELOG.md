@@ -3,6 +3,22 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — fix dark-mode flash on page navigation
+
+The earlier `defer` change pushed `applyTheme()` (called at the bottom
+of `shared/ui.js`) past the first paint, so dark-mode users saw a
+brief light flash on every navigation between portals before the
+`data-theme="dark"` attribute landed on `<html>`.
+
+Fix: a tiny new `shared/theme-init.js` (~5 lines) reads the saved
+theme from localStorage and sets the attribute synchronously during
+HTML parse. Loaded as a non-deferred `<script>` immediately before
+the first stylesheet link in every portal's `<head>`, so the
+attribute is in place before CSS evaluates its `[data-theme="dark"]`
+selectors. The full theme helpers in `api.js` stay deferred; the
+later `applyTheme()` call in `ui.js` is now a harmless no-op (sets
+the same value).
+
 ## Unreleased — `_INVALIDATES` audit
 
 Pruned the cache-invalidation map in `shared/api.js`. Each entry was
