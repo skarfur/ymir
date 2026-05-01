@@ -3,6 +3,30 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — frontend cold-load tuning
+
+Three low-risk changes to shave latency off every cold page load.
+
+- `crossorigin` added to the `<link rel="preconnect" href="https://script.google.com">`
+  hint in every portal HTML. `fetch()` runs in CORS-anonymous mode, so without
+  the attribute the warmed TLS connection is the wrong type and the browser
+  opens a fresh one for the real apiGet. Reclaims the preconnect's intent.
+- `defer` added to all shared `<script src="…/shared/*.js">` tags in `<head>`
+  across every portal (api.js, ui.js, layout.js, strings.js, plus per-portal
+  helpers like list-filter, calendar, boat-modal, slot-modal, trip-form,
+  weather, tides, dateutil, boats). They no longer block HTML parse; defer
+  preserves document execution order so dependents (the portal entry script
+  is itself defer) still see the same globals. CSP forbids inline scripts so
+  there were no in-document call sites depending on synchronous availability.
+- `prefetch({…})` added at script-parse time in the six portals that didn't
+  already have one — captain, coxswain, dailylog, incidents, maintenance,
+  saumaklubbur. Each kicks off the same apiGets the page would have awaited
+  inside `DOMContentLoaded`; apiGet's existing inflight-dedup map makes the
+  later awaits pick up the in-flight promises without code changes. User-
+  bound calls (getConfirmations, getCrewInvites, getRowingPassport) read the
+  cached user from `getUser()` — same gate the existing member.js prefetch
+  uses.
+
 ## Unreleased — emoji → icons across maintenance, saumaklúbbur, incidents
 
 Replaced ad-hoc emoji glyphs across the maintenance, saumaklúbbur, and

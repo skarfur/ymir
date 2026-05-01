@@ -1,4 +1,17 @@
-// ══ AUTH (runs immediately — api.js is non-deferred) ═════════════════════════
+// Kick off init reads at script-parse time. apiGet's inflight dedup means the
+// awaits inside DOMContentLoaded pick up these in-flight promises instead of
+// firing fresh network calls.
+var _cxU = (typeof getUser === 'function') ? getUser() : null;
+prefetch({
+  Config:        ['getConfig'],
+  Maintenance:   ['getMaintenance'],
+  Trips:         ['getTrips', { limit: 200 }],
+  CrewBoard:     ['getCrewBoard', {}],
+  CrewInvites:   _cxU && _cxU.kennitala ? ['getCrewInvites', { kennitala: _cxU.kennitala }] : null,
+  RowingPassport:_cxU && _cxU.id ? ['getRowingPassport', { memberId: _cxU.id }] : null,
+});
+
+// ══ AUTH ═════════════════════════════════════════════════════════════════════
 const user = requireAuth();
 if (!user || !hasRowingEndorsement(user)) { window.location.href = '../member/'; throw new Error('No rowing endorsement'); }
 const _isReleasedRower = isReleasedRower(user);

@@ -1,3 +1,6 @@
+// Race the network: page init awaits these via the inflight-dedup path.
+prefetch({ Incidents: ['getIncidents'], Config: ['getConfig'] });
+
 const user = requireAuth(isStaff);
 const L    = getLang();
 

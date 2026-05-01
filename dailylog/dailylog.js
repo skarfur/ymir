@@ -1,6 +1,13 @@
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 1 — AUTH + CONSTANTS
 // ════════════════════════════════════════════════════════════════════════════
+// Race the network with the rest of init: today's daily log + config are
+// every page load's two unconditional reads.
+prefetch({
+  DailyLog: ['getDailyLog', { date: todayISO() }],
+  Config:   ['getConfig'],
+});
+
 const user  = requireAuth(isStaff);
 const L     = getLang();
 const TODAY = todayISO();
