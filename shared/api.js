@@ -140,16 +140,21 @@ var _INVALIDATES = {
   overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog'],
   restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog'],
   // Volunteer events live in scheduled_events (read by getConfig).
+  // deleteVolunteerEvent cascades to volunteerSignups rows for the event,
+  // so it also drops the cached signups.
   saveVolunteerEvent:      ['getConfig'],
-  deleteVolunteerEvent:    ['getConfig'],
+  deleteVolunteerEvent:    ['getConfig', 'getVolunteerSignups'],
   syncVolunteerEvents:     ['getConfig'],
-  // Volunteer signups write to a separate sheet that no cached read embeds
-  // (signups are fetched via apiPost('getVolunteerSignups'), uncached).
-  // volunteerSignup_ keeps getConfig because the first signup against a
-  // virtual recurring event materializes a scheduled_events row, which
-  // feeds getConfig.volunteerEvents. volunteerWithdraw_ touches no cached
-  // read at all and is intentionally absent.
-  volunteerSignup:         ['getConfig'],
+  // Volunteer signups: the volunteerSignups sheet itself is read via
+  // apiPost('getVolunteerSignups'), now in _POST_CACHEABLE. Both writes
+  // drop that cache. volunteerSignup_ also keeps getConfig because the
+  // first signup against a virtual recurring event materializes a
+  // scheduled_events row that feeds getConfig.volunteerEvents.
+  volunteerSignup:         ['getConfig', 'getVolunteerSignups'],
+  volunteerWithdraw:       ['getVolunteerSignups'],
+  // Share tokens — read-shaped POST, cacheable.
+  createShareToken:        ['getShareTokens'],
+  revokeShareToken:        ['getShareTokens'],
 
   // Member-row writes — members sheet only.
   saveMember:              ['getMembers'],
@@ -225,8 +230,50 @@ var _INVALIDATES = {
   deleteRecurrenceGroup:   ['getSlots'],
 };
 
+// Read-shaped POSTs: actions that go through apiPost (typically because
+// they take a payload-bound caller identity like kennitala) but are pure
+// reads with no side effects. Opt in here to share the same memory +
+// sessionStorage cache as apiGet — keys use the same
+// `ymir_<action>_<paramsJSON>` shape so _invalidateApiCache drops both
+// kinds in one prefix scan, and the prefetch helper's `{ post: ... }`
+// form populates the cache transparently.
+var _POST_CACHEABLE = {
+  getVolunteerSignups: 30000,
+  getShareTokens:      60000,
+};
+
 async function apiPost(action, payload) {
   payload = payload || {};
+  if (_POST_CACHEABLE[action] && !payload._fresh) {
+    try {
+      var _ck = 'ymir_' + action + '_' + JSON.stringify(payload);
+      var _now = Date.now();
+      var _mc = apiGet._memCache[_ck];
+      if (_mc && _now - _mc.ts < _POST_CACHEABLE[action]) return _mc.data;
+      var _cs = sessionStorage.getItem(_ck);
+      if (_cs) {
+        var _cp = JSON.parse(_cs);
+        if (_now - _cp.ts < _POST_CACHEABLE[action]) {
+          apiGet._memCache[_ck] = _cp;
+          return _cp.data;
+        }
+      }
+      if (apiGet._inflight[_ck]) return apiGet._inflight[_ck];
+      var _p = (async function () {
+        try {
+          var data = await _call(action, payload);
+          var entry = { ts: Date.now(), data: data };
+          apiGet._memCache[_ck] = entry;
+          try { sessionStorage.setItem(_ck, JSON.stringify(entry)); } catch(e) {}
+          return data;
+        } finally {
+          delete apiGet._inflight[_ck];
+        }
+      })();
+      apiGet._inflight[_ck] = _p;
+      return _p;
+    } catch(e) { /* fall through to plain _call */ }
+  }
   var invalidates = _INVALIDATES[action];
   if (invalidates) invalidates.forEach(_invalidateApiCache);
   return _call(action, payload);
