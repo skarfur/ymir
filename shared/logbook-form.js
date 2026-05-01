@@ -450,14 +450,17 @@ function handleTrackFile(input){
   if(!file){ _pendingTrack=null; document.getElementById('mTrackStatus').textContent=''; return; }
   const statusEl=document.getElementById('mTrackStatus');
   statusEl.textContent=s('logbook.readingFile');
-  const reader=new FileReader();
-  reader.onload=function(e){
-    _pendingTrack={fileName:file.name, fileData:e.target.result, mimeType:file.type||'application/octet-stream'};
+  // readFileForUpload (in shared/api.js) gzips GPX/KML transparently before
+  // base64-encoding; KMZ and other formats fall through as plain data URLs.
+  readFileForUpload(file).then(function(info){
+    _pendingTrack=info;
     statusEl.textContent=s('logbook.fileReady',{name:file.name});
     statusEl.style.color='var(--accent)';
-  };
-  reader.onerror=function(){ statusEl.textContent=s('logbook.readError'); statusEl.style.color='var(--red)'; _pendingTrack=null; };
-  reader.readAsDataURL(file);
+  }).catch(function(){
+    statusEl.textContent=s('logbook.readError');
+    statusEl.style.color='var(--red)';
+    _pendingTrack=null;
+  });
 }
 
 function handlePhotoFiles(input){
@@ -693,7 +696,7 @@ async function submitManual(){
   let trackFileUrl='', trackSimplified='', trackSource='', distanceNm=distInput;
   if(_pendingTrack){
     try{
-      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_pendingTrack.fileName,fileData:_pendingTrack.fileData,mimeType:_pendingTrack.mimeType});
+      const tr=await apiPost('uploadTripFile',{fileType:'track',fileName:_pendingTrack.fileName,fileData:_pendingTrack.fileData,mimeType:_pendingTrack.mimeType,compressed:_pendingTrack.compressed});
       if(tr.ok){
         trackFileUrl=tr.trackFileUrl||'';
         trackSimplified=tr.trackSimplified||'';

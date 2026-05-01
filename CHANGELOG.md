@@ -3,6 +3,38 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — backend handbook caching + gzipped GPX uploads
+
+⚠️ **Backend changes (.gs files) — won't take effect until you push to
+Apps Script.**
+
+`handbook.gs` — `getHandbook_` now consults `cGet_('handbook')` /
+`cPut_('handbook', …)` (default 60 s TTL via the existing CacheService
+helpers). The hydrated handbook payload is one of the heaviest reads
+in the app (joins handbookRoles + members + boat-cat colours +
+contacts + docs + info), and the existing frontend cache is 10 min,
+so a 60 s backend cache catches almost all cold-container reads.
+
+Invalidation is centralised: `saveConfigListItem_` /
+`deleteConfigListItem_` in `alerts.gs` now drop the `handbook` cache
+when their key starts with `handbook` (covers 7 of the 10 handbook
+writers via the helper). The remaining direct writer
+(`reorderHandbookRoles_` in `handbook.gs`) gets an explicit
+`cDel_('handbook')`.
+
+`trips.gs` — `saveTripTrack_` honours an optional `b.compressed === 'gzip'`
+flag and `Utilities.ungzip()`s the bytes before parsing. Backwards
+compatible: clients that don't set the flag keep working as before.
+
+Frontend (`shared/api.js`, `shared/logbook-form.js`,
+`shared/logbook-edit.js`) — new `readFileForUpload(file)` helper uses
+`CompressionStream('gzip')` (browser-native, no library, CSP-safe) on
+`.gpx` / `.kml` uploads to cut payload ~60-70 % before base64 encoding.
+KMZ (already zipped) and photos (already JPEG/PNG) skip compression
+and fall back to the legacy data-URL form. If `CompressionStream`
+isn't available (very old browsers) the helper degrades to the same
+fallback transparently.
+
 ## Unreleased — opt-in cache for read-shaped POSTs
 
 `shared/api.js` — new `_POST_CACHEABLE` map lets `apiPost` actions
