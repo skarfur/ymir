@@ -1,5 +1,18 @@
 window._logbookSkipInit = true;
 
+// Kick off init reads at script-parse time so they race the rest of the
+// deferred-script chain. apiGet's inflight dedup means the awaits below
+// pick up these promises instead of firing fresh network calls.
+var _cqU = (typeof getUser === 'function') ? getUser() : null;
+prefetch({
+  Config:               ['getConfig'],
+  Maintenance:          ['getMaintenance'],
+  Trips:                ['getTrips', { limit: 500 }],
+  VerificationRequests: ['getVerificationRequests'],
+  Members:              ['getMembers'],
+  Confirmations: _cqU && _cqU.kennitala ? ['getConfirmations', { kennitala: _cqU.kennitala }] : null,
+});
+
 // ══ STATE ════════════════════════════════════════════════════════════════════
 const user = requireAuth();
 if (!user || !isCaptain(user)) { window.location.href = '../member/'; throw new Error('Not a captain'); }

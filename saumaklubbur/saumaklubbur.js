@@ -1,3 +1,5 @@
+// Race the network with the rest of init.
+prefetch({ Maintenance: ['getMaintenance'], Config: ['getConfig'] });
 
 let allProjects = [];
 let currentFilter = "open";
