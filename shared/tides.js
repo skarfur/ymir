@@ -242,9 +242,15 @@ function tideSvgChart(series, extrema, nowMs, W, H) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIDE WIDGET  —  compact card with SVG curve + day nav + today button
+//
+// Options:
+//   onData(d)   — callback fired after each refresh with { extrema, moon, sun, dateStr }
+//   getDate()   — optional fn returning a YYYY-MM-DD string; when provided the
+//                 widget shows that fixed day and hides the date-navigation UI
 // ═══════════════════════════════════════════════════════════════════════════════
-function tideWidget(targetEl, { onData } = {}) {
+function tideWidget(targetEl, { onData, getDate } = {}) {
   let timer = null, _dateOffset = 0;
+  const _fixedDate = typeof getDate === 'function';
 
   function _dateStr(off) {
     const d = new Date(); d.setUTCDate(d.getUTCDate() + (off||0));
@@ -254,15 +260,16 @@ function tideWidget(targetEl, { onData } = {}) {
   async function refresh() {
     const IS = typeof getLang === 'function' && getLang() === 'IS';
     const now = new Date();
-    const dateStr = _dateStr(_dateOffset);
-    const isToday = _dateOffset === 0;
+    const todayStr = _dateStr(0);
+    const dateStr = _fixedDate ? (getDate() || todayStr) : _dateStr(_dateOffset);
+    const isToday = dateStr === todayStr;
     const extrema = tideExtrema(dateStr);
     const series  = tideChartSeries(dateStr);
     const moon = moonPhase(isToday ? now : new Date(dateStr + 'T12:00:00Z'));
     const sun = await fetchSunTimes(TIDE_STATION.lat, TIDE_STATION.lon, dateStr);
     if (onData) onData({ extrema, moon, sun, dateStr });
 
-    // Status (today: trend, other days: today button)
+    // Status (today: trend, other days: today button when nav is enabled)
     let statusHtml = '';
     if (isToday) {
       const curH = tideHeight(now), soonH = tideHeight(new Date(now.getTime() + 600000));
@@ -272,7 +279,7 @@ function tideWidget(targetEl, { onData } = {}) {
       statusHtml = `<span style="color:${col};font-weight:700;font-size:12px">${up?'↑':'↓'}</span>`
         + `<span style="color:${col};font-size:10px;font-weight:500">${lbl}</span>`
         + `<span style="font-size:11px;font-weight:500;color:var(--text);font-family:var(--font-mono)">${curH.toFixed(1)}m</span>`;
-    } else {
+    } else if (!_fixedDate) {
       statusHtml = `<button class="tide-today-btn" style="background:none;border:1px solid var(--border);color:var(--accent-fg);border-radius:4px;padding:0 6px;font-size:9px;cursor:pointer;font-family:inherit;line-height:1.6;letter-spacing:.3px">${IS?'Fara á í dag':'Go to today'}</button>`;
     }
 
@@ -301,29 +308,35 @@ function tideWidget(targetEl, { onData } = {}) {
     // Chart
     const svg = tideSvgChart(series, extrema, isToday ? now.getTime() : -1, 640, 120);
 
+    const dayRow = _fixedDate
+      ? `<div style="text-align:center;margin-bottom:2px"><span style="font-size:10px;color:var(--text);font-weight:500">${dayLabel}</span></div>`
+      : `<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2px">
+          <button class="tide-nav-btn" data-dir="-1" style="${navStyle}">◀</button>
+          <span style="font-size:10px;color:var(--text);font-weight:500;min-width:70px;text-align:center">${dayLabel}</span>
+          <button class="tide-nav-btn" data-dir="1" style="${navStyle}">▶</button>
+        </div>`;
+
     targetEl.innerHTML = `
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
           <div style="display:flex;align-items:center;gap:4px">${statusHtml}</div>
           <div style="display:flex;align-items:center;gap:6px">${sunHtml}${moonHtml}</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2px">
-          <button class="tide-nav-btn" data-dir="-1" style="${navStyle}">◀</button>
-          <span style="font-size:10px;color:var(--text);font-weight:500;min-width:70px;text-align:center">${dayLabel}</span>
-          <button class="tide-nav-btn" data-dir="1" style="${navStyle}">▶</button>
-        </div>
+        ${dayRow}
         ${svg}
         <div style="text-align:left;margin-top:2px">
           <span style="font-size:7px;color:var(--muted);opacity:.55">⚠️ ${disclaimer}</span>
         </div>
       </div>`;
 
-    // Wire nav
-    targetEl.querySelectorAll('.tide-nav-btn').forEach(b => {
-      b.onclick = () => { _dateOffset += parseInt(b.dataset.dir); refresh(); };
-    });
-    const tb = targetEl.querySelector('.tide-today-btn');
-    if (tb) tb.onclick = () => { _dateOffset = 0; refresh(); };
+    // Wire nav (only present when not pinned to a fixed date)
+    if (!_fixedDate) {
+      targetEl.querySelectorAll('.tide-nav-btn').forEach(b => {
+        b.onclick = () => { _dateOffset += parseInt(b.dataset.dir); refresh(); };
+      });
+      const tb = targetEl.querySelector('.tide-today-btn');
+      if (tb) tb.onclick = () => { _dateOffset = 0; refresh(); };
+    }
   }
 
   function start(ms) { refresh(); timer = setInterval(refresh, ms||300000); return { refresh, start, stop }; }
