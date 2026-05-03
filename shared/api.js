@@ -386,6 +386,24 @@ function prefetch(calls) {
 // caller's session token so the backend can identify them.
 var _PUBLIC_ACTIONS = { loginMember: 1, loginWithGoogle: 1, dashboard: 1, lookup: 1, captain: 1, boat: 1 };
 
+// Side-effect-free actions that are safe to retry when the Apps Script
+// content host (script.googleusercontent.com/macros/echo) intermittently
+// 404s on the redirect hop — the server-side handler has already run by
+// that point, so a blind retry of a write would double-execute. `batch`
+// is retried only when every sub-request is itself idempotent.
+function _isIdempotent(action, payload) {
+  if (!action) return false;
+  if (action === 'batch') {
+    var reqs = payload && payload.requests;
+    if (!Array.isArray(reqs) || reqs.length === 0) return false;
+    return reqs.every(function (r) { return r && _isIdempotent(r.action); });
+  }
+  if (/^get/i.test(action)) return true;
+  return action === 'validateMember' || action === 'listSessions' ||
+         action === 'lookup' || action === 'dashboard' ||
+         action === 'captain' || action === 'boat';
+}
+
 // ── Request batching ─────────────────────────────────────────────────────────
 // Apps Script web-app calls have a fat fixed cost per request (HTTPS handshake,
 // 302 redirect to the user-content host, V8 spin-up, sheet warmup) that
@@ -486,32 +504,45 @@ async function _callDirect(action, payload) {
   // though the write already landed.
   var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 60000) : null;
   try {
-    var res = await fetch(SCRIPT_URL, {
-      method:   "POST",
-      redirect: "follow",
-      headers:  { "Content-Type": "text/plain" },
-      body:     body,
-      signal:   ctrl ? ctrl.signal : undefined,
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    var data = await res.json();
-    if (!data.success) {
-      // A 401 means our session is gone — wipe local state and bounce the
-      // user back to the login screen instead of leaving them staring at a
-      // broken page. Public actions (login itself) are exempt so login
-      // errors surface their real message. The login page itself also
-      // swallows 401s because it hasn't authenticated yet (a pre-warm call
-      // landing here shouldn't trigger an auth-redirect dance).
-      var onLoginPage = (typeof window !== 'undefined' && window.location &&
-        window.location.pathname.indexOf('/login/') >= 0);
-      if (data.code === 401 && !_PUBLIC_ACTIONS[action] && !onLoginPage) {
-        _handleUnauthorized();
+    var attempt = 0;
+    for (;;) {
+      var res = await fetch(SCRIPT_URL, {
+        method:   "POST",
+        redirect: "follow",
+        headers:  { "Content-Type": "text/plain" },
+        body:     body,
+        signal:   ctrl ? ctrl.signal : undefined,
+      });
+      // Apps Script's content host (script.googleusercontent.com/macros/echo)
+      // intermittently 404s the second hop of a successful POST: doPost has
+      // already run, but the rendered output briefly isn't servable. One
+      // short-backoff retry clears it for reads. Writes are NOT retried —
+      // the server-side mutation has already landed.
+      if (res.status === 404 && attempt === 0 && _isIdempotent(action, payload)) {
+        attempt++;
+        await new Promise(function (r) { setTimeout(r, 400); });
+        continue;
       }
-      var err = new Error(data.error || action + " failed");
-      err.code = data.code;
-      throw err;
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var data = await res.json();
+      if (!data.success) {
+        // A 401 means our session is gone — wipe local state and bounce the
+        // user back to the login screen instead of leaving them staring at a
+        // broken page. Public actions (login itself) are exempt so login
+        // errors surface their real message. The login page itself also
+        // swallows 401s because it hasn't authenticated yet (a pre-warm call
+        // landing here shouldn't trigger an auth-redirect dance).
+        var onLoginPage = (typeof window !== 'undefined' && window.location &&
+          window.location.pathname.indexOf('/login/') >= 0);
+        if (data.code === 401 && !_PUBLIC_ACTIONS[action] && !onLoginPage) {
+          _handleUnauthorized();
+        }
+        var err = new Error(data.error || action + " failed");
+        err.code = data.code;
+        throw err;
+      }
+      return data;
     }
-    return data;
   } catch (e) {
     if (e && e.name === 'AbortError') throw new Error(action + " timed out");
     throw e;
