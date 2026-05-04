@@ -1128,19 +1128,34 @@ function syncVolunteerEventToCalendar_(eventId) {
     for (var j = 0; j < types.length; j++) {
       if (types[j] && types[j].id === atId) { at = types[j]; break; }
     }
-    if (!at || !at.calendarId) return;
-    var enabled = at.calendarSyncActive === true || at.calendarSyncActive === 'true';
-    if (!enabled) return;
+    // Resolve the destination calendar. Per-event override wins when the
+    // event has its own calendarSyncActive=true + calendarId set; otherwise
+    // fall through to the parent activity-type's calendarId (existing
+    // behavior — pre-feature events with no per-event calendarId stay
+    // synced via their parent type).
+    var calId = '';
+    var enabled = false;
+    if (ev.calendarSyncActive && ev.calendarId) {
+      calId = ev.calendarId;
+      enabled = true;
+    } else if (at && at.calendarId) {
+      var atEnabled = at.calendarSyncActive === true || at.calendarSyncActive === 'true';
+      if (atEnabled) { calId = at.calendarId; enabled = true; }
+    }
+    if (!enabled || !calId) return;
     // If the parent class carries a recurring master event AND this volunteer
     // event is a bulk-projected occurrence (deterministic vae- id), the
     // master already covers it — skip the standalone sync to avoid double
     // entries. Manually-created volunteer events (no vae- prefix) still get
-    // their own calendar entry as before.
-    var bulkProjected = at.gcalSeriesEventId
+    // their own calendar entry as before. The skip only applies when the
+    // event is inheriting the parent's calendar; per-event override wins.
+    var inheritingFromParent = !(ev.calendarSyncActive && ev.calendarId);
+    var bulkProjected = inheritingFromParent
+      && at && at.gcalSeriesEventId
       && String(ev.id || '').indexOf('vae-' + at.id + '-') === 0;
     if (bulkProjected) {
       if (ev.gcalEventId) {
-        gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
+        gcalUpsertEvent_(calId, ev.gcalEventId, '', null, null, '', 'delete');
         activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
@@ -1149,7 +1164,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     // Cancelled/orphaned events lose their calendar entry.
     if (ev.status === 'cancelled' || ev.status === 'orphaned') {
       if (ev.gcalEventId) {
-        gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
+        gcalUpsertEvent_(calId, ev.gcalEventId, '', null, null, '', 'delete');
         activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
@@ -1158,7 +1173,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     var start = gcalParseDateTime_(ev.date, ev.startTime || '00:00');
     var end   = gcalParseDateTime_(ev.endDate || ev.date, ev.endTime || ev.startTime || '00:00');
     if (end <= start) end = new Date(start.getTime() + 60 * 60 * 1000);
-    var typeLabel = at.nameIS || at.name || '';
+    var typeLabel = at ? (at.nameIS || at.name || '') : '';
     var titleBase = ev.title || typeLabel;
     var title = titleBase + (typeLabel && titleBase !== typeLabel ? ' (' + typeLabel + ')' : '');
     var roleLines = (Array.isArray(ev.roles) ? ev.roles : []).map(function (r) {
@@ -1168,7 +1183,7 @@ function syncVolunteerEventToCalendar_(eventId) {
       + (ev.leaderName ? ('\nLeader: ' + ev.leaderName) : '')
       + (ev.notes ? ('\n' + ev.notes) : '')
       + (roleLines ? ('\n\nRoles:\n' + roleLines) : '');
-    var newId = gcalUpsertEvent_(at.calendarId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
+    var newId = gcalUpsertEvent_(calId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
     if (newId && newId !== (ev.gcalEventId || '')) {
       activity_upsert_({ id: ev.id, gcalEventId: newId });
       cDel_('config');
@@ -1183,16 +1198,24 @@ function syncVolunteerEventToCalendar_(eventId) {
 function deleteVolunteerEventCalendarEvent_(evRow) {
   try {
     if (!evRow || !evRow.gcalEventId) return;
-    var atId = evRow.activityTypeId || evRow.sourceActivityTypeId || '';
-    if (!atId) return;
-    var types = [];
-    try { types = JSON.parse(getConfigSheetValue_('activity_templates') || '[]'); } catch (e) {}
-    var at = null;
-    for (var i = 0; i < types.length; i++) {
-      if (types[i] && types[i].id === atId) { at = types[i]; break; }
+    // Per-event override wins when set; otherwise look up the parent
+    // activity type's calendarId — the same precedence as
+    // syncVolunteerEventToCalendar_ so the right calendar is targeted.
+    var calId = (evRow.calendarSyncActive && evRow.calendarId) ? evRow.calendarId : '';
+    if (!calId) {
+      var atId = evRow.activityTypeId || evRow.sourceActivityTypeId || '';
+      if (!atId) return;
+      var types = [];
+      try { types = JSON.parse(getConfigSheetValue_('activity_templates') || '[]'); } catch (e) {}
+      for (var i = 0; i < types.length; i++) {
+        if (types[i] && types[i].id === atId && types[i].calendarId) {
+          calId = types[i].calendarId;
+          break;
+        }
+      }
     }
-    if (!at || !at.calendarId) return;
-    gcalUpsertEvent_(at.calendarId, evRow.gcalEventId, '', null, null, '', 'delete');
+    if (!calId) return;
+    gcalUpsertEvent_(calId, evRow.gcalEventId, '', null, null, '', 'delete');
   } catch (e) { Logger.log('deleteVolunteerEventCalendarEvent_ failed: ' + e); }
 }
 

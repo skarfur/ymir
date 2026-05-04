@@ -84,6 +84,8 @@ function activity_parseRow_(row) {
     sourceActivityTypeId:  row.sourceActivityTypeId || '',
     sourceSubtypeId:       row.sourceSubtypeId || '',
     gcalEventId:           row.gcalEventId || '',
+    calendarId:            row.calendarId || '',
+    calendarSyncActive:    row.calendarSyncActive === true || row.calendarSyncActive === 'true',
     dailyLogDate:          row.dailyLogDate || '',
     createdAt:             row.createdAt || '',
     updatedAt:             row.updatedAt || '',
@@ -135,6 +137,8 @@ function activity_rowShape_(ev) {
   if (ev.sourceActivityTypeId !== undefined)  out.sourceActivityTypeId = ev.sourceActivityTypeId;
   if (ev.sourceSubtypeId !== undefined)       out.sourceSubtypeId = ev.sourceSubtypeId;
   if (ev.gcalEventId !== undefined)           out.gcalEventId = ev.gcalEventId;
+  if (ev.calendarId !== undefined)            out.calendarId = ev.calendarId;
+  if (ev.calendarSyncActive !== undefined)    out.calendarSyncActive = !!ev.calendarSyncActive;
   if (ev.dailyLogDate !== undefined)          out.dailyLogDate = ev.dailyLogDate;
   if (ev.createdAt !== undefined)             out.createdAt = ev.createdAt;
   if (ev.updatedAt !== undefined)             out.updatedAt = ev.updatedAt;
@@ -162,6 +166,7 @@ var ACTIVITIES_COLS_ = [
   'reservedBoatIds',
   'sourceActivityTypeId','sourceSubtypeId',
   'gcalEventId',
+  'calendarId','calendarSyncActive',
   'dailyLogDate',
   'createdAt','updatedAt','updatedBy',
   // Per-activity extras saved from the daily-log activity modal.
