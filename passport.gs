@@ -292,8 +292,6 @@ function importRowingPassportCsv_(b) {
     }
 
     let assessment = (r.assessment || '').toLowerCase();
-    // Back-compat: accept historical 'theoretical' spelling and normalise to 'theory'.
-    if (assessment === 'theoretical') assessment = 'theory';
     if (assessment !== 'theory' && assessment !== 'practical') assessment = 'practical';
     // Module: optional non-negative integer (0 / blank = unassigned).
     let moduleNum = parseInt((r.module || '').toString().trim(), 10);

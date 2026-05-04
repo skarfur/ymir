@@ -12,9 +12,6 @@ const TABS_ = {
   dailyLog: 'daily_log',
   maintenance: 'maintenance',
   checkouts: 'checkouts',
-  // actTypes removed — activity templates live in the config sheet under
-  // key 'activity_templates' (legacy alias 'activity_types'), not a tab.
-  // dailyCL removed — daily checklists now stored as JSON in config key 'dailyChecklist'
   incidents: 'incidents',
   trips: 'trips',
   config: 'config',
@@ -671,7 +668,6 @@ function ensureSheet_(tabKey, columns) {
   const name = TABS_[tabKey] || tabKey;
   const ss = ss_();
   let sh = ss.getSheetByName(name);
-  if (!sh) sh = _reconcileLegacyTab_(ss, name);
   if (!sh) {
     sh = ss.insertSheet(name);
     sh.getRange(1, 1, 1, columns.length).setValues([columns]);
@@ -950,44 +946,9 @@ function sweepExpiredSessions() {
 // SHEET HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Self-healing tab renames. Key = canonical sheet tab name; value = list of
-// legacy names to fall back to. If the canonical tab is missing but a legacy
-// name is present, _reconcileLegacyTab_ renames it via setName so existing
-// data is preserved and subsequent calls find it normally. Idempotent — a
-// no-op once the rename has happened.
-//
-// 'activities' ← 'scheduled_events': introduced in 63a10db, prematurely
-// cleared in 8072be6 alongside the kind-column drop. Restored because the
-// tab rename is independent of the kind backfill and any deployment that
-// hadn't run setupSpreadsheet between those commits ended up with an empty
-// 'activities' tab created next to the legacy 'scheduled_events' tab,
-// orphaning every existing activity row. Safe to drop again once every
-// deployment is verified to live on the canonical name.
-const LEGACY_TAB_ALIASES_ = {
-  'activities': ['scheduled_events'],
-};
-
-function _reconcileLegacyTab_(ss, canonicalName) {
-  var aliases = LEGACY_TAB_ALIASES_[canonicalName];
-  if (!aliases || !aliases.length) return null;
-  for (var i = 0; i < aliases.length; i++) {
-    var legacyName = aliases[i];
-    if (legacyName === canonicalName) continue;
-    var legacy = ss.getSheetByName(legacyName);
-    if (legacy) {
-      legacy.setName(canonicalName);
-      Logger.log('Renamed legacy sheet tab: "' + legacyName + '" → "' + canonicalName + '"');
-      return legacy;
-    }
-  }
-  return null;
-}
-
 function getSheet_(tabKey) {
   const name = TABS_[tabKey] || tabKey;
-  const ss = ss_();
-  let s = ss.getSheetByName(name);
-  if (!s) s = _reconcileLegacyTab_(ss, name);
+  const s = ss_().getSheetByName(name);
   if (!s) throw new Error('Tab not found: ' + name);
   return s;
 }
@@ -1330,7 +1291,6 @@ function route_(action, b, caller) {
     case 'deactivateMembers': return deactivateMembers_(b.ids);
     case 'savePreferences': return savePreferences_(b);
     case 'getDailyLog': return getDailyLog_(b.date);
-    case 'saveDailyLog': return saveDailyLog_(b);
     case 'getActivityLog': return getActivityLog_(b);
     case 'saveDailyLog': return saveDailyLog_(b, caller);
     case 'getMaintenance': return getMaintenance_();
@@ -1392,7 +1352,6 @@ function route_(action, b, caller) {
     case 'deleteCheckout': return deleteCheckout_(b.id);
     case 'saveGroupCheckout': return saveGroupCheckout_(b, caller);
     case 'groupCheckIn': return groupCheckIn_(b, caller);
-    // charter endpoints removed — use saveReservation / removeReservation
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveBoatOos': return saveBoatOos_(b);
     case 'saveReservation': return saveReservation_(b);
@@ -1449,7 +1408,6 @@ function route_(action, b, caller) {
     case 'saveTrip': return saveTrip_(b);
     case 'setHelm': return setHelm_(b);
     case 'deleteTrip': return deleteTrip_(b.id);
-    case 'requestValidation': return requestVerification_(b);
     case 'requestVerification': return requestVerification_(b);
     case 'getVerificationRequests': return getVerificationRequests_();
     case 'getConfirmations': return getConfirmations_(b);

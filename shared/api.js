@@ -7,27 +7,6 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 // verify tokens unless the GOOGLE_CLIENT_ID script property is set.
 const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
-// ── Service Worker Cleanup (one-shot per browser) ──────────────────────────
-// The app used to register a SW; it was removed long ago. This block
-// guarantees any stranded old SW + its caches get purged so users don't
-// see stale static assets. Once it's run successfully in a browser we
-// flip a localStorage flag and skip on every subsequent page load —
-// there's no point re-querying navigator.serviceWorker on every view.
-try {
-  if (!localStorage.getItem('ymirSwCleanupDone') && 'serviceWorker' in navigator) {
-    var _swCleanupDone = function () { try { localStorage.setItem('ymirSwCleanupDone', '1'); } catch (e) {} };
-    navigator.serviceWorker.getRegistrations()
-      .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
-      .catch(function () {})
-      .finally(_swCleanupDone);
-    if (typeof caches !== 'undefined') {
-      caches.keys().then(function (names) {
-        names.forEach(function (n) { caches.delete(n); });
-      }).catch(function () {});
-    }
-  }
-} catch (e) {}
-
 async function apiGet(action, params) {
   params = params || {};
   // Cache key now includes a serialized params suffix so the same action with
@@ -277,7 +256,6 @@ var _INVALIDATES = {
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],
   requestVerification:     ['getConfirmations', 'getNotifications', 'getTrips'],
-  requestValidation:       ['getConfirmations', 'getNotifications', 'getTrips'],
   // Maintenance — most also change notification counts (follower pings, etc.).
   saveMaintenance:         ['getMaintenance', 'getNotifications'],
   resolveMaintenance:      ['getMaintenance', 'getNotifications'],
