@@ -926,7 +926,7 @@ function applyLogData(logRes, cfgRes) {
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
   amItems       = cfg.dailyChecklist?.opening || [];
   pmItems       = cfg.dailyChecklist?.closing || [];
-  activityTypes = cfg.activityTypes || [];
+  activityTypes = cfg.activityTemplates || cfg.activityTypes || [];
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
 
@@ -944,7 +944,7 @@ function applyLogData(logRes, cfgRes) {
     // Merge unmaterialized projections — backend already filters scheduledActivities
     // to exclude ids present in log.activities, so dedup-by-id is enough. Without
     // this, today's bulk-projected activities go missing once a dailyLog row
-    // exists with no scheduled_events activity rows for the date.
+    // exists with no activities rows for the date.
     if (scheduled.length) {
       var seen = {};
       activities.forEach(function (a) { if (a && a.id) seen[a.id] = true; });

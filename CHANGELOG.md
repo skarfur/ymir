@@ -3,6 +3,71 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activities vocabulary cleanup (sheet + config-key rename)
+
+Third step of the activities vocabulary cleanup. Renames the underlying
+sheet tab and config key to match the canonical vocabulary.
+
+- Sheet tab: `'scheduled_events'` → `'activities'`. `TABS_.activities` now
+  resolves to the new canonical name. A self-healing helper
+  (`_reconcileLegacyTab_` + `LEGACY_TAB_ALIASES_` in `code.gs`) renames the
+  legacy tab via `setName` whenever the canonical isn't found —
+  triggered by `getSheet_`, `ensureSheet_`, and `_setup.gs/ensureTab_`,
+  so the rename happens whichever path hits the sheet first
+  (idempotent, preserves data).
+- Config key: `'activity_types'` → `'activity_templates'`.
+  `getConfigValue_` and `getConfigSheetValue_` consult
+  `LEGACY_CONFIG_KEY_ALIASES_` and fall back to the legacy key when the
+  canonical row is missing/empty. `setupSpreadsheet` runs an idempotent
+  copy from legacy → canonical row. All in-code reads/writes
+  (`config.gs`, `scheduling.gs`, `checkouts.gs`, `public.gs`) updated to
+  use the canonical key. The unused `TABS_.actTypes` entry is removed.
+- The seeded config-key list in `_setup.gs` now uses
+  `'activity_templates'` for fresh deployments.
+
+Deploy guidance: this commit is safe to roll out without running
+`setupSpreadsheet` first — the runtime self-healing handles existing
+sheets transparently. Running `setupSpreadsheet` afterward triggers an
+explicit, logged rename so you can confirm the migration in the
+Apps Script log.
+
+Still to land: drop the legacy `kind` column on the activities sheet
+once we're confident no readers depend on it (a release cycle or two
+after the prior commit). After that, build the unified Group Checkout
+activity picker on top of the cleaned-up vocabulary.
+
+## Unreleased — activities vocabulary cleanup (identifier renames)
+
+Second step of the activities vocabulary cleanup. Pure code rename — no
+schema change, no behavior change, the underlying sheet tab keeps its
+existing name.
+
+- `TABS_.scheduledEvents` → `TABS_.activities` (the value still resolves
+  to the `'scheduled_events'` sheet tab; only the JS-side key changed).
+  All `readAll_('scheduledEvents')`, `findOne_('scheduledEvents', …)`,
+  `insertRow_/updateRow_/deleteRow_` callers updated in lockstep.
+- `sched_*` function prefix → `activity_*` across the backend
+  (`scheduling.gs`, `checkouts.gs`, `public.gs`, `members.gs`,
+  `config.gs`, `_setup.gs`). Disambiguating renames:
+  `sched_listActivitiesForDate_` → `activity_listForDate_`,
+  `sched_listActivityLog_` → `activity_listLog_`,
+  `sched_signupCountsByEvent_` → `activity_signupCountsById_`.
+- `ensureScheduledEventsSheet_` → `ensureActivitiesSheet_`,
+  `SCHEDULED_EVENTS_COLS_` → `ACTIVITIES_COLS_`,
+  cache key `sched_events_for_config` → `activities_for_config`,
+  `_scheduledEventsForConfig_` → `_activitiesForConfig_`.
+- `getConfig` response now emits `activityTemplates` (canonical) alongside
+  the legacy `activityTypes` alias. Both point at the same array. Frontend
+  consumers (`admin.js`, `member.js`, `volunteer.js`, `dailylog.js`,
+  `staff_logbook-review.js`) read `cfgRes.activityTemplates ||
+  cfgRes.activityTypes` so old/cached frontends and old backends
+  interoperate.
+
+Still to land: rename `activity_types` config-sheet key → `activity_templates`
+(needs migration), rename the `'scheduled_events'` sheet tab → `'activities'`
+(needs migration), drop the legacy `kind` column once all readers have
+migrated to `signupRequired`.
+
 ## Unreleased — group sails: render-time activity label
 
 The trip/checkout detail modals used to show `Notes: Group: — None —`

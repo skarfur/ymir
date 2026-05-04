@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
-    _volunteerActTypes = cfgRes.activityTypes || [];
+    _volunteerActTypes = cfgRes.activityTemplates || cfgRes.activityTypes || [];
     _clubCalendars = cfgRes.clubCalendars || [];
 
     populateFormSelects();

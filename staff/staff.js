@@ -987,7 +987,7 @@ async function openDlLinkModal(checkoutId) {
   _dlLinkCheckoutId  = checkoutId;
   _dlLinkSelectedAct = null;
   // Fetch today's daily log activities. Merge materialized activities (from
-  // log.activities, populated by sched_listActivitiesForDate_) with the
+  // log.activities, populated by activity_listForDate_) with the
   // unmaterialized bulk projection (scheduledActivities) — backend filters the
   // projection to exclude already-materialized ids, so dedup-by-id is enough.
   try {

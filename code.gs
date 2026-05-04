@@ -12,7 +12,8 @@ const TABS_ = {
   dailyLog: 'daily_log',
   maintenance: 'maintenance',
   checkouts: 'checkouts',
-  actTypes: 'activity_types',
+  // actTypes removed — activity templates live in the config sheet under
+  // key 'activity_templates' (legacy alias 'activity_types'), not a tab.
   // dailyCL removed — daily checklists now stored as JSON in config key 'dailyChecklist'
   incidents: 'incidents',
   trips: 'trips',
@@ -27,7 +28,7 @@ const TABS_ = {
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
   volunteerSignups: 'volunteer_signups',
-  scheduledEvents: 'scheduled_events',
+  activities: 'activities',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
   // All four handbook sections (roles/docs/contacts/info) now live as JSON
@@ -671,6 +672,7 @@ function ensureSheet_(tabKey, columns) {
   const name = TABS_[tabKey] || tabKey;
   const ss = ss_();
   let sh = ss.getSheetByName(name);
+  if (!sh) sh = _reconcileLegacyTab_(ss, name);
   if (!sh) {
     sh = ss.insertSheet(name);
     sh.getRange(1, 1, 1, columns.length).setValues([columns]);
@@ -949,9 +951,36 @@ function sweepExpiredSessions() {
 // SHEET HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Self-healing tab renames. Key = canonical sheet tab name; value = list of
+// legacy names to fall back to. If the canonical tab is missing but a legacy
+// name is present, _reconcileLegacyTab_ renames it via setName so existing
+// data is preserved and subsequent calls find it normally. Idempotent — a
+// no-op once the rename has happened.
+const LEGACY_TAB_ALIASES_ = {
+  'activities': ['scheduled_events'],
+};
+
+function _reconcileLegacyTab_(ss, canonicalName) {
+  var aliases = LEGACY_TAB_ALIASES_[canonicalName];
+  if (!aliases || !aliases.length) return null;
+  for (var i = 0; i < aliases.length; i++) {
+    var legacyName = aliases[i];
+    if (legacyName === canonicalName) continue;
+    var legacy = ss.getSheetByName(legacyName);
+    if (legacy) {
+      legacy.setName(canonicalName);
+      Logger.log('Renamed legacy sheet tab: "' + legacyName + '" → "' + canonicalName + '"');
+      return legacy;
+    }
+  }
+  return null;
+}
+
 function getSheet_(tabKey) {
   const name = TABS_[tabKey] || tabKey;
-  const s = ss_().getSheetByName(name);
+  const ss = ss_();
+  let s = ss.getSheetByName(name);
+  if (!s) s = _reconcileLegacyTab_(ss, name);
   if (!s) throw new Error('Tab not found: ' + name);
   return s;
 }

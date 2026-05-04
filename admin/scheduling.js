@@ -178,7 +178,7 @@ function _upcomingRowHtml(ev, L) {
 // Cancel one occurrence of a recurring activity class on a given date.
 // Confirms first (irreversible from the user's POV — they'd have to re-add
 // the date back if they change their mind), then POSTs to the backend which
-// writes a scheduled_events tombstone AND PATCHes the GCal master event's
+// writes an activities-row tombstone AND PATCHes the GCal master event's
 // instance to status='cancelled'. The Scheduling timeline refreshes so the
 // row drops out without a full page reload.
 async function cancelClassOccurrence(classId, dateISO) {

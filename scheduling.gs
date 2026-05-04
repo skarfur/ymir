@@ -2,7 +2,7 @@
 // SCHEDULING  —  single source of truth for activities (every concrete
 // occurrence at the club: signup-tracked or plain).
 // ═══════════════════════════════════════════════════════════════════════════════
-// Every row in scheduled_events represents one concrete activity instance.
+// Every row in the activities sheet represents one concrete occurrence.
 // The `signupRequired` boolean flags whether it's signup-tracked:
 //
 //   signupRequired=true  — has roles/leader, surfaced in the volunteer portal
@@ -12,7 +12,7 @@
 //
 // (The legacy `kind` column — 'volunteer' | 'activity' — is still written
 // alongside signupRequired during the transition. New code should consult
-// signupRequired; both fields are kept in lock-step by sched_rowShape_.)
+// signupRequired; both fields are kept in lock-step by activity_rowShape_.)
 //
 // An activity may be templated from an `activity_types` (a.k.a. activity
 // template) row via `activityTypeId`, or authored ad-hoc with no template.
@@ -24,7 +24,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── Row ↔ domain conversion ──────────────────────────────────────────────────
-// sched_parseRow_ takes a sanitized row from readAll_('scheduledEvents') and
+// activity_parseRow_ takes a sanitized row from readAll_('activities') and
 // returns a shape where `roles` is parsed back into an array and booleans are
 // unwrapped. Use this everywhere readers need the domain object.
 //
@@ -32,7 +32,7 @@
 // (no signupRequired cell yet), we derive it from the legacy `kind` column.
 // Both are emitted on the parsed object during the transition so frontend
 // callers that still read `.kind === 'volunteer'` continue to work.
-function sched_parseRow_(row) {
+function activity_parseRow_(row) {
   if (!row) return null;
   var roles = [];
   try { roles = row.roles ? JSON.parse(row.roles) : []; } catch (e) { roles = []; }
@@ -93,14 +93,14 @@ function sched_parseRow_(row) {
   };
 }
 
-// Inverse of sched_parseRow_ — takes a partial domain object and returns the
+// Inverse of activity_parseRow_ — takes a partial domain object and returns the
 // row shape suitable for insertRow_/updateRow_. Undefined fields pass through
 // so callers can do partial updates (updateRow_ ignores absent keys).
 //
 // signupRequired ↔ kind are written in lockstep: if the caller specified
 // either one, both are populated on the row so legacy and modern readers see
 // consistent values until `kind` is removed in a follow-up.
-function sched_rowShape_(ev) {
+function activity_rowShape_(ev) {
   var out = {};
   if (ev.id !== undefined)                    out.id = ev.id;
   // signupRequired is canonical; kind mirrors it for legacy compat.
@@ -153,7 +153,7 @@ function sched_rowShape_(ev) {
 // Lazy tab creation — a fresh deployment that hasn't had `setupSpreadsheet`
 // re-run yet still serves the pages that read scheduled events (they just
 // return empty lists until the migration populates rows).
-var SCHEDULED_EVENTS_COLS_ = [
+var ACTIVITIES_COLS_ = [
   'id','kind','signupRequired','status','source',
   'date','endDate','startTime','endTime',
   'activityTypeId','subtypeId','subtypeName',
@@ -170,25 +170,25 @@ var SCHEDULED_EVENTS_COLS_ = [
   'ablerRegistered','linkedGroupCheckoutIds','editedBy','editedAt',
 ];
 
-function ensureScheduledEventsSheet_() {
-  return ensureSheet_('scheduledEvents', SCHEDULED_EVENTS_COLS_);
+function ensureActivitiesSheet_() {
+  return ensureSheet_('activities', ACTIVITIES_COLS_);
 }
 
-function sched_getById_(id) {
+function activity_getById_(id) {
   if (!id) return null;
-  ensureScheduledEventsSheet_();
-  var row = findOne_('scheduledEvents', 'id', id);
-  return row ? sched_parseRow_(row) : null;
+  ensureActivitiesSheet_();
+  var row = findOne_('activities', 'id', id);
+  return row ? activity_parseRow_(row) : null;
 }
 
-function sched_listAll_() {
-  ensureScheduledEventsSheet_();
-  return (readAll_('scheduledEvents') || []).map(sched_parseRow_);
+function activity_listAll_() {
+  ensureActivitiesSheet_();
+  return (readAll_('activities') || []).map(activity_parseRow_);
 }
 
 // Activities surfaced by the volunteer portal — i.e. signup-tracked.
-function sched_listVolunteerEvents_() {
-  return sched_listAll_().filter(function (e) {
+function activity_listVolunteerEvents_() {
+  return activity_listAll_().filter(function (e) {
     if (!e || !e.signupRequired) return false;
     return e.status !== 'cancelled';
   });
@@ -197,20 +197,20 @@ function sched_listVolunteerEvents_() {
 // Plain (non-signup) activity rows for a specific date. Used by the daily-log
 // read path; projections for not-yet-materialized days stay in
 // projectActivitiesForDate_ (config.gs).
-function sched_listActivitiesForDate_(dateISO) {
+function activity_listForDate_(dateISO) {
   if (!dateISO) return [];
-  return sched_listAll_().filter(function (e) {
+  return activity_listAll_().filter(function (e) {
     return e && !e.signupRequired && e.date === dateISO && e.status !== 'cancelled';
   });
 }
 
 // Filter activities to a date range. Optional `kind` filter accepts the legacy
 // values 'volunteer' / 'activity' for backward compat, mapped to signupRequired.
-function sched_listInRange_(fromIso, toIso, kind) {
+function activity_listInRange_(fromIso, toIso, kind) {
   var wantSignup = null;
   if (kind === 'volunteer') wantSignup = true;
   else if (kind === 'activity') wantSignup = false;
-  return sched_listAll_().filter(function (e) {
+  return activity_listAll_().filter(function (e) {
     if (!e || e.status === 'cancelled') return false;
     if (wantSignup !== null && e.signupRequired !== wantSignup) return false;
     if (fromIso && (e.date || '') < fromIso) return false;
@@ -224,15 +224,15 @@ function sched_listInRange_(fromIso, toIso, kind) {
 // parent activity-template definition so the frontend can group/filter by tag
 // without a second config lookup. Optional activityTypeId / classTag filters
 // apply server-side; an empty filter passes through.
-function sched_listActivityLog_(fromIso, toIso, opts) {
+function activity_listLog_(fromIso, toIso, opts) {
   opts = opts || {};
-  var rows = sched_listInRange_(fromIso, toIso, 'activity');
+  var rows = activity_listInRange_(fromIso, toIso, 'activity');
   // Build id -> { classTag, classTagIS } map from saved activity types so the
   // response carries the tag without forcing the client to read getConfig.
   var typeMap = {};
   try {
     var cfgMap = getConfigMap_();
-    var types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
+    var types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]');
     (types || []).forEach(function (t) {
       if (t && t.id) typeMap[t.id] = { classTag: t.classTag || '', classTagIS: t.classTagIS || '' };
     });
@@ -300,7 +300,7 @@ function getActivityLog_(b) {
       from = Utilities.formatDate(capped, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     }
   } catch (e) {}
-  var activities = sched_listActivityLog_(from, to, {
+  var activities = activity_listLog_(from, to, {
     activityTypeId: b.activityTypeId,
     classTag:       b.classTag,
   });
@@ -311,17 +311,17 @@ function getActivityLog_(b) {
 
 // Upsert (insert or update) by id. If id is empty, a new uid is minted.
 // Returns the persisted domain object.
-function sched_upsert_(ev) {
-  if (!ev || typeof ev !== 'object') throw new Error('sched_upsert_: event required');
-  ensureScheduledEventsSheet_();
+function activity_upsert_(ev) {
+  if (!ev || typeof ev !== 'object') throw new Error('activity_upsert_: event required');
+  ensureActivitiesSheet_();
   var ts = now_();
   var id = ev.id || uid_();
-  var payload = sched_rowShape_(ev);
+  var payload = activity_rowShape_(ev);
   payload.id = id;
   payload.updatedAt = ts;
-  var existing = findOne_('scheduledEvents', 'id', id);
+  var existing = findOne_('activities', 'id', id);
   if (existing) {
-    updateRow_('scheduledEvents', 'id', id, payload);
+    updateRow_('activities', 'id', id, payload);
   } else {
     payload.createdAt = payload.createdAt || ts;
     // Fill required-but-missing fields with sane defaults so every row is
@@ -329,41 +329,41 @@ function sched_upsert_(ev) {
     // about.
     if (payload.status === undefined) payload.status = 'upcoming';
     if (payload.roles  === undefined) payload.roles  = '[]';
-    insertRow_('scheduledEvents', payload);
+    insertRow_('activities', payload);
   }
-  cDel_('sched_events_for_config');
+  cDel_('activities_for_config');
   // The outer 'config' cache embeds the volunteerEvents projection
   // (cancelled-activity tombstones too), so a scheduled-events write must
   // drop it too — otherwise getConfig_ short-circuits on its own cache
   // before ever consulting the freshly-cleared sub-cache.
   cDel_('config');
-  return sched_getById_(id);
+  return activity_getById_(id);
 }
 
 // Mark a row cancelled (soft delete). Keeps history + preserves the id so
 // volunteer_signups don't dangle. Returns true if the row existed.
-function sched_cancel_(id, updatedBy) {
+function activity_cancel_(id, updatedBy) {
   if (!id) return false;
-  var row = findOne_('scheduledEvents', 'id', id);
+  var row = findOne_('activities', 'id', id);
   if (!row) return false;
-  updateRow_('scheduledEvents', 'id', id, {
+  updateRow_('activities', 'id', id, {
     status: 'cancelled',
     updatedAt: now_(),
     updatedBy: updatedBy || '',
   });
-  cDel_('sched_events_for_config');
+  cDel_('activities_for_config');
   cDel_('config');
   return true;
 }
 
 // Hard delete — preferred for rows that were never materialized by a user
 // action (bulk-schedule reconciliation prune path). For rows with signups or
-// daily-log ties, use sched_cancel_ instead.
-function sched_hardDelete_(id) {
+// daily-log ties, use activity_cancel_ instead.
+function activity_hardDelete_(id) {
   if (!id) return false;
-  var ok = deleteRow_('scheduledEvents', 'id', id);
+  var ok = deleteRow_('activities', 'id', id);
   if (ok) {
-    cDel_('sched_events_for_config');
+    cDel_('activities_for_config');
     cDel_('config');
   }
   return ok;
@@ -371,7 +371,7 @@ function sched_hardDelete_(id) {
 
 // ── Batch helpers used by signup flows ───────────────────────────────────────
 
-function sched_signupCountsByEvent_() {
+function activity_signupCountsById_() {
   var out = {};
   var sus = [];
   try { ensureVolunteerSignupsTab_(); sus = readAll_('volunteerSignups') || []; } catch (e) { sus = []; }

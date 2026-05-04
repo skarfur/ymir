@@ -1,5 +1,5 @@
 // ══ ACTIVITY — CLIENT NORMALIZER ═════════════════════════════════════════════
-// Backend storage lives in the `scheduled_events` sheet (one row per concrete
+// Backend storage lives in the `activities` sheet (one row per concrete
 // activity occurrence). The canonical flag is `signupRequired` (boolean);
 // the legacy `kind` discriminator ('volunteer' | 'activity') is still emitted
 // in lockstep during the transition — see scheduling.gs.

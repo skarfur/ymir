@@ -526,7 +526,7 @@ function projectSlotsForDate_(dateISO, classes) {
   if (!dateISO) return [];
   var arr = classes;
   if (!arr) {
-    try { arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+    try { arr = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]'); } catch (e) { return []; }
   }
   if (!Array.isArray(arr) || !arr.length) return [];
   var dow = String(new Date(dateISO + 'T12:00:00').getDay());
@@ -574,7 +574,7 @@ function projectSlotsForDate_(dateISO, classes) {
 function projectSlotsForRange_(fromISO, toISO) {
   if (!fromISO || !toISO) return [];
   var classes = [];
-  try { classes = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  try { classes = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]'); } catch (e) { return []; }
   if (!Array.isArray(classes) || !classes.length) return [];
   var out = [];
   var d = new Date(fromISO + 'T00:00:00');
@@ -629,7 +629,7 @@ function gcalParseDateTime_(dateStr, timeStr) {
 // One Google Calendar recurring event per active activity class; the class
 // stores its `gcalSeriesEventId`. Members see the standing schedule as a
 // single recurring entry on their phones. Per-occurrence cancellations and
-// overrides are GCal exception PATCHes paired with local `scheduled_events`
+// overrides are GCal exception PATCHes paired with local `activities`
 // tombstone/override rows so the daily log + the calendar stay in sync.
 
 function syncClassRecurringEvent_(cls) {
@@ -716,7 +716,7 @@ function cancelClassOccurrence_(b) {
   //    suppressed by getSlots/projectActivitiesForDate when a real row with
   //    the same id exists. A status=cancelled row carries the suppression
   //    plus history.
-  sched_upsert_({
+  activity_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
     signupRequired:       false,
     status:               'cancelled',
@@ -788,7 +788,7 @@ function overrideClassOccurrence_(b) {
   var newEnd   = String(b.endTime).slice(0, 5);
   if (newEnd <= newStart) return failJ('endTime must be after startTime');
   var cls = _activityClassById_(classId);
-  sched_upsert_({
+  activity_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
     signupRequired:       false,
     status:               'upcoming',
@@ -822,9 +822,9 @@ function restoreClassOccurrence_(b) {
   var tombId  = 'sched-' + classId + '-' + dateISO;
   // Only act if the row is actually a cancelled tombstone — don't blow away
   // an override row that happens to share the deterministic id.
-  var existing = sched_getById_(tombId);
+  var existing = activity_getById_(tombId);
   if (existing && existing.status === 'cancelled') {
-    sched_hardDelete_(tombId);
+    activity_hardDelete_(tombId);
   }
   var cls = _activityClassById_(classId);
   if (cls && cls.calendarId && cls.gcalSeriesEventId) {
@@ -841,7 +841,7 @@ function restoreClassOccurrence_(b) {
 
 function _activityClassById_(id) {
   try {
-    var arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]');
+    var arr = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]');
     return arr.find(function(c) { return c && c.id === id; }) || null;
   } catch (e) { return null; }
 }
@@ -966,7 +966,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
   try {
     var cfgMap = getConfigMap_();
     var types = [];
-    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]'); } catch (e) {}
     var typeMap = {};
     types.forEach(function (t) { typeMap[t.id] = t; });
     var oldMap = {};
@@ -1026,7 +1026,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
 // (CacheService) to avoid hammering the Calendar API on every getDailyLog.
 function projectActivitiesFromCalendar_(cls, dateISO) {
   if (!cls || !cls.calendarId || !dateISO) return [];
-  var cacheKey = 'gcal_sched_' + cls.calendarId + '_' + dateISO;
+  var cacheKey = 'gcal_activity_' + cls.calendarId + '_' + dateISO;
   var cache = null;
   try { cache = CacheService.getScriptCache(); } catch (e) {}
   if (cache) {
@@ -1088,11 +1088,11 @@ function projectActivitiesFromCalendar_(cls, dateISO) {
 function syncVolunteerEventToCalendar_(eventId) {
   try {
     if (!eventId) return;
-    var ev = sched_getById_(eventId);
+    var ev = activity_getById_(eventId);
     if (!ev || !ev.signupRequired) return;
     var cfgMap = getConfigMap_();
     var types = [];
-    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]'); } catch (e) {}
     var atId = ev.activityTypeId || ev.sourceActivityTypeId || '';
     var at = null;
     for (var j = 0; j < types.length; j++) {
@@ -1111,7 +1111,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (bulkProjected) {
       if (ev.gcalEventId) {
         gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
-        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
       return;
@@ -1120,7 +1120,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (ev.status === 'cancelled' || ev.status === 'orphaned') {
       if (ev.gcalEventId) {
         gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
-        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
       return;
@@ -1140,7 +1140,7 @@ function syncVolunteerEventToCalendar_(eventId) {
       + (roleLines ? ('\n\nRoles:\n' + roleLines) : '');
     var newId = gcalUpsertEvent_(at.calendarId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
     if (newId && newId !== (ev.gcalEventId || '')) {
-      sched_upsert_({ id: ev.id, gcalEventId: newId });
+      activity_upsert_({ id: ev.id, gcalEventId: newId });
       cDel_('config');
     }
   } catch (e) { Logger.log('syncVolunteerEventToCalendar_ failed: ' + e); }
@@ -1156,7 +1156,7 @@ function deleteVolunteerEventCalendarEvent_(evRow) {
     var atId = evRow.activityTypeId || evRow.sourceActivityTypeId || '';
     if (!atId) return;
     var types = [];
-    try { types = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigSheetValue_('activity_templates') || '[]'); } catch (e) {}
     var at = null;
     for (var i = 0; i < types.length; i++) {
       if (types[i] && types[i].id === atId) { at = types[i]; break; }
