@@ -3,6 +3,27 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — daily-log: action button reflects sign-off state on today
+
+The bottom action button on `/dailylog/` previously read "Save & Sign
+off" on today's view regardless of whether the day was already signed
+off, and clicking it called `signOffDay` → `doSave(true)`, which
+re-stamped `signedOffBy` / `signedOffAt` over the original entry
+instead of recording an amendment.
+
+- `dailylog/dailylog.js`: button text is now driven by `logSignedOff`
+  alongside `isToday()`. "Save & Sign off" only shows on today before
+  sign-off; past/future days and today-after-sign-off both read "Save
+  amendments". The click handler routes the same way — only an
+  unsigned today triggers `signOffDay`; everything else confirms and
+  saves as an amendment via `doSave(false)`.
+- `dailylog/dailylog.js`: `doSave` promotes local state
+  (`logSignedOff` / `logSignedOffBy` / `logSignedOffAt`) on successful
+  sign-off and re-runs `updateDateNav` so the button immediately
+  switches to "Save amendments". Error path falls back to
+  `updateDateNav` too, keeping the today/past/future branching in
+  one place.
+
 ## Unreleased — daily-log caching: promote getDailyLog, consume prefetch
 
 Two issues in the daily-log frontend caused needless round-trips when
