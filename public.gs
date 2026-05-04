@@ -1181,7 +1181,7 @@ function saveVolunteerEvent_(b) {
     var todayIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
     var saved = sched_upsert_({
       id:                    b.id || '',
-      kind:                  'volunteer',
+      signupRequired:        true,
       status:                (_startIso && _startIso < todayIso) ? 'completed' : 'upcoming',
       source:                prev ? (prev.source || 'manual') : 'manual',
       activityTypeId:        b.activityTypeId || '',
@@ -1255,7 +1255,7 @@ function volunteerSignup_(b) {
       const ve = b.virtualEvent;
       evt = sched_upsert_({
         id:                    ve.id,
-        kind:                  'volunteer',
+        signupRequired:        true,
         status:                'upcoming',
         source:                'bulk',
         activityTypeId:        ve.activityTypeId || ve.sourceActivityTypeId || '',
@@ -1551,6 +1551,7 @@ function _volExpandedToDomain_(e) {
   return {
     id:                    e.id,
     kind:                  'volunteer',
+    signupRequired:        true,
     status:                'upcoming',
     source:                'bulk',
     date:                  e.date,
