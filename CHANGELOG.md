@@ -3,6 +3,50 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — Group Checkout: unified activity picker
+
+Replaces the broken Activity dropdown in the staff Group Checkout modal
+(which had nothing populating its option list) with a grouped picker
+that consolidates the previously-separate "set activity type" and "link
+to today's activity" flows. Three flavors:
+
+1. **Today's activities** — pick an existing scheduled occurrence for
+   today (materialized or projected); writes `linkedActivityId` on the
+   checkout. Same source as the post-create dlLinkModal previously used,
+   so the dropdown contents match.
+2. **Tags** — a flat list of `classTag` values pulled from the activity
+   templates (deduplicated). Useful for ad-hoc paddles that are tagged
+   "training" / "lesson" but aren't tied to a specific scheduled slot.
+   Writes `classTag` on the checkout.
+3. **+ Create activity for today…** — reveals an inline name + tag
+   form. Submitting mints an ad-hoc activity row (signupRequired=false,
+   start/end inherited from the checkout times) and links the new
+   checkout to it in one round-trip.
+
+Backend (`checkouts.gs`): `saveGroupCheckout_` accepts
+`linkedActivityId`, `classTag`, and an optional `newActivity` payload;
+when `newActivity` is provided it calls `activity_upsert_` first and
+uses the resulting id as `linkedActivityId`. `ensureGroupCols_` adds
+the new `linkedActivityId` and `classTag` columns to checkouts on
+first write. Cache invalidation map (`shared/api.js`) gains
+`saveGroupCheckout: ['getDailyLog','getActivityLog','getTrips']` since
+the new flow may mint an activity that surfaces in those views.
+
+Frontend (`staff/staff.js`, `staff/index.html`): `openGroupModal` is
+now async and fetches today's activities + class templates to build
+the grouped `<select>`. New `onGmActivityChange` handler reveals the
+inline form when "+ Create" is selected. `submitGroupCheckout`
+resolves the picker value to one of the three backend payloads and
+denormalizes a friendly label into `activityTypeName` so the existing
+group-card render keeps showing a badge. The auto-popup of the
+post-create `dlLinkModal` is removed (now redundant — the picker
+handles linking up front).
+
+The previous `_activityTypes` window global (which never got populated)
+is replaced by `window._activityTemplates`, populated from
+`cfgRes.activityTemplates || cfgRes.activityTypes` during the staff
+init's `Promise.all`.
+
 ## Unreleased — activities vocabulary cleanup (drop kind from new writes)
 
 Fourth step of the activities cleanup. After the migration in commit

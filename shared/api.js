@@ -269,6 +269,11 @@ var _INVALIDATES = {
   // Group sail ↔ activity link: trip cards' resolved Activity row reads
   // through this on the backend, so cached getTrips needs to drop.
   linkGroupCheckoutToActivity: ['getTrips'],
+  // saveGroupCheckout may mint a new ad-hoc activity row for today (when
+  // the user picks "+ Create activity for today" in the picker). That
+  // activity surfaces in the daily-log + activity-log views, so drop both.
+  // getTrips for the same reason as linkGroupCheckoutToActivity.
+  saveGroupCheckout:       ['getDailyLog', 'getActivityLog', 'getTrips'],
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],

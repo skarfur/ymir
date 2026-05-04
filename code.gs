@@ -1167,7 +1167,7 @@ function addColIfMissing_(tabKey, colName) {
   }
 }
 function ensureGroupCols_() {
-  ['isGroup','participants','staffNames','staffKennitalar','boatNames','boatIds','activityTypeId','activityTypeName'].forEach(c => addColIfMissing_('checkouts', c));
+  ['isGroup','participants','staffNames','staffKennitalar','boatNames','boatIds','activityTypeId','activityTypeName','linkedActivityId','classTag'].forEach(c => addColIfMissing_('checkouts', c));
 }
 function ensureActorCols_(tabKey) {
   ['actorKennitala','actorName'].forEach(c => addColIfMissing_(tabKey, c));

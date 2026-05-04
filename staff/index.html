@@ -285,8 +285,22 @@
         <select id="gmLocation"><option value="">—</option></select>
       </div>
       <div class="gm-field">
-        <label id="gmActivityLabel" for="gmActivity" data-s="staff.activityType"></label>
-        <select id="gmActivity"><option value="" data-s="staff.noneDash"></option></select>
+        <label id="gmActivityLabel" for="gmActivity" data-s="staff.activity"></label>
+        <select id="gmActivity" data-staff-change="onGmActivityChange"><option value="" data-s="staff.noneDash"></option></select>
+      </div>
+    </div>
+    <!-- Inline new-activity form, revealed when "+ Create activity for today" is picked. -->
+    <div class="gm-section gm-new-act d-none" id="gmNewActSection">
+      <div class="gm-section-label" data-s="staff.newActivityHeading"></div>
+      <div class="gm-row">
+        <div class="gm-field">
+          <label for="gmNewActName" data-s="staff.newActivityName"></label>
+          <input type="text" id="gmNewActName" autocomplete="off">
+        </div>
+        <div class="gm-field">
+          <label for="gmNewActTag" data-s="admin.classTag"></label>
+          <select id="gmNewActTag"><option value="">—</option></select>
+        </div>
       </div>
     </div>
     <div class="gm-row mb-16">
