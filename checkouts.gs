@@ -2,12 +2,23 @@
 // CHECKOUTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getActiveCheckouts_() {
+function getActiveCheckouts_(b) {
   // Compare against createdAt's UTC date since createdAt is stored as UTC ISO
   // via now_(); both operands must share the same reference frame.
   const todayUtc = now_().slice(0, 10);
+  const date = b && b.date ? String(b.date).slice(0, 10) : '';
   const all = readAll_('checkouts');
-  const result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '').slice(0, 10) === todayUtc));
+  // When a date is passed and it isn't today, return every checkout whose
+  // createdAt falls on that date — the daily-log "Link group checkout"
+  // picker uses this to allow post-facto linking on past daily logs. Today
+  // (or no date) keeps the original "active" semantics: currently-out plus
+  // anything checked back in earlier today.
+  let result;
+  if (date && date !== todayUtc) {
+    result = all.filter(c => (c.createdAt || '').slice(0, 10) === date);
+  } else {
+    result = all.filter(c => c.status === 'out' || (c.status === 'in' && (c.createdAt || '').slice(0, 10) === todayUtc));
+  }
   let memberMap = {};
   try { memberMap = getMemberMap_(); } catch (e) { }
   const enriched = result.map(c => {
