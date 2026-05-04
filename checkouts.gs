@@ -44,16 +44,16 @@ function getActiveCheckouts_(b) {
 // back to a generic "Group sail" label when the value is empty.
 //
 // Resolution order, per checkout:
-//   1. checkout.linkedActivityId → scheduledEvents.title  (Path A: link picker
+//   1. checkout.linkedActivityId → activities.title  (Path A: link picker
 //      shown right after launching the group sail)
-//   2. scheduledEvents.linkedGroupCheckoutIds[] contains checkout.id → that
+//   2. activities.linkedGroupCheckoutIds[] contains checkout.id → that
 //      activity's title  (Path B: link from the daily-log activity modal)
 //   3. checkout.activityTypeName, when an actual activityTypeId is set
 //      (gmActivity dropdown selection at launch time).
 function buildGroupLabelMap_() {
   var labels = {};
   var sched = [];
-  try { sched = (readAll_('scheduledEvents') || []).filter(function (r) { return r && r.kind === 'activity'; }); } catch (e) { sched = []; }
+  try { sched = (readAll_('activities') || []).filter(function (r) { return r && !(r.signupRequired === true || r.signupRequired === 'TRUE' || r.signupRequired === 'true'); }); } catch (e) { sched = []; }
   var schedById = {};
   sched.forEach(function (r) { if (r.id) schedById[String(r.id)] = r; });
   var checkouts = [];
