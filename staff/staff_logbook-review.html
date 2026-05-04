@@ -124,6 +124,31 @@
 
   </div>
 
+  <!-- ══ ACTIVITY LOGS ══════════════════════════════════════════════════════ -->
+  <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px">
+    <div class="section-label mb-4" data-s="slr.act.title"></div>
+    <div class="text-sm text-muted mb-14" data-s="slr.act.subtitle"></div>
+
+    <div class="filter-bar">
+      <select id="actFilterTag" data-slr-change="applyActivityFilters">
+        <option value="" id="actFilterTagAll"></option>
+      </select>
+      <select id="actFilterType" data-slr-change="applyActivityFilters">
+        <option value="" id="actFilterTypeAll"></option>
+      </select>
+      <input type="text" id="actFilterSearch" data-slr-input="applyActivityFilters">
+      <input type="date" id="actFilterFrom" data-slr-change="reloadActivityLog">
+      <input type="date" id="actFilterTo"   data-slr-change="reloadActivityLog">
+      <label class="flex-center gap-6 text-sm text-muted cursor-pointer">
+        <input type="checkbox" id="actFilterLogged" data-slr-change="applyActivityFilters">
+        <span data-s="slr.act.loggedOnly"></span>
+      </label>
+    </div>
+
+    <div id="actSummary" class="text-xs text-muted mb-8"></div>
+    <div id="actList"><div class="empty-note" data-s="lbl.loading"></div></div>
+  </div>
+
 <script src="staff_logbook-review.js" defer></script>
 </body>
 </html>

@@ -159,6 +159,94 @@ function sched_listInRange_(fromIso, toIso, kind) {
   });
 }
 
+// Activity-log read for staff Logbook Review. Returns concrete activity rows
+// (kind='activity') in a date range, enriched with classTag from the parent
+// activity-type definition so the frontend can group/filter by tag without a
+// second config lookup. Optional activityTypeId / classTag filters apply
+// server-side; an empty filter passes through.
+function sched_listActivityLog_(fromIso, toIso, opts) {
+  opts = opts || {};
+  var rows = sched_listInRange_(fromIso, toIso, 'activity');
+  // Build id -> { classTag, classTagIS } map from saved activity types so the
+  // response carries the tag without forcing the client to read getConfig.
+  var typeMap = {};
+  try {
+    var cfgMap = getConfigMap_();
+    var types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
+    (types || []).forEach(function (t) {
+      if (t && t.id) typeMap[t.id] = { classTag: t.classTag || '', classTagIS: t.classTagIS || '' };
+    });
+  } catch (e) { typeMap = {}; }
+  var wantType = String(opts.activityTypeId || '').trim();
+  var wantTag  = String(opts.classTag || '').trim();
+  var out = [];
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (wantType && r.activityTypeId !== wantType) continue;
+    var meta = typeMap[r.activityTypeId] || {};
+    if (wantTag && (meta.classTag || '') !== wantTag) continue;
+    var runNotes = r.runNotes || '';
+    out.push({
+      id:              r.id,
+      date:            r.date,
+      startTime:       r.startTime,
+      endTime:         r.endTime,
+      activityTypeId:  r.activityTypeId,
+      classTag:        meta.classTag   || '',
+      classTagIS:      meta.classTagIS || '',
+      subtypeId:       r.subtypeId,
+      subtypeName:     r.subtypeName,
+      title:           r.title,
+      titleIS:         r.titleIS,
+      participants:    r.participants,
+      notes:           r.notes,
+      runNotes:        runNotes,
+      hasLog:          !!String(runNotes).trim(),
+      leaderMemberId:  r.leaderMemberId,
+      leaderName:      r.leaderName,
+      status:          r.status,
+      updatedBy:       r.updatedBy,
+      updatedAt:       r.updatedAt,
+    });
+  }
+  // Newest first — mirrors the trips list ordering on the same page.
+  out.sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (a.startTime || '') < (b.startTime || '') ? 1 : -1;
+  });
+  return out;
+}
+
+// Public handler for the staff Logbook Review activity-log section.
+// Defaults to the last 90 days; hard-caps the range at 366 days so a
+// runaway client can't pull every row in the sheet.
+function getActivityLog_(b) {
+  b = b || {};
+  var to   = String(b.to   || '').trim() || nowLocalDate_();
+  var from = String(b.from || '').trim();
+  if (!from) {
+    var d = new Date(to + 'T00:00:00');
+    d.setDate(d.getDate() - 90);
+    from = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  // Cap span to keep the response bounded.
+  try {
+    var dFrom = new Date(from + 'T00:00:00');
+    var dTo   = new Date(to   + 'T00:00:00');
+    var spanDays = Math.round((dTo - dFrom) / 86400000);
+    if (spanDays > 366) {
+      var capped = new Date(dTo);
+      capped.setDate(capped.getDate() - 366);
+      from = Utilities.formatDate(capped, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+  } catch (e) {}
+  var activities = sched_listActivityLog_(from, to, {
+    activityTypeId: b.activityTypeId,
+    classTag:       b.classTag,
+  });
+  return okJ({ activities: activities, from: from, to: to });
+}
+
 // ── Writes ───────────────────────────────────────────────────────────────────
 
 // Upsert (insert or update) by id. If id is empty, a new uid is minted.

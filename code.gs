@@ -144,6 +144,7 @@ const STAFF_ACTIONS_ = {
   saveFlagOverride:            true,   // staff-set weather flag override
   saveStaffStatus:             true,   // staff on-duty / support-boat toggle
   reassignMaintenance:         true,   // flip a request between maint and saumaklúbbur
+  getActivityLog:              true,   // staff logbook-review activity-log section
 };
 
 // Actions that mutate a specific member's own data. The caller's kennitala
@@ -1264,6 +1265,8 @@ function route_(action, b, caller) {
     case 'deactivateMembers': return deactivateMembers_(b.ids);
     case 'savePreferences': return savePreferences_(b);
     case 'getDailyLog': return getDailyLog_(b.date);
+    case 'saveDailyLog': return saveDailyLog_(b);
+    case 'getActivityLog': return getActivityLog_(b);
     case 'saveDailyLog': return saveDailyLog_(b, caller);
     case 'getMaintenance': return getMaintenance_();
     case 'saveMaintenance': return saveMaintenance_(b);

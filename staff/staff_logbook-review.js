@@ -16,6 +16,11 @@ let _dataLoaded = false;
 // Currently selected member in the cert panel
 let _certMember = null;   // { id, name, kennitala }
 
+// Activity-log section state — populated by loadActivityLog()
+let _actTypes      = [];  // activity-type config rows (for dropdown labels + classTag map)
+let _actAll        = [];  // last-fetched activity rows (server already filtered by date range)
+let _actDataLoaded = false;
+
 // Helpers required by shared/tripcard.js (each portal that uses tripCard
 // provides its own — keep in sync with captain.js / logbook/logbook.js).
 function parseDateParts(d) {
@@ -39,6 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filterOptPending').textContent  = s('logrev.filterPending');
   document.getElementById('filterOptVerified').textContent = s('logrev.filterVerified');
   document.getElementById('certMemberSearch').placeholder  = s('logrev.certSearchPlaceholder');
+  document.getElementById('actFilterSearch').placeholder   = s('slr.act.searchPlaceholder');
+  document.getElementById('actFilterFrom').title           = s('logrev.filterFrom');
+  document.getElementById('actFilterTo').title             = s('logrev.filterTo');
+  document.getElementById('actFilterTagAll').textContent   = s('slr.act.allTags');
+  document.getElementById('actFilterTypeAll').textContent  = s('slr.act.allTypes');
 
   init();
 });
@@ -70,6 +80,14 @@ async function init() {
 
     // Populate cert-type dropdown once
     populateCertFilterType();
+
+    // Activity-log section setup: dropdowns from activityTypes config + first
+    // fetch over the default range (last 30 days). Filters are client-side
+    // except date range, which re-fetches.
+    _actTypes = cfgRes.activityTypes || [];
+    populateActivityFilters();
+    initActivityDateInputs();
+    loadActivityLog();
 
     // Enrich trips with resolved member name where missing
     allTrips = (tripsRes.trips || [])
@@ -366,6 +384,157 @@ function applyCertFilter() {
         <div class="flex-1 text-base">${esc(m.name)}<span class="text-xs text-muted" style="margin-left:6px">${esc(m.role||'')}</span>${expiry}</div>
       </div>`;
     }).join('');
+}
+
+// ── Activity log section ──────────────────────────────────────────────────────
+// Default range mirrors the server's fallback (last 30 days). Filling the
+// inputs lets the user widen or narrow without first guessing dates.
+function initActivityDateInputs() {
+  var today = todayISO();
+  var d = new Date(today + 'T00:00:00');
+  d.setDate(d.getDate() - 30);
+  var from = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+  var fromEl = document.getElementById('actFilterFrom');
+  var toEl   = document.getElementById('actFilterTo');
+  if (fromEl && !fromEl.value) fromEl.value = from;
+  if (toEl   && !toEl.value)   toEl.value   = today;
+}
+
+function populateActivityFilters() {
+  var tagSel  = document.getElementById('actFilterTag');
+  var typeSel = document.getElementById('actFilterType');
+  if (!tagSel || !typeSel) return;
+  // Distinct class tags (server uses the EN form for filtering).
+  var tagSeen = {};
+  var tagOpts = [];
+  (_actTypes || []).forEach(function (t) {
+    if (!t || !t.classTag) return;
+    if (tagSeen[t.classTag]) return;
+    tagSeen[t.classTag] = true;
+    tagOpts.push({ value: t.classTag, label: actTagLabel(t) });
+  });
+  tagOpts.sort(function (a, b) { return a.label.localeCompare(b.label); });
+  // Preserve "All tags" option (already in the markup) and append the rest.
+  tagSel.querySelectorAll('option:not(#actFilterTagAll)').forEach(function (o) { o.remove(); });
+  tagOpts.forEach(function (o) {
+    var opt = document.createElement('option');
+    opt.value = o.value;
+    opt.textContent = o.label;
+    tagSel.appendChild(opt);
+  });
+  // Activity types: only those with an id, sorted by displayed name.
+  var typeOpts = (_actTypes || [])
+    .filter(function (t) { return t && t.id; })
+    .map(function (t)    { return { id: t.id, label: actTypeLabel(t) }; })
+    .sort(function (a, b) { return a.label.localeCompare(b.label); });
+  typeSel.querySelectorAll('option:not(#actFilterTypeAll)').forEach(function (o) { o.remove(); });
+  typeOpts.forEach(function (t) {
+    var opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.label;
+    typeSel.appendChild(opt);
+  });
+}
+
+function actTypeLabel(t) {
+  if (!t) return '';
+  return (L === 'IS' && t.nameIS) ? t.nameIS : (t.name || t.nameIS || '');
+}
+function actTagLabel(t) {
+  if (!t) return '';
+  return (L === 'IS' && t.classTagIS) ? t.classTagIS : (t.classTag || t.classTagIS || '');
+}
+
+async function loadActivityLog() {
+  var from = document.getElementById('actFilterFrom').value;
+  var to   = document.getElementById('actFilterTo').value;
+  var listEl = document.getElementById('actList');
+  if (listEl) listEl.innerHTML = `<div class="empty-note">${s('lbl.loading')}</div>`;
+  try {
+    var res = await apiPost('getActivityLog', { from: from, to: to });
+    _actAll = res.activities || [];
+    _actDataLoaded = true;
+    applyActivityFilters();
+  } catch (e) {
+    if (listEl) listEl.innerHTML =
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+  }
+}
+
+function reloadActivityLog() { loadActivityLog(); }
+
+function applyActivityFilters() {
+  if (!_actDataLoaded) return;
+  var tag    = document.getElementById('actFilterTag').value;
+  var typeId = document.getElementById('actFilterType').value;
+  var q      = document.getElementById('actFilterSearch').value.trim().toLowerCase();
+  var loggedOnly = document.getElementById('actFilterLogged').checked;
+  var rows = _actAll.filter(function (a) {
+    if (tag    && (a.classTag || '') !== tag) return false;
+    if (typeId && a.activityTypeId !== typeId) return false;
+    if (loggedOnly && !a.hasLog) return false;
+    if (q) {
+      var hay = [a.title, a.subtypeName, a.participants, a.notes, a.runNotes, a.leaderName]
+        .map(function (v) { return (v || '').toLowerCase(); }).join(' ');
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+  renderActivityLog(rows);
+}
+
+function renderActivityLog(rows) {
+  var summaryEl = document.getElementById('actSummary');
+  var listEl    = document.getElementById('actList');
+  if (!listEl) return;
+  if (summaryEl) {
+    var loggedCount = rows.filter(function (a) { return a.hasLog; }).length;
+    summaryEl.textContent = s('slr.act.summary')
+      .replace('{n}',      String(rows.length))
+      .replace('{logged}', String(loggedCount));
+  }
+  if (!rows.length) {
+    listEl.innerHTML = `<div class="empty-note">${s('slr.act.empty')}</div>`;
+    return;
+  }
+  listEl.innerHTML = rows.map(activityCardHTML).join('');
+}
+
+function activityCardHTML(a) {
+  var tagLbl = (L === 'IS' && a.classTagIS) ? a.classTagIS : a.classTag;
+  var titleLbl = (L === 'IS' && a.titleIS) ? a.titleIS : (a.title || a.titleIS || '');
+  if (a.subtypeName) titleLbl += ' · ' + a.subtypeName;
+  var time = (a.startTime || a.endTime)
+    ? `<span class="text-xs text-muted" style="margin-left:6px">${esc(a.startTime || '')}${a.endTime ? '–' + esc(a.endTime) : ''}</span>`
+    : '';
+  var tagBadge = tagLbl
+    ? `<span class="slr-act-tag">${esc(tagLbl)}</span>`
+    : '';
+  var leaderLine = a.leaderName
+    ? `<div class="text-xs text-muted">${esc(s('slr.act.leader'))}: ${esc(a.leaderName)}</div>`
+    : '';
+  var participantsLine = a.participants
+    ? `<div class="text-xs text-muted">${esc(s('slr.act.participants'))}: ${esc(a.participants)}</div>`
+    : '';
+  var notesLine = a.notes
+    ? `<div class="text-sm mt-6"><span class="text-xs text-muted">${esc(s('slr.act.brief'))}:</span> ${esc(a.notes)}</div>`
+    : '';
+  var logLine = a.hasLog
+    ? `<div class="text-sm mt-6 slr-act-log"><span class="text-xs text-muted">${esc(s('slr.act.log'))}:</span> ${esc(a.runNotes)}</div>`
+    : `<div class="text-xs text-muted mt-6 fst-italic">${esc(s('slr.act.noLog'))}</div>`;
+  return `<div class="slr-act-card${a.hasLog ? '' : ' slr-act-card-empty'}">
+    <div class="flex-between mb-4">
+      <div class="fw-500">${esc(titleLbl || '—')}${time}</div>
+      ${tagBadge}
+    </div>
+    <div class="text-xs text-muted mb-4">${esc(a.date)}</div>
+    ${leaderLine}
+    ${participantsLine}
+    ${notesLine}
+    ${logLine}
+  </div>`;
 }
 
 // Minimal trip-card delegation — staff doesn't load shared/logbook.js, so we
