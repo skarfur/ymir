@@ -190,14 +190,32 @@ function ensureTab_(ss, tabName, cols) {
     Logger.log('Created tab: ' + tabName + ' (' + cols.length + ' columns)');
     return sheet;
   }
-  // Tab exists — add any missing columns
-  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  // Tab exists — add any missing columns. Trim existing headers so a stray
+  // whitespace edit doesn't trick us into appending a duplicate column with
+  // the same logical name (writes go to indexOf-first, reads to last —
+  // silent divergence). Same trim applied to runtime reads in
+  // getSheetData_, so this stays in sync.
+  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+  // Loud-warn duplicates so a recurrence is visible in the migration log.
+  var seen = {}, dupes = [];
+  existing.forEach(function (h) {
+    if (!h) return;
+    if (seen[h]) { if (dupes.indexOf(h) === -1) dupes.push(h); }
+    else seen[h] = true;
+  });
+  if (dupes.length) {
+    Logger.log('⚠ Duplicate headers in tab "' + tabName + '": ' + dupes.join(', ')
+      + ' — writes hit indexOf(first), reads keep last; clean the sheet manually.');
+  }
   cols.forEach(function(col) {
-    if (!existing.includes(col)) {
+    var c = String(col == null ? '' : col).trim();
+    if (!c) return;
+    if (!existing.includes(c)) {
       var nextCol = existing.length + 1;
-      sheet.getRange(1, nextCol).setValue(col);
-      existing.push(col);
-      Logger.log('Added column "' + col + '" to tab "' + tabName + '"');
+      sheet.getRange(1, nextCol).setValue(c);
+      existing.push(c);
+      Logger.log('Added column "' + c + '" to tab "' + tabName + '"');
     }
   });
   return sheet;

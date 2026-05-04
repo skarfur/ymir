@@ -1034,7 +1034,31 @@ function getSheetData_(tabKey) {
   if (_sheetCache_[tabKey]) return _sheetCache_[tabKey];
   const sheet = getSheet_(tabKey);
   const data = sheet.getDataRange().getValues();
-  const headers = (data[0] || []).map(String);
+  // Trim header strings — a stray trailing space on a manually edited cell
+  // would otherwise break headers.indexOf() / .includes() and trick
+  // addColIfMissing_ into appending a duplicate column with the same
+  // logical name. Trim happens once here so every downstream caller sees
+  // clean keys.
+  const headers = (data[0] || []).map(function (h) { return String(h).trim(); });
+  // Loudly flag duplicate headers — they cause silent write/read divergence:
+  // updateRow_ / findOne_ / addColIfMissing_ key off the first match
+  // (indexOf), but readAll_'s `headers.forEach((h,i) => o[h] = …)` lets the
+  // last occurrence overwrite the first into the same JS key. So writes hit
+  // one column and reads return the other. Surface once per cache load
+  // (cached by getSheetData_ itself) so the warning fires when the data is
+  // actually read but doesn't spam every individual call.
+  var _seen = {}, _dupes = [];
+  for (var _i = 0; _i < headers.length; _i++) {
+    var _h = headers[_i];
+    if (!_h) continue;
+    if (_seen[_h]) { if (_dupes.indexOf(_h) === -1) _dupes.push(_h); }
+    else _seen[_h] = true;
+  }
+  if (_dupes.length) {
+    Logger.log('⚠ Duplicate headers in tab "' + (TABS_[tabKey] || tabKey) + '": '
+      + _dupes.join(', ')
+      + ' — writes hit indexOf(first), reads keep the last; clean the sheet.');
+  }
   // Raw, unfiltered — updateRow_'s (i + 2) arithmetic depends on this array
   // matching the actual sheet row positions. readAll_ applies the
   // trailing-blank filter in its mapping step.
@@ -1096,9 +1120,14 @@ function insertRow_(tabKey, obj) {
 }
 
 function addColIfMissing_(tabKey, colName) {
+  // Trim defensively — every sheet read trims headers (see getSheetData_),
+  // so the comparison would mismatch if the caller passed a name with stray
+  // whitespace; same for the value we'd write into the new cell.
+  var col = String(colName == null ? '' : colName).trim();
+  if (!col) return;
   const c = getSheetData_(tabKey);
-  if (!c.headers.includes(colName)) {
-    c.sheet.getRange(1, c.headers.length + 1).setValue(colName);
+  if (!c.headers.includes(col)) {
+    c.sheet.getRange(1, c.headers.length + 1).setValue(col);
     // Force the pending write to be committed before we re-read the sheet,
     // otherwise getDataRange().getValues() in the next getSheetData_ call
     // may return stale data that doesn't include the new column header.
