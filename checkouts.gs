@@ -226,6 +226,34 @@ function saveGroupCheckout_(b, caller) {
   const boatNames      = Array.isArray(b.boatNames)       ? b.boatNames       : tryParseArr_(b.boatNames);
   const staffNames     = Array.isArray(b.staffNames)      ? b.staffNames      : tryParseArr_(b.staffNames);
   const staffKennitalar= Array.isArray(b.staffKennitalar) ? b.staffKennitalar : tryParseArr_(b.staffKennitalar);
+
+  // Activity association — three flavors:
+  //   1. linkedActivityId (the group is part of an existing scheduled activity)
+  //   2. classTag (no instance link, just a coarse category)
+  //   3. newActivity (mint an ad-hoc activity for today, then link it)
+  // The frontend picker normalizes its choice into one of these before POST.
+  let linkedActivityId = String(b.linkedActivityId || '');
+  let classTag         = String(b.classTag || '');
+  if (b.newActivity && typeof b.newActivity === 'object' && (b.newActivity.name || b.newActivity.classTag)) {
+    var na = b.newActivity;
+    var todayIso = nowLocalDate_();
+    var startTime = na.startTime || b.checkedOutAt || nowLocalTime_();
+    var endTime   = na.endTime   || b.expectedReturn || '';
+    var newAct = activity_upsert_({
+      signupRequired: false,
+      status:         'upcoming',
+      source:         'manual',
+      date:           todayIso,
+      startTime:      startTime,
+      endTime:        endTime,
+      activityTypeId: String(na.activityTypeId || ''),
+      title:          String(na.name || na.classTag || ''),
+      updatedBy:      actorName_(caller),
+    });
+    linkedActivityId = newAct ? newAct.id : '';
+    if (!classTag) classTag = String(na.classTag || '');
+  }
+
   insertRow_('checkouts', {
     id,
     boatId:          boatIds.join(','),
@@ -251,11 +279,13 @@ function saveGroupCheckout_(b, caller) {
     boatIds:         JSON.stringify(boatIds),
     activityTypeId:  b.activityTypeId || '',
     activityTypeName:b.activityTypeName || '',
+    linkedActivityId,
+    classTag,
     actorKennitala:  actorKt_(caller),
     actorName:       actorName_(caller),
   });
   cDel_('checkouts');
-  return okJ({ id, created: true });
+  return okJ({ id, created: true, linkedActivityId, classTag });
 }
 
 function groupCheckIn_(b, caller) {

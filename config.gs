@@ -164,7 +164,7 @@ function getCertCategoriesFromMap_(cfgMap) {
 // (for the daily-log virtual-suppression list). The 60s getConfig cache covers
 // the hot path; this cache survives many config rebuilds (5min TTL) so plain
 // config writes — flagConfig, staffStatus, etc. — don't pay for a fresh
-// the activities sheet sheet read. Invalidated by activity_upsert_ / activity_cancel_ /
+// the activities sheet read. Invalidated by activity_upsert_ / activity_cancel_ /
 // activity_hardDelete_ so any actual scheduled-events write rebuilds it.
 //
 // We cache parsed rows, not DTOs, so changes to activity_types (which feed the
@@ -523,7 +523,7 @@ function deleteActivityType_(id) {
     arr = arr.filter(a => a.id !== id);
     setConfigSheetValue_('activity_templates', JSON.stringify(arr));
     // Master GCal recurring event tear-down. Per-instance exceptions stored
-    // as the activities sheet rows are pruned by the cascade below.
+    // as activity rows are pruned by the cascade below.
     if (deletedCls && deletedCls.calendarId && deletedCls.gcalSeriesEventId) {
       try { Calendar.Events.remove(deletedCls.calendarId, deletedCls.gcalSeriesEventId); } catch (e) {}
     }

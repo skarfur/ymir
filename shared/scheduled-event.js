@@ -1,14 +1,13 @@
 // ══ ACTIVITY — CLIENT NORMALIZER ═════════════════════════════════════════════
 // Backend storage lives in the `activities` sheet (one row per concrete
-// activity occurrence). The canonical flag is `signupRequired` (boolean);
-// the legacy `kind` discriminator ('volunteer' | 'activity') is still emitted
-// in lockstep during the transition — see scheduling.gs.
+// activity occurrence). The canonical flag is `signupRequired` (boolean) —
+// see scheduling.gs.
 //
 // On the client we keep the two existing API surfaces
 // (getConfig().volunteerEvents and getDailyLog().log.activities) and project
 // them through a single shape for views that want a unified timeline:
 //
-//   { id, kind, signupRequired, source, status,
+//   { id, signupRequired, source, status,
 //     date, endDate, startTime, endTime,
 //     activityTypeId, subtypeId, subtypeName,
 //     title, titleIS, notes, notesIS,
@@ -18,8 +17,7 @@
 //     gcalEventId,
 //     raw }
 //
-//   signupRequired ∈ { true, false }   — canonical
-//   kind           ∈ { 'volunteer', 'activity' }   — legacy mirror
+//   signupRequired ∈ { true, false }
 //   source         ∈ { 'bulk' | 'calendar' | 'manual' | 'daily-log' }
 
 (function (global) {
@@ -33,28 +31,27 @@
 
   // Normalize a single raw row (volunteer event DTO from getConfig, or a
   // daily-log activity from getDailyLog) into the unified Activity shape.
-  // `opts.signupRequired` (or legacy `opts.kind`) determines the flavor;
-  // `opts.source` defaults to a sensible guess.
+  // `opts.signupRequired` determines the flavor (legacy `opts.kind` is still
+  // accepted for back-compat); `opts.source` defaults to a sensible guess.
   function toScheduledEvent(raw, opts) {
     if (!raw) return null;
     opts = opts || {};
-    // Resolve signupRequired from explicit opt, legacy opts.kind, or by
-    // sniffing the raw row (presence of roles/leaderName implies a
-    // signup-tracked activity).
+    // Resolve signupRequired from explicit opt, raw row, or by sniffing
+    // (presence of roles/leaderName implies a signup-tracked activity).
+    // Legacy `kind` is consulted as a final fallback for stragglers.
     var signupRequired;
     if (opts.signupRequired === true || opts.signupRequired === false) {
       signupRequired = opts.signupRequired;
-    } else if (opts.kind) {
-      signupRequired = (opts.kind === 'volunteer');
     } else if (raw.signupRequired === true || raw.signupRequired === false) {
       signupRequired = raw.signupRequired;
+    } else if (opts.kind) {
+      signupRequired = (opts.kind === 'volunteer');
     } else if (raw.kind) {
       signupRequired = (raw.kind === 'volunteer');
     } else {
       signupRequired = !!(raw.roles || raw.leaderName);
     }
-    var kind = signupRequired ? 'volunteer' : 'activity';
-    var source = opts.source || _guessSource(raw, kind);
+    var source = opts.source || _guessSource(raw, signupRequired);
     var roles = _parse(raw.roles, []);
     var capacity = roles.reduce(function (acc, r) { return acc + (Number(r && r.slots) || 0); }, 0);
     var status = raw.status
@@ -62,7 +59,6 @@
       || (_isPastDate(raw.date) ? 'completed' : 'upcoming');
     return {
       id:                raw.id || '',
-      kind:              kind,
       signupRequired:    signupRequired,
       source:            source,
       status:            status,
@@ -92,8 +88,8 @@
     };
   }
 
-  function _guessSource(raw, kind) {
-    if (kind === 'activity') {
+  function _guessSource(raw, signupRequired) {
+    if (!signupRequired) {
       if (String(raw.id || '').indexOf('gcal-')  === 0) return 'calendar';
       if (String(raw.id || '').indexOf('sched-') === 0) return 'bulk';
       return 'daily-log';

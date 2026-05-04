@@ -1155,7 +1155,7 @@ function publicShareRecord_(b) {
 
 
 // ── VOLUNTEERS ──────────────────────────────────────────────────────────────
-// Volunteer events live in the the activities sheet sheet (kind='volunteer'). See
+// Volunteer events live in the activities sheet (signupRequired=true). See
 // scheduling.gs for the read/write primitives. Signups keep their own sheet
 // (volunteer_signups) and reference the activities sheet.id via `eventId`.
 
@@ -1298,7 +1298,7 @@ function volunteerWithdraw_(b) {
   } catch(e) { return failJ('volunteerWithdraw failed: ' + e.message); }
 }
 
-// Shape a the activities sheet row into the legacy volunteer-event DTO the
+// Shape an activities-sheet row into the legacy volunteer-event DTO the
 // frontend expects. Preserves the old field names (subtitle, active) so the
 // admin + member volunteer pages keep working without changes.
 //
@@ -1376,7 +1376,7 @@ function ensureVolunteerSignupsTab() {
 // ── Materialize bulk-scheduled volunteer events ─────────────────────────────
 // When an activity type is flagged as volunteer and its subtypes define a
 // bulkSchedule, each occurrence should exist as a concrete row in
-// the activities sheet so admins can view/edit/delete it individually. This
+// the activities sheet so admins can view/edit/delete the row individually. This
 // mirrors the logic in shared/volunteer.js (expandVolunteerActivityTypes) but
 // runs on the backend so that events are persisted, not computed lazily on
 // the client.
@@ -1550,7 +1550,6 @@ function syncVolunteerEvents_(b) {
 function _volExpandedToDomain_(e) {
   return {
     id:                    e.id,
-    kind:                  'volunteer',
     signupRequired:        true,
     status:                'upcoming',
     source:                'bulk',

@@ -56,6 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       apiGet('getMaintenance').catch(() => ({ requests: [] })),
     ]);
     _cfgRes = cfgRes;
+    // Stash activity templates on window so the Group Checkout picker can
+    // build its classTag list. Falls back to the legacy `activityTypes` key
+    // for old/cached backends.
+    window._activityTemplates = cfgRes.activityTemplates || cfgRes.activityTypes || [];
     checkouts   = coRes.checkouts  || [];
     boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -749,13 +753,17 @@ async function toggleBoatAvailability(boatId) {
 // ══ GROUP CHECKOUT ═══════════════════════════════════════════════════════════
 let _groupBoats = new Set();
 let _groupParticipants = 0;
+// Picker state — populated in openGroupModal so submitGroupCheckout can
+// resolve a chosen "link:<id>" value back to a friendly display name and
+// denormalize it onto the checkout's activityTypeName for the group card.
+let _gmTodayActs = [];
 
-function openGroupModal() {
+async function openGroupModal() {
   document.getElementById('groupModalTitle').textContent = s('staff.groupCheckoutTitle');
   document.getElementById('gmBoatsLabel').textContent    = s('staff.selectBoats');
   document.getElementById('gmParticLabel').textContent   = s('staff.participants');
   document.getElementById('gmLocLabel').textContent      = s('lbl.location');
-  document.getElementById('gmActivityLabel').textContent = s('staff.activityType');
+  document.getElementById('gmActivityLabel').textContent = s('staff.activity');
   _groupBoats = new Set();
   _groupParticipants = 0;
   document.getElementById('gmParticCount').textContent = '0';
@@ -763,6 +771,9 @@ function openGroupModal() {
   document.getElementById('gmErr').style.display = 'none';
   document.getElementById('gmTimeOut').value = fmtTimeNow();
   document.getElementById('gmReturnBy').value = '';
+  document.getElementById('gmNewActSection').classList.add('d-none');
+  document.getElementById('gmNewActName').value = '';
+  document.getElementById('gmNewActTag').value  = '';
   const grid = document.getElementById('gmBoatGrid');
   const active = checkouts.filter(c => c.status === 'out');
   grid.innerHTML = '';
@@ -785,18 +796,99 @@ function openGroupModal() {
   locations.filter(l => l.type !== 'port').forEach(l => { const o=document.createElement('option'); o.value=l.id; o.textContent=l.name; lSel.appendChild(o); });
   const foss = locations.filter(l => l.type !== 'port').find(l => l.name && l.name.toLowerCase().includes('fossvogur'));
   if (foss) lSel.value = foss.id;
+
+  // Activity picker — three flavors:
+  //   link:<id>  → existing scheduled activity for today (linkedActivityId)
+  //   tag:<tag>  → coarse classTag, no instance link
+  //   new        → reveals inline form to mint an ad-hoc activity for today
+  // Today's activities are merged from materialized + bulk-projected, the
+  // same source openDlLinkModal uses (so the dropdown matches what would
+  // have appeared in the post-create link modal).
+  _gmTodayActs = [];
+  try {
+    const today = todayISO();
+    const res   = await apiGet('getDailyLog', { date: today });
+    const log   = res.log || {};
+    var _acts = log.activities;
+    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
+    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
+    var _materialized = Array.isArray(_acts) ? _acts.slice() : [];
+    var _projected = Array.isArray(res.scheduledActivities) ? res.scheduledActivities : [];
+    var _seen = {};
+    _materialized.forEach(function (a) { if (a && a.id) _seen[a.id] = true; });
+    _projected.forEach(function (a) { if (a && a.id && !_seen[a.id]) _materialized.push(a); });
+    _gmTodayActs = _materialized;
+  } catch(e) { _gmTodayActs = []; }
+
+  const cfgTemplates = (window._activityTemplates || window._activityTypes || []);
+  const tags = Array.from(new Set(
+    cfgTemplates.map(t => (getLang()==='IS' ? (t.classTagIS || t.classTag) : t.classTag) || '').filter(Boolean)
+  )).sort();
+
   const aSel = document.getElementById('gmActivity');
-  aSel.innerHTML = '<option value="">' + s('staff.noneOption') + '</option>';
-  (window._activityTypes || []).forEach(t => {
-    const o=document.createElement('option'); o.value=t.id;
-    o.textContent = getLang()==='IS' ? (t.nameIS||t.name) : t.name;
-    aSel.appendChild(o);
+  aSel.innerHTML = '';
+  const noneOpt = document.createElement('option');
+  noneOpt.value = '';
+  noneOpt.textContent = s('staff.noneOption');
+  aSel.appendChild(noneOpt);
+  if (_gmTodayActs.length) {
+    const grpToday = document.createElement('optgroup');
+    grpToday.label = s('staff.actGroupToday');
+    _gmTodayActs.forEach(a => {
+      const o = document.createElement('option');
+      o.value = 'link:' + a.id;
+      const name = a.name || a.title || a.type || s('staff.activity');
+      const start = a.start || a.startTime || '';
+      const end   = a.end   || a.endTime   || '';
+      const timeLabel = start && end ? ' · ' + start + '–' + end : (start ? ' · ' + start : '');
+      o.textContent = name + timeLabel;
+      grpToday.appendChild(o);
+    });
+    aSel.appendChild(grpToday);
+  }
+  if (tags.length) {
+    const grpTags = document.createElement('optgroup');
+    grpTags.label = s('staff.actGroupTags');
+    tags.forEach(t => {
+      const o = document.createElement('option');
+      o.value = 'tag:' + t;
+      o.textContent = t;
+      grpTags.appendChild(o);
+    });
+    aSel.appendChild(grpTags);
+  }
+  const newOpt = document.createElement('option');
+  newOpt.value = 'new';
+  newOpt.textContent = s('staff.actCreateNew');
+  aSel.appendChild(newOpt);
+  aSel.value = '';
+
+  // Inline-form classTag select draws from the same dedup'd set.
+  const tSel = document.getElementById('gmNewActTag');
+  tSel.innerHTML = '<option value="">—</option>';
+  tags.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    tSel.appendChild(o);
   });
+
   const sec = document.getElementById('gmStaffSection');
   sec.innerHTML = '';
   addGmStaffRow();
   openModal('groupModal');
   document.body.style.overflow = 'hidden';
+}
+
+function onGmActivityChange() {
+  const v = document.getElementById('gmActivity').value;
+  const sec = document.getElementById('gmNewActSection');
+  if (v === 'new') {
+    sec.classList.remove('d-none');
+    setTimeout(() => { try { document.getElementById('gmNewActName').focus(); } catch(e){} }, 60);
+  } else {
+    sec.classList.add('d-none');
+  }
 }
 
 function closeGroupModal() {
@@ -878,17 +970,37 @@ async function submitGroupCheckout() {
   if (!lid) { err.textContent = s('staff.errSailingArea'); err.style.display = ''; return; }
   const tout  = document.getElementById('gmTimeOut').value || fmtTimeNow();
   const retBy = document.getElementById('gmReturnBy').value;
-  const actId = document.getElementById('gmActivity').value;
-  // Only capture the visible label when a real type is selected; the
-  // placeholder option's text ("— None —") would otherwise leak into the
-  // checkout's activityTypeName and render badly downstream.
-  const actName = actId ? (document.getElementById('gmActivity').selectedOptions[0]?.text || '') : '';
+
+  // Resolve the activity picker value into one of three backend payloads:
+  //   linkedActivityId, classTag, or newActivity. activityTypeName is
+  //   denormalized for the group-card display badge so existing renders
+  //   keep working without doing a per-card activity lookup.
+  const pickerVal = document.getElementById('gmActivity').value;
+  let linkedActivityId = '';
+  let classTag         = '';
+  let newActivity      = null;
+  let displayName      = '';
+  if (pickerVal.indexOf('link:') === 0) {
+    linkedActivityId = pickerVal.slice(5);
+    const a = (_gmTodayActs || []).find(x => x && x.id === linkedActivityId);
+    displayName = a ? (a.name || a.title || a.type || '') : '';
+  } else if (pickerVal.indexOf('tag:') === 0) {
+    classTag = pickerVal.slice(4);
+    displayName = classTag;
+  } else if (pickerVal === 'new') {
+    const name = document.getElementById('gmNewActName').value.trim();
+    const tag  = document.getElementById('gmNewActTag').value;
+    if (!name && !tag) { err.textContent = s('staff.errNewActDetails'); err.style.display = ''; return; }
+    newActivity = { name, classTag: tag, startTime: tout, endTime: retBy };
+    classTag    = tag;
+    displayName = name || tag;
+  }
+
   const loc = locations.find(l => l.id === lid) || {};
   const snap = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
     .map(i => ({ name: i.value.trim(), kennitala: i.dataset.kennitala || '' })).filter(s => s.name);
   if (!staffEntries.length) { err.textContent = s('staff.errStaffRequired'); err.style.display = ''; return; }
-  // Warn if any staff entry was typed but not selected from DB
   const unmatched = staffEntries.filter(s => !s.kennitala);
   if (unmatched.length && members.length > 0) { err.textContent = s('staff.errStaffFromList',{names:unmatched.map(x=>x.name).join(', ')}); err.style.display = ''; return; }
   const boatIds   = Array.from(_groupBoats);
@@ -903,16 +1015,18 @@ async function submitGroupCheckout() {
       staffNames: staffEntries.map(s => s.name),
       staffKennitalar: staffEntries.map(s => s.kennitala).filter(Boolean),
       crew: totalAboard,
-      activityTypeId: actId, activityTypeName: actName,
+      // New-style fields:
+      linkedActivityId, classTag, newActivity,
+      // Display label backwards-compat — group-card renderer reads
+      // activityTypeName as the badge label.
+      activityTypeName: displayName,
       wxSnapshot: snap,
     });
     const _gcRes = await apiGet('getActiveCheckouts');
     checkouts = _gcRes.checkouts || [];
-    const _newGrpId = (_gcRes.checkouts||[]).slice().reverse().find(function(c){ return c.isGroup===true||c.isGroup==='true'; })?.id || null;
     closeGroupModal();
     renderAll();
     showToast(s('staff.groupLaunched'));
-    if (_newGrpId) setTimeout(function(){ openDlLinkModal(_newGrpId); }, 600);
   } catch(e) { err.textContent = e.message; err.style.display = ''; }
 }
 

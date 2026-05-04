@@ -196,7 +196,7 @@ try {
 // Reference notes for the audit trail:
 //   getConfig — config sheet only (boats, locations, certDefs, certCats,
 //     activity_types, dailyChecklist, flagConfig/Override, staffStatus,
-//     rowingPassport, clubCalendars) PLUS the activities sheet projection
+//     rowingPassport, clubCalendars) PLUS activities projection
 //     (volunteerEvents, cancelledActivityOccurrences). Independent of
 //     the members sheet entirely.
 //   getMembers — members sheet only.
@@ -235,7 +235,7 @@ var _INVALIDATES = {
   // apiPost('getVolunteerSignups'), now in _POST_CACHEABLE. Both writes
   // drop that cache. volunteerSignup_ also keeps getConfig because the
   // first signup against a virtual recurring event materializes a
-  // the activities sheet row that feeds getConfig.volunteerEvents.
+  // the activities-sheet row that feeds getConfig.volunteerEvents.
   volunteerSignup:         ['getConfig', 'getVolunteerSignups'],
   volunteerWithdraw:       ['getVolunteerSignups'],
   // Share tokens — read-shaped POST, cacheable.
@@ -269,6 +269,11 @@ var _INVALIDATES = {
   // Group sail ↔ activity link: trip cards' resolved Activity row reads
   // through this on the backend, so cached getTrips needs to drop.
   linkGroupCheckoutToActivity: ['getTrips'],
+  // saveGroupCheckout may mint a new ad-hoc activity row for today (when
+  // the user picks "+ Create activity for today" in the picker). That
+  // activity surfaces in the daily-log + activity-log views, so drop both.
+  // getTrips for the same reason as linkGroupCheckoutToActivity.
+  saveGroupCheckout:       ['getDailyLog', 'getActivityLog', 'getTrips'],
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],
