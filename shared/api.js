@@ -34,7 +34,7 @@ async function apiGet(action, params) {
   // different params (e.g. getSlots for adjacent weeks) doesn't clobber the
   // single-entry cache. apiPost invalidates by prefix scan so all entries
   // for an action drop together.
-  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000, getHandbook: 600000, getSlots: 60000 };
+  var _CACHEABLE = { getConfig: 120000, getWeather: 300000, getMembers: 30000, getTrips: 30000, getMaintenance: 30000, getCrews: 30000, getCrewBoard: 30000, getCrewInvites: 30000, getNotifications: 30000, getConfirmations: 30000, getHandbook: 600000, getSlots: 60000, getDailyLog: 60000 };
   if (_CACHEABLE[action] && !params._fresh) {
     try {
       var _ck = 'ymir_' + action + '_' + JSON.stringify(params);
@@ -220,8 +220,8 @@ var _INVALIDATES = {
   importRowingPassportCsv: ['getConfig'],
   // Class-occurrence writes touch the activities sheet (which feeds getConfig's
   // volunteerEvents + cancelledActivityOccurrences) and the activity-class
-  // virtual-slot projection. getDailyLog isn't cached — listed only for
-  // semantic intent (no-op today).
+  // virtual-slot projection. getDailyLog is also cached per-date, so any write
+  // that may surface in a daily-log view drops it.
   cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
   overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
   restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
@@ -261,7 +261,8 @@ var _INVALIDATES = {
   // Logbook Review activity-log section reads via getActivityLog. Activities
   // can also carry linkedGroupCheckoutIds → trip group labels resolve through
   // those, so dropping getTrips keeps the trip-detail Activity row fresh.
-  saveDailyLog:            ['getActivityLog', 'getTrips'],
+  // getDailyLog is cached per-date so the just-saved day reads back fresh.
+  saveDailyLog:            ['getDailyLog', 'getActivityLog', 'getTrips'],
   // Trips.
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
