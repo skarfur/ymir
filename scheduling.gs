@@ -370,3 +370,23 @@ function activity_signupCountsById_() {
   });
   return out;
 }
+
+// ── Transitional shims for the sched_* → activity_* rename (b108509) ─────────
+// Apps Script projects can hold partially-stale .gs files between pushes — if
+// scheduling.gs lands but a caller (e.g. members.gs) is still pre-rename, the
+// caller throws "sched_X is not defined" until the next push lands. These
+// aliases keep the old names callable so a partial sync degrades gracefully.
+// Drop once you're confident every deployment has caught up.
+function sched_parseRow_(row)                   { return activity_parseRow_(row); }
+function sched_rowShape_(ev)                    { return activity_rowShape_(ev); }
+function sched_getById_(id)                     { return activity_getById_(id); }
+function sched_listAll_()                       { return activity_listAll_(); }
+function sched_listVolunteerEvents_()           { return activity_listVolunteerEvents_(); }
+function sched_listActivitiesForDate_(dateISO)  { return activity_listForDate_(dateISO); }
+function sched_listInRange_(fromIso, toIso, kind) { return activity_listInRange_(fromIso, toIso, kind); }
+function sched_listActivityLog_(fromIso, toIso, opts) { return activity_listLog_(fromIso, toIso, opts); }
+function sched_upsert_(ev)                      { return activity_upsert_(ev); }
+function sched_cancel_(id, updatedBy)           { return activity_cancel_(id, updatedBy); }
+function sched_hardDelete_(id)                  { return activity_hardDelete_(id); }
+function sched_signupCountsByEvent_()           { return activity_signupCountsById_(); }
+function ensureScheduledEventsSheet_()          { return ensureActivitiesSheet_(); }

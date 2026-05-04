@@ -3,6 +3,27 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — sched_* shims + buildGroupLabelMap_ post-rename fix
+
+Daily-log saves were failing on deployments where one or more `.gs` files
+hadn't been re-pushed after the `sched_* → activity_*` rename in `b108509`
+("Server error: sched_listActivitiesForDate_ is not defined"). The
+codebase itself is consistent — the error only surfaces when an Apps
+Script project holds a partially-stale set of files between pushes.
+
+- `scheduling.gs`: transitional shim aliases for the renamed
+  `sched_*` functions (and `ensureScheduledEventsSheet_`) so a
+  pre-rename caller in another `.gs` file degrades to the new
+  implementation instead of throwing. Drop the shims once every
+  deployment is on post-rename code.
+- `checkouts.gs`: `buildGroupLabelMap_` was still calling
+  `readAll_('scheduledEvents')` (the TABS_ key was renamed to
+  `'activities'` in `b108509`) and filtering on `r.kind === 'activity'`
+  (the `kind` column was dropped in `8072be6`). Both paths silently
+  returned empty, so group-sail activity labels never resolved via
+  Path A or Path B. Fixed to read `'activities'` and filter on
+  `signupRequired` falsy.
+
 ## Unreleased — frontend: rename actTypes / activityTypes vars to activityTemplates
 
 Cosmetic rename across the portals to align in-code variable names
