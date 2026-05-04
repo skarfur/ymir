@@ -772,9 +772,10 @@ function getDailyLog_(date) {
     // their matching projection virtual. Union the cancelled ids in.
     try {
       (readAll_('scheduledEvents') || []).forEach(function (r) {
-        if (r && r.kind === 'activity' && r.date === d
-            && r.status === 'cancelled' && r.id) {
-          materialized[r.id] = true;
+        if (!r || !r.id) return;
+        var ev = sched_parseRow_(r);
+        if (ev && !ev.signupRequired && ev.date === d && ev.status === 'cancelled') {
+          materialized[ev.id] = true;
         }
       });
     } catch (e) {}
@@ -884,7 +885,7 @@ function persistDailyLogActivities_(dateISO, oldRows, newActs, updatedBy) {
     nextIds[a.id] = true;
     sched_upsert_({
       id:                     a.id,
-      kind:                   'activity',
+      signupRequired:         false,
       status:                 status,
       source:                 _inferActivitySource_(a),
       date:                   dateISO,

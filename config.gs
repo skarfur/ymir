@@ -150,10 +150,12 @@ function _scheduledEventsForConfig_() {
   try {
     (readAll_('scheduledEvents') || []).forEach(function (r) {
       if (!r) return;
-      if (r.kind === 'volunteer' && r.status !== 'cancelled') {
-        volunteerRows.push(sched_parseRow_(r));
-      } else if (r.kind === 'activity' && r.status === 'cancelled' && r.id) {
-        cancelledActivityIds.push(String(r.id));
+      var ev = sched_parseRow_(r);
+      if (!ev) return;
+      if (ev.signupRequired && ev.status !== 'cancelled') {
+        volunteerRows.push(ev);
+      } else if (!ev.signupRequired && ev.status === 'cancelled' && ev.id) {
+        cancelledActivityIds.push(String(ev.id));
       }
     });
   } catch (e) {}

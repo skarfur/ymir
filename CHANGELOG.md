@@ -31,6 +31,37 @@ Also patches the original `— None —` leak: `staff.js` now only
 captures `gmActivity.selectedOptions[0].text` when an actual id is
 selected, so the placeholder label can't propagate even on older
 clients hitting newer backends.
+## Unreleased — activities vocabulary cleanup (kind → signupRequired)
+
+First step of a broader vocabulary alignment around scheduled activities.
+The `scheduled_events` row's `kind` column ('volunteer' | 'activity') was
+really a yes/no question — "is this signup-tracked?" — masquerading as a
+two-value enum. Replaces it with a `signupRequired` boolean. The `kind`
+column stays on the row during the transition and is written in lockstep
+by `sched_rowShape_`, so any external/legacy reader still sees a valid
+discriminator until it migrates.
+
+Schema: `_setup.gs` adds `signupRequired` to the `scheduled_events`
+column list and runs an idempotent backfill on `setupSpreadsheet()` —
+empty cells are derived from the existing `kind` value (`'volunteer'` →
+`true`, otherwise `false`).
+
+Backend: `sched_parseRow_` emits both `signupRequired` (canonical) and
+`kind` (legacy mirror); `sched_rowShape_` accepts either and writes both.
+Internal predicates in `scheduling.gs`, `config.gs`, `members.gs`,
+`checkouts.gs`, and `public.gs` switch to `signupRequired`. Write callers
+(`saveGroupCheckout`, `cancelClassOccurrence`, `rescheduleActivity`,
+volunteer-event upserts, daily-log activity sync) now pass
+`signupRequired: true|false` as the canonical field.
+
+Frontend: `shared/scheduled-event.js` accepts `opts.signupRequired` and
+emits both fields on the normalized object. `admin/scheduling.js` row
+predicates switch to `ev.signupRequired`. No UI/UX change.
+
+Vocabulary direction (still to land in follow-ups): rename
+`scheduled_events` JS identifiers to `activities`, rename `activity_types`
+to `activity_templates`, drop the legacy `kind` column once all readers
+have migrated.
 
 ## Unreleased — staff Logbook Review: activity-log filter section
 

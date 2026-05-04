@@ -718,7 +718,7 @@ function cancelClassOccurrence_(b) {
   //    plus history.
   sched_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
-    kind:                 'activity',
+    signupRequired:       false,
     status:               'cancelled',
     sourceActivityTypeId: classId,
     activityTypeId:       classId,
@@ -790,7 +790,7 @@ function overrideClassOccurrence_(b) {
   var cls = _activityClassById_(classId);
   sched_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
-    kind:                 'activity',
+    signupRequired:       false,
     status:               'upcoming',
     sourceActivityTypeId: classId,
     activityTypeId:       classId,
@@ -1089,7 +1089,7 @@ function syncVolunteerEventToCalendar_(eventId) {
   try {
     if (!eventId) return;
     var ev = sched_getById_(eventId);
-    if (!ev || ev.kind !== 'volunteer') return;
+    if (!ev || !ev.signupRequired) return;
     var cfgMap = getConfigMap_();
     var types = [];
     try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}

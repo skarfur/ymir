@@ -1,12 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// SCHEDULING  —  single source of truth for scheduled events (volunteer + activity)
+// SCHEDULING  —  single source of truth for activities (every concrete
+// occurrence at the club: signup-tracked or plain).
 // ═══════════════════════════════════════════════════════════════════════════════
-// Every row in scheduled_events carries a `kind` discriminator:
+// Every row in scheduled_events represents one concrete activity instance.
+// The `signupRequired` boolean flags whether it's signup-tracked:
 //
-//   kind='volunteer' — signup-tracked events with roles/leader. The volunteer
-//                      portal + admin volunteer view read these.
-//   kind='activity'  — concrete daily-log activities (past + today). Daily-log
-//                      renderer + midnight materializer read these.
+//   signupRequired=true  — has roles/leader, surfaced in the volunteer portal
+//                          and admin volunteer view.
+//   signupRequired=false — plain activity, surfaced by the daily-log renderer
+//                          and the midnight materializer.
+//
+// (The legacy `kind` column — 'volunteer' | 'activity' — is still written
+// alongside signupRequired during the transition. New code should consult
+// signupRequired; both fields are kept in lock-step by sched_rowShape_.)
+//
+// An activity may be templated from an `activity_types` (a.k.a. activity
+// template) row via `activityTypeId`, or authored ad-hoc with no template.
 //
 // Projections (bulk schedule, Google Calendar) still produce virtual rows at
 // read time — see `projectActivitiesForDate_` in config.gs — but any row that's
@@ -18,6 +27,11 @@
 // sched_parseRow_ takes a sanitized row from readAll_('scheduledEvents') and
 // returns a shape where `roles` is parsed back into an array and booleans are
 // unwrapped. Use this everywhere readers need the domain object.
+//
+// `signupRequired` is the canonical boolean. If a row predates the migration
+// (no signupRequired cell yet), we derive it from the legacy `kind` column.
+// Both are emitted on the parsed object during the transition so frontend
+// callers that still read `.kind === 'volunteer'` continue to work.
 function sched_parseRow_(row) {
   if (!row) return null;
   var roles = [];
@@ -26,9 +40,24 @@ function sched_parseRow_(row) {
   try { reservedBoatIds = row.reservedBoatIds ? JSON.parse(row.reservedBoatIds) : []; } catch (e) { reservedBoatIds = []; }
   var linkedGroupCheckoutIds = [];
   try { linkedGroupCheckoutIds = row.linkedGroupCheckoutIds ? JSON.parse(row.linkedGroupCheckoutIds) : []; } catch (e) { linkedGroupCheckoutIds = []; }
+  // Coerce signupRequired to a real boolean. Sheets returns true/false for
+  // new rows but the migration backfill writes the same; legacy rows have
+  // it empty and we fall back to deriving from `kind`.
+  var sigRaw = row.signupRequired;
+  var signupRequired;
+  if (sigRaw === true || sigRaw === false) {
+    signupRequired = sigRaw;
+  } else if (sigRaw === 'TRUE' || sigRaw === 'true') {
+    signupRequired = true;
+  } else if (sigRaw === 'FALSE' || sigRaw === 'false') {
+    signupRequired = false;
+  } else {
+    signupRequired = (String(row.kind || '').toLowerCase() === 'volunteer');
+  }
   return {
     id:                    row.id || '',
-    kind:                  row.kind || '',
+    kind:                  row.kind || (signupRequired ? 'volunteer' : 'activity'),
+    signupRequired:        signupRequired,
     status:                row.status || '',
     source:                row.source || '',
     date:                  row.date || '',
@@ -67,10 +96,23 @@ function sched_parseRow_(row) {
 // Inverse of sched_parseRow_ — takes a partial domain object and returns the
 // row shape suitable for insertRow_/updateRow_. Undefined fields pass through
 // so callers can do partial updates (updateRow_ ignores absent keys).
+//
+// signupRequired ↔ kind are written in lockstep: if the caller specified
+// either one, both are populated on the row so legacy and modern readers see
+// consistent values until `kind` is removed in a follow-up.
 function sched_rowShape_(ev) {
   var out = {};
   if (ev.id !== undefined)                    out.id = ev.id;
-  if (ev.kind !== undefined)                  out.kind = ev.kind;
+  // signupRequired is canonical; kind mirrors it for legacy compat.
+  // If only one was supplied, derive the other.
+  if (ev.signupRequired !== undefined) {
+    out.signupRequired = !!ev.signupRequired;
+    if (ev.kind === undefined) out.kind = ev.signupRequired ? 'volunteer' : 'activity';
+    else                       out.kind = ev.kind;
+  } else if (ev.kind !== undefined) {
+    out.kind = ev.kind;
+    out.signupRequired = (String(ev.kind).toLowerCase() === 'volunteer');
+  }
   if (ev.status !== undefined)                out.status = ev.status;
   if (ev.source !== undefined)                out.source = ev.source;
   if (ev.date !== undefined)                  out.date = ev.date;
@@ -112,7 +154,7 @@ function sched_rowShape_(ev) {
 // re-run yet still serves the pages that read scheduled events (they just
 // return empty lists until the migration populates rows).
 var SCHEDULED_EVENTS_COLS_ = [
-  'id','kind','status','source',
+  'id','kind','signupRequired','status','source',
   'date','endDate','startTime','endTime',
   'activityTypeId','subtypeId','subtypeName',
   'title','titleIS','notes','notesIS','runNotes',
@@ -144,38 +186,44 @@ function sched_listAll_() {
   return (readAll_('scheduledEvents') || []).map(sched_parseRow_);
 }
 
+// Activities surfaced by the volunteer portal — i.e. signup-tracked.
 function sched_listVolunteerEvents_() {
   return sched_listAll_().filter(function (e) {
-    if (!e || e.kind !== 'volunteer') return false;
+    if (!e || !e.signupRequired) return false;
     return e.status !== 'cancelled';
   });
 }
 
-// Concrete activity rows for a specific date (kind='activity'). Used by the
-// daily log read path; projections for not-yet-materialized days stay in
+// Plain (non-signup) activity rows for a specific date. Used by the daily-log
+// read path; projections for not-yet-materialized days stay in
 // projectActivitiesForDate_ (config.gs).
 function sched_listActivitiesForDate_(dateISO) {
   if (!dateISO) return [];
   return sched_listAll_().filter(function (e) {
-    return e && e.kind === 'activity' && e.date === dateISO && e.status !== 'cancelled';
+    return e && !e.signupRequired && e.date === dateISO && e.status !== 'cancelled';
   });
 }
 
+// Filter activities to a date range. Optional `kind` filter accepts the legacy
+// values 'volunteer' / 'activity' for backward compat, mapped to signupRequired.
 function sched_listInRange_(fromIso, toIso, kind) {
+  var wantSignup = null;
+  if (kind === 'volunteer') wantSignup = true;
+  else if (kind === 'activity') wantSignup = false;
   return sched_listAll_().filter(function (e) {
     if (!e || e.status === 'cancelled') return false;
-    if (kind && e.kind !== kind) return false;
+    if (wantSignup !== null && e.signupRequired !== wantSignup) return false;
     if (fromIso && (e.date || '') < fromIso) return false;
     if (toIso   && (e.date || '') > toIso)   return false;
     return true;
   });
 }
 
-// Activity-log read for staff Logbook Review. Returns concrete activity rows
-// (kind='activity') in a date range, enriched with classTag from the parent
-// activity-type definition so the frontend can group/filter by tag without a
-// second config lookup. Optional activityTypeId / classTag filters apply
-// server-side; an empty filter passes through.
+// Activity-log read for staff Logbook Review. Returns concrete plain
+// (non-signup) activity rows in a date range, enriched with classTag from the
+// parent activity-template definition so the frontend can group/filter by tag
+// without a second config lookup. Optional activityTypeId / classTag filters
+// apply server-side; an empty filter passes through.
 function sched_listActivityLog_(fromIso, toIso, opts) {
   opts = opts || {};
   var rows = sched_listInRange_(fromIso, toIso, 'activity');
