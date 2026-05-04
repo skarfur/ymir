@@ -12,7 +12,7 @@
 // Reads transparently fall through to the legacy key during the transition;
 // setupSpreadsheet copies legacy → canonical once explicitly.
 const LEGACY_CONFIG_KEY_ALIASES_ = {
-  'activity_templates': ['activity_templates'],
+  'activity_templates': ['activity_types'],
 };
 
 // Read the entire config sheet once and return a key→value map.

@@ -261,6 +261,32 @@ function setupSpreadsheet() {
   });
 
   // ── Migrations ─────────────────────────────────────────────────────────────
+  // Copy legacy 'activity_types' → canonical 'activity_templates' (config key
+  // rename, see LEGACY_CONFIG_KEY_ALIASES_ in config.gs). Idempotent: only
+  // copies when the canonical key is empty AND the legacy key has data, so
+  // re-running setup never clobbers a populated canonical key. Reads already
+  // fall through via the alias, but the canonical key needs to land in the
+  // sheet so future writes (saveActivityType etc.) hit it directly without
+  // depending on the alias.
+  try {
+    var legacyVal = getConfigSheetValue_('activity_types');
+    var canonicalVal = null;
+    try {
+      var cSheet = ss.getSheetByName('config');
+      if (cSheet && cSheet.getLastRow() >= 2) {
+        var cRows = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, 2).getValues();
+        var cRow = cRows.find(function (r) { return String(r[0]).trim() === 'activity_templates'; });
+        canonicalVal = cRow ? String(cRow[1]).trim() : '';
+      }
+    } catch (e) { canonicalVal = ''; }
+    if (legacyVal && legacyVal !== '' && (!canonicalVal || canonicalVal === '')) {
+      setConfigSheetValue_('activity_templates', legacyVal);
+      Logger.log('Migrated config key activity_types → activity_templates');
+    }
+  } catch (e) {
+    Logger.log('activity_templates migration skipped: ' + e.message);
+  }
+
   // Backfill signupRequired on activities from the legacy `kind` column.
   // Idempotent: only writes when signupRequired is empty/missing on a row.
   // Safe to run repeatedly; no-op once every row carries the boolean.
