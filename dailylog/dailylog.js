@@ -1082,13 +1082,16 @@ async function openGroupLinkPicker() {
   // Always pull a fresh list rather than relying on loadTodayTrips' side
   // effect — past/future daily-log views never populate _activeCheckouts,
   // and the picker should also surface group sails that have already been
-  // checked back in today (so retroactive linking works).
+  // checked back in today (so retroactive linking works). For non-today
+  // views, pass viewDate so the backend returns every checkout from that
+  // day (any status) — required for post-facto linking.
+  const params = isToday() ? {} : { date: viewDate };
   try {
-    const r = await apiGet('getActiveCheckouts');
+    const r = await apiGet('getActiveCheckouts', params);
     _groupLinkPickerCache = r.checkouts || [];
-    window._activeCheckouts = _groupLinkPickerCache;
+    if (isToday()) window._activeCheckouts = _groupLinkPickerCache;
   } catch (e) {
-    _groupLinkPickerCache = window._activeCheckouts || [];
+    _groupLinkPickerCache = isToday() ? (window._activeCheckouts || []) : [];
   }
   _renderGroupLinkPicker();
   openModal('groupLinkModal');

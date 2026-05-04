@@ -1321,7 +1321,7 @@ function route_(action, b, caller) {
     case 'createIncident': return createIncident_(b);
     case 'resolveIncident': return resolveIncident_(b);
     case 'addIncidentNote': return addIncidentNote_(b);
-    case 'getActiveCheckouts': return getActiveCheckouts_();
+    case 'getActiveCheckouts': return getActiveCheckouts_(b);
     case 'saveCheckout': return saveCheckout_(b, caller);
     case 'checkIn': return checkIn_(b, caller);
     case 'deleteCheckout': return deleteCheckout_(b.id);
