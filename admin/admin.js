@@ -3,7 +3,7 @@ prefetch({Config:['getConfig'],Members:['getMembers']});
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const user = requireAuth(isAdmin);
 
-let members = [], boats = [], locations = [], clItems = [], actTypes = [], volunteerEvents = [];
+let members = [], boats = [], locations = [], clItems = [], activityTemplates = [], volunteerEvents = [];
 let volunteerSignups = [];
 let cancelledActivityOccurrences = [];
 let _allBoats = [], _allLocations = [];
@@ -107,7 +107,7 @@ async function loadAll() {
   }).catch(e => { console.warn('getVolunteerSignups failed:', e.message); });
 
   // ── Assign data ───────────────────────────────────────────────────────────
-  actTypes        = cfgRes.activityTemplates || [];
+  activityTemplates        = cfgRes.activityTemplates || [];
   volunteerEvents = cfgRes.volunteerEvents || [];
   cancelledActivityOccurrences = cfgRes.cancelledActivityOccurrences || [];
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || []),
@@ -182,6 +182,9 @@ function showTopTab(top) {
 function showTab(tab) {
   // Legacy tab aliases — old standalone tabs now live as col-sections inside
   // Scheduling. Keep old bookmarks (?tab=slotCal etc.) working.
+  // Legacy URL hash redirect — pre-consolidation tab ids should send the
+  // user to the unified Scheduling tab. Keep the literal strings stable
+  // so old bookmarks keep working.
   if (tab === 'actTypes' || tab === 'volunteers' || tab === 'clubCal' || tab === 'slotCal') tab = 'scheduling';
   document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {

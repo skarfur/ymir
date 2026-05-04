@@ -48,7 +48,7 @@ function renderVolunteerEvents() {
   // Defense-in-depth: hide materialized events whose source activity type is
   // missing, inactive, or no longer volunteer-flagged. Manually-created events
   // (no sourceActivityTypeId) are shown regardless.
-  const activeAtIds = new Set((actTypes || [])
+  const activeAtIds = new Set((activityTemplates || [])
     .filter(a => bool(a.active) && bool(a.volunteer))
     .map(a => a.id));
   const saved = (volunteerEvents || []).filter(e => {
@@ -61,7 +61,7 @@ function renderVolunteerEvents() {
   // Use 365-day horizon to match the volunteer page.
   const rangeTo = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const virtual = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(actTypes || [], today, rangeTo)
+    ? expandVolunteerActivityTypes(activityTemplates || [], today, rangeTo)
     : [];
   const all = (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(saved, virtual)
@@ -147,7 +147,7 @@ function openVolEventModal(id) {
   // Search saved events first, then the merged list (which includes virtual
   // events). On the Scheduling tab the standalone volunteer card no longer
   // exists, so renderVolunteerEvents short-circuits and _volMergedEvents stays
-  // unset — fall back to expanding virtuals from actTypes so clicking a
+  // unset — fall back to expanding virtuals from activityTemplates so clicking a
   // template-projected occurrence in Upcoming events opens the editor with
   // the existing data instead of an empty Add form.
   let ev = null;
@@ -159,7 +159,7 @@ function openVolEventModal(id) {
       const todayIso = new Date().toISOString().slice(0, 10);
       const horizonIso = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
         .toISOString().slice(0, 10);
-      const virt = expandVolunteerActivityTypes(actTypes || [], todayIso, horizonIso);
+      const virt = expandVolunteerActivityTypes(activityTemplates || [], todayIso, horizonIso);
       ev = virt.find(x => x.id === id) || null;
     }
   }
@@ -194,7 +194,7 @@ function openVolEventModal(id) {
   const sel = document.getElementById("veActType");
   const L = getLang();
   sel.innerHTML = '<option value="">' + s('admin.volActTypeNone') + '</option>'
-    + actTypes.filter(a => bool(a.active)).map(a => {
+    + activityTemplates.filter(a => bool(a.active)).map(a => {
       const label = (L === 'IS' && a.nameIS ? a.nameIS : a.name) || a.name;
       return '<option value="' + a.id + '"' + (ev && ev.activityTypeId === a.id ? ' selected' : '') + '>' + esc(label) + '</option>';
     }).join('');
@@ -376,7 +376,7 @@ function clearVolLeaderChip() {
 
 function loadRolesFromActType(atId) {
   if (!atId) return [];
-  var at = actTypes.find(function(a) { return a.id === atId; });
+  var at = activityTemplates.find(function(a) { return a.id === atId; });
   if (!at || !at.roles) return [];
   var roles = Array.isArray(at.roles) ? at.roles : tryParse_(at.roles, []);
   return roles.map(function(r) {
@@ -394,7 +394,7 @@ function loadRolesFromActType(atId) {
 
 function loadReservedBoatsFromActType(atId) {
   if (!atId) return [];
-  var at = actTypes.find(function (a) { return a.id === atId; });
+  var at = activityTemplates.find(function (a) { return a.id === atId; });
   if (!at || !Array.isArray(at.reservedBoatIds)) return [];
   return at.reservedBoatIds.slice().map(String).filter(Boolean);
 }
@@ -459,7 +459,7 @@ function onVeActTypeChange() {
   }
   // Inherit leader from the picked type only when the leader fields are still
   // empty — preserves any in-progress per-instance override the admin typed.
-  var at = atId ? actTypes.find(function (a) { return a.id === atId; }) : null;
+  var at = atId ? activityTemplates.find(function (a) { return a.id === atId; }) : null;
   if (!at) return;
   var leaderIdEl = document.getElementById("veLeaderMemberId");
   var leaderSearchEl = document.getElementById("veLeaderSearch");

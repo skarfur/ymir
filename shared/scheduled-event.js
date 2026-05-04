@@ -125,7 +125,7 @@
   // care should surface a hint via `calendarSourcedActivityTypes`.
   function buildUpcomingEvents(opts) {
     opts = opts || {};
-    var actTypes        = Array.isArray(opts.actTypes) ? opts.actTypes : [];
+    var activityTemplates        = Array.isArray(opts.activityTemplates) ? opts.activityTemplates : [];
     var volunteerEvents = Array.isArray(opts.volunteerEvents) ? opts.volunteerEvents : [];
     var signupCounts    = _countSignups(opts.volunteerSignups);
     var fromIso         = opts.fromIso || new Date().toISOString().slice(0, 10);
@@ -138,7 +138,7 @@
 
     // 1) Bulk-scheduled activity projections (per day × per active, bulk-sourced class).
     _eachDay(fromIso, toIso, function (iso, dow) {
-      actTypes.forEach(function (cls) {
+      activityTemplates.forEach(function (cls) {
         if (!cls || cls.active === false || cls.active === 'false') return;
         if (String(cls.scheduleSource || 'bulk') !== 'bulk') return;
         if (!cls.bulkSchedule) return;
@@ -168,7 +168,7 @@
     // 2) Volunteer events in range (saved DTOs + virtual expansions deduped).
     var virt = [];
     if (typeof global.expandVolunteerActivityTypes === 'function') {
-      virt = global.expandVolunteerActivityTypes(actTypes, fromIso, toIso);
+      virt = global.expandVolunteerActivityTypes(activityTemplates, fromIso, toIso);
     }
     var merged = (typeof global.mergeVolunteerEvents === 'function')
       ? global.mergeVolunteerEvents(volunteerEvents, virt)
@@ -217,8 +217,8 @@
     });
   }
 
-  function calendarSourcedActivityTypes(actTypes) {
-    return (Array.isArray(actTypes) ? actTypes : []).filter(function (at) {
+  function calendarSourcedActivityTypes(activityTemplates) {
+    return (Array.isArray(activityTemplates) ? activityTemplates : []).filter(function (at) {
       if (!at || at.active === false || at.active === 'false') return false;
       return String(at.scheduleSource || 'bulk') === 'calendar';
     });

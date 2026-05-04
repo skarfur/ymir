@@ -13,7 +13,7 @@ prefetch({
 const user = requireAuth();
 let _staffStatus = { onDuty: false, supportBoat: false };
 let boats=[], locations=[], checkouts=[], _slots=[], _crews=[];
-let _volunteerEvents=[], _volunteerSignups=[], _volunteerActTypes=[];
+let _volunteerEvents=[], _volunteerSignups=[], _volunteerTemplates=[];
 let currentWx=null;
 let launchBoat=null, returnCo=null;
 let _clubCalendars = [];
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _volunteerEvents = (cfgRes.volunteerEvents || []).filter(e => e.active !== false);
-    _volunteerActTypes = cfgRes.activityTemplates || [];
+    _volunteerTemplates = cfgRes.activityTemplates || [];
     _clubCalendars = cfgRes.clubCalendars || [];
 
     populateFormSelects();
@@ -1323,7 +1323,7 @@ function _renderMemberStaffStatus() {
 // just fetches signups so it can show an "unfilled roles" badge on the button.
 
 async function loadVolunteerSignups() {
-  const hasVolActType = (_volunteerActTypes || []).some(function(a) {
+  const hasVolActType = (_volunteerTemplates || []).some(function(a) {
     return a && (a.volunteer === true || a.volunteer === 'true') && (a.active !== false && a.active !== 'false');
   });
   if (!_volunteerEvents.length && !hasVolActType) {
@@ -1347,7 +1347,7 @@ function renderVolunteerNotifBadge() {
 
   const today = todayISO();
   const virtualEvents = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(_volunteerActTypes || [], today, null)
+    ? expandVolunteerActivityTypes(_volunteerTemplates || [], today, null)
     : [];
   const merged = (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(_volunteerEvents, virtualEvents)

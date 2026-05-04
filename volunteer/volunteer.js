@@ -4,7 +4,7 @@ prefetch({Config:['getConfig'],VolSignups:{post:'getVolunteerSignups'}});
 const user = requireAuth();
 let _volEvents = [];
 let _volSignups = [];
-let _volActTypes = [];
+let _activityTemplates = [];
 let _volCertDefs = [];
 let _vpView = 'list';
 let _vpMonth = (function() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
@@ -28,12 +28,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._earlyConfig || apiGet('getConfig'),
       window._earlyVolSignups || apiPost('getVolunteerSignups', {}),
     ]);
-    _volActTypes = cfgRes.activityTemplates || [];
+    _activityTemplates = cfgRes.activityTemplates || [];
     // Defense-in-depth: hide materialized events whose source activity type is
     // missing, inactive, or no longer volunteer-flagged. Manually-created
     // events (no sourceActivityTypeId) are shown regardless. Mirrors the
     // admin volunteer-tab filter so stale data never leaks through.
-    const _vpActiveAtIds = new Set((_volActTypes || [])
+    const _vpActiveAtIds = new Set((_activityTemplates || [])
       .filter(a => a && a.active !== false && a.active !== 'false'
                    && (a.volunteer === true || a.volunteer === 'true'))
       .map(a => a.id));
@@ -70,7 +70,7 @@ function showVpTab(tab) {
 // ══ HELPERS ══════════════════════════════════════════════════════════════════
 function getMergedEvents(rangeFrom, rangeTo) {
   const virtual = (typeof expandVolunteerActivityTypes === 'function')
-    ? expandVolunteerActivityTypes(_volActTypes || [], rangeFrom || null, rangeTo || null)
+    ? expandVolunteerActivityTypes(_activityTemplates || [], rangeFrom || null, rangeTo || null)
     : [];
   return (typeof mergeVolunteerEvents === 'function')
     ? mergeVolunteerEvents(_volEvents, virtual)
@@ -377,7 +377,7 @@ async function vpSignup(eventId, roleId) {
     if (String(eventId).indexOf('vae-') === 0) {
       const today = _todayIso();
       const virt = (typeof expandVolunteerActivityTypes === 'function')
-        ? expandVolunteerActivityTypes(_volActTypes || [], today, null)
+        ? expandVolunteerActivityTypes(_activityTemplates || [], today, null)
         : [];
       const src = virt.find(function(e) { return e.id === eventId; });
       if (src) payload.virtualEvent = src;

@@ -3,7 +3,7 @@
 // Hosts three col-sections:
 //   1. Upcoming events — unified ScheduledEvent timeline (next 30 days),
 //                        with "+ Add event" for one-offs
-//   2. Activity types  — existing renderer (actTypesCard)
+//   2. Activity types  — existing renderer (activityTemplatesCard)
 //   3. Calendars       — existing club-calendar form (clubCalList)
 // The per-feature renderers live in their original files (act-types.js,
 // volunteers.js, calendars.js) — this module only owns the new unified view
@@ -28,7 +28,7 @@ function renderUpcomingEvents() {
   try {
     events = (typeof buildUpcomingEvents === 'function')
       ? buildUpcomingEvents({
-          actTypes: actTypes || [],
+          activityTemplates: activityTemplates || [],
           volunteerEvents: volunteerEvents || [],
           volunteerSignups: (typeof volunteerSignups !== 'undefined' ? volunteerSignups : []),
           cancelledActivityOccurrences: (typeof cancelledActivityOccurrences !== 'undefined' ? cancelledActivityOccurrences : []),
@@ -39,7 +39,7 @@ function renderUpcomingEvents() {
   } catch (e) { events = []; console.warn('buildUpcomingEvents:', e && e.message); }
 
   var calOnlyTypes = (typeof calendarSourcedActivityTypes === 'function')
-    ? calendarSourcedActivityTypes(actTypes || [])
+    ? calendarSourcedActivityTypes(activityTemplates || [])
     : [];
 
   if (!events.length) {
@@ -80,7 +80,7 @@ function _cancelledSectionHtml() {
     var dateISO = s.slice(-10);
     var classId = s.slice('sched-'.length, s.length - 11);
     if (!classId || dateISO < todayIso) return null;
-    var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
+    var cls = (activityTemplates || []).find(function (a) { return a && a.id === classId; });
     var name = cls ? ((L === 'IS' && cls.nameIS) ? cls.nameIS : (cls.name || classId)) : classId;
     return { id: id, classId: classId, dateISO: dateISO, name: name };
   }).filter(Boolean).sort(function (a, b) { return a.dateISO.localeCompare(b.dateISO); });
@@ -184,8 +184,8 @@ function _upcomingRowHtml(ev, L) {
 async function cancelClassOccurrence(classId, dateISO) {
   if (!classId || !dateISO) return;
   // Find the class for the confirm message — fall back to the id if the
-  // local actTypes array hasn't loaded yet.
-  var cls = (actTypes || []).find(function(a) { return a && a.id === classId; });
+  // local activityTemplates array hasn't loaded yet.
+  var cls = (activityTemplates || []).find(function(a) { return a && a.id === classId; });
   var L = getLang();
   var name = cls
     ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId))
@@ -217,7 +217,7 @@ async function cancelClassOccurrence(classId, dateISO) {
 // cancellation is a deliberate action.
 async function restoreClassOccurrence(classId, dateISO) {
   if (!classId || !dateISO) return;
-  var cls = (actTypes || []).find(function (a) { return a && a.id === classId; });
+  var cls = (activityTemplates || []).find(function (a) { return a && a.id === classId; });
   var L = getLang();
   var name = cls ? (L === 'IS' && cls.nameIS ? cls.nameIS : (cls.name || classId)) : classId;
   var msg = s('admin.confirmRestoreOccurrence')

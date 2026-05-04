@@ -3,6 +3,32 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — frontend: rename actTypes / activityTypes vars to activityTemplates
+
+Cosmetic rename across the portals to align in-code variable names
+with the new vocabulary. No behavior change. Renamed:
+
+- `admin/admin.js`, `admin/act-types.js`, `admin/scheduling.js`,
+  `admin/volunteers.js`: `actTypes` → `activityTemplates`.
+- `staff/staff_logbook-review.js`: `_actTypes` → `_activityTemplates`.
+- `volunteer/volunteer.js`: `_volActTypes` → `_activityTemplates`.
+- `member/member.js`: `_volunteerActTypes` → `_volunteerTemplates`.
+- `dailylog/dailylog.js`: global `activityTypes` → `activityTemplates`.
+- `shared/volunteer.js`: function parameter `actTypes` →
+  `activityTemplates` (internal; function name
+  `expandVolunteerActivityTypes` stays as-is, exposed on `global`).
+- `shared/scheduled-event.js`: `buildUpcomingEvents`'s
+  `opts.actTypes` field → `opts.activityTemplates` (admin/scheduling.js
+  was already passing the new name; the function previously read the
+  old name, silently using an empty array — fixing in lockstep).
+- `admin/index.html`: DOM id `actTypesCard` → `activityTemplatesCard`.
+
+The pre-consolidation tab-id literal `'actTypes'` in admin.js's URL
+hash redirect is preserved on purpose (legacy bookmarks). Function
+names that include "ActivityTypes" (e.g. `expandVolunteerActivityTypes`,
+`calendarSourcedActivityTypes`) are intentionally untouched — those
+are exposed APIs and renaming them is a larger commit.
+
 ## Unreleased — activities cleanup: drop legacy aliases
 
 Final cleanup of the activities vocabulary transition:

@@ -35,7 +35,7 @@ let pmChecks  = {};
 let amItems   = [];
 let pmItems   = [];
 let activities    = [];
-let activityTypes = [];
+let activityTemplates = [];
 let tripsData     = [];
 let tideData      = {};
 let _selectedActType = null;
@@ -352,7 +352,7 @@ function openIncidentDetail(id) {
 // ── Activity-class buttons ────────────────────────────────────────────────────
 function renderActTypeBtns() {
   dom.actTypeBtns.replaceChildren();
-  activityTypes.forEach(t => {
+  activityTemplates.forEach(t => {
     const btn = document.createElement('button');
     btn.className = 'type-btn' + (t.id === _selectedActType ? ' selected' : '');
     btn.dataset.typeId = t.id;
@@ -366,7 +366,7 @@ function renderActTypeBtns() {
       // When the user picks a class, prefill name + default times + leader
       // if those fields are still untouched (so re-picking doesn't clobber
       // edits the user already made).
-      const cls = activityTypes.find(x => x.id === t.id);
+      const cls = activityTemplates.find(x => x.id === t.id);
       if (cls) {
         if (!dom.actName.value)  dom.actName.value  = L==='IS' && cls.nameIS ? cls.nameIS : (cls.name || '');
         if (!dom.actStart.value && cls.defaultStart) dom.actStart.value = cls.defaultStart;
@@ -646,12 +646,12 @@ let _editingActivityId = null;
 function openActivityModal(id) {
   _editingActivityId = id || null;
   const existing = id ? activities.find(a => a.id === id) : null;
-  _selectedActType = existing ? (existing.activityTypeId || null) : (activityTypes[0]?.id || null);
+  _selectedActType = existing ? (existing.activityTypeId || null) : (activityTemplates[0]?.id || null);
   _linkedGroupCheckoutIds = existing && Array.isArray(existing.linkedGroupCheckoutIds) ? existing.linkedGroupCheckoutIds.slice() : [];
   renderActTypeBtns();
   // Prefill name + default times from the picked class on a fresh add; on edit
   // we keep the existing instance values verbatim.
-  const cls = activityTypes.find(t => t.id === _selectedActType);
+  const cls = activityTemplates.find(t => t.id === _selectedActType);
   dom.actName.value  = existing ? (existing.name  || '') : (cls ? (L==='IS' && cls.nameIS ? cls.nameIS : cls.name) || '' : '');
   dom.actStart.value = existing ? (existing.start || '') : (cls ? cls.defaultStart || '' : '');
   dom.actEnd.value   = existing ? (existing.end   || '') : (cls ? cls.defaultEnd   || '' : '');
@@ -681,7 +681,7 @@ function closeActivityModal() { _editingActivityId = null; closeModal('activityM
 
 function saveActivity(keepOpen) {
   const name = dom.actName.value.trim();
-  const cls = activityTypes.find(t => t.id === _selectedActType);
+  const cls = activityTemplates.find(t => t.id === _selectedActType);
   if (!name) { showToast(s('daily.actNameLabel') + ' required.', 'warn'); return; }
   if (!cls)  { showToast(s('daily.actType') + ' required.', 'warn'); return; }
   const leaderName = document.getElementById('actLeader').value.trim();
@@ -926,7 +926,7 @@ function applyLogData(logRes, cfgRes) {
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
   amItems       = cfg.dailyChecklist?.opening || [];
   pmItems       = cfg.dailyChecklist?.closing || [];
-  activityTypes = cfg.activityTemplates || [];
+  activityTemplates = cfg.activityTemplates || [];
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
 

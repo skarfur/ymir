@@ -8,9 +8,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function renderActTypes() {
-  const card   = document.getElementById("actTypesCard");
+  const card   = document.getElementById("activityTemplatesCard");
   const locale = getLang() === 'IS' ? 'is' : 'en';
-  const active = actTypes
+  const active = activityTemplates
     .filter(a => bool(a.active))
     .sort((a, b) => {
       // Sort by tag first, then by name within tag
@@ -49,7 +49,7 @@ function renderActTypes() {
 
 function openActTypeModal(id) {
   editingId = id || null;
-  const a   = id ? actTypes.find(x => x.id === id) : null;
+  const a   = id ? activityTemplates.find(x => x.id === id) : null;
   document.getElementById("actTypeModalTitle").textContent = a ? s('admin.actTypeModal.edit') : s('admin.actTypeModal.add');
   document.getElementById("atName").value     = a ? a.name            : "";
   document.getElementById("atNameIS").value   = a ? (a.nameIS || "")  : "";
@@ -173,8 +173,8 @@ async function saveActType() {
   };
   await saveEntity({
     apiAction: "saveActivityType",
-    getArray:  () => actTypes,
-    setArray:  arr => { actTypes = arr; },
+    getArray:  () => activityTemplates,
+    setArray:  arr => { activityTemplates = arr; },
     payload, modalId: "actTypeModal",
     renderFn:  renderActTypes,
   });
@@ -354,7 +354,7 @@ async function deleteActType(id) {
   }
   try {
     const res = await apiPost("deleteActivityType", { id: _id });
-    actTypes = actTypes.filter(a => a.id !== _id);
+    activityTemplates = activityTemplates.filter(a => a.id !== _id);
     var removedE = (res && res.removedEvents) || 0;
     var removedS = (res && res.removedSignups) || 0;
     if (removedE > 0) {
@@ -382,7 +382,7 @@ async function deleteActType(id) {
       toast(s("toast.deleted"), "ok");
     }
     renderActTypes();
-    // The Scheduling timeline reads off the same actTypes array; refresh it
+    // The Scheduling timeline reads off the same activityTemplates array; refresh it
     // here so projected occurrences from the deleted class drop out of the
     // upcoming-events list immediately rather than after a full page reload.
     if (typeof renderUpcomingEvents === 'function') {
