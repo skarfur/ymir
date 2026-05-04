@@ -62,7 +62,7 @@ function openActTypeModal(id) {
   if (presetSel) presetSel.value = _matchClassTagPreset(atTag, atTagIS);
   document.getElementById("atActive").checked = a ? bool(a.active)    : true;
   document.getElementById("atVolunteer").checked = a ? bool(a.volunteer) : false;
-  document.getElementById("atCalendarId").value = a ? (a.calendarId || "") : "";
+  populateClubCalSelect(document.getElementById("atCalendarId"), a ? (a.calendarId || "") : "");
   document.getElementById("atCalendarSyncActive").checked = a ? bool(a.calendarSyncActive) : false;
   document.getElementById("atDefaultStart").value = a ? coerceHHMM(a.defaultStart) : "";
   document.getElementById("atDefaultEnd").value   = a ? coerceHHMM(a.defaultEnd)   : "";

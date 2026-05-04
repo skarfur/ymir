@@ -10,9 +10,10 @@
 // Self-healing config-key renames. Key = canonical config key; value = list
 // of legacy keys to fall back to when the canonical key is missing/empty.
 // Reads transparently fall through to the legacy key during the transition;
-// setupSpreadsheet copies legacy → canonical once explicitly. Empty for
-// now; populate when the next rename lands.
-const LEGACY_CONFIG_KEY_ALIASES_ = {};
+// setupSpreadsheet copies legacy → canonical once explicitly.
+const LEGACY_CONFIG_KEY_ALIASES_ = {
+  'activity_templates': ['activity_types'],
+};
 
 // Read the entire config sheet once and return a key→value map.
 function getConfigMap_() {

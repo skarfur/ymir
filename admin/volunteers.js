@@ -187,6 +187,10 @@ function openVolEventModal(id) {
   }
   document.getElementById("veNotes").value = ev ? (ev.notes || '') : '';
   document.getElementById("veNotesIS").value = ev ? (ev.notesIS || '') : '';
+  // Calendar push: per-event override. When unchecked + empty, the sync
+  // function falls through to the parent activity template's calendar.
+  populateClubCalSelect(document.getElementById("veCalendarId"), ev ? (ev.calendarId || '') : '');
+  document.getElementById("veCalendarSyncActive").checked = ev ? !!ev.calendarSyncActive : false;
   document.getElementById("veDeleteBtn").classList.toggle("hidden", !ev);
   // Populate activity type select (all active templates — signup roles +
   // reserved boats are now opt-in per occurrence regardless of the parent
@@ -238,6 +242,8 @@ async function saveVolEvent() {
     notesIS: document.getElementById("veNotesIS").value.trim(),
     roles: JSON.stringify(window._volRoles || []),
     reservedBoatIds: JSON.stringify(window._veReservedBoatIds || []),
+    calendarId: document.getElementById("veCalendarId").value.trim(),
+    calendarSyncActive: document.getElementById("veCalendarSyncActive").checked,
     active: true,
   };
   await saveEntity({
