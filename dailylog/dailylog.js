@@ -932,6 +932,15 @@ function applyLogData(logRes, cfgRes) {
     amChecks = sjson(log.openingChecks, {});
     pmChecks = sjson(log.closingChecks, {});
     activities = sjson(log.activities, []);
+    // Merge unmaterialized projections — backend already filters scheduledActivities
+    // to exclude ids present in log.activities, so dedup-by-id is enough. Without
+    // this, today's bulk-projected activities go missing once a dailyLog row
+    // exists with no scheduled_events activity rows for the date.
+    if (scheduled.length) {
+      var seen = {};
+      activities.forEach(function (a) { if (a && a.id) seen[a.id] = true; });
+      scheduled.forEach(function (a) { if (a && a.id && !seen[a.id]) activities.push(a); });
+    }
     wxLog    = sjson(log.weatherLog, []);
     dom.narrativeInput.value = log.narrative || '';
     if (log.signedOffBy) {
