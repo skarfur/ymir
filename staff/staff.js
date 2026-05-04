@@ -976,7 +976,10 @@ let _dlLinkTodayActs   = [];
 async function openDlLinkModal(checkoutId) {
   _dlLinkCheckoutId  = checkoutId;
   _dlLinkSelectedAct = null;
-  // Fetch today's daily log activities
+  // Fetch today's daily log activities. Merge materialized activities (from
+  // log.activities, populated by sched_listActivitiesForDate_) with the
+  // unmaterialized bulk projection (scheduledActivities) — backend filters the
+  // projection to exclude already-materialized ids, so dedup-by-id is enough.
   try {
     const today = todayISO();
     const res   = await apiGet('getDailyLog', { date: today });
@@ -985,7 +988,12 @@ async function openDlLinkModal(checkoutId) {
     if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
     // Legacy rows were double-encoded; unwrap once more if needed.
     if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
-    _dlLinkTodayActs = Array.isArray(_acts) ? _acts : [];
+    var _materialized = Array.isArray(_acts) ? _acts.slice() : [];
+    var _projected = Array.isArray(res.scheduledActivities) ? res.scheduledActivities : [];
+    var _seen = {};
+    _materialized.forEach(function (a) { if (a && a.id) _seen[a.id] = true; });
+    _projected.forEach(function (a) { if (a && a.id && !_seen[a.id]) _materialized.push(a); });
+    _dlLinkTodayActs = _materialized;
   } catch(e) { _dlLinkTodayActs = []; }
 
   const list = document.getElementById('dlLinkActList');

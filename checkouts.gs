@@ -23,8 +23,9 @@ function getActiveCheckouts_() {
   return okJ({ checkouts: enriched });
 }
 
-function saveCheckout_(b) {
+function saveCheckout_(b, caller) {
   ensureCheckoutContactCols_();
+  ensureActorCols_('checkouts');
   // Access-control check for controlled-access boats
   if (b.boatId) {
     try {
@@ -132,12 +133,15 @@ function saveCheckout_(b) {
     crewNames: b.crewNames || '',
     nonClub: b.nonClub || false,
     memberPhone, memberIsMinor, guardianName, guardianPhone,
+    actorKennitala: actorKt_(caller),
+    actorName:      actorName_(caller),
   });
   cDel_('checkouts'); return okJ({ id, created: true });
 }
 
-function saveGroupCheckout_(b) {
+function saveGroupCheckout_(b, caller) {
   ensureGroupCols_();
+  ensureActorCols_('checkouts');
   const ts = now_(), id = uid_();
   let wxSnap = '';
   if (b.wxSnapshot) {
@@ -153,9 +157,10 @@ function saveGroupCheckout_(b) {
     } catch(e) { wxSnap = ''; }
   }
   // Normalise arrays (frontend may send as JSON strings)
-  const boatIds   = Array.isArray(b.boatIds)   ? b.boatIds   : tryParseArr_(b.boatIds);
-  const boatNames = Array.isArray(b.boatNames)  ? b.boatNames : tryParseArr_(b.boatNames);
-  const staffNames= Array.isArray(b.staffNames) ? b.staffNames: tryParseArr_(b.staffNames);
+  const boatIds        = Array.isArray(b.boatIds)         ? b.boatIds         : tryParseArr_(b.boatIds);
+  const boatNames      = Array.isArray(b.boatNames)       ? b.boatNames       : tryParseArr_(b.boatNames);
+  const staffNames     = Array.isArray(b.staffNames)      ? b.staffNames      : tryParseArr_(b.staffNames);
+  const staffKennitalar= Array.isArray(b.staffKennitalar) ? b.staffKennitalar : tryParseArr_(b.staffKennitalar);
   insertRow_('checkouts', {
     id,
     boatId:          boatIds.join(','),
@@ -176,28 +181,100 @@ function saveGroupCheckout_(b) {
     isGroup:         true,
     participants:    parseInt(b.participants) || 0,
     staffNames:      JSON.stringify(staffNames),
+    staffKennitalar: JSON.stringify(staffKennitalar),
     boatNames:       JSON.stringify(boatNames),
     boatIds:         JSON.stringify(boatIds),
     activityTypeId:  b.activityTypeId || '',
     activityTypeName:b.activityTypeName || '',
+    actorKennitala:  actorKt_(caller),
+    actorName:       actorName_(caller),
   });
   cDel_('checkouts');
   return okJ({ id, created: true });
 }
 
-function groupCheckIn_(b) {
+function groupCheckIn_(b, caller) {
   if (!b.id) return failJ('id required');
   const checkedInAt = b.timeIn || nowLocalTime_();
-  updateRow_('checkouts', 'id', b.id, { status: 'in', checkedInAt });
+  ensureActorCols_('checkouts');
+  updateRow_('checkouts', 'id', b.id, {
+    status: 'in', checkedInAt,
+    actorKennitala: actorKt_(caller),
+    actorName:      actorName_(caller),
+  });
+  // Create one trip row per named staff member with a kennitala so supervising
+  // staff get sea-time credit and the group sail surfaces in logbook/passport
+  // queries the same way an individual checkout does. Anonymous participants
+  // remain off the trip ledger (mostly minors/guests with no kt on file).
+  var tripsCreated = 0;
+  try { tripsCreated = createSupervisorTripsForGroup_(b.id, checkedInAt, caller); }
+  catch (e) { Logger.log('createSupervisorTripsForGroup_ failed: ' + e); }
   cDel_('checkouts');
-  return okJ({ updated: true, checkedInAt });
+  return okJ({ updated: true, checkedInAt, tripsCreated });
 }
 
-function linkGroupCheckoutToActivity_(b) {
+// One trip row per named staff member with a kennitala. Idempotent — finds
+// existing trips for this checkout id (any role) and skips kennitalar that
+// already have one. Returns the number of trips actually inserted.
+function createSupervisorTripsForGroup_(checkoutId, checkedInAt, caller) {
+  var co = findOne_('checkouts', 'id', checkoutId);
+  if (!co) return 0;
+  var staffNames     = tryParseArr_(co.staffNames);
+  var staffKennitalar= tryParseArr_(co.staffKennitalar);
+  if (!staffKennitalar.length) return 0;
+  ensureActorCols_('trips');
+  var existing = readAll_('trips').filter(function (t) {
+    return String(t.linkedCheckoutId || '') === String(checkoutId);
+  });
+  var seenKt = {};
+  existing.forEach(function (t) { if (t.kennitala) seenKt[String(t.kennitala)] = true; });
+  var timeOut = sstr_(co.checkedOutAt).slice(0, 5);
+  var timeIn  = sstr_(checkedInAt).slice(0, 5);
+  var hoursDecimal = 0;
+  if (timeOut && timeIn) {
+    var oh = parseInt(timeOut.slice(0, 2), 10), om = parseInt(timeOut.slice(3, 5), 10);
+    var ih = parseInt(timeIn.slice(0, 2), 10),  im = parseInt(timeIn.slice(3, 5), 10);
+    var mins = (ih * 60 + im) - (oh * 60 + om);
+    if (mins < 0) mins += 1440;
+    hoursDecimal = Math.round((mins / 60) * 100) / 100;
+  }
+  var date = nowLocalDate_();
+  var ts = now_();
+  var n = 0;
+  staffKennitalar.forEach(function (kt, i) {
+    kt = String(kt || '').trim();
+    if (!kt || seenKt[kt]) return;
+    var name = staffNames[i] || '';
+    insertRow_('trips', {
+      id: uid_(), kennitala: kt, memberName: name,
+      date: date, timeOut: timeOut, timeIn: timeIn, hoursDecimal: hoursDecimal,
+      boatId: co.boatId || '', boatName: co.boatName || '', boatCategory: co.boatCategory || '',
+      locationId: co.locationId || '', locationName: co.locationName || '',
+      crew: parseInt(co.crew) || 0, role: 'supervisor',
+      wxSnapshot: co.wxSnapshot || '',
+      notes: co.activityTypeName ? 'Group: ' + co.activityTypeName : 'Group sail',
+      isLinked: true, linkedCheckoutId: String(checkoutId),
+      departurePort: co.departurePort || '',
+      actorKennitala: actorKt_(caller), actorName: actorName_(caller),
+      createdAt: ts, updatedAt: ts,
+    });
+    n++;
+  });
+  return n;
+}
+
+function sstr_(v) { return String(v == null ? '' : v); }
+
+function linkGroupCheckoutToActivity_(b, caller) {
   if (!b.checkoutId || !b.activityId) return failJ('checkoutId and activityId required');
   // Mark the checkout with the linked activity id
   addColIfMissing_('checkouts', 'linkedActivityId');
-  updateRow_('checkouts', 'id', b.checkoutId, { linkedActivityId: b.activityId });
+  ensureActorCols_('checkouts');
+  updateRow_('checkouts', 'id', b.checkoutId, {
+    linkedActivityId: b.activityId,
+    actorKennitala:   actorKt_(caller),
+    actorName:        actorName_(caller),
+  });
   cDel_('checkouts');
   return okJ({ linked: true });
 }
@@ -208,10 +285,15 @@ function tryParseArr_(v) {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : [String(v)]; } catch(e) { return String(v).split(',').map(x=>x.trim()).filter(Boolean); }
 }
 
-function checkIn_(b) {
+function checkIn_(b, caller) {
   if (!b.id) return failJ('id required');
+  ensureActorCols_('checkouts');
   const checkedInAt = b.timeIn || nowLocalTime_();
-  const updates = { status: 'in', checkedInAt };
+  const updates = {
+    status: 'in', checkedInAt,
+    actorKennitala: actorKt_(caller),
+    actorName:      actorName_(caller),
+  };
   if (b.afterSailChecklist) updates.afterSailChecklist = b.afterSailChecklist;
   updateRow_('checkouts', 'id', b.id, updates);
   cDel_('checkouts'); return okJ({ updated: true, checkedInAt });

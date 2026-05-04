@@ -19,6 +19,10 @@ var SCHEMA_ = {
     'id','date','openingChecks','closingChecks','activities',
     'weatherLog','narrative','tideData',
     'signedOffBy','signedOffAt','updatedBy','createdAt','updatedAt',
+    // Authoritative actor identity stamped from the session caller. updatedBy
+    // is a free-text display name (client-supplied, spoofable); these are the
+    // audit trail.
+    'actorKennitala','actorName',
   ],
   maintenance: [
     'id','category','boatId','boatName','itemName','part','severity',
@@ -36,11 +40,13 @@ var SCHEMA_ = {
     'wxSnapshot','preLaunchChecklist','afterSailChecklist','notes',
     'status','nonClub','createdAt','departurePort','crewNames',
     // group checkouts
-    'isGroup','participants','staffNames','boatNames','boatIds',
+    'isGroup','participants','staffNames','staffKennitalar','boatNames','boatIds',
     'activityTypeId','activityTypeName','linkedActivityId',
     // overdue alerts
     'alertSilenced','alertSilencedBy','alertSilencedAt',
     'alertSnoozedUntil','alertFirstSent',
+    // Authoritative actor (session caller) for any staff-initiated write.
+    'actorKennitala','actorName',
   ],
   // daily_checklist removed — now stored as JSON in config key 'dailyChecklist'
   incidents: [
@@ -67,6 +73,9 @@ var SCHEMA_ = {
     'trackFileUrl','trackSimplified','trackSource',
     'photoUrls','photoMeta',
     'createdAt','updatedAt',
+    // Authoritative actor (session caller) for staff-initiated inserts
+    // (e.g. supervisor trips materialized at group check-in).
+    'actorKennitala','actorName',
   ],
   trip_confirmations: [
     'id','type','status',

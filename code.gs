@@ -815,6 +815,12 @@ function authCaller_(b) {
 function isAdmin_(caller) { return caller && caller.role === 'admin'; }
 function isStaff_(caller) { return caller && (caller.role === 'staff' || caller.role === 'admin'); }
 
+// Authoritative actor identity for audit columns. Use these instead of
+// trusting any client-supplied display string (e.g. b.updatedBy, user.name) —
+// caller comes from authCaller_ which re-reads the members row each call.
+function actorKt_(caller)   { return caller && caller.kennitala ? String(caller.kennitala) : ''; }
+function actorName_(caller) { return caller && caller.member && caller.member.name ? String(caller.member.name) : ''; }
+
 // Decide whether `caller` is permitted to run `action` with body `b`.
 // Returns null on allow or a failJ response on deny. Centralises all
 // role/self-or-admin gating so route_ stays a plain dispatch table.
@@ -1103,7 +1109,10 @@ function addColIfMissing_(tabKey, colName) {
   }
 }
 function ensureGroupCols_() {
-  ['isGroup','participants','staffNames','boatNames','boatIds','activityTypeId','activityTypeName'].forEach(c => addColIfMissing_('checkouts', c));
+  ['isGroup','participants','staffNames','staffKennitalar','boatNames','boatIds','activityTypeId','activityTypeName'].forEach(c => addColIfMissing_('checkouts', c));
+}
+function ensureActorCols_(tabKey) {
+  ['actorKennitala','actorName'].forEach(c => addColIfMissing_(tabKey, c));
 }
 function ensureCheckoutContactCols_() {
   ['memberPhone','memberIsMinor','guardianName','guardianPhone'].forEach(c => addColIfMissing_('checkouts', c));
@@ -1258,6 +1267,7 @@ function route_(action, b, caller) {
     case 'getDailyLog': return getDailyLog_(b.date);
     case 'saveDailyLog': return saveDailyLog_(b);
     case 'getActivityLog': return getActivityLog_(b);
+    case 'saveDailyLog': return saveDailyLog_(b, caller);
     case 'getMaintenance': return getMaintenance_();
     case 'saveMaintenance': return saveMaintenance_(b);
     case 'resolveMaintenance': return resolveMaintenance_(b);
@@ -1312,12 +1322,12 @@ function route_(action, b, caller) {
     case 'resolveIncident': return resolveIncident_(b);
     case 'addIncidentNote': return addIncidentNote_(b);
     case 'getActiveCheckouts': return getActiveCheckouts_();
-    case 'saveCheckout': return saveCheckout_(b);
-    case 'checkIn': return checkIn_(b);
+    case 'saveCheckout': return saveCheckout_(b, caller);
+    case 'checkIn': return checkIn_(b, caller);
     case 'deleteCheckout': return deleteCheckout_(b.id);
-    case 'saveGroupCheckout': return saveGroupCheckout_(b);
-    case 'groupCheckIn': return groupCheckIn_(b);
-    case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b);
+    case 'saveGroupCheckout': return saveGroupCheckout_(b, caller);
+    case 'groupCheckIn': return groupCheckIn_(b, caller);
+    case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b, caller);
     // charter endpoints removed — use saveReservation / removeReservation
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveBoatOos': return saveBoatOos_(b);

@@ -20,6 +20,44 @@ Backend: `scheduling.gs` gains `sched_listActivityLog_(from, to, opts)`
 `_POST_CACHEABLE` (30 s) and `saveDailyLog` invalidates it; the
 class-occurrence writes already on the cache map pick up the new key
 too.
+## Unreleased — scheduling & group-checkout audit fixes
+
+Four related fixes around the daily-log / group-checkout / scheduled-events seam:
+
+1. **Daily log — scheduled activities now show on today.** `applyLogData`
+   was only consuming `scheduledActivities` (the bulk projection) when no
+   `dailyLog` row existed. Once any save (AM checks, weather, narrative)
+   created the row, today's projected activities silently disappeared
+   because `log.activities` only carries materialized `scheduled_events`
+   rows. Now merges projection into `activities` even when the row
+   exists; the backend already filters by id so no duplicates. Same fix
+   applied to the staff page's "Link group checkout" modal
+   (`openDlLinkModal`).
+
+2. **Daily log — "Link group checkout" picker fetches active checkouts
+   directly.** Previously read from `window._activeCheckouts`, populated
+   only by `loadTodayTrips`, which only runs on the today branch.
+   Past/future views always saw an empty picker. The picker now
+   `await`s `getActiveCheckouts` itself, and includes group sails that
+   have already been checked back in (so retroactive linking works).
+
+3. **Authoritative actor identity on staff writes.** Staff-action
+   handlers now receive the resolved `caller` from `route_` and stamp
+   `actorKennitala` + `actorName` from `caller.member` instead of
+   trusting client-supplied `b.updatedBy` / `user.name`. New columns
+   added to `dailyLog`, `checkouts`, and `trips`. Also persists
+   `staffKennitalar` on group checkouts (frontend was already sending
+   it; backend was dropping it). Helpers `actorKt_` / `actorName_` in
+   `code.gs`; `ensureActorCols_(tabKey)` for live schema migration.
+
+4. **Group check-in auto-creates supervisor trip rows.** `groupCheckIn_`
+   now materializes one `trips` row per named staff member with a
+   kennitala (`role: 'supervisor'`, linked back via
+   `linkedCheckoutId`). Idempotent — skips kennitalar that already have
+   a trip for the same checkout. Anonymous participants stay off the
+   trip ledger (mostly minors/guests with no kt on file). Gives
+   supervising staff sea-time / passport credit and surfaces group
+   sails in logbook queries the same way individual checkouts do.
 
 ## Unreleased — promote getConfig/getHandbook to localStorage with cross-tab invalidation
 
