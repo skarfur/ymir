@@ -334,6 +334,7 @@ textarea {
   color: var(--text);
   padding: 10px 14px;
   font-size: 14px;
+  line-height: 1.5;
   font-family: inherit;
   outline: none;
   transition: border-color .2s, box-shadow .2s;
@@ -1461,7 +1462,7 @@ textarea { min-height: 70px; }
   input[type=text], input[type=number], input[type=email],
   input[type=tel], input[type=date], input[type=time],
   input[type=password], input[type=file], select, textarea {
-    padding: 10px 12px; font-size: 16px;
+    padding: 10px 12px;
   }
 
   /* ── Modals ── */
