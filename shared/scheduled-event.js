@@ -31,23 +31,18 @@
 
   // Normalize a single raw row (volunteer event DTO from getConfig, or a
   // daily-log activity from getDailyLog) into the unified Activity shape.
-  // `opts.signupRequired` determines the flavor (legacy `opts.kind` is still
-  // accepted for back-compat); `opts.source` defaults to a sensible guess.
+  // `opts.signupRequired` determines the flavor; `opts.source` defaults to a
+  // sensible guess.
   function toScheduledEvent(raw, opts) {
     if (!raw) return null;
     opts = opts || {};
     // Resolve signupRequired from explicit opt, raw row, or by sniffing
     // (presence of roles/leaderName implies a signup-tracked activity).
-    // Legacy `kind` is consulted as a final fallback for stragglers.
     var signupRequired;
     if (opts.signupRequired === true || opts.signupRequired === false) {
       signupRequired = opts.signupRequired;
     } else if (raw.signupRequired === true || raw.signupRequired === false) {
       signupRequired = raw.signupRequired;
-    } else if (opts.kind) {
-      signupRequired = (opts.kind === 'volunteer');
-    } else if (raw.kind) {
-      signupRequired = (raw.kind === 'volunteer');
     } else {
       signupRequired = !!(raw.roles || raw.leaderName);
     }

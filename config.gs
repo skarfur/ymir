@@ -7,14 +7,6 @@
 // the (typically JSON) value. Most domain config (boats, locations, certDefs,
 // activity templates, flagConfig, …) lives in here under one row per key.
 
-// Self-healing config-key renames. Key = canonical config key; value = list
-// of legacy keys to fall back to when the canonical key is missing/empty.
-// Reads transparently fall through to the legacy key during the transition;
-// setupSpreadsheet copies legacy → canonical once explicitly.
-const LEGACY_CONFIG_KEY_ALIASES_ = {
-  'activity_templates': ['activity_types'],
-};
-
 // Read the entire config sheet once and return a key→value map.
 function getConfigMap_() {
   let sheet;
@@ -28,14 +20,6 @@ function getConfigMap_() {
 
 function getConfigValue_(key, map) {
   const v = map[key];
-  if (v !== undefined && v !== '') return v;
-  const aliases = LEGACY_CONFIG_KEY_ALIASES_[key];
-  if (aliases) {
-    for (let i = 0; i < aliases.length; i++) {
-      const alt = map[aliases[i]];
-      if (alt !== undefined && alt !== '') return alt;
-    }
-  }
   return v !== undefined ? v : null;
 }
 
@@ -46,20 +30,8 @@ function getConfigSheetValue_(key) {
   try { sheet = getSheet_('config'); } catch (e) { return null; }
   if (sheet.getLastRow() < 2) return null;
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
-  const findRow = function (k) {
-    const r = data.find(row => String(row[0]).trim() === k);
-    return r ? String(r[1]).trim() : null;
-  };
-  const v = findRow(key);
-  if (v !== null && v !== '') return v;
-  const aliases = LEGACY_CONFIG_KEY_ALIASES_[key];
-  if (aliases) {
-    for (let i = 0; i < aliases.length; i++) {
-      const alt = findRow(aliases[i]);
-      if (alt !== null && alt !== '') return alt;
-    }
-  }
-  return v;
+  const r = data.find(row => String(row[0]).trim() === key);
+  return r ? String(r[1]).trim() : null;
 }
 
 function setConfigSheetValue_(key, value) {

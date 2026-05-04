@@ -10,12 +10,6 @@
 //   signupRequired=false — plain activity, surfaced by the daily-log renderer
 //                          and the midnight materializer.
 //
-// (A legacy `kind` column — 'volunteer' | 'activity' — may still be present
-// on rows written before the cleanup; new writes no longer populate it, and
-// activity_parseRow_ falls back to it only if signupRequired is missing. It
-// can be dropped manually from the sheet once you're confident the
-// signupRequired backfill has run for every row.)
-//
 // An activity may be templated from an `activity_templates` row via
 // `activityTypeId`, or authored ad-hoc with no template.
 //
@@ -29,10 +23,6 @@
 // activity_parseRow_ takes a sanitized row from readAll_('activities') and
 // returns a shape where `roles` is parsed back into an array and booleans are
 // unwrapped. Use this everywhere readers need the domain object.
-//
-// `signupRequired` is the canonical boolean. The migration backfilled it on
-// every existing row before this commit, so a missing value just falls back
-// to false (a plain activity).
 function activity_parseRow_(row) {
   if (!row) return null;
   var roles = [];
@@ -193,12 +183,10 @@ function activity_listForDate_(dateISO) {
   });
 }
 
-// Filter activities to a date range. Optional `kind` filter accepts the legacy
-// values 'volunteer' / 'activity' for backward compat, mapped to signupRequired.
-function activity_listInRange_(fromIso, toIso, kind) {
-  var wantSignup = null;
-  if (kind === 'volunteer') wantSignup = true;
-  else if (kind === 'activity') wantSignup = false;
+// Filter activities to a date range. Optional `signupRequired` filter
+// (true | false | null) restricts to one flavor; null returns both.
+function activity_listInRange_(fromIso, toIso, signupRequired) {
+  var wantSignup = (signupRequired === true || signupRequired === false) ? signupRequired : null;
   return activity_listAll_().filter(function (e) {
     if (!e || e.status === 'cancelled') return false;
     if (wantSignup !== null && e.signupRequired !== wantSignup) return false;
@@ -215,7 +203,7 @@ function activity_listInRange_(fromIso, toIso, kind) {
 // apply server-side; an empty filter passes through.
 function activity_listLog_(fromIso, toIso, opts) {
   opts = opts || {};
-  var rows = activity_listInRange_(fromIso, toIso, 'activity');
+  var rows = activity_listInRange_(fromIso, toIso, false);
   // Build id -> { classTag, classTagIS } map from saved activity types so the
   // response carries the tag without forcing the client to read getConfig.
   var typeMap = {};
@@ -371,22 +359,3 @@ function activity_signupCountsById_() {
   return out;
 }
 
-// ── Transitional shims for the sched_* → activity_* rename (b108509) ─────────
-// Apps Script projects can hold partially-stale .gs files between pushes — if
-// scheduling.gs lands but a caller (e.g. members.gs) is still pre-rename, the
-// caller throws "sched_X is not defined" until the next push lands. These
-// aliases keep the old names callable so a partial sync degrades gracefully.
-// Drop once you're confident every deployment has caught up.
-function sched_parseRow_(row)                   { return activity_parseRow_(row); }
-function sched_rowShape_(ev)                    { return activity_rowShape_(ev); }
-function sched_getById_(id)                     { return activity_getById_(id); }
-function sched_listAll_()                       { return activity_listAll_(); }
-function sched_listVolunteerEvents_()           { return activity_listVolunteerEvents_(); }
-function sched_listActivitiesForDate_(dateISO)  { return activity_listForDate_(dateISO); }
-function sched_listInRange_(fromIso, toIso, kind) { return activity_listInRange_(fromIso, toIso, kind); }
-function sched_listActivityLog_(fromIso, toIso, opts) { return activity_listLog_(fromIso, toIso, opts); }
-function sched_upsert_(ev)                      { return activity_upsert_(ev); }
-function sched_cancel_(id, updatedBy)           { return activity_cancel_(id, updatedBy); }
-function sched_hardDelete_(id)                  { return activity_hardDelete_(id); }
-function sched_signupCountsByEvent_()           { return activity_signupCountsById_(); }
-function ensureScheduledEventsSheet_()          { return ensureActivitiesSheet_(); }
