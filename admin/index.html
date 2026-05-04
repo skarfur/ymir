@@ -213,43 +213,13 @@
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-scheduling" class="hidden">
-      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities.
-           "+ Add event" creates a one-off (no parent activity type required); per-type instances
-           appear here automatically once a type's bulk schedule has been authored. -->
-      <div class="col-section">
-        <div class="col-head open" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
-          <span class="col-toggle open">▼</span>
-        </div>
-        <div class="col-body" id="schedUpcomingCard">
-          <div class="loading-state"><span class="spinner"></span></div>
-        </div>
-        <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
-        </div>
-      </div>
-
-      <!-- Activity types (templates) -->
-      <div class="col-section">
-        <div class="col-head" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.actTypesTitle"></div>
-          <span class="col-toggle">▼</span>
-        </div>
-        <div class="col-body hidden" id="actTypesCard">
-          <div class="loading-state"><span class="spinner"></span></div>
-        </div>
-        <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
-        </div>
-      </div>
-
       <!-- Club calendars (GCal link registry) -->
       <div class="col-section">
-        <div class="col-head" data-admin-toggle-section>
+        <div class="col-head open" data-admin-toggle-section>
           <div class="col-title" data-s="admin.tabCalendars"></div>
-          <span class="col-toggle">▼</span>
+          <span class="col-toggle open">▼</span>
         </div>
-        <div class="col-body hidden">
+        <div class="col-body">
           <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.calDesc"></div>
           <div id="clubCalList"></div>
           <button class="btn btn-secondary mt-8" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
@@ -257,42 +227,6 @@
             <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
             <span id="clubCalSaveMsg" class="text-xs"></span>
           </div>
-        </div>
-      </div>
-
-      <!-- Reservation slots — slots projected from activity-type schedules,
-           plus any manually-created singles or recurring overrides. -->
-      <div class="col-section">
-        <div class="col-head" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.tabReservations"></div>
-          <span class="col-toggle">▼</span>
-        </div>
-        <div class="col-body hidden">
-          <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc"></div>
-          <div class="d-flex items-center gap-10 mb-10 flex-wrap">
-            <select id="slotCatFilter" data-admin-change="loadSlotCalendar" class="filter-select"></select>
-            <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" class="filter-select">
-              <option value="" data-s="slot.allBoats">All boats</option>
-            </select>
-            <div class="slot-week-nav">
-              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="-1">&larr;</button>
-              <span id="slotWeekLabel" class="week-label"></span>
-              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="1">&rarr;</button>
-              <button class="btn btn-secondary" data-admin-click="slotWeekToday" data-s="slot.today">Today</button>
-            </div>
-          </div>
-          <div id="slotCalGrid" style="overflow-x:auto"></div>
-          <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
-            <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
-            <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
-          </div>
-          <details class="mt-12">
-            <summary class="text-xs text-muted cursor-pointer" data-s="admin.manualSlotAdd">Add slot manually</summary>
-            <div class="d-flex gap-8 mt-8 flex-wrap">
-              <button class="btn btn-secondary" data-s="slot.addSingle" data-s-attr="title" data-admin-click="openNewSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addSingle">+ Single</span></button>
-              <button class="btn btn-secondary" data-s="slot.addRecurring" data-s-attr="title" data-admin-click="openRecurringSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
-            </div>
-          </details>
         </div>
       </div>
 
@@ -332,6 +266,72 @@
             <span id="charterCalSaveMsg" class="text-xs"></span>
           </div>
           <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
+        </div>
+      </div>
+
+      <!-- Reservation slots — slots projected from activity-type schedules,
+           plus any manually-created singles or recurring overrides. -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.tabReservations"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden">
+          <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.chartersDesc"></div>
+          <div class="d-flex items-center gap-10 mb-10 flex-wrap">
+            <select id="slotCatFilter" data-admin-change="loadSlotCalendar" class="filter-select"></select>
+            <select id="slotBoatFilter" data-admin-change="renderSlotCalendar" class="filter-select">
+              <option value="" data-s="slot.allBoats">All boats</option>
+            </select>
+            <div class="slot-week-nav">
+              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="-1">&larr;</button>
+              <span id="slotWeekLabel" class="week-label"></span>
+              <button class="btn btn-secondary" data-admin-click="shiftSlotWeek" data-admin-arg="1">&rarr;</button>
+              <button class="btn btn-secondary" data-admin-click="slotWeekToday" data-s="slot.today">Today</button>
+            </div>
+          </div>
+          <div id="slotCalGrid" style="overflow-x:auto"></div>
+          <div class="mt-8 d-flex gap-12 text-10 text-muted flex-wrap">
+            <span><span class="d-inline-block bg-surface border-muted" style="width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendOpen">Open</span></span>
+            <span><span class="d-inline-block" style="width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span> <span data-s="slot.legendBooked">Booked</span></span>
+          </div>
+          <details class="mt-12">
+            <summary class="text-xs text-muted cursor-pointer" data-s="admin.manualSlotAdd">Add slot manually</summary>
+            <div class="d-flex gap-8 mt-8 flex-wrap">
+              <button class="btn btn-secondary" data-s="slot.addSingle" data-s-attr="title" data-admin-click="openNewSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addSingle">+ Single</span></button>
+              <button class="btn btn-secondary" data-s="slot.addRecurring" data-s-attr="title" data-admin-click="openRecurringSlotModal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="1" fill="currentColor" stroke="none"/></svg><span class="btn-label" data-s="slot.addRecurring">+ Recurring</span></button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Activity types (templates) -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.actTypesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="actTypesCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
+        </div>
+      </div>
+
+      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities.
+           "+ Add event" creates a one-off (no parent activity type required); per-type instances
+           appear here automatically once a type's bulk schedule has been authored. -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="schedUpcomingCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
         </div>
       </div>
     </div>
