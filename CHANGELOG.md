@@ -59,6 +59,18 @@ Four related fixes around the daily-log / group-checkout / scheduled-events seam
    supervising staff sea-time / passport credit and surfaces group
    sails in logbook queries the same way individual checkouts do.
 
+5. **Daily-log activity modal: per-activity extras now persist.**
+   `ablerRegistered`, `linkedGroupCheckoutIds`, and the per-activity
+   `editedBy` / `editedAt` audit stamps were silently dropped at the
+   `persistDailyLogActivities_` → `sched_upsert_` → `sched_rowShape_`
+   pipeline (none of the three layers carried the fields). After save
+   + refresh, the "Abler ✓" badge, linked-group-checkout chips, and
+   "edited by" badges all disappeared. Plumbed through end-to-end:
+   schema in `_setup.gs` and `SCHEDULED_EVENTS_COLS_`, write in
+   `sched_rowShape_`, read in `sched_parseRow_`, the upsert payload in
+   `persistDailyLogActivities_`, and the round-trip shape in
+   `_schedActivityToLogShape_`.
+
 ## Unreleased — promote getConfig/getHandbook to localStorage with cross-tab invalidation
 
 Frontend-only change. Profiling on a real session showed `getConfig` is

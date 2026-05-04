@@ -24,6 +24,8 @@ function sched_parseRow_(row) {
   try { roles = row.roles ? JSON.parse(row.roles) : []; } catch (e) { roles = []; }
   var reservedBoatIds = [];
   try { reservedBoatIds = row.reservedBoatIds ? JSON.parse(row.reservedBoatIds) : []; } catch (e) { reservedBoatIds = []; }
+  var linkedGroupCheckoutIds = [];
+  try { linkedGroupCheckoutIds = row.linkedGroupCheckoutIds ? JSON.parse(row.linkedGroupCheckoutIds) : []; } catch (e) { linkedGroupCheckoutIds = []; }
   return {
     id:                    row.id || '',
     kind:                  row.kind || '',
@@ -55,6 +57,10 @@ function sched_parseRow_(row) {
     createdAt:             row.createdAt || '',
     updatedAt:             row.updatedAt || '',
     updatedBy:             row.updatedBy || '',
+    ablerRegistered:        row.ablerRegistered === true || row.ablerRegistered === 'true',
+    linkedGroupCheckoutIds: Array.isArray(linkedGroupCheckoutIds) ? linkedGroupCheckoutIds.map(String) : [],
+    editedBy:               row.editedBy || '',
+    editedAt:               row.editedAt || '',
   };
 }
 
@@ -93,6 +99,10 @@ function sched_rowShape_(ev) {
   if (ev.createdAt !== undefined)             out.createdAt = ev.createdAt;
   if (ev.updatedAt !== undefined)             out.updatedAt = ev.updatedAt;
   if (ev.updatedBy !== undefined)             out.updatedBy = ev.updatedBy;
+  if (ev.ablerRegistered !== undefined)       out.ablerRegistered = !!ev.ablerRegistered;
+  if (ev.linkedGroupCheckoutIds !== undefined) out.linkedGroupCheckoutIds = JSON.stringify(Array.isArray(ev.linkedGroupCheckoutIds) ? ev.linkedGroupCheckoutIds.map(String).filter(Boolean) : []);
+  if (ev.editedBy !== undefined)              out.editedBy = ev.editedBy;
+  if (ev.editedAt !== undefined)              out.editedAt = ev.editedAt;
   return out;
 }
 
@@ -114,6 +124,8 @@ var SCHEDULED_EVENTS_COLS_ = [
   'gcalEventId',
   'dailyLogDate',
   'createdAt','updatedAt','updatedBy',
+  // Per-activity extras saved from the daily-log activity modal.
+  'ablerRegistered','linkedGroupCheckoutIds','editedBy','editedAt',
 ];
 
 function ensureScheduledEventsSheet_() {
