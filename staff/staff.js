@@ -526,6 +526,13 @@ function openCoDetail(id, event) {
   document.getElementById('cdOut').textContent      = sstr(co.checkedOutAt||co.timeOut).slice(0,5) || '—';
   document.getElementById('cdReturn').textContent   = co.expectedReturn || '—';
   document.getElementById('cdCrew').textContent     = co.crew || 1;
+  // Group sails get a resolved activity name from the backend; show a generic
+  // fallback when nothing's linked yet so staff can still tell it apart from
+  // an individual checkout.
+  const isGrp = co.isGroup === true || co.isGroup === 'true';
+  const actRow = document.getElementById('cdActivityRow');
+  actRow.style.display = isGrp ? '' : 'none';
+  document.getElementById('cdActivity').textContent = isGrp ? (co.groupLabel || s('lbl.groupSail')) : '';
   const notesRow = document.getElementById('cdNotesRow');
   notesRow.style.display = co.notes ? '' : 'none';
   document.getElementById('cdNotes').textContent    = co.notes || '';
@@ -872,7 +879,10 @@ async function submitGroupCheckout() {
   const tout  = document.getElementById('gmTimeOut').value || fmtTimeNow();
   const retBy = document.getElementById('gmReturnBy').value;
   const actId = document.getElementById('gmActivity').value;
-  const actName = document.getElementById('gmActivity').selectedOptions[0]?.text || '';
+  // Only capture the visible label when a real type is selected; the
+  // placeholder option's text ("— None —") would otherwise leak into the
+  // checkout's activityTypeName and render badly downstream.
+  const actName = actId ? (document.getElementById('gmActivity').selectedOptions[0]?.text || '') : '';
   const loc = locations.find(l => l.id === lid) || {};
   const snap = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   const staffEntries = Array.from(document.querySelectorAll('#gmStaffSection input'))
