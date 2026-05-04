@@ -808,15 +808,18 @@ function _schedActivityToLogShape_(a) {
   };
 }
 
-function saveDailyLog_(b) {
+function saveDailyLog_(b, caller) {
   const ts = now_(), date = b.date || ts.slice(0, 10);
   const ex = findOne_('dailyLog', 'date', date);
+  ensureActorCols_('dailyLog');
+  const actorKt   = actorKt_(caller);
+  const actorName = actorName_(caller);
   // Persist activities into scheduled_events (kind='activity'). Each activity
   // gets its own row keyed by id; sync to activity-type calendars happens
   // inside syncDailyLogActivities_.
   if (b.activities !== undefined) {
     var oldRows = sched_listActivitiesForDate_(date);
-    persistDailyLogActivities_(date, oldRows, b.activities || [], b.updatedBy || '');
+    persistDailyLogActivities_(date, oldRows, b.activities || [], actorName || b.updatedBy || '');
   }
   // The `activities` column on dailyLog is now unread (authoritative source is
   // scheduled_events). We still write an empty JSON array to the column so the
@@ -834,7 +837,8 @@ function saveDailyLog_(b) {
       tideData: b.tideData !== undefined ? JSON.stringify(b.tideData) : ex.tideData,
       signedOffBy: b.signedOffBy || ex.signedOffBy || '',
       signedOffAt: b.signedOffAt || ex.signedOffAt || '',
-      updatedBy: b.updatedBy || '', updatedAt: ts,
+      updatedBy: b.updatedBy || actorName || '', updatedAt: ts,
+      actorKennitala: actorKt, actorName: actorName,
     });
     return okJ({ date, updated: true });
   } else {
@@ -847,7 +851,8 @@ function saveDailyLog_(b) {
       narrative: b.narrative || '',
       tideData: JSON.stringify(b.tideData || {}),
       signedOffBy: b.signedOffBy || '', signedOffAt: b.signedOffAt || '',
-      updatedBy: b.updatedBy || '', createdAt: ts, updatedAt: ts,
+      updatedBy: b.updatedBy || actorName || '', createdAt: ts, updatedAt: ts,
+      actorKennitala: actorKt, actorName: actorName,
     });
     return okJ({ date, created: true });
   }
