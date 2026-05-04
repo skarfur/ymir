@@ -266,6 +266,9 @@ var _INVALIDATES = {
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
   setHelm:                 ['getTrips'],
+  // Group sail ↔ activity link: trip cards' resolved Activity row reads
+  // through this on the backend, so cached getTrips needs to drop.
+  linkGroupCheckoutToActivity: ['getTrips'],
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],

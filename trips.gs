@@ -10,6 +10,21 @@ function getTrips_(kennitala, limit, p) {
   const offset = parseInt(p.offset) || 0;
   const lim    = limit || 100;
   const page   = sorted.slice(offset, offset + lim);
+  // Resolve the group-sail activity name for supervisor trips at read time so
+  // edits via either link path (checkouts.linkedActivityId or
+  // scheduledEvents.linkedGroupCheckoutIds) flow through without backfill.
+  // Map-key presence carries the "is group" flag; the value (possibly '') is
+  // the resolved activity name.
+  let labelMap = {};
+  try { labelMap = buildGroupLabelMap_(); } catch (e) { labelMap = {}; }
+  page.forEach(t => {
+    if (!t.linkedCheckoutId) return;
+    const key = String(t.linkedCheckoutId);
+    if (key in labelMap) {
+      t.isGroupTrip = true;
+      t.groupLabel = labelMap[key];
+    }
+  });
   return okJ({ trips: page, total: sorted.length, offset: offset, limit: lim });
 }
 
