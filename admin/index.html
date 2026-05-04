@@ -219,11 +219,11 @@
            sync sub-section + activity-type and add-event modals all pick from
            that registry rather than re-entering raw IDs. -->
       <div class="col-section">
-        <div class="col-head open" data-admin-toggle-section>
+        <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.tabCalendars"></div>
-          <span class="col-toggle open">▼</span>
+          <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body">
+        <div class="col-body hidden">
           <div class="text-xs text-muted mb-10" style="line-height:1.5" data-s="admin.calDesc"></div>
           <div id="clubCalList"></div>
           <button class="btn btn-secondary mt-8" data-admin-click="addClubCalRow" data-admin-arg="" data-admin-arg2="" data-s="admin.calAdd"></button>
@@ -305,7 +305,7 @@
         </div>
       </div>
 
-      <!-- Activity types (templates) -->
+      <!-- Activity templates -->
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.actTypesTitle"></div>
@@ -314,27 +314,23 @@
         <div class="col-body hidden" id="actTypesCard">
           <div class="loading-state"><span class="spinner"></span></div>
         </div>
-        <div style="padding:8px 0 4px">
+        <div class="d-flex gap-8 flex-wrap" style="padding:8px 0 4px">
           <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
+          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
         </div>
       </div>
 
       <!-- Upcoming activities — unified timeline across signup-tracked activities
-           and bulk-scheduled plain activities. "+ Add activity" creates a one-off
-           (no parent template required); per-template instances appear here
-           automatically once the template's bulk schedule has been authored. -->
+           and bulk-scheduled plain activities. Per-template instances appear
+           automatically once the template's bulk schedule has been authored;
+           one-offs land here when created via "+ Add activity" above. -->
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
           <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body hidden">
-          <div style="padding:0 0 8px">
-            <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
-          </div>
-          <div id="schedUpcomingCard">
-            <div class="loading-state"><span class="spinner"></span></div>
-          </div>
+        <div class="col-body hidden" id="schedUpcomingCard">
+          <div class="loading-state"><span class="spinner"></span></div>
         </div>
       </div>
     </div>
