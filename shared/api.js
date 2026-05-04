@@ -258,8 +258,10 @@ var _INVALIDATES = {
   unlinkGoogleAccount:     ['getMembers'],
 
   // Daily log: writes activity rows into the activities sheet, which the staff
-  // Logbook Review activity-log section reads via getActivityLog.
-  saveDailyLog:            ['getActivityLog'],
+  // Logbook Review activity-log section reads via getActivityLog. Activities
+  // can also carry linkedGroupCheckoutIds → trip group labels resolve through
+  // those, so dropping getTrips keeps the trip-detail Activity row fresh.
+  saveDailyLog:            ['getActivityLog', 'getTrips'],
   // Trips.
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
