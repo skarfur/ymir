@@ -954,9 +954,18 @@ function sweepExpiredSessions() {
 // legacy names to fall back to. If the canonical tab is missing but a legacy
 // name is present, _reconcileLegacyTab_ renames it via setName so existing
 // data is preserved and subsequent calls find it normally. Idempotent — a
-// no-op once the rename has happened. Empty for now; populate when the
-// next rename lands.
-const LEGACY_TAB_ALIASES_ = {};
+// no-op once the rename has happened.
+//
+// 'activities' ← 'scheduled_events': introduced in 63a10db, prematurely
+// cleared in 8072be6 alongside the kind-column drop. Restored because the
+// tab rename is independent of the kind backfill and any deployment that
+// hadn't run setupSpreadsheet between those commits ended up with an empty
+// 'activities' tab created next to the legacy 'scheduled_events' tab,
+// orphaning every existing activity row. Safe to drop again once every
+// deployment is verified to live on the canonical name.
+const LEGACY_TAB_ALIASES_ = {
+  'activities': ['scheduled_events'],
+};
 
 function _reconcileLegacyTab_(ss, canonicalName) {
   var aliases = LEGACY_TAB_ALIASES_[canonicalName];

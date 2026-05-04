@@ -31,6 +31,18 @@ Fixes:
   / `window._earlyConfig` and clears the references, so return-to-today
   navigations after a save read fresh data through the apiGet cache
   instead of re-resolving the original (now stale) prefetch.
+## Unreleased — restore LEGACY_TAB_ALIASES_['activities'] safety net
+
+`8072be6` cleared `LEGACY_TAB_ALIASES_` alongside the kind-column drop,
+but the tab rename (`scheduled_events` → `activities`, introduced in
+`63a10db`) is independent of the kind backfill. Any deployment that
+hadn't run `setupSpreadsheet` between those commits ended up with an
+empty `activities` tab created next to the legacy `scheduled_events`
+tab — orphaning every existing activity row and silently dropping new
+writes. Re-added the `'activities': ['scheduled_events']` entry so
+`_reconcileLegacyTab_` self-heals via `setName` on first access. Safe
+to drop again once every deployment is verified to live on the
+canonical name.
 
 ## Unreleased — sched_* shims + buildGroupLabelMap_ post-rename fix
 
