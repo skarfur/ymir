@@ -153,19 +153,19 @@ var SCHEMA_ = {
   ],
   // Unified activities table — single source of truth for every concrete
   // occurrence at the club. One row per activity instance; an activity may
-  // be templated from an `activity_types` (a.k.a. activity-template) row or
-  // authored ad-hoc.
+  // be templated from an `activity_templates` row or authored ad-hoc.
   //   signupRequired ∈ true | false  — true means signup-tracked (volunteer
   //                                    portal surfaces it with roles/leader);
   //                                    false means a plain activity (daily-log
   //                                    renderer + midnight materializer).
-  //   kind ∈ 'volunteer' | 'activity' — legacy discriminator. Kept alongside
-  //                                    signupRequired during the transition;
-  //                                    new readers should consult signupRequired.
   //   status ∈ 'upcoming' | 'completed' | 'cancelled' | 'orphaned'
   //   source ∈ 'bulk' | 'calendar' | 'manual' | 'daily-log'
+  // (Legacy `kind` column may still be present on rows from before the
+  // vocabulary cleanup. New writes don't populate it; activity_parseRow_
+  // falls back to it only if signupRequired is missing. Drop it manually
+  // from the sheet once you're confident every row has signupRequired set.)
   activities: [
-    'id','kind','signupRequired','status','source',
+    'id','signupRequired','status','source',
     'date','endDate','startTime','endTime',
     'activityTypeId','subtypeId','subtypeName',
     'title','titleIS','notes','notesIS',

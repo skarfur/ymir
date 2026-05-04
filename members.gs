@@ -786,7 +786,7 @@ function getDailyLog_(date) {
   return okJ({ log: logDto, date: d, scheduledActivities: scheduledActivities });
 }
 
-// Convert a the activities sheet row (kind='activity') into the daily-log activity
+// Convert an activities-sheet row (signupRequired=false) into the daily-log activity
 // shape the frontend already knows how to render.
 function _schedActivityToLogShape_(a) {
   return {
@@ -819,7 +819,7 @@ function saveDailyLog_(b, caller) {
   ensureActorCols_('dailyLog');
   const actorKt   = actorKt_(caller);
   const actorName = actorName_(caller);
-  // Persist activities into the activities sheet (kind='activity'). Each activity
+  // Persist activities into the activities sheet (signupRequired=false). Each activity
   // gets its own row keyed by id; sync to activity-type calendars happens
   // inside syncDailyLogActivities_.
   if (b.activities !== undefined) {
@@ -864,7 +864,7 @@ function saveDailyLog_(b, caller) {
 }
 
 // Upsert each activity from the frontend's saved daily log into the activities sheet
-// as kind='activity' rows. Deletes rows whose id vanished from the new list.
+// as signupRequired=false rows. Deletes rows whose id vanished from the new list.
 // Handles per-activity GCal sync via syncDailyLogActivities_ before writing so
 // that the assigned gcalEventId is persisted on the row.
 function persistDailyLogActivities_(dateISO, oldRows, newActs, updatedBy) {

@@ -3,6 +3,38 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activities vocabulary cleanup (drop kind from new writes)
+
+Fourth step of the activities cleanup. After the migration in commit
+`1542670` populated `signupRequired` on every activity row and the prior
+commits moved every reader/writer to that field, this commit stops
+emitting and writing `kind` entirely on the new code path:
+
+- `activity_rowShape_` no longer writes the `kind` cell. It still
+  accepts a legacy `kind` input parameter and translates it to
+  `signupRequired` so any straggler caller passing `kind=…` continues
+  to behave correctly.
+- `activity_parseRow_` no longer surfaces `kind` on the parsed object.
+  It keeps a defensive input-side fallback that derives
+  `signupRequired` from `row.kind` for any rare row that predates the
+  backfill migration — harmless once every row has the boolean set.
+- `_volExpandedToDomain_` (public.gs) no longer emits `kind` on
+  expanded virtual events.
+- `shared/scheduled-event.js` (client normalizer) no longer emits
+  `kind` on the unified Activity shape. Its internal `_guessSource`
+  helper now keys off `signupRequired` rather than `kind`. Input-side
+  back-compat (accepting `opts.kind` / `raw.kind`) preserved as
+  defensive fallbacks.
+- `kind` removed from the `ACTIVITIES_COLS_` schema in scheduling.gs
+  and from the `activities` schema in `_setup.gs`. The column will
+  remain on existing sheets (Sheets only ever adds columns; removing
+  one requires a manual delete) but it's no longer maintained — drop
+  it from the sheet by hand once you're ready.
+
+Comment vocabulary swept across `members.gs`, `public.gs`, `config.gs`,
+`shared/api.js` to fix awkward phrasings left over from earlier
+search-replace passes.
+
 ## Unreleased — activities vocabulary cleanup (sheet + config-key rename)
 
 Third step of the activities vocabulary cleanup. Renames the underlying

@@ -196,7 +196,7 @@ try {
 // Reference notes for the audit trail:
 //   getConfig — config sheet only (boats, locations, certDefs, certCats,
 //     activity_types, dailyChecklist, flagConfig/Override, staffStatus,
-//     rowingPassport, clubCalendars) PLUS the activities sheet projection
+//     rowingPassport, clubCalendars) PLUS activities projection
 //     (volunteerEvents, cancelledActivityOccurrences). Independent of
 //     the members sheet entirely.
 //   getMembers — members sheet only.
@@ -235,7 +235,7 @@ var _INVALIDATES = {
   // apiPost('getVolunteerSignups'), now in _POST_CACHEABLE. Both writes
   // drop that cache. volunteerSignup_ also keeps getConfig because the
   // first signup against a virtual recurring event materializes a
-  // the activities sheet row that feeds getConfig.volunteerEvents.
+  // the activities-sheet row that feeds getConfig.volunteerEvents.
   volunteerSignup:         ['getConfig', 'getVolunteerSignups'],
   volunteerWithdraw:       ['getVolunteerSignups'],
   // Share tokens — read-shaped POST, cacheable.

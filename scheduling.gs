@@ -10,12 +10,14 @@
 //   signupRequired=false — plain activity, surfaced by the daily-log renderer
 //                          and the midnight materializer.
 //
-// (The legacy `kind` column — 'volunteer' | 'activity' — is still written
-// alongside signupRequired during the transition. New code should consult
-// signupRequired; both fields are kept in lock-step by activity_rowShape_.)
+// (A legacy `kind` column — 'volunteer' | 'activity' — may still be present
+// on rows written before the cleanup; new writes no longer populate it, and
+// activity_parseRow_ falls back to it only if signupRequired is missing. It
+// can be dropped manually from the sheet once you're confident the
+// signupRequired backfill has run for every row.)
 //
-// An activity may be templated from an `activity_types` (a.k.a. activity
-// template) row via `activityTypeId`, or authored ad-hoc with no template.
+// An activity may be templated from an `activity_templates` row via
+// `activityTypeId`, or authored ad-hoc with no template.
 //
 // Projections (bulk schedule, Google Calendar) still produce virtual rows at
 // read time — see `projectActivitiesForDate_` in config.gs — but any row that's
@@ -28,10 +30,11 @@
 // returns a shape where `roles` is parsed back into an array and booleans are
 // unwrapped. Use this everywhere readers need the domain object.
 //
-// `signupRequired` is the canonical boolean. If a row predates the migration
-// (no signupRequired cell yet), we derive it from the legacy `kind` column.
-// Both are emitted on the parsed object during the transition so frontend
-// callers that still read `.kind === 'volunteer'` continue to work.
+// `signupRequired` is the canonical boolean. New rows always carry it; for
+// legacy rows that predate the migration (no signupRequired cell), we derive
+// it from the dropped-but-still-present `kind` column as a safety net. The
+// emit-side no longer surfaces `kind` — all callers have moved to
+// signupRequired in the activities vocabulary cleanup.
 function activity_parseRow_(row) {
   if (!row) return null;
   var roles = [];
@@ -40,9 +43,9 @@ function activity_parseRow_(row) {
   try { reservedBoatIds = row.reservedBoatIds ? JSON.parse(row.reservedBoatIds) : []; } catch (e) { reservedBoatIds = []; }
   var linkedGroupCheckoutIds = [];
   try { linkedGroupCheckoutIds = row.linkedGroupCheckoutIds ? JSON.parse(row.linkedGroupCheckoutIds) : []; } catch (e) { linkedGroupCheckoutIds = []; }
-  // Coerce signupRequired to a real boolean. Sheets returns true/false for
-  // new rows but the migration backfill writes the same; legacy rows have
-  // it empty and we fall back to deriving from `kind`.
+  // Coerce signupRequired to a real boolean. Defensive fallback to legacy
+  // `kind` for any row written before the migration's backfill — harmless
+  // once every row has signupRequired set.
   var sigRaw = row.signupRequired;
   var signupRequired;
   if (sigRaw === true || sigRaw === false) {
@@ -56,7 +59,6 @@ function activity_parseRow_(row) {
   }
   return {
     id:                    row.id || '',
-    kind:                  row.kind || (signupRequired ? 'volunteer' : 'activity'),
     signupRequired:        signupRequired,
     status:                row.status || '',
     source:                row.source || '',
@@ -93,24 +95,20 @@ function activity_parseRow_(row) {
   };
 }
 
-// Inverse of activity_parseRow_ — takes a partial domain object and returns the
-// row shape suitable for insertRow_/updateRow_. Undefined fields pass through
-// so callers can do partial updates (updateRow_ ignores absent keys).
+// Inverse of activity_parseRow_ — takes a partial domain object and returns
+// the row shape suitable for insertRow_/updateRow_. Undefined fields pass
+// through so callers can do partial updates (updateRow_ ignores absent keys).
 //
-// signupRequired ↔ kind are written in lockstep: if the caller specified
-// either one, both are populated on the row so legacy and modern readers see
-// consistent values until `kind` is removed in a follow-up.
+// Only `signupRequired` is written. Legacy `kind` input is still accepted
+// (and translated to signupRequired if signupRequired wasn't supplied) so
+// any straggler caller passing kind=… continues to behave correctly, but
+// new rows no longer carry the kind column.
 function activity_rowShape_(ev) {
   var out = {};
   if (ev.id !== undefined)                    out.id = ev.id;
-  // signupRequired is canonical; kind mirrors it for legacy compat.
-  // If only one was supplied, derive the other.
   if (ev.signupRequired !== undefined) {
     out.signupRequired = !!ev.signupRequired;
-    if (ev.kind === undefined) out.kind = ev.signupRequired ? 'volunteer' : 'activity';
-    else                       out.kind = ev.kind;
   } else if (ev.kind !== undefined) {
-    out.kind = ev.kind;
     out.signupRequired = (String(ev.kind).toLowerCase() === 'volunteer');
   }
   if (ev.status !== undefined)                out.status = ev.status;
@@ -154,7 +152,7 @@ function activity_rowShape_(ev) {
 // re-run yet still serves the pages that read scheduled events (they just
 // return empty lists until the migration populates rows).
 var ACTIVITIES_COLS_ = [
-  'id','kind','signupRequired','status','source',
+  'id','signupRequired','status','source',
   'date','endDate','startTime','endTime',
   'activityTypeId','subtypeId','subtypeName',
   'title','titleIS','notes','notesIS','runNotes',
