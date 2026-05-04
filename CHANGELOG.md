@@ -3,6 +3,21 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — admin: activity-template Category dropdown reflects saved tag
+
+Reopening an activity template that was saved with a preset class tag
+(e.g. "Lesson") showed the Category dropdown stuck on "Pick category…"
+even though the underlying `classTag`/`classTagIS` were persisted. The
+Custom (EN/IS) inputs displayed correctly, but admins read the empty
+dropdown as "the class tag isn't saved."
+
+`admin/act-types.js` (`openActTypeModal`): the function called
+`populateClassTagPresets()` twice — once before setting
+`presetSel.value` from `_matchClassTagPreset`, and once again further
+down (a leftover from when the field was a `<datalist>`). The second
+call rebuilt `<select>.innerHTML`, which discarded the just-set value
+and reverted the dropdown to its placeholder. Drops the duplicate
+call so the dropdown keeps the matched preset on reopen.
 ## Unreleased — daily-log: sign-off badge stays accurate after save
 
 The post-click sign-off badge on `/dailylog/` showed only the signer's

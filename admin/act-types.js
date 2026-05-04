@@ -79,8 +79,6 @@ function openActTypeModal(id) {
   // occurrence. Empty = no resource reservation (classroom, land work, etc.).
   window._atReservedBoatIds = a && Array.isArray(a.reservedBoatIds)
     ? a.reservedBoatIds.slice().map(String) : [];
-  // Refresh datalist of existing class tags so the input autocompletes
-  populateClassTagPresets();
   renderAtDayBtns();
   renderAtBoatPicker();
   // Schedule source: default 'bulk' for legacy rows and new types.
