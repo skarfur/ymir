@@ -122,8 +122,10 @@ async function loadAll() {
   boatCats       = _allBoatCats .filter(c => c.active !== false && c.active !== 'false');
   registerBoatCats(boatCats);
 
-  try { loadCharterCalendars(cfgRes.charterCalendars || {}); } catch(e) { console.warn("loadCharterCalendars:", e.message); }
+  // Load club calendars first — the charter-sync selects + activity-type
+  // modal calendar picker source their options from this registry.
   try { loadClubCalendars(cfgRes.clubCalendars || []); } catch(e) { console.warn("loadClubCalendars:", e.message); }
+  try { loadCharterCalendars(cfgRes.charterCalendars || {}); } catch(e) { console.warn("loadCharterCalendars:", e.message); }
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }

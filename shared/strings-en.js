@@ -1661,6 +1661,8 @@ var _STRINGS_FLAT = {
   "admin.calAdd": "+ Add calendar",
   "admin.calEmpty": "No calendars added.",
   "admin.calRemove": "Remove",
+  "admin.calPickNone": "— No calendar —",
+  "admin.calUnknown": "(unknown)",
 
   "member.notifPending": "pending",
   "sauma.follow": "Follow",

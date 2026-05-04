@@ -9,10 +9,50 @@ var _slotWeekStart = null; // Monday of current week
 var _slotData = [];        // loaded slots for current view
 var _editingSlot = null;   // slot being edited in modal
 
+// Source of truth for the registered club calendars after load. Other modules
+// (act-types.js, volunteers.js) read this when populating their calendar
+// pickers so a single registry entry drives every "push to GCal" dropdown.
+var clubCalendars = [];
+
+// Populate a <select> with the registered club calendars. Adds an empty
+// "no calendar" option as the first entry. If `currentValue` is set but
+// not present in the registry, prepends a fallback "(unknown) <id>" option
+// so the saved value is never silently lost — admins see the orphan and can
+// re-pick or save a new value.
+function populateClubCalSelect(sel, currentValue) {
+  if (!sel) return;
+  var cur = currentValue == null ? '' : String(currentValue);
+  var opts = ['<option value="">' + esc(s('admin.calPickNone')) + '</option>'];
+  var seen = false;
+  (clubCalendars || []).forEach(function (c) {
+    if (!c || !c.calendarId) return;
+    var sel2 = (c.calendarId === cur) ? ' selected' : '';
+    if (c.calendarId === cur) seen = true;
+    opts.push('<option value="' + esc(c.calendarId) + '"' + sel2 + '>' + esc(c.name || c.calendarId) + '</option>');
+  });
+  if (cur && !seen) {
+    opts.unshift('<option value="' + esc(cur) + '" selected>' + esc(s('admin.calUnknown')) + ' ' + esc(cur) + '</option>');
+  }
+  sel.innerHTML = opts.join('');
+}
+
+// Re-populate every dependent picker in the DOM from the current registry.
+// Called after the registry is loaded or saved so the charter sync dropdowns
+// reflect the latest list. Activity-type and add-event modals re-populate
+// on open via populateClubCalSelect, so they don't need to be touched here.
+function refreshClubCalSelects() {
+  var selR = document.getElementById('charterRowingCalId');
+  var selK = document.getElementById('charterKeelboatCalId');
+  if (selR) populateClubCalSelect(selR, selR.value || '');
+  if (selK) populateClubCalSelect(selK, selK.value || '');
+}
+
 function loadCharterCalendars(cc) {
-  document.getElementById("charterRowingCalId").value = cc.rowingCalendarId || "";
+  var selR = document.getElementById("charterRowingCalId");
+  var selK = document.getElementById("charterKeelboatCalId");
+  if (selR) populateClubCalSelect(selR, cc.rowingCalendarId || "");
+  if (selK) populateClubCalSelect(selK, cc.keelboatCalendarId || "");
   document.getElementById("charterRowingCalActive").checked = !!cc.rowingCalendarSyncActive;
-  document.getElementById("charterKeelboatCalId").value = cc.keelboatCalendarId || "";
   document.getElementById("charterKeelboatCalActive").checked = !!cc.keelboatCalendarSyncActive;
 }
 
@@ -36,14 +76,17 @@ async function saveCharterCalendars() {
 
 // ── Club Calendars ────────────────────────────────────────────────────────────
 function loadClubCalendars(cals) {
+  clubCalendars = (cals || []).slice();
   var list = document.getElementById("clubCalList");
   list.innerHTML = "";
   if (!cals.length) {
     list.innerHTML = '<div style="font-size:11px;color:var(--muted);margin:8px 0" data-s="admin.calEmpty"></div>';
     applyStrings(list);
+    refreshClubCalSelects();
     return;
   }
   cals.forEach(function(c) { addClubCalRow(c.name, c.calendarId); });
+  refreshClubCalSelects();
 }
 
 function addClubCalRow(name, calId) {
@@ -78,6 +121,8 @@ async function saveClubCalendars() {
   });
   try {
     await apiPost("saveClubCalendars", { calendars: cals });
+    clubCalendars = cals.slice();
+    refreshClubCalSelects();
     msg.textContent = s("toast.saved") || "Saved";
     msg.style.color = "var(--green)";
   } catch (e) {

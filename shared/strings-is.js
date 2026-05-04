@@ -1661,6 +1661,8 @@ var _STRINGS_FLAT = {
   "admin.calAdd": "+ Bæta við dagatali",
   "admin.calEmpty": "Engin dagatöl skráð.",
   "admin.calRemove": "Fjarlægja",
+  "admin.calPickNone": "— Ekkert dagatal —",
+  "admin.calUnknown": "(óþekkt)",
 
   "member.notifPending": "í bið",
   "sauma.follow": "Fylgjast með",

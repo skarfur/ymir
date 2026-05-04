@@ -213,7 +213,11 @@
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-scheduling" class="hidden">
-      <!-- Club calendars (GCal link registry) -->
+      <!-- Calendars: club-calendar registry + reservation sync.
+           One section because it's all the same problem — naming GCal IDs and
+           assigning them to roles. The registry stores (name, id) pairs; the
+           sync sub-section + activity-type and add-event modals all pick from
+           that registry rather than re-entering raw IDs. -->
       <div class="col-section">
         <div class="col-head open" data-admin-toggle-section>
           <div class="col-title" data-s="admin.tabCalendars"></div>
@@ -227,45 +231,41 @@
             <button class="btn btn-primary" data-admin-click="saveClubCalendars" data-s="btn.save"></button>
             <span id="clubCalSaveMsg" class="text-xs"></span>
           </div>
-        </div>
-      </div>
 
-      <!-- Reservation calendar sync — Ymir mirrors bookings to these GCals. -->
-      <div class="col-section">
-        <div class="col-head" data-admin-toggle-section>
-          <div class="col-title" data-s="admin.gcalSyncHdr"></div>
-          <span class="col-toggle">▼</span>
-        </div>
-        <div class="col-body hidden">
-          <div class="grid2">
-            <div>
-              <div class="text-xs fw-600 mb-4" data-s="admin.rowingCal"></div>
-              <div class="field">
-                <label for="charterRowingCalId" data-s="admin.calendarId"></label>
-                <input type="text" id="charterRowingCalId" placeholder="e.g. abc123@group.calendar.google.com">
+          <!-- Reservation sync — pick which registered calendar receives
+               rowing / keelboat slot bookings. -->
+          <div class="border-muted rounded-6 mt-14" style="padding:10px 12px">
+            <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
+            <div class="grid2">
+              <div>
+                <div class="text-xs fw-600 mb-4" data-s="admin.rowingCal"></div>
+                <div class="field">
+                  <label for="charterRowingCalId" data-s="admin.calendarId"></label>
+                  <select id="charterRowingCalId"></select>
+                </div>
+                <div class="check-row">
+                  <input type="checkbox" id="charterRowingCalActive">
+                  <label for="charterRowingCalActive" data-s="admin.syncRowing"></label>
+                </div>
               </div>
-              <div class="check-row">
-                <input type="checkbox" id="charterRowingCalActive">
-                <label for="charterRowingCalActive" data-s="admin.syncRowing"></label>
-              </div>
-            </div>
-            <div>
-              <div class="text-xs fw-600 mb-4" data-s="admin.keelboatCal"></div>
-              <div class="field">
-                <label for="charterKeelboatCalId" data-s="admin.calendarId"></label>
-                <input type="text" id="charterKeelboatCalId" placeholder="e.g. xyz789@group.calendar.google.com">
-              </div>
-              <div class="check-row">
-                <input type="checkbox" id="charterKeelboatCalActive">
-                <label for="charterKeelboatCalActive" data-s="admin.syncKeelboat"></label>
+              <div>
+                <div class="text-xs fw-600 mb-4" data-s="admin.keelboatCal"></div>
+                <div class="field">
+                  <label for="charterKeelboatCalId" data-s="admin.calendarId"></label>
+                  <select id="charterKeelboatCalId"></select>
+                </div>
+                <div class="check-row">
+                  <input type="checkbox" id="charterKeelboatCalActive">
+                  <label for="charterKeelboatCalActive" data-s="admin.syncKeelboat"></label>
+                </div>
               </div>
             </div>
+            <div class="d-flex gap-8 items-center mt-8">
+              <button class="btn btn-primary" data-admin-click="saveCharterCalendars" data-s="admin.saveCalSettings"></button>
+              <span id="charterCalSaveMsg" class="text-xs"></span>
+            </div>
+            <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
           </div>
-          <div class="d-flex gap-8 items-center mt-8">
-            <button class="btn btn-primary" data-admin-click="saveCharterCalendars" data-s="admin.saveCalSettings"></button>
-            <span id="charterCalSaveMsg" class="text-xs"></span>
-          </div>
-          <div class="text-10 text-muted mt-6" data-s="admin.ymirOnlyTouchesOwn"></div>
         </div>
       </div>
 
@@ -1023,8 +1023,8 @@
     <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
       <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
       <div class="field">
-        <label data-s="admin.calendarId"></label>
-        <input type="text" id="atCalendarId" placeholder="e.g. abc123@group.calendar.google.com">
+        <label data-s="admin.calendarId" for="atCalendarId"></label>
+        <select id="atCalendarId"></select>
       </div>
       <div class="check-row">
         <input type="checkbox" id="atCalendarSyncActive">
