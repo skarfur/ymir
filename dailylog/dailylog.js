@@ -520,10 +520,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('actSaveAddBtn').addEventListener('click', function() { saveActivity(true); });
 
   dom.signOffBtn.addEventListener('click', async () => {
-    // Today: full sign-off (marks signedOffBy/signedOffAt). Past/future: save
-    // as an amendment — the row already has a signOffBy stamp (either staff
-    // or the midnight trigger), and updatedBy/updatedAt distinguishes the edit.
-    if (isToday()) { signOffDay(); return; }
+    // Full sign-off only when today AND not yet signed off (marks
+    // signedOffBy/signedOffAt). Otherwise save as an amendment — the row
+    // already has a signOffBy stamp (staff, or the midnight trigger),
+    // and updatedBy/updatedAt distinguishes the edit.
+    if (isToday() && !logSignedOff) { signOffDay(); return; }
     const msg = s('daily.confirmAmendmentSave', { date: viewDate });
     if (!await ymConfirm(msg)) return;
     doSave(false);
@@ -587,7 +588,10 @@ function updateDateNav() {
   dom.mainWrap.classList.remove('readonly');
   dom.readonlyBadge.classList.add('hidden');
   dom.signOffBtn.style.display = '';
-  dom.signOffBtn.textContent   = isToday() ? s('btn.signOff') : s('daily.saveAmendments');
+  // "Sign off" only when today AND not yet signed off; everything else is
+  // an amendment (past/future days, or today after sign-off).
+  const isAmendment = !isToday() || logSignedOff;
+  dom.signOffBtn.textContent = isAmendment ? s('daily.saveAmendments') : s('btn.signOff');
   dom.logWxBtn.parentElement.style.display = 'block';
   dom.logWxBtn.style.display   = isToday() ? '' : 'none';
   dom.logWxDesc.style.display  = isToday() ? '' : 'none';
@@ -1064,6 +1068,13 @@ async function doSave(signOff) {
     dom.saveMsg.textContent = signOff ? s('toast.signedOff') : s('toast.saved');
     if (!signOff) setTimeout(function(){ dom.saveMsg.textContent = ''; }, 3000);
     if (signOff) {
+      // Promote local state so updateDateNav flips the action button to
+      // "Save amendments" — without this, a second click of the (still
+      // labelled "Sign off") button would re-stamp signedOff over the
+      // original entry instead of saving as an amendment.
+      logSignedOff   = true;
+      logSignedOffBy = user.name || '';
+      logSignedOffAt = nowIso;
       dom.signoffBadge.classList.remove('hidden');
       dom.signoffBadge.textContent = s('daily.signedOffBy') + user.name;
     }
@@ -1075,7 +1086,10 @@ async function doSave(signOff) {
   } finally {
     if (signOff) {
       dom.signOffBtn.disabled = false;
-      dom.signOffBtn.textContent = s('btn.signOff');
+      // Restore button text from current state (now signed off → "Save
+      // amendments"; on error → still "Sign off"). Defers to updateDateNav
+      // so the today/past/future branching stays in one place.
+      updateDateNav();
     }
   }
 }
