@@ -174,6 +174,10 @@ var SCHEMA_ = {
     'roles',
     'sourceActivityTypeId','sourceSubtypeId',
     'gcalEventId',
+    // Per-event calendar push override. When calendarSyncActive=true and
+    // calendarId is set, the event syncs to its own calendar; otherwise the
+    // sync function falls through to the parent activity-type's calendarId.
+    'calendarId','calendarSyncActive',
     'dailyLogDate',
     'createdAt','updatedAt','updatedBy',
     // Plain-activity (signupRequired=false) extras saved from the daily-log

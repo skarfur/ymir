@@ -1200,6 +1200,8 @@ function saveVolunteerEvent_(b) {
       roles:                 roles,
       reservedBoatIds:       reservedBoatIds,
       gcalEventId:           prev ? prev.gcalEventId : '',
+      calendarId:            b.calendarId || '',
+      calendarSyncActive:    b.calendarSyncActive === true || b.calendarSyncActive === 'true',
       createdAt:             prev ? prev.createdAt : '',
     });
     // Push to Google Calendar (upsert) if the activity type has sync enabled.
@@ -1355,6 +1357,8 @@ function _schedToVolDto_(ev, classMap) {
     roles:                 ev.roles,
     reservedBoatIds:       ev.reservedBoatIds || [],
     gcalEventId:           ev.gcalEventId,
+    calendarId:            ev.calendarId || '',
+    calendarSyncActive:    !!ev.calendarSyncActive,
     active:                ev.status !== 'cancelled',
     orphaned:              ev.status === 'orphaned',
     materialized:          !!ev.sourceActivityTypeId,

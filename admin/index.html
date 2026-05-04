@@ -319,19 +319,22 @@
         </div>
       </div>
 
-      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities.
-           "+ Add event" creates a one-off (no parent activity type required); per-type instances
-           appear here automatically once a type's bulk schedule has been authored. -->
+      <!-- Upcoming activities — unified timeline across signup-tracked activities
+           and bulk-scheduled plain activities. "+ Add activity" creates a one-off
+           (no parent template required); per-template instances appear here
+           automatically once the template's bulk schedule has been authored. -->
       <div class="col-section">
         <div class="col-head" data-admin-toggle-section>
           <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
           <span class="col-toggle">▼</span>
         </div>
-        <div class="col-body hidden" id="schedUpcomingCard">
-          <div class="loading-state"><span class="spinner"></span></div>
-        </div>
-        <div style="padding:8px 0 4px">
-          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
+        <div class="col-body hidden">
+          <div style="padding:0 0 8px">
+            <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
+          </div>
+          <div id="schedUpcomingCard">
+            <div class="loading-state"><span class="spinner"></span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1121,6 +1124,17 @@
       </summary>
       <div id="veBoatPicker" class="d-flex gap-6 flex-wrap mt-8"></div>
     </details>
+    <div class="border-muted rounded-6 mb-10" style="padding:10px 12px">
+      <div class="text-9 text-muted mb-8" style="letter-spacing:1px" data-s="admin.gcalSyncHdr"></div>
+      <div class="field">
+        <label data-s="admin.calendarId" for="veCalendarId"></label>
+        <select id="veCalendarId"></select>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="veCalendarSyncActive">
+        <label for="veCalendarSyncActive" data-s="admin.volPushToCal"></label>
+      </div>
+    </div>
     <div class="btn-row mt-14">
       <button class="btn btn-secondary" data-admin-close="volEventModal" data-s="btn.cancel"></button>
       <button class="btn btn-danger hidden icon-btn" id="veDeleteBtn" data-admin-click="deleteVolEvent" data-icon="trash-2" data-s-aria="btn.delete" data-s-title="btn.delete"></button>
