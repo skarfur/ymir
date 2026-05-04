@@ -784,7 +784,8 @@ function _renderDailyTide() {
   if (!el || typeof tideWidget !== 'function') return;
   if (!_tideWidgetInstance) {
     _tideWidgetInstance = tideWidget(el, {
-      onData: function(d) { tideData = tideToDailyLog(d.extrema); }
+      getDate: function() { return viewDate; },
+      onData:  function(d) { tideData = tideToDailyLog(d.extrema); }
     });
   }
   _tideWidgetInstance.refresh();
