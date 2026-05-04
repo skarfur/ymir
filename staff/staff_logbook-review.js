@@ -84,7 +84,7 @@ async function init() {
     // Activity-log section setup: dropdowns from activityTypes config + first
     // fetch over the default range (last 30 days). Filters are client-side
     // except date range, which re-fetches.
-    _actTypes = cfgRes.activityTemplates || cfgRes.activityTypes || [];
+    _actTypes = cfgRes.activityTemplates || [];
     populateActivityFilters();
     initActivityDateInputs();
     loadActivityLog();

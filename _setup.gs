@@ -293,6 +293,45 @@ function setupSpreadsheet() {
     Logger.log('signupRequired backfill skipped: ' + e.message);
   }
 
+  // Drop the legacy `kind` column from the activities sheet once every row
+  // carries the canonical `signupRequired` boolean. Safety-gated: if any
+  // row still has signupRequired empty/missing, the migration logs a
+  // warning and skips so no information is lost. Idempotent — once the
+  // column is gone, getLastColumn no longer turns it up and this is a
+  // no-op. Re-run safely.
+  try {
+    var actSheet = ss.getSheetByName('activities');
+    if (actSheet && actSheet.getLastColumn() > 0) {
+      var actHeaders = actSheet.getRange(1, 1, 1, actSheet.getLastColumn()).getValues()[0]
+        .map(function (h) { return String(h).trim(); });
+      var kindIdx = actHeaders.indexOf('kind');
+      var sigIdx2 = actHeaders.indexOf('signupRequired');
+      if (kindIdx >= 0) {
+        var safe = true;
+        if (actSheet.getLastRow() >= 2 && sigIdx2 >= 0) {
+          var sigVals = actSheet.getRange(2, sigIdx2 + 1, actSheet.getLastRow() - 1, 1).getValues();
+          for (var r = 0; r < sigVals.length; r++) {
+            var v = sigVals[r][0];
+            if (v === true || v === false) continue;
+            if (v === 'TRUE' || v === 'true' || v === 'FALSE' || v === 'false') continue;
+            safe = false; break;
+          }
+        } else if (sigIdx2 < 0) {
+          safe = false;
+        }
+        if (safe) {
+          actSheet.deleteColumn(kindIdx + 1);
+          Logger.log('Dropped legacy `kind` column from activities sheet.');
+        } else {
+          Logger.log('⚠ Legacy `kind` column NOT dropped: some rows are missing signupRequired. ' +
+            'Re-run setupSpreadsheet after the backfill completes, or fix those rows by hand.');
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Legacy kind-column drop skipped: ' + e.message);
+  }
+
   // Copy legacy config keys into their canonical names. Idempotent — only
   // copies when the canonical row is missing/empty AND the legacy row has a
   // value. Leaves the legacy row in place for one cycle so a partial-deploy

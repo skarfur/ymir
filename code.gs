@@ -954,10 +954,9 @@ function sweepExpiredSessions() {
 // legacy names to fall back to. If the canonical tab is missing but a legacy
 // name is present, _reconcileLegacyTab_ renames it via setName so existing
 // data is preserved and subsequent calls find it normally. Idempotent — a
-// no-op once the rename has happened.
-const LEGACY_TAB_ALIASES_ = {
-  'activities': ['scheduled_events'],
-};
+// no-op once the rename has happened. Empty for now; populate when the
+// next rename lands.
+const LEGACY_TAB_ALIASES_ = {};
 
 function _reconcileLegacyTab_(ss, canonicalName) {
   var aliases = LEGACY_TAB_ALIASES_[canonicalName];

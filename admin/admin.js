@@ -107,7 +107,7 @@ async function loadAll() {
   }).catch(e => { console.warn('getVolunteerSignups failed:', e.message); });
 
   // ── Assign data ───────────────────────────────────────────────────────────
-  actTypes        = cfgRes.activityTemplates || cfgRes.activityTypes || [];
+  actTypes        = cfgRes.activityTemplates || [];
   volunteerEvents = cfgRes.volunteerEvents || [];
   cancelledActivityOccurrences = cfgRes.cancelledActivityOccurrences || [];
   clItems        = [ ...(cfgRes.dailyChecklist?.opening || []),

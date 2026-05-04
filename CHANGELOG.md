@@ -3,6 +3,37 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activities cleanup: drop legacy aliases
+
+Final cleanup of the activities vocabulary transition:
+
+- **`kind` column drop**: `_setup.gs` gains a safety-gated migration
+  that walks the activities sheet, confirms every row has a real
+  `signupRequired` boolean, and then deletes the legacy `kind` column.
+  If any row is still missing `signupRequired`, the migration logs a
+  loud warning and skips the deletion — re-run after fixing.
+  Idempotent: a no-op once the column is gone.
+- **Parser/shaper fallbacks**: `activity_parseRow_` no longer falls
+  back to `row.kind` when `signupRequired` is empty (defaults to
+  `false` instead). `activity_rowShape_` no longer accepts a legacy
+  `kind` input parameter — every caller has migrated.
+- **`activityTypes` API alias dropped**: `getConfig` now emits only
+  `activityTemplates`. The five frontend portals (`admin/admin.js`,
+  `staff/staff.js`, `staff/staff_logbook-review.js`,
+  `volunteer/volunteer.js`, `member/member.js`,
+  `dailylog/dailylog.js`) read it without the legacy fallback.
+- **`LEGACY_TAB_ALIASES_` and `LEGACY_CONFIG_KEY_ALIASES_` cleared**:
+  the maps stay (zero-cost) for future rename use, but the
+  `'activities' → 'scheduled_events'` and
+  `'activity_templates' → 'activity_types'` entries are gone now that
+  the migrations have run in production. The reconcile helpers stay
+  in place for future renames.
+
+After this commit, the `kind` column on the activities sheet will be
+deleted on the next `setupSpreadsheet` run (assuming the
+`signupRequired` backfill completed cleanly — which it should have
+during commit `1542670`'s deploy).
+
 ## Unreleased — Group Checkout: drop dlLinkModal dead code
 
 Follow-up cleanup after the unified activity picker landed. The

@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._earlyConfig || apiGet('getConfig'),
       window._earlyVolSignups || apiPost('getVolunteerSignups', {}),
     ]);
-    _volActTypes = cfgRes.activityTemplates || cfgRes.activityTypes || [];
+    _volActTypes = cfgRes.activityTemplates || [];
     // Defense-in-depth: hide materialized events whose source activity type is
     // missing, inactive, or no longer volunteer-flagged. Manually-created
     // events (no sourceActivityTypeId) are shown regardless. Mirrors the

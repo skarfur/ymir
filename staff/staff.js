@@ -57,9 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     _cfgRes = cfgRes;
     // Stash activity templates on window so the Group Checkout picker can
-    // build its classTag list. Falls back to the legacy `activityTypes` key
-    // for old/cached backends.
-    window._activityTemplates = cfgRes.activityTemplates || cfgRes.activityTypes || [];
+    // build its classTag list.
+    window._activityTemplates = cfgRes.activityTemplates || [];
     checkouts   = coRes.checkouts  || [];
     boats       = (cfgRes.boats     || []).filter(b => b.active !== false && b.active !== 'false');
     locations   = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
@@ -820,7 +819,7 @@ async function openGroupModal() {
     _gmTodayActs = _materialized;
   } catch(e) { _gmTodayActs = []; }
 
-  const cfgTemplates = (window._activityTemplates || window._activityTypes || []);
+  const cfgTemplates = (window._activityTemplates || []);
   const tags = Array.from(new Set(
     cfgTemplates.map(t => (getLang()==='IS' ? (t.classTagIS || t.classTag) : t.classTag) || '').filter(Boolean)
   )).sort();

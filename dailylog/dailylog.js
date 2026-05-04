@@ -926,7 +926,7 @@ function applyLogData(logRes, cfgRes) {
   if (cfg.flagConfig && typeof wxLoadFlagConfig === 'function') wxLoadFlagConfig(cfg.flagConfig);
   amItems       = cfg.dailyChecklist?.opening || [];
   pmItems       = cfg.dailyChecklist?.closing || [];
-  activityTypes = cfg.activityTemplates || cfg.activityTypes || [];
+  activityTypes = cfg.activityTemplates || [];
   // Always auto-fill tides from harmonic prediction for the viewed date
   _autoFillTide();
 
