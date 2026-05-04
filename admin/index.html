@@ -213,6 +213,37 @@
 
     <!-- ══ ACTIVITY TYPES ════════════════════════════════════════════════════ -->
     <div id="tab-scheduling" class="hidden">
+      <!-- Upcoming events — unified timeline across volunteer events + bulk-scheduled activities.
+           "+ Add event" creates a one-off (no parent activity type required); per-type instances
+           appear here automatically once a type's bulk schedule has been authored. -->
+      <div class="col-section">
+        <div class="col-head open" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.schedUpcomingHdr"></div>
+          <span class="col-toggle open">▼</span>
+        </div>
+        <div class="col-body" id="schedUpcomingCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openVolEventModal" data-s="admin.addOneOffEvent"></button>
+        </div>
+      </div>
+
+      <!-- Activity types (templates) -->
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section>
+          <div class="col-title" data-s="admin.actTypesTitle"></div>
+          <span class="col-toggle">▼</span>
+        </div>
+        <div class="col-body hidden" id="activityTemplatesCard">
+          <div class="loading-state"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:8px 0 4px">
+          <button class="btn btn-primary" data-admin-click="openActTypeModal" data-s="admin.addType"></button>
+        </div>
+      </div>
+
+      <!-- Club calendars (GCal link registry) -->
       <!-- Calendars: club-calendar registry + reservation sync.
            One section because it's all the same problem — naming GCal IDs and
            assigning them to roles. The registry stores (name, id) pairs; the

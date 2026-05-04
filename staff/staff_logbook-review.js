@@ -17,7 +17,7 @@ let _dataLoaded = false;
 let _certMember = null;   // { id, name, kennitala }
 
 // Activity-log section state — populated by loadActivityLog()
-let _actTypes      = [];  // activity-type config rows (for dropdown labels + classTag map)
+let _activityTemplates      = [];  // activity-type config rows (for dropdown labels + classTag map)
 let _actAll        = [];  // last-fetched activity rows (server already filtered by date range)
 let _actDataLoaded = false;
 
@@ -84,7 +84,7 @@ async function init() {
     // Activity-log section setup: dropdowns from activityTypes config + first
     // fetch over the default range (last 30 days). Filters are client-side
     // except date range, which re-fetches.
-    _actTypes = cfgRes.activityTemplates || cfgRes.activityTypes || [];
+    _activityTemplates = cfgRes.activityTemplates || [];
     populateActivityFilters();
     initActivityDateInputs();
     loadActivityLog();
@@ -409,7 +409,7 @@ function populateActivityFilters() {
   // Distinct class tags (server uses the EN form for filtering).
   var tagSeen = {};
   var tagOpts = [];
-  (_actTypes || []).forEach(function (t) {
+  (_activityTemplates || []).forEach(function (t) {
     if (!t || !t.classTag) return;
     if (tagSeen[t.classTag]) return;
     tagSeen[t.classTag] = true;
@@ -425,7 +425,7 @@ function populateActivityFilters() {
     tagSel.appendChild(opt);
   });
   // Activity types: only those with an id, sorted by displayed name.
-  var typeOpts = (_actTypes || [])
+  var typeOpts = (_activityTemplates || [])
     .filter(function (t) { return t && t.id; })
     .map(function (t)    { return { id: t.id, label: actTypeLabel(t) }; })
     .sort(function (a, b) { return a.label.localeCompare(b.label); });

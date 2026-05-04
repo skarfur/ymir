@@ -275,11 +275,9 @@ function getConfig_() {
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
   } catch (e) {}
   // `activityTemplates` is the canonical name (an activity template defines
-  // a recurring activity class). `activityTypes` is the legacy alias kept
-  // in lockstep during the vocabulary cleanup; new code should read
-  // `activityTemplates`. Both point at the same array.
+  // a recurring activity class).
   var activityTemplates = activityTypes;
-  var config = { activityTemplates, activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
+  var config = { activityTemplates, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
   cPut_('config', config);
   return okJ(config);
 }

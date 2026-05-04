@@ -360,20 +360,6 @@ function createSupervisorTripsForGroup_(checkoutId, checkedInAt, caller) {
 
 function sstr_(v) { return String(v == null ? '' : v); }
 
-function linkGroupCheckoutToActivity_(b, caller) {
-  if (!b.checkoutId || !b.activityId) return failJ('checkoutId and activityId required');
-  // Mark the checkout with the linked activity id
-  addColIfMissing_('checkouts', 'linkedActivityId');
-  ensureActorCols_('checkouts');
-  updateRow_('checkouts', 'id', b.checkoutId, {
-    linkedActivityId: b.activityId,
-    actorKennitala:   actorKt_(caller),
-    actorName:        actorName_(caller),
-  });
-  cDel_('checkouts');
-  return okJ({ linked: true });
-}
-
 function tryParseArr_(v) {
   if (!v) return [];
   if (Array.isArray(v)) return v;

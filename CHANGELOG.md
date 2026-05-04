@@ -3,6 +3,89 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — frontend: rename actTypes / activityTypes vars to activityTemplates
+
+Cosmetic rename across the portals to align in-code variable names
+with the new vocabulary. No behavior change. Renamed:
+
+- `admin/admin.js`, `admin/act-types.js`, `admin/scheduling.js`,
+  `admin/volunteers.js`: `actTypes` → `activityTemplates`.
+- `staff/staff_logbook-review.js`: `_actTypes` → `_activityTemplates`.
+- `volunteer/volunteer.js`: `_volActTypes` → `_activityTemplates`.
+- `member/member.js`: `_volunteerActTypes` → `_volunteerTemplates`.
+- `dailylog/dailylog.js`: global `activityTypes` → `activityTemplates`.
+- `shared/volunteer.js`: function parameter `actTypes` →
+  `activityTemplates` (internal; function name
+  `expandVolunteerActivityTypes` stays as-is, exposed on `global`).
+- `shared/scheduled-event.js`: `buildUpcomingEvents`'s
+  `opts.actTypes` field → `opts.activityTemplates` (admin/scheduling.js
+  was already passing the new name; the function previously read the
+  old name, silently using an empty array — fixing in lockstep).
+- `admin/index.html`: DOM id `actTypesCard` → `activityTemplatesCard`.
+
+The pre-consolidation tab-id literal `'actTypes'` in admin.js's URL
+hash redirect is preserved on purpose (legacy bookmarks). Function
+names that include "ActivityTypes" (e.g. `expandVolunteerActivityTypes`,
+`calendarSourcedActivityTypes`) are intentionally untouched — those
+are exposed APIs and renaming them is a larger commit.
+
+## Unreleased — activities cleanup: drop legacy aliases
+
+Final cleanup of the activities vocabulary transition:
+
+- **`kind` column drop**: `_setup.gs` gains a safety-gated migration
+  that walks the activities sheet, confirms every row has a real
+  `signupRequired` boolean, and then deletes the legacy `kind` column.
+  If any row is still missing `signupRequired`, the migration logs a
+  loud warning and skips the deletion — re-run after fixing.
+  Idempotent: a no-op once the column is gone.
+- **Parser/shaper fallbacks**: `activity_parseRow_` no longer falls
+  back to `row.kind` when `signupRequired` is empty (defaults to
+  `false` instead). `activity_rowShape_` no longer accepts a legacy
+  `kind` input parameter — every caller has migrated.
+- **`activityTypes` API alias dropped**: `getConfig` now emits only
+  `activityTemplates`. The five frontend portals (`admin/admin.js`,
+  `staff/staff.js`, `staff/staff_logbook-review.js`,
+  `volunteer/volunteer.js`, `member/member.js`,
+  `dailylog/dailylog.js`) read it without the legacy fallback.
+- **`LEGACY_TAB_ALIASES_` and `LEGACY_CONFIG_KEY_ALIASES_` cleared**:
+  the maps stay (zero-cost) for future rename use, but the
+  `'activities' → 'scheduled_events'` and
+  `'activity_templates' → 'activity_types'` entries are gone now that
+  the migrations have run in production. The reconcile helpers stay
+  in place for future renames.
+
+After this commit, the `kind` column on the activities sheet will be
+deleted on the next `setupSpreadsheet` run (assuming the
+`signupRequired` backfill completed cleanly — which it should have
+during commit `1542670`'s deploy).
+
+## Unreleased — Group Checkout: drop dlLinkModal dead code
+
+Follow-up cleanup after the unified activity picker landed. The
+post-create "Link to daily log" modal was the legacy second step of
+the two-step Group Checkout flow; the picker now handles that up
+front, leaving the modal unreachable.
+
+Removed:
+- `staff/index.html`: the `<div id="dlLinkModal">` block.
+- `staff/staff.js`: `openDlLinkModal`, `selectDlAct`, `confirmDlLink`,
+  `closeDlLinkModal`, `openDailyLogForNew`, plus the
+  `_dlLinkCheckoutId` / `_dlLinkSelectedAct` / `_dlLinkTodayActs`
+  state.
+- `staff/staff.css`: the `.dl-link-*` and `.dl-act-*` rules.
+- `checkouts.gs`: `linkGroupCheckoutToActivity_` (the backend action
+  the modal posted to). `code.gs` route + `STAFF_ACTIONS_` entry
+  removed in lockstep.
+- `shared/api.js`: the `linkGroupCheckoutToActivity` cache-invalidation
+  entry (`saveGroupCheckout` already covers `getTrips`).
+- `shared/strings-{en,is}.js`: `staff.linkToDailyLog`,
+  `staff.linkHint`, `staff.linkedDailyLog`, `staff.noActivities`.
+
+The dailylog `?linkCheckout=` URL handler stays — no current code
+produces that URL, but the handler is harmless and would help anyone
+landing on a stale bookmark.
+
 ## Unreleased — Group Checkout: unified activity picker
 
 Replaces the broken Activity dropdown in the staff Group Checkout modal

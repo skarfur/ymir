@@ -42,14 +42,14 @@
   // volunteer events within [rangeFrom, rangeTo]. Classes without a bulk
   // schedule or without default times are skipped.
   //
-  //   actTypes : flat-template array from config (cfg.activityTemplates,
+  //   activityTemplates : flat-template array from config (cfg.activityTemplates,
   //              with cfg.activityTypes as legacy alias)
   //   rangeFrom: ISO date (default: today)
   //   rangeTo  : ISO date (default: today + 90 days)
   //
   // Returns an array of virtual event objects.
-  function expandVolunteerActivityTypes(actTypes, rangeFrom, rangeTo) {
-    if (!Array.isArray(actTypes) || !actTypes.length) return [];
+  function expandVolunteerActivityTypes(activityTemplates, rangeFrom, rangeTo) {
+    if (!Array.isArray(activityTemplates) || !activityTemplates.length) return [];
     var today = new Date();
     var fromIso = rangeFrom || today.toISOString().slice(0, 10);
     if (!rangeTo) {
@@ -57,7 +57,7 @@
       rangeTo = until.toISOString().slice(0, 10);
     }
     var out = [];
-    actTypes.forEach(function(cls) {
+    activityTemplates.forEach(function(cls) {
       if (!cls || cls.active === false || cls.active === 'false') return;
       var isVol = cls.volunteer === true || cls.volunteer === 'true';
       if (!isVol) return;

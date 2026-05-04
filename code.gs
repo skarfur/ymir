@@ -133,7 +133,6 @@ const STAFF_ACTIONS_ = {
   saveDailyLog:                true,   // daily club log sign-off
   saveGroupCheckout:           true,   // group check-outs (courses / events)
   groupCheckIn:                true,
-  linkGroupCheckoutToActivity: true,
   deleteCheckout:              true,   // staff override; members check in instead
   silenceAlert:                true,
   snoozeAlert:                 true,
@@ -955,10 +954,9 @@ function sweepExpiredSessions() {
 // legacy names to fall back to. If the canonical tab is missing but a legacy
 // name is present, _reconcileLegacyTab_ renames it via setName so existing
 // data is preserved and subsequent calls find it normally. Idempotent — a
-// no-op once the rename has happened.
-const LEGACY_TAB_ALIASES_ = {
-  'activities': ['scheduled_events'],
-};
+// no-op once the rename has happened. Empty for now; populate when the
+// next rename lands.
+const LEGACY_TAB_ALIASES_ = {};
 
 function _reconcileLegacyTab_(ss, canonicalName) {
   var aliases = LEGACY_TAB_ALIASES_[canonicalName];
@@ -1385,7 +1383,6 @@ function route_(action, b, caller) {
     case 'deleteCheckout': return deleteCheckout_(b.id);
     case 'saveGroupCheckout': return saveGroupCheckout_(b, caller);
     case 'groupCheckIn': return groupCheckIn_(b, caller);
-    case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b, caller);
     // charter endpoints removed — use saveReservation / removeReservation
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveBoatOos': return saveBoatOos_(b);

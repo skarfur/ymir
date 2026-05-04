@@ -30,11 +30,9 @@
 // returns a shape where `roles` is parsed back into an array and booleans are
 // unwrapped. Use this everywhere readers need the domain object.
 //
-// `signupRequired` is the canonical boolean. New rows always carry it; for
-// legacy rows that predate the migration (no signupRequired cell), we derive
-// it from the dropped-but-still-present `kind` column as a safety net. The
-// emit-side no longer surfaces `kind` — all callers have moved to
-// signupRequired in the activities vocabulary cleanup.
+// `signupRequired` is the canonical boolean. The migration backfilled it on
+// every existing row before this commit, so a missing value just falls back
+// to false (a plain activity).
 function activity_parseRow_(row) {
   if (!row) return null;
   var roles = [];
@@ -43,19 +41,14 @@ function activity_parseRow_(row) {
   try { reservedBoatIds = row.reservedBoatIds ? JSON.parse(row.reservedBoatIds) : []; } catch (e) { reservedBoatIds = []; }
   var linkedGroupCheckoutIds = [];
   try { linkedGroupCheckoutIds = row.linkedGroupCheckoutIds ? JSON.parse(row.linkedGroupCheckoutIds) : []; } catch (e) { linkedGroupCheckoutIds = []; }
-  // Coerce signupRequired to a real boolean. Defensive fallback to legacy
-  // `kind` for any row written before the migration's backfill — harmless
-  // once every row has signupRequired set.
   var sigRaw = row.signupRequired;
   var signupRequired;
   if (sigRaw === true || sigRaw === false) {
     signupRequired = sigRaw;
   } else if (sigRaw === 'TRUE' || sigRaw === 'true') {
     signupRequired = true;
-  } else if (sigRaw === 'FALSE' || sigRaw === 'false') {
-    signupRequired = false;
   } else {
-    signupRequired = (String(row.kind || '').toLowerCase() === 'volunteer');
+    signupRequired = false;
   }
   return {
     id:                    row.id || '',
@@ -100,18 +93,11 @@ function activity_parseRow_(row) {
 // Inverse of activity_parseRow_ — takes a partial domain object and returns
 // the row shape suitable for insertRow_/updateRow_. Undefined fields pass
 // through so callers can do partial updates (updateRow_ ignores absent keys).
-//
-// Only `signupRequired` is written. Legacy `kind` input is still accepted
-// (and translated to signupRequired if signupRequired wasn't supplied) so
-// any straggler caller passing kind=… continues to behave correctly, but
-// new rows no longer carry the kind column.
 function activity_rowShape_(ev) {
   var out = {};
   if (ev.id !== undefined)                    out.id = ev.id;
   if (ev.signupRequired !== undefined) {
     out.signupRequired = !!ev.signupRequired;
-  } else if (ev.kind !== undefined) {
-    out.signupRequired = (String(ev.kind).toLowerCase() === 'volunteer');
   }
   if (ev.status !== undefined)                out.status = ev.status;
   if (ev.source !== undefined)                out.source = ev.source;
