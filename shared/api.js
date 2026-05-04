@@ -222,9 +222,9 @@ var _INVALIDATES = {
   // volunteerEvents + cancelledActivityOccurrences) and the activity-class
   // virtual-slot projection. getDailyLog isn't cached — listed only for
   // semantic intent (no-op today).
-  cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog'],
-  overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog'],
-  restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog'],
+  cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
+  overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
+  restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
   // Volunteer events live in scheduled_events (read by getConfig).
   // deleteVolunteerEvent cascades to volunteerSignups rows for the event,
   // so it also drops the cached signups.
@@ -257,6 +257,9 @@ var _INVALIDATES = {
   linkGoogleAccount:       ['getMembers'],
   unlinkGoogleAccount:     ['getMembers'],
 
+  // Daily log: writes activity rows into scheduled_events, which the staff
+  // Logbook Review activity-log section reads via getActivityLog.
+  saveDailyLog:            ['getActivityLog'],
   // Trips.
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
@@ -326,6 +329,9 @@ var _INVALIDATES = {
 var _POST_CACHEABLE = {
   getVolunteerSignups: 30000,
   getShareTokens:      60000,
+  // Staff Logbook Review activity-log section. Read-shaped POST that takes a
+  // date range; cached per-range thanks to the params-suffixed cache key.
+  getActivityLog:      30000,
 };
 
 async function apiPost(action, payload) {

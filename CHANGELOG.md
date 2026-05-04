@@ -3,6 +3,24 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — staff Logbook Review: activity-log filter section
+
+Adds a third section to the staff Logbook Review page (below trips
+validation and certifications) that surfaces concrete daily-log
+activities across a date range. Filters: class tag (training, scout
+program, class, …), specific activity type, free-text search across
+notes/participants/leader, and a "Logged only" toggle that hides
+activities with no `runNotes`. Date range defaults to the last 30 days
+and is server-capped at 366 days.
+
+Backend: `scheduling.gs` gains `sched_listActivityLog_(from, to, opts)`
+(reuses `sched_listInRange_` and joins each row with its activity-type
+`classTag` from config) plus a `getActivityLog_` handler. Routed in
+`code.gs` and gated by `STAFF_ACTIONS_`. Frontend caches via
+`_POST_CACHEABLE` (30 s) and `saveDailyLog` invalidates it; the
+class-occurrence writes already on the cache map pick up the new key
+too.
+
 ## Unreleased — promote getConfig/getHandbook to localStorage with cross-tab invalidation
 
 Frontend-only change. Profiling on a real session showed `getConfig` is
