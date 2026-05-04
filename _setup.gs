@@ -168,6 +168,10 @@ var SCHEMA_ = {
     'gcalEventId',
     'dailyLogDate',
     'createdAt','updatedAt','updatedBy',
+    // Per-activity (kind='activity') extras saved from the daily-log modal.
+    // Live alongside notes/runNotes so a single sched_upsert_ round-trips
+    // everything the modal captures.
+    'ablerRegistered','linkedGroupCheckoutIds','editedBy','editedAt',
   ],
   // Handbook (members- and staff-facing reference). See handbook.gs.
   // All four sections (roles, docs, contacts, info) now live as JSON arrays
