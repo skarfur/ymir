@@ -2,7 +2,7 @@
 // SCHEDULING  —  single source of truth for activities (every concrete
 // occurrence at the club: signup-tracked or plain).
 // ═══════════════════════════════════════════════════════════════════════════════
-// Every row in scheduled_events represents one concrete activity instance.
+// Every row in the activities sheet represents one concrete occurrence.
 // The `signupRequired` boolean flags whether it's signup-tracked:
 //
 //   signupRequired=true  — has roles/leader, surfaced in the volunteer portal
@@ -232,7 +232,7 @@ function activity_listLog_(fromIso, toIso, opts) {
   var typeMap = {};
   try {
     var cfgMap = getConfigMap_();
-    var types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
+    var types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]');
     (types || []).forEach(function (t) {
       if (t && t.id) typeMap[t.id] = { classTag: t.classTag || '', classTagIS: t.classTagIS || '' };
     });

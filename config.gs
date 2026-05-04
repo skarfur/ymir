@@ -5,7 +5,15 @@
 // ── Config-sheet primitives ──────────────────────────────────────────────────
 // The `config` sheet is a key/value store: column A holds the key, column B
 // the (typically JSON) value. Most domain config (boats, locations, certDefs,
-// activityTypes, flagConfig, …) lives in here under one row per key.
+// activity templates, flagConfig, …) lives in here under one row per key.
+
+// Self-healing config-key renames. Key = canonical config key; value = list
+// of legacy keys to fall back to when the canonical key is missing/empty.
+// Reads transparently fall through to the legacy key during the transition;
+// setupSpreadsheet copies legacy → canonical once explicitly.
+const LEGACY_CONFIG_KEY_ALIASES_ = {
+  'activity_templates': ['activity_templates'],
+};
 
 // Read the entire config sheet once and return a key→value map.
 function getConfigMap_() {
@@ -20,6 +28,14 @@ function getConfigMap_() {
 
 function getConfigValue_(key, map) {
   const v = map[key];
+  if (v !== undefined && v !== '') return v;
+  const aliases = LEGACY_CONFIG_KEY_ALIASES_[key];
+  if (aliases) {
+    for (let i = 0; i < aliases.length; i++) {
+      const alt = map[aliases[i]];
+      if (alt !== undefined && alt !== '') return alt;
+    }
+  }
   return v !== undefined ? v : null;
 }
 
@@ -30,8 +46,20 @@ function getConfigSheetValue_(key) {
   try { sheet = getSheet_('config'); } catch (e) { return null; }
   if (sheet.getLastRow() < 2) return null;
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
-  const row = data.find(r => String(r[0]).trim() === key);
-  return row ? String(row[1]).trim() : null;
+  const findRow = function (k) {
+    const r = data.find(row => String(row[0]).trim() === k);
+    return r ? String(r[1]).trim() : null;
+  };
+  const v = findRow(key);
+  if (v !== null && v !== '') return v;
+  const aliases = LEGACY_CONFIG_KEY_ALIASES_[key];
+  if (aliases) {
+    for (let i = 0; i < aliases.length; i++) {
+      const alt = findRow(aliases[i]);
+      if (alt !== null && alt !== '') return alt;
+    }
+  }
+  return v;
 }
 
 function setConfigSheetValue_(key, value) {
@@ -55,11 +83,11 @@ function setConfigSheetValue_(key, value) {
 // These helpers collapse the save/delete boilerplate: parse → find-by-id →
 // merge-or-push → stringify → cache-clear.
 //
-//   saveConfigListItem_('activity_types', { id, ...fields })
+//   saveConfigListItem_('activity_templates', { id, ...fields })
 //     → inserts if id empty/missing; merges into existing row otherwise.
 //       Returns { id, item, created|updated: true }.
 //
-//   deleteConfigListItem_('activity_types', id, { soft: true })
+//   deleteConfigListItem_('activity_templates', id, { soft: true })
 //     → hard-removes by default. With { soft: true } sets active=false instead.
 //       Returns { deleted: true } (or { deactivated: true } for soft delete).
 function readConfigList_(key) {
@@ -131,12 +159,12 @@ function getCertCategoriesFromMap_(cfgMap) {
   try { return normalizeCertCategoriesRaw_(JSON.parse(raw)); } catch (e) { return []; }
 }
 
-// Cached projection of scheduled_events into the two slices getConfig_ needs:
+// Cached projection of the activities sheet into the two slices getConfig_ needs:
 // volunteer rows (for the volunteerEvents DTO list) and cancelled-activity ids
 // (for the daily-log virtual-suppression list). The 60s getConfig cache covers
 // the hot path; this cache survives many config rebuilds (5min TTL) so plain
 // config writes — flagConfig, staffStatus, etc. — don't pay for a fresh
-// scheduled_events sheet read. Invalidated by activity_upsert_ / activity_cancel_ /
+// the activities sheet sheet read. Invalidated by activity_upsert_ / activity_cancel_ /
 // activity_hardDelete_ so any actual scheduled-events write rebuilds it.
 //
 // We cache parsed rows, not DTOs, so changes to activity_types (which feed the
@@ -170,7 +198,7 @@ function getConfig_() {
   const cfgMap = getConfigMap_();
   let activityTypes = [], dailyChecklist = { opening: [], closing: [] };
   try {
-    activityTypes = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]');
+    activityTypes = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]');
   } catch (e) { }
   try {
     const dcRaw = JSON.parse(getConfigValue_('dailyChecklist', cfgMap) || '{}');
@@ -225,7 +253,7 @@ function getConfig_() {
     const rpRaw = getConfigValue_('rowingPassport', cfgMap);
     if (rpRaw) rowingPassport = JSON.parse(rpRaw);
   } catch (e) {}
-  // Single pass over scheduled_events: derive volunteerEvents (DTO shape) +
+  // Single pass over the activities sheet: derive volunteerEvents (DTO shape) +
   // cancelled-activity tombstones. The parsed-row projection is cached
   // (see _activitiesForConfig_) so plain config writes don't pay for a
   // fresh sheet read; DTO conversion happens here using the in-scope
@@ -273,7 +301,7 @@ function getConfig_() {
 function projectActivitiesForDate_(dateISO) {
   if (!dateISO) return [];
   var classes = [];
-  try { classes = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  try { classes = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]'); } catch (e) { return []; }
   if (!Array.isArray(classes) || !classes.length) return [];
   var dow = String(new Date(dateISO + 'T12:00:00').getDay()); // '0'..'6'
   var out = [];
@@ -374,7 +402,7 @@ function saveConfig_(b) {
     setConfigSheetValue_('rowingPassport', JSON.stringify(b.rowingPassport));
     saved.rowingPassport = true;
   }
-  if (b.activityTypes) { setConfigSheetValue_('activity_types', JSON.stringify(b.activityTypes)); saved.activityTypes = true; }
+  if (b.activityTypes) { setConfigSheetValue_('activity_templates', JSON.stringify(b.activityTypes)); saved.activityTypes = true; }
   if (b.allowBreaks !== undefined) { setConfigSheetValue_('allowBreaks', b.allowBreaks ? 'true' : 'false'); saved.allowBreaks = true; }
   cDel_('config');
   return okJ({ saved });
@@ -451,7 +479,7 @@ function saveActivityType_(b) {
     if (!leaderMemberId && !leaderName) {
       return failJ('saveActivityType failed: leader is required');
     }
-    const res = saveConfigListItem_('activity_types', {
+    const res = saveConfigListItem_('activity_templates', {
       id: b.id || '',
       name: b.name,
       nameIS: b.nameIS || '',
@@ -481,7 +509,7 @@ function saveActivityType_(b) {
     var gcalId = '';
     try { gcalId = syncClassRecurringEvent_(res.item); } catch (e) { Logger.log('class gcal sync: ' + e); }
     if (gcalId !== (res.item.gcalSeriesEventId || '')) {
-      saveConfigListItem_('activity_types', { id: res.id, gcalSeriesEventId: gcalId || '' });
+      saveConfigListItem_('activity_templates', { id: res.id, gcalSeriesEventId: gcalId || '' });
       res.item.gcalSeriesEventId = gcalId;
     }
     return okJ({ id: res.id, item: res.item });
@@ -490,12 +518,12 @@ function saveActivityType_(b) {
 
 function deleteActivityType_(id) {
   try {
-    let arr = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+    let arr = JSON.parse(getConfigSheetValue_('activity_templates') || '[]');
     var deletedCls = arr.find(function(a) { return a && a.id === id; }) || null;
     arr = arr.filter(a => a.id !== id);
-    setConfigSheetValue_('activity_types', JSON.stringify(arr));
+    setConfigSheetValue_('activity_templates', JSON.stringify(arr));
     // Master GCal recurring event tear-down. Per-instance exceptions stored
-    // as scheduled_events rows are pruned by the cascade below.
+    // as the activities sheet rows are pruned by the cascade below.
     if (deletedCls && deletedCls.calendarId && deletedCls.gcalSeriesEventId) {
       try { Calendar.Events.remove(deletedCls.calendarId, deletedCls.gcalSeriesEventId); } catch (e) {}
     }

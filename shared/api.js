@@ -196,7 +196,7 @@ try {
 // Reference notes for the audit trail:
 //   getConfig — config sheet only (boats, locations, certDefs, certCats,
 //     activity_types, dailyChecklist, flagConfig/Override, staffStatus,
-//     rowingPassport, clubCalendars) PLUS scheduled_events projection
+//     rowingPassport, clubCalendars) PLUS the activities sheet projection
 //     (volunteerEvents, cancelledActivityOccurrences). Independent of
 //     the members sheet entirely.
 //   getMembers — members sheet only.
@@ -218,14 +218,14 @@ var _INVALIDATES = {
   saveStaffStatus:         ['getConfig'],
   saveRowingPassportDef:   ['getConfig'],
   importRowingPassportCsv: ['getConfig'],
-  // Class-occurrence writes touch scheduled_events (which feeds getConfig's
+  // Class-occurrence writes touch the activities sheet (which feeds getConfig's
   // volunteerEvents + cancelledActivityOccurrences) and the activity-class
   // virtual-slot projection. getDailyLog isn't cached — listed only for
   // semantic intent (no-op today).
   cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
   overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
   restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
-  // Volunteer events live in scheduled_events (read by getConfig).
+  // Volunteer events live in the activities sheet (read by getConfig).
   // deleteVolunteerEvent cascades to volunteerSignups rows for the event,
   // so it also drops the cached signups.
   saveVolunteerEvent:      ['getConfig'],
@@ -235,7 +235,7 @@ var _INVALIDATES = {
   // apiPost('getVolunteerSignups'), now in _POST_CACHEABLE. Both writes
   // drop that cache. volunteerSignup_ also keeps getConfig because the
   // first signup against a virtual recurring event materializes a
-  // scheduled_events row that feeds getConfig.volunteerEvents.
+  // the activities sheet row that feeds getConfig.volunteerEvents.
   volunteerSignup:         ['getConfig', 'getVolunteerSignups'],
   volunteerWithdraw:       ['getVolunteerSignups'],
   // Share tokens — read-shaped POST, cacheable.
@@ -257,7 +257,7 @@ var _INVALIDATES = {
   linkGoogleAccount:       ['getMembers'],
   unlinkGoogleAccount:     ['getMembers'],
 
-  // Daily log: writes activity rows into scheduled_events, which the staff
+  // Daily log: writes activity rows into the activities sheet, which the staff
   // Logbook Review activity-log section reads via getActivityLog.
   saveDailyLog:            ['getActivityLog'],
   // Trips.

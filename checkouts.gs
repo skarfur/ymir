@@ -472,7 +472,7 @@ function projectSlotsForDate_(dateISO, classes) {
   if (!dateISO) return [];
   var arr = classes;
   if (!arr) {
-    try { arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+    try { arr = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]'); } catch (e) { return []; }
   }
   if (!Array.isArray(arr) || !arr.length) return [];
   var dow = String(new Date(dateISO + 'T12:00:00').getDay());
@@ -520,7 +520,7 @@ function projectSlotsForDate_(dateISO, classes) {
 function projectSlotsForRange_(fromISO, toISO) {
   if (!fromISO || !toISO) return [];
   var classes = [];
-  try { classes = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]'); } catch (e) { return []; }
+  try { classes = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]'); } catch (e) { return []; }
   if (!Array.isArray(classes) || !classes.length) return [];
   var out = [];
   var d = new Date(fromISO + 'T00:00:00');
@@ -575,7 +575,7 @@ function gcalParseDateTime_(dateStr, timeStr) {
 // One Google Calendar recurring event per active activity class; the class
 // stores its `gcalSeriesEventId`. Members see the standing schedule as a
 // single recurring entry on their phones. Per-occurrence cancellations and
-// overrides are GCal exception PATCHes paired with local `scheduled_events`
+// overrides are GCal exception PATCHes paired with local `activities`
 // tombstone/override rows so the daily log + the calendar stay in sync.
 
 function syncClassRecurringEvent_(cls) {
@@ -787,7 +787,7 @@ function restoreClassOccurrence_(b) {
 
 function _activityClassById_(id) {
   try {
-    var arr = JSON.parse(getConfigValue_('activity_types', getConfigMap_()) || '[]');
+    var arr = JSON.parse(getConfigValue_('activity_templates', getConfigMap_()) || '[]');
     return arr.find(function(c) { return c && c.id === id; }) || null;
   } catch (e) { return null; }
 }
@@ -912,7 +912,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
   try {
     var cfgMap = getConfigMap_();
     var types = [];
-    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]'); } catch (e) {}
     var typeMap = {};
     types.forEach(function (t) { typeMap[t.id] = t; });
     var oldMap = {};
@@ -1038,7 +1038,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (!ev || !ev.signupRequired) return;
     var cfgMap = getConfigMap_();
     var types = [];
-    try { types = JSON.parse(getConfigValue_('activity_types', cfgMap) || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigValue_('activity_templates', cfgMap) || '[]'); } catch (e) {}
     var atId = ev.activityTypeId || ev.sourceActivityTypeId || '';
     var at = null;
     for (var j = 0; j < types.length; j++) {
@@ -1102,7 +1102,7 @@ function deleteVolunteerEventCalendarEvent_(evRow) {
     var atId = evRow.activityTypeId || evRow.sourceActivityTypeId || '';
     if (!atId) return;
     var types = [];
-    try { types = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch (e) {}
+    try { types = JSON.parse(getConfigSheetValue_('activity_templates') || '[]'); } catch (e) {}
     var at = null;
     for (var i = 0; i < types.length; i++) {
       if (types[i] && types[i].id === atId) { at = types[i]; break; }

@@ -164,7 +164,7 @@ var SCHEMA_ = {
   //                                    new readers should consult signupRequired.
   //   status ∈ 'upcoming' | 'completed' | 'cancelled' | 'orphaned'
   //   source ∈ 'bulk' | 'calendar' | 'manual' | 'daily-log'
-  scheduled_events: [
+  activities: [
     'id','kind','signupRequired','status','source',
     'date','endDate','startTime','endTime',
     'activityTypeId','subtypeId','subtypeName',
@@ -176,9 +176,9 @@ var SCHEMA_ = {
     'gcalEventId',
     'dailyLogDate',
     'createdAt','updatedAt','updatedBy',
-    // Per-activity (kind='activity') extras saved from the daily-log modal.
-    // Live alongside notes/runNotes so a single activity_upsert_ round-trips
-    // everything the modal captures.
+    // Plain-activity (signupRequired=false) extras saved from the daily-log
+    // modal. Live alongside notes/runNotes so a single activity_upsert_
+    // round-trips everything the modal captures.
     'ablerRegistered','linkedGroupCheckoutIds','editedBy','editedAt',
   ],
   // Handbook (members- and staff-facing reference). See handbook.gs.
@@ -191,6 +191,9 @@ var SCHEMA_ = {
 
 function ensureTab_(ss, tabName, cols) {
   var sheet = ss.getSheetByName(tabName);
+  // Self-healing rename: if the canonical tab is missing but a legacy alias
+  // is present, rename so existing data is preserved.
+  if (!sheet) sheet = _reconcileLegacyTab_(ss, tabName);
   if (!sheet) {
     sheet = ss.insertSheet(tabName);
     sheet.getRange(1, 1, 1, cols.length).setValues([cols]);
@@ -245,7 +248,7 @@ function setupSpreadsheet() {
   var cfgKeys = cfgSheet.getLastRow() >= 2
     ? cfgSheet.getRange(2, 1, cfgSheet.getLastRow()-1, 1).getValues().map(function(r){ return String(r[0]).trim(); })
     : [];
-  var defaultCfgKeys = ['activity_types','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist','handbookRoles','handbookDocs','handbookContacts','handbookInfo'];
+  var defaultCfgKeys = ['activity_templates','overdueAlerts','flagConfig','staffStatus','boats','locations','launchChecklists','boatCategories','certDefs','certCategories','dailyChecklist','handbookRoles','handbookDocs','handbookContacts','handbookInfo'];
   defaultCfgKeys.forEach(function(k) {
     if (!cfgKeys.includes(k)) {
       cfgSheet.appendRow([k, '']);
@@ -254,11 +257,14 @@ function setupSpreadsheet() {
   });
 
   // ── Migrations ─────────────────────────────────────────────────────────────
-  // Backfill signupRequired on scheduled_events from the legacy `kind` column.
+  // Backfill signupRequired on activities from the legacy `kind` column.
   // Idempotent: only writes when signupRequired is empty/missing on a row.
   // Safe to run repeatedly; no-op once every row carries the boolean.
+  // Tab may still be named 'scheduled_events' on older deployments —
+  // the SCHEMA_ loop above runs ensureTab_ which auto-renames via
+  // _reconcileLegacyTab_, so by this point it's named 'activities'.
   try {
-    var seSheet = ss.getSheetByName('scheduled_events');
+    var seSheet = ss.getSheetByName('activities');
     if (seSheet && seSheet.getLastRow() >= 2) {
       var headers = seSheet.getRange(1, 1, 1, seSheet.getLastColumn()).getValues()[0]
         .map(function (h) { return String(h).trim(); });
@@ -279,12 +285,47 @@ function setupSpreadsheet() {
         }
         if (changed > 0) {
           range.setValues(values);
-          Logger.log('Migrated signupRequired on ' + changed + ' scheduled_events row(s).');
+          Logger.log('Migrated signupRequired on ' + changed + ' activities row(s).');
         }
       }
     }
   } catch (e) {
     Logger.log('signupRequired backfill skipped: ' + e.message);
+  }
+
+  // Copy legacy config keys into their canonical names. Idempotent — only
+  // copies when the canonical row is missing/empty AND the legacy row has a
+  // value. Leaves the legacy row in place for one cycle so a partial-deploy
+  // rollback still has a working source. See LEGACY_CONFIG_KEY_ALIASES_ in
+  // config.gs for the source of truth.
+  try {
+    var cfgSheet2 = ss.getSheetByName('config');
+    if (cfgSheet2 && cfgSheet2.getLastRow() >= 2) {
+      var cfgRows = cfgSheet2.getRange(2, 1, cfgSheet2.getLastRow() - 1, 2).getValues();
+      var cfgKeyToRow = {};
+      cfgRows.forEach(function (r, i) {
+        cfgKeyToRow[String(r[0]).trim()] = { rowIndex: i + 2, value: String(r[1]).trim() };
+      });
+      Object.keys(LEGACY_CONFIG_KEY_ALIASES_).forEach(function (canonical) {
+        var canonRow = cfgKeyToRow[canonical];
+        if (canonRow && canonRow.value !== '') return; // canonical already populated
+        var legacies = LEGACY_CONFIG_KEY_ALIASES_[canonical] || [];
+        for (var j = 0; j < legacies.length; j++) {
+          var legacyRow = cfgKeyToRow[legacies[j]];
+          if (legacyRow && legacyRow.value !== '') {
+            if (canonRow) {
+              cfgSheet2.getRange(canonRow.rowIndex, 2).setValue(literalWrite_(legacyRow.value));
+            } else {
+              cfgSheet2.appendRow([canonical, literalWrite_(legacyRow.value)]);
+            }
+            Logger.log('Migrated config key: "' + legacies[j] + '" → "' + canonical + '"');
+            break;
+          }
+        }
+      });
+    }
+  } catch (e) {
+    Logger.log('Config-key migration skipped: ' + e.message);
   }
 
   Logger.log('setupSpreadsheet complete. Tabs processed: ' + results.join(', '));

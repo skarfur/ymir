@@ -1155,9 +1155,9 @@ function publicShareRecord_(b) {
 
 
 // ── VOLUNTEERS ──────────────────────────────────────────────────────────────
-// Volunteer events live in the scheduled_events sheet (kind='volunteer'). See
+// Volunteer events live in the the activities sheet sheet (kind='volunteer'). See
 // scheduling.gs for the read/write primitives. Signups keep their own sheet
-// (volunteer_signups) and reference scheduled_events.id via `eventId`.
+// (volunteer_signups) and reference the activities sheet.id via `eventId`.
 
 function saveVolunteerEvent_(b) {
   try {
@@ -1248,7 +1248,7 @@ function volunteerSignup_(b) {
       return failJ('Already signed up for this role');
     }
     // Find the event. If not materialized yet and a virtualEvent payload was
-    // provided (id starts with 'vae-'), materialize into scheduled_events now
+    // provided (id starts with 'vae-'), materialize into the activities sheet now
     // so future signups + lookups work.
     var evt = activity_getById_(b.eventId);
     if (!evt && b.virtualEvent && String(b.eventId).indexOf('vae-') === 0) {
@@ -1298,7 +1298,7 @@ function volunteerWithdraw_(b) {
   } catch(e) { return failJ('volunteerWithdraw failed: ' + e.message); }
 }
 
-// Shape a scheduled_events row into the legacy volunteer-event DTO the
+// Shape a the activities sheet row into the legacy volunteer-event DTO the
 // frontend expects. Preserves the old field names (subtitle, active) so the
 // admin + member volunteer pages keep working without changes.
 //
@@ -1322,7 +1322,7 @@ function _schedToVolDto_(ev, classMap) {
       subtitleIS = String(cls.classTagIS || cls.classTag   || '');
     } else {
       try {
-        var types = JSON.parse(getConfigSheetValue_('activity_types') || '[]');
+        var types = JSON.parse(getConfigSheetValue_('activity_templates') || '[]');
         var found = types.find(function (t) { return t && t.id === ev.activityTypeId; });
         if (found) {
           subtitle   = String(found.classTag   || found.classTagIS || '');
@@ -1376,7 +1376,7 @@ function ensureVolunteerSignupsTab() {
 // ── Materialize bulk-scheduled volunteer events ─────────────────────────────
 // When an activity type is flagged as volunteer and its subtypes define a
 // bulkSchedule, each occurrence should exist as a concrete row in
-// scheduled_events so admins can view/edit/delete it individually. This
+// the activities sheet so admins can view/edit/delete it individually. This
 // mirrors the logic in shared/volunteer.js (expandVolunteerActivityTypes) but
 // runs on the backend so that events are persisted, not computed lazily on
 // the client.
@@ -1453,7 +1453,7 @@ function volExpandActType_(cls, fromIso, toIso) {
 }
 
 // Materialize all bulk-scheduled volunteer events for a single activity type
-// into scheduled_events. Safe to call repeatedly — activity_upsert_ is idempotent
+// into the activities sheet. Safe to call repeatedly — activity_upsert_ is idempotent
 // by id. Returns the count of events added (skips those already present).
 function materializeVolunteerEventsForAt_(at) {
   if (!at) return 0;
@@ -1531,7 +1531,7 @@ function reconcileVolunteerEventsForAt_(at) {
 function syncVolunteerEvents_(b) {
   try {
     var actTypes = [];
-    try { actTypes = JSON.parse(getConfigSheetValue_('activity_types') || '[]'); } catch(e) { actTypes = []; }
+    try { actTypes = JSON.parse(getConfigSheetValue_('activity_templates') || '[]'); } catch(e) { actTypes = []; }
     var totalAdded = 0, totalPruned = 0, totalSoft = 0;
     actTypes.forEach(function (at) {
       var r = reconcileVolunteerEventsForAt_(at);

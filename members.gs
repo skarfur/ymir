@@ -752,7 +752,7 @@ function getDailyLog_(date) {
   // anywhere else. nowLocalDate_() matches the format saveDailyLog_ writes.
   const d = date || nowLocalDate_();
   const log = findOne_('dailyLog', 'date', d);
-  // Concrete activity rows for this date from scheduled_events. Populated
+  // Concrete activity rows for this date from the activities sheet. Populated
   // into the dailyLog DTO's `activities` field (as a JSON string) so the
   // frontend contract is preserved — see dailylog.js `applyLogData`.
   var activityRows = [];
@@ -786,7 +786,7 @@ function getDailyLog_(date) {
   return okJ({ log: logDto, date: d, scheduledActivities: scheduledActivities });
 }
 
-// Convert a scheduled_events row (kind='activity') into the daily-log activity
+// Convert a the activities sheet row (kind='activity') into the daily-log activity
 // shape the frontend already knows how to render.
 function _schedActivityToLogShape_(a) {
   return {
@@ -819,7 +819,7 @@ function saveDailyLog_(b, caller) {
   ensureActorCols_('dailyLog');
   const actorKt   = actorKt_(caller);
   const actorName = actorName_(caller);
-  // Persist activities into scheduled_events (kind='activity'). Each activity
+  // Persist activities into the activities sheet (kind='activity'). Each activity
   // gets its own row keyed by id; sync to activity-type calendars happens
   // inside syncDailyLogActivities_.
   if (b.activities !== undefined) {
@@ -827,12 +827,12 @@ function saveDailyLog_(b, caller) {
     persistDailyLogActivities_(date, oldRows, b.activities || [], actorName || b.updatedBy || '');
   }
   // The `activities` column on dailyLog is now unread (authoritative source is
-  // scheduled_events). We still write an empty JSON array to the column so the
+  // the activities sheet). We still write an empty JSON array to the column so the
   // sheet row shape stays clean, but the frontend gets activities from the
   // new table via getDailyLog_.
   if (ex) {
     // Note: `activities` column is intentionally omitted from the update —
-    // authoritative activities live in scheduled_events now, and leaving the
+    // authoritative activities live in the activities sheet now, and leaving the
     // legacy column untouched preserves pre-cutover data as a rollback safety.
     updateRow_('dailyLog', 'date', date, {
       openingChecks: b.openingChecks !== undefined ? JSON.stringify(b.openingChecks) : ex.openingChecks,
@@ -863,7 +863,7 @@ function saveDailyLog_(b, caller) {
   }
 }
 
-// Upsert each activity from the frontend's saved daily log into scheduled_events
+// Upsert each activity from the frontend's saved daily log into the activities sheet
 // as kind='activity' rows. Deletes rows whose id vanished from the new list.
 // Handles per-activity GCal sync via syncDailyLogActivities_ before writing so
 // that the assigned gcalEventId is persisted on the row.
@@ -940,7 +940,7 @@ function materializeYesterday_() {
   var d = new Date();
   d.setDate(d.getDate() - 1);
   var dateISO = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  // Freeze each projected activity into scheduled_events so the day is
+  // Freeze each projected activity into the activities sheet so the day is
   // captured even if nobody opened the daily log. Idempotent — activity_upsert_
   // is keyed by id. Checklist metadata still lives on the dailyLog row; if
   // the row is missing, create an empty one so the daily-log page has a

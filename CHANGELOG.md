@@ -3,6 +3,39 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activities vocabulary cleanup (sheet + config-key rename)
+
+Third step of the activities vocabulary cleanup. Renames the underlying
+sheet tab and config key to match the canonical vocabulary.
+
+- Sheet tab: `'scheduled_events'` → `'activities'`. `TABS_.activities` now
+  resolves to the new canonical name. A self-healing helper
+  (`_reconcileLegacyTab_` + `LEGACY_TAB_ALIASES_` in `code.gs`) renames the
+  legacy tab via `setName` whenever the canonical isn't found —
+  triggered by `getSheet_`, `ensureSheet_`, and `_setup.gs/ensureTab_`,
+  so the rename happens whichever path hits the sheet first
+  (idempotent, preserves data).
+- Config key: `'activity_types'` → `'activity_templates'`.
+  `getConfigValue_` and `getConfigSheetValue_` consult
+  `LEGACY_CONFIG_KEY_ALIASES_` and fall back to the legacy key when the
+  canonical row is missing/empty. `setupSpreadsheet` runs an idempotent
+  copy from legacy → canonical row. All in-code reads/writes
+  (`config.gs`, `scheduling.gs`, `checkouts.gs`, `public.gs`) updated to
+  use the canonical key. The unused `TABS_.actTypes` entry is removed.
+- The seeded config-key list in `_setup.gs` now uses
+  `'activity_templates'` for fresh deployments.
+
+Deploy guidance: this commit is safe to roll out without running
+`setupSpreadsheet` first — the runtime self-healing handles existing
+sheets transparently. Running `setupSpreadsheet` afterward triggers an
+explicit, logged rename so you can confirm the migration in the
+Apps Script log.
+
+Still to land: drop the legacy `kind` column on the activities sheet
+once we're confident no readers depend on it (a release cycle or two
+after the prior commit). After that, build the unified Group Checkout
+activity picker on top of the cleaned-up vocabulary.
+
 ## Unreleased — activities vocabulary cleanup (identifier renames)
 
 Second step of the activities vocabulary cleanup. Pure code rename — no
