@@ -107,8 +107,16 @@ function renderTrips() {
     const tin   = sstr(co.checkedInAt ||co.timeIn).slice(0,5);
     const retBy = sstr(co.expectedReturn).slice(0,5);
     const overdue = retBy && !tin && retBy < fmtTimeNow();
+    let boatLabel;
+    try {
+      const arr = co.boatNames ? (typeof co.boatNames === 'string' ? JSON.parse(co.boatNames) : co.boatNames) : null;
+      boatLabel = (Array.isArray(arr) && arr.length) ? arr.join(', ') : (co.boatName || co.boatId || '');
+    } catch (e) {
+      boatLabel = co.boatName || co.boatId || '';
+    }
+    boatLabel = String(boatLabel).replace(/,(?!\s)/g, ', ');
     row.innerHTML = `<div class="flex-1">
-      <div class="trip-boat">${esc(co.boatName||co.boatId)}
+      <div class="trip-boat">${esc(boatLabel)}
         ${co.memberIsMinor ? `<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>` : ''}
       </div>
       <div class="trip-meta">${esc(co.memberName||'')}${co.locationName ? ' · '+esc(co.locationName) : ''}${co.crew && co.crew > 1 ? ' · '+co.crew+' '+s('lbl.crew').toLowerCase() : ''}</div>
