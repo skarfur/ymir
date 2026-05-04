@@ -933,6 +933,15 @@ function applyLogData(logRes, cfgRes) {
     amChecks = sjson(log.openingChecks, {});
     pmChecks = sjson(log.closingChecks, {});
     activities = sjson(log.activities, []);
+    // Merge unmaterialized projections — backend already filters scheduledActivities
+    // to exclude ids present in log.activities, so dedup-by-id is enough. Without
+    // this, today's bulk-projected activities go missing once a dailyLog row
+    // exists with no scheduled_events activity rows for the date.
+    if (scheduled.length) {
+      var seen = {};
+      activities.forEach(function (a) { if (a && a.id) seen[a.id] = true; });
+      scheduled.forEach(function (a) { if (a && a.id && !seen[a.id]) activities.push(a); });
+    }
     wxLog    = sjson(log.weatherLog, []);
     dom.narrativeInput.value = log.narrative || '';
     if (log.signedOffBy) {
@@ -1066,36 +1075,55 @@ function renderGroupLinkCards() {
   }).join('');
 }
 
-function openGroupLinkPicker() {
+let _groupLinkPickerCache = [];
+
+async function openGroupLinkPicker() {
   _groupLinkPickerSelected = new Set(_linkedGroupCheckoutIds);
+  // Always pull a fresh list rather than relying on loadTodayTrips' side
+  // effect — past/future daily-log views never populate _activeCheckouts,
+  // and the picker should also surface group sails that have already been
+  // checked back in today (so retroactive linking works).
+  try {
+    const r = await apiGet('getActiveCheckouts');
+    _groupLinkPickerCache = r.checkouts || [];
+    window._activeCheckouts = _groupLinkPickerCache;
+  } catch (e) {
+    _groupLinkPickerCache = window._activeCheckouts || [];
+  }
+  _renderGroupLinkPicker();
+  openModal('groupLinkModal');
+}
+
+function _renderGroupLinkPicker() {
   const wrap  = document.getElementById('groupLinkPickerCards');
   const empty = document.getElementById('groupLinkEmpty');
-  // Get today's group checkouts from the active checkouts in memory
-  const groups = (window._activeCheckouts || []).filter(function(c) {
-    return (c.isGroup === true || c.isGroup === 'true') && c.status === 'out';
+  const groups = _groupLinkPickerCache.filter(function (c) {
+    return c && (c.isGroup === true || c.isGroup === 'true');
   });
   if (!groups.length) {
     wrap.innerHTML = '';
     empty.style.display = '';
-  } else {
-    empty.style.display = 'none';
-    wrap.innerHTML = groups.map(function(c) {
-      let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
-      let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
-      const sel = _groupLinkPickerSelected.has(c.id);
-      return '<div data-dl-click="toggleGroupLinkPick" data-dl-arg="'+c.id+'" class="callout-panel mb-6" style="background:' + (sel?'color-mix(in srgb, var(--navy) 12%, transparent)':'var(--surface)') + ';border-color:' + (sel?'var(--navy)':'var(--border)') + ';border-left:3px solid var(--navy);cursor:pointer">' +
-        '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
-        '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5)) + '</div>' +
-        '</div>';
-    }).join('');
+    return;
   }
-  openModal('groupLinkModal');
+  empty.style.display = 'none';
+  wrap.innerHTML = groups.map(function(c) {
+    let boatArr; try { boatArr = c.boatNames?(typeof c.boatNames==='string'?JSON.parse(c.boatNames):c.boatNames):[c.boatName||'—']; } catch(e){ boatArr=[c.boatName||'—']; }
+    let staffArr; try { staffArr = c.staffNames?(typeof c.staffNames==='string'?JSON.parse(c.staffNames):c.staffNames):[]; } catch(e){ staffArr=[]; }
+    const sel = _groupLinkPickerSelected.has(c.id);
+    const checkedInChip = c.status === 'in'
+      ? ' · ↩ ' + esc(sstr(c.checkedInAt||'').slice(0,5))
+      : '';
+    return '<div data-dl-click="toggleGroupLinkPick" data-dl-arg="'+c.id+'" class="callout-panel mb-6" style="background:' + (sel?'color-mix(in srgb, var(--navy) 12%, transparent)':'var(--surface)') + ';border-color:' + (sel?'var(--navy)':'var(--border)') + ';border-left:3px solid var(--navy);cursor:pointer">' +
+      '<div class="text-md fw-500">' + esc(boatArr.join(', ')) + '</div>' +
+      '<div class="text-sm text-muted">' + (staffArr[0]?esc(staffArr[0])+' · ':'') + esc(c.activityTypeName||'—') + ' · Out ' + esc(sstr(c.checkedOutAt||c.timeOut).slice(0,5)) + checkedInChip + '</div>' +
+      '</div>';
+  }).join('');
 }
 
 function toggleGroupLinkPick(id) {
   if (_groupLinkPickerSelected.has(id)) _groupLinkPickerSelected.delete(id);
   else _groupLinkPickerSelected.add(id);
-  openGroupLinkPicker();
+  _renderGroupLinkPicker();
 }
 
 function confirmGroupLink() {
