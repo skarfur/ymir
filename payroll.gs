@@ -1,14 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PAYROLL  —  punch clock, employee records, pay calculation, launamiðar XML
-// 2026 RSK constants; configurable via config.payroll
+// PAYROLL  —  punch clock, employee records
 // ═══════════════════════════════════════════════════════════════════════════════
-
-const TAX_2026_ = {
-  bracketBase1: 498122, bracketBase2: 1398450,
-  rate1: 0.3149, rate2: 0.3799, rate3: 0.4629,
-  personalCredit: 72492, tryggingagjald: 0.0635,
-  motframlag: 0.115, orlofsfe: 0.1017, lifeyrir: 0.04,
-};
 
 function seedEmployees_() {
   const sheet = getSheet_(TABS_.employees);
@@ -41,34 +33,9 @@ function initPayrollSheets_() {
       'source','originalTimestamp','note','periodKey','durationMinutes']]);
     s.setFrozenRows(1);
   }
-  if (!ss.getSheetByName(TABS_.payroll)) {
-    const s = ss.insertSheet(TABS_.payroll);
-    s.getRange(1,1,1,18).setValues([['id','employeeId','period','hoursRegular',
-      'hoursOT133','hoursOT155','grossWage','orlofsfe','grossTotal','lifeyrir',
-      'sereignarsjodur','otherWithholdings','stadgreidslaSkattur','netPay',
-      'tryggingagjald','motframlag','totalEmployerCost','generatedBy']]);
-    s.setFrozenRows(1);
-  }
   seedEmployees_();
-  cDel_('employees'); cDel_('time_clock'); cDel_('payroll');
+  cDel_('employees'); cDel_('time_clock');
   return okJ({ initialised: true });
-}
-
-function payrollCfg_() {
-  const raw = getConfig_();
-  const p   = raw.payroll || {};
-  return {
-    baseRateKr:        p.baseRateKr        || 3310,
-    ot133multiplier:   p.ot133multiplier   || 1.33,
-    ot155multiplier:   p.ot155multiplier   || 1.55,
-    otThreshold133:    p.otThreshold133    || 173,
-    otThreshold155:    p.otThreshold155    || 200,
-    payPeriodStartDay: p.payPeriodStartDay || 1,
-    payPeriodEndDay:   p.payPeriodEndDay   || 31,
-    employerKt:        p.employerKt        || '4705760659',
-    employerName:      p.employerName      || 'Siglingafelagid Ymir',
-    employerAddress:   p.employerAddress   || 'Reykjavik',
-  };
 }
 
 function periodKey_(date) {
@@ -219,146 +186,4 @@ function saveEmployee_(b) {
   }
   cDel_('employees');
   return okJ({ saved:true });
-}
-
-function calcTax_(gross, lif, ser) {
-  const t = TAX_2026_;
-  const base = Math.max(0, gross*(1-lif-ser));
-  var tax = base<=t.bracketBase1 ? base*t.rate1
-    : base<=t.bracketBase2 ? t.bracketBase1*t.rate1+(base-t.bracketBase1)*t.rate2
-    : t.bracketBase1*t.rate1+(t.bracketBase2-t.bracketBase1)*t.rate2+(base-t.bracketBase2)*t.rate3;
-  return Math.max(0, Math.round(tax - t.personalCredit));
-}
-
-function closePayPeriod_(b) {
-  // Frontend sends pre-calculated rows — store them directly so the committed
-  // payslip always reflects the config values that were in effect at approval time.
-  const rows = b.rows;
-  if (!rows || !rows.length) return failJ('rows array required');
-
-  // Ensure newer columns exist in the payroll sheet
-  ['periodFrom','periodTo','paymentDate','slipNumber','employeeName','kt',
-   'bankAccount','orlofsreikningur','title','baseRateKr','regularMinutes',
-   'otMinutes','manualLines','dagvinna','eftirvinna1','eftirvinna2','otLines',
-   'orlofslaun','orlofsRate','manualTotal','employeePension','sereignarsjodur',
-   'sereignRate','unionDues','taxBase','taxGross','personalCredit',
-   'taxWithheld','taxAfterCredit','orlofIBanki','totalDeductions',
-   'employerPension','endurhaefingarsjodur','regularHrs','ot1Hrs','ot2Hrs',
-   'pensionRate','configSnapshot','approved','totalHours'
-  ].forEach(function(c) { addColIfMissing_(TABS_.payroll, c); });
-
-  // Generate slip numbers: YY0M0x based on payment date month
-  var payDate = b.paymentDate || '';
-  var yy = payDate.slice(2, 4) || '00';
-  var mm = payDate.slice(5, 7) || '01';
-  var prefix = yy + mm;
-  // Find the highest existing counter for this prefix
-  var existing = readAll_(TABS_.payroll);
-  var maxCounter = 0;
-  existing.forEach(function(r) {
-    var sn = String(r.slipNumber || '');
-    if (sn.indexOf(prefix) === 0) {
-      var num = parseInt(sn.slice(prefix.length), 10);
-      if (num > maxCounter) maxCounter = num;
-    }
-  });
-
-  var results = [];
-  rows.forEach(function(r, i) {
-    var counter = String(maxCounter + i + 1).padStart(2, '0');
-    var slipNumber = prefix + counter;
-    var row = Object.assign({}, r, {
-      id: uid_(),
-      generatedBy: b.by || 'admin',
-      slipNumber: slipNumber
-    });
-    insertRow_(TABS_.payroll, row);
-    results.push(row);
-  });
-  cDel_('payroll');
-  return okJ({ periodFrom: b.periodFrom, periodTo: b.periodTo, rows: results.length });
-}
-
-function getPayroll_(b) {
-  var rows = readAll_(TABS_.payroll);
-  if (b.period)     rows = rows.filter(function(r){ return r.period===b.period || r.periodFrom===b.period; });
-  if (b.employeeId) rows = rows.filter(function(r){ return r.employeeId===b.employeeId; });
-  const allRows = readAll_(TABS_.payroll);
-  const fields  = ['grossWage','orlofsfe','grossTotal','lifeyrir','sereignarsjodur',
-    'stadgreidslaSkattur','netPay','tryggingagjald','motframlag','totalEmployerCost',
-    'hoursRegular','hoursOT133','hoursOT155'];
-  rows.forEach(function(row) {
-    const pKey = row.period || row.periodFrom || '';
-    const yr  = pKey.slice(0,4);
-    const ytd = allRows.filter(function(r){
-      var rk = r.period || r.periodFrom || '';
-      return r.employeeId===row.employeeId && rk.startsWith(yr) && rk<=pKey;
-    });
-    const tot = {};
-    fields.forEach(function(f){ tot[f]=ytd.reduce(function(s,r){ return s+Number(r[f]||0); },0); });
-    row._ytd = tot;
-  });
-  return okJ({ payroll:rows });
-}
-
-function generatePayslipData_(b) {
-  if (!b.employeeId||!b.period) return failJ('employeeId and period required');
-  const payRows = readAll_(TABS_.payroll).filter(function(r){ return r.employeeId===b.employeeId&&r.period===b.period; });
-  if (!payRows.length) return failJ('No payroll record for this period');
-  const emp = readAll_(TABS_.employees).find(function(r){ return r.id===b.employeeId; });
-  if (!emp) return failJ('Employee not found');
-  const yr  = b.period.slice(0,4);
-  const all = readAll_(TABS_.payroll);
-  const ytd = all.filter(function(r){ return r.employeeId===b.employeeId&&(r.period||'').startsWith(yr)&&r.period<=b.period; });
-  const fields = ['grossWage','orlofsfe','grossTotal','lifeyrir','sereignarsjodur','stadgreidslaSkattur','netPay','hoursRegular','hoursOT133','hoursOT155'];
-  const tot={};
-  fields.forEach(function(f){ tot[f]=ytd.reduce(function(s,r){ return s+Number(r[f]||0); },0); });
-  return okJ({ payslip:{ employee:emp, period:b.period, pay:payRows[0], ytd:tot, employer:payrollCfg_() } });
-}
-
-function generateLaunamidlar_(b) {
-  var year = b.year || String(new Date().getFullYear());
-  var cfg  = payrollCfg_();
-  var emps = readAll_(TABS_.employees).filter(function(e){ return e.payrollEnabled===true||e.payrollEnabled==='true'; });
-  var rows = readAll_(TABS_.payroll).filter(function(r){ return (r.period||'').indexOf(year)===0; });
-
-  var byEmp = {};
-  rows.forEach(function(r){
-    if (!byEmp[r.employeeId]) byEmp[r.employeeId]={grossTotal:0,lifeyrir:0,sereignarsjodur:0,orlofsfe:0,stadgreidslaSkattur:0,tryggingagjald:0,motframlag:0};
-    var e=byEmp[r.employeeId];
-    ['grossTotal','lifeyrir','sereignarsjodur','orlofsfe','stadgreidslaSkattur','tryggingagjald','motframlag'].forEach(function(f){
-      e[f]+=Number(r[f]||0);
-    });
-  });
-
-  var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<LS year="'+year+'" kt="'+xmlEsc_(cfg.employerKt)+'" name="'+xmlEsc_(cfg.employerName)+'">\n';
-
-  emps.forEach(function(emp){
-    var agg = byEmp[emp.id];
-    if (!agg) return;
-    var r02 = Math.round(agg.grossTotal);
-    var r03 = Math.round(agg.lifeyrir+agg.sereignarsjodur);
-    var r07 = Math.round(agg.orlofsfe);
-    var r71 = Math.round(agg.stadgreidslaSkattur);
-    xml += '  <launamidi>\n';
-    xml += '    <kt>'+xmlEsc_(emp.kt)+'</kt>\n';
-    xml += '    <n>'+xmlEsc_(emp.name)+'</n>\n';
-    xml += '    <title>'+xmlEsc_(emp.title||'')+'</title>\n';
-    xml += '    <r02>'+r02+'</r02>\n';
-    xml += '    <r03>'+r03+'</r03>\n';
-    xml += '    <r07>'+r07+'</r07>\n';
-    xml += '    <r08>'+xmlEsc_(emp.union||'')+'</r08>\n';
-    xml += '    <r70>'+r02+'</r70>\n';
-    xml += '    <r71>'+r71+'</r71>\n';
-    xml += '    <motframlag>'+Math.round(agg.motframlag)+'</motframlag>\n';
-    xml += '    <tryggingagjald>'+Math.round(agg.tryggingagjald)+'</tryggingagjald>\n';
-    xml += '  </launamidi>\n';
-  });
-
-  xml += '</LS>';
-  return okJ({ xml:xml, year:year, employerKt:cfg.employerKt });
-}
-function xmlEsc_(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

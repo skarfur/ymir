@@ -3,6 +3,27 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — backend: drop unused `payroll` sheet + dead pay-calc code
+
+The `payroll` sheet in the spreadsheet was never written to at runtime. Its
+four backend writers/readers (`closePayPeriod`, `getPayroll`,
+`generatePayslipData`, `generateLaunamidlar`) were wired into the router
+but no frontend code called them — admin's payroll portal exports raw
+`time_clock` entries to an external URL via `prExportTimeData`, so all
+pay calculation happens off-platform.
+
+- `payroll.gs`: remove `closePayPeriod_`, `getPayroll_`,
+  `generatePayslipData_`, `generateLaunamidlar_`, plus their helpers
+  `payrollCfg_`, `calcTax_`, `xmlEsc_`, and the `TAX_2026_` constant.
+  `initPayrollSheets_` no longer creates the `payroll` sheet.
+- `code.gs`: drop `TABS_.payroll`, the `closePayPeriod` entry in
+  `ADMIN_ACTIONS_`, and the four dead router cases.
+- `_setup.gs`: drop the `payroll` schema entry.
+- `CLAUDE.md`: update `payroll.gs` description to reflect the slimmer scope.
+
+The punch-clock / employees feature is unchanged — `time_clock` and
+`employees` sheets remain.
+
 ## Unreleased — admin: activity-template Category dropdown reflects saved tag
 
 Reopening an activity template that was saved with a preset class tag
