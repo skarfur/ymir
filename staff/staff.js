@@ -801,9 +801,9 @@ async function openGroupModal() {
   //   link:<id>  → existing scheduled activity for today (linkedActivityId)
   //   tag:<tag>  → coarse classTag, no instance link
   //   new        → reveals inline form to mint an ad-hoc activity for today
-  // Today's activities are merged from materialized + bulk-projected, the
-  // same source openDlLinkModal uses (so the dropdown matches what would
-  // have appeared in the post-create link modal).
+  // Today's activities are merged from materialized + bulk-projected — the
+  // backend filters the projection to exclude already-materialized ids,
+  // so dedup-by-id is enough.
   _gmTodayActs = [];
   try {
     const today = todayISO();
@@ -1090,86 +1090,6 @@ function renderGroupCard(c) {
     + '</div>';
   return div;
 }
-
-
-// ── Daily log link after group checkout ──────────────────────────────────────
-let _dlLinkCheckoutId  = null;
-let _dlLinkSelectedAct = null;
-let _dlLinkTodayActs   = [];
-
-async function openDlLinkModal(checkoutId) {
-  _dlLinkCheckoutId  = checkoutId;
-  _dlLinkSelectedAct = null;
-  // Fetch today's daily log activities. Merge materialized activities (from
-  // log.activities, populated by activity_listForDate_) with the
-  // unmaterialized bulk projection (scheduledActivities) — backend filters the
-  // projection to exclude already-materialized ids, so dedup-by-id is enough.
-  try {
-    const today = todayISO();
-    const res   = await apiGet('getDailyLog', { date: today });
-    const log   = res.log || {};
-    var _acts = log.activities;
-    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
-    // Legacy rows were double-encoded; unwrap once more if needed.
-    if (typeof _acts === 'string') { try { _acts = JSON.parse(_acts); } catch(e) { _acts = []; } }
-    var _materialized = Array.isArray(_acts) ? _acts.slice() : [];
-    var _projected = Array.isArray(res.scheduledActivities) ? res.scheduledActivities : [];
-    var _seen = {};
-    _materialized.forEach(function (a) { if (a && a.id) _seen[a.id] = true; });
-    _projected.forEach(function (a) { if (a && a.id && !_seen[a.id]) _materialized.push(a); });
-    _dlLinkTodayActs = _materialized;
-  } catch(e) { _dlLinkTodayActs = []; }
-
-  const list = document.getElementById('dlLinkActList');
-  if (!_dlLinkTodayActs.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">' + s('staff.noActivities') + '</div>';
-    document.getElementById('dlLinkConfirmBtn').style.display = 'none';
-  } else {
-    document.getElementById('dlLinkConfirmBtn').style.display = '';
-    list.innerHTML = _dlLinkTodayActs.map(function(act) {
-      const meta = [act.type, act.start && act.end ? act.start+'\u2013'+act.end : act.start].filter(Boolean).join(' \u00b7 ');
-      return '<div class="dl-act-card" data-actid="' + esc(act.id) + '" data-staff-click="selectDlAct" data-staff-arg="' + act.id + '">' +
-        '<div class="dl-act-name">' + esc(act.name) + '</div>' +
-        '<div class="dl-act-meta">' + esc(meta) + '</div>' +
-        '</div>';
-    }).join('');
-  }
-  openModal('dlLinkModal');
-}
-
-function selectDlAct(actId) {
-  _dlLinkSelectedAct = actId;
-  document.querySelectorAll('.dl-act-card').forEach(function(c) {
-    c.classList.toggle('selected', c.dataset.actid === actId);
-  });
-}
-
-async function confirmDlLink() {
-  if (!_dlLinkSelectedAct || !_dlLinkCheckoutId) { closeDlLinkModal(); return; }
-  try {
-    await apiPost('linkGroupCheckoutToActivity', {
-      checkoutId:  _dlLinkCheckoutId,
-      activityId:  _dlLinkSelectedAct,
-    });
-    showToast(s('staff.linkedDailyLog'));
-  } catch(e) {
-    showToast('Link saved locally — sync when online', 'warn');
-  }
-  closeDlLinkModal();
-}
-
-function closeDlLinkModal() {
-  closeModal('dlLinkModal');
-  _dlLinkCheckoutId  = null;
-  _dlLinkSelectedAct = null;
-}
-
-function openDailyLogForNew() {
-  // Navigate to daily log; pass checkout id so it can pre-link
-  closeDlLinkModal();
-  window.location.href = '../dailylog/?linkCheckout=' + encodeURIComponent(_dlLinkCheckoutId || '');
-}
-
 
 // ══ STAFF STATUS ═══════════════════════════════════════════════════════════════════════════
 function renderStaffStatusStrip() {

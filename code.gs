@@ -133,7 +133,6 @@ const STAFF_ACTIONS_ = {
   saveDailyLog:                true,   // daily club log sign-off
   saveGroupCheckout:           true,   // group check-outs (courses / events)
   groupCheckIn:                true,
-  linkGroupCheckoutToActivity: true,
   deleteCheckout:              true,   // staff override; members check in instead
   silenceAlert:                true,
   snoozeAlert:                 true,
@@ -1385,7 +1384,6 @@ function route_(action, b, caller) {
     case 'deleteCheckout': return deleteCheckout_(b.id);
     case 'saveGroupCheckout': return saveGroupCheckout_(b, caller);
     case 'groupCheckIn': return groupCheckIn_(b, caller);
-    case 'linkGroupCheckoutToActivity': return linkGroupCheckoutToActivity_(b, caller);
     // charter endpoints removed — use saveReservation / removeReservation
     case 'saveBoatAccess': return saveBoatAccess_(b);
     case 'saveBoatOos': return saveBoatOos_(b);

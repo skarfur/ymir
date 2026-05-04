@@ -3,6 +3,32 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — Group Checkout: drop dlLinkModal dead code
+
+Follow-up cleanup after the unified activity picker landed. The
+post-create "Link to daily log" modal was the legacy second step of
+the two-step Group Checkout flow; the picker now handles that up
+front, leaving the modal unreachable.
+
+Removed:
+- `staff/index.html`: the `<div id="dlLinkModal">` block.
+- `staff/staff.js`: `openDlLinkModal`, `selectDlAct`, `confirmDlLink`,
+  `closeDlLinkModal`, `openDailyLogForNew`, plus the
+  `_dlLinkCheckoutId` / `_dlLinkSelectedAct` / `_dlLinkTodayActs`
+  state.
+- `staff/staff.css`: the `.dl-link-*` and `.dl-act-*` rules.
+- `checkouts.gs`: `linkGroupCheckoutToActivity_` (the backend action
+  the modal posted to). `code.gs` route + `STAFF_ACTIONS_` entry
+  removed in lockstep.
+- `shared/api.js`: the `linkGroupCheckoutToActivity` cache-invalidation
+  entry (`saveGroupCheckout` already covers `getTrips`).
+- `shared/strings-{en,is}.js`: `staff.linkToDailyLog`,
+  `staff.linkHint`, `staff.linkedDailyLog`, `staff.noActivities`.
+
+The dailylog `?linkCheckout=` URL handler stays — no current code
+produces that URL, but the handler is harmless and would help anyone
+landing on a stale bookmark.
+
 ## Unreleased — Group Checkout: unified activity picker
 
 Replaces the broken Activity dropdown in the staff Group Checkout modal
