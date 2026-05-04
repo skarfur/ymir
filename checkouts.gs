@@ -257,7 +257,7 @@ function saveGroupCheckout_(b, caller) {
   insertRow_('checkouts', {
     id,
     boatId:          boatIds.join(','),
-    boatName:        boatNames.join(','),
+    boatName:        boatNames.join(', '),
     boatCategory:    b.boatCategory || '',
     memberKennitala: '',
     memberName:      staffNames.length ? staffNames.join(', ') : 'Group',
