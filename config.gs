@@ -136,21 +136,21 @@ function getCertCategoriesFromMap_(cfgMap) {
 // (for the daily-log virtual-suppression list). The 60s getConfig cache covers
 // the hot path; this cache survives many config rebuilds (5min TTL) so plain
 // config writes — flagConfig, staffStatus, etc. — don't pay for a fresh
-// scheduled_events sheet read. Invalidated by sched_upsert_ / sched_cancel_ /
-// sched_hardDelete_ so any actual scheduled-events write rebuilds it.
+// scheduled_events sheet read. Invalidated by activity_upsert_ / activity_cancel_ /
+// activity_hardDelete_ so any actual scheduled-events write rebuilds it.
 //
 // We cache parsed rows, not DTOs, so changes to activity_types (which feed the
 // volunteer-event subtitle) don't need to clear this cache — getConfig_
 // rebuilds DTOs on the fly from the in-scope cfgMap.
-function _scheduledEventsForConfig_() {
-  var cached = cGet_('sched_events_for_config');
+function _activitiesForConfig_() {
+  var cached = cGet_('activities_for_config');
   if (cached) return cached;
   var volunteerRows = [];
   var cancelledActivityIds = [];
   try {
-    (readAll_('scheduledEvents') || []).forEach(function (r) {
+    (readAll_('activities') || []).forEach(function (r) {
       if (!r) return;
-      var ev = sched_parseRow_(r);
+      var ev = activity_parseRow_(r);
       if (!ev) return;
       if (ev.signupRequired && ev.status !== 'cancelled') {
         volunteerRows.push(ev);
@@ -160,7 +160,7 @@ function _scheduledEventsForConfig_() {
     });
   } catch (e) {}
   var out = { volunteerRows: volunteerRows, cancelledActivityIds: cancelledActivityIds };
-  cPut_('sched_events_for_config', out, 300);
+  cPut_('activities_for_config', out, 300);
   return out;
 }
 
@@ -227,14 +227,14 @@ function getConfig_() {
   } catch (e) {}
   // Single pass over scheduled_events: derive volunteerEvents (DTO shape) +
   // cancelled-activity tombstones. The parsed-row projection is cached
-  // (see _scheduledEventsForConfig_) so plain config writes don't pay for a
+  // (see _activitiesForConfig_) so plain config writes don't pay for a
   // fresh sheet read; DTO conversion happens here using the in-scope
   // activityTypes so subtitle changes are picked up immediately.
   var classMap = {};
   (activityTypes || []).forEach(function (t) {
     if (t && t.id) classMap[t.id] = { classTag: t.classTag || '', classTagIS: t.classTagIS || '' };
   });
-  var schedProj = _scheduledEventsForConfig_();
+  var schedProj = _activitiesForConfig_();
   var volunteerEvents = [];
   (schedProj.volunteerRows || []).forEach(function (ev) {
     var dto = _schedToVolDto_(ev, classMap);
@@ -246,7 +246,12 @@ function getConfig_() {
     var ccRaw = getConfigValue_('clubCalendars', cfgMap);
     if (ccRaw) clubCalendars = JSON.parse(ccRaw);
   } catch (e) {}
-  var config = { activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
+  // `activityTemplates` is the canonical name (an activity template defines
+  // a recurring activity class). `activityTypes` is the legacy alias kept
+  // in lockstep during the vocabulary cleanup; new code should read
+  // `activityTemplates`. Both point at the same array.
+  var activityTemplates = activityTypes;
+  var config = { activityTemplates, activityTypes, dailyChecklist, overdueAlerts, flagConfig, flagOverride, certDefs, certCategories, boats, locations, launchChecklists, boatCategories, staffStatus, allowBreaks, charterCalendars, rowingPassport, volunteerEvents, clubCalendars, cancelledActivityOccurrences };
   cPut_('config', config);
   return okJ(config);
 }
@@ -501,7 +506,7 @@ function deleteActivityType_(id) {
     var removedEvents = 0;
     var removedSignups = 0;
     try {
-      var linked = sched_listVolunteerEvents_().filter(function (ev) {
+      var linked = activity_listVolunteerEvents_().filter(function (ev) {
         if (!ev) return false;
         return (ev.sourceActivityTypeId && String(ev.sourceActivityTypeId) === String(id))
             || (ev.activityTypeId       && String(ev.activityTypeId)       === String(id));
@@ -515,7 +520,7 @@ function deleteActivityType_(id) {
           try { deleteVolunteerEventCalendarEvent_(ev); } catch (err) {}
         });
         linked.forEach(function (ev) {
-          try { sched_hardDelete_(ev.id); removedEvents++; } catch (err) {}
+          try { activity_hardDelete_(ev.id); removedEvents++; } catch (err) {}
         });
         try {
           ensureVolunteerSignupsTab_();

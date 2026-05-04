@@ -3,6 +3,38 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — activities vocabulary cleanup (identifier renames)
+
+Second step of the activities vocabulary cleanup. Pure code rename — no
+schema change, no behavior change, the underlying sheet tab keeps its
+existing name.
+
+- `TABS_.scheduledEvents` → `TABS_.activities` (the value still resolves
+  to the `'scheduled_events'` sheet tab; only the JS-side key changed).
+  All `readAll_('scheduledEvents')`, `findOne_('scheduledEvents', …)`,
+  `insertRow_/updateRow_/deleteRow_` callers updated in lockstep.
+- `sched_*` function prefix → `activity_*` across the backend
+  (`scheduling.gs`, `checkouts.gs`, `public.gs`, `members.gs`,
+  `config.gs`, `_setup.gs`). Disambiguating renames:
+  `sched_listActivitiesForDate_` → `activity_listForDate_`,
+  `sched_listActivityLog_` → `activity_listLog_`,
+  `sched_signupCountsByEvent_` → `activity_signupCountsById_`.
+- `ensureScheduledEventsSheet_` → `ensureActivitiesSheet_`,
+  `SCHEDULED_EVENTS_COLS_` → `ACTIVITIES_COLS_`,
+  cache key `sched_events_for_config` → `activities_for_config`,
+  `_scheduledEventsForConfig_` → `_activitiesForConfig_`.
+- `getConfig` response now emits `activityTemplates` (canonical) alongside
+  the legacy `activityTypes` alias. Both point at the same array. Frontend
+  consumers (`admin.js`, `member.js`, `volunteer.js`, `dailylog.js`,
+  `staff_logbook-review.js`) read `cfgRes.activityTemplates ||
+  cfgRes.activityTypes` so old/cached frontends and old backends
+  interoperate.
+
+Still to land: rename `activity_types` config-sheet key → `activity_templates`
+(needs migration), rename the `'scheduled_events'` sheet tab → `'activities'`
+(needs migration), drop the legacy `kind` column once all readers have
+migrated to `signupRequired`.
+
 ## Unreleased — activities vocabulary cleanup (kind → signupRequired)
 
 First step of a broader vocabulary alignment around scheduled activities.

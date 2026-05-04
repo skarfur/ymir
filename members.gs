@@ -757,7 +757,7 @@ function getDailyLog_(date) {
   // frontend contract is preserved — see dailylog.js `applyLogData`.
   var activityRows = [];
   try {
-    activityRows = sched_listActivitiesForDate_(d).map(_schedActivityToLogShape_);
+    activityRows = activity_listForDate_(d).map(_schedActivityToLogShape_);
   } catch (e) { activityRows = []; }
   // Projected activities from activity-type templates (bulk schedule or
   // linked Google Calendar) that haven't been materialized yet. See
@@ -767,13 +767,13 @@ function getDailyLog_(date) {
   try {
     var materialized = {};
     activityRows.forEach(function (a) { if (a && a.id) materialized[a.id] = true; });
-    // Cancelled tombstones aren't returned by sched_listActivitiesForDate_
+    // Cancelled tombstones aren't returned by activity_listForDate_
     // (it filters status !== 'cancelled'), but they still need to suppress
     // their matching projection virtual. Union the cancelled ids in.
     try {
-      (readAll_('scheduledEvents') || []).forEach(function (r) {
+      (readAll_('activities') || []).forEach(function (r) {
         if (!r || !r.id) return;
-        var ev = sched_parseRow_(r);
+        var ev = activity_parseRow_(r);
         if (ev && !ev.signupRequired && ev.date === d && ev.status === 'cancelled') {
           materialized[ev.id] = true;
         }
@@ -823,7 +823,7 @@ function saveDailyLog_(b, caller) {
   // gets its own row keyed by id; sync to activity-type calendars happens
   // inside syncDailyLogActivities_.
   if (b.activities !== undefined) {
-    var oldRows = sched_listActivitiesForDate_(date);
+    var oldRows = activity_listForDate_(date);
     persistDailyLogActivities_(date, oldRows, b.activities || [], actorName || b.updatedBy || '');
   }
   // The `activities` column on dailyLog is now unread (authoritative source is
@@ -883,7 +883,7 @@ function persistDailyLogActivities_(dateISO, oldRows, newActs, updatedBy) {
   (newActs || []).forEach(function (a) {
     if (!a || !a.id) return;
     nextIds[a.id] = true;
-    sched_upsert_({
+    activity_upsert_({
       id:                     a.id,
       signupRequired:         false,
       status:                 status,
@@ -917,7 +917,7 @@ function persistDailyLogActivities_(dateISO, oldRows, newActs, updatedBy) {
   (oldRows || []).forEach(function (old) {
     if (!old || !old.id) return;
     if (nextIds[old.id]) return;
-    sched_hardDelete_(old.id);
+    activity_hardDelete_(old.id);
   });
 }
 
@@ -941,7 +941,7 @@ function materializeYesterday_() {
   d.setDate(d.getDate() - 1);
   var dateISO = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   // Freeze each projected activity into scheduled_events so the day is
-  // captured even if nobody opened the daily log. Idempotent — sched_upsert_
+  // captured even if nobody opened the daily log. Idempotent — activity_upsert_
   // is keyed by id. Checklist metadata still lives on the dailyLog row; if
   // the row is missing, create an empty one so the daily-log page has a
   // shell to render against.
@@ -949,7 +949,7 @@ function materializeYesterday_() {
   try { scheduled = projectActivitiesForDate_(dateISO); } catch (e) { scheduled = []; }
   if (!scheduled.length && findOne_('dailyLog', 'date', dateISO)) return;
   if (scheduled.length) {
-    persistDailyLogActivities_(dateISO, sched_listActivitiesForDate_(dateISO), scheduled, 'auto:midnight');
+    persistDailyLogActivities_(dateISO, activity_listForDate_(dateISO), scheduled, 'auto:midnight');
   }
   if (!findOne_('dailyLog', 'date', dateISO)) {
     var ts = now_();

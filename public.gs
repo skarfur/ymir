@@ -1177,9 +1177,9 @@ function saveVolunteerEvent_(b) {
     if (_endIso && _startIso && _endIso < _startIso) { var _swap = _endIso; _endIso = _startIso; _startIso = _swap; }
     if (_endIso && _endIso === _startIso) _endIso = '';
     // Preserve gcalEventId, createdAt, source when updating an existing row.
-    var prev = b.id ? sched_getById_(b.id) : null;
+    var prev = b.id ? activity_getById_(b.id) : null;
     var todayIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    var saved = sched_upsert_({
+    var saved = activity_upsert_({
       id:                    b.id || '',
       signupRequired:        true,
       status:                (_startIso && _startIso < todayIso) ? 'completed' : 'upcoming',
@@ -1212,10 +1212,10 @@ function saveVolunteerEvent_(b) {
 
 function deleteVolunteerEvent_(b) {
   try {
-    var prev = b.id ? sched_getById_(b.id) : null;
+    var prev = b.id ? activity_getById_(b.id) : null;
     if (prev) {
       try { deleteVolunteerEventCalendarEvent_(prev); } catch (e) {}
-      sched_hardDelete_(b.id);
+      activity_hardDelete_(b.id);
     }
     // Cascade: remove all signups for this event.
     try {
@@ -1250,10 +1250,10 @@ function volunteerSignup_(b) {
     // Find the event. If not materialized yet and a virtualEvent payload was
     // provided (id starts with 'vae-'), materialize into scheduled_events now
     // so future signups + lookups work.
-    var evt = sched_getById_(b.eventId);
+    var evt = activity_getById_(b.eventId);
     if (!evt && b.virtualEvent && String(b.eventId).indexOf('vae-') === 0) {
       const ve = b.virtualEvent;
-      evt = sched_upsert_({
+      evt = activity_upsert_({
         id:                    ve.id,
         signupRequired:        true,
         status:                'upcoming',
@@ -1453,7 +1453,7 @@ function volExpandActType_(cls, fromIso, toIso) {
 }
 
 // Materialize all bulk-scheduled volunteer events for a single activity type
-// into scheduled_events. Safe to call repeatedly — sched_upsert_ is idempotent
+// into scheduled_events. Safe to call repeatedly — activity_upsert_ is idempotent
 // by id. Returns the count of events added (skips those already present).
 function materializeVolunteerEventsForAt_(at) {
   if (!at) return 0;
@@ -1463,11 +1463,11 @@ function materializeVolunteerEventsForAt_(at) {
   var expanded = volExpandActType_(at, fromIso, toIso);
   if (!expanded.length) return 0;
   var existing = {};
-  sched_listVolunteerEvents_().forEach(function (e) { if (e && e.id) existing[e.id] = true; });
+  activity_listVolunteerEvents_().forEach(function (e) { if (e && e.id) existing[e.id] = true; });
   var added = 0;
   expanded.forEach(function (e) {
     if (existing[e.id]) return;
-    sched_upsert_(_volExpandedToDomain_(e));
+    activity_upsert_(_volExpandedToDomain_(e));
     added++;
   });
   if (added) cDel_('config');
@@ -1496,29 +1496,29 @@ function reconcileVolunteerEventsForAt_(at) {
   var expanded = volExpandActType_(at, fromIso, toIso);
   var wanted = {};
   expanded.forEach(function (e) { if (e && e.id) wanted[e.id] = true; });
-  var signupCounts = sched_signupCountsByEvent_();
-  // Walk current sched_events rows that belong to this activity type and
+  var signupCounts = activity_signupCountsById_();
+  // Walk current activity_events rows that belong to this activity type and
   // aren't in the wanted set; drop or orphan them.
-  sched_listVolunteerEvents_().forEach(function (ev) {
+  activity_listVolunteerEvents_().forEach(function (ev) {
     if (!ev) return;
     if (String(ev.sourceActivityTypeId || '') !== String(at.id)) return;
     if (wanted[ev.id]) return;
     if (signupCounts[ev.id]) {
       try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
-      sched_upsert_({ id: ev.id, status: 'orphaned', gcalEventId: '' });
+      activity_upsert_({ id: ev.id, status: 'orphaned', gcalEventId: '' });
       result.softDeleted++;
     } else {
       try { deleteVolunteerEventCalendarEvent_(ev); } catch (e) {}
-      sched_hardDelete_(ev.id);
+      activity_hardDelete_(ev.id);
       result.removed++;
     }
   });
   // Insert any newly-wanted events that aren't already present.
   var already = {};
-  sched_listVolunteerEvents_().forEach(function (e) { if (e && e.id) already[e.id] = true; });
+  activity_listVolunteerEvents_().forEach(function (e) { if (e && e.id) already[e.id] = true; });
   expanded.forEach(function (e) {
     if (already[e.id]) return;
-    sched_upsert_(_volExpandedToDomain_(e));
+    activity_upsert_(_volExpandedToDomain_(e));
     result.added++;
   });
   if (result.added || result.removed || result.softDeleted) cDel_('config');
@@ -1539,13 +1539,13 @@ function syncVolunteerEvents_(b) {
       totalPruned += r.removed;
       totalSoft   += r.softDeleted;
     });
-    var total = sched_listVolunteerEvents_().length;
+    var total = activity_listVolunteerEvents_().length;
     return okJ({ added: totalAdded, pruned: totalPruned, softDeleted: totalSoft, total: total });
   } catch(e) { return failJ('syncVolunteerEvents failed: ' + e.message); }
 }
 
 // Map the object shape produced by volExpandActType_ (legacy DTO shape) onto
-// the domain shape accepted by sched_upsert_. Preserves the deterministic id
+// the domain shape accepted by activity_upsert_. Preserves the deterministic id
 // and all per-occurrence metadata.
 function _volExpandedToDomain_(e) {
   return {

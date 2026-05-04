@@ -662,7 +662,7 @@ function cancelClassOccurrence_(b) {
   //    suppressed by getSlots/projectActivitiesForDate when a real row with
   //    the same id exists. A status=cancelled row carries the suppression
   //    plus history.
-  sched_upsert_({
+  activity_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
     signupRequired:       false,
     status:               'cancelled',
@@ -734,7 +734,7 @@ function overrideClassOccurrence_(b) {
   var newEnd   = String(b.endTime).slice(0, 5);
   if (newEnd <= newStart) return failJ('endTime must be after startTime');
   var cls = _activityClassById_(classId);
-  sched_upsert_({
+  activity_upsert_({
     id:                   'sched-' + classId + '-' + dateISO,
     signupRequired:       false,
     status:               'upcoming',
@@ -768,9 +768,9 @@ function restoreClassOccurrence_(b) {
   var tombId  = 'sched-' + classId + '-' + dateISO;
   // Only act if the row is actually a cancelled tombstone — don't blow away
   // an override row that happens to share the deterministic id.
-  var existing = sched_getById_(tombId);
+  var existing = activity_getById_(tombId);
   if (existing && existing.status === 'cancelled') {
-    sched_hardDelete_(tombId);
+    activity_hardDelete_(tombId);
   }
   var cls = _activityClassById_(classId);
   if (cls && cls.calendarId && cls.gcalSeriesEventId) {
@@ -972,7 +972,7 @@ function syncDailyLogActivities_(date, oldActs, newActs) {
 // (CacheService) to avoid hammering the Calendar API on every getDailyLog.
 function projectActivitiesFromCalendar_(cls, dateISO) {
   if (!cls || !cls.calendarId || !dateISO) return [];
-  var cacheKey = 'gcal_sched_' + cls.calendarId + '_' + dateISO;
+  var cacheKey = 'gcal_activity_' + cls.calendarId + '_' + dateISO;
   var cache = null;
   try { cache = CacheService.getScriptCache(); } catch (e) {}
   if (cache) {
@@ -1034,7 +1034,7 @@ function projectActivitiesFromCalendar_(cls, dateISO) {
 function syncVolunteerEventToCalendar_(eventId) {
   try {
     if (!eventId) return;
-    var ev = sched_getById_(eventId);
+    var ev = activity_getById_(eventId);
     if (!ev || !ev.signupRequired) return;
     var cfgMap = getConfigMap_();
     var types = [];
@@ -1057,7 +1057,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (bulkProjected) {
       if (ev.gcalEventId) {
         gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
-        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
       return;
@@ -1066,7 +1066,7 @@ function syncVolunteerEventToCalendar_(eventId) {
     if (ev.status === 'cancelled' || ev.status === 'orphaned') {
       if (ev.gcalEventId) {
         gcalUpsertEvent_(at.calendarId, ev.gcalEventId, '', null, null, '', 'delete');
-        sched_upsert_({ id: ev.id, gcalEventId: '' });
+        activity_upsert_({ id: ev.id, gcalEventId: '' });
         cDel_('config');
       }
       return;
@@ -1086,7 +1086,7 @@ function syncVolunteerEventToCalendar_(eventId) {
       + (roleLines ? ('\n\nRoles:\n' + roleLines) : '');
     var newId = gcalUpsertEvent_(at.calendarId, ev.gcalEventId || '', title, start, end, desc, 'upsert');
     if (newId && newId !== (ev.gcalEventId || '')) {
-      sched_upsert_({ id: ev.id, gcalEventId: newId });
+      activity_upsert_({ id: ev.id, gcalEventId: newId });
       cDel_('config');
     }
   } catch (e) { Logger.log('syncVolunteerEventToCalendar_ failed: ' + e); }

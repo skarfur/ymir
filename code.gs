@@ -27,7 +27,11 @@ const TABS_ = {
   crewInvites: 'crew_invites',
   passportSignoffs: 'passport_signoffs',
   volunteerSignups: 'volunteer_signups',
-  scheduledEvents: 'scheduled_events',
+  // `activities` resolves to the legacy 'scheduled_events' sheet tab — the
+  // tab itself stays put for now; only the JS-side key was renamed in the
+  // activities vocabulary cleanup. A follow-up may rename the tab too with
+  // a one-time setupSpreadsheet migration.
+  activities: 'scheduled_events',
   sessions: 'sessions',
   loginAttempts: 'login_attempts',
   // All four handbook sections (roles/docs/contacts/info) now live as JSON

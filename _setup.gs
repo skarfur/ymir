@@ -177,7 +177,7 @@ var SCHEMA_ = {
     'dailyLogDate',
     'createdAt','updatedAt','updatedBy',
     // Per-activity (kind='activity') extras saved from the daily-log modal.
-    // Live alongside notes/runNotes so a single sched_upsert_ round-trips
+    // Live alongside notes/runNotes so a single activity_upsert_ round-trips
     // everything the modal captures.
     'ablerRegistered','linkedGroupCheckoutIds','editedBy','editedAt',
   ],

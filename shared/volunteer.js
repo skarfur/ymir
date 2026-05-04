@@ -42,7 +42,8 @@
   // volunteer events within [rangeFrom, rangeTo]. Classes without a bulk
   // schedule or without default times are skipped.
   //
-  //   actTypes : flat-class array from config (cfg.activityTypes)
+  //   actTypes : flat-template array from config (cfg.activityTemplates,
+  //              with cfg.activityTypes as legacy alias)
   //   rangeFrom: ISO date (default: today)
   //   rangeTo  : ISO date (default: today + 90 days)
   //
