@@ -3,6 +3,34 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — daily-log caching: promote getDailyLog, consume prefetch
+
+Two issues in the daily-log frontend caused needless round-trips when
+navigating across days:
+
+- `dailylog/dailylog.js` prefetched `getDailyLog` at the top of the file,
+  but the action wasn't in `_CACHEABLE` in `shared/api.js`, so `apiGet`
+  skipped the cache + inflight-dedup path. The prefetched promise sat on
+  `window._earlyDailyLog` unread while `loadTodayLog` fired its own
+  duplicate fetch. Result: today's daily log went over the wire twice
+  on every page load.
+- Day-to-day navigation (prev/next/today/picker) called `apiGet(
+  'getDailyLog', { date })` with no caching, so every click was a fresh
+  round-trip even on rapid back-and-forth.
+
+Fixes:
+
+- `shared/api.js`: add `getDailyLog: 60000` to `_CACHEABLE`. Cache key is
+  already params-suffixed, so per-date entries don't clobber each other.
+- `shared/api.js`: `_INVALIDATES.saveDailyLog` now drops `getDailyLog`
+  alongside `getActivityLog` + `getTrips`, so the just-saved day reads
+  back fresh. Comment on the `cancelClassOccurrence` / `overrideClassOccurrence`
+  / `restoreClassOccurrence` rows updated — `getDailyLog` listed there
+  is no longer a no-op.
+- `dailylog/dailylog.js`: `loadTodayLog` consumes `window._earlyDailyLog`
+  / `window._earlyConfig` and clears the references, so return-to-today
+  navigations after a save read fresh data through the apiGet cache
+  instead of re-resolving the original (now stale) prefetch.
 ## Unreleased — restore LEGACY_TAB_ALIASES_['activities'] safety net
 
 `8072be6` cleared `LEGACY_TAB_ALIASES_` alongside the kind-column drop,

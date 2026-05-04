@@ -865,10 +865,15 @@ async function loadTodayLog() {
   // Don't pre-render checklists/activity-type buttons before config arrives —
   // the spinner from loadDay() stays until real data replaces it.
   renderActivities(); renderWxLog(); renderIncidentSection([]);
+  // Consume the prefetched promises once, then drop the references so
+  // return-to-today navigations after a save read fresh data through the
+  // apiGet cache instead of re-resolving the original (now stale) prefetch.
+  const earlyLog = window._earlyDailyLog; window._earlyDailyLog = null;
+  const earlyCfg = window._earlyConfig;   window._earlyConfig   = null;
   try {
     const [logRes, cfgRes, incidents] = await Promise.all([
-      apiGet('getDailyLog', { date: TODAY }),
-      apiGet('getConfig'),
+      earlyLog || apiGet('getDailyLog', { date: TODAY }),
+      earlyCfg || apiGet('getConfig'),
       loadIncidentsForDate(TODAY),
     ]);
     applyLogData(logRes, cfgRes);
