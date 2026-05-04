@@ -1,11 +1,14 @@
-// ══ SCHEDULED EVENT — CLIENT NORMALIZER ══════════════════════════════════════
-// Backend storage lives in the `scheduled_events` sheet with a `kind`
-// discriminator ('volunteer' | 'activity') and a `status` field — see
-// scheduling.gs. On the client, we keep the two existing API surfaces
+// ══ ACTIVITY — CLIENT NORMALIZER ═════════════════════════════════════════════
+// Backend storage lives in the `scheduled_events` sheet (one row per concrete
+// activity occurrence). The canonical flag is `signupRequired` (boolean);
+// the legacy `kind` discriminator ('volunteer' | 'activity') is still emitted
+// in lockstep during the transition — see scheduling.gs.
+//
+// On the client we keep the two existing API surfaces
 // (getConfig().volunteerEvents and getDailyLog().log.activities) and project
 // them through a single shape for views that want a unified timeline:
 //
-//   { id, kind, source, status,
+//   { id, kind, signupRequired, source, status,
 //     date, endDate, startTime, endTime,
 //     activityTypeId, subtypeId, subtypeName,
 //     title, titleIS, notes, notesIS,
@@ -15,8 +18,9 @@
 //     gcalEventId,
 //     raw }
 //
-//   kind   ∈ { 'volunteer', 'activity' }
-//   source ∈ { 'bulk' | 'calendar' | 'manual' | 'daily-log' }
+//   signupRequired ∈ { true, false }   — canonical
+//   kind           ∈ { 'volunteer', 'activity' }   — legacy mirror
+//   source         ∈ { 'bulk' | 'calendar' | 'manual' | 'daily-log' }
 
 (function (global) {
   'use strict';
@@ -28,12 +32,28 @@
   }
 
   // Normalize a single raw row (volunteer event DTO from getConfig, or a
-  // daily-log activity from getDailyLog) into the ScheduledEvent shape.
-  // `opts.kind` is required; `opts.source` defaults to a sensible guess.
+  // daily-log activity from getDailyLog) into the unified Activity shape.
+  // `opts.signupRequired` (or legacy `opts.kind`) determines the flavor;
+  // `opts.source` defaults to a sensible guess.
   function toScheduledEvent(raw, opts) {
     if (!raw) return null;
     opts = opts || {};
-    var kind = opts.kind || (raw.roles || raw.leaderName ? 'volunteer' : 'activity');
+    // Resolve signupRequired from explicit opt, legacy opts.kind, or by
+    // sniffing the raw row (presence of roles/leaderName implies a
+    // signup-tracked activity).
+    var signupRequired;
+    if (opts.signupRequired === true || opts.signupRequired === false) {
+      signupRequired = opts.signupRequired;
+    } else if (opts.kind) {
+      signupRequired = (opts.kind === 'volunteer');
+    } else if (raw.signupRequired === true || raw.signupRequired === false) {
+      signupRequired = raw.signupRequired;
+    } else if (raw.kind) {
+      signupRequired = (raw.kind === 'volunteer');
+    } else {
+      signupRequired = !!(raw.roles || raw.leaderName);
+    }
+    var kind = signupRequired ? 'volunteer' : 'activity';
     var source = opts.source || _guessSource(raw, kind);
     var roles = _parse(raw.roles, []);
     var capacity = roles.reduce(function (acc, r) { return acc + (Number(r && r.slots) || 0); }, 0);
@@ -43,6 +63,7 @@
     return {
       id:                raw.id || '',
       kind:              kind,
+      signupRequired:    signupRequired,
       source:            source,
       status:            status,
       date:              raw.date || '',
@@ -113,7 +134,7 @@
     var signupCounts    = _countSignups(opts.volunteerSignups);
     var fromIso         = opts.fromIso || new Date().toISOString().slice(0, 10);
     var toIso           = opts.toIso   || _addDaysIso(fromIso, 30);
-    // Cancelled tombstones (sched_events rows with kind=activity status=cancelled).
+    // Cancelled tombstones (plain-activity rows with status=cancelled).
     // Passed through getConfig as a list of ids; build a Set for O(1) lookup
     // so the projection skips matching dates.
     var cancelled = new Set(Array.isArray(opts.cancelledActivityOccurrences) ? opts.cancelledActivityOccurrences : []);
@@ -144,7 +165,7 @@
           title:          cls.name || '',
           titleIS:        cls.nameIS || '',
         };
-        out.push(toScheduledEvent(raw, { kind: 'activity', source: 'bulk' }));
+        out.push(toScheduledEvent(raw, { signupRequired: false, source: 'bulk' }));
       });
     });
 
@@ -161,7 +182,7 @@
       if (ev.date < fromIso || ev.date > toIso) return;
       if (ev.active === false || ev.active === 'false') return;
       out.push(toScheduledEvent(ev, {
-        kind: 'volunteer',
+        signupRequired: true,
         signupCount: signupCounts[ev.id] || 0,
       }));
     });
@@ -180,13 +201,13 @@
     // or activity-class cancelled but signups remain) still render alone.
     var volByKey = {};
     out.forEach(function (ev) {
-      if (ev.kind !== 'volunteer' || !ev.activityTypeId) return;
+      if (!ev.signupRequired || !ev.activityTypeId) return;
       var key = ev.activityTypeId + '|' + ev.date;
       if (!volByKey[key]) volByKey[key] = ev;
     });
     var consumed = {};
     out.forEach(function (ev) {
-      if (ev.kind !== 'activity' || !ev.activityTypeId) return;
+      if (ev.signupRequired || !ev.activityTypeId) return;
       var key = ev.activityTypeId + '|' + ev.date;
       var vol = volByKey[key];
       if (!vol || consumed[vol.id]) return;
@@ -196,7 +217,7 @@
       consumed[vol.id] = true;
     });
     return out.filter(function (ev) {
-      return !(ev.kind === 'volunteer' && consumed[ev.id]);
+      return !(ev.signupRequired && consumed[ev.id]);
     });
   }
 

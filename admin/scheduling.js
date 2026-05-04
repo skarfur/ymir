@@ -118,30 +118,31 @@ function _upcomingRowHtml(ev, L) {
     // the row's daily-log link and reschedule/cancel buttons aren't shadowed
     // by a whole-row click.
     var volId = ev.linkedVolunteerEvent ? ev.linkedVolunteerEvent.id
-              : (ev.kind === 'volunteer' ? ev.id : '');
+              : (ev.signupRequired ? ev.id : '');
     var chipClick = volId
       ? ' data-admin-click="openVolEventModal" data-admin-arg="' + esc(volId) + '" style="cursor:pointer"'
       : '';
     signups = ' <span class="sched-signup"' + chipClick + '>' + ev.signupCount + '/' + ev.capacity + '</span>';
   }
-  // Standalone volunteer rows stay whole-row-clickable. Activity rows (paired
-  // or not) leave the whole-row click off — they have multiple child actions.
-  var editAction = (ev.kind === 'volunteer') ? 'openVolEventModal' : '';
+  // Standalone signup rows stay whole-row-clickable. Plain activity rows
+  // (paired or not) leave the whole-row click off — they have multiple child
+  // actions.
+  var editAction = ev.signupRequired ? 'openVolEventModal' : '';
   var openAttr = editAction
     ? (' data-admin-click="' + editAction + '" data-admin-arg="' + esc(ev.id) + '" style="cursor:pointer"')
     : '';
-  var linkOut = ev.kind === 'activity'
+  var linkOut = !ev.signupRequired
     ? ' <a href="../dailylog/?date=' + esc(ev.date) + '" class="sched-link">' + s('admin.schedOpenDailyLog') + '</a>'
     : '';
-  // Inline cancel/delete for any kind. Volunteer events delete the row
-  // outright (deleteVolEvent → deleteVolunteerEvent). Activity occurrences
-  // cancel just the one date (cancelClassOccurrence writes a tombstone +
-  // PATCHes the master GCal event's instance) — the parent class survives.
+  // Inline cancel/delete. Signup-tracked activities delete the row outright
+  // (deleteVolEvent → deleteVolunteerEvent). Plain activity occurrences cancel
+  // just the one date (cancelClassOccurrence writes a tombstone + PATCHes the
+  // master GCal event's instance) — the parent activity template survives.
   var deleteBtn = '';
-  if (ev.kind === 'volunteer') {
+  if (ev.signupRequired) {
     deleteBtn = ' <button type="button" class="sched-del" data-admin-click="deleteVolEvent" data-admin-arg="'
       + esc(ev.id) + '" data-s-aria="btn.delete" data-s-title="btn.delete" aria-label="Delete">×</button>';
-  } else if (ev.kind === 'activity' && ev.activityTypeId && ev.date) {
+  } else if (ev.activityTypeId && ev.date) {
     // Two inline actions on activity rows: ✎ to edit, × to cancel that
     // single occurrence (cancelClassOccurrence writes a status='cancelled'
     // tombstone + PATCHes the master GCal instance).

@@ -151,13 +151,21 @@ var SCHEMA_ = {
   volunteer_signups: [
     'id','eventId','roleId','kennitala','name','signedUpAt',
   ],
-  // Unified scheduled-events table — single source of truth for volunteer
-  // events and daily-log activities.
-  //   kind   ∈ 'volunteer' | 'activity'
+  // Unified activities table — single source of truth for every concrete
+  // occurrence at the club. One row per activity instance; an activity may
+  // be templated from an `activity_types` (a.k.a. activity-template) row or
+  // authored ad-hoc.
+  //   signupRequired ∈ true | false  — true means signup-tracked (volunteer
+  //                                    portal surfaces it with roles/leader);
+  //                                    false means a plain activity (daily-log
+  //                                    renderer + midnight materializer).
+  //   kind ∈ 'volunteer' | 'activity' — legacy discriminator. Kept alongside
+  //                                    signupRequired during the transition;
+  //                                    new readers should consult signupRequired.
   //   status ∈ 'upcoming' | 'completed' | 'cancelled' | 'orphaned'
   //   source ∈ 'bulk' | 'calendar' | 'manual' | 'daily-log'
   scheduled_events: [
-    'id','kind','status','source',
+    'id','kind','signupRequired','status','source',
     'date','endDate','startTime','endTime',
     'activityTypeId','subtypeId','subtypeName',
     'title','titleIS','notes','notesIS',
@@ -244,6 +252,40 @@ function setupSpreadsheet() {
       Logger.log('Seeded config key: ' + k);
     }
   });
+
+  // ── Migrations ─────────────────────────────────────────────────────────────
+  // Backfill signupRequired on scheduled_events from the legacy `kind` column.
+  // Idempotent: only writes when signupRequired is empty/missing on a row.
+  // Safe to run repeatedly; no-op once every row carries the boolean.
+  try {
+    var seSheet = ss.getSheetByName('scheduled_events');
+    if (seSheet && seSheet.getLastRow() >= 2) {
+      var headers = seSheet.getRange(1, 1, 1, seSheet.getLastColumn()).getValues()[0]
+        .map(function (h) { return String(h).trim(); });
+      var kindCol = headers.indexOf('kind');
+      var sigCol  = headers.indexOf('signupRequired');
+      if (kindCol >= 0 && sigCol >= 0) {
+        var nRows = seSheet.getLastRow() - 1;
+        var range = seSheet.getRange(2, 1, nRows, headers.length);
+        var values = range.getValues();
+        var changed = 0;
+        for (var i = 0; i < values.length; i++) {
+          var existing = values[i][sigCol];
+          if (existing === true || existing === false) continue;
+          if (existing === 'TRUE' || existing === 'FALSE') continue;
+          var kindVal = String(values[i][kindCol] || '').trim().toLowerCase();
+          values[i][sigCol] = (kindVal === 'volunteer');
+          changed++;
+        }
+        if (changed > 0) {
+          range.setValues(values);
+          Logger.log('Migrated signupRequired on ' + changed + ' scheduled_events row(s).');
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('signupRequired backfill skipped: ' + e.message);
+  }
 
   Logger.log('setupSpreadsheet complete. Tabs processed: ' + results.join(', '));
   return 'Done — tabs processed: ' + results.join(', ');
