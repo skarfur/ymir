@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   warmContainer();
   // Auto-save every 30s when dirty
-  setInterval(function(){ if (dirty && isToday()) saveDraft(); }, 30000);
+  setInterval(function(){ if (dirty && isToday() && !_savingInFlight) saveDraft(); }, 30000);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -969,22 +969,7 @@ function applyLogData(logRes, cfgRes) {
     }
     wxLog    = sjson(log.weatherLog, []);
     dom.narrativeInput.value = log.narrative || '';
-    if (log.signedOffBy) {
-      dom.signoffBadge.classList.remove('hidden');
-      const at = log.signedOffAt
-        ? ' at ' + fmtTime(log.signedOffAt) : '';
-      let txt = s('daily.signedOffBy') + (log.signedOffBy||'') + at;
-      // Amendment annotation: if the row was updated after sign-off by
-      // someone other than the signer, surface who/when.
-      if (log.updatedAt && log.signedOffAt && log.updatedAt > log.signedOffAt
-          && log.updatedBy && log.updatedBy !== log.signedOffBy) {
-        txt += ' · ' + s('daily.amendedBy', {
-          name: log.updatedBy,
-          when: fmtDate(log.updatedAt) + ' ' + fmtTime(log.updatedAt),
-        });
-      }
-      dom.signoffBadge.textContent = txt;
-    }
+    _renderSignoffBadge(log.signedOffBy, log.signedOffAt, log.updatedBy, log.updatedAt);
   } else {
     // No sheet row yet — pre-populate from the bulk schedule so today's user
     // sees the planned lessons/events, and forward-browsing shows what's coming.
@@ -992,6 +977,29 @@ function applyLogData(logRes, cfgRes) {
     // or the midnight trigger materializes the day.
     activities = scheduled;
   }
+}
+
+// Single source of truth for the sign-off badge. Both load (applyLogData)
+// and post-save (doSave) call this so the immediate post-click render shows
+// the timestamp + amendment suffix that previously only appeared after a
+// reload reran applyLogData.
+function _renderSignoffBadge(signedOffBy, signedOffAt, updatedBy, updatedAt) {
+  if (!signedOffBy) {
+    dom.signoffBadge.classList.add('hidden');
+    dom.signoffBadge.textContent = s('daily.signedOff');
+    return;
+  }
+  dom.signoffBadge.classList.remove('hidden');
+  const at = signedOffAt ? ' at ' + fmtTime(signedOffAt) : '';
+  let txt = s('daily.signedOffBy') + signedOffBy + at;
+  if (updatedAt && signedOffAt && updatedAt > signedOffAt
+      && updatedBy && updatedBy !== signedOffBy) {
+    txt += ' · ' + s('daily.amendedBy', {
+      name: updatedBy,
+      when: fmtDate(updatedAt) + ' ' + fmtTime(updatedAt),
+    });
+  }
+  dom.signoffBadge.textContent = txt;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1025,6 +1033,11 @@ window.addEventListener('beforeunload', function (e) {
   return '';
 });
 
+// Serialized so the 30s auto-save can't overlap a manual sign-off /
+// amendment in flight (and vice versa). Backend still tolerates the race
+// via the `||` fallback on signedOffBy/At, but a stale response landing
+// last would desync the local badge.
+let _savingInFlight = false;
 async function saveDraft()  { await doSave(false); }
 async function signOffDay() {
   if (!isToday()) return;
@@ -1037,6 +1050,8 @@ async function signOffDay() {
 }
 
 async function doSave(signOff) {
+  if (_savingInFlight) return;
+  _savingInFlight = true;
   if (signOff) {
     dom.signOffBtn.disabled = true;
     dom.signOffBtn.textContent = s('daily.signOffSaving');
@@ -1067,23 +1082,25 @@ async function doSave(signOff) {
     dom.saveMsg.className = 'save-ok';
     dom.saveMsg.textContent = signOff ? s('toast.signedOff') : s('toast.saved');
     if (!signOff) setTimeout(function(){ dom.saveMsg.textContent = ''; }, 3000);
-    if (signOff) {
-      // Promote local state so updateDateNav flips the action button to
-      // "Save amendments" — without this, a second click of the (still
-      // labelled "Sign off") button would re-stamp signedOff over the
-      // original entry instead of saving as an amendment.
-      logSignedOff   = true;
-      logSignedOffBy = user.name || '';
-      logSignedOffAt = nowIso;
-      dom.signoffBadge.classList.remove('hidden');
-      dom.signoffBadge.textContent = s('daily.signedOffBy') + user.name;
-    }
+    // Mirror server-resolved values (which apply the backend's || fallback
+    // for amendment saves) so the badge renders the timestamp + amendment
+    // suffix without waiting for a reload. Falls back to local guesses when
+    // the response omits a field, which keeps older deployments working.
+    const sBy = res.signedOffBy != null ? res.signedOffBy : (signOff ? (user.name || '') : logSignedOffBy);
+    const sAt = res.signedOffAt != null ? res.signedOffAt : (signOff ? nowIso : logSignedOffAt);
+    const uBy = res.updatedBy   != null ? res.updatedBy   : (user.name || '');
+    const uAt = res.updatedAt   != null ? res.updatedAt   : nowIso;
+    logSignedOff   = !!sBy;
+    logSignedOffBy = sBy;
+    logSignedOffAt = sAt;
+    _renderSignoffBadge(sBy, sAt, uBy, uAt);
     if (signOff) showToast(s('toast.signedOff'));
   } catch(e) {
     dom.saveMsg.className = 'save-err';
     dom.saveMsg.textContent = s('toast.error') + ': ' + e.message;
     if (signOff) showToast(s('toast.saveFailed') + ': ' + e.message, 'err');
   } finally {
+    _savingInFlight = false;
     if (signOff) {
       dom.signOffBtn.disabled = false;
       // Restore button text from current state (now signed off → "Save

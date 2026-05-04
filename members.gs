@@ -830,7 +830,13 @@ function saveDailyLog_(b, caller) {
   // the activities sheet). We still write an empty JSON array to the column so the
   // sheet row shape stays clean, but the frontend gets activities from the
   // new table via getDailyLog_.
+  // Resolve audit fields once so the response can echo what was actually
+  // written. Without this the client falls back to local guesses for the
+  // post-save badge render and can desync from the stored row.
+  const updatedBy = b.updatedBy || actorName || '';
   if (ex) {
+    const signedOffBy = b.signedOffBy || ex.signedOffBy || '';
+    const signedOffAt = b.signedOffAt || ex.signedOffAt || '';
     // Note: `activities` column is intentionally omitted from the update —
     // authoritative activities live in the activities sheet now, and leaving the
     // legacy column untouched preserves pre-cutover data as a rollback safety.
@@ -840,13 +846,15 @@ function saveDailyLog_(b, caller) {
       weatherLog: b.weatherLog !== undefined ? JSON.stringify(b.weatherLog) : ex.weatherLog,
       narrative: b.narrative !== undefined ? b.narrative : ex.narrative,
       tideData: b.tideData !== undefined ? JSON.stringify(b.tideData) : ex.tideData,
-      signedOffBy: b.signedOffBy || ex.signedOffBy || '',
-      signedOffAt: b.signedOffAt || ex.signedOffAt || '',
-      updatedBy: b.updatedBy || actorName || '', updatedAt: ts,
+      signedOffBy: signedOffBy,
+      signedOffAt: signedOffAt,
+      updatedBy: updatedBy, updatedAt: ts,
       actorKennitala: actorKt, actorName: actorName,
     });
-    return okJ({ date, updated: true });
+    return okJ({ date, updated: true, signedOffBy: signedOffBy, signedOffAt: signedOffAt, updatedBy: updatedBy, updatedAt: ts });
   } else {
+    const signedOffBy = b.signedOffBy || '';
+    const signedOffAt = b.signedOffAt || '';
     insertRow_('dailyLog', {
       id: uid_(), date,
       openingChecks: JSON.stringify(b.openingChecks || {}),
@@ -855,11 +863,11 @@ function saveDailyLog_(b, caller) {
       weatherLog: JSON.stringify(b.weatherLog || []),
       narrative: b.narrative || '',
       tideData: JSON.stringify(b.tideData || {}),
-      signedOffBy: b.signedOffBy || '', signedOffAt: b.signedOffAt || '',
-      updatedBy: b.updatedBy || actorName || '', createdAt: ts, updatedAt: ts,
+      signedOffBy: signedOffBy, signedOffAt: signedOffAt,
+      updatedBy: updatedBy, createdAt: ts, updatedAt: ts,
       actorKennitala: actorKt, actorName: actorName,
     });
-    return okJ({ date, created: true });
+    return okJ({ date, created: true, signedOffBy: signedOffBy, signedOffAt: signedOffAt, updatedBy: updatedBy, updatedAt: ts });
   }
 }
 

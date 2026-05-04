@@ -3,6 +3,32 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — daily-log: sign-off badge stays accurate after save
+
+The post-click sign-off badge on `/dailylog/` showed only the signer's
+name without the timestamp ("Signed off by steve"), and amendment
+saves never refreshed the badge at all — both required a page reload
+to render the same string the load path produces.
+
+- `dailylog/dailylog.js`: extract `_renderSignoffBadge` so `applyLogData`
+  (load) and `doSave` (post-save) share one badge formatter. The
+  helper renders the timestamp + amendment suffix uniformly, so the
+  immediate post-click state matches what a reload would show.
+- `dailylog/dailylog.js`: `doSave` now mirrors the server-resolved
+  `signedOffBy` / `signedOffAt` / `updatedBy` / `updatedAt` from the
+  response into local state and the badge — covers amendment renders
+  too, not just the initial sign-off.
+- `dailylog/dailylog.js`: serialize saves behind `_savingInFlight` so
+  the 30s auto-save can't overlap a manual sign-off / amendment in
+  flight. Backend was already race-safe via the `||` fallback on
+  `signedOffBy/At`, but a stale response landing last would desync
+  the local badge.
+- `members.gs`: `saveDailyLog_` now echoes the resolved audit fields
+  (`signedOffBy`, `signedOffAt`, `updatedBy`, `updatedAt`) in the
+  response so the client doesn't have to guess what the sheet stored.
+  Older deployments degrade gracefully — the client falls back to
+  local guesses when a field is omitted.
+
 ## Unreleased — daily-log: action button reflects sign-off state on today
 
 The bottom action button on `/dailylog/` previously read "Save & Sign
