@@ -258,12 +258,17 @@ var _INVALIDATES = {
   unlinkGoogleAccount:     ['getMembers'],
 
   // Daily log: writes activity rows into scheduled_events, which the staff
-  // Logbook Review activity-log section reads via getActivityLog.
-  saveDailyLog:            ['getActivityLog'],
+  // Logbook Review activity-log section reads via getActivityLog. Activities
+  // can also carry linkedGroupCheckoutIds → trip group labels resolve through
+  // those, so dropping getTrips keeps the trip-detail Activity row fresh.
+  saveDailyLog:            ['getActivityLog', 'getTrips'],
   // Trips.
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
   setHelm:                 ['getTrips'],
+  // Group sail ↔ activity link: trip cards' resolved Activity row reads
+  // through this on the backend, so cached getTrips needs to drop.
+  linkGroupCheckoutToActivity: ['getTrips'],
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],

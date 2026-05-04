@@ -26,6 +26,8 @@ var _STRINGS_FLAT = {
   "lbl.date": "Dagsetning",
   "lbl.time": "Tími",
   "lbl.notes": "Athugasemdir",
+  "lbl.activity": "Viðburður",
+  "lbl.groupSail": "Hópsigling",
   "lbl.phone": "Sími",
   "lbl.email": "Netfang",
   "lbl.location": "Staðsetning",

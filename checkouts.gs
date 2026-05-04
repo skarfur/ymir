@@ -21,17 +21,71 @@ function getActiveCheckouts_(b) {
   }
   let memberMap = {};
   try { memberMap = getMemberMap_(); } catch (e) { }
+  let labelMap = {};
+  try { labelMap = buildGroupLabelMap_(); } catch (e) { labelMap = {}; }
   const enriched = result.map(c => {
     const m = memberMap[String(c.memberKennitala || '')] || {};
+    const key = String(c.id);
     return {
       ...c,
       memberPhone: c.memberPhone || m.phone || '',
       memberIsMinor: c.memberIsMinor !== undefined && c.memberIsMinor !== '' ? bool_(c.memberIsMinor) : bool_(m.isMinor),
       guardianName: c.guardianName || m.guardianName || '',
       guardianPhone: c.guardianPhone || m.guardianPhone || '',
+      groupLabel: key in labelMap ? labelMap[key] : '',
     };
   });
   return okJ({ checkouts: enriched });
+}
+
+// Build { checkoutId → activity-name } for every group-sail checkout. Every
+// group checkout is present as a key — value is '' when no name resolves so
+// callers can use map-key presence to mean "this is a group sail" and fall
+// back to a generic "Group sail" label when the value is empty.
+//
+// Resolution order, per checkout:
+//   1. checkout.linkedActivityId → scheduledEvents.title  (Path A: link picker
+//      shown right after launching the group sail)
+//   2. scheduledEvents.linkedGroupCheckoutIds[] contains checkout.id → that
+//      activity's title  (Path B: link from the daily-log activity modal)
+//   3. checkout.activityTypeName, when an actual activityTypeId is set
+//      (gmActivity dropdown selection at launch time).
+function buildGroupLabelMap_() {
+  var labels = {};
+  var sched = [];
+  try { sched = (readAll_('scheduledEvents') || []).filter(function (r) { return r && r.kind === 'activity'; }); } catch (e) { sched = []; }
+  var schedById = {};
+  sched.forEach(function (r) { if (r.id) schedById[String(r.id)] = r; });
+  var checkouts = [];
+  try { checkouts = (readAll_('checkouts') || []).filter(function (c) { return c && (c.isGroup === true || c.isGroup === 'true'); }); } catch (e) { checkouts = []; }
+  // Seed every group checkout with '' so map presence carries the group flag
+  // even when no link/type resolves.
+  checkouts.forEach(function (c) { labels[String(c.id)] = ''; });
+  // Path A
+  checkouts.forEach(function (c) {
+    if (!c.linkedActivityId) return;
+    var ev = schedById[String(c.linkedActivityId)];
+    if (ev && ev.title) labels[String(c.id)] = ev.title;
+  });
+  // Path B (Path A wins when both are set — explicit checkout-side link.)
+  sched.forEach(function (r) {
+    if (!r.linkedGroupCheckoutIds || !r.title) return;
+    var arr;
+    try { arr = JSON.parse(r.linkedGroupCheckoutIds); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (coId) {
+      var key = String(coId);
+      if (key in labels && !labels[key]) labels[key] = r.title;
+    });
+  });
+  // Fallback to activityTypeName when an actual type was picked at launch.
+  // Skips rows where only the placeholder text leaked through (no id).
+  checkouts.forEach(function (c) {
+    var key = String(c.id);
+    if (labels[key]) return;
+    if (c.activityTypeId && c.activityTypeName) labels[key] = c.activityTypeName;
+  });
+  return labels;
 }
 
 function saveCheckout_(b, caller) {
@@ -186,7 +240,7 @@ function saveGroupCheckout_(b, caller) {
     expectedReturn:  b.expectedReturn || '',
     checkedInAt:     '',
     wxSnapshot:      wxSnap,
-    notes:           b.activityTypeName ? 'Activity: ' + b.activityTypeName : '',
+    notes:           '',
     status:          'out',
     createdAt:       ts,
     isGroup:         true,
@@ -263,7 +317,7 @@ function createSupervisorTripsForGroup_(checkoutId, checkedInAt, caller) {
       locationId: co.locationId || '', locationName: co.locationName || '',
       crew: parseInt(co.crew) || 0, role: 'supervisor',
       wxSnapshot: co.wxSnapshot || '',
-      notes: co.activityTypeName ? 'Group: ' + co.activityTypeName : 'Group sail',
+      notes: '',
       isLinked: true, linkedCheckoutId: String(checkoutId),
       departurePort: co.departurePort || '',
       actorKennitala: actorKt_(caller), actorName: actorName_(caller),

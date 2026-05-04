@@ -26,6 +26,8 @@ var _STRINGS_FLAT = {
   "lbl.date": "Date",
   "lbl.time": "Time",
   "lbl.notes": "Notes",
+  "lbl.activity": "Activity",
+  "lbl.groupSail": "Group sail",
   "lbl.phone": "Phone",
   "lbl.email": "Email",
   "lbl.location": "Location",

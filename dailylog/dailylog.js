@@ -759,6 +759,14 @@ function openTripDetail(id) {
   document.getElementById('tdReturn').textContent   = co.expectedReturn||'—';
   document.getElementById('tdIn').textContent       = (co.checkedInAt||co.timeIn||'')||'—';
   document.getElementById('tdCrew').textContent     = co.crew||1;
+  // Group sails get a resolved activity name from the backend (via either
+  // checkout→activity link path); fall back to a generic label when no link
+  // or activity type was set. Today's view feeds in checkout rows (isGroup
+  // flag); past days feed in trip rows (isGroupTrip flag from getTrips).
+  const isGrp = (co.isGroup === true || co.isGroup === 'true') || co.isGroupTrip === true;
+  const actRow = document.getElementById('tdActivityRow');
+  actRow.style.display = isGrp ? '' : 'none';
+  document.getElementById('tdActivity').textContent = isGrp ? (co.groupLabel || s('lbl.groupSail')) : '';
   const notesRow = document.getElementById('tdNotesRow');
   notesRow.style.display = co.notes ? '' : 'none';
   document.getElementById('tdNotes').textContent    = co.notes||'';

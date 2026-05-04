@@ -3,6 +3,35 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — group sails: render-time activity label
+
+The trip/checkout detail modals used to show `Notes: Group: — None —`
+when a group sail's gmActivity dropdown was left at the placeholder —
+the dropdown's display text was being captured as `activityTypeName`
+and stamped into the trip's `notes` field at check-in. Worse, links
+made later (either via the staff portal's "link to today's daily-log
+activity" picker or via the daily-log activity modal's "link group
+checkout") never propagated to the trip card — `notes` was frozen at
+group-check-in time.
+
+Fix: stop writing `Group: …` / `Activity: …` into the `notes` column.
+A new helper `buildGroupLabelMap_` (in `checkouts.gs`) resolves group
+sails to an activity name at read time, preferring the linked
+scheduled-event title (Path A: `checkouts.linkedActivityId`; Path B:
+`scheduledEvents.linkedGroupCheckoutIds`), falling back to
+`activityTypeName` only when an actual `activityTypeId` is set, and
+otherwise leaving the value empty (frontend renders `Group sail`).
+Both `getActiveCheckouts_` and `getTrips_` attach `groupLabel` (and
+`getTrips_` also flags `isGroupTrip` for supervisor trips). The
+daily-log and staff checkout detail modals show a dedicated
+`Activity` row instead of conflating with `Notes`. Cache invalidation
+extended for `linkGroupCheckoutToActivity` and `saveDailyLog`.
+
+Also patches the original `— None —` leak: `staff.js` now only
+captures `gmActivity.selectedOptions[0].text` when an actual id is
+selected, so the placeholder label can't propagate even on older
+clients hitting newer backends.
+
 ## Unreleased — staff Logbook Review: activity-log filter section
 
 Adds a third section to the staff Logbook Review page (below trips
