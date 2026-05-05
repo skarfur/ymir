@@ -212,7 +212,7 @@ function renderActivities() {
       return '<span class="activity-edited-badge" title="' + esc(tip) + '">' + s('daily.edited') + '</span>';
     })() : '';
     const linkedCount = act.linkedGroupCheckoutIds && act.linkedGroupCheckoutIds.length
-      ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
+      ? '<span style="font-size:9px;background:var(--card);border:1px solid color-mix(in srgb, var(--navy) 33%, transparent);border-left:2px solid var(--navy);border-radius:4px;padding:1px 7px;margin-left:4px;white-space:nowrap">⛵ ' + act.linkedGroupCheckoutIds.length + ' ' + (act.linkedGroupCheckoutIds.length>1?s('daily.groups'):s('daily.group')) + '</span>' : '';
     // Two distinct notes surfaces, matching the bifurcation in the activity
     // modal: `notes` is the pre-execution brief (intent / context, often
     // inherited from the template) shown muted; `runNotes` is the
