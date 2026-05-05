@@ -1,5 +1,5 @@
 .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-    .filter-bar input, .filter-bar select { flex:1; min-width:140px; }
+    .filter-bar input:not([type="checkbox"]), .filter-bar select { flex:1; min-width:140px; }
     /* Verify wrapper / action row live in shared/tripcard.css
        (.verify-wrap / .verify-actions) — captain page uses the same. */
     .slr-verified-by { padding:0 14px 8px; }
