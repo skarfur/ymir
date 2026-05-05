@@ -470,7 +470,6 @@ textarea { min-height: 70px; }
 .filter-bar .filter-search-row input { flex: 1; min-width: 0; }
 .filter-count { font-size: 10px; color: var(--muted); white-space: nowrap; }
 @media (max-width: 600px) { .filter-bar { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 400px) { .filter-bar { grid-template-columns: 1fr; } }
 
 /* ── FILTER SHEET ──────────────────────────────────────────────────────────────
    Search-led filter bar with a slide-down panel of secondary controls. Top row
@@ -559,7 +558,6 @@ textarea { min-height: 70px; }
 .filter-sheet-body .fs-pill-row { grid-column: 1/-1; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
 .filter-sheet-body .fs-pill-row .filter-label { margin: 0 4px 0 0; }
 @media (max-width: 600px) { .filter-sheet-body .fs-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 400px) { .filter-sheet-body .fs-grid { grid-template-columns: 1fr; } }
 
 /* Compact standalone select — matches `.filter-bar select` metrics but sits in
    any flex/inline toolbar (admin slot calendar, etc.) without the grid parent. */
