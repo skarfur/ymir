@@ -74,6 +74,7 @@ const dom = domRefs({
   activitiesEmpty:   'activitiesEmpty',
   activitiesList:    'activitiesList',
   narrativeInput:    'narrativeInput',
+  narrativeView:     'narrativeView',
   incidentContainer: 'incidentContainer',
   incidentHeading:   'incidentHeading',
   saveMsg:           'saveMsg',
@@ -530,6 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
     doSave(false);
   });
   dom.narrativeInput.addEventListener('input', markDirty);
+  dom.narrativeInput.addEventListener('blur', _renderNarrativeView);
+  dom.narrativeView.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editNarrative(); }
+  });
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
 
   // Tide fields are now auto-filled from harmonic prediction (no manual inputs)
@@ -844,6 +849,7 @@ async function loadDay() {
   dom.signoffBadge.classList.add('hidden');
   dom.signoffBadge.textContent = s('daily.signedOff');
   dom.narrativeInput.value = '';
+  _renderNarrativeView();
   updateDateNav();
 
   const spinner = '<div class="empty-state"><span class="spinner"></span></div>';
@@ -969,6 +975,7 @@ function applyLogData(logRes, cfgRes) {
     }
     wxLog    = sjson(log.weatherLog, []);
     dom.narrativeInput.value = log.narrative || '';
+    _renderNarrativeView();
     _renderSignoffBadge(log.signedOffBy, log.signedOffAt, log.updatedBy, log.updatedAt);
   } else {
     // No sheet row yet — pre-populate from the bulk schedule so today's user
@@ -1000,6 +1007,28 @@ function _renderSignoffBadge(signedOffBy, signedOffAt, updatedBy, updatedAt) {
     });
   }
   dom.signoffBadge.textContent = txt;
+}
+
+// Staff-notes view/edit swap. Empty content keeps the textarea visible so the
+// user can start typing; once there's saved text we collapse the textarea into
+// a flowing-text view that visually matches activity run-notes. Click (or
+// Enter/Space) on the view re-opens the textarea via editNarrative().
+function _renderNarrativeView() {
+  const v = (dom.narrativeInput.value || '').trim();
+  if (!v) {
+    dom.narrativeView.classList.add('d-none');
+    dom.narrativeInput.classList.remove('d-none');
+    return;
+  }
+  dom.narrativeView.textContent = v;
+  dom.narrativeView.classList.remove('d-none');
+  dom.narrativeInput.classList.add('d-none');
+}
+
+function editNarrative() {
+  dom.narrativeView.classList.add('d-none');
+  dom.narrativeInput.classList.remove('d-none');
+  dom.narrativeInput.focus();
 }
 
 // ════════════════════════════════════════════════════════════════════════════

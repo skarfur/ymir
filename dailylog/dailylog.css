@@ -63,6 +63,21 @@
 .activity-note { color:var(--text); font-size:12px; margin-top:4px; }
 .activity-note-brief { opacity:.55; font-style:italic; }
 .activity-note-record { white-space:pre-wrap; border-left:2px solid color-mix(in srgb, var(--brass) 50%, transparent); padding-left:8px; }
+
+/* Staff-notes finalized view — collapses the textarea to inline flowing text
+   when it has saved content and isn't being edited. Click to switch back to
+   the textarea for editing. */
+.dl-narrative-view {
+  white-space:pre-wrap; word-wrap:break-word;
+  color:var(--text); font-size:13px; line-height:1.55;
+  border-left:2px solid color-mix(in srgb, var(--brass) 50%, transparent);
+  padding:2px 0 2px 10px; cursor:text; min-height:20px;
+  border-radius:2px; transition:background-color .12s;
+}
+.dl-narrative-view:hover, .dl-narrative-view:focus {
+  background:color-mix(in srgb, var(--accent) 6%, transparent);
+  outline:none;
+}
 .del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:18px; padding:0 4px; transition:color .15s; line-height:1; }
 .del-btn:hover { color:var(--red); }
 
