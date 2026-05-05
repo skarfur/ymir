@@ -763,7 +763,6 @@ function _ppRenderItemCard(passport, it, prog, signingSomeoneElse, canRevoke, op
   }).join(' · ');
   var onclick = signingSomeoneElse ? ' data-cx-click="signPassportItemClick" data-cx-arg="'+it.id+'"' : '';
   var assessment = it.assessment || 'practical';
-  if (assessment === 'theoretical') assessment = 'theory'; // back-compat for older stored data
   var badgeCls = 'pp-asmt pp-asmt-' + assessment;
   var badgeLbl = s('passport.' + assessment);
   var moduleNum = Number(it.module || 0);

@@ -93,13 +93,6 @@ function deleteTrip_(id) {
   return okJ({ deleted: deleteRow_('trips', 'id', id) });
 }
 
-function requestValidation_(b) {
-  if (!b.tripId) return failJ('tripId required');
-  updateRow_('trips', 'id', b.tripId, { validationRequested: true });
-  return okJ({ requested: true });
-}
-
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRIP CONFIRMATIONS (handshake protocol)
 // ═══════════════════════════════════════════════════════════════════════════════

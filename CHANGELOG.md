@@ -23,6 +23,42 @@ pay calculation happens off-platform.
 
 The punch-clock / employees feature is unchanged — `time_clock` and
 `employees` sheets remain.
+## Unreleased — purge legacy/migration shims (testing-stage cleanup)
+
+Cleared aliases, transitional shims, completed migrations, and stale
+comments that accumulated during the activity-vocabulary cleanup and
+earlier renames. Net −288 lines. Existing test sheets must have run
+`setupSpreadsheet()` at least once on the previous version (or already
+live on canonical names) — there is no longer a self-healing path for
+deployments that haven't.
+
+- `scheduling.gs`: dropped 13 `sched_*` → `activity_*` re-export shims;
+  `activity_listInRange_(fromIso, toIso, kind)` now takes a boolean
+  `signupRequired` directly instead of mapping the legacy
+  `'volunteer'` / `'activity'` strings.
+- `code.gs`: dropped duplicate `saveDailyLog` case in `route_` (was
+  shadowed by the canonical handler); dropped `requestValidation`
+  action alias (canonical is `requestVerification`); dropped
+  `LEGACY_TAB_ALIASES_` + `_reconcileLegacyTab_` self-healing rename
+  for `scheduled_events` → `activities`.
+- `trips.gs`: removed dead `requestValidation_` function (no callers
+  after the route alias dropped).
+- `config.gs`: dropped `LEGACY_CONFIG_KEY_ALIASES_` map and the
+  fallback paths in `getConfigValue_` / `getConfigSheetValue_`. The
+  `activity_types` → `activity_templates` rename is fully cut over.
+- `_setup.gs`: dropped four migration blocks (config-key copy,
+  `signupRequired` backfill from `kind`, legacy `kind` column drop,
+  generic alias copier) and the `_reconcileLegacyTab_` call in
+  `ensureTab_`.
+- `shared/api.js`: dropped one-shot service-worker cleanup block (SW
+  was removed long ago); dropped redundant `requestValidation` entry
+  in `_INVALIDATES`.
+- `shared/scheduled-event.js`: `toScheduledEvent` no longer consults
+  `opts.kind` / `raw.kind` as a fallback for `signupRequired`.
+- `passport.gs`, `coxswain/coxswain.js`: dropped `'theoretical'` →
+  `'theory'` spelling normalizer.
+- `admin/admin.js`: dropped `actTypes` / `volunteers` / `clubCal` /
+  `slotCal` URL-tab redirects to the unified `scheduling` tab.
 
 ## Unreleased — admin: activity-template Category dropdown reflects saved tag
 

@@ -182,12 +182,6 @@ function showTopTab(top) {
 
 // ── Settings sub-tab switching ─────────────────────────────────────────────────
 function showTab(tab) {
-  // Legacy tab aliases — old standalone tabs now live as col-sections inside
-  // Scheduling. Keep old bookmarks (?tab=slotCal etc.) working.
-  // Legacy URL hash redirect — pre-consolidation tab ids should send the
-  // user to the unified Scheduling tab. Keep the literal strings stable
-  // so old bookmarks keep working.
-  if (tab === 'actTypes' || tab === 'volunteers' || tab === 'clubCal' || tab === 'slotCal') tab = 'scheduling';
   document.querySelectorAll('#top-settings > [id^="tab-"]').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('#settingsTabBar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
