@@ -7,6 +7,12 @@
     .stat-cell { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 10px; text-align:center; box-shadow:var(--shadow-sm); }
     .stat-n { font-size:22px; color:var(--accent-fg); font-weight:500; }
     .stat-l { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.5px; }
+    .slr-stat-cats { text-align:left; padding:8px 10px; }
+    .slr-boat-cats { line-height:1.8; }
+    @media (max-width: 600px) {
+      .slr-stats-detail { grid-template-columns:1fr 1fr; }
+      .slr-stats-detail > .slr-stat-cats { grid-column:1 / -1; }
+    }
     .cert-row { display:flex; align-items:flex-start; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); gap:10px; }
     .cert-row:last-child { border-bottom:none; }
     .cert-name { font-size:13px; font-weight:500; color:var(--text); }
