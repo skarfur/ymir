@@ -10,7 +10,7 @@
 - `data.gs` — thin domain-oriented data-access layer (`data_.readMembers`, `data_.updateTrip`, etc.)
 - `members.gs` — member CRUD, sessions API, preferences, daily log
 - `maintenance.gs` — maintenance projects
-- `payroll.gs` — punch clock, pay periods, launamiðar XML
+- `payroll.gs` — punch clock, employee records
 - `config.gs` — config-sheet primitives (`getConfigMap_`, `getConfigSheetValue_`, `setConfigSheetValue_`), config-list CRUD (`saveConfigListItem_`, `deleteConfigListItem_`, `readConfigList_`), per-section parsers (`getCertDefsFromMap_`, `getFlagConfigFromMap_`, …), `getConfig_` bundle + certifications
 - `incidents.gs` — incident reports
 - `checkouts.gs` — checkouts, reservation slots, crews

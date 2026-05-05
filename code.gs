@@ -17,7 +17,6 @@ const TABS_ = {
   config: 'config',
   employees: 'employees',
   timeClock: 'time_clock',
-  payroll: 'payroll',
   shareTokens: 'share_tokens',
   tripConfirmations: 'trip_confirmations',
   reservationSlots: 'reservation_slots',
@@ -101,7 +100,6 @@ const ADMIN_ACTIONS_ = {
   saveCertCategories:   true,
   saveAlertConfig:      true,
   saveEmployee:         true,
-  closePayPeriod:       true,
   adminEditTime:        true,
   adminAddTime:         true,
   adminDeleteTime:      true,
@@ -1321,10 +1319,6 @@ function route_(action, b, caller) {
     case 'adminDeleteTime': return adminDeleteTime_(b);
     case 'getEmployees':        return getEmployees_();
     case 'saveEmployee':        return saveEmployee_(b);
-    case 'closePayPeriod':      return closePayPeriod_(b);
-    case 'getPayroll':          return getPayroll_(b);
-    case 'generatePayslipData': return generatePayslipData_(b);
-    case 'generateLaunamidlar': return generateLaunamidlar_(b);
     case 'getConfig': return getConfig_();
     case 'saveConfig': return saveConfig_(b);
     case 'saveFlagOverride': return saveFlagOverride_(b);
