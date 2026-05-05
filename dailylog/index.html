@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
@@ -51,10 +51,15 @@
   <div class="section-label" data-s="daily.wxLog"></div>
   <div class="content-card mb-4">
     <div id="wxLogList"></div>
-    <div class="flex-center gap-8 mt-8">
+    <div class="flex-center flex-wrap gap-8 mt-8">
       <button class="btn-ghost-sm icon-btn" id="logWxBtn"><span data-icon="wind"></span><span data-s="daily.wxLogBtn"></span></button>
       <span id="logWxDesc" class="text-xs text-muted"></span>
       <span id="wxLogCount" class="text-xs text-muted ml-auto"></span>
+    </div>
+    <div class="flex-center flex-wrap gap-8 mt-4" id="logWxRetroRow">
+      <input type="time" id="logWxTime" class="dl-retro-time" data-s="daily.wxLogRetroTime" data-s-attr="aria-label">
+      <button class="btn-ghost-sm icon-btn" id="logWxRetroBtn"><span data-icon="hourglass"></span><span data-s="daily.wxLogRetroBtn"></span></button>
+      <span id="logWxRetroDesc" class="text-xs text-muted" data-s="daily.wxLogRetroDesc"></span>
     </div>
   </div>
 

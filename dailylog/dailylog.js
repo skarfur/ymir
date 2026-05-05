@@ -60,6 +60,10 @@ const dom = domRefs({
   readonlyBadge:     'readonlyBadge',
   logWxBtn:          'logWxBtn',
   logWxDesc:         'logWxDesc',
+  logWxRetroRow:     'logWxRetroRow',
+  logWxTime:         'logWxTime',
+  logWxRetroBtn:     'logWxRetroBtn',
+  logWxRetroDesc:    'logWxRetroDesc',
   wxLogList:         'wxLogList',
   wxLogCount:        'wxLogCount',
   tripsCard:         'tripsCard',
@@ -414,9 +418,13 @@ function renderWxLog() {
     var gridHtml = cells.map(function(c) {
       return '<div><div class="wx-snap-label">'+c.lbl+'</div><div class="wx-snap-val">'+esc(c.val)+'</div></div>';
     }).join("");
+    var retroBadge = snap.retro
+      ? '<span class="wx-snap-retro" title="' + esc(s('wx.retroBadgeTitle')) + '">' + esc(s('wx.retroBadge')) + '</span>'
+      : '';
     card.innerHTML =
       '<div class="wx-snap-header">'
       + '<span class="wx-snap-time">' + esc(time) + '</span>'
+      + retroBadge
       + '<span class="wx-snap-flag">' + (snap.flag ? fi[snap.flag]||"" : "") + '</span>'
       + '<button class="del-btn text-lg" data-delete-wx="' + i + '">&times;</button>'
       + '</div>'
@@ -536,6 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editNarrative(); }
   });
   dom.logWxBtn.addEventListener('click',     logCurrentWeather);
+  dom.logWxRetroBtn.addEventListener('click', logRetroWeather);
 
   // Tide fields are now auto-filled from harmonic prediction (no manual inputs)
 
@@ -600,6 +609,15 @@ function updateDateNav() {
   dom.logWxBtn.parentElement.style.display = 'block';
   dom.logWxBtn.style.display   = isToday() ? '' : 'none';
   dom.logWxDesc.style.display  = isToday() ? '' : 'none';
+  // Retro snapshot row: today + past days (forecast/archive lookup), hidden
+  // on future dates where there is nothing to retrieve yet.
+  dom.logWxRetroRow.style.display = isFuture() ? 'none' : '';
+  if (isToday()) {
+    // Cap the time picker so users can't pick a future hour today.
+    dom.logWxTime.max = new Date().toTimeString().slice(0, 5);
+  } else {
+    dom.logWxTime.removeAttribute('max');
+  }
 }
 
 function navigateDay(d) {
@@ -762,6 +780,56 @@ function logCurrentWeather() {
     wxLog.unshift(snap);
     renderWxLog();
     markDirty();
+  }
+}
+
+// Retro snapshot: pulls the hourly weather + marine values for `viewDate` at
+// the user-entered time from Open-Meteo (BIRK has no public archive). The
+// resulting snapshot is tagged `retro:true` so renderWxLog can mark it as
+// non-contemporaneous.
+async function logRetroWeather() {
+  const hhmm = (dom.logWxTime.value || '').trim();
+  if (!hhmm) { showToast(s('wx.retroPickTime'), 'warn'); return; }
+  if (isToday()) {
+    const nowHhmm = new Date().toTimeString().slice(0, 5);
+    if (hhmm > nowHhmm) { showToast(s('wx.retroFutureTime'), 'warn'); return; }
+  }
+  const btn = dom.logWxRetroBtn;
+  btn.disabled = true;
+  try {
+    const fetched = await wxFetchAt(WX_DEFAULT.lat, WX_DEFAULT.lon, viewDate, hhmm);
+    if (!fetched) { showToast(s('wx.retroUnavailable'), 'warn'); return; }
+    const { wx, marine, hourIdx } = fetched;
+    const c   = wx.current, hr = wx.hourly;
+    const mc  = (marine && marine.current) ? marine.current : {};
+    const ws  = c.wind_speed_10m || 0, wg = c.wind_gusts_10m || ws, wd = c.wind_direction_10m;
+    const bft = wxMsToBft(ws), wDir = wxDirLabel(wd);
+    const waveH   = mc.wave_height != null ? mc.wave_height : null;
+    const waveDir = mc.wave_direction != null ? wxDirLabel(mc.wave_direction) : null;
+    const sst     = mc.sea_surface_temperature != null ? mc.sea_surface_temperature : null;
+    const presObj = wxPressureTrend(hr.surface_pressure, hourIdx);
+    const assessed = wxScoreFlag(ws, wDir, waveH || 0, null, null, null, 'good');
+    const data = { ws, wd, wg, bft, wDir, waveH, waveDir, sst,
+                   flagKey: assessed.flagKey,
+                   airT: c.temperature_2m, apparentT: c.apparent_temperature,
+                   pres: c.surface_pressure, presTrend: presObj.trend,
+                   code: c.weather_code };
+    const snap = wxSnapshot(data);
+    if (!snap) { showToast(s('wx.retroUnavailable'), 'warn'); return; }
+    snap.time  = hhmm;
+    snap.pres  = c.surface_pressure != null ? Math.round(c.surface_pressure) : null;
+    snap.retro = true;
+    // Insert in time order (newest first) so retro additions slot in next to
+    // contemporaneous ones rather than always landing at the top.
+    wxLog.push(snap);
+    wxLog.sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
+    renderWxLog();
+    markDirty();
+    dom.logWxTime.value = '';
+  } catch (e) {
+    showToast(s('wx.retroUnavailable'), 'warn');
+  } finally {
+    btn.disabled = false;
   }
 }
 
