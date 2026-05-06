@@ -3,6 +3,16 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased — _setup: actively drop the legacy `payroll` tab
+
+Followup to the payroll cleanup: an existing spreadsheet may still carry the
+`payroll` sheet from before the schema entry was removed, and an outdated
+deployment or trigger could have recreated it. `setupSpreadsheet()` now runs a
+`dropLegacyTabs_` step before ensuring schema tabs — it deletes the `payroll`
+sheet if it's empty/header-only, and logs a loud warning if it still has data
+so an operator can archive and remove it manually. `LEGACY_TABS_` is the
+single list to extend the next time another schema tab gets retired.
+
 ## Unreleased — backend: drop unused `payroll` sheet + dead pay-calc code
 
 The `payroll` sheet in the spreadsheet was never written to at runtime. Its

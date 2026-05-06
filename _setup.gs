@@ -215,9 +215,32 @@ function ensureTab_(ss, tabName, cols) {
 
 // ── Main entry point ─────────────────────────────────────────────────────────
 
+// Tabs that used to be in SCHEMA_ but were removed and should be deleted
+// from any spreadsheet still carrying them. Each entry is the literal sheet
+// name. setupSpreadsheet() drops empty/header-only sheets silently and
+// preserves anything with data while warning loudly so the operator can
+// archive and remove it manually.
+var LEGACY_TABS_ = ['payroll'];
+
+function dropLegacyTabs_(ss) {
+  LEGACY_TABS_.forEach(function(name) {
+    var sh = ss.getSheetByName(name);
+    if (!sh) return;
+    if (sh.getLastRow() <= 1) {
+      ss.deleteSheet(sh);
+      Logger.log('Dropped legacy tab: ' + name);
+    } else {
+      Logger.log('⚠ Legacy tab "' + name + '" has '
+        + (sh.getLastRow() - 1) + ' data row(s); leaving in place — archive and delete manually.');
+    }
+  });
+}
+
 function setupSpreadsheet() {
   var ss = SpreadsheetApp.openById(SHEET_ID_);
   var results = [];
+
+  dropLegacyTabs_(ss);
 
   Object.keys(SCHEMA_).forEach(function(tabName) {
     ensureTab_(ss, tabName, SCHEMA_[tabName]);
