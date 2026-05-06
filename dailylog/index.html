@@ -51,15 +51,11 @@
   <div class="section-label" data-s="daily.wxLog"></div>
   <div class="content-card mb-4">
     <div id="wxLogList"></div>
-    <div class="flex-center flex-wrap gap-8 mt-8">
+    <div class="flex-center flex-wrap gap-8 mt-8" id="logWxRow">
       <button class="btn-ghost-sm icon-btn" id="logWxBtn"><span data-icon="wind"></span><span data-s="daily.wxLogBtn"></span></button>
+      <button class="btn-ghost-sm icon-btn" id="logWxRetroBtn"><span data-icon="hourglass"></span><span data-s="daily.wxLogRetroBtn"></span></button>
       <span id="logWxDesc" class="text-xs text-muted"></span>
       <span id="wxLogCount" class="text-xs text-muted ml-auto"></span>
-    </div>
-    <div class="flex-center flex-wrap gap-8 mt-4" id="logWxRetroRow">
-      <input type="time" id="logWxTime" class="dl-retro-time" data-s="daily.wxLogRetroTime" data-s-attr="aria-label">
-      <button class="btn-ghost-sm icon-btn" id="logWxRetroBtn"><span data-icon="hourglass"></span><span data-s="daily.wxLogRetroBtn"></span></button>
-      <span id="logWxRetroDesc" class="text-xs text-muted" data-s="daily.wxLogRetroDesc"></span>
     </div>
   </div>
 
@@ -204,6 +200,25 @@
     <div class="btn-row">
       <button class="btn btn-secondary" data-dl-close="groupLinkModal" data-s="btn.cancel"></button>
       <button class="btn btn-primary" data-dl-click="confirmGroupLink" data-s="daily.linkSelected"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RETRO WEATHER LOOKUP MODAL ══ -->
+<div class="modal-overlay hidden" id="wxRetroModal" data-dl-close-self>
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <h3 data-s="daily.wxRetroModalTitle"></h3>
+      <button class="modal-close-x" data-dl-close="wxRetroModal">&times;</button>
+    </div>
+    <div class="field">
+      <label data-s="daily.wxLogRetroTime" for="logWxTime"></label>
+      <input type="time" id="logWxTime">
+    </div>
+    <div class="text-xs text-muted mb-10" data-s="daily.wxRetroModalHint"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" data-dl-close="wxRetroModal" data-s="btn.cancel"></button>
+      <button class="btn btn-primary" id="wxRetroConfirmBtn" data-s="daily.wxRetroLookup"></button>
     </div>
   </div>
 </div>
