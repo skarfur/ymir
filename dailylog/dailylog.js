@@ -773,10 +773,18 @@ function logCurrentWeather() {
   if (snap) {
     snap.time = new Date().toTimeString().slice(0, 5);
     snap.pres = wxData.pres  != null ? Math.round(wxData.pres)  : null;
-    wxLog.unshift(snap);
+    wxLog.push(snap);
+    sortWxLog();
     renderWxLog();
     markDirty();
   }
+}
+
+// Snapshots render in chronological order (earliest at the top, mirroring
+// how the day unfolds). Both live and retro inserts go through this so the
+// list stays sorted regardless of insertion order.
+function sortWxLog() {
+  wxLog.sort(function(a, b) { return (a.time || '').localeCompare(b.time || ''); });
 }
 
 // Open the retro lookup modal. Pre-fills with the current time on today and
@@ -829,7 +837,7 @@ async function logRetroWeather() {
     // Insert in time order (newest first) so retro additions slot in next to
     // contemporaneous ones rather than always landing at the top.
     wxLog.push(snap);
-    wxLog.sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
+    sortWxLog();
     renderWxLog();
     markDirty();
     closeModal('wxRetroModal');
@@ -1049,6 +1057,7 @@ function applyLogData(logRes, cfgRes) {
       scheduled.forEach(function (a) { if (a && a.id && !seen[a.id]) activities.push(a); });
     }
     wxLog    = sjson(log.weatherLog, []);
+    sortWxLog();
     dom.narrativeInput.value = log.narrative || '';
     _renderNarrativeView();
     _renderSignoffBadge(log.signedOffBy, log.signedOffAt, log.updatedBy, log.updatedAt);
