@@ -595,6 +595,70 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   return { wx, marine };
 }
 
+// ── Retroactive fetch ─────────────────────────────────────────────────────────
+// Fetch a single past hour for a given calendar date. Used by the daily-log
+// retro-snapshot button. BIRK has no public historical API, so this is purely
+// Open-Meteo (forecast API for the recent ~92-day window, archive API beyond
+// that). Returns { wx, marine, hourIdx } shaped like wxFetch so the caller can
+// reuse wxScoreFlag / wxPressureTrend / wxSnapshot.
+async function wxFetchAt(lat, lon, dateISO, hhmm) {
+  if (!dateISO || !hhmm) return null;
+  const todayISOStr = new Date().toISOString().slice(0, 10);
+  const daysAgo = Math.floor((Date.parse(todayISOStr) - Date.parse(dateISO)) / 86400000);
+  // Forecast API serves the most recent ~92 days at full resolution; older
+  // dates fall through to the ERA5 archive (≈5-day publication lag).
+  const useArchive = daysAgo > 90;
+  const host = useArchive ? 'https://archive-api.open-meteo.com/v1/archive' : 'https://api.open-meteo.com/v1/forecast';
+  const marineHost = 'https://marine-api.open-meteo.com/v1/marine';
+  const hourlyParams = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,temperature_2m,apparent_temperature,weather_code,visibility';
+  const marineParams = 'wave_height,wave_direction,wave_period,sea_surface_temperature';
+  // ICON-EU is forecast-only; archive endpoint silently ignores `models=` and
+  // serves ERA5, so the param is harmless either way.
+  const url = `${host}?latitude=${lat}&longitude=${lon}&hourly=${hourlyParams}` +
+              `${useArchive ? '' : '&models=icon_eu'}` +
+              `&start_date=${dateISO}&end_date=${dateISO}&timezone=auto&wind_speed_unit=ms`;
+  const marineUrl = `${marineHost}?latitude=${lat}&longitude=${lon}&hourly=${marineParams}` +
+                    `&start_date=${dateISO}&end_date=${dateISO}&timezone=auto`;
+
+  const [hourlyData, marineData] = await Promise.all([
+    fetch(url).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(marineUrl).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  if (!hourlyData?.hourly?.time?.length) return null;
+
+  const targetHour = `${dateISO}T${hhmm.slice(0, 2)}:00`;
+  const hr = hourlyData.hourly;
+  const idx = hr.time.findIndex(t => t === targetHour);
+  if (idx < 0) return null;
+
+  const mhr = marineData?.hourly;
+  const wx = {
+    current: {
+      wind_speed_10m:       hr.wind_speed_10m?.[idx]      ?? 0,
+      wind_direction_10m:   hr.wind_direction_10m?.[idx]  ?? null,
+      wind_gusts_10m:       hr.wind_gusts_10m?.[idx]      ?? 0,
+      temperature_2m:       hr.temperature_2m?.[idx]      ?? null,
+      apparent_temperature: hr.apparent_temperature?.[idx] ?? null,
+      weather_code:         hr.weather_code?.[idx]        ?? null,
+      surface_pressure:     hr.surface_pressure?.[idx]    ?? null,
+      visibility:           hr.visibility?.[idx]          ?? null,
+      _source: useArchive ? 'OpenMeteoArchive' : 'OpenMeteoHindcast',
+      _obs_time: hr.time[idx],
+    },
+    hourly: hr,
+  };
+  const marine = mhr ? {
+    current: {
+      wave_height:             mhr.wave_height?.[idx]             ?? null,
+      wave_direction:          mhr.wave_direction?.[idx]          ?? null,
+      wave_period:             mhr.wave_period?.[idx]             ?? null,
+      sea_surface_temperature: mhr.sea_surface_temperature?.[idx] ?? null,
+    },
+    hourly: mhr,
+  } : null;
+  return { wx, marine, hourIdx: idx };
+}
+
 // ── Compact widget (member + dailylog) ────────────────────────────────────────
 // Always uses WX_DEFAULT coords regardless of any location override.
 // targetEl  : DOM element to render into (must have class wx-widget in CSS)

@@ -101,11 +101,15 @@
 /* ── Weather log ── */
 .wx-snap-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 .wx-snap-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.wx-snap-time { color:var(--accent-fg); font-weight:500; font-size:14px; flex:1; }
-.wx-snap-flag { font-size:16px; }
+.wx-snap-time { color:var(--accent-fg); font-weight:500; font-size:14px; }
+.wx-snap-flag { font-size:16px; margin-left:auto; }
 .wx-snap-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; }
 .wx-snap-label { font-size:9px; color:var(--muted); letter-spacing:.8px; margin-bottom:2px; }
 .wx-snap-val { font-size:12px; color:var(--text); font-weight:500; }
+.wx-snap-retro { font-size:9px; color:var(--muted); letter-spacing:.8px; text-transform:uppercase;
+  border:1px solid var(--border); border-radius:8px; padding:1px 6px; background:var(--surface); }
+.dl-retro-time { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:inherit; font-size:12px; padding:4px 8px; }
 
 /* ── Tides (auto-filled widget) ── */
 
