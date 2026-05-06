@@ -60,10 +60,10 @@ const dom = domRefs({
   readonlyBadge:     'readonlyBadge',
   logWxBtn:          'logWxBtn',
   logWxDesc:         'logWxDesc',
-  logWxRetroRow:     'logWxRetroRow',
+  logWxRow:          'logWxRow',
   logWxTime:         'logWxTime',
   logWxRetroBtn:     'logWxRetroBtn',
-  logWxRetroDesc:    'logWxRetroDesc',
+  wxRetroConfirmBtn: 'wxRetroConfirmBtn',
   wxLogList:         'wxLogList',
   wxLogCount:        'wxLogCount',
   tripsCard:         'tripsCard',
@@ -543,8 +543,9 @@ document.addEventListener('DOMContentLoaded', () => {
   dom.narrativeView.addEventListener('keydown', function(e){
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editNarrative(); }
   });
-  dom.logWxBtn.addEventListener('click',     logCurrentWeather);
-  dom.logWxRetroBtn.addEventListener('click', logRetroWeather);
+  dom.logWxBtn.addEventListener('click',           logCurrentWeather);
+  dom.logWxRetroBtn.addEventListener('click',      openWxRetroModal);
+  dom.wxRetroConfirmBtn.addEventListener('click',  logRetroWeather);
 
   // Tide fields are now auto-filled from harmonic prediction (no manual inputs)
 
@@ -606,18 +607,13 @@ function updateDateNav() {
   // an amendment (past/future days, or today after sign-off).
   const isAmendment = !isToday() || logSignedOff;
   dom.signOffBtn.textContent = isAmendment ? s('daily.saveAmendments') : s('btn.signOff');
-  dom.logWxBtn.parentElement.style.display = 'block';
-  dom.logWxBtn.style.display   = isToday() ? '' : 'none';
-  dom.logWxDesc.style.display  = isToday() ? '' : 'none';
-  // Retro snapshot row: today + past days (forecast/archive lookup), hidden
-  // on future dates where there is nothing to retrieve yet.
-  dom.logWxRetroRow.style.display = isFuture() ? 'none' : '';
-  if (isToday()) {
-    // Cap the time picker so users can't pick a future hour today.
-    dom.logWxTime.max = new Date().toTimeString().slice(0, 5);
-  } else {
-    dom.logWxTime.removeAttribute('max');
-  }
+  // Whole row hides on future dates (nothing to log either way); on
+  // today both buttons show; on past days only the retro button shows
+  // (live snapshot is meaningless for a different calendar day).
+  dom.logWxRow.style.display     = isFuture() ? 'none' : '';
+  dom.logWxBtn.style.display     = isToday()  ? '' : 'none';
+  dom.logWxDesc.style.display    = isToday()  ? '' : 'none';
+  dom.logWxRetroBtn.style.display = isFuture() ? 'none' : '';
 }
 
 function navigateDay(d) {
@@ -783,6 +779,17 @@ function logCurrentWeather() {
   }
 }
 
+// Open the retro lookup modal. Pre-fills with the current time on today and
+// caps the picker's max so users can't ask for an hour that hasn't happened
+// yet; on past dates the picker is unconstrained.
+function openWxRetroModal() {
+  dom.logWxTime.value = '';
+  if (isToday()) dom.logWxTime.max = new Date().toTimeString().slice(0, 5);
+  else           dom.logWxTime.removeAttribute('max');
+  openModal('wxRetroModal');
+  setTimeout(function() { dom.logWxTime.focus(); }, 50);
+}
+
 // Retro snapshot: pulls the hourly weather + marine values for `viewDate` at
 // the user-entered time from Open-Meteo (BIRK has no public archive). The
 // resulting snapshot is tagged `retro:true` so renderWxLog can mark it as
@@ -794,7 +801,7 @@ async function logRetroWeather() {
     const nowHhmm = new Date().toTimeString().slice(0, 5);
     if (hhmm > nowHhmm) { showToast(s('wx.retroFutureTime'), 'warn'); return; }
   }
-  const btn = dom.logWxRetroBtn;
+  const btn = dom.wxRetroConfirmBtn;
   btn.disabled = true;
   try {
     const fetched = await wxFetchAt(WX_DEFAULT.lat, WX_DEFAULT.lon, viewDate, hhmm);
@@ -825,7 +832,7 @@ async function logRetroWeather() {
     wxLog.sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
     renderWxLog();
     markDirty();
-    dom.logWxTime.value = '';
+    closeModal('wxRetroModal');
   } catch (e) {
     showToast(s('wx.retroUnavailable'), 'warn');
   } finally {
