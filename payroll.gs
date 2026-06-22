@@ -129,7 +129,7 @@ function adminEditTime_(b) {
   const row = readAll_(TABS_.timeClock).find(function(r){ return r.id === b.id; });
   if (!row) return failJ('Entry not found');
   updateRow_('timeClock','id',b.id,{
-    timestamp:b.timestamp, originalTimestamp:row.originalTimestamp||row.timestamp,
+    timestamp:b.timestamp, originalTimestamp:b.clockIn||row.originalTimestamp||row.timestamp,
     note:b.note||row.note||'admin edit', source:'admin',
     durationMinutes:b.durationMinutes!==undefined?b.durationMinutes:row.durationMinutes,
   });
