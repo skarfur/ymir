@@ -40,7 +40,7 @@ function initPayrollSheets_() {
 
 function periodKey_(date) {
   const d = date || new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-01';
 }
 
 function clockIn_(b) {
@@ -143,7 +143,7 @@ function adminAddTime_(b) {
     var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     // Column order matches sheet: id, employeeId, type, timestamp(clockOut), source, originalTimestamp(clockIn), note, periodKey, durationMinutes
     var periodKey = b.clockIn ? b.clockIn.slice(0,7) + '-01' : new Date().toISOString().slice(0,7) + '-01';
-    sh.appendRow([id, b.employeeId, '', b.timestamp, 'admin', b.clockIn, literalWrite_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
+    sh.appendRow([id, b.employeeId, 'out', b.timestamp, 'admin', b.clockIn, literalWrite_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
     return okJ({ success: true, id: id });
   } catch(e) {
     return failJ(e.message);

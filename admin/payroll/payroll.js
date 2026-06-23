@@ -216,13 +216,19 @@ function _pairTimeEntries(rows) {
   // Pair out rows with their matching in rows
   var usedInIds=new Set();
   outs.slice().sort(function(a,b){return a.timestamp>b.timestamp?1:-1;}).forEach(function(out){
-    var matchIn=null;
-    ins.slice().reverse().forEach(function(inn){
-      if(!matchIn&&!usedInIds.has(inn.id)&&inn.employeeId===out.employeeId&&inn.timestamp<out.timestamp)
-        matchIn=inn;
-    });
     var e=Object.assign({},out);
-    if(matchIn){e.clockIn=matchIn.timestamp;usedInIds.add(matchIn.id);}
+    if(out.originalTimestamp){
+      // Admin-added/edited entries store their own start time on the row
+      // itself — no separate type='in' row was ever created to pair against.
+      e.clockIn=out.originalTimestamp;
+    }else{
+      var matchIn=null;
+      ins.slice().reverse().forEach(function(inn){
+        if(!matchIn&&!usedInIds.has(inn.id)&&inn.employeeId===out.employeeId&&inn.timestamp<out.timestamp)
+          matchIn=inn;
+      });
+      if(matchIn){e.clockIn=matchIn.timestamp;usedInIds.add(matchIn.id);}
+    }
     paired.push(e);
   });
   return paired;
