@@ -475,10 +475,10 @@ async function prExportCSV(){
     ]);
     var employees=res[1].employees||[];
     var empName_=function(eid){var e=employees.find(function(x){return x.id===eid;});return e?e.name:eid;};
-    var paired=_pairTimeEntries(res[0].entries||res[0].timeEntries||[]).filter(function(e){return !_isBreakEntry(e);});
+    var paired=_pairTimeEntries(res[0].entries||res[0].timeEntries||[]);
     // Restrict to entries whose clock-in date falls within [from,to].
     paired=paired.filter(function(e){var d=String(e.clockIn||e.timestamp||'').slice(0,10);return d>=from&&d<=to;});
-    var byEmpDay={}; // empId -> { date -> minutes }
+    var byEmpDay={}; // empId -> { date -> net worked minutes (shift minus breaks) }
     var allDates={};
     paired.forEach(function(e){
       var eid=e.employeeId||'unknown';
@@ -486,7 +486,8 @@ async function prExportCSV(){
       if(!d)return;
       allDates[d]=true;
       if(!byEmpDay[eid])byEmpDay[eid]={};
-      byEmpDay[eid][d]=(byEmpDay[eid][d]||0)+(+(e.durationMinutes||0));
+      var mins=+(e.durationMinutes||0);
+      byEmpDay[eid][d]=(byEmpDay[eid][d]||0)+(_isBreakEntry(e)?-mins:mins);
     });
     var empIds=Object.keys(byEmpDay);
     var dates=Object.keys(allDates).sort();
