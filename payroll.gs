@@ -138,16 +138,20 @@ function adminEditTime_(b) {
 }
 
 function adminAddTime_(b) {
-  try {
-    var sh = SpreadsheetApp.openById(SHEET_ID_).getSheetByName(TABS_.timeClock);
-    var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-    // Column order matches sheet: id, employeeId, type, timestamp(clockOut), source, originalTimestamp(clockIn), note, periodKey, durationMinutes
-    var periodKey = b.clockIn ? b.clockIn.slice(0,7) + '-01' : new Date().toISOString().slice(0,7) + '-01';
-    sh.appendRow([id, b.employeeId, 'out', b.timestamp, 'admin', b.clockIn, literalWrite_(b.note || 'admin entry'), periodKey, b.durationMinutes]);
-    return okJ({ success: true, id: id });
-  } catch(e) {
-    return failJ(e.message);
-  }
+  if (!b.employeeId || !b.timestamp) return failJ('employeeId and timestamp required');
+  var isBreak = b.type === 'break_end';
+  var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var periodKey = (b.clockIn || new Date().toISOString()).slice(0,7) + '-01';
+  // insertRow_ maps fields by header name, so column order in the sheet
+  // can't desync the write the way a hardcoded sh.appendRow(...) array can.
+  insertRow_('timeClock', {
+    id: id, employeeId: b.employeeId, type: isBreak ? 'break_end' : 'out',
+    timestamp: b.timestamp, source: 'admin', originalTimestamp: b.clockIn || '',
+    note: b.note || (isBreak ? 'admin break' : 'admin entry'),
+    periodKey: periodKey, durationMinutes: b.durationMinutes || 0,
+  });
+  cDel_('time_clock');
+  return okJ({ success: true, id: id });
 }
 
 function adminDeleteTime_(b) {

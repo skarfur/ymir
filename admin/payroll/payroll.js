@@ -208,18 +208,18 @@ function prRenderCalLabel(){
   var d=new Date(_calYear,_calMonth,1);
   document.getElementById('prCalLabel').textContent=String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
 }
-// Pair separate type='in'/type='out' rows into single session entries.
-function _pairTimeEntries(rows) {
-  var ins   = rows.filter(function(r){ return r.type==='in'; });
-  var outs  = rows.filter(function(r){ return r.type==='out'; });
+// Pair separate start/end-typed rows (shift: 'in'/'out', break: 'break_start'/
+// 'break_end') into single session entries. Admin-added/edited rows skip
+// pairing entirely — they store their own start time on the row itself
+// (originalTimestamp) since no separate start-typed row was ever created.
+function _pairKind(rows, startType, endType) {
+  var ins  = rows.filter(function(r){ return r.type===startType; });
+  var outs = rows.filter(function(r){ return r.type===endType; });
   var paired = [];
-  // Pair out rows with their matching in rows
   var usedInIds=new Set();
   outs.slice().sort(function(a,b){return a.timestamp>b.timestamp?1:-1;}).forEach(function(out){
     var e=Object.assign({},out);
     if(out.originalTimestamp){
-      // Admin-added/edited entries store their own start time on the row
-      // itself — no separate type='in' row was ever created to pair against.
       e.clockIn=out.originalTimestamp;
     }else{
       var matchIn=null;
@@ -233,6 +233,10 @@ function _pairTimeEntries(rows) {
   });
   return paired;
 }
+function _pairTimeEntries(rows) {
+  return _pairKind(rows,'in','out').concat(_pairKind(rows,'break_start','break_end'));
+}
+function _isBreakEntry(e){ return e.type==='break_end'; }
 async function prLoadTsEntries(){
   var empId=document.getElementById('prTsEmp').value;
   var firstDay=new Date(_calYear,_calMonth,1);
@@ -247,7 +251,7 @@ async function prLoadTsEntries(){
     var res=await apiGet('getTimeEntries',params);
     _tsEntries=_pairTimeEntries(res.entries||res.timeEntries||[]);
     var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
-    var totalMins=filtered.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    var totalMins=filtered.filter(function(e){return !_isBreakEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours');
     if(_calView==='cal')prRenderCalDays();else prRenderList();
   }catch(e){document.getElementById('prTsTotal').textContent='';}
@@ -283,7 +287,7 @@ function prRenderCalDays(){
       var outT=e.timestamp?_fmtTime(e.timestamp):'?';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
       var firstName=empName(e.employeeId).split(' ')[0];
-      var label=firstName+'\u00a0'+inT+'\u2013'+outT;
+      var label=(_isBreakEntry(e)?'\u2615\u00a0':'')+firstName+'\u00a0'+inT+'\u2013'+outT;
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<span class="cal-pill" style="background:'+col+'22;color:'+col+';border-color:'+col+'44"'
         +' data-pr-open-ds-row data-e="'+edata+'"'
@@ -304,7 +308,7 @@ function prRenderList(){
   filtered.forEach(function(e){var k=e.employeeId||'unknown';if(!byEmp[k])byEmp[k]={name:e.employeeName||empName(k),entries:[]};byEmp[k].entries.push(e);});
   list.innerHTML=Object.keys(byEmp).map(function(eid){
     var grp=byEmp[eid];
-    var tot=grp.entries.reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    var tot=grp.entries.filter(function(e){return !_isBreakEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     var rows=grp.entries.slice().sort(function(a,b){return (a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;}).map(function(e){
       var ci=e.clockIn?new Date(e.clockIn):null,co=e.timestamp?new Date(e.timestamp):null;
       var dateStr=e.clockIn?_fmtDateDMY(e.clockIn):'--';
@@ -312,6 +316,8 @@ function prRenderList(){
       var outT=e.timestamp?_fmtTime(e.timestamp):'--';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
       var srcLabel=e.source==='admin'?('<span class="src-admin">\u270e '+s('lbl.admin')+'</span>'):s('lbl.staff');
+      var breakBadge=_isBreakEntry(e)?('<span class="edited-badge">\u2615 '+s('payroll.entryTypeBreak')+'</span>'):'';
+      srcLabel=breakBadge+srcLabel;
       var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<tr><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+srcLabel+'</td>'
@@ -336,6 +342,9 @@ function prOpenModal(entry,dateStr){
   var meSel=document.getElementById('meEmp');
   if(entry&&entry.employeeId)meSel.value=entry.employeeId;
   else if(_tsEmployees.length)meSel.value=_tsEmployees[0].id;
+  var meType=document.getElementById('meType');
+  meType.value=_isBreakEntry(entry||{})?'break':'shift';
+  meType.disabled=!!entry;
   if(entry){
     document.getElementById('meIn').value=toLocal(entry.clockIn||'');
     document.getElementById('meOut').value=toLocal(entry.timestamp||'');
@@ -368,11 +377,12 @@ async function meSave(){
   if(!empId||!inV||!outV){err.textContent=s('payroll.entryRequired');return;}
   if(!mins)mins=Math.round((new Date(outV)-new Date(inV))/60000);
   if(mins<=0){err.textContent=s('payroll.clockOutAfterIn');return;}
+  var isBreak=document.getElementById('meType').value==='break';
   try{
     if(_editId){
       await apiPost('adminEditTime',{id:_editId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin edit',source:'admin'});
     }else{
-      await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin entry',source:'admin'});
+      await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||(isBreak?'admin break':'admin entry'),source:'admin',type:isBreak?'break_end':'out'});
     }
     prCloseModal(true);showToast(s('toast.saved'));prLoadTsEntries();
   }catch(e){err.textContent=e.message;}
