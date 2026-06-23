@@ -456,6 +456,74 @@ async function prExportTimeData(){
     showToast(s('payroll.exportFailed')+': '+e.message,'err');
   }
 }
+function _csvCell(v){
+  v=String(v==null?'':v);
+  return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+}
+function _csvRow(cells){return cells.map(_csvCell).join(',');}
+async function prExportCSV(){
+  var msg=document.getElementById('prExpMsg');
+  function setMsg(text,color){if(msg){msg.textContent=text;msg.style.color=color||'';}}
+  var from=(document.getElementById('prExpFrom')||{}).value||'';
+  var to=(document.getElementById('prExpTo')||{}).value||'';
+  if(!from||!to||from>to){showToast(s('payroll.noPeriodDefined'),'err');setMsg(s('payroll.noPeriodDefined'),'var(--red)');return;}
+  setMsg(s('lbl.loading'),'var(--muted)');
+  try{
+    var res=await Promise.all([
+      apiGet('getTimeEntries',{from:from,to:to,period:from.slice(0,7)+'-01'}),
+      apiGet('getEmployees')
+    ]);
+    var employees=res[1].employees||[];
+    var empName_=function(eid){var e=employees.find(function(x){return x.id===eid;});return e?e.name:eid;};
+    var paired=_pairTimeEntries(res[0].entries||res[0].timeEntries||[]).filter(function(e){return !_isBreakEntry(e);});
+    // Restrict to entries whose clock-in date falls within [from,to].
+    paired=paired.filter(function(e){var d=String(e.clockIn||e.timestamp||'').slice(0,10);return d>=from&&d<=to;});
+    var byEmpDay={}; // empId -> { date -> minutes }
+    var allDates={};
+    paired.forEach(function(e){
+      var eid=e.employeeId||'unknown';
+      var d=String(e.clockIn||e.timestamp||'').slice(0,10);
+      if(!d)return;
+      allDates[d]=true;
+      if(!byEmpDay[eid])byEmpDay[eid]={};
+      byEmpDay[eid][d]=(byEmpDay[eid][d]||0)+(+(e.durationMinutes||0));
+    });
+    var empIds=Object.keys(byEmpDay);
+    var dates=Object.keys(allDates).sort();
+    // Summary section: name, total hours, days worked over 6 hours.
+    var lines=[];
+    lines.push(_csvRow([s('payroll.employee'),s('payroll.totalHours'),s('payroll.daysOver6h')]));
+    empIds.forEach(function(eid){
+      var days=byEmpDay[eid];
+      var totalMins=0,over6=0;
+      Object.keys(days).forEach(function(d){totalMins+=days[d];if(days[d]>360)over6++;});
+      lines.push(_csvRow([empName_(eid),(totalMins/60).toFixed(2),over6]));
+    });
+    lines.push('');
+    // Daily breakdown section: date x employee matrix, hours per day.
+    var header=[s('lbl.date')].concat(empIds.map(empName_)).concat([s('payroll.totalHours')]);
+    lines.push(_csvRow(header));
+    dates.forEach(function(d){
+      var rowTotal=0;
+      var cells=[d].concat(empIds.map(function(eid){
+        var mins=(byEmpDay[eid]||{})[d]||0;
+        rowTotal+=mins;
+        return mins?(mins/60).toFixed(2):'';
+      }));
+      cells.push((rowTotal/60).toFixed(2));
+      lines.push(_csvRow(cells));
+    });
+    var blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='payroll-'+from+'_to_'+to+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setMsg('✓ '+s('toast.saved'),'var(--green)');
+  }catch(e){
+    setMsg(s('payroll.exportFailed')+': '+e.message,'var(--red)');
+    showToast(s('payroll.exportFailed')+': '+e.message,'err');
+  }
+}
 
 /* == Init == */
 (function(){var p=new URLSearchParams(window.location.search);prTab(p.get('tab')||'employees');})();

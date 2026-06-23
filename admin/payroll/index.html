@@ -64,8 +64,10 @@
           <label class="text-10 text-muted" data-s="payroll.periodTo" for="prExpTo"></label>
           <input id="prExpTo" type="date" class="text-xs" style="padding:3px 6px;width:140px">
           <button class="btn btn-primary text-xs" data-pr-click="prExportTimeData" data-s="payroll.export"></button>
+          <button class="btn btn-secondary text-xs" data-pr-click="prExportCSV" data-s="payroll.downloadCsv"></button>
           <span id="prExpMsg" class="text-xs"></span>
         </div>
+        <div class="text-10 text-muted mb-10" data-s="payroll.downloadCsvHint"></div>
         <div class="mb-6">
           <label class="text-10 text-muted mb-4" style="display:block" data-s="payroll.externalUrl" for="prExpUrl"></label>
           <input id="prExpUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" data-pr-input="prSaveExportUrl" class="w-full text-xs" style="max-width:560px;padding:5px 8px">
