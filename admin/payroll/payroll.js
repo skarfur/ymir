@@ -199,7 +199,7 @@ function prSetView(v){
   if(v==='list') prRenderList();else prRenderCalDays();
 }
 function prCalMove(dir){
-  _calMonth+=dir;
+  _calMonth+=+dir;
   if(_calMonth>11){_calMonth=0;_calYear++;}
   if(_calMonth<0){_calMonth=11;_calYear--;}
   prRenderCalLabel();prLoadTsEntries();
