@@ -209,9 +209,11 @@ function prRenderCalLabel(){
   document.getElementById('prCalLabel').textContent=String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
 }
 // Pair separate start/end-typed rows (shift: 'in'/'out', break: 'break_start'/
-// 'break_end') into single session entries. Admin-added/edited rows skip
-// pairing entirely — they store their own start time on the row itself
-// (originalTimestamp) since no separate start-typed row was ever created.
+// 'break_end', sick day: 'sick_start'/'sick_end') into single session entries.
+// Admin-added/edited rows skip pairing entirely — they store their own start
+// time on the row itself (originalTimestamp) since no separate start-typed
+// row was ever created. Sick days are always admin-added, so only 'sick_end'
+// rows ever exist in practice.
 function _pairKind(rows, startType, endType) {
   var ins  = rows.filter(function(r){ return r.type===startType; });
   var outs = rows.filter(function(r){ return r.type===endType; });
@@ -234,9 +236,10 @@ function _pairKind(rows, startType, endType) {
   return paired;
 }
 function _pairTimeEntries(rows) {
-  return _pairKind(rows,'in','out').concat(_pairKind(rows,'break_start','break_end'));
+  return _pairKind(rows,'in','out').concat(_pairKind(rows,'break_start','break_end')).concat(_pairKind(rows,'sick_start','sick_end'));
 }
 function _isBreakEntry(e){ return e.type==='break_end'; }
+function _isSickEntry(e){ return e.type==='sick_end'; }
 async function prLoadTsEntries(){
   var empId=document.getElementById('prTsEmp').value;
   var firstDay=new Date(_calYear,_calMonth,1);
@@ -251,8 +254,9 @@ async function prLoadTsEntries(){
     var res=await apiGet('getTimeEntries',params);
     _tsEntries=_pairTimeEntries(res.entries||res.timeEntries||[]);
     var filtered=empId?_tsEntries.filter(function(e){return e.employeeId===empId;}):_tsEntries;
-    var totalMins=filtered.filter(function(e){return !_isBreakEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
-    document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours');
+    var totalMins=filtered.filter(function(e){return !_isBreakEntry(e)&&!_isSickEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    var sickMins=filtered.filter(_isSickEntry).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    document.getElementById('prTsTotal').textContent=fmtMins(totalMins)+' '+s('payroll.totalHours')+(sickMins?(' · '+fmtMins(sickMins)+' '+s('payroll.sickTotal')):'');
     if(_calView==='cal')prRenderCalDays();else prRenderList();
   }catch(e){document.getElementById('prTsTotal').textContent='';}
 }
@@ -287,7 +291,8 @@ function prRenderCalDays(){
       var outT=e.timestamp?_fmtTime(e.timestamp):'?';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'';
       var firstName=empName(e.employeeId).split(' ')[0];
-      var label=(_isBreakEntry(e)?'\u2615\u00a0':'')+firstName+'\u00a0'+inT+'\u2013'+outT;
+      var icon=_isBreakEntry(e)?'\u2615\u00a0':(_isSickEntry(e)?'\ud83e\udd12\u00a0':'');
+      var label=icon+firstName+'\u00a0'+inT+'\u2013'+outT;
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<span class="cal-pill" style="background:'+col+'22;color:'+col+';border-color:'+col+'44"'
         +' data-pr-open-ds-row data-e="'+edata+'"'
@@ -308,7 +313,7 @@ function prRenderList(){
   filtered.forEach(function(e){var k=e.employeeId||'unknown';if(!byEmp[k])byEmp[k]={name:e.employeeName||empName(k),entries:[]};byEmp[k].entries.push(e);});
   list.innerHTML=Object.keys(byEmp).map(function(eid){
     var grp=byEmp[eid];
-    var tot=grp.entries.filter(function(e){return !_isBreakEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
+    var tot=grp.entries.filter(function(e){return !_isBreakEntry(e)&&!_isSickEntry(e);}).reduce(function(s,e){return s+(+(e.durationMinutes||0));},0);
     var rows=grp.entries.slice().sort(function(a,b){return (a.clockIn||a.timestamp||'')>(b.clockIn||b.timestamp||'')?1:-1;}).map(function(e){
       var ci=e.clockIn?new Date(e.clockIn):null,co=e.timestamp?new Date(e.timestamp):null;
       var dateStr=e.clockIn?_fmtDateDMY(e.clockIn):'--';
@@ -316,8 +321,9 @@ function prRenderList(){
       var outT=e.timestamp?_fmtTime(e.timestamp):'--';
       var dur=e.durationMinutes?fmtMins(+e.durationMinutes):'--';
       var srcLabel=e.source==='admin'?('<span class="src-admin">\u270e '+s('lbl.admin')+'</span>'):s('lbl.staff');
-      var breakBadge=_isBreakEntry(e)?('<span class="edited-badge">\u2615 '+s('payroll.entryTypeBreak')+'</span>'):'';
-      srcLabel=breakBadge+srcLabel;
+      var typeBadge=_isBreakEntry(e)?('<span class="edited-badge">\u2615 '+s('payroll.entryTypeBreak')+'</span>')
+        :(_isSickEntry(e)?('<span class="edited-badge">\ud83e\udd12 '+s('payroll.entryTypeSick')+'</span>'):'');
+      srcLabel=typeBadge+srcLabel;
       var edited=e.originalTimestamp?('<span class="edited-badge">'+s('lbl.edited')+'</span>'):'';
       var edata=JSON.stringify(e).replace(/"/g,'&quot;');
       return '<tr><td>'+dateStr+'</td><td>'+inT+'</td><td>'+outT+edited+'</td><td>'+dur+'</td><td>'+srcLabel+'</td>'
@@ -343,7 +349,7 @@ function prOpenModal(entry,dateStr){
   if(entry&&entry.employeeId)meSel.value=entry.employeeId;
   else if(_tsEmployees.length)meSel.value=_tsEmployees[0].id;
   var meType=document.getElementById('meType');
-  meType.value=_isBreakEntry(entry||{})?'break':'shift';
+  meType.value=_isSickEntry(entry||{})?'sick':(_isBreakEntry(entry||{})?'break':'shift');
   meType.disabled=!!entry;
   if(entry){
     document.getElementById('meIn').value=toLocal(entry.clockIn||'');
@@ -377,12 +383,16 @@ async function meSave(){
   if(!empId||!inV||!outV){err.textContent=s('payroll.entryRequired');return;}
   if(!mins)mins=Math.round((new Date(outV)-new Date(inV))/60000);
   if(mins<=0){err.textContent=s('payroll.clockOutAfterIn');return;}
-  var isBreak=document.getElementById('meType').value==='break';
+  var meTypeVal=document.getElementById('meType').value;
+  var isBreak=meTypeVal==='break';
+  var isSick=meTypeVal==='sick';
   try{
     if(_editId){
       await apiPost('adminEditTime',{id:_editId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||'admin edit',source:'admin'});
     }else{
-      await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||(isBreak?'admin break':'admin entry'),source:'admin',type:isBreak?'break_end':'out'});
+      var defNote=isSick?'admin sick day':(isBreak?'admin break':'admin entry');
+      var entryType=isSick?'sick_end':(isBreak?'break_end':'out');
+      await apiPost('adminAddTime',{employeeId:empId,clockIn:new Date(inV).toISOString(),timestamp:new Date(outV).toISOString(),durationMinutes:mins,note:note||defNote,source:'admin',type:entryType});
     }
     prCloseModal(true);showToast(s('toast.saved'));prLoadTsEntries();
   }catch(e){err.textContent=e.message;}
@@ -479,26 +489,32 @@ async function prExportCSV(){
     // Restrict to entries whose clock-in date falls within [from,to].
     paired=paired.filter(function(e){var d=String(e.clockIn||e.timestamp||'').slice(0,10);return d>=from&&d<=to;});
     var byEmpDay={}; // empId -> { date -> net worked minutes (shift minus breaks) }
+    var byEmpSick={}; // empId -> total sick minutes (kept separate from worked hours)
     var allDates={};
     paired.forEach(function(e){
       var eid=e.employeeId||'unknown';
       var d=String(e.clockIn||e.timestamp||'').slice(0,10);
       if(!d)return;
+      if(_isSickEntry(e)){
+        byEmpSick[eid]=(byEmpSick[eid]||0)+(+(e.durationMinutes||0));
+        return;
+      }
       allDates[d]=true;
       if(!byEmpDay[eid])byEmpDay[eid]={};
       var mins=+(e.durationMinutes||0);
       byEmpDay[eid][d]=(byEmpDay[eid][d]||0)+(_isBreakEntry(e)?-mins:mins);
     });
     var empIds=Object.keys(byEmpDay);
+    Object.keys(byEmpSick).forEach(function(eid){if(empIds.indexOf(eid)===-1)empIds.push(eid);});
     var dates=Object.keys(allDates).sort();
-    // Summary section: name, total hours, days worked over 6 hours.
+    // Summary section: name, total hours, days worked over 6 hours, sick hours.
     var lines=[];
-    lines.push(_csvRow([s('payroll.employee'),s('payroll.totalHours'),s('payroll.daysOver6h')]));
+    lines.push(_csvRow([s('payroll.employee'),s('payroll.totalHours'),s('payroll.daysOver6h'),s('payroll.sickHours')]));
     empIds.forEach(function(eid){
-      var days=byEmpDay[eid];
+      var days=byEmpDay[eid]||{};
       var totalMins=0,over6=0;
       Object.keys(days).forEach(function(d){totalMins+=days[d];if(days[d]>360)over6++;});
-      lines.push(_csvRow([empName_(eid),(totalMins/60).toFixed(2),over6]));
+      lines.push(_csvRow([empName_(eid),(totalMins/60).toFixed(2),over6,((byEmpSick[eid]||0)/60).toFixed(2)]));
     });
     lines.push('');
     // Daily breakdown section: date x employee matrix, hours per day.
