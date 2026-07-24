@@ -139,15 +139,16 @@ function adminEditTime_(b) {
 
 function adminAddTime_(b) {
   if (!b.employeeId || !b.timestamp) return failJ('employeeId and timestamp required');
-  var isBreak = b.type === 'break_end';
+  var type = (b.type === 'break_end' || b.type === 'sick_end') ? b.type : 'out';
+  var defaultNote = type === 'break_end' ? 'admin break' : (type === 'sick_end' ? 'admin sick day' : 'admin entry');
   var id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   var periodKey = (b.clockIn || new Date().toISOString()).slice(0,7) + '-01';
   // insertRow_ maps fields by header name, so column order in the sheet
   // can't desync the write the way a hardcoded sh.appendRow(...) array can.
   insertRow_('timeClock', {
-    id: id, employeeId: b.employeeId, type: isBreak ? 'break_end' : 'out',
+    id: id, employeeId: b.employeeId, type: type,
     timestamp: b.timestamp, source: 'admin', originalTimestamp: b.clockIn || '',
-    note: b.note || (isBreak ? 'admin break' : 'admin entry'),
+    note: b.note || defaultNote,
     periodKey: periodKey, durationMinutes: b.durationMinutes || 0,
   });
   cDel_('time_clock');
