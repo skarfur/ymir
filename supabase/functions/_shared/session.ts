@@ -1,3 +1,12 @@
+// NOT CURRENTLY IMPORTED BY ANY DEPLOYED FUNCTION.
+// whoami/index.ts originally imported this via a relative path
+// ("../_shared/session.ts") but produced no response at all when actually
+// invoked — the cross-file import likely isn't resolving inside the
+// deployed bundle the way expected. whoami now inlines the same logic
+// instead. Verify the shared-import path works (deploy a two-file test,
+// confirm it responds) before wiring this into the next function that
+// needs it, rather than assuming this file is live.
+
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 export interface ResolvedSession {
