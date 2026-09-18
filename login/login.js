@@ -343,10 +343,14 @@ async function testSupabaseLogin() {
     const weatherResult = await callSupabaseFunction('weather', {
       sessionToken: loginResult.sessionToken,
     });
+    const handbookResult = await callSupabaseFunction('handbook', {
+      sessionToken: loginResult.sessionToken,
+    });
     out.textContent =
       'login: ' + JSON.stringify(loginResult, null, 2) +
       '\n\nwhoami: ' + JSON.stringify(whoamiResult, null, 2) +
-      '\n\nweather: ' + JSON.stringify(weatherResult, null, 2);
+      '\n\nweather: ' + JSON.stringify(weatherResult, null, 2) +
+      '\n\nhandbook: ' + JSON.stringify(handbookResult, null, 2);
     if (loginResult.sessionToken) {
       _lastSupabaseToken = loginResult.sessionToken;
       copyBtn.classList.remove('d-none');
