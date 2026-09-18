@@ -456,6 +456,7 @@ var _SUPABASE_ACTIONS = {
   getSlots:           'get-slots',
   getCrews:           'get-crews',
   getNotifications:   'get-notifications',
+  getMaintenance:     'get-maintenance',
 };
 
 async function _callSupabase(action, payload) {
