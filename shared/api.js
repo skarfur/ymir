@@ -460,6 +460,7 @@ var _SUPABASE_ACTIONS = {
   getVolunteerSignups: 'get-volunteer-signups',
   getMembers:         'get-members',
   getRowingPassport:  'get-rowing-passport',
+  getEmployees:       'get-employees',
 };
 
 async function _callSupabase(action, payload, opts) {
