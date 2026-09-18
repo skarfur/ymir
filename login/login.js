@@ -336,9 +336,17 @@ async function testSupabaseLogin() {
     const whoamiResult = await callSupabaseFunction('whoami', {
       sessionToken: loginResult.sessionToken,
     });
+    // Chained here (not a separate button) specifically so the token never
+    // has to leave the browser via manual copy/curl — that's been the
+    // actual source of every "it's broken" report on this endpoint so far,
+    // not the functions themselves.
+    const weatherResult = await callSupabaseFunction('weather', {
+      sessionToken: loginResult.sessionToken,
+    });
     out.textContent =
       'login: ' + JSON.stringify(loginResult, null, 2) +
-      '\n\nwhoami: ' + JSON.stringify(whoamiResult, null, 2);
+      '\n\nwhoami: ' + JSON.stringify(whoamiResult, null, 2) +
+      '\n\nweather: ' + JSON.stringify(weatherResult, null, 2);
     if (loginResult.sessionToken) {
       _lastSupabaseToken = loginResult.sessionToken;
       copyBtn.classList.remove('d-none');
