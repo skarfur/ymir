@@ -453,6 +453,9 @@ var _SUPABASE_ACTIONS = {
   getHandbook:        'handbook',
   getWeather:         'weather',
   getActiveCheckouts: 'get-active-checkouts',
+  getSlots:           'get-slots',
+  getCrews:           'get-crews',
+  getNotifications:   'get-notifications',
 };
 
 async function _callSupabase(action, payload) {
