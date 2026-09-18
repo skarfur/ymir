@@ -631,14 +631,22 @@ function _readSession() {
   try {
     var s = sessionStorage.getItem(SESSION_KEY);
     if (s) return JSON.parse(s);
-  } catch(e) {}
+  } catch(e) {
+    // TEMPORARY diagnostic — tracking down intermittent "logged out based
+    // on time" reports where _getSessionToken() returns null despite a
+    // valid session existing server-side. Remove once root-caused.
+    console.warn('[ymir diag] sessionStorage read/parse failed:', e);
+  }
   try {
     var l = localStorage.getItem(SESSION_KEY);
     if (l) {
       try { sessionStorage.setItem(SESSION_KEY, l); } catch(e) {}
       return JSON.parse(l);
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[ymir diag] localStorage fallback read/parse failed:', e);
+  }
+  console.warn('[ymir diag] _readSession found nothing in sessionStorage or localStorage. raw sessionStorage value:', (function(){ try { return sessionStorage.getItem(SESSION_KEY); } catch(e) { return '<threw: ' + e + '>'; } })());
   return null;
 }
 function _writeSession(sess) {
@@ -655,8 +663,14 @@ function _clearSession() {
 }
 function _getSessionToken() {
   var s = _readSession();
-  if (!s || !s.token) return null;
+  if (!s || !s.token) {
+    console.warn('[ymir diag] _getSessionToken: no session/token from _readSession. s =', s);
+    return null;
+  }
   if (s.expiresAt && new Date(s.expiresAt).getTime() < Date.now()) {
+    console.warn('[ymir diag] _getSessionToken: treating session as client-side expired.',
+      'expiresAt=', s.expiresAt, 'parsed=', new Date(s.expiresAt).toISOString(),
+      'now=', new Date().toISOString(), 'Date.now()=', Date.now());
     _clearSession();
     return null;
   }
