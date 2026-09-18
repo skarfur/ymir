@@ -7,6 +7,30 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 // verify tokens unless the GOOGLE_CLIENT_ID script property is set.
 const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
+// Supabase (ymir-staging) — migration in progress. Only auth (login/whoami)
+// is wired so far; every other action still goes through SCRIPT_URL above.
+// The anon key is safe to expose client-side by design (same as
+// GOOGLE_CLIENT_ID above): RLS + revoked table grants are what actually gate
+// access, not secrecy of this key. See CLAUDE.md once the Supabase side has
+// its own documented section.
+const SUPABASE_URL = "https://jilmxhonqhbvieyknyen.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppbG14aG9ucWhidmlleWtueWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NTU1MzIsImV4cCI6MjEwNTMzMTUzMn0.7zMcRKdZTAiNMbNukyq5-i5Ofqp_p_GhziYNmrt9fhQ";
+
+async function callSupabaseFunction(name, payload) {
+  const resp = await fetch(SUPABASE_URL + '/functions/v1/' + name, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await resp.json().catch(function () { return {}; });
+  if (!resp.ok) {
+    const err = new Error(data.error || ('Supabase function error ' + resp.status));
+    err.status = resp.status;
+    throw err;
+  }
+  return data;
+}
+
 async function apiGet(action, params) {
   params = params || {};
   // Cache key now includes a serialized params suffix so the same action with
