@@ -461,6 +461,15 @@ var _SUPABASE_ACTIONS = {
   getMembers:         'get-members',
   getRowingPassport:  'get-rowing-passport',
   getEmployees:       'get-employees',
+  getShareTokens:     'get-share-tokens',
+  getTrips:           'get-trips',
+  getConfirmations:   'get-confirmations',
+  getVerificationRequests: 'get-verification-requests',
+  getIncidents:       'get-incidents',
+  getActivityLog:     'get-activity-log',
+  getCrewBoard:       'get-crew-board',
+  getCrewInvites:     'get-crew-invites',
+  getDailyLog:        'get-daily-log',
 };
 
 async function _callSupabase(action, payload, opts) {
