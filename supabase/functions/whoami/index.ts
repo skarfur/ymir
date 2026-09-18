@@ -1,20 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
 // Minimal protected endpoint — proves the session round-trip end to end
 // (login issues a token -> whoami resolves it back to a caller).
 //
-// Self-contained rather than importing ../_shared/session.ts: the first
-// deploy used that shared import and produced no response at all (not even
-// an error body) when invoked for real, which points at the cross-file
-// import not resolving the way expected inside the deployed bundle. Rather
-// than debug bundler semantics blind (this sandbox can't invoke the
-// function to verify a fix), inlining the same logic removes the untested
-// variable. _shared/session.ts is kept as a reference implementation but
-// isn't wired into any deployed function yet — verify the shared-import
-// path works before the next function relies on it.
+// Uses the shared resolveSession() helper — import-test confirmed
+// _shared/*.ts cross-file imports resolve correctly in this deployment
+// path. (This function briefly inlined the same logic instead, on the
+// suspicion that the shared import was the cause of an earlier "no
+// response"; that turned out to be leftover shell-quoting/URL issues in
+// that test session, not a real bundler bug. See import-test's commit
+// history if this needs re-litigating.)
 
-// See login/index.ts's CORS_HEADERS comment — same reasoning applies here.
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -28,12 +25,6 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -45,39 +36,13 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Invalid JSON" }, 400);
   }
 
-  const token = String(body?.sessionToken ?? "").trim();
-  if (!token) return json({ error: "Unauthorized" }, 401);
-
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-
-  const tokenHash = await sha256Hex(token);
-  const { data: session } = await admin
-    .from("sessions")
-    .select("id, member_id, role, expires_at")
-    .eq("token_hash", tokenHash)
-    .maybeSingle();
+  const admin = createAdminClient();
+  const session = await resolveSession(admin, body?.sessionToken as string | undefined);
   if (!session) return json({ error: "Unauthorized" }, 401);
 
-  if (new Date(session.expires_at).getTime() < Date.now()) {
-    await admin.from("sessions").delete().eq("id", session.id);
-    return json({ error: "Unauthorized" }, 401);
-  }
-
-  const { data: member } = await admin
-    .from("members")
-    .select("id, kennitala, role, active")
-    .eq("id", session.member_id)
-    .maybeSingle();
-  if (!member || !member.active) return json({ error: "Unauthorized" }, 401);
-
-  await admin.from("sessions").update({ last_seen_at: new Date().toISOString() }).eq("id", session.id);
-
   return json({
-    memberId: member.id,
-    kennitala: member.kennitala,
-    role: member.role || session.role,
+    memberId: session.memberId,
+    kennitala: session.kennitala,
+    role: session.role,
   });
 });
