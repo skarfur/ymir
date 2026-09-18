@@ -462,7 +462,7 @@ var _SUPABASE_ACTIONS = {
   getRowingPassport:  'get-rowing-passport',
 };
 
-async function _callSupabase(action, payload) {
+async function _callSupabase(action, payload, opts) {
   var body = Object.assign({}, payload);
   if (action !== 'loginMember') {
     var t = _getSessionToken();
@@ -473,18 +473,22 @@ async function _callSupabase(action, payload) {
   } catch (e) {
     // Mirrors _callDirect's 401 -> bounce-to-login behavior so an expired
     // Supabase session doesn't leave the user stuck on a broken page.
+    // Skipped for opts.silent callers (e.g. warmContainer's background
+    // cache warm) — a best-effort prefetch that's explicitly written to
+    // fail silently (its own .catch is a no-op) should never be able to
+    // force a disruptive logout on the user's behalf.
     var onLoginPage = (typeof window !== 'undefined' && window.location &&
       window.location.pathname.indexOf('/login/') >= 0);
-    if (e && e.code === 401 && action !== 'loginMember' && !onLoginPage) {
+    if (e && e.code === 401 && action !== 'loginMember' && !onLoginPage && !(opts && opts.silent)) {
       _handleUnauthorized();
     }
     throw e;
   }
 }
 
-function _call(action, payload) {
+function _call(action, payload, opts) {
   if (_SUPABASE_ACTIONS[action]) {
-    return _callSupabase(action, payload);
+    return _callSupabase(action, payload, opts);
   }
   if (_PUBLIC_ACTIONS[action] || action === 'batch') {
     return _callDirect(action, payload);
@@ -1219,7 +1223,7 @@ function warmContainer() {
     // `ymir_getConfig_` write this used to do never matched apiGet's lookup
     // shape, so the warm only primed the server-side CacheService — never
     // the client cache.
-    _call('getConfig', {}).then(function(r) {
+    _call('getConfig', {}, { silent: true }).then(function(r) {
       seedApiCache('getConfig', {}, r);
     }).catch(function() {});
   }
