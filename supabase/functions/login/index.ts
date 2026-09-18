@@ -148,8 +148,10 @@ Deno.serve(async (req: Request) => {
       kennitala: member.kennitala,
       name: member.name,
       role: member.role,
-      usingDefaultPassword: member.password_is_temp,
     },
+    // Top-level, matching members.gs's loginMember_ exactly — the frontend
+    // reads data.usingDefaultPassword, not data.member.usingDefaultPassword.
+    usingDefaultPassword: member.password_is_temp,
     sessionToken: rawToken,
     sessionId: session.id,
     expiresAt: session.expires_at,

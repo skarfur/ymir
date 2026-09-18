@@ -26,6 +26,7 @@ async function callSupabaseFunction(name, payload) {
   if (!resp.ok) {
     const err = new Error(data.error || ('Supabase function error ' + resp.status));
     err.status = resp.status;
+    err.code = resp.status; // mirrors _callDirect's err.code convention (e.g. e.code === 429 checks)
     throw err;
   }
   return data;
@@ -439,7 +440,44 @@ function _isIdempotent(action, payload) {
 var _batchQueue = [];
 var _batchScheduled = false;
 
+// ── Supabase migration routing ───────────────────────────────────────────────
+// Actions ported to Edge Functions get routed here instead of through Apps
+// Script's batch/direct dispatch. Everything NOT listed here falls straight
+// through to the existing Apps Script path below, untouched — callers
+// (doLogin, proceedWithUser, etc.) don't need to know or care which backend
+// actually served a given action. Keys are the Apps Script action names
+// already used throughout the app; values are the Supabase function slug.
+var _SUPABASE_ACTIONS = {
+  loginMember: 'login',
+  getConfig:   'get-config',
+  getHandbook: 'handbook',
+  getWeather:  'weather',
+};
+
+async function _callSupabase(action, payload) {
+  var body = Object.assign({}, payload);
+  if (action !== 'loginMember') {
+    var t = _getSessionToken();
+    if (t) body.sessionToken = t;
+  }
+  try {
+    return await callSupabaseFunction(_SUPABASE_ACTIONS[action], body);
+  } catch (e) {
+    // Mirrors _callDirect's 401 -> bounce-to-login behavior so an expired
+    // Supabase session doesn't leave the user stuck on a broken page.
+    var onLoginPage = (typeof window !== 'undefined' && window.location &&
+      window.location.pathname.indexOf('/login/') >= 0);
+    if (e && e.code === 401 && action !== 'loginMember' && !onLoginPage) {
+      _handleUnauthorized();
+    }
+    throw e;
+  }
+}
+
 function _call(action, payload) {
+  if (_SUPABASE_ACTIONS[action]) {
+    return _callSupabase(action, payload);
+  }
   if (_PUBLIC_ACTIONS[action] || action === 'batch') {
     return _callDirect(action, payload);
   }

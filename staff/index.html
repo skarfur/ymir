@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <!-- connect-src includes the ymir-staging Supabase project — getConfig
+       (and any other migrated action) now routes there via shared/api.js's
+       _SUPABASE_ACTIONS map. Remove once the migration is complete and
+       everything talks to Supabase, or narrow back down if it's reverted. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com https://jilmxhonqhbvieyknyen.supabase.co; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
