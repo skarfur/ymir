@@ -448,10 +448,11 @@ var _batchScheduled = false;
 // actually served a given action. Keys are the Apps Script action names
 // already used throughout the app; values are the Supabase function slug.
 var _SUPABASE_ACTIONS = {
-  loginMember: 'login',
-  getConfig:   'get-config',
-  getHandbook: 'handbook',
-  getWeather:  'weather',
+  loginMember:        'login',
+  getConfig:          'get-config',
+  getHandbook:        'handbook',
+  getWeather:         'weather',
+  getActiveCheckouts: 'get-active-checkouts',
 };
 
 async function _callSupabase(action, payload) {

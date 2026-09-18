@@ -349,10 +349,14 @@ async function testSupabaseLogin() {
     const configResult = await callSupabaseFunction('get-config', {
       sessionToken: loginResult.sessionToken,
     });
+    const checkoutsResult = await callSupabaseFunction('get-active-checkouts', {
+      sessionToken: loginResult.sessionToken,
+    });
     out.textContent =
       'login: ' + JSON.stringify(loginResult, null, 2) +
       '\n\nwhoami: ' + JSON.stringify(whoamiResult, null, 2) +
       '\n\nweather: ' + JSON.stringify(weatherResult, null, 2) +
+      '\n\ngetActiveCheckouts: ' + JSON.stringify(checkoutsResult, null, 2) +
       '\n\nhandbook: ' + JSON.stringify(handbookResult, null, 2) +
       '\n\nget-config: ' + JSON.stringify(configResult, null, 2);
     if (loginResult.sessionToken) {
