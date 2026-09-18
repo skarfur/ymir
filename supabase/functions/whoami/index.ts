@@ -14,10 +14,17 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // isn't wired into any deployed function yet — verify the shared-import
 // path works before the next function relies on it.
 
+// See login/index.ts's CORS_HEADERS comment — same reasoning applies here.
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
 
@@ -28,6 +35,7 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   let body: Record<string, unknown>;

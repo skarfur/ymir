@@ -15,10 +15,22 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const SHORT_SESSION_MS = 8 * 60 * 60 * 1000;
 const LONG_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Browser callers send a CORS preflight (OPTIONS) before the real POST
+// whenever the body is application/json — curl never triggers this, which
+// is why direct-HTTP testing didn't catch its absence. Access-Control-Allow-
+// Origin: '*' is deliberate here, matching Supabase's own default function
+// template: the anon key + RLS/grants are the real access boundary, not
+// which origin is allowed to call this endpoint.
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
 
@@ -35,6 +47,7 @@ function randomToken(): string {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   let body: Record<string, unknown>;
