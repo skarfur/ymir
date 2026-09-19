@@ -502,6 +502,20 @@ var _SUPABASE_ACTIONS = {
   bookSlot:              'book-slot',
   unbookSlot:            'unbook-slot',
   bulkBookSlots:         'bulk-book-slots',
+  saveMaintenance:       'save-maintenance',
+  resolveMaintenance:    'resolve-maintenance',
+  deleteMaintenance:     'delete-maintenance',
+  addMaintenanceComment: 'add-maintenance-comment',
+  toggleMaterial:        'toggle-material',
+  addMaterial:           'add-material',
+  removeMaterial:        'remove-material',
+  approveSaumaklubbur:   'approve-saumaklubbur',
+  adoptSaumaklubbur:     'adopt-saumaklubbur',
+  holdSaumaklubbur:      'hold-saumaklubbur',
+  reassignMaintenance:   'reassign-maintenance',
+  followProject:         'follow-project',
+  unfollowProject:       'unfollow-project',
+  markProjectSeen:       'mark-project-seen',
 };
 
 async function _callSupabase(action, payload, opts) {
