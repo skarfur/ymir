@@ -476,6 +476,10 @@ var _SUPABASE_ACTIONS = {
   deleteCheckout:     'delete-checkout',
   saveGroupCheckout:  'save-group-checkout',
   groupCheckIn:       'group-check-in',
+  saveBoatOos:        'save-boat-oos',
+  saveBoatAccess:     'save-boat-access',
+  saveReservation:    'save-reservation',
+  removeReservation:  'remove-reservation',
 };
 
 async function _callSupabase(action, payload, opts) {

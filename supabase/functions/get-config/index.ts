@@ -9,7 +9,11 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // boats/locations move from config-JSON-blobs to their own real tables
 // (boats, locations) in the new schema — a deliberate normalization, not a
 // shortcut — so they're read from those tables here instead of app_config.
-// Both tables are empty right now; expect [] until real data is imported.
+// boats also carries OOS/access-control fields as real columns now (see
+// the boats_access_control_and_reservations migration) and reservations
+// join in from their own table rather than a jsonb array on the boat row.
+// Both tables are still empty right now; expect [] until real data is
+// imported.
 //
 // Deliberately stubbed (deferred, not ported): volunteerEvents and
 // cancelledActivityOccurrences, normally derived from the activities table
@@ -121,10 +125,43 @@ Deno.serve(async (req: Request) => {
   const cfg: Record<string, any> = {};
   (configRows || []).forEach((r) => { cfg[r.key] = r.value; });
 
-  const { data: boats, error: boatsError } = await admin
-    .from("boats")
-    .select("id, name, category, active");
+  const { data: boatRows, error: boatsError } = await admin.from("boats").select("*");
   if (boatsError) return json({ error: "Boats lookup failed" }, 500);
+  const { data: allReservations, error: resError } = await admin.from("boat_reservations").select("*");
+  if (resError) return json({ error: "Boat reservations lookup failed" }, 500);
+  const reservationsByBoat: Record<string, any[]> = {};
+  (allReservations || []).forEach((r) => {
+    (reservationsByBoat[r.boat_id] ||= []).push(r);
+  });
+  const boats = (boatRows || []).map((b) => ({
+    id: b.id,
+    name: b.name,
+    category: b.category,
+    active: b.active,
+    oos: !!b.oos,
+    oosReason: b.oos_reason || "",
+    defaultPortId: b.default_port_id || "",
+    registrationNo: b.registration_no || "",
+    typeModel: b.type_model || "",
+    loa: b.loa != null ? Number(b.loa) : "",
+    ownership: b.ownership || "club",
+    ownerId: b.owner_kennitala || "",
+    ownerName: b.owner_name || "",
+    accessMode: b.access_mode || "free",
+    accessGate: b.access_gate || null,
+    accessGateCert: b.access_gate_cert || "",
+    accessAllowlist: Array.isArray(b.access_allowlist) ? b.access_allowlist : [],
+    slotSchedulingEnabled: !!b.slot_scheduling_enabled,
+    availableOutsideSlots: b.available_outside_slots !== false,
+    reservations: (reservationsByBoat[b.id] || []).map((r) => ({
+      id: r.id,
+      memberKennitala: r.member_kennitala,
+      memberName: r.member_name,
+      startDate: r.start_date,
+      endDate: r.end_date,
+      note: r.note || "",
+    })),
+  }));
 
   const { data: locations, error: locationsError } = await admin
     .from("locations")
