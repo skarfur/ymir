@@ -524,6 +524,11 @@ var _SUPABASE_ACTIONS = {
   createIncident:        'create-incident',
   resolveIncident:       'resolve-incident',
   addIncidentNote:       'add-incident-note',
+  saveVolunteerEvent:    'save-volunteer-event',
+  deleteVolunteerEvent:  'delete-volunteer-event',
+  volunteerSignup:       'volunteer-signup',
+  volunteerWithdraw:     'volunteer-withdraw',
+  syncVolunteerEvents:   'sync-volunteer-events',
 };
 
 async function _callSupabase(action, payload, opts) {

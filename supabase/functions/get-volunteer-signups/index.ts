@@ -5,7 +5,10 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // plain readAll_('volunteerSignups'). Joins against members to hydrate
 // kennitala/name into each row: the Sheets schema stored those directly
 // (SCHEMA_.volunteer_signups has 'kennitala','name'), this table keeps
-// member_id as the only source of truth.
+// member_id as the only source of truth. Translates the raw snake_case
+// row into the camelCase DTO (eventId, roleId, signedUpAt) volunteer.js/
+// member.js/admin read — the row was previously spread as-is, the same
+// read-DTO bug fixed everywhere else this session.
 //
 // This is called as apiPost('getVolunteerSignups', {}) despite the get*
 // name (Apps Script routes it through doPost, not doGet) — routed the
@@ -59,9 +62,12 @@ Deno.serve(async (req: Request) => {
   const signups = (all || []).map((s) => {
     const m = s.member_id ? memberById[s.member_id] : null;
     return {
-      ...s,
+      id: s.id,
+      eventId: s.event_id,
+      roleId: s.role_id,
       kennitala: (m && m.kennitala) || "",
       name: (m && m.name) || "",
+      signedUpAt: s.signed_up_at,
     };
   });
 

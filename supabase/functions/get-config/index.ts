@@ -15,12 +15,14 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // Both tables are still empty right now; expect [] until real data is
 // imported.
 //
-// Deliberately stubbed (deferred, not ported): volunteerEvents and
-// cancelledActivityOccurrences, normally derived from the activities table
-// via activity_parseRow_/_schedToVolDto_ (public.gs). That's real,
-// separate-scope logic, and activities has zero rows in this project
-// regardless, so there's nothing to derive yet — returning [] rather than
-// faking a derivation with no data to exercise it.
+// volunteerEvents reads activities rows with signup_required=true and
+// translates them via toVolDto, the same shape save-volunteer-event
+// returns (see that function's header) — kept in sync manually since
+// there's no shared module between Edge Functions here.
+//
+// Deliberately stubbed (deferred, not ported): cancelledActivityOccurrences
+// — that's class-occurrence cancellation (cancelClassOccurrence_ and
+// friends), separate-scope logic not part of this domain's write port.
 //
 // Requires a valid session — getConfig isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -92,6 +94,46 @@ function normalizeCertCategories(arr: unknown): any[] {
       return { key, labelEN, labelIS: String(c.labelIS || "").trim() };
     })
     .filter((c) => c.key);
+}
+
+function toVolDto(ev: any, classMap: Record<string, any>) {
+  let subtitle = "", subtitleIS = "";
+  if (ev.activity_type_id && classMap[ev.activity_type_id]) {
+    const cls = classMap[ev.activity_type_id];
+    subtitle = String(cls.classTag || cls.classTagIS || "");
+    subtitleIS = String(cls.classTagIS || cls.classTag || "");
+  }
+  if (!subtitle) subtitle = ev.subtype_name || "";
+  if (!subtitleIS) subtitleIS = subtitle || "";
+  return {
+    id: ev.id,
+    activityTypeId: ev.activity_type_id || "",
+    sourceActivityTypeId: ev.source_activity_type_id || "",
+    sourceSubtypeId: ev.source_subtype_id || "",
+    title: ev.title || "",
+    titleIS: ev.title_is || "",
+    subtitle, subtitleIS,
+    date: ev.date || "",
+    endDate: ev.end_date || "",
+    startTime: ev.start_time || "",
+    endTime: ev.end_time || "",
+    leaderMemberId: ev.leader_member_id || "",
+    leaderName: ev.leader_name || "",
+    leaderPhone: ev.leader_phone || "",
+    showLeaderPhone: !!ev.show_leader_phone,
+    notes: ev.notes || "",
+    notesIS: ev.notes_is || "",
+    roles: ev.roles || [],
+    reservedBoatIds: ev.reserved_boat_ids || [],
+    gcalEventId: ev.gcal_event_id || "",
+    calendarId: ev.calendar_id || "",
+    calendarSyncActive: !!ev.calendar_sync_active,
+    active: ev.status !== "cancelled",
+    orphaned: ev.status === "orphaned",
+    materialized: !!ev.source_activity_type_id,
+    createdAt: ev.created_at,
+    updatedAt: ev.updated_at,
+  };
 }
 
 const CONFIG_KEYS = [
@@ -168,6 +210,13 @@ Deno.serve(async (req: Request) => {
     .select("id, name");
   if (locationsError) return json({ error: "Locations lookup failed" }, 500);
 
+  const { data: volunteerEventRows, error: volEventsError } = await admin
+    .from("activities").select("*").eq("signup_required", true);
+  if (volEventsError) return json({ error: "Volunteer events lookup failed" }, 500);
+  const classMap: Record<string, any> = {};
+  (Array.isArray(cfg.activity_templates) ? cfg.activity_templates : []).forEach((t: any) => { if (t && t.id) classMap[t.id] = t; });
+  const volunteerEvents = (volunteerEventRows || []).map((ev) => toVolDto(ev, classMap));
+
   const dailyChecklistRaw = cfg.dailyChecklist || {};
   const dailyChecklist = {
     opening: (dailyChecklistRaw.opening || []).filter((r: any) => r && r.active),
@@ -212,7 +261,7 @@ Deno.serve(async (req: Request) => {
       keelboatCalendarSyncActive: !!cfg.keelboatCalendarSyncActive,
     },
     rowingPassport: cfg.rowingPassport ?? null,
-    volunteerEvents: [] as any[], // stubbed — see file header
+    volunteerEvents,
     clubCalendars: cfg.clubCalendars || [],
     cancelledActivityOccurrences: [] as any[], // stubbed — see file header
   };
