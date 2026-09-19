@@ -483,6 +483,11 @@ var _SUPABASE_ACTIONS = {
   saveTrip:           'save-trip',
   deleteTrip:         'delete-trip',
   setHelm:            'set-helm',
+  createConfirmation:      'create-confirmation',
+  respondConfirmation:     'respond-confirmation',
+  requestVerification:     'request-verification',
+  dismissConfirmation:     'dismiss-confirmation',
+  dismissAllConfirmations: 'dismiss-all-confirmations',
 };
 
 async function _callSupabase(action, payload, opts) {

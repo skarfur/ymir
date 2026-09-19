@@ -1,10 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
-// Ports trips.gs's getNotifications_. trip_confirmations/crew_invites use
-// real member_id FKs here rather than a toKennitala string column, so the
-// kennitala from the request is resolved to a member id first, then
-// filtered by that — same semantics, adapted to the schema.
+// Ports trips.gs's getNotifications_. trip_confirmations now carries a
+// to_kennitala text column (see the trip_confirmations write-port
+// migration) matching the original's toKennitala field exactly — filtered
+// directly by that, not by a resolved member_id FK, since to_kennitala can
+// hold the literal 'staff' sentinel with no member behind it.
+// crew_invites still only has a member_id FK, so that one filter stays
+// resolved-by-kennitala.
 //
 // Requires a valid session — getNotifications isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -42,24 +45,22 @@ Deno.serve(async (req: Request) => {
 
   const counts = { confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0 };
 
+  const { data: pending } = await admin
+    .from("trip_confirmations")
+    .select("type")
+    .eq("to_kennitala", kennitala)
+    .eq("status", "pending")
+    .eq("dismissed", false);
+  const pendingList = pending || [];
+  counts.captainQ = pendingList.length;
+  counts.confirmations = pendingList.filter((r) => r.type !== "verify").length;
+
   const { data: member } = await admin.from("members").select("id").eq("kennitala", kennitala).maybeSingle();
-  const memberId = member?.id;
-
-  if (memberId) {
-    const { data: pending } = await admin
-      .from("trip_confirmations")
-      .select("type")
-      .eq("to_member_id", memberId)
-      .eq("status", "pending")
-      .eq("dismissed", false);
-    const pendingList = pending || [];
-    counts.captainQ = pendingList.length;
-    counts.confirmations = pendingList.filter((r) => r.type !== "verify").length;
-
+  if (member) {
     const { data: invites } = await admin
       .from("crew_invites")
       .select("id")
-      .eq("to_member_id", memberId)
+      .eq("to_member_id", member.id)
       .eq("status", "pending");
     counts.crewInvites = (invites || []).length;
   }
