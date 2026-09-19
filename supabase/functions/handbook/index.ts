@@ -6,14 +6,18 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // 'handbookDocs'/'handbookInfo' keys to jsonb values in app_config under the
 // same keys — same shape, natively typed instead of stringified.
 //
-// Deliberately NOT ported here (left for a follow-up, same as login's
-// deferred password-reset/Google-OAuth paths):
-//   - saveHandbookRole_/deleteHandbookRole_/reorderHandbookRoles_
-//   - saveHandbookContact_/deleteHandbookContact_
-//   - saveHandbookDoc_/deleteHandbookDoc_
-//   - syncHandbookDocs_/uploadHandbookDoc_ (Drive integration)
-//   - boat-category color hydration on roles (_hbBoatCatColorMap_) — needs
-//     'boatCategories' in app_config, which isn't seeded/ported yet either
+// The write side (saveHandbookRole_/deleteHandbookRole_/
+// reorderHandbookRoles_/saveHandbookContact_/deleteHandbookContact_/
+// saveHandbookDoc_/deleteHandbookDoc_/saveHandbookInfo_/
+// deleteHandbookInfo_) lives in save-handbook-role, delete-handbook-role,
+// reorder-handbook-roles, save-handbook-contact, delete-handbook-contact,
+// save-handbook-doc, delete-handbook-doc, save-handbook-info, and
+// delete-handbook-info.
+//
+// Deliberately NOT ported: syncHandbookDocs_/uploadHandbookDoc_ (Drive
+// integration, out of scope everywhere this migration) and
+// boat-category color hydration on roles (_hbBoatCatColorMap_) — needs
+// 'boatCategories' in app_config, which isn't seeded/ported yet either.
 // Requires a valid session — getHandbook isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
 

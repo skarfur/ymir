@@ -529,6 +529,15 @@ var _SUPABASE_ACTIONS = {
   volunteerSignup:       'volunteer-signup',
   volunteerWithdraw:     'volunteer-withdraw',
   syncVolunteerEvents:   'sync-volunteer-events',
+  saveHandbookRole:      'save-handbook-role',
+  deleteHandbookRole:    'delete-handbook-role',
+  reorderHandbookRoles:  'reorder-handbook-roles',
+  saveHandbookContact:   'save-handbook-contact',
+  deleteHandbookContact: 'delete-handbook-contact',
+  saveHandbookDoc:       'save-handbook-doc',
+  deleteHandbookDoc:     'delete-handbook-doc',
+  saveHandbookInfo:      'save-handbook-info',
+  deleteHandbookInfo:    'delete-handbook-info',
 };
 
 async function _callSupabase(action, payload, opts) {
