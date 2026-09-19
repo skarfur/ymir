@@ -480,6 +480,9 @@ var _SUPABASE_ACTIONS = {
   saveBoatAccess:     'save-boat-access',
   saveReservation:    'save-reservation',
   removeReservation:  'remove-reservation',
+  saveTrip:           'save-trip',
+  deleteTrip:         'delete-trip',
+  setHelm:            'set-helm',
 };
 
 async function _callSupabase(action, payload, opts) {
