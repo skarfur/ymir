@@ -223,6 +223,8 @@ var _INVALIDATES = {
   saveStaffStatus:         ['getConfig'],
   saveRowingPassportDef:   ['getConfig'],
   importRowingPassportCsv: ['getConfig'],
+  signPassportItem:        ['getRowingPassport'],
+  revokePassportSignoff:   ['getRowingPassport'],
   // Class-occurrence writes touch the activities sheet (which feeds getConfig's
   // volunteerEvents + cancelledActivityOccurrences) and the activity-class
   // virtual-slot projection. getDailyLog is also cached per-date, so any write
@@ -542,6 +544,10 @@ var _SUPABASE_ACTIONS = {
   createShareToken:      'create-share-token',
   revokeShareToken:      'revoke-share-token',
   deleteShareToken:      'delete-share-token',
+  signPassportItem:      'sign-passport-item',
+  revokePassportSignoff: 'revoke-passport-signoff',
+  saveRowingPassportDef: 'save-rowing-passport-def',
+  importRowingPassportCsv: 'import-rowing-passport-csv',
 };
 
 async function _callSupabase(action, payload, opts) {
