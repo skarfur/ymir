@@ -488,6 +488,13 @@ var _SUPABASE_ACTIONS = {
   requestVerification:     'request-verification',
   dismissConfirmation:     'dismiss-confirmation',
   dismissAllConfirmations: 'dismiss-all-confirmations',
+  createCrew:         'create-crew',
+  updateCrew:         'update-crew',
+  disbandCrew:        'disband-crew',
+  joinCrew:           'join-crew',
+  leaveCrew:          'leave-crew',
+  inviteToCrew:       'invite-to-crew',
+  respondCrewInvite:  'respond-crew-invite',
 };
 
 async function _callSupabase(action, payload, opts) {

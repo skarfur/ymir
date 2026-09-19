@@ -1,9 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
-// Ports checkouts.gs's getCrewInvites_ — filter by kennitala (pending only)
-// and/or crewId, translated into the flat camelCase DTO coxswain.js reads
-// (crewName, fromName, pairId, ...) instead of raw snake_case columns.
+// Ports checkouts.gs's updateCrew_. Any authenticated session.
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -11,22 +9,6 @@ const CORS_HEADERS: Record<string, string> = {
 };
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
-}
-
-function toDto(r: any) {
-  return {
-    id: r.id,
-    crewId: r.crew_id,
-    crewName: r.crew_name || "",
-    pairId: r.pair_id || "",
-    fromKennitala: r.from_kennitala || "",
-    fromName: r.from_name || "",
-    toKennitala: r.to_kennitala || "",
-    toName: r.to_name || "",
-    status: r.status,
-    createdAt: r.created_at,
-    respondedAt: r.responded_at || "",
-  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -39,16 +21,20 @@ Deno.serve(async (req: Request) => {
   const session = await resolveSession(admin, body?.sessionToken as string | undefined);
   if (!session) return json({ error: "Unauthorized" }, 401);
 
-  let query = admin.from("crew_invites").select("*");
-
-  const kennitala = body?.kennitala ? String(body.kennitala).trim() : "";
-  if (kennitala) query = query.eq("to_kennitala", kennitala).eq("status", "pending");
-
   const crewId = body?.crewId ? String(body.crewId) : "";
-  if (crewId) query = query.eq("crew_id", crewId);
+  if (!crewId) return json({ error: "crewId required" }, 400);
+  const { data: crew } = await admin.from("crews").select("status").eq("id", crewId).maybeSingle();
+  if (!crew) return json({ error: "Crew not found" }, 404);
+  if (crew.status === "disbanded") return json({ error: "Crew is disbanded" }, 400);
 
-  const { data: invites, error } = await query;
-  if (error) return json({ error: "Crew invites lookup failed" }, 500);
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (body?.name !== undefined) updates.name = String(body.name);
+  if (body?.description !== undefined) updates.description = String(body.description);
+  if (body?.visibility !== undefined) updates.visibility = body.visibility === "invite_only" ? "invite_only" : "open";
+  if (body?.color !== undefined) updates.color = String(body.color);
 
-  return json({ invites: (invites || []).map(toDto) });
+  const { error } = await admin.from("crews").update(updates).eq("id", crewId);
+  if (error) return json({ error: "Crew update failed: " + error.message }, 500);
+
+  return json({ updated: true });
 });
