@@ -516,6 +516,7 @@ var _SUPABASE_ACTIONS = {
   followProject:         'follow-project',
   unfollowProject:       'unfollow-project',
   markProjectSeen:       'mark-project-seen',
+  saveDailyLog:          'save-daily-log',
 };
 
 async function _callSupabase(action, payload, opts) {
