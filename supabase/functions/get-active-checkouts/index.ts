@@ -1,17 +1,28 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
-// Ports checkouts.gs's getActiveCheckouts_ (core filter + member/guardian
-// enrichment). member_id is a real FK here (not a kennitala-string map
-// build like the Sheets version), so enrichment is a direct lookup rather
-// than building a whole-table map first. memberIsMinor is computed from
-// birth_year at read time (age changes with the calendar, not the row —
-// see the members-table migration's note; it was never stored).
+// Ports checkouts.gs's getActiveCheckouts_ — core filter + member/guardian
+// enrichment, translated into the flat camelCase DTO the frontend
+// (staff.js, member.js, shared/boats.js, shared/tripcard.js) reads
+// directly: boatId/boatName/boatCategory/memberKennitala/memberName/crew
+// (a headcount, not the crew jsonb list)/locationId/locationName/etc, not
+// the raw snake_case columns. Times (checkedOutAt/expectedReturn/
+// checkedInAt) come back out as "HH:MM" the same shape they went in as —
+// see save-checkout's header for why that round-trips cleanly (the club's
+// timezone, Atlantic/Reykjavik, has no DST and sits at UTC+0 year-round, so
+// a UTC timestamptz's time-of-day IS the local wall-clock time).
+//
+// member_id is a real FK here (not a kennitala-string map build like the
+// Sheets version), so enrichment is a direct lookup rather than building a
+// whole-table map first. memberIsMinor is computed from birth_year at read
+// time when the checkout row didn't capture it at write time.
 //
 // Deliberately stubbed: buildGroupLabelMap_'s group-sail label resolution
 // (checkout.linkedActivityId / activities.linkedGroupCheckoutIds /
 // activityTypeName chain) — every checkout gets groupLabel: '' for now.
-// Moot regardless: both checkouts and activities are empty tables.
+// Group-checkout fields (isGroup, participants, staffNames, etc.) are
+// passed through with safe defaults since saveGroupCheckout/groupCheckIn
+// aren't ported yet.
 //
 // Requires a valid session — getActiveCheckouts isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -27,6 +38,12 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
+}
+
+function hhmm(ts: unknown): string {
+  if (!ts) return "";
+  const s = String(ts);
+  return s.length >= 16 ? s.slice(11, 16) : "";
 }
 
 Deno.serve(async (req: Request) => {
@@ -84,7 +101,38 @@ Deno.serve(async (req: Request) => {
       ? !!c.member_is_minor
       : !!(m && m.birth_year && currentYear - m.birth_year < 18);
     return {
-      ...c,
+      id: c.id,
+      boatId: c.boat_id || "",
+      boatName: c.boat_name || "",
+      boatCategory: c.boat_category || "",
+      memberKennitala: c.member_kennitala || "",
+      memberName: c.member_name || "",
+      crew: c.crew_count || 1,
+      locationId: c.location_id || "",
+      locationName: c.location_name || "",
+      checkedOutAt: hhmm(c.checked_out_at),
+      expectedReturn: hhmm(c.expected_return),
+      checkedInAt: hhmm(c.checked_in_at),
+      wxSnapshot: c.wx_snapshot ? JSON.stringify(c.wx_snapshot) : "",
+      preLaunchChecklist: c.pre_launch_checklist ? JSON.stringify(c.pre_launch_checklist) : "",
+      afterSailChecklist: c.after_sail_checklist ? JSON.stringify(c.after_sail_checklist) : "",
+      notes: c.notes || "",
+      status: c.status,
+      createdAt: c.created_at,
+      departurePort: c.departure_port || "",
+      crewNames: Array.isArray(c.crew) && c.crew.length ? JSON.stringify(c.crew) : "",
+      nonClub: !!c.non_club,
+      // Group-checkout fields — safe defaults, saveGroupCheckout not ported yet.
+      isGroup: !!c.is_group,
+      participants: Array.isArray(c.participants) ? c.participants.length : 0,
+      staffNames: JSON.stringify([]),
+      staffKennitalar: JSON.stringify([]),
+      boatNames: JSON.stringify([]),
+      boatIds: JSON.stringify(c.boat_ids || []),
+      activityTypeId: c.activity_type_id || "",
+      activityTypeName: "",
+      linkedActivityId: c.linked_activity_id || "",
+      classTag: "",
       memberPhone: c.member_phone || (m && m.phone) || "",
       memberIsMinor: isMinor,
       guardianName: c.guardian_name || (g && g.name) || "",

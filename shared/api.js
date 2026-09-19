@@ -7,12 +7,13 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 // verify tokens unless the GOOGLE_CLIENT_ID script property is set.
 const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
-// Supabase (ymir-staging) — migration in progress. Only auth (login/whoami)
-// is wired so far; every other action still goes through SCRIPT_URL above.
-// The anon key is safe to expose client-side by design (same as
-// GOOGLE_CLIENT_ID above): RLS + revoked table grants are what actually gate
-// access, not secrecy of this key. See CLAUDE.md once the Supabase side has
-// its own documented section.
+// Supabase (ymir-staging) — migration in progress. All read actions are
+// wired (see _SUPABASE_ACTIONS below), plus the checkouts write path
+// (saveCheckout/checkIn/deleteCheckout); everything else still goes through
+// SCRIPT_URL above. The anon key is safe to expose client-side by design
+// (same as GOOGLE_CLIENT_ID above): RLS + revoked table grants are what
+// actually gate access, not secrecy of this key. See CLAUDE.md once the
+// Supabase side has its own documented section.
 const SUPABASE_URL = "https://jilmxhonqhbvieyknyen.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppbG14aG9ucWhidmlleWtueWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NTU1MzIsImV4cCI6MjEwNTMzMTUzMn0.7zMcRKdZTAiNMbNukyq5-i5Ofqp_p_GhziYNmrt9fhQ";
 
@@ -470,6 +471,9 @@ var _SUPABASE_ACTIONS = {
   getCrewBoard:       'get-crew-board',
   getCrewInvites:     'get-crew-invites',
   getDailyLog:        'get-daily-log',
+  saveCheckout:       'save-checkout',
+  checkIn:            'check-in',
+  deleteCheckout:     'delete-checkout',
 };
 
 async function _callSupabase(action, payload, opts) {
