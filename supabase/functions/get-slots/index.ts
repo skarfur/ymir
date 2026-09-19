@@ -2,12 +2,16 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
 // Ports checkouts.gs's getSlots_ — real-row filtering only (boatId,
-// category via a boats-table lookup, date range). Deliberately stubbed:
-// the virtual-slot projection (projectSlotsForRange_, which expands each
-// active activity class's bulkSchedule x reservedBoatIds into synthetic
-// slots) — that depends on activity_templates data that doesn't exist yet
-// (app_config's activity_templates key is unseeded), so it would return []
-// regardless of how faithfully it's ported right now.
+// category via a boats-table lookup, date range), translated into the
+// flat camelCase DTO captain.js/coxswain.js/admin/calendars.js read
+// directly (bookedByKennitala, bookedByName, bookedByCrewId, ...) instead
+// of raw snake_case columns — the same bug pattern fixed in every other
+// domain this session. Deliberately stubbed: the virtual-slot projection
+// (projectSlotsForRange_, which expands each active activity class's
+// bulkSchedule x reservedBoatIds into synthetic slots) — that depends on
+// activity_templates data that doesn't exist yet (app_config's
+// activity_templates key is unseeded), so it would return [] regardless
+// of how faithfully it's ported right now.
 //
 // Requires a valid session — getSlots isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -23,6 +27,27 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
+}
+
+function toDto(s: any) {
+  return {
+    id: s.id,
+    boatId: s.boat_id || "",
+    date: s.date,
+    startTime: s.start_time,
+    endTime: s.end_time,
+    recurrenceGroupId: s.recurrence_group_id || "",
+    gcalEventId: s.gcal_event_id || "",
+    note: s.note || "",
+    createdAt: s.created_at,
+    bookedByKennitala: s.booked_by_kennitala || "",
+    bookedByName: s.booked_by_name || "",
+    bookedByCrewId: s.booked_by_crew_id || "",
+    bookingColor: s.booking_color || "",
+    tentative: s.tentative ? "true" : "",
+    virtual: false,
+    sourceActivityClassId: s.source_activity_class_id || "",
+  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -60,7 +85,7 @@ Deno.serve(async (req: Request) => {
     if (fromDate && s.date < fromDate) return false;
     if (toDate && s.date > toDate) return false;
     return true;
-  });
+  }).map(toDto);
 
   return json({ slots: result });
 });

@@ -495,6 +495,13 @@ var _SUPABASE_ACTIONS = {
   leaveCrew:          'leave-crew',
   inviteToCrew:       'invite-to-crew',
   respondCrewInvite:  'respond-crew-invite',
+  saveSlot:              'save-slot',
+  saveRecurringSlots:    'save-recurring-slots',
+  deleteSlot:            'delete-slot',
+  deleteRecurrenceGroup: 'delete-recurrence-group',
+  bookSlot:              'book-slot',
+  unbookSlot:            'unbook-slot',
+  bulkBookSlots:         'bulk-book-slots',
 };
 
 async function _callSupabase(action, payload, opts) {
