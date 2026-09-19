@@ -246,6 +246,7 @@ var _INVALIDATES = {
   // Share tokens — read-shaped POST, cacheable.
   createShareToken:        ['getShareTokens'],
   revokeShareToken:        ['getShareTokens'],
+  deleteShareToken:        ['getShareTokens'],
 
   // Member-row writes — members sheet only.
   saveMember:              ['getMembers'],
@@ -538,6 +539,9 @@ var _SUPABASE_ACTIONS = {
   deleteHandbookDoc:     'delete-handbook-doc',
   saveHandbookInfo:      'save-handbook-info',
   deleteHandbookInfo:    'delete-handbook-info',
+  createShareToken:      'create-share-token',
+  revokeShareToken:      'revoke-share-token',
+  deleteShareToken:      'delete-share-token',
 };
 
 async function _callSupabase(action, payload, opts) {

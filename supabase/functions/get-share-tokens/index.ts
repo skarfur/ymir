@@ -1,8 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAdminClient, resolveSession } from "../_shared/session.ts";
 
-// Ports share.gs's getShareTokens_ — filter share_tokens by kennitala,
-// resolved to member_id (real FK here vs a kennitala string column).
+// Ports share.gs's getShareTokens_ — filter share_tokens by
+// member_kennitala directly (see create-share-token's header for why the
+// id column and this denormalized field exist). Translates the raw
+// snake_case rows into the camelCase DTO logbook-share.js reads
+// (cutOffDate, accessCount, revokedAt, ...) — the row was previously
+// spread as-is, the same read-DTO bug fixed everywhere else this
+// session.
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -10,6 +15,22 @@ const CORS_HEADERS: Record<string, string> = {
 };
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+}
+
+function toDto(t: any) {
+  return {
+    id: t.id,
+    memberId: t.member_id || "",
+    memberKennitala: t.member_kennitala || "",
+    cutOffDate: t.cut_off_date || "",
+    createdAt: t.created_at,
+    revokedAt: t.revoked_at || "",
+    accessCount: t.access_count || 0,
+    lastAccessedAt: t.last_accessed_at || "",
+    includePhotos: !!t.include_photos,
+    includeTracks: !!t.include_tracks,
+    categories: t.categories || [],
+  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -25,11 +46,8 @@ Deno.serve(async (req: Request) => {
   const kennitala = body?.kennitala ? String(body.kennitala).trim() : "";
   if (!kennitala) return json({ error: "kennitala required" }, 400);
 
-  const { data: member } = await admin.from("members").select("id").eq("kennitala", kennitala).maybeSingle();
-  if (!member) return json({ tokens: [] });
-
-  const { data: tokens, error } = await admin.from("share_tokens").select("*").eq("member_id", member.id);
+  const { data: tokens, error } = await admin.from("share_tokens").select("*").eq("member_kennitala", kennitala);
   if (error) return json({ error: "Share tokens lookup failed" }, 500);
 
-  return json({ tokens: tokens || [] });
+  return json({ tokens: (tokens || []).map(toDto) });
 });
