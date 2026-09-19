@@ -296,6 +296,10 @@ var _INVALIDATES = {
   removeMaterial:          ['getMaintenance', 'getNotifications'],
   followProject:           ['getMaintenance', 'getNotifications'],
   unfollowProject:         ['getMaintenance', 'getNotifications'],
+  // Incidents.
+  createIncident:          ['getIncidents'],
+  resolveIncident:         ['getIncidents'],
+  addIncidentNote:         ['getIncidents'],
   // Notification-only.
   dismissConfirmation:     ['getNotifications', 'getConfirmations'],
   dismissAllConfirmations: ['getNotifications', 'getConfirmations'],
@@ -517,6 +521,9 @@ var _SUPABASE_ACTIONS = {
   unfollowProject:       'unfollow-project',
   markProjectSeen:       'mark-project-seen',
   saveDailyLog:          'save-daily-log',
+  createIncident:        'create-incident',
+  resolveIncident:       'resolve-incident',
+  addIncidentNote:       'add-incident-note',
 };
 
 async function _callSupabase(action, payload, opts) {
