@@ -474,6 +474,8 @@ var _SUPABASE_ACTIONS = {
   saveCheckout:       'save-checkout',
   checkIn:            'check-in',
   deleteCheckout:     'delete-checkout',
+  saveGroupCheckout:  'save-group-checkout',
+  groupCheckIn:       'group-check-in',
 };
 
 async function _callSupabase(action, payload, opts) {

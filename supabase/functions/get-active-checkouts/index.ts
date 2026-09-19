@@ -20,9 +20,8 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // Deliberately stubbed: buildGroupLabelMap_'s group-sail label resolution
 // (checkout.linkedActivityId / activities.linkedGroupCheckoutIds /
 // activityTypeName chain) — every checkout gets groupLabel: '' for now.
-// Group-checkout fields (isGroup, participants, staffNames, etc.) are
-// passed through with safe defaults since saveGroupCheckout/groupCheckIn
-// aren't ported yet.
+// Group-checkout fields (isGroup, participants, staffNames, boatNames, ...)
+// reflect real data written by save-group-checkout.
 //
 // Requires a valid session — getActiveCheckouts isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -122,17 +121,17 @@ Deno.serve(async (req: Request) => {
       departurePort: c.departure_port || "",
       crewNames: Array.isArray(c.crew) && c.crew.length ? JSON.stringify(c.crew) : "",
       nonClub: !!c.non_club,
-      // Group-checkout fields — safe defaults, saveGroupCheckout not ported yet.
+      // Group-checkout fields.
       isGroup: !!c.is_group,
-      participants: Array.isArray(c.participants) ? c.participants.length : 0,
-      staffNames: JSON.stringify([]),
-      staffKennitalar: JSON.stringify([]),
-      boatNames: JSON.stringify([]),
+      participants: c.participants_count || 0,
+      staffNames: JSON.stringify(Array.isArray(c.staff_names) ? c.staff_names : []),
+      staffKennitalar: JSON.stringify(Array.isArray(c.staff_kennitalar) ? c.staff_kennitalar : []),
+      boatNames: JSON.stringify(Array.isArray(c.boat_names) ? c.boat_names : []),
       boatIds: JSON.stringify(c.boat_ids || []),
       activityTypeId: c.activity_type_id || "",
-      activityTypeName: "",
+      activityTypeName: c.activity_type_name || "",
       linkedActivityId: c.linked_activity_id || "",
-      classTag: "",
+      classTag: c.class_tag || "",
       memberPhone: c.member_phone || (m && m.phone) || "",
       memberIsMinor: isMinor,
       guardianName: c.guardian_name || (g && g.name) || "",
