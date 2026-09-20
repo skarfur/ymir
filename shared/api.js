@@ -33,6 +33,59 @@ async function callSupabaseFunction(name, payload) {
   return data;
 }
 
+// ── PostgREST direct access (RLS + RPC rearchitecture) ──────────────────────
+// See /root/.claude/plans/glistening-soaring-fairy.md. Bypasses Edge
+// Functions entirely: table reads/writes go straight to PostgREST, gated
+// by RLS policies reading the caller's self-signed JWT (accessToken,
+// minted by login/refresh-session — see _getAccessToken below). RPC calls
+// hit Postgres functions (supabase.rpc equivalent) the same way, for
+// anything transactional that can't be a safe plain RLS-gated table op.
+//
+// `accessToken` is an explicit override, not just a convenience: some
+// callers (e.g. the login-page migration diagnostic) need to exercise a
+// freshly-minted token without writing it into the shared session store,
+// since the stored session is still what every Apps-Script-routed action
+// reads — clobbering it here would break every other page's calls.
+async function callPostgrestTable(table, opts) {
+  opts = opts || {};
+  const token = opts.accessToken || _getAccessToken();
+  const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (opts.prefer) headers['Prefer'] = opts.prefer;
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/' + table + (opts.query || ''), {
+    method: opts.method || 'GET',
+    headers: headers,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await resp.json().catch(function () { return null; });
+  if (!resp.ok) {
+    const err = new Error((data && (data.message || data.error)) || ('PostgREST error ' + resp.status));
+    err.status = resp.status;
+    err.code = resp.status;
+    throw err;
+  }
+  return data;
+}
+
+async function callSupabaseRpc(fnName, payload, accessToken) {
+  const token = accessToken || _getAccessToken();
+  const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fnName, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await resp.json().catch(function () { return null; });
+  if (!resp.ok) {
+    const err = new Error((data && (data.message || data.error)) || ('RPC error ' + resp.status));
+    err.status = resp.status;
+    err.code = resp.status;
+    throw err;
+  }
+  return data;
+}
+
 async function apiGet(action, params) {
   params = params || {};
   // Cache key now includes a serialized params suffix so the same action with
@@ -769,9 +822,21 @@ function _getSessionToken() {
   }
   return s.token;
 }
-function setSession(token, expiresAt, id) {
+// The self-signed JWT (see login/refresh-session's accessToken) that
+// PostgREST/RPC calls send as Authorization: Bearer — a separate token
+// from the opaque sessionToken above, same expiry semantics.
+function _getAccessToken() {
+  var s = _readSession();
+  if (!s || !s.accessToken) return null;
+  if (s.expiresAt && new Date(s.expiresAt).getTime() < Date.now()) {
+    _clearSession();
+    return null;
+  }
+  return s.accessToken;
+}
+function setSession(token, expiresAt, id, accessToken) {
   if (!token) { _clearSession(); return; }
-  _writeSession({ token: token, expiresAt: expiresAt || null, id: id || null });
+  _writeSession({ token: token, expiresAt: expiresAt || null, id: id || null, accessToken: accessToken || null });
 }
 function getSessionInfo() { return _readSession(); }
 
