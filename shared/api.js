@@ -373,8 +373,9 @@ var _INVALIDATES = {
   breakEnd:                ['getTimeEntries'],
   adminEditTime:           ['getTimeEntries'],
   adminAddTime:            ['getTimeEntries'],
-  adminDeleteTime:         ['getTimeEntries'],
-  saveEmployee:            ['getEmployees'],
+  // adminDeleteTime/saveEmployee go straight to PostgREST (see
+  // admin/payroll/payroll.js) and invalidate via _invalidateApiCache
+  // directly, bypassing apiPost — no entry needed here.
   // Notification-only.
   dismissConfirmation:     ['getNotifications', 'getConfirmations'],
   dismissAllConfirmations: ['getNotifications', 'getConfirmations'],
@@ -622,9 +623,8 @@ var _SUPABASE_ACTIONS = {
   getTimeEntries:         'get-time-entries',
   adminEditTime:          'admin-edit-time',
   adminAddTime:            'admin-add-time',
-  // adminDeleteTime/saveEmployee: written (supabase/functions/admin-delete-time,
-  // save-employee) but NOT deployed — ymir-staging is at Supabase's 100 Edge
-  // Function cap. Stay off this map (and routed to Apps Script) until deployed.
+  // adminDeleteTime/saveEmployee: admin-only RLS + direct PostgREST (see
+  // admin/payroll/payroll.js) — no Edge Function.
 };
 
 async function _callSupabase(action, payload, opts) {

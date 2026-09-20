@@ -151,7 +151,14 @@ async function prSaveEmployee(memberId){
     payrollEnabled:!!(document.getElementById('prEnabled_'+memberId)&&document.getElementById('prEnabled_'+memberId).checked)};
   if(msg)msg.textContent=s('lbl.loading');
   try{
-    await apiPost('saveEmployee',payload);
+    var row={member_id:memberId,name:member.name,kt:member.kennitala||'',title:fv('prTitle'),payroll_enabled:payload.payrollEnabled};
+    if(existing){
+      await callPostgrestTable('employees',{method:'PATCH',query:'?id=eq.'+encodeURIComponent(empId),body:row});
+    }else{
+      row.id=empId;
+      await callPostgrestTable('employees',{method:'POST',body:row});
+    }
+    _invalidateApiCache('getEmployees');
     _empData[empId]=Object.assign({},existing||{},payload);
     _empByMember[memberId]=_empData[empId];
     delete _empEditBaseline[memberId];
@@ -400,8 +407,11 @@ async function meSave(){
 async function meDelete(){
   if(!_editId)return;
   if(!await ymConfirm(s('payroll.deleteConfirm')))return;
-  try{await apiPost('adminDeleteTime',{id:_editId});prCloseModal(true);showToast(s('toast.deleted'));prLoadTsEntries();}
-  catch(e){document.getElementById('meErr').textContent=e.message;}
+  try{
+    await callPostgrestTable('time_clock',{method:'DELETE',query:'?id=eq.'+encodeURIComponent(_editId)});
+    _invalidateApiCache('getTimeEntries');
+    prCloseModal(true);showToast(s('toast.deleted'));prLoadTsEntries();
+  }catch(e){document.getElementById('meErr').textContent=e.message;}
 }
 
 /* == EXPORT TO EXTERNAL PAYROLL APP == */
