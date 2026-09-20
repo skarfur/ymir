@@ -323,11 +323,13 @@ async function changePassword() {
   var prevLabel = btn.textContent;
   btn.textContent = s('lbl.loading');
   try {
-    var res = await apiPost('setPassword', {
-      kennitala:       user.kennitala,
-      currentPassword: cur,
-      newPassword:     next,
+    var res = await callSupabaseRpc('change_member_password', {
+      p_kennitala:         user.kennitala,
+      p_current_password:  cur,
+      p_new_password:      next,
     });
+    _invalidateApiCache('getMembers');
+    _invalidateApiCache('listSessions');
     document.getElementById('sCurrentPw').value = '';
     document.getElementById('sNewPw').value     = '';
     document.getElementById('sConfirmPw').value = '';

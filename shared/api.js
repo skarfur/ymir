@@ -320,10 +320,9 @@ var _INVALIDATES = {
   savePreferences:         ['getMembers'],
   importMembers:           ['getMembers'],
   deactivateMembers:       ['getMembers'],
-  // Password set / admin reset both flip the hashed-password fields that
-  // feed getMembers' `hasPassword` flag, plus revoke sessions.
-  setPassword:             ['getMembers', 'listSessions'],
-  adminResetMemberPassword:['getMembers', 'listSessions'],
+  // setPassword/adminResetMemberPassword go straight to Postgres RPC (see
+  // settings/settings.js, admin/members.js) and invalidate via
+  // _invalidateApiCache directly, bypassing apiPost — no entry needed here.
   // Google link state lives on the member record.
   linkGoogleAccount:       ['getMembers'],
   unlinkGoogleAccount:     ['getMembers'],

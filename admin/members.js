@@ -117,7 +117,9 @@ async function resetMemberPassword() {
   var btn = document.getElementById('mResetPwBtn');
   btn.disabled = true;
   try {
-    var res = await apiPost('adminResetMemberPassword', { kennitala: m.kennitala });
+    var res = await callSupabaseRpc('admin_reset_member_password', { p_kennitala: m.kennitala });
+    _invalidateApiCache('getMembers');
+    _invalidateApiCache('listSessions');
     m.hasPassword = false;
     var status = document.getElementById('mPwStatus');
     status.textContent = s('admin.usingDefaultPassword');
