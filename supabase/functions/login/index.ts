@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { mintAccessToken } from "../_shared/session.ts";
 
 // Password-gated sign-in — ports members.gs's loginMember_. Username may be
 // either a 10-digit kennitala or the member's initials (case-insensitive).
@@ -9,6 +10,13 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // This function implements its own authentication (username/password +
 // custom session tokens), not Supabase Auth — it must be callable by an
 // unauthenticated client, so it's deployed with verify_jwt disabled.
+//
+// Also mints a signed accessToken (see _shared/session.ts's
+// mintAccessToken) alongside the existing opaque sessionToken — the JWT
+// is what direct PostgREST/RPC calls send as Authorization: Bearer, so
+// RLS policies can read who's calling. The opaque sessionToken is
+// unchanged and still the thing sent to signOut/signOutAll and shown in
+// the settings page's "signed in on…" list.
 
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -142,6 +150,13 @@ Deno.serve(async (req: Request) => {
 
   if (sessionError) return json({ error: "Session creation failed" }, 500);
 
+  const accessToken = await mintAccessToken({
+    memberId: member.id,
+    kennitala: member.kennitala,
+    role: member.role,
+    sessionId: session.id,
+  }, expiresAt);
+
   return json({
     member: {
       id: member.id,
@@ -155,5 +170,6 @@ Deno.serve(async (req: Request) => {
     sessionToken: rawToken,
     sessionId: session.id,
     expiresAt: session.expires_at,
+    accessToken,
   });
 });

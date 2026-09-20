@@ -333,9 +333,9 @@ async function testSupabaseLogin() {
       password: password,
       stayLoggedIn: false,
     });
-    const whoamiResult = await callSupabaseFunction('whoami', {
-      sessionToken: loginResult.sessionToken,
-    });
+    // whoami is retired — login now mints accessToken (a signed JWT)
+    // directly, decoded client-side instead of round-tripped to ask who
+    // the caller is.
     // Chained here (not a separate button) specifically so the token never
     // has to leave the browser via manual copy/curl — that's been the
     // actual source of every "it's broken" report on this endpoint so far,
@@ -354,7 +354,6 @@ async function testSupabaseLogin() {
     });
     out.textContent =
       'login: ' + JSON.stringify(loginResult, null, 2) +
-      '\n\nwhoami: ' + JSON.stringify(whoamiResult, null, 2) +
       '\n\nweather: ' + JSON.stringify(weatherResult, null, 2) +
       '\n\ngetActiveCheckouts: ' + JSON.stringify(checkoutsResult, null, 2) +
       '\n\nhandbook: ' + JSON.stringify(handbookResult, null, 2) +
