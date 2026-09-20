@@ -1085,7 +1085,7 @@ async function switchBackToGuardian() {
     if (!parent || !parent.token) throw new Error('parent session missing');
     // Restore the guardian's token before the next API call so
     // validateMember auth's as them.
-    setSession(parent.token, parent.expiresAt || null, parent.id || null);
+    setSession(parent.token, parent.expiresAt || null, parent.id || null, parent.accessToken || null);
     setParentSession(null);
     var data = await apiGet('validateMember', { kennitala: cur.guardianSession.kennitala, _fresh: 1 });
     if (!data || !data.member) throw new Error('guardian not found');

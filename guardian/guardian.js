@@ -65,7 +65,7 @@ async function switchToWard(ward) {
       userAgent:         (navigator.userAgent || '').slice(0, 200),
     });
     if (data.sessionToken) {
-      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null, data.accessToken || null);
     }
     var wardUser = Object.assign({}, data.member, {
       guardianSession: {

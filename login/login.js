@@ -159,7 +159,7 @@ async function handleGoogleCredential(resp) {
     var user = data.member;
     var wards = Array.isArray(data.wards) ? data.wards : [];
     if (data.sessionToken) {
-      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null, data.accessToken || null);
     }
     // Login response carries an embedded getConfig snapshot — seed the cache
     // so the destination portal's first apiGet('getConfig') is an instant hit.
@@ -245,7 +245,7 @@ async function doLogin() {
     // Stash the session token so every subsequent API call can authenticate
     // as this user. Expiry is enforced client- and server-side.
     if (data.sessionToken) {
-      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null, data.accessToken || null);
     }
     // Login response carries an embedded getConfig snapshot — seed the cache
     // so the destination portal's first apiGet('getConfig') is an instant hit.
@@ -553,7 +553,7 @@ async function switchToWard(guardian, ward) {
     });
     // Swap to the ward's freshly-minted session for subsequent calls.
     if (data.sessionToken) {
-      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null);
+      setSession(data.sessionToken, data.expiresAt || null, data.sessionId || null, data.accessToken || null);
     }
     // Stash a trimmed guardian record on the ward's user object so the
     // header can surface "Signed in as X — ↶ Back to guardian".
