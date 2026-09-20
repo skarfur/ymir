@@ -564,8 +564,9 @@ var _SUPABASE_ACTIONS = {
   getTimeEntries:         'get-time-entries',
   adminEditTime:          'admin-edit-time',
   adminAddTime:            'admin-add-time',
-  adminDeleteTime:         'admin-delete-time',
-  saveEmployee:            'save-employee',
+  // adminDeleteTime/saveEmployee: written (supabase/functions/admin-delete-time,
+  // save-employee) but NOT deployed — ymir-staging is at Supabase's 100 Edge
+  // Function cap. Stay off this map (and routed to Apps Script) until deployed.
 };
 
 async function _callSupabase(action, payload, opts) {
