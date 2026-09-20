@@ -303,6 +303,15 @@ var _INVALIDATES = {
   createIncident:          ['getIncidents'],
   resolveIncident:         ['getIncidents'],
   addIncidentNote:         ['getIncidents'],
+  // Payroll — punch clock + employee records.
+  clockIn:                 ['getTimeEntries'],
+  clockOut:                ['getTimeEntries'],
+  breakStart:              ['getTimeEntries'],
+  breakEnd:                ['getTimeEntries'],
+  adminEditTime:           ['getTimeEntries'],
+  adminAddTime:            ['getTimeEntries'],
+  adminDeleteTime:         ['getTimeEntries'],
+  saveEmployee:            ['getEmployees'],
   // Notification-only.
   dismissConfirmation:     ['getNotifications', 'getConfirmations'],
   dismissAllConfirmations: ['getNotifications', 'getConfirmations'],
@@ -548,6 +557,15 @@ var _SUPABASE_ACTIONS = {
   revokePassportSignoff: 'revoke-passport-signoff',
   saveRowingPassportDef: 'save-rowing-passport-def',
   importRowingPassportCsv: 'import-rowing-passport-csv',
+  clockIn:               'clock-in',
+  clockOut:               'clock-out',
+  breakStart:             'break-start',
+  breakEnd:               'break-end',
+  getTimeEntries:         'get-time-entries',
+  adminEditTime:          'admin-edit-time',
+  adminAddTime:            'admin-add-time',
+  adminDeleteTime:         'admin-delete-time',
+  saveEmployee:            'save-employee',
 };
 
 async function _callSupabase(action, payload, opts) {
