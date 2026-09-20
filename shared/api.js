@@ -86,6 +86,20 @@ async function callSupabaseRpc(fnName, payload, accessToken) {
   return data;
 }
 
+// PostgREST returns raw snake_case column names; callers that used to get
+// camelCase DTOs from an Edge Function (or Apps Script) need this at the
+// call site. Shallow by design — nested jsonb columns (e.g. `categories`)
+// keep their own shape rather than being recursively rewritten.
+function _camelizeKeys(row) {
+  if (!row || typeof row !== 'object') return row;
+  var out = {};
+  Object.keys(row).forEach(function (k) {
+    var ck = k.replace(/_([a-z0-9])/g, function (_, c) { return c.toUpperCase(); });
+    out[ck] = row[k];
+  });
+  return out;
+}
+
 async function apiGet(action, params) {
   params = params || {};
   // Cache key now includes a serialized params suffix so the same action with
@@ -298,10 +312,6 @@ var _INVALIDATES = {
   // the activities-sheet row that feeds getConfig.volunteerEvents.
   volunteerSignup:         ['getConfig', 'getVolunteerSignups'],
   volunteerWithdraw:       ['getVolunteerSignups'],
-  // Share tokens — read-shaped POST, cacheable.
-  createShareToken:        ['getShareTokens'],
-  revokeShareToken:        ['getShareTokens'],
-  deleteShareToken:        ['getShareTokens'],
 
   // Member-row writes — members sheet only.
   saveMember:              ['getMembers'],
@@ -410,7 +420,6 @@ var _INVALIDATES = {
 // form populates the cache transparently.
 var _POST_CACHEABLE = {
   getVolunteerSignups: 30000,
-  getShareTokens:      60000,
   // Staff Logbook Review activity-log section. Read-shaped POST that takes a
   // date range; cached per-range thanks to the params-suffixed cache key.
   getActivityLog:      30000,
@@ -531,7 +540,6 @@ var _SUPABASE_ACTIONS = {
   getMembers:         'get-members',
   getRowingPassport:  'get-rowing-passport',
   getEmployees:       'get-employees',
-  getShareTokens:     'get-share-tokens',
   getTrips:           'get-trips',
   getConfirmations:   'get-confirmations',
   getVerificationRequests: 'get-verification-requests',
@@ -603,9 +611,6 @@ var _SUPABASE_ACTIONS = {
   deleteHandbookDoc:     'delete-handbook-doc',
   saveHandbookInfo:      'save-handbook-info',
   deleteHandbookInfo:    'delete-handbook-info',
-  createShareToken:      'create-share-token',
-  revokeShareToken:      'revoke-share-token',
-  deleteShareToken:      'delete-share-token',
   signPassportItem:      'sign-passport-item',
   revokePassportSignoff: 'revoke-passport-signoff',
   saveRowingPassportDef: 'save-rowing-passport-def',

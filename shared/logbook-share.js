@@ -24,8 +24,10 @@ function renderShareCatChecks(){
 }
 async function loadShareTokens(){
   try{
-    var res=await apiPost('getShareTokens',{kennitala:user.kennitala});
-    renderShareTokens(res.tokens||[]);
+    // RLS scopes this to the caller's own rows — no kennitala param needed,
+    // the JWT's member_id claim is the filter.
+    var rows=await callPostgrestTable('share_tokens',{query:'?select=*&order=created_at.desc'});
+    renderShareTokens((rows||[]).map(_camelizeKeys));
   }catch(e){}
 }
 function renderShareTokens(tokens){
@@ -49,9 +51,13 @@ async function generateAndCopyShareLink(){
     var categories=Array.from(catChecks).map(function(c){return c.value;});
     var photos=document.getElementById('sharePhotos').checked;
     var tracks=document.getElementById('shareTracks').checked;
-    var res=await apiPost('createShareToken',{kennitala:user.kennitala,includePhotos:photos,includeTracks:tracks,categories:JSON.stringify(categories)});
-    if(res.id){
-      var url=SCRIPT_URL+'?share='+res.id;
+    // member_id is the only trust anchor RLS checks (with check on insert);
+    // member_kennitala + id are filled in server-side (trigger + column default).
+    var rows=await callPostgrestTable('share_tokens',{method:'POST',prefer:'return=representation',
+      body:{member_id:user.id,include_photos:photos,include_tracks:tracks,categories:categories}});
+    var row=Array.isArray(rows)?rows[0]:rows;
+    if(row&&row.id){
+      var url=SCRIPT_URL+'?share='+row.id;
       await navigator.clipboard.writeText(url);
       showToast(s('logbook.shareCopied'));
       loadShareTokens();
@@ -100,7 +106,10 @@ function copyShareLink(tokenId){
 async function revokeShareToken(tokenId){
   if(!await ymConfirm(s('logbook.revokeLink')))return;
   try{
-    await apiPost('revokeShareToken',{tokenId:tokenId,kennitala:user.kennitala});
+    // RLS's own owner check (member_id = current_member_id()) does the
+    // authorization; PostgREST's ?id=eq. filter just targets the row.
+    await callPostgrestTable('share_tokens',{method:'PATCH',query:'?id=eq.'+encodeURIComponent(tokenId),
+      body:{revoked_at:new Date().toISOString()}});
     showToast(s('logbook.linkRevoked'));
     loadShareTokens();
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
