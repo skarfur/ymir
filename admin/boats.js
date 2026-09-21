@@ -462,63 +462,64 @@ async function saveBoat() {
   const name = document.getElementById("bName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
-  const id  = editingId || ("boat_" + Date.now().toString(36));
   const cat = document.getElementById("bCategory").value;
   const ownershipVal = document.getElementById("bOwnership").value;
   const accessModeVal = document.getElementById("bAccessMode").value;
+  const controlled = accessModeVal === 'controlled';
+  const gate = controlled ? _decodeGateValue(document.getElementById("bGateCert").value) : null;
+  const accessGateCert = gate ? (gate.sub || gate.certId) : '';
+
   const payload = {
-    id, name,
-    category:      cat,
+    id: editingId || null,
+    name, category: cat,
+    active: document.getElementById("bActive").checked,
+    oos: document.getElementById("bOOS").checked,
+    oosReason: document.getElementById("bOOSReason").value.trim(),
     defaultPortId: document.getElementById("bDefaultPortId").value || "",
-    oos:           document.getElementById("bOOS").checked,
-    oosReason:     document.getElementById("bOOSReason").value.trim(),
-    active:        document.getElementById("bActive").checked,
     registrationNo: document.getElementById("bRegNo").value.trim(),
-    // all boats
-    typeModel:      document.getElementById("bTypeModel").value.trim(),
-    loa:            parseFloat(document.getElementById("bLoa").value) || '',
-    // ownership
-    ownership:      ownershipVal,
-    ownerId:        ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
-    ownerName:      ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
-    // access control — new structured gate, plus legacy mirror for older readers
-    accessMode:     accessModeVal,
-    accessGate:     accessModeVal === 'controlled' ? _decodeGateValue(document.getElementById("bGateCert").value) : null,
-    accessGateCert: accessModeVal === 'controlled' ? (function() {
-      var _g = _decodeGateValue(document.getElementById("bGateCert").value);
-      return _g ? (_g.sub || _g.certId) : '';
-    })() : '',
-    accessAllowlist: accessModeVal === 'controlled' ? _editAllowlist.slice() : [],
-    // slot scheduling
-    slotSchedulingEnabled: accessModeVal === 'controlled' && document.getElementById("bSlotScheduling").checked,
-    availableOutsideSlots: accessModeVal === 'controlled' && document.getElementById("bSlotScheduling").checked ? document.getElementById("bAvailOutside").checked : true,
+    typeModel: document.getElementById("bTypeModel").value.trim(),
+    loa: parseFloat(document.getElementById("bLoa").value) || '',
+    ownership: ownershipVal,
+    ownerId: ownershipVal === 'private' ? (document.getElementById("bOwnerId").value || '') : '',
+    ownerName: ownershipVal === 'private' ? (document.getElementById("bOwnerName").textContent || '') : '',
+    accessMode: accessModeVal,
+    accessGate: gate,
+    accessGateCert: accessGateCert,
+    accessAllowlist: controlled ? _editAllowlist.slice() : [],
+    slotSchedulingEnabled: controlled && document.getElementById("bSlotScheduling").checked,
+    availableOutsideSlots: controlled && document.getElementById("bSlotScheduling").checked
+      ? document.getElementById("bAvailOutside").checked : true,
   };
 
-  const idx = _allBoats.findIndex(x => x.id === id);
-  if (idx >= 0) {
-    // Preserve reservations (managed via separate endpoints)
-    payload.reservations = _allBoats[idx].reservations || [];
-    _allBoats[idx] = { ..._allBoats[idx], ...payload };
-  } else {
-    payload.reservations = [];
-    _allBoats.push(payload);
-  }
-
-  try {
-    await apiPost("saveConfig", { boats: _allBoats });
-    boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
-    closeModal("boatModal", true);
-    renderBoats();
-    toast(s("toast.saved"));
-  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
+  await saveEntity({
+    call: () => callSupabaseRpc('save_boat', {
+      p_id: payload.id, p_name: payload.name, p_category: payload.category, p_active: payload.active,
+      p_oos: payload.oos, p_oos_reason: payload.oosReason, p_default_port_id: payload.defaultPortId || null,
+      p_registration_no: payload.registrationNo, p_type_model: payload.typeModel,
+      p_loa: payload.loa === '' ? null : payload.loa,
+      p_ownership: payload.ownership, p_owner_kennitala: payload.ownerId, p_owner_name: payload.ownerName,
+      p_access_mode: payload.accessMode, p_access_gate: payload.accessGate, p_access_gate_cert: payload.accessGateCert,
+      p_access_allowlist: payload.accessAllowlist, p_slot_scheduling_enabled: payload.slotSchedulingEnabled,
+      p_available_outside_slots: payload.availableOutsideSlots,
+    }),
+    getArray: () => _allBoats,
+    setArray: arr => {
+      _allBoats = arr;
+      boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
+    },
+    payload, modalId: "boatModal",
+    renderFn: renderBoats,
+  });
+  _invalidateApiCache('getConfig');
 }
 
 async function deleteBoat(id) {
   const _id = id || editingId;
   if (!await ymConfirm(s("admin.confirmDeleteBoat"))) return;
-  _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
   try {
-    await apiPost("saveConfig", { boats: _allBoats });
+    await callSupabaseRpc('delete_boat', { p_id: _id });
+    _invalidateApiCache('getConfig');
+    _allBoats = _allBoats.map(b => b.id === _id ? { ...b, active: false } : b);
     boats = _allBoats.filter(b => b.active !== false && b.active !== 'false');
     renderBoats();
     closeModal("boatModal", true);

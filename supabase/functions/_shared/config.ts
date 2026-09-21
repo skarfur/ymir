@@ -137,7 +137,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     admin.from("app_config").select("key, value").in("key", CONFIG_KEYS),
     admin.from("boats").select("*"),
     admin.from("boat_reservations").select("*"),
-    admin.from("locations").select("id, name"),
+    admin.from("locations").select("id, name, type, coordinates, active"),
     admin.from("activities").select("*").eq("signup_required", true),
     admin.from("activities").select("source_activity_type_id, date")
       .eq("status", "cancelled").eq("signup_required", false).not("source_activity_type_id", "is", null),

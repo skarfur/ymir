@@ -39,31 +39,39 @@ async function saveLocation() {
   const name = document.getElementById("lName").value.trim();
   if (!name) { toast(s("admin.nameRequired"), "err"); return; }
 
-  const id      = editingId || ("loc_" + Date.now().toString(36));
   var latVal = document.getElementById("lLat").value.trim();
   var lngVal = document.getElementById("lLng").value.trim();
   var coordinates = (latVal && lngVal) ? latVal + "," + lngVal : "";
-  const payload = { id, name, type: document.getElementById("lType").value || 'location', active: document.getElementById("lActive").checked, coordinates: coordinates };
+  const payload = {
+    id: editingId || null, name,
+    type: document.getElementById("lType").value || 'location',
+    active: document.getElementById("lActive").checked,
+    coordinates: coordinates,
+  };
 
-  const idx = _allLocations.findIndex(x => x.id === id);
-  if (idx >= 0) _allLocations[idx] = { ..._allLocations[idx], ...payload };
-  else          _allLocations.push(payload);
-
-  try {
-    await apiPost("saveConfig", { locations: _allLocations });
-    locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
-    closeModal("locationModal", true);
-    renderLocations();
-    toast(s("toast.saved"));
-  } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
+  await saveEntity({
+    call: () => callSupabaseRpc('save_location', {
+      p_id: payload.id, p_name: payload.name, p_type: payload.type,
+      p_coordinates: payload.coordinates, p_active: payload.active,
+    }),
+    getArray: () => _allLocations,
+    setArray: arr => {
+      _allLocations = arr;
+      locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
+    },
+    payload, modalId: "locationModal",
+    renderFn: renderLocations,
+  });
+  _invalidateApiCache('getConfig');
 }
 
 async function deleteLocation(id) {
   const _id = id || editingId;
   if (!await ymConfirm(s("admin.confirmDeleteLocation"))) return;
-  _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
   try {
-    await apiPost("saveConfig", { locations: _allLocations });
+    await callSupabaseRpc('delete_location', { p_id: _id });
+    _invalidateApiCache('getConfig');
+    _allLocations = _allLocations.map(l => l.id === _id ? { ...l, active: false } : l);
     locations = _allLocations.filter(l => l.active !== false && l.active !== 'false');
     renderLocations();
     closeModal("locationModal", true);
