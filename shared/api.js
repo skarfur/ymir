@@ -714,17 +714,18 @@ async function _callDirect(action, payload) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       var data = await res.json();
       if (!data.success) {
-        // A 401 means our session is gone — wipe local state and bounce the
-        // user back to the login screen instead of leaving them staring at a
-        // broken page. Public actions (login itself) are exempt so login
-        // errors surface their real message. The login page itself also
-        // swallows 401s because it hasn't authenticated yet (a pre-warm call
-        // landing here shouldn't trigger an auth-redirect dance).
-        var onLoginPage = (typeof window !== 'undefined' && window.location &&
-          window.location.pathname.indexOf('/login/') >= 0);
-        if (data.code === 401 && !_PUBLIC_ACTIONS[action] && !onLoginPage) {
-          _handleUnauthorized();
-        }
+        // NOTE: a 401 here does NOT mean the user's real session is invalid.
+        // loginMember is fully Supabase-routed now (see _SUPABASE_ACTIONS) —
+        // no login flow writes a row into the Apps Script sessions sheet
+        // anymore, so authCaller_ in code.gs can never resolve a caller and
+        // every remaining GAS-routed action 401s unconditionally, regardless
+        // of how valid the caller's actual (Supabase) session is. Treating
+        // that as "log the user out" was bouncing people to /login/ just for
+        // clicking a button whose action hasn't been ported to Supabase yet
+        // — a real, reported bug. Only _callSupabase's 401 (tied to the
+        // live Supabase session via the JWT/opaque token) should trigger
+        // _handleUnauthorized; a GAS 401 just surfaces as a normal error for
+        // that one action. Revisit once every action is off SCRIPT_URL.
         var err = new Error(data.error || action + " failed");
         err.code = data.code;
         throw err;

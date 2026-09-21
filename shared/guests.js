@@ -92,10 +92,11 @@
     var kennitala = isYear ? '' : ktOrYear;
     var birthYear = isYear ? ktOrYear : '';
     try {
-      var res = await apiPost('saveMember', {
-        name: name, kennitala: kennitala, birthYear: birthYear,
-        phone: phone, role: 'guest', active: true,
+      var res = await callSupabaseRpc('save_member', {
+        p_name: name, p_kennitala: kennitala, p_birth_year: birthYear ? parseInt(birthYear, 10) : null,
+        p_phone: phone, p_role: 'guest', p_active: true,
       });
+      _invalidateApiCache('getMembers');
       var guest = {
         id: res.id, name: name, kennitala: kennitala, birthYear: birthYear,
         phone: phone, role: 'guest', active: true,
