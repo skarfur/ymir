@@ -144,6 +144,7 @@ Deno.serve(async (req: Request) => {
       role: member.role,
       stay_logged_in: stayLoggedIn,
       expires_at: expiresAt.toISOString(),
+      user_agent: (req.headers.get("user-agent") || "").slice(0, 300),
     })
     .select("id, expires_at")
     .single();

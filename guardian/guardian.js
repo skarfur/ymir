@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('gSub').textContent = s('guardian.sub');
 
   try {
-    // validateMember returns { member, wards } — wards is what we need.
-    var data = await apiGet('validateMember', { kennitala: user.kennitala, _fresh: 1 });
+    // validate_member returns { member, wards } — wards is what we need.
+    var data = await callSupabaseRpc('validate_member', { p_kennitala: user.kennitala });
     renderWards(Array.isArray(data.wards) ? data.wards : []);
   } catch (e) {
     renderWards([]);

@@ -185,7 +185,7 @@ async function loadSessions() {
   var list = document.getElementById('sessionList');
   list.innerHTML = '<div class="settings-hint">' + s('lbl.loading') + '</div>';
   try {
-    var data = await apiGet('listSessions', { _fresh: 1 });
+    var data = await callSupabaseRpc('list_sessions', {});
     renderSessions(Array.isArray(data.sessions) ? data.sessions : []);
   } catch (e) {
     list.innerHTML = '<div class="settings-hint msg-err">' + s('settings.signInActivityError') + '</div>';
@@ -271,7 +271,7 @@ async function signOutOne(sessionId) {
   var msg = document.getElementById('sessionMsg');
   msg.style.display = 'none';
   try {
-    await apiPost('signOut', { sessionId: sessionId });
+    await callSupabaseRpc('sign_out', { p_session_id: sessionId });
     await loadSessions();
   } catch (e) {
     msg.textContent = s('settings.signInActivityError');
@@ -289,7 +289,7 @@ async function signOutEverywhereElse() {
   try {
     // `exceptCurrent: true` keeps this tab's session alive so the user
     // isn't punted back to /login/ after revoking remote devices.
-    var data = await apiPost('signOutAll', { exceptCurrent: true });
+    var data = await callSupabaseRpc('sign_out_all', { p_except_current: true });
     var n = (data && typeof data.count === 'number') ? data.count : 0;
     msg.textContent = s('settings.signedOutEverywhereElse').replace('{n}', n);
     msg.className = 'msg msg-ok';
@@ -420,12 +420,13 @@ async function saveSettings() {
 
   // Save to server
   try {
-    await apiPost('savePreferences', {
-      kennitala: user.kennitala,
-      initials: initials,
-      lang: lang,
-      preferences: prefs,
+    await callSupabaseRpc('save_preferences', {
+      p_kennitala: user.kennitala,
+      p_initials: initials,
+      p_lang: lang,
+      p_preferences: prefs,
     });
+    _invalidateApiCache('getMembers');
     showToast(s('settings.saved'), 'ok');
 
     // If language changed, reload the target page to apply

@@ -580,7 +580,8 @@ let _snoozeMins = 30;
 async function resolveAlertAction(checkoutId, op, btnEl) {
   btnEl.disabled = true;
   try {
-    await apiPost('resolveAlert', { checkoutId, op });
+    await callSupabaseRpc('resolve_alert', { p_checkout_id: checkoutId, p_op: op });
+    _invalidateApiCache('getActiveCheckouts');
     // Remove the checkout card from the active list immediately
     if (op === 'checkInAndClose') {
       document.querySelectorAll('[data-checkout-id="' + checkoutId + '"]').forEach(el => el.remove());
@@ -649,7 +650,7 @@ function renderOverdueBanner(alerts) {
 
 async function pollOverdueAlerts() {
   try {
-    const result = await apiGet('getOverdueAlerts');
+    const result = await callSupabaseRpc('get_overdue_alerts', {});
     _snoozeMins = result.snoozeMins || 30;
     renderOverdueBanner(result.alerts || []);
   } catch(e) { /* silent fail — don't disrupt the page */ }

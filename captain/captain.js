@@ -336,7 +336,8 @@ async function uploadHeadshot() {
 async function saveBio() {
   var bio = document.getElementById('bioText').value.trim();
   try {
-    await apiPost('saveCaptainBio', { kennitala: user.kennitala, bio: bio });
+    await callSupabaseRpc('save_captain_bio', { p_kennitala: user.kennitala, p_bio: bio });
+    _invalidateApiCache('getMembers');
     user.bio = bio;
     setUser(user);
     showToast(s('cq.bioSaved'), 'ok');
@@ -806,7 +807,8 @@ async function saveCqBookingColor() {
   prefs.bookingColor = color;
   user.preferences = prefs;
   try {
-    await apiPost('savePreferences', { kennitala: user.kennitala, preferences: prefs });
+    await callSupabaseRpc('save_preferences', { p_kennitala: user.kennitala, p_preferences: prefs });
+    _invalidateApiCache('getMembers');
     toast(s('toast.saved'));
   } catch(e) { toast(e.message || 'Error', 'err'); }
   renderCqSlots();

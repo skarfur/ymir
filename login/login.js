@@ -457,10 +457,10 @@ async function submitForceChange() {
   if (!user) { btn.disabled = false; return; }
 
   try {
-    await apiPost('setPassword', {
-      kennitala:       user.kennitala,
-      currentPassword: _pendingOldPassword || '',
-      newPassword:     pw1,
+    await callSupabaseRpc('change_member_password', {
+      p_kennitala:        user.kennitala,
+      p_current_password: _pendingOldPassword || '',
+      p_new_password:     pw1,
     });
 
     user.usingDefaultPassword = false;

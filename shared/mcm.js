@@ -254,7 +254,7 @@
         var cats = _certCats();
         if (!cats.some(function(c){ return certCategoryKey(c) === key; })) {
           cats.push({ key: key, labelEN: key, labelIS: '' });
-          apiPost('saveCertCategories', { categories: cats }).catch(function(e){ console.warn(e); });
+          callSupabaseRpc('save_cert_categories', { p_categories: cats }).then(function(){ _invalidateApiCache('getConfig'); }).catch(function(e){ console.warn(e); });
         }
         _populateCategories();
         sel.value = key;
@@ -420,7 +420,8 @@
       certs = certs.filter(function(c){ return !(c.certId === key && (c.sub || '') === (sub || '')); });
     }
     try {
-      await apiPost('saveMemberCert', { memberId: _memberId, certifications: certs });
+      await callSupabaseRpc('save_member_cert', { p_member_id: _memberId, p_certifications: certs });
+      _invalidateApiCache('getMembers');
       var arr  = _members();
       var mIdx = arr.findIndex(function(x){ return String(x.id) === String(_memberId); });
       arr[mIdx] = Object.assign({}, m, { certifications: JSON.stringify(certs) });
@@ -457,7 +458,8 @@
     var updated = existing;
 
     try {
-      await apiPost('saveMemberCert', { memberId: _memberId, certifications: updated });
+      await callSupabaseRpc('save_member_cert', { p_member_id: _memberId, p_certifications: updated });
+      _invalidateApiCache('getMembers');
       var arr  = _members();
       var mIdx = arr.findIndex(function(x){ return String(x.id) === String(_memberId); });
       arr[mIdx] = Object.assign({}, m, { certifications: JSON.stringify(updated) });

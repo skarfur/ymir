@@ -310,8 +310,10 @@ var _INVALIDATES = {
   volunteerWithdraw:       ['getVolunteerSignups'],
 
   // Member-row writes — members sheet only.
-  saveMemberCert:          ['getMembers'],
-  savePreferences:         ['getMembers'],
+  // saveMemberCert/savePreferences/saveCertCategories/saveCaptainBio/
+  // validateMember go straight to Postgres RPC now (see shared/mcm.js,
+  // captain/captain.js, settings/settings.js, guardian/guardian.js) and
+  // invalidate via _invalidateApiCache directly.
   // saveMember/deleteMember/importMembers/deactivateMembers go straight to
   // Postgres RPC / PostgREST (see admin/members.js, admin/import.js) and
   // invalidate via _invalidateApiCache directly, bypassing apiPost — no
@@ -368,9 +370,9 @@ var _INVALIDATES = {
   dismissConfirmation:     ['getNotifications', 'getConfirmations'],
   dismissAllConfirmations: ['getNotifications', 'getConfirmations'],
   markProjectSeen:         ['getNotifications'],
-  // Session-state changes. Settings page re-fetches its "signed in on…" list.
-  signOut:                 ['listSessions'],
-  signOutAll:              ['listSessions'],
+  // Session-state changes. signOut/signOutAll/listSessions/setPassword go
+  // straight to Postgres RPC now (see shared/api.js's signOut(),
+  // settings/settings.js, login/login.js) and invalidate/re-fetch directly.
   // Handbook (admin-managed). Members + staff read via getHandbook.
   // saveHandbookRole/deleteHandbookRole/reorderHandbookRoles/
   // saveHandbookDoc/deleteHandbookDoc/saveHandbookInfo/deleteHandbookInfo/
@@ -1016,7 +1018,7 @@ function hasRowingEndorsement(u) { return _rowingCertInfo(u).hasAny; }
 async function signOut() {
   try {
     if (_getSessionToken()) {
-      await _call('signOut', {});
+      await callSupabaseRpc('sign_out', {});
     }
   } catch (e) { /* ignore; fall through to local cleanup */ }
   clearUser();
@@ -1038,13 +1040,13 @@ async function switchBackToGuardian() {
   try {
     // Revoke the ward session on the way out so it doesn't linger in the
     // backend's sessions sheet. Best-effort.
-    try { await _call('signOut', {}); } catch(e) {}
+    try { await callSupabaseRpc('sign_out', {}); } catch(e) {}
     if (!parent || !parent.token) throw new Error('parent session missing');
     // Restore the guardian's token before the next API call so
-    // validateMember auth's as them.
+    // validate_member auth's as them.
     setSession(parent.token, parent.expiresAt || null, parent.id || null, parent.accessToken || null);
     setParentSession(null);
-    var data = await apiGet('validateMember', { kennitala: cur.guardianSession.kennitala, _fresh: 1 });
+    var data = await callSupabaseRpc('validate_member', { p_kennitala: cur.guardianSession.kennitala });
     if (!data || !data.member) throw new Error('guardian not found');
     setUser(data.member);
     // Purge any cached per-user data so the guardian's view is not stale.
