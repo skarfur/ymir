@@ -110,8 +110,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     _myKeelboatTrips  = _allTrips.filter(t => (t.boatCategory || '').toLowerCase() === 'keelboat')
                          .filter(t => String(t.kennitala) === String(user.kennitala));
 
-    // Confirmations: pending ones where I'm the recipient
-    _crewConfirmations = confRes.confirmations || confRes.items || [];
+    // Confirmations: pending ones where I'm the recipient. get-confirmations
+    // returns { incoming, outgoing } (see _shared/confirmations.ts) — this
+    // read confRes.confirmations/.items, which the response never had, so
+    // _crewConfirmations (and renderCrew's crew-approval list) was silently
+    // always empty. incoming is rows addressed to me, matching this
+    // variable's actual use in renderCrew() ("sent TO me").
+    _crewConfirmations = confRes.incoming || [];
 
     // Populate logbook globals (myTrips = all trips, captain sees fleet-wide)
     allBoats   = _boats;
