@@ -38,7 +38,8 @@ async function saveAlertConfig() {
     staffSmsList:   smsRaw.split(",").map(function(e){return e.trim();}).filter(function(e){return e.length>4;}),
   };
   try {
-    await apiPost("saveAlertConfig", cfg);
+    await callSupabaseRpc("save_config_value", { p_key: "overdueAlerts", p_value: cfg });
+    _invalidateApiCache("getConfig");
     const msg = document.getElementById("alertSaveMsg");
     msg.textContent = "✓ " + s("toast.saved");
     setTimeout(() => { msg.textContent = ""; }, 2500);
