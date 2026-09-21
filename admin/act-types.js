@@ -170,12 +170,23 @@ async function saveActType() {
     showLeaderPhone: document.getElementById("atShowPhone").checked,
   };
   await saveEntity({
-    apiAction: "saveActivityType",
+    call: () => callSupabaseRpc("save_activity_type", {
+      p_id: payload.id || null, p_name: payload.name, p_name_is: payload.nameIS,
+      p_active: payload.active, p_class_tag: payload.classTag, p_class_tag_is: payload.classTagIS,
+      p_calendar_id: payload.calendarId, p_calendar_sync_active: payload.calendarSyncActive,
+      p_schedule_source: payload.scheduleSource, p_volunteer: payload.volunteer, p_roles: payload.roles,
+      p_leader_member_id: payload.leaderMemberId, p_leader_name: payload.leaderName,
+      p_leader_phone: payload.leaderPhone, p_show_leader_phone: payload.showLeaderPhone,
+      p_default_start: payload.defaultStart, p_default_end: payload.defaultEnd,
+      p_bulk_schedule: payload.bulkSchedule, p_reserved_boat_ids: payload.reservedBoatIds,
+    }),
     getArray:  () => activityTemplates,
     setArray:  arr => { activityTemplates = arr; },
     payload, modalId: "actTypeModal",
     renderFn:  renderActTypes,
   });
+  _invalidateApiCache("getConfig");
+  _invalidateApiCache("getSlots");
   // Volunteer event materialization is deferred to syncVolunteerEvents.
   // Trigger it in the background after a successful save so new events
   // appear on the Volunteer tab without a manual refresh.
@@ -351,7 +362,9 @@ async function deleteActType(id) {
     if (!await ymConfirm(warn)) return;
   }
   try {
-    const res = await apiPost("deleteActivityType", { id: _id });
+    const res = await callSupabaseRpc("delete_activity_type", { p_id: _id });
+    _invalidateApiCache("getConfig");
+    _invalidateApiCache("getSlots");
     activityTemplates = activityTemplates.filter(a => a.id !== _id);
     var removedE = (res && res.removedEvents) || 0;
     var removedS = (res && res.removedSignups) || 0;

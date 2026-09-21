@@ -277,10 +277,9 @@ var _INVALIDATES = {
   // saveConfig itself stays routed here — boats/locations writes still go
   // through it (see the config_rpcs.sql migration note on that gap).
   saveConfig:              ['getConfig'],
-  saveActivityType:        ['getConfig', 'getSlots'],
-  deleteActivityType:      ['getConfig', 'getSlots'],
-  // saveChecklistItem/deleteChecklistItem/saveCertDef/deleteCertDef/
-  // saveCertCategories/saveFlagOverride/saveStaffStatus go straight to
+  // saveActivityType/deleteActivityType/saveChecklistItem/
+  // deleteChecklistItem/saveCertDef/deleteCertDef/saveCertCategories/
+  // saveFlagOverride/saveStaffStatus go straight to
   // Postgres RPC now (see admin/checklists.js, admin/certs.js,
   // staff/staff.js) and invalidate via _invalidateApiCache directly.
   saveBoatAccess:          ['getConfig'],
