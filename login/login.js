@@ -96,11 +96,6 @@ function toggleLang() {
 // to re-tick it every time on a device they treat as their own.
 document.getElementById('stayLoggedIn').checked = getStayLoggedIn();
 
-// Warm the Apps Script container early so post-login API calls are fast.
-// Swallow the 401 — we're not authenticated yet and the request still
-// spins up the container, which is all we care about here.
-apiGet('getConfig').catch(function() {});
-
 // ── Google one-tap sign-in ──────────────────────────────────────────────────
 // Poll briefly for the GSI library to load (it's async deferred). When it's
 // ready — and only if the admin has configured a client ID — render the

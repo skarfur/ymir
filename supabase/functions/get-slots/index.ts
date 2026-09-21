@@ -70,14 +70,15 @@ Deno.serve(async (req: Request) => {
   const fromDate = body?.fromDate ? String(body.fromDate) : "";
   const toDate = body?.toDate ? String(body.toDate) : "";
 
-  let catBoatIds: Set<string> | null = null;
-  if (category) {
-    const { data: boats } = await admin.from("boats").select("id").eq("category", category);
-    catBoatIds = new Set((boats || []).map((b) => b.id));
-  }
-
-  const { data: all, error } = await admin.from("reservation_slots").select("*");
+  // The boats-by-category lookup and the slots read don't depend on each
+  // other (category filtering happens in JS below), so they run in
+  // parallel rather than one after the other.
+  const [{ data: boats }, { data: all, error }] = await Promise.all([
+    category ? admin.from("boats").select("id").eq("category", category) : Promise.resolve({ data: null }),
+    admin.from("reservation_slots").select("*"),
+  ]);
   if (error) return json({ error: "Slots lookup failed" }, 500);
+  const catBoatIds = category ? new Set((boats || []).map((b) => b.id)) : null;
 
   const result = (all || []).filter((s) => {
     if (boatId && s.boat_id !== boatId) return false;

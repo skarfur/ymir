@@ -45,17 +45,27 @@ Deno.serve(async (req: Request) => {
 
   const counts = { confirmations: 0, crewInvites: 0, saumaklubbur: 0, captainQ: 0 };
 
-  const { data: pending } = await admin
-    .from("trip_confirmations")
-    .select("type")
-    .eq("to_kennitala", kennitala)
-    .eq("status", "pending")
-    .eq("dismissed", false);
+  // trip_confirmations, the member lookup, and maintenance are all
+  // independent of each other — only crew_invites needs member.id first,
+  // so it's the one query that stays sequential.
+  const [
+    { data: pending },
+    { data: member },
+    { data: allMaint },
+  ] = await Promise.all([
+    admin
+      .from("trip_confirmations")
+      .select("type")
+      .eq("to_kennitala", kennitala)
+      .eq("status", "pending")
+      .eq("dismissed", false),
+    admin.from("members").select("id").eq("kennitala", kennitala).maybeSingle(),
+    admin.from("maintenance").select("saumaklubbur, resolved, approved, verkstjori, followers, updated_at"),
+  ]);
   const pendingList = pending || [];
   counts.captainQ = pendingList.length;
   counts.confirmations = pendingList.filter((r) => r.type !== "verify").length;
 
-  const { data: member } = await admin.from("members").select("id").eq("kennitala", kennitala).maybeSingle();
   if (member) {
     const { data: invites } = await admin
       .from("crew_invites")
@@ -64,10 +74,6 @@ Deno.serve(async (req: Request) => {
       .eq("status", "pending");
     counts.crewInvites = (invites || []).length;
   }
-
-  const { data: allMaint } = await admin
-    .from("maintenance")
-    .select("saumaklubbur, resolved, approved, verkstjori, followers, updated_at");
 
   let saumaCount = 0;
   (allMaint || []).forEach((r) => {

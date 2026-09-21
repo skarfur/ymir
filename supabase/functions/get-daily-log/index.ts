@@ -63,13 +63,11 @@ Deno.serve(async (req: Request) => {
 
   const date = body?.date ? String(body.date).trim() : new Date().toISOString().slice(0, 10);
 
-  const { data: log } = await admin.from("daily_log").select("*").eq("date", date).maybeSingle();
-
-  const { data: activityRows } = await admin
-    .from("activities")
-    .select("*")
-    .eq("daily_log_date", date)
-    .eq("signup_required", false);
+  // Both filtered by the same date, neither depends on the other's result.
+  const [{ data: log }, { data: activityRows }] = await Promise.all([
+    admin.from("daily_log").select("*").eq("date", date).maybeSingle(),
+    admin.from("activities").select("*").eq("daily_log_date", date).eq("signup_required", false),
+  ]);
 
   const logDto = log ? {
     id: log.id,

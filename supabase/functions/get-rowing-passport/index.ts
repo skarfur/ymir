@@ -83,25 +83,24 @@ Deno.serve(async (req: Request) => {
   const session = await resolveSession(admin, body?.sessionToken as string | undefined);
   if (!session) return json({ error: "Unauthorized" }, 401);
 
-  const { data: configRow } = await admin
-    .from("app_config")
-    .select("value")
-    .eq("key", "rowingPassport")
-    .maybeSingle();
+  const memberId = body?.memberId ? String(body.memberId) : "";
+
+  // The definition read and the signoffs read (when memberId is given)
+  // don't depend on each other — def only feeds into computeProgress as a
+  // pure-JS combination once both are in hand — so they run in parallel.
+  const [{ data: configRow }, { data: signoffs }] = await Promise.all([
+    admin.from("app_config").select("value").eq("key", "rowingPassport").maybeSingle(),
+    memberId
+      ? admin.from("passport_signoffs").select("*").eq("member_id", memberId).is("revoked_at", null)
+      : Promise.resolve({ data: null }),
+  ]);
 
   const def = (configRow?.value && Array.isArray(configRow.value.passports))
     ? configRow.value
     : { version: 1, passports: [] };
 
   const result: Record<string, unknown> = { definition: def };
-
-  const memberId = body?.memberId ? String(body.memberId) : "";
   if (memberId) {
-    const { data: signoffs } = await admin
-      .from("passport_signoffs")
-      .select("*")
-      .eq("member_id", memberId)
-      .is("revoked_at", null);
     result.progress = computeProgress(signoffs || [], def);
   }
 
