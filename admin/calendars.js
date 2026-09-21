@@ -315,12 +315,13 @@ async function saveCurrentSlot() {
   var endTime = document.getElementById("smEndTime").value;
   if (!date || !startTime || !endTime) { toast(s('slot.missingFields'), 'err'); return; }
   try {
-    await apiPost("saveSlot", {
-      boatId: _editingSlot.boatId,
-      slotId: _editingSlot.slotId || '',
-      date: date, startTime: startTime, endTime: endTime,
-      note: document.getElementById("smNote").value || '',
+    await callSupabaseRpc("save_slot", {
+      p_boat_id: _editingSlot.boatId,
+      p_slot_id: _editingSlot.slotId || null,
+      p_date: date, p_start_time: startTime, p_end_time: endTime,
+      p_note: document.getElementById("smNote").value || '',
     });
+    _invalidateApiCache('getSlots');
     closeModal("slotModal", true);
     toast(s('toast.saved'));
     loadSlotCalendar();
@@ -331,7 +332,8 @@ async function deleteCurrentSlot() {
   if (!_editingSlot || !_editingSlot.slotId) return;
   if (!(await ymConfirm(s('slot.confirmDelete')))) return;
   try {
-    await apiPost("deleteSlot", { slotId: _editingSlot.slotId });
+    await callSupabaseRpc("delete_slot", { p_slot_id: _editingSlot.slotId });
+    _invalidateApiCache('getSlots');
     closeModal("slotModal", true);
     toast(s('toast.deleted'));
     loadSlotCalendar();
@@ -408,12 +410,13 @@ async function saveRecurringSlots() {
     toast(s('slot.missingFields'), 'err'); return;
   }
   try {
-    var res = await apiPost("saveRecurringSlots", {
-      boatId: boatId, daysOfWeek: days,
-      startTime: startTime, endTime: endTime,
-      fromDate: fromDate, toDate: toDate,
-      note: document.getElementById("rsNote").value || '',
+    var res = await callSupabaseRpc("save_recurring_slots", {
+      p_boat_id: boatId, p_days_of_week: days,
+      p_start_time: startTime, p_end_time: endTime,
+      p_from_date: fromDate, p_to_date: toDate,
+      p_note: document.getElementById("rsNote").value || '',
     });
+    _invalidateApiCache('getSlots');
     closeModal("recurSlotModal", true);
     toast(s('slot.created', { count: res.count || 0 }));
     loadSlotCalendar();

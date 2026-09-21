@@ -371,11 +371,12 @@ async function createNewCrew() {
   var visibility = document.getElementById('cmVisibility').value;
   var color = document.getElementById('cmColor').value;
   try {
-    await apiPost('createCrew', {
-      name: name, numPairs: numPairs, creatorPairIndex: myPair, creatorSeatIndex: mySeat,
-      description: description, visibility: visibility, color: color,
-      kennitala: user.kennitala, memberName: user.name,
+    await callSupabaseRpc('create_crew', {
+      p_name: name, p_num_pairs: numPairs, p_creator_pair_index: myPair, p_creator_seat_index: mySeat,
+      p_description: description, p_visibility: visibility, p_color: color,
+      p_kennitala: user.kennitala, p_member_name: user.name,
     });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites');
     closeModal('crewModal');
     showToast(s('toast.saved'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
@@ -386,10 +387,11 @@ async function createNewCrew() {
 
 async function joinSeat(crewId, pairId, seatIndex) {
   try {
-    await apiPost('joinCrew', {
-      crewId: crewId, pairId: pairId, seatIndex: seatIndex,
-      kennitala: user.kennitala, memberName: user.name,
+    await callSupabaseRpc('join_crew', {
+      p_crew_id: crewId, p_pair_id: pairId, p_seat_index: seatIndex,
+      p_kennitala: user.kennitala, p_member_name: user.name,
     });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites');
     showToast(s('cox.joined'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
     await loadCrews();
@@ -400,7 +402,8 @@ async function joinSeat(crewId, pairId, seatIndex) {
 async function leaveCrewConfirm(crewId) {
   if (!(await ymConfirm(s('cox.confirmLeave')))) return;
   try {
-    await apiPost('leaveCrew', { crewId: crewId, kennitala: user.kennitala });
+    await callSupabaseRpc('leave_crew', { p_crew_id: crewId, p_kennitala: user.kennitala });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites');
     showToast(s('cox.left'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
     await loadCrews();
@@ -467,11 +470,12 @@ async function sendCrewInvite() {
   if (!kt || !name) { showToast(s('cox.selectMember'), 'err'); return; }
   if (!pairId) { showToast(s('cox.selectPair'), 'err'); return; }
   try {
-    await apiPost('inviteToCrew', {
-      crewId: _invCrewId, toKennitala: kt, toName: name,
-      fromKennitala: user.kennitala, fromName: user.name,
-      pairId: pairId,
+    await callSupabaseRpc('invite_to_crew', {
+      p_crew_id: _invCrewId, p_to_kennitala: kt, p_to_name: name,
+      p_from_kennitala: user.kennitala, p_from_name: user.name,
+      p_pair_id: pairId,
     });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites');
     closeModal('crewInvModal');
     showToast(s('cox.inviteSent'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
@@ -484,7 +488,8 @@ async function respondInvite(inviteId, response) {
   _crewInvites = _crewInvites.filter(function(inv) { return inv.id !== inviteId; });
   renderCrewInvites();
   try {
-    await apiPost('respondCrewInvite', { inviteId: inviteId, response: response });
+    await callSupabaseRpc('respond_crew_invite', { p_invite_id: inviteId, p_response: response });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getNotifications');
     showToast(response === 'accepted' ? s('cox.inviteAccepted') : s('cox.inviteRejected'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
     await loadCrews();
@@ -499,7 +504,8 @@ async function respondInvite(inviteId, response) {
 async function disbandCrewConfirm(crewId) {
   if (!(await ymConfirm(s('cox.confirmDisband')))) return;
   try {
-    await apiPost('disbandCrew', { crewId: crewId });
+    await callSupabaseRpc('disband_crew', { p_crew_id: crewId });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites');
     showToast(s('cox.crewDisbanded'), 'ok');
     sessionStorage.removeItem('ymir_getCrewBoard_');
     await loadCrews();
@@ -630,7 +636,8 @@ async function bookCxSlot(slotId) {
     renderCxSlots();
   }
   try {
-    await apiPost('bookSlot', { slotId: slotId, crewId: crewId, kennitala: user.kennitala, memberName: user.name });
+    await callSupabaseRpc('book_slot', { p_slot_id: slotId, p_crew_id: crewId, p_kennitala: user.kennitala, p_member_name: user.name });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     showToast(s('slot.booked'), 'ok');
   } catch(e) {
     showToast(e.message || 'Error', 'err');
@@ -650,7 +657,8 @@ async function unbookCxSlot(slotId) {
     renderCxSlots();
   }
   try {
-    await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
+    await callSupabaseRpc('unbook_slot', { p_slot_id: slotId, p_kennitala: user.kennitala });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     showToast(s('slot.unbooked'), 'ok');
   } catch(e) {
     if (prevSlot && slot) { Object.assign(slot, prevSlot); renderCxSlots(); }
@@ -711,11 +719,12 @@ async function submitCxBulkBook() {
   var endTime = document.getElementById('cxBbEndTime').value || '';
   if (!days.length || !fromDate || !toDate || !boatId) { showToast(s('slot.missingFields'), 'err'); return; }
   try {
-    var res = await apiPost('bulkBookSlots', {
-      boatId: boatId, crewId: crewId, kennitala: user.kennitala, memberName: user.name,
-      fromDate: fromDate, toDate: toDate, daysOfWeek: days,
-      startTime: startTime, endTime: endTime,
+    var res = await callSupabaseRpc('bulk_book_slots', {
+      p_boat_id: boatId, p_crew_id: crewId, p_kennitala: user.kennitala, p_member_name: user.name,
+      p_from_date: fromDate, p_to_date: toDate, p_days_of_week: days,
+      p_start_time: startTime || null, p_end_time: endTime || null,
     });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     closeModal('cxBulkBookModal');
     if (res.skipped > 0) { showToast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped }), 'ok'); }
     else { showToast(s('slot.bulkBooked', { count: res.booked }), 'ok'); }

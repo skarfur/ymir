@@ -382,22 +382,12 @@ var _INVALIDATES = {
   // _invalidateApiCache directly. syncHandbookDocs/uploadHandbookDoc stay
   // Apps-Script-routed — genuine Drive-API needs.
   syncHandbookDocs:    ['getHandbook'],
-  // Crews + invites.
-  createCrew:              ['getCrews', 'getCrewInvites'],
-  disbandCrew:             ['getCrews', 'getCrewInvites'],
-  inviteToCrew:            ['getCrews', 'getCrewInvites'],
-  respondCrewInvite:       ['getCrews', 'getCrewInvites', 'getNotifications'],
-  // Slot writes drop the per-week getSlots cache so navigation reflects
-  // bookings immediately. bookSlot/unbookSlot also touch crew membership
-  // (slot.bookedBy mirrors into the crew record), so getCrews / getCrewInvites
-  // drop too.
-  bookSlot:                ['getCrews', 'getCrewInvites', 'getSlots'],
-  unbookSlot:              ['getCrews', 'getCrewInvites', 'getSlots'],
-  bulkBookSlots:           ['getCrews', 'getCrewInvites', 'getSlots'],
-  saveSlot:                ['getSlots'],
-  deleteSlot:              ['getSlots'],
-  saveRecurringSlots:      ['getSlots'],
-  deleteRecurrenceGroup:   ['getSlots'],
+  // Crews + invites + reservation slots (createCrew/updateCrew/disbandCrew/
+  // joinCrew/leaveCrew/inviteToCrew/respondCrewInvite/saveSlot/
+  // saveRecurringSlots/deleteSlot/deleteRecurrenceGroup/bookSlot/
+  // unbookSlot/bulkBookSlots) go straight to Postgres RPC now (see
+  // captain/captain.js, coxswain/coxswain.js, admin/calendars.js) and
+  // invalidate via _invalidateApiCache directly.
 };
 
 // Read-shaped POSTs: actions that go through apiPost (typically because
@@ -550,20 +540,11 @@ var _SUPABASE_ACTIONS = {
   requestVerification:     'request-verification',
   dismissConfirmation:     'dismiss-confirmation',
   dismissAllConfirmations: 'dismiss-all-confirmations',
-  createCrew:         'create-crew',
-  updateCrew:         'update-crew',
-  disbandCrew:        'disband-crew',
-  joinCrew:           'join-crew',
-  leaveCrew:          'leave-crew',
-  inviteToCrew:       'invite-to-crew',
-  respondCrewInvite:  'respond-crew-invite',
-  saveSlot:              'save-slot',
-  saveRecurringSlots:    'save-recurring-slots',
-  deleteSlot:            'delete-slot',
-  deleteRecurrenceGroup: 'delete-recurrence-group',
-  bookSlot:              'book-slot',
-  unbookSlot:            'unbook-slot',
-  bulkBookSlots:         'bulk-book-slots',
+  // createCrew/updateCrew/disbandCrew/joinCrew/leaveCrew/inviteToCrew/
+  // respondCrewInvite/saveSlot/saveRecurringSlots/deleteSlot/
+  // deleteRecurrenceGroup/bookSlot/unbookSlot/bulkBookSlots: session-only
+  // RLS gate + Postgres RPC (see captain/captain.js, coxswain/coxswain.js,
+  // admin/calendars.js) — no Edge Function.
   saveMaintenance:       'save-maintenance',
   resolveMaintenance:    'resolve-maintenance',
   deleteMaintenance:     'delete-maintenance',

@@ -861,7 +861,8 @@ async function bookCqSlot(slotId) {
     renderCqSlots();
   }
   try {
-    var res = await apiPost('bookSlot', { slotId: slotId, kennitala: user.kennitala, memberName: user.name, bookingColor: bookingColor });
+    var res = await callSupabaseRpc('book_slot', { p_slot_id: slotId, p_kennitala: user.kennitala, p_member_name: user.name, p_booking_color: bookingColor });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     // Booking a virtual class-slot materializes a real reservationSlots row
     // on the backend; capture the new id (and drop the `virtual` flag) so a
     // subsequent unbook in the same session targets the materialized row
@@ -901,7 +902,8 @@ async function unbookCqSlot(slotId) {
     renderCqSlots();
   }
   try {
-    await apiPost('unbookSlot', { slotId: slotId, kennitala: user.kennitala });
+    await callSupabaseRpc('unbook_slot', { p_slot_id: slotId, p_kennitala: user.kennitala });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     toast(s('slot.unbooked'));
     // Reconcile with backend truth — guarantees the rendered state matches
     // even if the optimistic update missed something (e.g. dematerialized
@@ -962,11 +964,12 @@ async function saveBulkSlots() {
   var endTime = document.getElementById('rsEndTime').value || '';
   if (!days.length || !fromDate || !toDate || !boatId) { toast(s('slot.missingFields'), 'err'); return; }
   try {
-    var res = await apiPost('bulkBookSlots', {
-      boatId: boatId, kennitala: user.kennitala, memberName: user.name,
-      fromDate: fromDate, toDate: toDate, daysOfWeek: days,
-      startTime: startTime, endTime: endTime, bookingColor: _cqGetBookingColor(),
+    var res = await callSupabaseRpc('bulk_book_slots', {
+      p_boat_id: boatId, p_kennitala: user.kennitala, p_member_name: user.name,
+      p_from_date: fromDate, p_to_date: toDate, p_days_of_week: days,
+      p_start_time: startTime || null, p_end_time: endTime || null, p_booking_color: _cqGetBookingColor(),
     });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     closeModal('recurSlotModal');
     if (res.skipped > 0) { toast(s('slot.bulkPartial', { booked: res.booked, skipped: res.skipped })); }
     else { toast(s('slot.bulkBooked', { count: res.booked })); }
@@ -1017,9 +1020,10 @@ async function saveAndBookSlot() {
   } catch(e) { /* fall through — backend will still validate */ }
   try {
     // Create the slot
-    var res = await apiPost('saveSlot', { boatId: boatId, date: date, startTime: startTime, endTime: endTime });
+    var res = await callSupabaseRpc('save_slot', { p_boat_id: boatId, p_date: date, p_start_time: startTime, p_end_time: endTime });
     // Book it for the current user
-    await apiPost('bookSlot', { slotId: res.slotId, kennitala: user.kennitala, memberName: user.name });
+    await callSupabaseRpc('book_slot', { p_slot_id: res.slotId, p_kennitala: user.kennitala, p_member_name: user.name });
+    _invalidateApiCache('getCrews'); _invalidateApiCache('getCrewInvites'); _invalidateApiCache('getSlots');
     closeModal('slotModal');
     toast(s('slot.createdAndBooked'));
     loadCqSlots();
