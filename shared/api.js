@@ -511,6 +511,7 @@ var _batchScheduled = false;
 // already used throughout the app; values are the Supabase function slug.
 var _SUPABASE_ACTIONS = {
   loginMember:        'login',
+  validateWard:       'validate-ward',
   getConfig:          'get-config',
   getHandbook:        'handbook',
   getWeather:         'weather',
