@@ -1081,22 +1081,22 @@ async function submitInlineReport(type, pathway) {
       var irBoatName=irBoatId?(boats.find(b=>b.id===irBoatId)||{name:''}).name:'';
       var typeLabelMap={injury:'🩹 Injury',capsize:'⛵ Capsize',collision:'💥 Collision',equipment:'🔧 Equipment failure',medical:'🏥 Medical',nearMiss:'⚡️ Near miss',missing:'🔍 Missing person',propertyDmg:'🏗️ Property damage',stranding:'⚓️ Ran aground',other:'📌 Other'};
       var typeLabels=types.map(t=>typeLabelMap[t]||t).join(', ');
-      await apiPost('createIncident',{
-        types:JSON.stringify(types), typeLabels, severity:sev2,
-        date:dateV, time:timeV,
-        locationId:locId, locationName:locName,
-        boatId:irBoatId, boatName:irBoatName,
-        description:desc.trim(),
-        involved:(document.getElementById('irPeople')||{}).value||'',
-        witnesses:(document.getElementById('irWitnesses')||{}).value||'',
-        immediateAction:(document.getElementById('irAction')||{}).value||'',
-        followUp:(document.getElementById('irFollowUp')||{}).value||'',
-        handOffNotes:(document.getElementById('irHandoff')||{}).value||'',
-        filedBy:user.name, title:typeLabels,
-        status: pathway==='review' ? 'review' : 'closed',
-        resolved: pathway!=='review',
-        source:'member-checkin',
+      await callSupabaseRpc('create_incident',{
+        p_types:types, p_severity:sev2,
+        p_date:dateV, p_time:timeV,
+        p_location_id:locId, p_location_name:locName,
+        p_boat_id:irBoatId, p_boat_name:irBoatName,
+        p_description:desc.trim(),
+        p_involved:(document.getElementById('irPeople')||{}).value||'',
+        p_witnesses:(document.getElementById('irWitnesses')||{}).value||'',
+        p_immediate_action:(document.getElementById('irAction')||{}).value||'',
+        p_follow_up:(document.getElementById('irFollowUp')||{}).value||'',
+        p_hand_off_notes:(document.getElementById('irHandoff')||{}).value||'',
+        p_filed_by:user.name,
+        p_status: pathway==='review' ? 'review' : 'closed',
+        p_resolved: pathway!=='review',
       });
+      _invalidateApiCache('getIncidents');
     }
     renderLandingChecklist();
     setTimeout(()=>{var note=document.getElementById('reportFlagNote');if(note){note.textContent=type==='damage'?'✓ Damage report submitted.':'✓ Incident report submitted.';note.style.color='var(--green)';note.style.display='block';}},50);

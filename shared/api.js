@@ -359,10 +359,9 @@ var _INVALIDATES = {
   removeMaterial:          ['getMaintenance', 'getNotifications'],
   followProject:           ['getMaintenance', 'getNotifications'],
   unfollowProject:         ['getMaintenance', 'getNotifications'],
-  // Incidents.
-  createIncident:          ['getIncidents'],
-  resolveIncident:         ['getIncidents'],
-  addIncidentNote:         ['getIncidents'],
+  // createIncident/resolveIncident/addIncidentNote go straight to
+  // Postgres RPC / PostgREST now (see incidents/incidents.js,
+  // member/member.js) and invalidate via _invalidateApiCache directly.
   // Payroll — punch clock + employee records.
   clockIn:                 ['getTimeEntries'],
   clockOut:                ['getTimeEntries'],
@@ -589,9 +588,8 @@ var _SUPABASE_ACTIONS = {
   unfollowProject:       'unfollow-project',
   markProjectSeen:       'mark-project-seen',
   saveDailyLog:          'save-daily-log',
-  createIncident:        'create-incident',
-  resolveIncident:       'resolve-incident',
-  addIncidentNote:       'add-incident-note',
+  // createIncident/addIncidentNote: RPC. resolveIncident: staff-only RLS
+  // + direct PostgREST (see incidents/incidents.js) — no Edge Function.
   saveVolunteerEvent:    'save-volunteer-event',
   deleteVolunteerEvent:  'delete-volunteer-event',
   volunteerSignup:       'volunteer-signup',

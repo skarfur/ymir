@@ -344,30 +344,28 @@ async function fileReport(pathway) {
   try {
     const iDate = document.getElementById('iDate').value;
     const iTime = document.getElementById('iTime').value;
-    const res = await apiPost('createIncident', {
-      types:         JSON.stringify([...selectedTypes]),
-      typeLabels,
-      severity:      selectedSev,
-      date:          iDate,
-      time:          iTime,
-      locationId:    locSel.value,
-      locationName:  locOpt.value ? locOpt.textContent : '',
-      boatId:        boatSel.value,
-      boatName:      boatSel.value ? boatOpt.textContent : '',
-      description:   desc,
-      involved:      document.getElementById('iInvolved').value.trim(),
-      witnesses:     document.getElementById('iWitnesses').value.trim(),
-      immediateAction: document.getElementById('iAction').value.trim(),
-      followUp:      document.getElementById('iFollowUp').value.trim(),
-      handOffTo:     handTo,
-      handOffName:   document.getElementById('iHandOffName').value.trim(),
-      handOffNotes:  document.getElementById('iHandOffNotes').value.trim(),
-      filedBy:       user.name,
-      filedAt:       new Date().toISOString(),
-      title:         typeLabels,
-      status:        pathway === 'review' ? 'review' : 'closed',
-      resolved:      pathway === 'closed',
+    const res = await callSupabaseRpc('create_incident', {
+      p_types:         [...selectedTypes],
+      p_severity:      selectedSev,
+      p_date:          iDate,
+      p_time:          iTime,
+      p_location_id:    locSel.value,
+      p_location_name:  locOpt.value ? locOpt.textContent : '',
+      p_boat_id:        boatSel.value,
+      p_boat_name:      boatSel.value ? boatOpt.textContent : '',
+      p_description:   desc,
+      p_involved:      document.getElementById('iInvolved').value.trim(),
+      p_witnesses:     document.getElementById('iWitnesses').value.trim(),
+      p_immediate_action: document.getElementById('iAction').value.trim(),
+      p_follow_up:      document.getElementById('iFollowUp').value.trim(),
+      p_hand_off_to:     handTo,
+      p_hand_off_name:   document.getElementById('iHandOffName').value.trim(),
+      p_hand_off_notes:  document.getElementById('iHandOffNotes').value.trim(),
+      p_filed_by:       user.name,
+      p_status:        pathway === 'review' ? 'review' : 'closed',
+      p_resolved:      pathway === 'closed',
     });
+    _invalidateApiCache('getIncidents');
     const newInc = { ...res, types: JSON.stringify([...selectedTypes]),
       description: desc, severity: selectedSev, filedBy: user.name,
       filedAt: new Date().toISOString(), title: typeLabels,
@@ -417,7 +415,8 @@ async function addReviewerNote() {
   const text  = input.value.trim();
   if (!text || !detailId) return;
   try {
-    await apiPost('addIncidentNote', { id: detailId, by: user.name, text, at: new Date().toISOString(), kind: 'reviewer' });
+    await callSupabaseRpc('add_incident_note', { p_id: detailId, p_by: user.name, p_text: text, p_kind: 'reviewer' });
+    _invalidateApiCache('getIncidents');
     const i = incidents.find(x => x.id === detailId);
     if (i) {
       const notes = parseJson(i.reviewerNotes, []);
@@ -440,7 +439,11 @@ async function toggleResolve() {
   if (!i) return;
   const resolved = !(i.resolved && i.resolved !== 'false');
   try {
-    await apiPost('resolveIncident', { id: detailId, resolved, resolvedAt: resolved ? new Date().toISOString() : '', status: resolved ? 'closed' : (i.status || 'open') });
+    await callPostgrestTable('incidents', {
+      method: 'PATCH', query: '?id=eq.' + encodeURIComponent(detailId),
+      body: { resolved, resolved_at: resolved ? new Date().toISOString() : null, status: resolved ? 'closed' : (i.status || 'open') },
+    });
+    _invalidateApiCache('getIncidents');
     i.resolved = resolved;
     if (resolved) i.status = 'closed';
     showToast(s('toast.saved'));
