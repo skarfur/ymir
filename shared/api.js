@@ -177,11 +177,14 @@ function _writeCacheEntry(ck, action, entry) {
 }
 
 // Single source of truth for "fetch, cache, clear inflight". Used by both
-// the blocking miss path and the SWR background refresh.
-function _fetchAndCache(ck, action, params) {
+// the blocking miss path and the SWR background refresh. `opts` is passed
+// straight through to `_call` — the SWR path uses it to mark its refresh
+// silent (see _refreshInBackground below); the blocking miss path leaves
+// it unset so a real 401 there still bounces to login as normal.
+function _fetchAndCache(ck, action, params, opts) {
   return (async function () {
     try {
-      var data = await _call(action, params);
+      var data = await _call(action, params, opts);
       _writeCacheEntry(ck, action, { ts: Date.now(), data: data });
       return data;
     } finally {
@@ -193,10 +196,13 @@ function _fetchAndCache(ck, action, params) {
 // SWR helper — kicks off a refresh without blocking the caller. Dedup against
 // the inflight map (a foreground miss already in flight covers us). Errors are
 // swallowed: the user already has stale data; failing the refresh shouldn't
-// surface as an unhandled rejection.
+// surface as an unhandled rejection — and, same as warmContainer's background
+// warm, it must never force a logout via _handleUnauthorized: the user never
+// asked for this network call, so a transient/expired-session 401 here should
+// just leave the stale cached data in place, not yank them back to /login/.
 function _refreshInBackground(ck, action, params) {
   if (apiGet._inflight[ck]) return;
-  var p = _fetchAndCache(ck, action, params);
+  var p = _fetchAndCache(ck, action, params, { silent: true });
   apiGet._inflight[ck] = p;
   p.catch(function () {});
 }
