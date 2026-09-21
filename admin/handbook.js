@@ -40,9 +40,23 @@ function _hbAdminMemberName(kt) {
 
 // Generic save: posts the payload, splices the result into the local array,
 // closes the modal, re-renders, toasts. `render` may be a single fn or array.
+// action -> app_config key, for the RPC-routed calls below. All 4 of
+// saveHandbookContact/saveHandbookRole/saveHandbookDoc/saveHandbookInfo
+// (and their delete counterparts) now go through the same generic
+// save_config_list_item/delete_config_list_item RPCs Domain 5's certDefs
+// port introduced, since handbook.gs's own handlers already called the
+// exact same generic saveConfigListItem_/deleteConfigListItem_ helpers.
+var _HB_ACTION_KEY = {
+  saveHandbookContact: 'handbookContacts', deleteHandbookContact: 'handbookContacts',
+  saveHandbookRole:    'handbookRoles',    deleteHandbookRole:    'handbookRoles',
+  saveHandbookDoc:     'handbookDocs',     deleteHandbookDoc:     'handbookDocs',
+  saveHandbookInfo:    'handbookInfo',     deleteHandbookInfo:    'handbookInfo',
+};
+
 async function _hbSave(action, payload, listKey, modalId, render) {
   try {
-    const res = await apiPost(action, payload);
+    const res = await callSupabaseRpc('save_config_list_item', { p_key: _HB_ACTION_KEY[action], p_item: payload });
+    _invalidateApiCache('getHandbook');
     payload.id = payload.id || res.id;
     payload.active = true;
     const arr = _hbAdmin[listKey];
@@ -60,7 +74,10 @@ async function _hbDelete(action, listKey, editingKey, modalId, render) {
   if (!id) return;
   if (!await ymConfirm(s('admin.handbookConfirmDelete'))) return;
   try {
-    await apiPost(action, { id: id });
+    // Every handbook delete is soft (deleteConfigListItem_'s {soft:true}) —
+    // sets active:false server-side, so re-parenting/undo stay possible.
+    await callSupabaseRpc('delete_config_list_item', { p_key: _HB_ACTION_KEY[action], p_id: id, p_soft: true });
+    _invalidateApiCache('getHandbook');
     _hbAdmin[listKey] = _hbAdmin[listKey].filter(x => x.id !== id);
     closeModal(modalId, true);
     [].concat(render).forEach(fn => fn());
@@ -424,7 +441,8 @@ async function moveHbRole(id, dir) {
   if (!items.length) return;
   renderHandbookRolesList(); // optimistic
   try {
-    await apiPost('reorderHandbookRoles', { items: items });
+    await callSupabaseRpc('reorder_handbook_roles', { p_items: items });
+    _invalidateApiCache('getHandbook');
   } catch (e) {
     toast(s('toast.saveFailed') + ': ' + e.message, 'err');
     await loadHandbookAdmin(true);

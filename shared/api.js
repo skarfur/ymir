@@ -381,16 +381,13 @@ var _INVALIDATES = {
   signOut:                 ['listSessions'],
   signOutAll:              ['listSessions'],
   // Handbook (admin-managed). Members + staff read via getHandbook.
-  saveHandbookRole:    ['getHandbook'],
-  deleteHandbookRole:  ['getHandbook'],
-  reorderHandbookRoles:['getHandbook'],
-  saveHandbookDoc:     ['getHandbook'],
-  deleteHandbookDoc:   ['getHandbook'],
+  // saveHandbookRole/deleteHandbookRole/reorderHandbookRoles/
+  // saveHandbookDoc/deleteHandbookDoc/saveHandbookInfo/deleteHandbookInfo/
+  // saveHandbookContact/deleteHandbookContact go straight to Postgres RPC
+  // now (see admin/handbook.js's _hbSave/_hbDelete) and invalidate via
+  // _invalidateApiCache directly. syncHandbookDocs/uploadHandbookDoc stay
+  // Apps-Script-routed — genuine Drive-API needs.
   syncHandbookDocs:    ['getHandbook'],
-  saveHandbookInfo:     ['getHandbook'],
-  deleteHandbookInfo:   ['getHandbook'],
-  saveHandbookContact:  ['getHandbook'],
-  deleteHandbookContact:['getHandbook'],
   // Crews + invites.
   createCrew:              ['getCrews', 'getCrewInvites'],
   disbandCrew:             ['getCrews', 'getCrewInvites'],
@@ -600,15 +597,10 @@ var _SUPABASE_ACTIONS = {
   volunteerSignup:       'volunteer-signup',
   volunteerWithdraw:     'volunteer-withdraw',
   syncVolunteerEvents:   'sync-volunteer-events',
-  saveHandbookRole:      'save-handbook-role',
-  deleteHandbookRole:    'delete-handbook-role',
-  reorderHandbookRoles:  'reorder-handbook-roles',
-  saveHandbookContact:   'save-handbook-contact',
-  deleteHandbookContact: 'delete-handbook-contact',
-  saveHandbookDoc:       'save-handbook-doc',
-  deleteHandbookDoc:     'delete-handbook-doc',
-  saveHandbookInfo:      'save-handbook-info',
-  deleteHandbookInfo:    'delete-handbook-info',
+  // saveHandbookRole/deleteHandbookRole/reorderHandbookRoles/
+  // saveHandbookContact/deleteHandbookContact/saveHandbookDoc/
+  // deleteHandbookDoc/saveHandbookInfo/deleteHandbookInfo: admin-only RLS
+  // + Postgres RPC (see admin/handbook.js) — no Edge Function.
   signPassportItem:      'sign-passport-item',
   revokePassportSignoff: 'revoke-passport-signoff',
   saveRowingPassportDef: 'save-rowing-passport-def',
