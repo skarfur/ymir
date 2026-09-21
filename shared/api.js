@@ -314,12 +314,12 @@ var _INVALIDATES = {
   volunteerWithdraw:       ['getVolunteerSignups'],
 
   // Member-row writes — members sheet only.
-  saveMember:              ['getMembers'],
-  deleteMember:            ['getMembers'],
   saveMemberCert:          ['getMembers'],
   savePreferences:         ['getMembers'],
-  importMembers:           ['getMembers'],
-  deactivateMembers:       ['getMembers'],
+  // saveMember/deleteMember/importMembers/deactivateMembers go straight to
+  // Postgres RPC / PostgREST (see admin/members.js, admin/import.js) and
+  // invalidate via _invalidateApiCache directly, bypassing apiPost — no
+  // entry needed here.
   // setPassword/adminResetMemberPassword go straight to Postgres RPC (see
   // settings/settings.js, admin/members.js) and invalidate via
   // _invalidateApiCache directly, bypassing apiPost — no entry needed here.

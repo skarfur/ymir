@@ -198,23 +198,32 @@ async function confirmImport() {
       else if (decision === 'same') { extraUpdated.push({ ...a.csvRow, id: a.existing.id, kennitala: a.existing.kennitala, _prev: a.existing }); }
     });
 
+    // dob is whatever raw date string the CSV carried; the backend only
+    // stores a birth YEAR (isMinor is computed from it), so extract just
+    // the leading 4 digits — same estimation the preview already uses.
     const toSend = [...importResult.added, ...extraAdded, ...importResult.updated, ...extraUpdated].map(m => {
-      const c = { ...m }; delete c._s; delete c._prev; return c;
+      const c = { ...m }; delete c._s; delete c._prev; delete c.dob;
+      var y = m.dob ? parseInt(String(m.dob).slice(0, 4), 10) : NaN;
+      c.birthYear = isFinite(y) ? y : null;
+      return c;
     });
     const importTemps = [];
     if (toSend.length) {
-      const results = await Promise.all(chunk(toSend, 10).map(rows => apiPost("importMembers", { rows })));
-      results.forEach(r => {
-        if (r && Array.isArray(r.tempPasswords)) importTemps.push(...r.tempPasswords);
-      });
+      const res = await callSupabaseRpc("import_members", { p_rows: toSend });
+      _invalidateApiCache("getMembers");
+      if (res && Array.isArray(res.tempPasswords)) importTemps.push(...res.tempPasswords);
     }
 
     // Deactivate checked flagged members
     const deactivateIds = Array.from(document.querySelectorAll('.flag-cb:checked')).map(cb => cb.value).filter(Boolean);
     let deactivated = 0;
     if (deactivateIds.length) {
-      const res = await apiPost("deactivateMembers", { ids: deactivateIds });
-      deactivated = res.deactivated || 0;
+      const idList = deactivateIds.map(encodeURIComponent).join(",");
+      await callPostgrestTable("members", {
+        method: "PATCH", query: "?id=in.(" + idList + ")", body: { active: false },
+      });
+      _invalidateApiCache("getMembers");
+      deactivated = deactivateIds.length;
       deactivateIds.forEach(id => {
         const m = members.find(x => x.id === id);
         if (m) m.active = false;

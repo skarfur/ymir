@@ -82,10 +82,13 @@ function openMemberModal(id) {
   document.getElementById("mEmail").value          = m ? (m.email        || "") : "";
   document.getElementById("mPhone").value          = m ? (m.phone        || "") : "";
   document.getElementById("mInitials").value       = m ? (m.initials     || "") : "";
-  document.getElementById("mDob").value            = m ? (m.dob          || "") : "";
+  // mDob is a date picker but the backend only stores a birth YEAR
+  // (isMinor is computed from it, day/month were never stored) — show
+  // Jan 1 of that year so editing an existing member doesn't discard it.
+  document.getElementById("mDob").value            = m && m.birthYear ? (m.birthYear + "-01-01") : "";
   document.getElementById("mRole").value           = m ? (m.role         || "member") : "member";
   document.getElementById("mGuardianName").value   = m ? (m.guardianName  || "") : "";
-  document.getElementById("mGuardianKt").value     = m ? (m.guardianKt   || "") : "";
+  document.getElementById("mGuardianKt").value     = m ? (m.guardianKennitala || "") : "";
   document.getElementById("mGuardianPhone").value  = m ? (m.guardianPhone || "") : "";
   document.getElementById("mActive").checked       = m ? bool(m.active)  : true;
   document.getElementById("mDeleteBtn").classList.toggle("hidden", !m);
@@ -202,25 +205,33 @@ async function saveMember() {
   const kennitala = document.getElementById("mKennitala").value.trim();
   if (!name || !kennitala) { toast(s("admin.nameKtRequired"), "err"); return; }
 
-  const id      = editingId || ("mbr_" + Date.now().toString(36));
+  const dobVal = document.getElementById("mDob").value;
   const payload = {
-    id, name, kennitala,
-    email:          document.getElementById("mEmail").value.trim(),
-    phone:          document.getElementById("mPhone").value.trim(),
-    initials:       document.getElementById("mInitials").value.trim().toUpperCase(),
-    dob:            document.getElementById("mDob").value,
-    role:           document.getElementById("mRole").value,
-    guardianName:   document.getElementById("mGuardianName").value.trim(),
-    guardianKt:     document.getElementById("mGuardianKt").value.trim(),
-    guardianPhone:  document.getElementById("mGuardianPhone").value.trim(),
-    active:         document.getElementById("mActive").checked,
+    name, kennitala,
+    email:               document.getElementById("mEmail").value.trim(),
+    phone:               document.getElementById("mPhone").value.trim(),
+    initials:            document.getElementById("mInitials").value.trim().toUpperCase(),
+    birthYear:           dobVal ? new Date(dobVal).getFullYear() : null,
+    role:                document.getElementById("mRole").value,
+    guardianName:        document.getElementById("mGuardianName").value.trim(),
+    guardianKennitala:   document.getElementById("mGuardianKt").value.trim(),
+    guardianPhone:       document.getElementById("mGuardianPhone").value.trim(),
+    active:              document.getElementById("mActive").checked,
   };
 
   try {
-    const res = await apiPost("saveMember", payload);
+    const res = await callSupabaseRpc("save_member", {
+      p_id: editingId, p_kennitala: payload.kennitala, p_name: payload.name,
+      p_role: payload.role, p_email: payload.email, p_phone: payload.phone,
+      p_birth_year: payload.birthYear, p_guardian_name: payload.guardianName,
+      p_guardian_kennitala: payload.guardianKennitala, p_guardian_phone: payload.guardianPhone,
+      p_active: payload.active, p_initials: payload.initials || null,
+    });
+    _invalidateApiCache("getMembers");
+    const id  = editingId || res.id;
     const idx = members.findIndex(x => x.id === id);
-    if (idx >= 0) members[idx] = { ...members[idx], ...payload };
-    else          members.push(payload);
+    if (idx >= 0) members[idx] = { ...members[idx], ...payload, id };
+    else          members.push({ ...payload, id });
     closeModal("memberModal", true);
     renderMembers();
     toast(s("toast.saved"));
@@ -234,7 +245,10 @@ async function saveMember() {
 async function deactivateMember(id) {
   if (!await ymConfirm(s("admin.confirmDeactivateMember"))) return;
   try {
-    await apiPost("deleteMember", { id });
+    await callPostgrestTable("members", {
+      method: "PATCH", query: "?id=eq." + encodeURIComponent(id), body: { active: false },
+    });
+    _invalidateApiCache("getMembers");
     members = members.filter(m => m.id !== id);
     renderMembers();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
