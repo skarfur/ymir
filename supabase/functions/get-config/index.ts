@@ -20,9 +20,13 @@ import { createAdminClient, resolveSession } from "../_shared/session.ts";
 // returns (see that function's header) — kept in sync manually since
 // there's no shared module between Edge Functions here.
 //
-// Deliberately stubbed (deferred, not ported): cancelledActivityOccurrences
-// — that's class-occurrence cancellation (cancelClassOccurrence_ and
-// friends), separate-scope logic not part of this domain's write port.
+// cancelledActivityOccurrences: plain-activity (signup_required=false)
+// tombstone rows written by the cancel-class-occurrence RPC (see
+// supabase/migrations/20260921160000_class_occurrence_overrides.sql).
+// Returned as the same 'sched-{classId}-{date}' virtual-id shape the
+// client's buildUpcomingEvents (shared/scheduled-event.js) already expects
+// from the Apps Script version, so no client-side change was needed to
+// pick this up once it stopped being a stub.
 //
 // Requires a valid session — getConfig isn't in Apps Script's
 // PUBLIC_ACTIONS_ either.
@@ -217,6 +221,17 @@ Deno.serve(async (req: Request) => {
   (Array.isArray(cfg.activity_templates) ? cfg.activity_templates : []).forEach((t: any) => { if (t && t.id) classMap[t.id] = t; });
   const volunteerEvents = (volunteerEventRows || []).map((ev) => toVolDto(ev, classMap));
 
+  const { data: cancelledRows, error: cancelledError } = await admin
+    .from("activities")
+    .select("source_activity_type_id, date")
+    .eq("status", "cancelled")
+    .eq("signup_required", false)
+    .not("source_activity_type_id", "is", null);
+  if (cancelledError) return json({ error: "Cancelled occurrences lookup failed" }, 500);
+  const cancelledActivityOccurrences = (cancelledRows || [])
+    .map((r) => (r.source_activity_type_id && r.date) ? `sched-${r.source_activity_type_id}-${r.date}` : null)
+    .filter((id): id is string => !!id);
+
   const dailyChecklistRaw = cfg.dailyChecklist || {};
   const dailyChecklist = {
     opening: (dailyChecklistRaw.opening || []).filter((r: any) => r && r.active),
@@ -263,7 +278,7 @@ Deno.serve(async (req: Request) => {
     rowingPassport: cfg.rowingPassport ?? null,
     volunteerEvents,
     clubCalendars: cfg.clubCalendars || [],
-    cancelledActivityOccurrences: [] as any[], // stubbed — see file header
+    cancelledActivityOccurrences,
   };
 
   return json(config);

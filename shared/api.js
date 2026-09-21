@@ -294,13 +294,12 @@ var _INVALIDATES = {
   importRowingPassportCsv: ['getConfig'],
   signPassportItem:        ['getRowingPassport'],
   revokePassportSignoff:   ['getRowingPassport'],
-  // Class-occurrence writes touch the activities sheet (which feeds getConfig's
-  // volunteerEvents + cancelledActivityOccurrences) and the activity-class
-  // virtual-slot projection. getDailyLog is also cached per-date, so any write
-  // that may surface in a daily-log view drops it.
-  cancelClassOccurrence:   ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
-  overrideClassOccurrence: ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
-  restoreClassOccurrence:  ['getConfig', 'getSlots', 'getDailyLog', 'getActivityLog'],
+  // cancelClassOccurrence/restoreClassOccurrence go straight to Postgres RPC
+  // now (see admin/scheduling.js) and invalidate getConfig via
+  // _invalidateApiCache directly, bypassing apiPost — no entry needed here.
+  // overrideClassOccurrence (one-shot time reschedule) stays unrouted:
+  // admin/scheduling.js's own comment says the frontend never surfaces it,
+  // so there's no live caller to rewire.
   // Volunteer events live in the activities sheet (read by getConfig).
   // deleteVolunteerEvent cascades to volunteerSignups rows for the event,
   // so it also drops the cached signups.

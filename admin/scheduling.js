@@ -195,7 +195,8 @@ async function cancelClassOccurrence(classId, dateISO) {
     .replace('{date}', dateISO);
   if (!await ymConfirm(msg)) return;
   try {
-    await apiPost('cancelClassOccurrence', { classId: classId, date: dateISO });
+    await callSupabaseRpc('cancel_class_occurrence', { p_class_id: classId, p_date: dateISO });
+    _invalidateApiCache('getConfig');
     // Locally append the tombstone id so the next render skips this date —
     // saves a getConfig round-trip. The next page load will pick it up from
     // cfgRes.cancelledActivityOccurrences anyway.
@@ -224,7 +225,8 @@ async function restoreClassOccurrence(classId, dateISO) {
     .replace('{name}', name).replace('{date}', dateISO);
   if (!await ymConfirm(msg)) return;
   try {
-    await apiPost('restoreClassOccurrence', { classId: classId, date: dateISO });
+    await callSupabaseRpc('restore_class_occurrence', { p_class_id: classId, p_date: dateISO });
+    _invalidateApiCache('getConfig');
     var tombstoneId = 'sched-' + classId + '-' + dateISO;
     cancelledActivityOccurrences = cancelledActivityOccurrences.filter(function (id) {
       return id !== tombstoneId;
