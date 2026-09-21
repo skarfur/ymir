@@ -8,9 +8,9 @@ const BASE_URL   = "https://skarfur.github.io/ymir";
 const GOOGLE_CLIENT_ID = "231967339479-m1fqbqk134sjtt2o4nloljfle7l7hk7b.apps.googleusercontent.com";
 
 // Supabase (ymir-staging) — migration in progress. All read actions are
-// wired (see _SUPABASE_ACTIONS below), plus the checkouts write path
-// (saveCheckout/checkIn/deleteCheckout); everything else still goes through
-// SCRIPT_URL above. The anon key is safe to expose client-side by design
+// wired (see _SUPABASE_ACTIONS below); most writes now go straight to
+// Postgres RPC / PostgREST at their call sites instead of an Edge Function.
+// The anon key is safe to expose client-side by design
 // (same as GOOGLE_CLIENT_ID above): RLS + revoked table grants are what
 // actually gate access, not secrecy of this key. See CLAUDE.md once the
 // Supabase side has its own documented section.
@@ -279,13 +279,11 @@ var _INVALIDATES = {
   saveConfig:              ['getConfig'],
   // saveActivityType/deleteActivityType/saveChecklistItem/
   // deleteChecklistItem/saveCertDef/deleteCertDef/saveCertCategories/
-  // saveFlagOverride/saveStaffStatus go straight to
-  // Postgres RPC now (see admin/checklists.js, admin/certs.js,
-  // staff/staff.js) and invalidate via _invalidateApiCache directly.
-  saveBoatAccess:          ['getConfig'],
-  saveBoatOos:             ['getConfig'],
-  saveReservation:         ['getConfig'],
-  removeReservation:       ['getConfig'],
+  // saveFlagOverride/saveStaffStatus/saveBoatAccess/saveBoatOos/
+  // saveReservation/removeReservation go straight to Postgres RPC now (see
+  // admin/checklists.js, admin/certs.js, staff/staff.js, captain/captain.js,
+  // admin/boats.js, shared/maintenance.js) and invalidate via
+  // _invalidateApiCache directly.
   saveRowingPassportDef:   ['getConfig'],
   importRowingPassportCsv: ['getConfig'],
   signPassportItem:        ['getRowingPassport'],
@@ -335,12 +333,9 @@ var _INVALIDATES = {
   saveTrip:                ['getTrips'],
   deleteTrip:              ['getTrips'],
   setHelm:                 ['getTrips'],
-  // saveGroupCheckout sets the linkedActivityId / classTag on the checkout
-  // row and may mint a new ad-hoc activity for today (when the user picks
-  // "+ Create activity for today" in the picker). The activity surfaces in
-  // the daily-log + activity-log views; trip cards' resolved Activity row
-  // also reads through linkedActivityId on the backend.
-  saveGroupCheckout:       ['getDailyLog', 'getActivityLog', 'getTrips'],
+  // saveCheckout/checkIn/deleteCheckout/saveGroupCheckout/groupCheckIn go
+  // straight to Postgres RPC now (see member/member.js, staff/staff.js)
+  // and invalidate via _invalidateApiCache directly where needed.
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
   createConfirmation:      ['getConfirmations', 'getNotifications'],
@@ -542,15 +537,11 @@ var _SUPABASE_ACTIONS = {
   getCrewBoard:       'get-crew-board',
   getCrewInvites:     'get-crew-invites',
   getDailyLog:        'get-daily-log',
-  saveCheckout:       'save-checkout',
-  checkIn:            'check-in',
-  deleteCheckout:     'delete-checkout',
-  saveGroupCheckout:  'save-group-checkout',
-  groupCheckIn:       'group-check-in',
-  saveBoatOos:        'save-boat-oos',
-  saveBoatAccess:     'save-boat-access',
-  saveReservation:    'save-reservation',
-  removeReservation:  'remove-reservation',
+  // saveCheckout/checkIn/deleteCheckout/saveGroupCheckout/groupCheckIn/
+  // saveBoatOos/saveBoatAccess/saveReservation/removeReservation: admin-or-
+  // self / staff-or-admin RLS gate + Postgres RPC (see member/member.js,
+  // staff/staff.js, captain/captain.js, admin/boats.js,
+  // shared/maintenance.js) — no Edge Function.
   saveTrip:           'save-trip',
   deleteTrip:         'delete-trip',
   setHelm:            'set-helm',

@@ -634,7 +634,8 @@ async function maintResolve(id) {
     await apiPost("resolveMaintenance", { id, resolvedBy: (typeof getUser==='function'?getUser()?.name:s('maint.defaultAuthor')) });
     r.resolved = true; r.resolvedBy = (typeof getUser==='function'?getUser()?.name:s('maint.defaultAuthor')); r.resolvedAt = new Date().toISOString();
     if (boolVal(r.markOos) && r.boatId) {
-      await apiPost("saveBoatOos", { id: r.boatId, oos: false, oosReason: "" });
+      await callSupabaseRpc("save_boat_oos", { p_id: r.boatId, p_oos: false, p_oos_reason: "" });
+      _invalidateApiCache('getConfig');
     }
     if (typeof renderStats === "function") renderStats();
     if (typeof renderList  === "function") renderList();

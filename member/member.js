@@ -620,17 +620,15 @@ async function submitLaunch() {
   if(isNC&&!_locName){showToast(s('logbook.enterLocation'),'err');return;}
   var snap=(typeof wxSnapshot==='function')?wxSnapshot(currentWx):null;
   try {
-    var res=await apiPost('saveCheckout',{
-      memberKennitala:user.kennitala, memberName:user.name,
-      boatId:_boatId, boatName:_boatName, boatCategory:_boatCat,
-      locationId:_locId, locationName:_locName,
-      checkedOutAt:tout, expectedReturn:ret, crew:crewCount,
-      departurePort:depPort,
-      crewNames:crewNames.length?JSON.stringify(crewNames):'',
-      memberPhone:user.phone||'', memberIsMinor:user.isMinor||false,
-      guardianName:user.guardianName||'', guardianPhone:user.guardianPhone||'',
-      wxSnapshot:snap,
-      nonClub:isNC,
+    var res=await callSupabaseRpc('save_checkout',{
+      p_member_kennitala:user.kennitala, p_member_name:user.name,
+      p_boat_id:_boatId, p_boat_name:_boatName, p_boat_category:_boatCat,
+      p_location_id:_locId, p_location_name:_locName,
+      p_checked_out_at:tout, p_expected_return:ret, p_crew:crewCount,
+      p_departure_port:depPort,
+      p_crew_names:crewNames.length?crewNames:[],
+      p_wx_snapshot:snap,
+      p_non_club:isNC,
     });
     // Optimistic update — push new checkout locally instead of refetching
     checkouts.push({
@@ -1181,7 +1179,7 @@ async function confirmCheckIn(coId) {
 
   try {
     var _tripRes = (await Promise.all([
-      apiPost('checkIn',{id:coId,timeIn,kennitala:user.kennitala,memberName:user.name,boatId:co.boatId,boatName:co.boatName}),
+      callSupabaseRpc('check_in',{p_id:coId,p_time_in:timeIn}),
       apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
       date:today,boatId:co.boatId,boatName:co.boatName,boatCategory:co.boatCategory||'',
       locationId:co.locationId||'',locationName:co.locationName||'',

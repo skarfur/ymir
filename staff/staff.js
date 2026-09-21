@@ -422,18 +422,16 @@ async function submitCheckout() {
   const member   = members.find(m => m.kennitala === kt) || {};
   const snap     = (typeof wxSnapshot === 'function') ? wxSnapshot(wxData) : null;
   try {
-    const res = await apiPost('saveCheckout', {
-      memberKennitala: kt, memberName: member.name||kt,
-      boatId: bid, boatName: boat.name||bid, boatCategory: boat.category||'',
-      locationId: lid, locationName: location.name||lid,
-      checkedOutAt: document.getElementById('coTimeOut').value,
-      expectedReturn: document.getElementById('coReturnBy').value,
-      crew: crewCount, notes: document.getElementById('coNotes').value.trim(),
-      departurePort: (document.getElementById('coDeparturePort').value||'').trim(),
-      memberPhone: member.phone||'', memberIsMinor: member.isMinor||false,
-      guardianName: member.guardianName||'', guardianPhone: member.guardianPhone||'',
-      wxSnapshot: snap,
-      crewNames: (function(){ var _cn=Array.from(document.querySelectorAll('#coCrewInputs input')).map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:!!i.dataset.guest};}).filter(function(c){return c.name;}); return _cn.length?JSON.stringify(_cn):''; })(),
+    const res = await callSupabaseRpc('save_checkout', {
+      p_member_kennitala: kt, p_member_name: member.name||kt,
+      p_boat_id: bid, p_boat_name: boat.name||bid, p_boat_category: boat.category||'',
+      p_location_id: lid, p_location_name: location.name||lid,
+      p_checked_out_at: document.getElementById('coTimeOut').value,
+      p_expected_return: document.getElementById('coReturnBy').value,
+      p_crew: crewCount, p_notes: document.getElementById('coNotes').value.trim(),
+      p_departure_port: (document.getElementById('coDeparturePort').value||'').trim(),
+      p_wx_snapshot: snap,
+      p_crew_names: (function(){ var _cn=Array.from(document.querySelectorAll('#coCrewInputs input')).map(function(i){return{name:i.value.trim(),kennitala:i.dataset.kennitala||'',guest:!!i.dataset.guest};}).filter(function(c){return c.name;}); return _cn; })(),
     });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     // Create confirmation requests for named crew members
@@ -467,7 +465,7 @@ async function staffCheckIn(id) {
   try {
     const co = checkouts.find(c => c.id === id);
     const timeIn = new Date().toTimeString().slice(0, 5);
-    await apiPost('checkIn', { id, timeIn });
+    await callSupabaseRpc('check_in', { p_id: id, p_time_in: timeIn });
     // Auto-create trip record for the skipper
     if (co && co.memberKennitala) {
       const timeOut = sstr(co.checkedOutAt || co.timeOut).slice(0, 5);
@@ -507,7 +505,7 @@ async function staffDeleteCheckout(id, boatName) {
   }
   if (!await ymConfirm(`${s('staff.deleteCheckout')}: ${boatName||''}?`)) return;
   try {
-    await apiPost('deleteCheckout', { id });
+    await callSupabaseRpc('delete_checkout', { p_id: id });
     checkouts = checkouts.filter(c => c.id !== id);
     renderAll();
     showToast(s('toast.deleted'));
@@ -1006,21 +1004,24 @@ async function submitGroupCheckout() {
   const boatNames = boatIds.map(id => (boats.find(b => b.id === id) || {}).name || id);
   const totalAboard = _groupParticipants + staffEntries.length;
   try {
-    await apiPost('saveGroupCheckout', {
-      boatIds, boatNames,
-      locationId: lid, locationName: loc.name || lid,
-      checkedOutAt: tout, expectedReturn: retBy,
-      participants: _groupParticipants,
-      staffNames: staffEntries.map(s => s.name),
-      staffKennitalar: staffEntries.map(s => s.kennitala).filter(Boolean),
-      crew: totalAboard,
+    await callSupabaseRpc('save_group_checkout', {
+      p_boat_ids: boatIds, p_boat_names: boatNames,
+      p_location_id: lid, p_location_name: loc.name || lid,
+      p_checked_out_at: tout, p_expected_return: retBy,
+      p_participants: _groupParticipants,
+      p_staff_names: staffEntries.map(s => s.name),
+      p_staff_kennitalar: staffEntries.map(s => s.kennitala).filter(Boolean),
+      p_crew: totalAboard,
       // New-style fields:
-      linkedActivityId, classTag, newActivity,
+      p_linked_activity_id: linkedActivityId, p_class_tag: classTag, p_new_activity: newActivity,
       // Display label backwards-compat — group-card renderer reads
       // activityTypeName as the badge label.
-      activityTypeName: displayName,
-      wxSnapshot: snap,
+      p_activity_type_name: displayName,
+      p_wx_snapshot: snap,
     });
+    _invalidateApiCache('getDailyLog');
+    _invalidateApiCache('getActivityLog');
+    _invalidateApiCache('getTrips');
     const _gcRes = await apiGet('getActiveCheckouts');
     checkouts = _gcRes.checkouts || [];
     closeGroupModal();
@@ -1032,7 +1033,7 @@ async function submitGroupCheckout() {
 async function staffGroupCheckIn(id) {
   try {
     const timeIn = new Date().toTimeString().slice(0, 5);
-    await apiPost('groupCheckIn', { id, timeIn });
+    await callSupabaseRpc('group_check_in', { p_id: id, p_time_in: timeIn });
     checkouts = (await apiGet('getActiveCheckouts')).checkouts || [];
     renderAll();
     showToast(s('toast.checkedIn'));

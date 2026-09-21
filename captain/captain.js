@@ -496,7 +496,8 @@ async function saveCqReservation() {
   var note = document.getElementById('cqResNote').value.trim();
   if (!kt || !name || !start || !end) { showToast(s('cq.memberDatesRequired'), 'err'); return; }
   try {
-    var res = await apiPost('saveReservation', { boatId: _resBoatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var res = await callSupabaseRpc('save_reservation', { p_boat_id: _resBoatId, p_member_kennitala: kt, p_member_name: name, p_start_date: start, p_end_date: end, p_note: note });
+    _invalidateApiCache('getConfig');
     var b = _boats.find(x => x.id === _resBoatId);
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     closeModal('resModal');
@@ -508,7 +509,8 @@ async function saveCqReservation() {
 async function removeCqReservation(boatId, resId) {
   if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
-    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var res = await callSupabaseRpc('remove_reservation', { p_boat_id: boatId, p_reservation_id: resId });
+    _invalidateApiCache('getConfig');
     var b = _boats.find(x => x.id === boatId);
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderBoats();
@@ -1245,7 +1247,8 @@ async function saveResFromModal() {
   var note = document.getElementById('bResNote').value.trim();
   if (!kt || !name || !start || !end) { showToast(s('admin.memberDatesRequired'), 'err'); return; }
   try {
-    var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var res = await callSupabaseRpc('save_reservation', { p_boat_id: boatId, p_member_kennitala: kt, p_member_name: name, p_start_date: start, p_end_date: end, p_note: note });
+    _invalidateApiCache('getConfig');
     var b = _boats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     cancelResForm();
@@ -1259,7 +1262,8 @@ async function removeBmResFromModal(resId) {
   if (!boatId) return;
   if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
-    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var res = await callSupabaseRpc('remove_reservation', { p_boat_id: boatId, p_reservation_id: resId });
+    _invalidateApiCache('getConfig');
     var b = _boats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderReservationList(b);

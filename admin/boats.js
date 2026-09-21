@@ -425,7 +425,8 @@ async function saveResFromModal() {
   var note  = document.getElementById("bResNote").value.trim();
   if (!kt || !name || !start || !end) { toast(s("admin.memberDatesRequired"), "err"); return; }
   try {
-    var res = await apiPost('saveReservation', { boatId: boatId, memberKennitala: kt, memberName: name, startDate: start, endDate: end, note: note });
+    var res = await callSupabaseRpc('save_reservation', { p_boat_id: boatId, p_member_kennitala: kt, p_member_name: name, p_start_date: start, p_end_date: end, p_note: note });
+    _invalidateApiCache('getConfig');
     var b = _allBoats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     // Clear sub-form fields so the boat modal's dirty check doesn't flag
@@ -448,7 +449,8 @@ async function removeResFromModal(resId) {
   if (!boatId) return;
   if (!(await ymConfirm(s('boat.removeReservation') + '?'))) return;
   try {
-    var res = await apiPost('removeReservation', { boatId: boatId, reservationId: resId });
+    var res = await callSupabaseRpc('remove_reservation', { p_boat_id: boatId, p_reservation_id: resId });
+    _invalidateApiCache('getConfig');
     var b = _allBoats.find(function(x) { return x.id === boatId; });
     if (b && res.boat) { b.reservations = res.boat.reservations; }
     renderReservationList(b);
