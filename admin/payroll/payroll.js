@@ -172,7 +172,7 @@ async function cfgSaveAllowBreaks(){
   var val=cb?cb.checked:false;
   if(lbl)lbl.textContent=val?s('lbl.on'):s('lbl.off');
   try{
-    await apiPost('saveConfig',{allowBreaks:val});
+    await callSupabaseRpc('save_config_value',{p_key:'allowBreaks',p_value:val});_invalidateApiCache('getConfig');
     showToast(s('toast.saved'));
   }catch(e){showToast(e.message,'err');}
 }

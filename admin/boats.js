@@ -63,7 +63,7 @@ async function saveBoatCat() {
   else          _allBoatCats.push(payload);
 
   try {
-    await apiPost("saveConfig", { boatCategories: _allBoatCats });
+    await callSupabaseRpc("save_config_value", { p_key: "boatCategories", p_value: _allBoatCats }); _invalidateApiCache("getConfig");
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
     closeModal("boatCatModal", true);
@@ -78,7 +78,7 @@ async function deleteBoatCat() {
   if (!key || !await ymConfirm(s("admin.confirmRemoveBoatCat"))) return;
   _allBoatCats = _allBoatCats.map(c => c.key === key ? { ...c, active: false } : c);
   try {
-    await apiPost("saveConfig", { boatCategories: _allBoatCats });
+    await callSupabaseRpc("save_config_value", { p_key: "boatCategories", p_value: _allBoatCats }); _invalidateApiCache("getConfig");
     boatCats = _allBoatCats.filter(c => c.active !== false && c.active !== 'false');
     registerBoatCats(boatCats);
     closeModal("boatCatModal", true);

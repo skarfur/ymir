@@ -54,19 +54,24 @@ async function saveCLItem() {
     active:    document.getElementById("clActive").checked,
   };
   await saveEntity({
-    apiAction: "saveChecklistItem",
+    call: () => callSupabaseRpc("save_checklist_item", {
+      p_id: payload.id, p_phase: payload.phase, p_text_en: payload.textEN,
+      p_text_is: payload.textIS, p_active: payload.active, p_sort_order: payload.sortOrder,
+    }),
     getArray:  () => clItems,
     setArray:  arr => { clItems = arr; },
     payload, modalId: "clModal",
     renderFn:  renderChecklists,
   });
+  _invalidateApiCache("getConfig");
 }
 
 async function deleteCLItem(id) {
   const _id = id || editingId;
   if (!await ymConfirm(s("admin.confirmDeleteItem"))) return;
   try {
-    await apiPost("deleteChecklistItem", { id: _id });
+    await callSupabaseRpc("delete_checklist_item", { p_id: _id });
+    _invalidateApiCache("getConfig");
     clItems = clItems.filter(i => i.id !== _id);
     renderChecklists();
     closeModal("clModal", true);
@@ -85,8 +90,12 @@ async function updateCLOrder(phase) {
   if (!updates.length) { document.getElementById('clUpdateOrder_' + phase)?.classList.add('hidden'); return; }
   try {
     for (const item of updates) {
-      await apiPost("saveChecklistItem", { id: item.id, phase: item.phase, textEN: item.textEN, textIS: item.textIS || "", sortOrder: item.sortOrder, active: item.active });
+      await callSupabaseRpc("save_checklist_item", {
+        p_id: item.id, p_phase: item.phase, p_text_en: item.textEN,
+        p_text_is: item.textIS || "", p_sort_order: item.sortOrder, p_active: item.active,
+      });
     }
+    _invalidateApiCache("getConfig");
     renderChecklists();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -190,7 +199,7 @@ async function saveLaunchCLItem() {
   }
 
   try {
-    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    await callSupabaseRpc("save_config_value", { p_key: "launchChecklists", p_value: _launchCLs }); _invalidateApiCache("getConfig");
     closeModal("launchCLModal", true);
     renderLaunchCLSections();
     toast(s("toast.saved"));
@@ -209,7 +218,7 @@ async function updateLaunchCLOrder(cat, phase) {
   });
   if (!changed) { document.getElementById('lcUpdateOrder_' + cat + '_' + phase)?.classList.add('hidden'); return; }
   try {
-    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    await callSupabaseRpc("save_config_value", { p_key: "launchChecklists", p_value: _launchCLs }); _invalidateApiCache("getConfig");
     renderLaunchCLSections();
     toast(s("toast.saved"));
   } catch(e) { toast(s("toast.saveFailed") + ": " + e.message, "err"); }
@@ -234,7 +243,7 @@ async function deleteLaunchCLItem(cat, phase, id) {
     _launchCLs[cat][phase] = _launchCLs[cat][phase].filter(x => x.id !== id);
   }
   try {
-    await apiPost("saveConfig", { launchChecklists: _launchCLs });
+    await callSupabaseRpc("save_config_value", { p_key: "launchChecklists", p_value: _launchCLs }); _invalidateApiCache("getConfig");
     closeModal("launchCLModal", true);
     renderLaunchCLSections();
     toast(s("toast.deleted"));

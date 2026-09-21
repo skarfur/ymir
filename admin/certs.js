@@ -56,7 +56,7 @@ async function addCertCategory() {
   inEN.value = "";
   if (inIS) inIS.value = "";
   try {
-    await apiPost("saveCertCategories", { categories: certCategories });
+    await callSupabaseRpc("save_config_value", { p_key: "certCategories", p_value: certCategories }); _invalidateApiCache("getConfig");
     renderCertCategories();
     toast(s("admin.categoryAdded"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -85,7 +85,7 @@ async function saveCertCat() {
     key, labelEN, labelIS,
   });
   try {
-    await apiPost("saveCertCategories", { categories: certCategories });
+    await callSupabaseRpc("save_config_value", { p_key: "certCategories", p_value: certCategories }); _invalidateApiCache("getConfig");
     closeModal("certCatModal", true);
     renderCertCategories();
     renderCertDefs();
@@ -99,7 +99,7 @@ async function removeCertCategory(key) {
   if (next.length === certCategories.length) return;
   certCategories = next;
   try {
-    await apiPost("saveCertCategories", { categories: certCategories });
+    await callSupabaseRpc("save_config_value", { p_key: "certCategories", p_value: certCategories }); _invalidateApiCache("getConfig");
     renderCertCategories();
     toast(s("admin.categoryRemoved"));
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
@@ -313,7 +313,8 @@ async function saveCertDef() {
 
   btn.disabled = true;
   try {
-    const res     = await apiPost("saveCertDef", payload);
+    const res     = await callSupabaseRpc("save_config_list_item", { p_key: "certDefs", p_item: payload });
+    _invalidateApiCache("getConfig");
     const savedId = res?.id || newId;
     const saved   = { ...payload, id: savedId };
     if (certEditId) {
@@ -336,7 +337,7 @@ async function saveCertDef() {
 async function deleteCertDef() {
   if (!certEditId || !await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
-    await apiPost("deleteCertDef", { id: certEditId });
+    await callSupabaseRpc("delete_config_list_item", { p_key: "certDefs", p_id: certEditId }); _invalidateApiCache("getConfig");
     certDefs = certDefs.filter(d => d.id !== certEditId);
     renderCertDefs();
 
@@ -348,7 +349,7 @@ async function deleteCertDef() {
 async function deleteCertDefById(id) {
   if (!await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
-    await apiPost("deleteCertDef", { id });
+    await callSupabaseRpc("delete_config_list_item", { p_key: "certDefs", p_id: id }); _invalidateApiCache("getConfig");
     certDefs = certDefs.filter(d => d.id !== id);
     renderCertDefs();
 

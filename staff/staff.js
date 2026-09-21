@@ -1111,7 +1111,10 @@ async function toggleStaffStatus(field) {
   _staffStatus.updatedByName = (typeof user !== 'undefined' && user) ? (user.name || '') : '';
   renderStaffStatusStrip();
   document.getElementById('wxWidget')?._wxRefreshBadges?.();
-  try { await apiPost('saveStaffStatus', { staffStatus: _staffStatus }); }
+  try {
+    await callSupabaseRpc('save_staff_status', { p_staff_status: _staffStatus });
+    _invalidateApiCache('getConfig');
+  }
   catch(e) { showToast('Status saved — sync when online', 'warn'); }
 }
 
@@ -1194,7 +1197,10 @@ async function saveFlagOverride() {
   wxLoadFlagOverride(ov);
   toggleFlagOverrideForm(false);
   document.getElementById('wxWidget')?._wxRefresh?.();
-  try { await apiPost('saveFlagOverride', { flagOverride: ov }); }
+  try {
+    await callSupabaseRpc('save_flag_override', { p_flag_override: ov });
+    _invalidateApiCache('getConfig');
+  }
   catch(e) {
     _flagOverride = prev;
     wxLoadFlagOverride(prev);
@@ -1210,7 +1216,10 @@ async function clearFlagOverride() {
   wxLoadFlagOverride(null);
   renderFlagOverrideCard();
   document.getElementById('wxWidget')?._wxRefresh?.();
-  try { await apiPost('saveFlagOverride', { flagOverride: null }); }
+  try {
+    await callSupabaseRpc('save_flag_override', { p_flag_override: null });
+    _invalidateApiCache('getConfig');
+  }
   catch(e) {
     _flagOverride = prev;
     wxLoadFlagOverride(prev);

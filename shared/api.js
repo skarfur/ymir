@@ -274,20 +274,19 @@ try {
 //   getMembers — members sheet only.
 var _INVALIDATES = {
   // Config writes — config-sheet only; member rows untouched.
+  // saveConfig itself stays routed here — boats/locations writes still go
+  // through it (see the config_rpcs.sql migration note on that gap).
   saveConfig:              ['getConfig'],
   saveActivityType:        ['getConfig', 'getSlots'],
   deleteActivityType:      ['getConfig', 'getSlots'],
-  saveChecklistItem:       ['getConfig'],
-  deleteChecklistItem:     ['getConfig'],
-  saveCertDef:             ['getConfig'],
-  deleteCertDef:           ['getConfig'],
-  saveCertCategories:      ['getConfig'],
+  // saveChecklistItem/deleteChecklistItem/saveCertDef/deleteCertDef/
+  // saveCertCategories/saveFlagOverride/saveStaffStatus go straight to
+  // Postgres RPC now (see admin/checklists.js, admin/certs.js,
+  // staff/staff.js) and invalidate via _invalidateApiCache directly.
   saveBoatAccess:          ['getConfig'],
   saveBoatOos:             ['getConfig'],
   saveReservation:         ['getConfig'],
   removeReservation:       ['getConfig'],
-  saveFlagOverride:        ['getConfig'],
-  saveStaffStatus:         ['getConfig'],
   saveRowingPassportDef:   ['getConfig'],
   importRowingPassportCsv: ['getConfig'],
   signPassportItem:        ['getRowingPassport'],

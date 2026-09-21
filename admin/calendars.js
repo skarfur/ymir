@@ -60,12 +60,13 @@ async function saveCharterCalendars() {
   const msg = document.getElementById("charterCalSaveMsg");
   msg.textContent = "";
   try {
-    await apiPost("saveCharterCalendars", {
-      rowingCalendarId: document.getElementById("charterRowingCalId").value.trim(),
-      rowingCalendarSyncActive: document.getElementById("charterRowingCalActive").checked,
-      keelboatCalendarId: document.getElementById("charterKeelboatCalId").value.trim(),
-      keelboatCalendarSyncActive: document.getElementById("charterKeelboatCalActive").checked,
+    await callSupabaseRpc("save_charter_calendars", {
+      p_rowing_calendar_id: document.getElementById("charterRowingCalId").value.trim(),
+      p_rowing_calendar_sync_active: document.getElementById("charterRowingCalActive").checked,
+      p_keelboat_calendar_id: document.getElementById("charterKeelboatCalId").value.trim(),
+      p_keelboat_calendar_sync_active: document.getElementById("charterKeelboatCalActive").checked,
     });
+    _invalidateApiCache("getConfig");
     msg.textContent = s("toast.saved") || "Saved";
     msg.style.color = "var(--green)";
   } catch (e) {
@@ -120,7 +121,8 @@ async function saveClubCalendars() {
     if (name && calId) cals.push({ name: name, calendarId: calId });
   });
   try {
-    await apiPost("saveClubCalendars", { calendars: cals });
+    await callSupabaseRpc("save_config_value", { p_key: "clubCalendars", p_value: cals });
+    _invalidateApiCache("getConfig");
     clubCalendars = cals.slice();
     refreshClubCalSelects();
     msg.textContent = s("toast.saved") || "Saved";

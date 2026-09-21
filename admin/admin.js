@@ -209,10 +209,13 @@ function showMemberSub(sub) {
 }
 
 // ── Generic entity save ────────────────────────────────────────────────────────
-async function saveEntity({ apiAction, getArray, setArray, payload, modalId, renderFn, btn }) {
+// `call`, when given, replaces the apiPost(apiAction, payload) round trip —
+// used by actions ported to a Postgres RPC (see admin/checklists.js) so
+// they can still ride this shared array-merge/modal/toast plumbing.
+async function saveEntity({ apiAction, call, getArray, setArray, payload, modalId, renderFn, btn }) {
   if (btn) btn.disabled = true;
   try {
-    const res = await apiPost(apiAction, payload);
+    const res = call ? await call() : await apiPost(apiAction, payload);
     const arr = getArray();
     if (!payload.id && res.id) {
       setArray([...arr, { ...payload, id: res.id }]);
