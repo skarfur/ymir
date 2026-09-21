@@ -512,7 +512,8 @@ document.addEventListener('keydown', function(e) {
 // ── Delete trip files ────────────────────────────────────────────────────────
 async function toggleHelm(tripId, checked) {
   try {
-    await apiPost('setHelm', { tripId, helm: checked });
+    await callSupabaseRpc('set_helm', { p_trip_id: tripId, p_helm: checked });
+    _invalidateApiCache('getTrips');
     // Update local data
     const t = myTrips.find(x => x.id === tripId);
     if (t) t.helm = checked;
@@ -544,7 +545,8 @@ async function deleteTripPhoto(tripId, photoUrl) {
       let meta = {}; try { if (t.photoMeta) meta = JSON.parse(t.photoMeta); } catch(e) {}
       delete meta[photoUrl];
       t.photoMeta = Object.keys(meta).length ? JSON.stringify(meta) : '';
-      await apiPost('saveTrip', { id: tripId, photoMeta: t.photoMeta });
+      await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: { photoMeta: t.photoMeta } });
+      _invalidateApiCache('getTrips');
     }
     applyFilter();
     showToast(s('logbook.photoDeleted'), 'success');

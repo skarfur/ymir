@@ -232,7 +232,8 @@ async function verifyTrip(id) {
       _verifyReqs = _verifyReqs.filter(r => r.id !== vr.id);
     }
     // Also update staffComment directly (handshake sets verified + verifiedBy)
-    await apiPost('saveTrip', { id, verified: true, staffComment: comment, verifiedBy: user.name });
+    await callSupabaseRpc('save_trip', { p_id: id, p_updates: { verified: true, staffComment: comment, verifiedBy: user.name } });
+    _invalidateApiCache('getTrips');
     const t = allTrips.find(x => x.id === id);
     if (t) Object.assign(t, { verified: 'true', staffComment: comment, verifiedBy: user.name });
     updateStats();
@@ -247,7 +248,8 @@ async function verifyTrip(id) {
 async function unverifyTrip(id) {
   const comment = document.getElementById('comment-' + id)?.value.trim() || '';
   try {
-    await apiPost('saveTrip', { id, verified: false, staffComment: comment, verifiedBy: '' });
+    await callSupabaseRpc('save_trip', { p_id: id, p_updates: { verified: false, staffComment: comment, verifiedBy: '' } });
+    _invalidateApiCache('getTrips');
     const t = allTrips.find(x => x.id === id);
     if (t) Object.assign(t, { verified: 'false', staffComment: comment, verifiedBy: '' });
     updateStats();

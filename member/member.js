@@ -1180,7 +1180,7 @@ async function confirmCheckIn(coId) {
   try {
     var _tripRes = (await Promise.all([
       callSupabaseRpc('check_in',{p_id:coId,p_time_in:timeIn}),
-      apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,
+      callSupabaseRpc('save_trip',{p_updates:{kennitala:user.kennitala,memberName:user.name,
       date:today,boatId:co.boatId,boatName:co.boatName,boatCategory:co.boatCategory||'',
       locationId:co.locationId||'',locationName:co.locationName||'',
       timeOut:tout,timeIn,hoursDecimal:h>0?h.toFixed(2):'0',crew:co.crew||1,
@@ -1191,8 +1191,9 @@ async function confirmCheckIn(coId) {
       distanceNm,trackFileUrl,trackSimplified,trackSource,
       photoUrls:photoUrls.length?JSON.stringify(photoUrls):'',
       crewNames:co.crewNames||'',
-      }),
+      }}),
     ]))[1];
+    _invalidateApiCache('getTrips');
     var _skipperTripId = _tripRes?.id || '';
     // Create helm confirmation requests for non-guest crew members
     // Create helm + student confirmation requests for non-guest crew
@@ -1256,7 +1257,7 @@ async function confirmCheckIn(coId) {
       if(cn&&!cn.student){cn.student=true;_crewNamesChanged=true;}
     });
     if(_crewNamesChanged&&_skipperTripId){
-      apiPost('saveTrip',{id:_skipperTripId,crewNames:JSON.stringify(_updatedCrewNames)}).catch(function(){});
+      callSupabaseRpc('save_trip',{p_id:_skipperTripId,p_updates:{crewNames:JSON.stringify(_updatedCrewNames)}}).then(function(){_invalidateApiCache('getTrips');}).catch(function(){});
     }
     window._retCrewTrips=[]; window._retCrewTripsFetched=false;
     checkouts=checkouts.filter(function(c){return c.id!==coId;});
@@ -1281,7 +1282,8 @@ async function submitManualTrip() {
   const boat=boats.find(b=>b.id===bid)||{},location=locations.find(l=>l.id===lid)||{};
   const h=tout&&tin?((new Date('2000-01-01T'+tin).getTime()-new Date('2000-01-01T'+tout).getTime())/3600000):0;
   try {
-    await apiPost('saveTrip',{kennitala:user.kennitala,memberName:user.name,memberId:user.id||user.kennitala,date,boatId:bid,boatName:boat.name||bid,locationId:lid,locationName:location.name||lid,timeOut:tout,timeIn:tin,hoursDecimal:h>0?h.toFixed(2):'',notes:document.getElementById('rNotes').value.trim(),role:'skipper'});
+    await callSupabaseRpc('save_trip',{p_updates:{kennitala:user.kennitala,memberName:user.name,date,boatId:bid,boatName:boat.name||bid,locationId:lid,locationName:location.name||lid,timeOut:tout,timeIn:tin,hoursDecimal:h>0?h.toFixed(2):'',notes:document.getElementById('rNotes').value.trim(),role:'skipper'}});
+    _invalidateApiCache('getTrips');
     closeModal('manualTripModal'); logbookLoaded=false; showToast(s('toast.saved'));
   } catch(e){err.textContent=s('toast.error')+': '+e.message;err.style.display='block';}
 }

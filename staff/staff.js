@@ -478,7 +478,7 @@ async function staffCheckIn(id) {
         hoursDecimal = +(mins / 60).toFixed(2);
       }
       try {
-        await apiPost('saveTrip', {
+        await callSupabaseRpc('save_trip', { p_updates: {
           kennitala: co.memberKennitala, memberName: co.memberName || '',
           date: todayISO(),
           timeOut, timeIn, hoursDecimal,
@@ -488,7 +488,8 @@ async function staffCheckIn(id) {
           linkedCheckoutId: id, isLinked: true,
           departurePort: co.departurePort || '',
           wxSnapshot: co.wxSnapshot || '',
-        });
+        } });
+        _invalidateApiCache('getTrips');
       } catch(e2) { console.warn('Auto trip save failed:', e2.message); }
     }
     const localCo = checkouts.find(c => c.id === id);

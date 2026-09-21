@@ -245,7 +245,8 @@ async function editNote(tripId, field) {
   try {
     const update = {};
     update[field] = val;
-    await apiPost('saveTrip', { id: tripId, [field]: val });
+    await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: update });
+    _invalidateApiCache('getTrips');
     t[field] = val;
     applyFilter();
     showToast(s('logbook.noteSaved'), 'success');

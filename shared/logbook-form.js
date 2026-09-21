@@ -758,7 +758,8 @@ async function submitManual(){
       helm: helmSelf,
       crewNames: _crewNamesArr.length ? JSON.stringify(_crewNamesArr) : '',
     };
-    const res=await apiPost('saveTrip', tripBase);
+    const res=await callSupabaseRpc('save_trip', { p_updates: tripBase });
+    _invalidateApiCache('getTrips');
     const savedTrip = Object.assign({id:res.id, kennitala:user.kennitala}, tripBase);
     myTrips.unshift(savedTrip);
 
@@ -771,7 +772,7 @@ async function submitManual(){
       const cKt = inp?.dataset.kennitala||'';
       if(!cName) continue;
       try{
-        await apiPost('saveTrip',{
+        await callSupabaseRpc('save_trip',{p_updates:{
           kennitala: cKt, memberName: cName,
           date, boatId, boatName, boatCategory,
           locationId:locId, locationName:locName,
@@ -783,7 +784,7 @@ async function submitManual(){
           beaufort:bft, windDir:wdir, wxSnapshot,
           distanceNm, departurePort:depPort, arrivalPort:arrPort,
           nonClub: isNonClub||false,
-        });
+        }});
       }catch(e2){ console.warn('Crew trip save failed for',cName,e2.message); }
     }
 

@@ -144,13 +144,14 @@ async function submitEditTrip() {
   const btn = document.getElementById('etSubmitBtn');
   btn.disabled = true; btn.textContent = s('logbook.saving');
   try {
-    await apiPost('saveTrip', {
-      id: tripId, date, boatId, boatName, boatCategory,
+    await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: {
+      date, boatId, boatName, boatCategory,
       locationId: locId, locationName: locName,
       timeOut, timeIn, hoursDecimal, crew,
       beaufort: bft, windDir, wxSnapshot, skipperNote,
       distanceNm, departurePort: depPort, arrivalPort: arrPort,
-    });
+    }});
+    _invalidateApiCache('getTrips');
     // Update local data
     Object.assign(t, { date, boatId, boatName, boatCategory, locationId: locId, locationName: locName, timeOut, timeIn, hoursDecimal, crew, beaufort: bft, windDir, wxSnapshot, skipperNote, distanceNm, departurePort: depPort, arrivalPort: arrPort });
     closeEditTrip();
@@ -179,7 +180,8 @@ function inlineUploadTrack(tripId) {
       // Save track to trip
       const updates = { trackFileUrl: res.trackFileUrl || '', trackSimplified: res.trackSimplified || '', trackSource: res.trackSource || '' };
       if (res.distanceNm) updates.distanceNm = res.distanceNm;
-      await apiPost('saveTrip', { id: tripId, ...updates });
+      await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: updates });
+      _invalidateApiCache('getTrips');
       const t = myTrips.find(x => x.id === tripId);
       if (t) Object.assign(t, updates);
       applyFilter();
@@ -258,7 +260,8 @@ async function submitInlinePhotos() {
       const allUrls = urls.concat(newUrls);
       const photoUrls = JSON.stringify(allUrls);
       const photoMeta = JSON.stringify(meta);
-      await apiPost('saveTrip', { id: tripId, photoUrls, photoMeta });
+      await callSupabaseRpc('save_trip', { p_id: tripId, p_updates: { photoUrls, photoMeta } });
+      _invalidateApiCache('getTrips');
       t.photoUrls = photoUrls;
       t.photoMeta = photoMeta;
     }

@@ -329,12 +329,9 @@ var _INVALIDATES = {
   // those, so dropping getTrips keeps the trip-detail Activity row fresh.
   // getDailyLog is cached per-date so the just-saved day reads back fresh.
   saveDailyLog:            ['getDailyLog', 'getActivityLog', 'getTrips'],
-  // Trips.
-  saveTrip:                ['getTrips'],
-  deleteTrip:              ['getTrips'],
-  setHelm:                 ['getTrips'],
-  // saveCheckout/checkIn/deleteCheckout/saveGroupCheckout/groupCheckIn go
-  // straight to Postgres RPC now (see member/member.js, staff/staff.js)
+  // saveTrip/deleteTrip/setHelm/saveCheckout/checkIn/deleteCheckout/
+  // saveGroupCheckout/groupCheckIn go straight to Postgres RPC now (see
+  // member/member.js, staff/staff.js, shared/logbook-*.js)
   // and invalidate via _invalidateApiCache directly where needed.
   // respondConfirmation can mint a new crew-trip row AND clear a notification.
   respondConfirmation:     ['getTrips', 'getNotifications', 'getConfirmations'],
@@ -532,9 +529,9 @@ var _SUPABASE_ACTIONS = {
   // self / staff-or-admin RLS gate + Postgres RPC (see member/member.js,
   // staff/staff.js, captain/captain.js, admin/boats.js,
   // shared/maintenance.js) — no Edge Function.
-  saveTrip:           'save-trip',
-  deleteTrip:         'delete-trip',
-  setHelm:            'set-helm',
+  // saveTrip/deleteTrip/setHelm: session-only RLS gate + Postgres RPC (see
+  // member/member.js, staff/staff.js, shared/logbook-*.js) — no Edge
+  // Function.
   createConfirmation:      'create-confirmation',
   respondConfirmation:     'respond-confirmation',
   requestVerification:     'request-verification',
