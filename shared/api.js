@@ -527,6 +527,12 @@ var _SUPABASE_ACTIONS = {
   getTrips:           'get-trips',
   getConfirmations:   'get-confirmations',
   getVerificationRequests: 'get-verification-requests',
+  // captain/captain.js's init-load bundle: one call standing in for
+  // getConfig+getMaintenance+getTrips+getConfirmations+
+  // getVerificationRequests+getMembers (see get-captain-bundle's header).
+  // Not cached itself — captain.js seeds each of those six actions'
+  // individual cache slots from the response instead.
+  getCaptainBundle:   'get-captain-bundle',
   getIncidents:       'get-incidents',
   getActivityLog:     'get-activity-log',
   getCrewBoard:       'get-crew-board',

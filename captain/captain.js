@@ -1,16 +1,25 @@
 window._logbookSkipInit = true;
 
-// Kick off init reads at script-parse time so they race the rest of the
-// deferred-script chain. apiGet's inflight dedup means the awaits below
-// pick up these promises instead of firing fresh network calls.
+// Kick off the init read at script-parse time so it races the rest of the
+// deferred-script chain. apiGet's inflight dedup means the await below
+// picks up this promise instead of firing a fresh network call.
+//
+// One bundled call (getCaptainBundle) instead of six separate ones
+// (getConfig/getMaintenance/getTrips/getConfirmations/
+// getVerificationRequests/getMembers) — this page's init previously fired
+// all six as their own Edge Function invocations, each paying its own
+// resolveSession round-trip and cold-start risk on top of the query
+// itself. The bundle resolves the session once server-side and runs all
+// six reads in parallel there instead. DOMContentLoaded below seeds each
+// individual action's apiGet cache slot from the bundle response, so
+// every other page's normal per-action invalidation
+// (_invalidateApiCache('getMaintenance') etc.) keeps working unchanged —
+// only this page's initial fan-out changes.
 var _cqU = (typeof getUser === 'function') ? getUser() : null;
 prefetch({
-  Config:               ['getConfig'],
-  Maintenance:          ['getMaintenance'],
-  Trips:                ['getTrips', { limit: 500 }],
-  VerificationRequests: ['getVerificationRequests'],
-  Members:              ['getMembers'],
-  Confirmations: _cqU && _cqU.kennitala ? ['getConfirmations', { kennitala: _cqU.kennitala }] : null,
+  CaptainBundle: _cqU && _cqU.kennitala
+    ? ['getCaptainBundle', { kennitala: _cqU.kennitala }]
+    : null,
 });
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
@@ -67,16 +76,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Build filter pills
   buildMaintPills();
 
-  // Fetch all data in parallel
+  // Fetch all init data via one bundled call (see the prefetch comment
+  // above for why) and seed each individual action's cache slot from it
+  // so the rest of the page — and every other page's write-triggered
+  // invalidation — keeps treating getConfig/getMaintenance/getTrips/
+  // getConfirmations/getVerificationRequests/getMembers as independently
+  // cached reads.
   try {
-    const [cfgRes, maintRes, tripsRes, confRes, verRes, membersRes] = await Promise.all([
-      apiGet('getConfig'),
-      apiGet('getMaintenance'),
-      apiGet('getTrips', { limit: 500 }),
-      apiGet('getConfirmations', { kennitala: user.kennitala }),
-      apiGet('getVerificationRequests'),
-      apiGet('getMembers'),
-    ]);
+    const bundle = window._earlyCaptainBundle || apiGet('getCaptainBundle', { kennitala: user.kennitala });
+    const { config: cfgRes, maintenance: maintRes, trips: tripsRes,
+            confirmations: confRes, verificationRequests: verRes, members: membersRes } = await bundle;
+
+    seedApiCache('getConfig', {}, cfgRes);
+    seedApiCache('getMaintenance', {}, maintRes);
+    seedApiCache('getTrips', { limit: 500 }, tripsRes);
+    seedApiCache('getConfirmations', { kennitala: user.kennitala }, confRes);
+    seedApiCache('getVerificationRequests', {}, verRes);
+    seedApiCache('getMembers', {}, membersRes);
 
     _boats     = (cfgRes.boats     || []);
     _locations = (cfgRes.locations || []).filter(l => l.active !== false && l.active !== 'false');
