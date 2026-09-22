@@ -480,12 +480,16 @@ async function wxFetch(lat, lon, { fresh = false, useBirk = true } = {}) {
   }
 
   // ── 1. BIRK current observations  —  via backend proxy (skipped for non-club locations) ──
-  // The proxy fetches Vedur.is server-side (CORS-blocked from browsers). On
-  // a cold Apps Script container this round-trip can stretch to 20s+, so we
-  // race against a 5s timeout: if BIRK isn't back, the widget renders with
-  // Open-Meteo's `current` data and the eventual response still warms the
+  // The proxy (Supabase Edge Function `weather`, see supabase/functions/weather)
+  // fetches Vedur.is server-side (CORS-blocked from browsers) fresh on every
+  // call, with no caching of its own — the whole widget was blocking on this
+  // one leg for up to 5s whenever Vedur.is was slow, even though the other
+  // two legs (Open-Meteo) typically settle in well under a second. Capped
+  // shorter here since the fallback path is already solid: if BIRK isn't
+  // back in time, the widget renders with Open-Meteo's `current` data
+  // instead, and the eventual (still in-flight) response just warms the
   // sessionStorage cache for the next refresh tick.
-  const BIRK_TIMEOUT_MS = 5000;
+  const BIRK_TIMEOUT_MS = 2000;
   const birkPromise = useBirk
     ? Promise.race([
         apiGet('getWeather', fresh ? { _fresh: true } : {}).catch(() => null),

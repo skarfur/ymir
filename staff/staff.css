@@ -240,6 +240,12 @@
 #groupCheckOutBtn{background:var(--navy);border-color:var(--navy);color:#fff}
 #groupCheckOutBtn:hover{background:var(--navy-d);border-color:var(--navy-d)}
 
+/* Punch clock resolves in its own async lookup after the main data load
+   (see staff.js) and can render either the widget or a one-line "not
+   enabled" message — reserve enough height for the collapsed widget so
+   that swap doesn't shift the maintenance/fleet sections below it. */
+#punchClockWidget{min-height:96px}
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .nav-grid{grid-template-columns:1fr}

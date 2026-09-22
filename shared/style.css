@@ -858,6 +858,23 @@ textarea { min-height: 70px; }
   flex-shrink: 0;
 }
 
+/* ── WEATHER / TIDE WIDGETS (shared/weather.js, shared/tides.js) ─────────────────
+   Both widgets start as a bare one-line "Loading…" placeholder, then swap in a
+   much taller rendered card once their fetch resolves. Reserving that height
+   (and giving the container the same card chrome public/public.css already
+   uses for its own copy of .wx-widget) keeps the first paint from reflowing
+   everything below it once the real content lands. */
+.wx-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  min-height: 260px;
+}
+.wx-widget .wx-cell { padding: 4px 0; }
+#tideWidget { min-height: 190px; }
+
 /* ── BOAT CARDS (shared/boats.js) ─────────────────────────────────────────────── */
 
 /* Fleet card — available / out / oos.
