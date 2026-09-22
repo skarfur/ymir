@@ -1673,7 +1673,7 @@ textarea { min-height: 70px; }
 .border-muted      { border: 1px solid var(--border); }
 .border-none       { border: none; }
 .bg-none           { background: none; }
-.bg-surface        { background: var(--surface); }
+.bg-surface        { background-color: var(--surface); }
 .rounded-4         { border-radius: 4px; }
 .rounded-6         { border-radius: 6px; }
 .rounded-8         { border-radius: 8px; }
