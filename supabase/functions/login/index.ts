@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { mintAccessToken } from "../_shared/session.ts";
 import { buildConfigSnapshot } from "../_shared/config.ts";
+import { toMemberDto } from "../_shared/members.ts";
 
 // Password-gated sign-in — ports members.gs's loginMember_. Username may be
 // either a 10-digit kennitala or the member's initials (case-insensitive).
@@ -29,6 +30,16 @@ import { buildConfigSnapshot } from "../_shared/config.ts";
 // login paid a full extra getConfig round-trip the piggyback was there to
 // avoid. Both are computed in parallel with the session insert below,
 // since neither depends on it.
+//
+// `member` is built via _shared/members.ts's toMemberDto (the same
+// mapper get-members/get-captain-bundle use), not a hand-rolled subset —
+// this used to return only {id,kennitala,name,role}, silently dropping
+// certifications/preferences/bio/etc. from the object every page stores
+// as the client-side `user`. That regression broke every cert-gated page
+// (captain, coxswain) immediately after login: isCaptain()/
+// hasRowingEndorsement() read user.certifications, which was always
+// undefined, so even correctly-credentialed members got bounced back to
+// /member/.
 
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -114,9 +125,7 @@ Deno.serve(async (req: Request) => {
 
   // Resolve username: 10-digit kennitala, or case-insensitive initials.
   const isKennitala = /^\d{10}$/.test(username);
-  const lookup = admin
-    .from("members")
-    .select("id, kennitala, name, role, active, password_is_temp, birth_year");
+  const lookup = admin.from("members").select("*");
   const { data: matches, error: findError } = isKennitala
     ? await lookup.eq("kennitala", username)
     : await lookup.ilike("initials", username);
@@ -175,6 +184,7 @@ Deno.serve(async (req: Request) => {
     { data: session, error: sessionError },
     wards,
     config,
+    { data: guardian },
   ] = await Promise.all([
     admin
       .from("sessions")
@@ -193,6 +203,7 @@ Deno.serve(async (req: Request) => {
     // original _loginConfigPiggyback_'s try/catch — the client just falls
     // back to its own apiGet('getConfig').
     buildConfigSnapshot(admin).catch(() => null),
+    admin.from("guardians").select("name, kennitala, phone").eq("member_id", member.id).maybeSingle(),
   ]);
 
   if (sessionError) return json({ error: "Session creation failed" }, 500);
@@ -205,12 +216,7 @@ Deno.serve(async (req: Request) => {
   }, expiresAt);
 
   return json({
-    member: {
-      id: member.id,
-      kennitala: member.kennitala,
-      name: member.name,
-      role: member.role,
-    },
+    member: toMemberDto(member, guardian),
     // Top-level, matching members.gs's loginMember_ exactly — the frontend
     // reads data.usingDefaultPassword, not data.member.usingDefaultPassword.
     usingDefaultPassword: member.password_is_temp,
