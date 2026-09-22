@@ -1,0 +1,14 @@
+-- CSV member import was failing with HTTP 500 / Postgres error 57014
+-- (query_canceled) for realistic-sized imports (200+ rows): the
+-- `authenticated` role has an 8s statement_timeout (a platform-wide guard
+-- protecting every other RPC from a runaway query), and import_members's
+-- row-by-row loop -- a SELECT + INSERT/UPDATE per row, plus a bcrypt hash
+-- (cost 12 as of the auth-hardening migration) for every new member --
+-- simply doesn't fit 200+ rows in 8s. Observed: cancelled at 8181ms.
+--
+-- Fix: give this specific function its own longer budget via a function-
+-- level SET, rather than raising the role-wide timeout (which would also
+-- let a genuinely runaway query on any OTHER RPC run 90s instead of being
+-- caught quickly). 90s comfortably covers even large (1000+ row) imports
+-- at the observed ~40ms/row rate, with headroom.
+alter function public.import_members(jsonb) set statement_timeout = '90s';

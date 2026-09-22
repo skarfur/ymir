@@ -3,6 +3,37 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix CSV member import for realistic-sized files
+
+CSV member import (admin → Members → Import CSV) failed with HTTP 500 for
+any real-sized file (200+ rows) — the preview screen looked right, but
+confirming the import silently died with no error shown.
+
+Root cause: `import_members` processes rows in a PL/pgSQL loop (one
+SELECT + INSERT/UPDATE per row, plus a bcrypt hash for every new member),
+and the `authenticated` role has an 8-second `statement_timeout` — a
+platform-wide guard against runaway queries. A 200+ row import blew past
+that and got cancelled by Postgres itself (`57014 query_canceled`), which
+PostgREST surfaces as an opaque 500 with no body the frontend could show.
+The previous migration's bcrypt cost bump (10 → 12) made this
+meaningfully worse: hashing ~250 new-member temp passwords at cost 12
+measured at 70-80s — over 4x the 8s budget on its own.
+
+- `import_members` now runs with its own `statement_timeout = '90s'`
+  (function-scoped, not a role-wide change — every other RPC keeps the
+  8s guard).
+- Reverted bcrypt cost back to 10 for `import_members` and the
+  `ensure_guardian_record_` cascade it calls for minors — the only two
+  functions that can hash many passwords in one request.
+  `change_member_password`/`admin_reset_member_password` (always
+  single-row) stay at cost 12. Not a meaningful security regression: both
+  reverted call sites only ever hash `gen_temp_password_()`'s own
+  ~57-bit-entropy random output, never a user-chosen password, and
+  `password_is_temp` forces it to be replaced on first login.
+- Verified with a timed 250-row synthetic import: cost 12 took 70-80s
+  (over budget even under the new 90s timeout's margin for larger
+  imports); cost 10 completed comfortably within it.
+
 ## Unreleased (Supabase branch) — Google sign-in + a login/password security pass
 
 Ported Google sign-in to Edge Functions (the frontend already had the full
