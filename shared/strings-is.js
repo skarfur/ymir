@@ -43,6 +43,7 @@ var _STRINGS_FLAT = {
   "lbl.optional": "valfrjálst",
   "lbl.filter": "SÍA:",
   "lbl.active": "Virkt",
+  "lbl.inactive": "Óvirkt",
   "lbl.category": "Flokkur",
   "lbl.categories": "Flokkar",
   "lbl.description": "Lýsing",

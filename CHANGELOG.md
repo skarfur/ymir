@@ -3,6 +3,28 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — admin member list/search shows inactive members too
+
+Deactivated members were completely invisible in the admin Members tab —
+`renderMembers`/`filterMembers` both hard-filtered to `active` only, so
+there was no way to find (or reactivate) someone once deactivated, even
+by searching their exact kennitala. `deactivateMember` compounded this by
+removing the member from the local array entirely, so deactivating
+someone made them vanish from the list mid-session too.
+
+- `admin/members.js`: the list and search now include every member.
+  Inactive ones render greyed out with an "(Inactive)" tag so the
+  distinction stays visible; Edit still works, so reactivating is a normal
+  edit-and-save. `deactivateMember` now marks the local row inactive
+  instead of removing it.
+- Search review: kennitala matching now strips non-digit characters from
+  the query (`String.replace(/\D/g, '')`) before comparing, so pasting a
+  hyphenated kennitala ("010190-1234") still matches the raw-digit stored
+  value — it previously wouldn't have matched at all. Name matching is
+  unchanged (case-insensitive substring, same as every other member
+  search in the app).
+- `shared/strings-en.js`/`strings-is.js`: new `lbl.inactive` key.
+
 ## Unreleased (Supabase branch) — admin member list sorts alphabetically
 
 `getMembers` returns members in database order, not name order, and

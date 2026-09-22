@@ -6,16 +6,24 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function filterMembers() {
-  const q = document.getElementById("memberSearch").value.toLowerCase();
-  const active = members.filter(m => bool(m.active) &&
-    (String(m.name||"").toLowerCase().includes(q) || String(m.kennitala||"").includes(q)));
-  renderMemberList(active);
+  const q = document.getElementById("memberSearch").value.trim().toLowerCase();
+  // Kennitala is stored as 10 raw digits, but an admin pasting one from
+  // elsewhere often carries the display hyphen ("010190-1234") — strip
+  // non-digits from the query for the kennitala side of the match so that
+  // still matches, without affecting the name-substring side.
+  const qDigits = q.replace(/\D/g, '');
+  const matches = members.filter(m =>
+    String(m.name||"").toLowerCase().includes(q) ||
+    (qDigits && String(m.kennitala||"").includes(qDigits)));
+  renderMemberList(matches);
 }
 
 function renderMembers() {
-  const active = members.filter(m => bool(m.active));
-  document.getElementById("memberCountLabel").textContent = `(${active.length})`;
-  renderMemberList(active);
+  // Shows every member, active or not — an admin needs to find and manage
+  // (e.g. reactivate) a deactivated member just as much as an active one.
+  // Row rendering marks inactive members so the distinction stays visible.
+  document.getElementById("memberCountLabel").textContent = `(${members.length})`;
+  renderMemberList(members);
 }
 
 var _memberListData = [];
@@ -48,8 +56,11 @@ function _renderMemberBatch(card) {
     var m = _memberListData[i];
     var row = document.createElement('div');
     row.className = 'member-row';
+    var isInactive = !bool(m.active);
     row.innerHTML =
-      `<span class="member-name">${esc((_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || "—"))}</span>` +
+      `<span class="member-name"${isInactive ? ' style="opacity:.55"' : ''}>${esc((_memberDupNames && _memberDupNames.has(m.name) && m.birthYear) ? (m.name + ' (' + m.birthYear + ')') : (m.name || "—"))}` +
+        (isInactive ? ` <span style="color:var(--muted);font-size:10px;font-weight:400">(${s('lbl.inactive')})</span>` : '') +
+      `</span>` +
       `<span class="member-kt">${esc(m.kennitala || "")}</span>` +
       `<button class="row-edit" data-admin-click="openMemberModal" data-admin-arg="${m.id}">Edit</button>` +
       `<button class="row-edit" data-admin-click="openMemberCertModal" data-admin-arg="${m.id}" style="font-size:10px">${s('admin.manageCreds')}</button>`;
@@ -259,7 +270,11 @@ async function deactivateMember(id) {
       method: "PATCH", query: "?id=eq." + encodeURIComponent(id), body: { active: false },
     });
     _invalidateApiCache("getMembers");
-    members = members.filter(m => m.id !== id);
+    // Mark inactive rather than removing from the local array — the list
+    // now shows all members, so a deactivated one should stay visible
+    // (greyed out) instead of vanishing.
+    const m = members.find(x => x.id === id);
+    if (m) m.active = false;
     renderMembers();
   } catch(e) { toast(s("toast.error") + ": " + e.message, "err"); }
 }

@@ -43,6 +43,7 @@ var _STRINGS_FLAT = {
   "lbl.optional": "optional",
   "lbl.filter": "FILTER:",
   "lbl.active": "Active",
+  "lbl.inactive": "Inactive",
   "lbl.category": "Category",
   "lbl.categories": "Categories",
   "lbl.description": "Description",
