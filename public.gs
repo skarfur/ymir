@@ -169,7 +169,7 @@ function pubPageShell_(title, bodyHtml) {
     // Leaflet map helpers
     + 'var _pubThumbMaps={};var _pubFullMap=null;'
     + 'function pubAddLayers(map){'
-    + 'L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);'
+    + 'L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxNativeZoom:16,maxZoom:19,attribution:"Tiles &copy; Esri"}).addTo(map);'
     + 'L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",{maxNativeZoom:17,maxZoom:19,opacity:0.9}).addTo(map);'
     + '}'
     + 'function initPubThumbMap(el){'
