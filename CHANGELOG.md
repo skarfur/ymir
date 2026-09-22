@@ -3,6 +3,30 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix infinite-scroll lists stopping after 2 batches
+
+The admin member list stopped loading partway through (alphabetically,
+around the H's on a large roster) — only the first two batches of 50
+ever rendered, no matter how far you scrolled.
+
+Root cause: `_setupMemberScrollObserver` calls `IntersectionObserver.
+observe()` exactly once, on whichever sentinel `<div>` exists at that
+moment. Every subsequent `_renderMemberBatch` call removes that sentinel
+node and appends a brand new one (to mark the new bottom of the list) —
+but nothing re-registered the observer against the new node. An
+IntersectionObserver only watches the literal element instance passed to
+`observe()`; once that node is removed, the observer keeps watching a
+detached element that can never intersect the viewport again. So the
+very first scroll-triggered batch load "used up" the observer's only
+subscription, and every batch after that silently never happened.
+
+- `admin/members.js`: `_renderMemberBatch` now re-observes each new
+  sentinel via the existing `_memberObserver` as it's appended.
+- `shared/logbook.js`: the trip list's infinite scroll (`_renderTripBatch`
+  / `_tripListObserver`, used by `captain/` and `logbook/`) had the
+  identical pattern and the same bug — fixed the same way. Was capped at
+  2×40 = 80 trips.
+
 ## Unreleased (Supabase branch) — admin member list/search shows inactive members too
 
 Deactivated members were completely invisible in the admin Members tab —

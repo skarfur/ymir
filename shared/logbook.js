@@ -212,6 +212,12 @@ function _renderTripBatch(el) {
     sentinel.className = 'trip-scroll-sentinel';
     sentinel.style.height = '1px';
     el.appendChild(sentinel);
+    // The old sentinel (which _tripListObserver was watching) was just
+    // removed above — an IntersectionObserver only watches the exact node
+    // passed to observe(), so without re-observing here, every batch past
+    // the second stops loading (the observer keeps watching a detached
+    // node that can never intersect again).
+    if (_tripListObserver) _tripListObserver.observe(sentinel);
   } else if (typeof _tripsTotal === 'number' && allTrips.length < _tripsTotal) {
     // All locally-filtered trips rendered, but the server has more older
     // trips waiting. Show a "Load older" footer with progress.

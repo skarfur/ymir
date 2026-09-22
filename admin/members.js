@@ -75,6 +75,13 @@ function _renderMemberBatch(card) {
     sentinel.className = 'member-scroll-sentinel';
     sentinel.style.height = '1px';
     card.appendChild(sentinel);
+    // The old sentinel node (which _memberObserver was watching) was just
+    // removed above and replaced with this new one — an IntersectionObserver
+    // only watches the exact node passed to observe(), so without
+    // re-observing here, every batch past the second stops loading (the
+    // observer keeps firing off a detached node that can never intersect
+    // again). This is what capped the list at 2 batches.
+    if (_memberObserver) _memberObserver.observe(sentinel);
   }
 }
 
