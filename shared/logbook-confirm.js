@@ -191,7 +191,10 @@ async function ackCrewRejection(confId){
     updateConfBadge();
     renderConfirmations();
     // Crew count on the skipper's trip may have changed — refresh the logbook view
-    if(typeof reload==='function') reload();
+    if(typeof reload==='function'){
+      await reload();
+      if (typeof cqSyncFleetTrips === 'function') cqSyncFleetTrips();
+    }
   }catch(e){showToast(s('toast.error')+': '+e.message,'err');}
 }
 
@@ -213,8 +216,14 @@ async function respondConf(confId,response,rejectComment){
       apiPost('dismissConfirmation', { id: confId }).catch(function(){});
     }
     if(response==='confirmed'){
-      // Refresh logbook to show the new crew trip created server-side
-      reload();
+      // Refresh logbook to show the new crew trip created server-side.
+      // reload() narrows the shared myTrips global to the caller's own
+      // kennitala (correct for the personal-logbook portals) — the captain
+      // portal's fleet-wide trip list needs re-widening after that; await
+      // so cqSyncFleetTrips (captain.js, undefined elsewhere) runs after
+      // reload() has refreshed allTrips, not before.
+      await reload();
+      if (typeof cqSyncFleetTrips === 'function') cqSyncFleetTrips();
     }
     showToast(response==='confirmed'?s('logbook.confirmed'):s('logbook.rejected'));
   }catch(e){

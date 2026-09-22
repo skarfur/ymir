@@ -3,6 +3,33 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — fix captain portal losing fleet-wide trips after a handshake
+
+Confirming any trip handshake (a crew member accepting an invite, a skipper
+acknowledging a rejection) on the captain portal silently dropped every
+other member's trips from the fleet-wide trip list — it looked like the
+default year filter had hidden a trip that was genuinely from the current
+year.
+
+Root cause: `captain.js` and `shared/logbook.js` both declare top-level
+`buildFilters()`/`applyFilter()` functions with incompatible semantics
+(fleet-wide vs. "my own trips only"), and `captain/index.html` loads
+`captain.js` before `shared/logbook.js` — so shared/logbook.js's
+declarations always won, and `captain.js`'s own versions were silently
+dead code. `captain.js` also had no `reload()` of its own, so
+`shared/logbook-confirm.js`'s handshake handlers fell back to
+shared/logbook.js's `reload()`, which narrows the shared `myTrips` global
+to the caller's own kennitala — exactly the wrong thing for a fleet-wide
+view.
+
+- `captain/captain.js`: renamed the colliding `buildFilters`/`applyFilter`
+  to `cqBuildFilters`/`cqApplyFilter`, and added `cqSyncFleetTrips()` to
+  re-widen `myTrips` back to fleet-wide from the already-fresh `allTrips`
+  after a shared-module reload.
+- `shared/logbook-confirm.js`: `respondConf()`/`ackCrewRejection()` now
+  await `reload()` and call `cqSyncFleetTrips()` when present (a no-op on
+  every other portal).
+
 ## Unreleased (Supabase branch) — port Google Calendar sync for activity templates
 
 Saving or deleting an activity template with calendar sync enabled stopped

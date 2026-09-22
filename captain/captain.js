@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderCrew();
     renderBoats();
     initCqReservations();
-    buildFilters();
-    applyFilter();
+    cqBuildFilters();
+    cqApplyFilter();
   } catch (e) {
     console.error(e);
     showToast(s('toast.loadFailed') + ': ' + e.message, 'err');
@@ -547,7 +547,7 @@ window.mcmGetCertCategories = function() { return _cqCertCategories; };
 
 // ══ CAPTAIN LOGBOOK FILTERS (override shared/logbook.js) ════════════════════
 var _captains = [];
-var _cqTripFilter = null;  // shared/list-filter.js controller built in buildFilters()
+var _cqTripFilter = null;  // shared/list-filter.js controller built in cqBuildFilters()
 
 // Resolve the skipper's kennitala for a trip. For a crew trip, this walks the
 // linkage (linkedTripId / linkedCheckoutId) back to the skipper row.
@@ -613,7 +613,15 @@ function _rebuildBoatNameOptions(catFilter) {
   if (names.indexOf(prev) !== -1) bSel.value = prev;
 }
 
-function buildFilters() {
+// Named cq-prefixed (not buildFilters/applyFilter) so it can't be shadowed by
+// shared/logbook.js's own top-level functions of those names — captain.js
+// loads before shared/logbook.js (see index.html), so an unprefixed
+// declaration here would lose to shared/logbook.js's member-only-trips
+// version once both scripts finish loading, silently breaking this fleet-
+// wide filter (years/categories computed from myTrips would still look
+// right most of the time, but boatName/captain/member filters would never
+// get populated, and the "keelboat" default category would never apply).
+function cqBuildFilters() {
   // Year filter
   var years = [...new Set(myTrips.map(function(t) { return sstr(t.date).slice(0, 4); }).filter(Boolean))].sort().reverse();
   var yrSel = document.getElementById('fYear');
@@ -712,7 +720,26 @@ function buildFilters() {
 }
 
 // Kept as a thin shim so existing callers (init, post-save refreshes) keep working.
-function applyFilter() { if (_cqTripFilter) _cqTripFilter.refresh(); }
+// cq-prefixed for the same shadowing reason as cqBuildFilters above.
+function cqApplyFilter() { if (_cqTripFilter) _cqTripFilter.refresh(); }
+
+// shared/logbook-confirm.js's respondConf()/ackCrewRejection() call the
+// generic global reload() (shared/logbook.js) after a handshake response.
+// That reload() repopulates allTrips fleet-wide but then narrows the SHARED
+// myTrips global down to the caller's own kennitala — correct for the
+// personal-logbook portals (member/, logbook/), but wrong here: the captain
+// portal's trip list is fleet-wide. This re-widens myTrips from the
+// already-fresh allTrips (no extra fetch needed) and redraws via our own
+// cq-prefixed filter, undoing that narrowing. Without this, confirming any
+// handshake (e.g. a crew member accepting a trip invite) would silently
+// drop every other member's trips from the captain's view until the next
+// full page load — including, confusingly, trips genuinely within the
+// default year filter's range.
+function cqSyncFleetTrips() {
+  myTrips = allTrips.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  cqBuildFilters();
+  cqApplyFilter();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAPTAIN RESERVATION SLOTS
