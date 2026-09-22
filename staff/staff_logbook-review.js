@@ -59,14 +59,21 @@ window.mcmGetCertDefs       = function () { return _certDefs; };
 window.mcmGetCertCategories = function () { return _certCats; };
 window.mcmOnUpdate          = function () { renderCertPanelList(); applyCertFilter(); };
 
-// ── Init: load trips + members + certDefs in one pass ────────────────────────
+// ── Init: members/config load independently of trips/verification ────────────
+// Previously all four reads shared one Promise.all — a failure in ANY of
+// them (even getVerificationRequests, which only feeds the trip-card
+// "pending validation" badge) rejected the whole thing, so allMembers/
+// _certDefs never got assigned and the CERTIFICATIONS section stayed
+// permanently empty even though it has nothing to do with trips or
+// verification requests. Split into two independent stages instead:
+// members+config (what the certifications section and trip-member-name
+// enrichment both need) fails loudly on its own; trips+verification
+// requests fail on their own without taking the other section down.
 async function init() {
   try {
-    const [tripsRes, membersRes, cfgRes, verifyRes] = await Promise.all([
-      apiGet('getTrips', { limit: 200 }),
+    const [membersRes, cfgRes] = await Promise.all([
       apiGet('getMembers'),
       apiGet('getConfig'),
-      apiGet('getVerificationRequests'),
     ]);
 
     allMembers  = membersRes.members || [];
@@ -74,7 +81,6 @@ async function init() {
     allLocs     = cfgRes.locations || [];
     _certDefs   = certDefsFromConfig(cfgRes.certDefs || []);
     _certCats   = certCategoriesFromConfig(cfgRes.certCategories || []);
-    _verifyReqs = verifyRes.requests || [];
     _dataLoaded = true;
     if (typeof registerBoatCats === 'function') registerBoatCats(cfgRes.boatCategories || []);
 
@@ -88,8 +94,26 @@ async function init() {
     populateActivityFilters();
     initActivityDateInputs();
     loadActivityLog();
+  } catch (e) {
+    document.getElementById('certMemberEmpty').innerHTML =
+      `<span class="text-red">${s('toast.loadFailed')}: ${esc(e.message)}</span>`;
+    document.getElementById('tripList').innerHTML =
+      `<div class="empty-note text-red">${s('toast.loadFailed')}: ${esc(e.message)}</div>`;
+    return;
+  }
 
-    // Enrich trips with resolved member name where missing
+  try {
+    // getVerificationRequests only feeds the "pending validation" badge on
+    // trip cards — a failure there shouldn't blank the trip list itself.
+    const [tripsRes, verifyRes] = await Promise.all([
+      apiGet('getTrips', { limit: 200 }),
+      apiGet('getVerificationRequests').catch(() => ({ requests: [] })),
+    ]);
+
+    _verifyReqs = verifyRes.requests || [];
+
+    // Enrich trips with resolved member name where missing (needs allMembers,
+    // set by the stage above — this is why trips load after, not in parallel).
     allTrips = (tripsRes.trips || [])
       .map(t => _enrichTripMember(t))
       .sort((a, b) => (b.date > a.date ? 1 : -1));
