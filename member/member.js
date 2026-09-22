@@ -348,7 +348,7 @@ function renderNonClubLaunchForm() {
     '<input type="text" id="launchBoatName" placeholder="'+s('logbook.boatNamePh')+'" autocomplete="off"></div>'+
     '<div class="field"><label>'+s('logbook.boatCategory')+'</label>'+
     '<select id="launchBoatCat">'+catOpts+'</select></div>'+
-    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<div class="field"><label>'+s('lbl.sailingLocation')+'</label>'+
     '<div style="display:flex;gap:6px;align-items:center">'+
       '<input type="text" id="launchLocFree" placeholder="'+s('logbook.locationNamePh')+'" autocomplete="off" style="flex:1">'+
       '<button type="button" class="btn btn-secondary btn-sm" data-member-click="useMyLocation" data-member-arg="launchLocFree" data-member-arg2="launchLocGeoStatus" style="white-space:nowrap">📍 '+s('logbook.useMyLocation')+'</button>'+
@@ -397,7 +397,7 @@ function renderLaunchForm(boat) {
   var defaultPort='';
   if(isKeel&&boat.defaultPortId){var _hp=locations.find(function(l){return l.id===boat.defaultPortId;});if(_hp)defaultPort=_hp.name;}
   document.getElementById('launchModalBody').innerHTML=
-    '<div class="field"><label>'+s('lbl.location')+'</label>'+
+    '<div class="field"><label>'+s('lbl.sailingLocation')+'</label>'+
     '<select id="launchLocation"><option value="">'+s('lbl.selectDots')+'</option>'+locOpts+'</select></div>'+
     (isKeel?'<div class="field"><label style="color:var(--accent-fg)">⚓️ '+s('member.departurePort')+'</label>'+
       '<input type="text" list="launchPortsList" id="launchDeparturePort" placeholder="'+s('member.homePort')+'" value="'+esc(defaultPort)+'" autocomplete="off">'+

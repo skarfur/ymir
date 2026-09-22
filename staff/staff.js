@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('newCheckoutLabel').textContent    = s('staff.newCheckout');
   document.getElementById('memberLabel').textContent         = s('lbl.member');
   document.getElementById('boatLabel').textContent           = s('lbl.boat');
-  document.getElementById('locationLabel').textContent       = s('lbl.location');
+  document.getElementById('locationLabel').textContent       = s('lbl.sailingLocation');
   document.getElementById('departureLabel').textContent      = s('staff.coForm.departure');
   document.getElementById('estReturnLabel').textContent      = s('staff.coForm.estReturn');
   document.getElementById('crewLabel').textContent           = s('staff.coForm.crew');
@@ -761,7 +761,7 @@ async function openGroupModal() {
   document.getElementById('groupModalTitle').textContent = s('staff.groupCheckoutTitle');
   document.getElementById('gmBoatsLabel').textContent    = s('staff.selectBoats');
   document.getElementById('gmParticLabel').textContent   = s('staff.participants');
-  document.getElementById('gmLocLabel').textContent      = s('lbl.location');
+  document.getElementById('gmLocLabel').textContent      = s('lbl.sailingLocation');
   document.getElementById('gmActivityLabel').textContent = s('staff.activity');
   _groupBoats = new Set();
   _groupParticipants = 0;

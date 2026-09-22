@@ -31,6 +31,7 @@ var _STRINGS_FLAT = {
   "lbl.phone": "Phone",
   "lbl.email": "Email",
   "lbl.location": "Location",
+  "lbl.sailingLocation": "Sailing Location",
   "lbl.boat": "Boat",
   "lbl.crew": "Crew",
   "lbl.role": "Role",
