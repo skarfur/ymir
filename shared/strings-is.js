@@ -613,7 +613,7 @@ var _STRINGS_FLAT = {
   "logrev.validationRequests": "Beiðnir um staðfestingu",
   "logrev.showAll": "Sýna allar ferðir",
   "logrev.certSearch": "Leitaðu að félaga hér að ofan til að skoða skírteini.",
-  "logrev.certSearchPlaceholder": "Leita að nafni félaga...",
+  "logrev.certSearchPlaceholder": "Leita að nafni eða kennitölu...",
   "logrev.certNoMatches": "Engir félagar fundust með þetta skírteini.",
   "logrev.verifyRequest": "STAÐFESTINGARBEIÐNI",
   "cq.reject": "Hafna",

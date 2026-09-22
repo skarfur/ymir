@@ -613,7 +613,7 @@ var _STRINGS_FLAT = {
   "logrev.validationRequests": "Validation requests",
   "logrev.showAll": "Show all trips",
   "logrev.certSearch": "Search for a member above to view their credentials.",
-  "logrev.certSearchPlaceholder": "Search member name...",
+  "logrev.certSearchPlaceholder": "Search name or kennitala...",
   "logrev.certNoMatches": "No members found with this credential.",
   "logrev.verifyRequest": "VERIFICATION REQUEST",
   "cq.reject": "Reject",

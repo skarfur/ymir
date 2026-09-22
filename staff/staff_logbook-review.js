@@ -265,8 +265,13 @@ function searchCertMember(q) {
   const drop = document.getElementById('certMemberDrop');
   if (!q || q.length < 2) { drop.style.display = 'none'; drop.innerHTML = ''; return; }
 
+  // Matches on name OR kennitala — same as the shared member-cert-modal
+  // search (shared/mcm.js's mcmFilterMembers) staff already use elsewhere
+  // on this page. Staff commonly look members up by kennitala, not just
+  // name, so name-only matching silently returned nothing for that case.
+  const ql = q.toLowerCase();
   const matches = allMembers
-    .filter(m => m.name && m.name.toLowerCase().includes(q.toLowerCase()))
+    .filter(m => (m.name && m.name.toLowerCase().includes(ql)) || String(m.kennitala || '').includes(q))
     .slice(0, 8);
 
   if (!matches.length) { drop.style.display = 'none'; return; }
@@ -274,9 +279,9 @@ function searchCertMember(q) {
   drop.innerHTML = '';
   matches.forEach(m => {
     const item = document.createElement('div');
-    item.className = 'text-md';
+    item.className = 'text-md flex-between gap-10';
     item.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)';
-    item.textContent   = m.name;
+    item.innerHTML = `<span>${esc(m.name)}</span><span class="text-xs text-muted">${esc(m.kennitala || '')}</span>`;
     item.addEventListener('mouseover', function () { this.style.background = 'var(--card)'; });
     item.addEventListener('mouseout',  function () { this.style.background = ''; });
     item.addEventListener('mousedown', e => { e.preventDefault(); selectCertMember(m); });
