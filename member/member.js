@@ -4,9 +4,13 @@
 // skip the notifications prefetch and the post-render fallback path picks it up.
 var _u = (typeof getUser === 'function') ? getUser() : null;
 prefetch({
-  Config:        ['getConfig'],
-  Checkouts:     ['getActiveCheckouts'],
-  Notifications: _u && _u.kennitala ? ['getNotifications', { kennitala: _u.kennitala }] : null,
+  Config:         ['getConfig'],
+  Checkouts:      ['getActiveCheckouts'],
+  Notifications:  _u && _u.kennitala ? ['getNotifications', { kennitala: _u.kennitala }] : null,
+  // Crew-name search in the launch modal (searchCrewMembers) needs the full
+  // roster — firing this at parse time instead of waiting for the user to
+  // reach the crew step means it's almost always already resolved by then.
+  LaunchMembers:  ['getMembers'],
 });
 
 // ══ STATE ════════════════════════════════════════════════════════════════════
@@ -379,9 +383,7 @@ function renderNonClubLaunchForm() {
     '</div>';
   window._launchCrewCount=1;
   renderCrewInputs();
-  if(!window._launchMembers){
-    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
-  }
+  _ensureLaunchMembers();
 }
 
 // Step 2 — time / crew / location form
@@ -429,9 +431,7 @@ function renderLaunchForm(boat) {
     '</div>';
   window._launchCrewCount=1;
   renderCrewInputs();
-  if(!window._launchMembers){
-    apiGet('getMembers').then(r=>{window._launchMembers=r.members||[];}).catch(()=>{});
-  }
+  _ensureLaunchMembers();
 }
 
 // Validate form then stash values and advance to step 3.
@@ -512,6 +512,23 @@ function _addToLaunchOut(mins) {
   var total=parts[0]*60+parts[1]+Number(mins);
   document.getElementById('launchReturnBy').value=String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
+// Shared loader for the crew-name search's member roster. Memoized on
+// window so it's fetched at most once per page load and reused by every
+// call site (searchCrewMembers, the crew toggles in the return flow) —
+// prefers the prefetch() kicked off at parse time (window._earlyLaunchMembers)
+// so this is almost always already resolved by the time it's needed.
+// Resets its own promise on failure so a transient error gets retried on
+// the next call instead of leaving window._launchMembers stuck empty for
+// the rest of the session.
+function _ensureLaunchMembers() {
+  if (window._launchMembers) return Promise.resolve(window._launchMembers);
+  if (!window._launchMembersPromise) {
+    window._launchMembersPromise = (window._earlyLaunchMembers || apiGet('getMembers'))
+      .then(function(r){ window._launchMembers=r.members||[]; return window._launchMembers; })
+      .catch(function(){ window._launchMembersPromise=null; return []; });
+  }
+  return window._launchMembersPromise;
+}
 function adjLaunchCrew(d) {
   window._launchCrewCount=Math.max(1,Math.min(20,(window._launchCrewCount||1)+Number(d)));
   document.getElementById('launchCrewNum').textContent=window._launchCrewCount;
@@ -549,10 +566,15 @@ function renderCrewInputs() {
     row.appendChild(inputRow); row.appendChild(drop); wrap.appendChild(row);
   }
 }
-function searchCrewMembers(inp,drop) {
+async function searchCrewMembers(inp,drop) {
   const q=inp.value.trim().toLowerCase();
   if(!q||q.length<2){drop.style.display='none';return;}
-  const matches=(window._launchMembers||[]).filter(m=>m.name&&m.name.toLowerCase().includes(q)&&m.kennitala!==user.kennitala).slice(0,8);
+  const list = window._launchMembers || await _ensureLaunchMembers();
+  // The awaited fetch only actually pauses on the very first search before
+  // the prefetch has landed — re-check the input hasn't moved on to a
+  // different (or cleared) query in the meantime before rendering stale matches.
+  if (inp.value.trim().toLowerCase() !== q) return;
+  const matches=(list||[]).filter(m=>m.name&&m.name.toLowerCase().includes(q)&&m.kennitala!==user.kennitala).slice(0,8);
   drop.innerHTML='';
   matches.forEach(m=>{
     const item=document.createElement('div');
