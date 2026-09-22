@@ -316,7 +316,7 @@ async function changePassword() {
     msg.style.display = 'block';
   }
 
-  if (!next || next.length < 4) { showMsg('settings.passwordTooShort'); return; }
+  if (!next || next.length < 8) { showMsg('settings.passwordTooShort'); return; }
   if (next !== conf)             { showMsg('settings.passwordMismatch'); return; }
 
   btn.disabled = true;

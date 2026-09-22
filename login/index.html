@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- connect-src includes the ymir-staging Supabase project for the
-       migration-diagnostic "Test Supabase login" control below — remove
-       once the real login flow (or this test control) is retired. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/ https://jilmxhonqhbvieyknyen.supabase.co; frame-src https://accounts.google.com/gsi/; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <!-- Login is fully Supabase-routed (loginMember/loginWithGoogle/
+       validateWard/getConfig/getMembers/getActiveCheckouts — see
+       login.js) — connect-src only needs the Supabase project + Google's
+       GIS endpoints, no Apps Script origin. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/ https://jilmxhonqhbvieyknyen.supabase.co; frame-src https://accounts.google.com/gsi/; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="../shared/logo.svg">
   <title>Ýmir — Sign In</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://script.google.com" crossorigin>
   <script src="../shared/theme-init.js"></script>
   <link rel="stylesheet" href="../shared/style.css">
   <script src="../shared/api.js" defer></script>
@@ -51,23 +51,6 @@
       </div>
       <div id="pwHint" class="msg d-none mt-8 text-xs text-muted"></div>
       <div id="errMsg" class="msg msg-err d-none"></div>
-    </div>
-
-    <!-- Migration diagnostic only — exercises the real Supabase login ->
-         whoami round trip using the username/password above, but never
-         calls setSession/proceedWithUser. The two backends don't share
-         sessions yet, so this intentionally does not sign you in. Remove
-         this block once the real flow migrates. -->
-    <div class="card mt-14">
-      <div class="text-xs text-muted mb-8">Supabase staging test — does not sign you in</div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="supabaseTestBtn" data-login-click="testSupabaseLogin">
-          <span id="supabaseTestBtnText">Test Supabase login</span>
-        </button>
-        <button class="btn btn-ghost d-none" id="supabaseCopyTokenBtn" data-login-click="copySupabaseToken">Copy token</button>
-      </div>
-      <pre id="supabaseTestResult" class="text-xs mt-8 d-none"
-        style="white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere;"></pre>
     </div>
   </div>
 

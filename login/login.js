@@ -286,98 +286,6 @@ async function doLogin() {
   }
 }
 
-// Migration diagnostic — exercises the real Supabase login -> whoami round
-// trip using whatever is currently in the username/password fields. Never
-// calls setSession/proceedWithUser: the two backends don't share sessions
-// yet (Apps Script's sessions sheet has no idea Supabase's sessions table
-// exists, and vice versa), so wiring this into the real flow would break
-// every subsequent apiGet/apiPost call once redirected into the app. This
-// exists purely to prove the pattern with real UI instead of curl. Remove
-// once the real login flow migrates, and this whole block goes with it —
-// not held to the bilingual-strings convention because it's not staying.
-// Holds the raw token from the last successful test so copySupabaseToken
-// can copy exactly that string — manually selecting it out of the
-// multi-line JSON dump below is exactly the kind of thing that goes wrong
-// (a stray brace/quote sneaking into the copied text corrupts the next
-// curl command's JSON body without looking wrong at a glance).
-var _lastSupabaseToken = null;
-
-async function testSupabaseLogin() {
-  const rawUser  = document.getElementById('ktInput').value.trim();
-  const password = document.getElementById('pwInput').value;
-  const btn      = document.getElementById('supabaseTestBtn');
-  const btnText  = document.getElementById('supabaseTestBtnText');
-  const out      = document.getElementById('supabaseTestResult');
-  const copyBtn  = document.getElementById('supabaseCopyTokenBtn');
-
-  if (!rawUser || !password) {
-    out.textContent = 'Enter username + password above first.';
-    out.classList.remove('d-none');
-    return;
-  }
-
-  btn.disabled = true;
-  btnText.textContent = 'Testing…';
-  out.classList.add('d-none');
-  copyBtn.classList.add('d-none');
-  _lastSupabaseToken = null;
-
-  try {
-    const loginResult = await callSupabaseFunction('login', {
-      username: rawUser,
-      password: password,
-      stayLoggedIn: false,
-    });
-    // whoami is retired — login now mints accessToken (a signed JWT)
-    // directly, decoded client-side instead of round-tripped to ask who
-    // the caller is.
-    // Chained here (not a separate button) specifically so the token never
-    // has to leave the browser via manual copy/curl — that's been the
-    // actual source of every "it's broken" report on this endpoint so far,
-    // not the functions themselves.
-    const weatherResult = await callSupabaseFunction('weather', {
-      sessionToken: loginResult.sessionToken,
-    });
-    const handbookResult = await callSupabaseFunction('handbook', {
-      sessionToken: loginResult.sessionToken,
-    });
-    const configResult = await callSupabaseFunction('get-config', {
-      sessionToken: loginResult.sessionToken,
-    });
-    const checkoutsResult = await callSupabaseFunction('get-active-checkouts', {
-      sessionToken: loginResult.sessionToken,
-    });
-    out.textContent =
-      'login: ' + JSON.stringify(loginResult, null, 2) +
-      '\n\nweather: ' + JSON.stringify(weatherResult, null, 2) +
-      '\n\ngetActiveCheckouts: ' + JSON.stringify(checkoutsResult, null, 2) +
-      '\n\nhandbook: ' + JSON.stringify(handbookResult, null, 2) +
-      '\n\nget-config: ' + JSON.stringify(configResult, null, 2);
-    if (loginResult.sessionToken) {
-      _lastSupabaseToken = loginResult.sessionToken;
-      copyBtn.classList.remove('d-none');
-    }
-  } catch (e) {
-    out.textContent = 'Error: ' + ((e && e.message) || String(e));
-  } finally {
-    out.classList.remove('d-none');
-    btn.disabled = false;
-    btnText.textContent = 'Test Supabase login';
-  }
-}
-
-async function copySupabaseToken() {
-  if (!_lastSupabaseToken) return;
-  const copyBtn = document.getElementById('supabaseCopyTokenBtn');
-  try {
-    await navigator.clipboard.writeText(_lastSupabaseToken);
-    copyBtn.textContent = 'Copied!';
-  } catch (e) {
-    copyBtn.textContent = 'Copy failed — select from JSON above';
-  }
-  setTimeout(function () { copyBtn.textContent = 'Copy token'; }, 2000);
-}
-
 // Persist the chosen user and drive the existing role-picker / redirect flow.
 // `user` is assumed to already carry any `guardianSession` metadata if the
 // active session is a guardian acting as their ward.
@@ -439,7 +347,7 @@ async function submitForceChange() {
     err.style.display = 'block';
   }
 
-  if (!pw1 || pw1.length < 4) { showErr('settings.passwordTooShort'); return; }
+  if (!pw1 || pw1.length < 8) { showErr('settings.passwordTooShort'); return; }
   if (pw1 !== pw2)            { showErr('settings.passwordMismatch'); return; }
 
   err.style.display = 'none';

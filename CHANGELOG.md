@@ -3,6 +3,64 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — Google sign-in + a login/password security pass
+
+Ported Google sign-in to Edge Functions (the frontend already had the full
+GIS button/settings-link UI wired up, waiting on this), and used the work
+as the occasion for a security pass over the whole login/password system.
+
+**Google sign-in** (ports members.gs's verifyGoogleIdToken_/
+loginWithGoogle_/linkGoogleAccount_/unlinkGoogleAccount_):
+- `supabase/functions/_shared/google-auth.ts` (new): verifies a Google ID
+  token's RS256 signature locally against Google's live JWKS, instead of
+  round-tripping to Google's tokeninfo endpoint the way the Apps Script
+  version did — tokeninfo is rate-limited and Google's own docs mark it as
+  a debugging aid, not a production verification path.
+  `GOOGLE_CLIENT_ID` is hardcoded (same public value already in
+  shared/api.js — OAuth client IDs aren't secrets), so this needs no
+  Supabase secret to work.
+- `supabase/functions/_shared/finish-login.ts` (new): the session-minting
+  tail (sessionToken/accessToken, wards, getConfig piggyback) factored out
+  of `login/index.ts` so `login-with-google` doesn't hand-duplicate it —
+  login/index.ts's own header comment documents a past regression from
+  exactly that kind of copy drift.
+- `supabase/functions/login-with-google`, `link-google-account`,
+  `unlink-google-account` (new Edge Functions), wired into
+  `shared/api.js`'s `_SUPABASE_ACTIONS`.
+- `login/index.html`/`login/login.js`: removed the "Test Supabase login"
+  migration-diagnostic panel — every action the login page calls is now
+  Supabase-routed, so there's nothing left to diagnose. CSP `connect-src`
+  no longer needs the Apps Script origin either.
+
+**Security pass** (`supabase/migrations/20260922120000_google_signin_and_auth_hardening.sql`,
+`..._fix_members_column_grants.sql`):
+- `members.password_hash`/`password_is_temp` were column-level readable
+  *and writable* by any `authenticated` caller (an admin's own
+  accessToken) — a blanket `grant select, update on members to
+  authenticated` (added for admin/members.js's direct-PostgREST
+  deactivate-member PATCH, which only ever touches `active`) covered them
+  too, completely bypassing the bcrypt hashing the password RPCs exist
+  for. Narrowed to exactly what's used: SELECT on every column except the
+  two password ones, UPDATE on just `active`.
+- bcrypt cost bumped 10 → 12 on every password-hashing call site
+  (`save_member`, `import_members`, `ensure_guardian_record_`,
+  `change_member_password`, `admin_reset_member_password`). Existing
+  hashes keep their own embedded cost and still verify fine.
+- `change_member_password`'s minimum length raised 4 → 8 characters (NIST
+  SP 800-63B baseline) — client-side checks and the
+  `settings.passwordHint`/`settings.passwordTooShort` strings updated to
+  match.
+- Dropped `set_member_password` — a service_role-only password setter
+  that nothing called (every real password-set path hashes inline).
+- `audit_row_change()` no longer captures `password_hash` into
+  `audit_log`'s diff for the members table — no reason to keep redundant
+  copies of bcrypt hashes around, even in an already-locked-down table.
+- A unique partial index on `members(google_email)` closes a TOCTOU race
+  in `link-google-account`'s check-then-update.
+
+Requires nothing further from the operator — no new secrets, and existing
+passwords/sessions are unaffected.
+
 ## Unreleased (Supabase branch) — fix captain portal losing fleet-wide trips after a handshake
 
 Confirming any trip handshake (a crew member accepting an invite, a skipper

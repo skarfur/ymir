@@ -1,8 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { mintAccessToken } from "../_shared/session.ts";
-import { buildConfigSnapshot } from "../_shared/config.ts";
-import { toMemberDto } from "../_shared/members.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import { finishLogin } from "../_shared/finish-login.ts";
 
 // Password-gated sign-in — ports members.gs's loginMember_. Username may be
 // either a 10-digit kennitala or the member's initials (case-insensitive).
@@ -13,38 +11,14 @@ import { toMemberDto } from "../_shared/members.ts";
 // custom session tokens), not Supabase Auth — it must be callable by an
 // unauthenticated client, so it's deployed with verify_jwt disabled.
 //
-// Also mints a signed accessToken (see _shared/session.ts's
-// mintAccessToken) alongside the existing opaque sessionToken — the JWT
-// is what direct PostgREST/RPC calls send as Authorization: Bearer, so
-// RLS policies can read who's calling. The opaque sessionToken is
-// unchanged and still the thing sent to signOut/signOutAll and shown in
-// the settings page's "signed in on…" list.
-//
-// Also bundles a wards list + a getConfig snapshot into the response, the
-// same as the original loginMember_ did (wards: bool_(m.isMinor) ? [] :
-// findWardsOf_(m.kennitala); config: _loginConfigPiggyback_()) — this had
-// silently regressed to always-empty/always-missing once login moved off
-// Apps Script, since the login/login.js frontend already reads
-// data.wards/data.config but nothing was populating them: the account
-// picker for a member who guards a minor stopped appearing, and every
-// login paid a full extra getConfig round-trip the piggyback was there to
-// avoid. Both are computed in parallel with the session insert below,
-// since neither depends on it.
-//
-// `member` is built via _shared/members.ts's toMemberDto (the same
-// mapper get-members/get-captain-bundle use), not a hand-rolled subset —
-// this used to return only {id,kennitala,name,role}, silently dropping
-// certifications/preferences/bio/etc. from the object every page stores
-// as the client-side `user`. That regression broke every cert-gated page
-// (captain, coxswain) immediately after login: isCaptain()/
-// hasRowingEndorsement() read user.certifications, which was always
-// undefined, so even correctly-credentialed members got bounced back to
-// /member/.
+// The session-minting tail (sessionToken/accessToken, wards, getConfig
+// piggyback) lives in _shared/finish-login.ts, shared with
+// login-with-google/index.ts, so the two sign-in paths can't drift apart
+// the way this function's wards/config piggyback silently did once before
+// (see finish-login.ts's header comment).
 
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const SHORT_SESSION_MS = 8 * 60 * 60 * 1000;
-const LONG_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Browser callers send a CORS preflight (OPTIONS) before the real POST
 // whenever the body is application/json — curl never triggers this, which
@@ -63,41 +37,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function randomToken(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-// isMinor is computed from birth_year, not a stored column — age changes
-// with the calendar, not the row (same formula as get-members.ts and the
-// member-CRUD/validate-ward RPCs).
-function isMinor(birthYear: number | null): boolean {
-  if (!birthYear) return false;
-  return new Date().getUTCFullYear() - birthYear < 18;
-}
-
-// Ports findWardsOf_: active minors whose guardians-table row points at
-// this kennitala. A minor can never itself be a guardian, so callers pass
-// [] straight through without querying when the logging-in member is one.
-async function getWardsOf(admin: SupabaseClient, guardianKennitala: string) {
-  const { data: links } = await admin
-    .from("guardians").select("member_id").eq("kennitala", guardianKennitala);
-  const wardIds = (links || []).map((l) => l.member_id);
-  if (!wardIds.length) return [];
-  const { data: wardRows } = await admin
-    .from("members").select("id, kennitala, name, birth_year, active").in("id", wardIds);
-  return (wardRows || [])
-    .filter((w) => w.active && isMinor(w.birth_year))
-    .map((w) => ({ id: w.id, kennitala: w.kennitala, name: w.name, birthYear: w.birth_year || "" }));
 }
 
 Deno.serve(async (req: Request) => {
@@ -174,57 +113,13 @@ Deno.serve(async (req: Request) => {
 
   await admin.from("login_attempts").delete().eq("kennitala", member.kennitala);
 
-  // Raw token goes to the client; only its hash is ever stored — a stolen
-  // sessions table can't be used to hijack live sessions.
-  const rawToken = randomToken();
-  const tokenHash = await sha256Hex(rawToken);
-  const expiresAt = new Date(now.getTime() + (stayLoggedIn ? LONG_SESSION_MS : SHORT_SESSION_MS));
-
-  const [
-    { data: session, error: sessionError },
-    wards,
-    config,
-    { data: guardian },
-  ] = await Promise.all([
-    admin
-      .from("sessions")
-      .insert({
-        member_id: member.id,
-        token_hash: tokenHash,
-        role: member.role,
-        stay_logged_in: stayLoggedIn,
-        expires_at: expiresAt.toISOString(),
-        user_agent: (req.headers.get("user-agent") || "").slice(0, 300),
-      })
-      .select("id, expires_at")
-      .single(),
-    isMinor(member.birth_year) ? Promise.resolve([]) : getWardsOf(admin, member.kennitala),
-    // Best-effort: a failure here shouldn't fail the login, same as the
-    // original _loginConfigPiggyback_'s try/catch — the client just falls
-    // back to its own apiGet('getConfig').
-    buildConfigSnapshot(admin).catch(() => null),
-    admin.from("guardians").select("name, kennitala, phone").eq("member_id", member.id).maybeSingle(),
-  ]);
-
-  if (sessionError) return json({ error: "Session creation failed" }, 500);
-
-  const accessToken = await mintAccessToken({
-    memberId: member.id,
-    kennitala: member.kennitala,
-    role: member.role,
-    sessionId: session.id,
-  }, expiresAt);
-
-  return json({
-    member: toMemberDto(member, guardian),
-    // Top-level, matching members.gs's loginMember_ exactly — the frontend
-    // reads data.usingDefaultPassword, not data.member.usingDefaultPassword.
-    usingDefaultPassword: member.password_is_temp,
-    wards,
-    sessionToken: rawToken,
-    sessionId: session.id,
-    expiresAt: session.expires_at,
-    accessToken,
-    config,
-  });
+  try {
+    const result = await finishLogin(admin, member, {
+      stayLoggedIn,
+      userAgent: req.headers.get("user-agent") || "",
+    });
+    return json(result);
+  } catch {
+    return json({ error: "Session creation failed" }, 500);
+  }
 });

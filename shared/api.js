@@ -601,6 +601,12 @@ var _SUPABASE_ACTIONS = {
   // admin/act-types.js calls it as an independent best-effort step after
   // the RPC write succeeds.
   syncActivityTypeCalendar: 'sync-activity-type-calendar',
+  // Google sign-in — login-with-google is public (verify_jwt disabled,
+  // listed in _PUBLIC_ACTIONS above); link/unlink require an existing
+  // session, same auth pattern as every other write below.
+  loginWithGoogle:    'login-with-google',
+  linkGoogleAccount:  'link-google-account',
+  unlinkGoogleAccount: 'unlink-google-account',
 };
 
 async function _callSupabase(action, payload, opts) {
