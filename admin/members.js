@@ -104,7 +104,11 @@ function openMemberModal(id) {
       status.textContent = s('admin.usingDefaultPassword');
       status.style.color = 'var(--accent)';
     }
-    document.getElementById("mResetPwBtn").disabled = !m.hasPassword;
+    // Always enabled: re-issuing is exactly what's needed for a member
+    // still stuck on their original temp password (lost, never picked up,
+    // or the "issued" dialog got closed before anyone copied it down) —
+    // not just for replacing an already-set custom password.
+    document.getElementById("mResetPwBtn").disabled = false;
   } else {
     pwBox.classList.add("hidden");
   }

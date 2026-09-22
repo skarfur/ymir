@@ -3,6 +3,20 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — allow re-issuing a member's temp password
+
+`admin/members.js`'s "Issue temporary password" button was disabled for
+exactly the members who most need it: anyone still on their original temp
+password (lost, never picked up, or the one-time "here's the password"
+dialog got closed before anyone copied it down). It only ever enabled for
+members who'd already set a custom password. This pre-existed on `main`
+too — not a Supabase-migration regression, just a real gap.
+
+- `admin/members.js`: `mResetPwBtn` is no longer conditionally disabled —
+  an admin can now re-issue a fresh temp password (via the existing
+  `admin_reset_member_password` RPC, unchanged) for any active member
+  regardless of their current password state.
+
 ## Unreleased (Supabase branch) — fix CSV member import for realistic-sized files
 
 CSV member import (admin → Members → Import CSV) failed with HTTP 500 for
