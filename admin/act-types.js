@@ -170,16 +170,29 @@ async function saveActType() {
     showLeaderPhone: document.getElementById("atShowPhone").checked,
   };
   await saveEntity({
-    call: () => callSupabaseRpc("save_activity_type", {
-      p_id: payload.id || null, p_name: payload.name, p_name_is: payload.nameIS,
-      p_active: payload.active, p_class_tag: payload.classTag, p_class_tag_is: payload.classTagIS,
-      p_calendar_id: payload.calendarId, p_calendar_sync_active: payload.calendarSyncActive,
-      p_schedule_source: payload.scheduleSource, p_volunteer: payload.volunteer, p_roles: payload.roles,
-      p_leader_member_id: payload.leaderMemberId, p_leader_name: payload.leaderName,
-      p_leader_phone: payload.leaderPhone, p_show_leader_phone: payload.showLeaderPhone,
-      p_default_start: payload.defaultStart, p_default_end: payload.defaultEnd,
-      p_bulk_schedule: payload.bulkSchedule, p_reserved_boat_ids: payload.reservedBoatIds,
-    }),
+    call: async () => {
+      const res = await callSupabaseRpc("save_activity_type", {
+        p_id: payload.id || null, p_name: payload.name, p_name_is: payload.nameIS,
+        p_active: payload.active, p_class_tag: payload.classTag, p_class_tag_is: payload.classTagIS,
+        p_calendar_id: payload.calendarId, p_calendar_sync_active: payload.calendarSyncActive,
+        p_schedule_source: payload.scheduleSource, p_volunteer: payload.volunteer, p_roles: payload.roles,
+        p_leader_member_id: payload.leaderMemberId, p_leader_name: payload.leaderName,
+        p_leader_phone: payload.leaderPhone, p_show_leader_phone: payload.showLeaderPhone,
+        p_default_start: payload.defaultStart, p_default_end: payload.defaultEnd,
+        p_bulk_schedule: payload.bulkSchedule, p_reserved_boat_ids: payload.reservedBoatIds,
+      });
+      // Calendar push is a separate, independent Edge Function call (not
+      // part of the RPC — see sync-activity-type-calendar) so is_admin()
+      // still sees the caller's own JWT on the RPC write. Best-effort: a
+      // calendar failure never undoes the already-saved template.
+      apiPost('syncActivityTypeCalendar', { id: res.id }).then(function(r) {
+        if (r && typeof r.gcalSeriesEventId === 'string') {
+          var idx = activityTemplates.findIndex(function(a) { return a.id === res.id; });
+          if (idx !== -1) activityTemplates[idx].gcalSeriesEventId = r.gcalSeriesEventId;
+        }
+      }).catch(function(e) { console.warn('calendar sync failed:', e); });
+      return res;
+    },
     getArray:  () => activityTemplates,
     setArray:  arr => { activityTemplates = arr; },
     payload, modalId: "actTypeModal",
@@ -361,11 +374,25 @@ async function deleteActType(id) {
       .replace("{m}", linkedSignups);
     if (!await ymConfirm(warn)) return;
   }
+  // Captured before the row disappears from local state below — the
+  // calendar cleanup call runs after deletion, when the DB row is already
+  // gone, so it needs these passed explicitly rather than looked up by id.
+  var deletedTmpl = activityTemplates.find(function(a) { return a.id === _id; });
   try {
     const res = await callSupabaseRpc("delete_activity_type", { p_id: _id });
     _invalidateApiCache("getConfig");
     _invalidateApiCache("getSlots");
     activityTemplates = activityTemplates.filter(a => a.id !== _id);
+    // Calendar cleanup is best-effort and independent of the delete having
+    // already succeeded — mirrors deleteActivityType_'s original
+    // "log and move on" contract for its Calendar.Events.remove call.
+    if (deletedTmpl && deletedTmpl.calendarId && deletedTmpl.gcalSeriesEventId) {
+      apiPost('syncActivityTypeCalendar', {
+        deleted: true,
+        calendarId: deletedTmpl.calendarId,
+        gcalSeriesEventId: deletedTmpl.gcalSeriesEventId,
+      }).catch(function(e) { console.warn('calendar cleanup failed:', e); });
+    }
     var removedE = (res && res.removedEvents) || 0;
     var removedS = (res && res.removedSignups) || 0;
     if (removedE > 0) {

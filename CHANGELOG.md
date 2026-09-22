@@ -3,6 +3,35 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — port Google Calendar sync for activity templates
+
+Saving or deleting an activity template with calendar sync enabled stopped
+pushing to Google Calendar after the Supabase migration — `save_activity_type`
+/ `delete_activity_type` are Postgres RPCs and can't make outbound HTTPS
+calls the way `checkouts.gs`'s `syncClassRecurringEvent_` did under Apps
+Script's implicit Google OAuth.
+
+- `supabase/functions/_shared/gcal.ts` (new): Google Calendar API v3 access
+  for Edge Functions via a service account's OAuth2 JWT-bearer flow
+  (`GOOGLE_SERVICE_ACCOUNT_JSON` secret). Ports `syncClassRecurringEvent_`'s
+  create/update/teardown logic for the template's master recurring event
+  (one RRULE-based series per template, not per-occurrence).
+- `supabase/functions/sync-activity-type-calendar/index.ts` (new): admin-only
+  Edge Function that performs the calendar push as an independent step
+  *after* the RPC write succeeds, so `is_admin()` still sees the caller's
+  own JWT on the RPC call itself (a service-role client would make
+  `auth.jwt()` empty and reject legitimate admin saves).
+- `shared/api.js`: add `syncActivityTypeCalendar` to `_SUPABASE_ACTIONS`.
+- `admin/act-types.js`: fire the calendar sync call, best-effort, after a
+  successful save or delete; a calendar failure never undoes the already
+  -saved/-deleted template.
+
+Requires a Google Cloud service account (Calendar API enabled) with its JSON
+key set as the `GOOGLE_SERVICE_ACCOUNT_JSON` Supabase secret, and each synced
+calendar shared with the service account's `client_email` ("Make changes to
+events"). Per-occurrence cancel/override/restore sync and volunteer-event
+calendar sync remain deferred — out of scope for this fix.
+
 ## Unreleased — _setup: actively drop the legacy `payroll` tab
 
 Followup to the payroll cleanup: an existing spreadsheet may still carry the

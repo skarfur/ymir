@@ -595,6 +595,12 @@ var _SUPABASE_ACTIONS = {
   adminAddTime:            'admin-add-time',
   // adminDeleteTime/saveEmployee: admin-only RLS + direct PostgREST (see
   // admin/payroll/payroll.js) — no Edge Function.
+  // save_activity_type/delete_activity_type stay direct RPC calls (so
+  // is_admin() sees the real caller via the request's own JWT) — this is
+  // the Google Calendar push those Postgres RPCs can't do themselves.
+  // admin/act-types.js calls it as an independent best-effort step after
+  // the RPC write succeeds.
+  syncActivityTypeCalendar: 'sync-activity-type-calendar',
 };
 
 async function _callSupabase(action, payload, opts) {
