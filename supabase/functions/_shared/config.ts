@@ -12,15 +12,19 @@ import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 // lives — a change here reaches both callers on their next deploy instead
 // of needing to be hand-copied twice.
 //
-// The six queries below are independent of each other (none reads a value
+// The queries below are independent of each other (none reads a value
 // the other produced — the activity_templates -> classMap join is done in
 // JS after both are in hand, not as a DB-level dependency), so they run via
-// Promise.all instead of sequential awaits: this was previously six
+// Promise.all instead of sequential awaits: this was previously several
 // round-trips end-to-end, now it's bounded by the slowest single one.
 //
-// boats/locations read from their own real tables (a deliberate
-// normalization from the Sheets version's config-JSON-blobs, not a
-// shortcut) — see the boats_access_control_and_reservations migration.
+// boats/locations/activity_templates read from their own real tables (a
+// deliberate normalization from the Sheets version's config-JSON-blobs,
+// not a shortcut) — see the boats_access_control_and_reservations
+// migration, and 20260922100000_activity_templates_table.sql's header for
+// why activity_templates followed the same path (a real bug, not just
+// tidiness: its legacy string ids didn't satisfy the uuid columns
+// activities.source_activity_type_id etc. expect).
 
 const ALERT_DEFAULTS = {
   enabled: true,
@@ -78,6 +82,33 @@ function normalizeCertCategories(arr: unknown): any[] {
     .filter((c) => c.key);
 }
 
+function toActivityTemplateDto(t: any) {
+  return {
+    id: t.id,
+    name: t.name || "",
+    nameIS: t.name_is || "",
+    active: t.active,
+    classTag: t.class_tag || "",
+    classTagIS: t.class_tag_is || "",
+    calendarId: t.calendar_id || "",
+    calendarSyncActive: !!t.calendar_sync_active,
+    scheduleSource: t.schedule_source || "bulk",
+    volunteer: !!t.volunteer,
+    roles: t.roles || [],
+    leaderMemberId: t.leader_member_id || "",
+    leaderName: t.leader_name || "",
+    leaderPhone: t.leader_phone || "",
+    showLeaderPhone: !!t.show_leader_phone,
+    defaultStart: t.default_start || "",
+    defaultEnd: t.default_end || "",
+    bulkSchedule: t.bulk_schedule || null,
+    reservedBoatIds: t.reserved_boat_ids || [],
+    gcalSeriesEventId: t.gcal_series_event_id || "",
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+  };
+}
+
 function toVolDto(ev: any, classMap: Record<string, any>) {
   let subtitle = "", subtitleIS = "";
   if (ev.activity_type_id && classMap[ev.activity_type_id]) {
@@ -119,7 +150,7 @@ function toVolDto(ev: any, classMap: Record<string, any>) {
 }
 
 const CONFIG_KEYS = [
-  "activity_templates", "dailyChecklist", "overdueAlerts", "flagConfig", "flagOverride",
+  "dailyChecklist", "overdueAlerts", "flagConfig", "flagOverride",
   "certDefs", "certCategories", "launchChecklists", "boatCategories", "staffStatus",
   "allowBreaks", "rowingCalendarId", "rowingCalendarSyncActive", "keelboatCalendarId",
   "keelboatCalendarSyncActive", "rowingPassport", "clubCalendars",
@@ -131,6 +162,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     { data: boatRows, error: boatsError },
     { data: allReservations, error: resError },
     { data: locations, error: locationsError },
+    { data: templateRows, error: templatesError },
     { data: volunteerEventRows, error: volEventsError },
     { data: cancelledRows, error: cancelledError },
   ] = await Promise.all([
@@ -138,6 +170,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     admin.from("boats").select("*"),
     admin.from("boat_reservations").select("*"),
     admin.from("locations").select("id, name, type, coordinates, active"),
+    admin.from("activity_templates").select("*"),
     admin.from("activities").select("*").eq("signup_required", true),
     admin.from("activities").select("source_activity_type_id, date")
       .eq("status", "cancelled").eq("signup_required", false).not("source_activity_type_id", "is", null),
@@ -146,6 +179,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
   if (boatsError) throw new Error("Boats lookup failed");
   if (resError) throw new Error("Boat reservations lookup failed");
   if (locationsError) throw new Error("Locations lookup failed");
+  if (templatesError) throw new Error("Activity templates lookup failed");
   if (volEventsError) throw new Error("Volunteer events lookup failed");
   if (cancelledError) throw new Error("Cancelled occurrences lookup failed");
 
@@ -186,8 +220,9 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     })),
   }));
 
+  const activityTemplates = (templateRows || []).map(toActivityTemplateDto);
   const classMap: Record<string, any> = {};
-  (Array.isArray(cfg.activity_templates) ? cfg.activity_templates : []).forEach((t: any) => { if (t && t.id) classMap[t.id] = t; });
+  activityTemplates.forEach((t) => { if (t && t.id) classMap[t.id] = t; });
   const volunteerEvents = (volunteerEventRows || []).map((ev) => toVolDto(ev, classMap));
 
   const cancelledActivityOccurrences = (cancelledRows || [])
@@ -218,7 +253,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
   }
 
   return {
-    activityTemplates: cfg.activity_templates || [],
+    activityTemplates,
     dailyChecklist,
     overdueAlerts: mergeAlertConfig(cfg.overdueAlerts),
     flagConfig: cfg.flagConfig || null,

@@ -125,9 +125,11 @@ Deno.serve(async (req: Request) => {
   const { data: saved, error } = await admin.from("activities").upsert(row).select("*").single();
   if (error) return json({ error: "saveVolunteerEvent failed: " + error.message }, 500);
 
-  const { data: cfgRow } = await admin.from("app_config").select("value").eq("key", "activity_templates").maybeSingle();
+  const { data: templateRows } = await admin.from("activity_templates").select("id, class_tag, class_tag_is");
   const classMap: Record<string, any> = {};
-  (Array.isArray(cfgRow?.value) ? cfgRow!.value : []).forEach((t: any) => { if (t && t.id) classMap[t.id] = t; });
+  (templateRows || []).forEach((t) => {
+    if (t && t.id) classMap[t.id] = { classTag: t.class_tag, classTagIS: t.class_tag_is };
+  });
 
   return json({ id: saved.id, item: toVolDto(saved, classMap) });
 });
