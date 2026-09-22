@@ -3,6 +3,20 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — admin member list sorts alphabetically
+
+`getMembers` returns members in database order, not name order, and
+nothing sorted them before rendering the admin Members tab.
+
+- `admin/admin.js`: the `members` array is sorted (locale-aware, so
+  Icelandic letters þ/ð/æ/ö collate correctly) once when loaded, so every
+  consumer — the list, dropdowns, the cert-assignment modal — sees
+  alphabetical order.
+- `admin/members.js`: `renderMemberList` also re-sorts at render time,
+  since `saveMember`/`confirmImport` append new/updated rows to the end
+  of the array — without this, the visible list would drift out of order
+  after adding or importing a member until the next full page reload.
+
 ## Unreleased (Supabase branch) — allow re-issuing a member's temp password
 
 `admin/members.js`'s "Issue temporary password" button was disabled for

@@ -27,6 +27,12 @@ var _MEMBER_BATCH = 50;
 function renderMemberList(list) {
   const card = document.getElementById("membersCard");
   if (!list.length) { card.innerHTML = `<div class="empty-state">${s('admin.noMembers')}</div>`; return; }
+  // Re-sort at render time, not just once on load: saveMember/confirmImport
+  // append new/updated rows to the end of the members array, which would
+  // otherwise leave the visible list out of alphabetical order until the
+  // next full page reload.
+  const _mLocale = getLang() === 'IS' ? 'is' : 'en';
+  list = list.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', _mLocale, { sensitivity: 'base' }));
   _memberListData = list;
   _memberDupNames = duplicateMemberNames(list);
   _memberRendered = 0;

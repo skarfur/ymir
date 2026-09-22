@@ -87,7 +87,12 @@ async function loadAll() {
       window._earlyMembers || apiGet("getMembers"),
       window._earlyConfig || apiGet("getConfig"),
     ]);
-    members  = mRes.members || [];
+    // Sorted once here so every consumer (member list, dropdowns, cert
+    // modal, etc.) sees alphabetical order without re-sorting locally —
+    // locale-aware so Icelandic letters (þ, ð, æ, ö) collate correctly.
+    const _mLocale = getLang() === 'IS' ? 'is' : 'en';
+    members  = (mRes.members || []).slice()
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', _mLocale, { sensitivity: 'base' }));
     cfgRes   = cfgRes_;
   } catch(e) {
     console.error("loadAll failed:", e);
