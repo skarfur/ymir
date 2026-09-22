@@ -292,11 +292,11 @@ function searchMember(q) {
   ).slice(0,6);
   let html = matches.map(m =>
     `<div style="padding:6px 10px;cursor:pointer;border:1px solid var(--border);border-top:none;
-      background:var(--card);font-size:12px" onmousedown="selectMember('${m.kennitala}','${esc(memberDisplayName(m, members))}')"
+      background:var(--card);font-size:12px" data-staff-click="selectMember" data-staff-arg="${esc(m.kennitala)}" data-staff-arg2="${esc(memberDisplayName(m, members))}"
     >${esc(memberDisplayName(m, members))} <span style="color:var(--muted)">${m.kennitala}</span>${m.isMinor?`<span class="badge badge-yellow" style="margin-left:6px">${s('lbl.minor')}</span>`:''}</div>`
   ).join('');
   if (q.length >= 3) {
-    html += `<div class="guest-add-hint" onmousedown="promptGuestSkipper('${esc(q.trim())}')"
+    html += `<div class="guest-add-hint" data-staff-click="promptGuestSkipper" data-staff-arg="${esc(q.trim())}"
       >${s('staff.addAsGuest',{name:esc(q.trim())})}</div>`;
   }
   box.innerHTML = html;
