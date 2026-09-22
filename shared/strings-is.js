@@ -31,7 +31,7 @@ var _STRINGS_FLAT = {
   "lbl.phone": "Sími",
   "lbl.email": "Netfang",
   "lbl.location": "Staðsetning",
-  "lbl.sailingLocation": "Siglingastaður",
+  "lbl.sailingLocation": "Siglingasvæði",
   "lbl.boat": "Bátur",
   "lbl.crew": "Áhöfn",
   "lbl.role": "Hlutverk",
