@@ -18,13 +18,17 @@ import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 // Promise.all instead of sequential awaits: this was previously several
 // round-trips end-to-end, now it's bounded by the slowest single one.
 //
-// boats/locations/activity_templates read from their own real tables (a
-// deliberate normalization from the Sheets version's config-JSON-blobs,
-// not a shortcut) — see the boats_access_control_and_reservations
-// migration, and 20260922100000_activity_templates_table.sql's header for
-// why activity_templates followed the same path (a real bug, not just
+// boats/locations/activity_templates/cert_defs read from their own real
+// tables (a deliberate normalization from the Sheets version's
+// config-JSON-blobs, not a shortcut) — see the
+// boats_access_control_and_reservations migration, and
+// 20260922100000_activity_templates_table.sql's header for why
+// activity_templates followed the same path (a real bug, not just
 // tidiness: its legacy string ids didn't satisfy the uuid columns
-// activities.source_activity_type_id etc. expect).
+// activities.source_activity_type_id etc. expect). cert_defs
+// (20260922110000) is the same promotion for consistency, not a bug fix
+// — its ids are only ever compared as free text, never a typed uuid
+// column, so they kept their original values with no remap needed.
 
 const ALERT_DEFAULTS = {
   enabled: true,
@@ -45,25 +49,30 @@ function mergeAlertConfig(raw: any): typeof ALERT_DEFAULTS {
   };
 }
 
-function normalizeCertDefs(arr: unknown): any[] {
-  if (!Array.isArray(arr)) return [];
-  return arr.map((d: any) => {
-    if (!d) return d;
-    const nameEN = d.nameEN || d.name || "";
-    const nameIS = d.nameIS || "";
-    const descriptionEN = d.descriptionEN || d.description || "";
-    const descriptionIS = d.descriptionIS || "";
-    const subcats = Array.isArray(d.subcats)
-      ? d.subcats.map((sc: any) => {
-          const labelEN = sc.labelEN || sc.label || "";
-          const labelIS = sc.labelIS || "";
-          const scDescEN = sc.descriptionEN || sc.description || "";
-          const scDescIS = sc.descriptionIS || "";
-          return { ...sc, labelEN, labelIS, label: labelEN, descriptionEN: scDescEN, descriptionIS: scDescIS, description: scDescEN };
-        })
-      : [];
-    return { ...d, nameEN, nameIS, name: nameEN, descriptionEN, descriptionIS, description: descriptionEN, subcats };
-  });
+function toCertDefDto(d: any) {
+  const subcats = Array.isArray(d.subcats)
+    ? d.subcats.map((sc: any) => {
+        const labelEN = sc.labelEN || sc.label || "";
+        const labelIS = sc.labelIS || "";
+        const scDescEN = sc.descriptionEN || sc.description || "";
+        const scDescIS = sc.descriptionIS || "";
+        return { ...sc, labelEN, labelIS, label: labelEN, descriptionEN: scDescEN, descriptionIS: scDescIS, description: scDescEN };
+      })
+    : [];
+  return {
+    id: d.id,
+    nameEN: d.name_en || "", nameIS: d.name_is || "", name: d.name_en || "",
+    descriptionEN: d.description_en || "", descriptionIS: d.description_is || "", description: d.description_en || "",
+    category: d.category || "",
+    issuingAuthority: d.issuing_authority || "",
+    color: d.color || "",
+    expires: !!d.expires,
+    hasIdNumber: !!d.has_id_number,
+    clubEndorsement: !!d.club_endorsement,
+    subcats,
+    createdAt: d.created_at,
+    updatedAt: d.updated_at,
+  };
 }
 
 function normalizeCertCategories(arr: unknown): any[] {
@@ -151,7 +160,7 @@ function toVolDto(ev: any, classMap: Record<string, any>) {
 
 const CONFIG_KEYS = [
   "dailyChecklist", "overdueAlerts", "flagConfig", "flagOverride",
-  "certDefs", "certCategories", "launchChecklists", "boatCategories", "staffStatus",
+  "certCategories", "launchChecklists", "boatCategories", "staffStatus",
   "allowBreaks", "rowingCalendarId", "rowingCalendarSyncActive", "keelboatCalendarId",
   "keelboatCalendarSyncActive", "rowingPassport", "clubCalendars",
 ];
@@ -163,6 +172,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     { data: allReservations, error: resError },
     { data: locations, error: locationsError },
     { data: templateRows, error: templatesError },
+    { data: certDefRows, error: certDefsError },
     { data: volunteerEventRows, error: volEventsError },
     { data: cancelledRows, error: cancelledError },
   ] = await Promise.all([
@@ -171,6 +181,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     admin.from("boat_reservations").select("*"),
     admin.from("locations").select("id, name, type, coordinates, active"),
     admin.from("activity_templates").select("*"),
+    admin.from("cert_defs").select("*"),
     admin.from("activities").select("*").eq("signup_required", true),
     admin.from("activities").select("source_activity_type_id, date")
       .eq("status", "cancelled").eq("signup_required", false).not("source_activity_type_id", "is", null),
@@ -180,6 +191,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
   if (resError) throw new Error("Boat reservations lookup failed");
   if (locationsError) throw new Error("Locations lookup failed");
   if (templatesError) throw new Error("Activity templates lookup failed");
+  if (certDefsError) throw new Error("Cert defs lookup failed");
   if (volEventsError) throw new Error("Volunteer events lookup failed");
   if (cancelledError) throw new Error("Cancelled occurrences lookup failed");
 
@@ -258,7 +270,7 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     overdueAlerts: mergeAlertConfig(cfg.overdueAlerts),
     flagConfig: cfg.flagConfig || null,
     flagOverride,
-    certDefs: normalizeCertDefs(cfg.certDefs),
+    certDefs: (certDefRows || []).map(toCertDefDto),
     certCategories: normalizeCertCategories(cfg.certCategories),
     boats: boats || [],
     locations: locations || [],

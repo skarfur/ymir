@@ -287,13 +287,11 @@ async function saveCertDef() {
   const nameIS = document.getElementById("cdNameIS").value.trim();
   if (!nameEN) { toast(s("admin.nameRequired"), "err"); return; }
 
-  const newId   = certEditId || ("cert_" + Date.now().toString(36));
   const expires = document.getElementById("cdExpires").checked;
   const isEndorsement = document.getElementById("cdClubEndorsement").checked;
   const descEN  = document.getElementById("cdDescEN").value.trim();
   const descIS  = document.getElementById("cdDescIS").value.trim();
   const payload = {
-    id:               newId,
     // New bilingual fields:
     nameEN,
     nameIS,
@@ -313,9 +311,15 @@ async function saveCertDef() {
 
   btn.disabled = true;
   try {
-    const res     = await callSupabaseRpc("save_config_list_item", { p_key: "certDefs", p_item: payload });
+    const res     = await callSupabaseRpc("save_cert_def", {
+      p_id: certEditId || null, p_name_en: payload.nameEN, p_name_is: payload.nameIS,
+      p_description_en: payload.descriptionEN, p_description_is: payload.descriptionIS,
+      p_category: payload.category, p_issuing_authority: payload.issuingAuthority,
+      p_color: payload.color, p_expires: payload.expires, p_has_id_number: payload.hasIdNumber,
+      p_club_endorsement: payload.clubEndorsement, p_subcats: payload.subcats,
+    });
     _invalidateApiCache("getConfig");
-    const savedId = res?.id || newId;
+    const savedId = res?.id || certEditId;
     const saved   = { ...payload, id: savedId };
     if (certEditId) {
       certDefs = certDefs.map(d => d.id === certEditId ? saved : d);
@@ -337,7 +341,7 @@ async function saveCertDef() {
 async function deleteCertDef() {
   if (!certEditId || !await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
-    await callSupabaseRpc("delete_config_list_item", { p_key: "certDefs", p_id: certEditId }); _invalidateApiCache("getConfig");
+    await callSupabaseRpc("delete_cert_def", { p_id: certEditId }); _invalidateApiCache("getConfig");
     certDefs = certDefs.filter(d => d.id !== certEditId);
     renderCertDefs();
 
@@ -349,7 +353,7 @@ async function deleteCertDef() {
 async function deleteCertDefById(id) {
   if (!await ymConfirm(s("admin.confirmDeleteCertDef"))) return;
   try {
-    await callSupabaseRpc("delete_config_list_item", { p_key: "certDefs", p_id: id }); _invalidateApiCache("getConfig");
+    await callSupabaseRpc("delete_cert_def", { p_id: id }); _invalidateApiCache("getConfig");
     certDefs = certDefs.filter(d => d.id !== id);
     renderCertDefs();
 
