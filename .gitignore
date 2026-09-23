@@ -19,3 +19,6 @@ package-lock.json
 # Apps Script pull artefacts (if clasp ever used locally)
 .clasp.json
 .clasprc.json
+
+# Local output of tools/gcal-wif-setup.sh (public key, but generated/local)
+tools/jwks.json

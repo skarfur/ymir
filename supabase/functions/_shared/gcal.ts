@@ -1,38 +1,62 @@
-// Google Calendar API access for Supabase Edge Functions, via a service
-// account's OAuth2 "server to server" (JWT bearer) flow — see
-// https://developers.google.com/identity/protocols/oauth2/service-account.
+// Google Calendar API access for Supabase Edge Functions, via Workload
+// Identity Federation (WIF) — no downloaded service-account key involved.
+// This function mints its own short-lived OIDC-shaped JWT (signed with a
+// dedicated ES256 key held only as the GCAL_WIF_SIGNING_KEY Supabase
+// secret — same signing pattern as _shared/session.ts's mintAccessToken,
+// a separate key so a leak of one never compromises the other), exchanges
+// it at Google's STS endpoint for a federated access token, then uses that
+// to impersonate the Calendar service account via the IAM Credentials API
+// for a short-lived, Calendar-scoped access token. See
+// https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-other-providers.
+//
+// This replaces an earlier downloaded-key JWT-bearer flow (which read a
+// GOOGLE_SERVICE_ACCOUNT_JSON secret directly) — Google's current guidance
+// is to avoid long-lived, downloadable service-account keys wherever the
+// calling platform can instead present a verifiable identity of its own.
+// Supabase Edge Functions don't get one ambiently (unlike e.g. GitHub
+// Actions or GCP compute), so we mint one ourselves: the Workload Identity
+// Pool's OIDC provider trusts our own public key, uploaded directly (no
+// public issuer endpoint needed) — see tools/gcal-wif-setup.sh, which
+// performs that one-time Google Cloud + Supabase-secrets setup locally.
 //
 // This is the Deno/Edge-Function replacement for what checkouts.gs did
 // with Apps Script's built-in CalendarApp/Calendar.Events (which relied on
 // the Apps Script project's own implicit Google OAuth, not portable here).
-// A calendar-touching write needs its target calendar shared with the
-// service account's client_email (Settings and sharing → "Make changes to
+// A calendar-touching write still needs its target calendar shared with
+// the service account's email (Settings and sharing → "Make changes to
 // events") before any of this can succeed — sharing is per-calendar, done
 // once in Google Calendar's UI, not something this code can do for you.
 //
-// Auth requires the GOOGLE_SERVICE_ACCOUNT_JSON secret: the full JSON key
-// file downloaded when the service account's key is created in Google
-// Cloud Console (Calendar API must be enabled on that project). Every
-// calendar-touching Edge Function reads this same secret.
+// Required secrets (all pushed by tools/gcal-wif-setup.sh):
+//   GCAL_WIF_SIGNING_KEY — our own private JWK (ES256)
+//   GCAL_WIF_AUDIENCE    — full WIF provider resource name
+//   GCAL_WIF_ISSUER      — the `iss`/`aud` claim our JWTs carry; must match
+//                          the provider's configured issuer-uri exactly
+//   GCAL_WIF_SUBJECT     — the `sub` claim our JWTs carry; must match the
+//                          IAM binding's .../subject/<this value>
+//   GCAL_SA_EMAIL        — the Calendar service account's email to impersonate
 
-interface ServiceAccountKey {
-  client_email: string;
-  private_key: string;
+interface WifSigningKey {
+  jwk: JsonWebKey;
+  kid: string;
 }
 
-let cachedKey: ServiceAccountKey | null = null;
+let cachedSigningKey: WifSigningKey | null = null;
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
-function getServiceAccountKey(): ServiceAccountKey {
-  if (cachedKey) return cachedKey;
-  const raw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-  const parsed = JSON.parse(raw);
-  if (!parsed.client_email || !parsed.private_key) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON missing client_email/private_key");
-  }
-  cachedKey = { client_email: parsed.client_email, private_key: parsed.private_key };
-  return cachedKey;
+function requireEnv(name: string): string {
+  const v = Deno.env.get(name);
+  if (!v) throw new Error(`${name} not configured`);
+  return v;
+}
+
+function getSigningKey(): WifSigningKey {
+  if (cachedSigningKey) return cachedSigningKey;
+  const raw = requireEnv("GCAL_WIF_SIGNING_KEY");
+  const jwk = JSON.parse(raw);
+  if (!jwk.kid) throw new Error("GCAL_WIF_SIGNING_KEY missing kid");
+  cachedSigningKey = { jwk, kid: jwk.kid };
+  return cachedSigningKey;
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -41,60 +65,88 @@ function base64url(bytes: Uint8Array): string {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function importPrivateKey(pem: string): Promise<CryptoKey> {
-  const body = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const der = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey(
-    "pkcs8",
-    der,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+function base64urlJson(obj: unknown): string {
+  return base64url(new TextEncoder().encode(JSON.stringify(obj)));
+}
+
+// Mints the short-lived OIDC-shaped assertion Google's STS endpoint
+// verifies against the JWKS we uploaded to the Workload Identity Pool
+// provider (tools/gcal-wif-setup.sh) — this is the "external token" in
+// Google's federation flow, standing in for what GitHub Actions/GCP
+// compute would hand a workload automatically.
+async function mintWifAssertion(): Promise<string> {
+  const { jwk, kid } = getSigningKey();
+  const issuer = requireEnv("GCAL_WIF_ISSUER");
+  const subject = requireEnv("GCAL_WIF_SUBJECT");
+  const key = await crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"],
   );
-}
-
-// Mints (and caches, for the life of this warm isolate) an OAuth2 access
-// token scoped to the Calendar API. Tokens are valid for 1h; refreshed
-// 60s early to avoid racing expiry mid-request.
-async function getAccessToken(): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.token;
-
-  const { client_email, private_key } = getServiceAccountKey();
-  const key = await importPrivateKey(private_key);
   const nowSec = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const claims = {
-    iss: client_email,
-    scope: "https://www.googleapis.com/auth/calendar",
-    aud: "https://oauth2.googleapis.com/token",
-    iat: nowSec,
-    exp: nowSec + 3600,
-  };
-  const signingInput = base64url(new TextEncoder().encode(JSON.stringify(header))) + "." +
-    base64url(new TextEncoder().encode(JSON.stringify(claims)));
+  const header = { alg: "ES256", kid, typ: "JWT" };
+  const claims = { iss: issuer, sub: subject, aud: issuer, iat: nowSec, exp: nowSec + 300 };
+  const signingInput = base64urlJson(header) + "." + base64urlJson(claims);
   const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
+    { name: "ECDSA", hash: "SHA-256" },
     key,
     new TextEncoder().encode(signingInput),
   );
-  const assertion = signingInput + "." + base64url(new Uint8Array(signature));
+  return signingInput + "." + base64url(new Uint8Array(signature));
+}
 
-  const resp = await fetch("https://oauth2.googleapis.com/token", {
+// Two-step "workload identity federation with service account
+// impersonation" flow: exchange our self-signed assertion at Google's STS
+// endpoint for a federated access token, then use that to impersonate the
+// Calendar service account via the IAM Credentials API for a token
+// actually scoped to the Calendar API. Cached for the life of this warm
+// isolate, refreshed 60s early to avoid racing expiry mid-request.
+async function getAccessToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.token;
+
+  const assertion = await mintWifAssertion();
+  const audience = requireEnv("GCAL_WIF_AUDIENCE");
+  const saEmail = requireEnv("GCAL_SA_EMAIL");
+
+  const stsResp = await fetch("https://sts.googleapis.com/v1/token", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grantType: "urn:ietf:params:oauth:grant-type:token-exchange",
+      audience,
+      scope: "https://www.googleapis.com/auth/cloud-platform",
+      requestedTokenType: "urn:ietf:params:oauth:token-type:access_token",
+      subjectToken: assertion,
+      subjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
     }),
   });
-  const data = await resp.json();
-  if (!resp.ok || !data.access_token) {
-    throw new Error("Google token request failed: " + (data.error_description || data.error || resp.status));
+  const stsData = await stsResp.json().catch(() => null);
+  // The STS token endpoint's response follows RFC 8693's snake_case wire
+  // format even though its own request body uses camelCase field names —
+  // a real (if confusing) asymmetry in Google's implementation.
+  const federatedToken = stsData?.access_token;
+  if (!stsResp.ok || !federatedToken) {
+    throw new Error(
+      "WIF token exchange failed: " + (stsData?.error_description || stsData?.error || stsResp.status),
+    );
   }
-  cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+
+  const impResp = await fetch(
+    `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(saEmail)}:generateAccessToken`,
+    {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${federatedToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: ["https://www.googleapis.com/auth/calendar"], lifetime: "3600s" }),
+    },
+  );
+  const impData = await impResp.json().catch(() => null);
+  if (!impResp.ok || !impData?.accessToken) {
+    throw new Error("Service account impersonation failed: " + (impData?.error?.message || impResp.status));
+  }
+
+  cachedToken = { token: impData.accessToken, expiresAt: new Date(impData.expireTime).getTime() };
   return cachedToken.token;
 }
 
