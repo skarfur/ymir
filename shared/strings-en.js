@@ -1836,6 +1836,7 @@ var _STRINGS_FLAT = {
 
   // ── Admin: Handbook tab ─────────────────────────────────────────────────
   "admin.tabHandbook":          "Handbook",
+  "admin.tabOther":             "Other",
   "admin.handbookHdr":          "HANDBOOK",
   "admin.handbookContactsTitle":"Contact numbers",
   "admin.handbookContactsPeople":"People",

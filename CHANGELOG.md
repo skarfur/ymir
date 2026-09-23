@@ -31,10 +31,11 @@ address.
 - `supabase/functions/_shared/config.ts`: added `sharedPhotoEmailTo` to
   the config bundle every portal fetches (`get-config`, `login`,
   `login-with-google` all redeployed with the updated shared module).
-- `admin/index.html`, `admin/flags.js`, `admin/admin.js`: new "Shared
-  photo notifications" card in the Flags tab — a single email field, own
-  save button (`saveSharedPhotoEmail`), independent of the flag-scoring
-  form it sits next to.
+- `admin/index.html`, `admin/flags.js`, `admin/admin.js`: new "Other"
+  settings sub-tab (Settings → Other) holding the "Shared photo
+  notifications" card — a single email field, own save button
+  (`saveSharedPhotoEmail`). Started out in the Flags tab, moved to its
+  own tab once flags themselves are unrelated to it.
 
 Setup still needed (external, can't be done from here): a Resend account
 + `RESEND_API_KEY` secret (and ideally a verified sending domain via

@@ -1836,6 +1836,7 @@ var _STRINGS_FLAT = {
 
   // ── Stjórnandi: Handbók flipi ───────────────────────────────────────────
   "admin.tabHandbook":          "Handbók",
+  "admin.tabOther":             "Annað",
   "admin.handbookHdr":          "HANDBÓK",
   "admin.handbookContactsTitle":"Símanúmer",
   "admin.handbookContactsPeople":"Fólk",
