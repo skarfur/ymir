@@ -162,7 +162,7 @@ const CONFIG_KEYS = [
   "dailyChecklist", "overdueAlerts", "flagConfig", "flagOverride",
   "certCategories", "launchChecklists", "boatCategories", "staffStatus",
   "allowBreaks", "rowingCalendarId", "rowingCalendarSyncActive", "keelboatCalendarId",
-  "keelboatCalendarSyncActive", "rowingPassport", "clubCalendars",
+  "keelboatCalendarSyncActive", "rowingPassport", "clubCalendars", "sharedPhotoEmailTo",
 ];
 
 export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
@@ -288,5 +288,6 @@ export async function buildConfigSnapshot(admin: SupabaseClient): Promise<any> {
     volunteerEvents,
     clubCalendars: cfg.clubCalendars || [],
     cancelledActivityOccurrences,
+    sharedPhotoEmailTo: cfg.sharedPhotoEmailTo || "",
   };
 }

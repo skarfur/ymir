@@ -134,6 +134,7 @@ async function loadAll() {
   try { loadAlertConfig(cfgRes.overdueAlerts); }   catch(e) { console.warn("loadAlertConfig:", e.message); }
   try { loadLaunchChecklists(cfgRes.launchChecklists || {}); } catch(e) { console.warn("loadLaunchChecklists:", e.message); }
   try { loadFlagConfigPanel(cfgRes.flagConfig); }  catch(e) { console.warn("loadFlagConfigPanel:", e.message); }
+  try { loadSharedPhotoEmail(cfgRes.sharedPhotoEmailTo); } catch(e) { console.warn("loadSharedPhotoEmail:", e.message); }
 
   renderMembers(); renderBoats(); renderLocations();
   renderChecklists(); renderActTypes(); renderVolunteerEvents();

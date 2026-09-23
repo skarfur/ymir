@@ -539,6 +539,17 @@
         <button class="btn btn-secondary" data-admin-click="resetFlagConfig" data-s="admin.resetDefaults"></button>
         <span id="fcSaveMsg" class="text-xs ml-4"></span>
       </div>
+      <div class="col-section">
+        <div class="col-head" data-admin-toggle-section><div class="col-title" data-s="admin.sharedPhotoNotify"></div><span class="col-toggle">▼</span></div>
+        <div class="col-body hidden" id="sharedPhotoEmailCard">
+          <div class="text-xs text-muted mb-10" data-s="admin.sharedPhotoNotifyHint"></div>
+          <div class="field"><label data-s="admin.sharedPhotoEmailTo" for="sharedPhotoEmailTo"></label><input type="email" id="sharedPhotoEmailTo" placeholder="photos@example.com"></div>
+          <div class="d-flex gap-8 items-center mt-8">
+            <button class="btn btn-secondary text-xs" data-admin-click="saveSharedPhotoEmail" data-s="admin.saveSharedPhotoSettings"></button>
+            <span id="sharedPhotoEmailMsg" class="text-xs"></span>
+          </div>
+        </div>
+      </div>
     </div><!-- /tab-flags -->
 
     <!-- ══ HANDBOOK ═══════════════════════════════════════════════════════════ -->

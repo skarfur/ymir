@@ -133,5 +133,21 @@ async function saveFlagConfig(){
 }
 async function resetFlagConfig(){if(!await ymConfirm(s('admin.confirmResetFlags')))return;loadFlagConfigPanel(null);}
 
+function loadSharedPhotoEmail(addr){
+  var el=document.getElementById('sharedPhotoEmailTo');
+  if(el) el.value=addr||'';
+}
+async function saveSharedPhotoEmail(){
+  var msgEl=document.getElementById('sharedPhotoEmailMsg');
+  var addr=(document.getElementById('sharedPhotoEmailTo').value||'').trim();
+  msgEl.textContent='';
+  try{
+    await callSupabaseRpc('save_config_value',{p_key:'sharedPhotoEmailTo',p_value:addr});
+    _invalidateApiCache('getConfig');
+    msgEl.style.color='var(--green)';msgEl.textContent='✓ '+s('toast.saved');
+    setTimeout(function(){msgEl.textContent='';},3000);
+  }catch(e){msgEl.style.color='var(--red)';msgEl.textContent=s('toast.saveFailed')+': '+e.message;}
+}
+
 // ══ CSV IMPORT ════════════════════════════════════════════════════════════════
 

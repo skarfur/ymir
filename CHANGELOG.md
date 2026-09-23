@@ -3,6 +3,44 @@
 Material changes to the Ýmir Sailing Club codebase. Entries are newest-first.
 Commit hashes reference the `main` branch.
 
+## Unreleased (Supabase branch) — email notification for club-shared trip photos
+
+New feature: when a member marks a trip photo as shareable with the club,
+an email listing the newly shared photo(s) goes out to an admin-configured
+address.
+
+- `supabase/migrations/20260923110000_shared_photo_notify.sql`: a trigger
+  on `trips` (`AFTER INSERT OR UPDATE OF photo_meta`) diffs old vs new
+  `photo_meta` and, if anything is newly `shared: true`, calls the
+  `notify-shared-photos` Edge Function via `pg_net` — async, best-effort,
+  never blocks or fails the trip save. Authenticates the call with a
+  shared secret stored in Supabase Vault (`trigger_shared_secret`) rather
+  than a hardcoded value in the migration file — this is meant to be a
+  reusable convention for any future Postgres-trigger-to-Edge-Function
+  call, not a one-off for this feature. Also whitelists a new
+  `sharedPhotoEmailTo` key on `save_config_value` (admin-editable, not a
+  secret, since it's expected to change from the UI).
+- `supabase/functions/notify-shared-photos/index.ts` (new): verifies the
+  `x-trigger-secret` header, diffs the webhook payload's old/new
+  `photo_meta`, looks up the notify address from `app_config`, and sends
+  via Resend — a plain HTML email linking to the already-public Storage
+  URLs, not attachments (no reason to re-download/re-attach bytes that
+  are already served publicly, and it sidesteps attachment size limits
+  entirely). Not reachable from the frontend; the shared-secret check is
+  the only gate, since there's no end-user session to validate.
+- `supabase/functions/_shared/config.ts`: added `sharedPhotoEmailTo` to
+  the config bundle every portal fetches (`get-config`, `login`,
+  `login-with-google` all redeployed with the updated shared module).
+- `admin/index.html`, `admin/flags.js`, `admin/admin.js`: new "Shared
+  photo notifications" card in the Flags tab — a single email field, own
+  save button (`saveSharedPhotoEmail`), independent of the flag-scoring
+  form it sits next to.
+
+Setup still needed (external, can't be done from here): a Resend account
++ `RESEND_API_KEY` secret (and ideally a verified sending domain via
+`SHARED_PHOTO_EMAIL_FROM`, rather than the Resend sandbox sender), plus
+the `TRIGGER_SHARED_SECRET` secret matching the Vault-stored value.
+
 ## Unreleased (Supabase branch) — trip GPS track + photo uploads, Supabase Storage
 
 `uploadTripFile`/`deleteTripFile` were never ported off Apps Script's Google
